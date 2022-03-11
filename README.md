@@ -8,28 +8,7 @@ This repository contains a reference implementation of Identity Hubs as per the 
 Proposals for the specification itself should be submitted as pull requests to the [spec repo](https://github.com/decentralized-identity/identity-hub). Similarly, issues pertaining to the specification itself should be submitted as github issues to the [spec repo](https://github.com/decentralized-identity/identity-hub). 
 
 
-## V1.0 Feature Roadmap 
-- [ ] Scaffolding
-- [ ] Core functionality
-    - [ ] Message
-    - [ ] Interfaces
-        - [ ] Descriptor Index
-        - [ ] Blockstore
-- [ ] DMZ
-    - [ ] DMZ Spec Proposal
-    - [ ] DMZ Implementation
-- [ ] Permissions
-    - [ ] Permissions Spec Proposal
-    - [ ] Permissions Implementation
-- [ ] Hooks
-    - [ ] Hooks Spec Proposal
-    - [ ] Hooks Implementation
-- [ ] Threads
-    - [ ] Threads Spec Proposal
-    - [ ] Threads Implementation
-- [ ] Collections
-    - [ ] Collections Implementation
-- [ ] Sync
+## [V1.0 Milestone](https://github.com/TBD54566975/hub-sdk-js/milestone/1)
 
 
 ## Project Resources
