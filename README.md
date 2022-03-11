@@ -8,18 +8,36 @@ This repository contains a reference implementation of Identity Hubs as per the 
 Proposals for the specification itself should be submitted as pull requests to the [spec repo](https://github.com/decentralized-identity/identity-hub). Similarly, issues pertaining to the specification itself should be submitted as github issues to the [spec repo](https://github.com/decentralized-identity/identity-hub). 
 
 
+## V1.0 Feature Roadmap 
+- [ ] Scaffolding
+- [ ] Core functionality
+    - [ ] Message
+    - [ ] Interfaces
+        - [ ] Descriptor Index
+        - [ ] Blockstore
+- [ ] DMZ
+    - [ ] DMZ Spec Proposal
+    - [ ] DMZ Implementation
+- [ ] Permissions
+    - [ ] Permissions Spec Proposal
+    - [ ] Permissions Implementation
+- [ ] Hooks
+    - [ ] Hooks Spec Proposal
+    - [ ] Hooks Implementation
+- [ ] Threads
+    - [ ] Threads Spec Proposal
+    - [ ] Threads Implementation
+- [ ] Collections
+    - [ ] Collections Implementation
+- [ ] Sync
 
-The other files in this template repo may be used as-is:
-* [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
-* [GOVERNANCE.md](./GOVERNANCE.md)
-* [LICENSE](./LICENSE)
 
 ## Project Resources
 
-| Resource                                   | Description                                                                    |
-| ------------------------------------------ | ------------------------------------------------------------------------------ |
-| [CODEOWNERS](./CODEOWNERS)                 | Outlines the project lead(s)                                                   |
+| Resource                                   | Description                                                                   |
+| ------------------------------------------ | ----------------------------------------------------------------------------- |
+| [CODEOWNERS](./CODEOWNERS)                 | Outlines the project lead(s)                                                  |
 | [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) | Expected behavior for project contributors, promoting a welcoming environment |
-| [CONTRIBUTING.md](./CONTRIBUTING.md)       | Developer guide to build, test, run, access CI, chat, discuss, file issues     |
-| [GOVERNANCE.md](./GOVERNANCE.md)           | Project governance                                                             |
-| [LICENSE](./LICENSE)                       | Apache License, Version 2.0                                                    |
+| [CONTRIBUTING.md](./CONTRIBUTING.md)       | Developer guide to build, test, run, access CI, chat, discuss, file issues    |
+| [GOVERNANCE.md](./GOVERNANCE.md)           | Project governance                                                            |
+| [LICENSE](./LICENSE)                       | Apache License, Version 2.0                                                   |
