@@ -1,24 +1,13 @@
-# $PROJECT_NAME README
-
-Congrats, project leads! You got a new project to grow!
-
-This stub is meant to help you form a strong community around your work. It's yours to adapt, and may 
-diverge from this initial structure. Just keep the files seeded in this repo, and the rest is yours to evolve! 
+# hub-sdk-js 
 
 ## Introduction
 
-Orient users to the project here. This is a good place to start with an assumption
-that the user knows very little - so start with the Big Picture and show how this
-project fits into it. It may be good to reference/link the broader architecture in the
-`collaboration` repo or the developer site here.
+This repository contains a reference implementation of Identity Hubs as per the [specification](https://identity.foundation/identity-hub/spec/). This specification is in a draft state and very much so a WIP. For the foreseeable future, a lot of the work on Identity Hubs will be split across this repo and the repo that houses the specification, which you can find [here](https://github.com/decentralized-identity/identity-hub). The overall goal is to produce a v1.0 specification along with a reference implementation by 07/01/2022. 
 
-Then maybe a dive into what this project does.
 
-Diagrams and other visuals are helpful here. Perhaps code snippets showing usage.
+Proposals for the specification itself should be submitted as pull requests to the [spec repo](https://github.com/decentralized-identity/identity-hub). Similarly, issues pertaining to the specification itself should be submitted as github issues to the [spec repo](https://github.com/decentralized-identity/identity-hub). 
 
-Project leads should complete, alongside this `README`:
-* [CODEOWNERS](./CODEOWNERS) - set project lead(s)
-* [CONTRIBUTING.md](./CONTRIBUTING.md) - Fill out how to: install prereqs, build, test, run, access CI, chat, discuss, file issues
+
 
 The other files in this template repo may be used as-is:
 * [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
