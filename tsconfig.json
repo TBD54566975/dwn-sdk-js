@@ -1,0 +1,22 @@
+// we're using babel to transpile ts -> js. We're using `tsc` to generate
+// our type definitions. The reasons why we chose this approach are documented
+// in this repo's Github Wiki.
+{
+  "compilerOptions": {
+    "lib": [
+      "DOM",
+      "ES6"
+    ],
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationMap": true,
+    "outDir": "dist/types",
+  },
+  "include": [
+    "./src/index.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

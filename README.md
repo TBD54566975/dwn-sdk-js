@@ -10,6 +10,52 @@ Proposals for the specification itself should be submitted as pull requests to t
 
 ## [V1.0 Milestone](https://github.com/TBD54566975/hub-sdk-js/milestone/1)
 
+## Installation
+Since this SDK is still in early stages, we haven't yet to published to npm. Until then, we suggest using [`npm link`](https://docs.npmjs.com/cli/v8/commands/npm-link) to use this SDK in your own project. Steps:
+```bash
+# clone this repo somewhere
+git clone https://github.com/TBD54566975/hub-sdk-js.git
+# install deps
+npm install
+# transpile typescript and build bundles
+npm run build
+
+# cd into your project dir
+cd /path/to/your/project
+# first creates a global link, and then links the global installation target into your project's node_modules folder.
+npm link ../path/to/where/you/cloned/hub-sdk-js
+
+# profit
+```
+
+## Usage
+
+### nodeJS
+
+- **ESM**
+  ```javascript
+  import { IdentityHub } from 'hub-sdk';
+
+  // cool things
+  ```
+
+- **CJS**
+  ```javascript
+  const { IdentityHub } = require('hub-sdk');
+
+  // cool things
+  ```
+### Browser:
+
+- **UMD Bundle**
+  ```html
+  <script type="text/javascript" src="node_modules/hub-sdk/dist/bundles/bundle.umd.js"></script>
+  ```
+
+- **ESM Bundle**
+  ```html
+  <script type="text/javascript" src="node_modules/hub-sdk/dist/bundles/bundle.esm.js"></script>
+  ```
 
 ## Project Resources
 

@@ -12,156 +12,29 @@ This guide is for you.
 
 ## Development Prerequisites
 
-___***UPDATE TABLE OF PROJECT DEPS AND INSTALLATION NOTES***___
+| Requirement | Tested Version | Installation Instructions |
+| ----------- | -------------- | ------------------------- |
+| fill        | out            | plz                       |
 
-| Requirement | Tested Version | Installation Instructions                            |
-|-------------|----------------|------------------------------------------------------|
-| Go          | 1.17.6         |[go.dev](https://go.dev/doc/tutorial/compile-install) |
-| Mage        | 1.12.1         |[magefile.org](https://magefile.org/)                 |
-| Java        | 17.0.2         | Below, recommended via [SDKMan](https://sdkman.io)   |
 
-### Go
+## Available Scripts
+| command                      | description                                                                                                        |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `npm run test`               | runs tests and type checking                                                                                       |
+| `npm run build`              | transpiles `ts` -> `js` as `esm` and `cjs`, generates `esm` and `umd` bundles, and generates all type declarations |
+| `npm run build:esm`          | transpiles ts -> js as `esm`                                                                                       |
+| `npm run build:cjs`          | transpiles ts -> js as `cjs`                                                                                       |
+| `npm run build:bundles`      | generates `esm` and `umd` bundles                                                                                  |
+| `npm run build:declarations` | generates all type declarations                                                                                    |
+| `npm run clean`              | deletes `dist` dir                                                                                                 |
+| `npm run lint`               | runs linter and auto-fixes all problems                                                                            |
 
-This project is written in Go, a modern, open source programming language. 
-
-You may verify your `go` installation via the terminal:
-
-```
-$> go version
-go version go1.17.6 darwin/amd64
-```
-
-If you do not have go, we recommend installing it by:
-
-#### MacOS
-
-##### Homebrew
-```
-$> brew install go
-```
-
-### Mage
-
-The build is run by Mage.
-
-You may verify your `mage` installation via the terminal:
-
-```
-$> mage --version
-Mage Build Tool 1.12.1
-Build Date: 2021-12-15T21:00:02Z
-Commit: 2f1ec40
-built with: go1.17.6
-```
-
-#### MacOS
-
-##### Homebrew
-
-```
-$> brew install mage
-```
-
-### Java
-
-This project is written in Java, a typesafe, compiled programming language. 
-
-You may verify your `java` installation via the terminal by running `java -version`.
-
-If you do not have Java, we recommend installing it 
-via [SDKMan](https://sdkman.io/install). This is a project which will allow you 
-to easily install the Java Development Kit (JDK), runtime (JRE), and related frameworks, 
-build tools, and runtimes.
-
-After you've installed SDKMan, you may install Java:
-
-#### SDKMan (cross-platform instructions)
-
-```shell
-$> sdk install java 
- ...
-Do you want java 17.0.2-open to be set as default? (Y/n): Y
-Setting java 17.0.2-open as default.
-```
-
-You may test your installation:
-
-```shell
-$> java -version
-openjdk version "17.0.2" 2022-01-18
-OpenJDK Runtime Environment (build 17.0.2+8-86)
-OpenJDK 64-Bit Server VM (build 17.0.2+8-86, mixed mode, sharing)
-```
-
----
-**NOTE**
-
-You may additionally look for other Java versions to install by running `sdk list java`:
-
-...or other installation candidates like Apache Ant, Apache Maven, etc, by running `sdk list`.
-
-Consult the SDKMan documentation for more info.
-
----
-
-## Build (Mage)
-
-```
-$> mage build
-```
-
-## Build (Java / Gradle)
-
-### macOS / Linux
-```shell
-$> ./gradlew build
-```
-
-### Windows
-```shell
-$> gradlew.bat build
-```
-
-## Test (Mage)
-
-```
-$> mage test
-```
-
-## Test (Java / Gradle)
-
-### macOS / Linux
-```shell
-$> ./gradlew test
-```
-
-### Windows
-```shell
-$> gradlew.bat test
-```
-
----
-**NOTE**
-
-You may also combine Gradle build targets in one call, like:
-
-```shell
-$> ./gradlew clean build test
-```
-
----
 
 ## Communications
 
 ### Issues
 
-Anyone from the community is welcome (and encouraged!) to raise issues via [GitHub Issues](LINK_HERE)  ___***FIX LINK AND REMOVE THIS NOTICE***___.
-
-### Discussions
-
-Design discussions and proposals take place on [GitHub Discussions](LINK_HERE)  ___***FIX LINK AND REMOVE THIS NOTICE***___. 
-
-We advocate an asynchronous, written debate model - so write up your thoughts and invite the community to join in!
+Anyone from the community is welcome (and encouraged!) to raise issues via [GitHub Issues](https://github.com/issues)
 
 ### Continuous Integration
 
