@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build-and-deploy-spec:
+  run-ALL-the-tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 🛎️
@@ -14,7 +14,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install and Build
+      - name: Install and Run
         run: |
           npm install
           npm run test
