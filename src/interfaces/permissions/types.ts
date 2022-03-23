@@ -1,0 +1,1 @@
+export type PermissionsMethod = 'PermissionsRequest' | 'PermissionsGrant' | 'PermissionsRevoke';

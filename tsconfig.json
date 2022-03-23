@@ -11,6 +11,10 @@
     "emitDeclarationOnly": true,
     "declarationMap": true,
     "outDir": "dist/types",
+    // allows us to import json files
+    "resolveJsonModule": true,
+    // required otherwise `ms` lib doesn't import
+    "esModuleInterop": true
   },
   "include": [
     "./src/index.ts"
@@ -18,5 +22,11 @@
   "exclude": [
     "node_modules",
     "dist"
-  ]
+  ],
+  "ts-node": {
+    "compilerOptions": {
+      "module": "ES2020",
+      "moduleResolution": "node"
+    }
+  }
 }
