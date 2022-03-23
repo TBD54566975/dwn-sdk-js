@@ -30,6 +30,16 @@ module.exports = {
       'always'
     ],
     'no-trailing-spaces': ['warn'],
-    'max-len': ['warn', { 'code': 100 }]
-  },
+    'max-len': ['warn', { 'code': 100 }],
+    'key-spacing': [
+      "error",
+      {
+        "align": {
+          "beforeColon": true,
+          "afterColon": true,
+          "on": "colon"
+        }
+      }
+    ]
+  }
 };
