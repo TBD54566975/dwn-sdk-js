@@ -1,4 +1,5 @@
 import { FlattenedJWS } from 'jose';
+import { DIDResolver } from '../../did/did-resolver';
 import { Ability, Conditions } from './permission';
 import { PermissionsMethod } from './types';
 
@@ -6,8 +7,15 @@ import { PermissionsMethod } from './types';
  * TODO: add documentation
  * @param message
  */
-export async function PermissionsRequest(message: PermissionsRequestMessage) {
-  throw new Error('Method not implemented');
+export async function PermissionsRequest(
+  message: PermissionsRequestMessage,
+  didResolver: DIDResolver
+) {
+
+  const { attestation, descriptor } = message;
+  const { requester } = descriptor;
+
+  const { didDocument } = await didResolver.resolve(requester);
 }
 
 export type PermissionsRequestMessage = {
@@ -17,8 +25,8 @@ export type PermissionsRequestMessage = {
 
 export type PermissionsRequestDescriptor = {
   method: PermissionsMethod,
-  objectId: string,
   requester: string,
   ability: Ability,
+  objectId?: string,
   conditions?: Conditions
 };

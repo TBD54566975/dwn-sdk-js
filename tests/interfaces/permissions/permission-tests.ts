@@ -3,10 +3,9 @@ import MockDate from 'mockdate';
 import { describe } from 'mocha';
 import { expect } from 'chai';
 
-import { Permission } from '../src/interfaces/permissions/permission';
+import { Permission } from '../../../src/interfaces/permissions/permission';
 
-
-describe('Permissions', () => {
+describe('Permission Tests', () => {
   beforeEach(() => {
     MockDate.reset();
   });

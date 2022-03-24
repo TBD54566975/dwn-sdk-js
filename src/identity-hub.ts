@@ -1,16 +1,15 @@
-import type { DIDResolver } from './did/did-resolver';
-import type { PermissionsRequestMessage, PermissionsMethod } from './interfaces/permissions';
+import { DIDResolver, DIDMethodResolver } from './did/did-resolver';
 
-import validator from './validator';
-
+import { Message, validateMessage } from './message';
 import { PermissionsRequest } from './interfaces/permissions';
 
 export class IdentityHub {
-  static methods = {
-    PermissionsRequest
-  };
+  static methods = { PermissionsRequest };
+  DIDResolver: DIDResolver;
 
-  constructor(config: Config) {}
+  constructor(config: Config) {
+    this.DIDResolver = new DIDResolver(config.DIDMethodResolvers);
+  }
 
   /**
    * TODO: add docs
@@ -24,24 +23,13 @@ export class IdentityHub {
       throw new Error('{methodName} is not a supported method.');
     }
 
-    const validateFn = validator.getSchema(methodName);
-    const isValid = validateFn(message);
+    // throws exception if message is invalid
+    validateMessage(message);
 
-    if (!isValid) {
-      // Every time a validation function is called the errors property is overwritten.
-      const errors = [...validateFn.errors];
-
-      // TODO: build helpful errors object using returned errors
-      throw new Error('Invalid message.');
-    }
-
-    await method(message);
+    await method(message, this.DIDResolver);
   }
 };
 
 export type Config = {
-  DIDResolvers: DIDResolver[],
+  DIDMethodResolvers: DIDMethodResolver[],
 };
-
-export type Message = PermissionsRequestMessage;
-export type Method = PermissionsMethod;
