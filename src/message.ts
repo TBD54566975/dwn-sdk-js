@@ -57,6 +57,12 @@ export function validateMessage(message: Message) {
  * verifies the signature of the provided message. Details regarding message signing can be found
  * {@link https://identity.foundation/identity-hub/spec/#signed-data here}.
  * @param message - the message to verify
+ * @throws {Error} if provided CID is invalid
+ * @throws {Error} if provided CID doesn't utilize CBOR codec
+ * @throws {Error} if provided CID was created using unsupporting hashing algo
+ * @throws {Error} if resolving DID Doc failed
+ * @throws {Error} if respective public key could not be found in DID Doc
+ * @throws {TypeError} if signature verification failed with public key
  */
 export async function verifyMessageSignature(message: Message, didResolver: DIDResolver) {
   const { descriptor, attestation } = message;
