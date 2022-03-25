@@ -96,6 +96,9 @@ describe('Message Tests', () => {
         .to.eventually.be.rejectedWith('provided CID does not match expected CID of descriptor');
 
     });
+
+    xit('throws an exception if provided CID doesnt utilize cbor codec', () => {});
+    xit('throws an exception if provided CID uses unsupported hashing algo', () => {});
     xit('throws an exception if DID could not be resolved', () => {});
     xit('throws an exception if appropriate key isnt present in DID Doc', () => {});
     xit('throws an exception if signature does not match', () => {});
