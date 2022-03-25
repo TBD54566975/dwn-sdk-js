@@ -8,9 +8,11 @@ import * as cbor from '@ipld/dag-cbor';
 
 import { base64url } from 'multiformats/bases/base64';
 import { CID } from 'multiformats/cid';
+import { flattenedVerify, importJWK } from 'jose';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 import permissionsSchemas from './interfaces/permissions/schemas';
+import { DIDResolver } from './did/did-resolver';
 
 // a map of all supported CID hashing algorithms. This map is used to select the appropriate hasher
 // when generating a CID to compare against a provided CID
@@ -56,7 +58,7 @@ export function validateMessage(message: Message) {
  * {@link https://identity.foundation/identity-hub/spec/#signed-data here}.
  * @param message - the message to verify
  */
-export async function verifyMessageSignature(message: Message) {
+export async function verifyMessageSignature(message: Message, didResolver: DIDResolver) {
   const { descriptor, attestation } = message;
   let providedCID: CID;
 
@@ -90,6 +92,60 @@ export async function verifyMessageSignature(message: Message) {
   if (!expectedCID.equals(providedCID)) {
     throw new Error('provided CID does not match expected CID of descriptor');
   }
+
+  // we need the public key of the signer so that we can verify the signature. steps:
+  //  - decode `attestation.protected` so that we can grab `kid`. That's where the signer's DID is
+  //  - resolve signer's DID
+  //  - grab appropriate public key from DID doc by `kid`
+  //  - use public key to verify signature
+
+  // `baseDecode` throws SyntaxError: Unexpected end of data if paylod is not base64
+  const protectedBytes = base64url.baseDecode(attestation.protected);
+  const protectedJson = Buffer.from(protectedBytes).toString();
+
+  const { alg, kid } = JSON.parse(protectedJson);
+  const [ did ] = kid.split('#');
+
+  // `resolve` throws exception if DID is invalid, DID method is not supported,
+  // or resolving DID fails
+  const { didDocument } = await didResolver.resolve(did);
+  const { verificationMethod: verificationMethods = [] } = didDocument;
+
+  // use a set to do O(1) "lookups" for the correct id
+  const verificationMethodIds = new Set();
+  let publicKey;
+
+  for (let verificationMethod of verificationMethods) {
+    verificationMethodIds.add(verificationMethod.id);
+
+    // TODO: figure out if we need to support ALL verification method properties
+    //       listed here: https://www.w3.org/TR/did-spec-registries/#verification-method-properties
+
+    // TODO: figure out if we need to support ALL verification method types
+    //       listed here: https://www.w3.org/TR/did-spec-registries/#verification-method-types
+
+    // TODO: figure out if we need to check to ensure that `controller` === did in kid
+    //       are the same. This may matter more for a `PermissionsRequest`
+
+    // going to naively yank `publicKeyJwk` for now until above TODOS are resolved. thxbai
+    if (verificationMethodIds.has(kid)) {
+      publicKey = verificationMethod.publicKeyJwk;
+      break;
+    }
+  }
+
+  if (!publicKey) {
+    throw new Error('failed to find respective public key to verify signature');
+  }
+
+  // we have to use `importJWK` to "convert" a json object to `KeyLike` which is what
+  // the JWS verification function requires as key type
+  // TODO: handle exception so that we can provide a meaningful error message
+  const publicJWK = await importJWK(publicKey, alg);
+
+  // `flattenedVerify` throws a `TypeError` with a meaningful error message thankfully
+  // so we don't have to worry about handling the exception
+  await flattenedVerify(attestation, publicJWK);
 }
 
 export type Message = PermissionsRequestMessage;
