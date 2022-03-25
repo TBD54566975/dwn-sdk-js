@@ -13,7 +13,15 @@ export class DIDResolver {
     }
   }
 
-  async resolve(did: string): Promise<DIDResolutionResult> {
+  /**
+   * attempt to resolve the DID provided using the available DIDMethodResolvers
+   * @throws {Error} if DID is invalid
+   * @throws {Error} if DID method is not supported
+   * @throws {Error} if resolving DID fails
+   * @param did - the DID to resolve
+   * @returns {DIDResolutionResult}
+   */
+  public async resolve(did: string): Promise<DIDResolutionResult> {
   // naively validate requester DID
   // TODO: add better DID validation
     const splitDID = did.split(':', 3);
@@ -85,14 +93,19 @@ export type ServiceEndpoint = {
   description?: string
 }
 
+// TODO: figure out if we need to support ALL verification method properties
+//       listed here: https://www.w3.org/TR/did-spec-registries/#verification-method-properties
 export type VerificationMethod = {
   id: string
+  // one of the valid verification method types as per
+  // https://www.w3.org/TR/did-spec-registries/#verification-method-types
   type: string
+  // DID of the key's controller
   controller: string
-  publicKeyBase58?: string
-  publicKeyBase64?: string
+  // a JSON Web Key that conforms to https://datatracker.ietf.org/doc/html/rfc7517
   publicKeyJwk?: JWK
-  publicKeyHex?: string
+  // a string representation of
+  // https://datatracker.ietf.org/doc/html/draft-multiformats-multibase-05
   publicKeyMultibase?: string
 }
 
@@ -110,12 +123,24 @@ export type DIDResolutionMetadata = {
 }
 
 export type DIDDocumentMetadata = {
+  // indicates the timestamp of the Create operation. ISO8601 timestamp
   created?: string
+  // indicates the timestamp of the last Update operation for the document version which was
+  // resolved. ISO8601 timestamp
   updated?: string
+  // indicates whether the DID has been deactivated
   deactivated?: boolean
+  // indicates the version of the last Update operation for the document version which
+  // was resolved
   versionId?: string
+  // indicates the timestamp of the next Update operation if the resolved document version
+  // is not the latest version of the document.
   nextUpdate?: string
+  // indicates the version of the next Update operation if the resolved document version
+  // is not the latest version of the document.
   nextVersionId?: string
+  // @see https://www.w3.org/TR/did-core/#dfn-equivalentid
   equivalentId?: string
+  // @see https://www.w3.org/TR/did-core/#dfn-canonicalid
   canonicalId?: string
 }
