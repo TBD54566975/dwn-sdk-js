@@ -1,13 +1,15 @@
 import chai, { expect } from 'chai';
 import { describe, it, xit } from 'mocha';
 
-import chaiAsPromised from 'chai-as-promised';
 import * as cbor from '@ipld/dag-cbor';
+import chaiAsPromised from 'chai-as-promised';
+import sinon from 'sinon';
 
 import { CID } from 'multiformats/cid';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 import { Message, validateMessage, verifyMessageSignature } from '../src/message';
+import { DIDResolver } from '../src/did/did-resolver';
 
 // extend chai to test promises
 chai.use(chaiAsPromised);
@@ -19,6 +21,12 @@ describe('Message Tests', () => {
   });
 
   describe('verifyMessageSignature', () => {
+    afterEach(() => {
+      // restores all fakes, stubs, spies etc. not restoring causes a memory leak.
+      // more info here: https://sinonjs.org/releases/v13/general-setup/
+      sinon.restore();
+    });
+
     xit('throws an exception if attestation property is missing',  () => {
       // NOTE: can't write this test until there's a Message type that doesnt
       // necessitate the presence of `attestation`
@@ -47,7 +55,8 @@ describe('Message Tests', () => {
         }
       };
 
-      await expect(verifyMessageSignature(msg))
+      const resolverStub = sinon.createStubInstance(DIDResolver);
+      await expect(verifyMessageSignature(msg, resolverStub))
         .to.eventually.be.rejectedWith('payload is not a valid CID');
     });
 
@@ -82,7 +91,8 @@ describe('Message Tests', () => {
         }
       };
 
-      await expect(verifyMessageSignature(msg))
+      const resolverStub = sinon.createStubInstance(DIDResolver);
+      await expect(verifyMessageSignature(msg, resolverStub))
         .to.eventually.be.rejectedWith('provided CID does not match expected CID of descriptor');
 
     });
