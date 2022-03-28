@@ -147,9 +147,9 @@ describe('Message Tests', () => {
       };
 
       // create JWS payload using message.descriptor
-      const jsonBytes = cbor.encode(msg.descriptor);
-      const jsonHash = await sha512.digest(jsonBytes);
-      const cid = await CID.createV1(cbor.code, jsonHash);
+      const cborBytes = cbor.encode(msg.descriptor);
+      const cborHash = await sha512.digest(cborBytes);
+      const cid = await CID.createV1(cbor.code, cborHash);
 
       const jwsPayload = Buffer.from(cid.bytes).toString('base64url');
 
@@ -181,9 +181,9 @@ describe('Message Tests', () => {
       };
 
       // create JWS payload using message.descriptor
-      const jsonBytes = cbor.encode(msg.descriptor);
-      const jsonHash = await sha256.digest(jsonBytes);
-      const cid = await CID.createV1(cbor.code, jsonHash);
+      const cborBytes = cbor.encode(msg.descriptor);
+      const cborHash = await sha256.digest(cborBytes);
+      const cid = await CID.createV1(cbor.code, cborHash);
 
       const jwsPayload = Buffer.from(cid.bytes).toString('base64url');
 
