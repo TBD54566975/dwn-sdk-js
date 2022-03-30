@@ -1,6 +1,5 @@
 import MockDate from 'mockdate';
 
-import { describe } from 'mocha';
 import { expect } from 'chai';
 
 import { Permission } from '../../../src/interfaces/permissions/permission';
