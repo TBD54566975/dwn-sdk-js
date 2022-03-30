@@ -1,7 +1,10 @@
-import { DIDResolver, DIDMethodResolver } from './did/did-resolver';
+import { DIDResolver } from './did/did-resolver';
 
-import { Message, validateMessage } from './message';
+import { validateMessage } from './message';
 import { PermissionsRequest } from './interfaces/permissions';
+
+import type { Message } from './message';
+import type { DIDMethodResolver } from './did/did-resolver';
 
 export class IdentityHub {
   static methods = { PermissionsRequest };

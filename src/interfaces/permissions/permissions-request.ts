@@ -1,7 +1,8 @@
-import { FlattenedJWS } from 'jose';
 import { DIDResolver } from '../../did/did-resolver';
-import { Ability, Conditions } from './permission';
-import { PermissionsMethod } from './types';
+
+import type { Ability, Conditions } from './permission';
+import type { FlattenedJWS } from 'jose';
+import type { PermissionsMethod } from './types';
 
 /**
  * TODO: add documentation
