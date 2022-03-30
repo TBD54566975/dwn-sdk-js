@@ -1,0 +1,44 @@
+# This workflow runs a handful of integrity checks.
+
+# when:
+#   - a pull request is opened against main
+#   - commits are pushed to main
+
+# what:
+#   - transpiles ts -> js and builds browser bundles to ensure everything builds without error.
+#   - runs type checker
+#   - runs tests (currently in node environment only)
+#   - runs linter. Will fail if there are any warnings
+
+name: Integrity Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # used to run action manually via the UI
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # read more about matrix strategies here: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstrategymatrix
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x]
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      # https://docs.npmjs.com/cli/v8/commands/npm-ci
+      - run: npm clean-install
+      # builds all bundles
+      - run: npm run build
+      # runs tests in node environment
+      - run: npm run test:node
+      # runs linter. Job will fail if there are any warnings or errors
+      - run: npm run lint
