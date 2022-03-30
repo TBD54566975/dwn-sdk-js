@@ -53,7 +53,8 @@ Our preferred code style has been codified into `eslint` rules. Feel free to tak
 ### Available NPM Commands
 | command                      | description                                                                                                        |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `npm run test`               | runs tests and type checking                                                                                       |
+| `npm run test:node`               | runs tests and type checking                                                                                  |
+| `npm run test:browser`               | runs tests against browser bundles in headless browser                                                     |
 | `npm run build`              | transpiles `ts` -> `js` as `esm` and `cjs`, generates `esm` and `umd` bundles, and generates all type declarations |
 | `npm run build:esm`          | transpiles ts -> js as `esm`                                                                                       |
 | `npm run build:cjs`          | transpiles ts -> js as `cjs`                                                                                       |
