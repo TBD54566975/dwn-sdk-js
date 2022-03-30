@@ -6,7 +6,7 @@ import { PermissionsRequest } from './interfaces/permissions';
 import type { Message } from './message';
 import type { DIDMethodResolver } from './did/did-resolver';
 
-export class IdentityHub {
+export class DWN {
   static methods = { PermissionsRequest };
   DIDResolver: DIDResolver;
 
@@ -20,7 +20,7 @@ export class IdentityHub {
    */
   async processMessage(message: Message): Promise<void> {
     const { method: methodName } = message.descriptor;
-    const method = IdentityHub.methods[methodName];
+    const method = DWN.methods[methodName];
 
     if (!method) {
       throw new Error('{methodName} is not a supported method.');

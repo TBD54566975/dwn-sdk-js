@@ -37,13 +37,13 @@ export default  {
     {
       file      : 'dist/bundles/bundle.umd.js',
       format    : 'umd',
-      name      : 'hubSDK',
+      name      : 'dwnSDK',
       sourcemap : true
     },
     {
       file      : 'dist/bundles/bundle.umd.min.js',
       format    : 'umd',
-      name      : 'hubSDK',
+      name      : 'dwnSDK',
       plugins   : [terser()],
       sourcemap : true
     }

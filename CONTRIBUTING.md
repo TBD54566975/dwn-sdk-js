@@ -1,9 +1,9 @@
 # Contribution Guide
 
-This repo acts as the reference implementation for the Identity Hub specification. Before getting started, we highly recommend that you read the [Identity Hub spec doc](https://identity.foundation/identity-hub/spec/). The specification is still in a draft / incomplete state. Anything related to the general architecture, features, or bugs with respect to Identity Hubs in general are best addressed via issues and pull requests within the [spec repo](https://github.com/decentralized-identity/identity-hub). During early development, we'll be working on the specification and implementation in parallel. If you're confused about where to post your question, bug, or feature request, don't sweat! Go ahead and post it in either repo and we'll go ahead and move it if need be.
+This repo acts as a reference implementation of the Decentralized Web Node (DWN) specification. Before getting started, we highly recommend that you read the [DWN spec doc](https://identity.foundation/identity-hub/spec/). The specification is still in a draft / incomplete state. Anything related to the general architecture, features, or bugs with respect to DWN in general are best addressed via issues and pull requests within the [spec repo](https://github.com/decentralized-identity/identity-hub). During early development, we'll be working on the specification and implementation in parallel. If you're confused about where to post your question, bug, or feature request, don't sweat! Go ahead and post it in either repo and we'll go ahead and move it if need be.
 
 The general process we hope to follow is:
-- Submit a proposal as a PR in the Identity Hub spec repo. 
+- Submit a proposal as a PR in the DWN spec repo. 
 - Iterate on the PR until it gets pulled into `main`. 
 - Implement said proposal in this repo and submit a PR
 - Iterate on PR until its ready for `main`
@@ -12,15 +12,15 @@ Given that we're still in early stages of development, this contribution guide w
 
 We'll be focusing on issues in the following order:
 - https://github.com/decentralized-identity/identity-hub/issues/126
-- https://github.com/TBD54566975/hub-sdk-js/issues/7
+- https://github.com/TBD54566975/dwn-sdk-js/issues/7
 - https://github.com/decentralized-identity/identity-hub/issues/127
 - https://github.com/decentralized-identity/identity-hub/issues/128
-- https://github.com/TBD54566975/hub-sdk-js/issues/6
-- https://github.com/TBD54566975/hub-sdk-js/issues/10
-- https://github.com/TBD54566975/hub-sdk-js/issues/11
-- https://github.com/TBD54566975/hub-sdk-js/issues/12
-- https://github.com/TBD54566975/hub-sdk-js/issues/13
-- https://github.com/TBD54566975/hub-sdk-js/issues/14
+- https://github.com/TBD54566975/dwn-sdk-js/issues/6
+- https://github.com/TBD54566975/dwn-sdk-js/issues/10
+- https://github.com/TBD54566975/dwn-sdk-js/issues/11
+- https://github.com/TBD54566975/dwn-sdk-js/issues/12
+- https://github.com/TBD54566975/dwn-sdk-js/issues/13
+- https://github.com/TBD54566975/dwn-sdk-js/issues/14
 
 As we work our way through these issues, we'll be creating more focused issues with the following labels:
 - `bug`
@@ -28,7 +28,7 @@ As we work our way through these issues, we'll be creating more focused issues w
 - `good first issue`
 - `help wanted`
 
-These issues are excellent canditates for contribution and we'd be thrilled to get all the help we can get! You can take a look at all of the Issues that match the labels above [here](https://github.com/TBD54566975/hub-sdk-js/issues?q=is%3Aopen+label%3A%22help+wanted%22%2C%22good+first+issue%22%2C%22documentation%22%2C%22bug%22+)
+These issues are excellent canditates for contribution and we'd be thrilled to get all the help we can get! You can take a look at all of the Issues that match the labels above [here](https://github.com/TBD54566975/dwn-sdk-js/issues?q=is%3Aopen+label%3A%22help+wanted%22%2C%22good+first+issue%22%2C%22documentation%22%2C%22bug%22+)
 
 We suggest the following process when picking up one of these issues:
 - Check to see if anyone is already working on the issue by looking to see if the issue has a `WIP` tag. 
