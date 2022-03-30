@@ -1,5 +1,5 @@
 {
-  "name": "hub-sdk",
+  "name": "dwn-sdk",
   "version": "0.1.0",
   "description": "A reference implementation of https://identity.foundation/identity-hub/spec/",
   "type": "module",
@@ -90,7 +90,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TBD54566975/hub-sdk-js.git"
+    "url": "git+https://github.com/TBD54566975/dwn-sdk-js.git"
   },
   "author": "Moe Jangda <moe@squareup.com> (https://twitter.com/moe_jangda)",
   "contributors": [
@@ -102,7 +102,7 @@
   ],
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/TBD54566975/hub-sdk-js/issues"
+    "url": "https://github.com/TBD54566975/dwn-sdk-js/issues"
   },
-  "homepage": "https://github.com/TBD54566975/hub-sdk-js#readme"
+  "homepage": "https://github.com/TBD54566975/dwn-sdk-js#readme"
 }

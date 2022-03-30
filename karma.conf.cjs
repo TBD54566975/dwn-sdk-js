@@ -64,7 +64,7 @@ module.exports = function(config) {
 
     rollupPreprocessor: {
       output: {
-        name      : 'hubSDK',
+        name      : 'dwnSDK',
         format    : 'iife',
         sourcemap : 'inline',
       },
