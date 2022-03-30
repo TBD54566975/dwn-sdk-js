@@ -1,0 +1,127 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "type": "object",
+  "required": [
+    "attestation",
+    "descriptor"
+  ],
+  "properties": {
+    "attestation": {
+      "properties": {
+        "header": {
+          "properties": {
+            "alg": {
+              "type": "string"
+            },
+            "b64": {
+              "type": "boolean"
+            },
+            "crit": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "cty": {
+              "type": "string"
+            },
+            "kid": {
+              "type": "string"
+            },
+            "typ": {
+              "type": "string"
+            },
+            "x5c": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "x5t": {
+              "type": "string"
+            },
+            "x5u": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "payload": {
+          "type": "string"
+        },
+        "protected": {
+          "type": "string"
+        },
+        "signature": {
+          "type": "string"
+        }
+      },
+      "type": "object",
+      "additionalProperties": false
+    },
+    "descriptor": {
+      "properties": {
+        "ability": {
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "method": {
+              "type": "string"
+            },
+            "objectId": {
+              "type": "string"
+            },
+            "schema": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "conditions": {
+          "properties": {
+            "attestation": {
+              "enum": [
+                0,
+                1,
+                2
+              ],
+              "type": "number"
+            },
+            "delegation": {
+              "type": "boolean"
+            },
+            "encryption": {
+              "enum": [
+                0,
+                1,
+                2
+              ],
+              "type": "number"
+            },
+            "sharedAccess": {
+              "type": "boolean"
+            }
+          },
+          "type": "object"
+        },
+        "method": {
+          "enum": [
+            "PermissionsGrant",
+            "PermissionsRequest",
+            "PermissionsRevoke"
+          ],
+          "type": "string"
+        },
+        "objectId": {
+          "type": "string"
+        },
+        "requester": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  }
+}

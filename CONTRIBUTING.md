@@ -1,26 +1,60 @@
-# Contribution Guide 
+# Contribution Guide
 
-There are many ways to be an open source contributor, and we're here to help you on your way! You may:
+This repo acts as the reference implementation for the Identity Hub specification. Before getting started, we highly recommend that you read the [Identity Hub spec doc](https://identity.foundation/identity-hub/spec/). The specification is still in a draft / incomplete state. Anything related to the general architecture, features, or bugs with respect to Identity Hubs in general are best addressed via issues and pull requests within the [spec repo](https://github.com/decentralized-identity/identity-hub). During early development, we'll be working on the specification and implementation in parallel. If you're confused about where to post your question, bug, or feature request, don't sweat! Go ahead and post it in either repo and we'll go ahead and move it if need be.
 
-* Propose ideas in our [discussion forums](LINK_HERE)  ___***FIX LINK AND REMOVE THIS NOTICE***___
-* Raise an issue or feature request in our [issue tracker](LINK_HERE)  ___***FIX LINK AND REMOVE THIS NOTICE***___
-* Help another contributor with one of their questions, or a code review
-* Suggest improvements to our Getting Started documentation by supplying a Pull Request
-* Evangelize our work together in conferences, podcasts, and social media spaces.
+The general process we hope to follow is:
+- Submit a proposal as a PR in the Identity Hub spec repo. 
+- Iterate on the PR until it gets pulled into `main`. 
+- Implement said proposal in this repo and submit a PR
+- Iterate on PR until its ready for `main`
 
-This guide is for you.
+Given that we're still in early stages of development, this contribution guide will certainly change as we near a v1.0 release. Until then, things will be a bit ragtag but there's still plently of opportunities for contribution.
 
-## Development Prerequisites
+We'll be focusing on issues in the following order:
+- https://github.com/decentralized-identity/identity-hub/issues/126
+- https://github.com/TBD54566975/hub-sdk-js/issues/7
+- https://github.com/decentralized-identity/identity-hub/issues/127
+- https://github.com/decentralized-identity/identity-hub/issues/128
+- https://github.com/TBD54566975/hub-sdk-js/issues/6
+- https://github.com/TBD54566975/hub-sdk-js/issues/10
+- https://github.com/TBD54566975/hub-sdk-js/issues/11
+- https://github.com/TBD54566975/hub-sdk-js/issues/12
+- https://github.com/TBD54566975/hub-sdk-js/issues/13
+- https://github.com/TBD54566975/hub-sdk-js/issues/14
+
+As we work our way through these issues, we'll be creating more focused issues with the following labels:
+- `bug`
+- `documentation`
+- `good first issue`
+- `help wanted`
+
+These issues are excellent canditates for contribution and we'd be thrilled to get all the help we can get! You can take a look at all of the Issues that match the labels above [here](https://github.com/TBD54566975/hub-sdk-js/issues?q=is%3Aopen+label%3A%22help+wanted%22%2C%22good+first+issue%22%2C%22documentation%22%2C%22bug%22+)
+
+We suggest the following process when picking up one of these issues:
+- Check to see if anyone is already working on the issue by looking to see if the issue has a `WIP` tag. 
+- Fork the repo and create a branch named the issue number you're taking on
+- Push that branch and create a draft PR
+- paste a link to the draft PR in the issue you're tackling
+- We'll add the `WIP` tag for you
+- work away. Feel free to ask any/all questions that crop up along the way
+- Switch the draft PR to "Ready for review"
+## Development
+### Prerequisites
 
 | Requirement | Tested Version | Installation Instructions |
 | ----------- | -------------- | ------------------------- |
-| fill        | out            | plz                       |
+| `Node.js`        | `v16.14.0`            | There are many ways to install `Node.js`. Feel free to choose whichever approach you feel the most comfortable with. If you don't have a preferred installation method, you can visit the official [downloads](https://nodejs.org/en/download/) page and choose the the appropriate installer respective to your operating system |
 
-
-## Available Scripts
+We plan on including a Docker container to support all local development soon.
+### Running tests
+Running the `npm run test` command from the root of the project will run all tests. Please make sure there are no failing tests before switching your PR to ready for review! We hope to have this automated via a github action very soon.
+### Code Style
+Our preferred code style has been codified into `eslint` rules. Feel free to take a look [here](./.eslintrc.cjs). Running `npm run lint` will auto-format as much as `eslint` can. Everything it wasn't able to will be printed out as errors or warnings. Please make sure to run `npm run lint` before switching your PR to ready for review! We hope to have this automated via a github action very soon.
+### Available NPM Commands
 | command                      | description                                                                                                        |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `npm run test`               | runs tests and type checking                                                                                       |
+| `npm run test:node`               | runs tests and type checking                                                                                  |
+| `npm run test:browser`               | runs tests against browser bundles in headless browser                                                     |
 | `npm run build`              | transpiles `ts` -> `js` as `esm` and `cjs`, generates `esm` and `umd` bundles, and generates all type declarations |
 | `npm run build:esm`          | transpiles ts -> js as `esm`                                                                                       |
 | `npm run build:cjs`          | transpiles ts -> js as `cjs`                                                                                       |
@@ -28,32 +62,3 @@ This guide is for you.
 | `npm run build:declarations` | generates all type declarations                                                                                    |
 | `npm run clean`              | deletes `dist` dir                                                                                                 |
 | `npm run lint`               | runs linter and auto-fixes all problems                                                                            |
-
-
-## Communications
-
-### Issues
-
-Anyone from the community is welcome (and encouraged!) to raise issues via [GitHub Issues](https://github.com/issues)
-
-### Continuous Integration
-
-Build and Test cycles are run on every commit to every branch on [CircleCI](LINK_HERE).
-
- ___***FIX LINK ABOVE AND REMOVE THIS NOTICE***___
-
-## Contribution
-
-We review contributions to the codebase via GitHub's Pull Request mechanism. We have the following guidelines to ease your experience and help our leads respond quickly to your valuable work:
-
-* Start by proposing a change either in Issues (most appropriate for small change requests or bug fixes) or in Discussions (most appropriate for design and architecture considerations, proposing a new feature, or where you'd like insight and feedback)
-* Cultivate consensus around your ideas; the project leads will help you pre-flight how beneficial the proposal might be to the project. Developing early buy-in will help others understand what you're looking to do, and give you a a greater chance of your contributions making it into the codebase! No one wants to see work done in an area that's unlikely to be incorporated into the codebase.
-* Fork the repo into your own namespace/remote
-* Work in a dedicated feature branch. Atlassian wrote a great [description of this workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/feature-branch-workflow)
-* When you're ready to offer your work to the project, first:
-* Squash your commits into a single one (or an appropriate small number of commits), and rebase atop the upstream `main` branch. This will limit the potential for merge conflicts during review, and helps keep the audit trail clean. A good writeup for how this is done is [here](https://medium.com/@slamflipstrom/a-beginners-guide-to-squashing-commits-with-git-rebase-8185cf6e62ec), and if you're having trouble - feel free to ask a member or the community for help or leave the commits as-is, and flag that you'd like rebasing assistance in your PR! We're here to support you.
-* Open a PR in the project to bring in the code from your feature branch.
-* The maintainers noted in the `CODEOWNERS` file will review your PR and optionally open a discussion about its contents before moving forward.
-* Remain responsive to follow-up questions, be open to making requested changes, and...
-* You're a contributor!
-* And remember to respect everyone in our global development community. Guidelines are established in our `CODE_OF_CONDUCT.md`.
