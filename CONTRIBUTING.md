@@ -1,6 +1,6 @@
 # Contribution Guide
 
-This repo acts as a reference implementation of the Decentralized Web Node (DWN) specification. Before getting started, we highly recommend that you read the [DWN spec doc](https://identity.foundation/identity-hub/spec/). The specification is still in a draft / incomplete state. Anything related to the general architecture, features, or bugs with respect to DWN in general are best addressed via issues and pull requests within the [spec repo](https://github.com/decentralized-identity/identity-hub). During early development, we'll be working on the specification and implementation in parallel. If you're confused about where to post your question, bug, or feature request, don't sweat! Go ahead and post it in either repo and we'll go ahead and move it if need be.
+This repo acts as a reference implementation of the Decentralized Web Node (DWN) specification. Before getting started, we highly recommend that you read the [DWN spec doc](https://identity.foundation/decentralized-web-node/spec/). The specification is still in a draft / incomplete state. Anything related to the general architecture, features, or bugs with respect to DWN in general are best addressed via issues and pull requests within the [spec repo](https://github.com/decentralized-identity/decentralized-web-node). During early development, we'll be working on the specification and implementation in parallel. If you're confused about where to post your question, bug, or feature request, don't sweat! Go ahead and post it in either repo and we'll go ahead and move it if need be.
 
 The general process we hope to follow is:
 - Submit a proposal as a PR in the DWN spec repo. 
@@ -11,10 +11,10 @@ The general process we hope to follow is:
 Given that we're still in early stages of development, this contribution guide will certainly change as we near a v1.0 release. Until then, things will be a bit ragtag but there's still plently of opportunities for contribution.
 
 We'll be focusing on issues in the following order:
-- https://github.com/decentralized-identity/identity-hub/issues/126
+- https://github.com/decentralized-identity/decentralized-web-node/issues/126
 - https://github.com/TBD54566975/dwn-sdk-js/issues/7
-- https://github.com/decentralized-identity/identity-hub/issues/127
-- https://github.com/decentralized-identity/identity-hub/issues/128
+- https://github.com/decentralized-identity/decentralized-web-node/issues/127
+- https://github.com/decentralized-identity/decentralized-web-node/issues/128
 - https://github.com/TBD54566975/dwn-sdk-js/issues/6
 - https://github.com/TBD54566975/dwn-sdk-js/issues/10
 - https://github.com/TBD54566975/dwn-sdk-js/issues/11

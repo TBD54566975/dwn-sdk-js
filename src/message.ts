@@ -55,7 +55,7 @@ export function validateMessage(message: Message) {
 
 /**
  * verifies the signature of the provided message. Details regarding message signing can be found
- * {@link https://identity.foundation/identity-hub/spec/#signed-data here}.
+ * {@link https://identity.foundation/decentralized-web-node/spec/#signed-data here}.
  * @param message - the message to verify
  * @throws {Error} if provided CID is invalid
  * @throws {Error} if provided CID doesn't utilize CBOR codec

@@ -1,7 +1,7 @@
 {
   "name": "dwn-sdk",
   "version": "0.1.0",
-  "description": "A reference implementation of https://identity.foundation/identity-hub/spec/",
+  "description": "A reference implementation of https://identity.foundation/decentralized-web-node/spec/",
   "type": "module",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
