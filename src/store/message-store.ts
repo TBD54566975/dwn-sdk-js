@@ -4,6 +4,7 @@ import { sha256 } from 'multiformats/hashes/sha2';
 import * as cbor from '@ipld/dag-cbor';
 import * as Block from 'multiformats/block';
 
+import _ from 'lodash';
 import searchIndex from 'search-index';
 
 import { BlockstoreLevel } from './blockstore-level';
@@ -47,7 +48,35 @@ export class MessageStoreLevel implements MessageStore {
   }
 
   async query(query: any): Promise<Message[]> {
+    const messages: Message[] = [];
 
+    let copy: any = { ...query };
+    delete copy.method;
+
+    const indexQueryTerms: string[] = MessageStoreLevel._buildIndexQueryTerms(copy);
+    const { RESULTS: indexResults } = await this.index.QUERY({ AND: indexQueryTerms });
+
+    let promises = [];
+
+    for (let i = 0; i < indexResults.length; i += 1) {
+      const cid = CID.parse(indexResults[i]._id);
+      promises.push(this.get(cid).catch(e => e));
+    }
+
+    const chunkedPromises = _.chunk(promises, 15);
+    for (let chunk of chunkedPromises) {
+      const results = await Promise.all(chunk);
+
+      for (let result of results) {
+        if (result instanceof Error) {
+          console.log(result);
+        } else {
+          messages.push(result);
+        }
+      }
+    }
+
+    return messages;
   }
 
   async delete(cid: CID): Promise<void> {
@@ -74,6 +103,20 @@ export class MessageStoreLevel implements MessageStore {
     }
 
     await this.index.PUT([indexDocument]);
+  }
+
+  static _buildIndexQueryTerms(query: any, terms: string[] = [], prefix: string = '') {
+    for (let property in query) {
+      let val = query[property];
+
+      if (_.isPlainObject(val)) {
+        MessageStoreLevel._buildIndexQueryTerms(val, terms, `${prefix}${property}.`);
+      } else {
+        terms.push(`${prefix}${property}:${val}`);
+      }
+    }
+
+    return terms;
   }
 
 }
