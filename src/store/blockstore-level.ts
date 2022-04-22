@@ -115,8 +115,11 @@ export class BlockstoreLevel implements Blockstore {
   }
 }
 
+/**
+ * sleeps for the desired duration
+ * @param durationMillis the desired amount of sleep time
+ * @returns when the provided duration has passed
+ */
 function sleep(durationMillis): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, durationMillis);
-  });
+  return new Promise(resolve => setTimeout(resolve, durationMillis));
 }

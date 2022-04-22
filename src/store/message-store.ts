@@ -10,6 +10,10 @@ import searchIndex from 'search-index';
 import { BlockstoreLevel } from './blockstore-level';
 import { Message } from '../message';
 
+/**
+ * A simple implementation of {@link MessageStore} that works in both the browser and server-side.
+ * Leverages LevelDB under the hood.
+ */
 export class MessageStoreLevel implements MessageStore {
   db: BlockstoreLevel;
   // TODO: search-index lib does not import type `SearchIndex`. find a workaround
@@ -63,12 +67,16 @@ export class MessageStoreLevel implements MessageStore {
   async query(query: any): Promise<Message[]> {
     const messages: Message[] = [];
 
+    // copy the query provided to prevent any mutation
     let copy: any = { ...query };
     delete copy.method;
 
+    // parse query into a query that is compatible with the index we're using
     const indexQueryTerms: string[] = MessageStoreLevel._buildIndexQueryTerms(copy);
     const { RESULTS: indexResults } = await this.index.QUERY({ AND: indexQueryTerms });
 
+    // iterate through all index query results and fetch all messages from the underlying
+    // blockstore in chunks of 15
     let promises = [];
 
     for (let i = 0; i < indexResults.length; i += 1) {
@@ -82,6 +90,7 @@ export class MessageStoreLevel implements MessageStore {
 
       for (let result of results) {
         if (result instanceof Error) {
+          // TODO: figure out how we want to handle errors here.
           console.log(result);
         } else {
           messages.push(result);
@@ -192,10 +201,4 @@ export interface MessageStore {
    */
   delete(cid: CID): Promise<void>;
 
-}
-
-function sleep(durationMillis): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, durationMillis);
-  });
 }
