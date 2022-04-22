@@ -25,6 +25,9 @@ export class MessageStoreLevel implements MessageStore {
     this.db = new BlockstoreLevel(location);
   }
 
+  /**
+   * opens a connection to the underlying store
+   */
   async open(): Promise<void> {
     await this.db.open();
 
@@ -40,6 +43,11 @@ export class MessageStoreLevel implements MessageStore {
     await this.db.close();
   }
 
+  /**
+   * fetches a single message by `cid` from the underlying store. Returns `undefined`
+   * if no message was found
+   * @param cid
+   */
   async get(cid: CID): Promise<Message> {
     const bytes = await this.db.get(cid);
     const block = await Block.decode({ bytes, codec: cbor, hasher: sha256 });
@@ -47,6 +55,11 @@ export class MessageStoreLevel implements MessageStore {
     return block.value as Message;
   }
 
+  /**
+   * queries the underlying store for messages that match the query provided.
+   * returns an empty array if no messages are found
+   * @param query
+   */
   async query(query: any): Promise<Message[]> {
     const messages: Message[] = [];
 
@@ -79,6 +92,10 @@ export class MessageStoreLevel implements MessageStore {
     return messages;
   }
 
+  /**
+   * deletes the message associated to the cid provided.
+   * @param cid
+   */
   async delete(cid: CID): Promise<void> {
     await this.db.delete(cid);
     await this.index.DELETE(cid.toString());
@@ -86,6 +103,10 @@ export class MessageStoreLevel implements MessageStore {
     return;
   }
 
+  /**
+   * adds a message to the underlying store. Uses the message's cid as the key
+   * @param message
+   */
   async put(message: Message): Promise<void> {
     const block = await Block.encode({ value: message, codec: cbor, hasher: sha256 });
     await this.db.put(block.cid, block.bytes);
@@ -105,6 +126,23 @@ export class MessageStoreLevel implements MessageStore {
     await this.index.PUT([indexDocument]);
   }
 
+  /**
+   * recursively parses a query object into a list of flattened terms that can be used to query the search
+   * index
+   * @example
+   * _buildIndexQueryParams({
+   *  method  : 'PermissionsQuery',
+   *    ability : {
+   *      method : 'CollectionsQuery',
+   *      schema : 'https://schema.org/MusicPlaylist'
+   *    }
+   * })
+   * // returns ['ability.method:CollectionsQuery', 'ability.schema:https://schema.org/MusicPlaylist' ]
+   * @param query - the query to parse
+   * @param terms - internally used to collect terms
+   * @param prefix - internally used to pass parent properties into recursive calls
+   * @returns the list of terms
+   */
   static _buildIndexQueryTerms(query: any, terms: string[] = [], prefix: string = '') {
     for (let property in query) {
       let val = query[property];
@@ -138,10 +176,9 @@ export interface MessageStore {
   /**
    * fetches a single message by `cid` from the underlying store. Returns `undefined`
    * if no message was found
-   * @param id
+   * @param cid
    */
   get(cid: CID): Promise<Message>;
-
   /**
    * queries the underlying store for messages that match the query provided.
    * returns an empty array if no messages are found
@@ -152,8 +189,7 @@ export interface MessageStore {
 
   /**
    * deletes the message associated to the id provided
-   * @param id
-   * @returns a boolean indicating whether the message was found and deleted
+   * @param cid
    */
   delete(cid: CID): Promise<void>;
 
