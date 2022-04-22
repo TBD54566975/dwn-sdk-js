@@ -3,6 +3,7 @@ import { DIDResolver } from '../../did/did-resolver';
 import type { Ability, Conditions } from './permission';
 import type { FlattenedJWS } from 'jose';
 import type { PermissionsMethod } from './types';
+import { MessageStore } from '../../store/message-store';
 
 /**
  * TODO: add documentation
@@ -10,7 +11,8 @@ import type { PermissionsMethod } from './types';
  */
 export async function PermissionsRequest(
   message: PermissionsRequestMessage,
-  didResolver: DIDResolver
+  didResolver: DIDResolver,
+  messageStore: MessageStore
 ) {
 
   const { attestation, descriptor } = message;
