@@ -7,7 +7,6 @@
       "DOM",
       "ES6"
     ],
-    "allowSyntheticDefaultImports": true,
     "declaration": true,
     "emitDeclarationOnly": true,
     "declarationMap": true,
