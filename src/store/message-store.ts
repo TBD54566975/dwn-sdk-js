@@ -156,7 +156,6 @@ export class MessageStoreLevel implements MessageStore {
 
     return terms;
   }
-
 }
 
 export interface MessageStore {
