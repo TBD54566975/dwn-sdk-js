@@ -54,6 +54,11 @@ export class MessageStoreLevel implements MessageStore {
    */
   async get(cid: CID): Promise<Message> {
     const bytes = await this.db.get(cid);
+
+    if (!bytes) {
+      return;
+    }
+
     const block = await Block.decode({ bytes, codec: cbor, hasher: sha256 });
 
     return block.value as Message;
