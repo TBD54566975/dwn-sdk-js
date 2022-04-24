@@ -141,6 +141,14 @@ export class MessageStoreLevel implements MessageStore {
   }
 
   /**
+   * deletes everything in the underlying datastore and indes.
+   */
+  async clear(): Promise<void> {
+    await this.db.clear();
+    await this.index.FLUSH();
+  }
+
+  /**
    * recursively parses a query object into a list of flattened terms that can be used to query the search
    * index
    * @example

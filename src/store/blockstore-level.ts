@@ -102,6 +102,13 @@ export class BlockstoreLevel implements Blockstore {
     }
   }
 
+  /**
+   * deletes all entries
+   */
+  clear(): Promise<void> {
+    return this.db.clear();
+  }
+
   batch(): Batch<CID, Uint8Array> {
     throw new Error('not implemented');
   }
