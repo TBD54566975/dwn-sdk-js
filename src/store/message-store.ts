@@ -15,6 +15,7 @@ import { Message } from '../message';
  * Leverages LevelDB under the hood.
  */
 export class MessageStoreLevel implements MessageStore {
+  config: MessageStoreLevelConfig;
   db: BlockstoreLevel;
   // TODO: search-index lib does not import type `SearchIndex`. find a workaround
   index;
@@ -25,8 +26,14 @@ export class MessageStoreLevel implements MessageStore {
    * the {@link https://developer.mozilla.org/en-US/docs/Web/API/IDBDatabase IDBDatabase}
    * to be opened.
    */
-  constructor(location?: string) {
-    this.db = new BlockstoreLevel(location);
+  constructor(config: MessageStoreLevelConfig) {
+    this.config = {
+      blockstoreLocation : 'BLOCKSTORE',
+      indexLocation      : 'INDEX',
+      ...config
+    };
+
+    this.db = new BlockstoreLevel(this.config.blockstoreLocation);
   }
 
   /**
@@ -37,7 +44,7 @@ export class MessageStoreLevel implements MessageStore {
 
     // TODO: look into using the same level we're using for blockstore
     // TODO: parameterize `name`
-    this.index = await searchIndex({ name: 'INDEX' });
+    this.index = await searchIndex({ name: this.config.indexLocation });
   }
 
   /**
@@ -178,6 +185,11 @@ export class MessageStoreLevel implements MessageStore {
 
     return terms;
   }
+}
+
+type MessageStoreLevelConfig = {
+  blockstoreLocation?: string,
+  indexLocation?: string,
 }
 
 export interface MessageStore {
