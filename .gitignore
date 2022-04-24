@@ -2,3 +2,7 @@ node_modules
 dist
 try.ts
 try.js
+BLOCKSTORE
+TEST-BLOCKSTORE
+INDEX
+TEST-INDEX
