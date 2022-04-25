@@ -10,6 +10,7 @@ export default class Jws {
   /**
    * Signs the given payload as a JWS.
    * NOTE: this is mainly used by tests to create valid test data.
+   * @throws {Error} if key given is unsupported.
    */
   public static async sign (
     protectedHeader: object,
@@ -43,7 +44,10 @@ export default class Jws {
   /**
    * Implementation of signing using ED25519.
    */
-  private static async signEd25519 (signingInputBuffer: Buffer, privateKeyJwk: Required<JwkEd25519>): Promise<Buffer> {
+  private static async signEd25519 (
+    signingInputBuffer: Buffer,
+    privateKeyJwk: Required<JwkEd25519>
+  ): Promise<Buffer> {
     const privateKeyBuffer = base64url.toBuffer(privateKeyJwk.d);
     const signatureUint8Array = await ed25519.sign(signingInputBuffer, privateKeyBuffer);
     const signatureBuffer = Buffer.from(signatureUint8Array);
@@ -52,7 +56,9 @@ export default class Jws {
 
   /**
    * Verifies the JWS signature.
-   * @returns true if signature is successfully verified, false otherwise.
+   * @returns `true` if signature is successfully verified, false otherwise.
+   * @throws {Error} if key given is unsupported.
+   * 
    */
   public static async verify (
     jwsFlattenedModel: JwsFlattenedModel,
@@ -76,7 +82,11 @@ export default class Jws {
   /**
    * Implementation of signature verification using ED25519.
    */
-  private static async verifyEd25519 (signatureInputBuffer: Buffer, signatureBuffer: Buffer, publicKeyJwk: JwkEd25519): Promise<boolean> {
+  private static async verifyEd25519 (
+    signatureInputBuffer: Buffer,
+    signatureBuffer: Buffer,
+    publicKeyJwk: JwkEd25519
+  ): Promise<boolean> {
     const publicKeyBuffer = base64url.toBuffer(publicKeyJwk.x);
     const result = await ed25519.verify(signatureBuffer, signatureInputBuffer, publicKeyBuffer);
     return result;
