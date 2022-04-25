@@ -1,4 +1,4 @@
-import * as ed from '@noble/ed25519';
+import * as ed25519 from '@noble/ed25519';
 import base64url from 'base64url';
 import JwkEd25519 from './JwkEd25519';
 import JwsFlattenedModel from './JwsFlattenedModel';
@@ -45,7 +45,7 @@ export default class Jws {
    */
   private static async signEd25519 (signingInputBuffer: Buffer, privateKeyJwk: Required<JwkEd25519>): Promise<Buffer> {
     const privateKeyBuffer = base64url.toBuffer(privateKeyJwk.d);
-    const signatureUint8Array = await ed.sign(signingInputBuffer, privateKeyBuffer);
+    const signatureUint8Array = await ed25519.sign(signingInputBuffer, privateKeyBuffer);
     const signatureBuffer = Buffer.from(signatureUint8Array);
     return signatureBuffer;
   }
@@ -78,7 +78,7 @@ export default class Jws {
    */
   private static async verifyEd25519 (signatureInputBuffer: Buffer, signatureBuffer: Buffer, publicKeyJwk: JwkEd25519): Promise<boolean> {
     const publicKeyBuffer = base64url.toBuffer(publicKeyJwk.x);
-    const result = await ed.verify(signatureBuffer, signatureInputBuffer, publicKeyBuffer);
+    const result = await ed25519.verify(signatureBuffer, signatureInputBuffer, publicKeyBuffer);
     return result;
   }
 }

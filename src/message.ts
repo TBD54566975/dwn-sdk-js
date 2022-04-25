@@ -1,18 +1,18 @@
 /**
  * this file contains functions and types related to messages
  */
-import type { PermissionsRequestMessage, PermissionsMethod } from './interfaces/permissions';
+import type { PermissionsMethod, PermissionsRequestMessage } from './interfaces/permissions';
 
-import Ajv from 'ajv';
 import * as cbor from '@ipld/dag-cbor';
+import Ajv from 'ajv';
+import Jws from './crypto/Jws';
+import permissionsSchemas from './interfaces/permissions/schemas';
 
 import { base64url } from 'multiformats/bases/base64';
 import { CID } from 'multiformats/cid';
+import { DIDResolver } from './did/did-resolver';
 import { sha256 } from 'multiformats/hashes/sha2';
 
-import permissionsSchemas from './interfaces/permissions/schemas';
-import { DIDResolver } from './did/did-resolver';
-import Jws from './crypto/Jws';
 
 // a map of all supported CID hashing algorithms. This map is used to select the appropriate hasher
 // when generating a CID to compare against a provided CID

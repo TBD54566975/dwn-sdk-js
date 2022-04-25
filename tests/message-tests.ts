@@ -336,20 +336,11 @@ describe('Message Tests', () => {
       const cid = await CID.createV1(cbor.code, cborHash);
 
       // create signature
-      // const signingKey = await jose.generateKeyPair('EdDSA');
       const { publicKeyJwk, privateKeyJwk } = await Jwk.generateEd25519KeyPair();
-
-
-      // const jws = await new jose.FlattenedSign(cid.bytes)
-      //   .setProtectedHeader({ alg: 'EdDSA', 'kid': 'did:jank:alice#key1' })
-      //   .sign(signingKey.privateKey);
       const protectedHeader = { alg: 'EdDSA', 'kid': 'did:jank:alice#key1' };
       const jws = await Jws.sign(protectedHeader, Buffer.from(cid.bytes), privateKeyJwk);
 
       msg.attestation = jws;
-
-      // const jwkPrivate = await jose.exportJWK(signingKey.privateKey);
-      // const jwk = await jose.exportJWK(signingKey.publicKey);
 
       const mockResolutionResult = {
         didResolutionMetadata : {},

@@ -14,7 +14,7 @@ module.exports = {
   rules: {
     'no-console': 'off',
     'indent': [
-      'warn',
+      'error',
       2
     ],
     'linebreak-style': [
@@ -28,8 +28,8 @@ module.exports = {
     ],
     "semi": ["off"],
     "@typescript-eslint/semi": ["error", "always"],
-    'no-trailing-spaces': ['warn'],
-    'max-len': ['warn', { 'code': 150 }],
+    'no-trailing-spaces': ['error'],
+    'max-len': ['error', { 'code': 150 }],
     'key-spacing': [
       'error',
       {
