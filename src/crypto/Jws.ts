@@ -58,7 +58,6 @@ export default class Jws {
    * Verifies the JWS signature.
    * @returns `true` if signature is successfully verified, false otherwise.
    * @throws {Error} if key given is unsupported.
-   * 
    */
   public static async verify (
     jwsFlattenedModel: JwsFlattenedModel,
