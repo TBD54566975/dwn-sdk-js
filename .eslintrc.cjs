@@ -26,10 +26,8 @@ module.exports = {
       'single',
       { 'allowTemplateLiterals': true }
     ],
-    'semi': [
-      'error',
-      'always'
-    ],
+    "semi": ["off"],
+    "@typescript-eslint/semi": ["error", "always"],
     'no-trailing-spaces': ['warn'],
     'max-len': ['warn', { 'code': 150 }],
     'key-spacing': [
