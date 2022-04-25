@@ -355,7 +355,7 @@ describe('Message Tests', () => {
         didResolutionMetadata : {},
         didDocument           : {
           verificationMethod: [{
-            id           : 'did:jank:alice#key1',
+            id: 'did:jank:alice#key1',
             publicKeyJwk
           }]
         },

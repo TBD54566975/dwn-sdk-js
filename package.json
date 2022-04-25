@@ -29,6 +29,7 @@
     "build": "npm-run-all -l clean -p build:esm build:cjs build:bundles build:declarations",
     "clean": "rimraf dist",
     "lint": "eslint . --ext .ts --max-warnings 0",
+    "lint:fix": "eslint . --ext .ts --fix",
     "test:node": "ts-mocha --type-check tests/**/*.ts",
     "test:browser": "cross-env BABEL_ENV=test karma start karma.conf.cjs",
     "test:browser-debug": "cross-env BABEL_ENV=test karma start karma.conf.debug.cjs"

@@ -31,7 +31,7 @@ module.exports = {
       'always'
     ],
     'no-trailing-spaces': ['warn'],
-    'max-len': ['warn', { 'code': 100 }],
+    'max-len': ['warn', { 'code': 150 }],
     'key-spacing': [
       'error',
       {

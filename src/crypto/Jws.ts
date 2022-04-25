@@ -34,10 +34,10 @@ export default class Jws {
     const signatureBase64UrlString = base64url.encode(signatureBuffer);
 
     return {
-      payload: payloadBase64UrlString,
-      protected: protectedHeaderBase64UrlString,
-      signature: signatureBase64UrlString
-    }
+      payload   : payloadBase64UrlString,
+      protected : protectedHeaderBase64UrlString,
+      signature : signatureBase64UrlString
+    };
   }
 
   /**
@@ -47,7 +47,7 @@ export default class Jws {
     const privateKeyBuffer = base64url.toBuffer(privateKeyJwk.d);
     const signatureUint8Array = await ed.sign(signingInputBuffer, privateKeyBuffer);
     const signatureBuffer = Buffer.from(signatureUint8Array);
-    return signatureBuffer
+    return signatureBuffer;
   }
 
   /**
@@ -72,7 +72,7 @@ export default class Jws {
 
     return result;
   }
-    
+
   /**
    * Implementation of signature verification using ED25519.
    */

@@ -24,15 +24,15 @@ export default class Jwk {
     const x = base64url.encode(publicKeyBuffer);
 
     const publicKeyJwk: JwkEd25519 = {
-      kty: 'OKP',
-      crv: 'Ed25519',
+      kty : 'OKP',
+      crv : 'Ed25519',
       x
     };
 
     const privateKeyJwk: Required<JwkEd25519> = {
       ...publicKeyJwk,
       d
-    }
+    };
 
     return { publicKeyJwk, privateKeyJwk};
   }
