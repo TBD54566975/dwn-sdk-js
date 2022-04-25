@@ -13,8 +13,6 @@ import { sha256, sha512 } from 'multiformats/hashes/sha2';
 import { Message, validateMessage, verifyMessageSignature } from '../src/message';
 import { DIDResolutionResult, DIDResolver } from '../src/did/did-resolver';
 import base64url from 'base64url';
-import { Ed25519KeyPair } from '@transmute/ed25519-key-pair';
-
 
 import type { SinonStub } from 'sinon';
 import Jwk from '../src/crypto/Jwk';
