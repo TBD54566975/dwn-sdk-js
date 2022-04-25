@@ -8,11 +8,11 @@ import * as cbor from '@ipld/dag-cbor';
 
 import { base64url } from 'multiformats/bases/base64';
 import { CID } from 'multiformats/cid';
-import { flattenedVerify, importJWK } from 'jose';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 import permissionsSchemas from './interfaces/permissions/schemas';
 import { DIDResolver } from './did/did-resolver';
+import Jws from './crypto/Jws';
 
 // a map of all supported CID hashing algorithms. This map is used to select the appropriate hasher
 // when generating a CID to compare against a provided CID
@@ -62,7 +62,7 @@ export function validateMessage(message: Message) {
  * @throws {Error} if provided CID was created using unsupporting hashing algo
  * @throws {Error} if resolving DID Doc failed
  * @throws {Error} if respective public key could not be found in DID Doc
- * @throws {TypeError} if signature verification failed with public key
+ * @throws {Error} if signature verification failed with public key
  */
 export async function verifyMessageSignature(message: Message, didResolver: DIDResolver) {
   const { descriptor, attestation } = message;
@@ -144,14 +144,11 @@ export async function verifyMessageSignature(message: Message, didResolver: DIDR
     throw new Error('failed to find respective public key to verify signature');
   }
 
-  // we have to use `importJWK` to "convert" a json object to `KeyLike` which is what
-  // the JWS verification function requires as key type
-  // TODO: handle exception so that we can provide a meaningful error message
-  const publicJWK = await importJWK(publicKey, alg);
+  const result = await Jws.verifySignature(attestation, publicKey);
 
-  // `flattenedVerify` throws a `TypeError` with a meaningful error message thankfully
-  // so we don't have to worry about handling the exception
-  await flattenedVerify(attestation, publicJWK);
+  if (!result) {
+    throw new Error('signature verification failed');
+  }
 }
 
 export type Message = PermissionsRequestMessage;

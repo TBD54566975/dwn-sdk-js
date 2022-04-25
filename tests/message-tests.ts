@@ -2,7 +2,6 @@ import chai, { expect } from 'chai';
 import { describe, it, xit } from 'mocha';
 
 import * as cbor from '@ipld/dag-cbor';
-import * as jose from 'jose';
 import * as json from 'multiformats/codecs/json';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -13,9 +12,13 @@ import { sha256, sha512 } from 'multiformats/hashes/sha2';
 
 import { Message, validateMessage, verifyMessageSignature } from '../src/message';
 import { DIDResolutionResult, DIDResolver } from '../src/did/did-resolver';
-import { base64url } from 'jose';
+import base64url from 'base64url';
+import { Ed25519KeyPair } from '@transmute/ed25519-key-pair';
+
 
 import type { SinonStub } from 'sinon';
+import Jwk from '../src/crypto/Jwk';
+import Jws from '../src/crypto/Jws';
 
 // extend chai to test promises
 chai.use(chaiAsPromised);
@@ -68,7 +71,8 @@ describe('Message Tests', () => {
       const cid = await CID.createV1(cbor.code, cborHash);
 
       // create JWS payload with bogus CID in it
-      const jwsPayload = Buffer.from(cid.bytes).toString('base64url');
+      const cidBytes = Buffer.from(cid.bytes);
+      const cidString = base64url.encode(cidBytes);
 
       const msg = {
         'descriptor': {
@@ -82,7 +86,7 @@ describe('Message Tests', () => {
           'requester' : 'did:jank:alice'
         },
         'attestation': {
-          'payload'   : jwsPayload,
+          'payload'   : cidString,
           'protected' : 'farts',
           'signature' : 'farts'
         }
@@ -116,10 +120,10 @@ describe('Message Tests', () => {
       const jsonBytes = json.encode(msg.descriptor);
       const jsonHash = await sha256.digest(jsonBytes);
       const cid = await CID.createV1(json.code, jsonHash);
+      const cidBytes = Buffer.from(cid.bytes);
+      const cidString = base64url.encode(cidBytes);
 
-      const jwsPayload = Buffer.from(cid.bytes).toString('base64url');
-
-      msg.attestation.payload = jwsPayload;
+      msg.attestation.payload = cidString;
 
       const resolverStub = sinon.createStubInstance(DIDResolver);
       await expect(verifyMessageSignature(msg, resolverStub))
@@ -150,10 +154,10 @@ describe('Message Tests', () => {
       const cborBytes = cbor.encode(msg.descriptor);
       const cborHash = await sha512.digest(cborBytes);
       const cid = await CID.createV1(cbor.code, cborHash);
+      const cidBytes = Buffer.from(cid.bytes);
+      const cidString = base64url.encode(cidBytes);
 
-      const jwsPayload = Buffer.from(cid.bytes).toString('base64url');
-
-      msg.attestation.payload = jwsPayload;
+      msg.attestation.payload = cidString;
 
       const resolverStub = sinon.createStubInstance(DIDResolver);
       await expect(verifyMessageSignature(msg, resolverStub))
@@ -184,10 +188,10 @@ describe('Message Tests', () => {
       const cborBytes = cbor.encode(msg.descriptor);
       const cborHash = await sha256.digest(cborBytes);
       const cid = await CID.createV1(cbor.code, cborHash);
+      const cidBytes = Buffer.from(cid.bytes);
+      const cidString = base64url.encode(cidBytes);
 
-      const jwsPayload = Buffer.from(cid.bytes).toString('base64url');
-
-      msg.attestation.payload = jwsPayload;
+      msg.attestation.payload = cidString;
 
       // base64url encode value of `attestation.protected
       const jwsProtected = JSON.stringify({ 'kid': 'did:jank:alice#kid1' });
@@ -230,10 +234,10 @@ describe('Message Tests', () => {
       const cborBytes = cbor.encode(msg.descriptor);
       const cborHash = await sha256.digest(cborBytes);
       const cid = await CID.createV1(cbor.code, cborHash);
+      const cidBytes = Buffer.from(cid.bytes);
+      const cidString = base64url.encode(cidBytes);
 
-      const jwsPayload = Buffer.from(cid.bytes).toString('base64url');
-
-      msg.attestation.payload = jwsPayload;
+      msg.attestation.payload = cidString;
 
       // base64url encode value of `attestation.protected
       const jwsProtected = JSON.stringify({ 'kid': 'did:jank:alice#kid1' });
@@ -280,24 +284,26 @@ describe('Message Tests', () => {
       const cid = await CID.createV1(cbor.code, cborHash);
 
       // create signature
-      const signingKey = await jose.generateKeyPair('EdDSA');
+      const [publicKeyJwk, privateKeyJwk] = await Jwk.generateEd25519KeyPair();
+      
+      console.info("456");
+      const protectedHeader = { alg: 'EdDSA', 'kid': 'did:jank:alice#key1' };
+      const jws = await Jws.sign(protectedHeader, Buffer.from(cid.bytes), privateKeyJwk);
 
-      const jws = await new jose.FlattenedSign(cid.bytes)
-        .setProtectedHeader({ alg: 'EdDSA', 'kid': 'did:jank:alice#key1' })
-        .sign(signingKey.privateKey);
+      console.info("789");
 
       msg.attestation = jws;
 
       // add a different key with the same kid to DID Doc
-      const verificationMethodKey = await jose.generateKeyPair('EdDSA');
-      const jwk = await jose.exportJWK(verificationMethodKey.publicKey);
+      const [publicKeyJwk2, privateKeyJwk2] = await Jwk.generateEd25519KeyPair();
+      console.info("123");
 
       const mockResolutionResult = {
         didResolutionMetadata : {},
         didDocument           : {
           verificationMethod: [{
             id           : 'did:jank:alice#key1',
-            publicKeyJwk : jwk
+            publicKeyJwk : publicKeyJwk2
           }]
         },
         didDocumentMetadata: {}
@@ -337,22 +343,27 @@ describe('Message Tests', () => {
       const cid = await CID.createV1(cbor.code, cborHash);
 
       // create signature
-      const signingKey = await jose.generateKeyPair('EdDSA');
+      // const signingKey = await jose.generateKeyPair('EdDSA');
+      const [publicKeyJwk, privateKeyJwk] = await Jwk.generateEd25519KeyPair();
 
-      const jws = await new jose.FlattenedSign(cid.bytes)
-        .setProtectedHeader({ alg: 'EdDSA', 'kid': 'did:jank:alice#key1' })
-        .sign(signingKey.privateKey);
+
+      // const jws = await new jose.FlattenedSign(cid.bytes)
+      //   .setProtectedHeader({ alg: 'EdDSA', 'kid': 'did:jank:alice#key1' })
+      //   .sign(signingKey.privateKey);
+      const protectedHeader = { alg: 'EdDSA', 'kid': 'did:jank:alice#key1' };
+      const jws = await Jws.sign(protectedHeader, Buffer.from(cid.bytes), privateKeyJwk);
 
       msg.attestation = jws;
 
-      const jwk = await jose.exportJWK(signingKey.publicKey);
+      // const jwkPrivate = await jose.exportJWK(signingKey.privateKey);
+      // const jwk = await jose.exportJWK(signingKey.publicKey);
 
       const mockResolutionResult = {
         didResolutionMetadata : {},
         didDocument           : {
           verificationMethod: [{
             id           : 'did:jank:alice#key1',
-            publicKeyJwk : jwk
+            publicKeyJwk
           }]
         },
         didDocumentMetadata: {}

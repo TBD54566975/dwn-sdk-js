@@ -70,8 +70,6 @@ export interface DIDMethodResolver {
   resolve(DID: string): Promise<DIDResolutionResult>;
 }
 
-import type { JWK } from 'jose';
-
 export type DIDDocument = {
   '@context'?: 'https://www.w3.org/ns/did/v1' | string | string[]
   id: string
@@ -103,7 +101,7 @@ export type VerificationMethod = {
   // DID of the key's controller
   controller: string
   // a JSON Web Key that conforms to https://datatracker.ietf.org/doc/html/rfc7517
-  publicKeyJwk?: JWK
+  publicKeyJwk?: object
   // a string representation of
   // https://datatracker.ietf.org/doc/html/draft-multiformats-multibase-05
   publicKeyMultibase?: string
