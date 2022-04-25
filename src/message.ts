@@ -144,7 +144,7 @@ export async function verifyMessageSignature(message: Message, didResolver: DIDR
     throw new Error('failed to find respective public key to verify signature');
   }
 
-  const result = await Jws.verifySignature(attestation, publicKey);
+  const result = await Jws.verify(attestation, publicKey);
 
   if (!result) {
     throw new Error('signature verification failed');

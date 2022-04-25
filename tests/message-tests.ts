@@ -284,26 +284,21 @@ describe('Message Tests', () => {
       const cid = await CID.createV1(cbor.code, cborHash);
 
       // create signature
-      const [publicKeyJwk, privateKeyJwk] = await Jwk.generateEd25519KeyPair();
-      
-      console.info("456");
+      const actualKeyPair = await Jwk.generateEd25519KeyPair();
       const protectedHeader = { alg: 'EdDSA', 'kid': 'did:jank:alice#key1' };
-      const jws = await Jws.sign(protectedHeader, Buffer.from(cid.bytes), privateKeyJwk);
-
-      console.info("789");
+      const jws = await Jws.sign(protectedHeader, Buffer.from(cid.bytes), actualKeyPair.privateKeyJwk);
 
       msg.attestation = jws;
 
       // add a different key with the same kid to DID Doc
-      const [publicKeyJwk2, privateKeyJwk2] = await Jwk.generateEd25519KeyPair();
-      console.info("123");
+      const wrongKeyPair = await Jwk.generateEd25519KeyPair();
 
       const mockResolutionResult = {
         didResolutionMetadata : {},
         didDocument           : {
           verificationMethod: [{
             id           : 'did:jank:alice#key1',
-            publicKeyJwk : publicKeyJwk2
+            publicKeyJwk : wrongKeyPair.publicKeyJwk
           }]
         },
         didDocumentMetadata: {}
@@ -344,7 +339,7 @@ describe('Message Tests', () => {
 
       // create signature
       // const signingKey = await jose.generateKeyPair('EdDSA');
-      const [publicKeyJwk, privateKeyJwk] = await Jwk.generateEd25519KeyPair();
+      const { publicKeyJwk, privateKeyJwk } = await Jwk.generateEd25519KeyPair();
 
 
       // const jws = await new jose.FlattenedSign(cid.bytes)
