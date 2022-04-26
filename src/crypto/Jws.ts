@@ -66,7 +66,6 @@ export default class Jws {
     privateKeyJwk: Required<JwkSecp256k1>
   ): Promise<Buffer> {
     const privateKeyBuffer = base64url.toBuffer(privateKeyJwk.d);
-    console.log(base64url.encode(Buffer.from(secp256k1.getPublicKey(privateKeyBuffer))));
     const signatureUint8Array = await secp256k1.sign(signingInputBuffer, privateKeyBuffer);
     const signatureBuffer = Buffer.from(signatureUint8Array);
     return signatureBuffer;
