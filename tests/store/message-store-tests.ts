@@ -93,9 +93,55 @@ describe('MessageStoreLevel Tests', () => {
       const blockBytes = await messageStore.db.get(expectedBlock.cid);
       expect(blockBytes).to.eql(expectedBlock.bytes);
     });
+
+    it('adds message to index', async () => {
+      const msg = {
+        'descriptor': {
+          'ability': {
+            'description' : 'some description',
+            'method'      : 'CollectionsWrite',
+            'schema'      : 'https://schema.org/MusicPlaylist'
+          },
+          'method'    : 'PermissionsRequest' as const,
+          'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
+          'requester' : 'did:jank:alice'
+        },
+        'attestation': {
+          'payload'   : 'farts',
+          'protected' : 'farts',
+          'signature' : 'farts'
+        }
+      };
+
+      await messageStore.put(msg);
+
+      const { RESULT_LENGTH } = await messageStore.index.QUERY('ability.method:CollectionsWrite');
+      expect(RESULT_LENGTH).to.equal(1);
+    });
   });
 
-  describe('get', () => {});
+
+  describe('get', () => {
+    before(async () => {
+      await messageStore.open();
+    });
+
+    afterEach(async () => {
+      await messageStore.clear();
+    });
+
+    after(async () => {
+      await messageStore.close();
+    });
+
+
+    it('returns undefined if message does not exist', async () => {
+      const { cid } = await Block.encode({ value: { beep: 'boop' }, codec: cbor, hasher: sha256 });
+      const message = await messageStore.get(cid);
+
+      expect(message).to.be.undefined;
+    });
+  });
 
   describe('query', () => {});
 
