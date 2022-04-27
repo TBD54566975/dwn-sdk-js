@@ -21,12 +21,13 @@ export class MessageStoreLevel implements MessageStore {
   index;
 
   /**
-   * @param location - must be a directory path (relative or absolute) where LevelDB will store its
-   * files, or in browsers, the name of
-   * the {@link https://developer.mozilla.org/en-US/docs/Web/API/IDBDatabase IDBDatabase}
-   * to be opened.
+   * @param {MessageStoreLevelConfig} config
+   * @param {string} config.blockstoreLocation - must be a directory path (relative or absolute) where
+   *  LevelDB will store its files, or in browsers, the name of the
+   * {@link https://developer.mozilla.org/en-US/docs/Web/API/IDBDatabase IDBDatabase} to be opened.
+   * @param {string} config.indexLocation - same as config.blockstoreLocation
    */
-  constructor(config: MessageStoreLevelConfig) {
+  constructor(config: MessageStoreLevelConfig = {}) {
     this.config = {
       blockstoreLocation : 'BLOCKSTORE',
       indexLocation      : 'INDEX',
