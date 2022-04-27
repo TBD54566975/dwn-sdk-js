@@ -45,7 +45,11 @@ export class MessageStoreLevel implements MessageStore {
 
     // TODO: look into using the same level we're using for blockstore
     // TODO: parameterize `name`
-    this.index = await searchIndex({ name: this.config.indexLocation });
+    // calling `searchIndex` twice causes the process to hang, so check to see if the index
+    // has already been "opened" before opening it again.
+    if (!this.index) {
+      this.index = await searchIndex({ name: this.config.indexLocation });
+    }
   }
 
   /**
@@ -53,6 +57,7 @@ export class MessageStoreLevel implements MessageStore {
    */
   async close(): Promise<void> {
     await this.db.close();
+    await this.index.FLUSH();
   }
 
   /**
