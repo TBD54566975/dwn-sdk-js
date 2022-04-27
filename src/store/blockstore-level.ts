@@ -1,7 +1,8 @@
 import { Level } from 'level';
-import { Blockstore } from 'interface-blockstore';
 import { Options, AwaitIterable, Pair, Batch, Query, KeyQuery } from 'interface-store';
 import { CID } from 'multiformats';
+
+import type { Blockstore } from 'interface-blockstore';
 
 // `level` works in Node.js 12+ and Electron 5+ on Linux, Mac OS, Windows and
 // FreeBSD, including any future Node.js and Electron release thanks to Node-API, including ARM

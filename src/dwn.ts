@@ -1,11 +1,11 @@
 import { DIDResolver } from './did/did-resolver';
-
+import { MessageStoreLevel } from './store/message-store';
 import { validateMessage } from './message';
 import { PermissionsRequest } from './interfaces/permissions';
 
-import type { Message } from './message';
 import type { DIDMethodResolver } from './did/did-resolver';
-import { MessageStore, MessageStoreLevel } from './store/message-store';
+import type { Message } from './message';
+import type { MessageStore } from './store/message-store';
 
 export class DWN {
   static methods = { PermissionsRequest };
