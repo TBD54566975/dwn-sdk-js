@@ -6,6 +6,6 @@ type JwkEd25519 = {
   crv: string;
   x: string;
   d?: string; // Only used by a private key.
-}
+};
 
 export default JwkEd25519;

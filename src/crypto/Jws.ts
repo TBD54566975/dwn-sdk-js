@@ -2,7 +2,7 @@ import * as ed25519 from '@noble/ed25519';
 import * as secp256k1 from '@noble/secp256k1';
 import base64url from 'base64url';
 import type JwkEd25519 from './JwkEd25519';
-import type JwsFlattenedModel from './JwsFlattenedModel';
+import type JwsFlattened from './JwsFlattened';
 import type JwkSecp256k1 from './JwkSecp256k1';
 
 /**
@@ -18,7 +18,7 @@ export default class Jws {
     protectedHeader: object,
     payload: Buffer,
     privateKeyJwk: any
-  ): Promise<JwsFlattenedModel> {
+  ): Promise<JwsFlattened> {
 
     const protectedHeaderString = JSON.stringify(protectedHeader);
     const protectedHeaderBase64UrlString = base64url.encode(protectedHeaderString);
@@ -77,7 +77,7 @@ export default class Jws {
    * @throws {Error} if key given is unsupported.
    */
   public static async verify (
-    jwsFlattenedModel: JwsFlattenedModel,
+    jwsFlattenedModel: JwsFlattened,
     publicKeyJwk: any
   ): Promise<boolean> {
     const signatureInput = jwsFlattenedModel.protected + '.' + jwsFlattenedModel.payload;

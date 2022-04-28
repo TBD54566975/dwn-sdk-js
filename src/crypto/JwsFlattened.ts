@@ -1,10 +1,10 @@
 /**
  * Represents a flattened JWS JSON serialized model.
  */
-type JwkEd25519 = {
+type JwsFlattened = {
   protected: string,
   payload: string,
   signature: string
-}
+};
 
-export default JwkEd25519;
+export default JwsFlattened;
