@@ -1,9 +1,9 @@
 import * as ed25519 from '@noble/ed25519';
 import * as secp256k1 from '@noble/secp256k1';
 import base64url from 'base64url';
-import JwkEd25519 from './JwkEd25519';
-import JwsFlattenedModel from './JwsFlattenedModel';
-import JwkSecp256k1 from './JwkSecp256k1';
+import type JwkEd25519 from './JwkEd25519';
+import type JwsFlattenedModel from './JwsFlattenedModel';
+import type JwkSecp256k1 from './JwkSecp256k1';
 
 /**
  * Class containing reusable JWS operations.
