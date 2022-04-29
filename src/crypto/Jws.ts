@@ -1,9 +1,13 @@
 import * as ed25519 from '@noble/ed25519';
 import * as secp256k1 from '@noble/secp256k1';
 import base64url from 'base64url';
-import type JwkEd25519 from './JwkEd25519';
+import type JwkEd25519Private from './JwkEd25519Private';
+import type JwkEd25519Public from './JwkEd25519Public';
 import type JwsFlattened from './JwsFlattened';
-import type JwkSecp256k1 from './JwkSecp256k1';
+import type JwkPrivate from './JwkPrivate';
+import type JwkPublic from './JwkPublic';
+import type JwkSecp256k1Private from './JwkSecp256k1Private';
+import type JwkSecp256k1Public from './JwkSecp256k1Public';
 
 /**
  * Class containing reusable JWS operations.
@@ -17,7 +21,7 @@ export default class Jws {
   public static async sign (
     protectedHeader: object,
     payload: Buffer,
-    privateKeyJwk: any
+    privateKeyJwk: JwkPrivate
   ): Promise<JwsFlattened> {
 
     const protectedHeaderString = JSON.stringify(protectedHeader);
@@ -29,9 +33,9 @@ export default class Jws {
     // This is where we will add support for different algorithms over time.
     let signatureBuffer: Buffer;
     if (privateKeyJwk.crv === 'Ed25519') {
-      signatureBuffer = await Jws.signEd25519(signingInputBuffer, privateKeyJwk as Required<JwkEd25519>);
+      signatureBuffer = await Jws.signEd25519(signingInputBuffer, privateKeyJwk as JwkEd25519Private);
     } else if (privateKeyJwk.crv === 'secp256k1') {
-      signatureBuffer = await Jws.signSecp256k1(signingInputBuffer, privateKeyJwk as Required<JwkSecp256k1>);
+      signatureBuffer = await Jws.signSecp256k1(signingInputBuffer, privateKeyJwk as JwkSecp256k1Private);
     } else {
       throw new Error(`unsupported key type ${privateKeyJwk.kty} with curve ${privateKeyJwk.crv}`);
     }
@@ -50,7 +54,7 @@ export default class Jws {
    */
   private static async signEd25519 (
     signingInputBuffer: Buffer,
-    privateKeyJwk: Required<JwkEd25519>
+    privateKeyJwk: JwkEd25519Private
   ): Promise<Buffer> {
     const privateKeyBuffer = base64url.toBuffer(privateKeyJwk.d);
     const signatureUint8Array = await ed25519.sign(signingInputBuffer, privateKeyBuffer);
@@ -63,7 +67,7 @@ export default class Jws {
    */
   private static async signSecp256k1 (
     signingInputBuffer: Buffer,
-    privateKeyJwk: Required<JwkSecp256k1>
+    privateKeyJwk: JwkSecp256k1Private
   ): Promise<Buffer> {
     const privateKeyBuffer = base64url.toBuffer(privateKeyJwk.d);
     const signatureUint8Array = await secp256k1.sign(signingInputBuffer, privateKeyBuffer);
@@ -78,7 +82,7 @@ export default class Jws {
    */
   public static async verify (
     jwsFlattenedModel: JwsFlattened,
-    publicKeyJwk: any
+    publicKeyJwk: JwkPublic
   ): Promise<boolean> {
     const signatureInput = jwsFlattenedModel.protected + '.' + jwsFlattenedModel.payload;
     const signatureInputBuffer = Buffer.from(signatureInput);
@@ -87,9 +91,9 @@ export default class Jws {
     // This is where we will add support for different algorithms over time.
     let result = false;
     if (publicKeyJwk.crv === 'Ed25519') {
-      result = await Jws.verifyEd25519(signatureInputBuffer, signatureBuffer, publicKeyJwk as JwkEd25519);
+      result = await Jws.verifyEd25519(signatureInputBuffer, signatureBuffer, publicKeyJwk as JwkEd25519Public);
     } else if (publicKeyJwk.crv === 'secp256k1') {
-      result = await Jws.verifySecp256k1(signatureInputBuffer, signatureBuffer, publicKeyJwk as JwkSecp256k1);
+      result = await Jws.verifySecp256k1(signatureInputBuffer, signatureBuffer, publicKeyJwk as JwkSecp256k1Public);
     } else {
       throw new Error(`unsupported key type ${publicKeyJwk.kty} with curve ${publicKeyJwk.crv}`);
     }
@@ -103,7 +107,7 @@ export default class Jws {
   private static async verifyEd25519 (
     signatureInputBuffer: Buffer,
     signatureBuffer: Buffer,
-    publicKeyJwk: JwkEd25519
+    publicKeyJwk: JwkEd25519Public
   ): Promise<boolean> {
     const publicKeyBuffer = base64url.toBuffer(publicKeyJwk.x);
     const result = await ed25519.verify(signatureBuffer, signatureInputBuffer, publicKeyBuffer);
@@ -116,7 +120,7 @@ export default class Jws {
   private static async verifySecp256k1 (
     signatureInputBuffer: Buffer,
     signatureBuffer: Buffer,
-    publicKeyJwk: JwkSecp256k1
+    publicKeyJwk: JwkSecp256k1Public
   ): Promise<boolean> {
     const identifierByte = Buffer.from([0x04]);
     const xBuffer = base64url.toBuffer(publicKeyJwk.x);
