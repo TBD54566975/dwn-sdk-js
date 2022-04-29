@@ -8,7 +8,8 @@ import _ from 'lodash';
 import searchIndex from 'search-index';
 
 import { BlockstoreLevel } from './blockstore-level';
-import { Message } from '../message';
+
+import type { Message } from '../message';
 
 /**
  * A simple implementation of {@link MessageStore} that works in both the browser and server-side.

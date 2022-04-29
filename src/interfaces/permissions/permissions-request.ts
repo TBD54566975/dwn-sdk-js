@@ -2,8 +2,8 @@ import { DIDResolver } from '../../did/did-resolver';
 
 import type { Ability, Conditions } from './permission';
 import type { FlattenedJWS } from 'jose';
+import type { MessageStore } from '../../store/message-store';
 import type { PermissionsMethod } from './types';
-import { MessageStore } from '../../store/message-store';
 
 /**
  * TODO: add documentation
@@ -19,6 +19,9 @@ export async function PermissionsRequest(
   const { requester } = descriptor;
 
   const { didDocument } = await didResolver.resolve(requester);
+
+  // additional method specific logic here
+  await messageStore.put(message);
 }
 
 export type PermissionsRequestMessage = {

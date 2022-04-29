@@ -1,7 +1,7 @@
 import { Level } from 'level';
-import { Options, AwaitIterable, Pair, Batch, Query, KeyQuery } from 'interface-store';
 import { CID } from 'multiformats';
 
+import type { Options, AwaitIterable, Pair, Batch, Query, KeyQuery } from 'interface-store';
 import type { Blockstore } from 'interface-blockstore';
 
 // `level` works in Node.js 12+ and Electron 5+ on Linux, Mac OS, Windows and
