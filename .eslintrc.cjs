@@ -1,19 +1,19 @@
 module.exports = {
-  parser: '@typescript-eslint/parser',
-  parserOptions: {
-    ecmaVersion: 'latest', // Allows the use of modern ECMAScript features
-    sourceType: 'module', // Allows for the use of imports
+  parser        : '@typescript-eslint/parser',
+  parserOptions : {
+    ecmaVersion : 'latest', // Allows the use of modern ECMAScript features
+    sourceType  : 'module', // Allows for the use of imports
   },
   plugins: [
     '@typescript-eslint',
   ],
   env: {
-    node: true, // Enable Node.js global variables
-    browser: true
+    node    : true, // Enable Node.js global variables
+    browser : true
   },
   rules: {
-    'no-console': 'off',
-    'indent': [
+    'no-console' : 'off',
+    'indent'     : [
       'error',
       2
     ],
@@ -26,17 +26,17 @@ module.exports = {
       'single',
       { 'allowTemplateLiterals': true }
     ],
-    "semi": ["off"],
-    "@typescript-eslint/semi": ["error", "always"],
-    'no-trailing-spaces': ['error'],
-    'max-len': ['error', { 'code': 150 }],
-    'key-spacing': [
+    'semi'                    : ['off'],
+    '@typescript-eslint/semi' : ['error', 'always'],
+    'no-trailing-spaces'      : ['error'],
+    'max-len'                 : ['error', { 'code': 150 }],
+    'key-spacing'             : [
       'error',
       {
         'align': {
-          'beforeColon': true,
-          'afterColon': true,
-          'on': 'colon'
+          'beforeColon' : true,
+          'afterColon'  : true,
+          'on'          : 'colon'
         }
       }
     ]
