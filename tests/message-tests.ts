@@ -42,18 +42,18 @@ describe('Message Tests', () => {
       const msg = {
         'descriptor': {
           'ability': {
-            'description': 'some description',
-            'method': 'CollectionsWrite',
-            'schema': 'https://schema.org/MusicPlaylist'
+            'description' : 'some description',
+            'method'      : 'CollectionsWrite',
+            'schema'      : 'https://schema.org/MusicPlaylist'
           },
-          'method': 'PermissionsRequest' as const,
-          'objectId': '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
-          'requester': 'did:jank:alice'
+          'method'    : 'PermissionsRequest' as const,
+          'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
+          'requester' : 'did:jank:alice'
         },
         'attestation': {
-          'payload': 'farts',
-          'protected': 'farts',
-          'signature': 'farts'
+          'payload'   : 'farts',
+          'protected' : 'farts',
+          'signature' : 'farts'
         }
       };
 
@@ -75,18 +75,18 @@ describe('Message Tests', () => {
       const msg = {
         'descriptor': {
           'ability': {
-            'description': 'some description',
-            'method': 'CollectionsWrite',
-            'schema': 'https://schema.org/MusicPlaylist'
+            'description' : 'some description',
+            'method'      : 'CollectionsWrite',
+            'schema'      : 'https://schema.org/MusicPlaylist'
           },
-          'method': 'PermissionsRequest' as const,
-          'objectId': '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
-          'requester': 'did:jank:alice'
+          'method'    : 'PermissionsRequest' as const,
+          'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
+          'requester' : 'did:jank:alice'
         },
         'attestation': {
-          'payload': cidString,
-          'protected': 'farts',
-          'signature': 'farts'
+          'payload'   : cidString,
+          'protected' : 'farts',
+          'signature' : 'farts'
         }
       };
 
@@ -99,18 +99,18 @@ describe('Message Tests', () => {
       const msg = {
         'descriptor': {
           'ability': {
-            'description': 'some description',
-            'method': 'CollectionsWrite',
-            'schema': 'https://schema.org/MusicPlaylist'
+            'description' : 'some description',
+            'method'      : 'CollectionsWrite',
+            'schema'      : 'https://schema.org/MusicPlaylist'
           },
-          'method': 'PermissionsRequest' as const,
-          'objectId': '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
-          'requester': 'did:jank:alice'
+          'method'    : 'PermissionsRequest' as const,
+          'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
+          'requester' : 'did:jank:alice'
         },
         'attestation': {
-          'payload': undefined, // this will be set below
-          'protected': 'farts',
-          'signature': 'farts'
+          'payload'   : undefined, // this will be set below
+          'protected' : 'farts',
+          'signature' : 'farts'
         }
       };
 
@@ -133,18 +133,18 @@ describe('Message Tests', () => {
       const msg = {
         'descriptor': {
           'ability': {
-            'description': 'some description',
-            'method': 'CollectionsWrite',
-            'schema': 'https://schema.org/MusicPlaylist'
+            'description' : 'some description',
+            'method'      : 'CollectionsWrite',
+            'schema'      : 'https://schema.org/MusicPlaylist'
           },
-          'method': 'PermissionsRequest' as const,
-          'objectId': '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
-          'requester': 'did:jank:alice'
+          'method'    : 'PermissionsRequest' as const,
+          'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
+          'requester' : 'did:jank:alice'
         },
         'attestation': {
-          'payload': undefined, // this will be set below
-          'protected': 'farts',
-          'signature': 'farts'
+          'payload'   : undefined, // this will be set below
+          'protected' : 'farts',
+          'signature' : 'farts'
         }
       };
 
@@ -167,18 +167,18 @@ describe('Message Tests', () => {
       const msg = {
         'descriptor': {
           'ability': {
-            'description': 'some description',
-            'method': 'CollectionsWrite',
-            'schema': 'https://schema.org/MusicPlaylist'
+            'description' : 'some description',
+            'method'      : 'CollectionsWrite',
+            'schema'      : 'https://schema.org/MusicPlaylist'
           },
-          'method': 'PermissionsRequest' as const,
-          'objectId': '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
-          'requester': 'did:jank:alice'
+          'method'    : 'PermissionsRequest' as const,
+          'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
+          'requester' : 'did:jank:alice'
         },
         'attestation': {
-          'payload': undefined, // this will be set below
-          'protected': undefined, // this will be set below
-          'signature': 'farts'
+          'payload'   : undefined, // this will be set below
+          'protected' : undefined, // this will be set below
+          'signature' : 'farts'
         }
       };
 
@@ -213,18 +213,18 @@ describe('Message Tests', () => {
       const msg = {
         'descriptor': {
           'ability': {
-            'description': 'some description',
-            'method': 'CollectionsWrite',
-            'schema': 'https://schema.org/MusicPlaylist'
+            'description' : 'some description',
+            'method'      : 'CollectionsWrite',
+            'schema'      : 'https://schema.org/MusicPlaylist'
           },
-          'method': 'PermissionsRequest' as const,
-          'objectId': '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
-          'requester': 'did:jank:alice'
+          'method'    : 'PermissionsRequest' as const,
+          'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
+          'requester' : 'did:jank:alice'
         },
         'attestation': {
-          'payload': undefined, // this will be set below
-          'protected': undefined, // this will be set below
-          'signature': 'farts'
+          'payload'   : undefined, // this will be set below
+          'protected' : undefined, // this will be set below
+          'signature' : 'farts'
         }
       };
 
@@ -242,9 +242,9 @@ describe('Message Tests', () => {
       msg.attestation.protected = base64url.encode(jwsProtected);
 
       const mockResolutionResult = {
-        didResolutionMetadata: {},
-        didDocument: {},
-        didDocumentMetadata: {}
+        didResolutionMetadata : {},
+        didDocument           : {},
+        didDocumentMetadata   : {}
       };
 
       const resolveStub: SinonStub<any, Promise<DIDResolutionResult>> =
@@ -265,13 +265,13 @@ describe('Message Tests', () => {
       const msg = {
         'descriptor': {
           'ability': {
-            'description': 'some description',
-            'method': 'CollectionsWrite',
-            'schema': 'https://schema.org/MusicPlaylist'
+            'description' : 'some description',
+            'method'      : 'CollectionsWrite',
+            'schema'      : 'https://schema.org/MusicPlaylist'
           },
-          'method': 'PermissionsRequest' as const,
-          'objectId': '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
-          'requester': 'did:jank:alice'
+          'method'    : 'PermissionsRequest' as const,
+          'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
+          'requester' : 'did:jank:alice'
         },
         attestation: undefined // this will be set below
       };
@@ -292,11 +292,11 @@ describe('Message Tests', () => {
       const wrongKeyPair = await Jwk.generateEd25519KeyPair();
 
       const mockResolutionResult = {
-        didResolutionMetadata: {},
-        didDocument: {
+        didResolutionMetadata : {},
+        didDocument           : {
           verificationMethod: [{
-            id: 'did:jank:alice#key1',
-            publicKeyJwk: wrongKeyPair.publicKeyJwk
+            id           : 'did:jank:alice#key1',
+            publicKeyJwk : wrongKeyPair.publicKeyJwk
           }]
         },
         didDocumentMetadata: {}
@@ -319,13 +319,13 @@ describe('Message Tests', () => {
       const msg = {
         'descriptor': {
           'ability': {
-            'description': 'some description',
-            'method': 'CollectionsWrite',
-            'schema': 'https://schema.org/MusicPlaylist'
+            'description' : 'some description',
+            'method'      : 'CollectionsWrite',
+            'schema'      : 'https://schema.org/MusicPlaylist'
           },
-          'method': 'PermissionsRequest' as const,
-          'objectId': '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
-          'requester': 'did:jank:alice'
+          'method'    : 'PermissionsRequest' as const,
+          'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
+          'requester' : 'did:jank:alice'
         },
         attestation: undefined // this will be set below
       };
@@ -343,8 +343,8 @@ describe('Message Tests', () => {
       msg.attestation = jws;
 
       const mockResolutionResult = {
-        didResolutionMetadata: {},
-        didDocument: {
+        didResolutionMetadata : {},
+        didDocument           : {
           verificationMethod: [{
             id: 'did:jank:alice#key1',
             publicKeyJwk
