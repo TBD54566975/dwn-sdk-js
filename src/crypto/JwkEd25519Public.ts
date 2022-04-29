@@ -1,5 +1,5 @@
 /**
- * Model for representing a Ed25519 public key in JWK format.
+ * Model for representing an Ed25519 public key in JWK format.
  */
 type JwkEd25519Public = {
   kty: string;
