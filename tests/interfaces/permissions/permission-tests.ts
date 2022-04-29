@@ -13,6 +13,7 @@ describe('Permission Tests', () => {
     xit('throws an exception if expiration is in the past', () => {});
     xit('throws an exception if expiration is before nbf', () => {});
   });
+
   describe('toUnixEpochSeconds', () => {
     it('adds duration to the current time and returns that as a unix epoch timestamp', () => {
       const date = new Date('2022-03-22T00:00:00.000Z');

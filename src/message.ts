@@ -17,7 +17,7 @@ import { sha256 } from 'multiformats/hashes/sha2';
 // a map of all supported CID hashing algorithms. This map is used to select the appropriate hasher
 // when generating a CID to compare against a provided CID
 const HASHERS = {
-  [sha256.code]: sha256
+  [sha256.code]: sha256,
 };
 
 // `allErrors` checks all rules and collects all errors vs. short-circuiting
