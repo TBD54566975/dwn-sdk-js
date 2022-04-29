@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import Jws from '../../src/crypto/Jws';
+import Jws from '../../src/jose/Jws';
 import * as JwkSecp256k1Private from './vectors/JwkSecp256k1Private.json';
 
 describe('Jws', () => {

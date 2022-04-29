@@ -1,4 +1,4 @@
-import type JwkPublic from '../crypto/JwkPublic';
+import type JwkPublic from '../jose/JwkPublic';
 
 /**
  * TODO: add docs
