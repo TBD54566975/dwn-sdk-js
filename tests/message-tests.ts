@@ -15,8 +15,8 @@ import { DIDResolutionResult, DIDResolver } from '../src/did/did-resolver';
 import base64url from 'base64url';
 
 import type { SinonStub } from 'sinon';
-import Jwk from '../src/jose/Jwk';
-import Jws from '../src/jose/Jws';
+import { Jwk } from '../src/jose/jwk';
+import { Jws } from '../src/jose/jws';
 
 // extend chai to test promises
 chai.use(chaiAsPromised);

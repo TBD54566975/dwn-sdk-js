@@ -1,6 +1,6 @@
 import { expect } from 'chai';
-import Jws from '../../src/jose/Jws';
-import * as JwkSecp256k1Private from './vectors/JwkSecp256k1Private.json';
+import { Jws } from '../../src/jose/jws';
+import * as JwkSecp256k1Private from './vectors/jwk-secp256k1-private.json';
 
 describe('Jws', () => {
   it('should sign and verify SECP256K1 signature using a key vector correctly',  async () => {

@@ -1,12 +1,11 @@
 import * as ed25519 from '@noble/ed25519';
 import base64url from 'base64url';
-import type JwkEd25519Private from './JwkEd25519Private';
-import type JwkEd25519Public from './JwkEd25519Public';
+import type { JwkEd25519Private, JwkEd25519Public } from './jwk-types';
 
 /**
  * Class containing JWK related operations.
  */
-export default class Jwk {
+export class Jwk {
 
   /**
    * Generates ED25519 public-private key pair.

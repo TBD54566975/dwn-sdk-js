@@ -1,18 +1,13 @@
 import * as ed25519 from '@noble/ed25519';
 import * as secp256k1 from '@noble/secp256k1';
 import base64url from 'base64url';
-import type JwkEd25519Private from './JwkEd25519Private';
-import type JwkEd25519Public from './JwkEd25519Public';
-import type JwsFlattened from './JwsFlattened';
-import type JwkPrivate from './JwkPrivate';
-import type JwkPublic from './JwkPublic';
-import type JwkSecp256k1Private from './JwkSecp256k1Private';
-import type JwkSecp256k1Public from './JwkSecp256k1Public';
+import type { JwkEd25519Private, JwkEd25519Public, JwkPrivate, JwkPublic, JwkSecp256k1Private, JwkSecp256k1Public } from './jwk-types';
+import type { JwsFlattened } from './jws-flattened';
 
 /**
  * Class containing reusable JWS operations.
  */
-export default class Jws {
+export class Jws {
   /**
    * Signs the given payload as a JWS.
    * NOTE: this is mainly used by tests to create valid test data.

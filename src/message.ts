@@ -5,12 +5,12 @@ import type { PermissionsMethod, PermissionsRequestMessage } from './interfaces/
 
 import * as cbor from '@ipld/dag-cbor';
 import Ajv from 'ajv';
-import Jws from './jose/Jws';
 import permissionsSchemas from './interfaces/permissions/schemas';
 
 import { base64url } from 'multiformats/bases/base64';
 import { CID } from 'multiformats/cid';
 import { DIDResolver } from './did/did-resolver';
+import { Jws } from './jose/jws';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 
