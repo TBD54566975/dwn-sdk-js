@@ -2,7 +2,9 @@ import chai, { expect } from 'chai';
 import { describe, it, xit } from 'mocha';
 
 import * as cbor from '@ipld/dag-cbor';
+import * as ed25519 from '../src/jose/algorithms/ed25519';
 import * as json from 'multiformats/codecs/json';
+import * as jws from '../src/jose/jws';
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -15,8 +17,6 @@ import { DIDResolutionResult, DIDResolver } from '../src/did/did-resolver';
 import base64url from 'base64url';
 
 import type { SinonStub } from 'sinon';
-import { Jwk } from '../src/jose/jwk';
-import { Jws } from '../src/jose/jws';
 
 // extend chai to test promises
 chai.use(chaiAsPromised);
@@ -282,14 +282,14 @@ describe('Message Tests', () => {
       const cid = await CID.createV1(cbor.code, cborHash);
 
       // create signature
-      const actualKeyPair = await Jwk.generateEd25519KeyPair();
+      const actualKeyPair = await ed25519.generateKeyPair();
       const protectedHeader = { alg: 'EdDSA', 'kid': 'did:jank:alice#key1' };
-      const jws = await Jws.sign(protectedHeader, Buffer.from(cid.bytes), actualKeyPair.privateKeyJwk);
+      const jwsObject = await jws.sign(protectedHeader, Buffer.from(cid.bytes), actualKeyPair.privateKeyJwk);
 
-      msg.attestation = jws;
+      msg.attestation = jwsObject;
 
       // add a different key with the same kid to DID Doc
-      const wrongKeyPair = await Jwk.generateEd25519KeyPair();
+      const wrongKeyPair = await ed25519.generateKeyPair();
 
       const mockResolutionResult = {
         didResolutionMetadata : {},
@@ -336,11 +336,11 @@ describe('Message Tests', () => {
       const cid = await CID.createV1(cbor.code, cborHash);
 
       // create signature
-      const { publicKeyJwk, privateKeyJwk } = await Jwk.generateEd25519KeyPair();
+      const { publicKeyJwk, privateKeyJwk } = await ed25519.generateKeyPair();
       const protectedHeader = { alg: 'EdDSA', 'kid': 'did:jank:alice#key1' };
-      const jws = await Jws.sign(protectedHeader, Buffer.from(cid.bytes), privateKeyJwk);
+      const jwsObject = await jws.sign(protectedHeader, Buffer.from(cid.bytes), privateKeyJwk);
 
-      msg.attestation = jws;
+      msg.attestation = jwsObject;
 
       const mockResolutionResult = {
         didResolutionMetadata : {},

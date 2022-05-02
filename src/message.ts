@@ -4,13 +4,13 @@
 import type { PermissionsMethod, PermissionsRequestMessage } from './interfaces/permissions';
 
 import * as cbor from '@ipld/dag-cbor';
+import * as jws from './jose/jws';
 import Ajv from 'ajv';
 import permissionsSchemas from './interfaces/permissions/schemas';
 
 import { base64url } from 'multiformats/bases/base64';
 import { CID } from 'multiformats/cid';
 import { DIDResolver } from './did/did-resolver';
-import { Jws } from './jose/jws';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 
@@ -144,7 +144,7 @@ export async function verifyMessageSignature(message: Message, didResolver: DIDR
     throw new Error('failed to find respective public key to verify signature');
   }
 
-  const result = await Jws.verify(attestation, publicKey);
+  const result = await jws.verify(attestation, publicKey);
 
   if (!result) {
     throw new Error('signature verification failed');

@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { Jws } from '../../src/jose/jws';
+import * as jws from '../../src/jose/jws';
 import * as JwkSecp256k1Private from './vectors/jwk-secp256k1-private.json';
 
 describe('Jws', () => {
@@ -10,9 +10,9 @@ describe('Jws', () => {
 
     const protectedHeader = { anyHeader: 'anyHeaderValue' };
     const payloadBuffer = Buffer.from('anyPayloadValue');
-    const jws = await Jws.sign(protectedHeader, payloadBuffer, privateKeyJwk);
+    const jwsObject = await jws.sign(protectedHeader, payloadBuffer, privateKeyJwk);
 
-    const verificationResult = await Jws.verify(jws, publicKeyJwk);
+    const verificationResult = await jws.verify(jwsObject, publicKeyJwk);
 
     expect(verificationResult).to.be.true;
   });
