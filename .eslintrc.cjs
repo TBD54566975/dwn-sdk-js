@@ -12,8 +12,9 @@ module.exports = {
     browser : true
   },
   rules: {
-    'no-console' : 'off',
-    'indent'     : [
+    'object-curly-spacing' : ['error', 'always'],
+    'no-console'           : 'off',
+    'indent'               : [
       'error',
       2
     ],

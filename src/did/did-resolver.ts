@@ -1,4 +1,4 @@
-import type { JwkPublic } from '../jose/jwk-types';
+import type { JwkPublic } from '../jose/jwk';
 
 /**
  * TODO: add docs
