@@ -45,7 +45,7 @@ export async function generateKeyPair (): Promise<{
     d
   };
 
-  return { publicKeyJwk, privateKeyJwk};
+  return { publicKeyJwk, privateKeyJwk };
 }
 
 /**
