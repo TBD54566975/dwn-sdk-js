@@ -1,6 +1,10 @@
-import { expect } from 'chai';
 import * as jws from '../../src/jose/jws';
+import chai, { expect } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import jwkSecp256k1Private from './vectors/jwk-secp256k1-private.json';
+
+// extend chai to test promises
+chai.use(chaiAsPromised);
 
 describe('Jws', () => {
   it('should sign and verify SECP256K1 signature using a key vector correctly',  async () => {
