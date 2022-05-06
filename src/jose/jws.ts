@@ -1,4 +1,5 @@
 import * as ed25519 from './algorithms/ed25519';
+import * as jwk from './jwk';
 import * as secp256k1 from './algorithms/secp256k1';
 import base64url from 'base64url';
 import type { JwkPrivate, JwkPublic } from './jwk';
@@ -20,8 +21,10 @@ export type JwsFlattened = {
 export async function sign (
   protectedHeader: object,
   payload: Buffer,
-  privateKeyJwk: JwkPrivate
+  jwkPrivate: any
 ): Promise<JwsFlattened> {
+  jwk.validateJwkPrivate(jwkPrivate);
+
   const protectedHeaderString = JSON.stringify(protectedHeader);
   const protectedHeaderBase64UrlString = base64url.encode(protectedHeaderString);
   const payloadBase64UrlString = base64url.encode(payload);
@@ -30,15 +33,13 @@ export async function sign (
 
   // This is where we will add support for different algorithms over time.
   let dsaSign: (signingInputBuffer: Buffer, privateKeyJwk: JwkPrivate) => Promise<Buffer>;
-  if (privateKeyJwk.crv === 'Ed25519') {
+  if (jwkPrivate.crv === 'Ed25519') {
     dsaSign = ed25519.sign;
-  } else if (privateKeyJwk.crv === 'secp256k1') {
+  } else if (jwkPrivate.crv === 'secp256k1') {
     dsaSign = secp256k1.sign;
-  } else {
-    throw new Error(`unsupported key type ${privateKeyJwk.kty} with curve ${privateKeyJwk.crv}`);
   }
 
-  const signatureBuffer = await dsaSign(signingInputBuffer, privateKeyJwk);
+  const signatureBuffer = await dsaSign(signingInputBuffer, jwkPrivate);
   const signatureBase64UrlString = base64url.encode(signatureBuffer);
 
   return {
@@ -54,23 +55,23 @@ export async function sign (
  * @throws {Error} if key given is unsupported.
  */
 export async function verify (
-  jwsFlattenedModel: JwsFlattened,
-  publicKeyJwk: JwkPublic
+  jwsFlattened: JwsFlattened,
+  jwkPublic: any
 ): Promise<boolean> {
-  const signatureInput = jwsFlattenedModel.protected + '.' + jwsFlattenedModel.payload;
+  jwk.validateJwkPublic(jwkPublic);
+
+  const signatureInput = jwsFlattened.protected + '.' + jwsFlattened.payload;
   const signatureInputBuffer = Buffer.from(signatureInput);
-  const signatureBuffer = base64url.toBuffer(jwsFlattenedModel.signature);
+  const signatureBuffer = base64url.toBuffer(jwsFlattened.signature);
 
   // This is where we will add support for different algorithms over time.
   let dsaVerify: (signingInputBuffer: Buffer, signatureBuffer: Buffer, jwkPublic: JwkPublic) => Promise<boolean>;
-  if (publicKeyJwk.crv === 'Ed25519') {
+  if (jwkPublic.crv === 'Ed25519') {
     dsaVerify = ed25519.verify;
-  } else if (publicKeyJwk.crv === 'secp256k1') {
+  } else if (jwkPublic.crv === 'secp256k1') {
     dsaVerify = secp256k1.verify;
-  } else {
-    throw new Error(`unsupported key type ${publicKeyJwk.kty} with curve ${publicKeyJwk.crv}`);
   }
 
-  const result = await dsaVerify(signatureInputBuffer, signatureBuffer, publicKeyJwk);
+  const result = await dsaVerify(signatureInputBuffer, signatureBuffer, jwkPublic);
   return result;
 }

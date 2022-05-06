@@ -1,10 +1,10 @@
 import { expect } from 'chai';
 import * as jws from '../../src/jose/jws';
-import * as jwkSecp256k1Private from './vectors/jwk-secp256k1-private.json';
+import jwkSecp256k1Private from './vectors/jwk-secp256k1-private.json';
 
 describe('Jws', () => {
   it('should sign and verify SECP256K1 signature using a key vector correctly',  async () => {
-    const publicKeyJwk = Object.assign({ }, jwkSecp256k1Private); // Clone private key.
+    const publicKeyJwk = Object.assign({ }, jwkSecp256k1Private); // Clone private key.ㄣ
     delete publicKeyJwk.d; // Remove the private key portion.
 
     const protectedHeader = { anyHeader: 'anyHeaderValue' };
@@ -14,5 +14,24 @@ describe('Jws', () => {
     const verificationResult = await jws.verify(jwsObject, publicKeyJwk);
 
     expect(verificationResult).to.be.true;
+  });
+
+  it('should throw error if attempting to sign using an unsupported JWK',  async () => {
+    const unsupportedJwk = Object.assign({ randomUnsupportedProperty: 'anyValue' }, jwkSecp256k1Private); // Clone private key.
+
+    const protectedHeader = { anyHeader: 'anyHeaderValue' };
+    const payloadBuffer = Buffer.from('anyPayloadValue');
+    const signingPromise = jws.sign(protectedHeader, payloadBuffer, unsupportedJwk);
+
+    await expect(signingPromise).to.be.rejectedWith('unsupported JWK private key');
+  });
+
+  it('should throw error if attempting to verify using an unsupported/private JWK',  async () => {
+    const protectedHeader = { anyHeader: 'anyHeaderValue' };
+    const payloadBuffer = Buffer.from('anyPayloadValue');
+    const jwsObject = await jws.sign(protectedHeader, payloadBuffer, jwkSecp256k1Private);
+
+    const verificationPromise = jws.verify(jwsObject, jwkSecp256k1Private);
+    await expect(verificationPromise).to.be.rejectedWith('unsupported JWK public key');
   });
 });

@@ -1,12 +1,35 @@
 import * as ed25519 from '@noble/ed25519';
 import base64url from 'base64url';
 
+export const jwkPublicJsonSchema = {
+  type       : 'object',
+  properties : {
+    kty : { const: 'OKP' },
+    crv : { const: 'Ed25519' },
+    x   : { type: 'string' }
+  },
+  required             : ['kty', 'crv', 'x'],
+  additionalProperties : false,
+};
+
+export const jwkPrivateJsonSchema = {
+  type       : 'object',
+  properties : {
+    kty : { const: 'OKP' },
+    crv : { const: 'Ed25519' },
+    x   : { type: 'string' },
+    d   : { type: 'string' },
+  },
+  required             : ['kty', 'crv', 'x'],
+  additionalProperties : false,
+};
+
 /**
  * An Ed25519 public key in JWK format.
  */
 export type JwkEd25519Public = {
-  kty: string;
-  crv: string;
+  kty: 'OKP';
+  crv: 'Ed25519';
   x: string;
 };
 

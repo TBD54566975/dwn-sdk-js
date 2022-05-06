@@ -1,12 +1,40 @@
 import * as secp256k1 from '@noble/secp256k1';
 import base64url from 'base64url';
 
+export const jwkPublicJsonSchema = {
+  type       : 'object',
+  properties : {
+    kty : { const: 'EC' },
+    crv : { const: 'secp256k1' },
+    x   : { type: 'string' },
+    y   : { type: 'string' }
+  },
+  required             : ['kty', 'crv', 'x', 'y'],
+  additionalProperties : false,
+};
+
+export const jwkPrivateJsonSchema = {
+  type       : 'object',
+  properties : {
+    kty : { const: 'EC' },
+    crv : { const: 'secp256k1' },
+    x   : { type: 'string' },
+    y   : { type: 'string' },
+    d   : { type: 'string' },
+  },
+  required             : ['kty', 'crv', 'x', 'y', 'd'],
+  additionalProperties : false,
+};
+
 /**
  * A SECP256K1 public key in JWK format.
+ * Values taken from:
+ * https://www.iana.org/assignments/jose/jose.xhtml#web-key-elliptic-curve
+ * https://datatracker.ietf.org/doc/html/draft-ietf-cose-webauthn-algorithms-06#section-3.1
  */
 export type JwkSecp256k1Public = {
-  kty: string;
-  crv: string;
+  kty: 'EC';
+  crv: 'secp256k1';
   x: string;
   y: string;
 };
