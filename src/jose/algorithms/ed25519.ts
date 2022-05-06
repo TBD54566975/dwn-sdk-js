@@ -20,7 +20,7 @@ export const jwkPrivateJsonSchema = {
     x   : { type: 'string' },
     d   : { type: 'string' },
   },
-  required             : ['kty', 'crv', 'x'],
+  required             : ['kty', 'crv', 'x', 'd'],
   additionalProperties : false,
 };
 
