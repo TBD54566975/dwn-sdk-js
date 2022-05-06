@@ -16,11 +16,8 @@ export const jwkPublicJsonSchema = {
 export const jwkPrivateJsonSchema = {
   type       : 'object',
   properties : {
-    kty : { const: 'EC' },
-    crv : { const: 'secp256k1' },
-    x   : { type: 'string' },
-    y   : { type: 'string' },
-    d   : { type: 'string' },
+    ...jwkPublicJsonSchema.properties,
+    d: { type: 'string' },
   },
   required             : ['kty', 'crv', 'x', 'y', 'd'],
   additionalProperties : false,

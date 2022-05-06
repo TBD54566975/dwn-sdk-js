@@ -27,7 +27,7 @@ describe('Jws', () => {
     const payloadBuffer = Buffer.from('anyPayloadValue');
     const signingPromise = jws.sign(protectedHeader, payloadBuffer, unsupportedJwk);
 
-    await expect(signingPromise).to.be.rejectedWith('unsupported JWK private key');
+    await expect(signingPromise).to.be.rejectedWith('invalid or unsupported JWK private key');
   });
 
   it('should throw error if attempting to verify using an unsupported/private JWK',  async () => {
@@ -36,6 +36,6 @@ describe('Jws', () => {
     const jwsObject = await jws.sign(protectedHeader, payloadBuffer, jwkSecp256k1Private);
 
     const verificationPromise = jws.verify(jwsObject, jwkSecp256k1Private);
-    await expect(verificationPromise).to.be.rejectedWith('unsupported JWK public key');
+    await expect(verificationPromise).to.be.rejectedWith('invalid or unsupported JWK public key');
   });
 });

@@ -35,13 +35,13 @@ const validateJwkPrivateInternal = ajv.compile<JwkPrivate>(jwkPrivateSchema);
 export function validateJwkPrivate (jwkPrivate: any) {
   const isValid = validateJwkPrivateInternal(jwkPrivate);
   if (!isValid) {
-    throw new Error(`unsupported JWK private key: ${JSON.stringify(jwkPrivate)}`);
+    throw new Error(`invalid or unsupported JWK private key: ${JSON.stringify(jwkPrivate)}`);
   }
 }
 
 export function validateJwkPublic (jwkPublic: any) {
   const isValid = validateJwkPublicInternal(jwkPublic);
   if (!isValid) {
-    throw new Error(`unsupported JWK public key: ${JSON.stringify(jwkPublic)}`);
+    throw new Error(`invalid or unsupported JWK public key: ${JSON.stringify(jwkPublic)}`);
   }
 }
