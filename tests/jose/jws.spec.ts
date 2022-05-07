@@ -8,7 +8,7 @@ chai.use(chaiAsPromised);
 
 describe('Jws', () => {
   it('should sign and verify SECP256K1 signature using a key vector correctly',  async () => {
-    const publicKeyJwk = Object.assign({ }, jwkSecp256k1Private); // Clone private key.ㄣ
+    const publicKeyJwk = Object.assign({ }, jwkSecp256k1Private); // Clone private key.
     delete publicKeyJwk.d; // Remove the private key portion.
 
     const protectedHeader = { anyHeader: 'anyHeaderValue' };
