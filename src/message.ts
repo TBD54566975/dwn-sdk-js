@@ -16,7 +16,7 @@ import { sha256 } from 'multiformats/hashes/sha2';
 
 // a map of all supported CID hashing algorithms. This map is used to select the appropriate hasher
 // when generating a CID to compare against a provided CID
-const HASHERS = {
+const hashers = {
   [sha256.code]: sha256,
 };
 
@@ -86,7 +86,7 @@ export async function verifyMessageSignature(message: Message, didResolver: DIDR
 
   // create CID of descriptor to check against provided CID
   const cborBytes = cbor.encode(descriptor);
-  const hasher = HASHERS[providedCID.multihash.code];
+  const hasher = hashers[providedCID.multihash.code];
 
   if (!hasher) {
     throw new Error(`multihash code [${providedCID.multihash.code}] not supported`);

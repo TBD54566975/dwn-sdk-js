@@ -236,7 +236,7 @@ describe('Message Tests', () => {
       // base64url encode value of `attestation.protected
       const jwsProtected = JSON.stringify({ 'kid': 'did:jank:alice#kid1' });
       const jwsProtectedBytes = new TextEncoder().encode(jwsProtected);
-      msg.attestation.protected = base64url.encode(jwsProtectedBytes);
+      msg.attestation.protected = base64url.baseEncode(jwsProtectedBytes);
 
       const mockResolutionResult = {
         didResolutionMetadata : {},
@@ -253,7 +253,7 @@ describe('Message Tests', () => {
 
       await expect(verifyMessageSignature(msg, resolverStub))
         .to.eventually.be
-        .rejectedWith('failed to find respective public key to verify signature');
+        .rejectedWith('public key needed to verify signature not found in DID Document');
 
       expect(resolverStub.resolve.called).to.be.true;
     });
@@ -293,6 +293,7 @@ describe('Message Tests', () => {
         didDocument           : {
           verificationMethod: [{
             id           : 'did:jank:alice#key1',
+            type         : 'JsonWebKey2020',
             publicKeyJwk : wrongKeyPair.publicKeyJwk
           }]
         },
@@ -343,7 +344,8 @@ describe('Message Tests', () => {
         didResolutionMetadata : {},
         didDocument           : {
           verificationMethod: [{
-            id: 'did:jank:alice#key1',
+            id   : 'did:jank:alice#key1',
+            type : 'JsonWebKey2020',
             publicKeyJwk
           }]
         },

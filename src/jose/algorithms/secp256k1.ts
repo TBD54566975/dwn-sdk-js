@@ -27,10 +27,7 @@ export type JwkSecp256k1Private = JwkSecp256k1Public & {
  * generates a random keypair
  * @returns the public and private keys as JWKs
  */
-export async function generateKeyPair(): Promise<{
-  publicKeyJwk: JwkSecp256k1Public,
-  privateKeyJwk: JwkSecp256k1Private
-}> {
+export async function generateKeyPair(): Promise<{publicKeyJwk: JwkSecp256k1Public, privateKeyJwk: JwkSecp256k1Private}> {
   const privateKeyBytes = secp256k1.utils.randomPrivateKey();
   // the public key is uncompressed which means that it contains both the x and y values.
   // the first byte is a header that indicates whether the key is uncompressed (0x04 if uncompressed).
@@ -51,28 +48,31 @@ export async function generateKeyPair(): Promise<{
 
 /**
  * hashes (using sha256) and then signs the provided payload using the provided JWK
- * @param payload - the content to sign
+ * @param content - the content to sign
  * @param privateKeyJwk - the key to sign with
- * @returns the signed payload (aka signature)
+ * @returns the signed content (aka signature)
  */
-export async function sign(payload: Uint8Array, privateKeyJwk: JwkSecp256k1Private): Promise<Uint8Array> {
-  // the underlying lib expects us to hash the payload ourselves:
+export async function sign(content: Uint8Array, privateKeyJwk: JwkSecp256k1Private): Promise<Uint8Array> {
+  // the underlying lib expects us to hash the content ourselves:
   // https://github.com/paulmillr/noble-secp256k1/blob/97aa518b9c12563544ea87eba471b32ecf179916/index.ts#L1160
-  const hashedPayload = await sha256.encode(payload);
+  const hashedContent = await sha256.encode(content);
   const privateKeyBytes = base64url.baseDecode(privateKeyJwk.d);
 
-  return await secp256k1.sign(hashedPayload, privateKeyBytes);
+  return await secp256k1.sign(hashedContent, privateKeyBytes);
 }
 
 /**
  * Verifies a signature against the provided payload hash and public key.
- * @param payload - the content to verify with
+ * @param content - the content to verify with
  * @param signature - the signature to verify against
  * @param publicKeyJwk - the key to verify with
  * @returns a boolean indicating whether the signature matches
  */
-export async function verify(payload: Uint8Array, signature: Uint8Array, publicKeyJwk: JwkSecp256k1Public): Promise<boolean> {
-  const publicKey = secp256k1.Point.fromHex(publicKeyJwk.x);
+export async function verify(content: Uint8Array, signature: Uint8Array, publicKeyJwk: JwkSecp256k1Public): Promise<boolean> {
+  const compressedPublicKey = base64url.baseDecode(publicKeyJwk.x);
+  const publicKey = secp256k1.Point.fromHex(compressedPublicKey);
 
-  return secp256k1.verify(signature, payload, publicKey);
+  const hashedContent = await sha256.encode(content);
+
+  return secp256k1.verify(signature, hashedContent, publicKey);
 }

@@ -5,12 +5,12 @@ import { base64url } from 'multiformats/bases/base64';
 
 import type { JwkPrivate, JwkPublic } from './jwk';
 
-const VERIFIERS = {
+const verifiers = {
   'Ed25519'   : ed25519.verify,
   'secp256k1' : secp256k1.verify
 };
 
-const SIGNERS = {
+const signers = {
   'Ed25519'   : ed25519.sign,
   'secp256k1' : secp256k1.sign
 };
@@ -35,10 +35,10 @@ export async function sign (
   jwkPrivate: JwkPrivate
 ): Promise<JwsFlattened> {
   const signFn:
-    (payload: Uint8Array, privateKeyJwk: JwkPrivate) => Promise<Uint8Array> = SIGNERS[jwkPrivate.crv];
+    (payload: Uint8Array, privateKeyJwk: JwkPrivate) => Promise<Uint8Array> = signers[jwkPrivate.crv];
 
   if (!signFn) {
-    throw new Error(`unsupported crv. crv must be one of ${Object.keys(SIGNERS)}`);
+    throw new Error(`unsupported crv. crv must be one of ${Object.keys(signers)}`);
   }
 
   const protectedHeaderString = JSON.stringify(protectedHeader);
@@ -66,10 +66,10 @@ export async function sign (
  */
 export async function verify(jwsFlattened: JwsFlattened, jwkPublic: JwkPublic): Promise<boolean> {
   const verifyFn:
-    (payload: Uint8Array, signature: Uint8Array, publicKeyJwk: JwkPublic) => Promise<boolean> = VERIFIERS[jwkPublic.crv];
+    (payload: Uint8Array, signature: Uint8Array, publicKeyJwk: JwkPublic) => Promise<boolean> = verifiers[jwkPublic.crv];
 
   if (!verifyFn) {
-    throw new Error(`unsupported crv. crv must be one of ${Object.keys(VERIFIERS)}`);
+    throw new Error(`unsupported crv. crv must be one of ${Object.keys(verifiers)}`);
   }
 
   const payload = new TextEncoder().encode(`${jwsFlattened.protected}.${jwsFlattened.payload}`);

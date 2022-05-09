@@ -40,28 +40,28 @@ export async function generateKeyPair (): Promise<{
 
 /**
  * signs the provided payload using the provided JWK
- * @param payload - the content to sign
+ * @param content - the content to sign
  * @param privateKeyJwk - the key to sign with
- * @returns the signed payload (aka signature)
+ * @returns the signed content (aka signature)
  */
 export async function sign (
-  payload: Uint8Array,
+  content: Uint8Array,
   privateKeyJwk: JwkEd25519Private
 ): Promise<Uint8Array> {
   const privateKeyBytes = base64url.baseDecode(privateKeyJwk.d);
 
-  return await ed25519.sign(payload, privateKeyBytes);
+  return await ed25519.sign(content, privateKeyBytes);
 }
 
 /**
  * Verifies a signature against the provided payload hash and public key.
- * @param payload - the content to verify with
+ * @param content - the content to verify with
  * @param signature - the signature to verify against
  * @param publicKeyJwk - the key to verify with
  * @returns a boolean indicating whether the signature matches
  */
-export async function verify (payload: Uint8Array, signature: Uint8Array, publicKeyJwk: JwkEd25519Public): Promise<boolean> {
+export async function verify (content: Uint8Array, signature: Uint8Array, publicKeyJwk: JwkEd25519Public): Promise<boolean> {
   const publicKeyBytes = base64url.baseDecode(publicKeyJwk.x);
 
-  return await ed25519.verify(signature, payload, publicKeyBytes);
+  return await ed25519.verify(signature, content, publicKeyBytes);
 }
