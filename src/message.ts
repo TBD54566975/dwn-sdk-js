@@ -1,5 +1,5 @@
 /**
- * this file contains functions and types related to messages
+ * this file contains functions and types related to DWN messages
  */
 import type { PermissionsMethod, PermissionsRequestMessage } from './interfaces/permissions';
 
@@ -10,7 +10,7 @@ import permissionsSchemas from './interfaces/permissions/schemas';
 
 import { base64url } from 'multiformats/bases/base64';
 import { CID } from 'multiformats/cid';
-import { DIDResolver } from './did/did-resolver';
+import { DIDResolver, VerificationMethod } from './did/did-resolver';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 
@@ -70,7 +70,7 @@ export async function verifyMessageSignature(message: Message, didResolver: DIDR
 
   // check to ensure that attestation payload is a valid CID
   try {
-    // `baseDecode` throws SyntaxError: Unexpected end of data if paylod is not base64
+    // `baseDecode` throws SyntaxError: Unexpected end of data if payload is not base64
     const payloadBytes = base64url.baseDecode(attestation.payload);
 
     // `decode` throws `Error` if the bytes provided do not contain a valid binary representation
@@ -107,7 +107,7 @@ export async function verifyMessageSignature(message: Message, didResolver: DIDR
 
   // `baseDecode` throws SyntaxError: Unexpected end of data if paylod is not base64
   const protectedBytes = base64url.baseDecode(attestation.protected);
-  const protectedJson = Buffer.from(protectedBytes).toString();
+  const protectedJson = new TextDecoder().decode(protectedBytes);
 
   const { alg, kid } = JSON.parse(protectedJson);
   const [ did ] = kid.split('#');
@@ -119,32 +119,39 @@ export async function verifyMessageSignature(message: Message, didResolver: DIDR
 
   // use a set to do O(1) "lookups" for the correct id
   const verificationMethodIds = new Set();
-  let publicKey;
+  let verificationMethod: VerificationMethod;
 
-  for (let verificationMethod of verificationMethods) {
-    verificationMethodIds.add(verificationMethod.id);
+  for (const vm of verificationMethods) {
+    verificationMethodIds.add(vm.id);
 
-    // TODO: figure out if we need to support ALL verification method properties
-    //       listed here: https://www.w3.org/TR/did-spec-registries/#verification-method-properties
-
-    // TODO: figure out if we need to support ALL verification method types
-    //       listed here: https://www.w3.org/TR/did-spec-registries/#verification-method-types
-
-    // TODO: figure out if we need to check to ensure that `controller` === did in kid
-    //       are the same. This may matter more for a `PermissionsRequest`
-
-    // going to naively yank `publicKeyJwk` for now until above TODOS are resolved. thxbai
     if (verificationMethodIds.has(kid)) {
-      publicKey = verificationMethod.publicKeyJwk;
+      verificationMethod = vm;
       break;
     }
   }
 
-  if (!publicKey) {
-    throw new Error('failed to find respective public key to verify signature');
+  if (!verificationMethod) {
+    throw new Error('public key needed to verify signature not found in DID Document');
   }
 
-  const result = await jws.verify(attestation, publicKey);
+  // more info about the `JsonWebKey2020` type can be found here:
+  // https://www.w3.org/TR/did-spec-registries/#jsonwebkey2020
+  if (verificationMethod.type !== 'JsonWebKey2020') {
+    throw new Error(`verification method [${kid}] must be JsonWebKey2020`);
+  }
+
+  const { publicKeyJwk } = verificationMethod;
+
+  // more info about the `publicKeyJwk` property can be found here:
+  // https://www.w3.org/TR/did-spec-registries/#publickeyjwk
+  if (!publicKeyJwk) {
+    throw new Error(`publicKeyJwk property not found on verification method [${kid}]`);
+  }
+
+  // TODO: figure out if we need to check to ensure that `controller` === did in kid
+  //       are the same. This may matter more for a `PermissionsRequest`
+
+  const result = await jws.verify(attestation, publicKeyJwk);
 
   if (!result) {
     throw new Error('signature verification failed');

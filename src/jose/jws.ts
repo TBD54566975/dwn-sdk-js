@@ -1,8 +1,19 @@
 import * as ed25519 from './algorithms/ed25519';
-import * as jwk from './jwk';
 import * as secp256k1 from './algorithms/secp256k1';
-import base64url from 'base64url';
+
+import { base64url } from 'multiformats/bases/base64';
+
 import type { JwkPrivate, JwkPublic } from './jwk';
+
+const VERIFIERS = {
+  'Ed25519'   : ed25519.verify,
+  'secp256k1' : secp256k1.verify
+};
+
+const SIGNERS = {
+  'Ed25519'   : ed25519.sign,
+  'secp256k1' : secp256k1.sign
+};
 
 /**
  * A JWS in flattened JWS JSON format.
@@ -16,31 +27,30 @@ export type JwsFlattened = {
 /**
  * Signs the given payload as a JWS.
  * NOTE: this is mainly used by tests to create valid test data.
- * @throws {Error} if key given is unsupported.
+ * @throws {Error} if the provided key is unsupported.
  */
 export async function sign (
   protectedHeader: object,
-  payload: Buffer,
-  jwkPrivate: any
+  payload: Uint8Array,
+  jwkPrivate: JwkPrivate
 ): Promise<JwsFlattened> {
-  jwk.validateJwkPrivate(jwkPrivate);
+  const signFn:
+    (payload: Uint8Array, privateKeyJwk: JwkPrivate) => Promise<Uint8Array> = SIGNERS[jwkPrivate.crv];
 
-  const protectedHeaderString = JSON.stringify(protectedHeader);
-  const protectedHeaderBase64UrlString = base64url.encode(protectedHeaderString);
-  const payloadBase64UrlString = base64url.encode(payload);
-  const signingInputBase64urlString = protectedHeaderBase64UrlString + '.' + payloadBase64UrlString;
-  const signingInputBuffer = Buffer.from(signingInputBase64urlString);
-
-  // This is where we will add support for different algorithms over time.
-  let dsaSign: (signingInputBuffer: Buffer, privateKeyJwk: JwkPrivate) => Promise<Buffer>;
-  if (jwkPrivate.crv === 'Ed25519') {
-    dsaSign = ed25519.sign;
-  } else if (jwkPrivate.crv === 'secp256k1') {
-    dsaSign = secp256k1.sign;
+  if (!signFn) {
+    throw new Error(`unsupported crv. crv must be one of ${Object.keys(SIGNERS)}`);
   }
 
-  const signatureBuffer = await dsaSign(signingInputBuffer, jwkPrivate);
-  const signatureBase64UrlString = base64url.encode(signatureBuffer);
+  const protectedHeaderString = JSON.stringify(protectedHeader);
+  const protectedHeaderBytes = new TextEncoder().encode(protectedHeaderString);
+  const protectedHeaderBase64UrlString = base64url.baseEncode(protectedHeaderBytes);
+
+  const payloadBase64UrlString = base64url.baseEncode(payload);
+  const signingInputBase64urlString = `${protectedHeaderBase64UrlString}.${payloadBase64UrlString}`;
+  const signingInputBytes = new TextEncoder().encode(signingInputBase64urlString);
+
+  const signatureBytes = await signFn(signingInputBytes, jwkPrivate);
+  const signatureBase64UrlString = base64url.baseEncode(signatureBytes);
 
   return {
     payload   : payloadBase64UrlString,
@@ -54,24 +64,16 @@ export async function sign (
  * @returns `true` if signature is successfully verified, false otherwise.
  * @throws {Error} if key given is unsupported.
  */
-export async function verify (
-  jwsFlattened: JwsFlattened,
-  jwkPublic: any
-): Promise<boolean> {
-  jwk.validateJwkPublic(jwkPublic);
+export async function verify(jwsFlattened: JwsFlattened, jwkPublic: JwkPublic): Promise<boolean> {
+  const verifyFn:
+    (payload: Uint8Array, signature: Uint8Array, publicKeyJwk: JwkPublic) => Promise<boolean> = VERIFIERS[jwkPublic.crv];
 
-  const signatureInput = jwsFlattened.protected + '.' + jwsFlattened.payload;
-  const signatureInputBuffer = Buffer.from(signatureInput);
-  const signatureBuffer = base64url.toBuffer(jwsFlattened.signature);
-
-  // This is where we will add support for different algorithms over time.
-  let dsaVerify: (signingInputBuffer: Buffer, signatureBuffer: Buffer, jwkPublic: JwkPublic) => Promise<boolean>;
-  if (jwkPublic.crv === 'Ed25519') {
-    dsaVerify = ed25519.verify;
-  } else if (jwkPublic.crv === 'secp256k1') {
-    dsaVerify = secp256k1.verify;
+  if (!verifyFn) {
+    throw new Error(`unsupported crv. crv must be one of ${Object.keys(VERIFIERS)}`);
   }
 
-  const result = await dsaVerify(signatureInputBuffer, signatureBuffer, jwkPublic);
-  return result;
+  const payload = new TextEncoder().encode(`${jwsFlattened.protected}.${jwsFlattened.payload}`);
+  const signatureBytes = base64url.baseDecode(jwsFlattened.signature);
+
+  return await verifyFn(payload, signatureBytes, jwkPublic);
 }

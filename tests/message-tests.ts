@@ -9,12 +9,12 @@ import * as jws from '../src/jose/jws';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 
+import { base64url } from 'multiformats/bases/base64';
 import { CID } from 'multiformats/cid';
+import { Message, validateMessage, verifyMessageSignature } from '../src/message';
 import { sha256, sha512 } from 'multiformats/hashes/sha2';
 
-import { Message, validateMessage, verifyMessageSignature } from '../src/message';
 import { DIDResolutionResult, DIDResolver } from '../src/did/did-resolver';
-import base64url from 'base64url';
 
 import type { SinonStub } from 'sinon';
 
@@ -69,8 +69,7 @@ describe('Message Tests', () => {
       const cid = await CID.createV1(cbor.code, cborHash);
 
       // create JWS payload with bogus CID in it
-      const cidBytes = Buffer.from(cid.bytes);
-      const cidString = base64url.encode(cidBytes);
+      const cidString = base64url.baseEncode(cid.bytes);
 
       const msg = {
         'descriptor': {
@@ -118,8 +117,7 @@ describe('Message Tests', () => {
       const jsonBytes = json.encode(msg.descriptor);
       const jsonHash = await sha256.digest(jsonBytes);
       const cid = await CID.createV1(json.code, jsonHash);
-      const cidBytes = Buffer.from(cid.bytes);
-      const cidString = base64url.encode(cidBytes);
+      const cidString = base64url.baseEncode(cid.bytes);
 
       msg.attestation.payload = cidString;
 
@@ -152,8 +150,7 @@ describe('Message Tests', () => {
       const cborBytes = cbor.encode(msg.descriptor);
       const cborHash = await sha512.digest(cborBytes);
       const cid = await CID.createV1(cbor.code, cborHash);
-      const cidBytes = Buffer.from(cid.bytes);
-      const cidString = base64url.encode(cidBytes);
+      const cidString = base64url.baseEncode(cid.bytes);
 
       msg.attestation.payload = cidString;
 
@@ -186,14 +183,14 @@ describe('Message Tests', () => {
       const cborBytes = cbor.encode(msg.descriptor);
       const cborHash = await sha256.digest(cborBytes);
       const cid = await CID.createV1(cbor.code, cborHash);
-      const cidBytes = Buffer.from(cid.bytes);
-      const cidString = base64url.encode(cidBytes);
+      const cidString = base64url.baseEncode(cid.bytes);
 
       msg.attestation.payload = cidString;
 
       // base64url encode value of `attestation.protected
       const jwsProtected = JSON.stringify({ 'kid': 'did:jank:alice#kid1' });
-      msg.attestation.protected = base64url.encode(jwsProtected);
+      const jwsProtectedBytes = new TextEncoder().encode(jwsProtected);
+      msg.attestation.protected = base64url.baseEncode(jwsProtectedBytes);
 
       const expectedError = new Error('did:jank:alice is not a valid DID');
 
@@ -232,14 +229,14 @@ describe('Message Tests', () => {
       const cborBytes = cbor.encode(msg.descriptor);
       const cborHash = await sha256.digest(cborBytes);
       const cid = await CID.createV1(cbor.code, cborHash);
-      const cidBytes = Buffer.from(cid.bytes);
-      const cidString = base64url.encode(cidBytes);
+      const cidString = base64url.baseEncode(cid.bytes);
 
       msg.attestation.payload = cidString;
 
       // base64url encode value of `attestation.protected
       const jwsProtected = JSON.stringify({ 'kid': 'did:jank:alice#kid1' });
-      msg.attestation.protected = base64url.encode(jwsProtected);
+      const jwsProtectedBytes = new TextEncoder().encode(jwsProtected);
+      msg.attestation.protected = base64url.encode(jwsProtectedBytes);
 
       const mockResolutionResult = {
         didResolutionMetadata : {},
