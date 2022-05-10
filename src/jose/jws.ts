@@ -29,11 +29,7 @@ export type JwsFlattened = {
  * NOTE: this is mainly used by tests to create valid test data.
  * @throws {Error} if the provided key is unsupported.
  */
-export async function sign (
-  protectedHeader: object,
-  payload: Uint8Array,
-  jwkPrivate: JwkPrivate
-): Promise<JwsFlattened> {
+export async function sign (protectedHeader: object, payload: Uint8Array, jwkPrivate: JwkPrivate): Promise<JwsFlattened> {
   const signFn:
     (payload: Uint8Array, privateKeyJwk: JwkPrivate) => Promise<Uint8Array> = signers[jwkPrivate.crv];
 

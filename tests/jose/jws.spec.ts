@@ -8,13 +8,10 @@ import jwkSecp256k1Private from './vectors/jwk-secp256k1-private.json';
 chai.use(chaiAsPromised);
 
 describe('Jws', () => {
-  it.only('should sign and verify secp256k1 signature using a key vector correctly',  async () => {
-    // const publicKeyJwk: any = { ...jwkSecp256k1Private };
+  it('should sign and verify secp256k1 signature using a key vector correctly',  async () => {
     const { publicKeyJwk, privateKeyJwk } = await generateSecp256k1Jwk();
-    // console.log(publicKeyJwk);
-    // console.log(privateKeyJwk);
 
-    const protectedHeader = { anyHeader: 'anyHeaderValue' };
+    const protectedHeader = { alg: 'ES256K', anyHeader: 'anyHeaderValue' };
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
     const jwsObject = await jws.sign(protectedHeader, payloadBytes, privateKeyJwk);
 

@@ -69,10 +69,13 @@ export async function sign(content: Uint8Array, privateKeyJwk: JwkSecp256k1Priva
  * @returns a boolean indicating whether the signature matches
  */
 export async function verify(content: Uint8Array, signature: Uint8Array, publicKeyJwk: JwkSecp256k1Public): Promise<boolean> {
-  const compressedPublicKey = base64url.baseDecode(publicKeyJwk.x);
-  const publicKey = secp256k1.Point.fromHex(compressedPublicKey);
+  const xBytes = base64url.baseDecode(publicKeyJwk.x);
+  const yBytes = base64url.baseDecode(publicKeyJwk.y);
+
+  const leadingByte = Buffer.from([0x04]);
+  const publicKeyBytes = Buffer.concat([leadingByte, xBytes, yBytes]);
 
   const hashedContent = await sha256.encode(content);
 
-  return secp256k1.verify(signature, hashedContent, publicKey);
+  return secp256k1.verify(signature, hashedContent, publicKeyBytes);
 }
