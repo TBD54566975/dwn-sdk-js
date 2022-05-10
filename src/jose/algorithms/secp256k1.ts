@@ -72,8 +72,14 @@ export async function verify(content: Uint8Array, signature: Uint8Array, publicK
   const xBytes = base64url.baseDecode(publicKeyJwk.x);
   const yBytes = base64url.baseDecode(publicKeyJwk.y);
 
-  const leadingByte = Buffer.from([0x04]);
-  const publicKeyBytes = Buffer.concat([leadingByte, xBytes, yBytes]);
+  const publicKeyBytes = new Uint8Array(xBytes.length + yBytes.length + 1);
+
+  // create an uncompressed public key using the x and y values from the provided JWK.
+  // a leading byte of 0x04 indicates that the public key is uncompressed
+  // (e.g. x and y values are both present)
+  publicKeyBytes.set([0x04], 0);
+  publicKeyBytes.set(xBytes, 1);
+  publicKeyBytes.set(yBytes, xBytes.length + 1);
 
   const hashedContent = await sha256.encode(content);
 
