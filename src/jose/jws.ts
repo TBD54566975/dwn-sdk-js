@@ -4,7 +4,9 @@ import * as secp256k1 from './algorithms/secp256k1';
 import { base64url } from 'multiformats/bases/base64';
 
 import type { JwkPrivate, JwkPublic } from './jwk';
-import type { Signer, Verifier } from './algorithms/types';
+
+export type Signer = (payload: Uint8Array, privateKeyJwk: JwkPrivate) => Promise<Uint8Array>;
+export type Verifier = (payload: Uint8Array, signature: Uint8Array, publicKeyJwk: JwkPublic) => Promise<boolean>;
 
 const verifiers: { [key:string]: Verifier } = {
   'Ed25519'   : ed25519.verify,
