@@ -134,6 +134,7 @@ export async function verifyMessageSignature(message: Message, didResolver: DIDR
     throw new Error('public key needed to verify signature not found in DID Document');
   }
 
+  // TODO: replace with JSON Schema based validation
   // more info about the `JsonWebKey2020` type can be found here:
   // https://www.w3.org/TR/did-spec-registries/#jsonwebkey2020
   if (verificationMethod.type !== 'JsonWebKey2020') {
@@ -142,6 +143,7 @@ export async function verifyMessageSignature(message: Message, didResolver: DIDR
 
   const { publicKeyJwk } = verificationMethod;
 
+  // TODO: replace with JSON Schema based validation
   // more info about the `publicKeyJwk` property can be found here:
   // https://www.w3.org/TR/did-spec-registries/#publickeyjwk
   if (!publicKeyJwk) {
