@@ -1,26 +1,5 @@
 import * as ed25519 from '@noble/ed25519';
-import base64url from 'base64url';
-
-export const jwkPublicJsonSchema = {
-  type       : 'object',
-  properties : {
-    kty : { const: 'OKP' },
-    crv : { const: 'Ed25519' },
-    x   : { type: 'string' }
-  },
-  required             : ['kty', 'crv', 'x'],
-  additionalProperties : false,
-};
-
-export const jwkPrivateJsonSchema = {
-  type       : 'object',
-  properties : {
-    ...jwkPublicJsonSchema.properties,
-    d: { type: 'string' },
-  },
-  required             : ['kty', 'crv', 'x', 'd'],
-  additionalProperties : false,
-};
+import { base64url } from 'multiformats/bases/base64';
 
 /**
  * An Ed25519 public key in JWK format.
@@ -35,7 +14,7 @@ export type JwkEd25519Public = {
  * An Ed25519 private key in JWK format.
  */
 export type JwkEd25519Private = JwkEd25519Public & {
-  d: string; // Only used by a private key.
+  d: string; // Only used by a private key
 };
 
 
@@ -47,50 +26,42 @@ export async function generateKeyPair (): Promise<{
   publicKeyJwk: JwkEd25519Public,
   privateKeyJwk: JwkEd25519Private
 }> {
-  const privateKeyUint8Array = ed25519.utils.randomPrivateKey();
-  const publicKeyUint8Array = await ed25519.getPublicKey(privateKeyUint8Array);
-  const privateKeyBuffer = Buffer.from(privateKeyUint8Array);
-  const publicKeyBuffer = Buffer.from(publicKeyUint8Array);
+  const privateKeyBytes = ed25519.utils.randomPrivateKey();
+  const publicKeyBytes = await ed25519.getPublicKey(privateKeyBytes);
 
-  const d = base64url.encode(privateKeyBuffer);
-  const x = base64url.encode(publicKeyBuffer);
+  const d = base64url.baseEncode(privateKeyBytes);
+  const x = base64url.baseEncode(publicKeyBytes);
 
-  const publicKeyJwk: JwkEd25519Public = {
-    kty : 'OKP',
-    crv : 'Ed25519',
-    x
-  };
-
-  const privateKeyJwk: Required<JwkEd25519Private> = {
-    ...publicKeyJwk,
-    d
-  };
+  const publicKeyJwk: JwkEd25519Public = { kty: 'OKP', crv: 'Ed25519', x };
+  const privateKeyJwk: Required<JwkEd25519Private> = { ...publicKeyJwk, d };
 
   return { publicKeyJwk, privateKeyJwk };
 }
 
 /**
- * Implementation of signing using ED25519.
+ * signs the provided payload using the provided JWK
+ * @param content - the content to sign
+ * @param privateKeyJwk - the key to sign with
+ * @returns the signed content (aka signature)
  */
 export async function sign (
-  signingInputBuffer: Buffer,
+  content: Uint8Array,
   privateKeyJwk: JwkEd25519Private
-): Promise<Buffer> {
-  const privateKeyBuffer = base64url.toBuffer(privateKeyJwk.d);
-  const signatureUint8Array = await ed25519.sign(signingInputBuffer, privateKeyBuffer);
-  const signatureBuffer = Buffer.from(signatureUint8Array);
-  return signatureBuffer;
+): Promise<Uint8Array> {
+  const privateKeyBytes = base64url.baseDecode(privateKeyJwk.d);
+
+  return await ed25519.sign(content, privateKeyBytes);
 }
 
 /**
- * Implementation of signature verification using ED25519.
+ * Verifies a signature against the provided payload hash and public key.
+ * @param content - the content to verify with
+ * @param signature - the signature to verify against
+ * @param publicKeyJwk - the key to verify with
+ * @returns a boolean indicating whether the signature matches
  */
-export async function verify (
-  signatureInputBuffer: Buffer,
-  signatureBuffer: Buffer,
-  publicKeyJwk: JwkEd25519Public
-): Promise<boolean> {
-  const publicKeyBuffer = base64url.toBuffer(publicKeyJwk.x);
-  const result = await ed25519.verify(signatureBuffer, signatureInputBuffer, publicKeyBuffer);
-  return result;
+export async function verify (content: Uint8Array, signature: Uint8Array, publicKeyJwk: JwkEd25519Public): Promise<boolean> {
+  const publicKeyBytes = base64url.baseDecode(publicKeyJwk.x);
+
+  return await ed25519.verify(signature, content, publicKeyBytes);
 }
