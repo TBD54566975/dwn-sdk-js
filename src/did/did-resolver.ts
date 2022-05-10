@@ -1,3 +1,5 @@
+import type { JwkPublic } from '../jose/jwk';
+
 /**
  * TODO: add docs
  */
@@ -70,8 +72,6 @@ export interface DIDMethodResolver {
   resolve(DID: string): Promise<DIDResolutionResult>;
 }
 
-import type { JWK } from 'jose';
-
 export type DIDDocument = {
   '@context'?: 'https://www.w3.org/ns/did/v1' | string | string[]
   id: string
@@ -84,14 +84,14 @@ export type DIDDocument = {
   keyAgreement?: VerificationMethod[]
   capabilityInvocation?: VerificationMethod[]
   capabilityDelegation?: VerificationMethod[]
-}
+};
 
 export type ServiceEndpoint = {
   id: string
   type: string
   serviceEndpoint: string
   description?: string
-}
+};
 
 // TODO: figure out if we need to support ALL verification method properties
 //       listed here: https://www.w3.org/TR/did-spec-registries/#verification-method-properties
@@ -103,24 +103,24 @@ export type VerificationMethod = {
   // DID of the key's controller
   controller: string
   // a JSON Web Key that conforms to https://datatracker.ietf.org/doc/html/rfc7517
-  publicKeyJwk?: JWK
+  publicKeyJwk?: JwkPublic
   // a string representation of
   // https://datatracker.ietf.org/doc/html/draft-multiformats-multibase-05
   publicKeyMultibase?: string
-}
+};
 
 export type DIDResolutionResult = {
   '@context'?: 'https://w3id.org/did-resolution/v1' | string | string[]
   didResolutionMetadata: DIDResolutionMetadata
   didDocument: DIDDocument | null
   didDocumentMetadata: DIDDocumentMetadata
-}
+};
 
 export type DIDResolutionMetadata = {
   contentType?: string
   error?: 'invalidDid' | 'notFound' | 'representationNotSupported' |
   'unsupportedDidMethod' | string
-}
+};
 
 export type DIDDocumentMetadata = {
   // indicates the timestamp of the Create operation. ISO8601 timestamp
@@ -143,4 +143,4 @@ export type DIDDocumentMetadata = {
   equivalentId?: string
   // @see https://www.w3.org/TR/did-core/#dfn-canonicalid
   canonicalId?: string
-}
+};

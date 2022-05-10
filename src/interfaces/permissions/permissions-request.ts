@@ -1,8 +1,7 @@
 import { DIDResolver } from '../../did/did-resolver';
-
 import type { Ability, Conditions } from './permission';
-import type { FlattenedJWS } from 'jose';
 import type { PermissionsMethod } from './types';
+import type { JwsFlattened }from '../../jose/jws';
 
 /**
  * TODO: add documentation
@@ -21,7 +20,7 @@ export async function PermissionsRequest(
 
 export type PermissionsRequestMessage = {
   descriptor: PermissionsRequestDescriptor,
-  attestation: FlattenedJWS
+  attestation: JwsFlattened
 };
 
 export type PermissionsRequestDescriptor = {

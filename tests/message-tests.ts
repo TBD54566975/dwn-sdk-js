@@ -2,18 +2,19 @@ import chai, { expect } from 'chai';
 import { describe, it, xit } from 'mocha';
 
 import * as cbor from '@ipld/dag-cbor';
-import * as jose from 'jose';
+import * as ed25519 from '../src/jose/algorithms/ed25519';
 import * as json from 'multiformats/codecs/json';
+import * as jws from '../src/jose/jws';
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 
+import { base64url } from 'multiformats/bases/base64';
 import { CID } from 'multiformats/cid';
+import { Message, validateMessage, verifyMessageSignature } from '../src/message';
 import { sha256, sha512 } from 'multiformats/hashes/sha2';
 
-import { Message, validateMessage, verifyMessageSignature } from '../src/message';
 import { DIDResolutionResult, DIDResolver } from '../src/did/did-resolver';
-import { base64url } from 'jose';
 
 import type { SinonStub } from 'sinon';
 
@@ -22,8 +23,8 @@ chai.use(chaiAsPromised);
 
 describe('Message Tests', () => {
   describe('validateMessage', () => {
-    xit('throws exception if interface method isnt supported', () => {});
-    xit('throws exception if message is invalid relative to interface method', () => {});
+    xit('throws exception if interface method isnt supported', () => { });
+    xit('throws exception if message is invalid relative to interface method', () => { });
   });
 
   describe('verifyMessageSignature', () => {
@@ -37,7 +38,7 @@ describe('Message Tests', () => {
     // necessitate the presence of `attestation`
     xit('throws an exception if attestation property is missing');
 
-    it('throws an exception if attestation payload is not a valid CID',  async () => {
+    it('throws an exception if attestation payload is not a valid CID', async () => {
       const msg = {
         'descriptor': {
           'ability': {
@@ -61,14 +62,14 @@ describe('Message Tests', () => {
         .to.eventually.be.rejectedWith('payload is not a valid CID');
     });
 
-    it('throws an exception if CID of descriptor !== attestation payload',  async () => {
+    it('throws an exception if CID of descriptor !== attestation payload', async () => {
       // create a bogus CID
-      const cborBytes = cbor.encode({farts: 'smell'});
+      const cborBytes = cbor.encode({ farts: 'smell' });
       const cborHash = await sha256.digest(cborBytes);
       const cid = await CID.createV1(cbor.code, cborHash);
 
       // create JWS payload with bogus CID in it
-      const jwsPayload = Buffer.from(cid.bytes).toString('base64url');
+      const cidString = base64url.baseEncode(cid.bytes);
 
       const msg = {
         'descriptor': {
@@ -82,7 +83,7 @@ describe('Message Tests', () => {
           'requester' : 'did:jank:alice'
         },
         'attestation': {
-          'payload'   : jwsPayload,
+          'payload'   : cidString,
           'protected' : 'farts',
           'signature' : 'farts'
         }
@@ -116,10 +117,9 @@ describe('Message Tests', () => {
       const jsonBytes = json.encode(msg.descriptor);
       const jsonHash = await sha256.digest(jsonBytes);
       const cid = await CID.createV1(json.code, jsonHash);
+      const cidString = base64url.baseEncode(cid.bytes);
 
-      const jwsPayload = Buffer.from(cid.bytes).toString('base64url');
-
-      msg.attestation.payload = jwsPayload;
+      msg.attestation.payload = cidString;
 
       const resolverStub = sinon.createStubInstance(DIDResolver);
       await expect(verifyMessageSignature(msg, resolverStub))
@@ -150,10 +150,9 @@ describe('Message Tests', () => {
       const cborBytes = cbor.encode(msg.descriptor);
       const cborHash = await sha512.digest(cborBytes);
       const cid = await CID.createV1(cbor.code, cborHash);
+      const cidString = base64url.baseEncode(cid.bytes);
 
-      const jwsPayload = Buffer.from(cid.bytes).toString('base64url');
-
-      msg.attestation.payload = jwsPayload;
+      msg.attestation.payload = cidString;
 
       const resolverStub = sinon.createStubInstance(DIDResolver);
       await expect(verifyMessageSignature(msg, resolverStub))
@@ -184,14 +183,14 @@ describe('Message Tests', () => {
       const cborBytes = cbor.encode(msg.descriptor);
       const cborHash = await sha256.digest(cborBytes);
       const cid = await CID.createV1(cbor.code, cborHash);
+      const cidString = base64url.baseEncode(cid.bytes);
 
-      const jwsPayload = Buffer.from(cid.bytes).toString('base64url');
-
-      msg.attestation.payload = jwsPayload;
+      msg.attestation.payload = cidString;
 
       // base64url encode value of `attestation.protected
       const jwsProtected = JSON.stringify({ 'kid': 'did:jank:alice#kid1' });
-      msg.attestation.protected = base64url.encode(jwsProtected);
+      const jwsProtectedBytes = new TextEncoder().encode(jwsProtected);
+      msg.attestation.protected = base64url.baseEncode(jwsProtectedBytes);
 
       const expectedError = new Error('did:jank:alice is not a valid DID');
 
@@ -230,14 +229,14 @@ describe('Message Tests', () => {
       const cborBytes = cbor.encode(msg.descriptor);
       const cborHash = await sha256.digest(cborBytes);
       const cid = await CID.createV1(cbor.code, cborHash);
+      const cidString = base64url.baseEncode(cid.bytes);
 
-      const jwsPayload = Buffer.from(cid.bytes).toString('base64url');
-
-      msg.attestation.payload = jwsPayload;
+      msg.attestation.payload = cidString;
 
       // base64url encode value of `attestation.protected
       const jwsProtected = JSON.stringify({ 'kid': 'did:jank:alice#kid1' });
-      msg.attestation.protected = base64url.encode(jwsProtected);
+      const jwsProtectedBytes = new TextEncoder().encode(jwsProtected);
+      msg.attestation.protected = base64url.baseEncode(jwsProtectedBytes);
 
       const mockResolutionResult = {
         didResolutionMetadata : {},
@@ -245,7 +244,7 @@ describe('Message Tests', () => {
         didDocumentMetadata   : {}
       };
 
-      const resolveStub : SinonStub<any, Promise<DIDResolutionResult>> =
+      const resolveStub: SinonStub<any, Promise<DIDResolutionResult>> =
         sinon.stub().withArgs('did:jank:alice').resolves(mockResolutionResult);
 
       const resolverStub = sinon.createStubInstance(DIDResolver, {
@@ -254,7 +253,121 @@ describe('Message Tests', () => {
 
       await expect(verifyMessageSignature(msg, resolverStub))
         .to.eventually.be
-        .rejectedWith('failed to find respective public key to verify signature');
+        .rejectedWith('public key needed to verify signature not found in DID Document');
+
+      expect(resolverStub.resolve.called).to.be.true;
+    });
+
+    it('throws an exception if verificationMethod type isn\'t JsonWebKey2020', async () => {
+      const msg = {
+        'descriptor': {
+          'ability': {
+            'description' : 'some description',
+            'method'      : 'CollectionsWrite',
+            'schema'      : 'https://schema.org/MusicPlaylist'
+          },
+          'method'    : 'PermissionsRequest' as const,
+          'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
+          'requester' : 'did:jank:alice'
+        },
+        'attestation': {
+          'payload'   : undefined, // this will be set below
+          'protected' : undefined, // this will be set below
+          'signature' : 'farts'
+        }
+      };
+
+      // create JWS payload using message.descriptor
+      const cborBytes = cbor.encode(msg.descriptor);
+      const cborHash = await sha256.digest(cborBytes);
+      const cid = await CID.createV1(cbor.code, cborHash);
+      const cidString = base64url.baseEncode(cid.bytes);
+
+      msg.attestation.payload = cidString;
+
+      // base64url encode value of `attestation.protected
+      const jwsProtected = JSON.stringify({ 'kid': 'did:jank:alice#kid1' });
+      const jwsProtectedBytes = new TextEncoder().encode(jwsProtected);
+      msg.attestation.protected = base64url.baseEncode(jwsProtectedBytes);
+
+      const mockResolutionResult = {
+        didResolutionMetadata : {},
+        didDocument           : {
+          verificationMethod: [{
+            id   : 'did:jank:alice#kid1',
+            type : 'EcdsaSecp256k1VerificationKey2019'
+          }]
+        },
+        didDocumentMetadata: {}
+      };
+
+      const resolveStub: SinonStub<any, Promise<DIDResolutionResult>> =
+        sinon.stub().withArgs('did:jank:alice').resolves(mockResolutionResult);
+
+      const resolverStub = sinon.createStubInstance(DIDResolver, {
+        resolve: resolveStub
+      });
+
+      await expect(verifyMessageSignature(msg, resolverStub))
+        .to.eventually.be
+        .rejectedWith('JsonWebKey2020');
+
+      expect(resolverStub.resolve.called).to.be.true;
+    });
+
+    it('throws an exception if publicKeyJwk isn\'t present in verificationMethod', async () => {
+      const msg = {
+        'descriptor': {
+          'ability': {
+            'description' : 'some description',
+            'method'      : 'CollectionsWrite',
+            'schema'      : 'https://schema.org/MusicPlaylist'
+          },
+          'method'    : 'PermissionsRequest' as const,
+          'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
+          'requester' : 'did:jank:alice'
+        },
+        'attestation': {
+          'payload'   : undefined, // this will be set below
+          'protected' : undefined, // this will be set below
+          'signature' : 'farts'
+        }
+      };
+
+      // create JWS payload using message.descriptor
+      const cborBytes = cbor.encode(msg.descriptor);
+      const cborHash = await sha256.digest(cborBytes);
+      const cid = await CID.createV1(cbor.code, cborHash);
+      const cidString = base64url.baseEncode(cid.bytes);
+
+      msg.attestation.payload = cidString;
+
+      // base64url encode value of `attestation.protected
+      const jwsProtected = JSON.stringify({ 'kid': 'did:jank:alice#kid1' });
+      const jwsProtectedBytes = new TextEncoder().encode(jwsProtected);
+      msg.attestation.protected = base64url.baseEncode(jwsProtectedBytes);
+
+      const mockResolutionResult = {
+        didResolutionMetadata : {},
+        didDocument           : {
+          verificationMethod: [{
+            id   : 'did:jank:alice#kid1',
+            type : 'JsonWebKey2020'
+          }]
+        },
+        didDocumentMetadata: {}
+      };
+
+      const resolveStub: SinonStub<any, Promise<DIDResolutionResult>> =
+        sinon.stub().withArgs('did:jank:alice').resolves(mockResolutionResult);
+
+      const resolverStub = sinon.createStubInstance(DIDResolver, {
+        resolve: resolveStub
+      });
+
+      await expect(verifyMessageSignature(msg, resolverStub))
+        .to.eventually.be
+        .rejectedWith('publicKeyJwk');
 
       expect(resolverStub.resolve.called).to.be.true;
     });
@@ -280,30 +393,28 @@ describe('Message Tests', () => {
       const cid = await CID.createV1(cbor.code, cborHash);
 
       // create signature
-      const signingKey = await jose.generateKeyPair('EdDSA');
+      const actualKeyPair = await ed25519.generateKeyPair();
+      const protectedHeader = { alg: 'EdDSA', 'kid': 'did:jank:alice#key1' };
+      const jwsObject = await jws.sign(protectedHeader, Buffer.from(cid.bytes), actualKeyPair.privateKeyJwk);
 
-      const jws = await new jose.FlattenedSign(cid.bytes)
-        .setProtectedHeader({ alg: 'EdDSA', 'kid': 'did:jank:alice#key1' })
-        .sign(signingKey.privateKey);
-
-      msg.attestation = jws;
+      msg.attestation = jwsObject;
 
       // add a different key with the same kid to DID Doc
-      const verificationMethodKey = await jose.generateKeyPair('EdDSA');
-      const jwk = await jose.exportJWK(verificationMethodKey.publicKey);
+      const wrongKeyPair = await ed25519.generateKeyPair();
 
       const mockResolutionResult = {
         didResolutionMetadata : {},
         didDocument           : {
           verificationMethod: [{
             id           : 'did:jank:alice#key1',
-            publicKeyJwk : jwk
+            type         : 'JsonWebKey2020',
+            publicKeyJwk : wrongKeyPair.publicKeyJwk
           }]
         },
         didDocumentMetadata: {}
       };
 
-      const resolveStub : SinonStub<any, Promise<DIDResolutionResult>> =
+      const resolveStub: SinonStub<any, Promise<DIDResolutionResult>> =
         sinon.stub().withArgs('did:jank:alice').resolves(mockResolutionResult);
 
       const resolverStub = sinon.createStubInstance(DIDResolver, {
@@ -337,28 +448,25 @@ describe('Message Tests', () => {
       const cid = await CID.createV1(cbor.code, cborHash);
 
       // create signature
-      const signingKey = await jose.generateKeyPair('EdDSA');
+      const { publicKeyJwk, privateKeyJwk } = await ed25519.generateKeyPair();
+      const protectedHeader = { alg: 'EdDSA', 'kid': 'did:jank:alice#key1' };
+      const jwsObject = await jws.sign(protectedHeader, Buffer.from(cid.bytes), privateKeyJwk);
 
-      const jws = await new jose.FlattenedSign(cid.bytes)
-        .setProtectedHeader({ alg: 'EdDSA', 'kid': 'did:jank:alice#key1' })
-        .sign(signingKey.privateKey);
-
-      msg.attestation = jws;
-
-      const jwk = await jose.exportJWK(signingKey.publicKey);
+      msg.attestation = jwsObject;
 
       const mockResolutionResult = {
         didResolutionMetadata : {},
         didDocument           : {
           verificationMethod: [{
-            id           : 'did:jank:alice#key1',
-            publicKeyJwk : jwk
+            id   : 'did:jank:alice#key1',
+            type : 'JsonWebKey2020',
+            publicKeyJwk
           }]
         },
         didDocumentMetadata: {}
       };
 
-      const resolveStub : SinonStub<any, Promise<DIDResolutionResult>> =
+      const resolveStub: SinonStub<any, Promise<DIDResolutionResult>> =
         sinon.stub().withArgs('did:jank:alice').resolves(mockResolutionResult);
 
       const resolverStub = sinon.createStubInstance(DIDResolver, {
