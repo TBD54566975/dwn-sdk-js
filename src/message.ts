@@ -117,14 +117,11 @@ export async function verifyMessageSignature(message: Message, didResolver: DIDR
   const { didDocument } = await didResolver.resolve(did);
   const { verificationMethod: verificationMethods = [] } = didDocument;
 
-  // use a set to do O(1) "lookups" for the correct id
-  const verificationMethodIds = new Set();
   let verificationMethod: VerificationMethod;
 
   for (const vm of verificationMethods) {
-    verificationMethodIds.add(vm.id);
-
-    if (verificationMethodIds.has(kid)) {
+    // consider optimizing using a set for O(1) lookups if needed
+    if (vm.id === kid) {
       verificationMethod = vm;
       break;
     }
