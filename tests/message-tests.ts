@@ -258,6 +258,120 @@ describe('Message Tests', () => {
       expect(resolverStub.resolve.called).to.be.true;
     });
 
+    it('throws an exception if verificationMethod type isn\'t JsonWebKey2020', async () => {
+      const msg = {
+        'descriptor': {
+          'ability': {
+            'description' : 'some description',
+            'method'      : 'CollectionsWrite',
+            'schema'      : 'https://schema.org/MusicPlaylist'
+          },
+          'method'    : 'PermissionsRequest' as const,
+          'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
+          'requester' : 'did:jank:alice'
+        },
+        'attestation': {
+          'payload'   : undefined, // this will be set below
+          'protected' : undefined, // this will be set below
+          'signature' : 'farts'
+        }
+      };
+
+      // create JWS payload using message.descriptor
+      const cborBytes = cbor.encode(msg.descriptor);
+      const cborHash = await sha256.digest(cborBytes);
+      const cid = await CID.createV1(cbor.code, cborHash);
+      const cidString = base64url.baseEncode(cid.bytes);
+
+      msg.attestation.payload = cidString;
+
+      // base64url encode value of `attestation.protected
+      const jwsProtected = JSON.stringify({ 'kid': 'did:jank:alice#kid1' });
+      const jwsProtectedBytes = new TextEncoder().encode(jwsProtected);
+      msg.attestation.protected = base64url.baseEncode(jwsProtectedBytes);
+
+      const mockResolutionResult = {
+        didResolutionMetadata : {},
+        didDocument           : {
+          verificationMethod: [{
+            id   : 'did:jank:alice#kid1',
+            type : 'EcdsaSecp256k1VerificationKey2019'
+          }]
+        },
+        didDocumentMetadata: {}
+      };
+
+      const resolveStub: SinonStub<any, Promise<DIDResolutionResult>> =
+        sinon.stub().withArgs('did:jank:alice').resolves(mockResolutionResult);
+
+      const resolverStub = sinon.createStubInstance(DIDResolver, {
+        resolve: resolveStub
+      });
+
+      await expect(verifyMessageSignature(msg, resolverStub))
+        .to.eventually.be
+        .rejectedWith('JsonWebKey2020');
+
+      expect(resolverStub.resolve.called).to.be.true;
+    });
+
+    it('throws an exception if publicKeyJwk isn\'t present in verificationMethod', async () => {
+      const msg = {
+        'descriptor': {
+          'ability': {
+            'description' : 'some description',
+            'method'      : 'CollectionsWrite',
+            'schema'      : 'https://schema.org/MusicPlaylist'
+          },
+          'method'    : 'PermissionsRequest' as const,
+          'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
+          'requester' : 'did:jank:alice'
+        },
+        'attestation': {
+          'payload'   : undefined, // this will be set below
+          'protected' : undefined, // this will be set below
+          'signature' : 'farts'
+        }
+      };
+
+      // create JWS payload using message.descriptor
+      const cborBytes = cbor.encode(msg.descriptor);
+      const cborHash = await sha256.digest(cborBytes);
+      const cid = await CID.createV1(cbor.code, cborHash);
+      const cidString = base64url.baseEncode(cid.bytes);
+
+      msg.attestation.payload = cidString;
+
+      // base64url encode value of `attestation.protected
+      const jwsProtected = JSON.stringify({ 'kid': 'did:jank:alice#kid1' });
+      const jwsProtectedBytes = new TextEncoder().encode(jwsProtected);
+      msg.attestation.protected = base64url.baseEncode(jwsProtectedBytes);
+
+      const mockResolutionResult = {
+        didResolutionMetadata : {},
+        didDocument           : {
+          verificationMethod: [{
+            id   : 'did:jank:alice#kid1',
+            type : 'JsonWebKey2020'
+          }]
+        },
+        didDocumentMetadata: {}
+      };
+
+      const resolveStub: SinonStub<any, Promise<DIDResolutionResult>> =
+        sinon.stub().withArgs('did:jank:alice').resolves(mockResolutionResult);
+
+      const resolverStub = sinon.createStubInstance(DIDResolver, {
+        resolve: resolveStub
+      });
+
+      await expect(verifyMessageSignature(msg, resolverStub))
+        .to.eventually.be
+        .rejectedWith('publicKeyJwk');
+
+      expect(resolverStub.resolve.called).to.be.true;
+    });
+
     it('throws an exception if signature does not match', async () => {
       const msg = {
         'descriptor': {
