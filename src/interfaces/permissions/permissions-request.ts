@@ -1,7 +1,7 @@
 import { DIDResolver } from '../../did/did-resolver';
-
 import type { Ability, Conditions } from './permission';
-import type { FlattenedJWS } from 'jose';
+
+import type { JwsFlattened } from '../../jose/jws';
 import type { MessageStore } from '../../store/message-store';
 import type { PermissionsMethod } from './types';
 
@@ -26,7 +26,7 @@ export async function PermissionsRequest(
 
 export type PermissionsRequestMessage = {
   descriptor: PermissionsRequestDescriptor,
-  attestation: FlattenedJWS
+  attestation: JwsFlattened;
 };
 
 export type PermissionsRequestDescriptor = {
@@ -34,5 +34,5 @@ export type PermissionsRequestDescriptor = {
   requester: string,
   ability: Ability,
   objectId?: string,
-  conditions?: Conditions
+  conditions?: Conditions;
 };

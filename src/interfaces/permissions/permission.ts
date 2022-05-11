@@ -78,7 +78,7 @@ type PermissionOpts = {
   expiration?: Date | string | number
   nonce?: string,
   notBefore?: Date | string | number
-}
+};
 
 /**
  * A capability (often referred to as “caveat” in previous OCAP art) is used

@@ -1,23 +1,23 @@
 /**
- * this file contains functions and types related to messages
+ * this file contains functions and types related to DWN messages
  */
-import type { PermissionsRequestMessage, PermissionsMethod } from './interfaces/permissions';
+import type { PermissionsMethod, PermissionsRequestMessage } from './interfaces/permissions';
 
-import Ajv from 'ajv';
 import * as cbor from '@ipld/dag-cbor';
+import * as jws from './jose/jws';
+import Ajv from 'ajv';
+import permissionsSchemas from './interfaces/permissions/schemas';
 
 import { base64url } from 'multiformats/bases/base64';
 import { CID } from 'multiformats/cid';
-import { flattenedVerify, importJWK } from 'jose';
+import { DIDResolver, VerificationMethod } from './did/did-resolver';
 import { sha256 } from 'multiformats/hashes/sha2';
 
-import permissionsSchemas from './interfaces/permissions/schemas';
-import { DIDResolver } from './did/did-resolver';
 
 // a map of all supported CID hashing algorithms. This map is used to select the appropriate hasher
 // when generating a CID to compare against a provided CID
-const HASHERS = {
-  [sha256.code]: sha256
+const hashers = {
+  [sha256.code]: sha256,
 };
 
 // `allErrors` checks all rules and collects all errors vs. short-circuiting
@@ -62,7 +62,7 @@ export function validateMessage(message: Message) {
  * @throws {Error} if provided CID was created using unsupporting hashing algo
  * @throws {Error} if resolving DID Doc failed
  * @throws {Error} if respective public key could not be found in DID Doc
- * @throws {TypeError} if signature verification failed with public key
+ * @throws {Error} if signature verification failed with public key
  */
 export async function verifyMessageSignature(message: Message, didResolver: DIDResolver) {
   const { descriptor, attestation } = message;
@@ -70,7 +70,7 @@ export async function verifyMessageSignature(message: Message, didResolver: DIDR
 
   // check to ensure that attestation payload is a valid CID
   try {
-    // `baseDecode` throws SyntaxError: Unexpected end of data if paylod is not base64
+    // `baseDecode` throws SyntaxError: Unexpected end of data if payload is not base64
     const payloadBytes = base64url.baseDecode(attestation.payload);
 
     // `decode` throws `Error` if the bytes provided do not contain a valid binary representation
@@ -86,7 +86,7 @@ export async function verifyMessageSignature(message: Message, didResolver: DIDR
 
   // create CID of descriptor to check against provided CID
   const cborBytes = cbor.encode(descriptor);
-  const hasher = HASHERS[providedCID.multihash.code];
+  const hasher = hashers[providedCID.multihash.code];
 
   if (!hasher) {
     throw new Error(`multihash code [${providedCID.multihash.code}] not supported`);
@@ -107,7 +107,7 @@ export async function verifyMessageSignature(message: Message, didResolver: DIDR
 
   // `baseDecode` throws SyntaxError: Unexpected end of data if paylod is not base64
   const protectedBytes = base64url.baseDecode(attestation.protected);
-  const protectedJson = Buffer.from(protectedBytes).toString();
+  const protectedJson = new TextDecoder().decode(protectedBytes);
 
   const { alg, kid } = JSON.parse(protectedJson);
   const [ did ] = kid.split('#');
@@ -117,41 +117,44 @@ export async function verifyMessageSignature(message: Message, didResolver: DIDR
   const { didDocument } = await didResolver.resolve(did);
   const { verificationMethod: verificationMethods = [] } = didDocument;
 
-  // use a set to do O(1) "lookups" for the correct id
-  const verificationMethodIds = new Set();
-  let publicKey;
+  let verificationMethod: VerificationMethod;
 
-  for (let verificationMethod of verificationMethods) {
-    verificationMethodIds.add(verificationMethod.id);
-
-    // TODO: figure out if we need to support ALL verification method properties
-    //       listed here: https://www.w3.org/TR/did-spec-registries/#verification-method-properties
-
-    // TODO: figure out if we need to support ALL verification method types
-    //       listed here: https://www.w3.org/TR/did-spec-registries/#verification-method-types
-
-    // TODO: figure out if we need to check to ensure that `controller` === did in kid
-    //       are the same. This may matter more for a `PermissionsRequest`
-
-    // going to naively yank `publicKeyJwk` for now until above TODOS are resolved. thxbai
-    if (verificationMethodIds.has(kid)) {
-      publicKey = verificationMethod.publicKeyJwk;
+  for (const vm of verificationMethods) {
+    // consider optimizing using a set for O(1) lookups if needed
+    if (vm.id === kid) {
+      verificationMethod = vm;
       break;
     }
   }
 
-  if (!publicKey) {
-    throw new Error('failed to find respective public key to verify signature');
+  if (!verificationMethod) {
+    throw new Error('public key needed to verify signature not found in DID Document');
   }
 
-  // we have to use `importJWK` to "convert" a json object to `KeyLike` which is what
-  // the JWS verification function requires as key type
-  // TODO: handle exception so that we can provide a meaningful error message
-  const publicJWK = await importJWK(publicKey, alg);
+  // TODO: replace with JSON Schema based validation
+  // more info about the `JsonWebKey2020` type can be found here:
+  // https://www.w3.org/TR/did-spec-registries/#jsonwebkey2020
+  if (verificationMethod.type !== 'JsonWebKey2020') {
+    throw new Error(`verification method [${kid}] must be JsonWebKey2020`);
+  }
 
-  // `flattenedVerify` throws a `TypeError` with a meaningful error message thankfully
-  // so we don't have to worry about handling the exception
-  await flattenedVerify(attestation, publicJWK);
+  const { publicKeyJwk } = verificationMethod;
+
+  // TODO: replace with JSON Schema based validation
+  // more info about the `publicKeyJwk` property can be found here:
+  // https://www.w3.org/TR/did-spec-registries/#publickeyjwk
+  if (!publicKeyJwk) {
+    throw new Error(`publicKeyJwk property not found on verification method [${kid}]`);
+  }
+
+  // TODO: figure out if we need to check to ensure that `controller` === did in kid
+  //       are the same. This may matter more for a `PermissionsRequest`
+
+  const result = await jws.verify(attestation, publicKeyJwk);
+
+  if (!result) {
+    throw new Error('signature verification failed');
+  }
 }
 
 export type Message = PermissionsRequestMessage;

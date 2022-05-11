@@ -14,10 +14,11 @@ module.exports = {
   rules: {
     'no-console' : 'off',
     'indent'     : [
-      'warn',
+      'error',
       2
     ],
-    'linebreak-style': [
+    'object-curly-spacing' : ['error', 'always'],
+    'linebreak-style'      : [
       'error',
       'unix'
     ],
@@ -26,13 +27,11 @@ module.exports = {
       'single',
       { 'allowTemplateLiterals': true }
     ],
-    'semi': [
-      'error',
-      'always'
-    ],
-    'no-trailing-spaces' : ['warn'],
-    'max-len'            : ['warn', { 'code': 120 }],
-    'key-spacing'        : [
+    'semi'                    : ['off'],
+    '@typescript-eslint/semi' : ['error', 'always'],
+    'no-trailing-spaces'      : ['error'],
+    'max-len'                 : ['error', { 'code': 150 }],
+    'key-spacing'             : [
       'error',
       {
         'align': {
