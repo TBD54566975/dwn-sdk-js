@@ -11,11 +11,13 @@ import sinon from 'sinon';
 
 import { base64url } from 'multiformats/bases/base64';
 import { CID } from 'multiformats/cid';
-import { Message, validateMessage, verifyMessageSignature } from '../src/message';
+import { validateMessage, verifyMessageSignature } from '../src/message';
 import { sha256, sha512 } from 'multiformats/hashes/sha2';
 
-import { DIDResolutionResult, DIDResolver } from '../src/did/did-resolver';
+import { DIDResolver } from '../src/did/did-resolver';
 
+import type { DIDResolutionResult } from '../src/did/did-resolver';
+import type { Message } from '../src/message';
 import type { SinonStub } from 'sinon';
 
 // extend chai to test promises

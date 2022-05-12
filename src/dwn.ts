@@ -1,5 +1,5 @@
 import { DIDResolver } from './did/did-resolver';
-import { MessageStoreLevel } from './store/message-store';
+import { MessageStoreLevel } from './store/message-store-level';
 import { validateMessage } from './message';
 import { PermissionsRequest } from './interfaces/permissions';
 

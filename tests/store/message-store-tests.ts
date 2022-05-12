@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { MessageStoreLevel } from '../../src/store/message-store';
+import { MessageStoreLevel } from '../../src/store/message-store-level';
 
 import { sha256 } from 'multiformats/hashes/sha2';
 

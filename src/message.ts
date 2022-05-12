@@ -10,8 +10,10 @@ import permissionsSchemas from './interfaces/permissions/schemas';
 
 import { base64url } from 'multiformats/bases/base64';
 import { CID } from 'multiformats/cid';
-import { DIDResolver, VerificationMethod } from './did/did-resolver';
+import { DIDResolver } from './did/did-resolver';
 import { sha256 } from 'multiformats/hashes/sha2';
+
+import type { VerificationMethod } from './did/did-resolver';
 
 
 // a map of all supported CID hashing algorithms. This map is used to select the appropriate hasher
