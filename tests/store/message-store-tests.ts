@@ -51,7 +51,7 @@ describe('MessageStoreLevel Tests', () => {
     });
   });
 
-  describe('put', () => {
+  describe('put', function () {
     before(async () => {
       await messageStore.open();
     });
@@ -114,9 +114,9 @@ describe('MessageStoreLevel Tests', () => {
       };
 
       await messageStore.put(msg);
-
       const { RESULT_LENGTH } = await messageStore.index.QUERY('ability.method:CollectionsWrite');
       expect(RESULT_LENGTH).to.equal(1);
+
     });
   });
 

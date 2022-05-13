@@ -1,48 +1,14 @@
 // Karma is what we're using to run our tests in browser environments
 // Karma does not support .mjs
 
-// uses babel to transpile.
-const { babel } = require('@rollup/plugin-babel');
 
-// convert CommonJS modules to ES6, so they can be included in a Rollup bundle.
-// many 3rd party dependencies are exported as commonJS modules
-const commonjs = require('@rollup/plugin-commonjs/dist/index');
-
-// resolves imports to other node packages.
-const resolve = require('@rollup/plugin-node-resolve').default;
-
-// Converts .json files to ES6 modules. used specifically for the JSON schemas we use to validate
-// message payloads
-const json = require('@rollup/plugin-json');
-
-// includes polyfills for node-native modules (e.g. buffer)
-// info on available polyfills is available here -
-// https://www.npmjs.com/package/rollup-plugin-polyfill-node
-const nodePolyfills = require('rollup-plugin-polyfill-node');
-
-const rollupPlugins = [
-  commonjs(),
-  babel({
-    babelHelpers : 'runtime',
-    extensions   : ['.js', '.ts' ],
-    exclude      : ['./node_modules/**']
-  }),
-  json(),
-  resolve({
-    extensions     : ['.js', '.ts' ],
-    preferBuiltins : false,
-    mainFields     : ['browser']
-  }),
-  nodePolyfills({
-    include: null
-  })
-];
+const { NodeGlobalsPolyfillPlugin } = require('@esbuild-plugins/node-globals-polyfill');
 
 module.exports = function(config) {
   config.set({
     plugins: [
       require('karma-chrome-launcher'),
-      require('karma-rollup-preprocessor'),
+      require('karma-esbuild'),
       require('karma-mocha'),
       require('karma-mocha-reporter')
     ],
@@ -59,16 +25,19 @@ module.exports = function(config) {
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://www.npmjs.com/search?q=keywords:karma-preprocessor
     preprocessors: {
-      'tests/**/*.ts': ['rollup']
+      'tests/**/*.ts': ['esbuild']
     },
 
-    rollupPreprocessor: {
-      output: {
-        name      : 'dwnSDK',
-        format    : 'iife',
-        sourcemap : 'inline',
+    esbuild: {
+      mainFields : ['browser', 'module', 'main'],
+      target     : ['chrome101'],
+      plugins    : [NodeGlobalsPolyfillPlugin({
+        process: true
+      })],
+      sourcemap : true,
+      define    : {
+        'global': 'window'
       },
-      plugins: rollupPlugins,
     },
 
     // list of files / patterns to exclude
@@ -95,6 +64,6 @@ module.exports = function(config) {
 
     // Continuous Integration mode
     // if true, Karma captures browsers, runs the tests and exits
-    singleRun: true,
+    singleRun: true
   });
 };

@@ -1,5 +1,4 @@
 import chai, { expect } from 'chai';
-import { describe, it, xit } from 'mocha';
 
 import * as cbor from '@ipld/dag-cbor';
 import * as ed25519 from '../src/jose/algorithms/ed25519';
@@ -397,7 +396,7 @@ describe('Message Tests', () => {
       // create signature
       const actualKeyPair = await ed25519.generateKeyPair();
       const protectedHeader = { alg: 'EdDSA', 'kid': 'did:jank:alice#key1' };
-      const jwsObject = await jws.sign(protectedHeader, Buffer.from(cid.bytes), actualKeyPair.privateKeyJwk);
+      const jwsObject = await jws.sign(protectedHeader, cid.bytes, actualKeyPair.privateKeyJwk);
 
       msg.attestation = jwsObject;
 
@@ -452,7 +451,7 @@ describe('Message Tests', () => {
       // create signature
       const { publicKeyJwk, privateKeyJwk } = await ed25519.generateKeyPair();
       const protectedHeader = { alg: 'EdDSA', 'kid': 'did:jank:alice#key1' };
-      const jwsObject = await jws.sign(protectedHeader, Buffer.from(cid.bytes), privateKeyJwk);
+      const jwsObject = await jws.sign(protectedHeader, cid.bytes, privateKeyJwk);
 
       msg.attestation = jwsObject;
 
