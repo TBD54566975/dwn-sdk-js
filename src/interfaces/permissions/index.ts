@@ -1,3 +1,4 @@
 export * from './permission';
 export * from './permissions-request';
-export * from './types';
+
+export type PermissionsMethod = 'PermissionsRequest' | 'PermissionsGrant' | 'PermissionsRevoke';

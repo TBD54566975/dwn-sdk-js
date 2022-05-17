@@ -1,4 +1,6 @@
+import { BlockstoreLevel } from './blockstore-level';
 import { CID } from 'multiformats/cid';
+import { importer } from 'ipfs-unixfs-importer';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 import * as cbor from '@ipld/dag-cbor';
@@ -6,8 +8,6 @@ import * as Block from 'multiformats/block';
 
 import _ from 'lodash';
 import searchIndex from 'search-index';
-
-import { BlockstoreLevel } from './blockstore-level';
 
 import type { Message } from '../message';
 import type { MessageStore } from './message-store';

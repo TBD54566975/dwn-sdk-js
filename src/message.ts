@@ -1,6 +1,7 @@
 /**
  * this file contains functions and types related to DWN messages
  */
+import type { CollectionsMethod, CollectionsWriteMessage } from './interfaces/collections';
 import type { PermissionsMethod, PermissionsRequestMessage } from './interfaces/permissions';
 
 import * as cbor from '@ipld/dag-cbor';
@@ -159,5 +160,5 @@ export async function verifyMessageSignature(message: Message, didResolver: DIDR
   }
 }
 
-export type Message = PermissionsRequestMessage;
-export type Method = PermissionsMethod;
+export type Message = PermissionsRequestMessage | CollectionsWriteMessage;
+export type Method = PermissionsMethod | CollectionsMethod;

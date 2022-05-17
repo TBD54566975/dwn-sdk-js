@@ -1,9 +1,8 @@
 import { DIDResolver } from '../../did/did-resolver';
-import type { Ability, Conditions } from './permission';
 
+import type { Ability, Conditions } from './permission';
 import type { JwsFlattened } from '../../jose/jws';
 import type { MessageStore } from '../../store/message-store';
-import type { PermissionsMethod } from './types';
 
 /**
  * TODO: add documentation
@@ -30,7 +29,7 @@ export type PermissionsRequestMessage = {
 };
 
 export type PermissionsRequestDescriptor = {
-  method: PermissionsMethod,
+  method: 'PermissionsRequest',
   requester: string,
   ability: Ability,
   objectId?: string,
