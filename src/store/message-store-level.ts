@@ -148,7 +148,6 @@ export class MessageStoreLevel implements MessageStore {
    * index
    * @example
    * buildIndexQueryTerms({
-   *  method  : 'PermissionsQuery',
    *    ability : {
    *      method : 'CollectionsQuery',
    *      schema : 'https://schema.org/MusicPlaylist'
