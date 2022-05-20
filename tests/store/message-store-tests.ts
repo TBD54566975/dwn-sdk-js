@@ -12,7 +12,7 @@ const messageStore = new MessageStoreLevel({
 });
 
 describe('MessageStoreLevel Tests', () => {
-  describe('_buildIndexQueryTerms', () => {
+  describe('buildIndexQueryTerms', () => {
     it('returns an array of terms based on the query object provided', () => {
       const query = {
         method   : 'CollectionsQuery',
