@@ -41,9 +41,6 @@ export class MessageStoreLevel implements MessageStore {
     this.db = new BlockstoreLevel(this.config.blockstoreLocation);
   }
 
-  /**
-   * opens a connection to the underlying store
-   */
   async open(): Promise<void> {
     await this.db.open();
 
@@ -56,19 +53,12 @@ export class MessageStoreLevel implements MessageStore {
     }
   }
 
-  /**
-   * releases all file handles and locks held by the underlying db.
-   */
+
   async close(): Promise<void> {
     await this.db.close();
     await this.index.FLUSH();
   }
 
-  /**
-   * fetches a single message by `cid` from the underlying store. Returns `undefined`
-   * if no message was found
-   * @param cid
-   */
   async get(cid: CID): Promise<Message> {
     const bytes = await this.db.get(cid);
 
@@ -81,11 +71,6 @@ export class MessageStoreLevel implements MessageStore {
     return block.value as Message;
   }
 
-  /**
-   * queries the underlying store for messages that match the query provided.
-   * returns an empty array if no messages are found
-   * @param query
-   */
   async query(query: any): Promise<Message[]> {
     const messages: Message[] = [];
 
@@ -123,10 +108,7 @@ export class MessageStoreLevel implements MessageStore {
     return messages;
   }
 
-  /**
-   * deletes the message associated to the cid provided.
-   * @param cid
-   */
+
   async delete(cid: CID): Promise<void> {
     await this.db.delete(cid);
     await this.index.DELETE(cid.toString());
@@ -134,10 +116,6 @@ export class MessageStoreLevel implements MessageStore {
     return;
   }
 
-  /**
-   * adds a message to the underlying store. Uses the message's cid as the key
-   * @param message
-   */
   async put(message: Message): Promise<void> {
     const block = await Block.encode({ value: message, codec: cbor, hasher: sha256 });
     await this.db.put(block.cid, block.bytes);
