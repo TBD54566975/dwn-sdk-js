@@ -75,7 +75,7 @@ export class MessageStoreLevel implements MessageStore {
     const messages: Message[] = [];
 
     // copy the query provided to prevent any mutation
-    let copy: any = { ...query };
+    const copy: any = { ...query };
     delete copy.method;
 
     // parse query into a query that is compatible with the index we're using
@@ -92,10 +92,10 @@ export class MessageStoreLevel implements MessageStore {
     }
 
     const chunkedPromises = _.chunk(promises, 15);
-    for (let chunk of chunkedPromises) {
+    for (const chunk of chunkedPromises) {
       const results = await Promise.all(chunk);
 
-      for (let result of results) {
+      for (const result of results) {
         if (result instanceof Error) {
           // TODO: figure out how we want to handle errors here.
           console.log(result);
