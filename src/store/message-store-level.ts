@@ -136,7 +136,7 @@ export class MessageStoreLevel implements MessageStore {
   }
 
   /**
-   * deletes everything in the underlying datastore and indes.
+   * deletes everything in the underlying datastore and indices.
    */
   async clear(): Promise<void> {
     await this.db.clear();
