@@ -19,6 +19,8 @@ import type { MessageStore } from './message-store';
 export class MessageStoreLevel implements MessageStore {
   config: MessageStoreLevelConfig;
   db: BlockstoreLevel;
+  // levelDB doesn't natively provide the querying capabilities needed for DWN. To accommodate, we're leveraging
+  // a level-backed inverted index
   // TODO: search-index lib does not import type `SearchIndex`. find a workaround
   index;
 
