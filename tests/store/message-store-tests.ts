@@ -21,7 +21,7 @@ describe('MessageStoreLevel Tests', () => {
       };
 
       const expected = ['method:CollectionsQuery', 'schema:https://schema.org/MusicPlaylist', 'objectId:abcd123'];
-      const terms = MessageStoreLevel._buildIndexQueryTerms(query);
+      const terms = MessageStoreLevel['buildIndexQueryTerms'](query);
 
       expect(terms).to.eql(expected);
     });
@@ -45,7 +45,7 @@ describe('MessageStoreLevel Tests', () => {
         'ability.doo.bingo:bongo'
       ];
 
-      const terms = MessageStoreLevel._buildIndexQueryTerms(query);
+      const terms = MessageStoreLevel['buildIndexQueryTerms'](query);
 
       expect(terms).to.eql(expected);
     });

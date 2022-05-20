@@ -79,7 +79,7 @@ export class MessageStoreLevel implements MessageStore {
     delete copy.method;
 
     // parse query into a query that is compatible with the index we're using
-    const indexQueryTerms: string[] = MessageStoreLevel._buildIndexQueryTerms(copy);
+    const indexQueryTerms: string[] = MessageStoreLevel.buildIndexQueryTerms(copy);
     const { RESULTS: indexResults } = await this.index.QUERY({ AND: indexQueryTerms });
 
     // iterate through all index query results and fetch all messages from the underlying
@@ -160,12 +160,12 @@ export class MessageStoreLevel implements MessageStore {
    * @param prefix - internally used to pass parent properties into recursive calls
    * @returns the list of terms
    */
-  static _buildIndexQueryTerms(query: any, terms: string[] = [], prefix: string = '') {
+  private static buildIndexQueryTerms(query: any, terms: string[] = [], prefix: string = '') {
     for (let property in query) {
       let val = query[property];
 
       if (_.isPlainObject(val)) {
-        MessageStoreLevel._buildIndexQueryTerms(val, terms, `${prefix}${property}.`);
+        MessageStoreLevel.buildIndexQueryTerms(val, terms, `${prefix}${property}.`);
       } else {
         terms.push(`${prefix}${property}:${val}`);
       }
