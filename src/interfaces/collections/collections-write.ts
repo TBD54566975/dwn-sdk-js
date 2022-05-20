@@ -1,9 +1,5 @@
 import type { JwsFlattened } from '../../jose/jws';
 
-export async function CollectionsWrite() {
-  return null;
-}
-
 export type CollectionsWriteMessage = {
   attestation: JwsFlattened,
   descriptor: CollectionsWriteDescriptor,

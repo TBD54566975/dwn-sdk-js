@@ -35,7 +35,7 @@ for (let schemaName in permissionsSchemas) {
  * TODO: add docs
  * @param message - the message to validate
  */
-export function validateMessage(message: Message) {
+export function validateMessage(message: Message): void {
   // all interface methods have slightly different message requirements. validate message based
   // on method
   const { method: methodName } = message.descriptor;
@@ -67,7 +67,7 @@ export function validateMessage(message: Message) {
  * @throws {Error} if respective public key could not be found in DID Doc
  * @throws {Error} if signature verification failed with public key
  */
-export async function verifyMessageSignature(message: Message, didResolver: DIDResolver) {
+export async function verifyMessageSignature(message: Message, didResolver: DIDResolver): Promise<void> {
   const { descriptor, attestation } = message;
   let providedCID: CID;
 

@@ -12,7 +12,7 @@ export async function PermissionsRequest(
   message: PermissionsRequestMessage,
   didResolver: DIDResolver,
   messageStore: MessageStore
-) {
+): Promise<void> {
 
   const { attestation, descriptor } = message;
   const { requester } = descriptor;

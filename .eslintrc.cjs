@@ -40,6 +40,7 @@ module.exports = {
           'on'          : 'colon'
         }
       }
-    ]
+    ],
+    '@typescript-eslint/explicit-function-return-type': ['error']
   }
 };

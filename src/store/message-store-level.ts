@@ -160,7 +160,7 @@ export class MessageStoreLevel implements MessageStore {
    * @param prefix - internally used to pass parent properties into recursive calls
    * @returns the list of terms
    */
-  private static buildIndexQueryTerms(query: any, terms: string[] = [], prefix: string = '') {
+  private static buildIndexQueryTerms(query: any, terms: string[] = [], prefix: string = ''): string[] {
     for (const property in query) {
       const val = query[property];
 
