@@ -129,7 +129,7 @@ export class MessageStoreLevel implements MessageStore {
     // TODO: clean this up and likely move it elsewhere (e.g. a different function) so that
     if (descriptor.method === 'PermissionsRequest') {
       indexDocument.ability = descriptor.ability;
-      indexDocument.requster = descriptor.requester;
+      indexDocument.requester = descriptor.requester;
     }
 
     await this.index.PUT([indexDocument]);
