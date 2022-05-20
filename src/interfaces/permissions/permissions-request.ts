@@ -25,7 +25,7 @@ export async function PermissionsRequest(
 
 export type PermissionsRequestMessage = {
   descriptor: PermissionsRequestDescriptor,
-  attestation: JwsFlattened;
+  attestation: JwsFlattened
 };
 
 export type PermissionsRequestDescriptor = {
@@ -33,5 +33,5 @@ export type PermissionsRequestDescriptor = {
   requester: string,
   ability: Ability,
   objectId?: string,
-  conditions?: Conditions;
+  conditions?: Conditions
 };
