@@ -161,8 +161,8 @@ export class MessageStoreLevel implements MessageStore {
    * @returns the list of terms
    */
   private static buildIndexQueryTerms(query: any, terms: string[] = [], prefix: string = '') {
-    for (let property in query) {
-      let val = query[property];
+    for (const property in query) {
+      const val = query[property];
 
       if (_.isPlainObject(val)) {
         MessageStoreLevel.buildIndexQueryTerms(val, terms, `${prefix}${property}.`);
