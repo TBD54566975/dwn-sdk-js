@@ -17,7 +17,7 @@ export class BlockstoreLevel implements Blockstore {
    * the {@link https://developer.mozilla.org/en-US/docs/Web/API/IDBDatabase IDBDatabase}
    * to be opened.
    */
-  constructor(location = 'BLOCKSTORE') {
+  constructor(location: string) {
     this.db = new Level(location, { keyEncoding: 'utf8', valueEncoding: 'binary' });
   }
 
