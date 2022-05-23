@@ -125,7 +125,7 @@ export class MessageStoreLevel implements MessageStore {
 
     const indexDocument: any = { _id: encodedBlock.cid.toString(), method, objectId };
 
-    // TODO: clean this up and likely move it elsewhere (e.g. a different function) so that
+    // TODO: clean this up and likely move it elsewhere (e.g. a different function) so that it can be used elsewhere
     if (descriptor.method === 'PermissionsRequest') {
       indexDocument.ability = descriptor.ability;
       indexDocument.requester = descriptor.requester;
