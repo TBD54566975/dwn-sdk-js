@@ -81,29 +81,13 @@ export class MessageStoreLevel implements MessageStore {
     const indexQueryTerms: string[] = MessageStoreLevel.buildIndexQueryTerms(copy);
     const { RESULTS: indexResults } = await this.index.QUERY({ AND: indexQueryTerms });
 
-    // iterate through all index query results and fetch all messages from the underlying
-    // blockstore in chunks of 15
-    let promises = [];
 
-    for (let i = 0; i < indexResults.length; i += 1) {
-      const cid = CID.parse(indexResults[i]._id);
-      promises.push(this.get(cid).catch(e => e));
+    for (let result of indexResults) {
+      const cid = CID.parse(result._id);
+      const message = await this.get(cid);
+
+      messages.push(message);
     }
-
-    const chunkedPromises = _.chunk(promises, 15);
-    for (const chunk of chunkedPromises) {
-      const results = await Promise.all(chunk);
-
-      for (const result of results) {
-        if (result instanceof Error) {
-          // TODO: figure out how we want to handle errors here.
-          console.log(result);
-        } else {
-          messages.push(result);
-        }
-      }
-    }
-
     return messages;
   }
 
