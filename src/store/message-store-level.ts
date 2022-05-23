@@ -3,7 +3,7 @@ import { CID } from 'multiformats/cid';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 import * as cbor from '@ipld/dag-cbor';
-import * as Block from 'multiformats/block';
+import * as block from 'multiformats/block';
 
 import _ from 'lodash';
 import searchIndex from 'search-index';
@@ -65,9 +65,9 @@ export class MessageStoreLevel implements MessageStore {
       return;
     }
 
-    const block = await Block.decode({ bytes, codec: cbor, hasher: sha256 });
+    const decodedBlock = await block.decode({ bytes, codec: cbor, hasher: sha256 });
 
-    return block.value as Message;
+    return decodedBlock.value as Message;
   }
 
   async query(query: any): Promise<Message[]> {
@@ -116,14 +116,14 @@ export class MessageStoreLevel implements MessageStore {
   }
 
   async put(message: Message): Promise<void> {
-    const block = await Block.encode({ value: message, codec: cbor, hasher: sha256 });
-    await this.db.put(block.cid, block.bytes);
+    const encodedBlock = await block.encode({ value: message, codec: cbor, hasher: sha256 });
+    await this.db.put(encodedBlock.cid, encodedBlock.bytes);
 
     // index specific properties within message
     const { descriptor } = message;
     const { method, objectId } = descriptor;
 
-    let indexDocument: any = { _id: block.cid.toString(), method, objectId };
+    let indexDocument: any = { _id: encodedBlock.cid.toString(), method, objectId };
 
     // TODO: clean this up and likely move it elsewhere (e.g. a different function) so that
     if (descriptor.method === 'PermissionsRequest') {

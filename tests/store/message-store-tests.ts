@@ -4,7 +4,7 @@ import { MessageStoreLevel } from '../../src/store/message-store-level';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 import * as cbor from '@ipld/dag-cbor';
-import * as Block from 'multiformats/block';
+import * as block from 'multiformats/block';
 
 const messageStore = new MessageStoreLevel({
   blockstoreLocation : 'TEST-BLOCKSTORE',
@@ -85,7 +85,7 @@ describe('MessageStoreLevel Tests', () => {
 
       await messageStore.put(msg);
 
-      const expectedBlock = await Block.encode({ value: msg, codec: cbor, hasher: sha256 });
+      const expectedBlock = await block.encode({ value: msg, codec: cbor, hasher: sha256 });
 
       const hasBlock = await messageStore.db.has(expectedBlock.cid);
       expect(hasBlock).to.be.true;
@@ -136,7 +136,7 @@ describe('MessageStoreLevel Tests', () => {
 
 
     it('returns undefined if message does not exist', async () => {
-      const { cid } = await Block.encode({ value: { beep: 'boop' }, codec: cbor, hasher: sha256 });
+      const { cid } = await block.encode({ value: { beep: 'boop' }, codec: cbor, hasher: sha256 });
       const message = await messageStore.get(cid);
 
       expect(message).to.be.undefined;
