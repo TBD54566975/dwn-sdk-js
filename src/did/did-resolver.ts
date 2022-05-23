@@ -10,7 +10,7 @@ export class DIDResolver {
   constructor(resolvers: DIDMethodResolver[]) {
     this.didResolvers = new Map();
 
-    for (let resolver of resolvers) {
+    for (const resolver of resolvers) {
       this.didResolvers.set(resolver.method(), resolver);
     }
   }

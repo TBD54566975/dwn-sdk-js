@@ -26,8 +26,8 @@ export class Permission {
     this.att = [capability];
 
     // assign all optional values
-    for (let opt in opts) {
-      let value = opts[opt];
+    for (const opt in opts) {
+      const value = opts[opt];
       const { member, transform } = Permission.optionsMap[opt];
 
       this[member] = transform ? transform(value) : value;

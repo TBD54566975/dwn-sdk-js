@@ -26,7 +26,7 @@ const hashers = {
 // on the first error.
 const validator = new Ajv({ allErrors: true });
 
-for (let schemaName in permissionsSchemas) {
+for (const schemaName in permissionsSchemas) {
   validator.addSchema(permissionsSchemas[schemaName], schemaName);
 }
 
