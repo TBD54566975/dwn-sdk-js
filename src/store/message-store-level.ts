@@ -1,6 +1,5 @@
 import { BlockstoreLevel } from './blockstore-level';
 import { CID } from 'multiformats/cid';
-import { importer } from 'ipfs-unixfs-importer';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 import * as cbor from '@ipld/dag-cbor';
