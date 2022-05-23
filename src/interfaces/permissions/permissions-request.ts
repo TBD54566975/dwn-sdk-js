@@ -8,7 +8,7 @@ import type { MessageStore } from '../../store/message-store';
  * TODO: add documentation
  * @param message
  */
-export async function PermissionsRequest(
+export async function handlePermissionsRequest(
   message: PermissionsRequestMessage,
   didResolver: DIDResolver,
   messageStore: MessageStore
