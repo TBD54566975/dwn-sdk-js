@@ -10,13 +10,12 @@ import sinon from 'sinon';
 
 import { base64url } from 'multiformats/bases/base64';
 import { CID } from 'multiformats/cid';
-import { validateMessage, verifyMessageSignature } from '../src/message';
+import { verifyMessageSignature } from '../src/message';
 import { sha256, sha512 } from 'multiformats/hashes/sha2';
 
 import { DIDResolver } from '../src/did/did-resolver';
 
 import type { DIDResolutionResult } from '../src/did/did-resolver';
-import type { Message } from '../src/message';
 import type { SinonStub } from 'sinon';
 
 // extend chai to test promises

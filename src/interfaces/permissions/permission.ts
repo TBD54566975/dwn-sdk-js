@@ -32,17 +32,6 @@ export class Permission {
 
       this[member] = transform ? transform(value) : value;
     }
-
-    Permission.validate(this);
-  }
-
-  /**
-   * TODO: add docs
-   * @param permission
-   * @returns
-   */
-  static validate(permission: Permission): void {
-    return null;
   }
 
   /**

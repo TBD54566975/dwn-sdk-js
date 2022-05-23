@@ -14,11 +14,6 @@ export async function handlePermissionsRequest(
   messageStore: MessageStore
 ): Promise<void> {
 
-  const { attestation, descriptor } = message;
-  const { requester } = descriptor;
-
-  const { didDocument } = await didResolver.resolve(requester);
-
   // additional method specific logic here
   await messageStore.put(message);
 }

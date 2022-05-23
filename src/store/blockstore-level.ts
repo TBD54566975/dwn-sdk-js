@@ -53,11 +53,11 @@ export class BlockstoreLevel implements Blockstore {
     return this.db.close();
   }
 
-  put(key: CID, val: Uint8Array, options?: Options): Promise<void> {
+  put(key: CID, val: Uint8Array, _options?: Options): Promise<void> {
     return this.db.put(key.toString(), val);
   }
 
-  async get(key: CID, options?: Options): Promise<Uint8Array | undefined> {
+  async get(key: CID, _options?: Options): Promise<Uint8Array | undefined> {
     try {
       const val = await this.db.get(key.toString());
       return val;
@@ -71,33 +71,33 @@ export class BlockstoreLevel implements Blockstore {
     }
   }
 
-  async has(key: CID, options?: Options): Promise<boolean> {
+  async has(key: CID, _options?: Options): Promise<boolean> {
     return !! await this.get(key);
   }
 
-  delete(key: CID, options?: Options): Promise<void> {
+  delete(key: CID, _options?: Options): Promise<void> {
     return this.db.del(key.toString());
   }
 
-  async * putMany(source: AwaitIterable<Pair<CID, Uint8Array>>, options?: Options):
+  async * putMany(source: AwaitIterable<Pair<CID, Uint8Array>>, _options?: Options):
     AsyncIterable<Pair<CID, Uint8Array>> {
 
     for await (const entry of source) {
-      await this.put(entry.key, entry.value, options);
+      await this.put(entry.key, entry.value, _options);
 
       yield entry;
     }
   }
 
-  async * getMany(source: AwaitIterable<CID>, options?: Options): AsyncIterable<Uint8Array> {
+  async * getMany(source: AwaitIterable<CID>, _options?: Options): AsyncIterable<Uint8Array> {
     for await (const key of source) {
       yield this.get(key);
     }
   }
 
-  async * deleteMany(source: AwaitIterable<CID>, options?: Options): AsyncIterable<CID> {
+  async * deleteMany(source: AwaitIterable<CID>, _options?: Options): AsyncIterable<CID> {
     for await (const key of source) {
-      await this.delete(key, options);
+      await this.delete(key, _options);
 
       yield key;
     }
@@ -114,11 +114,11 @@ export class BlockstoreLevel implements Blockstore {
     throw new Error('not implemented');
   }
 
-  query(query: Query<CID, Uint8Array>, options?: Options): AsyncIterable<Pair<CID, Uint8Array>> {
+  query(_query: Query<CID, Uint8Array>, _options?: Options): AsyncIterable<Pair<CID, Uint8Array>> {
     throw new Error('not implemented');
   }
 
-  queryKeys(query: KeyQuery<CID>, options?: Options): AsyncIterable<CID> {
+  queryKeys(_query: KeyQuery<CID>, _options?: Options): AsyncIterable<CID> {
     throw new Error('not implemented');
   }
 }

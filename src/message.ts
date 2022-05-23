@@ -112,7 +112,7 @@ export async function verifyMessageSignature(message: Message, didResolver: DIDR
   const protectedBytes = base64url.baseDecode(attestation.protected);
   const protectedJson = new TextDecoder().decode(protectedBytes);
 
-  const { alg, kid } = JSON.parse(protectedJson);
+  const { kid } = JSON.parse(protectedJson);
   const [ did ] = kid.split('#');
 
   // `resolve` throws exception if DID is invalid, DID method is not supported,
