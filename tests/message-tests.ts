@@ -1,5 +1,4 @@
 import chai, { expect } from 'chai';
-import { describe, it, xit } from 'mocha';
 
 import * as cbor from '@ipld/dag-cbor';
 import * as ed25519 from '../src/jose/algorithms/ed25519';
@@ -11,11 +10,12 @@ import sinon from 'sinon';
 
 import { base64url } from 'multiformats/bases/base64';
 import { CID } from 'multiformats/cid';
-import { Message, validateMessage, verifyMessageSignature } from '../src/message';
+import { verifyMessageSignature } from '../src/message';
 import { sha256, sha512 } from 'multiformats/hashes/sha2';
 
-import { DIDResolutionResult, DIDResolver } from '../src/did/did-resolver';
+import { DIDResolver } from '../src/did/did-resolver';
 
+import type { DIDResolutionResult } from '../src/did/did-resolver';
 import type { SinonStub } from 'sinon';
 
 // extend chai to test promises
@@ -395,7 +395,7 @@ describe('Message Tests', () => {
       // create signature
       const actualKeyPair = await ed25519.generateKeyPair();
       const protectedHeader = { alg: 'EdDSA', 'kid': 'did:jank:alice#key1' };
-      const jwsObject = await jws.sign(protectedHeader, Buffer.from(cid.bytes), actualKeyPair.privateKeyJwk);
+      const jwsObject = await jws.sign(protectedHeader, cid.bytes, actualKeyPair.privateKeyJwk);
 
       msg.attestation = jwsObject;
 
@@ -450,7 +450,7 @@ describe('Message Tests', () => {
       // create signature
       const { publicKeyJwk, privateKeyJwk } = await ed25519.generateKeyPair();
       const protectedHeader = { alg: 'EdDSA', 'kid': 'did:jank:alice#key1' };
-      const jwsObject = await jws.sign(protectedHeader, Buffer.from(cid.bytes), privateKeyJwk);
+      const jwsObject = await jws.sign(protectedHeader, cid.bytes, privateKeyJwk);
 
       msg.attestation = jwsObject;
 

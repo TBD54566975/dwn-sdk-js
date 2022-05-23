@@ -7,10 +7,12 @@
       "DOM",
       "ES6"
     ],
+    "target": "es6",
     "declaration": true,
-    "emitDeclarationOnly": true,
     "declarationMap": true,
-    "outDir": "dist/types",
+    "outDir": "dist/esm",
+    "sourceMap": true,
+    "moduleResolution": "node",
     // allows us to import json files
     "resolveJsonModule": true,
     // required otherwise `ms` lib doesn't import
@@ -21,11 +23,13 @@
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "tests"
   ],
   "ts-node": {
+    "esm": true,
     "compilerOptions": {
-      "module": "ES2020",
+      "module": "es6",
       "moduleResolution": "node"
     }
   }

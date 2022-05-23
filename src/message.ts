@@ -10,8 +10,10 @@ import permissionsSchemas from './interfaces/permissions/schemas';
 
 import { base64url } from 'multiformats/bases/base64';
 import { CID } from 'multiformats/cid';
-import { DIDResolver, VerificationMethod } from './did/did-resolver';
+import { DIDResolver } from './did/did-resolver';
 import { sha256 } from 'multiformats/hashes/sha2';
+
+import type { VerificationMethod } from './did/did-resolver';
 
 
 // a map of all supported CID hashing algorithms. This map is used to select the appropriate hasher
@@ -24,7 +26,7 @@ const hashers = {
 // on the first error.
 const validator = new Ajv({ allErrors: true });
 
-for (let schemaName in permissionsSchemas) {
+for (const schemaName in permissionsSchemas) {
   validator.addSchema(permissionsSchemas[schemaName], schemaName);
 }
 
@@ -32,7 +34,7 @@ for (let schemaName in permissionsSchemas) {
  * TODO: add docs
  * @param message - the message to validate
  */
-export function validateMessage(message: Message) {
+export function validateMessage(message: Message): void {
   // all interface methods have slightly different message requirements. validate message based
   // on method
   const { method: methodName } = message.descriptor;
@@ -56,7 +58,8 @@ export function validateMessage(message: Message) {
 /**
  * verifies the signature of the provided message. Details regarding message signing can be found
  * {@link https://identity.foundation/decentralized-web-node/spec/#signed-data here}.
- * @param message - the message to verify
+ * @param message
+ * @param didResolver
  * @throws {Error} if provided CID is invalid
  * @throws {Error} if provided CID doesn't utilize CBOR codec
  * @throws {Error} if provided CID was created using unsupporting hashing algo
@@ -64,7 +67,7 @@ export function validateMessage(message: Message) {
  * @throws {Error} if respective public key could not be found in DID Doc
  * @throws {Error} if signature verification failed with public key
  */
-export async function verifyMessageSignature(message: Message, didResolver: DIDResolver) {
+export async function verifyMessageSignature(message: Message, didResolver: DIDResolver): Promise<void> {
   const { descriptor, attestation } = message;
   let providedCID: CID;
 
@@ -109,7 +112,7 @@ export async function verifyMessageSignature(message: Message, didResolver: DIDR
   const protectedBytes = base64url.baseDecode(attestation.protected);
   const protectedJson = new TextDecoder().decode(protectedBytes);
 
-  const { alg, kid } = JSON.parse(protectedJson);
+  const { kid } = JSON.parse(protectedJson);
   const [ did ] = kid.split('#');
 
   // `resolve` throws exception if DID is invalid, DID method is not supported,

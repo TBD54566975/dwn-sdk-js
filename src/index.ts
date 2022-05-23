@@ -9,5 +9,5 @@
 //   - https://stackoverflow.com/questions/44979976/typescript-compiler-is-forgetting-to-add-file-extensions-to-es6-module-imports
 //   - https://github.com/microsoft/TypeScript/issues/40878
 //
-export * from './dwn.js';
+export { DWN } from './dwn.js';
 export type { DIDResolver } from './did/did-resolver.js';

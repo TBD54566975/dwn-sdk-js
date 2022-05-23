@@ -1,17 +1,26 @@
 import { DIDResolver } from './did/did-resolver';
-
+import { MessageStoreLevel } from './store/message-store-level';
 import { validateMessage } from './message';
-import { PermissionsRequest } from './interfaces/permissions';
+import { handlePermissionsRequest } from './interfaces/permissions';
 
-import type { Message } from './message';
 import type { DIDMethodResolver } from './did/did-resolver';
+import type { Message } from './message';
+import type { MessageStore } from './store/message-store';
 
 export class DWN {
-  static methods = { PermissionsRequest };
+  static methods = {
+    PermissionsRequest: handlePermissionsRequest
+  };
+
   DIDResolver: DIDResolver;
+  messageStore: MessageStore;
 
   constructor(config: Config) {
-    this.DIDResolver = new DIDResolver(config.DIDMethodResolvers);
+    // override default config with any user-provided config
+    const mergedConfig = { ...defaultConfig,...config };
+
+    this.DIDResolver = new DIDResolver(mergedConfig.DIDMethodResolvers);
+    this.messageStore = mergedConfig.messageStore;
   }
 
   /**
@@ -29,10 +38,17 @@ export class DWN {
     // throws exception if message is invalid
     validateMessage(message);
 
-    await method(message, this.DIDResolver);
+    await method(message, this.DIDResolver, this.messageStore);
   }
 };
 
 export type Config = {
   DIDMethodResolvers: DIDMethodResolver[],
+  messageStore: MessageStore
+};
+
+const defaultConfig: Config = {
+  // TODO: include ION resolver as default DIDMethodResolver
+  DIDMethodResolvers : [],
+  messageStore       : new MessageStoreLevel()
 };

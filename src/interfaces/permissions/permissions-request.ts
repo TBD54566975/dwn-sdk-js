@@ -1,21 +1,21 @@
 import { DIDResolver } from '../../did/did-resolver';
+
 import type { Ability, Conditions } from './permission';
-import type { PermissionsMethod } from './types';
-import type { JwsFlattened }from '../../jose/jws';
+import type { JwsFlattened } from '../../jose/jws';
+import type { MessageStore } from '../../store/message-store';
 
 /**
  * TODO: add documentation
  * @param message
  */
-export async function PermissionsRequest(
+export async function handlePermissionsRequest(
   message: PermissionsRequestMessage,
-  didResolver: DIDResolver
-) {
+  didResolver: DIDResolver,
+  messageStore: MessageStore
+): Promise<void> {
 
-  const { attestation, descriptor } = message;
-  const { requester } = descriptor;
-
-  const { didDocument } = await didResolver.resolve(requester);
+  // additional method specific logic here
+  await messageStore.put(message);
 }
 
 export type PermissionsRequestMessage = {
@@ -24,7 +24,7 @@ export type PermissionsRequestMessage = {
 };
 
 export type PermissionsRequestDescriptor = {
-  method: PermissionsMethod,
+  method: 'PermissionsRequest',
   requester: string,
   ability: Ability,
   objectId?: string,

@@ -12,13 +12,13 @@ module.exports = {
     browser : true
   },
   rules: {
-    'object-curly-spacing' : ['error', 'always'],
-    'no-console'           : 'off',
-    'indent'               : [
+    'no-console' : 'off',
+    'indent'     : [
       'error',
       2
     ],
-    'linebreak-style': [
+    'object-curly-spacing' : ['error', 'always'],
+    'linebreak-style'      : [
       'error',
       'unix'
     ],
@@ -40,6 +40,17 @@ module.exports = {
           'on'          : 'colon'
         }
       }
-    ]
+    ],
+    '@typescript-eslint/explicit-function-return-type' : ['error'],
+    'no-unused-vars'                                   : 'off',
+    '@typescript-eslint/no-unused-vars'                : [
+      'error',
+      {
+        'vars'               : 'all',
+        'args'               : 'after-used',
+        'ignoreRestSiblings' : true,
+        'argsIgnorePattern'  : '^_'
+      }
+    ],
   }
 };

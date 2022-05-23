@@ -1,4 +1,16 @@
+# js deps
 node_modules
+# bundler output location
 dist
+# locally used file as a ts playground
 try.ts
+# locally used file as a js playground
 try.js
+# default location for levelDB data storage in a non-browser env
+BLOCKSTORE
+# location for levelDB data storage for non-browser tests
+TEST-BLOCKSTORE
+# default location for index specific levelDB data storage in a non-browser env
+INDEX
+# location for index specific levelDB data storage levelDB data storage for non-browser tests
+TEST-INDEX
