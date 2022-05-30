@@ -26,7 +26,7 @@ jobs:
     # read more about matrix strategies here: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstrategymatrix
     strategy:
       matrix:
-        node-version: [14.x, 16.x]
+        node-version: [16.x]
 
     steps:
       - uses: actions/checkout@v3
