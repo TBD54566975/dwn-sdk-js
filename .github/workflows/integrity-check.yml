@@ -38,7 +38,11 @@ jobs:
       - run: npm clean-install
       # builds all bundles
       - run: npm run build
-      # runs tests in node environment
-      - run: npm run test:node
       # runs linter. Job will fail if there are any warnings or errors
       - run: npm run lint
+      # runs tests in node environment without attempting to generate code coverage badges
+      - run: npm run test:node:ci
+      # runs code coverage badge generation, throws if README output differs to README to be checked in (thus detects if tests were not run)
+      - run: npm run make-coverage-badges:ci
+
+
