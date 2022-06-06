@@ -8,11 +8,9 @@ import { DIDResolver } from '../../src/did/did-resolver';
 chai.use(chaiAsPromised);
 
 describe('DIDResolver', () => {
-  const resolutionEndpoint = 'https://beta.discover.did.microsoft.com/1.0/identifiers/';
-
   it('should pick the right DID resolver based on DID method name',  async () => {
-    const did = 'did:ion:EiClkZMDxPKqC9c-umQfTkR8vvZ9JPhl_xLDI9Nfk38w5w';
-    const ionDidResolver = new IonDidResolver(resolutionEndpoint);
+    const did = 'did:ion:unusedDid';
+    const ionDidResolver = new IonDidResolver('unusedResolutionEndpoint');
     const didResolver = new DIDResolver([ionDidResolver]);
 
     const ionDidResolveSpy = sinon.stub(ionDidResolver, 'resolve').resolves({
