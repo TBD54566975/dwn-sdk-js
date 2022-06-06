@@ -2,6 +2,7 @@ import { DIDResolver } from './did/did-resolver';
 import { MessageStoreLevel } from './store/message-store-level';
 import { validateMessage } from './message';
 import { handlePermissionsRequest } from './interfaces/permissions';
+import { IonDidResolver } from './did/ion-did-resolver';
 
 import type { DIDMethodResolver } from './did/did-resolver';
 import type { Message } from './message';
@@ -48,7 +49,6 @@ export type Config = {
 };
 
 const defaultConfig: Config = {
-  // TODO: include ION resolver as default DIDMethodResolver
-  DIDMethodResolvers : [],
+  DIDMethodResolvers : [new IonDidResolver('https://beta.discover.did.microsoft.com/1.0/identifiers/')],
   messageStore       : new MessageStoreLevel()
 };
