@@ -31,9 +31,12 @@
     "bundle": "node create-bundle.cjs",
     "lint": "eslint . --ext .ts --max-warnings 0",
     "lint:fix": "eslint . --ext .ts --fix",
-    "test:node": "nyc ts-mocha --type-check \"tests/**/*.ts\"",
+    "test:node": "nyc ts-mocha --type-check \"tests/**/*.ts\" && npm run make-coverage-badges",
+    "test:node:ci": "nyc ts-mocha --type-check \"tests/**/*.ts\"",
     "test:browser": "cross-env karma start karma.conf.cjs",
-    "test:browser-debug": "cross-env karma start karma.conf.debug.cjs"
+    "test:browser-debug": "cross-env karma start karma.conf.debug.cjs",
+    "make-coverage-badges": "istanbul-badges-readme",
+    "make-coverage-badges:ci": "npm run make-coverage-badges -- --ci"
   },
   "dependencies": {
     "@ipld/dag-cbor": "7.0.1",
@@ -67,6 +70,7 @@
     "esbuild": "0.14.39",
     "eslint": "8.11.0",
     "events": "3.3.0",
+    "istanbul-badges-readme": "1.8.1",
     "karma": "6.3.17",
     "karma-chai": "0.1.0",
     "karma-chrome-launcher": "3.1.1",
@@ -114,7 +118,8 @@
     "reporter": [
       "text",
       "cobertura",
-      "html"
+      "html",
+      "json-summary"
     ]
   }
 }
