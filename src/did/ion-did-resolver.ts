@@ -22,7 +22,7 @@ export class IonDidResolver implements DIDMethodResolver {
     const resolutionUrl = new URL('./' + did, this.resolutionEndpoint).toString();
     const response = await this.fetch(resolutionUrl);
 
-    if(response.status !== 200) {
+    if (response.status !== 200) {
       throw new Error(`unable to resolve ${did}, got http status ${response.status}`);
     }
 

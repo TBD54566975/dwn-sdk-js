@@ -17,7 +17,7 @@ describe('IonDidResolver', () => {
     try {
       const response = await fetch(testDid);
 
-      if(response.status === 200) {
+      if (response.status === 200) {
         networkAvailable = true;
       }
     } catch {

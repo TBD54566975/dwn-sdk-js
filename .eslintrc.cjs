@@ -41,6 +41,7 @@ module.exports = {
         }
       }
     ],
+    'keyword-spacing'                                  : ['error', { 'before': true, 'after': true }],
     '@typescript-eslint/explicit-function-return-type' : ['error'],
     'no-unused-vars'                                   : 'off',
     '@typescript-eslint/no-unused-vars'                : [
