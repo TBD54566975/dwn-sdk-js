@@ -13,10 +13,15 @@ describe('IonDidResolver', () => {
   before(async () => {
     // test network connectivity, `networkAvailable` is used by tests to decide whether to run tests through real network calls or stubs
     const testDid = 'https://beta.discover.did.microsoft.com/1.0/identifiers/did:ion:EiClkZMDxPKqC9c-umQfTkR8vvZ9JPhl_xLDI9Nfk38w5w';
-    const response = await fetch(testDid);
 
-    if(response.status === 200) {
-      networkAvailable = true;
+    try {
+      const response = await fetch(testDid);
+
+      if(response.status === 200) {
+        networkAvailable = true;
+      }
+    } catch {
+      // no op, all tests will run through stubs
     }
   });
 
