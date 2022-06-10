@@ -17,7 +17,7 @@ Proposals for the specification itself should be submitted as pull requests to t
 ## [V1.0 Milestone](https://github.com/TBD54566975/dwn-sdk-js/milestone/1)
 
 ## Installation
-Since this SDK is still in early stages, we haven't yet to published to npm. Until then, we suggest using [`npm link`](https://docs.npmjs.com/cli/v8/commands/npm-link) to use this SDK in your own project. Steps:
+Since this SDK is still in early stages, we haven't yet published to npm. Until then, we suggest using [`npm link`](https://docs.npmjs.com/cli/v8/commands/npm-link) to use this SDK in your own project. Steps:
 ```bash
 # clone this repo somewhere
 git clone https://github.com/TBD54566975/dwn-sdk-js.git
