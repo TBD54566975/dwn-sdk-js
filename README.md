@@ -11,7 +11,7 @@ Code Coverage
 This repository contains a reference implementation of Decentralized Web Node (DWN) as per the [specification](https://identity.foundation/decentralized-web-node/spec/). This specification is in a draft state and very much so a WIP. For the foreseeable future, a lot of the work on DWN will be split across this repo and the repo that houses the specification, which you can find [here](https://github.com/decentralized-identity/decentralized-web-node). The overall goal is to produce a v1.0 specification along with a reference implementation by 07/01/2022. 
 
 
-Proposals for the specification itself should be submitted as pull requests to the [spec repo](https://github.com/decentralized-identity/decentralized-web-node). Similarly, issues pertaining to the specification itself should be submitted as github issues to the [spec repo](https://github.com/decentralized-identity/decentralized-web-node). 
+Proposals and issues for the specification itself should be submitted as pull requests to the [spec repo](https://github.com/decentralized-identity/decentralized-web-node).
 
 
 ## [V1.0 Milestone](https://github.com/TBD54566975/dwn-sdk-js/milestone/1)
