@@ -10,7 +10,7 @@ import type { Blockstore } from 'interface-blockstore';
 //  and Chrome for Android.
 export class BlockstoreLevel implements Blockstore {
   db: Level<string, Uint8Array>;
-
+  status: 'opening' | 'closing' | 'open';
   /**
    * @param location - must be a directory path (relative or absolute) where LevelDB will store its
    * files, or in browsers, the name of
@@ -19,6 +19,7 @@ export class BlockstoreLevel implements Blockstore {
    */
   constructor(location: string) {
     this.db = new Level(location, { keyEncoding: 'utf8', valueEncoding: 'binary' });
+    this.status = this.db.status;
   }
 
   async open(): Promise<void> {

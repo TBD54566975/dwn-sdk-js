@@ -47,6 +47,8 @@ export class MessageStoreLevel implements MessageStore {
     // TODO: parameterize `name`
     // calling `searchIndex` twice causes the process to hang, so check to see if the index
     // has already been "opened" before opening it again.
+    if(this.db.status === 'open' || this.db.status === 'opening') return;
+
     if (!this.index) {
       this.index = await searchIndex({ name: this.config.indexLocation });
     }
