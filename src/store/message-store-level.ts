@@ -79,7 +79,7 @@ export class MessageStoreLevel implements MessageStore {
 
     // parse query into a query that is compatible with the index we're using
     const indexQueryTerms: string[] = MessageStoreLevel.buildIndexQueryTerms(copy);
-    const { RESULTS: indexResults } = await this.index.QUERY({ AND: indexQueryTerms });
+    const { RESULT: indexResults } = await this.index.QUERY({ AND: indexQueryTerms });
 
 
     for (let result of indexResults) {
