@@ -40,7 +40,7 @@ export class MessageStoreLevel implements MessageStore {
     this.db = new BlockstoreLevel(this.config.blockstoreLocation);
   }
 
-  async open(): Promise<void> {
+  async open(name?: string): Promise<void> {
     await this.db.open();
 
     // TODO: look into using the same level we're using for blockstore
@@ -48,7 +48,7 @@ export class MessageStoreLevel implements MessageStore {
     // calling `searchIndex` twice causes the process to hang, so check to see if the index
     // has already been "opened" before opening it again.
     if (!this.index) {
-      this.index = await searchIndex({ name: this.config.indexLocation });
+      this.index = await searchIndex({ name: name ? name : this.config.indexLocation });
     }
   }
 
