@@ -8,7 +8,6 @@ import * as jws from '../src/jose/jws';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 
-import { base64url } from 'multiformats/bases/base64';
 import { CID } from 'multiformats/cid';
 import { generateEd25519Jwk, generateSecp256k1Jwk } from '../src/jose/jwk';
 import { verifyMessageSignature } from '../src/message';
