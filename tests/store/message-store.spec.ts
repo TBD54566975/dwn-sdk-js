@@ -76,11 +76,7 @@ describe('MessageStoreLevel Tests', () => {
           'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
           'requester' : 'did:jank:alice'
         },
-        'attestation': {
-          'payload'   : 'farts',
-          'protected' : 'farts',
-          'signature' : 'farts'
-        }
+        'attestation': 'doodoodoo'
       };
 
       await messageStore.put(msg);
@@ -106,11 +102,7 @@ describe('MessageStoreLevel Tests', () => {
           'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
           'requester' : 'did:jank:alice'
         },
-        'attestation': {
-          'payload'   : 'farts',
-          'protected' : 'farts',
-          'signature' : 'farts'
-        }
+        'attestation': 'doodoodoo'
       };
 
       await messageStore.put(msg);
