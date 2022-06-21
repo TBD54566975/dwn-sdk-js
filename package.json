@@ -52,6 +52,7 @@
     "lodash": "4.17.21",
     "ms": "2.1.3",
     "multiformats": "9.6.4",
+    "node-cache": "5.1.2",
     "search-index": "3.0.2"
   },
   "devDependencies": {
