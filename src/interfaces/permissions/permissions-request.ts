@@ -1,7 +1,6 @@
 import { DIDResolver } from '../../did/did-resolver';
 
 import type { Ability, Conditions } from './permission';
-import type { JwsFlattened } from '../../jose/jws';
 import type { MessageStore } from '../../store/message-store';
 
 /**
@@ -20,7 +19,7 @@ export async function handlePermissionsRequest(
 
 export type PermissionsRequestMessage = {
   descriptor: PermissionsRequestDescriptor,
-  attestation: JwsFlattened
+  attestation: string
 };
 
 export type PermissionsRequestDescriptor = {

@@ -19,27 +19,17 @@ const signers: { [key:string]: Signer } = {
 };
 
 /**
- * A JWS in flattened JWS JSON format.
- */
-export type JwsFlattened = {
-  protected: string,
-  payload: string,
-  signature: string
-};
-
-/**
- * Signs the given payload as a JWS.
- * NOTE: this is mainly used by tests to create valid test data.
+ * Signs the given payload and header as a JWS.
  * @throws {Error} if the provided key is unsupported.
  */
-export async function sign (protectedHeader: object, payload: Uint8Array, jwkPrivate: JwkPrivate): Promise<JwsFlattened> {
+export async function sign(payload: Uint8Array, jwkPrivate: JwkPrivate): Promise<string> {
   const signFn: Signer = signers[jwkPrivate.crv];
 
   if (!signFn) {
     throw new Error(`unsupported crv. crv must be one of ${Object.keys(signers)}`);
   }
 
-  const protectedHeaderString = JSON.stringify(protectedHeader);
+  const protectedHeaderString = JSON.stringify({ kid: jwkPrivate.kid, alg: jwkPrivate.alg });
   const protectedHeaderBytes = new TextEncoder().encode(protectedHeaderString);
   const protectedHeaderBase64UrlString = base64url.baseEncode(protectedHeaderBytes);
 
@@ -50,27 +40,25 @@ export async function sign (protectedHeader: object, payload: Uint8Array, jwkPri
   const signatureBytes = await signFn(signingInputBytes, jwkPrivate);
   const signatureBase64UrlString = base64url.baseEncode(signatureBytes);
 
-  return {
-    payload   : payloadBase64UrlString,
-    protected : protectedHeaderBase64UrlString,
-    signature : signatureBase64UrlString
-  };
+  return `${protectedHeaderBase64UrlString}.${payloadBase64UrlString}.${signatureBase64UrlString}`;
 }
 
 /**
- * Verifies the JWS signature.
+ * Verifies that the provided JWS was signed using the private key of the provided public key.
  * @returns `true` if signature is successfully verified, false otherwise.
  * @throws {Error} if key given is unsupported.
  */
-export async function verify(jwsFlattened: JwsFlattened, jwkPublic: JwkPublic): Promise<boolean> {
+export async function verify(jwsCompact: string, jwkPublic: JwkPublic): Promise<boolean> {
   const verifyFn: Verifier = verifiers[jwkPublic.crv];
 
   if (!verifyFn) {
     throw new Error(`unsupported crv. crv must be one of ${Object.keys(verifiers)}`);
   }
 
-  const payload = new TextEncoder().encode(`${jwsFlattened.protected}.${jwsFlattened.payload}`);
-  const signatureBytes = base64url.baseDecode(jwsFlattened.signature);
+  const [protectedHeader, payload, signature] = jwsCompact.split('.');
 
-  return await verifyFn(payload, signatureBytes, jwkPublic);
+  const payloadBytes = new TextEncoder().encode(`${protectedHeader}.${payload}`);
+  const signatureBytes = base64url.baseDecode(signature);
+
+  return await verifyFn(payloadBytes, signatureBytes, jwkPublic);
 }

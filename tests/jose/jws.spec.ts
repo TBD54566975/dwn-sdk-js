@@ -9,23 +9,21 @@ chai.use(chaiAsPromised);
 
 describe('Jws', () => {
   it('should sign and verify secp256k1 signature using a key vector correctly',  async () => {
-    const { publicKeyJwk, privateKeyJwk } = await generateSecp256k1Jwk();
+    const { publicKeyJwk, privateKeyJwk } = await generateSecp256k1Jwk('did:jank:alice');
 
-    const protectedHeader = { alg: 'ES256K', anyHeader: 'anyHeaderValue' };
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
-    const jwsObject = await jws.sign(protectedHeader, payloadBytes, privateKeyJwk);
+    const jwsCompact = await jws.sign(payloadBytes, privateKeyJwk);
 
-    const verificationResult = await jws.verify(jwsObject, publicKeyJwk);
+    const verificationResult = await jws.verify(jwsCompact, publicKeyJwk);
 
     expect(verificationResult).to.be.true;
   });
 
   it('should sign and verify ed25519 signature using an appropriate keypair', async () => {
-    const { publicKeyJwk, privateKeyJwk } = await generateEd25519Jwk();
-
-    const protectedHeader = { anyHeader: 'anyHeaderValue' };
+    const { publicKeyJwk, privateKeyJwk } = await generateEd25519Jwk('did:jank:alice');;
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
-    const jwsObject = await jws.sign(protectedHeader, payloadBytes, privateKeyJwk);
+
+    const jwsObject = await jws.sign(payloadBytes, privateKeyJwk);
 
     const verificationResult = await jws.verify(jwsObject, publicKeyJwk);
 
@@ -33,13 +31,12 @@ describe('Jws', () => {
   });
 
   it('should throw error if attempting to sign using an unsupported JWK',  async () => {
-    const { privateKeyJwk } = await generateEd25519Jwk();
+    const { privateKeyJwk } = await generateEd25519Jwk('did:jank:alice');
     const unsupportedJwk = { randomUnsupportedProperty: 'anyValue', ...privateKeyJwk as any }; // Clone private key.
     unsupportedJwk.crv = 'derp';
 
-    const protectedHeader = { anyHeader: 'anyHeaderValue' };
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
-    const signingPromise = jws.sign(protectedHeader, payloadBytes, unsupportedJwk);
+    const signingPromise = jws.sign(payloadBytes, unsupportedJwk);
 
     await expect(signingPromise).to.be.rejectedWith('unsupported crv');
   });

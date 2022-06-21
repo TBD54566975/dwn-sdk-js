@@ -10,6 +10,7 @@ import sinon from 'sinon';
 
 import { base64url } from 'multiformats/bases/base64';
 import { CID } from 'multiformats/cid';
+import { generateEd25519Jwk, generateSecp256k1Jwk } from '../src/jose/jwk';
 import { verifyMessageSignature } from '../src/message';
 import { sha256, sha512 } from 'multiformats/hashes/sha2';
 
@@ -50,12 +51,12 @@ describe('Message Tests', () => {
           'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
           'requester' : 'did:jank:alice'
         },
-        'attestation': {
-          'payload'   : 'farts',
-          'protected' : 'farts',
-          'signature' : 'farts'
-        }
+        'attestation': undefined as any
       };
+
+      const { privateKeyJwk } = await generateSecp256k1Jwk('whatever');
+      const bogusPayload = new TextEncoder().encode('dingdong');
+      msg.attestation = await jws.sign(bogusPayload, privateKeyJwk);
 
       const resolverStub = sinon.createStubInstance(DIDResolver);
       await expect(verifyMessageSignature(msg, resolverStub))
@@ -63,14 +64,6 @@ describe('Message Tests', () => {
     });
 
     it('throws an exception if CID of descriptor !== attestation payload', async () => {
-      // create a bogus CID
-      const cborBytes = cbor.encode({ farts: 'smell' });
-      const cborHash = await sha256.digest(cborBytes);
-      const cid = await CID.createV1(cbor.code, cborHash);
-
-      // create JWS payload with bogus CID in it
-      const cidString = base64url.baseEncode(cid.bytes);
-
       const msg = {
         'descriptor': {
           'ability': {
@@ -82,12 +75,16 @@ describe('Message Tests', () => {
           'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
           'requester' : 'did:jank:alice'
         },
-        'attestation': {
-          'payload'   : cidString,
-          'protected' : 'farts',
-          'signature' : 'farts'
-        }
+        'attestation': undefined as any
       };
+
+      const { privateKeyJwk } = await generateSecp256k1Jwk('whatever');
+
+      // create a bogus CID
+      const cborBytes = cbor.encode({ farts: 'smell' });
+      const cborHash = await sha256.digest(cborBytes);
+      const cid = await CID.createV1(cbor.code, cborHash);
+      msg.attestation = await jws.sign(cid.bytes, privateKeyJwk);
 
       const resolverStub = sinon.createStubInstance(DIDResolver);
       await expect(verifyMessageSignature(msg, resolverStub))
@@ -106,20 +103,16 @@ describe('Message Tests', () => {
           'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
           'requester' : 'did:jank:alice'
         },
-        'attestation': {
-          'payload'   : undefined, // this will be set below
-          'protected' : 'farts',
-          'signature' : 'farts'
-        }
+        'attestation': undefined as any
       };
 
       // create JWS payload using message.descriptor
       const jsonBytes = json.encode(msg.descriptor);
       const jsonHash = await sha256.digest(jsonBytes);
       const cid = await CID.createV1(json.code, jsonHash);
-      const cidString = base64url.baseEncode(cid.bytes);
 
-      msg.attestation.payload = cidString;
+      const { privateKeyJwk } = await generateSecp256k1Jwk('whatever');
+      msg.attestation = await jws.sign(cid.bytes, privateKeyJwk);
 
       const resolverStub = sinon.createStubInstance(DIDResolver);
       await expect(verifyMessageSignature(msg, resolverStub))
@@ -139,20 +132,16 @@ describe('Message Tests', () => {
           'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
           'requester' : 'did:jank:alice'
         },
-        'attestation': {
-          'payload'   : undefined, // this will be set below
-          'protected' : 'farts',
-          'signature' : 'farts'
-        }
+        'attestation': undefined as any
       };
 
       // create JWS payload using message.descriptor
       const cborBytes = cbor.encode(msg.descriptor);
       const cborHash = await sha512.digest(cborBytes);
       const cid = await CID.createV1(cbor.code, cborHash);
-      const cidString = base64url.baseEncode(cid.bytes);
 
-      msg.attestation.payload = cidString;
+      const { privateKeyJwk } = await generateSecp256k1Jwk('whatever');
+      msg.attestation = await jws.sign(cid.bytes, privateKeyJwk);
 
       const resolverStub = sinon.createStubInstance(DIDResolver);
       await expect(verifyMessageSignature(msg, resolverStub))
@@ -172,25 +161,17 @@ describe('Message Tests', () => {
           'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
           'requester' : 'did:jank:alice'
         },
-        'attestation': {
-          'payload'   : undefined, // this will be set below
-          'protected' : undefined, // this will be set below
-          'signature' : 'farts'
-        }
+        'attestation': undefined as any
       };
 
       // create JWS payload using message.descriptor
       const cborBytes = cbor.encode(msg.descriptor);
       const cborHash = await sha256.digest(cborBytes);
       const cid = await CID.createV1(cbor.code, cborHash);
-      const cidString = base64url.baseEncode(cid.bytes);
 
-      msg.attestation.payload = cidString;
+      const { privateKeyJwk } = await generateEd25519Jwk('did:jank:alice#kid1');
 
-      // base64url encode value of `attestation.protected
-      const jwsProtected = JSON.stringify({ 'kid': 'did:jank:alice#kid1' });
-      const jwsProtectedBytes = new TextEncoder().encode(jwsProtected);
-      msg.attestation.protected = base64url.baseEncode(jwsProtectedBytes);
+      msg.attestation = await jws.sign(cid.bytes, privateKeyJwk);
 
       const expectedError = new Error('did:jank:alice is not a valid DID');
 
@@ -218,25 +199,17 @@ describe('Message Tests', () => {
           'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
           'requester' : 'did:jank:alice'
         },
-        'attestation': {
-          'payload'   : undefined, // this will be set below
-          'protected' : undefined, // this will be set below
-          'signature' : 'farts'
-        }
+        'attestation': undefined as any
       };
 
       // create JWS payload using message.descriptor
       const cborBytes = cbor.encode(msg.descriptor);
       const cborHash = await sha256.digest(cborBytes);
       const cid = await CID.createV1(cbor.code, cborHash);
-      const cidString = base64url.baseEncode(cid.bytes);
 
-      msg.attestation.payload = cidString;
+      const { privateKeyJwk } = await generateEd25519Jwk('did:jank:alice#kid1');
 
-      // base64url encode value of `attestation.protected
-      const jwsProtected = JSON.stringify({ 'kid': 'did:jank:alice#kid1' });
-      const jwsProtectedBytes = new TextEncoder().encode(jwsProtected);
-      msg.attestation.protected = base64url.baseEncode(jwsProtectedBytes);
+      msg.attestation = await jws.sign(cid.bytes, privateKeyJwk);
 
       const mockResolutionResult = {
         didResolutionMetadata : {},
@@ -270,25 +243,17 @@ describe('Message Tests', () => {
           'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
           'requester' : 'did:jank:alice'
         },
-        'attestation': {
-          'payload'   : undefined, // this will be set below
-          'protected' : undefined, // this will be set below
-          'signature' : 'farts'
-        }
+        'attestation': undefined as any
       };
 
       // create JWS payload using message.descriptor
       const cborBytes = cbor.encode(msg.descriptor);
       const cborHash = await sha256.digest(cborBytes);
       const cid = await CID.createV1(cbor.code, cborHash);
-      const cidString = base64url.baseEncode(cid.bytes);
 
-      msg.attestation.payload = cidString;
+      const { privateKeyJwk } = await generateEd25519Jwk('did:jank:alice#kid1');
 
-      // base64url encode value of `attestation.protected
-      const jwsProtected = JSON.stringify({ 'kid': 'did:jank:alice#kid1' });
-      const jwsProtectedBytes = new TextEncoder().encode(jwsProtected);
-      msg.attestation.protected = base64url.baseEncode(jwsProtectedBytes);
+      msg.attestation = await jws.sign(cid.bytes, privateKeyJwk);
 
       const mockResolutionResult = {
         didResolutionMetadata : {},
@@ -327,25 +292,17 @@ describe('Message Tests', () => {
           'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
           'requester' : 'did:jank:alice'
         },
-        'attestation': {
-          'payload'   : undefined, // this will be set below
-          'protected' : undefined, // this will be set below
-          'signature' : 'farts'
-        }
+        'attestation': undefined as any
       };
 
       // create JWS payload using message.descriptor
       const cborBytes = cbor.encode(msg.descriptor);
       const cborHash = await sha256.digest(cborBytes);
       const cid = await CID.createV1(cbor.code, cborHash);
-      const cidString = base64url.baseEncode(cid.bytes);
 
-      msg.attestation.payload = cidString;
+      const { privateKeyJwk } = await generateEd25519Jwk('did:jank:alice#kid1');
 
-      // base64url encode value of `attestation.protected
-      const jwsProtected = JSON.stringify({ 'kid': 'did:jank:alice#kid1' });
-      const jwsProtectedBytes = new TextEncoder().encode(jwsProtected);
-      msg.attestation.protected = base64url.baseEncode(jwsProtectedBytes);
+      msg.attestation = await jws.sign(cid.bytes, privateKeyJwk);
 
       const mockResolutionResult = {
         didResolutionMetadata : {},
@@ -384,7 +341,7 @@ describe('Message Tests', () => {
           'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
           'requester' : 'did:jank:alice'
         },
-        attestation: undefined // this will be set below
+        attestation: undefined as any // this will be set below
       };
 
       // create CID of descriptor
@@ -393,14 +350,13 @@ describe('Message Tests', () => {
       const cid = await CID.createV1(cbor.code, cborHash);
 
       // create signature
-      const actualKeyPair = await ed25519.generateKeyPair();
-      const protectedHeader = { alg: 'EdDSA', 'kid': 'did:jank:alice#key1' };
-      const jwsObject = await jws.sign(protectedHeader, cid.bytes, actualKeyPair.privateKeyJwk);
+      const actualKeyPair = await ed25519.generateKeyPair('did:jank:alice#key1');
+      const jwsObject = await jws.sign(cid.bytes, actualKeyPair.privateKeyJwk);
 
       msg.attestation = jwsObject;
 
       // add a different key with the same kid to DID Doc
-      const wrongKeyPair = await ed25519.generateKeyPair();
+      const wrongKeyPair = await ed25519.generateKeyPair('did:jank:alice#key1');
 
       const mockResolutionResult = {
         didResolutionMetadata : {},
@@ -439,7 +395,7 @@ describe('Message Tests', () => {
           'objectId'  : '03754d75-c6b9-4fdd-891f-7eb2ad4bbd21',
           'requester' : 'did:jank:alice'
         },
-        attestation: undefined // this will be set below
+        attestation: undefined as any // this will be set below
       };
 
       // create CID of descriptor
@@ -448,9 +404,8 @@ describe('Message Tests', () => {
       const cid = await CID.createV1(cbor.code, cborHash);
 
       // create signature
-      const { publicKeyJwk, privateKeyJwk } = await ed25519.generateKeyPair();
-      const protectedHeader = { alg: 'EdDSA', 'kid': 'did:jank:alice#key1' };
-      const jwsObject = await jws.sign(protectedHeader, cid.bytes, privateKeyJwk);
+      const { publicKeyJwk, privateKeyJwk } = await ed25519.generateKeyPair('did:jank:alice#key1');
+      const jwsObject = await jws.sign(cid.bytes, privateKeyJwk);
 
       msg.attestation = jwsObject;
 

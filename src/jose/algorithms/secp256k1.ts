@@ -1,3 +1,5 @@
+import type { Jwk } from '../types';
+
 import * as secp256k1 from '@noble/secp256k1';
 
 import { base64url } from 'multiformats/bases/base64';
@@ -9,9 +11,12 @@ import { sha256 } from 'multiformats/hashes/sha2';
  * https://www.iana.org/assignments/jose/jose.xhtml#web-key-elliptic-curve
  * https://datatracker.ietf.org/doc/html/draft-ietf-cose-webauthn-algorithms-06#section-3.1
  */
-export type JwkSecp256k1Public = {
-  kty: 'EC';
+export type JwkSecp256k1Public = Jwk & {
+  alg: 'ES256K';
   crv: 'secp256k1';
+  kid: string;
+  kty: 'EC';
+  use: 'sig';
   x: string;
   y: string;
 };
@@ -27,7 +32,7 @@ export type JwkSecp256k1Private = JwkSecp256k1Public & {
  * generates a random keypair
  * @returns the public and private keys as JWKs
  */
-export async function generateKeyPair(): Promise<{publicKeyJwk: JwkSecp256k1Public, privateKeyJwk: JwkSecp256k1Private}> {
+export async function generateKeyPair(kid: string): Promise<{publicKeyJwk: JwkSecp256k1Public, privateKeyJwk: JwkSecp256k1Private}> {
   const privateKeyBytes = secp256k1.utils.randomPrivateKey();
   // the public key is uncompressed which means that it contains both the x and y values.
   // the first byte is a header that indicates whether the key is uncompressed (0x04 if uncompressed).
@@ -40,7 +45,15 @@ export async function generateKeyPair(): Promise<{publicKeyJwk: JwkSecp256k1Publ
   const x = base64url.baseEncode(publicKeyBytes.subarray(1, 33));
   const y = base64url.baseEncode(publicKeyBytes.subarray(33, 65));
 
-  const publicKeyJwk: JwkSecp256k1Public = { kty: 'EC', crv: 'secp256k1', x, y };
+  const publicKeyJwk: JwkSecp256k1Public = {
+    alg : 'ES256K',
+    kid,
+    kty : 'EC',
+    use : 'sig',
+    crv : 'secp256k1',
+    x,
+    y
+  };
   const privateKeyJwk: Required<JwkSecp256k1Private> = { ...publicKeyJwk, d };
 
   return { publicKeyJwk, privateKeyJwk };

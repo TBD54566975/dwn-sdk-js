@@ -1,12 +1,17 @@
+import type { Jwk } from '../types';
+
 import * as ed25519 from '@noble/ed25519';
 import { base64url } from 'multiformats/bases/base64';
 
 /**
  * An Ed25519 public key in JWK format.
  */
-export type JwkEd25519Public = {
-  kty: 'OKP';
+export type JwkEd25519Public = Jwk & {
+  alg: 'EdDSA'
   crv: 'Ed25519';
+  kid: string;
+  kty: 'OKP';
+  use: 'sig';
   x: string;
 };
 
@@ -22,7 +27,7 @@ export type JwkEd25519Private = JwkEd25519Public & {
  * Generates ED25519 public-private key pair.
  * @returns Public and private ED25519 keys in JWK format.
  */
-export async function generateKeyPair (): Promise<{
+export async function generateKeyPair (kid: string): Promise<{
   publicKeyJwk: JwkEd25519Public,
   privateKeyJwk: JwkEd25519Private
 }> {
@@ -32,7 +37,14 @@ export async function generateKeyPair (): Promise<{
   const d = base64url.baseEncode(privateKeyBytes);
   const x = base64url.baseEncode(publicKeyBytes);
 
-  const publicKeyJwk: JwkEd25519Public = { kty: 'OKP', crv: 'Ed25519', x };
+  const publicKeyJwk: JwkEd25519Public = {
+    alg : 'EdDSA',
+    crv : 'Ed25519',
+    kid,
+    kty : 'OKP',
+    use : 'sig',
+    x
+  };
   const privateKeyJwk: Required<JwkEd25519Private> = { ...publicKeyJwk, d };
 
   return { publicKeyJwk, privateKeyJwk };

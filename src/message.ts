@@ -71,10 +71,12 @@ export async function verifyMessageSignature(message: Message, didResolver: DIDR
   const { descriptor, attestation } = message;
   let providedCID: CID;
 
+  const [protectedHeader, payload] = attestation.split('.');
+
   // check to ensure that attestation payload is a valid CID
   try {
     // `baseDecode` throws SyntaxError: Unexpected end of data if payload is not base64
-    const payloadBytes = base64url.baseDecode(attestation.payload);
+    const payloadBytes = base64url.baseDecode(payload);
 
     // `decode` throws `Error` if the bytes provided do not contain a valid binary representation
     //  of a CID.
@@ -109,7 +111,7 @@ export async function verifyMessageSignature(message: Message, didResolver: DIDR
   //  - use public key to verify signature
 
   // `baseDecode` throws SyntaxError: Unexpected end of data if paylod is not base64
-  const protectedBytes = base64url.baseDecode(attestation.protected);
+  const protectedBytes = base64url.baseDecode(protectedHeader);
   const protectedJson = new TextDecoder().decode(protectedBytes);
 
   const { kid } = JSON.parse(protectedJson);
