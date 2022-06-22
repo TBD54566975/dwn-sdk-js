@@ -3,25 +3,7 @@ import * as secp256k1 from '@noble/secp256k1';
 import { base64url } from 'multiformats/bases/base64';
 import { sha256 } from 'multiformats/hashes/sha2';
 
-/**
- * A SECP256K1 public key in JWK format.
- * Values taken from:
- * https://www.iana.org/assignments/jose/jose.xhtml#web-key-elliptic-curve
- * https://datatracker.ietf.org/doc/html/draft-ietf-cose-webauthn-algorithms-06#section-3.1
- */
-export type JwkSecp256k1Public = {
-  kty: 'EC';
-  crv: 'secp256k1';
-  x: string;
-  y: string;
-};
-
-/**
- * A SECP256K1 private key in JWK format.
- */
-export type JwkSecp256k1Private = JwkSecp256k1Public & {
-  d: string; // Only used by a private key.
-};
+import type { JwkSecp256k1Public,  JwkSecp256k1Private } from '../types';
 
 /**
  * generates a random keypair
@@ -40,8 +22,14 @@ export async function generateKeyPair(): Promise<{publicKeyJwk: JwkSecp256k1Publ
   const x = base64url.baseEncode(publicKeyBytes.subarray(1, 33));
   const y = base64url.baseEncode(publicKeyBytes.subarray(33, 65));
 
-  const publicKeyJwk: JwkSecp256k1Public = { kty: 'EC', crv: 'secp256k1', x, y };
-  const privateKeyJwk: Required<JwkSecp256k1Private> = { ...publicKeyJwk, d };
+  const publicKeyJwk: JwkSecp256k1Public = {
+    alg : 'ES256K',
+    kty : 'EC',
+    crv : 'secp256k1',
+    x,
+    y
+  };
+  const privateKeyJwk: JwkSecp256k1Private = { ...publicKeyJwk, d };
 
   return { publicKeyJwk, privateKeyJwk };
 }
