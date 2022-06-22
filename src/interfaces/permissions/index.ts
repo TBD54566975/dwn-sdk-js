@@ -1,4 +1,6 @@
-export * from './permission';
-export * from './permissions-request';
+import type { InterfaceMethod } from '../types';
 
-export type PermissionsMethod = 'PermissionsRequest' | 'PermissionsGrant' | 'PermissionsRevoke';
+import { PermissionsRequest, processPermissionsRequest } from './request';
+
+export const methods: InterfaceMethod[] = [ processPermissionsRequest ];
+export const messages = [ PermissionsRequest ];

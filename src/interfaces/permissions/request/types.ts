@@ -11,6 +11,6 @@ export type PermissionsRequestDescriptor = {
   objectId?: string
 };
 
-export interface JsonPermissionsRequest extends JsonMessage, Authorization {
+export interface JsonPermissionsRequest extends JsonMessage {
   descriptor: PermissionsRequestDescriptor;
 }

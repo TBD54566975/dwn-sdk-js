@@ -1,3 +1,4 @@
+import type { JwkPrivate } from '../../types';
 /**
  * General JWS definition. Payload is returned as an empty
  * string when JWS Unencoded Payload Option
@@ -34,3 +35,8 @@ export interface JwsHeaderParameters {
   /** JWS "kid" (Key ID) Parameter. */
   kid: string
 }
+
+export type SignatureInput = {
+  protectedHeader: JwsHeaderParameters
+  jwkPrivate: JwkPrivate
+};

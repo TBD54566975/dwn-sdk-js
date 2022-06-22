@@ -1,16 +1,9 @@
-import type { GeneralJws, JwsHeaderParameters } from './types';
-import type { JwkPrivate } from '../../types';
+import type { GeneralJws, SignatureInput } from './types';
+import type { Signfn } from '../../types';
 
 import { base64url } from 'multiformats/bases/base64';
 import { sign as signEd25519 } from '../../algorithms/ed25519';
 import { sign as signSecp256k1 } from '../../algorithms/secp256k1';
-
-type Signfn = (payload: Uint8Array, privateKeyJwk: JwkPrivate) => Promise<Uint8Array>;
-
-type SignatureInput = {
-  protectedHeader: JwsHeaderParameters
-  jwkPrivate: JwkPrivate
-};
 
 const signers: { [key:string]: Signfn } = {
   'Ed25519'   : signEd25519,

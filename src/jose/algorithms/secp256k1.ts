@@ -3,7 +3,7 @@ import * as secp256k1 from '@noble/secp256k1';
 import { base64url } from 'multiformats/bases/base64';
 import { sha256 } from 'multiformats/hashes/sha2';
 
-import type { JwkSecp256k1Public,  JwkSecp256k1Private } from '../types';
+import type { JwkSecp256k1Public, JwkSecp256k1Private, Signfn, VerifyFn } from '../types';
 
 /**
  * generates a random keypair
@@ -40,14 +40,14 @@ export async function generateKeyPair(): Promise<{publicKeyJwk: JwkSecp256k1Publ
  * @param privateKeyJwk - the key to sign with
  * @returns the signed content (aka signature)
  */
-export async function sign(content: Uint8Array, privateKeyJwk: JwkSecp256k1Private): Promise<Uint8Array> {
+export const sign: Signfn = async (content: Uint8Array, privateKeyJwk: JwkSecp256k1Private): Promise<Uint8Array> => {
   // the underlying lib expects us to hash the content ourselves:
   // https://github.com/paulmillr/noble-secp256k1/blob/97aa518b9c12563544ea87eba471b32ecf179916/index.ts#L1160
   const hashedContent = await sha256.encode(content);
   const privateKeyBytes = base64url.baseDecode(privateKeyJwk.d);
 
   return await secp256k1.sign(hashedContent, privateKeyBytes);
-}
+};
 
 /**
  * Verifies a signature against the provided payload hash and public key.
@@ -56,7 +56,7 @@ export async function sign(content: Uint8Array, privateKeyJwk: JwkSecp256k1Priva
  * @param publicKeyJwk - the key to verify with
  * @returns a boolean indicating whether the signature matches
  */
-export async function verify(content: Uint8Array, signature: Uint8Array, publicKeyJwk: JwkSecp256k1Public): Promise<boolean> {
+export const verify: VerifyFn = async (content: Uint8Array, signature: Uint8Array, publicKeyJwk: JwkSecp256k1Public): Promise<boolean> => {
   const xBytes = base64url.baseDecode(publicKeyJwk.x);
   const yBytes = base64url.baseDecode(publicKeyJwk.y);
 
@@ -72,4 +72,4 @@ export async function verify(content: Uint8Array, signature: Uint8Array, publicK
   const hashedContent = await sha256.encode(content);
 
   return secp256k1.verify(signature, hashedContent, publicKeyBytes);
-}
+};

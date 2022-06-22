@@ -40,3 +40,6 @@ export type JwkSecp256k1Private = JwkSecp256k1Public & {
 
 export type JwkPublic = JwkSecp256k1Public | JwkEd25519Public;
 export type JwkPrivate = JwkSecp256k1Private | JwkEd25519Private;
+
+export type Signfn = (payload: Uint8Array, privateKeyJwk: JwkPrivate) => Promise<Uint8Array>;
+export type VerifyFn = (payload: Uint8Array, signature: Uint8Array, publicKeyJwk: JwkPublic) => Promise<boolean>;

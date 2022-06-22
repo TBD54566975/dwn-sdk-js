@@ -17,7 +17,7 @@ const codecs = {
 
 /**
  * generates a CID for the provided payload
- * @param payload 
+ * @param payload
  * @param codecCode - the codec to use. Defaults to cbor
  * @param multihashCode - the multihasher to use. Defaults to sha256
  * @returns payload CID
@@ -25,7 +25,7 @@ const codecs = {
  * @throws {Error} encoding fails
  * @throws {Error} if hasher is not supported
  */
-async function generateCid(payload: any, codecCode = cbor.code, multihashCode = sha256.code): Promise<CID> {
+export async function generateCid(payload: any, codecCode = cbor.code, multihashCode = sha256.code): Promise<CID> {
   const codec = codecs[codecCode];
   if (!codec) {
     throw new Error(`codec [${codecCode}] not supported`);
@@ -38,11 +38,11 @@ async function generateCid(payload: any, codecCode = cbor.code, multihashCode = 
 
   const payloadBytes = codec.encode(payload);
   const payloadHash = await hasher.digest(payloadBytes);
-  
+
   return await CID.createV1(codec.code, payloadHash);
 }
 
-function parseCid(str: string): CID {
+export function parseCid(str: string): CID {
   const cid = CID.parse(str).toV1();
 
   if (!codecs[cid.code]) {
