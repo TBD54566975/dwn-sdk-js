@@ -1,6 +1,3 @@
-import type { DIDResolutionResult } from '../../../src/did/did-resolver';
-import type { SinonStub } from 'sinon';
-
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { DIDResolver } from '../../../src/did/did-resolver';
@@ -11,7 +8,7 @@ import sinon from 'sinon';
 
 chai.use(chaiAsPromised);
 
-describe('General JWS Sign/Verify', () => {
+describe.only('General JWS Sign/Verify', () => {
   afterEach(() => {
     // restores all fakes, stubs, spies etc. not restoring causes a memory leak.
     // more info here: https://sinonjs.org/releases/v13/general-setup/
@@ -50,6 +47,105 @@ describe('General JWS Sign/Verify', () => {
 
     expect(verificatonResult.signers.length).to.equal(1);
     expect(verificatonResult.signers).to.include('did:jank:alice');
+  });
+
+  it('should sign and verify ed25519 signature using a key vector correctly',  async () => {
+    const { privateKeyJwk, publicKeyJwk } = await generateEd25519Jwk();
+    const payloadBytes = new TextEncoder().encode('anyPayloadValue');
+    const protectedHeader = { alg: 'EdDSA', kid: 'did:jank:alice#key1' };
+
+    const signer = await GeneralJwsSigner.create(payloadBytes, [{ jwkPrivate: privateKeyJwk, protectedHeader }]);
+    const jws = signer.getJws();
+
+    const mockResolutionResult = {
+      didResolutionMetadata : {},
+      didDocument           : {
+        verificationMethod: [{
+          id   : 'did:jank:alice#key1',
+          type : 'JsonWebKey2020',
+          publicKeyJwk
+        }]
+      },
+      didDocumentMetadata: {}
+    };
+
+    const resolverStub = sinon.createStubInstance(DIDResolver, {
+      // @ts-ignore
+      resolve: sinon.stub().withArgs('did:jank:alice').resolves(mockResolutionResult)
+    });
+
+    const verifier = new GeneralJwsVerifier(jws);
+
+    const verificatonResult = await verifier.verify(resolverStub);
+
+    expect(verificatonResult.signers.length).to.equal(1);
+    expect(verificatonResult.signers).to.include('did:jank:alice');
+  });
+
+  it('should support multiple signatures using different key types',  async () => {
+    const secp256k1Keys = await generateSecp256k1Jwk();
+    const ed25519Keys = await generateEd25519Jwk();
+
+    const alice = {
+      did                  : 'did:jank:alice',
+      jwkPrivate           : secp256k1Keys.privateKeyJwk,
+      jwkPublic            : secp256k1Keys.publicKeyJwk,
+      protectedHeader      : { alg: 'ES256K', kid: 'did:jank:alice#key1' },
+      mockResolutionResult : {
+        didResolutionMetadata : {},
+        didDocument           : {
+          verificationMethod: [{
+            id           : 'did:jank:alice#key1',
+            type         : 'JsonWebKey2020',
+            publicKeyJwk : secp256k1Keys.publicKeyJwk
+          }]
+        },
+        didDocumentMetadata: {}
+      }
+    };
+
+    const bob = {
+      did                  : 'did:jank:bob',
+      jwkPrivate           : ed25519Keys.privateKeyJwk,
+      jwkPublic            : ed25519Keys.publicKeyJwk,
+      protectedHeader      : { alg: 'EdDSA', kid: 'did:jank:bob#key1' },
+      mockResolutionResult : {
+        didResolutionMetadata : {},
+        didDocument           : {
+          verificationMethod: [{
+            id           : 'did:jank:bob#key1',
+            type         : 'JsonWebKey2020',
+            publicKeyJwk : ed25519Keys.publicKeyJwk,
+          }]
+        },
+        didDocumentMetadata: {}
+      }
+    };
+
+    const signatureInputs = [
+      { jwkPrivate: alice.jwkPrivate, protectedHeader: alice.protectedHeader },
+      { jwkPrivate: bob.jwkPrivate, protectedHeader: bob.protectedHeader },
+    ];
+
+    const payloadBytes = new TextEncoder().encode('anyPayloadValue');
+    const signer = await GeneralJwsSigner.create(payloadBytes, signatureInputs);
+    const jws = signer.getJws();
+
+    const resolveStub = sinon.stub();
+    resolveStub.withArgs('did:jank:alice').resolves(alice.mockResolutionResult);
+    resolveStub.withArgs('did:jank:bob').resolves(bob.mockResolutionResult);
+
+    const resolverStub = sinon.createStubInstance(DIDResolver, {
+      // @ts-ignore
+      resolve: resolveStub
+    });
+
+    const verifier = new GeneralJwsVerifier(jws);
+    const verificatonResult = await verifier.verify(resolverStub);
+
+    expect(verificatonResult.signers.length).to.equal(2);
+    expect(verificatonResult.signers).to.include(alice.did);
+    expect(verificatonResult.signers).to.include(bob.did);
 
   });
 });
