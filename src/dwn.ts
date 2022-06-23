@@ -10,6 +10,7 @@ import { MessageStoreLevel } from './store/message-store-level';
 import { Request } from './request';
 import { MessageResult, Response } from './response';
 import { PermissionsInterface } from './interfaces';
+
 export class DWN {
   static methods: { [key:string]: InterfaceMethod } = {
     ...PermissionsInterface.methods

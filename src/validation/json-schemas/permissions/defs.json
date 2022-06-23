@@ -27,10 +27,10 @@
       }
     },
     "grantedTo": {
-      "type": "string"
+      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
     },
     "grantedBy": {
-      "type": "string"
+      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
     },
     "scope": {
       "properties": {

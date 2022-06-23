@@ -6,7 +6,7 @@
   "required": ["target", "messages"],
   "properties": {
     "target": {
-      "type": "string"
+      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
     },
     "messages": {
       "type": "array",

@@ -25,6 +25,17 @@ describe('Request', () => {
       }).throws('target');
     });
 
+    it('throws an exception if target is not a valid DID', () => {
+      const tests = ['hi', 30, true, null, {}, [], 'did:jank'];
+
+      for (let t of tests) {
+        expect(() => {
+          const req = { target: t, messages: [{}] };
+          Request.unmarshal(req);
+        }).to.throw('target');
+      }
+    });
+
     it('throws an exception if messages is missing', () => {
       expect(() => {
         const req = { target: 'did:jank:123' };
