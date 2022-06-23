@@ -1,13 +1,18 @@
-import { DIDResolver } from './did/did-resolver';
-import { MessageStoreLevel } from './store/message-store-level';
-
-
+import type { Context } from './types';
 import type { DIDMethodResolver } from './did/did-resolver';
+import type { InterfaceMethod } from './interfaces/types';
+import type { JsonMessage } from './messages/types';
 import type { MessageStore } from './store/message-store';
 
+import { DIDResolver } from './did/did-resolver';
+import { Message } from './messages/message';
+import { MessageStoreLevel } from './store/message-store-level';
+import { Request } from './request';
+import { MessageResult, Response } from './response';
+import { PermissionsInterface } from './interfaces';
 export class DWN {
-  static methods = {
-    PermissionsRequest: handlePermissionsRequest
+  static methods: { [key:string]: InterfaceMethod } = {
+    ...PermissionsInterface.methods
   };
 
   DIDResolver: DIDResolver;
@@ -21,22 +26,46 @@ export class DWN {
     this.messageStore = mergedConfig.messageStore;
   }
 
+  async processRequest(rawRequest: any): Promise<Response> {
+    let request: Request;
+
+    try {
+      request = Request.unmarshal(rawRequest);
+    } catch (e) {
+      return new Response({
+        status: { code: 400, message: e.message }
+      });
+    }
+
+    const response = new Response();
+    const context: Context = { tenant: request.target };
+
+    for (let message of request.messages) {
+      const result = await this.processMessage(message, context);
+      response.addMessageResult(result);
+    }
+
+    return response;
+  }
+
   /**
    * TODO: add docs
    * @param message
    */
-  async processMessage(message: Message): Promise<void> {
-    const { method: methodName } = message.descriptor;
-    const method = DWN.methods[methodName];
+  async processMessage(rawMessage: object, ctx: Context): Promise<MessageResult> {
+    let message: JsonMessage;
 
-    if (!method) {
-      throw new Error('{methodName} is not a supported method.');
+    try {
+      message = Message.unmarshal(rawMessage);
+    } catch(e) {
+      return new MessageResult({
+        status: { code: 400, message: e.message }
+      });
     }
 
-    // throws exception if message is invalid
-    validateMessage(message);
+    const interfaceMethod = DWN.methods[message.descriptor.method];
 
-    await method(message, this.DIDResolver, this.messageStore);
+    return await interfaceMethod(context, message, this.messageStore, this.DIDResolver);
   }
 };
 

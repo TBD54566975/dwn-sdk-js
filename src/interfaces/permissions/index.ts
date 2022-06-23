@@ -1,6 +1,6 @@
 import { PermissionsRequest, processPermissionsRequest } from './request';
 
 export const PermissionsInterface = {
-  methods  : [ processPermissionsRequest ],
+  methods  : { 'PermissionsRequest': processPermissionsRequest },
   messages : [ PermissionsRequest ]
 };

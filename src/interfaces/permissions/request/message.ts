@@ -17,10 +17,26 @@ type PermissionsRequestOpts = AuthCreateOpts & {
 };
 
 export class PermissionsRequest extends Message {
-  message: JsonPermissionsRequest;
+  protected message: JsonPermissionsRequest;
 
   constructor(message: JsonPermissionsRequest) {
     super(message);
+  }
+
+  get grantedBy(): string {
+    return this.message.descriptor.grantedBy;
+  }
+
+  get grantedTo(): string {
+    return this.message.descriptor.grantedTo;
+  }
+
+  get conditions(): Conditions {
+    return this.message.descriptor.conditions;
+  }
+
+  get scope(): Scope {
+    return this.message.descriptor.scope;
   }
 
   static getType(): string {
