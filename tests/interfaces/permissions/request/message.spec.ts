@@ -91,6 +91,47 @@ describe('PermissionsRequest', () => {
         sinon.restore();
       });
 
+      it('returns signer DID if verification succeeds', async () => {
+        const { privateKeyJwk, publicKeyJwk } = await generateKeyPair();
+
+        const alice = {
+          did                  : 'did:jank:alice',
+          privateKeyJwk        : privateKeyJwk,
+          publicKeyJwk         : publicKeyJwk,
+          protectedHeader      : { alg: 'ES256K', kid: 'did:jank:alice#key1' },
+          mockResolutionResult : {
+            didResolutionMetadata : {},
+            didDocument           : {
+              verificationMethod: [{
+                id           : 'did:jank:alice#key1',
+                type         : 'JsonWebKey2020',
+                publicKeyJwk : publicKeyJwk
+              }]
+            },
+            didDocumentMetadata: {}
+          }
+        };
+
+        const message = await PermissionsRequest.create({
+          description     : 'drugs',
+          grantedBy       : 'did:jank:bob',
+          grantedTo       : 'did:jank:alice',
+          scope           : { method: 'CollectionsWrite' },
+          signingMaterial : { jwkPrivate: alice.privateKeyJwk, protectedHeader: alice.protectedHeader }
+        });
+
+        const resolveStub = sinon.stub();
+        resolveStub.withArgs('did:jank:alice').resolves(alice.mockResolutionResult);
+
+        // @ts-ignore
+        const resolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
+
+        const { signers } = await message.verifyAuth(resolverStub);
+
+        expect(signers.length).to.equal(1);
+        expect(signers).to.include('did:jank:alice');
+      });
+
       it('throws an exception if payload is not valid JSON', async () => {
         const jsonMessage = {
           descriptor: {

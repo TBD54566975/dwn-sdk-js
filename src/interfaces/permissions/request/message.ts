@@ -68,7 +68,9 @@ export class PermissionsRequest extends Message implements Authorizable {
       scope       : opts.scope,
     };
 
-    const authPayload = { descriptorCid: await generateCid(descriptor) };
+    const descriptorCid = await generateCid(descriptor);
+
+    const authPayload = { descriptorCid: descriptorCid.toString() };
     const authPayloadStr = JSON.stringify(authPayload);
     const authPayloadBytes = new TextEncoder().encode(authPayloadStr);
 
