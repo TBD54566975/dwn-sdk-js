@@ -66,7 +66,7 @@ export class DWN {
 
     const interfaceMethod = DWN.methods[message.descriptor.method];
 
-    return await interfaceMethod(context, message, this.messageStore, this.DIDResolver);
+    return await interfaceMethod(ctx, message, this.messageStore, this.DIDResolver);
   }
 };
 
