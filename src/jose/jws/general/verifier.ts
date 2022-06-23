@@ -16,6 +16,7 @@ type VerificationResult = {
   signers: string[];
 };
 
+// TODO: add logic to prevent validating duplicate signatures
 export class GeneralJwsVerifier {
   jws: GeneralJws;
 

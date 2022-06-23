@@ -8,18 +8,23 @@ export const processPermissionsRequest: InterfaceMethod = async (
   ctx,
   message,
   messageStore,
-  _didResolver
+  didResolver
 ): Promise<MessageResult> => {
   const request = new PermissionsRequest(message as JsonPermissionsRequest);
 
-  if (ctx.tenant !== request.grantedBy) {
+  if (ctx.tenant !== request.grantedBy && ctx.tenant !== request.grantedTo) {
     return new MessageResult({
-      status: { code: 400, message: 'grantedBy must be the targeted message recipient' }
+      status: { code: 400, message: 'grantedBy or grantedTo must be the targeted message recipient' }
     });
   }
 
-  // TODO: verify auth
-  // TODO: check if `grantedTo` === message signer
+  // TODO: should we add an explicit check to ensure that there's only 1 signer?
+  const { signers } = await request.verifyAuth(didResolver);
+  const [ signer ] = signers;
+
+  if (signer !== request.grantedTo) {
+    throw new Error('grantee must be signer');
+  }
 
   try {
     await messageStore.put(request);

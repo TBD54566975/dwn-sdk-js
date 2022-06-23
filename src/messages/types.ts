@@ -26,8 +26,12 @@ export interface Authorization {
   authorization: GeneralJws;
 }
 
+export type AuthVerificationResult = {
+  signers: string[];
+};
+
 export interface Authorizable {
-  verifyAuth(didResolver: DIDResolver): Promise<unknown>;
+  verifyAuth(didResolver: DIDResolver): Promise<AuthVerificationResult>;
 }
 
 export interface Attestable {

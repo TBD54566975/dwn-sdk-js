@@ -1,4 +1,4 @@
-import type { AuthCreateOpts, Authorizable } from '../../../messages/types';
+import type { AuthCreateOpts, Authorizable, AuthVerificationResult } from '../../../messages/types';
 import type { JsonPermissionsRequest, PermissionsRequestDescriptor } from './types';
 import type { Scope, Conditions } from '../types';
 
@@ -78,7 +78,7 @@ export class PermissionsRequest extends Message implements Authorizable {
   /**
    * @throws {Error} if descriptorCid is missing from Auth payload
    */
-  async verifyAuth(didResolver: DIDResolver): Promise<unknown> {
+  async verifyAuth(didResolver: DIDResolver): Promise<AuthVerificationResult> {
     const verifier = new GeneralJwsVerifier(this.message.authorization);
 
     // signature verification is computationally intensive, so we're going to start
@@ -101,7 +101,9 @@ export class PermissionsRequest extends Message implements Authorizable {
       throw new Error('provided descriptorCid does not match expected CID');
     }
 
-    return verifier.verify(didResolver);
+    const { signers } = await verifier.verify(didResolver);
+
+    return { signers };
   }
 }
 
