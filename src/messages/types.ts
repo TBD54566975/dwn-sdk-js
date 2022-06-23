@@ -1,5 +1,5 @@
+import { DIDResolver } from '../did/did-resolver';
 import type { GeneralJws, SignatureInput } from '../jose/jws/general/types';
-import type { JwkPrivate } from '../jose/types';
 
 export interface JsonMessage {
   descriptor: {
@@ -24,6 +24,15 @@ export interface Attestation {
 
 export interface Authorization {
   authorization: GeneralJws;
+}
+
+export interface Authorizable {
+  verifyAuth(didResolver: DIDResolver): Promise<unknown>;
+}
+
+export interface Attestable {
+  attest(): Promise<void>;
+  verifyAttestation(didResolver: DIDResolver): Promise<string>;
 }
 
 export interface AuthCreateOpts {

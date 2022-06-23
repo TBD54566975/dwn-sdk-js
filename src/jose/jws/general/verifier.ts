@@ -13,8 +13,7 @@ const verifiers: { [key:string]: VerifyFn } = {
 };
 
 type VerificationResult = {
-  payload: unknown,
-  signers: string[]
+  signers: string[];
 };
 
 export class GeneralJwsVerifier {
@@ -44,7 +43,7 @@ export class GeneralJwsVerifier {
       }
     }
 
-    return { payload: this.jws.payload, signers };
+    return { signers };
   }
 
   async getPublicKey(did: string, kid: string, didResolver: DIDResolver): Promise<JwkPublic> {

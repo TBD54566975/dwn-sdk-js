@@ -1,9 +1,10 @@
-import type { AuthCreateOpts } from '../../../messages/types';
+import type { AuthCreateOpts, Authorizable } from '../../../messages/types';
 import type { JsonPermissionsRequest, PermissionsRequestDescriptor } from './types';
 import type { Scope, Conditions } from '../types';
 
-import { GeneralJwsSigner } from '../../../jose/jws/general/signer';
-import { generateCid } from '../../../utils/cid';
+import { DIDResolver } from '../../../did/did-resolver';
+import { GeneralJwsSigner, GeneralJwsVerifier } from '../../../jose/jws/general';
+import { generateCid, parseCid } from '../../../utils/cid';
 import { Message } from '../../../messages/message';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -16,7 +17,7 @@ type PermissionsRequestOpts = AuthCreateOpts & {
   scope: Scope;
 };
 
-export class PermissionsRequest extends Message {
+export class PermissionsRequest extends Message implements Authorizable {
   protected message: JsonPermissionsRequest;
 
   constructor(message: JsonPermissionsRequest) {
@@ -41,6 +42,10 @@ export class PermissionsRequest extends Message {
 
   static getType(): string {
     return 'PermissionsRequest';
+  }
+
+  static getInterface(): string {
+    return 'Permissions';
   }
 
   static async create(opts: PermissionsRequestOpts): Promise<PermissionsRequest> {
@@ -70,8 +75,33 @@ export class PermissionsRequest extends Message {
     return new PermissionsRequest(message);
   }
 
-  getInterface(): string {
-    return 'Permissions';
+  /**
+   * @throws {Error} if descriptorCid is missing from Auth payload
+   */
+  async verifyAuth(didResolver: DIDResolver): Promise<unknown> {
+    const verifier = new GeneralJwsVerifier(this.message.authorization);
+
+    // signature verification is computationally intensive, so we're going to start
+    // by validating the payload.
+
+    const payloadBytes: Uint8Array = verifier.decodePayload();
+    const payloadStr = new TextDecoder().decode(payloadBytes);
+    const payloadJson = JSON.parse(payloadStr);
+
+    const { descriptorCid } = payloadJson;
+    if (!descriptorCid) {
+      throw new Error('descriptorCid must be present in authorization payload');
+    }
+
+    // parseCid throws an exception if parsing fails
+    const providedDescriptorCid = parseCid(descriptorCid);
+    const expectedDescriptorCid = await generateCid(this.message.descriptor);
+
+    if (!providedDescriptorCid.equals(expectedDescriptorCid)) {
+      throw new Error('provided descriptorCid does not match expected CID');
+    }
+
+    return verifier.verify(didResolver);
   }
 }
 
