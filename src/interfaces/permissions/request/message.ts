@@ -2,13 +2,10 @@ import type { AuthCreateOpts } from '../../../messages/types';
 import type { JsonPermissionsRequest, PermissionsRequestDescriptor } from './types';
 import type { Scope, Conditions } from '../types';
 
-import schema from './schema.json';
-
 import { GeneralJwsSigner } from '../../../jose/jws/general/signer';
 import { generateCid } from '../../../utils/cid';
 import { Message } from '../../../messages/message';
 import { v4 as uuidv4 } from 'uuid';
-
 
 type PermissionsRequestOpts = AuthCreateOpts & {
   conditions?: Conditions;
@@ -19,15 +16,11 @@ type PermissionsRequestOpts = AuthCreateOpts & {
   scope: Scope;
 };
 
-export class PermissionsRequest extends Message<JsonPermissionsRequest> {
+export class PermissionsRequest extends Message {
   message: JsonPermissionsRequest;
 
   constructor(message: JsonPermissionsRequest) {
     super(message);
-  }
-
-  static getJsonSchema(): object {
-    return schema;
   }
 
   static getType(): string {

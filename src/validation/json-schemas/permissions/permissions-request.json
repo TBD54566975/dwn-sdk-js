@@ -9,7 +9,7 @@
   ],
   "properties": {
     "authorization": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/attestation.json"
+      "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
     },
     "descriptor": {
       "type": "object",

@@ -1,10 +1,8 @@
 import { DIDResolver } from './did/did-resolver';
 import { MessageStoreLevel } from './store/message-store-level';
-import { validateMessage } from './message';
-import { handlePermissionsRequest } from './interfaces/permissions';
+
 
 import type { DIDMethodResolver } from './did/did-resolver';
-import type { Message } from './message';
 import type { MessageStore } from './store/message-store';
 
 export class DWN {

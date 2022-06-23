@@ -1,4 +1,4 @@
-import type { Message } from '../message';
+import { Message } from '../messages/message';
 import { CID } from 'multiformats/cid';
 
 export interface MessageStore {

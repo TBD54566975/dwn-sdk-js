@@ -1,7 +1,9 @@
 import type { JsonMessage } from './types';
 
-export abstract class Message<T extends JsonMessage> {
-  constructor(protected message: T) {}
+import { isPlainObject } from 'lodash';
+import { validate } from '../validation/validator';
+export abstract class Message {
+  constructor(protected message: JsonMessage) {}
 
   static getJsonSchema(): object {
     throw new Error('method not implemented');
@@ -10,11 +12,32 @@ export abstract class Message<T extends JsonMessage> {
     throw new Error('method not implemented');
   };
 
+  static unmarshal(rawMessage: object): JsonMessage {
+    const descriptor = rawMessage['descriptor'];
+    if (!descriptor) {
+      throw new Error('message must contain descriptor');
+    }
+
+    if (!isPlainObject(descriptor)) {
+      throw new Error('descriptor: must be object');
+    }
+
+    const messageType = descriptor['method'];
+    if (!messageType) {
+      throw new Error('descriptor must contain method');
+    }
+
+    // validate throws an error if message is invalid
+    validate(messageType, rawMessage);
+
+    return rawMessage as JsonMessage;
+  };
+
   getMethod(): string {
     return this.message.descriptor.method;
   }
 
-  toObject(): T {
+  toObject(): JsonMessage {
     return this.message;
   }
 

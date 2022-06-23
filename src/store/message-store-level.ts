@@ -1,5 +1,7 @@
 import { BlockstoreLevel } from './blockstore-level';
 import { CID } from 'multiformats/cid';
+import { DataMessage } from '../messages/data-message';
+import { Message } from '../messages/message';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 import * as cbor from '@ipld/dag-cbor';
@@ -8,7 +10,6 @@ import * as block from 'multiformats/block';
 import _ from 'lodash';
 import searchIndex from 'search-index';
 
-import type { Message } from '../message';
 import type { MessageStore } from './message-store';
 
 /**
@@ -104,7 +105,7 @@ export class MessageStoreLevel implements MessageStore {
     await this.db.put(encodedBlock.cid, encodedBlock.bytes);
 
     // index specific properties within message
-    const { descriptor } = message;
+    const { descriptor } = message.toObject();
     const { method, objectId } = descriptor;
 
     const indexDocument: any = { _id: encodedBlock.cid.toString(), method, objectId };

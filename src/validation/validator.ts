@@ -1,6 +1,11 @@
 import Ajv from 'ajv';
+import { schemas } from './json-schemas';
 
 const validator = new Ajv();
+
+for (let schemaName in schemas) {
+  addSchema(schemaName, schemas[schemaName]);
+}
 
 export function addSchema(schemaName: string, schema): void {
   validator.addSchema(schema, schemaName);

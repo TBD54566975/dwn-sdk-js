@@ -2,16 +2,8 @@ import type { JsonDataMessage } from './types';
 
 import { Message } from './message';
 
-export abstract class DataMessage<T extends JsonDataMessage> extends Message<T> {
-  constructor(message: T) {
+export abstract class DataMessage extends Message {
+  constructor(message: JsonDataMessage) {
     super(message);
-  }
-
-  toObject(): T {
-    return this.message;
-  }
-
-  toJSON(): string {
-    return JSON.stringify(this.message);
   }
 }

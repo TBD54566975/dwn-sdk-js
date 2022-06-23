@@ -8,13 +8,12 @@ import sinon from 'sinon';
 
 chai.use(chaiAsPromised);
 
-describe.only('General JWS Sign/Verify', () => {
+describe('General JWS Sign/Verify', () => {
   afterEach(() => {
     // restores all fakes, stubs, spies etc. not restoring causes a memory leak.
     // more info here: https://sinonjs.org/releases/v13/general-setup/
     sinon.restore();
   });
-
 
   it('should sign and verify secp256k1 signature using a key vector correctly',  async () => {
     const { privateKeyJwk, publicKeyJwk } = await generateSecp256k1Jwk();
