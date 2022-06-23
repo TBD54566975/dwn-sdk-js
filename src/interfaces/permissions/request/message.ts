@@ -5,6 +5,7 @@ import type { Scope, Conditions } from '../types';
 import { DIDResolver } from '../../../did/did-resolver';
 import { GeneralJwsSigner, GeneralJwsVerifier } from '../../../jose/jws/general';
 import { generateCid, parseCid } from '../../../utils/cid';
+import { isPlainObject } from 'lodash';
 import { Message } from '../../../messages/message';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -24,6 +25,10 @@ export class PermissionsRequest extends Message implements Authorizable {
     super(message);
   }
 
+  get conditions(): Conditions {
+    return this.message.descriptor.conditions;
+  }
+
   get grantedBy(): string {
     return this.message.descriptor.grantedBy;
   }
@@ -32,8 +37,8 @@ export class PermissionsRequest extends Message implements Authorizable {
     return this.message.descriptor.grantedTo;
   }
 
-  get conditions(): Conditions {
-    return this.message.descriptor.conditions;
+  get description(): string {
+    return this.message.descriptor.description;
   }
 
   get scope(): Scope {
@@ -86,7 +91,17 @@ export class PermissionsRequest extends Message implements Authorizable {
 
     const payloadBytes: Uint8Array = verifier.decodePayload();
     const payloadStr = new TextDecoder().decode(payloadBytes);
-    const payloadJson = JSON.parse(payloadStr);
+    let payloadJson;
+
+    try {
+      payloadJson = JSON.parse(payloadStr);
+    } catch(e) {
+      throw new Error('auth payload must be a valid JSON object');
+    }
+
+    if(!isPlainObject(payloadJson)) {
+      throw new Error('auth payload must be a valid JSON object');
+    }
 
     const { descriptorCid } = payloadJson;
     if (!descriptorCid) {
