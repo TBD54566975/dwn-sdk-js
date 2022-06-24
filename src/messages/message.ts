@@ -1,6 +1,6 @@
 import type { JsonMessage } from './types';
 
-import { isPlainObject } from 'lodash';
+import { cloneDeep, isPlainObject } from 'lodash';
 import { validate } from '../validation/validator';
 export abstract class Message {
   constructor(protected message: JsonMessage) {}
@@ -38,7 +38,7 @@ export abstract class Message {
   }
 
   toObject(): JsonMessage {
-    return this.message;
+    return cloneDeep(this.message);
   }
 
   toJSON(): string {

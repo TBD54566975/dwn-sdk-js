@@ -27,7 +27,7 @@ export const processPermissionsRequest: InterfaceMethod = async (
   }
 
   try {
-    await messageStore.put(request);
+    await messageStore.put(request, ctx);
 
     return new MessageResult({
       status: { code: 202, message: 'Accepted' }

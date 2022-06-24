@@ -167,7 +167,7 @@ describe('PermissionsRequest', () => {
           const resolverStub = sinon.createStubInstance(DIDResolver);
 
           await expect(message.verifyAuth(resolverStub))
-            .to.eventually.be.rejectedWith('valid JSON');
+            .to.eventually.be.rejectedWith('must be a valid JSON object');
         }
       });
     });

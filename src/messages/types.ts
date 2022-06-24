@@ -15,6 +15,9 @@ export interface JsonDataMessage extends JsonMessage {
     dataCid: string;
     [key: string]: unknown;
   };
+
+  data: string;
+
   [key:string]: any;
 }
 

@@ -1,6 +1,11 @@
+import type { Context } from '../types';
+import type { JsonMessage } from '../messages/types';
+import type { MessageStore } from './message-store';
+
 import { BlockstoreLevel } from './blockstore-level';
 import { CID } from 'multiformats/cid';
 import { DataMessage } from '../messages/data-message';
+import { importer } from 'ipfs-unixfs-importer';
 import { Message } from '../messages/message';
 import { sha256 } from 'multiformats/hashes/sha2';
 
@@ -9,8 +14,8 @@ import * as block from 'multiformats/block';
 
 import _ from 'lodash';
 import searchIndex from 'search-index';
-
-import type { MessageStore } from './message-store';
+import { exporter } from 'ipfs-unixfs-exporter';
+import { base64url } from 'multiformats/bases/base64';
 
 /**
  * A simple implementation of {@link MessageStore} that works in both the browser and server-side.
@@ -53,14 +58,13 @@ export class MessageStoreLevel implements MessageStore {
     }
   }
 
-
   async close(): Promise<void> {
     await this.db.close();
     await this.index.FLUSH();
   }
 
-  async get(cid: CID): Promise<Message> {
-    const bytes = await this.db.get(cid);
+  async get(cid: CID, ctx: Context): Promise<JsonMessage> {
+    const bytes = await this.db.get(cid, ctx);
 
     if (!bytes) {
       return;
@@ -68,53 +72,80 @@ export class MessageStoreLevel implements MessageStore {
 
     const decodedBlock = await block.decode({ bytes, codec: cbor, hasher: sha256 });
 
-    return decodedBlock.value as Message;
+    const jsonMessage = decodedBlock.value as JsonMessage;
+    const { descriptor } = jsonMessage;
+
+    if (!descriptor.dataCid) {
+      return jsonMessage;
+    }
+
+    const dataDagRoot = await exporter(descriptor.dataCid as CID, this.db);
+    const dataBytes = new Uint8Array(dataDagRoot.size);
+    let offset = 0;
+
+    for await (const chunk of dataDagRoot.content()) {
+      dataBytes.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    jsonMessage.data = base64url.baseEncode(dataBytes);
+
+    return jsonMessage;
   }
 
-  async query(query: any): Promise<Message[]> {
-    const messages: Message[] = [];
-
-    // copy the query provided to prevent any mutation
-    const copy: any = { ...query };
-    delete copy.method;
+  async query(query: any, ctx: Context): Promise<JsonMessage[]> {
+    const messages: JsonMessage[] = [];
 
     // parse query into a query that is compatible with the index we're using
-    const indexQueryTerms: string[] = MessageStoreLevel.buildIndexQueryTerms(copy);
-    const { RESULTS: indexResults } = await this.index.QUERY({ AND: indexQueryTerms });
-
+    const indexQueryTerms: string[] = MessageStoreLevel.buildIndexQueryTerms(query);
+    const { RESULT: indexResults } = await this.index.QUERY({ AND: indexQueryTerms });
 
     for (let result of indexResults) {
       const cid = CID.parse(result._id);
-      const message = await this.get(cid);
+      const message = await this.get(cid, ctx);
 
       messages.push(message);
     }
+
     return messages;
   }
 
 
-  async delete(cid: CID): Promise<void> {
-    await this.db.delete(cid);
+  async delete(cid: CID, ctx: Context): Promise<void> {
+    await this.db.delete(cid, ctx);
     await this.index.DELETE(cid.toString());
 
     return;
   }
 
-  async put(message: Message): Promise<void> {
-    const encodedBlock = await block.encode({ value: message, codec: cbor, hasher: sha256 });
+  async put(message: Message, ctx: Context): Promise<void> {
+    const jsonMessage = message.toObject();
+
+    // pre-emptively delete data. If data is presen't we'll be chunking it and storing it as unix-fs dag-pb
+    // encoded.
+    delete jsonMessage.data;
+
+    const encodedBlock = await block.encode({ value: jsonMessage, codec: cbor, hasher: sha256 });
+
     await this.db.put(encodedBlock.cid, encodedBlock.bytes);
 
-    // index specific properties within message
-    const { descriptor } = message.toObject();
-    const { method, objectId } = descriptor;
+    if (message instanceof DataMessage) {
+      const chunk = importer([{ content: message.data.toBytes() }], this.db, { cidVersion: 1 });
 
-    const indexDocument: any = { _id: encodedBlock.cid.toString(), method, objectId };
-
-    // TODO: clean this up and likely move it elsewhere (e.g. a different function) so that it can be used elsewhere
-    if (descriptor.method === 'PermissionsRequest') {
-      indexDocument.ability = descriptor.ability;
-      indexDocument.requester = descriptor.requester;
+      // for some reason no-unused-vars doesn't work in for loops. it's not entirely surprising because
+      // it does seem a bit strange to iterate over something you never end up using but in this case
+      // we really don't have to access the result of `chunk` because it's just outputting every unix-fs
+      // entry that's getting written to the blockstore. the last entry contains the root cid
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      for await (let _ of chunk);
     }
+
+    const indexDocument = {
+      ...jsonMessage.descriptor,
+      _id    : encodedBlock.cid.toString(),
+      author : ctx.author,
+      tenant : ctx.tenant
+    };
 
     await this.index.PUT([indexDocument]);
   }
