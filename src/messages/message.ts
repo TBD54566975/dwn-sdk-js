@@ -1,7 +1,9 @@
 import type { JsonMessage } from './types';
 
-import { cloneDeep, isPlainObject } from 'lodash';
+import lodash from 'lodash';
 import { validate } from '../validation/validator';
+
+const { cloneDeep, isPlainObject } = lodash;
 export abstract class Message {
   constructor(protected message: JsonMessage) {}
 

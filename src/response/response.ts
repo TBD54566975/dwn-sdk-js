@@ -30,9 +30,7 @@ export class Response {
       this.status = status;
     }
 
-    if (results) {
-      this.results = results;
-    }
+    this.results = results || [];
   }
 
   addMessageResult(result: MessageResult): void {

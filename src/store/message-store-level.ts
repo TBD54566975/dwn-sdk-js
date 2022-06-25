@@ -47,6 +47,10 @@ export class MessageStoreLevel implements MessageStore {
   }
 
   async open(): Promise<void> {
+    if (!this.db) {
+      this.db = new BlockstoreLevel(this.config.blockstoreLocation);
+    }
+
     await this.db.open();
 
     // TODO: look into using the same level we're using for blockstore

@@ -19,12 +19,27 @@ export class DWN {
   DIDResolver: DIDResolver;
   messageStore: MessageStore;
 
-  constructor(config: Config) {
-    // override default config with any user-provided config
-    const mergedConfig = { ...defaultConfig,...config };
+  private constructor(config: Config) {
+    this.DIDResolver = new DIDResolver(config.DIDMethodResolvers);
+    this.messageStore = config.messageStore;
+  }
 
-    this.DIDResolver = new DIDResolver(mergedConfig.DIDMethodResolvers);
-    this.messageStore = mergedConfig.messageStore;
+  static async create(config: Config): Promise<DWN> {
+    config.messageStore = config.messageStore || new MessageStoreLevel();
+    config.DIDMethodResolvers = config.DIDMethodResolvers || [];
+
+    const dwn = new DWN(config);
+    await dwn.open();
+
+    return dwn;
+  }
+
+  private async open(): Promise<void> {
+    return this.messageStore.open();
+  }
+
+  async close(): Promise<void> {
+    return this.messageStore.close();
   }
 
   async processRequest(rawRequest: any): Promise<Response> {
@@ -71,12 +86,6 @@ export class DWN {
 };
 
 export type Config = {
-  DIDMethodResolvers: DIDMethodResolver[],
-  messageStore: MessageStore
-};
-
-const defaultConfig: Config = {
-  // TODO: include ION resolver as default DIDMethodResolver
-  DIDMethodResolvers : [],
-  messageStore       : new MessageStoreLevel()
+  DIDMethodResolvers?: DIDMethodResolver[],
+  messageStore?: MessageStore
 };
