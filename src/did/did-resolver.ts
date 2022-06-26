@@ -25,11 +25,8 @@ export class DIDResolver {
    */
   public async resolve(did: string): Promise<DIDResolutionResult> {
   // naively validate requester DID
-  // TODO: add better DID validation
+    validateDID(did);
     const splitDID = did.split(':', 3);
-    if (splitDID.length < 3) {
-      throw new Error(`${did} is not a valid DID`);
-    }
 
     const didMethod = splitDID[1];
     const didResolver = this.didResolvers.get(didMethod);
@@ -50,6 +47,22 @@ export class DIDResolver {
     }
 
     return resolutionResult;
+  }
+}
+
+/**
+ * @param did - the DID to validate
+ */
+export function validateDID(did: unknown): void {
+  // @see https://www.w3.org/TR/2021/PR-did-core-20210803/#did-syntax
+  const DID_REGEX = /^did:[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+:[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+$/;
+
+  if (typeof did !== 'string') {
+    throw new TypeError(`DID is not string: ${did}`);
+  }
+
+  if (!DID_REGEX.test(did)) {
+    throw new TypeError(`DID is not a valid DID: ${did}`);
   }
 }
 
