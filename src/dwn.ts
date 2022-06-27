@@ -46,7 +46,7 @@ export class DWN {
     let request: Request;
 
     try {
-      request = Request.unmarshal(rawRequest);
+      request = Request.parse(rawRequest);
     } catch (e) {
       return new Response({
         status: { code: 400, message: e.message }

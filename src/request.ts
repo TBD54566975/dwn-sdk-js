@@ -18,7 +18,7 @@ export class Request {
   /**
    * unmarshals the provided payload into a Request.
    */
-  static unmarshal(rawRequest: any): Request {
+  static parse(rawRequest: any): Request {
     if (typeof rawRequest !== 'object') {
       try {
         rawRequest = JSON.parse(rawRequest);
