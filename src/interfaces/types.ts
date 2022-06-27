@@ -5,13 +5,13 @@ import type { MessageResult } from '../response/message-result';
 
 import { DIDResolver } from '../did/did-resolver';
 
-export type InterfaceMethod = (
+export type MethodHandler = (
   ctx: Context,
   message: JsonMessage,
   messageStore: MessageStore,
   didResolver: DIDResolver) => Promise<MessageResult>;
 
 export interface Interface {
-  methods: InterfaceMethod[];
+  methodHandlers: MethodHandler[];
   schemas: { [key:string]: object };
 }

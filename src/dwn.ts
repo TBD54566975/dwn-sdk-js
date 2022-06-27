@@ -1,6 +1,6 @@
 import type { Context } from './types';
 import type { DIDMethodResolver } from './did/did-resolver';
-import type { InterfaceMethod } from './interfaces/types';
+import type { MethodHandler } from './interfaces/types';
 import type { JsonMessage } from './messages/types';
 import type { MessageStore } from './store/message-store';
 
@@ -12,8 +12,8 @@ import { MessageResult, Response } from './response';
 import { PermissionsInterface } from './interfaces';
 
 export class DWN {
-  static methods: { [key:string]: InterfaceMethod } = {
-    ...PermissionsInterface.methods
+  static methodHandlers: { [key:string]: MethodHandler } = {
+    ...PermissionsInterface.methodHandlers
   };
 
   DIDResolver: DIDResolver;
@@ -79,7 +79,7 @@ export class DWN {
       });
     }
 
-    const interfaceMethod = DWN.methods[message.descriptor.method];
+    const interfaceMethod = DWN.methodHandlers[message.descriptor.method];
 
     return await interfaceMethod(ctx, message, this.messageStore, this.DIDResolver);
   }
