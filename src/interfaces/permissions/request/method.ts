@@ -1,10 +1,10 @@
-import type { InterfaceMethod } from '../../types';
+import type { MethodHandler } from '../../types';
 import type { JsonPermissionsRequest } from './types';
 
 import { MessageResult } from '../../../response';
 import { PermissionsRequest } from './message';
 
-export const processPermissionsRequest: InterfaceMethod = async (
+export const processPermissionsRequest: MethodHandler = async (
   ctx,
   message,
   messageStore,
