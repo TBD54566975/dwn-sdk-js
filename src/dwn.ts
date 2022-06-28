@@ -1,15 +1,16 @@
 import type { Context } from './types';
 import type { DIDMethodResolver } from './did/did-resolver';
-import type { MethodHandler } from './interfaces/types';
+import type { Interface, MethodHandler } from './interfaces/types';
 import type { MessageSchema } from './messages/types';
 import type { MessageStore } from './store/message-store';
 
+import { addSchema } from './validation/validator';
 import { DIDResolver } from './did/did-resolver';
 import { Message } from './messages/message';
 import { MessageStoreLevel } from './store/message-store-level';
-import { Request } from './request';
 import { MessageReply, Response } from './response';
 import { PermissionsInterface } from './interfaces';
+import { Request } from './request';
 
 export class DWN {
   static methodHandlers: { [key:string]: MethodHandler } = {
@@ -27,6 +28,22 @@ export class DWN {
   static async create(config: Config): Promise<DWN> {
     config.messageStore = config.messageStore || new MessageStoreLevel();
     config.DIDMethodResolvers = config.DIDMethodResolvers || [];
+    config.interfaces = config.interfaces || [];
+
+    for (let { methodHandlers, schemas } of config.interfaces) {
+
+      for (let messageType in methodHandlers) {
+        if (DWN.methodHandlers[messageType]) {
+          throw new Error(`methodHandler already exists for ${messageType}`);
+        } else {
+          DWN.methodHandlers[messageType] = methodHandlers[messageType];
+        }
+      }
+
+      for (let schemaName in schemas) {
+        addSchema(schemaName, schemas[schemaName]);
+      }
+    }
 
     const dwn = new DWN(config);
     await dwn.open();
@@ -86,6 +103,7 @@ export class DWN {
 };
 
 export type Config = {
-  DIDMethodResolvers?: DIDMethodResolver[],
-  messageStore?: MessageStore
+  DIDMethodResolvers?: DIDMethodResolver[];
+  interfaces?: Interface[];
+  messageStore?: MessageStore;
 };
