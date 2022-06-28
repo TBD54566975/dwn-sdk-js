@@ -8,7 +8,7 @@ import { DIDResolver } from './did/did-resolver';
 import { Message } from './messages/message';
 import { MessageStoreLevel } from './store/message-store-level';
 import { Request } from './request';
-import { MessageResult, Response } from './response';
+import { MessageReply, Response } from './response';
 import { PermissionsInterface } from './interfaces';
 
 export class DWN {
@@ -68,13 +68,13 @@ export class DWN {
    * TODO: add docs
    * @param message
    */
-  async processMessage(rawMessage: object, ctx: Context): Promise<MessageResult> {
+  async processMessage(rawMessage: object, ctx: Context): Promise<MessageReply> {
     let message: JsonMessage;
 
     try {
       message = Message.unmarshal(rawMessage);
     } catch(e) {
-      return new MessageResult({
+      return new MessageReply({
         status: { code: 400, message: e.message }
       });
     }

@@ -10,7 +10,7 @@ type MessageResultOpts = {
   entries?: JsonMessage[];
 };
 
-export class MessageResult {
+export class MessageReply {
   status: Status;
   // resulting message entries returned from the invocation of the corresponding message
   // e.g. the resulting messages from a CollectionsQuery

@@ -1,2 +1,2 @@
 export * from './response';
-export * from './message-result';
+export * from './message-reply';

@@ -1,4 +1,4 @@
-import { MessageResult } from './message-result';
+import { MessageReply } from './message-reply';
 
 type ResponseStatus = {
   code: number
@@ -7,7 +7,7 @@ type ResponseStatus = {
 
 type ResponseOpts = {
   status?: ResponseStatus
-  results?: MessageResult[];
+  results?: MessageReply[];
 };
 
 /**
@@ -18,7 +18,7 @@ export class Response {
   // e.g. malformed request, invalid target. `status` and `replies` are mutually exclusive
   status?: ResponseStatus;
   // responses to individual messages provided within a request
-  results?: MessageResult[];
+  results?: MessageReply[];
 
   constructor(opts: ResponseOpts = {}) {
     const { status, results } = opts;
@@ -33,7 +33,7 @@ export class Response {
     this.results = results || [];
   }
 
-  addMessageResult(result: MessageResult): void {
+  addMessageResult(result: MessageReply): void {
     if (this.status) {
       throw new Error('a response with a status cannot contain any results');
     }
