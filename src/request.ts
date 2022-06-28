@@ -1,13 +1,13 @@
-import { MessageJson } from './messages/types';
+import { BaseMessageSchema } from './messages/types';
 import { validate } from './validation/validator';
 
 type RequestJson = {
-  messages?: MessageJson[]
+  messages?: BaseMessageSchema[]
   target: string
 };
 
 export class Request {
-  messages: MessageJson[];
+  messages: BaseMessageSchema[];
   target: string;
 
   constructor(jsonRequest: RequestJson) {
@@ -33,7 +33,7 @@ export class Request {
     return new Request(rawRequest as RequestJson);
   }
 
-  addMessage(message: MessageJson): void {
+  addMessage(message: BaseMessageSchema): void {
     this.messages.push(message);
   }
 }

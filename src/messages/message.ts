@@ -1,11 +1,11 @@
-import type { MessageJson } from './types';
+import type { MessageSchema } from './types';
 
 import lodash from 'lodash';
 import { validate } from '../validation/validator';
 
 const { cloneDeep, isPlainObject } = lodash;
 export abstract class Message {
-  constructor(protected message: MessageJson) {}
+  constructor(protected message: MessageSchema) {}
 
   static getJsonSchema(): object {
     throw new Error('method not implemented');
@@ -14,7 +14,7 @@ export abstract class Message {
     throw new Error('method not implemented');
   };
 
-  static unmarshal(rawMessage: object): MessageJson {
+  static unmarshal(rawMessage: object): MessageSchema {
     const descriptor = rawMessage['descriptor'];
     if (!descriptor) {
       throw new Error('message must contain descriptor');
@@ -32,18 +32,22 @@ export abstract class Message {
     // validate throws an error if message is invalid
     validate(messageType, rawMessage);
 
-    return rawMessage as MessageJson;
+    return rawMessage as MessageSchema;
   };
 
   getMethod(): string {
     return this.message.descriptor.method;
   }
 
-  toObject(): MessageJson {
+  toObject(): MessageSchema {
     return cloneDeep(this.message);
   }
 
   toJSON(): string {
     return JSON.stringify(this.message);
+  }
+
+  hasData(): boolean {
+    return 'data' in this.message;
   }
 }

@@ -1,42 +1,66 @@
-import { DIDResolver } from '../did/did-resolver';
+import type { DeepPartial } from '../types';
 import type { GeneralJws, SignatureInput } from '../jose/jws/general/types';
 
-export interface MessageJson {
-  descriptor: {
-    method: string;
-    [key: string]: unknown;
-  };
-  [key:string]: unknown;
-}
+import { DIDResolver } from '../did/did-resolver';
+import { PermissionsRequestSchema } from '../interfaces/permissions/request/types';
 
-export interface DataMessageJson extends MessageJson {
+/**
+ * Intersection type for all concrete message schema types (e.g. PermissionsRequestSchema)
+ */
+export type BaseMessageSchema = {
   descriptor: {
     method: string;
+  };
+};
+
+/**
+ * Intersection type for message schema types that include `data`
+ */
+export type Data = {
+  descriptor: {
     dataCid: string;
-    [key: string]: unknown;
   };
 
   data: string;
+};
 
-  [key:string]: any;
-}
-
-export interface Attestation {
+/**
+ * Intersection type for message schema types that include `attestation`
+ */
+export type Attestation = {
   attestation?: GeneralJws;
 };
 
-export interface Authorization {
+/**
+ * Intersection type for message schema types that include `authorization`
+ */
+export type Authorization = {
   authorization: GeneralJws;
-}
+};
+
+export type GenericMessageSchema = BaseMessageSchema & DeepPartial<Data> & Partial<Attestation> & Partial<Authorization> & {
+  descriptor: {
+    [key: string]: unknown;
+  }
+};
+
+
+export type MessageSchema = PermissionsRequestSchema | GenericMessageSchema;
 
 export type AuthVerificationResult = {
   signers: string[];
 };
 
+/**
+ * concrete Message classes should implement this interface if the Message contains authorization
+ */
 export interface Authorizable {
   verifyAuth(didResolver: DIDResolver): Promise<AuthVerificationResult>;
 }
 
+/**
+ * concrete Message classes should implement this interface if the Message contains authorization
+ */
 export interface Attestable {
   attest(): Promise<void>;
   verifyAttestation(didResolver: DIDResolver): Promise<string>;

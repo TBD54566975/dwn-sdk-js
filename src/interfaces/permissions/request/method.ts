@@ -1,5 +1,5 @@
 import type { MethodHandler } from '../../types';
-import type { JsonPermissionsRequest } from './types';
+import type { PermissionsRequestSchema } from './types';
 
 import { MessageReply } from '../../../response';
 import { PermissionsRequest } from './message';
@@ -10,7 +10,7 @@ export const processPermissionsRequest: MethodHandler = async (
   messageStore,
   didResolver
 ): Promise<MessageReply> => {
-  const request = new PermissionsRequest(message as JsonPermissionsRequest);
+  const request = new PermissionsRequest(message as PermissionsRequestSchema);
 
   if (ctx.tenant !== request.grantedBy && ctx.tenant !== request.grantedTo) {
     return new MessageReply({

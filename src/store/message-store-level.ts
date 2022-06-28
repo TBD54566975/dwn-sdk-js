@@ -1,13 +1,14 @@
 import type { Context } from '../types';
-import type { MessageJson } from '../messages/types';
+import type { GenericMessageSchema, MessageSchema } from '../messages/types';
 import type { MessageStore } from './message-store';
 
 import { BlockstoreLevel } from './blockstore-level';
 import { CID } from 'multiformats/cid';
-import { DataMessage } from '../messages/data-message';
 import { importer } from 'ipfs-unixfs-importer';
 import { Message } from '../messages/message';
+import { parseCid } from '../utils/cid';
 import { sha256 } from 'multiformats/hashes/sha2';
+import { toBytes } from '../utils/data';
 
 import * as cbor from '@ipld/dag-cbor';
 import * as block from 'multiformats/block';
@@ -67,7 +68,7 @@ export class MessageStoreLevel implements MessageStore {
     await this.index.FLUSH();
   }
 
-  async get(cid: CID, ctx: Context): Promise<MessageJson> {
+  async get(cid: CID, ctx: Context): Promise<MessageSchema> {
     const bytes = await this.db.get(cid, ctx);
 
     if (!bytes) {
@@ -76,14 +77,16 @@ export class MessageStoreLevel implements MessageStore {
 
     const decodedBlock = await block.decode({ bytes, codec: cbor, hasher: sha256 });
 
-    const jsonMessage = decodedBlock.value as MessageJson;
-    const { descriptor } = jsonMessage;
+    const messageJson = decodedBlock.value as GenericMessageSchema;
 
-    if (!descriptor.dataCid) {
-      return jsonMessage;
+    if (!messageJson.data) {
+      return messageJson;
     }
 
-    const dataDagRoot = await exporter(descriptor.dataCid as CID, this.db);
+    const { descriptor } = messageJson;
+    const dataCid = parseCid(descriptor.dataCid);
+
+    const dataDagRoot = await exporter(dataCid, this.db);
     const dataBytes = new Uint8Array(dataDagRoot.size);
     let offset = 0;
 
@@ -92,13 +95,13 @@ export class MessageStoreLevel implements MessageStore {
       offset += chunk.length;
     }
 
-    jsonMessage.data = base64url.baseEncode(dataBytes);
+    messageJson.data = base64url.baseEncode(dataBytes);
 
-    return jsonMessage;
+    return messageJson as MessageSchema;
   }
 
-  async query(query: any, ctx: Context): Promise<MessageJson[]> {
-    const messages: MessageJson[] = [];
+  async query(query: any, ctx: Context): Promise<MessageSchema[]> {
+    const messages: MessageSchema[] = [];
 
     // parse query into a query that is compatible with the index we're using
     const indexQueryTerms: string[] = MessageStoreLevel.buildIndexQueryTerms(query);
@@ -123,18 +126,19 @@ export class MessageStoreLevel implements MessageStore {
   }
 
   async put(message: Message, ctx: Context): Promise<void> {
-    const jsonMessage = message.toObject();
+    const messageJson = message.toObject() as GenericMessageSchema;
+    const { data } = messageJson;
 
-    // pre-emptively delete data. If data is presen't we'll be chunking it and storing it as unix-fs dag-pb
+    // pre-emptively delete data. If data is present we'll be chunking it and storing it as unix-fs dag-pb
     // encoded.
-    delete jsonMessage.data;
+    delete messageJson.data;
 
-    const encodedBlock = await block.encode({ value: jsonMessage, codec: cbor, hasher: sha256 });
+    const encodedBlock = await block.encode({ value: messageJson, codec: cbor, hasher: sha256 });
 
     await this.db.put(encodedBlock.cid, encodedBlock.bytes);
 
-    if (message instanceof DataMessage) {
-      const chunk = importer([{ content: message.data.toBytes() }], this.db, { cidVersion: 1 });
+    if (data) {
+      const chunk = importer([{ content: toBytes(data) }], this.db, { cidVersion: 1 });
 
       // for some reason no-unused-vars doesn't work in for loops. it's not entirely surprising because
       // it does seem a bit strange to iterate over something you never end up using but in this case
@@ -145,7 +149,7 @@ export class MessageStoreLevel implements MessageStore {
     }
 
     const indexDocument = {
-      ...jsonMessage.descriptor,
+      ...messageJson.descriptor,
       _id    : encodedBlock.cid.toString(),
       author : ctx.author,
       tenant : ctx.tenant

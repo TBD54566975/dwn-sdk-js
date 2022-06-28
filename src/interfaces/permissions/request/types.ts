@@ -1,4 +1,4 @@
-import type { Authorization, MessageJson } from '../../../messages/types';
+import type { Authorization, BaseMessageSchema } from '../../../messages/types';
 import type { Conditions, Scope } from '../types';
 
 export type PermissionsRequestDescriptor = {
@@ -11,6 +11,6 @@ export type PermissionsRequestDescriptor = {
   objectId?: string
 };
 
-export interface JsonPermissionsRequest extends MessageJson, Authorization {
+export type PermissionsRequestSchema = BaseMessageSchema & Authorization & {
   descriptor: PermissionsRequestDescriptor;
-}
+};

@@ -1,4 +1,4 @@
-import type { JsonPermissionsRequest } from '../../src/interfaces/permissions/request/types';
+import type { PermissionsRequestSchema } from '../../src/interfaces/permissions/request/types';
 
 import { expect } from 'chai';
 import { generateKeyPair } from '../../src/jose/algorithms/secp256k1';
@@ -71,7 +71,7 @@ describe('Message', () => {
       const jsonMessage = Message.unmarshal(creator.toObject());
 
       expect(jsonMessage).to.not.be.undefined;
-      expect((jsonMessage as JsonPermissionsRequest).authorization).to.not.be.undefined;
+      expect((jsonMessage as PermissionsRequestSchema).authorization).to.not.be.undefined;
     });
   });
 });

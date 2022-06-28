@@ -7,7 +7,7 @@ type ResponseStatus = {
 
 type ResponseOpts = {
   status?: ResponseStatus
-  results?: MessageReply[];
+  replies?: MessageReply[];
 };
 
 /**
@@ -18,26 +18,26 @@ export class Response {
   // e.g. malformed request, invalid target. `status` and `replies` are mutually exclusive
   status?: ResponseStatus;
   // responses to individual messages provided within a request
-  results?: MessageReply[];
+  replies?: MessageReply[];
 
   constructor(opts: ResponseOpts = {}) {
-    const { status, results } = opts;
-    if (status && results) {
-      throw new Error('status and results are mutually exclusive');
+    const { status, replies } = opts;
+    if (status && replies) {
+      throw new Error('status and replies are mutually exclusive');
     }
 
     if (status) {
       this.status = status;
     }
 
-    this.results = results || [];
+    this.replies = replies || [];
   }
 
   addMessageResult(result: MessageReply): void {
     if (this.status) {
-      throw new Error('a response with a status cannot contain any results');
+      throw new Error('a response with a status cannot contain any replies');
     }
 
-    this.results.push(result);
+    this.replies.push(result);
   }
 }

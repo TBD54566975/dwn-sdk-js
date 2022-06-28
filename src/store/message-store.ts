@@ -1,5 +1,5 @@
 import type { Context } from '../types';
-import type { MessageJson } from '../messages/types';
+import type { MessageSchema } from '../messages/types';
 
 import { Message } from '../messages/message';
 import { CID } from 'multiformats/cid';
@@ -23,19 +23,18 @@ export interface MessageStore {
    * if no message was found
    * @param cid
    */
-  get(cid: CID, ctx: Context): Promise<MessageJson>;
+  get(cid: CID, ctx: Context): Promise<MessageSchema>;
   /**
    * queries the underlying store for messages that match the query provided.
    * returns an empty array if no messages are found
    * @param query
    */
   // TODO: change type of `query`
-  query(query: any, ctx: Context): Promise<MessageJson[]>;
+  query(query: any, ctx: Context): Promise<MessageSchema[]>;
 
   /**
    * deletes the message associated to the id provided
    * @param cid
    */
   delete(cid: CID, ctx: Context): Promise<void>;
-
 }

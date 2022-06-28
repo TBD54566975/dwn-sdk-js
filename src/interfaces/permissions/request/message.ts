@@ -1,5 +1,5 @@
 import type { AuthCreateOpts as AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../messages/types';
-import type { JsonPermissionsRequest, PermissionsRequestDescriptor } from './types';
+import type { PermissionsRequestSchema, PermissionsRequestDescriptor } from './types';
 import type { Scope, Conditions } from '../types';
 
 import { DIDResolver } from '../../../did/did-resolver';
@@ -21,9 +21,9 @@ type PermissionsRequestOptions = AuthCreateOptions & {
 };
 
 export class PermissionsRequest extends Message implements Authorizable {
-  protected message: JsonPermissionsRequest;
+  protected message: PermissionsRequestSchema;
 
-  constructor(message: JsonPermissionsRequest) {
+  constructor(message: PermissionsRequestSchema) {
     super(message);
   }
 
@@ -79,7 +79,7 @@ export class PermissionsRequest extends Message implements Authorizable {
     const signer = await GeneralJwsSigner
       .create(authPayloadBytes, [opts.signatureInput]);
 
-    const message: JsonPermissionsRequest = { descriptor, authorization: signer.getJws() };
+    const message: PermissionsRequestSchema = { descriptor, authorization: signer.getJws() };
 
     return new PermissionsRequest(message);
   }
