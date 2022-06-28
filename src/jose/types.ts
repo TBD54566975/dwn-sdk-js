@@ -9,7 +9,7 @@ export interface Jwk {
  * https://www.iana.org/assignments/jose/jose.xhtml#web-key-elliptic-curve
  * https://datatracker.ietf.org/doc/html/draft-ietf-cose-webauthn-algorithms-06#section-3.1
  */
-export type JwkEd25519Public = Jwk & {
+export type PublicEd25519Jwk = Jwk & {
   alg: 'EdDSA';
   crv: 'Ed25519';
   kty: 'OKP';
@@ -19,11 +19,11 @@ export type JwkEd25519Public = Jwk & {
 /**
  * An Ed25519 private key in JWK format.
  */
-export type JwkEd25519Private = JwkEd25519Public & {
+export type PrivateEd25519Jwk = PublicEd25519Jwk & {
   d: string; // Only used by a private key
 };
 
-export type JwkSecp256k1Public = Jwk & {
+export type PublicSecp256k1Jwk = Jwk & {
   alg: 'ES256K';
   crv: 'secp256k1';
   kty: 'EC';
@@ -34,12 +34,12 @@ export type JwkSecp256k1Public = Jwk & {
 /**
  * A SECP256K1 private key in JWK format.
  */
-export type JwkSecp256k1Private = JwkSecp256k1Public & {
+export type PrivateSecp256k1Jwk = PublicSecp256k1Jwk & {
   d: string; // Only used by a private key.
 };
 
-export type JwkPublic = JwkSecp256k1Public | JwkEd25519Public;
-export type JwkPrivate = JwkSecp256k1Private | JwkEd25519Private;
+export type PublicJwk = PublicSecp256k1Jwk | PublicEd25519Jwk;
+export type PrivateJwk = PrivateSecp256k1Jwk | PrivateEd25519Jwk;
 
-export type Signfn = (payload: Uint8Array, privateKeyJwk: JwkPrivate) => Promise<Uint8Array>;
-export type VerifyFn = (payload: Uint8Array, signature: Uint8Array, publicKeyJwk: JwkPublic) => Promise<boolean>;
+export type Signfn = (payload: Uint8Array, privateJwk: PrivateJwk) => Promise<Uint8Array>;
+export type VerifyFn = (payload: Uint8Array, signature: Uint8Array, publicJwk: PublicJwk) => Promise<boolean>;

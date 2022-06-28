@@ -1,5 +1,5 @@
 import type { GeneralJws, Signature } from './types';
-import type { JwkPublic, VerifyFn } from '../../types';
+import type { PublicJwk, VerifyFn } from '../../types';
 import type { VerificationMethod } from '../../../did/did-resolver';
 
 import { base64url } from 'multiformats/bases/base64';
@@ -33,9 +33,9 @@ export class GeneralJwsVerifier {
 
       const { kid } = JSON.parse(protectedJson);
       const did = this.extractDid(kid);
-      const publicKeyJwk = await this.getPublicKey(did, kid, didResolver);
+      const publicJwk = await this.getPublicKey(did, kid, didResolver);
 
-      const isVerified = await this.verifySignature(this.jws.payload, signature, publicKeyJwk);
+      const isVerified = await this.verifySignature(this.jws.payload, signature, publicJwk);
 
       if (isVerified) {
         signers.push(did);
@@ -47,7 +47,7 @@ export class GeneralJwsVerifier {
     return { signers };
   }
 
-  async getPublicKey(did: string, kid: string, didResolver: DIDResolver): Promise<JwkPublic> {
+  async getPublicKey(did: string, kid: string, didResolver: DIDResolver): Promise<PublicJwk> {
     // `resolve` throws exception if DID is invalid, DID method is not supported,
     // or resolving DID fails
 
@@ -76,19 +76,19 @@ export class GeneralJwsVerifier {
       throw new Error(`verification method [${kid}] must be JsonWebKey2020`);
     }
 
-    const { publicKeyJwk } = verificationMethod;
+    const { publicKeyJwk: publicJwk } = verificationMethod;
 
     // TODO: replace with JSON Schema based validation
-    // more info about the `publicKeyJwk` property can be found here:
-    // https://www.w3.org/TR/did-spec-registries/#publickeyjwk
-    if (!publicKeyJwk) {
+    // more info about the `publicJwk` property can be found here:
+    // https://www.w3.org/TR/did-spec-registries/#publicJwk
+    if (!publicJwk) {
       throw new Error(`publicKeyJwk property not found on verification method [${kid}]`);
     }
 
-    return publicKeyJwk as JwkPublic;
+    return publicJwk as PublicJwk;
   }
 
-  async verifySignature(base64UrlPayload: string, signature: Signature, jwkPublic: JwkPublic): Promise<boolean> {
+  async verifySignature(base64UrlPayload: string, signature: Signature, jwkPublic: PublicJwk): Promise<boolean> {
     const verifyFn: VerifyFn = verifiers[jwkPublic.crv];
 
     if (!verifyFn) {

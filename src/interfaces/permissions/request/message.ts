@@ -1,4 +1,4 @@
-import type { AuthCreateOpts, Authorizable, AuthVerificationResult } from '../../../messages/types';
+import type { AuthCreateOpts as AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../messages/types';
 import type { JsonPermissionsRequest, PermissionsRequestDescriptor } from './types';
 import type { Scope, Conditions } from '../types';
 
@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 const { isPlainObject } = lodash;
 
-type PermissionsRequestOpts = AuthCreateOpts & {
+type PermissionsRequestOptions = AuthCreateOptions & {
   conditions?: Conditions;
   description: string;
   grantedTo: string;
@@ -55,7 +55,7 @@ export class PermissionsRequest extends Message implements Authorizable {
     return 'Permissions';
   }
 
-  static async create(opts: PermissionsRequestOpts): Promise<PermissionsRequest> {
+  static async create(opts: PermissionsRequestOptions): Promise<PermissionsRequest> {
     const { conditions } = opts;
     const providedConditions = conditions ? conditions : {};
     const mergedConditions = { ...DEFAULT_CONDITIONS, ...providedConditions  };
@@ -77,7 +77,7 @@ export class PermissionsRequest extends Message implements Authorizable {
     const authPayloadBytes = new TextEncoder().encode(authPayloadStr);
 
     const signer = await GeneralJwsSigner
-      .create(authPayloadBytes, [opts.signingMaterial]);
+      .create(authPayloadBytes, [opts.signatureInput]);
 
     const message: JsonPermissionsRequest = { descriptor, authorization: signer.getJws() };
 

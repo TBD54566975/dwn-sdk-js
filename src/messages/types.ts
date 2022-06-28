@@ -1,7 +1,7 @@
 import { DIDResolver } from '../did/did-resolver';
 import type { GeneralJws, SignatureInput } from '../jose/jws/general/types';
 
-export interface JsonMessage {
+export interface MessageJson {
   descriptor: {
     method: string;
     [key: string]: unknown;
@@ -9,7 +9,7 @@ export interface JsonMessage {
   [key:string]: unknown;
 }
 
-export interface JsonDataMessage extends JsonMessage {
+export interface DataMessageJson extends MessageJson {
   descriptor: {
     method: string;
     dataCid: string;
@@ -43,5 +43,5 @@ export interface Attestable {
 }
 
 export interface AuthCreateOpts {
-  signingMaterial: SignatureInput
+  signatureInput: SignatureInput
 }

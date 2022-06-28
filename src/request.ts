@@ -1,16 +1,16 @@
-import { JsonMessage } from './messages/types';
+import { MessageJson } from './messages/types';
 import { validate } from './validation/validator';
 
-type JsonRequest = {
-  messages?: JsonMessage[]
+type RequestJson = {
+  messages?: MessageJson[]
   target: string
 };
 
 export class Request {
-  messages: JsonMessage[];
+  messages: MessageJson[];
   target: string;
 
-  constructor(jsonRequest: JsonRequest) {
+  constructor(jsonRequest: RequestJson) {
     this.target = jsonRequest.target;
     this.messages = jsonRequest.messages || [];
   }
@@ -30,10 +30,10 @@ export class Request {
     // throws an error if validation fails
     validate('Request', rawRequest);
 
-    return new Request(rawRequest as JsonRequest);
+    return new Request(rawRequest as RequestJson);
   }
 
-  addMessage(message: JsonMessage): void {
+  addMessage(message: MessageJson): void {
     this.messages.push(message);
   }
 }

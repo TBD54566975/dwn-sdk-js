@@ -51,11 +51,11 @@ describe('Message', () => {
     });
 
     it('returns unmarshalled message if validation succeeds', async () => {
-      const { privateKeyJwk } = await generateKeyPair();
-      const signingMaterial = {
-        jwkPrivate      : privateKeyJwk,
+      const { privateJwk } = await generateKeyPair();
+      const signatureInput = {
+        jwkPrivate      : privateJwk,
         protectedHeader : {
-          alg : privateKeyJwk.alg,
+          alg : privateJwk.alg,
           kid : 'did:jank:bob'
         }
       };
@@ -65,7 +65,7 @@ describe('Message', () => {
         grantedBy   : 'did:jank:bob',
         grantedTo   : 'did:jank:alice',
         scope       : { method: 'CollectionsWrite' },
-        signingMaterial
+        signatureInput
       });
 
       const jsonMessage = Message.unmarshal(creator.toObject());

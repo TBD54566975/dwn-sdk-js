@@ -27,11 +27,11 @@ describe('PermissionsRequest', () => {
 
   describe('create', () => {
     it('creates a PermissionsRequest message', async () => {
-      const { privateKeyJwk } = await generateKeyPair();
-      const signingMaterial = {
-        jwkPrivate      : privateKeyJwk,
+      const { privateJwk } = await generateKeyPair();
+      const signatureInput = {
+        jwkPrivate      : privateJwk,
         protectedHeader : {
-          alg : privateKeyJwk.alg,
+          alg : privateJwk.alg,
           kid : 'did:jank:bob'
         }
       };
@@ -41,7 +41,7 @@ describe('PermissionsRequest', () => {
         grantedBy   : 'did:jank:bob',
         grantedTo   : 'did:jank:alice',
         scope       : { method: 'CollectionsWrite' },
-        signingMaterial
+        signatureInput
       });
 
       // this would throw an exception if the underlying message was invalid
@@ -55,11 +55,11 @@ describe('PermissionsRequest', () => {
     });
 
     it('uses default conditions if none are provided', async () => {
-      const { privateKeyJwk } = await generateKeyPair();
-      const signingMaterial = {
-        jwkPrivate      : privateKeyJwk,
+      const { privateJwk } = await generateKeyPair();
+      const signatureInput = {
+        jwkPrivate      : privateJwk,
         protectedHeader : {
-          alg : privateKeyJwk.alg,
+          alg : privateJwk.alg,
           kid : 'did:jank:bob'
         }
       };
@@ -69,7 +69,7 @@ describe('PermissionsRequest', () => {
         grantedBy   : 'did:jank:bob',
         grantedTo   : 'did:jank:alice',
         scope       : { method: 'CollectionsWrite' },
-        signingMaterial
+        signatureInput
       });
 
       const { conditions } = message;
@@ -92,12 +92,12 @@ describe('PermissionsRequest', () => {
       });
 
       it('returns signer DID if verification succeeds', async () => {
-        const { privateKeyJwk, publicKeyJwk } = await generateKeyPair();
+        const { privateJwk, publicJwk } = await generateKeyPair();
 
         const alice = {
           did                  : 'did:jank:alice',
-          privateKeyJwk        : privateKeyJwk,
-          publicKeyJwk         : publicKeyJwk,
+          privateJwk           : privateJwk,
+          publicJwk            : publicJwk,
           protectedHeader      : { alg: 'ES256K', kid: 'did:jank:alice#key1' },
           mockResolutionResult : {
             didResolutionMetadata : {},
@@ -105,7 +105,7 @@ describe('PermissionsRequest', () => {
               verificationMethod: [{
                 id           : 'did:jank:alice#key1',
                 type         : 'JsonWebKey2020',
-                publicKeyJwk : publicKeyJwk
+                publicKeyJwk : publicJwk
               }]
             },
             didDocumentMetadata: {}
@@ -113,11 +113,11 @@ describe('PermissionsRequest', () => {
         };
 
         const message = await PermissionsRequest.create({
-          description     : 'drugs',
-          grantedBy       : 'did:jank:bob',
-          grantedTo       : 'did:jank:alice',
-          scope           : { method: 'CollectionsWrite' },
-          signingMaterial : { jwkPrivate: alice.privateKeyJwk, protectedHeader: alice.protectedHeader }
+          description    : 'drugs',
+          grantedBy      : 'did:jank:bob',
+          grantedTo      : 'did:jank:alice',
+          scope          : { method: 'CollectionsWrite' },
+          signatureInput : { jwkPrivate: alice.privateJwk, protectedHeader: alice.protectedHeader }
         });
 
         const resolveStub = sinon.stub();
@@ -152,13 +152,13 @@ describe('PermissionsRequest', () => {
         };
 
         const testVectors = [ 'dookie', JSON.stringify([])];
-        const { privateKeyJwk } = await generateKeyPair();
+        const { privateJwk } = await generateKeyPair();
 
         for (let vector of testVectors) {
           const payloadBytes = new TextEncoder().encode(vector);
-          const protectedHeader = { alg: privateKeyJwk.alg, kid: 'did:jank:alice#key1' };
+          const protectedHeader = { alg: privateJwk.alg, kid: 'did:jank:alice#key1' };
 
-          const signer = await GeneralJwsSigner.create(payloadBytes, [{ jwkPrivate: privateKeyJwk, protectedHeader }]);
+          const signer = await GeneralJwsSigner.create(payloadBytes, [{ jwkPrivate: privateJwk, protectedHeader }]);
           const jws = signer.getJws();
 
           jsonMessage['authorization'] = jws;

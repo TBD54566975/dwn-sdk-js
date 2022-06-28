@@ -1,13 +1,13 @@
-import type { JsonDataMessage } from './types';
+import type { DataMessageJson } from './types';
 
 import { Data } from './data';
 import { Message } from './message';
 
 export abstract class DataMessage extends Message {
-  protected message: JsonDataMessage;
+  protected message: DataMessageJson;
   data: Data;
 
-  constructor(message: JsonDataMessage) {
+  constructor(message: DataMessageJson) {
     super(message);
 
     this.message = message;

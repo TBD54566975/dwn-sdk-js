@@ -1,7 +1,7 @@
 import type { Context } from './types';
 import type { DIDMethodResolver } from './did/did-resolver';
 import type { MethodHandler } from './interfaces/types';
-import type { JsonMessage } from './messages/types';
+import type { MessageJson } from './messages/types';
 import type { MessageStore } from './store/message-store';
 
 import { DIDResolver } from './did/did-resolver';
@@ -69,7 +69,7 @@ export class DWN {
    * @param message
    */
   async processMessage(rawMessage: object, ctx: Context): Promise<MessageReply> {
-    let message: JsonMessage;
+    let message: MessageJson;
 
     try {
       message = Message.unmarshal(rawMessage);

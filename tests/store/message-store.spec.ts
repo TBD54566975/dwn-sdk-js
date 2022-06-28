@@ -11,13 +11,13 @@ const messageStore = new MessageStoreLevel({
 });
 
 async function generateMessage(): Promise<Message> {
-  const { privateKeyJwk } = await generateKeyPair();
+  const { privateJwk } = await generateKeyPair();
   return await PermissionsRequest.create({
-    description     : 'drugs',
-    grantedBy       : 'did:jank:bob',
-    grantedTo       : 'did:jank:alice',
-    scope           : { method: 'CollectionsWrite' },
-    signingMaterial : { jwkPrivate: privateKeyJwk, protectedHeader: { alg: privateKeyJwk.alg, kid: 'whatev' } }
+    description    : 'drugs',
+    grantedBy      : 'did:jank:bob',
+    grantedTo      : 'did:jank:alice',
+    scope          : { method: 'CollectionsWrite' },
+    signatureInput : { jwkPrivate: privateJwk, protectedHeader: { alg: privateJwk.alg, kid: 'whatev' } }
   });
 }
 

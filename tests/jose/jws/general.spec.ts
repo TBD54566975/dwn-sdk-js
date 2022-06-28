@@ -16,20 +16,20 @@ describe('General JWS Sign/Verify', () => {
   });
 
   it('should sign and verify secp256k1 signature using a key vector correctly',  async () => {
-    const { privateKeyJwk, publicKeyJwk } = await generateSecp256k1Jwk();
+    const { privateJwk, publicJwk } = await generateSecp256k1Jwk();
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
     const protectedHeader = { alg: 'ES256K', kid: 'did:jank:alice#key1' };
 
-    const signer = await GeneralJwsSigner.create(payloadBytes, [{ jwkPrivate: privateKeyJwk, protectedHeader }]);
+    const signer = await GeneralJwsSigner.create(payloadBytes, [{ jwkPrivate: privateJwk, protectedHeader }]);
     const jws = signer.getJws();
 
     const mockResolutionResult = {
       didResolutionMetadata : {},
       didDocument           : {
         verificationMethod: [{
-          id   : 'did:jank:alice#key1',
-          type : 'JsonWebKey2020',
-          publicKeyJwk
+          id           : 'did:jank:alice#key1',
+          type         : 'JsonWebKey2020',
+          publicKeyJwk : publicJwk
         }]
       },
       didDocumentMetadata: {}
@@ -49,20 +49,20 @@ describe('General JWS Sign/Verify', () => {
   });
 
   it('should sign and verify ed25519 signature using a key vector correctly',  async () => {
-    const { privateKeyJwk, publicKeyJwk } = await generateEd25519Jwk();
+    const { privateJwk, publicJwk } = await generateEd25519Jwk();
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
     const protectedHeader = { alg: 'EdDSA', kid: 'did:jank:alice#key1' };
 
-    const signer = await GeneralJwsSigner.create(payloadBytes, [{ jwkPrivate: privateKeyJwk, protectedHeader }]);
+    const signer = await GeneralJwsSigner.create(payloadBytes, [{ jwkPrivate: privateJwk, protectedHeader }]);
     const jws = signer.getJws();
 
     const mockResolutionResult = {
       didResolutionMetadata : {},
       didDocument           : {
         verificationMethod: [{
-          id   : 'did:jank:alice#key1',
-          type : 'JsonWebKey2020',
-          publicKeyJwk
+          id           : 'did:jank:alice#key1',
+          type         : 'JsonWebKey2020',
+          publicKeyJwk : publicJwk
         }]
       },
       didDocumentMetadata: {}
@@ -87,8 +87,8 @@ describe('General JWS Sign/Verify', () => {
 
     const alice = {
       did                  : 'did:jank:alice',
-      jwkPrivate           : secp256k1Keys.privateKeyJwk,
-      jwkPublic            : secp256k1Keys.publicKeyJwk,
+      jwkPrivate           : secp256k1Keys.privateJwk,
+      jwkPublic            : secp256k1Keys.publicJwk,
       protectedHeader      : { alg: 'ES256K', kid: 'did:jank:alice#key1' },
       mockResolutionResult : {
         didResolutionMetadata : {},
@@ -96,7 +96,7 @@ describe('General JWS Sign/Verify', () => {
           verificationMethod: [{
             id           : 'did:jank:alice#key1',
             type         : 'JsonWebKey2020',
-            publicKeyJwk : secp256k1Keys.publicKeyJwk
+            publicKeyJwk : secp256k1Keys.publicJwk
           }]
         },
         didDocumentMetadata: {}
@@ -105,8 +105,8 @@ describe('General JWS Sign/Verify', () => {
 
     const bob = {
       did                  : 'did:jank:bob',
-      jwkPrivate           : ed25519Keys.privateKeyJwk,
-      jwkPublic            : ed25519Keys.publicKeyJwk,
+      jwkPrivate           : ed25519Keys.privateJwk,
+      jwkPublic            : ed25519Keys.publicJwk,
       protectedHeader      : { alg: 'EdDSA', kid: 'did:jank:bob#key1' },
       mockResolutionResult : {
         didResolutionMetadata : {},
@@ -114,7 +114,7 @@ describe('General JWS Sign/Verify', () => {
           verificationMethod: [{
             id           : 'did:jank:bob#key1',
             type         : 'JsonWebKey2020',
-            publicKeyJwk : ed25519Keys.publicKeyJwk,
+            publicKeyJwk : ed25519Keys.publicJwk,
           }]
         },
         didDocumentMetadata: {}
@@ -145,6 +145,5 @@ describe('General JWS Sign/Verify', () => {
     expect(verificatonResult.signers.length).to.equal(2);
     expect(verificatonResult.signers).to.include(alice.did);
     expect(verificatonResult.signers).to.include(bob.did);
-
   });
 });

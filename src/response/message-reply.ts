@@ -1,4 +1,4 @@
-import { JsonMessage } from '../messages/types';
+import { MessageJson } from '../messages/types';
 
 type Status = {
   code: number
@@ -7,14 +7,14 @@ type Status = {
 
 type MessageResultOpts = {
   status: Status,
-  entries?: JsonMessage[];
+  entries?: MessageJson[];
 };
 
 export class MessageReply {
   status: Status;
   // resulting message entries returned from the invocation of the corresponding message
   // e.g. the resulting messages from a CollectionsQuery
-  entries?: JsonMessage[];
+  entries?: MessageJson[];
 
   constructor(opts: MessageResultOpts) {
     const { status, entries } = opts;

@@ -1,4 +1,4 @@
-import type { JwkPrivate } from '../../types';
+import type { PrivateJwk } from '../../types';
 /**
  * General JWS definition. Payload is returned as an empty
  * string when JWS Unencoded Payload Option
@@ -38,5 +38,5 @@ export interface JwsHeaderParameters {
 
 export type SignatureInput = {
   protectedHeader: JwsHeaderParameters
-  jwkPrivate: JwkPrivate
+  jwkPrivate: PrivateJwk
 };

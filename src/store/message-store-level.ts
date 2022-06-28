@@ -1,5 +1,5 @@
 import type { Context } from '../types';
-import type { JsonMessage } from '../messages/types';
+import type { MessageJson } from '../messages/types';
 import type { MessageStore } from './message-store';
 
 import { BlockstoreLevel } from './blockstore-level';
@@ -67,7 +67,7 @@ export class MessageStoreLevel implements MessageStore {
     await this.index.FLUSH();
   }
 
-  async get(cid: CID, ctx: Context): Promise<JsonMessage> {
+  async get(cid: CID, ctx: Context): Promise<MessageJson> {
     const bytes = await this.db.get(cid, ctx);
 
     if (!bytes) {
@@ -76,7 +76,7 @@ export class MessageStoreLevel implements MessageStore {
 
     const decodedBlock = await block.decode({ bytes, codec: cbor, hasher: sha256 });
 
-    const jsonMessage = decodedBlock.value as JsonMessage;
+    const jsonMessage = decodedBlock.value as MessageJson;
     const { descriptor } = jsonMessage;
 
     if (!descriptor.dataCid) {
@@ -97,8 +97,8 @@ export class MessageStoreLevel implements MessageStore {
     return jsonMessage;
   }
 
-  async query(query: any, ctx: Context): Promise<JsonMessage[]> {
-    const messages: JsonMessage[] = [];
+  async query(query: any, ctx: Context): Promise<MessageJson[]> {
+    const messages: MessageJson[] = [];
 
     // parse query into a query that is compatible with the index we're using
     const indexQueryTerms: string[] = MessageStoreLevel.buildIndexQueryTerms(query);
