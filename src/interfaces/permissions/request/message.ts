@@ -99,7 +99,7 @@ export class PermissionsRequest extends Message implements Authorizable {
 
     try {
       payloadJson = JSON.parse(payloadStr);
-    } catch(e) {
+    } catch {
       throw new Error('auth payload must be a valid JSON object');
     }
 

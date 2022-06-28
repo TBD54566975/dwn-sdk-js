@@ -22,7 +22,7 @@ export class Request {
     if (typeof rawRequest !== 'object') {
       try {
         rawRequest = JSON.parse(rawRequest);
-      } catch(e) {
+      } catch {
         throw new Error('expected request to be valid JSON');
       }
     }
