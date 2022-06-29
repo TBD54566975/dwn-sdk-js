@@ -1,7 +1,7 @@
 import type { Context } from '../types';
-import type { MessageSchema } from '../messages/types';
+import type { MessageSchema } from '../core/types';
 import type { MessageStore } from '../store/message-store';
-import type { MessageReply } from '../response/message-reply';
+import type { MessageReply } from '../core/message-reply';
 
 import { DIDResolver } from '../did/did-resolver';
 

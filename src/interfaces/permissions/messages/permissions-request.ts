@@ -1,12 +1,12 @@
-import type { AuthCreateOpts as AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../messages/types';
-import type { PermissionsRequestSchema, PermissionsRequestDescriptor } from './types';
+import type { AuthCreateOpts as AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
+import type { PermissionsRequestSchema, PermissionsRequestDescriptor } from '../types';
 import type { Scope, Conditions } from '../types';
 
 import { DIDResolver } from '../../../did/did-resolver';
 import { GeneralJwsSigner, GeneralJwsVerifier } from '../../../jose/jws/general';
 import { generateCid, parseCid } from '../../../utils/cid';
 import lodash from 'lodash';
-import { Message } from '../../../messages/message';
+import { Message } from '../../../core/message';
 import { v4 as uuidv4 } from 'uuid';
 
 const { isPlainObject } = lodash;

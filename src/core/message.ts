@@ -14,7 +14,7 @@ export abstract class Message {
     throw new Error('method not implemented');
   };
 
-  static unmarshal(rawMessage: object): MessageSchema {
+  static parse(rawMessage: object): MessageSchema {
     const descriptor = rawMessage['descriptor'];
     if (!descriptor) {
       throw new Error('message must contain descriptor');
@@ -45,9 +45,5 @@ export abstract class Message {
 
   toJSON(): string {
     return JSON.stringify(this.message);
-  }
-
-  hasData(): boolean {
-    return 'data' in this.message;
   }
 }

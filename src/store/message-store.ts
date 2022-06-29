@@ -1,7 +1,7 @@
 import type { Context } from '../types';
-import type { MessageSchema } from '../messages/types';
+import type { MessageSchema } from '../core/types';
 
-import { Message } from '../messages/message';
+import { Message } from '../core/message';
 import { CID } from 'multiformats/cid';
 
 export interface MessageStore {

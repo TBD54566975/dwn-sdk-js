@@ -1,16 +1,14 @@
 import type { Context } from './types';
 import type { DIDMethodResolver } from './did/did-resolver';
 import type { Interface, MethodHandler } from './interfaces/types';
-import type { MessageSchema } from './messages/types';
+import type { MessageSchema } from './core/types';
 import type { MessageStore } from './store/message-store';
 
 import { addSchema } from './validation/validator';
 import { DIDResolver } from './did/did-resolver';
-import { Message } from './messages/message';
+import { Message, MessageReply, Request, Response } from './core';
 import { MessageStoreLevel } from './store/message-store-level';
-import { MessageReply, Response } from './response';
 import { PermissionsInterface } from './interfaces';
-import { Request } from './request';
 
 export class DWN {
   static methodHandlers: { [key:string]: MethodHandler } = {
@@ -89,7 +87,7 @@ export class DWN {
     let message: MessageSchema;
 
     try {
-      message = Message.unmarshal(rawMessage);
+      message = Message.parse(rawMessage);
     } catch(e) {
       return new MessageReply({
         status: { code: 400, message: e.message }

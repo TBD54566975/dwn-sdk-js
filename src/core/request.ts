@@ -1,5 +1,5 @@
-import { BaseMessageSchema } from './messages/types';
-import { validate } from './validation/validator';
+import { BaseMessageSchema } from './types';
+import { validate } from '../validation/validator';
 
 type RequestJson = {
   messages?: BaseMessageSchema[]

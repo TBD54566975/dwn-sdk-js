@@ -1,10 +1,10 @@
 import type { MethodHandler } from '../../types';
-import type { PermissionsRequestSchema } from './types';
+import type { PermissionsRequestSchema } from '../types';
 
-import { MessageReply } from '../../../response';
-import { PermissionsRequest } from './message';
+import { MessageReply } from '../../../core';
+import { PermissionsRequest } from '../messages/permissions-request';
 
-export const processPermissionsRequest: MethodHandler = async (
+export const handlePermissionsRequest: MethodHandler = async (
   ctx,
   message,
   messageStore,

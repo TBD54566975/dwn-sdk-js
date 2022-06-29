@@ -1,4 +1,4 @@
-import { BaseMessageSchema } from '../messages/types';
+import { BaseMessageSchema } from './types';
 
 type Status = {
   code: number

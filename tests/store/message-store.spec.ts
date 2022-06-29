@@ -1,9 +1,9 @@
 import { expect } from 'chai';
 import { generateCid } from '../../src/utils/cid';
 import { generateKeyPair } from '../../src/jose/algorithms/ed25519';
-import { Message } from '../../src/messages/message';
+import { Message } from '../../src/core';
 import { MessageStoreLevel } from '../../src/store/message-store-level';
-import { PermissionsRequest } from '../../src/interfaces/permissions/request/message';
+import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request';
 
 const messageStore = new MessageStoreLevel({
   blockstoreLocation : 'TEST-BLOCKSTORE',

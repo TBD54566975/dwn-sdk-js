@@ -1,16 +1,16 @@
-import type { PermissionsRequestSchema } from '../../src/interfaces/permissions/request/types';
+import type { PermissionsRequestSchema } from '../../src/interfaces/permissions/types';
 
 import { expect } from 'chai';
 import { generateKeyPair } from '../../src/jose/algorithms/secp256k1';
-import { Message } from '../../src/messages/message';
-import { PermissionsRequest } from '../../src/interfaces/permissions/request/message';
+import { Message } from '../../src/core/message';
+import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request';
 
 
 describe('Message', () => {
-  describe('unmarshal', () => {
+  describe('parse', () => {
     it('throws an exception if raw message is missing descriptor', () => {
       expect(() => {
-        Message.unmarshal({});
+        Message.parse({});
       }).throws('descriptor');
     });
 
@@ -21,7 +21,7 @@ describe('Message', () => {
         for (let t of tests) {
           expect(() => {
             const m = { descriptor: t };
-            Message.unmarshal(m);
+            Message.parse(m);
           }).to.throw('array');
         }
       }).to.throw('object');
@@ -30,14 +30,14 @@ describe('Message', () => {
     it('throws an exception if raw message descriptor is missing method', () => {
       expect(() => {
         const m = { descriptor: {} };
-        Message.unmarshal(m);
+        Message.parse(m);
       }).throws('descriptor');
     });
 
     it('throws an exception if schema doesnt exist for message type', () => {
       expect(() => {
         const m = { descriptor: { method: 'KakaRequest' } };
-        Message.unmarshal(m);
+        Message.parse(m);
       }).throws('not found.');
     });
 
@@ -46,11 +46,11 @@ describe('Message', () => {
         const m = {
           descriptor: { method: 'PermissionsRequest' }
         };
-        Message.unmarshal(m);
+        Message.parse(m);
       }).throws('required property');
     });
 
-    it('returns unmarshalled message if validation succeeds', async () => {
+    it('returns parseled message if validation succeeds', async () => {
       const { privateJwk } = await generateKeyPair();
       const signatureInput = {
         jwkPrivate      : privateJwk,
@@ -68,7 +68,7 @@ describe('Message', () => {
         signatureInput
       });
 
-      const jsonMessage = Message.unmarshal(creator.toObject());
+      const jsonMessage = Message.parse(creator.toObject());
 
       expect(jsonMessage).to.not.be.undefined;
       expect((jsonMessage as PermissionsRequestSchema).authorization).to.not.be.undefined;

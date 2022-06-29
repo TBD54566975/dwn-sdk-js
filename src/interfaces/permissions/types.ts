@@ -1,3 +1,5 @@
+import type { Authorization, BaseMessageSchema } from '../../core/types';
+
 export type Scope = {
   method: string
   schema?: string
@@ -27,4 +29,18 @@ export type Conditions = {
   // they authored.
   // defaults to `false`
   sharedAccess?: boolean
+};
+
+export type PermissionsRequestDescriptor = {
+  description: string
+  grantedTo: string
+  grantedBy: string
+  method: 'PermissionsRequest'
+  scope: Scope
+  conditions: Conditions
+  objectId?: string
+};
+
+export type PermissionsRequestSchema = BaseMessageSchema & Authorization & {
+  descriptor: PermissionsRequestDescriptor;
 };

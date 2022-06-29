@@ -1,9 +1,9 @@
-import type { PermissionsRequestSchema } from '../../../../src/interfaces/permissions/request/types';
+import type { PermissionsRequestSchema } from '../../../../src/interfaces/permissions/types';
 
 import { DIDResolver } from '../../../../src/did/did-resolver';
 import { generateKeyPair } from '../../../../src/jose/algorithms/secp256k1';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general';
-import { PermissionsRequest, DEFAULT_CONDITIONS } from '../../../../src/interfaces/permissions/request/message';
+import { PermissionsRequest, DEFAULT_CONDITIONS } from '../../../../src/interfaces/permissions/messages/permissions-request';
 import { validate } from '../../../../src/validation/validator';
 
 import chai, { expect } from 'chai';

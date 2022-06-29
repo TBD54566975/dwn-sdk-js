@@ -2,7 +2,7 @@ import type { DeepPartial } from '../types';
 import type { GeneralJws, SignatureInput } from '../jose/jws/general/types';
 
 import { DIDResolver } from '../did/did-resolver';
-import { PermissionsRequestSchema } from '../interfaces/permissions/request/types';
+import { PermissionsRequestSchema } from '../interfaces/permissions/types';
 
 /**
  * Intersection type for all concrete message schema types (e.g. PermissionsRequestSchema)
@@ -24,9 +24,8 @@ export type Data = {
   data: string;
 };
 
-/**
- * Intersection type for message schema types that include `attestation`
- */
+
+
 export type Attestation = {
   attestation?: GeneralJws;
 };

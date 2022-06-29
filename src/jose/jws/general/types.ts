@@ -4,16 +4,16 @@ import type { PrivateJwk } from '../../types';
  * string when JWS Unencoded Payload Option
  * [RFC7797](https://www.rfc-editor.org/rfc/rfc7797) is used.
  */
-export interface GeneralJws {
+export type GeneralJws = {
   payload: string
   signatures: Signature[]
-}
+};
 
 /**
  * Flattened JWS definition for verify function inputs, allows payload as
  * Uint8Array for detached signature validation.
  */
-export interface Signature {
+export type Signature = {
   /**
    * The "protected" member MUST be present and contain the value
    * BASE64URL(UTF8(JWS Protected Header)) when the JWS Protected
@@ -27,14 +27,14 @@ export interface Signature {
    * BASE64URL(JWS Signature).
    */
   signature: string
-}
+};
 
-export interface JwsHeaderParameters {
+export type JwsHeaderParameters = {
   /** JWS "alg" (Algorithm) Header Parameter. */
   alg: string
   /** JWS "kid" (Key ID) Parameter. */
   kid: string
-}
+};
 
 export type SignatureInput = {
   protectedHeader: JwsHeaderParameters

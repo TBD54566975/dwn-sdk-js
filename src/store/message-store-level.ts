@@ -1,11 +1,11 @@
 import type { Context } from '../types';
-import type { GenericMessageSchema, MessageSchema } from '../messages/types';
+import type { GenericMessageSchema, MessageSchema } from '../core/types';
 import type { MessageStore } from './message-store';
 
 import { BlockstoreLevel } from './blockstore-level';
 import { CID } from 'multiformats/cid';
 import { importer } from 'ipfs-unixfs-importer';
-import { Message } from '../messages/message';
+import { Message } from '../core/message';
 import { parseCid } from '../utils/cid';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { toBytes } from '../utils/data';
