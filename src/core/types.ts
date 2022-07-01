@@ -1,8 +1,9 @@
 import type { DeepPartial } from '../types';
 import type { GeneralJws, SignatureInput } from '../jose/jws/general/types';
 
+import { CID } from 'multiformats/cid';
 import { DIDResolver } from '../did/did-resolver';
-import { PermissionsRequestSchema } from '../interfaces/permissions/types';
+import { PermissionsRequestSchema, PermissionsGrantSchema } from '../interfaces/permissions/types';
 
 /**
  * Intersection type for all concrete message schema types (e.g. PermissionsRequestSchema)
@@ -44,16 +45,23 @@ export type GenericMessageSchema = BaseMessageSchema & DeepPartial<Data> & Parti
 };
 
 
-export type MessageSchema = PermissionsRequestSchema | GenericMessageSchema;
+export type MessageSchema = PermissionsRequestSchema | PermissionsGrantSchema | GenericMessageSchema;
 
 export type AuthVerificationResult = {
+  /** DIDs of all signers */
   signers: string[];
+  /** parsed JWS payload */
+  payload: { descriptorCid: CID, [key: string]: CID }
 };
 
 /**
  * concrete Message classes should implement this interface if the Message contains authorization
  */
 export interface Authorizable {
+  /**
+   * validates and verifies the `authorization` property of a given message
+   * @param didResolver - used to resolve `kid`'s
+   */
   verifyAuth(didResolver: DIDResolver): Promise<AuthVerificationResult>;
 }
 
@@ -65,6 +73,6 @@ export interface Attestable {
   verifyAttestation(didResolver: DIDResolver): Promise<string>;
 }
 
-export interface AuthCreateOpts {
+export interface AuthCreateOptions {
   signatureInput: SignatureInput
 }

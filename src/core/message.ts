@@ -43,7 +43,7 @@ export abstract class Message {
     return cloneDeep(this.message);
   }
 
-  toJSON(): string {
-    return JSON.stringify(this.message);
+  toJSON(): MessageSchema {
+    return this.message;
   }
 }

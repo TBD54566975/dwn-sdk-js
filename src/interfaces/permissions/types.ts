@@ -9,7 +9,7 @@ export type Scope = {
 export type Conditions = {
   // attestation indicates whether any inbound data should be signed.
   // defaults to `optional`
-  attestation?: 'optional' | 'required'
+  attestation?: 'optional' | 'prohibited' | 'required'
 
   // delegation indicates that a given permission can be delegated to other entities.
   // defaults to `false`
@@ -32,15 +32,32 @@ export type Conditions = {
 };
 
 export type PermissionsRequestDescriptor = {
+  conditions: Conditions
   description: string
   grantedTo: string
   grantedBy: string
   method: 'PermissionsRequest'
-  scope: Scope
-  conditions: Conditions
   objectId?: string
+  scope: Scope
 };
 
 export type PermissionsRequestSchema = BaseMessageSchema & Authorization & {
   descriptor: PermissionsRequestDescriptor;
+};
+
+export type PermissionsGrantDescriptor = {
+  conditions: Conditions;
+  delegatedFrom?: string;
+  description: string;
+  grantedTo: string;
+  grantedBy: string;
+  method: 'PermissionsGrant';
+  objectId: string;
+  permissionsRequestId?: string;
+  scope: Scope;
+};
+
+export type PermissionsGrantSchema = BaseMessageSchema & Authorization & {
+  descriptor: PermissionsGrantDescriptor;
+  delegationChain?: PermissionsGrantSchema;
 };

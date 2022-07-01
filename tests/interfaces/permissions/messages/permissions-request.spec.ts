@@ -31,7 +31,7 @@ describe('PermissionsRequest', () => {
       const signatureInput = {
         jwkPrivate      : privateJwk,
         protectedHeader : {
-          alg : privateJwk.alg,
+          alg : privateJwk.alg as string,
           kid : 'did:jank:bob'
         }
       };
@@ -59,7 +59,7 @@ describe('PermissionsRequest', () => {
       const signatureInput = {
         jwkPrivate      : privateJwk,
         protectedHeader : {
-          alg : privateJwk.alg,
+          alg : privateJwk.alg as string,
           kid : 'did:jank:bob'
         }
       };
