@@ -41,7 +41,7 @@ export class GeneralJwsVerifier {
       if (isVerified) {
         signers.push(did);
       } else {
-        throw new Error('signature verification failed');
+        throw new Error(`signature verification failed for ${did}`);
       }
     }
 
