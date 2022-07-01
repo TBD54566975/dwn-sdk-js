@@ -13,6 +13,7 @@ const verifiers: { [key:string]: VerifyFn } = {
 };
 
 type VerificationResult = {
+  /** DIDs of all signers */
   signers: string[];
 };
 

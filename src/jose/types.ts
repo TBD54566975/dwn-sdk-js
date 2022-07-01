@@ -1,7 +1,11 @@
-export interface Jwk {
+export type Jwk = {
+  /** The "alg" (algorithm) parameter identifies the algorithm intended for use with the key. */
   alg?: string;
+  /** The "alg" (algorithm) parameter identifies the algorithm intended for use with the key. */
   kid?: string;
-}
+  /** identifies the cryptographic algorithm family used with the key, such "EC". */
+  kty: string;
+};
 
 /**
  * A SECP256K1 public key in JWK format.
@@ -10,7 +14,7 @@ export interface Jwk {
  * https://datatracker.ietf.org/doc/html/draft-ietf-cose-webauthn-algorithms-06#section-3.1
  */
 export type PublicEd25519Jwk = Jwk & {
-  alg: 'EdDSA';
+  alg?: 'EdDSA';
   crv: 'Ed25519';
   kty: 'OKP';
   x: string;
@@ -24,7 +28,7 @@ export type PrivateEd25519Jwk = PublicEd25519Jwk & {
 };
 
 export type PublicSecp256k1Jwk = Jwk & {
-  alg: 'ES256K';
+  alg?: 'ES256K';
   crv: 'secp256k1';
   kty: 'EC';
   x: string;
