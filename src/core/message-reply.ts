@@ -5,7 +5,7 @@ type Status = {
   message: string
 };
 
-type MessageResultOpts = {
+type MessageReplyOptions = {
   status: Status,
   entries?: BaseMessageSchema[];
 };
@@ -16,7 +16,7 @@ export class MessageReply {
   // e.g. the resulting messages from a CollectionsQuery
   entries?: BaseMessageSchema[];
 
-  constructor(opts: MessageResultOpts) {
+  constructor(opts: MessageReplyOptions) {
     const { status, entries } = opts;
 
     this.status = status;

@@ -73,6 +73,6 @@ export interface Attestable {
   verifyAttestation(didResolver: DIDResolver): Promise<string>;
 }
 
-export interface AuthCreateOptions {
+export type AuthCreateOptions = {
   signatureInput: SignatureInput
-}
+};

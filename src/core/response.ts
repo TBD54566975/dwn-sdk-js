@@ -5,7 +5,7 @@ type ResponseStatus = {
   message: string
 };
 
-type ResponseOpts = {
+type ResponseOptions = {
   status?: ResponseStatus
   replies?: MessageReply[];
 };
@@ -20,7 +20,7 @@ export class Response {
   // responses to individual messages provided within a request
   replies?: MessageReply[];
 
-  constructor(opts: ResponseOpts = {}) {
+  constructor(opts: ResponseOptions = {}) {
     const { status, replies } = opts;
     if (status && replies) {
       throw new Error('status and replies are mutually exclusive');
