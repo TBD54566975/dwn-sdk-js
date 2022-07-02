@@ -107,7 +107,7 @@ export class MessageStoreLevel implements MessageStore {
     const indexQueryTerms: string[] = MessageStoreLevel.buildIndexQueryTerms(query);
     const { RESULT: indexResults } = await this.index.QUERY({ AND: indexQueryTerms });
 
-    for (let result of indexResults) {
+    for (const result of indexResults) {
       const cid = CID.parse(result._id);
       const message = await this.get(cid, ctx);
 
@@ -145,7 +145,7 @@ export class MessageStoreLevel implements MessageStore {
       // we really don't have to access the result of `chunk` because it's just outputting every unix-fs
       // entry that's getting written to the blockstore. the last entry contains the root cid
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      for await (let _ of chunk);
+      for await (const _ of chunk);
     }
 
     const indexDocument = {

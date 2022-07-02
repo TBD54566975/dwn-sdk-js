@@ -12,7 +12,7 @@ describe('Request', () => {
     it('throws an exception if raw request is not an object', () => {
       const rawRequests = [3, true, []];
 
-      for (let r of rawRequests) {
+      for (const r of rawRequests) {
         expect(() => {
           Request.parse(r);
         }).throws('object');
@@ -28,7 +28,7 @@ describe('Request', () => {
     it('throws an exception if target is not a valid DID', () => {
       const tests = ['hi', 30, true, null, {}, [], 'did:jank'];
 
-      for (let t of tests) {
+      for (const t of tests) {
         expect(() => {
           const req = { target: t, messages: [{}] };
           Request.parse(req);
@@ -46,7 +46,7 @@ describe('Request', () => {
     it('throws an exception if  messages is not an array', () => {
       const tests = [{}, 'messages', 1, true, null];
 
-      for (let t of tests) {
+      for (const t of tests) {
         expect(() => {
           const req = { target: 'did:jank:123', messages: t };
           Request.parse(req);

@@ -72,7 +72,7 @@ export async function verifyAuth(
   payloadConstraints.properties.add('descriptorCid');
 
   // check to ensure that no unexpected properties exist in payload.
-  for (let field in payloadJson) {
+  for (const field in payloadJson) {
     if (!payloadConstraints.properties.has(field)) {
       throw new Error(`${field} not allowed in auth payload.`);
     }

@@ -25,7 +25,7 @@ export class GeneralJwsSigner {
 
     const signer = new GeneralJwsSigner(jws);
 
-    for (let signatureInput of signatureInputs) {
+    for (const signatureInput of signatureInputs) {
       await signer.addSignature(signatureInput);
     }
 

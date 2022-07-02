@@ -74,7 +74,7 @@ describe('PermissionsRequest', () => {
 
       const { conditions } = message;
 
-      for (let conditionName in DEFAULT_CONDITIONS) {
+      for (const conditionName in DEFAULT_CONDITIONS) {
         expect(conditions[conditionName]).to.equal(DEFAULT_CONDITIONS[conditionName]);
       }
 
@@ -154,7 +154,7 @@ describe('PermissionsRequest', () => {
         const testVectors = [ 'dookie', JSON.stringify([])];
         const { privateJwk } = await generateKeyPair();
 
-        for (let vector of testVectors) {
+        for (const vector of testVectors) {
           const payloadBytes = new TextEncoder().encode(vector);
           const protectedHeader = { alg: privateJwk.alg, kid: 'did:jank:alice#key1' };
 

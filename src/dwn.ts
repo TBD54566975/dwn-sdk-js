@@ -28,9 +28,9 @@ export class DWN {
     config.DIDMethodResolvers = config.DIDMethodResolvers || [];
     config.interfaces = config.interfaces || [];
 
-    for (let { methodHandlers, schemas } of config.interfaces) {
+    for (const { methodHandlers, schemas } of config.interfaces) {
 
-      for (let messageType in methodHandlers) {
+      for (const messageType in methodHandlers) {
         if (DWN.methodHandlers[messageType]) {
           throw new Error(`methodHandler already exists for ${messageType}`);
         } else {
@@ -38,7 +38,7 @@ export class DWN {
         }
       }
 
-      for (let schemaName in schemas) {
+      for (const schemaName in schemas) {
         addSchema(schemaName, schemas[schemaName]);
       }
     }
@@ -71,7 +71,7 @@ export class DWN {
     const response = new Response();
     const context: Context = { tenant: request.target };
 
-    for (let message of request.messages) {
+    for (const message of request.messages) {
       const result = await this.processMessage(message, context);
       response.addMessageResult(result);
     }

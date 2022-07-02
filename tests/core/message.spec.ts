@@ -18,7 +18,7 @@ describe('Message', () => {
       expect(() => {
         const tests = [[], 'descriptor', 1, true, null];
 
-        for (let t of tests) {
+        for (const t of tests) {
           expect(() => {
             const m = { descriptor: t };
             Message.parse(m);
@@ -55,7 +55,7 @@ describe('Message', () => {
       const signatureInput = {
         jwkPrivate      : privateJwk,
         protectedHeader : {
-          alg : privateJwk.alg,
+          alg : privateJwk.alg as string,
           kid : 'did:jank:bob'
         }
       };

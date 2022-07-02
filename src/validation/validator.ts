@@ -3,7 +3,7 @@ import { schemas } from './json-schemas';
 
 const validator = new Ajv();
 
-for (let schemaName in schemas) {
+for (const schemaName in schemas) {
   addSchema(schemaName, schemas[schemaName]);
 }
 

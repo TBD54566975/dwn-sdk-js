@@ -28,7 +28,7 @@ export class GeneralJwsVerifier {
   async verify(didResolver: DIDResolver): Promise<VerificationResult> {
     const signers: string[] = [];
 
-    for (let signature of this.jws.signatures) {
+    for (const signature of this.jws.signatures) {
       const protectedBytes = base64url.baseDecode(signature.protected);
       const protectedJson = new TextDecoder().decode(protectedBytes);
 
