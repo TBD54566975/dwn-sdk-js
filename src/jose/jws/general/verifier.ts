@@ -27,10 +27,10 @@ export class GeneralJwsVerifier {
       const protectedJson = new TextDecoder().decode(protectedBytes);
 
       const { kid } = JSON.parse(protectedJson);
-      const did = this.extractDid(kid);
-      const publicJwk = await this.getPublicKey(did, kid, didResolver);
+      const did = GeneralJwsVerifier.extractDid(kid);
+      const publicJwk = await GeneralJwsVerifier.getPublicKey(did, kid, didResolver);
 
-      const isVerified = await this.verifySignature(this.jws.payload, signature, publicJwk);
+      const isVerified = await GeneralJwsVerifier.verifySignature(this.jws.payload, signature, publicJwk);
 
       if (isVerified) {
         signers.push(did);
@@ -42,7 +42,7 @@ export class GeneralJwsVerifier {
     return { signers };
   }
 
-  async getPublicKey(did: string, kid: string, didResolver: DIDResolver): Promise<PublicJwk> {
+  static async getPublicKey(did: string, kid: string, didResolver: DIDResolver): Promise<PublicJwk> {
     // `resolve` throws exception if DID is invalid, DID method is not supported,
     // or resolving DID fails
 
@@ -83,7 +83,7 @@ export class GeneralJwsVerifier {
     return publicJwk as PublicJwk;
   }
 
-  async verifySignature(base64UrlPayload: string, signature: Signature, jwkPublic: PublicJwk): Promise<boolean> {
+  static async verifySignature(base64UrlPayload: string, signature: Signature, jwkPublic: PublicJwk): Promise<boolean> {
     const verifier = verifiers[jwkPublic.crv];
 
     if (!verifier) {
@@ -100,7 +100,7 @@ export class GeneralJwsVerifier {
     return base64url.baseDecode(this.jws.payload);
   }
 
-  private extractDid(kid: string): string {
+  private static extractDid(kid: string): string {
     const [ did ] = kid.split('#');
     return did;
   }
