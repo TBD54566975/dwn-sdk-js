@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { generateCid } from '../../src/utils/cid';
-import { generateKeyPair } from '../../src/jose/algorithms/ed25519';
+import { Ed25519 } from '../../src/jose/algorithms/signing/ed25519';
 import { Message } from '../../src/core';
 import { MessageStoreLevel } from '../../src/store/message-store-level';
 import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request';
@@ -11,13 +11,13 @@ const messageStore = new MessageStoreLevel({
 });
 
 async function generateMessage(): Promise<Message> {
-  const { privateJwk } = await generateKeyPair();
+  const { privateJwk } = await Ed25519.generateKeyPair();
   return await PermissionsRequest.create({
     description    : 'drugs',
     grantedBy      : 'did:jank:bob',
     grantedTo      : 'did:jank:alice',
     scope          : { method: 'CollectionsWrite' },
-    signatureInput : { jwkPrivate: privateJwk, protectedHeader: { alg: privateJwk.alg, kid: 'whatev' } }
+    signatureInput : { jwkPrivate: privateJwk, protectedHeader: { alg: privateJwk.alg as string, kid: 'whatev' } }
   });
 }
 

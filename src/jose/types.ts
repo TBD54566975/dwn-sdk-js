@@ -7,43 +7,53 @@ export type Jwk = {
   kty: string;
 };
 
-/**
- * A SECP256K1 public key in JWK format.
- * Values taken from:
- * https://www.iana.org/assignments/jose/jose.xhtml#web-key-elliptic-curve
- * https://datatracker.ietf.org/doc/html/draft-ietf-cose-webauthn-algorithms-06#section-3.1
- */
-export type PublicEd25519Jwk = Jwk & {
-  alg?: 'EdDSA';
-  crv: 'Ed25519';
-  kty: 'OKP';
+export type PublicJwk = Jwk & {
+  /** The "crv" (curve) parameter identifies the cryptographic curve used with the key.
+   * MUST be present for all EC public keys
+   */
+  crv: string;
+  /**
+   * the x coordinate for the Elliptic Curve point.
+   * Represented as the base64url encoding of the octet string representation of the coordinate.
+   * MUST be present for all EC public keys
+   */
   x: string;
+  /**
+   * the y coordinate for the Elliptic Curve point.
+   * Represented as the base64url encoding of the octet string representation of the coordinate.
+   */
+  y?: string;
 };
 
-/**
- * An Ed25519 private key in JWK format.
+export type PrivateJwk = PublicJwk & {
+  /**
+   * the Elliptic Curve private key value.
+   * It is represented as the base64url encoding of the octet string representation of the private key value
+   * MUST be present to represent Elliptic Curve private keys.
+   */
+  d: string;
+};
+
+export interface Signer {
+  /**
+ * signs the provided payload using the provided JWK
+ * @param content - the content to sign
+ * @param privateJwk - the key to sign with
+ * @returns the signed content (aka signature)
  */
-export type PrivateEd25519Jwk = PublicEd25519Jwk & {
-  d: string; // Only used by a private key
-};
+  sign(content: Uint8Array, privateJwk: PrivateJwk): Promise<Uint8Array>;
+  /**
+   * Verifies a signature against the provided payload hash and public key.
+   * @param content - the content to verify with
+   * @param signature - the signature to verify against
+   * @param publicJwk - the key to verify with
+   * @returns a boolean indicating whether the signature matches
+   */
+  verify(content: Uint8Array, signature: Uint8Array, publicJwk: PublicJwk): Promise<boolean>;
 
-export type PublicSecp256k1Jwk = Jwk & {
-  alg?: 'ES256K';
-  crv: 'secp256k1';
-  kty: 'EC';
-  x: string;
-  y: string;
-};
-
-/**
- * A SECP256K1 private key in JWK format.
- */
-export type PrivateSecp256k1Jwk = PublicSecp256k1Jwk & {
-  d: string; // Only used by a private key.
-};
-
-export type PublicJwk = PublicSecp256k1Jwk | PublicEd25519Jwk;
-export type PrivateJwk = PrivateSecp256k1Jwk | PrivateEd25519Jwk;
-
-export type Signfn = (payload: Uint8Array, privateJwk: PrivateJwk) => Promise<Uint8Array>;
-export type VerifyFn = (payload: Uint8Array, signature: Uint8Array, publicJwk: PublicJwk) => Promise<boolean>;
+  /**
+   * generates a random keypair
+   * @returns the public and private keys as JWKs
+   */
+  generateKeyPair(): Promise<{ publicJwk: PublicJwk, privateJwk: PrivateJwk }>
+}

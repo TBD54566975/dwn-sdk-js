@@ -1,16 +1,10 @@
 import type { GeneralJws, Signature } from './types';
-import type { PublicJwk, VerifyFn } from '../../types';
+import type { PublicJwk } from '../../types';
 import type { VerificationMethod } from '../../../did/did-resolver';
 
 import { base64url } from 'multiformats/bases/base64';
 import { DIDResolver } from '../../../did/did-resolver';
-import { verify as verifyEd25519 } from '../../algorithms/ed25519';
-import { verify as verifySecp256k1 } from '../../algorithms/secp256k1';
-
-const verifiers: { [key:string]: VerifyFn } = {
-  'Ed25519'   : verifyEd25519,
-  'secp256k1' : verifySecp256k1
-};
+import { signers as verifiers } from '../../algorithms';
 
 type VerificationResult = {
   /** DIDs of all signers */
@@ -90,16 +84,16 @@ export class GeneralJwsVerifier {
   }
 
   async verifySignature(base64UrlPayload: string, signature: Signature, jwkPublic: PublicJwk): Promise<boolean> {
-    const verifyFn: VerifyFn = verifiers[jwkPublic.crv];
+    const verifier = verifiers[jwkPublic.crv];
 
-    if (!verifyFn) {
+    if (!verifier) {
       throw new Error(`unsupported crv. crv must be one of ${Object.keys(verifiers)}`);
     }
 
     const payload = new TextEncoder().encode(`${signature.protected}.${base64UrlPayload}`);
     const signatureBytes = base64url.baseDecode(signature.signature);
 
-    return await verifyFn(payload, signatureBytes, jwkPublic);
+    return await verifier.verify(payload, signatureBytes, jwkPublic);
   }
 
   decodePayload(): Uint8Array {

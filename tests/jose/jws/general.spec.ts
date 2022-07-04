@@ -3,8 +3,10 @@ import chaiAsPromised from 'chai-as-promised';
 import { DIDResolver } from '../../../src/did/did-resolver';
 import { GeneralJwsSigner } from '../../../src/jose/jws/general/signer';
 import { GeneralJwsVerifier } from '../../../src/jose/jws/general/verifier';
-import { generateSecp256k1Jwk, generateEd25519Jwk } from '../../../src/jose/jwk';
+import { signers } from '../../../src/jose/algorithms';
 import sinon from 'sinon';
+
+const { Ed25519, secp256k1 } = signers;
 
 chai.use(chaiAsPromised);
 
@@ -16,7 +18,7 @@ describe('General JWS Sign/Verify', () => {
   });
 
   it('should sign and verify secp256k1 signature using a key vector correctly',  async () => {
-    const { privateJwk, publicJwk } = await generateSecp256k1Jwk();
+    const { privateJwk, publicJwk } = await secp256k1.generateKeyPair();
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
     const protectedHeader = { alg: 'ES256K', kid: 'did:jank:alice#key1' };
 
@@ -49,7 +51,7 @@ describe('General JWS Sign/Verify', () => {
   });
 
   it('should sign and verify ed25519 signature using a key vector correctly',  async () => {
-    const { privateJwk, publicJwk } = await generateEd25519Jwk();
+    const { privateJwk, publicJwk } = await Ed25519.generateKeyPair();
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
     const protectedHeader = { alg: 'EdDSA', kid: 'did:jank:alice#key1' };
 
@@ -82,8 +84,8 @@ describe('General JWS Sign/Verify', () => {
   });
 
   it('should support multiple signatures using different key types',  async () => {
-    const secp256k1Keys = await generateSecp256k1Jwk();
-    const ed25519Keys = await generateEd25519Jwk();
+    const secp256k1Keys = await secp256k1.generateKeyPair();
+    const ed25519Keys = await Ed25519.generateKeyPair();
 
     const alice = {
       did                  : 'did:jank:alice',
