@@ -25,8 +25,6 @@ export type Data = {
   data: string;
 };
 
-
-
 export type Attestation = {
   attestation?: GeneralJws;
 };
@@ -43,7 +41,6 @@ export type GenericMessageSchema = BaseMessageSchema & DeepPartial<Data> & Parti
     [key: string]: unknown;
   }
 };
-
 
 export type MessageSchema = PermissionsRequestSchema | PermissionsGrantSchema | GenericMessageSchema;
 
@@ -75,4 +72,9 @@ export interface Attestable {
 
 export type AuthCreateOptions = {
   signatureInput: SignatureInput
+};
+
+export type RequestSchema = {
+  messages: BaseMessageSchema[]
+  target: string
 };

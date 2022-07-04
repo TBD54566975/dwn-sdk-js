@@ -1,7 +1,7 @@
 import type { Context } from './types';
 import type { DIDMethodResolver } from './did/did-resolver';
 import type { Interface, MethodHandler } from './interfaces/types';
-import type { MessageSchema } from './core/types';
+import type { MessageSchema, RequestSchema } from './core/types';
 import type { MessageStore } from './store/message-store';
 
 import { addSchema } from './validation/validator';
@@ -58,7 +58,7 @@ export class DWN {
   }
 
   async processRequest(rawRequest: any): Promise<Response> {
-    let request: Request;
+    let request: RequestSchema;
 
     try {
       request = Request.parse(rawRequest);

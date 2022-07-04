@@ -65,7 +65,8 @@ describe('Request', () => {
       const rawRequest = { target: 'did:jank:123', messages: [{}] };
       const req = Request.parse(JSON.stringify(rawRequest));
 
-      expect(req instanceof Request).to.be.true;
+      expect(req.target).to.equal('did:jank:123');
+      expect(req.messages.length).to.equal(1);
     });
   });
 });

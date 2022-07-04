@@ -1,24 +1,11 @@
-import { BaseMessageSchema } from './types';
+import { RequestSchema } from './types';
 import { validate } from '../validation/validator';
 
-type RequestJson = {
-  messages?: BaseMessageSchema[]
-  target: string
-};
-
 export class Request {
-  messages: BaseMessageSchema[];
-  target: string;
-
-  constructor(jsonRequest: RequestJson) {
-    this.target = jsonRequest.target;
-    this.messages = jsonRequest.messages || [];
-  }
-
   /**
    * unmarshals the provided payload into a Request.
    */
-  static parse(rawRequest: any): Request {
+  static parse(rawRequest: any): RequestSchema {
     if (typeof rawRequest !== 'object') {
       try {
         rawRequest = JSON.parse(rawRequest);
@@ -30,10 +17,6 @@ export class Request {
     // throws an error if validation fails
     validate('Request', rawRequest);
 
-    return new Request(rawRequest as RequestJson);
-  }
-
-  addMessage(message: BaseMessageSchema): void {
-    this.messages.push(message);
+    return rawRequest as RequestSchema;
   }
 }
