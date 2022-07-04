@@ -1,12 +1,12 @@
 import type { Authorization, BaseMessageSchema } from '../../core/types';
 
-export type Scope = {
+export type PermissionScope = {
   method: string
   schema?: string
   objectId?: string
 };
 
-export type Conditions = {
+export type PermissionConditions = {
   // attestation indicates whether any inbound data should be signed.
   // defaults to `optional`
   attestation?: 'optional' | 'prohibited' | 'required'
@@ -32,13 +32,13 @@ export type Conditions = {
 };
 
 export type PermissionsRequestDescriptor = {
-  conditions: Conditions
+  conditions: PermissionConditions
   description: string
   grantedTo: string
   grantedBy: string
   method: 'PermissionsRequest'
   objectId?: string
-  scope: Scope
+  scope: PermissionScope
 };
 
 export type PermissionsRequestSchema = BaseMessageSchema & Authorization & {
@@ -46,7 +46,7 @@ export type PermissionsRequestSchema = BaseMessageSchema & Authorization & {
 };
 
 export type PermissionsGrantDescriptor = {
-  conditions: Conditions;
+  conditions: PermissionConditions;
   delegatedFrom?: string;
   description: string;
   grantedTo: string;
@@ -54,7 +54,7 @@ export type PermissionsGrantDescriptor = {
   method: 'PermissionsGrant';
   objectId: string;
   permissionsRequestId?: string;
-  scope: Scope;
+  scope: PermissionScope;
 };
 
 export type PermissionsGrantSchema = BaseMessageSchema & Authorization & {

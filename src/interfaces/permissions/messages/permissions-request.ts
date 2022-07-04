@@ -1,6 +1,6 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
 import type { PermissionsRequestSchema, PermissionsRequestDescriptor } from '../types';
-import type { Scope, Conditions } from '../types';
+import type { PermissionScope, PermissionConditions } from '../types';
 
 import { authenticate, verifyAuth } from '../../../core/auth';
 import { DIDResolver } from '../../../did/did-resolver';
@@ -8,12 +8,12 @@ import { Message } from '../../../core/message';
 import { v4 as uuidv4 } from 'uuid';
 
 type PermissionsRequestOptions = AuthCreateOptions & {
-  conditions?: Conditions;
+  conditions?: PermissionConditions;
   description: string;
   grantedTo: string;
   grantedBy: string;
   objectId?: string;
-  scope: Scope;
+  scope: PermissionScope;
 };
 
 export class PermissionsRequest extends Message implements Authorizable {
@@ -52,7 +52,7 @@ export class PermissionsRequest extends Message implements Authorizable {
     return this.message.descriptor.objectId;
   }
 
-  get conditions(): Conditions {
+  get conditions(): PermissionConditions {
     return this.message.descriptor.conditions;
   }
 
@@ -68,7 +68,7 @@ export class PermissionsRequest extends Message implements Authorizable {
     return this.message.descriptor.description;
   }
 
-  get scope(): Scope {
+  get scope(): PermissionScope {
     return this.message.descriptor.scope;
   }
 
@@ -81,7 +81,7 @@ export class PermissionsRequest extends Message implements Authorizable {
   }
 }
 
-export const DEFAULT_CONDITIONS: Conditions = {
+export const DEFAULT_CONDITIONS: PermissionConditions = {
   attestation  : 'optional',
   delegation   : false,
   encryption   : 'optional',
