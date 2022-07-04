@@ -71,14 +71,6 @@ export class PermissionsRequest extends Message implements Authorizable {
   get scope(): PermissionScope {
     return this.message.descriptor.scope;
   }
-
-  static getType(): string {
-    return 'PermissionsRequest';
-  }
-
-  static getInterface(): string {
-    return 'Permissions';
-  }
 }
 
 export const DEFAULT_CONDITIONS: PermissionConditions = {

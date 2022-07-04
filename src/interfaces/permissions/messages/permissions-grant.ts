@@ -1,6 +1,6 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
 import type { PermissionsGrantDescriptor, PermissionsGrantSchema } from '../types';
-import type { Scope, Conditions } from '../types';
+import type { PermissionScope, PermissionConditions } from '../types';
 import type { SignatureInput } from '../../../jose/jws/general/types';
 
 import { CID } from 'multiformats/cid';
@@ -12,13 +12,13 @@ import { PermissionsRequest, DEFAULT_CONDITIONS } from './permissions-request';
 import { v4 as uuidv4 } from 'uuid';
 
 type PermissionsGrantOptions = AuthCreateOptions & {
-  conditions?: Conditions;
+  conditions?: PermissionConditions;
   description: string;
   grantedTo: string;
   grantedBy: string;
   objectId?: string;
   permissionsRequestId?: string;
-  scope: Scope;
+  scope: PermissionScope;
 };
 
 export class PermissionsGrant extends Message implements Authorizable {
@@ -59,7 +59,7 @@ export class PermissionsGrant extends Message implements Authorizable {
   static async fromPermissionsRequest(
     permissionsRequest: PermissionsRequest,
     signatureInput: SignatureInput,
-    conditionOverrides: Partial<Conditions> = {}
+    conditionOverrides: Partial<PermissionConditions> = {}
   ): Promise<PermissionsGrant> {
     const conditions = { ...permissionsRequest.conditions, ...conditionOverrides };
 
@@ -110,7 +110,7 @@ export class PermissionsGrant extends Message implements Authorizable {
     return this.message.descriptor.objectId;
   }
 
-  get conditions(): Conditions {
+  get conditions(): PermissionConditions {
     return this.message.descriptor.conditions;
   }
 
@@ -126,7 +126,7 @@ export class PermissionsGrant extends Message implements Authorizable {
     return this.message.descriptor.description;
   }
 
-  get scope(): Scope {
+  get scope(): PermissionScope {
     return this.message.descriptor.scope;
   }
 
@@ -136,13 +136,5 @@ export class PermissionsGrant extends Message implements Authorizable {
 
   private set delegationChain(parentGrant: PermissionsGrantSchema) {
     this.message.delegationChain = parentGrant;
-  }
-
-  static getType(): string {
-    return 'PermissionsGrant';
-  }
-
-  static getInterface(): string {
-    return 'Permissions';
   }
 }

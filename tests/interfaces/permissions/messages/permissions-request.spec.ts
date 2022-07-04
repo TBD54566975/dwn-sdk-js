@@ -13,18 +13,6 @@ import sinon from 'sinon';
 chai.use(chaiAsPromised);
 
 describe('PermissionsRequest', () => {
-  describe('getType', () => {
-    it('returns PermissionsRequest', () => {
-      expect(PermissionsRequest.getType()).to.equal('PermissionsRequest');
-    });
-  });
-
-  describe('getInterface', () => {
-    it('returns Permissions', () => {
-      expect(PermissionsRequest.getInterface()).to.equal('Permissions');
-    });
-  });
-
   describe('create', () => {
     it('creates a PermissionsRequest message', async () => {
       const { privateJwk } = await Secp256k1.generateKeyPair();

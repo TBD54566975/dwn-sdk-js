@@ -7,13 +7,6 @@ const { cloneDeep, isPlainObject } = lodash;
 export abstract class Message {
   constructor(protected message: MessageSchema) {}
 
-  static getJsonSchema(): object {
-    throw new Error('method not implemented');
-  }
-  static getType(): string {
-    throw new Error('method not implemented');
-  };
-
   static parse(rawMessage: object): MessageSchema {
     const descriptor = rawMessage['descriptor'];
     if (!descriptor) {
