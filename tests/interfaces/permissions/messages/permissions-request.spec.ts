@@ -1,7 +1,7 @@
 import type { PermissionsRequestSchema } from '../../../../src/interfaces/permissions/types';
 
 import { DIDResolver } from '../../../../src/did/did-resolver';
-import { Secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
+import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general';
 import { PermissionsRequest, DEFAULT_CONDITIONS } from '../../../../src/interfaces/permissions/messages/permissions-request';
 import { validate } from '../../../../src/validation/validator';
@@ -15,7 +15,7 @@ chai.use(chaiAsPromised);
 describe('PermissionsRequest', () => {
   describe('create', () => {
     it('creates a PermissionsRequest message', async () => {
-      const { privateJwk } = await Secp256k1.generateKeyPair();
+      const { privateJwk } = await secp256k1.generateKeyPair();
       const signatureInput = {
         jwkPrivate      : privateJwk,
         protectedHeader : {
@@ -43,7 +43,7 @@ describe('PermissionsRequest', () => {
     });
 
     it('uses default conditions if none are provided', async () => {
-      const { privateJwk } = await Secp256k1.generateKeyPair();
+      const { privateJwk } = await secp256k1.generateKeyPair();
       const signatureInput = {
         jwkPrivate      : privateJwk,
         protectedHeader : {
@@ -80,7 +80,7 @@ describe('PermissionsRequest', () => {
       });
 
       it('returns signer DID if verification succeeds', async () => {
-        const { privateJwk, publicJwk } = await Secp256k1.generateKeyPair();
+        const { privateJwk, publicJwk } = await secp256k1.generateKeyPair();
 
         const alice = {
           did                  : 'did:jank:alice',
@@ -140,7 +140,7 @@ describe('PermissionsRequest', () => {
         };
 
         const testVectors = [ 'dookie', JSON.stringify([])];
-        const { privateJwk } = await Secp256k1.generateKeyPair();
+        const { privateJwk } = await secp256k1.generateKeyPair();
 
         for (const vector of testVectors) {
           const payloadBytes = new TextEncoder().encode(vector);

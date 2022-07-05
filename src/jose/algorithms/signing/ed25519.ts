@@ -1,4 +1,4 @@
-import * as ed25519 from '@noble/ed25519';
+import * as Ed25519 from '@noble/ed25519';
 import { base64url } from 'multiformats/bases/base64';
 
 import type { PrivateJwk, PublicJwk, Signer  } from '../../types';
@@ -9,25 +9,25 @@ function validateKey(jwk: PrivateJwk | PublicJwk): void {
   }
 }
 
-export const Ed25519: Signer = {
+export const ed25519: Signer = {
   sign: (content: Uint8Array, privateJwk: PrivateJwk): Promise<Uint8Array> => {
     validateKey(privateJwk);
 
     const privateKeyBytes = base64url.baseDecode(privateJwk.d);
 
-    return ed25519.sign(content, privateKeyBytes);
+    return Ed25519.sign(content, privateKeyBytes);
   },
 
   verify: (content: Uint8Array, signature: Uint8Array, publicJwk: PublicJwk): Promise<boolean> => {
     validateKey(publicJwk);
     const publicKeyBytes = base64url.baseDecode(publicJwk.x);
 
-    return ed25519.verify(signature, content, publicKeyBytes);
+    return Ed25519.verify(signature, content, publicKeyBytes);
   },
 
   generateKeyPair: async (): Promise<{publicJwk: PublicJwk, privateJwk: PrivateJwk}> => {
-    const privateKeyBytes = ed25519.utils.randomPrivateKey();
-    const publicKeyBytes = await ed25519.getPublicKey(privateKeyBytes);
+    const privateKeyBytes = Ed25519.utils.randomPrivateKey();
+    const publicKeyBytes = await Ed25519.getPublicKey(privateKeyBytes);
 
     const d = base64url.baseEncode(privateKeyBytes);
     const x = base64url.baseEncode(publicKeyBytes);

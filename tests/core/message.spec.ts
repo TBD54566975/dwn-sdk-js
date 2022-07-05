@@ -1,7 +1,7 @@
 import type { PermissionsRequestSchema } from '../../src/interfaces/permissions/types';
 
 import { expect } from 'chai';
-import { Secp256k1 } from '../../src/jose/algorithms/signing/secp256k1';
+import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1';
 import { Message } from '../../src/core/message';
 import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request';
 
@@ -51,7 +51,7 @@ describe('Message', () => {
     });
 
     it('returns parseled message if validation succeeds', async () => {
-      const { privateJwk } = await Secp256k1.generateKeyPair();
+      const { privateJwk } = await secp256k1.generateKeyPair();
       const signatureInput = {
         jwkPrivate      : privateJwk,
         protectedHeader : {
