@@ -28,6 +28,10 @@ export async function verifyAuth(
   payloadConstraints?: PayloadConstraints
 ): Promise<AuthVerificationResult> {
 
+  if (message.authorization.signatures.length !== 1) {
+    throw new Error('Expected no more than 1 signature for authorization');
+  }
+
   const verifier = new GeneralJwsVerifier(message.authorization);
 
   // signature verification is computationally intensive, so we're going to start
