@@ -83,6 +83,7 @@ export class MessageStoreLevel implements MessageStore {
       return messageJson;
     }
 
+    // `data`, if present, is chunked into dag-pb unixfs blocks. re-inflate the chunks.
     const { descriptor } = messageJson;
     const dataCid = parseCid(descriptor.dataCid);
 
