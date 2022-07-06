@@ -89,7 +89,7 @@ describe('MessageStoreLevel Tests', () => {
     });
 
     it('adds author to index', async () => {
-      const ctx = { tenant: 'doodeedoo', author: 'chickenparfait' };
+      const ctx = { tenant: 'did:ex:alice', author: 'did:ex:clifford' };
       const message = await generateMessage();
 
       await messageStore.put(message, ctx);
@@ -99,7 +99,7 @@ describe('MessageStoreLevel Tests', () => {
     });
 
     it('adds tenant to index', async () => {
-      const ctx = { tenant: 'doodeedoo', author: 'chickenparfait' };
+      const ctx = { tenant: 'did:ex:alice', author: 'did:ex:clifford' };
       const message = await generateMessage();
 
       await messageStore.put(message, ctx);

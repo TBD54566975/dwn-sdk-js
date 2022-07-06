@@ -156,7 +156,9 @@ export class MessageStoreLevel implements MessageStore {
       tenant : ctx.tenant
     };
 
-    await this.index.PUT([indexDocument]);
+    // tokenSplitRegex is used to tokenize values. By default, ':' is not indexed but we need
+    // it to be because DIDs include `:`. Override default regex to include ':'.
+    await this.index.PUT([indexDocument], { tokenSplitRegex: /[\p{L}\d:]+/gu });
   }
 
   /**
