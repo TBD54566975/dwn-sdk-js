@@ -1,4 +1,7 @@
-export * from './permission';
-export * from './permissions-request';
+import { PermissionsRequest } from './messages/permissions-request';
+import { handlePermissionsRequest } from './handlers/permissions-request';
 
-export type PermissionsMethod = 'PermissionsRequest' | 'PermissionsGrant' | 'PermissionsRevoke';
+export const PermissionsInterface = {
+  methodHandlers : { 'PermissionsRequest': handlePermissionsRequest },
+  messages       : [ PermissionsRequest ]
+};

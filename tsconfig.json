@@ -29,8 +29,10 @@
   "ts-node": {
     "esm": true,
     "compilerOptions": {
-      "module": "es6",
-      "moduleResolution": "node"
+      "module": "es2022",
+      "target": "es2017",
+      "moduleResolution": "node",
+      "esModuleInterop": true
     }
   }
 }
