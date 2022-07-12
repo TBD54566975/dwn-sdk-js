@@ -1,4 +1,4 @@
-import LRUCache from 'lru-cache';
+import LruCache from 'lru-cache';
 
 /**
  * A generalized cache interface.
@@ -21,13 +21,13 @@ export interface Cache {
  * A cache using local memory.
  */
 export class MemoryCache implements Cache {
-  private cache: LRUCache<string, any>;
+  private cache: LruCache<string, any>;
 
   /**
    * @param timeToLiveInSeconds time-to-live for every key-value pair set in the cache
    */
   public constructor (private timeToLiveInSeconds: number) {
-    this.cache = new LRUCache({
+    this.cache = new LruCache({
       max : 100_000,
       ttl : timeToLiveInSeconds * 1000
     });
