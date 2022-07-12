@@ -2,22 +2,18 @@
 
 Code Coverage
 
-![Statements](https://img.shields.io/badge/statements-77.45%25-red.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-70.42%25-red.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-71.73%25-red.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-79.32%25-red.svg?style=flat)
-
+![Statements](https://img.shields.io/badge/statements-76.08%25-red.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-55%25-red.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-72.28%25-red.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-78.19%25-red.svg?style=flat)
 
 
 ## Introduction
 
-This repository contains a reference implementation of Decentralized Web Node (DWN) as per the [specification](https://identity.foundation/decentralized-web-node/spec/). This specification is in a draft state and very much so a WIP. For the foreseeable future, a lot of the work on DWN will be split across this repo and the repo that houses the specification, which you can find [here](https://github.com/decentralized-identity/decentralized-web-node). The overall goal is to produce a v1.0 specification along with a reference implementation by 07/01/2022. 
+This repository contains a reference implementation of Decentralized Web Node (DWN) as per the [specification](https://identity.foundation/decentralized-web-node/spec/). This specification is in a draft state and very much so a WIP. For the foreseeable future, a lot of the work on DWN will be split across this repo and the repo that houses the specification, which you can find [here](https://github.com/decentralized-identity/decentralized-web-node). The overall goal is to produce a [beta implementation](https://github.com/TBD54566975/dwn-sdk-js/milestone/1) by 09/01/2022. This won't include all interfaces described in the spec, but enough to begin building applications.
 
 
-Proposals for the specification itself should be submitted as pull requests to the [spec repo](https://github.com/decentralized-identity/decentralized-web-node). Similarly, issues pertaining to the specification itself should be submitted as github issues to the [spec repo](https://github.com/decentralized-identity/decentralized-web-node). 
-
-
-## [V1.0 Milestone](https://github.com/TBD54566975/dwn-sdk-js/milestone/1)
+Proposals and issues for the specification itself should be submitted as pull requests to the [spec repo](https://github.com/decentralized-identity/decentralized-web-node).
 
 ## Installation
-Since this SDK is still in early stages, we haven't yet to published to npm. Until then, we suggest using [`npm link`](https://docs.npmjs.com/cli/v8/commands/npm-link) to use this SDK in your own project. Steps:
+Since this SDK is still in early stages, we haven't yet published to npm. Until then, we suggest using [`npm link`](https://docs.npmjs.com/cli/v8/commands/npm-link) to use this SDK in your own project. Steps:
 ```bash
 # clone this repo somewhere
 git clone https://github.com/TBD54566975/dwn-sdk-js.git

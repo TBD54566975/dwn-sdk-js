@@ -53,5 +53,6 @@ module.exports = {
         'argsIgnorePattern'  : '^_'
       }
     ],
+    'prefer-const': ['error', { 'destructuring': 'all' }]
   }
 };

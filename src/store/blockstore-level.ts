@@ -1,8 +1,10 @@
+import type { Blockstore } from 'interface-blockstore';
+import type { Context } from '../types';
+import type { AwaitIterable, Pair, Batch, Query, KeyQuery } from 'interface-store';
+
 import { Level } from 'level';
 import { CID } from 'multiformats';
 
-import type { Options, AwaitIterable, Pair, Batch, Query, KeyQuery } from 'interface-store';
-import type { Blockstore } from 'interface-blockstore';
 
 // `level` works in Node.js 12+ and Electron 5+ on Linux, Mac OS, Windows and
 // FreeBSD, including any future Node.js and Electron release thanks to Node-API, including ARM
@@ -53,11 +55,11 @@ export class BlockstoreLevel implements Blockstore {
     return this.db.close();
   }
 
-  put(key: CID, val: Uint8Array, _options?: Options): Promise<void> {
+  put(key: CID, val: Uint8Array, _ctx?: Context): Promise<void> {
     return this.db.put(key.toString(), val);
   }
 
-  async get(key: CID, _options?: Options): Promise<Uint8Array | undefined> {
+  async get(key: CID, _ctx?: Context): Promise<Uint8Array | undefined> {
     try {
       const val = await this.db.get(key.toString());
       return val;
@@ -71,33 +73,33 @@ export class BlockstoreLevel implements Blockstore {
     }
   }
 
-  async has(key: CID, _options?: Options): Promise<boolean> {
+  async has(key: CID, _ctx?: Context): Promise<boolean> {
     return !! await this.get(key);
   }
 
-  delete(key: CID, _options?: Options): Promise<void> {
+  delete(key: CID, _ctx?: Context): Promise<void> {
     return this.db.del(key.toString());
   }
 
-  async * putMany(source: AwaitIterable<Pair<CID, Uint8Array>>, _options?: Options):
+  async * putMany(source: AwaitIterable<Pair<CID, Uint8Array>>, _ctx?: Context):
     AsyncIterable<Pair<CID, Uint8Array>> {
 
     for await (const entry of source) {
-      await this.put(entry.key, entry.value, _options);
+      await this.put(entry.key, entry.value, _ctx);
 
       yield entry;
     }
   }
 
-  async * getMany(source: AwaitIterable<CID>, _options?: Options): AsyncIterable<Uint8Array> {
+  async * getMany(source: AwaitIterable<CID>, _ctx?: Context): AsyncIterable<Uint8Array> {
     for await (const key of source) {
       yield this.get(key);
     }
   }
 
-  async * deleteMany(source: AwaitIterable<CID>, _options?: Options): AsyncIterable<CID> {
+  async * deleteMany(source: AwaitIterable<CID>, _ctx?: Context): AsyncIterable<CID> {
     for await (const key of source) {
-      await this.delete(key, _options);
+      await this.delete(key, _ctx);
 
       yield key;
     }
@@ -114,11 +116,11 @@ export class BlockstoreLevel implements Blockstore {
     throw new Error('not implemented');
   }
 
-  query(_query: Query<CID, Uint8Array>, _options?: Options): AsyncIterable<Pair<CID, Uint8Array>> {
+  query(_query: Query<CID, Uint8Array>, _ctx?: Context): AsyncIterable<Pair<CID, Uint8Array>> {
     throw new Error('not implemented');
   }
 
-  queryKeys(_query: KeyQuery<CID>, _options?: Options): AsyncIterable<CID> {
+  queryKeys(_query: KeyQuery<CID>, _ctx?: Context): AsyncIterable<CID> {
     throw new Error('not implemented');
   }
 }

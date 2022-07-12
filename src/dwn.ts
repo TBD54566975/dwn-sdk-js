@@ -1,54 +1,107 @@
-import { DIDResolver } from './did/did-resolver';
-import { MessageStoreLevel } from './store/message-store-level';
-import { validateMessage } from './message';
-import { handlePermissionsRequest } from './interfaces/permissions';
-import { IonDidResolver } from './did/ion-did-resolver';
-
+import type { Context } from './types';
 import type { DIDMethodResolver } from './did/did-resolver';
-import type { Message } from './message';
+import type { Interface, MethodHandler } from './interfaces/types';
+import type { MessageSchema, RequestSchema } from './core/types';
 import type { MessageStore } from './store/message-store';
 
+import { addSchema } from './validation/validator';
+import { DIDResolver } from './did/did-resolver';
+import { Message, MessageReply, Request, Response } from './core';
+import { MessageStoreLevel } from './store/message-store-level';
+import { PermissionsInterface } from './interfaces';
+
 export class DWN {
-  static methods = {
-    PermissionsRequest: handlePermissionsRequest
+  static methodHandlers: { [key:string]: MethodHandler } = {
+    ...PermissionsInterface.methodHandlers
   };
 
   DIDResolver: DIDResolver;
   messageStore: MessageStore;
 
-  constructor(config: Config) {
-    // override default config with any user-provided config
-    const mergedConfig = { ...defaultConfig,...config };
+  private constructor(config: Config) {
+    this.DIDResolver = new DIDResolver(config.DIDMethodResolvers);
+    this.messageStore = config.messageStore;
+  }
 
-    this.DIDResolver = new DIDResolver(mergedConfig.DIDMethodResolvers);
-    this.messageStore = mergedConfig.messageStore;
+  static async create(config: Config): Promise<DWN> {
+    config.messageStore = config.messageStore || new MessageStoreLevel();
+    config.DIDMethodResolvers = config.DIDMethodResolvers || [];
+    config.interfaces = config.interfaces || [];
+
+    for (const { methodHandlers, schemas } of config.interfaces) {
+
+      for (const messageType in methodHandlers) {
+        if (DWN.methodHandlers[messageType]) {
+          throw new Error(`methodHandler already exists for ${messageType}`);
+        } else {
+          DWN.methodHandlers[messageType] = methodHandlers[messageType];
+        }
+      }
+
+      for (const schemaName in schemas) {
+        addSchema(schemaName, schemas[schemaName]);
+      }
+    }
+
+    const dwn = new DWN(config);
+    await dwn.open();
+
+    return dwn;
+  }
+
+  private async open(): Promise<void> {
+    return this.messageStore.open();
+  }
+
+  async close(): Promise<void> {
+    return this.messageStore.close();
+  }
+
+  async processRequest(rawRequest: any): Promise<Response> {
+    let request: RequestSchema;
+
+    try {
+      request = Request.parse(rawRequest);
+    } catch (e) {
+      return new Response({
+        status: { code: 400, message: e.message }
+      });
+    }
+
+    const response = new Response();
+    const context: Context = { tenant: request.target };
+
+    for (const message of request.messages) {
+      const result = await this.processMessage(message, context);
+      response.addMessageResult(result);
+    }
+
+    return response;
   }
 
   /**
    * TODO: add docs
    * @param message
    */
-  async processMessage(message: Message): Promise<void> {
-    const { method: methodName } = message.descriptor;
-    const method = DWN.methods[methodName];
+  async processMessage(rawMessage: object, ctx: Context): Promise<MessageReply> {
+    let message: MessageSchema;
 
-    if (!method) {
-      throw new Error('{methodName} is not a supported method.');
+    try {
+      message = Message.parse(rawMessage);
+    } catch (e) {
+      return new MessageReply({
+        status: { code: 400, message: e.message }
+      });
     }
 
-    // throws exception if message is invalid
-    validateMessage(message);
+    const interfaceMethod = DWN.methodHandlers[message.descriptor.method];
 
-    await method(message, this.DIDResolver, this.messageStore);
+    return await interfaceMethod(ctx, message, this.messageStore, this.DIDResolver);
   }
 };
 
 export type Config = {
   DIDMethodResolvers: DIDMethodResolver[],
-  messageStore: MessageStore
-};
-
-const defaultConfig: Config = {
-  DIDMethodResolvers : [new IonDidResolver('https://beta.discover.did.microsoft.com/1.0/identifiers/')],
-  messageStore       : new MessageStoreLevel()
+  interfaces?: Interface[];
+  messageStore?: MessageStore;
 };

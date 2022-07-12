@@ -1,4 +1,4 @@
-import type { JwkPublic } from '../jose/jwk';
+import type { PublicJwk } from '../jose/types';
 
 /**
  * TODO: add docs
@@ -104,7 +104,7 @@ export type VerificationMethod = {
   // DID of the key's controller
   controller: string
   // a JSON Web Key that conforms to https://datatracker.ietf.org/doc/html/rfc7517
-  publicKeyJwk?: JwkPublic
+  publicKeyJwk?: PublicJwk
   // a string representation of
   // https://datatracker.ietf.org/doc/html/draft-multiformats-multibase-05
   publicKeyMultibase?: string
