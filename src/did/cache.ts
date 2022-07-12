@@ -1,4 +1,4 @@
-import NodeCache from 'node-cache';
+import LRUCache from 'lru-cache';
 
 /**
  * A generalized cache interface.
@@ -21,20 +21,21 @@ export interface Cache {
  * A cache using local memory.
  */
 export class MemoryCache implements Cache {
-  private cache: NodeCache;
+  private cache: LRUCache<string, any>;
 
   /**
    * @param timeToLiveInSeconds time-to-live for every key-value pair set in the cache
    */
   public constructor (private timeToLiveInSeconds: number) {
-    this.cache = new NodeCache({
-      stdTTL  : timeToLiveInSeconds,
-      maxKeys : 100_000
+    this.cache = new LRUCache({
+      max : 100_000,
+      ttl : timeToLiveInSeconds * 1000
     });
   }
 
   async set(key: string, value: any): Promise<boolean> {
-    return this.cache.set(key, value);
+    this.cache.set(key, value);
+    return true;
   }
 
   async get(key: string): Promise<any | undefined> {
