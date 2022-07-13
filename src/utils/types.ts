@@ -4,10 +4,9 @@
  */
 export interface Cache {
   /**
-   * Sets a key-value pair.
-   * @returns `true` if key-value pair is stored successfully; `false` otherwise
+   * Sets a key-value pair. Does not throw error.
    */
-  set(key: string, value: any): Promise<boolean>;
+  set(key: string, value: any): Promise<void>;
 
   /**
    * Gets the value corresponding to the given key.

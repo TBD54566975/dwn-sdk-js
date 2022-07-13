@@ -17,9 +17,12 @@ export class MemoryCache implements Cache {
     });
   }
 
-  async set(key: string, value: any): Promise<boolean> {
-    this.cache.set(key, value);
-    return true;
+  async set(key: string, value: any): Promise<void> {
+    try {
+      this.cache.set(key, value);
+    } catch {
+      // let the code continue as this is a non-fatal error
+    }
   }
 
   async get(key: string): Promise<any | undefined> {
