@@ -1,21 +1,5 @@
 import LruCache from 'lru-cache';
-
-/**
- * A generalized cache interface.
- */
-export interface Cache {
-  /**
-   * Sets a key-value pair.
-   * @returns `true` if key-value pair is stored successfully; `false` otherwise
-   */
-  set(key: string, value: any): Promise<boolean>;
-
-  /**
-   * Gets the value corresponding to the given key.
-   * @returns value stored corresponding to the given key; `undefined` if key is not found or expired
-   */
-  get(key: string): Promise<any | undefined>;
-}
+import type { Cache } from './types';
 
 /**
  * A cache using local memory.

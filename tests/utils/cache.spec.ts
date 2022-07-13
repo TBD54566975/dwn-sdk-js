@@ -1,6 +1,6 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { MemoryCache } from '../../src/utils/cache';
+import { MemoryCache } from '../../src/utils/memory-cache';
 
 // extends chai to test promises
 chai.use(chaiAsPromised);
