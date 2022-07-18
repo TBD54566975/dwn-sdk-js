@@ -9,9 +9,10 @@ export class IonDidResolver implements DIDMethodResolver {
   private fetch = crossFetch;
 
   /**
-   * @param resolutionEndpoint URL to send DID resolution request to
+   * @param resolutionEndpoint optional custom URL to send DID resolution request to
    */
-  constructor (private resolutionEndpoint: string) { }
+  constructor (private resolutionEndpoint: string = 'https://beta.discover.did.microsoft.com/1.0/identifiers/') { }
+
   method(): string {
     return 'ion';
   }
