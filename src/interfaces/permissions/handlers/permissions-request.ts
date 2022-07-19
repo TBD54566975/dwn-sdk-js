@@ -32,7 +32,7 @@ export const handlePermissionsRequest: MethodHandler = async (
     return new MessageReply({
       status: { code: 202, message: 'Accepted' }
     });
-  } catch(e) {
+  } catch (e) {
     return new MessageReply({
       status: { code: 500, message: e.message }
     });

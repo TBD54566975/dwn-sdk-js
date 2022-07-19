@@ -88,7 +88,7 @@ export class DWN {
 
     try {
       message = Message.parse(rawMessage);
-    } catch(e) {
+    } catch (e) {
       return new MessageReply({
         status: { code: 400, message: e.message }
       });
@@ -101,7 +101,7 @@ export class DWN {
 };
 
 export type Config = {
-  DIDMethodResolvers?: DIDMethodResolver[];
+  DIDMethodResolvers: DIDMethodResolver[],
   interfaces?: Interface[];
   messageStore?: MessageStore;
 };

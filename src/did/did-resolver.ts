@@ -67,9 +67,10 @@ export interface DIDMethodResolver {
    * attempts to resolve the DID provided into its respective DID Document.
    * More info on resolving DIDs can be found
    * {@link https://www.w3.org/TR/did-core/#resolution here}
-   * @param DID - the DID to resolve
+   * @param did - the DID to resolve
+   * @throws {Error} if unable to resolve the DID
    */
-  resolve(DID: string): Promise<DIDResolutionResult>;
+  resolve(did: string): Promise<DIDResolutionResult>;
 }
 
 export type DIDDocument = {

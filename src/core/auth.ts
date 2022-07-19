@@ -47,7 +47,7 @@ export async function verifyAuth(
     throw new Error('auth payload must be a valid JSON object');
   }
 
-  if(!isPlainObject(payloadJson)) {
+  if (!isPlainObject(payloadJson)) {
     throw new Error('auth payload must be a valid JSON object');
   }
 
@@ -83,7 +83,7 @@ export async function verifyAuth(
 
     try {
       parsedPayload[field] = parseCid(payloadJson[field]);
-    } catch(e) {
+    } catch (e) {
       throw new Error(`${field} must be a valid CID`);
     }
   }
