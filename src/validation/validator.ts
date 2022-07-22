@@ -12,7 +12,7 @@ export function addSchema(schemaName: string, schema): void {
 }
 
 /**
- * TODO: add JSDoc
+ * TODO: add JSDoc, Issue #71 https://github.com/TBD54566975/dwn-sdk-js/issues/71
  * @param schemaName
  * @param payload
  * @returns

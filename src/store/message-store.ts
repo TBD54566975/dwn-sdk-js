@@ -29,7 +29,7 @@ export interface MessageStore {
    * returns an empty array if no messages are found
    * @param query
    */
-  // TODO: change type of `query`
+  // TODO: change type of `query`, Issue $69 https://github.com/TBD54566975/dwn-sdk-js/issues/69
   query(query: any, ctx: Context): Promise<MessageSchema[]>;
 
   /**
