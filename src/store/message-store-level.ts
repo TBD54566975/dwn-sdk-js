@@ -27,7 +27,7 @@ export class MessageStoreLevel implements MessageStore {
   db: BlockstoreLevel;
   // levelDB doesn't natively provide the querying capabilities needed for DWN. To accommodate, we're leveraging
   // a level-backed inverted index
-  // TODO: search-index lib does not import type `SearchIndex`. find a workaround
+  // TODO: search-index lib does not import type `SearchIndex`. find a workaround, Issue #48, https://github.com/TBD54566975/dwn-sdk-js/issues/48
   index;
 
   /**
@@ -54,8 +54,8 @@ export class MessageStoreLevel implements MessageStore {
 
     await this.db.open();
 
-    // TODO: look into using the same level we're using for blockstore
-    // TODO: parameterize `name`
+    // TODO: look into using the same level we're using for blockstore, Issue #49 https://github.com/TBD54566975/dwn-sdk-js/issues/49
+    // TODO: parameterize `name`, Issue #50 https://github.com/TBD54566975/dwn-sdk-js/issues/50
     // calling `searchIndex` twice causes the process to hang, so check to see if the index
     // has already been "opened" before opening it again.
     if (!this.index) {

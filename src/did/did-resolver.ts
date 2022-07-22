@@ -1,12 +1,12 @@
 import type { PublicJwk } from '../jose/types';
 
 /**
- * TODO: add docs
+ * TODO: add docs, Issue #72 https://github.com/TBD54566975/dwn-sdk-js/issues/72
  */
 export class DIDResolver {
   didResolvers: Map<string, DIDMethodResolver>;
 
-  // TODO: add DIDCache to constructor method signature
+  // TODO: add DIDCache to constructor method signature, Issue #62 https://github.com/TBD54566975/dwn-sdk-js/issues/62
   constructor(resolvers: DIDMethodResolver[]) {
     this.didResolvers = new Map();
 
@@ -25,7 +25,7 @@ export class DIDResolver {
    */
   public async resolve(did: string): Promise<DIDResolutionResult> {
   // naively validate requester DID
-  // TODO: add better DID validation
+  // TODO: add better DID validation, Issue #63 https://github.com/TBD54566975/dwn-sdk-js/issues/63
     const splitDID = did.split(':', 3);
     if (splitDID.length < 3) {
       throw new Error(`${did} is not a valid DID`);
@@ -94,7 +94,7 @@ export type ServiceEndpoint = {
   description?: string
 };
 
-// TODO: figure out if we need to support ALL verification method properties
+// TODO: figure out if we need to support ALL verification method properties, Issue #64 https://github.com/TBD54566975/dwn-sdk-js/issues/64
 //       listed here: https://www.w3.org/TR/did-spec-registries/#verification-method-properties
 export type VerificationMethod = {
   id: string

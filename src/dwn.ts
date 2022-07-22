@@ -80,7 +80,7 @@ export class DWN {
   }
 
   /**
-   * TODO: add docs
+   * TODO: add docs, Issue #70 https://github.com/TBD54566975/dwn-sdk-js/issues/70
    * @param message
    */
   async processMessage(rawMessage: object, ctx: Context): Promise<MessageReply> {
