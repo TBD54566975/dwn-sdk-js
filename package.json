@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "A reference implementation of https://identity.foundation/decentralized-web-node/spec/",
   "type": "module",
-  "types": "dist/types/index.d.ts",
+  "types": "dist/esm/index.d.ts",
   "engines": {
     "node": ">= 14"
   },
