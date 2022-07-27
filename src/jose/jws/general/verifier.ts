@@ -11,7 +11,7 @@ type VerificationResult = {
   signers: string[];
 };
 
-// TODO: add logic to prevent validating duplicate signatures
+// TODO: add logic to prevent validating duplicate signatures, Issue #66 https://github.com/TBD54566975/dwn-sdk-js/issues/66
 export class GeneralJwsVerifier {
   jws: GeneralJws;
 
@@ -64,7 +64,7 @@ export class GeneralJwsVerifier {
       throw new Error('public key needed to verify signature not found in DID Document');
     }
 
-    // TODO: replace with JSON Schema based validation
+    // TODO: replace with JSON Schema based validation, Issue 67 https://github.com/TBD54566975/dwn-sdk-js/issues/67
     // more info about the `JsonWebKey2020` type can be found here:
     // https://www.w3.org/TR/did-spec-registries/#jsonwebkey2020
     if (verificationMethod.type !== 'JsonWebKey2020') {
@@ -73,7 +73,7 @@ export class GeneralJwsVerifier {
 
     const { publicKeyJwk: publicJwk } = verificationMethod;
 
-    // TODO: replace with JSON Schema based validation
+    // TODO: replace with JSON Schema based validation, Issue 68 https://github.com/TBD54566975/dwn-sdk-js/issues/68
     // more info about the `publicJwk` property can be found here:
     // https://www.w3.org/TR/did-spec-registries/#publicJwk
     if (!publicJwk) {
