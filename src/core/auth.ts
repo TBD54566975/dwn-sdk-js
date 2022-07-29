@@ -17,7 +17,10 @@ type PayloadConstraints = {
 };
 
 /**
- * validates and verifies `authorization` of the provided message
+ * validates and verifies `authorization` of the provided message:
+ * - verifies signature
+ * - verifies `descriptorCid` matches the actual CID of the descriptor
+ * - verifies payload constraints if given
  * @throws {Error} if auth payload is not a valid JSON object
  * @throws {Error} if descriptorCid is missing from Auth payload
  * @throws {Error} if provided descriptorCid does not match expected descriptor CID
@@ -101,7 +104,7 @@ export async function verifyAuth(
  * @param payloadProperties - additional properties to include in the signed payload
  * @returns General JWS signature
  */
-export async function authenticate(
+export async function sign(
   message: BaseMessageSchema,
   signatureInput: SignatureInput,
   payloadProperties?: { [key: string]: CID }
