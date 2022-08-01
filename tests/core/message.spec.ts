@@ -34,7 +34,7 @@ describe('Message', () => {
       }).throws('descriptor');
     });
 
-    it('throws an exception if schema doesnt exist for message type', () => {
+    it('throws an exception if schema does not exist for message type', () => {
       expect(() => {
         const m = { descriptor: { method: 'KakaRequest' } };
         Message.parse(m);
@@ -50,7 +50,7 @@ describe('Message', () => {
       }).throws('required property');
     });
 
-    it('returns parseled message if validation succeeds', async () => {
+    it('returns parsed message if validation succeeds', async () => {
       const { privateJwk } = await secp256k1.generateKeyPair();
       const signatureInput = {
         jwkPrivate      : privateJwk,

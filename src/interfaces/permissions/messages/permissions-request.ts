@@ -2,9 +2,9 @@ import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '..
 import type { PermissionsRequestSchema, PermissionsRequestDescriptor } from '../types';
 import type { PermissionScope, PermissionConditions } from '../types';
 
-import { authenticate, verifyAuth } from '../../../core/auth';
 import { DIDResolver } from '../../../did/did-resolver';
 import { Message } from '../../../core/message';
+import { sign, verifyAuth } from '../../../core/auth';
 import { v4 as uuidv4 } from 'uuid';
 
 type PermissionsRequestOptions = AuthCreateOptions & {
@@ -38,7 +38,7 @@ export class PermissionsRequest extends Message implements Authorizable {
       scope       : opts.scope,
     };
 
-    const auth = await authenticate({ descriptor }, opts.signatureInput);
+    const auth = await sign({ descriptor }, opts.signatureInput);
     const message: PermissionsRequestSchema = { descriptor, authorization: auth };
 
     return new PermissionsRequest(message);

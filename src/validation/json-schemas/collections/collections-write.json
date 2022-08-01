@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://identity.foundation/dwn/json-schemas/collections-write.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "authorization",
+    "descriptor"
+  ],
+  "properties": {
+    "authorization": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
+    },
+    "descriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "method",
+        "recordId",
+        "nonce",
+        "dataCid",
+        "dateCreated",
+        "dataFormat"
+      ],
+      "properties": {
+        "method": {
+          "enum": [
+            "CollectionsWrite"
+          ],
+          "type": "string"
+        },
+        "protocol": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "recordId": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/uuid"
+        },
+        "nonce": {
+          "type": "string"
+        },
+        "dataCid": {
+          "type": "string"
+        },
+        "dateCreated": {
+          "type": "number",
+          "minimum": 0
+        },
+        "published": {
+          "type": "boolean"
+        },
+        "datePublished": {
+          "type": "number",
+          "minimum": 0
+        },
+        "dataFormat": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

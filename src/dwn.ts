@@ -5,13 +5,14 @@ import type { MessageSchema, RequestSchema } from './core/types';
 import type { MessageStore } from './store/message-store';
 
 import { addSchema } from './validation/validator';
+import { CollectionsInterface, PermissionsInterface } from './interfaces';
 import { DIDResolver } from './did/did-resolver';
 import { Message, MessageReply, Request, Response } from './core';
 import { MessageStoreLevel } from './store/message-store-level';
-import { PermissionsInterface } from './interfaces';
 
 export class DWN {
   static methodHandlers: { [key:string]: MethodHandler } = {
+    ...CollectionsInterface.methodHandlers,
     ...PermissionsInterface.methodHandlers
   };
 
