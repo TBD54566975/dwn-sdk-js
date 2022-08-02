@@ -3,7 +3,6 @@ import type { GeneralJws, SignatureInput } from '../jose/jws/general/types';
 
 import { CID } from 'multiformats/cid';
 import { DIDResolver } from '../did/did-resolver';
-import { PermissionsRequestSchema, PermissionsGrantSchema } from '../interfaces/permissions/types';
 
 /**
  * Intersection type for all concrete message schema types (e.g. PermissionsRequestSchema)
@@ -41,8 +40,6 @@ export type GenericMessageSchema = BaseMessageSchema & DeepPartial<Data> & Parti
     [key: string]: unknown;
   }
 };
-
-export type MessageSchema = PermissionsRequestSchema | PermissionsGrantSchema | GenericMessageSchema;
 
 export type AuthVerificationResult = {
   /** DIDs of all signers */

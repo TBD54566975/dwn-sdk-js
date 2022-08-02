@@ -1,7 +1,7 @@
 import { CollectionsWrite } from '../../../../src/interfaces/collections/messages/collections-write';
 import { CollectionsWriteSchema } from '../../../../src/interfaces/collections/types';
 import { DIDResolutionResult, DIDResolver } from '../../../../src/did/did-resolver';
-import { generateCollectionWriteMessage } from '../../../utils/message-generator';
+import { MessageGenerator } from '../../../utils/message-generator';
 import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
 import { v4 as uuidv4 } from 'uuid';
 import chai, { expect } from 'chai';
@@ -68,7 +68,7 @@ describe('CollectionsWrite', () => {
 
   describe('verifyAuth', () => {
     it('should throw if verification signature check fails', async () => {
-      const messageData = await generateCollectionWriteMessage();
+      const messageData = await MessageGenerator.generateCollectionWriteMessage();
 
       // setting up a stub method resolver
       const differentKeyPair = await secp256k1.generateKeyPair(); // used to return a different public key to simulate invalid signature

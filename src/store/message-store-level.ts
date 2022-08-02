@@ -1,5 +1,5 @@
 import type { Context } from '../types';
-import type { GenericMessageSchema, MessageSchema } from '../core/types';
+import type { GenericMessageSchema, BaseMessageSchema } from '../core/types';
 import type { MessageStore } from './message-store';
 
 import { BlockstoreLevel } from './blockstore-level';
@@ -68,7 +68,7 @@ export class MessageStoreLevel implements MessageStore {
     await this.index.FLUSH();
   }
 
-  async get(cid: CID, ctx: Context): Promise<MessageSchema> {
+  async get(cid: CID, ctx: Context): Promise<BaseMessageSchema> {
     const bytes = await this.db.get(cid, ctx);
 
     if (!bytes) {
@@ -98,11 +98,11 @@ export class MessageStoreLevel implements MessageStore {
 
     messageJson.data = base64url.baseEncode(dataBytes);
 
-    return messageJson as MessageSchema;
+    return messageJson as BaseMessageSchema;
   }
 
-  async query(query: any, ctx: Context): Promise<MessageSchema[]> {
-    const messages: MessageSchema[] = [];
+  async query(query: any, ctx: Context): Promise<BaseMessageSchema[]> {
+    const messages: BaseMessageSchema[] = [];
 
     // parse query into a query that is compatible with the index we're using
     const indexQueryTerms: string[] = MessageStoreLevel.buildIndexQueryTerms(query);
@@ -127,12 +127,17 @@ export class MessageStoreLevel implements MessageStore {
   }
 
   async put(message: Message, ctx: Context): Promise<void> {
-    const messageJson = message.toObject() as GenericMessageSchema;
-    const { data } = messageJson;
+    const messageJson = message.toObject();
 
-    // pre-emptively delete data. If data is present we'll be chunking it and storing it as unix-fs dag-pb
-    // encoded.
-    delete messageJson.data;
+    let data = undefined;
+    if (messageJson['data'] !== undefined) {
+      const messageJsonWithData = messageJson as GenericMessageSchema;
+      data = messageJsonWithData.data;
+
+      // delete data. If data is present we'll be chunking it and storing it as unix-fs dag-pb
+      // encoded.
+      delete messageJsonWithData.data;
+    }
 
     const encodedBlock = await block.encode({ value: messageJson, codec: cbor, hasher: sha256 });
 

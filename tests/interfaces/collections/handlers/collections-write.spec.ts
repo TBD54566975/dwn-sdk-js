@@ -1,6 +1,6 @@
 import { DIDResolutionResult, DIDResolver } from '../../../../src/did/did-resolver';
-import { generateCollectionWriteMessage } from '../../../utils/message-generator';
 import { handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write';
+import { MessageGenerator } from '../../../utils/message-generator';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
 import chai, { expect } from 'chai';
@@ -11,7 +11,7 @@ chai.use(chaiAsPromised);
 
 describe('handleCollectionsWrite()', () => {
   it('should return 401 if authorization fails', async () => {
-    const messageData = await generateCollectionWriteMessage();
+    const messageData = await MessageGenerator.generateCollectionWriteMessage();
 
     // setting up a stub did resolver & message store
     const differentKeyPair = await secp256k1.generateKeyPair(); // used to return a different public key to simulate invalid signature
@@ -39,7 +39,7 @@ describe('handleCollectionsWrite()', () => {
   });
 
   it('should return 500 if authorization fails', async () => {
-    const messageData = await generateCollectionWriteMessage();
+    const messageData = await MessageGenerator.generateCollectionWriteMessage();
 
     // setting up a stub method resolver & message store
     const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();

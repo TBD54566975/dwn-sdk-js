@@ -16,3 +16,17 @@ export type CollectionsWriteDescriptor = {
 export type CollectionsWriteSchema = BaseMessageSchema & Authorization & {
   descriptor: CollectionsWriteDescriptor;
 };
+
+export type CollectionsQueryDescriptor = {
+  method: 'CollectionsQuery';
+  nonce: string;
+  protocol?: string;
+  schema?: string;
+  recordId?: string;
+  dataFormat?: string;
+  dateSort?: string;
+};
+
+export type CollectionsQuerySchema = BaseMessageSchema & Authorization & {
+  descriptor: CollectionsQueryDescriptor;
+};

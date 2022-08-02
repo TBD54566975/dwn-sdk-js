@@ -1,5 +1,5 @@
 import type { Context } from '../types';
-import type { MessageSchema } from '../core/types';
+import type { BaseMessageSchema } from '../core/types';
 
 import { Message } from '../core/message';
 import { CID } from 'multiformats/cid';
@@ -23,14 +23,14 @@ export interface MessageStore {
    * if no message was found
    * @param cid
    */
-  get(cid: CID, ctx: Context): Promise<MessageSchema>;
+  get(cid: CID, ctx: Context): Promise<BaseMessageSchema>;
   /**
    * queries the underlying store for messages that match the query provided.
    * returns an empty array if no messages are found
    * @param query
    */
   // TODO: change type of `query`, Issue $69 https://github.com/TBD54566975/dwn-sdk-js/issues/69
-  query(query: any, ctx: Context): Promise<MessageSchema[]>;
+  query(query: any, ctx: Context): Promise<BaseMessageSchema[]>;
 
   /**
    * deletes the message associated to the id provided
