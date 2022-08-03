@@ -12,7 +12,7 @@ chai.use(chaiAsPromised);
 
 describe('CollectionsWrite', () => {
   describe('create() & verifyAuth()', () => {
-    it('should be able to create a valid CollectionsWrite message', async () => {
+    it('should be able to create and verify a valid CollectionsWrite message', async () => {
       // testing `create()` first
       const did = 'did:example:alice';
       const keyId = `${did}#key1`;
