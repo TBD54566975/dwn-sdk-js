@@ -13,8 +13,16 @@ describe('DWN', () => {
   describe('processMessage()', () => {
     const messageStore = new MessageStoreLevel();
 
-    afterEach(() => {
-      messageStore.clear();
+    before(async () => {
+      await messageStore.open();
+    });
+
+    beforeEach(async () => {
+      await messageStore.clear();
+    });
+
+    after(async () => {
+      await messageStore.close();
     });
 
     it('should process CollectionsWrite message', async () => {
@@ -37,7 +45,6 @@ describe('DWN', () => {
 
       const reply = await dwn.processMessage(messageData.message, { tenant: messageData.did });
 
-      await messageStore.close();
       expect(reply.status.code).to.equal(202);
     });
 

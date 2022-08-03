@@ -1,25 +1,12 @@
 import { expect } from 'chai';
 import { generateCid } from '../../src/utils/cid';
-import { ed25519 } from '../../src/jose/algorithms/signing/ed25519';
-import { Message } from '../../src/core';
 import { MessageStoreLevel } from '../../src/store/message-store-level';
-import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request';
+import { TestDataGenerator } from '../utils/test-data-generator';
 
 const messageStore = new MessageStoreLevel({
   blockstoreLocation : 'TEST-BLOCKSTORE',
   indexLocation      : 'TEST-INDEX'
 });
-
-async function generateMessage(): Promise<Message> {
-  const { privateJwk } = await ed25519.generateKeyPair();
-  return await PermissionsRequest.create({
-    description    : 'drugs',
-    grantedBy      : 'did:jank:bob',
-    grantedTo      : 'did:jank:alice',
-    scope          : { method: 'CollectionsWrite' },
-    signatureInput : { jwkPrivate: privateJwk, protectedHeader: { alg: privateJwk.alg as string, kid: 'whatev' } }
-  });
-}
 
 describe('MessageStoreLevel Tests', () => {
   describe('buildIndexQueryTerms', () => {
@@ -76,11 +63,11 @@ describe('MessageStoreLevel Tests', () => {
 
     it('stores messages as cbor/sha256 encoded blocks with CID as key', async () => {
       const ctx = { tenant: 'doodeedoo' };
-      const message = await generateMessage();
+      const message = await TestDataGenerator.generatePermissionRequestMessage();
 
       await messageStore.put(message, ctx);
 
-      const expectedCid = await generateCid(message.toObject());
+      const expectedCid = await generateCid(message);
 
       const jsonMessage = await messageStore.get(expectedCid, ctx);
       const resultCid = await generateCid(jsonMessage);
@@ -90,7 +77,7 @@ describe('MessageStoreLevel Tests', () => {
 
     it('adds author to index', async () => {
       const ctx = { tenant: 'did:ex:alice', author: 'did:ex:clifford' };
-      const message = await generateMessage();
+      const message = await TestDataGenerator.generatePermissionRequestMessage();
 
       await messageStore.put(message, ctx);
 
@@ -100,7 +87,7 @@ describe('MessageStoreLevel Tests', () => {
 
     it('adds tenant to index', async () => {
       const ctx = { tenant: 'did:ex:alice', author: 'did:ex:clifford' };
-      const message = await generateMessage();
+      const message = await TestDataGenerator.generatePermissionRequestMessage();
 
       await messageStore.put(message, ctx);
 

@@ -5,7 +5,6 @@ import type { MessageStore } from './message-store';
 import { BlockstoreLevel } from './blockstore-level';
 import { CID } from 'multiformats/cid';
 import { importer } from 'ipfs-unixfs-importer';
-import { Message } from '../core/message';
 import { parseCid } from '../utils/cid';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { toBytes } from '../utils/data';
@@ -126,8 +125,7 @@ export class MessageStoreLevel implements MessageStore {
     return;
   }
 
-  async put(message: Message, ctx: Context): Promise<void> {
-    const messageJson = message.toObject();
+  async put(messageJson: BaseMessageSchema, ctx: Context): Promise<void> {
 
     let data = undefined;
     if (messageJson['data'] !== undefined) {

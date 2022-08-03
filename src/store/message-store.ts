@@ -1,7 +1,6 @@
 import type { Context } from '../types';
 import type { BaseMessageSchema } from '../core/types';
 
-import { Message } from '../core/message';
 import { CID } from 'multiformats/cid';
 
 export interface MessageStore {
@@ -15,9 +14,9 @@ export interface MessageStore {
   close(): Promise<void>;
   /**
    * adds a message to the underlying store. Uses the message's cid as the key
-   * @param message
+   * @param messageJson
    */
-  put(message: Message, ctx: Context): Promise<void>;
+  put(messageJson: BaseMessageSchema, ctx: Context): Promise<void>;
   /**
    * fetches a single message by `cid` from the underlying store. Returns `undefined`
    * if no message was found

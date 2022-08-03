@@ -20,7 +20,11 @@ export const handleCollectionsQuery: MethodHandler = async (
   }
 
   try {
-    const entries = await messageStore.query(collectionsQueryMessage, context);
+    const validatedMessage = message as CollectionsQuerySchema;
+    const query = {
+      schema: validatedMessage.descriptor.schema
+    };
+    const entries = await messageStore.query(query, context);
 
     return new MessageReply({
       status: { code: 200, message: 'OK' },

@@ -1,10 +1,22 @@
 import { CollectionsWrite } from '../../src/interfaces/collections/messages/collections-write';
 import { CollectionsQuery } from '../../src/interfaces/collections/messages/collections-query';
 import { CollectionsQuerySchema, CollectionsWriteSchema } from '../../src/interfaces/collections/types';
+import { ed25519 } from '../../src/jose/algorithms/signing/ed25519';
 import { DIDResolutionResult } from '../../src/did/did-resolver';
 import { PrivateJwk, PublicJwk } from '../../src/jose/types';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1';
 import { v4 as uuidv4 } from 'uuid';
+import { BaseMessageSchema } from '../../src/core/types';
+import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request';
+
+
+type GenerateCollectionWriteMessageInput = {
+  protocol?: string;
+  schema?: string;
+  recordId?: string;
+  dataCid?: string;
+  dataFormat?: string;
+};
 
 type GenerateCollectionWriteMessageOutput = {
   message: CollectionsWriteSchema;
@@ -42,9 +54,10 @@ type GenerateCollectionQueryMessageOutput = {
 export class TestDataGenerator {
   /**
    * Generates a CollectionsWrite message for testing.
+   * All optional parameters are generated if not given.
    * Implementation currently uses `CollectionsWrite.create()`.
    */
-  public static async generateCollectionWriteMessage(): Promise<GenerateCollectionWriteMessageOutput> {
+  public static async generateCollectionWriteMessage(input?: GenerateCollectionWriteMessageInput): Promise<GenerateCollectionWriteMessageOutput> {
     const didMethod = TestDataGenerator.randomString(10);
     const didSuffix = TestDataGenerator.randomString(32);
     const did = `did:${didMethod}:${didSuffix}`;
@@ -60,11 +73,13 @@ export class TestDataGenerator {
     };
 
     const options = {
-      dataCid     : TestDataGenerator.randomString(32),
-      dataFormat  : 'application/json',
-      dateCreated : Date.now(),
       nonce       : TestDataGenerator.randomString(32),
-      recordId    : uuidv4(),
+      protocol    : input?.protocol ? input.protocol : TestDataGenerator.randomString(10),
+      schema      : input?.schema ? input.schema : TestDataGenerator.randomString(20),
+      recordId    : input?.recordId ? input.recordId : uuidv4(),
+      dataCid     : input?.dataCid ? input.dataCid : TestDataGenerator.randomString(32),
+      dataFormat  : input?.dataFormat ? input.dataFormat : 'application/json',
+      dateCreated : Date.now(),
       signatureInput
     };
 
@@ -115,6 +130,22 @@ export class TestDataGenerator {
       requesterKeyPair: { privateJwk, publicJwk }
     };
   };
+
+  /**
+   * Generates a PermissionsRequest message for testing.
+   */
+  public static async generatePermissionRequestMessage(): Promise<BaseMessageSchema> {
+    const { privateJwk } = await ed25519.generateKeyPair();
+    const permissionRequest = await PermissionsRequest.create({
+      description    : 'drugs',
+      grantedBy      : 'did:jank:bob',
+      grantedTo      : 'did:jank:alice',
+      scope          : { method: 'CollectionsWrite' },
+      signatureInput : { jwkPrivate: privateJwk, protectedHeader: { alg: privateJwk.alg as string, kid: 'whatev' } }
+    });
+
+    return permissionRequest.toObject();
+  }
 
   /**
    * Generates a random alpha-numeric string.

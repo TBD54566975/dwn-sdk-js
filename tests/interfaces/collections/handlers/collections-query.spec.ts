@@ -10,6 +10,44 @@ import sinon from 'sinon';
 chai.use(chaiAsPromised);
 
 describe('handleCollectionsQuery()', () => {
+  it('should return entries matching the query', async () => {
+    // insert three messages into DB, two with matching schema
+    const did = 'did:example:alice';
+    const schema = 'myAwesomeSchema';
+    const collectionsWriteMessage1Data = await TestDataGenerator.generateCollectionWriteMessage();
+    const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionWriteMessage({ schema });
+    const collectionsWriteMessage3Data = await TestDataGenerator.generateCollectionWriteMessage({ schema });
+    const messageStore = new MessageStoreLevel({
+      blockstoreLocation : 'BLOCKSTORE-COLLECTIONS-QUERY',
+      indexLocation      : 'INDEX-COLLECTIONS-QUERY'
+    });
+    await messageStore.open();
+    await messageStore.clear();
+    await messageStore.put(collectionsWriteMessage1Data.message, { tenant: did });
+    await messageStore.put(collectionsWriteMessage2Data.message, { tenant: did });
+    await messageStore.put(collectionsWriteMessage3Data.message, { tenant: did });
+
+    // generating a query that matches two of the messages written
+    const messageData = await TestDataGenerator.generateCollectionQueryMessage({ schema });
+
+    // setting up a stub method resolver & message store
+    const didResolutionResult = TestDataGenerator.createDidResolutionResult(
+      messageData.requesterDid,
+      messageData.requesterKeyId,
+      messageData.requesterKeyPair.publicJwk
+    );
+    const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
+    resolveStub.withArgs(messageData.requesterDid).resolves(didResolutionResult);
+    const didResolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
+
+
+    const context = { tenant: messageData.requesterDid };
+    const reply = await handleCollectionsQuery(context, messageData.message, messageStore, didResolverStub);
+
+    expect(reply.status.code).to.equal(200);
+    expect(reply.entries?.length).to.equal(2); // only 2 entries should match the query.
+  });
+
   it('should return 401 if authorization fails', async () => {
     const messageData = await TestDataGenerator.generateCollectionQueryMessage();
 
