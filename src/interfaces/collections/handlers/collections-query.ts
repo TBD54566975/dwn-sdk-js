@@ -20,13 +20,11 @@ export const handleCollectionsQuery: MethodHandler = async (
   }
 
   try {
-    // TODO
-    const query = { };
-    await messageStore.query(query, context);
+    const entries = await messageStore.query(collectionsQueryMessage, context);
 
     return new MessageReply({
-      status  : { code: 200, message: 'OK' },
-      entries : []
+      status: { code: 200, message: 'OK' },
+      entries
     });
   } catch (e) {
     return new MessageReply({

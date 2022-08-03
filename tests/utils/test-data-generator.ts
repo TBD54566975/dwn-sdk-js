@@ -1,9 +1,10 @@
 import { CollectionsWrite } from '../../src/interfaces/collections/messages/collections-write';
+import { CollectionsQuery } from '../../src/interfaces/collections/messages/collections-query';
 import { CollectionsQuerySchema, CollectionsWriteSchema } from '../../src/interfaces/collections/types';
+import { DIDResolutionResult } from '../../src/did/did-resolver';
 import { PrivateJwk, PublicJwk } from '../../src/jose/types';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1';
 import { v4 as uuidv4 } from 'uuid';
-import { CollectionsQuery } from '../../src/interfaces/collections/messages/collections-query';
 
 type GenerateCollectionWriteMessageOutput = {
   message: CollectionsWriteSchema;
@@ -36,16 +37,16 @@ type GenerateCollectionQueryMessageOutput = {
 };
 
 /**
- * Utility class for generating messages for testing.
+ * Utility class for generating data for testing.
  */
-export class MessageGenerator {
+export class TestDataGenerator {
   /**
    * Generates a CollectionsWrite message for testing.
    * Implementation currently uses `CollectionsWrite.create()`.
    */
   public static async generateCollectionWriteMessage(): Promise<GenerateCollectionWriteMessageOutput> {
-    const didMethod = MessageGenerator.randomString(10);
-    const didSuffix = MessageGenerator.randomString(32);
+    const didMethod = TestDataGenerator.randomString(10);
+    const didSuffix = TestDataGenerator.randomString(32);
     const did = `did:${didMethod}:${didSuffix}`;
     const keyId = `${did}#key1`;
     const { privateJwk, publicJwk } = await secp256k1.generateKeyPair();
@@ -59,10 +60,10 @@ export class MessageGenerator {
     };
 
     const options = {
-      dataCid     : MessageGenerator.randomString(32),
+      dataCid     : TestDataGenerator.randomString(32),
       dataFormat  : 'application/json',
       dateCreated : Date.now(),
-      nonce       : MessageGenerator.randomString(32),
+      nonce       : TestDataGenerator.randomString(32),
       recordId    : uuidv4(),
       signatureInput
     };
@@ -83,8 +84,8 @@ export class MessageGenerator {
    * Generates a CollectionsQuery message for testing.
    */
   public static async generateCollectionQueryMessage(input?: GenerateCollectionQueryMessageInput): Promise<GenerateCollectionQueryMessageOutput> {
-    const didMethod = MessageGenerator.randomString(10);
-    const didSuffix = MessageGenerator.randomString(32);
+    const didMethod = TestDataGenerator.randomString(10);
+    const didSuffix = TestDataGenerator.randomString(32);
     const requesterDid = `did:${didMethod}:${didSuffix}`;
     const requesterKeyId = `${requesterDid}#key1`;
     const { privateJwk, publicJwk } = await secp256k1.generateKeyPair();
@@ -98,7 +99,7 @@ export class MessageGenerator {
     };
 
     const options = {
-      nonce: MessageGenerator.randomString(32),
+      nonce: TestDataGenerator.randomString(32),
       signatureInput,
       ...input
     };
@@ -115,7 +116,10 @@ export class MessageGenerator {
     };
   };
 
-  private static randomString(length: number): string {
+  /**
+   * Generates a random alpha-numeric string.
+   */
+  public static randomString(length: number): string {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
     // pick characters randomly
@@ -126,4 +130,23 @@ export class MessageGenerator {
 
     return randomString;
   };
+
+  /**
+   * Creates a mock DID resolution result for testing purposes.
+   */
+  public static createDidResolutionResult(did: string, keyId: string, publicJwk: PublicJwk): DIDResolutionResult {
+    return {
+      didResolutionMetadata : {},
+      didDocument           : {
+        id                 : did,
+        verificationMethod : [{
+          controller   : did,
+          id           : keyId,
+          type         : 'JsonWebKey2020',
+          publicKeyJwk : publicJwk
+        }]
+      },
+      didDocumentMetadata: {}
+    };
+  }
 }

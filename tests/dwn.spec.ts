@@ -1,7 +1,8 @@
 import { Config } from '../src/dwn';
 import { DIDResolutionResult, DIDMethodResolver } from '../src/did/did-resolver';
 import { DWN } from '../src/dwn';
-import { MessageGenerator } from './utils/message-generator';
+import { MessageStoreLevel } from '../src/store/message-store-level';
+import { TestDataGenerator } from './utils/test-data-generator';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -10,68 +11,59 @@ chai.use(chaiAsPromised);
 
 describe('DWN', () => {
   describe('processMessage()', () => {
+    const messageStore = new MessageStoreLevel();
+
+    afterEach(() => {
+      messageStore.clear();
+    });
+
     it('should process CollectionsWrite message', async () => {
-      const messageData = await MessageGenerator.generateCollectionWriteMessage();
+      const messageData = await TestDataGenerator.generateCollectionWriteMessage();
 
       // setting up a stub method resolver
+      const didResolutionResult = TestDataGenerator.createDidResolutionResult(messageData.did, messageData.keyId, messageData.keyPair.publicJwk);
       const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
-      resolveStub.withArgs(messageData.did).resolves({
-        didResolutionMetadata : {},
-        didDocument           : {
-          id                 : messageData.did,
-          verificationMethod : [{
-            controller   : messageData.did,
-            id           : messageData.keyId,
-            type         : 'JsonWebKey2020',
-            publicKeyJwk : messageData.keyPair.publicJwk
-          }]
-        },
-        didDocumentMetadata: {}
-      });
+      resolveStub.withArgs(messageData.did).resolves(didResolutionResult);
       const methodResolverStub = <DIDMethodResolver>{
         method  : () => { return messageData.didMethod; },
         resolve : resolveStub
       };
 
       const dwnConfig: Config = {
-        DIDMethodResolvers: [methodResolverStub]
+        DIDMethodResolvers: [methodResolverStub],
+        messageStore
       };
       const dwn = await DWN.create(dwnConfig);
 
       const reply = await dwn.processMessage(messageData.message, { tenant: messageData.did });
 
+      await messageStore.close();
       expect(reply.status.code).to.equal(202);
     });
 
-    it.only('should process CollectionsQuery message', async () => {
-      const messageData = await MessageGenerator.generateCollectionQueryMessage();
+    it('should process CollectionsQuery message', async () => {
+      const messageData = await TestDataGenerator.generateCollectionQueryMessage();
 
       // setting up a stub method resolver
+      const didResolutionResult = TestDataGenerator.createDidResolutionResult(
+        messageData.requesterDid,
+        messageData.requesterKeyId,
+        messageData.requesterKeyPair.publicJwk
+      );
       const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
-      resolveStub.withArgs(messageData.requesterDid).resolves({
-        didResolutionMetadata : {},
-        didDocument           : {
-          id                 : messageData.requesterDid,
-          verificationMethod : [{
-            controller   : messageData.requesterDid,
-            id           : messageData.requesterKeyId,
-            type         : 'JsonWebKey2020',
-            publicKeyJwk : messageData.requesterKeyPair.publicJwk
-          }]
-        },
-        didDocumentMetadata: {}
-      });
+      resolveStub.withArgs(messageData.requesterDid).resolves(didResolutionResult);
       const methodResolverStub = <DIDMethodResolver>{
         method  : () => { return messageData.didMethod; },
         resolve : resolveStub
       };
 
       const dwnConfig: Config = {
-        DIDMethodResolvers: [methodResolverStub]
+        DIDMethodResolvers: [methodResolverStub],
+        messageStore
       };
       const dwn = await DWN.create(dwnConfig);
 
-      const reply = await dwn.processMessage(messageData.message, { tenant: 'did:ion:anExistingTarget' });
+      const reply = await dwn.processMessage(messageData.message, { tenant: 'did:ion:anyTargetTenant' });
 
       expect(reply.status.code).to.equal(200);
       expect(reply.entries).to.be.empty;

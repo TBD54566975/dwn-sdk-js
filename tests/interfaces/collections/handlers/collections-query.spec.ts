@@ -1,5 +1,5 @@
 import { DIDResolutionResult, DIDResolver } from '../../../../src/did/did-resolver';
-import { handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write';
+import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
 import { TestDataGenerator } from '../../../utils/test-data-generator';
@@ -9,37 +9,45 @@ import sinon from 'sinon';
 
 chai.use(chaiAsPromised);
 
-describe('handleCollectionsWrite()', () => {
+describe('handleCollectionsQuery()', () => {
   it('should return 401 if authorization fails', async () => {
-    const messageData = await TestDataGenerator.generateCollectionWriteMessage();
+    const messageData = await TestDataGenerator.generateCollectionQueryMessage();
 
     // setting up a stub did resolver & message store
     const differentKeyPair = await secp256k1.generateKeyPair(); // used to return a different public key to simulate invalid signature
-    const didResolutionResult = TestDataGenerator.createDidResolutionResult(messageData.did, messageData.keyId, differentKeyPair.publicJwk);
+    const didResolutionResult = TestDataGenerator.createDidResolutionResult(
+      messageData.requesterDid,
+      messageData.requesterKeyId,
+      differentKeyPair.publicJwk
+    );
     const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
-    resolveStub.withArgs( messageData.did).resolves(didResolutionResult);
+    resolveStub.withArgs(messageData.requesterDid).resolves(didResolutionResult);
     const didResolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-    const context = { tenant: messageData.did };
-    const reply = await handleCollectionsWrite(context, messageData.message, messageStoreStub, didResolverStub);
+    const context = { tenant: messageData.requesterDid };
+    const reply = await handleCollectionsQuery(context, messageData.message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(401);
   });
 
   it('should return 500 if authorization fails', async () => {
-    const messageData = await TestDataGenerator.generateCollectionWriteMessage();
+    const messageData = await TestDataGenerator.generateCollectionQueryMessage();
 
     // setting up a stub method resolver & message store
-    const didResolutionResult = TestDataGenerator.createDidResolutionResult(messageData.did, messageData.keyId, messageData.keyPair.publicJwk);
+    const didResolutionResult = TestDataGenerator.createDidResolutionResult(
+      messageData.requesterDid,
+      messageData.requesterKeyId,
+      messageData.requesterKeyPair.publicJwk
+    );
     const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
-    resolveStub.withArgs(messageData.did).resolves(didResolutionResult);
+    resolveStub.withArgs(messageData.requesterDid).resolves(didResolutionResult);
     const didResolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-    messageStoreStub.put.throwsException('anyError'); // simulate a DB write error
+    messageStoreStub.query.throwsException('anyError'); // simulate a DB query error
 
-    const context = { tenant: messageData.did };
-    const reply = await handleCollectionsWrite(context, messageData.message, messageStoreStub, didResolverStub);
+    const context = { tenant: messageData.requesterDid };
+    const reply = await handleCollectionsQuery(context, messageData.message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(500);
   });
