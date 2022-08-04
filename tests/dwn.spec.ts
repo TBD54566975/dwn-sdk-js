@@ -11,13 +11,20 @@ chai.use(chaiAsPromised);
 
 describe('DWN', () => {
   describe('processMessage()', () => {
-    const messageStore = new MessageStoreLevel();
+    let messageStore: MessageStoreLevel;
 
     before(async () => {
+      // important to follow this pattern to initialize the message store in tests
+      // so different suites can reuse the same block store and index location
+      messageStore = new MessageStoreLevel({
+        blockstoreLocation : 'TEST-BLOCKSTORE',
+        indexLocation      : 'TEST-INDEX'
+      });
+
       await messageStore.open();
     });
 
-    beforeEach(async () => {
+    afterEach(async () => {
       await messageStore.clear();
     });
 

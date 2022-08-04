@@ -55,8 +55,8 @@ export class MessageStoreLevel implements MessageStore {
 
     // TODO: look into using the same level we're using for blockstore, Issue #49 https://github.com/TBD54566975/dwn-sdk-js/issues/49
     // TODO: parameterize `name`, Issue #50 https://github.com/TBD54566975/dwn-sdk-js/issues/50
-    // calling `searchIndex` twice causes the process to hang, so check to see if the index
-    // has already been "opened" before opening it again.
+    // calling `searchIndex()` twice without closing its DB causes the process to hang (ie. calling this method consecutively),
+    // so check to see if the index has already been "opened" before opening it again.
     if (!this.index) {
       this.index = await searchIndex({ name: this.config.indexLocation });
     }
@@ -64,7 +64,7 @@ export class MessageStoreLevel implements MessageStore {
 
   async close(): Promise<void> {
     await this.db.close();
-    await this.index.FLUSH();
+    await this.index.INDEX.STORE.close(); // MUST index-search DB, else `searchIndex()` triggered in a different instance will hang indefinitely
   }
 
   async get(cid: CID, ctx: Context): Promise<BaseMessageSchema> {

@@ -3,12 +3,10 @@ import { generateCid } from '../../src/utils/cid';
 import { MessageStoreLevel } from '../../src/store/message-store-level';
 import { TestDataGenerator } from '../utils/test-data-generator';
 
-const messageStore = new MessageStoreLevel({
-  blockstoreLocation : 'TEST-BLOCKSTORE',
-  indexLocation      : 'TEST-INDEX'
-});
+let messageStore: MessageStoreLevel;
 
 describe('MessageStoreLevel Tests', () => {
+
   describe('buildIndexQueryTerms', () => {
     it('returns an array of terms based on the query object provided', () => {
       const query = {
@@ -50,6 +48,10 @@ describe('MessageStoreLevel Tests', () => {
 
   describe('put', function () {
     before(async () => {
+      messageStore = new MessageStoreLevel({
+        blockstoreLocation : 'TEST-BLOCKSTORE',
+        indexLocation      : 'TEST-INDEX'
+      });
       await messageStore.open();
     });
 
