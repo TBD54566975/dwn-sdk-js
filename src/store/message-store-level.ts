@@ -64,7 +64,7 @@ export class MessageStoreLevel implements MessageStore {
 
   async close(): Promise<void> {
     await this.db.close();
-    await this.index.INDEX.STORE.close(); // MUST index-search DB, else `searchIndex()` triggered in a different instance will hang indefinitely
+    await this.index.INDEX.STORE.close(); // MUST close index-search DB, else `searchIndex()` triggered in a different instance will hang indefinitely
   }
 
   async get(cid: CID, ctx: Context): Promise<BaseMessageSchema> {
@@ -101,7 +101,7 @@ export class MessageStoreLevel implements MessageStore {
   }
 
   async query(query: any, ctx: Context): Promise<BaseMessageSchema[]> {
-    // must scope the query to the tenant
+    // MUST scope the query to the tenant
     query.tenant = ctx.tenant;
 
     const messages: BaseMessageSchema[] = [];
