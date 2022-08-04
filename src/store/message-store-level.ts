@@ -101,6 +101,9 @@ export class MessageStoreLevel implements MessageStore {
   }
 
   async query(query: any, ctx: Context): Promise<BaseMessageSchema[]> {
+    // must scope the query to the tenant
+    query.tenant = ctx.tenant;
+
     const messages: BaseMessageSchema[] = [];
 
     // parse query into a query that is compatible with the index we're using

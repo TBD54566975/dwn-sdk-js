@@ -1,13 +1,14 @@
+import { BaseMessageSchema } from '../../src/core/types';
 import { CollectionsWrite } from '../../src/interfaces/collections/messages/collections-write';
 import { CollectionsQuery } from '../../src/interfaces/collections/messages/collections-query';
 import { CollectionsQuerySchema, CollectionsWriteSchema } from '../../src/interfaces/collections/types';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519';
 import { DIDResolutionResult } from '../../src/did/did-resolver';
+import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request';
 import { PrivateJwk, PublicJwk } from '../../src/jose/types';
+import { removeUndefinedProperties } from '../../src/utils/object';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1';
 import { v4 as uuidv4 } from 'uuid';
-import { BaseMessageSchema } from '../../src/core/types';
-import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request';
 
 
 type GenerateCollectionWriteMessageInput = {
@@ -30,6 +31,9 @@ type GenerateCollectionWriteMessageOutput = {
 };
 
 type GenerateCollectionQueryMessageInput = {
+  requesterDid?: string;
+  requesterKeyId?: string;
+  requesterKeyPair?: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
   protocol?: string;
   schema?: string;
   recordId?: string;
@@ -42,7 +46,7 @@ type GenerateCollectionQueryMessageOutput = {
   /**
    * method name without the `did:` prefix. e.g. "ion"
    */
-  didMethod: string;
+  requesterDidMethod: string;
   requesterDid: string;
   requesterKeyId: string;
   requesterKeyPair: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
@@ -99,35 +103,51 @@ export class TestDataGenerator {
    * Generates a CollectionsQuery message for testing.
    */
   public static async generateCollectionQueryMessage(input?: GenerateCollectionQueryMessageInput): Promise<GenerateCollectionQueryMessageOutput> {
-    const didMethod = TestDataGenerator.randomString(10);
-    const didSuffix = TestDataGenerator.randomString(32);
-    const requesterDid = `did:${didMethod}:${didSuffix}`;
-    const requesterKeyId = `${requesterDid}#key1`;
-    const { privateJwk, publicJwk } = await secp256k1.generateKeyPair();
+    // generate DID if not given
+    let requesterDid = input?.requesterDid;
+    if (!requesterDid) {
+      const didSuffix = TestDataGenerator.randomString(32);
+      requesterDid = `did:example:${didSuffix}`;
+    }
+    const requesterDidMethod = TestDataGenerator.getDidMethodName(requesterDid);
+
+    // generate key ID if not given
+    const requesterKeyId =  input?.requesterKeyId ? input.requesterKeyId : `${requesterDid}#key1`;
+
+    // generate key pair if not given
+    let requesterKeyPair = input?.requesterKeyPair;
+    if (!requesterKeyPair) {
+      requesterKeyPair = await secp256k1.generateKeyPair();
+    }
 
     const signatureInput = {
-      jwkPrivate      : privateJwk,
+      jwkPrivate      : requesterKeyPair.privateJwk,
       protectedHeader : {
-        alg : privateJwk.alg!,
+        alg : requesterKeyPair.privateJwk.alg!,
         kid : requesterKeyId
       }
     };
 
     const options = {
-      nonce: TestDataGenerator.randomString(32),
+      nonce      : TestDataGenerator.randomString(32),
       signatureInput,
-      ...input
+      protocol   : input?.protocol,
+      schema     : input?.schema,
+      recordId   : input?.recordId,
+      dataFormat : input?.dataFormat,
+      dateSort   : input?.dateSort
     };
+    removeUndefinedProperties(options);
 
     const collectionsQuery = await CollectionsQuery.create(options);
     const message = collectionsQuery.toObject() as CollectionsQuerySchema;
 
     return {
       message,
-      didMethod,
       requesterDid,
+      requesterDidMethod,
       requesterKeyId,
-      requesterKeyPair: { privateJwk, publicJwk }
+      requesterKeyPair
     };
   };
 
@@ -179,5 +199,17 @@ export class TestDataGenerator {
       },
       didDocumentMetadata: {}
     };
+  }
+
+  /**
+   * Gets the method name from the given DID.
+   */
+  private static getDidMethodName(did: string): string {
+    const segments = did.split(':', 3);
+    if (segments.length < 3) {
+      throw new Error(`${did} is not a valid DID`);
+    }
+
+    return segments[1];
   }
 }

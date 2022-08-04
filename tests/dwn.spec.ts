@@ -15,7 +15,7 @@ describe('DWN', () => {
 
     before(async () => {
       // important to follow this pattern to initialize the message store in tests
-      // so different suites can reuse the same block store and index location
+      // so that different suites can reuse the same block store and index location for testing
       messageStore = new MessageStoreLevel({
         blockstoreLocation : 'TEST-BLOCKSTORE',
         indexLocation      : 'TEST-INDEX'
@@ -24,8 +24,8 @@ describe('DWN', () => {
       await messageStore.open();
     });
 
-    afterEach(async () => {
-      await messageStore.clear();
+    beforeEach(async () => {
+      await messageStore.clear(); // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
     });
 
     after(async () => {
@@ -67,7 +67,7 @@ describe('DWN', () => {
       const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
       resolveStub.withArgs(messageData.requesterDid).resolves(didResolutionResult);
       const methodResolverStub = <DIDMethodResolver>{
-        method  : () => { return messageData.didMethod; },
+        method  : () => { return messageData.requesterDidMethod; },
         resolve : resolveStub
       };
 

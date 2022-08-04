@@ -2,6 +2,7 @@ import type { MethodHandler } from '../../types';
 import type { CollectionsQuerySchema } from '../types';
 import { CollectionsQuery } from '../messages/collections-query';
 import { MessageReply } from '../../../core';
+import { removeUndefinedProperties } from '../../../utils/object';
 
 export const handleCollectionsQuery: MethodHandler = async (
   context,
@@ -21,9 +22,20 @@ export const handleCollectionsQuery: MethodHandler = async (
 
   try {
     const validatedMessage = message as CollectionsQuerySchema;
+
+    if (validatedMessage.descriptor.dateSort) {
+      throw new Error('`dateSort` not implemented');
+    }
+
     const query = {
-      schema: validatedMessage.descriptor.schema
+      method     : 'CollectionsWrite',
+      protocol   : validatedMessage.descriptor.protocol,
+      schema     : validatedMessage.descriptor.schema,
+      recordId   : validatedMessage.descriptor.recordId,
+      dataFormat : validatedMessage.descriptor.dataFormat
     };
+    removeUndefinedProperties(query);
+
     const entries = await messageStore.query(query, context);
 
     return new MessageReply({

@@ -55,8 +55,8 @@ describe('MessageStoreLevel Tests', () => {
       await messageStore.open();
     });
 
-    afterEach(async () => {
-      await messageStore.clear();
+    beforeEach(async () => {
+      await messageStore.clear(); // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
     });
 
     after(async () => {
