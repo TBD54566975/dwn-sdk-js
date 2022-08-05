@@ -28,11 +28,8 @@ export const handleCollectionsQuery: MethodHandler = async (
     }
 
     const query = {
-      method     : 'CollectionsWrite',
-      protocol   : validatedMessage.descriptor.protocol,
-      schema     : validatedMessage.descriptor.schema,
-      recordId   : validatedMessage.descriptor.recordId,
-      dataFormat : validatedMessage.descriptor.dataFormat
+      method: 'CollectionsWrite',
+      ...validatedMessage.descriptor.filter
     };
     removeUndefinedProperties(query);
 

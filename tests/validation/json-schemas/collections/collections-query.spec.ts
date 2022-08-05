@@ -6,7 +6,8 @@ describe('CollectionsQuery schema definition', () => {
     const validMessage = {
       descriptor: {
         method : 'CollectionsQuery',
-        nonce  : 'anyNonce'
+        nonce  : 'anyNonce',
+        filter : { schema: 'anySchema' }
       },
       authorization: {
         payload    : 'anyPayload',
@@ -27,7 +28,7 @@ describe('CollectionsQuery schema definition', () => {
       descriptor: {
         method : 'CollectionsQuery',
         nonce  : 'anyNonce',
-        schema : 'anySchema'
+        filter : { schema: 'anySchema' }
       }
     };
 
@@ -41,7 +42,7 @@ describe('CollectionsQuery schema definition', () => {
       descriptor: {
         method : 'CollectionsQuery',
         nonce  : 'anyNonce',
-        schema : 'anySchema'
+        filter : { schema: 'anySchema' }
       },
       authorization: {
         payload    : 'anyPayload',
@@ -63,7 +64,7 @@ describe('CollectionsQuery schema definition', () => {
       descriptor: {
         method          : 'CollectionsQuery',
         nonce           : 'anyNonce',
-        schema          : 'anySchema',
+        filter          : { schema: 'anySchema' },
         unknownProperty : 'unknownProperty' // unknown property
       },
       authorization: {
@@ -80,6 +81,27 @@ describe('CollectionsQuery schema definition', () => {
     }).throws('must NOT have additional properties');
   });
 
+  it('should throws if empty `filter` property is given in the `descriptor`', () => {
+    const invalidMessage = {
+      descriptor: {
+        method : 'CollectionsQuery',
+        nonce  : 'anyNonce',
+        filter : { }
+      },
+      authorization: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      },
+    };
+
+    expect(() => {
+      Message.parse(invalidMessage);
+    }).throws('/descriptor/filter: must NOT have fewer than 1 properties');
+  });
+
   it('should only allows string values from the spec for `dateSort`', () => {
     // test all valid values of `dateSort`
     const allowedDateSortValues = ['createdAscending', 'createdDescending', 'publishedAscending', 'publishedAscending'];
@@ -88,6 +110,7 @@ describe('CollectionsQuery schema definition', () => {
         descriptor: {
           method   : 'CollectionsQuery',
           nonce    : 'anyNonce',
+          filter   : { schema: 'anySchema' },
           dateSort : dateSortValue
         },
         authorization: {
@@ -110,6 +133,7 @@ describe('CollectionsQuery schema definition', () => {
       descriptor: {
         method   : 'CollectionsQuery',
         nonce    : 'anyNonce',
+        filter   : { schema: 'anySchema' },
         dateSort : 'unacceptable', // bad value
       },
       authorization: {

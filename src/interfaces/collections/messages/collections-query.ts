@@ -7,10 +7,12 @@ import { sign, verifyAuth } from '../../../core/auth';
 
 type CollectionsQueryOptions = AuthCreateOptions & {
   nonce: string;
-  protocol?: string;
-  schema?: string;
-  recordId?: string;
-  dataFormat?: string;
+  filter: {
+    protocol?: string;
+    schema?: string;
+    recordId?: string;
+    dataFormat?: string;
+  },
   dateSort?: string;
 };
 
@@ -23,13 +25,10 @@ export class CollectionsQuery extends Message implements Authorizable {
 
   static async create(options: CollectionsQueryOptions): Promise<CollectionsQuery> {
     const descriptor: CollectionsQueryDescriptor = {
-      method     : 'CollectionsQuery',
-      nonce      : options.nonce,
-      protocol   : options.protocol,
-      schema     : options.schema,
-      recordId   : options.recordId,
-      dataFormat : options.dataFormat,
-      dateSort   : options.dateSort
+      method   : 'CollectionsQuery',
+      nonce    : options.nonce,
+      filter   : options.filter,
+      dateSort : options.dateSort
     };
 
     // delete all descriptor properties that are `undefined` else the code will encounter the following IPLD issue when attempting to generate CID:

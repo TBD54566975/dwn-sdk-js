@@ -16,7 +16,8 @@
       "additionalProperties": false,
       "required": [
         "method",
-        "nonce"
+        "nonce",
+        "filter"
       ],
       "properties": {
         "method": {
@@ -28,17 +29,24 @@
         "nonce": {
           "type": "string"
         },
-        "protocol": {
-          "type": "string"
-        },
-        "schema": {
-          "type": "string"
-        },
-        "recordId": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/uuid"
-        },
-        "dataFormat": {
-          "type": "string"
+        "filter": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": false,
+          "properties": {
+            "protocol": {
+              "type": "string"
+            },
+            "schema": {
+              "type": "string"
+            },
+            "recordId": {
+              "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/uuid"
+            },
+            "dataFormat": {
+              "type": "string"
+            }
+          }
         },
         "dateSort": {
           "enum": [

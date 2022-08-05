@@ -5,6 +5,8 @@ export function removeUndefinedProperties(obj: object): void {
   Object.keys(obj).forEach(key => {
     if (obj[key] === undefined) {
       delete obj[key];
+    } else if (typeof(obj[key]) === 'object') {
+      removeUndefinedProperties(obj[key]); // recursive remove `undefined` properties in nested objects
     }
   });
 }

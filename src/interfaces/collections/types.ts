@@ -20,10 +20,12 @@ export type CollectionsWriteSchema = BaseMessageSchema & Authorization & {
 export type CollectionsQueryDescriptor = {
   method: 'CollectionsQuery';
   nonce: string;
-  protocol?: string;
-  schema?: string;
-  recordId?: string;
-  dataFormat?: string;
+  filter: {
+    protocol?: string;
+    schema?: string;
+    recordId?: string;
+    dataFormat?: string;
+  }
   dateSort?: string;
 };
 

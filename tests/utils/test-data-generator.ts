@@ -34,10 +34,12 @@ type GenerateCollectionQueryMessageInput = {
   requesterDid?: string;
   requesterKeyId?: string;
   requesterKeyPair?: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
-  protocol?: string;
-  schema?: string;
-  recordId?: string;
-  dataFormat?: string;
+  filter?: {
+    protocol?: string;
+    schema?: string;
+    recordId?: string;
+    dataFormat?: string;
+  }
   dateSort?: string;
 };
 
@@ -129,13 +131,10 @@ export class TestDataGenerator {
     };
 
     const options = {
-      nonce      : TestDataGenerator.randomString(32),
+      nonce    : TestDataGenerator.randomString(32),
       signatureInput,
-      protocol   : input?.protocol,
-      schema     : input?.schema,
-      recordId   : input?.recordId,
-      dataFormat : input?.dataFormat,
-      dateSort   : input?.dateSort
+      filter   : input?.filter ? input.filter : { schema: TestDataGenerator.randomString(10) }, // must have one filter property if no filter is given
+      dateSort : input?.dateSort
     };
     removeUndefinedProperties(options);
 

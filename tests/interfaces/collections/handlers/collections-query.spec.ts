@@ -33,7 +33,7 @@ describe('handleCollectionsQuery()', () => {
     });
 
     it('should return entries matching the query', async () => {
-    // insert three messages into DB, two with matching protocol
+      // insert three messages into DB, two with matching protocol
       const did = 'did:example:alice';
       const protocol = 'myAwesomeProtocol';
       const collectionsWriteMessage1Data = await TestDataGenerator.generateCollectionWriteMessage();
@@ -46,7 +46,7 @@ describe('handleCollectionsQuery()', () => {
 
       // testing singular conditional query
       const requesterDid = 'did:example:bob';
-      const messageData = await TestDataGenerator.generateCollectionQueryMessage({ requesterDid, protocol });
+      const messageData = await TestDataGenerator.generateCollectionQueryMessage({ requesterDid, filter: { protocol } });
 
       // setting up a stub method resolver & message store
       const didResolutionResult = TestDataGenerator.createDidResolutionResult(
@@ -71,8 +71,10 @@ describe('handleCollectionsQuery()', () => {
         requesterDid,
         requesterKeyId,
         requesterKeyPair,
-        protocol,
-        schema: 'schema1'
+        filter: {
+          protocol,
+          schema: 'schema1'
+        }
       });
 
       const reply2 = await handleCollectionsQuery(context, messageData2.message, messageStore, didResolverStub);
@@ -95,7 +97,7 @@ describe('handleCollectionsQuery()', () => {
       await messageStore.put(collectionsWriteMessage2Data.message, { tenant: did2 });
 
       const requesterDid = 'did:example:carol';
-      const messageData = await TestDataGenerator.generateCollectionQueryMessage({ requesterDid, protocol });
+      const messageData = await TestDataGenerator.generateCollectionQueryMessage({ requesterDid, filter: { protocol } });
 
       // setting up a stub method resolver & message store
       const didResolutionResult = TestDataGenerator.createDidResolutionResult(
