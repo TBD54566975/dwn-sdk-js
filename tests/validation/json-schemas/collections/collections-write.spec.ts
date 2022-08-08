@@ -24,7 +24,7 @@ describe('CollectionsWrite schema definition', () => {
     const message = Message.parse(validMessage);
 
     expect(message).to.not.be.undefined;
-    expect(message.authorization).to.not.be.undefined;
+    expect(message.descriptor).to.not.be.undefined;
   });
 
   it('should throws if `authorization` is missing', () => {

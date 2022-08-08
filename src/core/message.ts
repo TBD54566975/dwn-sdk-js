@@ -1,13 +1,13 @@
-import type { MessageSchema } from './types';
+import type { BaseMessageSchema } from './types';
 
 import lodash from 'lodash';
 import { validate } from '../validation/validator';
 
 const { cloneDeep, isPlainObject } = lodash;
 export abstract class Message {
-  constructor(protected message: MessageSchema) {}
+  constructor(protected message: BaseMessageSchema) {}
 
-  static parse(rawMessage: object): MessageSchema {
+  static parse(rawMessage: object): BaseMessageSchema {
     const descriptor = rawMessage['descriptor'];
     if (!descriptor) {
       throw new Error('message must contain descriptor');
@@ -25,18 +25,18 @@ export abstract class Message {
     // validate throws an error if message is invalid
     validate(messageType, rawMessage);
 
-    return rawMessage as MessageSchema;
+    return rawMessage as BaseMessageSchema;
   };
 
   getMethod(): string {
     return this.message.descriptor.method;
   }
 
-  toObject(): MessageSchema {
+  toObject(): BaseMessageSchema {
     return cloneDeep(this.message);
   }
 
-  toJSON(): MessageSchema {
+  toJSON(): BaseMessageSchema {
     return this.message;
   }
 }

@@ -1,7 +1,7 @@
 import type { Context } from './types';
 import type { DIDMethodResolver } from './did/did-resolver';
 import type { Interface, MethodHandler } from './interfaces/types';
-import type { MessageSchema, RequestSchema } from './core/types';
+import type { BaseMessageSchema, RequestSchema } from './core/types';
 import type { MessageStore } from './store/message-store';
 
 import { addSchema } from './validation/validator';
@@ -85,7 +85,7 @@ export class DWN {
    * @param message
    */
   async processMessage(rawMessage: object, ctx: Context): Promise<MessageReply> {
-    let message: MessageSchema;
+    let message: BaseMessageSchema;
 
     try {
       message = Message.parse(rawMessage);

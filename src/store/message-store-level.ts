@@ -1,11 +1,10 @@
 import type { Context } from '../types';
-import type { GenericMessageSchema, MessageSchema } from '../core/types';
+import type { GenericMessageSchema, BaseMessageSchema } from '../core/types';
 import type { MessageStore } from './message-store';
 
 import { BlockstoreLevel } from './blockstore-level';
 import { CID } from 'multiformats/cid';
 import { importer } from 'ipfs-unixfs-importer';
-import { Message } from '../core/message';
 import { parseCid } from '../utils/cid';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { toBytes } from '../utils/data';
@@ -56,8 +55,8 @@ export class MessageStoreLevel implements MessageStore {
 
     // TODO: look into using the same level we're using for blockstore, Issue #49 https://github.com/TBD54566975/dwn-sdk-js/issues/49
     // TODO: parameterize `name`, Issue #50 https://github.com/TBD54566975/dwn-sdk-js/issues/50
-    // calling `searchIndex` twice causes the process to hang, so check to see if the index
-    // has already been "opened" before opening it again.
+    // calling `searchIndex()` twice without closing its DB causes the process to hang (ie. calling this method consecutively),
+    // so check to see if the index has already been "opened" before opening it again.
     if (!this.index) {
       this.index = await searchIndex({ name: this.config.indexLocation });
     }
@@ -65,10 +64,10 @@ export class MessageStoreLevel implements MessageStore {
 
   async close(): Promise<void> {
     await this.db.close();
-    await this.index.FLUSH();
+    await this.index.INDEX.STORE.close(); // MUST close index-search DB, else `searchIndex()` triggered in a different instance will hang indefinitely
   }
 
-  async get(cid: CID, ctx: Context): Promise<MessageSchema> {
+  async get(cid: CID, ctx: Context): Promise<BaseMessageSchema> {
     const bytes = await this.db.get(cid, ctx);
 
     if (!bytes) {
@@ -98,11 +97,14 @@ export class MessageStoreLevel implements MessageStore {
 
     messageJson.data = base64url.baseEncode(dataBytes);
 
-    return messageJson as MessageSchema;
+    return messageJson as BaseMessageSchema;
   }
 
-  async query(query: any, ctx: Context): Promise<MessageSchema[]> {
-    const messages: MessageSchema[] = [];
+  async query(query: any, ctx: Context): Promise<BaseMessageSchema[]> {
+    // MUST scope the query to the tenant
+    query.tenant = ctx.tenant;
+
+    const messages: BaseMessageSchema[] = [];
 
     // parse query into a query that is compatible with the index we're using
     const indexQueryTerms: string[] = MessageStoreLevel.buildIndexQueryTerms(query);
@@ -126,13 +128,17 @@ export class MessageStoreLevel implements MessageStore {
     return;
   }
 
-  async put(message: Message, ctx: Context): Promise<void> {
-    const messageJson = message.toObject() as GenericMessageSchema;
-    const { data } = messageJson;
+  async put(messageJson: BaseMessageSchema, ctx: Context): Promise<void> {
 
-    // pre-emptively delete data. If data is present we'll be chunking it and storing it as unix-fs dag-pb
-    // encoded.
-    delete messageJson.data;
+    let data = undefined;
+    if (messageJson['data'] !== undefined) {
+      const messageJsonWithData = messageJson as GenericMessageSchema;
+      data = messageJsonWithData.data;
+
+      // delete data. If data is present we'll be chunking it and storing it as unix-fs dag-pb
+      // encoded.
+      delete messageJsonWithData.data;
+    }
 
     const encodedBlock = await block.encode({ value: messageJson, codec: cbor, hasher: sha256 });
 

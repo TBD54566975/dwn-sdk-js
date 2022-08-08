@@ -44,10 +44,10 @@ describe('General JWS Sign/Verify', () => {
 
     const verifier = new GeneralJwsVerifier(jws);
 
-    const verificatonResult = await verifier.verify(resolverStub);
+    const verificationResult = await verifier.verify(resolverStub);
 
-    expect(verificatonResult.signers.length).to.equal(1);
-    expect(verificatonResult.signers).to.include('did:jank:alice');
+    expect(verificationResult.signers.length).to.equal(1);
+    expect(verificationResult.signers).to.include('did:jank:alice');
   });
 
   it('should sign and verify ed25519 signature using a key vector correctly',  async () => {
