@@ -1,8 +1,8 @@
 import { CollectionsWrite } from '../../../../src/interfaces/collections/messages/collections-write';
 import { CollectionsWriteSchema } from '../../../../src/interfaces/collections/types';
 import { DIDResolutionResult, DIDResolver } from '../../../../src/did/did-resolver';
-import { generateCollectionWriteMessage } from '../../../utils/message-generator';
 import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
+import { TestDataGenerator } from '../../../utils/test-data-generator';
 import { v4 as uuidv4 } from 'uuid';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
@@ -12,14 +12,16 @@ chai.use(chaiAsPromised);
 
 describe('CollectionsWrite', () => {
   describe('create() & verifyAuth()', () => {
-    it('should be able to create a valid CollectionsWrite message', async () => {
+    it('should be able to create and verify a valid CollectionsWrite message', async () => {
       // testing `create()` first
+      const did = 'did:example:alice';
+      const keyId = `${did}#key1`;
       const { privateJwk, publicJwk } = await secp256k1.generateKeyPair();
       const signatureInput = {
         jwkPrivate      : privateJwk,
         protectedHeader : {
           alg : privateJwk.alg as string,
-          kid : 'did:example:alice#key1'
+          kid : keyId
         }
       };
 
@@ -43,49 +45,27 @@ describe('CollectionsWrite', () => {
       expect(message.descriptor.recordId).to.equal(options.recordId);
 
       // setting up stub for resolution for testing `verifyAuth()`
+      const didResolutionResult = TestDataGenerator.createDidResolutionResult(did, keyId, publicJwk);
       const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
-      resolveStub.withArgs('did:example:alice').resolves({
-        didResolutionMetadata : {},
-        didDocument           : {
-          id                 : 'did:example:alice',
-          verificationMethod : [{
-            controller   : 'did:example:alice',
-            id           : 'did:example:alice#key1',
-            type         : 'JsonWebKey2020',
-            publicKeyJwk : publicJwk
-          }]
-        },
-        didDocumentMetadata: {}
-      });
+      resolveStub.withArgs(did).resolves(didResolutionResult);
 
       const resolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
       const { signers } = await collectionsWrite.verifyAuth(resolverStub);
 
       expect(signers.length).to.equal(1);
-      expect(signers).to.include('did:example:alice');
+      expect(signers).to.include(did);
     });
   });
 
   describe('verifyAuth', () => {
     it('should throw if verification signature check fails', async () => {
-      const messageData = await generateCollectionWriteMessage();
+      const messageData = await TestDataGenerator.generateCollectionWriteMessage();
 
       // setting up a stub method resolver
       const differentKeyPair = await secp256k1.generateKeyPair(); // used to return a different public key to simulate invalid signature
+      const didResolutionResult = TestDataGenerator.createDidResolutionResult(messageData.did, messageData.keyId, differentKeyPair.publicJwk);
       const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
-      resolveStub.withArgs( messageData.did).resolves({
-        didResolutionMetadata : {},
-        didDocument           : {
-          id                 : messageData.did,
-          verificationMethod : [{
-            controller   : messageData.did,
-            id           : messageData.keyId,
-            type         : 'JsonWebKey2020',
-            publicKeyJwk : differentKeyPair.publicJwk
-          }]
-        },
-        didDocumentMetadata: {}
-      });
+      resolveStub.withArgs( messageData.did).resolves(didResolutionResult);
       const didResolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
 
       const collectionsWrite = new CollectionsWrite(messageData.message);

@@ -20,7 +20,7 @@ export const handleCollectionsWrite: MethodHandler = async (
   }
 
   try {
-    await messageStore.put(collectionsWriteMessage, context);
+    await messageStore.put(message, context);
 
     return new MessageReply({
       status: { code: 202, message: 'Accepted' }

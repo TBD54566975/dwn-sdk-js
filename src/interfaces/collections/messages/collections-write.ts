@@ -2,6 +2,7 @@ import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '..
 import type { CollectionsWriteDescriptor, CollectionsWriteSchema } from '../types';
 import { DIDResolver } from '../../../did/did-resolver';
 import { Message } from '../../../core/message';
+import { removeUndefinedProperties } from '../../../utils/object';
 import { sign, verifyAuth } from '../../../core/auth';
 
 type CollectionsWriteOptions = AuthCreateOptions & {
@@ -59,11 +60,7 @@ export class CollectionsWrite extends Message implements Authorizable {
 
     // delete all descriptor properties that are `undefined` else the code will encounter the following IPLD issue when attempting to generate CID:
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
-    Object.keys(descriptor).forEach(key => {
-      if (descriptor[key] === undefined) {
-        delete descriptor[key];
-      }
-    });
+    removeUndefinedProperties(descriptor);
 
     const authorization = await sign({ descriptor }, options.signatureInput);
     const message = { descriptor, authorization };
