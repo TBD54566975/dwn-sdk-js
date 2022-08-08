@@ -16,6 +16,21 @@ type CollectionsWriteOptions = AuthCreateOptions & {
   dataFormat: string;
 };
 
+function isCollectionsWriteOptions(value: any): value is CollectionsWriteOptions {
+  return value !== null &&
+      value.signatureInput !== null &&
+      typeof value === 'object' &&
+      typeof value.protocol === 'string' &&
+      typeof value.schema === 'string' &&
+      typeof value.recordId === 'string' &&
+      typeof value.nonce === 'string' &&
+      typeof value.dateCreated === 'string' &&
+      typeof value.published === 'string' &&
+      typeof value.datePublished === 'string' &&
+      typeof value.dataFormat === 'string' &&
+      typeof value.signatureInput === 'object';
+}
+
 export class CollectionsWrite extends Message implements Authorizable {
   protected message: CollectionsWriteSchema;
 
@@ -24,6 +39,10 @@ export class CollectionsWrite extends Message implements Authorizable {
   }
 
   static async create(options: CollectionsWriteOptions): Promise<CollectionsWrite> {
+    if (!isCollectionsWriteOptions(options)) {
+      throw new Error('options is incomplete');
+    }
+
     const descriptor: CollectionsWriteDescriptor = {
       method        : 'CollectionsWrite',
       protocol      : options.protocol,
