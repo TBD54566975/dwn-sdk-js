@@ -20,15 +20,16 @@ function isCollectionsWriteOptions(value: any): value is CollectionsWriteOptions
   return value !== null &&
       value.signatureInput !== null &&
       typeof value === 'object' &&
-      typeof value.protocol === 'string' &&
-      typeof value.schema === 'string' &&
       typeof value.recordId === 'string' &&
       typeof value.nonce === 'string' &&
-      typeof value.dateCreated === 'string' &&
-      typeof value.published === 'string' &&
-      typeof value.datePublished === 'string' &&
+      typeof value.dateCreated === 'number' &&
       typeof value.dataFormat === 'string' &&
-      typeof value.signatureInput === 'object';
+      typeof value.dataCid === 'string' &&
+      typeof value.signatureInput === 'object' &&
+      (typeof value.protocol === 'string' ? value.protocol : true) &&
+      (typeof value.schema === 'string' ? value.schema : true) &&
+      (typeof value.datePublished === 'number' ? value.datePublished == null : true) &&
+      (typeof value.published === 'boolean' ? value.published == null : true);
 }
 
 export class CollectionsWrite extends Message implements Authorizable {

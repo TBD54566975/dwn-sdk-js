@@ -23,7 +23,6 @@ type PermissionsGrantOptions = AuthCreateOptions & {
 
 function isPermissionsGrantOptions(value: any): value is PermissionsGrantOptions {
   return value !== null &&
-      value.conditions !== null &&
       value.scope !== null &&
       typeof value === 'object' &&
       typeof value.conditions === 'object' &&
@@ -31,8 +30,9 @@ function isPermissionsGrantOptions(value: any): value is PermissionsGrantOptions
       typeof value.description === 'string' &&
       typeof value.grantedTo === 'string' &&
       typeof value.grantedBy === 'string' &&
-      typeof value.objectId === 'string' &&
-      typeof value.permissionsRequestId === 'string';
+      (typeof value.conditions ==='object' ? value.conditions : true) &&
+      (typeof value.objectId ==='string' ? value.objectId : true) &&
+      (typeof value.permissionsRequestId === 'string' ? value.permissionsRequestId : true);
 }
 
 export class PermissionsGrant extends Message implements Authorizable {

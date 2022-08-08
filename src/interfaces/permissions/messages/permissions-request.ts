@@ -18,15 +18,14 @@ type PermissionsRequestOptions = AuthCreateOptions & {
 
 function isPermissionsRequestOptions(value: any): value is PermissionsRequestOptions {
   return value !== null &&
-      value.conditions !== null &&
       value.scope !== null &&
       typeof value === 'object' &&
-      typeof value.conditions === 'object' &&
       typeof value.scope === 'object' &&
       typeof value.description === 'string' &&
       typeof value.grantedTo === 'string' &&
       typeof value.grantedBy === 'string' &&
-      typeof value.objectId === 'string';
+      (typeof value.conditions ==='object' ? value.conditions : true) &&
+      (typeof value.scope === 'object' ? value.scope : true);
 }
 
 export class PermissionsRequest extends Message implements Authorizable {
