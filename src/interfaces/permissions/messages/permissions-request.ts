@@ -16,6 +16,19 @@ type PermissionsRequestOptions = AuthCreateOptions & {
   scope: PermissionScope;
 };
 
+function isPermissionsRequestOptions(value: any): value is PermissionsRequestOptions {
+  return value !== null &&
+      value.conditions !== null &&
+      value.scope !== null &&
+      typeof value === 'object' &&
+      typeof value.conditions === 'object' &&
+      typeof value.scope === 'object' &&
+      typeof value.description === 'string' &&
+      typeof value.grantedTo === 'string' &&
+      typeof value.grantedBy === 'string' &&
+      typeof value.objectId === 'string';
+}
+
 export class PermissionsRequest extends Message implements Authorizable {
   protected message: PermissionsRequestSchema;
 
@@ -24,6 +37,10 @@ export class PermissionsRequest extends Message implements Authorizable {
   }
 
   static async create(opts: PermissionsRequestOptions): Promise<PermissionsRequest> {
+    if (!isPermissionsRequestOptions(opts)) {
+      throw new Error('opts is incomplete');
+    }
+
     const { conditions } = opts;
     const providedConditions = conditions ? conditions : {};
     const mergedConditions = { ...DEFAULT_CONDITIONS, ...providedConditions  };

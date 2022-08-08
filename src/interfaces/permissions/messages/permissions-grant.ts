@@ -21,6 +21,20 @@ type PermissionsGrantOptions = AuthCreateOptions & {
   scope: PermissionScope;
 };
 
+function isPermissionsGrantOptions(value: any): value is PermissionsGrantOptions {
+  return value !== null &&
+      value.conditions !== null &&
+      value.scope !== null &&
+      typeof value === 'object' &&
+      typeof value.conditions === 'object' &&
+      typeof value.scope === 'object' &&
+      typeof value.description === 'string' &&
+      typeof value.grantedTo === 'string' &&
+      typeof value.grantedBy === 'string' &&
+      typeof value.objectId === 'string' &&
+      typeof value.permissionsRequestId === 'string';
+}
+
 export class PermissionsGrant extends Message implements Authorizable {
   protected message: PermissionsGrantSchema;
 
@@ -29,6 +43,10 @@ export class PermissionsGrant extends Message implements Authorizable {
   }
 
   static async create(options: PermissionsGrantOptions): Promise<PermissionsGrant> {
+    if (!isPermissionsGrantOptions(options)) {
+      throw new Error('options is incomplete');
+    }
+
     const { conditions } = options;
     const providedConditions = conditions ? conditions : {};
     const mergedConditions = { ...DEFAULT_CONDITIONS, ...providedConditions  };
