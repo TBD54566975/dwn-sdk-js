@@ -10,6 +10,7 @@ import { generateCid } from '../../../utils/cid';
 import { Message } from '../../../core/message';
 import { PermissionsRequest, DEFAULT_CONDITIONS } from './permissions-request';
 import { v4 as uuidv4 } from 'uuid';
+import { validate } from '../../../validation/validator';
 
 type PermissionsGrantOptions = AuthCreateOptions & {
   conditions?: PermissionConditions;
@@ -21,20 +22,6 @@ type PermissionsGrantOptions = AuthCreateOptions & {
   scope: PermissionScope;
 };
 
-function isPermissionsGrantOptions(value: any): value is PermissionsGrantOptions {
-  return value !== null &&
-      value.scope !== null &&
-      typeof value === 'object' &&
-      typeof value.conditions === 'object' &&
-      typeof value.scope === 'object' &&
-      typeof value.description === 'string' &&
-      typeof value.grantedTo === 'string' &&
-      typeof value.grantedBy === 'string' &&
-      (typeof value.conditions ==='object' ? value.conditions : true) &&
-      (typeof value.objectId ==='string' ? value.objectId : true) &&
-      (typeof value.permissionsRequestId === 'string' ? value.permissionsRequestId : true);
-}
-
 export class PermissionsGrant extends Message implements Authorizable {
   protected message: PermissionsGrantSchema;
 
@@ -43,10 +30,6 @@ export class PermissionsGrant extends Message implements Authorizable {
   }
 
   static async create(options: PermissionsGrantOptions): Promise<PermissionsGrant> {
-    if (!isPermissionsGrantOptions(options)) {
-      throw new Error('options is incomplete');
-    }
-
     const { conditions } = options;
     const providedConditions = conditions ? conditions : {};
     const mergedConditions = { ...DEFAULT_CONDITIONS, ...providedConditions  };
@@ -63,6 +46,9 @@ export class PermissionsGrant extends Message implements Authorizable {
 
     const auth = await authenticate({ descriptor }, options.signatureInput);
     const message: PermissionsGrantSchema = { descriptor, authorization: auth };
+
+    const messageType = descriptor['method'];
+    validate(messageType, message);
 
     return new PermissionsGrant(message);
   }

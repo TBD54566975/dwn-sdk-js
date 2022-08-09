@@ -6,6 +6,7 @@ import { DIDResolver } from '../../../did/did-resolver';
 import { Message } from '../../../core/message';
 import { sign, verifyAuth } from '../../../core/auth';
 import { v4 as uuidv4 } from 'uuid';
+import { validate } from '../../../validation/validator';
 
 type PermissionsRequestOptions = AuthCreateOptions & {
   conditions?: PermissionConditions;
@@ -16,18 +17,6 @@ type PermissionsRequestOptions = AuthCreateOptions & {
   scope: PermissionScope;
 };
 
-function isPermissionsRequestOptions(value: any): value is PermissionsRequestOptions {
-  return value !== null &&
-      value.scope !== null &&
-      typeof value === 'object' &&
-      typeof value.scope === 'object' &&
-      typeof value.description === 'string' &&
-      typeof value.grantedTo === 'string' &&
-      typeof value.grantedBy === 'string' &&
-      (typeof value.conditions ==='object' ? value.conditions : true) &&
-      (typeof value.scope === 'object' ? value.scope : true);
-}
-
 export class PermissionsRequest extends Message implements Authorizable {
   protected message: PermissionsRequestSchema;
 
@@ -36,10 +25,6 @@ export class PermissionsRequest extends Message implements Authorizable {
   }
 
   static async create(opts: PermissionsRequestOptions): Promise<PermissionsRequest> {
-    if (!isPermissionsRequestOptions(opts)) {
-      throw new Error('opts is incomplete');
-    }
-
     const { conditions } = opts;
     const providedConditions = conditions ? conditions : {};
     const mergedConditions = { ...DEFAULT_CONDITIONS, ...providedConditions  };
@@ -56,6 +41,9 @@ export class PermissionsRequest extends Message implements Authorizable {
 
     const auth = await sign({ descriptor }, opts.signatureInput);
     const message: PermissionsRequestSchema = { descriptor, authorization: auth };
+
+    const messageType = descriptor['method'];
+    validate(messageType, message);
 
     return new PermissionsRequest(message);
   }

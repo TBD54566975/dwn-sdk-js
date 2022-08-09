@@ -4,6 +4,7 @@ import { DIDResolver } from '../../../did/did-resolver';
 import { Message } from '../../../core/message';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { sign, verifyAuth } from '../../../core/auth';
+import { validate } from '../../../validation/validator';
 
 type CollectionsWriteOptions = AuthCreateOptions & {
   protocol?: string;
@@ -17,22 +18,6 @@ type CollectionsWriteOptions = AuthCreateOptions & {
   dataFormat: string;
 };
 
-function isCollectionsWriteOptions(value: any): value is CollectionsWriteOptions {
-  return value !== null &&
-      value.signatureInput !== null &&
-      typeof value === 'object' &&
-      typeof value.recordId === 'string' &&
-      typeof value.nonce === 'string' &&
-      typeof value.dateCreated === 'number' &&
-      typeof value.dataFormat === 'string' &&
-      typeof value.dataCid === 'string' &&
-      typeof value.signatureInput === 'object' &&
-      (typeof value.protocol === 'string' ? value.protocol : true) &&
-      (typeof value.schema === 'string' ? value.schema : true) &&
-      (typeof value.datePublished === 'number' ? value.datePublished == null : true) &&
-      (typeof value.published === 'boolean' ? value.published == null : true);
-}
-
 export class CollectionsWrite extends Message implements Authorizable {
   protected message: CollectionsWriteSchema;
 
@@ -41,10 +26,6 @@ export class CollectionsWrite extends Message implements Authorizable {
   }
 
   static async create(options: CollectionsWriteOptions): Promise<CollectionsWrite> {
-    if (!isCollectionsWriteOptions(options)) {
-      throw new Error('options is incomplete');
-    }
-
     const descriptor: CollectionsWriteDescriptor = {
       method        : 'CollectionsWrite',
       protocol      : options.protocol,
@@ -64,6 +45,9 @@ export class CollectionsWrite extends Message implements Authorizable {
 
     const authorization = await sign({ descriptor }, options.signatureInput);
     const message = { descriptor, authorization };
+
+    const messageType = descriptor['method'];
+    validate(messageType, message);
 
     return new CollectionsWrite(message);
   }
