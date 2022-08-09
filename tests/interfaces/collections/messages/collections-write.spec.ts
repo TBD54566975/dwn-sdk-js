@@ -60,12 +60,13 @@ describe('CollectionsWrite', () => {
   describe('verifyAuth', () => {
     it('should throw if verification signature check fails', async () => {
       const messageData = await TestDataGenerator.generateCollectionWriteMessage();
+      const { requesterDid, requesterKeyId } = messageData;
 
       // setting up a stub method resolver
       const differentKeyPair = await secp256k1.generateKeyPair(); // used to return a different public key to simulate invalid signature
-      const didResolutionResult = TestDataGenerator.createDidResolutionResult(messageData.did, messageData.keyId, differentKeyPair.publicJwk);
+      const didResolutionResult = TestDataGenerator.createDidResolutionResult(requesterDid, requesterKeyId, differentKeyPair.publicJwk);
       const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
-      resolveStub.withArgs( messageData.did).resolves(didResolutionResult);
+      resolveStub.withArgs( requesterDid).resolves(didResolutionResult);
       const didResolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
 
       const collectionsWrite = new CollectionsWrite(messageData.message);

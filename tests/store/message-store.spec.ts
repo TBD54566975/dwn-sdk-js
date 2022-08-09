@@ -2,6 +2,8 @@ import { expect } from 'chai';
 import { generateCid } from '../../src/utils/cid';
 import { MessageStoreLevel } from '../../src/store/message-store-level';
 import { TestDataGenerator } from '../utils/test-data-generator';
+import { v4 as uuidv4 } from 'uuid';
+import { CollectionsWriteSchema } from '../../src/interfaces/collections/types';
 
 let messageStore: MessageStoreLevel;
 
@@ -95,6 +97,39 @@ describe('MessageStoreLevel Tests', () => {
 
       const results = await messageStore.query({ tenant: ctx.tenant }, ctx);
       expect(results.length).to.equal(1);
+    });
+
+    it.only('should index UUID values correctly', async () => {
+      const context = { tenant: 'did:example:alice' };
+      const protocol = 'awesomeProtocol';
+      const messageData = await TestDataGenerator.generateCollectionWriteMessage({ protocol });
+
+      await messageStore.put(messageData.message, context);
+
+      const results = await messageStore.query({ protocol }, context);
+      expect((results[0] as CollectionsWriteSchema).descriptor.protocol).to.equal(protocol);
+    });
+
+    it.only('should index UUID values correctly', async () => {
+      const context = { tenant: 'did:example:alice' };
+      const recordId = uuidv4();
+      const messageData = await TestDataGenerator.generateCollectionWriteMessage({ recordId });
+
+      await messageStore.put(messageData.message, context);
+
+      const results = await messageStore.query({ recordId }, context);
+      expect((results[0] as CollectionsWriteSchema).descriptor.recordId).to.equal(recordId);
+    });
+
+    it.only('should index UUID values correctly', async () => {
+      const context = { tenant: 'did:example:alice' };
+      const dataFormat = 'application/json';
+      const messageData = await TestDataGenerator.generateCollectionWriteMessage({ dataFormat });
+
+      await messageStore.put(messageData.message, context);
+
+      const results = await messageStore.query({ dataFormat }, context);
+      expect((results[0] as CollectionsWriteSchema).descriptor.dataFormat).to.equal(dataFormat);
     });
   });
 
