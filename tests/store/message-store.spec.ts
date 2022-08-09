@@ -99,7 +99,7 @@ describe('MessageStoreLevel Tests', () => {
       expect(results.length).to.equal(1);
     });
 
-    it.only('should index UUID values correctly', async () => {
+    it.only('should index generic string value correctly', async () => {
       const context = { tenant: 'did:example:alice' };
       const protocol = 'awesomeProtocol';
       const messageData = await TestDataGenerator.generateCollectionWriteMessage({ protocol });
@@ -121,7 +121,7 @@ describe('MessageStoreLevel Tests', () => {
       expect((results[0] as CollectionsWriteSchema).descriptor.recordId).to.equal(recordId);
     });
 
-    it.only('should index UUID values correctly', async () => {
+    it.only('should index MIME type string correctly', async () => {
       const context = { tenant: 'did:example:alice' };
       const dataFormat = 'application/json';
       const messageData = await TestDataGenerator.generateCollectionWriteMessage({ dataFormat });
