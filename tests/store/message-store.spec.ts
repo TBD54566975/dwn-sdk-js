@@ -99,40 +99,16 @@ describe('MessageStoreLevel Tests', () => {
       expect(results.length).to.equal(1);
     });
 
-    it.only('should index generic string value correctly', async () => {
+    it('should index properties with characters beyond just letters and digits', async () => {
       const context = { tenant: 'did:example:alice' };
-      const protocol = 'awesomeProtocol';
-      const messageData = await TestDataGenerator.generateCollectionWriteMessage({ protocol });
+      const schema = 'http://my-awesome-schema/awesomeness_schema#awesome-1?id=awesome_1';
+      const messageData = await TestDataGenerator.generateCollectionWriteMessage({ schema });
 
       await messageStore.put(messageData.message, context);
 
-      const results = await messageStore.query({ protocol }, context);
-      expect((results[0] as CollectionsWriteSchema).descriptor.protocol).to.equal(protocol);
+      const results = await messageStore.query({ schema }, context);
+      expect((results[0] as CollectionsWriteSchema).descriptor.schema).to.equal(schema);
     });
-
-    it.only('should index UUID values correctly', async () => {
-      const context = { tenant: 'did:example:alice' };
-      const recordId = uuidv4();
-      const messageData = await TestDataGenerator.generateCollectionWriteMessage({ recordId });
-
-      await messageStore.put(messageData.message, context);
-
-      const results = await messageStore.query({ recordId }, context);
-      expect((results[0] as CollectionsWriteSchema).descriptor.recordId).to.equal(recordId);
-    });
-
-    it.only('should index MIME type string correctly', async () => {
-      const context = { tenant: 'did:example:alice' };
-      const dataFormat = 'application/json';
-      const messageData = await TestDataGenerator.generateCollectionWriteMessage({ dataFormat });
-
-      await messageStore.put(messageData.message, context);
-
-      const results = await messageStore.query({ dataFormat }, context);
-      expect((results[0] as CollectionsWriteSchema).descriptor.dataFormat).to.equal(dataFormat);
-    });
-  });
-
 
   // describe('get', () => {
   //   before(async () => {
