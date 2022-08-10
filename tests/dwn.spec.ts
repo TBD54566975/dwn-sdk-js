@@ -34,13 +34,14 @@ describe('DWN', () => {
 
     it('should process CollectionsWrite message', async () => {
       const messageData = await TestDataGenerator.generateCollectionWriteMessage();
+      const { requesterDidMethod, requesterDid, requesterKeyId, requesterKeyPair } = messageData;
 
       // setting up a stub method resolver
-      const didResolutionResult = TestDataGenerator.createDidResolutionResult(messageData.did, messageData.keyId, messageData.keyPair.publicJwk);
+      const didResolutionResult = TestDataGenerator.createDidResolutionResult(requesterDid, requesterKeyId, requesterKeyPair.publicJwk);
       const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
-      resolveStub.withArgs(messageData.did).resolves(didResolutionResult);
+      resolveStub.withArgs(requesterDid).resolves(didResolutionResult);
       const methodResolverStub = <DIDMethodResolver>{
-        method  : () => { return messageData.didMethod; },
+        method  : () => { return requesterDidMethod; },
         resolve : resolveStub
       };
 
@@ -50,7 +51,7 @@ describe('DWN', () => {
       };
       const dwn = await DWN.create(dwnConfig);
 
-      const reply = await dwn.processMessage(messageData.message, { tenant: messageData.did });
+      const reply = await dwn.processMessage(messageData.message, { tenant: requesterDid });
 
       expect(reply.status.code).to.equal(202);
     });

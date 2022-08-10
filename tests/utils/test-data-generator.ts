@@ -12,6 +12,8 @@ import { v4 as uuidv4 } from 'uuid';
 
 
 type GenerateCollectionWriteMessageInput = {
+  requesterDid?: string;
+  requesterKeyId?: string;
   protocol?: string;
   schema?: string;
   recordId?: string;
@@ -24,10 +26,10 @@ type GenerateCollectionWriteMessageOutput = {
   /**
    * method name without the `did:` prefix. e.g. "ion"
    */
-  didMethod: string;
-  did: string;
-  keyId: string;
-  keyPair: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
+  requesterDid: string;
+  requesterDidMethod: string;
+  requesterKeyId: string;
+  requesterKeyPair: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
 };
 
 type GenerateCollectionQueryMessageInput = {
@@ -64,17 +66,24 @@ export class TestDataGenerator {
    * Implementation currently uses `CollectionsWrite.create()`.
    */
   public static async generateCollectionWriteMessage(input?: GenerateCollectionWriteMessageInput): Promise<GenerateCollectionWriteMessageOutput> {
-    const didMethod = TestDataGenerator.randomString(10);
-    const didSuffix = TestDataGenerator.randomString(32);
-    const did = `did:${didMethod}:${didSuffix}`;
-    const keyId = `${did}#key1`;
+    // generate DID if not given
+    let requesterDid = input?.requesterDid;
+    if (!requesterDid) {
+      const didSuffix = TestDataGenerator.randomString(32);
+      requesterDid = `did:example:${didSuffix}`;
+    }
+    const requesterDidMethod = TestDataGenerator.getDidMethodName(requesterDid);
+
+    // generate key ID if not given
+    const requesterKeyId =  input?.requesterKeyId ? input.requesterKeyId : `${requesterDid}#key1`;
+
     const { privateJwk, publicJwk } = await secp256k1.generateKeyPair();
 
     const signatureInput = {
       jwkPrivate      : privateJwk,
       protectedHeader : {
         alg : privateJwk.alg!,
-        kid : keyId
+        kid : requesterKeyId
       }
     };
 
@@ -94,10 +103,10 @@ export class TestDataGenerator {
 
     return {
       message,
-      didMethod,
-      did,
-      keyId,
-      keyPair: { privateJwk, publicJwk }
+      requesterDid,
+      requesterDidMethod,
+      requesterKeyId,
+      requesterKeyPair: { privateJwk, publicJwk }
     };
   };
 

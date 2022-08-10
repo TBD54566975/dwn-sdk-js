@@ -12,16 +12,17 @@ chai.use(chaiAsPromised);
 describe('handleCollectionsWrite()', () => {
   it('should return 401 if authorization fails', async () => {
     const messageData = await TestDataGenerator.generateCollectionWriteMessage();
+    const { requesterDid, requesterKeyId } = messageData;
 
     // setting up a stub did resolver & message store
     const differentKeyPair = await secp256k1.generateKeyPair(); // used to return a different public key to simulate invalid signature
-    const didResolutionResult = TestDataGenerator.createDidResolutionResult(messageData.did, messageData.keyId, differentKeyPair.publicJwk);
+    const didResolutionResult = TestDataGenerator.createDidResolutionResult(requesterDid, requesterKeyId, differentKeyPair.publicJwk);
     const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
-    resolveStub.withArgs( messageData.did).resolves(didResolutionResult);
+    resolveStub.withArgs(requesterDid).resolves(didResolutionResult);
     const didResolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-    const context = { tenant: messageData.did };
+    const context = { tenant: requesterDid };
     const reply = await handleCollectionsWrite(context, messageData.message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(401);
@@ -29,16 +30,17 @@ describe('handleCollectionsWrite()', () => {
 
   it('should return 500 if authorization fails', async () => {
     const messageData = await TestDataGenerator.generateCollectionWriteMessage();
+    const { requesterDid, requesterKeyId, requesterKeyPair } = messageData;
 
     // setting up a stub method resolver & message store
-    const didResolutionResult = TestDataGenerator.createDidResolutionResult(messageData.did, messageData.keyId, messageData.keyPair.publicJwk);
+    const didResolutionResult = TestDataGenerator.createDidResolutionResult(requesterDid, requesterKeyId, requesterKeyPair.publicJwk);
     const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
-    resolveStub.withArgs(messageData.did).resolves(didResolutionResult);
+    resolveStub.withArgs(requesterDid).resolves(didResolutionResult);
     const didResolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
     messageStoreStub.put.throwsException('anyError'); // simulate a DB write error
 
-    const context = { tenant: messageData.did };
+    const context = { tenant: requesterDid };
     const reply = await handleCollectionsWrite(context, messageData.message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(500);
