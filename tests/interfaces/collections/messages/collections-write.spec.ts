@@ -74,13 +74,13 @@ describe('CollectionsWrite', () => {
     });
   });
 
-  describe('compareAge', () => {
+  describe('compareCreationTime', () => {
     it('should return 0 if age is same', async () => {
       const dateCreated = Date.now();
       const a = (await TestDataGenerator.generateCollectionWriteMessage({ dateCreated })).message;
       const b = JSON.parse(JSON.stringify(a)); // create a deep copy of a
 
-      const compareResult = await CollectionsWrite.compareAge(a, b);
+      const compareResult = await CollectionsWrite.compareCreationTime(a, b);
       expect(compareResult).to.equal(0);
     });
   });

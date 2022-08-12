@@ -55,7 +55,7 @@ export class CollectionsWrite extends Message implements Authorizable {
   }
 
   /**
-   * Compares the creation time of the given records according to the spec.
+   * Compares the `dateCreated` of the given records with a fallback to message CID according to the spec.
    * @returns 1 if `a` is larger/newer than `b`; -1 if `a` is smaller/older than `b`; 0 otherwise (same age)
    */
   static async compareCreationTime(a: CollectionsWriteSchema, b: CollectionsWriteSchema): Promise<number> {
