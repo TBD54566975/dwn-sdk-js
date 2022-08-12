@@ -1,6 +1,7 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
 import type { CollectionsWriteDescriptor, CollectionsWriteSchema } from '../types';
 import { DIDResolver } from '../../../did/did-resolver';
+import { generateCid } from '../../../utils/cid';
 import { Message } from '../../../core/message';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { sign, verifyAuth } from '../../../core/auth';
@@ -52,4 +53,30 @@ export class CollectionsWrite extends Message implements Authorizable {
     // TODO: Issue #75 - Add permission verification - https://github.com/TBD54566975/dwn-sdk-js/issues/75
     return await verifyAuth(this.message, didResolver);
   }
+
+  /**
+   * Compares the age of the given records according to the spec.
+   * @returns 1 if `a` is larger/newer than `b`; -1 if `a` is smaller/older than `b`; 0 otherwise (same age)
+   */
+  static async compareAge(a: CollectionsWriteSchema, b: CollectionsWriteSchema): Promise<number> {
+    if (a.descriptor.dateCreated > b.descriptor.dateCreated) {
+      return 1;
+    } else if (a.descriptor.dateCreated < b.descriptor.dateCreated) {
+      return -1;
+    }
+
+    // else `dateCreated` is the same between a and b
+    // compare the `dataCid` instead, the < and > operators compare strings in lexicographical order
+    const cidA = await generateCid(a);
+    const cidB = await generateCid(b);
+    if (cidA > cidB) {
+      return 1;
+    } else if (cidA < cidB) {
+      return -1;
+    } else {
+      return 0;
+    }
+  }
 }
+
+

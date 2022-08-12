@@ -1,9 +1,11 @@
 import { BaseMessageSchema } from '../../src/core/types';
+import { CID } from 'multiformats/cid';
 import { CollectionsWrite } from '../../src/interfaces/collections/messages/collections-write';
 import { CollectionsQuery } from '../../src/interfaces/collections/messages/collections-query';
 import { CollectionsQuerySchema, CollectionsWriteSchema } from '../../src/interfaces/collections/types';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519';
 import { DIDResolutionResult } from '../../src/did/did-resolver';
+import { generateCid } from '../../src/utils/cid';
 import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request';
 import { PrivateJwk, PublicJwk } from '../../src/jose/types';
 import { removeUndefinedProperties } from '../../src/utils/object';
@@ -11,18 +13,21 @@ import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1';
 import { v4 as uuidv4 } from 'uuid';
 
 
-type GenerateCollectionWriteMessageInput = {
+export type GenerateCollectionWriteMessageInput = {
   requesterDid?: string;
   requesterKeyId?: string;
+  requesterKeyPair?: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
   protocol?: string;
   schema?: string;
   recordId?: string;
   dataCid?: string;
   dataFormat?: string;
+  dateCreated? : number;
 };
 
-type GenerateCollectionWriteMessageOutput = {
+export type GenerateCollectionWriteMessageOutput = {
   message: CollectionsWriteSchema;
+  messageCid: CID;
   /**
    * method name without the `did:` prefix. e.g. "ion"
    */
@@ -32,7 +37,7 @@ type GenerateCollectionWriteMessageOutput = {
   requesterKeyPair: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
 };
 
-type GenerateCollectionQueryMessageInput = {
+export type GenerateCollectionQueryMessageInput = {
   requesterDid?: string;
   requesterKeyId?: string;
   requesterKeyPair?: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
@@ -45,7 +50,7 @@ type GenerateCollectionQueryMessageInput = {
   dateSort?: string;
 };
 
-type GenerateCollectionQueryMessageOutput = {
+export type GenerateCollectionQueryMessageOutput = {
   message: CollectionsQuerySchema;
   /**
    * method name without the `did:` prefix. e.g. "ion"
@@ -77,12 +82,16 @@ export class TestDataGenerator {
     // generate key ID if not given
     const requesterKeyId =  input?.requesterKeyId ? input.requesterKeyId : `${requesterDid}#key1`;
 
-    const { privateJwk, publicJwk } = await secp256k1.generateKeyPair();
+    // generate key pair if not given
+    let requesterKeyPair = input?.requesterKeyPair;
+    if (!requesterKeyPair) {
+      requesterKeyPair = await secp256k1.generateKeyPair();
+    }
 
     const signatureInput = {
-      jwkPrivate      : privateJwk,
+      jwkPrivate      : requesterKeyPair.privateJwk,
       protectedHeader : {
-        alg : privateJwk.alg!,
+        alg : requesterKeyPair.privateJwk.alg!,
         kid : requesterKeyId
       }
     };
@@ -94,19 +103,21 @@ export class TestDataGenerator {
       recordId    : input?.recordId ? input.recordId : uuidv4(),
       dataCid     : input?.dataCid ? input.dataCid : TestDataGenerator.randomString(32),
       dataFormat  : input?.dataFormat ? input.dataFormat : 'application/json',
-      dateCreated : Date.now(),
+      dateCreated : input?.dateCreated ? input.dateCreated : Date.now(),
       signatureInput
     };
 
     const collectionsWrite = await CollectionsWrite.create(options);
     const message = collectionsWrite.toObject() as CollectionsWriteSchema;
+    const messageCid = await generateCid(message);
 
     return {
       message,
+      messageCid,
       requesterDid,
       requesterDidMethod,
       requesterKeyId,
-      requesterKeyPair: { privateJwk, publicJwk }
+      requesterKeyPair
     };
   };
 

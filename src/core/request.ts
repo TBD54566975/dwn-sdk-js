@@ -3,7 +3,7 @@ import { validate } from '../validation/validator';
 
 export class Request {
   /**
-   * unmarshals the provided payload into a Request.
+   * parses the provided payload into a Request.
    */
   static parse(rawRequest: any): RequestSchema {
     if (typeof rawRequest !== 'object') {

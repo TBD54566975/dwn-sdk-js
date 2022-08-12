@@ -73,5 +73,16 @@ describe('CollectionsWrite', () => {
       expect(collectionsWrite.verifyAuth(didResolverStub)).to.be.rejectedWith('signature verification failed for did:example:alice');
     });
   });
+
+  describe('compareAge', () => {
+    it('should return 0 if age is same', async () => {
+      const dateCreated = Date.now();
+      const a = (await TestDataGenerator.generateCollectionWriteMessage({ dateCreated })).message;
+      const b = JSON.parse(JSON.stringify(a)); // create a deep copy of a
+
+      const compareResult = await CollectionsWrite.compareAge(a, b);
+      expect(compareResult).to.equal(0);
+    });
+  });
 });
 
