@@ -36,7 +36,7 @@ export const handleCollectionsWrite: MethodHandler = async (
     // delete all records that are older
     let anExistingNewerOrSameMessage;
     for (const message of messages) {
-      const ageCompareResult = await CollectionsWrite.compareAge(message as CollectionsWriteSchema, validatedMessage);
+      const ageCompareResult = await CollectionsWrite.compareCreationTime(message as CollectionsWriteSchema, validatedMessage);
       if (ageCompareResult < 0) {
         const cid = await generateCid(message);
         await messageStore.delete(cid, context);

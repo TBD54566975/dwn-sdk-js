@@ -55,10 +55,10 @@ export class CollectionsWrite extends Message implements Authorizable {
   }
 
   /**
-   * Compares the age of the given records according to the spec.
+   * Compares the creation time of the given records according to the spec.
    * @returns 1 if `a` is larger/newer than `b`; -1 if `a` is smaller/older than `b`; 0 otherwise (same age)
    */
-  static async compareAge(a: CollectionsWriteSchema, b: CollectionsWriteSchema): Promise<number> {
+  static async compareCreationTime(a: CollectionsWriteSchema, b: CollectionsWriteSchema): Promise<number> {
     if (a.descriptor.dateCreated > b.descriptor.dateCreated) {
       return 1;
     } else if (a.descriptor.dateCreated < b.descriptor.dateCreated) {
