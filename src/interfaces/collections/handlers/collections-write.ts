@@ -23,31 +23,26 @@ export const handleCollectionsWrite: MethodHandler = async (
   }
 
   try {
-    const validatedMessage = message as CollectionsWriteSchema;
+    const incomingMessage = message as CollectionsWriteSchema;
 
     // get existing records matching the `recordId`
     const query = {
       method   : 'CollectionsWrite',
-      recordId : validatedMessage.descriptor.recordId
+      recordId : incomingMessage.descriptor.recordId
     };
-    removeUndefinedProperties(query);
-    const messages = await messageStore.query(query, context);
+    const existingMessages = await messageStore.query(query, context) as CollectionsWriteSchema[];
 
-    // delete all records that are older
-    let anExistingNewerOrSameMessage;
-    for (const message of messages) {
-      const ageCompareResult = await CollectionsWrite.compareCreationTime(message as CollectionsWriteSchema, validatedMessage);
-      if (ageCompareResult < 0) {
-        const cid = await generateCid(message);
-        await messageStore.delete(cid, context);
-      } else {
-        anExistingNewerOrSameMessage = message; // okay to be assigned more than once
-      }
+    // find which message is the newest, and if the incoming message is the newest
+    let newestMessage = await CollectionsWrite.getNewestMessage(existingMessages);
+    let incomingMessageIsNewest = false;
+    if (newestMessage === undefined || await CollectionsWrite.isNewer(incomingMessage, newestMessage)) {
+      incomingMessageIsNewest = true;
+      newestMessage = incomingMessage;
     }
 
-    // write the incoming message to DB if no existing message are newer
+    // write the incoming message to DB if incoming message is newest
     let messageReply: MessageReply;
-    if (anExistingNewerOrSameMessage === undefined) {
+    if (incomingMessageIsNewest) {
       await messageStore.put(message, context);
 
       messageReply = new MessageReply({
@@ -57,6 +52,14 @@ export const handleCollectionsWrite: MethodHandler = async (
       messageReply = new MessageReply({
         status: { code: 409, message: 'Conflict' }
       });
+    }
+
+    // delete all existing records that are not newest
+    for (const message of existingMessages) {
+      if (await CollectionsWrite.isNewer(newestMessage, message)) {
+        const cid = await generateCid(message);
+        await messageStore.delete(cid, context);
+      }
     }
 
     return messageReply;

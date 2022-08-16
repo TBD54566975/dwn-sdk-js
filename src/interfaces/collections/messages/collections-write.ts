@@ -54,6 +54,29 @@ export class CollectionsWrite extends Message implements Authorizable {
     return await verifyAuth(this.message, didResolver);
   }
 
+
+  /**
+   * @returns newest message in the array. `undefined` if given array is empty.
+   */
+  static async getNewestMessage(messages: CollectionsWriteSchema[]): Promise<CollectionsWriteSchema | undefined> {
+    let currentNewestMessage: CollectionsWriteSchema | undefined = undefined;
+    for (const message of messages) {
+      if (currentNewestMessage === undefined || await CollectionsWrite.isNewer(message, currentNewestMessage)) {
+        currentNewestMessage = message;
+      }
+    }
+
+    return currentNewestMessage;
+  }
+  /**
+   * Compares the age of this message against the given message.
+   * @returns `true` if `a` is newer than `b`; `false` otherwise
+   */
+  static async isNewer(a: CollectionsWriteSchema, b: CollectionsWriteSchema): Promise<boolean> {
+    const aIsNewer = (await CollectionsWrite.compareCreationTime(a, b) > 0);
+    return aIsNewer;
+  }
+
   /**
    * Compares the `dateCreated` of the given records with a fallback to message CID according to the spec.
    * @returns 1 if `a` is larger/newer than `b`; -1 if `a` is smaller/older than `b`; 0 otherwise (same age)
