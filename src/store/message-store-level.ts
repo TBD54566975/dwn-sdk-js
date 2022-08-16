@@ -131,13 +131,13 @@ export class MessageStoreLevel implements MessageStore {
 
   async put(messageJson: BaseMessageSchema, ctx: Context): Promise<void> {
 
-    let data = undefined;
-    if (messageJson['data'] !== undefined) {
-      const messageJsonWithData = messageJson as GenericMessageSchema;
-      data = messageJsonWithData.data;
+    // delete encodedData if it exists so `messageJson` is stored without it, `encodedData` will be chunked and stored separately below
+    let encodedData = undefined;
+    if (messageJson['encodedData'] !== undefined) {
+      const messageJsonWithEncodedData = messageJson as GenericMessageSchema;
+      encodedData = messageJsonWithEncodedData.encodedData;
 
-      // delete data so `messageJson` is stored without it, `data` will be chunked and stored separately below
-      delete messageJsonWithData.data;
+      delete messageJsonWithEncodedData.encodedData;
     }
 
     const encodedBlock = await block.encode({ value: messageJson, codec: cbor, hasher: sha256 });
@@ -146,7 +146,7 @@ export class MessageStoreLevel implements MessageStore {
 
     // if data is present we'll chunk it and store it as unix-fs dag-pb encoded
     if (data) {
-      const chunk = importer([{ content: toBytes(data) }], this.db, { cidVersion: 1 });
+      const chunk = importer([{ content: toBytes(encodedData) }], this.db, { cidVersion: 1 });
 
       // for some reason no-unused-vars doesn't work in for loops. it's not entirely surprising because
       // it does seem a bit strange to iterate over something you never end up using but in this case

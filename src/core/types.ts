@@ -21,7 +21,7 @@ export type Data = {
     dataCid: string;
   };
 
-  data: string;
+  encodedData: string;
 };
 
 export type Attestation = {
