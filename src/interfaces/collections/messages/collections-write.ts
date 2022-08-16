@@ -43,11 +43,11 @@ export class CollectionsWrite extends Message implements Authorizable {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
+    const messageType = descriptor.method;
+    validate(messageType, { descriptor, authorization: {} });
+
     const authorization = await sign({ descriptor }, options.signatureInput);
     const message = { descriptor, authorization };
-
-    const messageType = descriptor['method'];
-    validate(messageType, message);
 
     return new CollectionsWrite(message);
   }

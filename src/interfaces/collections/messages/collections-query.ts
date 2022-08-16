@@ -4,6 +4,7 @@ import { DIDResolver } from '../../../did/did-resolver';
 import { Message } from '../../../core/message';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { sign, verifyAuth } from '../../../core/auth';
+import { validate } from '../../../validation/validator';
 
 type CollectionsQueryOptions = AuthCreateOptions & {
   nonce: string;
@@ -34,6 +35,9 @@ export class CollectionsQuery extends Message implements Authorizable {
     // delete all descriptor properties that are `undefined` else the code will encounter the following IPLD issue when attempting to generate CID:
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
+
+    const messageType = descriptor.method;
+    validate(messageType, { descriptor, authorization: {} });
 
     const authorization = await sign({ descriptor }, options.signatureInput);
     const message = { descriptor, authorization };

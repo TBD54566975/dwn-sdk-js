@@ -39,11 +39,11 @@ export class PermissionsRequest extends Message implements Authorizable {
       scope       : opts.scope,
     };
 
+    const messageType = descriptor.method;
+    validate(messageType, { descriptor, authorization: {} });
+
     const auth = await sign({ descriptor }, opts.signatureInput);
     const message: PermissionsRequestSchema = { descriptor, authorization: auth };
-
-    const messageType = descriptor['method'];
-    validate(messageType, message);
 
     return new PermissionsRequest(message);
   }

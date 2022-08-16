@@ -44,11 +44,11 @@ export class PermissionsGrant extends Message implements Authorizable {
       scope       : options.scope,
     };
 
+    const messageType = descriptor.method;
+    validate(messageType, { descriptor, authorization: {} });
+
     const auth = await authenticate({ descriptor }, options.signatureInput);
     const message: PermissionsGrantSchema = { descriptor, authorization: auth };
-
-    const messageType = descriptor['method'];
-    validate(messageType, message);
 
     return new PermissionsGrant(message);
   }
