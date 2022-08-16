@@ -68,8 +68,9 @@ export class CollectionsWrite extends Message implements Authorizable {
 
     return currentNewestMessage;
   }
+
   /**
-   * Compares the age of this message against the given message.
+   * Compares the age of two messages.
    * @returns `true` if `a` is newer than `b`; `false` otherwise
    */
   static async isNewer(a: CollectionsWriteSchema, b: CollectionsWriteSchema): Promise<boolean> {

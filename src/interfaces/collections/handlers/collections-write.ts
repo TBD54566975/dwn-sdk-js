@@ -4,7 +4,6 @@ import type { MethodHandler } from '../../types';
 import { CollectionsWrite } from '../messages/collections-write';
 import { generateCid } from '../../../../src/utils/cid';
 import { MessageReply } from '../../../core';
-import { removeUndefinedProperties } from '../../../utils/object';
 
 export const handleCollectionsWrite: MethodHandler = async (
   context,
