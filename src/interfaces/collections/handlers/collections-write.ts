@@ -6,7 +6,6 @@ import { CollectionsWrite } from '../messages/collections-write';
 import { generateCid } from '../../../../src/utils/cid';
 import { getDagCid } from '../../../utils/data';
 import { MessageReply } from '../../../core';
-import { removeUndefinedProperties } from '../../../utils/object';
 
 export const handleCollectionsWrite: MethodHandler = async (
   context,
@@ -24,14 +23,14 @@ export const handleCollectionsWrite: MethodHandler = async (
     });
   }
 
-  const validatedMessage = message as CollectionsWriteSchema;
+  const incomingMessage = message as CollectionsWriteSchema;
 
   // verify dataCid matches given data
-  if (validatedMessage.encodedData !== undefined) {
-    const rawData = base64url.baseDecode(validatedMessage.encodedData);
+  if (incomingMessage.encodedData !== undefined) {
+    const rawData = base64url.baseDecode(incomingMessage.encodedData);
     const actualDataCid = (await getDagCid(rawData)).toString();
 
-    if (actualDataCid !== validatedMessage.descriptor.dataCid) {
+    if (actualDataCid !== incomingMessage.descriptor.dataCid) {
       return new MessageReply({
         status: { code: 400, message: 'actual CID of data and `dataCid` in descriptor mismatch' }
       });
@@ -42,26 +41,21 @@ export const handleCollectionsWrite: MethodHandler = async (
     // get existing records matching the `recordId`
     const query = {
       method   : 'CollectionsWrite',
-      recordId : validatedMessage.descriptor.recordId
+      recordId : incomingMessage.descriptor.recordId
     };
-    removeUndefinedProperties(query);
-    const messages = await messageStore.query(query, context);
+    const existingMessages = await messageStore.query(query, context) as CollectionsWriteSchema[];
 
-    // delete all records that are older
-    let anExistingNewerOrSameMessage;
-    for (const message of messages) {
-      const ageCompareResult = await CollectionsWrite.compareCreationTime(message as CollectionsWriteSchema, validatedMessage);
-      if (ageCompareResult < 0) {
-        const cid = await generateCid(message);
-        await messageStore.delete(cid, context);
-      } else {
-        anExistingNewerOrSameMessage = message; // okay to be assigned more than once
-      }
+    // find which message is the newest, and if the incoming message is the newest
+    let newestMessage = await CollectionsWrite.getNewestMessage(existingMessages);
+    let incomingMessageIsNewest = false;
+    if (newestMessage === undefined || await CollectionsWrite.isNewer(incomingMessage, newestMessage)) {
+      incomingMessageIsNewest = true;
+      newestMessage = incomingMessage;
     }
 
-    // write the incoming message to DB if no existing message are newer
+    // write the incoming message to DB if incoming message is newest
     let messageReply: MessageReply;
-    if (anExistingNewerOrSameMessage === undefined) {
+    if (incomingMessageIsNewest) {
       await messageStore.put(message, context);
 
       messageReply = new MessageReply({
@@ -71,6 +65,14 @@ export const handleCollectionsWrite: MethodHandler = async (
       messageReply = new MessageReply({
         status: { code: 409, message: 'Conflict' }
       });
+    }
+
+    // delete all existing records that are not newest
+    for (const message of existingMessages) {
+      if (await CollectionsWrite.isNewer(newestMessage, message)) {
+        const cid = await generateCid(message);
+        await messageStore.delete(cid, context);
+      }
     }
 
     return messageReply;
