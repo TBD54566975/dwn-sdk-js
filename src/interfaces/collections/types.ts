@@ -15,6 +15,7 @@ export type CollectionsWriteDescriptor = {
 
 export type CollectionsWriteSchema = BaseMessageSchema & Authorization & {
   descriptor: CollectionsWriteDescriptor;
+  encodedData?: string;
 };
 
 export type CollectionsQueryDescriptor = {

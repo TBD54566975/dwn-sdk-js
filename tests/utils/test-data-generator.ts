@@ -20,7 +20,7 @@ export type GenerateCollectionWriteMessageInput = {
   protocol?: string;
   schema?: string;
   recordId?: string;
-  dataCid?: string;
+  data?: Uint8Array;
   dataFormat?: string;
   dateCreated? : number;
 };
@@ -28,6 +28,7 @@ export type GenerateCollectionWriteMessageInput = {
 export type GenerateCollectionWriteMessageOutput = {
   message: CollectionsWriteSchema;
   messageCid: CID;
+  data: Uint8Array;
   /**
    * method name without the `did:` prefix. e.g. "ion"
    */
@@ -96,14 +97,16 @@ export class TestDataGenerator {
       }
     };
 
+    const data = input?.data ? input.data : TestDataGenerator.randomBytes(32);
+
     const options = {
       nonce       : TestDataGenerator.randomString(32),
       protocol    : input?.protocol ? input.protocol : TestDataGenerator.randomString(10),
       schema      : input?.schema ? input.schema : TestDataGenerator.randomString(20),
       recordId    : input?.recordId ? input.recordId : uuidv4(),
-      dataCid     : input?.dataCid ? input.dataCid : TestDataGenerator.randomString(32),
       dataFormat  : input?.dataFormat ? input.dataFormat : 'application/json',
       dateCreated : input?.dateCreated ? input.dateCreated : Date.now(),
+      data,
       signatureInput
     };
 
@@ -114,6 +117,7 @@ export class TestDataGenerator {
     return {
       message,
       messageCid,
+      data,
       requesterDid,
       requesterDidMethod,
       requesterKeyId,
@@ -199,6 +203,14 @@ export class TestDataGenerator {
     }
 
     return randomString;
+  };
+
+  /**
+   * Generates a random byte array of given length
+   */
+  public static randomBytes(length: number): Uint8Array {
+    const randomString = TestDataGenerator.randomString(length);
+    return new TextEncoder().encode(randomString);
   };
 
   /**

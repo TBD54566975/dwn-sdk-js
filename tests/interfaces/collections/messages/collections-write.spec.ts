@@ -1,3 +1,4 @@
+import { base64url } from 'multiformats/bases/base64';
 import { CollectionsWrite } from '../../../../src/interfaces/collections/messages/collections-write';
 import { CollectionsWriteSchema } from '../../../../src/interfaces/collections/types';
 import { DIDResolutionResult, DIDResolver } from '../../../../src/did/did-resolver';
@@ -7,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
+import { TestStubGenerator } from '../../../utils/test-stub-generator';
 
 chai.use(chaiAsPromised);
 
@@ -26,7 +28,7 @@ describe('CollectionsWrite', () => {
       };
 
       const options = {
-        dataCid     : 'anyCid',
+        data        : TestDataGenerator.randomBytes(10),
         dataFormat  : 'application/json',
         dateCreated : 123,
         nonce       : 'anyNonce',
@@ -38,18 +40,13 @@ describe('CollectionsWrite', () => {
       const message = collectionsWrite.toObject() as CollectionsWriteSchema;
 
       expect(message.authorization).to.exist;
-      expect(message.descriptor.dataCid).to.equal(options.dataCid);
+      expect(message.encodedData).to.equal(base64url.baseEncode(options.data));
       expect(message.descriptor.dataFormat).to.equal(options.dataFormat);
       expect(message.descriptor.dateCreated).to.equal(options.dateCreated);
       expect(message.descriptor.nonce).to.equal(options.nonce);
       expect(message.descriptor.recordId).to.equal(options.recordId);
 
-      // setting up stub for resolution for testing `verifyAuth()`
-      const didResolutionResult = TestDataGenerator.createDidResolutionResult(did, keyId, publicJwk);
-      const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
-      resolveStub.withArgs(did).resolves(didResolutionResult);
-
-      const resolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
+      const resolverStub = TestStubGenerator.createDidResolverStub(did, keyId, publicJwk);
       const { signers } = await collectionsWrite.verifyAuth(resolverStub);
 
       expect(signers.length).to.equal(1);

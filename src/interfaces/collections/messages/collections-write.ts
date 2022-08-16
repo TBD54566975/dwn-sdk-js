@@ -1,7 +1,9 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
 import type { CollectionsWriteDescriptor, CollectionsWriteSchema } from '../types';
+import { base64url } from 'multiformats/bases/base64';
 import { DIDResolver } from '../../../did/did-resolver';
 import { generateCid } from '../../../utils/cid';
+import { getDagCid } from '../../../utils/data';
 import { Message } from '../../../core/message';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { sign, verifyAuth } from '../../../core/auth';
@@ -11,7 +13,7 @@ type CollectionsWriteOptions = AuthCreateOptions & {
   schema?: string;
   recordId: string;
   nonce: string;
-  dataCid: string;
+  data: Uint8Array;
   dateCreated: number;
   published?: boolean;
   datePublished?: number;
@@ -26,13 +28,14 @@ export class CollectionsWrite extends Message implements Authorizable {
   }
 
   static async create(options: CollectionsWriteOptions): Promise<CollectionsWrite> {
+    const dataCid = await getDagCid(options.data);
     const descriptor: CollectionsWriteDescriptor = {
       method        : 'CollectionsWrite',
       protocol      : options.protocol,
       schema        : options.schema,
       recordId      : options.recordId,
       nonce         : options.nonce,
-      dataCid       : options.dataCid,
+      dataCid       : dataCid.toString(),
       dateCreated   : options.dateCreated,
       published     : options.published,
       datePublished : options.datePublished,
@@ -43,13 +46,15 @@ export class CollectionsWrite extends Message implements Authorizable {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
+    const encodedData = base64url.baseEncode(options.data);
     const authorization = await sign({ descriptor }, options.signatureInput);
-    const message = { descriptor, authorization };
+    const message = { descriptor, authorization, encodedData };
 
     return new CollectionsWrite(message);
   }
 
   async verifyAuth(didResolver: DIDResolver): Promise<AuthVerificationResult> {
+
     // TODO: Issue #75 - Add permission verification - https://github.com/TBD54566975/dwn-sdk-js/issues/75
     return await verifyAuth(this.message, didResolver);
   }

@@ -1,8 +1,10 @@
 import type { CollectionsWriteSchema } from '../types';
 import type { MethodHandler } from '../../types';
 
+import { base64url } from 'multiformats/bases/base64';
 import { CollectionsWrite } from '../messages/collections-write';
 import { generateCid } from '../../../../src/utils/cid';
+import { getDagCid } from '../../../utils/data';
 import { MessageReply } from '../../../core';
 import { removeUndefinedProperties } from '../../../utils/object';
 
@@ -22,9 +24,21 @@ export const handleCollectionsWrite: MethodHandler = async (
     });
   }
 
-  try {
-    const validatedMessage = message as CollectionsWriteSchema;
+  const validatedMessage = message as CollectionsWriteSchema;
 
+  // verify dataCid matches given data
+  if (validatedMessage.encodedData !== undefined) {
+    const rawData = base64url.baseDecode(validatedMessage.encodedData);
+    const actualDataCid = (await getDagCid(rawData)).toString();
+
+    if (actualDataCid !== validatedMessage.descriptor.dataCid) {
+      return new MessageReply({
+        status: { code: 400, message: 'actual CID of data and `dataCid` in descriptor mismatch' }
+      });
+    }
+  }
+
+  try {
     // get existing records matching the `recordId`
     const query = {
       method   : 'CollectionsWrite',
