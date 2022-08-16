@@ -2,20 +2,18 @@ import type { Context } from '../types';
 import type { GenericMessageSchema, BaseMessageSchema } from '../core/types';
 import type { MessageStore } from './message-store';
 
+import { base64url } from 'multiformats/bases/base64';
 import { BlockstoreLevel } from './blockstore-level';
 import { CID } from 'multiformats/cid';
+import { exporter } from 'ipfs-unixfs-exporter';
 import { importer } from 'ipfs-unixfs-importer';
-import { parseCid } from '../utils/cid';
 import { sha256 } from 'multiformats/hashes/sha2';
-import { toBytes } from '../utils/data';
 
 import * as cbor from '@ipld/dag-cbor';
 import * as block from 'multiformats/block';
 
 import _ from 'lodash';
 import searchIndex from 'search-index';
-import { exporter } from 'ipfs-unixfs-exporter';
-import { base64url } from 'multiformats/bases/base64';
 
 /**
  * A simple implementation of {@link MessageStore} that works in both the browser and server-side.
@@ -78,13 +76,13 @@ export class MessageStoreLevel implements MessageStore {
 
     const messageJson = decodedBlock.value as GenericMessageSchema;
 
-    if (!messageJson.data) {
+    if (!messageJson.descriptor.dataCid) {
       return messageJson;
     }
 
-    // `data`, if present, is chunked into dag-pb unixfs blocks. re-inflate the chunks.
+    // data is chunked into dag-pb unixfs blocks. re-inflate the chunks.
     const { descriptor } = messageJson;
-    const dataCid = parseCid(descriptor.dataCid);
+    const dataCid = CID.parse(descriptor.dataCid);
 
     const dataDagRoot = await exporter(dataCid, this.db);
     const dataBytes = new Uint8Array(dataDagRoot.size);
@@ -95,7 +93,7 @@ export class MessageStoreLevel implements MessageStore {
       offset += chunk.length;
     }
 
-    messageJson.data = base64url.baseEncode(dataBytes);
+    messageJson.encodedData = base64url.baseEncode(dataBytes);
 
     return messageJson as BaseMessageSchema;
   }
@@ -144,9 +142,10 @@ export class MessageStoreLevel implements MessageStore {
 
     await this.db.put(encodedBlock.cid, encodedBlock.bytes);
 
-    // if data is present we'll chunk it and store it as unix-fs dag-pb encoded
-    if (data) {
-      const chunk = importer([{ content: toBytes(encodedData) }], this.db, { cidVersion: 1 });
+    // if encodedData is present we'll decode it then chunk it and store it as unix-fs dag-pb encoded
+    if (encodedData) {
+      const content = base64url.baseDecode(encodedData);
+      const chunk = importer([{ content }], this.db, { cidVersion: 1 });
 
       // for some reason no-unused-vars doesn't work in for loops. it's not entirely surprising because
       // it does seem a bit strange to iterate over something you never end up using but in this case

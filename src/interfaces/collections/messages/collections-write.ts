@@ -1,6 +1,7 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
 import type { CollectionsWriteDescriptor, CollectionsWriteSchema } from '../types';
 import { base64url } from 'multiformats/bases/base64';
+import { CID } from 'multiformats/cid';
 import { DIDResolver } from '../../../did/did-resolver';
 import { generateCid } from '../../../utils/cid';
 import { getDagCid } from '../../../utils/data';
@@ -59,6 +60,19 @@ export class CollectionsWrite extends Message implements Authorizable {
     return await verifyAuth(this.message, didResolver);
   }
 
+  /**
+   * gets the cid of the given CollectionsWrite message.
+   */
+  static async getCid(message: CollectionsWriteSchema): Promise<CID> {
+    const messageCopy = { ...message };
+
+    if (messageCopy['encodedData'] !== undefined) {
+      delete messageCopy.encodedData;
+    }
+
+    const cid = await generateCid(messageCopy);
+    return cid;
+  }
 
   /**
    * @returns newest message in the array. `undefined` if given array is empty.

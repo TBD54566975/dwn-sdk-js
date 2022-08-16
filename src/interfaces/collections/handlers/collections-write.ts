@@ -3,7 +3,6 @@ import type { MethodHandler } from '../../types';
 
 import { base64url } from 'multiformats/bases/base64';
 import { CollectionsWrite } from '../messages/collections-write';
-import { generateCid } from '../../../../src/utils/cid';
 import { getDagCid } from '../../../utils/data';
 import { MessageReply } from '../../../core';
 
@@ -13,31 +12,30 @@ export const handleCollectionsWrite: MethodHandler = async (
   messageStore,
   didResolver
 ): Promise<MessageReply> => {
-  const collectionsWriteMessage = new CollectionsWrite(message as CollectionsWriteSchema);
-
   try {
-    await collectionsWriteMessage.verifyAuth(didResolver);
-  } catch (e) {
-    return new MessageReply({
-      status: { code: 401, message: e.message }
-    });
-  }
+    const collectionsWriteMessage = new CollectionsWrite(message as CollectionsWriteSchema);
+    const incomingMessage = message as CollectionsWriteSchema;
 
-  const incomingMessage = message as CollectionsWriteSchema;
-
-  // verify dataCid matches given data
-  if (incomingMessage.encodedData !== undefined) {
-    const rawData = base64url.baseDecode(incomingMessage.encodedData);
-    const actualDataCid = (await getDagCid(rawData)).toString();
-
-    if (actualDataCid !== incomingMessage.descriptor.dataCid) {
+    try {
+      await collectionsWriteMessage.verifyAuth(didResolver);
+    } catch (e) {
       return new MessageReply({
-        status: { code: 400, message: 'actual CID of data and `dataCid` in descriptor mismatch' }
+        status: { code: 401, message: e.message }
       });
     }
-  }
 
-  try {
+    // verify dataCid matches given data
+    if (incomingMessage.encodedData !== undefined) {
+      const rawData = base64url.baseDecode(incomingMessage.encodedData);
+      const actualDataCid = (await getDagCid(rawData)).toString();
+
+      if (actualDataCid !== incomingMessage.descriptor.dataCid) {
+        return new MessageReply({
+          status: { code: 400, message: 'actual CID of data and `dataCid` in descriptor mismatch' }
+        });
+      }
+    }
+
     // get existing records matching the `recordId`
     const query = {
       method   : 'CollectionsWrite',
@@ -70,7 +68,7 @@ export const handleCollectionsWrite: MethodHandler = async (
     // delete all existing records that are not newest
     for (const message of existingMessages) {
       if (await CollectionsWrite.isNewer(newestMessage, message)) {
-        const cid = await generateCid(message);
+        const cid = await CollectionsWrite.getCid(message);
         await messageStore.delete(cid, context);
       }
     }

@@ -60,8 +60,8 @@ describe('handleCollectionsWrite()', () => {
         filter: { recordId }
       });
 
+      // verify the message written can be queried
       const collectionsQueryReply = await handleCollectionsQuery(context, collectionsQueryMessageData.message, messageStore, didResolverStub);
-
       expect(collectionsQueryReply.status.code).to.equal(200);
       expect(collectionsQueryReply.entries?.length).to.equal(1);
       expect((collectionsQueryReply.entries![0] as CollectionsWriteSchema).encodedData).to.equal(base64url.baseEncode(data1));
@@ -181,6 +181,24 @@ describe('handleCollectionsWrite()', () => {
       expect((thirdCollectionsQueryReply.entries![0] as CollectionsWriteSchema).descriptor.dataCid)
         .to.equal(largerCollectionWriteMessageData.message.descriptor.dataCid); // expecting unchanged
     });
+  });
+
+  it('should return 400 if actual CID of `data` mismatches with `dataCid` in descriptor', async () => {
+    const messageData = await TestDataGenerator.generateCollectionWriteMessage();
+    const { requesterDid, requesterKeyId } = messageData;
+
+    // setting up a stub did resolver & message store
+    const differentKeyPair = await secp256k1.generateKeyPair(); // used to return a different public key to simulate invalid signature
+    const didResolutionResult = TestDataGenerator.createDidResolutionResult(requesterDid, requesterKeyId, differentKeyPair.publicJwk);
+    const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
+    resolveStub.withArgs(requesterDid).resolves(didResolutionResult);
+    const didResolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
+    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+
+    const context = { tenant: requesterDid };
+    const reply = await handleCollectionsWrite(context, messageData.message, messageStoreStub, didResolverStub);
+
+    expect(reply.status.code).to.equal(401);
   });
 
   it('should return 401 if authorization fails', async () => {
