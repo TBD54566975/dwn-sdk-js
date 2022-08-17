@@ -73,5 +73,27 @@ describe('CollectionsWrite', () => {
       expect(collectionsWrite.verifyAuth(didResolverStub)).to.be.rejectedWith('signature verification failed for did:example:alice');
     });
   });
+
+  describe('compareCreationTime', () => {
+    it('should return 0 if age is same', async () => {
+      const dateCreated = Date.now();
+      const a = (await TestDataGenerator.generateCollectionWriteMessage({ dateCreated })).message;
+      const b = JSON.parse(JSON.stringify(a)); // create a deep copy of a
+
+      const compareResult = await CollectionsWrite.compareCreationTime(a, b);
+      expect(compareResult).to.equal(0);
+    });
+  });
+
+  describe('getNewestMessage', () => {
+    it('should return the newest message', async () => {
+      const a = (await TestDataGenerator.generateCollectionWriteMessage()).message;
+      const b = (await TestDataGenerator.generateCollectionWriteMessage()).message;
+      const c = (await TestDataGenerator.generateCollectionWriteMessage()).message; // c is the newest since its created last
+
+      const newestMessage = await CollectionsWrite.getNewestMessage([b, c, a]);
+      expect(newestMessage?.descriptor.recordId).to.equal(c.descriptor.recordId);
+    });
+  });
 });
 

@@ -122,6 +122,7 @@ export class MessageStoreLevel implements MessageStore {
 
 
   async delete(cid: CID, ctx: Context): Promise<void> {
+    // TODO: Implement data deletion in Collections - https://github.com/TBD54566975/dwn-sdk-js/issues/84
     await this.db.delete(cid, ctx);
     await this.index.DELETE(cid.toString());
 
@@ -135,8 +136,7 @@ export class MessageStoreLevel implements MessageStore {
       const messageJsonWithData = messageJson as GenericMessageSchema;
       data = messageJsonWithData.data;
 
-      // delete data. If data is present we'll be chunking it and storing it as unix-fs dag-pb
-      // encoded.
+      // delete data so `messageJson` is stored without it, `data` will be chunked and stored separately below
       delete messageJsonWithData.data;
     }
 
@@ -144,6 +144,7 @@ export class MessageStoreLevel implements MessageStore {
 
     await this.db.put(encodedBlock.cid, encodedBlock.bytes);
 
+    // if data is present we'll chunk it and store it as unix-fs dag-pb encoded
     if (data) {
       const chunk = importer([{ content: toBytes(data) }], this.db, { cidVersion: 1 });
 
