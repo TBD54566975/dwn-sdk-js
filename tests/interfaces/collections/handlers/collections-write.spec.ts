@@ -185,7 +185,7 @@ describe('handleCollectionsWrite()', () => {
 
   it('should return 400 if actual CID of `data` mismatches with `dataCid` in descriptor', async () => {
     const messageData = await TestDataGenerator.generateCollectionWriteMessage();
-    messageData.message.encodedData = base64url.encode(TestDataGenerator.randomBytes(50));
+    messageData.message.encodedData = base64url.baseEncode(TestDataGenerator.randomBytes(50));
 
     const didResolverStub = sinon.createStubInstance(DIDResolver);
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
