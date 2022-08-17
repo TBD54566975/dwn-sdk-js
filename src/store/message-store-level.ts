@@ -129,7 +129,7 @@ export class MessageStoreLevel implements MessageStore {
 
   async put(messageJson: BaseMessageSchema, ctx: Context): Promise<void> {
 
-    // delete encodedData if it exists so `messageJson` is stored without it, `encodedData` will be chunked and stored separately below
+    // delete `encodedData` if it exists so `messageJson` is stored without it, `encodedData` will be chunked and stored separately below
     let encodedData = undefined;
     if (messageJson['encodedData'] !== undefined) {
       const messageJsonWithEncodedData = messageJson as GenericMessageSchema;
@@ -142,7 +142,7 @@ export class MessageStoreLevel implements MessageStore {
 
     await this.db.put(encodedBlock.cid, encodedBlock.bytes);
 
-    // if encodedData is present we'll decode it then chunk it and store it as unix-fs dag-pb encoded
+    // if `encodedData` is present we'll decode it then chunk it and store it as unix-fs dag-pb encoded
     if (encodedData) {
       const content = base64url.baseDecode(encodedData);
       const chunk = importer([{ content }], this.db, { cidVersion: 1 });
