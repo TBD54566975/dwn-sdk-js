@@ -129,7 +129,7 @@ export class MessageStoreLevel implements MessageStore {
 
   async put(messageJson: BaseMessageSchema, ctx: Context): Promise<void> {
 
-    // delete `encodedData` if it exists so `messageJson` is stored without it, `encodedData` will be chunked and stored separately below
+    // delete `encodedData` if it exists so `messageJson` is stored without it, `encodedData` will be decoded, chunked and stored separately below
     let encodedData = undefined;
     if (messageJson['encodedData'] !== undefined) {
       const messageJsonWithEncodedData = messageJson as GenericMessageSchema;
