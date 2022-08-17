@@ -8,6 +8,7 @@ import { getDagCid } from '../../../utils/data';
 import { Message } from '../../../core/message';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { sign, verifyAuth } from '../../../core/auth';
+import { validate } from '../../../validation/validator';
 
 type CollectionsWriteOptions = AuthCreateOptions & {
   protocol?: string;
@@ -46,6 +47,9 @@ export class CollectionsWrite extends Message implements Authorizable {
     // delete all descriptor properties that are `undefined` else the code will encounter the following IPLD issue when attempting to generate CID:
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
+
+    const messageType = descriptor.method;
+    validate(messageType, { descriptor, authorization: {} });
 
     const encodedData = base64url.baseEncode(options.data);
     const authorization = await sign({ descriptor }, options.signatureInput);

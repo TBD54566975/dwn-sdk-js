@@ -5,6 +5,7 @@ import { CollectionsQuery } from '../../src/interfaces/collections/messages/coll
 import { CollectionsQuerySchema, CollectionsWriteSchema } from '../../src/interfaces/collections/types';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519';
 import { DIDResolutionResult } from '../../src/did/did-resolver';
+import { generateCid } from '../../src/utils/cid';
 import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request';
 import { PrivateJwk, PublicJwk } from '../../src/jose/types';
 import { removeUndefinedProperties } from '../../src/utils/object';

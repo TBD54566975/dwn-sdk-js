@@ -6,6 +6,7 @@ import { DIDResolver } from '../../../did/did-resolver';
 import { Message } from '../../../core/message';
 import { sign, verifyAuth } from '../../../core/auth';
 import { v4 as uuidv4 } from 'uuid';
+import { validate } from '../../../validation/validator';
 
 type PermissionsRequestOptions = AuthCreateOptions & {
   conditions?: PermissionConditions;
@@ -37,6 +38,9 @@ export class PermissionsRequest extends Message implements Authorizable {
       objectId    : opts.objectId ? opts.objectId : uuidv4(),
       scope       : opts.scope,
     };
+
+    const messageType = descriptor.method;
+    validate(messageType, { descriptor, authorization: {} });
 
     const auth = await sign({ descriptor }, opts.signatureInput);
     const message: PermissionsRequestSchema = { descriptor, authorization: auth };

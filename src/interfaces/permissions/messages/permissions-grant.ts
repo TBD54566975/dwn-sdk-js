@@ -10,6 +10,7 @@ import { generateCid } from '../../../utils/cid';
 import { Message } from '../../../core/message';
 import { PermissionsRequest, DEFAULT_CONDITIONS } from './permissions-request';
 import { v4 as uuidv4 } from 'uuid';
+import { validate } from '../../../validation/validator';
 
 type PermissionsGrantOptions = AuthCreateOptions & {
   conditions?: PermissionConditions;
@@ -42,6 +43,9 @@ export class PermissionsGrant extends Message implements Authorizable {
       objectId    : options.objectId ? options.objectId : uuidv4(),
       scope       : options.scope,
     };
+
+    const messageType = descriptor.method;
+    validate(messageType, { descriptor, authorization: {} });
 
     const auth = await authenticate({ descriptor }, options.signatureInput);
     const message: PermissionsGrantSchema = { descriptor, authorization: auth };
