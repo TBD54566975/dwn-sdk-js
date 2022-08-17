@@ -13,18 +13,8 @@ export const handleCollectionsWrite: MethodHandler = async (
   didResolver
 ): Promise<MessageReply> => {
   try {
-    const collectionsWriteMessage = new CollectionsWrite(message as CollectionsWriteSchema);
-    const incomingMessage = message as CollectionsWriteSchema;
-
-    try {
-      await collectionsWriteMessage.verifyAuth(didResolver);
-    } catch (e) {
-      return new MessageReply({
-        status: { code: 401, message: e.message }
-      });
-    }
-
     // verify dataCid matches given data
+    const incomingMessage = message as CollectionsWriteSchema;
     if (incomingMessage.encodedData !== undefined) {
       const rawData = base64url.baseDecode(incomingMessage.encodedData);
       const actualDataCid = (await getDagCid(rawData)).toString();
@@ -34,6 +24,16 @@ export const handleCollectionsWrite: MethodHandler = async (
           status: { code: 400, message: 'actual CID of data and `dataCid` in descriptor mismatch' }
         });
       }
+    }
+
+    // authentication & authorization
+    try {
+      const collectionsWriteMessage = new CollectionsWrite(incomingMessage);
+      await collectionsWriteMessage.verifyAuth(didResolver);
+    } catch (e) {
+      return new MessageReply({
+        status: { code: 401, message: e.message }
+      });
     }
 
     // get existing records matching the `recordId`

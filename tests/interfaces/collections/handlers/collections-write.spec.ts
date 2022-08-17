@@ -185,20 +185,16 @@ describe('handleCollectionsWrite()', () => {
 
   it('should return 400 if actual CID of `data` mismatches with `dataCid` in descriptor', async () => {
     const messageData = await TestDataGenerator.generateCollectionWriteMessage();
-    const { requesterDid, requesterKeyId } = messageData;
+    messageData.message.encodedData = base64url.encode(TestDataGenerator.randomBytes(50));
 
-    // setting up a stub did resolver & message store
-    const differentKeyPair = await secp256k1.generateKeyPair(); // used to return a different public key to simulate invalid signature
-    const didResolutionResult = TestDataGenerator.createDidResolutionResult(requesterDid, requesterKeyId, differentKeyPair.publicJwk);
-    const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
-    resolveStub.withArgs(requesterDid).resolves(didResolutionResult);
-    const didResolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
+    const didResolverStub = sinon.createStubInstance(DIDResolver);
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-    const context = { tenant: requesterDid };
+    const context = { tenant: messageData.requesterDid };
     const reply = await handleCollectionsWrite(context, messageData.message, messageStoreStub, didResolverStub);
 
-    expect(reply.status.code).to.equal(401);
+    expect(reply.status.code).to.equal(400);
+    expect(reply.status.message).to.equal('actual CID of data and `dataCid` in descriptor mismatch');
   });
 
   it('should return 401 if authorization fails', async () => {

@@ -2,9 +2,9 @@ import type { Blockstore } from 'interface-blockstore';
 import type { Context } from '../types';
 import type { AwaitIterable, Pair, Batch, Query, KeyQuery } from 'interface-store';
 
-import { Level } from 'level';
 import { CID } from 'multiformats';
-
+import { Level } from 'level';
+import { sleep } from '../utils/time';
 
 // `level` works in Node.js 12+ and Electron 5+ on Linux, Mac OS, Windows and
 // FreeBSD, including any future Node.js and Electron release thanks to Node-API, including ARM
@@ -123,13 +123,4 @@ export class BlockstoreLevel implements Blockstore {
   queryKeys(_query: KeyQuery<CID>, _ctx?: Context): AsyncIterable<CID> {
     throw new Error('not implemented');
   }
-}
-
-/**
- * sleeps for the desired duration
- * @param durationMillis the desired amount of sleep time
- * @returns when the provided duration has passed
- */
-function sleep(durationMillis): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, durationMillis));
 }

@@ -61,7 +61,8 @@ export class CollectionsWrite extends Message implements Authorizable {
   }
 
   /**
-   * gets the cid of the given CollectionsWrite message.
+   * Gets the cid of the given CollectionsWrite message.
+   * NOTE: `encodedData` is ignored when computing the CID of message.
    */
   static async getCid(message: CollectionsWriteSchema): Promise<CID> {
     const messageCopy = { ...message };
@@ -110,8 +111,8 @@ export class CollectionsWrite extends Message implements Authorizable {
 
     // else `dateCreated` is the same between a and b
     // compare the `dataCid` instead, the < and > operators compare strings in lexicographical order
-    const cidA = await generateCid(a);
-    const cidB = await generateCid(b);
+    const cidA = await CollectionsWrite.getCid(a);
+    const cidB = await CollectionsWrite.getCid(b);
     if (cidA > cidB) {
       return 1;
     } else if (cidA < cidB) {

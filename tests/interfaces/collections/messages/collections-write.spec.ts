@@ -3,12 +3,13 @@ import { CollectionsWrite } from '../../../../src/interfaces/collections/message
 import { CollectionsWriteSchema } from '../../../../src/interfaces/collections/types';
 import { DIDResolutionResult, DIDResolver } from '../../../../src/did/did-resolver';
 import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
+import { sleep } from '../../../../src/utils/time';
 import { TestDataGenerator } from '../../../utils/test-data-generator';
+import { TestStubGenerator } from '../../../utils/test-stub-generator';
 import { v4 as uuidv4 } from 'uuid';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
-import { TestStubGenerator } from '../../../utils/test-stub-generator';
 
 chai.use(chaiAsPromised);
 
@@ -85,11 +86,33 @@ describe('CollectionsWrite', () => {
   describe('getNewestMessage', () => {
     it('should return the newest message', async () => {
       const a = (await TestDataGenerator.generateCollectionWriteMessage()).message;
+      await sleep(1); // need to sleep for at least one millisecond else some messages get generated with the same time
       const b = (await TestDataGenerator.generateCollectionWriteMessage()).message;
+      await sleep(1);
       const c = (await TestDataGenerator.generateCollectionWriteMessage()).message; // c is the newest since its created last
 
       const newestMessage = await CollectionsWrite.getNewestMessage([b, c, a]);
+      if (newestMessage?.descriptor.recordId !== c.descriptor.recordId) {
+        console.log(`a: ${a.descriptor.dateCreated}`);
+        console.log(`b: ${b.descriptor.dateCreated}`);
+        console.log(`c: ${c.descriptor.dateCreated}`);
+      }
       expect(newestMessage?.descriptor.recordId).to.equal(c.descriptor.recordId);
+    });
+  });
+
+  describe('getCid', () => {
+    it('should return the same value with or without `encodedData`', async () => {
+      const dateCreated = Date.now();
+      const messageData = await TestDataGenerator.generateCollectionWriteMessage({ dateCreated });
+
+      const messageWithoutEncodedData = { ...messageData.message };
+      delete messageWithoutEncodedData.encodedData;
+
+      const cidOfMessageWithEncodedData = await CollectionsWrite.getCid(messageData.message);
+      const cidOfMessageWithoutData = await CollectionsWrite.getCid(messageWithoutEncodedData);
+
+      expect(cidOfMessageWithEncodedData.toString()).to.equal(cidOfMessageWithoutData.toString());
     });
   });
 });
