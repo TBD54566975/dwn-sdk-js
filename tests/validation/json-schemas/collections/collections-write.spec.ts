@@ -93,4 +93,29 @@ describe('CollectionsWrite schema definition', () => {
       Message.parse(invalidMessage);
     }).throws('must NOT have additional properties');
   });
+
+  it('should throws if `encodedDat` is not using base64url character set', () => {
+    const invalidMessage = {
+      descriptor: {
+        method      : 'CollectionsWrite',
+        dataCid     : 'anyCid',
+        dataFormat  : 'application/json',
+        dateCreated : 123,
+        nonce       : 'anyNonce',
+        recordId    : uuidv4(),
+      },
+      authorization: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      },
+      encodedData: 'not-base64url-string!!' // incorrect value
+    };
+
+    expect(() => {
+      Message.parse(invalidMessage);
+    }).throws('must match pattern "^[A-Za-z0-9_-]+$"');
+  });
 });

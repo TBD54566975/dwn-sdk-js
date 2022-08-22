@@ -5,7 +5,6 @@ import { CollectionsQuery } from '../../src/interfaces/collections/messages/coll
 import { CollectionsQuerySchema, CollectionsWriteSchema } from '../../src/interfaces/collections/types';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519';
 import { DIDResolutionResult } from '../../src/did/did-resolver';
-import { generateCid } from '../../src/utils/cid';
 import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request';
 import { PrivateJwk, PublicJwk } from '../../src/jose/types';
 import { removeUndefinedProperties } from '../../src/utils/object';
@@ -20,7 +19,7 @@ export type GenerateCollectionWriteMessageInput = {
   protocol?: string;
   schema?: string;
   recordId?: string;
-  dataCid?: string;
+  data?: Uint8Array;
   dataFormat?: string;
   dateCreated? : number;
 };
@@ -28,6 +27,7 @@ export type GenerateCollectionWriteMessageInput = {
 export type GenerateCollectionWriteMessageOutput = {
   message: CollectionsWriteSchema;
   messageCid: CID;
+  data: Uint8Array;
   /**
    * method name without the `did:` prefix. e.g. "ion"
    */
@@ -96,24 +96,27 @@ export class TestDataGenerator {
       }
     };
 
+    const data = input?.data ? input.data : TestDataGenerator.randomBytes(32);
+
     const options = {
       nonce       : TestDataGenerator.randomString(32),
       protocol    : input?.protocol ? input.protocol : TestDataGenerator.randomString(10),
       schema      : input?.schema ? input.schema : TestDataGenerator.randomString(20),
       recordId    : input?.recordId ? input.recordId : uuidv4(),
-      dataCid     : input?.dataCid ? input.dataCid : TestDataGenerator.randomString(32),
       dataFormat  : input?.dataFormat ? input.dataFormat : 'application/json',
       dateCreated : input?.dateCreated ? input.dateCreated : Date.now(),
+      data,
       signatureInput
     };
 
     const collectionsWrite = await CollectionsWrite.create(options);
     const message = collectionsWrite.toObject() as CollectionsWriteSchema;
-    const messageCid = await generateCid(message);
+    const messageCid = await CollectionsWrite.getCid(message);
 
     return {
       message,
       messageCid,
+      data,
       requesterDid,
       requesterDidMethod,
       requesterKeyId,
@@ -199,6 +202,14 @@ export class TestDataGenerator {
     }
 
     return randomString;
+  };
+
+  /**
+   * Generates a random byte array of given length
+   */
+  public static randomBytes(length: number): Uint8Array {
+    const randomString = TestDataGenerator.randomString(length);
+    return new TextEncoder().encode(randomString);
   };
 
   /**

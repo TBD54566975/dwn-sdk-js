@@ -1,3 +1,4 @@
+import { base64url } from 'multiformats/bases/base64';
 import { CollectionsWriteSchema } from '../../../../src/interfaces/collections/types';
 import { DIDResolutionResult, DIDResolver } from '../../../../src/did/did-resolver';
 import { GenerateCollectionWriteMessageOutput, TestDataGenerator } from '../../../utils/test-data-generator';
@@ -41,7 +42,8 @@ describe('handleCollectionsWrite()', () => {
       const targetDid = 'did:example:alice';
       const requesterDid = 'did:example:bob';
       const recordId = uuidv4();
-      const collectionsWriteMessageData = await TestDataGenerator.generateCollectionWriteMessage({ requesterDid, recordId, dataCid: 'dataCid1' });
+      const data1 = new TextEncoder().encode('data1');
+      const collectionsWriteMessageData = await TestDataGenerator.generateCollectionWriteMessage({ requesterDid, recordId, data: data1 });
       const { requesterKeyId, requesterKeyPair } = collectionsWriteMessageData;
 
       // setting up a stub did resolver
@@ -58,20 +60,21 @@ describe('handleCollectionsWrite()', () => {
         filter: { recordId }
       });
 
+      // verify the message written can be queried
       const collectionsQueryReply = await handleCollectionsQuery(context, collectionsQueryMessageData.message, messageStore, didResolverStub);
-
       expect(collectionsQueryReply.status.code).to.equal(200);
       expect(collectionsQueryReply.entries?.length).to.equal(1);
-      expect((collectionsQueryReply.entries![0] as CollectionsWriteSchema).descriptor.dataCid).to.equal('dataCid1');
+      expect((collectionsQueryReply.entries![0] as CollectionsWriteSchema).encodedData).to.equal(base64url.baseEncode(data1));
 
       // generate and write a new CollectionsWrite to overwrite the existing record
       // a new CollectionsWrite by default will have a later `dateCreate` due to the default Date.now() call
+      const data2 = new TextEncoder().encode('data2');
       const newCollectionsWriteMessageData = await TestDataGenerator.generateCollectionWriteMessage({
         requesterDid,
         requesterKeyId,
         requesterKeyPair,
         recordId,
-        dataCid: 'dataCid2' // a new CID value
+        data: data2 // new data value
       });
       const newCollectionsWriteReply = await handleCollectionsWrite(context, newCollectionsWriteMessageData.message, messageStore, didResolverStub);
       expect(newCollectionsWriteReply.status.code).to.equal(202);
@@ -81,16 +84,17 @@ describe('handleCollectionsWrite()', () => {
 
       expect(newCollectionsQueryReply.status.code).to.equal(200);
       expect(newCollectionsQueryReply.entries?.length).to.equal(1);
-      expect((newCollectionsQueryReply.entries![0] as CollectionsWriteSchema).descriptor.dataCid).to.equal('dataCid2');
+      expect((newCollectionsQueryReply.entries![0] as CollectionsWriteSchema).encodedData).to.equal(base64url.baseEncode(data2));
 
       // try to write the older message to store again and verify that it is not accepted
       const thirdCollectionsWriteReply = await handleCollectionsWrite(context, collectionsWriteMessageData.message, messageStore, didResolverStub);
       expect(thirdCollectionsWriteReply.status.code).to.equal(409); // expecting to fail
 
+      // expecting unchanged
       const thirdCollectionsQueryReply = await handleCollectionsQuery(context, collectionsQueryMessageData.message, messageStore, didResolverStub);
       expect(thirdCollectionsQueryReply.status.code).to.equal(200);
       expect(thirdCollectionsQueryReply.entries?.length).to.equal(1);
-      expect((thirdCollectionsQueryReply.entries![0] as CollectionsWriteSchema).descriptor.dataCid).to.equal('dataCid2'); // expecting unchanged
+      expect((thirdCollectionsQueryReply.entries![0] as CollectionsWriteSchema).encodedData).to.equal(base64url.baseEncode(data2));
     });
 
     it('should only be able to overwrite existing record if new message CID is larger when `dateCreated` value is the same', async () => {
@@ -103,7 +107,7 @@ describe('handleCollectionsWrite()', () => {
         requesterDid,
         recordId,
         dateCreated,
-        dataCid: 'dataCid1'
+        data: new TextEncoder().encode('data1')
       });
       const { requesterKeyId, requesterKeyPair } = collectionsWriteMessageData1;
 
@@ -113,7 +117,7 @@ describe('handleCollectionsWrite()', () => {
         requesterKeyPair,
         recordId,
         dateCreated, // simulate the exact same dateCreated as message 1 above
-        dataCid: 'dataCid2' // a different CID value
+        data: new TextEncoder().encode('data2') // a different CID value
       });
 
       // determine the lexicographical order of the two messages
@@ -177,6 +181,20 @@ describe('handleCollectionsWrite()', () => {
       expect((thirdCollectionsQueryReply.entries![0] as CollectionsWriteSchema).descriptor.dataCid)
         .to.equal(largerCollectionWriteMessageData.message.descriptor.dataCid); // expecting unchanged
     });
+  });
+
+  it('should return 400 if actual CID of `data` mismatches with `dataCid` in descriptor', async () => {
+    const messageData = await TestDataGenerator.generateCollectionWriteMessage();
+    messageData.message.encodedData = base64url.baseEncode(TestDataGenerator.randomBytes(50));
+
+    const didResolverStub = sinon.createStubInstance(DIDResolver);
+    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+
+    const context = { tenant: messageData.requesterDid };
+    const reply = await handleCollectionsWrite(context, messageData.message, messageStoreStub, didResolverStub);
+
+    expect(reply.status.code).to.equal(400);
+    expect(reply.status.message).to.equal('actual CID of data and `dataCid` in descriptor mismatch');
   });
 
   it('should return 401 if authorization fails', async () => {
