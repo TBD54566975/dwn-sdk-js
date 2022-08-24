@@ -40,7 +40,7 @@ describe('handleCollectionsWrite()', () => {
     it('should only be able to overwrite existing record if new record has a later `dateCreated` value', async () => {
       // write a message into DB
       const targetDid = 'did:example:alice';
-      const requesterDid = 'did:example:bob';
+      const requesterDid = targetDid;
       const recordId = uuidv4();
       const data1 = new TextEncoder().encode('data1');
       const collectionsWriteMessageData = await TestDataGenerator.generateCollectionWriteMessage({ targetDid, requesterDid, recordId, data: data1 });
@@ -101,7 +101,7 @@ describe('handleCollectionsWrite()', () => {
     it('should only be able to overwrite existing record if new message CID is larger when `dateCreated` value is the same', async () => {
       // generate two messages with the same `dateCreated` value
       const targetDid = 'did:example:alice';
-      const requesterDid = 'did:example:bob';
+      const requesterDid = targetDid;
       const recordId = uuidv4();
       const dateCreated = Date.now();
       const collectionsWriteMessageData1 = await TestDataGenerator.generateCollectionWriteMessage({
@@ -198,19 +198,31 @@ describe('handleCollectionsWrite()', () => {
     expect(reply.status.message).to.equal('actual CID of data and `dataCid` in descriptor mismatch');
   });
 
-  it('should return 401 if authorization fails', async () => {
+  it('should return 401 if signature check fails', async () => {
     const messageData = await TestDataGenerator.generateCollectionWriteMessage();
     const { requesterDid, requesterKeyId } = messageData;
 
     // setting up a stub did resolver & message store
     const differentKeyPair = await secp256k1.generateKeyPair(); // used to return a different public key to simulate invalid signature
-    const didResolutionResult = TestDataGenerator.createDidResolutionResult(requesterDid, requesterKeyId, differentKeyPair.publicJwk);
-    const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
-    resolveStub.withArgs(requesterDid).resolves(didResolutionResult);
-    const didResolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
+    const didResolverStub = TestStubGenerator.createDidResolverStub(requesterDid, requesterKeyId, differentKeyPair.publicJwk);
+
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
     const reply = await handleCollectionsWrite(messageData.message, messageStoreStub, didResolverStub);
+
+    expect(reply.status.code).to.equal(401);
+  });
+
+  it('should return 401 if requester is not the same as the target', async () => {
+    const requesterDid = 'did:example:alice';
+    const targetDid = 'did:example:bob'; // requester and target are different
+    const { message, requesterKeyId, requesterKeyPair } = await TestDataGenerator.generateCollectionQueryMessage({ requesterDid, targetDid });
+
+    // setting up a stub did resolver & message store
+    const didResolverStub = TestStubGenerator.createDidResolverStub(requesterDid, requesterKeyId, requesterKeyPair.publicJwk);
+    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+
+    const reply = await handleCollectionsWrite(message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(401);
   });

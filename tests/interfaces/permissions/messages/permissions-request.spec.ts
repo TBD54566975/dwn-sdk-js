@@ -103,7 +103,7 @@ describe('PermissionsRequest', () => {
         };
 
         const message = await PermissionsRequest.create({
-          target         : 'did:jank:bob',
+          target         : 'did:jank:alice',
           description    : 'drugs',
           grantedBy      : 'did:jank:bob',
           grantedTo      : 'did:jank:alice',

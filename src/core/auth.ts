@@ -41,21 +41,6 @@ export async function verifyAuth(
   return { payload: parsedPayload, signers };
 }
 
-async function authorize(message: BaseMessageSchema, signers: string[]): Promise<void> {
-  // // if requester is the same as the target DID, then we can directly grant access
-  // if (signers[0] === message.target) {
-  //   return;
-  // } else {
-  //   throw new Error('unauthorized message');
-  // }
-}
-
-async function authenticate(jws: GeneralJws, didResolver: DIDResolver): Promise<string[]> {
-  const verifier = new GeneralJwsVerifier(jws);
-  const { signers } = await verifier.verify(didResolver);
-  return signers;
-}
-
 async function validateSchema(
   message: BaseMessageSchema & Authorization,
   payloadConstraints?: PayloadConstraints
@@ -110,6 +95,21 @@ async function validateSchema(
   }
 
   return parsedPayload;
+}
+
+async function authenticate(jws: GeneralJws, didResolver: DIDResolver): Promise<string[]> {
+  const verifier = new GeneralJwsVerifier(jws);
+  const { signers } = await verifier.verify(didResolver);
+  return signers;
+}
+
+async function authorize(message: BaseMessageSchema, signers: string[]): Promise<void> {
+  // if requester is the same as the target DID, we can directly grant access
+  if (signers[0] === message.descriptor.target) {
+    return;
+  } else {
+    throw new Error('message failed authorization, permission grant check not yet implemented');
+  }
 }
 
 /**

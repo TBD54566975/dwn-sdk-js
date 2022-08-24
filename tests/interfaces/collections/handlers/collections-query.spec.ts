@@ -35,6 +35,7 @@ describe('handleCollectionsQuery()', () => {
     it('should return entries matching the query', async () => {
       // insert three messages into DB, two with matching protocol
       const targetDid = 'did:example:alice';
+      const requesterDid = targetDid;
       const protocol = 'myAwesomeProtocol';
       const collectionsWriteMessage1Data = await TestDataGenerator.generateCollectionWriteMessage({ targetDid });
       const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionWriteMessage({ targetDid, protocol, schema: 'schema1' });
@@ -45,7 +46,6 @@ describe('handleCollectionsQuery()', () => {
       await messageStore.put(collectionsWriteMessage3Data.message);
 
       // testing singular conditional query
-      const requesterDid = 'did:example:bob';
       const messageData = await TestDataGenerator.generateCollectionQueryMessage({ targetDid, requesterDid, filter: { protocol } });
 
       // setting up a stub method resolver
@@ -113,7 +113,7 @@ describe('handleCollectionsQuery()', () => {
     });
   });
 
-  it('should return 401 if authorization fails', async () => {
+  it('should return 401 if signature check fails', async () => {
     const messageData = await TestDataGenerator.generateCollectionQueryMessage();
 
     // setting up a stub did resolver & message store
@@ -126,6 +126,21 @@ describe('handleCollectionsQuery()', () => {
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
     const reply = await handleCollectionsQuery(messageData.message, messageStoreStub, didResolverStub);
+
+    expect(reply.status.code).to.equal(401);
+  });
+
+
+  it('should return 401 if requester is not the same as the target', async () => {
+    const requesterDid = 'did:example:alice';
+    const targetDid = 'did:example:bob'; // requester and target are different
+    const { message, requesterKeyId, requesterKeyPair } = await TestDataGenerator.generateCollectionQueryMessage({ requesterDid, targetDid });
+
+    // setting up a stub did resolver & message store
+    const didResolverStub = TestStubGenerator.createDidResolverStub(requesterDid, requesterKeyId, requesterKeyPair.publicJwk );
+    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+
+    const reply = await handleCollectionsQuery(message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(401);
   });

@@ -4,7 +4,7 @@ import type { PermissionScope, PermissionConditions } from '../types';
 import type { SignatureInput } from '../../../jose/jws/general/types';
 
 import { CID } from 'multiformats/cid';
-import { authenticate, verifyAuth } from '../../../core/auth';
+import { sign, verifyAuth } from '../../../core/auth';
 import { DIDResolver } from '../../../did/did-resolver';
 import { generateCid } from '../../../utils/cid';
 import { Message } from '../../../core/message';
@@ -49,7 +49,7 @@ export class PermissionsGrant extends Message implements Authorizable {
     const messageType = descriptor.method;
     validate(messageType, { descriptor, authorization: {} });
 
-    const auth = await authenticate({ descriptor }, options.signatureInput);
+    const auth = await sign({ descriptor }, options.signatureInput);
     const message: PermissionsGrantSchema = { descriptor, authorization: auth };
 
     return new PermissionsGrant(message);
@@ -58,11 +58,13 @@ export class PermissionsGrant extends Message implements Authorizable {
 
   /**
    * generates a PermissionsGrant using the provided PermissionsRequest
+   * @param target - the DID of the DWN to this grant message will be sent to
    * @param permissionsRequest
    * @param signatureInput - the private key and additional signature material of the grantor
    * @param conditionOverrides - any conditions that the grantor may want to override
    */
   static async fromPermissionsRequest(
+    target: string,
     permissionsRequest: PermissionsRequest,
     signatureInput: SignatureInput,
     conditionOverrides: Partial<PermissionConditions> = {}
@@ -70,6 +72,7 @@ export class PermissionsGrant extends Message implements Authorizable {
     const conditions = { ...permissionsRequest.conditions, ...conditionOverrides };
 
     return PermissionsGrant.create({
+      target,
       conditions           : conditions,
       description          : permissionsRequest.description,
       grantedBy            : permissionsRequest.grantedBy,
@@ -82,11 +85,12 @@ export class PermissionsGrant extends Message implements Authorizable {
 
   /**
    * delegates the permission to the DID provided
+   * @param target - the DID of the DWN to this grant message will be sent to
    * @param to - the DID of the grantee
    * @param signatureInput - the private key and additional signature material of this permission's `grantedTo`
    * @throws {Error} - if the permission cannot be delegated
    */
-  async delegate(to: string, signatureInput: SignatureInput): Promise<PermissionsGrant> {
+  async delegate(target: string, to: string, signatureInput: SignatureInput): Promise<PermissionsGrant> {
     // throw an exception if the permission cannot be delegated
     if (!this.conditions.delegation) {
       throw new Error('this permission cannot be delegated');
@@ -94,6 +98,7 @@ export class PermissionsGrant extends Message implements Authorizable {
 
     // `grantedBy` of the delegated permission will be `grantedTo` of the permission being delegated because the grantee is the delegator
     const delegatedGrant = await PermissionsGrant.create({
+      target,
       conditions     : this.conditions,
       description    : this.description,
       grantedBy      : this.grantedTo,

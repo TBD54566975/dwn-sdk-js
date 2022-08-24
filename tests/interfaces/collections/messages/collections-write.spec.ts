@@ -29,7 +29,7 @@ describe('CollectionsWrite', () => {
       };
 
       const options = {
-        target      : 'did:example:bob',
+        target      : 'did:example:alice',
         data        : TestDataGenerator.randomBytes(10),
         dataFormat  : 'application/json',
         dateCreated : 123,
