@@ -90,7 +90,7 @@ async function validateSchema(
     try {
       parsedPayload[field] = parseCid(payloadJson[field]);
     } catch (e) {
-      throw new Error(`${field} must be a valid CID`); // TODO: Sanity: why does this must be a CID?
+      throw new Error(`${field} must be a valid CID`);
     }
   }
 
