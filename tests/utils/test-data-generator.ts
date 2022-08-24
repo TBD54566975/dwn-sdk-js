@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 
 export type GenerateCollectionWriteMessageInput = {
+  targetDid?: string;
   requesterDid?: string;
   requesterKeyId?: string;
   requesterKeyPair?: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
@@ -38,6 +39,7 @@ export type GenerateCollectionWriteMessageOutput = {
 };
 
 export type GenerateCollectionQueryMessageInput = {
+  targetDid?: string;
   requesterDid?: string;
   requesterKeyId?: string;
   requesterKeyPair?: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
@@ -71,7 +73,7 @@ export class TestDataGenerator {
    * Implementation currently uses `CollectionsWrite.create()`.
    */
   public static async generateCollectionWriteMessage(input?: GenerateCollectionWriteMessageInput): Promise<GenerateCollectionWriteMessageOutput> {
-    // generate DID if not given
+    // generate requester DID if not given
     let requesterDid = input?.requesterDid;
     if (!requesterDid) {
       const didSuffix = TestDataGenerator.randomString(32);
@@ -79,10 +81,10 @@ export class TestDataGenerator {
     }
     const requesterDidMethod = TestDataGenerator.getDidMethodName(requesterDid);
 
-    // generate key ID if not given
+    // generate requester key ID if not given
     const requesterKeyId =  input?.requesterKeyId ? input.requesterKeyId : `${requesterDid}#key1`;
 
-    // generate key pair if not given
+    // generate requester key pair if not given
     let requesterKeyPair = input?.requesterKeyPair;
     if (!requesterKeyPair) {
       requesterKeyPair = await secp256k1.generateKeyPair();
@@ -96,9 +98,23 @@ export class TestDataGenerator {
       }
     };
 
+    // generate target DID if not given
+    let targetDid = input?.targetDid;
+    if (!targetDid) {
+      // if both `requesterDid` and `targetDid` are both not given in input,
+      // use the same DID as the `requesterDid` to pass authorization in tests by default.
+      if (!input?.requesterDid) {
+        targetDid = requesterDid;
+      } else {
+        const didSuffix = TestDataGenerator.randomString(32);
+        targetDid = `did:example:${didSuffix}`;
+      }
+    }
+
     const data = input?.data ? input.data : TestDataGenerator.randomBytes(32);
 
     const options = {
+      target      : targetDid,
       nonce       : TestDataGenerator.randomString(32),
       protocol    : input?.protocol ? input.protocol : TestDataGenerator.randomString(10),
       schema      : input?.schema ? input.schema : TestDataGenerator.randomString(20),
@@ -126,9 +142,10 @@ export class TestDataGenerator {
 
   /**
    * Generates a CollectionsQuery message for testing.
+   * If both `requesterDid` and `targetDid` are not given, the generator will use the same DID for both to pass authorization in tests by default.
    */
   public static async generateCollectionQueryMessage(input?: GenerateCollectionQueryMessageInput): Promise<GenerateCollectionQueryMessageOutput> {
-    // generate DID if not given
+    // generate requester DID if not given
     let requesterDid = input?.requesterDid;
     if (!requesterDid) {
       const didSuffix = TestDataGenerator.randomString(32);
@@ -136,10 +153,10 @@ export class TestDataGenerator {
     }
     const requesterDidMethod = TestDataGenerator.getDidMethodName(requesterDid);
 
-    // generate key ID if not given
+    // generate requester key ID if not given
     const requesterKeyId =  input?.requesterKeyId ? input.requesterKeyId : `${requesterDid}#key1`;
 
-    // generate key pair if not given
+    // generate requester key pair if not given
     let requesterKeyPair = input?.requesterKeyPair;
     if (!requesterKeyPair) {
       requesterKeyPair = await secp256k1.generateKeyPair();
@@ -153,7 +170,21 @@ export class TestDataGenerator {
       }
     };
 
+    // generate target DID if not given
+    let targetDid = input?.targetDid;
+    if (!targetDid) {
+      // if both `requesterDid` and `targetDid` are both not given in input,
+      // use the same DID as the `requesterDid` to pass authorization in tests by default.
+      if (!input?.requesterDid) {
+        targetDid = requesterDid;
+      } else {
+        const didSuffix = TestDataGenerator.randomString(32);
+        targetDid = `did:example:${didSuffix}`;
+      }
+    }
+
     const options = {
+      target   : targetDid,
       nonce    : TestDataGenerator.randomString(32),
       signatureInput,
       filter   : input?.filter ? input.filter : { schema: TestDataGenerator.randomString(10) }, // must have one filter property if no filter is given
@@ -179,6 +210,7 @@ export class TestDataGenerator {
   public static async generatePermissionRequestMessage(): Promise<BaseMessageSchema> {
     const { privateJwk } = await ed25519.generateKeyPair();
     const permissionRequest = await PermissionsRequest.create({
+      target         : 'did:jank:alice',
       description    : 'drugs',
       grantedBy      : 'did:jank:bob',
       grantedTo      : 'did:jank:alice',

@@ -9,6 +9,7 @@ import { DIDResolver } from '../did/did-resolver';
  */
 export type BaseMessageSchema = {
   descriptor: {
+    target: string;
     method: string;
   };
 };

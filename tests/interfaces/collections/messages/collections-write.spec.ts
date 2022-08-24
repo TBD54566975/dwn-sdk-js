@@ -17,8 +17,8 @@ describe('CollectionsWrite', () => {
   describe('create() & verifyAuth()', () => {
     it('should be able to create and verify a valid CollectionsWrite message', async () => {
       // testing `create()` first
-      const did = 'did:example:alice';
-      const keyId = `${did}#key1`;
+      const requesterDid = 'did:example:alice';
+      const keyId = `${requesterDid}#key1`;
       const { privateJwk, publicJwk } = await secp256k1.generateKeyPair();
       const signatureInput = {
         jwkPrivate      : privateJwk,
@@ -29,6 +29,7 @@ describe('CollectionsWrite', () => {
       };
 
       const options = {
+        target      : 'did:example:bob',
         data        : TestDataGenerator.randomBytes(10),
         dataFormat  : 'application/json',
         dateCreated : 123,
@@ -47,11 +48,11 @@ describe('CollectionsWrite', () => {
       expect(message.descriptor.nonce).to.equal(options.nonce);
       expect(message.descriptor.recordId).to.equal(options.recordId);
 
-      const resolverStub = TestStubGenerator.createDidResolverStub(did, keyId, publicJwk);
+      const resolverStub = TestStubGenerator.createDidResolverStub(requesterDid, keyId, publicJwk);
       const { signers } = await collectionsWrite.verifyAuth(resolverStub);
 
       expect(signers.length).to.equal(1);
-      expect(signers).to.include(did);
+      expect(signers).to.include(requesterDid);
     });
   });
 

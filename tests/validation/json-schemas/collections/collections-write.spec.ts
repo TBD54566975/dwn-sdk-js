@@ -6,6 +6,7 @@ describe('CollectionsWrite schema definition', () => {
   it('should allow descriptor with only required properties', async () => {
     const validMessage = {
       descriptor: {
+        target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
@@ -30,6 +31,7 @@ describe('CollectionsWrite schema definition', () => {
   it('should throws if `authorization` is missing', () => {
     const invalidMessage = {
       descriptor: {
+        target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
@@ -47,6 +49,7 @@ describe('CollectionsWrite schema definition', () => {
   it('should throws if unknown property is given in message', () => {
     const invalidMessage = {
       descriptor: {
+        target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
@@ -72,6 +75,7 @@ describe('CollectionsWrite schema definition', () => {
   it('should throws if unknown property is given in the `descriptor`', () => {
     const invalidMessage = {
       descriptor: {
+        target          : 'did:example:anyDid',
         method          : 'CollectionsWrite',
         dataCid         : 'anyCid',
         dataFormat      : 'application/json',
@@ -94,9 +98,10 @@ describe('CollectionsWrite schema definition', () => {
     }).throws('must NOT have additional properties');
   });
 
-  it('should throws if `encodedDat` is not using base64url character set', () => {
+  it('should throws if `encodedData` is not using base64url character set', () => {
     const invalidMessage = {
       descriptor: {
+        target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',

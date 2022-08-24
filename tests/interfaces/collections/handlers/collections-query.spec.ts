@@ -1,8 +1,8 @@
-import { DIDResolutionResult, DIDResolver } from '../../../../src/did/did-resolver';
 import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
 import { TestDataGenerator } from '../../../utils/test-data-generator';
+import { TestStubGenerator } from '../../../utils/test-stub-generator';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -34,32 +34,28 @@ describe('handleCollectionsQuery()', () => {
 
     it('should return entries matching the query', async () => {
       // insert three messages into DB, two with matching protocol
-      const did = 'did:example:alice';
+      const targetDid = 'did:example:alice';
       const protocol = 'myAwesomeProtocol';
-      const collectionsWriteMessage1Data = await TestDataGenerator.generateCollectionWriteMessage();
-      const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionWriteMessage({ protocol, schema: 'schema1' });
-      const collectionsWriteMessage3Data = await TestDataGenerator.generateCollectionWriteMessage({ protocol, schema: 'schema2' });
+      const collectionsWriteMessage1Data = await TestDataGenerator.generateCollectionWriteMessage({ targetDid });
+      const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionWriteMessage({ targetDid, protocol, schema: 'schema1' });
+      const collectionsWriteMessage3Data = await TestDataGenerator.generateCollectionWriteMessage({ targetDid, protocol, schema: 'schema2' });
 
-      await messageStore.put(collectionsWriteMessage1Data.message, { tenant: did });
-      await messageStore.put(collectionsWriteMessage2Data.message, { tenant: did });
-      await messageStore.put(collectionsWriteMessage3Data.message, { tenant: did });
+      await messageStore.put(collectionsWriteMessage1Data.message);
+      await messageStore.put(collectionsWriteMessage2Data.message);
+      await messageStore.put(collectionsWriteMessage3Data.message);
 
       // testing singular conditional query
       const requesterDid = 'did:example:bob';
-      const messageData = await TestDataGenerator.generateCollectionQueryMessage({ requesterDid, filter: { protocol } });
+      const messageData = await TestDataGenerator.generateCollectionQueryMessage({ targetDid, requesterDid, filter: { protocol } });
 
-      // setting up a stub method resolver & message store
-      const didResolutionResult = TestDataGenerator.createDidResolutionResult(
+      // setting up a stub method resolver
+      const didResolverStub = TestStubGenerator.createDidResolverStub(
         messageData.requesterDid,
         messageData.requesterKeyId,
         messageData.requesterKeyPair.publicJwk
       );
-      const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
-      resolveStub.withArgs(messageData.requesterDid).resolves(didResolutionResult);
-      const didResolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
 
-      const context = { tenant: did };
-      const reply = await handleCollectionsQuery(context, messageData.message, messageStore, didResolverStub);
+      const reply = await handleCollectionsQuery(messageData.message, messageStore, didResolverStub);
 
       expect(reply.status.code).to.equal(200);
       expect(reply.entries?.length).to.equal(2); // only 2 entries should match the query on protocol
@@ -68,6 +64,7 @@ describe('handleCollectionsQuery()', () => {
       const requesterKeyId = messageData.requesterKeyId;
       const requesterKeyPair = messageData.requesterKeyPair;
       const messageData2 = await TestDataGenerator.generateCollectionQueryMessage({
+        targetDid,
         requesterDid,
         requesterKeyId,
         requesterKeyPair,
@@ -77,7 +74,7 @@ describe('handleCollectionsQuery()', () => {
         }
       });
 
-      const reply2 = await handleCollectionsQuery(context, messageData2.message, messageStore, didResolverStub);
+      const reply2 = await handleCollectionsQuery(messageData2.message, messageStore, didResolverStub);
 
       expect(reply2.status.code).to.equal(200);
       expect(reply2.entries?.length).to.equal(1); // only 1 entry should match the query
@@ -89,31 +86,30 @@ describe('handleCollectionsQuery()', () => {
       const did1 = 'did:example:alice';
       const did2 = 'did:example:bob';
       const protocol = 'myAwesomeProtocol';
-      const collectionsWriteMessage1Data = await TestDataGenerator.generateCollectionWriteMessage({ protocol });
-      const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionWriteMessage({ protocol });
+      const collectionsWriteMessage1Data = await TestDataGenerator.generateCollectionWriteMessage({ targetDid: did1, protocol });
+      const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionWriteMessage({ targetDid: did2, protocol });
 
       // insert data into 2 different tenants
-      await messageStore.put(collectionsWriteMessage1Data.message, { tenant: did1 });
-      await messageStore.put(collectionsWriteMessage2Data.message, { tenant: did2 });
+      await messageStore.put(collectionsWriteMessage1Data.message);
+      await messageStore.put(collectionsWriteMessage2Data.message);
 
-      const requesterDid = 'did:example:carol';
-      const messageData = await TestDataGenerator.generateCollectionQueryMessage({ requesterDid, filter: { protocol } });
+      const did1QueryMessageData = await TestDataGenerator.generateCollectionQueryMessage({
+        requesterDid : did1,
+        targetDid    : did1,
+        filter       : { protocol }
+      });
 
-      // setting up a stub method resolver & message store
-      const didResolutionResult = TestDataGenerator.createDidResolutionResult(
-        messageData.requesterDid,
-        messageData.requesterKeyId,
-        messageData.requesterKeyPair.publicJwk
+      // setting up a stub method resolver
+      const didResolverStub = TestStubGenerator.createDidResolverStub(
+        did1QueryMessageData.requesterDid,
+        did1QueryMessageData.requesterKeyId,
+        did1QueryMessageData.requesterKeyPair.publicJwk
       );
-      const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
-      resolveStub.withArgs(messageData.requesterDid).resolves(didResolutionResult);
-      const didResolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
 
-      const context = { tenant: did1 };
-      const reply = await handleCollectionsQuery(context, messageData.message, messageStore, didResolverStub);
+      const reply = await handleCollectionsQuery(did1QueryMessageData.message, messageStore, didResolverStub);
 
       expect(reply.status.code).to.equal(200);
-      expect(reply.entries?.length).to.equal(1); // only 2 entries should match the query on protocol
+      expect(reply.entries?.length).to.equal(1);
     });
   });
 
@@ -122,18 +118,14 @@ describe('handleCollectionsQuery()', () => {
 
     // setting up a stub did resolver & message store
     const differentKeyPair = await secp256k1.generateKeyPair(); // used to return a different public key to simulate invalid signature
-    const didResolutionResult = TestDataGenerator.createDidResolutionResult(
+    const didResolverStub = TestStubGenerator.createDidResolverStub(
       messageData.requesterDid,
       messageData.requesterKeyId,
       differentKeyPair.publicJwk
     );
-    const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
-    resolveStub.withArgs(messageData.requesterDid).resolves(didResolutionResult);
-    const didResolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-    const context = { tenant: messageData.requesterDid };
-    const reply = await handleCollectionsQuery(context, messageData.message, messageStoreStub, didResolverStub);
+    const reply = await handleCollectionsQuery(messageData.message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(401);
   });
@@ -142,19 +134,15 @@ describe('handleCollectionsQuery()', () => {
     const messageData = await TestDataGenerator.generateCollectionQueryMessage();
 
     // setting up a stub method resolver & message store
-    const didResolutionResult = TestDataGenerator.createDidResolutionResult(
+    const didResolverStub = TestStubGenerator.createDidResolverStub(
       messageData.requesterDid,
       messageData.requesterKeyId,
       messageData.requesterKeyPair.publicJwk
     );
-    const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
-    resolveStub.withArgs(messageData.requesterDid).resolves(didResolutionResult);
-    const didResolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
     messageStoreStub.query.throwsException('anyError'); // simulate a DB query error
 
-    const context = { tenant: messageData.requesterDid };
-    const reply = await handleCollectionsQuery(context, messageData.message, messageStoreStub, didResolverStub);
+    const reply = await handleCollectionsQuery(messageData.message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(500);
   });
@@ -163,19 +151,15 @@ describe('handleCollectionsQuery()', () => {
     const messageData = await TestDataGenerator.generateCollectionQueryMessage({ dateSort: 'createdAscending' });
 
     // setting up a stub method resolver & message store
-    const didResolutionResult = TestDataGenerator.createDidResolutionResult(
+    const didResolverStub = TestStubGenerator.createDidResolverStub(
       messageData.requesterDid,
       messageData.requesterKeyId,
       messageData.requesterKeyPair.publicJwk
     );
-    const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
-    resolveStub.withArgs(messageData.requesterDid).resolves(didResolutionResult);
-    const didResolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
     messageStoreStub.query.throwsException('anyError'); // simulate a DB query error
 
-    const context = { tenant: messageData.requesterDid };
-    const reply = await handleCollectionsQuery(context, messageData.message, messageStoreStub, didResolverStub);
+    const reply = await handleCollectionsQuery(messageData.message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(500);
     expect(reply.status.message).to.equal('`dateSort` not implemented');

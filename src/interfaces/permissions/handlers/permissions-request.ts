@@ -5,14 +5,13 @@ import { MessageReply } from '../../../core';
 import { PermissionsRequest } from '../messages/permissions-request';
 
 export const handlePermissionsRequest: MethodHandler = async (
-  ctx,
   message,
   messageStore,
   didResolver
 ): Promise<MessageReply> => {
   const request = new PermissionsRequest(message as PermissionsRequestSchema);
 
-  if (ctx.tenant !== request.grantedBy && ctx.tenant !== request.grantedTo) {
+  if (message.descriptor.target !== request.grantedBy && message.descriptor.target !== request.grantedTo) {
     return new MessageReply({
       status: { code: 400, message: 'grantedBy or grantedTo must be the targeted message recipient' }
     });
@@ -27,7 +26,7 @@ export const handlePermissionsRequest: MethodHandler = async (
   }
 
   try {
-    await messageStore.put(message, ctx);
+    await messageStore.put(message);
 
     return new MessageReply({
       status: { code: 202, message: 'Accepted' }

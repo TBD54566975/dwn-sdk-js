@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { validate } from '../../../validation/validator';
 
 type PermissionsGrantOptions = AuthCreateOptions & {
+  target: string,
   conditions?: PermissionConditions;
   description: string;
   grantedTo: string;
@@ -35,6 +36,7 @@ export class PermissionsGrant extends Message implements Authorizable {
     const mergedConditions = { ...DEFAULT_CONDITIONS, ...providedConditions  };
 
     const descriptor: PermissionsGrantDescriptor = {
+      target      : options.target,
       conditions  : mergedConditions,
       description : options.description,
       grantedTo   : options.grantedTo,

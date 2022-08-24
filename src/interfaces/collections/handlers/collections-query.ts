@@ -5,7 +5,6 @@ import { MessageReply } from '../../../core';
 import { removeUndefinedProperties } from '../../../utils/object';
 
 export const handleCollectionsQuery: MethodHandler = async (
-  context,
   message,
   messageStore,
   didResolver
@@ -28,12 +27,13 @@ export const handleCollectionsQuery: MethodHandler = async (
     }
 
     const query = {
-      method: 'CollectionsWrite',
+      target : validatedMessage.descriptor.target,
+      method : 'CollectionsWrite',
       ...validatedMessage.descriptor.filter
     };
     removeUndefinedProperties(query);
 
-    const entries = await messageStore.query(query, context);
+    const entries = await messageStore.query(query);
 
     return new MessageReply({
       status: { code: 200, message: 'OK' },

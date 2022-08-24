@@ -1,6 +1,7 @@
-import type { Authorization, BaseMessageSchema } from '../../core/types';
+import type { Authorization } from '../../core/types';
 
 export type CollectionsWriteDescriptor = {
+  target: string;
   method: 'CollectionsWrite';
   protocol?: string;
   schema?: string;
@@ -13,12 +14,13 @@ export type CollectionsWriteDescriptor = {
   dataFormat: string;
 };
 
-export type CollectionsWriteSchema = BaseMessageSchema & Authorization & {
+export type CollectionsWriteSchema = Authorization & {
   descriptor: CollectionsWriteDescriptor;
   encodedData?: string;
 };
 
 export type CollectionsQueryDescriptor = {
+  target: string;
   method: 'CollectionsQuery';
   nonce: string;
   filter: {
@@ -30,6 +32,6 @@ export type CollectionsQueryDescriptor = {
   dateSort?: string;
 };
 
-export type CollectionsQuerySchema = BaseMessageSchema & Authorization & {
+export type CollectionsQuerySchema = Authorization & {
   descriptor: CollectionsQueryDescriptor;
 };

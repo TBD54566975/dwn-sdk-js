@@ -7,6 +7,7 @@ import { sign, verifyAuth } from '../../../core/auth';
 import { validate } from '../../../validation/validator';
 
 type CollectionsQueryOptions = AuthCreateOptions & {
+  target: string;
   nonce: string;
   filter: {
     protocol?: string;
@@ -26,6 +27,7 @@ export class CollectionsQuery extends Message implements Authorizable {
 
   static async create(options: CollectionsQueryOptions): Promise<CollectionsQuery> {
     const descriptor: CollectionsQueryDescriptor = {
+      target   : options.target,
       method   : 'CollectionsQuery',
       nonce    : options.nonce,
       filter   : options.filter,

@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { validate } from '../../../validation/validator';
 
 type PermissionsRequestOptions = AuthCreateOptions & {
+  target: string;
   conditions?: PermissionConditions;
   description: string;
   grantedTo: string;
@@ -30,6 +31,7 @@ export class PermissionsRequest extends Message implements Authorizable {
     const mergedConditions = { ...DEFAULT_CONDITIONS, ...providedConditions  };
 
     const descriptor: PermissionsRequestDescriptor = {
+      target      : opts.target,
       conditions  : mergedConditions,
       description : opts.description,
       grantedTo   : opts.grantedTo,

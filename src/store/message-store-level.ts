@@ -1,4 +1,3 @@
-import type { Context } from '../types';
 import type { GenericMessageSchema, BaseMessageSchema } from '../core/types';
 import type { MessageStore } from './message-store';
 
@@ -65,8 +64,8 @@ export class MessageStoreLevel implements MessageStore {
     await this.index.INDEX.STORE.close(); // MUST close index-search DB, else `searchIndex()` triggered in a different instance will hang indefinitely
   }
 
-  async get(cid: CID, ctx: Context): Promise<BaseMessageSchema> {
-    const bytes = await this.db.get(cid, ctx);
+  async get(cid: CID): Promise<BaseMessageSchema> {
+    const bytes = await this.db.get(cid);
 
     if (!bytes) {
       return;
@@ -98,10 +97,7 @@ export class MessageStoreLevel implements MessageStore {
     return messageJson as BaseMessageSchema;
   }
 
-  async query(query: any, ctx: Context): Promise<BaseMessageSchema[]> {
-    // MUST scope the query to the tenant
-    query.tenant = ctx.tenant;
-
+  async query(query: any): Promise<BaseMessageSchema[]> {
     const messages: BaseMessageSchema[] = [];
 
     // parse query into a query that is compatible with the index we're using
@@ -110,7 +106,7 @@ export class MessageStoreLevel implements MessageStore {
 
     for (const result of indexResults) {
       const cid = CID.parse(result._id);
-      const message = await this.get(cid, ctx);
+      const message = await this.get(cid);
 
       messages.push(message);
     }
@@ -119,15 +115,15 @@ export class MessageStoreLevel implements MessageStore {
   }
 
 
-  async delete(cid: CID, ctx: Context): Promise<void> {
+  async delete(cid: CID): Promise<void> {
     // TODO: Implement data deletion in Collections - https://github.com/TBD54566975/dwn-sdk-js/issues/84
-    await this.db.delete(cid, ctx);
+    await this.db.delete(cid);
     await this.index.DELETE(cid.toString());
 
     return;
   }
 
-  async put(messageJson: BaseMessageSchema, ctx: Context): Promise<void> {
+  async put(messageJson: BaseMessageSchema): Promise<void> {
 
     // delete `encodedData` if it exists so `messageJson` is stored without it, `encodedData` will be decoded, chunked and stored separately below
     let encodedData = undefined;
@@ -157,9 +153,7 @@ export class MessageStoreLevel implements MessageStore {
 
     const indexDocument = {
       ...messageJson.descriptor,
-      _id    : encodedBlock.cid.toString(),
-      author : ctx.author,
-      tenant : ctx.tenant
+      _id: encodedBlock.cid.toString()
     };
 
     // tokenSplitRegex is used to tokenize values. By default, only letters and digits are indexed,

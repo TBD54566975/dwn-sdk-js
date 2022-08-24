@@ -65,47 +65,34 @@ describe('MessageStoreLevel Tests', () => {
     });
 
     it('stores messages as cbor/sha256 encoded blocks with CID as key', async () => {
-      const ctx = { tenant: 'doodeedoo' };
       const message = await TestDataGenerator.generatePermissionRequestMessage();
 
-      await messageStore.put(message, ctx);
+      await messageStore.put(message);
 
       const expectedCid = await generateCid(message);
 
-      const jsonMessage = await messageStore.get(expectedCid, ctx);
+      const jsonMessage = await messageStore.get(expectedCid);
       const resultCid = await generateCid(jsonMessage);
 
       expect(resultCid.equals(expectedCid)).to.be.true;
     });
 
-    it('adds author to index', async () => {
-      const ctx = { tenant: 'did:ex:alice', author: 'did:ex:clifford' };
-      const message = await TestDataGenerator.generatePermissionRequestMessage();
-
-      await messageStore.put(message, ctx);
-
-      const results = await messageStore.query({ author: ctx.author }, ctx);
-      expect(results.length).to.equal(1);
-    });
-
     it('adds tenant to index', async () => {
-      const ctx = { tenant: 'did:ex:alice', author: 'did:ex:clifford' };
       const message = await TestDataGenerator.generatePermissionRequestMessage();
 
-      await messageStore.put(message, ctx);
+      await messageStore.put(message);
 
-      const results = await messageStore.query({ tenant: ctx.tenant }, ctx);
+      const results = await messageStore.query({ target: message.descriptor.target });
       expect(results.length).to.equal(1);
     });
 
     it('should index properties with characters beyond just letters and digits', async () => {
-      const context = { tenant: 'did:example:alice' };
       const schema = 'http://my-awesome-schema/awesomeness_schema#awesome-1?id=awesome_1';
       const messageData = await TestDataGenerator.generateCollectionWriteMessage({ schema });
 
-      await messageStore.put(messageData.message, context);
+      await messageStore.put(messageData.message);
 
-      const results = await messageStore.query({ schema }, context);
+      const results = await messageStore.query({ schema });
       expect((results[0] as CollectionsWriteSchema).descriptor.schema).to.equal(schema);
     });
   });

@@ -51,7 +51,7 @@ describe('DWN', () => {
       };
       const dwn = await DWN.create(dwnConfig);
 
-      const reply = await dwn.processMessage(messageData.message, { tenant: requesterDid });
+      const reply = await dwn.processMessage(messageData.message);
 
       expect(reply.status.code).to.equal(202);
     });
@@ -78,7 +78,7 @@ describe('DWN', () => {
       };
       const dwn = await DWN.create(dwnConfig);
 
-      const reply = await dwn.processMessage(messageData.message, { tenant: 'did:ion:anyTargetTenant' });
+      const reply = await dwn.processMessage(messageData.message);
 
       expect(reply.status.code).to.equal(200);
       expect(reply.entries).to.be.empty;

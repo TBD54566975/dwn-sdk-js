@@ -1,5 +1,4 @@
-import type { Blockstore } from 'interface-blockstore';
-import type { Context } from '../types';
+import type { Blockstore, Options } from 'interface-blockstore';
 import type { AwaitIterable, Pair, Batch, Query, KeyQuery } from 'interface-store';
 
 import { CID } from 'multiformats';
@@ -55,11 +54,11 @@ export class BlockstoreLevel implements Blockstore {
     return this.db.close();
   }
 
-  put(key: CID, val: Uint8Array, _ctx?: Context): Promise<void> {
+  put(key: CID, val: Uint8Array, _ctx?: Options): Promise<void> {
     return this.db.put(key.toString(), val);
   }
 
-  async get(key: CID, _ctx?: Context): Promise<Uint8Array | undefined> {
+  async get(key: CID, _options?: Options): Promise<Uint8Array | undefined> {
     try {
       const val = await this.db.get(key.toString());
       return val;
@@ -73,33 +72,33 @@ export class BlockstoreLevel implements Blockstore {
     }
   }
 
-  async has(key: CID, _ctx?: Context): Promise<boolean> {
+  async has(key: CID, _options?: Options): Promise<boolean> {
     return !! await this.get(key);
   }
 
-  delete(key: CID, _ctx?: Context): Promise<void> {
+  delete(key: CID, _options?: Options): Promise<void> {
     return this.db.del(key.toString());
   }
 
-  async * putMany(source: AwaitIterable<Pair<CID, Uint8Array>>, _ctx?: Context):
+  async * putMany(source: AwaitIterable<Pair<CID, Uint8Array>>, options?: Options):
     AsyncIterable<Pair<CID, Uint8Array>> {
 
     for await (const entry of source) {
-      await this.put(entry.key, entry.value, _ctx);
+      await this.put(entry.key, entry.value, options);
 
       yield entry;
     }
   }
 
-  async * getMany(source: AwaitIterable<CID>, _ctx?: Context): AsyncIterable<Uint8Array> {
+  async * getMany(source: AwaitIterable<CID>, _options?: Options): AsyncIterable<Uint8Array> {
     for await (const key of source) {
       yield this.get(key);
     }
   }
 
-  async * deleteMany(source: AwaitIterable<CID>, _ctx?: Context): AsyncIterable<CID> {
+  async * deleteMany(source: AwaitIterable<CID>, options?: Options): AsyncIterable<CID> {
     for await (const key of source) {
-      await this.delete(key, _ctx);
+      await this.delete(key, options);
 
       yield key;
     }
@@ -116,11 +115,11 @@ export class BlockstoreLevel implements Blockstore {
     throw new Error('not implemented');
   }
 
-  query(_query: Query<CID, Uint8Array>, _ctx?: Context): AsyncIterable<Pair<CID, Uint8Array>> {
+  query(_query: Query<CID, Uint8Array>, _options?: Options): AsyncIterable<Pair<CID, Uint8Array>> {
     throw new Error('not implemented');
   }
 
-  queryKeys(_query: KeyQuery<CID>, _ctx?: Context): AsyncIterable<CID> {
+  queryKeys(_query: KeyQuery<CID>, _options?: Options): AsyncIterable<CID> {
     throw new Error('not implemented');
   }
 }

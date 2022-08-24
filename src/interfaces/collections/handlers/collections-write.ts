@@ -7,7 +7,6 @@ import { getDagCid } from '../../../utils/data';
 import { MessageReply } from '../../../core';
 
 export const handleCollectionsWrite: MethodHandler = async (
-  context,
   message,
   messageStore,
   didResolver
@@ -38,10 +37,11 @@ export const handleCollectionsWrite: MethodHandler = async (
 
     // get existing records matching the `recordId`
     const query = {
+      target   : incomingMessage.descriptor.target,
       method   : 'CollectionsWrite',
       recordId : incomingMessage.descriptor.recordId
     };
-    const existingMessages = await messageStore.query(query, context) as CollectionsWriteSchema[];
+    const existingMessages = await messageStore.query(query) as CollectionsWriteSchema[];
 
     // find which message is the newest, and if the incoming message is the newest
     let newestMessage = await CollectionsWrite.getNewestMessage(existingMessages);
@@ -54,7 +54,7 @@ export const handleCollectionsWrite: MethodHandler = async (
     // write the incoming message to DB if incoming message is newest
     let messageReply: MessageReply;
     if (incomingMessageIsNewest) {
-      await messageStore.put(message, context);
+      await messageStore.put(message);
 
       messageReply = new MessageReply({
         status: { code: 202, message: 'Accepted' }
@@ -69,7 +69,7 @@ export const handleCollectionsWrite: MethodHandler = async (
     for (const message of existingMessages) {
       if (await CollectionsWrite.isNewer(newestMessage, message)) {
         const cid = await CollectionsWrite.getCid(message);
-        await messageStore.delete(cid, context);
+        await messageStore.delete(cid);
       }
     }
 
