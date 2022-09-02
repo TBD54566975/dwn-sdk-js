@@ -3,11 +3,10 @@
   "$id": "https://identity.foundation/dwn/json-schemas/request.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["target", "messages"],
+  "required": [
+    "messages"
+  ],
   "properties": {
-    "target": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
-    },
     "messages": {
       "type": "array",
       "minItems": 1,

@@ -74,5 +74,4 @@ export type AuthCreateOptions = {
 
 export type RequestSchema = {
   messages: BaseMessageSchema[]
-  target: string
 };
