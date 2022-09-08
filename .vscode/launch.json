@@ -8,10 +8,10 @@
             "type": "pwa-node",
             "request": "launch",
             "name": "Tests - Node",
-            "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/ts-mocha",
+            "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/mocha",
             "runtimeArgs": [
-                "--type-check",
-                "tests/**/*.spec.ts"
+                "--es-module-specifier-resolution=node",
+                "dist/esm/tests/**/*.spec.js"
             ],
             "console": "internalConsole"
         },

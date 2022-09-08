@@ -6,6 +6,7 @@ import type { MessageStore } from './store/message-store';
 import { addSchema } from './validation/validator';
 import { CollectionsInterface, PermissionsInterface } from './interfaces';
 import { DIDResolver } from './did/did-resolver';
+import { IonDidResolver } from './did/ion-did-resolver';
 import { Message, MessageReply, Request, Response } from './core';
 import { MessageStoreLevel } from './store/message-store-level';
 
@@ -25,7 +26,7 @@ export class DWN {
 
   static async create(config: Config): Promise<DWN> {
     config.messageStore = config.messageStore || new MessageStoreLevel();
-    config.DIDMethodResolvers = config.DIDMethodResolvers || [];
+    config.DIDMethodResolvers = config.DIDMethodResolvers || [new IonDidResolver()];
     config.interfaces = config.interfaces || [];
 
     for (const { methodHandlers, schemas } of config.interfaces) {
@@ -57,11 +58,17 @@ export class DWN {
     return this.messageStore.close();
   }
 
-  async processRequest(rawRequest: any): Promise<Response> {
+  async processRequest(rawRequest: Uint8Array): Promise<Response> {
     let request: RequestSchema;
+    try {
+      const requestString = new TextDecoder().decode(rawRequest);
+      request = JSON.parse(requestString);
+    } catch {
+      throw new Error('expected request to be valid JSON');
+    }
 
     try {
-      request = Request.parse(rawRequest);
+      request = Request.parse(request);
     } catch (e) {
       return new Response({
         status: { code: 400, message: e.message }
@@ -100,7 +107,7 @@ export class DWN {
 };
 
 export type Config = {
-  DIDMethodResolvers: DIDMethodResolver[],
+  DIDMethodResolvers?: DIDMethodResolver[],
   interfaces?: Interface[];
   messageStore?: MessageStore;
 };
