@@ -1,4 +1,3 @@
-import type { Context } from './types';
 import type { DIDMethodResolver } from './did/did-resolver';
 import type { Interface, MethodHandler } from './interfaces/types';
 import type { BaseMessageSchema, RequestSchema } from './core/types';
@@ -70,10 +69,9 @@ export class DWN {
     }
 
     const response = new Response();
-    const context: Context = { tenant: request.target };
 
     for (const message of request.messages) {
-      const result = await this.processMessage(message, context);
+      const result = await this.processMessage(message);
       response.addMessageResult(result);
     }
 
@@ -84,7 +82,7 @@ export class DWN {
    * TODO: add docs, Issue #70 https://github.com/TBD54566975/dwn-sdk-js/issues/70
    * @param message
    */
-  async processMessage(rawMessage: object, ctx: Context): Promise<MessageReply> {
+  async processMessage(rawMessage: object): Promise<MessageReply> {
     let message: BaseMessageSchema;
 
     try {
@@ -95,9 +93,9 @@ export class DWN {
       });
     }
 
-    const interfaceMethod = DWN.methodHandlers[message.descriptor.method];
+    const interfaceMethodHandler = DWN.methodHandlers[message.descriptor.method];
 
-    return await interfaceMethod(ctx, message, this.messageStore, this.DIDResolver);
+    return await interfaceMethodHandler(message, this.messageStore, this.DIDResolver);
   }
 };
 

@@ -11,6 +11,7 @@ import { sign, verifyAuth } from '../../../core/auth';
 import { validate } from '../../../validation/validator';
 
 type CollectionsWriteOptions = AuthCreateOptions & {
+  target: string;
   protocol?: string;
   schema?: string;
   recordId: string;
@@ -32,6 +33,7 @@ export class CollectionsWrite extends Message implements Authorizable {
   static async create(options: CollectionsWriteOptions): Promise<CollectionsWrite> {
     const dataCid = await getDagCid(options.data);
     const descriptor: CollectionsWriteDescriptor = {
+      target        : options.target,
       method        : 'CollectionsWrite',
       protocol      : options.protocol,
       schema        : options.schema,

@@ -9,6 +9,7 @@ import { DIDResolver } from '../did/did-resolver';
  */
 export type BaseMessageSchema = {
   descriptor: {
+    target: string;
     method: string;
   };
 };
@@ -73,5 +74,4 @@ export type AuthCreateOptions = {
 
 export type RequestSchema = {
   messages: BaseMessageSchema[]
-  target: string
 };

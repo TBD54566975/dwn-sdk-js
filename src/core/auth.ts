@@ -30,38 +30,40 @@ export async function verifyAuth(
   didResolver: DIDResolver,
   payloadConstraints?: PayloadConstraints
 ): Promise<AuthVerificationResult> {
+  // signature verification is computationally intensive, so we're going to start
+  // by validating the payload.
+  const parsedPayload = await validateSchema(message, payloadConstraints);
+
+  const signers = await authenticate(message.authorization, didResolver);
+
+  await authorize(message, signers);
+
+  return { payload: parsedPayload, signers };
+}
+
+async function validateSchema(
+  message: BaseMessageSchema & Authorization,
+  payloadConstraints?: PayloadConstraints
+): Promise<{ descriptorCid: CID, [key: string]: CID }> {
 
   if (message.authorization.signatures.length !== 1) {
     throw new Error('Expected no more than 1 signature for authorization');
   }
 
-  const verifier = new GeneralJwsVerifier(message.authorization);
-
-  // signature verification is computationally intensive, so we're going to start
-  // by validating the payload.
-
-  const payloadBytes: Uint8Array = verifier.decodePayload();
-  const payloadStr = new TextDecoder().decode(payloadBytes);
-  let payloadJson;
-
-  try {
-    payloadJson = JSON.parse(payloadStr);
-  } catch {
-    throw new Error('auth payload must be a valid JSON object');
-  }
+  const payloadJson = GeneralJwsVerifier.decodeJsonPayload(message.authorization);
 
   if (!isPlainObject(payloadJson)) {
     throw new Error('auth payload must be a valid JSON object');
   }
 
+  // the authorization payload should, at minimum, always contain `descriptorCid` regardless
+  // of whatever else is present.
   const { descriptorCid } = payloadJson;
   if (!descriptorCid) {
     throw new Error('descriptorCid must be present in authorization payload');
   }
 
-  // the authorization payload should, at minimum, always contain `descriptorCid` regardless
-  // of whatever else is present. check to ensure that the provided descriptorCid matches
-  // the CID of the actual message
+  // check to ensure that the provided descriptorCid matches the CID of the actual message
 
   // parseCid throws an exception if parsing fails
   const providedDescriptorCid = parseCid(descriptorCid);
@@ -71,6 +73,7 @@ export async function verifyAuth(
     throw new Error('provided descriptorCid does not match expected CID');
   }
 
+  // property bag for all properties inspected
   const parsedPayload = { descriptorCid: providedDescriptorCid };
 
   payloadConstraints = payloadConstraints || { properties: new Set([]) };
@@ -91,9 +94,22 @@ export async function verifyAuth(
     }
   }
 
-  const { signers } = await verifier.verify(didResolver);
+  return parsedPayload;
+}
 
-  return { payload: parsedPayload, signers };
+async function authenticate(jws: GeneralJws, didResolver: DIDResolver): Promise<string[]> {
+  const verifier = new GeneralJwsVerifier(jws);
+  const { signers } = await verifier.verify(didResolver);
+  return signers;
+}
+
+async function authorize(message: BaseMessageSchema, signers: string[]): Promise<void> {
+  // if requester is the same as the target DID, we can directly grant access
+  if (signers[0] === message.descriptor.target) {
+    return;
+  } else {
+    throw new Error('message failed authorization, permission grant check not yet implemented');
+  }
 }
 
 /**

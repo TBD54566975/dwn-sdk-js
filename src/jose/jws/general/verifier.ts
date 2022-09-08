@@ -96,8 +96,15 @@ export class GeneralJwsVerifier {
     return await verifier.verify(payload, signatureBytes, jwkPublic);
   }
 
-  decodePayload(): Uint8Array {
-    return base64url.baseDecode(this.jws.payload);
+  static decodeJsonPayload(jws: GeneralJws): any {
+    try {
+      const payloadBytes = base64url.baseDecode(jws.payload);
+      const payloadString = new TextDecoder().decode(payloadBytes);
+      const payloadJson = JSON.parse(payloadString);
+      return payloadJson;
+    } catch {
+      throw new Error('auth payload must be a valid JSON object');
+    }
   }
 
   private static extractDid(kid: string): string {

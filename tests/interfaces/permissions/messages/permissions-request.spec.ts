@@ -25,6 +25,7 @@ describe('PermissionsRequest', () => {
       };
 
       const message = await PermissionsRequest.create({
+        target      : 'did:jank:bob',
         description : 'drugs',
         grantedBy   : 'did:jank:bob',
         grantedTo   : 'did:jank:alice',
@@ -53,6 +54,7 @@ describe('PermissionsRequest', () => {
       };
 
       const message = await PermissionsRequest.create({
+        target      : 'did:jank:bob',
         description : 'drugs',
         grantedBy   : 'did:jank:bob',
         grantedTo   : 'did:jank:alice',
@@ -101,6 +103,7 @@ describe('PermissionsRequest', () => {
         };
 
         const message = await PermissionsRequest.create({
+          target         : 'did:jank:alice',
           description    : 'drugs',
           grantedBy      : 'did:jank:bob',
           grantedTo      : 'did:jank:alice',
@@ -144,7 +147,7 @@ describe('PermissionsRequest', () => {
 
         for (const vector of testVectors) {
           const payloadBytes = new TextEncoder().encode(vector);
-          const protectedHeader = { alg: privateJwk.alg, kid: 'did:jank:alice#key1' };
+          const protectedHeader = { alg: privateJwk.alg!, kid: 'did:jank:alice#key1' };
 
           const signer = await GeneralJwsSigner.create(payloadBytes, [{ jwkPrivate: privateJwk, protectedHeader }]);
           const jws = signer.getJws();

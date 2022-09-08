@@ -14,7 +14,13 @@
     "descriptor": {
       "type": "object",
       "additionalProperties": false,
+      "required": [
+        "target"
+      ],
       "properties": {
+        "target": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+        },
         "conditions": {
           "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/conditions"
         },
@@ -28,7 +34,9 @@
           "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/grantedBy"
         },
         "method": {
-          "enum": ["PermissionsRequest"],
+          "enum": [
+            "PermissionsRequest"
+          ],
           "type": "string"
         },
         "scope": {

@@ -5,6 +5,7 @@ describe('CollectionsQuery schema definition', () => {
   it('should allow descriptor with only required properties', async () => {
     const validMessage = {
       descriptor: {
+        target : 'did:example:anyDid',
         method : 'CollectionsQuery',
         nonce  : 'anyNonce',
         filter : { schema: 'anySchema' }
@@ -26,6 +27,7 @@ describe('CollectionsQuery schema definition', () => {
   it('should throws if `authorization` is missing', () => {
     const invalidMessage = {
       descriptor: {
+        target : 'did:example:anyDid',
         method : 'CollectionsQuery',
         nonce  : 'anyNonce',
         filter : { schema: 'anySchema' }
@@ -40,6 +42,7 @@ describe('CollectionsQuery schema definition', () => {
   it('should throws if unknown property is given in message', () => {
     const invalidMessage = {
       descriptor: {
+        target : 'did:example:anyDid',
         method : 'CollectionsQuery',
         nonce  : 'anyNonce',
         filter : { schema: 'anySchema' }
@@ -62,6 +65,7 @@ describe('CollectionsQuery schema definition', () => {
   it('should throws if unknown property is given in the `descriptor`', () => {
     const invalidMessage = {
       descriptor: {
+        target          : 'did:example:anyDid',
         method          : 'CollectionsQuery',
         nonce           : 'anyNonce',
         filter          : { schema: 'anySchema' },
@@ -84,6 +88,7 @@ describe('CollectionsQuery schema definition', () => {
   it('should throws if empty `filter` property is given in the `descriptor`', () => {
     const invalidMessage = {
       descriptor: {
+        target : 'did:example:anyDid',
         method : 'CollectionsQuery',
         nonce  : 'anyNonce',
         filter : { }
@@ -108,6 +113,7 @@ describe('CollectionsQuery schema definition', () => {
     for (const dateSortValue of allowedDateSortValues) {
       const validMessage = {
         descriptor: {
+          target   : 'did:example:anyDid',
           method   : 'CollectionsQuery',
           nonce    : 'anyNonce',
           filter   : { schema: 'anySchema' },
@@ -131,6 +137,7 @@ describe('CollectionsQuery schema definition', () => {
     // test an invalid values of `dateSort`
     const invalidMessage = {
       descriptor: {
+        target   : 'did:example:anyDid',
         method   : 'CollectionsQuery',
         nonce    : 'anyNonce',
         filter   : { schema: 'anySchema' },
