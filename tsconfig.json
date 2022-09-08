@@ -5,7 +5,7 @@
       "ES6"
     ],
     "target": "es6",
-    "module": "ESNext", // The moment we add this line `npm run test:node` stops working!
+    "module": "ESNext", // Required for enabling JavaScript import assertion support
     "declaration": true,
     "declarationMap": true,
     "outDir": "dist/esm",
@@ -18,7 +18,7 @@
   },
   "include": [
     "./src/index.ts",
-    "tests" // the moment we move this to `include`, node project referencing this project fails to find this module
+    "tests" // building tests also so we can run tests directly without the need for ts-node, ts-mocha
   ],
   "exclude": [
     "node_modules",
