@@ -1,0 +1,16 @@
+{
+  "all": true,
+  "cache": false,
+  "extension": [
+    ".js"
+  ],
+  "include": [
+    "dist/esm/src/**"
+  ],
+  "reporter": [
+    "text",
+    "cobertura",
+    "html",
+    "json-summary"
+  ]
+}
