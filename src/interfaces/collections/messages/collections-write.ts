@@ -9,6 +9,7 @@ import { Message } from '../../../core/message';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { sign, verifyAuth } from '../../../core/auth';
 import { validate } from '../../../validation/validator';
+import { MessageStore } from '../../../store/message-store';
 
 type CollectionsWriteOptions = AuthCreateOptions & {
   target: string;
@@ -60,10 +61,10 @@ export class CollectionsWrite extends Message implements Authorizable {
     return new CollectionsWrite(message);
   }
 
-  async verifyAuth(didResolver: DIDResolver): Promise<AuthVerificationResult> {
+  async verifyAuth(didResolver: DIDResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
 
     // TODO: Issue #75 - Add permission verification - https://github.com/TBD54566975/dwn-sdk-js/issues/75
-    return await verifyAuth(this.message, didResolver);
+    return await verifyAuth(this.message, didResolver, messageStore);
   }
 
   /**

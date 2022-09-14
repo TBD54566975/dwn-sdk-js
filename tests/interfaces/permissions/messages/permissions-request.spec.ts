@@ -9,6 +9,7 @@ import { validate } from '../../../../src/validation/validator';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
+import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 
 chai.use(chaiAsPromised);
 
@@ -116,8 +117,9 @@ describe('PermissionsRequest', () => {
 
         // @ts-ignore
         const resolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
+        const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-        const { signers } = await message.verifyAuth(resolverStub);
+        const { signers } = await message.verifyAuth(resolverStub, messageStoreStub);
 
         expect(signers.length).to.equal(1);
         expect(signers).to.include('did:jank:alice');
@@ -156,8 +158,9 @@ describe('PermissionsRequest', () => {
 
           const message = new PermissionsRequest(jsonMessage as PermissionsRequestSchema);
           const resolverStub = sinon.createStubInstance(DIDResolver);
+          const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-          await expect(message.verifyAuth(resolverStub))
+          await expect(message.verifyAuth(resolverStub, messageStoreStub))
             .to.eventually.be.rejectedWith('must be a valid JSON object');
         }
       });

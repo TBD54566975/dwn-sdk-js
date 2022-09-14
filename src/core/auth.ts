@@ -8,6 +8,8 @@ import lodash from 'lodash';
 import { DIDResolver } from '../did/did-resolver';
 import { CID } from 'multiformats';
 import { GeneralJws } from '../jose/jws/general/types';
+import { CollectionsQuerySchema, CollectionsWriteSchema } from '../interfaces/collections/types';
+import { MessageStore } from '../store/message-store';
 
 const { isPlainObject } = lodash;
 
@@ -17,17 +19,13 @@ type PayloadConstraints = {
 };
 
 /**
- * validates and verifies `authorization` of the provided message:
- * - verifies signature
- * - verifies `descriptorCid` matches the actual CID of the descriptor
- * - verifies payload constraints if given
- * @throws {Error} if auth payload is not a valid JSON object
- * @throws {Error} if descriptorCid is missing from Auth payload
- * @throws {Error} if provided descriptorCid does not match expected descriptor CID
+ * Authenticates then authorizes the given Permissions message.
+ * @throws {Error} if auth fails
  */
 export async function verifyAuth(
   message: BaseMessageSchema & Authorization,
   didResolver: DIDResolver,
+  messageStore: MessageStore,
   payloadConstraints?: PayloadConstraints
 ): Promise<AuthVerificationResult> {
   // signature verification is computationally intensive, so we're going to start
@@ -36,7 +34,17 @@ export async function verifyAuth(
 
   const signers = await authenticate(message.authorization, didResolver);
 
-  await authorize(message, signers);
+  switch (message.descriptor.method) {
+  case 'PermissionsRequest':
+    await authorizePermissionsMessage(message, signers);
+    break;
+  case 'CollectionsWrite':
+  case 'CollectionsQuery':
+    await authorizeCollectionsMessage(message as CollectionsQuerySchema | CollectionsWriteSchema, signers, messageStore);
+    break;
+  default:
+    throw new Error(`unknown message method type for auth: ${message.descriptor.method}`);
+  }
 
   return { payload: parsedPayload, signers };
 }
@@ -47,7 +55,7 @@ async function validateSchema(
 ): Promise<{ descriptorCid: CID, [key: string]: CID }> {
 
   if (message.authorization.signatures.length !== 1) {
-    throw new Error('Expected no more than 1 signature for authorization');
+    throw new Error('expected no more than 1 signature for authorization');
   }
 
   const payloadJson = GeneralJwsVerifier.decodeJsonPayload(message.authorization);
@@ -103,13 +111,206 @@ async function authenticate(jws: GeneralJws, didResolver: DIDResolver): Promise<
   return signers;
 }
 
-async function authorize(message: BaseMessageSchema, signers: string[]): Promise<void> {
+async function authorizePermissionsMessage(message: BaseMessageSchema, signers: string[]): Promise<void> {
   // if requester is the same as the target DID, we can directly grant access
   if (signers[0] === message.descriptor.target) {
     return;
   } else {
     throw new Error('message failed authorization, permission grant check not yet implemented');
   }
+}
+
+async function authorizeCollectionsMessage(
+  message: CollectionsWriteSchema | CollectionsQuerySchema,
+  signers: string[],
+  messageStore: MessageStore
+): Promise<void> {
+  // if requester is the same as the target DID, we can directly grant access
+  if (signers[0] === message.descriptor.target) {
+    return;
+  }
+
+  // fall through to protocol-based authorization
+  await protocolAuthorize(message, signers[0], messageStore);
+}
+
+const methodToAllowedActionMap = {
+  'CollectionsWrite' : 'write',
+  'CollectionsQuery' : 'query'
+};
+
+async function getProtocolDefinition(message: CollectionsWriteSchema | CollectionsQuerySchema, messageStore: MessageStore): Promise<any> {
+  // fail if not a protocol-based object
+  let protocolUri: string;
+  if (message.descriptor.method === 'CollectionsWrite') {
+    protocolUri = (message as CollectionsWriteSchema).descriptor.protocol;
+  } else {
+    protocolUri = (message as CollectionsQuerySchema).descriptor.filter.protocol;
+  }
+
+  if (protocolUri === undefined) {
+    throw new Error('message does not have a protocol property for protocol-based authorization');
+  }
+
+  // fetch the corresponding protocol definition, temporary stubbing using collections
+  // get existing records matching the `recordId`
+  const query = {
+    target   : message.descriptor.target,
+    method   : 'CollectionsWrite',
+    schema   : 'dwn-protocol',
+    recordId : protocolUri
+  };
+  const protocols = await messageStore.query(query) as CollectionsWriteSchema[];
+
+  if (protocols.length === 0) {
+    throw new Error(`unable to find protocol definition for ${protocolUri}}`);
+  }
+
+  const protocolDefinition = {
+    recordTypes: {
+      credentialApplication: {
+        schema: 'https://identity.foundation/schemas/credential-application'
+      },
+      credentialResponse: {
+        schema: 'https://identity.foundation/schemas/credential-response'
+      }
+    },
+    structures: {
+      credentialApplication: {
+        contextRequired : true,
+        encryption      : true,
+        allow           : { // Issuers would have this allow present
+          anyone: {
+            to: [
+              'create'
+            ]
+          }
+        },
+        records: {
+          credentialResponse: {
+            allow: {
+              recipient: {
+                of : '$.[credential-application]', // only available in contexts, eval'd from the top of the contextual graph root
+                to : [
+                  'create'
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  };
+
+  return protocolDefinition;
+}
+
+/**
+ * Performs protocol-based authorization against the given collections message.
+ * @throws {Error} if authorization fails.
+ */
+export async function protocolAuthorize(
+  message: CollectionsWriteSchema | CollectionsQuerySchema,
+  senderDid: string,
+  messageStore: MessageStore
+): Promise<void> {
+  // fetch the protocol definition
+  const protocolDefinition = await getProtocolDefinition(message, messageStore);
+
+  // fetch message chain
+  const messageChain: CollectionsWriteSchema[] = [];
+
+  // record schema -> record type map
+  const recordSchemaToTypeMap = {};
+
+  // get the access control object by walking down the message chain from the root ancestor record
+  // and matching against the access control object in each level
+  let accessControlObjectForInboundMessage;
+  let currentStructureLevel = protocolDefinition.structures;
+  let currentMessageIndex = 0;
+  while (true) {
+    const currentRecordSchema = messageChain[currentMessageIndex].descriptor.schema;
+    const currentRecordType = recordSchemaToTypeMap[currentRecordSchema];
+
+    if (currentRecordType === undefined) {
+      throw new Error(`record with schema ${currentRecordSchema} not an allowed in protocol`);
+    }
+
+    if (!(currentRecordType in currentStructureLevel)) {
+      throw new Error(`record with schema: ${currentRecordSchema} not allowed in structure level ${currentMessageIndex}`);
+    }
+
+    // if we are looking at the inbound message itself (the last message in the chain),
+    // then we have found the access control object we need to evaluate against
+    if (currentMessageIndex === messageChain.length - 1) {
+      accessControlObjectForInboundMessage = currentStructureLevel[currentRecordType];
+      break;
+    }
+
+    // else we keep going down the message chain
+    currentStructureLevel = currentStructureLevel[currentRecordType].records;
+    currentMessageIndex++;
+  }
+
+  // corresponding access control object is found
+  // verify the sender against the `allow` property
+  const allowRule = accessControlObjectForInboundMessage.allow;
+  if (allowRule.anyone !== undefined) {
+    // good to go to next check
+  } else if (allowRule.recipient !== undefined) {
+    const messageForRecipientCheck = getMessage(messageChain, allowRule.recipient.of);
+    const expectedSenderDid = getRecipient(messageForRecipientCheck);
+
+    // the sender of the inbound message must be the recipient of the message obtained from the allow rule
+    if (senderDid !== expectedSenderDid) {
+      throw new Error(`inbound message sender ${senderDid} is not the expected ${expectedSenderDid}`);
+    }
+  } else {
+    throw new Error(`no matching allow condition`);
+  }
+
+  // recipient - the entity this message is intended for in the context of message exchange
+  // (putting it in authorization for now since it requires less code change)
+
+  // validate method invoked against the allowed actions defined in the `to` array property
+  let allowedActions: string[];
+  if (allowRule.anyone !== undefined) {
+    allowedActions = allowRule.anyone.to;
+  } else if (allowRule.recipient !== undefined) {
+    allowedActions = allowRule.recipient.to;
+  } // not possible to have `else` because of the above check already
+
+  const inboundMessageAction = methodToAllowedActionMap[message.descriptor.method];
+  if (!allowedActions.includes(inboundMessageAction)) {
+    throw new Error(`inbound message action ${inboundMessageAction} not in list of allowed actions ${allowedActions}`);
+  }
+
+  // make sure the context ID of the inbound message matches the existing context unless it is the first message
+  if (messageChain.length > 1) {
+    // get the `contextId` specified in the inbound message
+    let inboundMessageContextId: string;
+    if (message.descriptor.method === 'CollectionsWrite') {
+      inboundMessageContextId = (message as CollectionsWriteSchema).descriptor.contextId;
+    } else {
+      inboundMessageContextId = (message as CollectionsQuerySchema).descriptor.filter.contextId;
+    }
+
+    const expectedContextId = messageChain[0].descriptor.contextId;
+    if (inboundMessageContextId !== expectedContextId) {
+      throw new Error(`inbound message context ID ${inboundMessageContextId} does not match the expected context ID ${expectedContextId}`);
+    }
+  }
+
+  // !! MONKEY Wrench: create action is only allowed to create, not overwrite.
+}
+
+
+function getRecipient(_message: CollectionsWriteSchema): string {
+  return 'someDID';
+}
+
+function getMessage(messageChain: CollectionsWriteSchema[], _messagePath: string): CollectionsWriteSchema {
+  return messageChain[0];
 }
 
 /**

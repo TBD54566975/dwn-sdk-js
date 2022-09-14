@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
+import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 
 chai.use(chaiAsPromised);
 
@@ -49,7 +50,9 @@ describe('CollectionsWrite', () => {
       expect(message.descriptor.recordId).to.equal(options.recordId);
 
       const resolverStub = TestStubGenerator.createDidResolverStub(requesterDid, keyId, publicJwk);
-      const { signers } = await collectionsWrite.verifyAuth(resolverStub);
+      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+
+      const { signers } = await collectionsWrite.verifyAuth(resolverStub, messageStoreStub);
 
       expect(signers.length).to.equal(1);
       expect(signers).to.include(requesterDid);
@@ -67,9 +70,11 @@ describe('CollectionsWrite', () => {
       const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
       resolveStub.withArgs( requesterDid).resolves(didResolutionResult);
       const didResolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
+      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
       const collectionsWrite = new CollectionsWrite(messageData.message);
-      expect(collectionsWrite.verifyAuth(didResolverStub)).to.be.rejectedWith('signature verification failed for did:example:alice');
+      expect(collectionsWrite.verifyAuth(didResolverStub, messageStoreStub))
+        .to.be.rejectedWith('signature verification failed for did:example:alice');
     });
   });
 
