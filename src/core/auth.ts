@@ -223,10 +223,10 @@ export async function protocolAuthorize(
   // record schema -> record type map
   const recordSchemaToTypeMap = {};
 
-  // get the access control object by walking down the message chain from the root ancestor record
-  // and matching against the access control object in each level
-  let accessControlObjectForInboundMessage;
-  let currentStructureLevel = protocolDefinition.structures;
+  // get the rule set for the inbound message by walking down the message chain from the root ancestor record
+  // and matching against the corresponding rule set at each level
+  let ruleSetForInboundMessage;
+  let currentStructureLevelRuleSet = protocolDefinition.structures;
   let currentMessageIndex = 0;
   while (true) {
     const currentRecordSchema = messageChain[currentMessageIndex].descriptor.schema;
@@ -236,25 +236,25 @@ export async function protocolAuthorize(
       throw new Error(`record with schema ${currentRecordSchema} not an allowed in protocol`);
     }
 
-    if (!(currentRecordType in currentStructureLevel)) {
+    if (!(currentRecordType in currentStructureLevelRuleSet)) {
       throw new Error(`record with schema: ${currentRecordSchema} not allowed in structure level ${currentMessageIndex}`);
     }
 
     // if we are looking at the inbound message itself (the last message in the chain),
-    // then we have found the access control object we need to evaluate against
+    // then we have found the rule set we need to evaluate against
     if (currentMessageIndex === messageChain.length - 1) {
-      accessControlObjectForInboundMessage = currentStructureLevel[currentRecordType];
+      ruleSetForInboundMessage = currentStructureLevelRuleSet[currentRecordType];
       break;
     }
 
     // else we keep going down the message chain
-    currentStructureLevel = currentStructureLevel[currentRecordType].records;
+    currentStructureLevelRuleSet = currentStructureLevelRuleSet[currentRecordType].records;
     currentMessageIndex++;
   }
 
-  // corresponding access control object is found
+  // corresponding rule set is found
   // verify the sender against the `allow` property
-  const allowRule = accessControlObjectForInboundMessage.allow;
+  const allowRule = ruleSetForInboundMessage.allow;
   if (allowRule.anyone !== undefined) {
     // good to go to next check
   } else if (allowRule.recipient !== undefined) {
