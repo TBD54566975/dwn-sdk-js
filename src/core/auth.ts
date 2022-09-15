@@ -10,6 +10,7 @@ import { CID } from 'multiformats';
 import { GeneralJws } from '../jose/jws/general/types';
 import { CollectionsQuerySchema, CollectionsWriteSchema } from '../interfaces/collections/types';
 import { MessageStore } from '../store/message-store';
+import { base64url } from 'multiformats/bases/base64';
 
 const { isPlainObject } = lodash;
 
@@ -139,7 +140,7 @@ const methodToAllowedActionMap = {
   'CollectionsQuery' : 'query'
 };
 
-async function getProtocolDefinition(message: CollectionsWriteSchema | CollectionsQuerySchema, messageStore: MessageStore): Promise<any> {
+async function fetchProtocolDefinition(message: CollectionsWriteSchema | CollectionsQuerySchema, messageStore: MessageStore): Promise<any> {
   // fail if not a protocol-based object
   let protocolUri: string;
   if (message.descriptor.method === 'CollectionsWrite') {
@@ -166,43 +167,52 @@ async function getProtocolDefinition(message: CollectionsWriteSchema | Collectio
     throw new Error(`unable to find protocol definition for ${protocolUri}}`);
   }
 
-  const protocolDefinition = {
-    recordTypes: {
-      credentialApplication: {
-        schema: 'https://identity.foundation/schemas/credential-application'
-      },
-      credentialResponse: {
-        schema: 'https://identity.foundation/schemas/credential-response'
-      }
-    },
-    structures: {
-      credentialApplication: {
-        contextRequired : true,
-        encryption      : true,
-        allow           : { // Issuers would have this allow present
-          anyone: {
-            to: [
-              'create'
-            ]
-          }
-        },
-        records: {
-          credentialResponse: {
-            allow: {
-              recipient: {
-                of : '$.[credential-application]', // only available in contexts, eval'd from the top of the contextual graph root
-                to : [
-                  'create'
-                ]
-              }
-            }
-          }
-        }
-      }
-    }
-  };
+  const protocolMessage = protocols[0];
+  const decodedProtocolBytes = base64url.baseDecode(protocolMessage.encodedData);
+  const protocolDefinition = JSON.parse(new TextDecoder().decode(decodedProtocolBytes));
 
   return protocolDefinition;
+}
+
+/**
+ * Constructs a chain of existing messages
+ */
+async function constructExistingMessageChain(message: CollectionsWriteSchema | CollectionsQuerySchema, messageStore: MessageStore): Promise<any> {
+  const existingMessageChain: CollectionsWriteSchema[] = [];
+
+  let contextId;
+  let currentParentId;
+  if (message.descriptor.method === 'CollectionsWrite') {
+    const collectionsWriteMessage = (message as CollectionsWriteSchema);
+    contextId = collectionsWriteMessage.descriptor.contextId;
+    currentParentId = collectionsWriteMessage.descriptor.parentId;
+  } else {
+    const collectionsQueryMessage = (message as CollectionsQuerySchema);
+    contextId = collectionsQueryMessage.descriptor.filter.contextId;
+    currentParentId = collectionsQueryMessage.descriptor.filter.parentId;
+  }
+
+  while (currentParentId !== undefined) {
+    // fetch parent
+    const query = {
+      target   : message.descriptor.target,
+      method   : 'CollectionsWrite',
+      contextId,
+      recordId : currentParentId
+    };
+    const parentMessages = await messageStore.query(query) as CollectionsWriteSchema[];
+
+    if (parentMessages.length !== 1) {
+      throw new Error(`must have exactly one parent but found ${parentMessages.length}}`);
+    }
+
+    const parent = parentMessages[0];
+    existingMessageChain.push(parent);
+
+    currentParentId = parent.descriptor.parentId;
+  }
+
+  return existingMessageChain.reverse();
 }
 
 /**
@@ -215,36 +225,32 @@ export async function protocolAuthorize(
   messageStore: MessageStore
 ): Promise<void> {
   // fetch the protocol definition
-  const protocolDefinition = await getProtocolDefinition(message, messageStore);
+  const protocolDefinition = await fetchProtocolDefinition(message, messageStore);
 
   // fetch message chain
-  const messageChain: CollectionsWriteSchema[] = [];
+  const messageChain: CollectionsWriteSchema[] = await constructExistingMessageChain(message, messageStore);
 
   // record schema -> record type map
   const recordSchemaToTypeMap = {};
+  for (const recordTypeName in protocolDefinition.recordTypes) {
+    const schema = protocolDefinition.recordTypes[recordTypeName].schema;
+    recordSchemaToTypeMap[schema] = recordTypeName;
+  }
 
   // get the rule set for the inbound message by walking down the message chain from the root ancestor record
   // and matching against the corresponding rule set at each level
-  let ruleSetForInboundMessage;
   let currentStructureLevelRuleSet = protocolDefinition.structures;
   let currentMessageIndex = 0;
-  while (true) {
+  while (messageChain[currentMessageIndex] !== undefined) {
     const currentRecordSchema = messageChain[currentMessageIndex].descriptor.schema;
     const currentRecordType = recordSchemaToTypeMap[currentRecordSchema];
 
     if (currentRecordType === undefined) {
-      throw new Error(`record with schema ${currentRecordSchema} not an allowed in protocol`);
+      throw new Error(`record with schema ${currentRecordSchema} not allowed in protocol`);
     }
 
     if (!(currentRecordType in currentStructureLevelRuleSet)) {
       throw new Error(`record with schema: ${currentRecordSchema} not allowed in structure level ${currentMessageIndex}`);
-    }
-
-    // if we are looking at the inbound message itself (the last message in the chain),
-    // then we have found the rule set we need to evaluate against
-    if (currentMessageIndex === messageChain.length - 1) {
-      ruleSetForInboundMessage = currentStructureLevelRuleSet[currentRecordType];
-      break;
     }
 
     // else we keep going down the message chain
@@ -252,9 +258,19 @@ export async function protocolAuthorize(
     currentMessageIndex++;
   }
 
+  // get the rule set of the inbound message from its parent rule set
+  let inboundMessageSchema;
+  if (message.descriptor.method === 'CollectionsWrite') {
+    inboundMessageSchema = (message as CollectionsWriteSchema).descriptor.schema;
+  } else {
+    inboundMessageSchema = (message as CollectionsQuerySchema).descriptor.filter.schema;
+  }
+  const inboundMessageRecordType = recordSchemaToTypeMap[inboundMessageSchema];
+  const inboundMessageRuleSet = currentStructureLevelRuleSet[inboundMessageRecordType];
+
   // corresponding rule set is found
   // verify the sender against the `allow` property
-  const allowRule = ruleSetForInboundMessage.allow;
+  const allowRule = inboundMessageRuleSet.allow;
   if (allowRule.anyone !== undefined) {
     // good to go to next check
   } else if (allowRule.recipient !== undefined) {

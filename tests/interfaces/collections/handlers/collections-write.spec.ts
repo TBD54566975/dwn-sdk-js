@@ -15,9 +15,9 @@ import sinon from 'sinon';
 chai.use(chaiAsPromised);
 
 describe('handleCollectionsWrite()', () => {
-  describe('functional tests', () => {
-    let messageStore: MessageStoreLevel;
+  let messageStore: MessageStoreLevel;
 
+  describe('functional tests', () => {
     before(async () => {
       // important to follow this pattern to initialize the message store in tests
       // so that different suites can reuse the same block store and index location for testing
@@ -182,6 +182,113 @@ describe('handleCollectionsWrite()', () => {
       expect(thirdCollectionsQueryReply.entries?.length).to.equal(1);
       expect((thirdCollectionsQueryReply.entries![0] as CollectionsWriteSchema).descriptor.dataCid)
         .to.equal(largerCollectionWriteMessageData.message.descriptor.dataCid); // expecting unchanged
+    });
+
+    describe('protocol-based authorization', () => {
+      it('should allow write with allow-anyone rule', async () => {
+        // scenario, Bob writes into Alice's DWN given Alice's protocol allow-anyone protocol rule
+
+        // write a protocol definition with an allow-anyone rule
+        const protocolDefinition = {
+          recordTypes: {
+            credentialApplication: {
+              schema: 'https://identity.foundation/schemas/credential-application'
+            },
+            credentialResponse: {
+              schema: 'https://identity.foundation/schemas/credential-response'
+            }
+          },
+          structures: {
+            credentialApplication: {
+              contextRequired : true,
+              encryption      : true,
+              allow           : { // Issuers would have this allow present
+                anyone: {
+                  to: [
+                    'write'
+                  ]
+                }
+              },
+              records: {
+                credentialResponse: {
+                  allow: {
+                    recipient: {
+                      of : '$.[credential-application]', // only available in contexts, eval'd from the top of the contextual graph root
+                      to : [
+                        'write'
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        };
+        const aliceDid = 'did:example:alice';
+        const protocolId = uuidv4();
+        const encodedProtocolDefinition = new TextEncoder().encode(JSON.stringify(protocolDefinition));
+        const protocolWriteMessageData = await TestDataGenerator.generateCollectionWriteMessage({
+          targetDid    : aliceDid,
+          requesterDid : aliceDid,
+          recordId     : protocolId,
+          schema       : 'dwn-protocol',
+          data         : encodedProtocolDefinition
+        });
+        const aliceKeyId = protocolWriteMessageData.requesterKeyId;
+        const aliceKeyPair = protocolWriteMessageData.requesterKeyPair;
+
+        // setting up a stub did resolver
+        const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(aliceDid, aliceKeyId, aliceKeyPair.publicJwk);
+
+        const protocolWriteReply = await handleCollectionsWrite(protocolWriteMessageData.message, messageStore, aliceDidResolverStub);
+        expect(protocolWriteReply.status.code).to.equal(202);
+
+        // verify the protocol got written to the DB
+        const collectionsQueryMessageData = await TestDataGenerator.generateCollectionQueryMessage({
+          targetDid        : aliceDid,
+          requesterDid     : aliceDid,
+          requesterKeyId   : aliceKeyId,
+          requesterKeyPair : aliceKeyPair,
+          filter           : { recordId: protocolId }
+        });
+        const collectionsQueryReply = await handleCollectionsQuery(collectionsQueryMessageData.message, messageStore, aliceDidResolverStub);
+        expect(collectionsQueryReply.status.code).to.equal(200);
+        expect(collectionsQueryReply.entries?.length).to.equal(1);
+        expect((collectionsQueryReply.entries![0] as CollectionsWriteSchema).encodedData).to.equal(base64url.baseEncode(encodedProtocolDefinition));
+
+        // generate a collections write message from any other entity with the protocol and schema allowed by anyone
+        const bobDid = 'did:example:bob';
+        const bobData = new TextEncoder().encode('data from bob');
+        const collectionsWriteFromBob = await TestDataGenerator.generateCollectionWriteMessage(
+          {
+            targetDid    : aliceDid,
+            requesterDid : bobDid,
+            protocol     : protocolId,
+            schema       : 'https://identity.foundation/schemas/credential-application',
+            data         : bobData
+          }
+        );
+        const bobKeyId = collectionsWriteFromBob.requesterKeyId;
+        const bobKeyPair = collectionsWriteFromBob.requesterKeyPair;
+
+        const bobDidResolverStub = TestStubGenerator.createDidResolverStub(bobDid, bobKeyId, bobKeyPair.publicJwk);
+
+        const bobWriteReply = await handleCollectionsWrite(collectionsWriteFromBob.message, messageStore, bobDidResolverStub);
+        expect(bobWriteReply.status.code).to.equal(202);
+
+        // verify bob's message got written to the DB
+        const messageDataForQueryingBobsWrite = await TestDataGenerator.generateCollectionQueryMessage({
+          targetDid        : aliceDid,
+          requesterDid     : aliceDid,
+          requesterKeyId   : aliceKeyId,
+          requesterKeyPair : aliceKeyPair,
+          filter           : { recordId: collectionsWriteFromBob.message.descriptor.recordId }
+        });
+        const bobRecordQueryReply = await handleCollectionsQuery(messageDataForQueryingBobsWrite.message, messageStore, aliceDidResolverStub);
+        expect(bobRecordQueryReply.status.code).to.equal(200);
+        expect(bobRecordQueryReply.entries?.length).to.equal(1);
+        expect((bobRecordQueryReply.entries![0] as CollectionsWriteSchema).encodedData).to.equal(base64url.baseEncode(bobData));
+      });
     });
   });
 
