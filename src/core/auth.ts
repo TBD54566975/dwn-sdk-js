@@ -29,12 +29,12 @@ export async function verifyAuth(
   messageStore: MessageStore,
   payloadConstraints?: PayloadConstraints
 ): Promise<AuthVerificationResult> {
-  // signature verification is computationally intensive, so we're going to start
-  // by validating the payload.
+  // signature verification is computationally intensive, so we're going to start by validating the payload.
   const parsedPayload = await validateSchema(message, payloadConstraints);
 
   const signers = await authenticate(message.authorization, didResolver);
 
+  // authorization
   switch (message.descriptor.method) {
   case 'PermissionsRequest':
     await authorizePermissionsMessage(message, signers);
@@ -228,10 +228,10 @@ export async function protocolAuthorize(
   const protocolDefinition = await fetchProtocolDefinition(message, messageStore);
 
   // fetch message chain
-  const messageChain: CollectionsWriteSchema[] = await constructExistingMessageChain(message, messageStore);
+  const existingMessageChain: CollectionsWriteSchema[] = await constructExistingMessageChain(message, messageStore);
 
   // record schema -> record type map
-  const recordSchemaToTypeMap = {};
+  const recordSchemaToTypeMap: Map<string, string> = new Map();
   for (const recordTypeName in protocolDefinition.recordTypes) {
     const schema = protocolDefinition.recordTypes[recordTypeName].schema;
     recordSchemaToTypeMap[schema] = recordTypeName;
@@ -241,8 +241,8 @@ export async function protocolAuthorize(
   // and matching against the corresponding rule set at each level
   let currentStructureLevelRuleSet = protocolDefinition.structures;
   let currentMessageIndex = 0;
-  while (messageChain[currentMessageIndex] !== undefined) {
-    const currentRecordSchema = messageChain[currentMessageIndex].descriptor.schema;
+  while (existingMessageChain[currentMessageIndex] !== undefined) {
+    const currentRecordSchema = existingMessageChain[currentMessageIndex].descriptor.schema;
     const currentRecordType = recordSchemaToTypeMap[currentRecordSchema];
 
     if (currentRecordType === undefined) {
@@ -274,19 +274,16 @@ export async function protocolAuthorize(
   if (allowRule.anyone !== undefined) {
     // good to go to next check
   } else if (allowRule.recipient !== undefined) {
-    const messageForRecipientCheck = getMessage(messageChain, allowRule.recipient.of);
-    const expectedSenderDid = getRecipient(messageForRecipientCheck);
+    const messageForRecipientCheck = getMessage(existingMessageChain, allowRule.recipient.of, recordSchemaToTypeMap);
+    const expectedSenderDid = messageForRecipientCheck.descriptor.recipient;
 
     // the sender of the inbound message must be the recipient of the message obtained from the allow rule
     if (senderDid !== expectedSenderDid) {
-      throw new Error(`inbound message sender ${senderDid} is not the expected ${expectedSenderDid}`);
+      throw new Error(`unexpected inbound message author: ${senderDid}, expected ${expectedSenderDid}`);
     }
   } else {
     throw new Error(`no matching allow condition`);
   }
-
-  // recipient - the entity this message is intended for in the context of message exchange
-  // (putting it in authorization for now since it requires less code change)
 
   // validate method invoked against the allowed actions defined in the `to` array property
   let allowedActions: string[];
@@ -302,7 +299,7 @@ export async function protocolAuthorize(
   }
 
   // make sure the context ID of the inbound message matches the existing context unless it is the first message
-  if (messageChain.length > 1) {
+  if (existingMessageChain.length > 0) {
     // get the `contextId` specified in the inbound message
     let inboundMessageContextId: string;
     if (message.descriptor.method === 'CollectionsWrite') {
@@ -311,22 +308,48 @@ export async function protocolAuthorize(
       inboundMessageContextId = (message as CollectionsQuerySchema).descriptor.filter.contextId;
     }
 
-    const expectedContextId = messageChain[0].descriptor.contextId;
+    const expectedContextId = existingMessageChain[0].descriptor.contextId;
     if (inboundMessageContextId !== expectedContextId) {
       throw new Error(`inbound message context ID ${inboundMessageContextId} does not match the expected context ID ${expectedContextId}`);
     }
   }
-
-  // !! MONKEY Wrench: create action is only allowed to create, not overwrite.
 }
 
+/**
+ * Gets the message from the message chain based on the path specified.
+ * @param messagePath `/` delimited path starting from the root ancestor.
+ *                    Each path segment denotes the expected record type declared in protocol definition.
+ *                    e.g. `A/B/C` means that the root ancestor must be of type A, its child must be of type B, followed by a child of type C.
+ *                    NOTE: the path scheme use here is currently experimental and may change.
+ */
+function getMessage(messageChain: CollectionsWriteSchema[], messagePath: string, recordSchemaToTypeMap: Map<string, string>): CollectionsWriteSchema {
+  const ancestors = messagePath.split('/');
 
-function getRecipient(_message: CollectionsWriteSchema): string {
-  return 'someDID';
-}
+  let i = 0;
+  while (true) {
+    const expectedAncestorType = ancestors[i];
+    const ancestorMessage = messageChain[i];
 
-function getMessage(messageChain: CollectionsWriteSchema[], _messagePath: string): CollectionsWriteSchema {
-  return messageChain[0];
+    if (expectedAncestorType === undefined) {
+      throw new Error('expected ancestor cannot be undefined');
+    }
+
+    if (ancestorMessage === undefined) {
+      throw new Error('ancestor message cannot be found');
+    }
+
+    const actualAncestorType = recordSchemaToTypeMap[ancestorMessage.descriptor.schema];
+    if (actualAncestorType !== expectedAncestorType) {
+      throw new Error(`mismatching message type: expecting ${expectedAncestorType} but actual ${actualAncestorType}`);
+    }
+
+    // we have found the message if we are looking at the last message specified by the path
+    if (i + 1 === ancestors.length) {
+      return ancestorMessage;
+    }
+
+    i++;
+  }
 }
 
 /**

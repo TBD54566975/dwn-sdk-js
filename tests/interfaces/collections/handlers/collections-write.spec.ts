@@ -186,51 +186,34 @@ describe('handleCollectionsWrite()', () => {
 
     describe('protocol-based authorization', () => {
       it('should allow write with allow-anyone rule', async () => {
-        // scenario, Bob writes into Alice's DWN given Alice's protocol allow-anyone protocol rule
+        // scenario, Bob writes into Alice's DWN given Alice's "email" protocol allow-anyone rule
 
         // write a protocol definition with an allow-anyone rule
         const protocolDefinition = {
           recordTypes: {
-            credentialApplication: {
-              schema: 'https://identity.foundation/schemas/credential-application'
-            },
-            credentialResponse: {
-              schema: 'https://identity.foundation/schemas/credential-response'
+            email: {
+              schema: 'email'
             }
           },
           structures: {
-            credentialApplication: {
-              contextRequired : true,
-              encryption      : true,
-              allow           : { // Issuers would have this allow present
+            email: {
+              allow: {
                 anyone: {
                   to: [
                     'write'
                   ]
-                }
-              },
-              records: {
-                credentialResponse: {
-                  allow: {
-                    recipient: {
-                      of : '$.[credential-application]', // only available in contexts, eval'd from the top of the contextual graph root
-                      to : [
-                        'write'
-                      ]
-                    }
-                  }
                 }
               }
             }
           }
         };
         const aliceDid = 'did:example:alice';
-        const protocolId = uuidv4();
+        const emailProtocolId = uuidv4();
         const encodedProtocolDefinition = new TextEncoder().encode(JSON.stringify(protocolDefinition));
         const protocolWriteMessageData = await TestDataGenerator.generateCollectionWriteMessage({
           targetDid    : aliceDid,
           requesterDid : aliceDid,
-          recordId     : protocolId,
+          recordId     : emailProtocolId,
           schema       : 'dwn-protocol',
           data         : encodedProtocolDefinition
         });
@@ -249,31 +232,31 @@ describe('handleCollectionsWrite()', () => {
           requesterDid     : aliceDid,
           requesterKeyId   : aliceKeyId,
           requesterKeyPair : aliceKeyPair,
-          filter           : { recordId: protocolId }
+          filter           : { recordId: emailProtocolId }
         });
         const collectionsQueryReply = await handleCollectionsQuery(collectionsQueryMessageData.message, messageStore, aliceDidResolverStub);
         expect(collectionsQueryReply.status.code).to.equal(200);
         expect(collectionsQueryReply.entries?.length).to.equal(1);
         expect((collectionsQueryReply.entries![0] as CollectionsWriteSchema).encodedData).to.equal(base64url.baseEncode(encodedProtocolDefinition));
 
-        // generate a collections write message from any other entity with the protocol and schema allowed by anyone
+        // generate a collections write message from bob allowed by anyone
         const bobDid = 'did:example:bob';
         const bobData = new TextEncoder().encode('data from bob');
-        const collectionsWriteFromBob = await TestDataGenerator.generateCollectionWriteMessage(
+        const emailMessageDataFromBob = await TestDataGenerator.generateCollectionWriteMessage(
           {
             targetDid    : aliceDid,
             requesterDid : bobDid,
-            protocol     : protocolId,
-            schema       : 'https://identity.foundation/schemas/credential-application',
+            protocol     : emailProtocolId,
+            schema       : 'email',
             data         : bobData
           }
         );
-        const bobKeyId = collectionsWriteFromBob.requesterKeyId;
-        const bobKeyPair = collectionsWriteFromBob.requesterKeyPair;
+        const bobKeyId = emailMessageDataFromBob.requesterKeyId;
+        const bobKeyPair = emailMessageDataFromBob.requesterKeyPair;
 
         const bobDidResolverStub = TestStubGenerator.createDidResolverStub(bobDid, bobKeyId, bobKeyPair.publicJwk);
 
-        const bobWriteReply = await handleCollectionsWrite(collectionsWriteFromBob.message, messageStore, bobDidResolverStub);
+        const bobWriteReply = await handleCollectionsWrite(emailMessageDataFromBob.message, messageStore, bobDidResolverStub);
         expect(bobWriteReply.status.code).to.equal(202);
 
         // verify bob's message got written to the DB
@@ -282,13 +265,219 @@ describe('handleCollectionsWrite()', () => {
           requesterDid     : aliceDid,
           requesterKeyId   : aliceKeyId,
           requesterKeyPair : aliceKeyPair,
-          filter           : { recordId: collectionsWriteFromBob.message.descriptor.recordId }
+          filter           : { recordId: emailMessageDataFromBob.message.descriptor.recordId }
         });
         const bobRecordQueryReply = await handleCollectionsQuery(messageDataForQueryingBobsWrite.message, messageStore, aliceDidResolverStub);
         expect(bobRecordQueryReply.status.code).to.equal(200);
         expect(bobRecordQueryReply.entries?.length).to.equal(1);
         expect((bobRecordQueryReply.entries![0] as CollectionsWriteSchema).encodedData).to.equal(base64url.baseEncode(bobData));
       });
+    });
+
+    it('should allow write with recipient rule', async () => {
+      // scenario: FPI writes into Alice's DWN an asynchronous credential response upon receiving Alice's credential application
+
+      // write a protocol definition with an allow-anyone rule
+      const protocolDefinition = {
+        recordTypes: {
+          credentialApplication: {
+            schema: 'https://identity.foundation/schemas/credential-application'
+          },
+          credentialResponse: {
+            schema: 'https://identity.foundation/schemas/credential-response'
+          }
+        },
+        structures: {
+          credentialApplication: {
+            records: {
+              credentialResponse: {
+                allow: {
+                  recipient: {
+                    of : 'credentialApplication',
+                    to : [
+                      'write'
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      };
+      const aliceDid = 'did:example:alice';
+      const protocolId = uuidv4();
+      const encodedProtocolDefinition = new TextEncoder().encode(JSON.stringify(protocolDefinition));
+      const protocolWriteMessageData = await TestDataGenerator.generateCollectionWriteMessage({
+        targetDid    : aliceDid,
+        requesterDid : aliceDid,
+        recordId     : protocolId,
+        schema       : 'dwn-protocol',
+        data         : encodedProtocolDefinition
+      });
+      const aliceKeyId = protocolWriteMessageData.requesterKeyId;
+      const aliceKeyPair = protocolWriteMessageData.requesterKeyPair;
+
+      // setting up a stub did resolver
+      const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(aliceDid, aliceKeyId, aliceKeyPair.publicJwk);
+
+      const protocolWriteReply = await handleCollectionsWrite(protocolWriteMessageData.message, messageStore, aliceDidResolverStub);
+      expect(protocolWriteReply.status.code).to.equal(202);
+
+      // write a credential application to Alice's DWN to simulate that she has sent a credential application to the PFI
+      const pfiDid = 'did:example:pfi';
+      const credentialApplicationContextId = 'alice credential application thread';
+      const credentialApplicationRecordId = uuidv4();
+      const encodedCredentialApplication = new TextEncoder().encode('credential application data');
+      const credentialApplicationMessageData = await TestDataGenerator.generateCollectionWriteMessage({
+        requesterDid     : aliceDid,
+        requesterKeyId   : aliceKeyId,
+        requesterKeyPair : aliceKeyPair,
+        targetDid        : aliceDid,
+        recipientDid     : pfiDid,
+        protocol         : protocolId,
+        contextId        : credentialApplicationContextId,
+        recordId         : credentialApplicationRecordId,
+        schema           : 'https://identity.foundation/schemas/credential-application',
+        data             : encodedCredentialApplication
+      });
+
+      const credentialApplicationReply = await handleCollectionsWrite(credentialApplicationMessageData.message, messageStore, aliceDidResolverStub);
+      expect(credentialApplicationReply.status.code).to.equal(202);
+
+      // generate a credential application response message from PFI
+      const encodedCredentialResponse = new TextEncoder().encode('credential response data');
+      const credentialResponseMessageData = await TestDataGenerator.generateCollectionWriteMessage(
+        {
+          targetDid    : aliceDid,
+          recipientDid : aliceDid,
+          requesterDid : pfiDid,
+          protocol     : protocolId,
+          contextId    : credentialApplicationContextId,
+          parentId     : credentialApplicationRecordId,
+          schema       : 'https://identity.foundation/schemas/credential-response',
+          data         : encodedCredentialResponse
+        }
+      );
+      const pfiKeyId = credentialResponseMessageData.requesterKeyId;
+      const pfiKeyPair = credentialResponseMessageData.requesterKeyPair;
+
+      const pfiDidResolverStub = TestStubGenerator.createDidResolverStub(pfiDid, pfiKeyId, pfiKeyPair.publicJwk);
+
+      const pfiCredentialResponseReply = await handleCollectionsWrite(credentialResponseMessageData.message, messageStore, pfiDidResolverStub);
+      expect(pfiCredentialResponseReply.status.code).to.equal(202);
+
+      // verify PFI's message got written to the DB
+      const messageDataForQueryingCredentialResponse = await TestDataGenerator.generateCollectionQueryMessage({
+        targetDid        : aliceDid,
+        requesterDid     : aliceDid,
+        requesterKeyId   : aliceKeyId,
+        requesterKeyPair : aliceKeyPair,
+        filter           : { recordId: credentialResponseMessageData.message.descriptor.recordId }
+      });
+      const applicationResponseQueryReply = await handleCollectionsQuery(
+        messageDataForQueryingCredentialResponse.message,
+        messageStore,
+        aliceDidResolverStub
+      );
+      expect(applicationResponseQueryReply.status.code).to.equal(200);
+      expect(applicationResponseQueryReply.entries?.length).to.equal(1);
+      expect((applicationResponseQueryReply.entries![0] as CollectionsWriteSchema).encodedData)
+        .to.equal(base64url.baseEncode(encodedCredentialResponse));
+    });
+
+    it('should block unauthorized write with recipient rule', async () => {
+      // scenario: fake FPI attempts write into Alice's DWN a credential response upon learning the ID of Alice's credential application to actual PFI
+
+      // write a protocol definition with an allow-anyone rule
+      const protocolDefinition = {
+        recordTypes: {
+          credentialApplication: {
+            schema: 'https://identity.foundation/schemas/credential-application'
+          },
+          credentialResponse: {
+            schema: 'https://identity.foundation/schemas/credential-response'
+          }
+        },
+        structures: {
+          credentialApplication: {
+            records: {
+              credentialResponse: {
+                allow: {
+                  recipient: {
+                    of : 'credentialApplication',
+                    to : [
+                      'write'
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      };
+      const aliceDid = 'did:example:alice';
+      const protocolId = uuidv4();
+      const encodedProtocolDefinition = new TextEncoder().encode(JSON.stringify(protocolDefinition));
+      const protocolWriteMessageData = await TestDataGenerator.generateCollectionWriteMessage({
+        targetDid    : aliceDid,
+        requesterDid : aliceDid,
+        recordId     : protocolId,
+        schema       : 'dwn-protocol',
+        data         : encodedProtocolDefinition
+      });
+      const aliceKeyId = protocolWriteMessageData.requesterKeyId;
+      const aliceKeyPair = protocolWriteMessageData.requesterKeyPair;
+
+      // setting up a stub did resolver
+      const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(aliceDid, aliceKeyId, aliceKeyPair.publicJwk);
+
+      const protocolWriteReply = await handleCollectionsWrite(protocolWriteMessageData.message, messageStore, aliceDidResolverStub);
+      expect(protocolWriteReply.status.code).to.equal(202);
+
+      // write a credential application to Alice's DWN to simulate that she has sent a credential application to the PFI
+      const pfiDid = 'did:example:pfi';
+      const credentialApplicationContextId = 'alice credential application thread';
+      const credentialApplicationRecordId = uuidv4();
+      const encodedCredentialApplication = new TextEncoder().encode('credential application data');
+      const credentialApplicationMessageData = await TestDataGenerator.generateCollectionWriteMessage({
+        requesterDid     : aliceDid,
+        requesterKeyId   : aliceKeyId,
+        requesterKeyPair : aliceKeyPair,
+        targetDid        : aliceDid,
+        recipientDid     : pfiDid,
+        protocol         : protocolId,
+        contextId        : credentialApplicationContextId,
+        recordId         : credentialApplicationRecordId,
+        schema           : 'https://identity.foundation/schemas/credential-application',
+        data             : encodedCredentialApplication
+      });
+
+      const credentialApplicationReply = await handleCollectionsWrite(credentialApplicationMessageData.message, messageStore, aliceDidResolverStub);
+      expect(credentialApplicationReply.status.code).to.equal(202);
+
+      // generate a credential application response message from a fake PFI
+      const fakePfiDid = 'did:example:fake-pfi';
+      const encodedCredentialResponse = new TextEncoder().encode('credential response data');
+      const credentialResponseMessageData = await TestDataGenerator.generateCollectionWriteMessage(
+        {
+          targetDid    : aliceDid,
+          recipientDid : aliceDid,
+          requesterDid : fakePfiDid,
+          protocol     : protocolId,
+          contextId    : credentialApplicationContextId,
+          parentId     : credentialApplicationRecordId,
+          schema       : 'https://identity.foundation/schemas/credential-response',
+          data         : encodedCredentialResponse
+        }
+      );
+      const fakePfiKeyId = credentialResponseMessageData.requesterKeyId;
+      const fakePfiKeyPair = credentialResponseMessageData.requesterKeyPair;
+
+      const pfiDidResolverStub = TestStubGenerator.createDidResolverStub(fakePfiDid, fakePfiKeyId, fakePfiKeyPair.publicJwk);
+
+      const pfiCredentialResponseReply = await handleCollectionsWrite(credentialResponseMessageData.message, messageStore, pfiDidResolverStub);
+      expect(pfiCredentialResponseReply.status.code).to.equal(401);
+      expect(pfiCredentialResponseReply.status.message).to.contain('unexpected inbound message author');
     });
   });
 

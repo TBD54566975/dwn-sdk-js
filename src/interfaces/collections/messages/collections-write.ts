@@ -13,9 +13,12 @@ import { MessageStore } from '../../../store/message-store';
 
 type CollectionsWriteOptions = AuthCreateOptions & {
   target: string;
+  recipient: string;
   protocol?: string;
+  contextId?: string;
   schema?: string;
   recordId: string;
+  parentId?: string;
   nonce: string;
   data: Uint8Array;
   dateCreated: number;
@@ -35,10 +38,13 @@ export class CollectionsWrite extends Message implements Authorizable {
     const dataCid = await getDagCid(options.data);
     const descriptor: CollectionsWriteDescriptor = {
       target        : options.target,
+      recipient     : options.recipient,
       method        : 'CollectionsWrite',
       protocol      : options.protocol,
+      contextId     : options.contextId,
       schema        : options.schema,
       recordId      : options.recordId,
+      parentId      : options.parentId,
       nonce         : options.nonce,
       dataCid       : dataCid.toString(),
       dateCreated   : options.dateCreated,

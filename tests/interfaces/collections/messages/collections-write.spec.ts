@@ -31,6 +31,7 @@ describe('CollectionsWrite', () => {
 
       const options = {
         target      : 'did:example:alice',
+        recipient   : 'did:example:alice',
         data        : TestDataGenerator.randomBytes(10),
         dataFormat  : 'application/json',
         dateCreated : 123,
