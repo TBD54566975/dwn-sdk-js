@@ -176,27 +176,37 @@ async function fetchProtocolDefinition(message: CollectionsWriteSchema | Collect
 
 /**
  * Constructs a chain of existing messages
+ * @returns the existing chain of message where the first element is the root of the chain; returns empty array if no parent is specified.
  */
 async function constructExistingMessageChain(message: CollectionsWriteSchema | CollectionsQuerySchema, messageStore: MessageStore): Promise<any> {
   const existingMessageChain: CollectionsWriteSchema[] = [];
 
+  let protocol;
   let contextId;
   let currentParentId;
   if (message.descriptor.method === 'CollectionsWrite') {
     const collectionsWriteMessage = (message as CollectionsWriteSchema);
+    protocol = collectionsWriteMessage.descriptor.protocol;
     contextId = collectionsWriteMessage.descriptor.contextId;
     currentParentId = collectionsWriteMessage.descriptor.parentId;
   } else {
     const collectionsQueryMessage = (message as CollectionsQuerySchema);
+    protocol = collectionsQueryMessage.descriptor.filter.protocol;
     contextId = collectionsQueryMessage.descriptor.filter.contextId;
     currentParentId = collectionsQueryMessage.descriptor.filter.parentId;
   }
 
+  if (contextId === undefined) {
+    throw new Error('`contextId` must exist for protocol scoped records but is not specified');
+  }
+
+  // keep walking up the chain from the inbound message's parent, until there is no more parent
   while (currentParentId !== undefined) {
     // fetch parent
     const query = {
       target   : message.descriptor.target,
       method   : 'CollectionsWrite',
+      protocol,
       contextId,
       recordId : currentParentId
     };
@@ -212,7 +222,7 @@ async function constructExistingMessageChain(message: CollectionsWriteSchema | C
     currentParentId = parent.descriptor.parentId;
   }
 
-  return existingMessageChain.reverse();
+  return existingMessageChain.reverse(); // root ancestor first
 }
 
 /**
@@ -221,13 +231,13 @@ async function constructExistingMessageChain(message: CollectionsWriteSchema | C
  */
 export async function protocolAuthorize(
   message: CollectionsWriteSchema | CollectionsQuerySchema,
-  senderDid: string,
+  requesterDid: string,
   messageStore: MessageStore
 ): Promise<void> {
   // fetch the protocol definition
   const protocolDefinition = await fetchProtocolDefinition(message, messageStore);
 
-  // fetch message chain
+  // fetch existing message chain
   const existingMessageChain: CollectionsWriteSchema[] = await constructExistingMessageChain(message, messageStore);
 
   // record schema -> record type map
@@ -237,7 +247,63 @@ export async function protocolAuthorize(
     recordSchemaToTypeMap[schema] = recordTypeName;
   }
 
-  // get the rule set for the inbound message by walking down the message chain from the root ancestor record
+  // get the rule set for the inbound message
+  const inboundMessageRuleSet = getRuleSet(message, protocolDefinition, existingMessageChain, recordSchemaToTypeMap);
+
+  // corresponding rule set is found if code reaches here
+
+  // verify the requester of the inbound message against allowed requester rule
+  verifyAllowedRequester(requesterDid, inboundMessageRuleSet, existingMessageChain, recordSchemaToTypeMap);
+
+  // verify method invoked against the allowed actions
+  verifyAllowedActions(message, inboundMessageRuleSet);
+}
+
+function verifyAllowedActions(message: BaseMessageSchema, inboundMessageRuleSet: any,): void {
+  const allowRule = inboundMessageRuleSet.allow;
+
+  let allowedActions: string[];
+  if (allowRule.anyone !== undefined) {
+    allowedActions = allowRule.anyone.to;
+  } else if (allowRule.recipient !== undefined) {
+    allowedActions = allowRule.recipient.to;
+  } // not possible to have `else` because of the above check already
+
+  const inboundMessageAction = methodToAllowedActionMap[message.descriptor.method];
+  if (!allowedActions.includes(inboundMessageAction)) {
+    throw new Error(`inbound message action ${inboundMessageAction} not in list of allowed actions ${allowedActions}`);
+  }
+}
+
+function verifyAllowedRequester(
+  requesterDid: string,
+  inboundMessageRuleSet: any,
+  existingMessageChain: CollectionsWriteSchema[],
+  recordSchemaToTypeMap: Map<string, string>
+): void {
+  const allowRule = inboundMessageRuleSet.allow;
+  if (allowRule.anyone !== undefined) {
+    // good to go to next check
+  } else if (allowRule.recipient !== undefined) {
+    const messageForRecipientCheck = getMessage(existingMessageChain, allowRule.recipient.of, recordSchemaToTypeMap);
+    const expectedRequesterDid = messageForRecipientCheck.descriptor.recipient;
+
+    // the requester of the inbound message must be the recipient of the message obtained from the allow rule
+    if (requesterDid !== expectedRequesterDid) {
+      throw new Error(`unexpected inbound message author: ${requesterDid}, expected ${expectedRequesterDid}`);
+    }
+  } else {
+    throw new Error(`no matching allow condition`);
+  }
+}
+
+function getRuleSet(
+  message: CollectionsWriteSchema | CollectionsQuerySchema,
+  protocolDefinition: any,
+  existingMessageChain: CollectionsWriteSchema[],
+  recordSchemaToTypeMap: Map<string, string>
+): any {
+  // get the rule set for the inbound message by walking down the existing message chain from the root ancestor record
   // and matching against the corresponding rule set at each level
   let currentStructureLevelRuleSet = protocolDefinition.structures;
   let currentMessageIndex = 0;
@@ -268,51 +334,7 @@ export async function protocolAuthorize(
   const inboundMessageRecordType = recordSchemaToTypeMap[inboundMessageSchema];
   const inboundMessageRuleSet = currentStructureLevelRuleSet[inboundMessageRecordType];
 
-  // corresponding rule set is found
-  // verify the sender against the `allow` property
-  const allowRule = inboundMessageRuleSet.allow;
-  if (allowRule.anyone !== undefined) {
-    // good to go to next check
-  } else if (allowRule.recipient !== undefined) {
-    const messageForRecipientCheck = getMessage(existingMessageChain, allowRule.recipient.of, recordSchemaToTypeMap);
-    const expectedSenderDid = messageForRecipientCheck.descriptor.recipient;
-
-    // the sender of the inbound message must be the recipient of the message obtained from the allow rule
-    if (senderDid !== expectedSenderDid) {
-      throw new Error(`unexpected inbound message author: ${senderDid}, expected ${expectedSenderDid}`);
-    }
-  } else {
-    throw new Error(`no matching allow condition`);
-  }
-
-  // validate method invoked against the allowed actions defined in the `to` array property
-  let allowedActions: string[];
-  if (allowRule.anyone !== undefined) {
-    allowedActions = allowRule.anyone.to;
-  } else if (allowRule.recipient !== undefined) {
-    allowedActions = allowRule.recipient.to;
-  } // not possible to have `else` because of the above check already
-
-  const inboundMessageAction = methodToAllowedActionMap[message.descriptor.method];
-  if (!allowedActions.includes(inboundMessageAction)) {
-    throw new Error(`inbound message action ${inboundMessageAction} not in list of allowed actions ${allowedActions}`);
-  }
-
-  // make sure the context ID of the inbound message matches the existing context unless it is the first message
-  if (existingMessageChain.length > 0) {
-    // get the `contextId` specified in the inbound message
-    let inboundMessageContextId: string;
-    if (message.descriptor.method === 'CollectionsWrite') {
-      inboundMessageContextId = (message as CollectionsWriteSchema).descriptor.contextId;
-    } else {
-      inboundMessageContextId = (message as CollectionsQuerySchema).descriptor.filter.contextId;
-    }
-
-    const expectedContextId = existingMessageChain[0].descriptor.contextId;
-    if (inboundMessageContextId !== expectedContextId) {
-      throw new Error(`inbound message context ID ${inboundMessageContextId} does not match the expected context ID ${expectedContextId}`);
-    }
-  }
+  return inboundMessageRuleSet;
 }
 
 /**

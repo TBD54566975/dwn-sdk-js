@@ -247,6 +247,7 @@ describe('handleCollectionsWrite()', () => {
             targetDid    : aliceDid,
             requesterDid : bobDid,
             protocol     : emailProtocolId,
+            contextId    : 'bob email X',
             schema       : 'email',
             data         : bobData
           }
