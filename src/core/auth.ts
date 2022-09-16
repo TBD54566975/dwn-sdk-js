@@ -41,7 +41,7 @@ export async function verifyAuth(
     break;
   case 'CollectionsWrite':
   case 'CollectionsQuery':
-    await authorizeCollectionsMessage(message as CollectionsQuerySchema | CollectionsWriteSchema, signers, messageStore);
+    await authorizeCollectionsMessage(message as CollectionsWriteSchema, signers, messageStore);
     break;
   default:
     throw new Error(`unknown message method type for auth: ${message.descriptor.method}`);
@@ -122,7 +122,7 @@ async function authorizePermissionsMessage(message: BaseMessageSchema, signers: 
 }
 
 async function authorizeCollectionsMessage(
-  message: CollectionsWriteSchema | CollectionsQuerySchema,
+  message: CollectionsWriteSchema,
   signers: string[],
   messageStore: MessageStore
 ): Promise<void> {

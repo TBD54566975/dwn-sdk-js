@@ -1,12 +1,9 @@
-import type { BaseMessageSchema } from './types';
-
 import { base64url } from 'multiformats/bases/base64';
-import { CollectionsQuerySchema, CollectionsWriteSchema } from '../interfaces/collections/types';
+import { CollectionsWriteSchema } from '../interfaces/collections/types';
 import { MessageStore } from '../store/message-store';
 
 const methodToAllowedActionMap = {
-  'CollectionsWrite' : 'write',
-  'CollectionsQuery' : 'query'
+  'CollectionsWrite': 'write',
 };
 
 /**
@@ -14,7 +11,7 @@ const methodToAllowedActionMap = {
  * @throws {Error} if authorization fails.
  */
 export async function protocolAuthorize(
-  message: CollectionsWriteSchema | CollectionsQuerySchema,
+  message: CollectionsWriteSchema,
   requesterDid: string,
   messageStore: MessageStore
 ): Promise<void> {
@@ -48,14 +45,9 @@ export async function protocolAuthorize(
  * NOTE: this is a basic temporary implementation reusing Collections,
  * there will be a dedicated protocol interface for creating and fetching protocol definitions.
  */
-async function fetchProtocolDefinition(message: CollectionsWriteSchema | CollectionsQuerySchema, messageStore: MessageStore): Promise<any> {
+async function fetchProtocolDefinition(message: CollectionsWriteSchema, messageStore: MessageStore): Promise<any> {
   // get the protocol URI
-  let protocolUri: string;
-  if (message.descriptor.method === 'CollectionsWrite') {
-    protocolUri = (message as CollectionsWriteSchema).descriptor.protocol;
-  } else {
-    protocolUri = (message as CollectionsQuerySchema).descriptor.filter.protocol;
-  }
+  const protocolUri = (message as CollectionsWriteSchema).descriptor.protocol;
 
   // fail if not a protocol-based object
   if (protocolUri === undefined) {
@@ -86,29 +78,18 @@ async function fetchProtocolDefinition(message: CollectionsWriteSchema | Collect
  * Constructs a chain of ancestor messages
  * @returns the ancestor chain of messages where the first element is the root of the chain; returns empty array if no parent is specified.
  */
-async function constructAncestorMessageChain(message: CollectionsWriteSchema | CollectionsQuerySchema, messageStore: MessageStore): Promise<any> {
+async function constructAncestorMessageChain(message: CollectionsWriteSchema, messageStore: MessageStore): Promise<any> {
   const ancestorMessageChain: CollectionsWriteSchema[] = [];
 
-  let protocol;
-  let contextId;
-  let currentParentId;
-  if (message.descriptor.method === 'CollectionsWrite') {
-    const collectionsWriteMessage = (message as CollectionsWriteSchema);
-    protocol = collectionsWriteMessage.descriptor.protocol;
-    contextId = collectionsWriteMessage.descriptor.contextId;
-    currentParentId = collectionsWriteMessage.descriptor.parentId;
-  } else {
-    const collectionsQueryMessage = (message as CollectionsQuerySchema);
-    protocol = collectionsQueryMessage.descriptor.filter.protocol;
-    contextId = collectionsQueryMessage.descriptor.filter.contextId;
-    currentParentId = collectionsQueryMessage.descriptor.filter.parentId;
-  }
+  const protocol = message.descriptor.protocol;
+  const contextId = message.descriptor.contextId;
 
   if (contextId === undefined) {
     throw new Error('`contextId` must exist for a protocol scoped message but is not specified');
   }
 
   // keep walking up the chain from the inbound message's parent, until there is no more parent
+  let currentParentId = message.descriptor.parentId;
   while (currentParentId !== undefined) {
     // fetch parent
     const query = {
@@ -137,17 +118,20 @@ async function constructAncestorMessageChain(message: CollectionsWriteSchema | C
  * Gets the rule set corresponding to the inbound message.
  */
 function getRuleSet(
-  message: CollectionsWriteSchema | CollectionsQuerySchema,
+  inboundMessage: CollectionsWriteSchema,
   protocolDefinition: any,
   ancestorMessageChain: CollectionsWriteSchema[],
   recordSchemaToTypeMap: Map<string, string>
 ): any {
+  // make a copy of the ancestor messages and include the inbound message in the chain
+  const messageChain = [...ancestorMessageChain, inboundMessage];
+
   // walk down the ancestor message chain from the root ancestor record and match against the corresponding rule set at each level
   // to make sure the chain structure is allowed
   let allowedRecordTypesAtCurrentLevel = protocolDefinition.structures;
   let currentMessageIndex = 0;
-  while (ancestorMessageChain[currentMessageIndex] !== undefined) {
-    const currentRecordSchema = ancestorMessageChain[currentMessageIndex].descriptor.schema;
+  while (true) {
+    const currentRecordSchema = messageChain[currentMessageIndex].descriptor.schema;
     const currentRecordType = recordSchemaToTypeMap[currentRecordSchema];
 
     if (currentRecordType === undefined) {
@@ -158,28 +142,16 @@ function getRuleSet(
       throw new Error(`record with schema: ${currentRecordSchema} not allowed in structure level ${currentMessageIndex}`);
     }
 
+    // if we are looking at the inbound message itself (the last message in the chain),
+    // then we have found the access control object we need to evaluate against
+    if (currentMessageIndex === messageChain.length - 1) {
+      return allowedRecordTypesAtCurrentLevel[currentRecordType];
+    }
+
     // else we keep going down the message chain
     allowedRecordTypesAtCurrentLevel = allowedRecordTypesAtCurrentLevel[currentRecordType].records;
     currentMessageIndex++;
   }
-
-  // if the coe reaches here, currentStructureLevelRuleSet should have an entry for the type specified by the inbound message
-
-  // get the rule set of the inbound message from its parent rule set
-  let inboundMessageSchema;
-  if (message.descriptor.method === 'CollectionsWrite') {
-    inboundMessageSchema = (message as CollectionsWriteSchema).descriptor.schema;
-  } else {
-    inboundMessageSchema = (message as CollectionsQuerySchema).descriptor.filter.schema;
-  }
-  const inboundMessageRecordType = recordSchemaToTypeMap[inboundMessageSchema];
-  const inboundMessageRuleSet = allowedRecordTypesAtCurrentLevel[inboundMessageRecordType];
-
-  if (inboundMessageRuleSet === undefined) {
-    throw new Error(`inbound message with schema ${inboundMessageSchema} not allowed in protocol`);
-  }
-
-  return inboundMessageRuleSet;
 }
 
 /**
@@ -213,7 +185,7 @@ function verifyAllowedRequester(
  * Verifies the actions specified in the given message matches the allowed actions in the rule set.
  * @throws {Error} if action not allowed.
  */
-function verifyAllowedActions(message: BaseMessageSchema, inboundMessageRuleSet: any,): void {
+function verifyAllowedActions(message: CollectionsWriteSchema, inboundMessageRuleSet: any,): void {
   const allowRule = inboundMessageRuleSet.allow;
 
   let allowedActions: string[];
