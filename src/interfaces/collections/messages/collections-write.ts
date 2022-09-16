@@ -6,10 +6,10 @@ import { DIDResolver } from '../../../did/did-resolver';
 import { generateCid } from '../../../utils/cid';
 import { getDagCid } from '../../../utils/data';
 import { Message } from '../../../core/message';
+import { MessageStore } from '../../../store/message-store';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { sign, verifyAuth } from '../../../core/auth';
 import { validate } from '../../../validation/validator';
-import { MessageStore } from '../../../store/message-store';
 
 type CollectionsWriteOptions = AuthCreateOptions & {
   target: string;

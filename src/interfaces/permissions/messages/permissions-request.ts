@@ -4,10 +4,10 @@ import type { PermissionScope, PermissionConditions } from '../types';
 
 import { DIDResolver } from '../../../did/did-resolver';
 import { Message } from '../../../core/message';
+import { MessageStore } from '../../../store/message-store';
 import { sign, verifyAuth } from '../../../core/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { validate } from '../../../validation/validator';
-import { MessageStore } from '../../../store/message-store';
 
 type PermissionsRequestOptions = AuthCreateOptions & {
   target: string;
