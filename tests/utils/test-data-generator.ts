@@ -47,9 +47,12 @@ export type GenerateCollectionQueryMessageInput = {
   requesterKeyId?: string;
   requesterKeyPair?: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
   filter?: {
+    recipient?: string;
     protocol?: string;
+    contextId?: string;
     schema?: string;
     recordId?: string;
+    parentId?: string;
     dataFormat?: string;
   }
   dateSort?: string;

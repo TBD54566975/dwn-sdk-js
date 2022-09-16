@@ -184,7 +184,7 @@ describe('handleCollectionsWrite()', () => {
         .to.equal(largerCollectionWriteMessageData.message.descriptor.dataCid); // expecting unchanged
     });
 
-    describe('protocol-based authorization', () => {
+    describe('protocol authorized writes', () => {
       it('should allow write with allow-anyone rule', async () => {
         // scenario, Bob writes into Alice's DWN given Alice's "email" protocol allow-anyone rule
 

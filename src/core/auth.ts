@@ -197,7 +197,7 @@ async function constructExistingMessageChain(message: CollectionsWriteSchema | C
   }
 
   if (contextId === undefined) {
-    throw new Error('`contextId` must exist for protocol scoped records but is not specified');
+    throw new Error('`contextId` must exist for a protocol scoped message but is not specified');
   }
 
   // keep walking up the chain from the inbound message's parent, until there is no more parent

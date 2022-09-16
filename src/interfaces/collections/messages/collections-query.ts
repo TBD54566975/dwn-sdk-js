@@ -11,9 +11,12 @@ type CollectionsQueryOptions = AuthCreateOptions & {
   target: string;
   nonce: string;
   filter: {
+    recipient?: string;
     protocol?: string;
+    contextId?: string;
     schema?: string;
     recordId?: string;
+    parentId?: string;
     dataFormat?: string;
   },
   dateSort?: string;

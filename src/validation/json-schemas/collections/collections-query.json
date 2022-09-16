@@ -41,10 +41,19 @@
             "protocol": {
               "type": "string"
             },
+            "recipient": {
+              "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+            },
+            "contextId": {
+              "type": "string"
+            },
             "schema": {
               "type": "string"
             },
             "recordId": {
+              "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/uuid"
+            },
+            "parentId": {
               "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/uuid"
             },
             "dataFormat": {
