@@ -31,8 +31,6 @@ export async function protocolAuthorize(
   // get the rule set for the inbound message
   const inboundMessageRuleSet = getRuleSet(message, protocolDefinition, ancestorMessageChain, recordSchemaToTypeMap);
 
-  // corresponding rule set is found if code reaches here
-
   // verify the requester of the inbound message against allowed requester rule
   verifyAllowedRequester(requesterDid, message.descriptor.target, inboundMessageRuleSet, ancestorMessageChain, recordSchemaToTypeMap);
 
