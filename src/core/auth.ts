@@ -3,7 +3,7 @@ import type { AuthVerificationResult } from './types';
 import type { SignatureInput } from '../jose/jws/general/types';
 
 import { CID } from 'multiformats';
-import { CollectionsQuerySchema, CollectionsWriteSchema } from '../interfaces/collections/types';
+import { CollectionsWriteSchema } from '../interfaces/collections/types';
 import { DIDResolver } from '../did/did-resolver';
 import { GeneralJws } from '../jose/jws/general/types';
 import { GeneralJwsSigner, GeneralJwsVerifier } from '../jose/jws/general';
@@ -35,16 +35,11 @@ export async function verifyAuth(
   const signers = await authenticate(message.authorization, didResolver);
 
   // authorization
-  switch (message.descriptor.method) {
-  case 'PermissionsRequest':
-    await authorizePermissionsMessage(message, signers);
-    break;
-  case 'CollectionsWrite':
-  case 'CollectionsQuery':
-    await authorizeCollectionsMessage(message as CollectionsWriteSchema, signers, messageStore);
-    break;
-  default:
-    throw new Error(`unknown message method type for auth: ${message.descriptor.method}`);
+  if (message.descriptor.method === 'CollectionsWrite' &&
+      (message as CollectionsWriteSchema).descriptor.protocol !== undefined) {
+    await protocolAuthorize((message as CollectionsWriteSchema), signers[0], messageStore);
+  } else {
+    await authorize(message, signers);
   }
 
   return { payload: parsedPayload, signers };
@@ -112,27 +107,13 @@ async function authenticate(jws: GeneralJws, didResolver: DIDResolver): Promise<
   return signers;
 }
 
-async function authorizePermissionsMessage(message: BaseMessageSchema, signers: string[]): Promise<void> {
+async function authorize(message: BaseMessageSchema, signers: string[]): Promise<void> {
   // if requester is the same as the target DID, we can directly grant access
   if (signers[0] === message.descriptor.target) {
     return;
   } else {
     throw new Error('message failed authorization, permission grant check not yet implemented');
   }
-}
-
-async function authorizeCollectionsMessage(
-  message: CollectionsWriteSchema,
-  signers: string[],
-  messageStore: MessageStore
-): Promise<void> {
-  // if requester is the same as the target DID, we can directly grant access
-  if (signers[0] === message.descriptor.target) {
-    return;
-  }
-
-  // fall through to protocol-based authorization
-  await protocolAuthorize(message, signers[0], messageStore);
 }
 
 /**

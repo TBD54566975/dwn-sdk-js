@@ -34,10 +34,10 @@ export async function protocolAuthorize(
   // corresponding rule set is found if code reaches here
 
   // verify the requester of the inbound message against allowed requester rule
-  verifyAllowedRequester(requesterDid, inboundMessageRuleSet, ancestorMessageChain, recordSchemaToTypeMap);
+  verifyAllowedRequester(requesterDid, message.descriptor.target, inboundMessageRuleSet, ancestorMessageChain, recordSchemaToTypeMap);
 
   // verify method invoked against the allowed actions
-  verifyAllowedActions(message, inboundMessageRuleSet);
+  verifyAllowedActions(requesterDid, message, inboundMessageRuleSet);
 }
 
 /**
@@ -160,12 +160,18 @@ function getRuleSet(
  */
 function verifyAllowedRequester(
   requesterDid: string,
+  targetDid: string,
   inboundMessageRuleSet: any,
   ancestorMessageChain: CollectionsWriteSchema[],
   recordSchemaToTypeMap: Map<string, string>
 ): void {
   const allowRule = inboundMessageRuleSet.allow;
-  if (allowRule.anyone !== undefined) {
+  if (allowRule === undefined) {
+    // if no allow rule is defined, still allow if requester is the same as target, but throw otherwise
+    if (requesterDid !== targetDid) {
+      throw new Error(`no allow rule defined, ${requesterDid} is unauthorized`);
+    }
+  } else if (allowRule.anyone !== undefined) {
     // good to go to next check
   } else if (allowRule.recipient !== undefined) {
     // get the message to check for recipient based on the path given
@@ -177,7 +183,7 @@ function verifyAllowedRequester(
       throw new Error(`unexpected inbound message author: ${requesterDid}, expected ${expectedRequesterDid}`);
     }
   } else {
-    throw new Error(`no matching allow condition`);
+    throw new Error(`no matching allow requester condition`);
   }
 }
 
@@ -185,15 +191,24 @@ function verifyAllowedRequester(
  * Verifies the actions specified in the given message matches the allowed actions in the rule set.
  * @throws {Error} if action not allowed.
  */
-function verifyAllowedActions(message: CollectionsWriteSchema, inboundMessageRuleSet: any,): void {
+function verifyAllowedActions(requesterDid: string, message: CollectionsWriteSchema, inboundMessageRuleSet: any,): void {
   const allowRule = inboundMessageRuleSet.allow;
+
+  if (allowRule === undefined) {
+    // if no allow rule is defined, owner of DWN can do everything
+    if (requesterDid === message.descriptor.target) {
+      return;
+    } else {
+      throw new Error(`no allow rule defined, ${requesterDid} is unauthorized`);
+    }
+  }
 
   let allowedActions: string[];
   if (allowRule.anyone !== undefined) {
     allowedActions = allowRule.anyone.to;
   } else if (allowRule.recipient !== undefined) {
     allowedActions = allowRule.recipient.to;
-  } // not possible to have `else` because of the above check already
+  } // not possible to have `else` because of same check already done by verifyAllowedRequester()
 
   const inboundMessageAction = methodToAllowedActionMap[message.descriptor.method];
   if (!allowedActions.includes(inboundMessageAction)) {
