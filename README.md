@@ -18,6 +18,7 @@ Since this SDK is still in early stages, we haven't yet published to npm. Until 
 ```bash
 # clone this repo somewhere
 git clone https://github.com/TBD54566975/dwn-sdk-js.git
+cd dwn-sdk-js
 # install deps
 npm install
 # transpile typescript and build bundles
