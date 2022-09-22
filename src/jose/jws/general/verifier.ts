@@ -53,7 +53,9 @@ export class GeneralJwsVerifier {
 
     for (const vm of verificationMethods) {
       // consider optimizing using a set for O(1) lookups if needed
-      if (vm.id === kid) {
+      // key ID in DID Document may or may not be fully qualified. e.g.
+      // `did:ion:alice#key1` or `#key1`
+      if (kid.endsWith(vm.id)) {
         verificationMethod = vm;
         break;
       }

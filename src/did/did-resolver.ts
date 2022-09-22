@@ -41,7 +41,7 @@ export class DIDResolver {
     const resolutionResult = await didResolver.resolve(did);
     const { didDocument, didResolutionMetadata } = resolutionResult;
 
-    if (!didDocument || didResolutionMetadata.error) {
+    if (!didDocument || didResolutionMetadata?.error) {
       const { error } = didResolutionMetadata;
       let errMsg = `Failed to resolve DID ${did}.`;
       errMsg += error ? ` Error: ${error}` : '';
