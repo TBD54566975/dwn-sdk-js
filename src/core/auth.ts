@@ -2,12 +2,15 @@ import type { Authorization, BaseMessageSchema } from './types';
 import type { AuthVerificationResult } from './types';
 import type { SignatureInput } from '../jose/jws/general/types';
 
+import { CID } from 'multiformats';
+import { CollectionsWriteSchema } from '../interfaces/collections/types';
+import { DIDResolver } from '../did/did-resolver';
+import { GeneralJws } from '../jose/jws/general/types';
 import { GeneralJwsSigner, GeneralJwsVerifier } from '../jose/jws/general';
 import { generateCid, parseCid } from '../utils/cid';
+import { MessageStore } from '../store/message-store';
+import { protocolAuthorize } from './protocol-authorization';
 import lodash from 'lodash';
-import { DIDResolver } from '../did/did-resolver';
-import { CID } from 'multiformats';
-import { GeneralJws } from '../jose/jws/general/types';
 
 const { isPlainObject } = lodash;
 
@@ -17,26 +20,27 @@ type PayloadConstraints = {
 };
 
 /**
- * validates and verifies `authorization` of the provided message:
- * - verifies signature
- * - verifies `descriptorCid` matches the actual CID of the descriptor
- * - verifies payload constraints if given
- * @throws {Error} if auth payload is not a valid JSON object
- * @throws {Error} if descriptorCid is missing from Auth payload
- * @throws {Error} if provided descriptorCid does not match expected descriptor CID
+ * Authenticates then authorizes the given Permissions message.
+ * @throws {Error} if auth fails
  */
 export async function verifyAuth(
   message: BaseMessageSchema & Authorization,
   didResolver: DIDResolver,
+  messageStore: MessageStore,
   payloadConstraints?: PayloadConstraints
 ): Promise<AuthVerificationResult> {
-  // signature verification is computationally intensive, so we're going to start
-  // by validating the payload.
+  // signature verification is computationally intensive, so we're going to start by validating the payload.
   const parsedPayload = await validateSchema(message, payloadConstraints);
 
   const signers = await authenticate(message.authorization, didResolver);
 
-  await authorize(message, signers);
+  // authorization
+  if (message.descriptor.method === 'CollectionsWrite' &&
+      (message as CollectionsWriteSchema).descriptor.protocol !== undefined) {
+    await protocolAuthorize((message as CollectionsWriteSchema), signers[0], messageStore);
+  } else {
+    await authorize(message, signers);
+  }
 
   return { payload: parsedPayload, signers };
 }
@@ -47,7 +51,7 @@ async function validateSchema(
 ): Promise<{ descriptorCid: CID, [key: string]: CID }> {
 
   if (message.authorization.signatures.length !== 1) {
-    throw new Error('Expected no more than 1 signature for authorization');
+    throw new Error('expected no more than 1 signature for authorization');
   }
 
   const payloadJson = GeneralJwsVerifier.decodeJsonPayload(message.authorization);

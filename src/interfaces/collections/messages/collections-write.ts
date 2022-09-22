@@ -6,15 +6,19 @@ import { DIDResolver } from '../../../did/did-resolver';
 import { generateCid } from '../../../utils/cid';
 import { getDagCid } from '../../../utils/data';
 import { Message } from '../../../core/message';
+import { MessageStore } from '../../../store/message-store';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { sign, verifyAuth } from '../../../core/auth';
 import { validate } from '../../../validation/validator';
 
 type CollectionsWriteOptions = AuthCreateOptions & {
   target: string;
+  recipient: string;
   protocol?: string;
+  contextId?: string;
   schema?: string;
   recordId: string;
+  parentId?: string;
   nonce: string;
   data: Uint8Array;
   dateCreated: number;
@@ -34,10 +38,13 @@ export class CollectionsWrite extends Message implements Authorizable {
     const dataCid = await getDagCid(options.data);
     const descriptor: CollectionsWriteDescriptor = {
       target        : options.target,
+      recipient     : options.recipient,
       method        : 'CollectionsWrite',
       protocol      : options.protocol,
+      contextId     : options.contextId,
       schema        : options.schema,
       recordId      : options.recordId,
+      parentId      : options.parentId,
       nonce         : options.nonce,
       dataCid       : dataCid.toString(),
       dateCreated   : options.dateCreated,
@@ -60,10 +67,10 @@ export class CollectionsWrite extends Message implements Authorizable {
     return new CollectionsWrite(message);
   }
 
-  async verifyAuth(didResolver: DIDResolver): Promise<AuthVerificationResult> {
+  async verifyAuth(didResolver: DIDResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
 
     // TODO: Issue #75 - Add permission verification - https://github.com/TBD54566975/dwn-sdk-js/issues/75
-    return await verifyAuth(this.message, didResolver);
+    return await verifyAuth(this.message, didResolver, messageStore);
   }
 
   /**

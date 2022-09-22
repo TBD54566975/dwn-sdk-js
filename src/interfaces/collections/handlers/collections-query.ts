@@ -12,7 +12,7 @@ export const handleCollectionsQuery: MethodHandler = async (
   const collectionsQueryMessage = new CollectionsQuery(message as CollectionsQuerySchema);
 
   try {
-    await collectionsQueryMessage.verifyAuth(didResolver);
+    await collectionsQueryMessage.verifyAuth(didResolver, messageStore);
   } catch (e) {
     return new MessageReply({
       status: { code: 401, message: e.message }

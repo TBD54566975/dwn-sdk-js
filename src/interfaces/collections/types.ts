@@ -2,11 +2,14 @@ import type { Authorization } from '../../core/types';
 
 export type CollectionsWriteDescriptor = {
   target: string;
+  recipient: string;
   method: 'CollectionsWrite';
   protocol?: string;
+  contextId?: string;
   schema?: string;
   nonce: string;
   recordId: string;
+  parentId?: string;
   dataCid: string;
   dateCreated: number;
   published?: boolean;
@@ -24,9 +27,12 @@ export type CollectionsQueryDescriptor = {
   method: 'CollectionsQuery';
   nonce: string;
   filter: {
+    recipient?: string;
     protocol?: string;
+    contextId?: string;
     schema?: string;
     recordId?: string;
+    parentId?: string;
     dataFormat?: string;
   }
   dateSort?: string;

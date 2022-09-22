@@ -14,12 +14,15 @@ import { v4 as uuidv4 } from 'uuid';
 
 export type GenerateCollectionWriteMessageInput = {
   targetDid?: string;
+  recipientDid?: string;
   requesterDid?: string;
   requesterKeyId?: string;
   requesterKeyPair?: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
   protocol?: string;
+  contextId?: string;
   schema?: string;
   recordId?: string;
+  parentId?: string;
   data?: Uint8Array;
   dataFormat?: string;
   dateCreated? : number;
@@ -44,9 +47,12 @@ export type GenerateCollectionQueryMessageInput = {
   requesterKeyId?: string;
   requesterKeyPair?: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
   filter?: {
+    recipient?: string;
     protocol?: string;
+    contextId?: string;
     schema?: string;
     recordId?: string;
+    parentId?: string;
     dataFormat?: string;
   }
   dateSort?: string;
@@ -82,7 +88,7 @@ export class TestDataGenerator {
     const requesterDidMethod = TestDataGenerator.getDidMethodName(requesterDid);
 
     // generate requester key ID if not given
-    const requesterKeyId =  input?.requesterKeyId ? input.requesterKeyId : `${requesterDid}#key1`;
+    const requesterKeyId =  input?.requesterKeyId ?? `${requesterDid}#key1`;
 
     // generate requester key pair if not given
     let requesterKeyPair = input?.requesterKeyPair;
@@ -111,16 +117,19 @@ export class TestDataGenerator {
       }
     }
 
-    const data = input?.data ? input.data : TestDataGenerator.randomBytes(32);
+    const data = input?.data ?? TestDataGenerator.randomBytes(32);
 
     const options = {
       target      : targetDid,
+      recipient   : input?.recipientDid ?? targetDid, // use target if recipient is not explicitly set
       nonce       : TestDataGenerator.randomString(32),
-      protocol    : input?.protocol ? input.protocol : TestDataGenerator.randomString(10),
-      schema      : input?.schema ? input.schema : TestDataGenerator.randomString(20),
-      recordId    : input?.recordId ? input.recordId : uuidv4(),
-      dataFormat  : input?.dataFormat ? input.dataFormat : 'application/json',
-      dateCreated : input?.dateCreated ? input.dateCreated : Date.now(),
+      protocol    : input?.protocol,
+      contextId   : input?.contextId,
+      schema      : input?.schema ?? TestDataGenerator.randomString(20),
+      recordId    : input?.recordId ?? uuidv4(),
+      parentId    : input?.parentId,
+      dataFormat  : input?.dataFormat ?? 'application/json',
+      dateCreated : input?.dateCreated ?? Date.now(),
       data,
       signatureInput
     };
@@ -154,7 +163,7 @@ export class TestDataGenerator {
     const requesterDidMethod = TestDataGenerator.getDidMethodName(requesterDid);
 
     // generate requester key ID if not given
-    const requesterKeyId =  input?.requesterKeyId ? input.requesterKeyId : `${requesterDid}#key1`;
+    const requesterKeyId =  input?.requesterKeyId ?? `${requesterDid}#key1`;
 
     // generate requester key pair if not given
     let requesterKeyPair = input?.requesterKeyPair;
@@ -187,7 +196,7 @@ export class TestDataGenerator {
       target   : targetDid,
       nonce    : TestDataGenerator.randomString(32),
       signatureInput,
-      filter   : input?.filter ? input.filter : { schema: TestDataGenerator.randomString(10) }, // must have one filter property if no filter is given
+      filter   : input?.filter ?? { schema: TestDataGenerator.randomString(10) }, // must have one filter property if no filter is given
       dateSort : input?.dateSort
     };
     removeUndefinedProperties(options);

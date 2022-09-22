@@ -3,6 +3,7 @@ import type { GeneralJws, SignatureInput } from '../jose/jws/general/types';
 
 import { CID } from 'multiformats/cid';
 import { DIDResolver } from '../did/did-resolver';
+import { MessageStore } from '../store/message-store';
 
 /**
  * Intersection type for all concrete message schema types (e.g. PermissionsRequestSchema)
@@ -57,7 +58,7 @@ export interface Authorizable {
    * validates and verifies the `authorization` property of a given message
    * @param didResolver - used to resolve `kid`'s
    */
-  verifyAuth(didResolver: DIDResolver): Promise<AuthVerificationResult>;
+  verifyAuth(didResolver: DIDResolver, messageStore: MessageStore): Promise<AuthVerificationResult>;
 }
 
 /**

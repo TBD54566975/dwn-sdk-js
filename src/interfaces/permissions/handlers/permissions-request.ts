@@ -18,7 +18,7 @@ export const handlePermissionsRequest: MethodHandler = async (
   }
 
   // TODO: should we add an explicit check to ensure that there's only 1 signer?, Issue #65 https://github.com/TBD54566975/dwn-sdk-js/issues/65
-  const { signers } = await request.verifyAuth(didResolver);
+  const { signers } = await request.verifyAuth(didResolver, messageStore);
   const [ signer ] = signers;
 
   if (signer !== request.grantedTo) {

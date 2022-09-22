@@ -28,7 +28,7 @@ export const handleCollectionsWrite: MethodHandler = async (
     // authentication & authorization
     try {
       const collectionsWriteMessage = new CollectionsWrite(incomingMessage);
-      await collectionsWriteMessage.verifyAuth(didResolver);
+      await collectionsWriteMessage.verifyAuth(didResolver, messageStore);
     } catch (e) {
       return new MessageReply({
         status: { code: 401, message: e.message }

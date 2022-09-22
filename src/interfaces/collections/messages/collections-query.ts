@@ -2,6 +2,7 @@ import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '..
 import type { CollectionsQueryDescriptor, CollectionsQuerySchema } from '../types';
 import { DIDResolver } from '../../../did/did-resolver';
 import { Message } from '../../../core/message';
+import { MessageStore } from '../../../store/message-store';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { sign, verifyAuth } from '../../../core/auth';
 import { validate } from '../../../validation/validator';
@@ -10,9 +11,12 @@ type CollectionsQueryOptions = AuthCreateOptions & {
   target: string;
   nonce: string;
   filter: {
+    recipient?: string;
     protocol?: string;
+    contextId?: string;
     schema?: string;
     recordId?: string;
+    parentId?: string;
     dataFormat?: string;
   },
   dateSort?: string;
@@ -47,8 +51,8 @@ export class CollectionsQuery extends Message implements Authorizable {
     return new CollectionsQuery(message);
   }
 
-  async verifyAuth(didResolver: DIDResolver): Promise<AuthVerificationResult> {
+  async verifyAuth(didResolver: DIDResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
     // TODO: Issue #75 - Add permission verification - https://github.com/TBD54566975/dwn-sdk-js/issues/75
-    return await verifyAuth(this.message, didResolver);
+    return await verifyAuth(this.message, didResolver, messageStore);
   }
 }

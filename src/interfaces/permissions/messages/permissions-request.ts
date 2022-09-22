@@ -4,6 +4,7 @@ import type { PermissionScope, PermissionConditions } from '../types';
 
 import { DIDResolver } from '../../../did/did-resolver';
 import { Message } from '../../../core/message';
+import { MessageStore } from '../../../store/message-store';
 import { sign, verifyAuth } from '../../../core/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { validate } from '../../../validation/validator';
@@ -50,8 +51,8 @@ export class PermissionsRequest extends Message implements Authorizable {
     return new PermissionsRequest(message);
   }
 
-  async verifyAuth(didResolver: DIDResolver): Promise<AuthVerificationResult> {
-    return await verifyAuth(this.message, didResolver);
+  async verifyAuth(didResolver: DIDResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
+    return await verifyAuth(this.message, didResolver, messageStore);
   }
 
   get id(): string {
