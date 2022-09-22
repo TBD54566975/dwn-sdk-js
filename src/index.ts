@@ -9,5 +9,15 @@
 //   - https://stackoverflow.com/questions/44979976/typescript-compiler-is-forgetting-to-add-file-extensions-to-es6-module-imports
 //   - https://github.com/microsoft/TypeScript/issues/40878
 //
-export { DWN } from './dwn.js';
+export type { CollectionsQueryOptions } from './interfaces/collections/messages/collections-query.js';
+export type { CollectionsQuerySchema, CollectionsWriteSchema } from './interfaces/collections/types';
+export type { CollectionsWriteOptions } from './interfaces/collections/messages/collections-write.js';
 export type { DIDResolver } from './did/did-resolver.js';
+export type { EventHandler } from './dwn.js';
+export type { HandlersWriteOptions } from './interfaces/handlers/messages/handlers-write.js';
+export type { HandlersWriteSchema } from './interfaces/handlers/types';
+export { CollectionsQuery } from './interfaces/collections/messages/collections-query.js';
+export { CollectionsWrite } from './interfaces/collections/messages/collections-write.js';
+export { DWN } from './dwn.js';
+export { HandlersWrite } from './interfaces/handlers/messages/handlers-write.js';
+export { Response } from './core/response.js';

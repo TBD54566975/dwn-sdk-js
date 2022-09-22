@@ -11,7 +11,7 @@ import { removeUndefinedProperties } from '../../../utils/object';
 import { sign, verifyAuth } from '../../../core/auth';
 import { validate } from '../../../validation/validator';
 
-type CollectionsWriteOptions = AuthCreateOptions & {
+export type CollectionsWriteOptions = AuthCreateOptions & {
   target: string;
   recipient: string;
   protocol?: string;
