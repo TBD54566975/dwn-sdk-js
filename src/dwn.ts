@@ -1,6 +1,7 @@
 import type { DIDMethodResolver } from './did/did-resolver';
 import type { Interface, MethodHandler } from './interfaces/types';
 import type { BaseMessageSchema, RequestSchema } from './core/types';
+import type { HandlersWriteSchema } from './interfaces/handlers/types';
 import type { MessageStore } from './store/message-store';
 
 import { addSchema } from './validation/validator';
@@ -58,6 +59,13 @@ export class DWN {
     return this.messageStore.close();
   }
 
+  /**
+   * Adds a custom event handler.
+   */
+  async addEventHandler(_handlersWriteMessage: HandlersWriteSchema, _eventHandler: EventHandler): Promise<Response> {
+    throw new Error('not implemented');
+  }
+
   async processRequest(rawRequest: Uint8Array): Promise<Response> {
     let request: RequestSchema;
     try {
@@ -111,3 +119,14 @@ export type Config = {
   interfaces?: Interface[];
   messageStore?: MessageStore;
 };
+
+
+/**
+ * An event handler that is triggered after a message passes processing flow of:
+ * DWN message level schema validation -> authentication -> authorization -> message processing/storage.
+ * @param message The message to be handled
+ * @returns the response to be returned back to the caller
+ */
+export interface EventHandler {
+  (message: BaseMessageSchema): Promise<Response>;
+}

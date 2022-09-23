@@ -8,6 +8,7 @@ import { sign, verifyAuth } from '../../../core/auth';
 import { DIDResolver } from '../../../did/did-resolver';
 import { generateCid } from '../../../utils/cid';
 import { Message } from '../../../core/message';
+import { MessageStore } from '../../../store/message-store';
 import { PermissionsRequest, DEFAULT_CONDITIONS } from './permissions-request';
 import { v4 as uuidv4 } from 'uuid';
 import { validate } from '../../../validation/validator';
@@ -113,8 +114,8 @@ export class PermissionsGrant extends Message implements Authorizable {
     return delegatedGrant;
   }
 
-  verifyAuth(didResolver: DIDResolver): Promise<AuthVerificationResult> {
-    return verifyAuth(this.message, didResolver);
+  verifyAuth(didResolver: DIDResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
+    return verifyAuth(this.message, didResolver, messageStore);
   }
 
   get id(): string {

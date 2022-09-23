@@ -7,7 +7,7 @@ import { removeUndefinedProperties } from '../../../utils/object';
 import { sign, verifyAuth } from '../../../core/auth';
 import { validate } from '../../../validation/validator';
 
-type CollectionsQueryOptions = AuthCreateOptions & {
+export type CollectionsQueryOptions = AuthCreateOptions & {
   target: string;
   nonce: string;
   filter: {
