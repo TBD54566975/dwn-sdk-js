@@ -13,7 +13,7 @@ export const handlePermissionsRequest: MethodHandler = async (
 
   if (message.descriptor.target !== request.grantedBy && message.descriptor.target !== request.grantedTo) {
     return new MessageReply({
-      status: { code: 400, message: 'grantedBy or grantedTo must be the targeted message recipient' }
+      status: { code: 400, detail: 'grantedBy or grantedTo must be the targeted message recipient' }
     });
   }
 
@@ -29,11 +29,11 @@ export const handlePermissionsRequest: MethodHandler = async (
     await messageStore.put(message);
 
     return new MessageReply({
-      status: { code: 202, message: 'Accepted' }
+      status: { code: 202, detail: 'Accepted' }
     });
   } catch (e) {
     return new MessageReply({
-      status: { code: 500, message: e.message }
+      status: { code: 500, detail: e.message }
     });
   }
 };

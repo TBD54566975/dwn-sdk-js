@@ -20,7 +20,7 @@ export const handleCollectionsWrite: MethodHandler = async (
 
       if (actualDataCid !== incomingMessage.descriptor.dataCid) {
         return new MessageReply({
-          status: { code: 400, message: 'actual CID of data and `dataCid` in descriptor mismatch' }
+          status: { code: 400, detail: 'actual CID of data and `dataCid` in descriptor mismatch' }
         });
       }
     }
@@ -31,7 +31,7 @@ export const handleCollectionsWrite: MethodHandler = async (
       await collectionsWriteMessage.verifyAuth(didResolver, messageStore);
     } catch (e) {
       return new MessageReply({
-        status: { code: 401, message: e.message }
+        status: { code: 401, detail: e.message }
       });
     }
 
@@ -57,11 +57,11 @@ export const handleCollectionsWrite: MethodHandler = async (
       await messageStore.put(message);
 
       messageReply = new MessageReply({
-        status: { code: 202, message: 'Accepted' }
+        status: { code: 202, detail: 'Accepted' }
       });
     } else {
       messageReply = new MessageReply({
-        status: { code: 409, message: 'Conflict' }
+        status: { code: 409, detail: 'Conflict' }
       });
     }
 
@@ -76,7 +76,7 @@ export const handleCollectionsWrite: MethodHandler = async (
     return messageReply;
   } catch (e) {
     return new MessageReply({
-      status: { code: 500, message: e.message }
+      status: { code: 500, detail: e.message }
     });
   }
 };

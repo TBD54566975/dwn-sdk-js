@@ -18,8 +18,6 @@ export type HandlersWriteDescriptor = {
    */
   filter: {
     method: string;
-    protocol: string;
-    schema: string;
   }
 };
 

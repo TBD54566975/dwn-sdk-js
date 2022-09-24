@@ -478,7 +478,7 @@ describe('handleCollectionsWrite()', () => {
 
       const pfiCredentialResponseReply = await handleCollectionsWrite(credentialResponseMessageData.message, messageStore, pfiDidResolverStub);
       expect(pfiCredentialResponseReply.status.code).to.equal(401);
-      expect(pfiCredentialResponseReply.status.message).to.contain('unexpected inbound message author');
+      expect(pfiCredentialResponseReply.status.detail).to.contain('unexpected inbound message author');
     });
   });
 
@@ -492,7 +492,7 @@ describe('handleCollectionsWrite()', () => {
     const reply = await handleCollectionsWrite(messageData.message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(400);
-    expect(reply.status.message).to.equal('actual CID of data and `dataCid` in descriptor mismatch');
+    expect(reply.status.detail).to.equal('actual CID of data and `dataCid` in descriptor mismatch');
   });
 
   it('should return 401 if signature check fails', async () => {
