@@ -1,5 +1,5 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
-import type { CollectionsWriteDescriptor, CollectionsWriteSchema } from '../types';
+import type { CollectionsWriteDescriptor, CollectionsWriteMessage } from '../types';
 import { base64url } from 'multiformats/bases/base64';
 import { CID } from 'multiformats/cid';
 import { DIDResolver } from '../../../did/did-resolver';
@@ -28,9 +28,9 @@ export type CollectionsWriteOptions = AuthCreateOptions & {
 };
 
 export class CollectionsWrite extends Message implements Authorizable {
-  protected message: CollectionsWriteSchema;
+  protected message: CollectionsWriteMessage;
 
-  constructor(message: CollectionsWriteSchema) {
+  constructor(message: CollectionsWriteMessage) {
     super(message);
   }
 
@@ -77,7 +77,7 @@ export class CollectionsWrite extends Message implements Authorizable {
    * Gets the cid of the given CollectionsWrite message.
    * NOTE: `encodedData` is ignored when computing the CID of message.
    */
-  static async getCid(message: CollectionsWriteSchema): Promise<CID> {
+  static async getCid(message: CollectionsWriteMessage): Promise<CID> {
     const messageCopy = { ...message };
 
     if (messageCopy['encodedData'] !== undefined) {
@@ -91,8 +91,8 @@ export class CollectionsWrite extends Message implements Authorizable {
   /**
    * @returns newest message in the array. `undefined` if given array is empty.
    */
-  static async getNewestMessage(messages: CollectionsWriteSchema[]): Promise<CollectionsWriteSchema | undefined> {
-    let currentNewestMessage: CollectionsWriteSchema | undefined = undefined;
+  static async getNewestMessage(messages: CollectionsWriteMessage[]): Promise<CollectionsWriteMessage | undefined> {
+    let currentNewestMessage: CollectionsWriteMessage | undefined = undefined;
     for (const message of messages) {
       if (currentNewestMessage === undefined || await CollectionsWrite.isNewer(message, currentNewestMessage)) {
         currentNewestMessage = message;
@@ -106,7 +106,7 @@ export class CollectionsWrite extends Message implements Authorizable {
    * Compares the age of two messages.
    * @returns `true` if `a` is newer than `b`; `false` otherwise
    */
-  static async isNewer(a: CollectionsWriteSchema, b: CollectionsWriteSchema): Promise<boolean> {
+  static async isNewer(a: CollectionsWriteMessage, b: CollectionsWriteMessage): Promise<boolean> {
     const aIsNewer = (await CollectionsWrite.compareCreationTime(a, b) > 0);
     return aIsNewer;
   }
@@ -115,7 +115,7 @@ export class CollectionsWrite extends Message implements Authorizable {
    * Compares the `dateCreated` of the given records with a fallback to message CID according to the spec.
    * @returns 1 if `a` is larger/newer than `b`; -1 if `a` is smaller/older than `b`; 0 otherwise (same age)
    */
-  static async compareCreationTime(a: CollectionsWriteSchema, b: CollectionsWriteSchema): Promise<number> {
+  static async compareCreationTime(a: CollectionsWriteMessage, b: CollectionsWriteMessage): Promise<number> {
     if (a.descriptor.dateCreated > b.descriptor.dateCreated) {
       return 1;
     } else if (a.descriptor.dateCreated < b.descriptor.dateCreated) {

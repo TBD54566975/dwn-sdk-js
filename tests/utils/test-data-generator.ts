@@ -1,11 +1,11 @@
-import { BaseMessageSchema } from '../../src/core/types';
+import { BaseMessage } from '../../src/core/types';
 import { CID } from 'multiformats/cid';
 import { CollectionsWrite } from '../../src/interfaces/collections/messages/collections-write';
 import { CollectionsQuery } from '../../src/interfaces/collections/messages/collections-query';
-import { CollectionsQuerySchema, CollectionsWriteSchema } from '../../src/interfaces/collections/types';
+import { CollectionsQueryMessage, CollectionsWriteMessage } from '../../src/interfaces/collections/types';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519';
 import { DIDResolutionResult } from '../../src/did/did-resolver';
-import { HandlersWrite, HandlersWriteSchema } from '../../src';
+import { HandlersWrite, HandlersWriteMessage } from '../../src';
 import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request';
 import { PrivateJwk, PublicJwk } from '../../src/jose/types';
 import { removeUndefinedProperties } from '../../src/utils/object';
@@ -30,7 +30,7 @@ export type GenerateCollectionWriteMessageInput = {
 };
 
 export type GenerateCollectionWriteMessageOutput = {
-  message: CollectionsWriteSchema;
+  message: CollectionsWriteMessage;
   messageCid: CID;
   data: Uint8Array;
   /**
@@ -60,7 +60,7 @@ export type GenerateCollectionQueryMessageInput = {
 };
 
 export type GenerateCollectionQueryMessageOutput = {
-  message: CollectionsQuerySchema;
+  message: CollectionsQueryMessage;
   /**
    * method name without the `did:` prefix. e.g. "ion"
    */
@@ -82,7 +82,7 @@ export type GenerateHandlersWriteMessageInput = {
 };
 
 export type GenerateHandlersWriteMessageOutput = {
-  message: HandlersWriteSchema;
+  message: HandlersWriteMessage;
   requesterDidMethod: string;
   requesterDid: string;
   requesterKeyId: string;
@@ -155,7 +155,7 @@ export class TestDataGenerator {
     };
 
     const collectionsWrite = await CollectionsWrite.create(options);
-    const message = collectionsWrite.toObject() as CollectionsWriteSchema;
+    const message = collectionsWrite.toObject() as CollectionsWriteMessage;
     const messageCid = await CollectionsWrite.getCid(message);
 
     return {
@@ -222,7 +222,7 @@ export class TestDataGenerator {
     removeUndefinedProperties(options);
 
     const collectionsQuery = await CollectionsQuery.create(options);
-    const message = collectionsQuery.toObject() as CollectionsQuerySchema;
+    const message = collectionsQuery.toObject() as CollectionsQueryMessage;
 
     return {
       message,
@@ -297,7 +297,7 @@ export class TestDataGenerator {
   /**
    * Generates a PermissionsRequest message for testing.
    */
-  public static async generatePermissionRequestMessage(): Promise<BaseMessageSchema> {
+  public static async generatePermissionRequestMessage(): Promise<BaseMessage> {
     const { privateJwk } = await ed25519.generateKeyPair();
     const permissionRequest = await PermissionsRequest.create({
       target         : 'did:jank:alice',

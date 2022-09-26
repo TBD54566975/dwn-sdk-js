@@ -1,4 +1,4 @@
-import type { GenericMessageSchema, BaseMessageSchema } from '../core/types';
+import type { GenericMessageSchema, BaseMessage } from '../core/types';
 import type { MessageStore } from './message-store';
 
 import { base64url } from 'multiformats/bases/base64';
@@ -64,7 +64,7 @@ export class MessageStoreLevel implements MessageStore {
     await this.index.INDEX.STORE.close(); // MUST close index-search DB, else `searchIndex()` triggered in a different instance will hang indefinitely
   }
 
-  async get(cid: CID): Promise<BaseMessageSchema> {
+  async get(cid: CID): Promise<BaseMessage> {
     const bytes = await this.db.get(cid);
 
     if (!bytes) {
@@ -94,11 +94,11 @@ export class MessageStoreLevel implements MessageStore {
 
     messageJson.encodedData = base64url.baseEncode(dataBytes);
 
-    return messageJson as BaseMessageSchema;
+    return messageJson as BaseMessage;
   }
 
-  async query(query: any): Promise<BaseMessageSchema[]> {
-    const messages: BaseMessageSchema[] = [];
+  async query(query: any): Promise<BaseMessage[]> {
+    const messages: BaseMessage[] = [];
 
     // parse query into a query that is compatible with the index we're using
     const indexQueryTerms: string[] = MessageStoreLevel.buildIndexQueryTerms(query);
@@ -123,7 +123,7 @@ export class MessageStoreLevel implements MessageStore {
     return;
   }
 
-  async put(messageJson: BaseMessageSchema): Promise<void> {
+  async put(messageJson: BaseMessage): Promise<void> {
 
     // delete `encodedData` if it exists so `messageJson` is stored without it, `encodedData` will be decoded, chunked and stored separately below
     let encodedData = undefined;

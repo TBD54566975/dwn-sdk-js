@@ -1,4 +1,4 @@
-import { BaseMessageSchema } from './types';
+import { BaseMessage } from './types';
 
 type Status = {
   code: number
@@ -7,14 +7,14 @@ type Status = {
 
 type MessageReplyOptions = {
   status: Status,
-  entries?: BaseMessageSchema[];
+  entries?: BaseMessage[];
 };
 
 export class MessageReply {
   status: Status;
   // resulting message entries returned from the invocation of the corresponding message
   // e.g. the resulting messages from a CollectionsQuery
-  entries?: BaseMessageSchema[];
+  entries?: BaseMessage[];
 
   constructor(opts: MessageReplyOptions) {
     const { status, entries } = opts;

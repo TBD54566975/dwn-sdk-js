@@ -2,7 +2,7 @@ import { sign } from '../../../core/auth';
 import type { AuthCreateOptions } from '../../../core/types';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { validate } from '../../../validation/validator';
-import type { HandlersWriteDescriptor, HandlersWriteSchema } from '../../handlers/types';
+import type { HandlersWriteDescriptor, HandlersWriteMessage } from '../../handlers/types';
 
 /**
  * Input to `HandlersWrite.create()`.
@@ -26,7 +26,7 @@ export class HandlersWrite {
   /**
    * Creates a HandlersWrite message
    */
-  static async create(options: HandlersWriteOptions): Promise<HandlersWriteSchema> {
+  static async create(options: HandlersWriteOptions): Promise<HandlersWriteMessage> {
     const descriptor: HandlersWriteDescriptor = {
       target : options.target,
       method : 'HandlersWrite',

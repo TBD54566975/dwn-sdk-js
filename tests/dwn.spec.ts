@@ -1,7 +1,7 @@
 import { Config } from '../src/dwn';
 import { DIDResolutionResult, DIDMethodResolver } from '../src/did/did-resolver';
 import { DWN } from '../src/dwn';
-import { HandlersWriteSchema } from '../src';
+import { HandlersWriteMessage } from '../src';
 import { MessageReply } from '../src/core';
 import { MessageStoreLevel } from '../src/store/message-store-level';
 import { TestDataGenerator } from './utils/test-data-generator';
@@ -114,10 +114,10 @@ describe('DWN', () => {
 
       const mockHandlerReply = { status: { code: 200, detail: 'good stuff mate' } };
 
-      const customHandlerStub1 = sinon.stub<[HandlersWriteSchema], Promise<MessageReply>>();
+      const customHandlerStub1 = sinon.stub<[HandlersWriteMessage], Promise<MessageReply>>();
       customHandlerStub1.resolves(mockHandlerReply);
 
-      const customHandlerStub2 = sinon.stub<[HandlersWriteSchema], Promise<MessageReply>>();
+      const customHandlerStub2 = sinon.stub<[HandlersWriteMessage], Promise<MessageReply>>();
       customHandlerStub1.resolves(mockHandlerReply);
 
       dwn.addCustomEventHandler(handlersWriteMessageData1.message, customHandlerStub1);

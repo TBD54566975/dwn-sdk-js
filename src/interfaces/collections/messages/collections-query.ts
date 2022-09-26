@@ -1,5 +1,5 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
-import type { CollectionsQueryDescriptor, CollectionsQuerySchema } from '../types';
+import type { CollectionsQueryDescriptor, CollectionsQueryMessage } from '../types';
 import { DIDResolver } from '../../../did/did-resolver';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
@@ -23,9 +23,9 @@ export type CollectionsQueryOptions = AuthCreateOptions & {
 };
 
 export class CollectionsQuery extends Message implements Authorizable {
-  protected message: CollectionsQuerySchema;
+  protected message: CollectionsQueryMessage;
 
-  constructor(message: CollectionsQuerySchema) {
+  constructor(message: CollectionsQueryMessage) {
     super(message);
   }
 

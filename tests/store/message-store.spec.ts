@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { generateCid } from '../../src/utils/cid';
 import { MessageStoreLevel } from '../../src/store/message-store-level';
 import { TestDataGenerator } from '../utils/test-data-generator';
-import { CollectionsWriteSchema } from '../../src/interfaces/collections/types';
+import { CollectionsWriteMessage } from '../../src/interfaces/collections/types';
 
 let messageStore: MessageStoreLevel;
 
@@ -93,7 +93,7 @@ describe('MessageStoreLevel Tests', () => {
       await messageStore.put(messageData.message);
 
       const results = await messageStore.query({ schema });
-      expect((results[0] as CollectionsWriteSchema).descriptor.schema).to.equal(schema);
+      expect((results[0] as CollectionsWriteMessage).descriptor.schema).to.equal(schema);
     });
   });
 
