@@ -221,7 +221,11 @@ function verifyAllowedActions(requesterDid: string, message: CollectionsWriteMes
  *                    e.g. `A/B/C` means that the root ancestor must be of type A, its child must be of type B, followed by a child of type C.
  *                    NOTE: the path scheme use here may be temporary dependent on final protocol spec.
  */
-function getMessage(messageChain: CollectionsWriteMessage[], messagePath: string, recordSchemaToTypeMap: Map<string, string>): CollectionsWriteMessage {
+function getMessage(
+  messageChain: CollectionsWriteMessage[],
+  messagePath: string,
+  recordSchemaToTypeMap: Map<string, string>
+): CollectionsWriteMessage {
   const ancestors = messagePath.split('/');
 
   let i = 0;

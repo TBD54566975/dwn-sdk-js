@@ -1,4 +1,3 @@
-import type { DeepPartial } from '../types';
 import type { GeneralJws, SignatureInput } from '../jose/jws/general/types';
 
 import { CID } from 'multiformats/cid';
