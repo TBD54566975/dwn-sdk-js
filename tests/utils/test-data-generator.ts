@@ -5,6 +5,7 @@ import { CollectionsQuery } from '../../src/interfaces/collections/messages/coll
 import { CollectionsQuerySchema, CollectionsWriteSchema } from '../../src/interfaces/collections/types';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519';
 import { DIDResolutionResult } from '../../src/did/did-resolver';
+import { HandlersWrite, HandlersWriteSchema } from '../../src';
 import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request';
 import { PrivateJwk, PublicJwk } from '../../src/jose/types';
 import { removeUndefinedProperties } from '../../src/utils/object';
@@ -63,6 +64,25 @@ export type GenerateCollectionQueryMessageOutput = {
   /**
    * method name without the `did:` prefix. e.g. "ion"
    */
+  requesterDidMethod: string;
+  requesterDid: string;
+  requesterKeyId: string;
+  requesterKeyPair: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
+};
+
+export type GenerateHandlersWriteMessageInput = {
+  targetDid?: string;
+  requesterDid?: string;
+  requesterKeyId?: string;
+  requesterKeyPair?: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
+  filter?: {
+    method: string;
+  }
+  uri?: string;
+};
+
+export type GenerateHandlersWriteMessageOutput = {
+  message: HandlersWriteSchema;
   requesterDidMethod: string;
   requesterDid: string;
   requesterKeyId: string;
@@ -203,6 +223,67 @@ export class TestDataGenerator {
 
     const collectionsQuery = await CollectionsQuery.create(options);
     const message = collectionsQuery.toObject() as CollectionsQuerySchema;
+
+    return {
+      message,
+      requesterDid,
+      requesterDidMethod,
+      requesterKeyId,
+      requesterKeyPair
+    };
+  };
+
+  /**
+   * Generates a HandlersWrite message for testing.
+   * If both `requesterDid` and `targetDid` are not given, the generator will use the same DID for both to pass authorization in tests by default.
+   */
+  public static async generateHandlersWriteMessage(input?: GenerateHandlersWriteMessageInput): Promise<GenerateHandlersWriteMessageOutput> {
+    // generate requester DID if not given
+    let requesterDid = input?.requesterDid;
+    if (!requesterDid) {
+      const didSuffix = TestDataGenerator.randomString(32);
+      requesterDid = `did:example:${didSuffix}`;
+    }
+    const requesterDidMethod = TestDataGenerator.getDidMethodName(requesterDid);
+
+    // generate requester key ID if not given
+    const requesterKeyId =  input?.requesterKeyId ?? `${requesterDid}#key1`;
+
+    // generate requester key pair if not given
+    let requesterKeyPair = input?.requesterKeyPair;
+    if (!requesterKeyPair) {
+      requesterKeyPair = await secp256k1.generateKeyPair();
+    }
+
+    const signatureInput = {
+      jwkPrivate      : requesterKeyPair.privateJwk,
+      protectedHeader : {
+        alg : requesterKeyPair.privateJwk.alg!,
+        kid : requesterKeyId
+      }
+    };
+
+    // generate target DID if not given
+    let targetDid = input?.targetDid;
+    if (!targetDid) {
+      // if both `requesterDid` and `targetDid` are both not given in input,
+      // use the same DID as the `requesterDid` to pass authorization in tests by default.
+      if (!input?.requesterDid) {
+        targetDid = requesterDid;
+      } else {
+        const didSuffix = TestDataGenerator.randomString(32);
+        targetDid = `did:example:${didSuffix}`;
+      }
+    }
+
+    const options = {
+      target : targetDid,
+      signatureInput,
+      filter : input?.filter ?? { method: 'CollectionsWrite' }, // hardcode to filter on `CollectionsWrite` if no filter is given
+    };
+    removeUndefinedProperties(options);
+
+    const message = await HandlersWrite.create(options);
 
     return {
       message,

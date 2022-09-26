@@ -2,7 +2,7 @@ import { BaseMessageSchema } from './types';
 
 type Status = {
   code: number
-  message: string
+  detail: string
 };
 
 type MessageReplyOptions = {

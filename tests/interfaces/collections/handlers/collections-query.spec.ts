@@ -177,7 +177,7 @@ describe('handleCollectionsQuery()', () => {
     const reply = await handleCollectionsQuery(messageData.message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(500);
-    expect(reply.status.message).to.equal('`dateSort` not implemented');
+    expect(reply.status.detail).to.equal('`dateSort` not implemented');
   });
 });
 

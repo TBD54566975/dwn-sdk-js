@@ -1,5 +1,8 @@
+import { sign } from '../../../core/auth';
 import type { AuthCreateOptions } from '../../../core/types';
-import type { HandlersWriteSchema } from '../../handlers/types';
+import { removeUndefinedProperties } from '../../../utils/object';
+import { validate } from '../../../validation/validator';
+import type { HandlersWriteDescriptor, HandlersWriteSchema } from '../../handlers/types';
 
 /**
  * Input to `HandlersWrite.create()`.
@@ -13,8 +16,6 @@ export type HandlersWriteOptions = AuthCreateOptions & {
   uri?: string,
   filter: {
     method: string,
-    protocol: string,
-    schema: string
   }
 };
 
@@ -25,7 +26,24 @@ export class HandlersWrite {
   /**
    * Creates a HandlersWrite message
    */
-  static async create(_options: HandlersWriteOptions): Promise<HandlersWriteSchema> {
-    throw new Error('not implemented');
+  static async create(options: HandlersWriteOptions): Promise<HandlersWriteSchema> {
+    const descriptor: HandlersWriteDescriptor = {
+      target : options.target,
+      method : 'HandlersWrite',
+      uri    : options.uri,
+      filter : options.filter
+    };
+
+    // delete all descriptor properties that are `undefined` else the code will encounter the following IPLD issue when attempting to generate CID:
+    // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
+    removeUndefinedProperties(descriptor);
+
+    const messageType = descriptor.method;
+    validate(messageType, { descriptor, authorization: {} });
+
+    const authorization = await sign({ descriptor }, options.signatureInput);
+    const message = { descriptor, authorization };
+
+    return message;
   }
 }

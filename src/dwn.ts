@@ -17,8 +17,10 @@ export class DWN {
     ...PermissionsInterface.methodHandlers
   };
 
-  DIDResolver: DIDResolver;
-  messageStore: MessageStore;
+  private DIDResolver: DIDResolver;
+  private messageStore: MessageStore;
+  private customEventHandlers: { handlersWriteMessage: HandlersWriteSchema, eventHandler: EventHandler }[] = [];
+
 
   private constructor(config: Config) {
     this.DIDResolver = new DIDResolver(config.DIDMethodResolvers);
@@ -61,9 +63,19 @@ export class DWN {
 
   /**
    * Adds a custom event handler.
+   * Current implementation only allows one matching handler.
    */
-  async addEventHandler(_handlersWriteMessage: HandlersWriteSchema, _eventHandler: EventHandler): Promise<Response> {
-    throw new Error('not implemented');
+  async addCustomEventHandler(handlersWriteMessage: HandlersWriteSchema, eventHandler: EventHandler): Promise<void> {
+    const matchingHandlers = this.getCustomEventHandlers(handlersWriteMessage);
+
+    if (matchingHandlers.length !== 0) {
+      throw new Error(`an existing handler matching the filter of the given handler already exists`);
+    }
+
+    this.customEventHandlers.push({
+      handlersWriteMessage,
+      eventHandler
+    });
   }
 
   async processRequest(rawRequest: Uint8Array): Promise<Response> {
@@ -104,13 +116,57 @@ export class DWN {
       message = Message.parse(rawMessage);
     } catch (e) {
       return new MessageReply({
-        status: { code: 400, message: e.message }
+        status: { code: 400, detail: e.message }
       });
     }
 
-    const interfaceMethodHandler = DWN.methodHandlers[message.descriptor.method];
+    try {
+      const interfaceMethodHandler = DWN.methodHandlers[message.descriptor.method];
 
-    return await interfaceMethodHandler(message, this.messageStore, this.DIDResolver);
+      const methodHandlerReply = await interfaceMethodHandler(message, this.messageStore, this.DIDResolver);
+
+      const customHandlerReply = await this.triggerEventHandler(message);
+
+      // use custom handler's reply if exists
+      if (customHandlerReply === undefined) {
+        return methodHandlerReply;
+      } else {
+        return customHandlerReply;
+      }
+    } catch (e) {
+      return new MessageReply({
+        status: { code: 500, detail: e.message }
+      });
+    }
+  }
+
+  /**
+   * Gets the matching custom event handlers given a message.
+   */
+  private getCustomEventHandlers(message: BaseMessageSchema): EventHandler[]{
+    const matchingHandlersData = this.customEventHandlers.filter(
+      (handlerData) => message.descriptor.target === handlerData.handlersWriteMessage.descriptor.target &&
+                       message.descriptor.method === handlerData.handlersWriteMessage.descriptor.filter.method);
+
+    const matchingHandlers = matchingHandlersData.map(handlerData => handlerData.eventHandler);
+    return matchingHandlers;
+  }
+
+  /**
+   * Trigger method event handler as needed.
+   * Current implementation only allows one matching handler.
+   */
+  private async triggerEventHandler(message: BaseMessageSchema): Promise<MessageReply | undefined> {
+    // find the matching event handlers
+    const matchingHandlers = this.getCustomEventHandlers(message);
+
+    if (matchingHandlers.length === 0) {
+      return undefined;
+    }
+
+    const handler = matchingHandlers[0];
+    const response = await handler(message);
+    return response;
   }
 };
 
@@ -128,5 +184,5 @@ export type Config = {
  * @returns the response to be returned back to the caller
  */
 export interface EventHandler {
-  (message: BaseMessageSchema): Promise<Response>;
+  (message: BaseMessageSchema): Promise<MessageReply>;
 }

@@ -15,7 +15,7 @@ export const handleCollectionsQuery: MethodHandler = async (
     await collectionsQueryMessage.verifyAuth(didResolver, messageStore);
   } catch (e) {
     return new MessageReply({
-      status: { code: 401, message: e.message }
+      status: { code: 401, detail: e.message }
     });
   }
 
@@ -36,12 +36,12 @@ export const handleCollectionsQuery: MethodHandler = async (
     const entries = await messageStore.query(query);
 
     return new MessageReply({
-      status: { code: 200, message: 'OK' },
+      status: { code: 200, detail: 'OK' },
       entries
     });
   } catch (e) {
     return new MessageReply({
-      status: { code: 500, message: e.message }
+      status: { code: 500, detail: e.message }
     });
   }
 };
