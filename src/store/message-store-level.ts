@@ -1,4 +1,4 @@
-import type { GenericMessageSchema, BaseMessage } from '../core/types';
+import type { BaseMessage, DataReferencingMessage } from '../core/types';
 import type { MessageStore } from './message-store';
 
 import { base64url } from 'multiformats/bases/base64';
@@ -73,15 +73,15 @@ export class MessageStoreLevel implements MessageStore {
 
     const decodedBlock = await block.decode({ bytes, codec: cbor, hasher: sha256 });
 
-    const messageJson = decodedBlock.value as GenericMessageSchema;
+    const messageJson = decodedBlock.value as BaseMessage;
 
-    if (!messageJson.descriptor.dataCid) {
+    if (!messageJson.descriptor['dataCid']) {
       return messageJson;
     }
 
     // data is chunked into dag-pb unixfs blocks. re-inflate the chunks.
-    const { descriptor } = messageJson;
-    const dataCid = CID.parse(descriptor.dataCid);
+    const dataReferencingMessage = decodedBlock.value as DataReferencingMessage;
+    const dataCid = CID.parse(dataReferencingMessage.descriptor.dataCid);
 
     const dataDagRoot = await exporter(dataCid, this.db);
     const dataBytes = new Uint8Array(dataDagRoot.size);
@@ -92,9 +92,9 @@ export class MessageStoreLevel implements MessageStore {
       offset += chunk.length;
     }
 
-    messageJson.encodedData = base64url.baseEncode(dataBytes);
+    dataReferencingMessage.encodedData = base64url.baseEncode(dataBytes);
 
-    return messageJson as BaseMessage;
+    return messageJson;
   }
 
   async query(query: any): Promise<BaseMessage[]> {
@@ -128,7 +128,7 @@ export class MessageStoreLevel implements MessageStore {
     // delete `encodedData` if it exists so `messageJson` is stored without it, `encodedData` will be decoded, chunked and stored separately below
     let encodedData = undefined;
     if (messageJson['encodedData'] !== undefined) {
-      const messageJsonWithEncodedData = messageJson as GenericMessageSchema;
+      const messageJsonWithEncodedData = messageJson as unknown as DataReferencingMessage;
       encodedData = messageJsonWithEncodedData.encodedData;
 
       delete messageJsonWithEncodedData.encodedData;

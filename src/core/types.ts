@@ -40,11 +40,6 @@ export type AuthorizableMessage = {
   authorization: GeneralJws;
 };
 
-export type GenericMessageSchema = BaseMessage & DeepPartial<DataReferencingMessage> & Partial<AttestableMessage> & Partial<AuthorizableMessage> & {
-  descriptor: {
-    [key: string]: unknown;
-  }
-};
 
 export type AuthVerificationResult = {
   /** DIDs of all signers */
