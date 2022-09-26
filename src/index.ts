@@ -9,8 +9,8 @@
 //   - https://stackoverflow.com/questions/44979976/typescript-compiler-is-forgetting-to-add-file-extensions-to-es6-module-imports
 //   - https://github.com/microsoft/TypeScript/issues/40878
 //
-export type { CollectionsQueryOptions } from './interfaces/collections/messages/collections-query.js';
 export type { CollectionsQueryMessage, CollectionsWriteMessage } from './interfaces/collections/types';
+export type { CollectionsQueryOptions } from './interfaces/collections/messages/collections-query.js';
 export type { CollectionsWriteOptions } from './interfaces/collections/messages/collections-write.js';
 export type { DIDResolver } from './did/did-resolver.js';
 export type { EventHandler } from './dwn.js';

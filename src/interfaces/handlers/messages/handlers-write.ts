@@ -1,8 +1,8 @@
 import { sign } from '../../../core/auth';
 import type { AuthCreateOptions } from '../../../core/types';
+import type { HandlersWriteDescriptor, HandlersWriteMessage } from '../../handlers/types';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { validate } from '../../../validation/validator';
-import type { HandlersWriteDescriptor, HandlersWriteMessage } from '../../handlers/types';
 
 /**
  * Input to `HandlersWrite.create()`.

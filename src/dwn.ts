@@ -1,7 +1,7 @@
-import type { DIDMethodResolver } from './did/did-resolver';
-import type { Interface, MethodHandler } from './interfaces/types';
 import type { BaseMessage, RequestSchema } from './core/types';
+import type { DIDMethodResolver } from './did/did-resolver';
 import type { HandlersWriteMessage } from './interfaces/handlers/types';
+import type { Interface, MethodHandler } from './interfaces/types';
 import type { MessageStore } from './store/message-store';
 
 import { addSchema } from './validation/validator';

@@ -1,5 +1,5 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
-import type { PermissionsRequestMessage, PermissionsRequestDescriptor } from '../types';
+import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types';
 import type { PermissionScope, PermissionConditions } from '../types';
 
 import { DIDResolver } from '../../../did/did-resolver';
