@@ -1,5 +1,5 @@
 import type { MethodHandler } from '../../types';
-import type { PermissionsRequestSchema } from '../types';
+import type { PermissionsRequestMessage } from '../types';
 
 import { MessageReply } from '../../../core';
 import { PermissionsRequest } from '../messages/permissions-request';
@@ -9,7 +9,7 @@ export const handlePermissionsRequest: MethodHandler = async (
   messageStore,
   didResolver
 ): Promise<MessageReply> => {
-  const request = new PermissionsRequest(message as PermissionsRequestSchema);
+  const request = new PermissionsRequest(message as PermissionsRequestMessage);
 
   if (message.descriptor.target !== request.grantedBy && message.descriptor.target !== request.grantedTo) {
     return new MessageReply({

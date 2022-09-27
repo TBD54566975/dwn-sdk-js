@@ -1,4 +1,4 @@
-import type { Authorization } from '../../core/types';
+import type { AuthorizableMessage } from '../../core/types';
 
 /**
  * Descriptor structure for HandlersWrite
@@ -24,6 +24,6 @@ export type HandlersWriteDescriptor = {
 /**
  * Structure for HandlersWrite message.
  */
-export type HandlersWriteSchema = Authorization & {
+export type HandlersWriteMessage = AuthorizableMessage & {
   descriptor: HandlersWriteDescriptor;
 };

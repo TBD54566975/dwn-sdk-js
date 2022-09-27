@@ -1,4 +1,4 @@
-import type { PermissionsRequestSchema } from '../../src/interfaces/permissions/types';
+import type { PermissionsRequestMessage } from '../../src/interfaces/permissions/types';
 
 import { expect } from 'chai';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1';
@@ -72,7 +72,7 @@ describe('Message', () => {
       const jsonMessage = Message.parse(creator.toObject());
 
       expect(jsonMessage).to.not.be.undefined;
-      expect((jsonMessage as PermissionsRequestSchema).authorization).to.not.be.undefined;
+      expect((jsonMessage as PermissionsRequestMessage).authorization).to.not.be.undefined;
     });
   });
 });

@@ -1,5 +1,5 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
-import type { PermissionsGrantDescriptor, PermissionsGrantSchema } from '../types';
+import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types';
 import type { PermissionScope, PermissionConditions } from '../types';
 import type { SignatureInput } from '../../../jose/jws/general/types';
 
@@ -25,9 +25,9 @@ type PermissionsGrantOptions = AuthCreateOptions & {
 };
 
 export class PermissionsGrant extends Message implements Authorizable {
-  protected message: PermissionsGrantSchema;
+  protected message: PermissionsGrantMessage;
 
-  constructor(message: PermissionsGrantSchema) {
+  constructor(message: PermissionsGrantMessage) {
     super(message);
   }
 
@@ -51,7 +51,7 @@ export class PermissionsGrant extends Message implements Authorizable {
     validate(messageType, { descriptor, authorization: {} });
 
     const auth = await sign({ descriptor }, options.signatureInput);
-    const message: PermissionsGrantSchema = { descriptor, authorization: auth };
+    const message: PermissionsGrantMessage = { descriptor, authorization: auth };
 
     return new PermissionsGrant(message);
   }
@@ -146,7 +146,7 @@ export class PermissionsGrant extends Message implements Authorizable {
     this.message.descriptor.delegatedFrom = cid.toString();
   }
 
-  private set delegationChain(parentGrant: PermissionsGrantSchema) {
+  private set delegationChain(parentGrant: PermissionsGrantMessage) {
     this.message.delegationChain = parentGrant;
   }
 }

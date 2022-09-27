@@ -1,11 +1,11 @@
-import type { BaseMessageSchema } from '../core/types';
+import type { BaseMessage } from '../core/types';
 import type { MessageStore } from '../store/message-store';
 import type { MessageReply } from '../core/message-reply';
 
 import { DIDResolver } from '../did/did-resolver';
 
 export type MethodHandler = (
-  message: BaseMessageSchema,
+  message: BaseMessage,
   messageStore: MessageStore,
   didResolver: DIDResolver) => Promise<MessageReply>;
 

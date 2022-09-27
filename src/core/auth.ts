@@ -1,9 +1,9 @@
-import type { Authorization, BaseMessageSchema } from './types';
+import type { AuthorizableMessage, BaseMessage } from './types';
 import type { AuthVerificationResult } from './types';
 import type { SignatureInput } from '../jose/jws/general/types';
 
 import { CID } from 'multiformats';
-import { CollectionsWriteSchema } from '../interfaces/collections/types';
+import { CollectionsWriteMessage } from '../interfaces/collections/types';
 import { DIDResolver } from '../did/did-resolver';
 import { GeneralJws } from '../jose/jws/general/types';
 import { GeneralJwsSigner, GeneralJwsVerifier } from '../jose/jws/general';
@@ -24,7 +24,7 @@ type PayloadConstraints = {
  * @throws {Error} if auth fails
  */
 export async function verifyAuth(
-  message: BaseMessageSchema & Authorization,
+  message: BaseMessage & AuthorizableMessage,
   didResolver: DIDResolver,
   messageStore: MessageStore,
   payloadConstraints?: PayloadConstraints
@@ -36,8 +36,8 @@ export async function verifyAuth(
 
   // authorization
   if (message.descriptor.method === 'CollectionsWrite' &&
-      (message as CollectionsWriteSchema).descriptor.protocol !== undefined) {
-    await protocolAuthorize((message as CollectionsWriteSchema), signers[0], messageStore);
+      (message as CollectionsWriteMessage).descriptor.protocol !== undefined) {
+    await protocolAuthorize((message as CollectionsWriteMessage), signers[0], messageStore);
   } else {
     await authorize(message, signers);
   }
@@ -46,7 +46,7 @@ export async function verifyAuth(
 }
 
 async function validateSchema(
-  message: BaseMessageSchema & Authorization,
+  message: BaseMessage & AuthorizableMessage,
   payloadConstraints?: PayloadConstraints
 ): Promise<{ descriptorCid: CID, [key: string]: CID }> {
 
@@ -107,7 +107,7 @@ async function authenticate(jws: GeneralJws, didResolver: DIDResolver): Promise<
   return signers;
 }
 
-async function authorize(message: BaseMessageSchema, signers: string[]): Promise<void> {
+async function authorize(message: BaseMessage, signers: string[]): Promise<void> {
   // if requester is the same as the target DID, we can directly grant access
   if (signers[0] === message.descriptor.target) {
     return;
@@ -125,7 +125,7 @@ async function authorize(message: BaseMessageSchema, signers: string[]): Promise
  * @returns General JWS signature
  */
 export async function sign(
-  message: BaseMessageSchema,
+  message: BaseMessage,
   signatureInput: SignatureInput,
   payloadProperties?: { [key: string]: CID }
 

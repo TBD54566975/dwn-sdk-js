@@ -1,5 +1,5 @@
 import type { MethodHandler } from '../../types';
-import type { CollectionsQuerySchema } from '../types';
+import type { CollectionsQueryMessage } from '../types';
 import { CollectionsQuery } from '../messages/collections-query';
 import { MessageReply } from '../../../core';
 import { removeUndefinedProperties } from '../../../utils/object';
@@ -9,7 +9,7 @@ export const handleCollectionsQuery: MethodHandler = async (
   messageStore,
   didResolver
 ): Promise<MessageReply> => {
-  const collectionsQueryMessage = new CollectionsQuery(message as CollectionsQuerySchema);
+  const collectionsQueryMessage = new CollectionsQuery(message as CollectionsQueryMessage);
 
   try {
     await collectionsQueryMessage.verifyAuth(didResolver, messageStore);
@@ -20,7 +20,7 @@ export const handleCollectionsQuery: MethodHandler = async (
   }
 
   try {
-    const validatedMessage = message as CollectionsQuerySchema;
+    const validatedMessage = message as CollectionsQueryMessage;
 
     if (validatedMessage.descriptor.dateSort) {
       throw new Error('`dateSort` not implemented');

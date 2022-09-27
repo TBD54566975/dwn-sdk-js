@@ -1,4 +1,4 @@
-import type { CollectionsWriteSchema } from '../types';
+import type { CollectionsWriteMessage } from '../types';
 import type { MethodHandler } from '../../types';
 
 import { base64url } from 'multiformats/bases/base64';
@@ -13,7 +13,7 @@ export const handleCollectionsWrite: MethodHandler = async (
 ): Promise<MessageReply> => {
   try {
     // verify dataCid matches given data
-    const incomingMessage = message as CollectionsWriteSchema;
+    const incomingMessage = message as CollectionsWriteMessage;
     if (incomingMessage.encodedData !== undefined) {
       const rawData = base64url.baseDecode(incomingMessage.encodedData);
       const actualDataCid = (await getDagCid(rawData)).toString();
@@ -41,7 +41,7 @@ export const handleCollectionsWrite: MethodHandler = async (
       method   : 'CollectionsWrite',
       recordId : incomingMessage.descriptor.recordId
     };
-    const existingMessages = await messageStore.query(query) as CollectionsWriteSchema[];
+    const existingMessages = await messageStore.query(query) as CollectionsWriteMessage[];
 
     // find which message is the newest, and if the incoming message is the newest
     let newestMessage = await CollectionsWrite.getNewestMessage(existingMessages);

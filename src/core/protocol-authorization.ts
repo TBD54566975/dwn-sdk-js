@@ -1,5 +1,5 @@
 import { base64url } from 'multiformats/bases/base64';
-import { CollectionsWriteSchema } from '../interfaces/collections/types';
+import { CollectionsWriteMessage } from '../interfaces/collections/types';
 import { MessageStore } from '../store/message-store';
 
 const methodToAllowedActionMap = {
@@ -11,7 +11,7 @@ const methodToAllowedActionMap = {
  * @throws {Error} if authorization fails.
  */
 export async function protocolAuthorize(
-  message: CollectionsWriteSchema,
+  message: CollectionsWriteMessage,
   requesterDid: string,
   messageStore: MessageStore
 ): Promise<void> {
@@ -19,7 +19,7 @@ export async function protocolAuthorize(
   const protocolDefinition = await fetchProtocolDefinition(message, messageStore);
 
   // fetch ancestor message chain
-  const ancestorMessageChain: CollectionsWriteSchema[] = await constructAncestorMessageChain(message, messageStore);
+  const ancestorMessageChain: CollectionsWriteMessage[] = await constructAncestorMessageChain(message, messageStore);
 
   // record schema -> record type map
   const recordSchemaToTypeMap: Map<string, string> = new Map();
@@ -43,9 +43,9 @@ export async function protocolAuthorize(
  * NOTE: this is a basic temporary implementation reusing Collections,
  * there will be a dedicated protocol interface for creating and fetching protocol definitions.
  */
-async function fetchProtocolDefinition(message: CollectionsWriteSchema, messageStore: MessageStore): Promise<any> {
+async function fetchProtocolDefinition(message: CollectionsWriteMessage, messageStore: MessageStore): Promise<any> {
   // get the protocol URI
-  const protocolUri = (message as CollectionsWriteSchema).descriptor.protocol;
+  const protocolUri = (message as CollectionsWriteMessage).descriptor.protocol;
 
   // fail if not a protocol-based object
   if (protocolUri === undefined) {
@@ -59,7 +59,7 @@ async function fetchProtocolDefinition(message: CollectionsWriteSchema, messageS
     schema   : 'dwn-protocol',
     recordId : protocolUri
   };
-  const protocols = await messageStore.query(query) as CollectionsWriteSchema[];
+  const protocols = await messageStore.query(query) as CollectionsWriteMessage[];
 
   if (protocols.length === 0) {
     throw new Error(`unable to find protocol definition for ${protocolUri}}`);
@@ -76,8 +76,8 @@ async function fetchProtocolDefinition(message: CollectionsWriteSchema, messageS
  * Constructs a chain of ancestor messages
  * @returns the ancestor chain of messages where the first element is the root of the chain; returns empty array if no parent is specified.
  */
-async function constructAncestorMessageChain(message: CollectionsWriteSchema, messageStore: MessageStore): Promise<any> {
-  const ancestorMessageChain: CollectionsWriteSchema[] = [];
+async function constructAncestorMessageChain(message: CollectionsWriteMessage, messageStore: MessageStore): Promise<any> {
+  const ancestorMessageChain: CollectionsWriteMessage[] = [];
 
   const protocol = message.descriptor.protocol;
   const contextId = message.descriptor.contextId;
@@ -97,7 +97,7 @@ async function constructAncestorMessageChain(message: CollectionsWriteSchema, me
       contextId,
       recordId : currentParentId
     };
-    const parentMessages = await messageStore.query(query) as CollectionsWriteSchema[];
+    const parentMessages = await messageStore.query(query) as CollectionsWriteMessage[];
 
     if (parentMessages.length !== 1) {
       throw new Error(`must have exactly one parent but found ${parentMessages.length}}`);
@@ -116,9 +116,9 @@ async function constructAncestorMessageChain(message: CollectionsWriteSchema, me
  * Gets the rule set corresponding to the inbound message.
  */
 function getRuleSet(
-  inboundMessage: CollectionsWriteSchema,
+  inboundMessage: CollectionsWriteMessage,
   protocolDefinition: any,
-  ancestorMessageChain: CollectionsWriteSchema[],
+  ancestorMessageChain: CollectionsWriteMessage[],
   recordSchemaToTypeMap: Map<string, string>
 ): any {
   // make a copy of the ancestor messages and include the inbound message in the chain
@@ -160,7 +160,7 @@ function verifyAllowedRequester(
   requesterDid: string,
   targetDid: string,
   inboundMessageRuleSet: any,
-  ancestorMessageChain: CollectionsWriteSchema[],
+  ancestorMessageChain: CollectionsWriteMessage[],
   recordSchemaToTypeMap: Map<string, string>
 ): void {
   const allowRule = inboundMessageRuleSet.allow;
@@ -189,7 +189,7 @@ function verifyAllowedRequester(
  * Verifies the actions specified in the given message matches the allowed actions in the rule set.
  * @throws {Error} if action not allowed.
  */
-function verifyAllowedActions(requesterDid: string, message: CollectionsWriteSchema, inboundMessageRuleSet: any,): void {
+function verifyAllowedActions(requesterDid: string, message: CollectionsWriteMessage, inboundMessageRuleSet: any,): void {
   const allowRule = inboundMessageRuleSet.allow;
 
   if (allowRule === undefined) {
@@ -221,7 +221,11 @@ function verifyAllowedActions(requesterDid: string, message: CollectionsWriteSch
  *                    e.g. `A/B/C` means that the root ancestor must be of type A, its child must be of type B, followed by a child of type C.
  *                    NOTE: the path scheme use here may be temporary dependent on final protocol spec.
  */
-function getMessage(messageChain: CollectionsWriteSchema[], messagePath: string, recordSchemaToTypeMap: Map<string, string>): CollectionsWriteSchema {
+function getMessage(
+  messageChain: CollectionsWriteMessage[],
+  messagePath: string,
+  recordSchemaToTypeMap: Map<string, string>
+): CollectionsWriteMessage {
   const ancestors = messagePath.split('/');
 
   let i = 0;

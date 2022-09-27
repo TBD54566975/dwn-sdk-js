@@ -1,6 +1,6 @@
 import { base64url } from 'multiformats/bases/base64';
 import { CollectionsWrite } from '../../../../src/interfaces/collections/messages/collections-write';
-import { CollectionsWriteSchema } from '../../../../src/interfaces/collections/types';
+import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/types';
 import { DIDResolutionResult, DIDResolver } from '../../../../src/did/did-resolver';
 import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
 import { sleep } from '../../../../src/utils/time';
@@ -41,7 +41,7 @@ describe('CollectionsWrite', () => {
       };
       const collectionsWrite = await CollectionsWrite.create(options);
 
-      const message = collectionsWrite.toObject() as CollectionsWriteSchema;
+      const message = collectionsWrite.toObject() as CollectionsWriteMessage;
 
       expect(message.authorization).to.exist;
       expect(message.encodedData).to.equal(base64url.baseEncode(options.data));

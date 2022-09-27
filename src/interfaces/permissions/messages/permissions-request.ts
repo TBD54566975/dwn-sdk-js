@@ -1,5 +1,5 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
-import type { PermissionsRequestSchema, PermissionsRequestDescriptor } from '../types';
+import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types';
 import type { PermissionScope, PermissionConditions } from '../types';
 
 import { DIDResolver } from '../../../did/did-resolver';
@@ -20,9 +20,9 @@ type PermissionsRequestOptions = AuthCreateOptions & {
 };
 
 export class PermissionsRequest extends Message implements Authorizable {
-  protected message: PermissionsRequestSchema;
+  protected message: PermissionsRequestMessage;
 
-  constructor(message: PermissionsRequestSchema) {
+  constructor(message: PermissionsRequestMessage) {
     super(message);
   }
 
@@ -46,7 +46,7 @@ export class PermissionsRequest extends Message implements Authorizable {
     validate(messageType, { descriptor, authorization: {} });
 
     const auth = await sign({ descriptor }, opts.signatureInput);
-    const message: PermissionsRequestSchema = { descriptor, authorization: auth };
+    const message: PermissionsRequestMessage = { descriptor, authorization: auth };
 
     return new PermissionsRequest(message);
   }

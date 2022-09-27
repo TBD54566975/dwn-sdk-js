@@ -1,4 +1,4 @@
-import type { GenericMessageSchema, BaseMessageSchema } from '../core/types';
+import type { BaseMessage, DataReferencingMessage } from '../core/types';
 import type { MessageStore } from './message-store';
 
 import { base64url } from 'multiformats/bases/base64';
@@ -64,7 +64,7 @@ export class MessageStoreLevel implements MessageStore {
     await this.index.INDEX.STORE.close(); // MUST close index-search DB, else `searchIndex()` triggered in a different instance will hang indefinitely
   }
 
-  async get(cid: CID): Promise<BaseMessageSchema> {
+  async get(cid: CID): Promise<BaseMessage> {
     const bytes = await this.db.get(cid);
 
     if (!bytes) {
@@ -73,15 +73,15 @@ export class MessageStoreLevel implements MessageStore {
 
     const decodedBlock = await block.decode({ bytes, codec: cbor, hasher: sha256 });
 
-    const messageJson = decodedBlock.value as GenericMessageSchema;
+    const messageJson = decodedBlock.value as BaseMessage;
 
-    if (!messageJson.descriptor.dataCid) {
+    if (!messageJson.descriptor['dataCid']) {
       return messageJson;
     }
 
     // data is chunked into dag-pb unixfs blocks. re-inflate the chunks.
-    const { descriptor } = messageJson;
-    const dataCid = CID.parse(descriptor.dataCid);
+    const dataReferencingMessage = decodedBlock.value as DataReferencingMessage;
+    const dataCid = CID.parse(dataReferencingMessage.descriptor.dataCid);
 
     const dataDagRoot = await exporter(dataCid, this.db);
     const dataBytes = new Uint8Array(dataDagRoot.size);
@@ -92,13 +92,13 @@ export class MessageStoreLevel implements MessageStore {
       offset += chunk.length;
     }
 
-    messageJson.encodedData = base64url.baseEncode(dataBytes);
+    dataReferencingMessage.encodedData = base64url.baseEncode(dataBytes);
 
-    return messageJson as BaseMessageSchema;
+    return messageJson;
   }
 
-  async query(query: any): Promise<BaseMessageSchema[]> {
-    const messages: BaseMessageSchema[] = [];
+  async query(query: any): Promise<BaseMessage[]> {
+    const messages: BaseMessage[] = [];
 
     // parse query into a query that is compatible with the index we're using
     const indexQueryTerms: string[] = MessageStoreLevel.buildIndexQueryTerms(query);
@@ -123,12 +123,12 @@ export class MessageStoreLevel implements MessageStore {
     return;
   }
 
-  async put(messageJson: BaseMessageSchema): Promise<void> {
+  async put(messageJson: BaseMessage): Promise<void> {
 
     // delete `encodedData` if it exists so `messageJson` is stored without it, `encodedData` will be decoded, chunked and stored separately below
     let encodedData = undefined;
     if (messageJson['encodedData'] !== undefined) {
-      const messageJsonWithEncodedData = messageJson as GenericMessageSchema;
+      const messageJsonWithEncodedData = messageJson as unknown as DataReferencingMessage;
       encodedData = messageJsonWithEncodedData.encodedData;
 
       delete messageJsonWithEncodedData.encodedData;

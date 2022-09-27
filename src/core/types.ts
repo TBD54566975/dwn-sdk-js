@@ -1,4 +1,3 @@
-import type { DeepPartial } from '../types';
 import type { GeneralJws, SignatureInput } from '../jose/jws/general/types';
 
 import { CID } from 'multiformats/cid';
@@ -6,9 +5,9 @@ import { DIDResolver } from '../did/did-resolver';
 import { MessageStore } from '../store/message-store';
 
 /**
- * Intersection type for all concrete message schema types (e.g. PermissionsRequestSchema)
+ * Intersection type for all concrete message types.
  */
-export type BaseMessageSchema = {
+export type BaseMessage = {
   descriptor: {
     target: string;
     method: string;
@@ -16,9 +15,9 @@ export type BaseMessageSchema = {
 };
 
 /**
- * Intersection type for message schema types that include `data`
+ * Message that references `dataCid`.
  */
-export type Data = {
+export type DataReferencingMessage = {
   descriptor: {
     dataCid: string;
   };
@@ -26,22 +25,20 @@ export type Data = {
   encodedData: string;
 };
 
-export type Attestation = {
-  attestation?: GeneralJws;
+/**
+ * Message that includes `attestation` property.
+ */
+export type AttestableMessage = {
+  attestation: GeneralJws;
 };
 
 /**
- * Intersection type for message schema types that include `authorization`
+ * Message that includes `authorization` property.
  */
-export type Authorization = {
+export type AuthorizableMessage = {
   authorization: GeneralJws;
 };
 
-export type GenericMessageSchema = BaseMessageSchema & DeepPartial<Data> & Partial<Attestation> & Partial<Authorization> & {
-  descriptor: {
-    [key: string]: unknown;
-  }
-};
 
 export type AuthVerificationResult = {
   /** DIDs of all signers */
@@ -62,7 +59,7 @@ export interface Authorizable {
 }
 
 /**
- * concrete Message classes should implement this interface if the Message contains authorization
+ * concrete Message classes should implement this interface if the Message contains `attestation`
  */
 export interface Attestable {
   attest(): Promise<void>;
@@ -74,5 +71,5 @@ export type AuthCreateOptions = {
 };
 
 export type RequestSchema = {
-  messages: BaseMessageSchema[]
+  messages: BaseMessage[]
 };

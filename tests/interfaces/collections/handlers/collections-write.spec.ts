@@ -1,5 +1,5 @@
 import { base64url } from 'multiformats/bases/base64';
-import { CollectionsWriteSchema } from '../../../../src/interfaces/collections/types';
+import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/types';
 import { DIDResolutionResult, DIDResolver } from '../../../../src/did/did-resolver';
 import { GenerateCollectionWriteMessageOutput, TestDataGenerator } from '../../../utils/test-data-generator';
 import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query';
@@ -64,7 +64,7 @@ describe('handleCollectionsWrite()', () => {
       const collectionsQueryReply = await handleCollectionsQuery(collectionsQueryMessageData.message, messageStore, didResolverStub);
       expect(collectionsQueryReply.status.code).to.equal(200);
       expect(collectionsQueryReply.entries?.length).to.equal(1);
-      expect((collectionsQueryReply.entries![0] as CollectionsWriteSchema).encodedData).to.equal(base64url.baseEncode(data1));
+      expect((collectionsQueryReply.entries![0] as CollectionsWriteMessage).encodedData).to.equal(base64url.baseEncode(data1));
 
       // generate and write a new CollectionsWrite to overwrite the existing record
       // a new CollectionsWrite by default will have a later `dateCreate` due to the default Date.now() call
@@ -85,7 +85,7 @@ describe('handleCollectionsWrite()', () => {
 
       expect(newCollectionsQueryReply.status.code).to.equal(200);
       expect(newCollectionsQueryReply.entries?.length).to.equal(1);
-      expect((newCollectionsQueryReply.entries![0] as CollectionsWriteSchema).encodedData).to.equal(base64url.baseEncode(data2));
+      expect((newCollectionsQueryReply.entries![0] as CollectionsWriteMessage).encodedData).to.equal(base64url.baseEncode(data2));
 
       // try to write the older message to store again and verify that it is not accepted
       const thirdCollectionsWriteReply = await handleCollectionsWrite(collectionsWriteMessageData.message, messageStore, didResolverStub);
@@ -95,7 +95,7 @@ describe('handleCollectionsWrite()', () => {
       const thirdCollectionsQueryReply = await handleCollectionsQuery(collectionsQueryMessageData.message, messageStore, didResolverStub);
       expect(thirdCollectionsQueryReply.status.code).to.equal(200);
       expect(thirdCollectionsQueryReply.entries?.length).to.equal(1);
-      expect((thirdCollectionsQueryReply.entries![0] as CollectionsWriteSchema).encodedData).to.equal(base64url.baseEncode(data2));
+      expect((thirdCollectionsQueryReply.entries![0] as CollectionsWriteMessage).encodedData).to.equal(base64url.baseEncode(data2));
     });
 
     it('should only be able to overwrite existing record if new message CID is larger when `dateCreated` value is the same', async () => {
@@ -154,7 +154,7 @@ describe('handleCollectionsWrite()', () => {
       const collectionsQueryReply = await handleCollectionsQuery(collectionsQueryMessageData.message, messageStore, didResolverStub);
       expect(collectionsQueryReply.status.code).to.equal(200);
       expect(collectionsQueryReply.entries?.length).to.equal(1);
-      expect((collectionsQueryReply.entries![0] as CollectionsWriteSchema).descriptor.dataCid)
+      expect((collectionsQueryReply.entries![0] as CollectionsWriteMessage).descriptor.dataCid)
         .to.equal(smallerCollectionWriteMessageData.message.descriptor.dataCid);
 
       // attempt to write the message with larger lexicographical message CID
@@ -165,7 +165,7 @@ describe('handleCollectionsWrite()', () => {
       const newCollectionsQueryReply = await handleCollectionsQuery(collectionsQueryMessageData.message, messageStore, didResolverStub);
       expect(newCollectionsQueryReply.status.code).to.equal(200);
       expect(newCollectionsQueryReply.entries?.length).to.equal(1);
-      expect((newCollectionsQueryReply.entries![0] as CollectionsWriteSchema).descriptor.dataCid)
+      expect((newCollectionsQueryReply.entries![0] as CollectionsWriteMessage).descriptor.dataCid)
         .to.equal(largerCollectionWriteMessageData.message.descriptor.dataCid);
 
       // try to write the message with smaller lexicographical message CID again
@@ -180,7 +180,7 @@ describe('handleCollectionsWrite()', () => {
       const thirdCollectionsQueryReply = await handleCollectionsQuery(collectionsQueryMessageData.message, messageStore, didResolverStub);
       expect(thirdCollectionsQueryReply.status.code).to.equal(200);
       expect(thirdCollectionsQueryReply.entries?.length).to.equal(1);
-      expect((thirdCollectionsQueryReply.entries![0] as CollectionsWriteSchema).descriptor.dataCid)
+      expect((thirdCollectionsQueryReply.entries![0] as CollectionsWriteMessage).descriptor.dataCid)
         .to.equal(largerCollectionWriteMessageData.message.descriptor.dataCid); // expecting unchanged
     });
 
@@ -237,7 +237,7 @@ describe('handleCollectionsWrite()', () => {
         const collectionsQueryReply = await handleCollectionsQuery(collectionsQueryMessageData.message, messageStore, aliceDidResolverStub);
         expect(collectionsQueryReply.status.code).to.equal(200);
         expect(collectionsQueryReply.entries?.length).to.equal(1);
-        expect((collectionsQueryReply.entries![0] as CollectionsWriteSchema).encodedData).to.equal(base64url.baseEncode(encodedProtocolDefinition));
+        expect((collectionsQueryReply.entries![0] as CollectionsWriteMessage).encodedData).to.equal(base64url.baseEncode(encodedProtocolDefinition));
 
         // generate a collections write message from bob allowed by anyone
         const bobDid = 'did:example:bob';
@@ -271,7 +271,7 @@ describe('handleCollectionsWrite()', () => {
         const bobRecordQueryReply = await handleCollectionsQuery(messageDataForQueryingBobsWrite.message, messageStore, aliceDidResolverStub);
         expect(bobRecordQueryReply.status.code).to.equal(200);
         expect(bobRecordQueryReply.entries?.length).to.equal(1);
-        expect((bobRecordQueryReply.entries![0] as CollectionsWriteSchema).encodedData).to.equal(base64url.baseEncode(bobData));
+        expect((bobRecordQueryReply.entries![0] as CollectionsWriteMessage).encodedData).to.equal(base64url.baseEncode(bobData));
       });
     });
 
@@ -382,7 +382,7 @@ describe('handleCollectionsWrite()', () => {
       );
       expect(applicationResponseQueryReply.status.code).to.equal(200);
       expect(applicationResponseQueryReply.entries?.length).to.equal(1);
-      expect((applicationResponseQueryReply.entries![0] as CollectionsWriteSchema).encodedData)
+      expect((applicationResponseQueryReply.entries![0] as CollectionsWriteMessage).encodedData)
         .to.equal(base64url.baseEncode(encodedCredentialResponse));
     });
 

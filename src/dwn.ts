@@ -1,7 +1,7 @@
+import type { BaseMessage, RequestSchema } from './core/types';
 import type { DIDMethodResolver } from './did/did-resolver';
+import type { HandlersWriteMessage } from './interfaces/handlers/types';
 import type { Interface, MethodHandler } from './interfaces/types';
-import type { BaseMessageSchema, RequestSchema } from './core/types';
-import type { HandlersWriteSchema } from './interfaces/handlers/types';
 import type { MessageStore } from './store/message-store';
 
 import { addSchema } from './validation/validator';
@@ -19,7 +19,7 @@ export class DWN {
 
   private DIDResolver: DIDResolver;
   private messageStore: MessageStore;
-  private customEventHandlers: { handlersWriteMessage: HandlersWriteSchema, eventHandler: EventHandler }[] = [];
+  private customEventHandlers: { handlersWriteMessage: HandlersWriteMessage, eventHandler: EventHandler }[] = [];
 
 
   private constructor(config: Config) {
@@ -65,7 +65,7 @@ export class DWN {
    * Adds a custom event handler.
    * Current implementation only allows one matching handler.
    */
-  async addCustomEventHandler(handlersWriteMessage: HandlersWriteSchema, eventHandler: EventHandler): Promise<void> {
+  async addCustomEventHandler(handlersWriteMessage: HandlersWriteMessage, eventHandler: EventHandler): Promise<void> {
     const matchingHandlers = this.getCustomEventHandlers(handlersWriteMessage);
 
     if (matchingHandlers.length !== 0) {
@@ -110,7 +110,7 @@ export class DWN {
    * @param message
    */
   async processMessage(rawMessage: object): Promise<MessageReply> {
-    let message: BaseMessageSchema;
+    let message: BaseMessage;
 
     try {
       message = Message.parse(rawMessage);
@@ -143,7 +143,7 @@ export class DWN {
   /**
    * Gets the matching custom event handlers given a message.
    */
-  private getCustomEventHandlers(message: BaseMessageSchema): EventHandler[]{
+  private getCustomEventHandlers(message: BaseMessage): EventHandler[]{
     const matchingHandlersData = this.customEventHandlers.filter(
       (handlerData) => message.descriptor.target === handlerData.handlersWriteMessage.descriptor.target &&
                        message.descriptor.method === handlerData.handlersWriteMessage.descriptor.filter.method);
@@ -156,7 +156,7 @@ export class DWN {
    * Trigger method event handler as needed.
    * Current implementation only allows one matching handler.
    */
-  private async triggerEventHandler(message: BaseMessageSchema): Promise<MessageReply | undefined> {
+  private async triggerEventHandler(message: BaseMessage): Promise<MessageReply | undefined> {
     // find the matching event handlers
     const matchingHandlers = this.getCustomEventHandlers(message);
 
@@ -184,5 +184,5 @@ export type Config = {
  * @returns the response to be returned back to the caller
  */
 export interface EventHandler {
-  (message: BaseMessageSchema): Promise<MessageReply>;
+  (message: BaseMessage): Promise<MessageReply>;
 }

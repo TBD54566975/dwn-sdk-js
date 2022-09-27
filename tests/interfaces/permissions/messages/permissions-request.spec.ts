@@ -1,4 +1,4 @@
-import type { PermissionsRequestSchema } from '../../../../src/interfaces/permissions/types';
+import type { PermissionsRequestMessage } from '../../../../src/interfaces/permissions/types';
 
 import { DIDResolver } from '../../../../src/did/did-resolver';
 import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
@@ -156,7 +156,7 @@ describe('PermissionsRequest', () => {
 
           jsonMessage['authorization'] = jws;
 
-          const message = new PermissionsRequest(jsonMessage as PermissionsRequestSchema);
+          const message = new PermissionsRequest(jsonMessage as PermissionsRequestMessage);
           const resolverStub = sinon.createStubInstance(DIDResolver);
           const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
