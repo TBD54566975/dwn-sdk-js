@@ -1,7 +1,7 @@
 import * as Ed25519 from '@noble/ed25519';
 import { base64url } from 'multiformats/bases/base64';
 
-import type { PrivateJwk, PublicJwk, Signer  } from '../../types';
+import type { PrivateJwk, PublicJwk, Signer } from '../../types';
 
 function validateKey(jwk: PrivateJwk | PublicJwk): void {
   if (jwk.kty !== 'OKP' || jwk.crv !== 'Ed25519') {

@@ -1,0 +1,34 @@
+{
+  "$id": "https://identity.foundation/dwn/json-schemas/protocol-definition.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "labels",
+    "records"
+  ],
+  "properties": {
+    "labels": {
+      "type": "object",
+      "patternProperties": {
+        ".*": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schema": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "records": {
+      "type": "object",
+      "patternProperties": {
+        ".*": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/protocol-rule-set.json"
+        }
+      }
+    }
+  }
+}

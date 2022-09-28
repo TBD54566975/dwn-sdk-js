@@ -15,7 +15,7 @@ describe('CID', () => {
     xit('throws an error if multihasher is not supported');
     xit('generates a cbor/sha256 v1 cid by default');
 
-    it('generates a CBOR SHA256 CID identical to IPFS block encoding algorithm',  async () => {
+    it('generates a CBOR SHA256 CID identical to IPFS block encoding algorithm', async () => {
       const anyTestData = {
         a : TestDataGenerator.randomString(32),
         b : TestDataGenerator.randomString(32),

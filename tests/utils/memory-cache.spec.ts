@@ -7,7 +7,7 @@ import sinon from 'sinon';
 chai.use(chaiAsPromised);
 
 describe('MemoryCache', () => {
-  it('should return `undefined` when value expires',  async () => {
+  it('should return `undefined` when value expires', async () => {
     const memoryCache = new MemoryCache(0.01); // 0.01 second = 10 millisecond time-to-live
 
     await memoryCache.set('key', 'aValue');
@@ -19,7 +19,7 @@ describe('MemoryCache', () => {
     expect(valueInCache).to.be.undefined;
   });
 
-  it('should continue if set() fails',  async () => {
+  it('should continue if set() fails', async () => {
     const timeToLiveInSeconds = 1;
     const memoryCache = new MemoryCache(timeToLiveInSeconds);
 
