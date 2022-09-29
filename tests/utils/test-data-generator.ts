@@ -1,19 +1,70 @@
 import { BaseMessage } from '../../src/core/types';
 import { CID } from 'multiformats/cid';
-import { CollectionsWrite } from '../../src/interfaces/collections/messages/collections-write';
-import { CollectionsQuery } from '../../src/interfaces/collections/messages/collections-query';
-import { CollectionsQueryMessage, CollectionsWriteMessage } from '../../src/interfaces/collections/types';
+import {
+  CollectionsQuery,
+  CollectionsQueryMessage,
+  CollectionsWrite,
+  CollectionsWriteMessage,
+  HandlersWrite,
+  HandlersWriteMessage,
+  ProtocolDefinition,
+  ProtocolsConfigure,
+  ProtocolsConfigureMessage,
+  ProtocolsConfigureOptions,
+  ProtocolsQuery,
+  ProtocolsQueryMessage,
+  ProtocolsQueryOptions
+} from '../../src';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519';
 import { DIDResolutionResult } from '../../src/did/did-resolver';
-import { HandlersWrite, HandlersWriteMessage } from '../../src';
 import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request';
 import { PrivateJwk, PublicJwk } from '../../src/jose/types';
 import { removeUndefinedProperties } from '../../src/utils/object';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1';
 import { v4 as uuidv4 } from 'uuid';
 
+export type GenerateProtocolsConfigureMessageInput = {
+  targetDid?: string;
+  requesterDid?: string;
+  requesterKeyId?: string;
+  requesterKeyPair?: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
+  protocol?: string;
+  protocolDefinition?: ProtocolDefinition;
+};
 
-export type GenerateCollectionWriteMessageInput = {
+export type GenerateProtocolsConfigureMessageOutput = {
+  message: ProtocolsConfigureMessage;
+  /**
+   * method name without the `did:` prefix. e.g. "ion"
+   */
+  requesterDidMethod: string;
+  requesterDid: string;
+  requesterKeyId: string;
+  requesterKeyPair: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
+};
+
+export type GenerateProtocolsQueryMessageInput = {
+  targetDid?: string;
+  requesterDid?: string;
+  requesterKeyId?: string;
+  requesterKeyPair?: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
+  filter?: {
+    protocol: string;
+  }
+};
+
+export type GenerateProtocolsQueryMessageOutput = {
+  message: ProtocolsQueryMessage;
+  /**
+   * method name without the `did:` prefix. e.g. "ion"
+   */
+  requesterDidMethod: string;
+  requesterDid: string;
+  requesterKeyId: string;
+  requesterKeyPair: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
+};
+
+export type GenerateCollectionsWriteMessageInput = {
   targetDid?: string;
   recipientDid?: string;
   requesterDid?: string;
@@ -29,20 +80,20 @@ export type GenerateCollectionWriteMessageInput = {
   dateCreated? : number;
 };
 
-export type GenerateCollectionWriteMessageOutput = {
+export type GenerateCollectionsWriteMessageOutput = {
   message: CollectionsWriteMessage;
   messageCid: CID;
   data: Uint8Array;
   /**
    * method name without the `did:` prefix. e.g. "ion"
    */
-  requesterDid: string;
   requesterDidMethod: string;
+  requesterDid: string;
   requesterKeyId: string;
   requesterKeyPair: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
 };
 
-export type GenerateCollectionQueryMessageInput = {
+export type GenerateCollectionsQueryMessageInput = {
   targetDid?: string;
   requesterDid?: string;
   requesterKeyId?: string;
@@ -59,7 +110,7 @@ export type GenerateCollectionQueryMessageInput = {
   dateSort?: string;
 };
 
-export type GenerateCollectionQueryMessageOutput = {
+export type GenerateCollectionsQueryMessageOutput = {
   message: CollectionsQueryMessage;
   /**
    * method name without the `did:` prefix. e.g. "ion"
@@ -94,11 +145,13 @@ export type GenerateHandlersWriteMessageOutput = {
  */
 export class TestDataGenerator {
   /**
-   * Generates a CollectionsWrite message for testing.
-   * All optional parameters are generated if not given.
-   * Implementation currently uses `CollectionsWrite.create()`.
+   * Generates a ProtocolsConfigure message for testing.
+   * Optional parameters are generated if not given.
+   * Implementation currently uses `ProtocolsConfigure.create()`.
    */
-  public static async generateCollectionWriteMessage(input?: GenerateCollectionWriteMessageInput): Promise<GenerateCollectionWriteMessageOutput> {
+  public static async generateProtocolsConfigureMessage(
+    input?: GenerateProtocolsConfigureMessageInput
+  ): Promise<GenerateProtocolsConfigureMessageOutput> {
     // generate requester DID if not given
     let requesterDid = input?.requesterDid;
     if (!requesterDid) {
@@ -108,7 +161,139 @@ export class TestDataGenerator {
     const requesterDidMethod = TestDataGenerator.getDidMethodName(requesterDid);
 
     // generate requester key ID if not given
-    const requesterKeyId =  input?.requesterKeyId ?? `${requesterDid}#key1`;
+    const requesterKeyId = input?.requesterKeyId ?? `${requesterDid}#key1`;
+
+    // generate requester key pair if not given
+    let requesterKeyPair = input?.requesterKeyPair;
+    if (!requesterKeyPair) {
+      requesterKeyPair = await secp256k1.generateKeyPair();
+    }
+
+    const signatureInput = {
+      jwkPrivate      : requesterKeyPair.privateJwk,
+      protectedHeader : {
+        alg : requesterKeyPair.privateJwk.alg!,
+        kid : requesterKeyId
+      }
+    };
+
+    // generate target DID if not given
+    let targetDid = input?.targetDid;
+    if (!targetDid) {
+      // if both `requesterDid` and `targetDid` are both not given in input,
+      // use the same DID as the `requesterDid` to pass authorization in tests by default.
+      if (!input?.requesterDid) {
+        targetDid = requesterDid;
+      } else {
+        const didSuffix = TestDataGenerator.randomString(32);
+        targetDid = `did:example:${didSuffix}`;
+      }
+    }
+
+    const generatedLabel = 'record' + TestDataGenerator.randomString(10);
+    const definition = {
+      labels  : { },
+      records : { }
+    };
+    definition.labels[generatedLabel] = { schema: `test-object` };
+    definition.records[generatedLabel] = { };
+
+    const options: ProtocolsConfigureOptions = {
+      target   : targetDid,
+      protocol : input?.protocol ?? TestDataGenerator.randomString(20),
+      definition,
+      signatureInput
+    };
+
+    const message = await ProtocolsConfigure.create(options);
+
+    return {
+      message,
+      requesterDid,
+      requesterDidMethod,
+      requesterKeyId,
+      requesterKeyPair
+    };
+  };
+
+
+  /**
+   * Generates a ProtocolsQuery message for testing.
+   * If both `requesterDid` and `targetDid` are not given, the generator will use the same DID for both to pass authorization in tests by default.
+   */
+  public static async generateProtocolsQueryMessage(input?: GenerateProtocolsQueryMessageInput): Promise<GenerateProtocolsQueryMessageOutput> {
+    // generate requester DID if not given
+    let requesterDid = input?.requesterDid;
+    if (!requesterDid) {
+      const didSuffix = TestDataGenerator.randomString(32);
+      requesterDid = `did:example:${didSuffix}`;
+    }
+    const requesterDidMethod = TestDataGenerator.getDidMethodName(requesterDid);
+
+    // generate requester key ID if not given
+    const requesterKeyId = input?.requesterKeyId ?? `${requesterDid}#key1`;
+
+    // generate requester key pair if not given
+    let requesterKeyPair = input?.requesterKeyPair;
+    if (!requesterKeyPair) {
+      requesterKeyPair = await secp256k1.generateKeyPair();
+    }
+
+    const signatureInput = {
+      jwkPrivate      : requesterKeyPair.privateJwk,
+      protectedHeader : {
+        alg : requesterKeyPair.privateJwk.alg!,
+        kid : requesterKeyId
+      }
+    };
+
+    // generate target DID if not given
+    let targetDid = input?.targetDid;
+    if (!targetDid) {
+      // if both `requesterDid` and `targetDid` are both not given in input,
+      // use the same DID as the `requesterDid` to pass authorization in tests by default.
+      if (!input?.requesterDid) {
+        targetDid = requesterDid;
+      } else {
+        const didSuffix = TestDataGenerator.randomString(32);
+        targetDid = `did:example:${didSuffix}`;
+      }
+    }
+
+    const options: ProtocolsQueryOptions = {
+      target : targetDid,
+      filter : input?.filter,
+      signatureInput
+    };
+    removeUndefinedProperties(options);
+
+    const message = await ProtocolsQuery.create(options);
+
+    return {
+      message,
+      requesterDid,
+      requesterDidMethod,
+      requesterKeyId,
+      requesterKeyPair
+    };
+  };
+
+  /**
+   * Generates a CollectionsWrite message for testing.
+   * Optional parameters are generated if not given.
+   * Implementation currently uses `CollectionsWrite.create()`.
+   */
+  public static async generateCollectionWriteMessage(input?: GenerateCollectionsWriteMessageInput): Promise<GenerateCollectionsWriteMessageOutput> {
+    // generate requester DID if not given
+    let requesterDid = input?.requesterDid;
+    if (!requesterDid) {
+      const didSuffix = TestDataGenerator.randomString(32);
+      requesterDid = `did:example:${didSuffix}`;
+    }
+    const requesterDidMethod = TestDataGenerator.getDidMethodName(requesterDid);
+
+    // generate requester key ID if not given
+    const requesterKeyId = input?.requesterKeyId ?? `${requesterDid}#key1`;
 
     // generate requester key pair if not given
     let requesterKeyPair = input?.requesterKeyPair;
@@ -173,7 +358,7 @@ export class TestDataGenerator {
    * Generates a CollectionsQuery message for testing.
    * If both `requesterDid` and `targetDid` are not given, the generator will use the same DID for both to pass authorization in tests by default.
    */
-  public static async generateCollectionQueryMessage(input?: GenerateCollectionQueryMessageInput): Promise<GenerateCollectionQueryMessageOutput> {
+  public static async generateCollectionQueryMessage(input?: GenerateCollectionsQueryMessageInput): Promise<GenerateCollectionsQueryMessageOutput> {
     // generate requester DID if not given
     let requesterDid = input?.requesterDid;
     if (!requesterDid) {
@@ -183,7 +368,7 @@ export class TestDataGenerator {
     const requesterDidMethod = TestDataGenerator.getDidMethodName(requesterDid);
 
     // generate requester key ID if not given
-    const requesterKeyId =  input?.requesterKeyId ?? `${requesterDid}#key1`;
+    const requesterKeyId = input?.requesterKeyId ?? `${requesterDid}#key1`;
 
     // generate requester key pair if not given
     let requesterKeyPair = input?.requesterKeyPair;
@@ -247,7 +432,7 @@ export class TestDataGenerator {
     const requesterDidMethod = TestDataGenerator.getDidMethodName(requesterDid);
 
     // generate requester key ID if not given
-    const requesterKeyId =  input?.requesterKeyId ?? `${requesterDid}#key1`;
+    const requesterKeyId = input?.requesterKeyId ?? `${requesterDid}#key1`;
 
     // generate requester key pair if not given
     let requesterKeyPair = input?.requesterKeyPair;

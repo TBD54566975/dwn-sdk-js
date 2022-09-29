@@ -1,7 +1,7 @@
 import { base64url } from 'multiformats/bases/base64';
 import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/types';
 import { DIDResolutionResult, DIDResolver } from '../../../../src/did/did-resolver';
-import { GenerateCollectionWriteMessageOutput, TestDataGenerator } from '../../../utils/test-data-generator';
+import { GenerateCollectionsWriteMessageOutput, TestDataGenerator } from '../../../utils/test-data-generator';
 import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query';
 import { handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level';
@@ -124,8 +124,8 @@ describe('handleCollectionsWrite()', () => {
       });
 
       // determine the lexicographical order of the two messages
-      let largerCollectionWriteMessageData: GenerateCollectionWriteMessageOutput;
-      let smallerCollectionWriteMessageData: GenerateCollectionWriteMessageOutput;
+      let largerCollectionWriteMessageData: GenerateCollectionsWriteMessageOutput;
+      let smallerCollectionWriteMessageData: GenerateCollectionsWriteMessageOutput;
       if (collectionsWriteMessageData1.messageCid > collectionsWriteMessageData2.messageCid) {
         largerCollectionWriteMessageData = collectionsWriteMessageData1;
         smallerCollectionWriteMessageData = collectionsWriteMessageData2;

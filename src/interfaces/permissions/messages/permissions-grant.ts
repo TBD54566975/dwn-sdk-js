@@ -34,7 +34,7 @@ export class PermissionsGrant extends Message implements Authorizable {
   static async create(options: PermissionsGrantOptions): Promise<PermissionsGrant> {
     const { conditions } = options;
     const providedConditions = conditions ? conditions : {};
-    const mergedConditions = { ...DEFAULT_CONDITIONS, ...providedConditions  };
+    const mergedConditions = { ...DEFAULT_CONDITIONS, ...providedConditions };
 
     const descriptor: PermissionsGrantDescriptor = {
       target      : options.target,

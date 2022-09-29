@@ -10,14 +10,14 @@
 //   - https://github.com/microsoft/TypeScript/issues/40878
 //
 export type { CollectionsQueryMessage, CollectionsWriteMessage } from './interfaces/collections/types';
-export type { CollectionsQueryOptions } from './interfaces/collections/messages/collections-query.js';
-export type { CollectionsWriteOptions } from './interfaces/collections/messages/collections-write.js';
 export type { DIDResolver } from './did/did-resolver.js';
 export type { EventHandler } from './dwn.js';
-export type { HandlersWriteOptions } from './interfaces/handlers/messages/handlers-write.js';
 export type { HandlersWriteMessage } from './interfaces/handlers/types';
-export { CollectionsQuery } from './interfaces/collections/messages/collections-query.js';
-export { CollectionsWrite } from './interfaces/collections/messages/collections-write.js';
+export type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolsQueryMessage } from './interfaces/protocols/types';
+export { CollectionsQuery, CollectionsQueryOptions } from './interfaces/collections/messages/collections-query.js';
+export { CollectionsWrite, CollectionsWriteOptions } from './interfaces/collections/messages/collections-write.js';
 export { DWN } from './dwn.js';
-export { HandlersWrite } from './interfaces/handlers/messages/handlers-write.js';
+export { HandlersWrite, HandlersWriteOptions } from './interfaces/handlers/messages/handlers-write.js';
+export { ProtocolsConfigure, ProtocolsConfigureOptions } from './interfaces/protocols/messages/protocols-configure.js';
+export { ProtocolsQuery, ProtocolsQueryOptions } from './interfaces/protocols/messages/protocols-query.js';
 export { Response } from './core/response.js';

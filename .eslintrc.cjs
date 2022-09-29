@@ -29,8 +29,9 @@ module.exports = {
     ],
     'semi'                    : ['off'],
     '@typescript-eslint/semi' : ['error', 'always'],
+    'no-multi-spaces'         : ['error'],
     'no-trailing-spaces'      : ['error'],
-    'max-len'                 : ['error', { 'code': 150 }],
+    'max-len'                 : ['error', { 'code': 200 }],
     'key-spacing'             : [
       'error',
       {

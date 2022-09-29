@@ -29,7 +29,7 @@ export class PermissionsRequest extends Message implements Authorizable {
   static async create(opts: PermissionsRequestOptions): Promise<PermissionsRequest> {
     const { conditions } = opts;
     const providedConditions = conditions ? conditions : {};
-    const mergedConditions = { ...DEFAULT_CONDITIONS, ...providedConditions  };
+    const mergedConditions = { ...DEFAULT_CONDITIONS, ...providedConditions };
 
     const descriptor: PermissionsRequestDescriptor = {
       target      : opts.target,

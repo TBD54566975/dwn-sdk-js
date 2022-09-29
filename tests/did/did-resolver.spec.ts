@@ -8,7 +8,7 @@ import { DIDResolver } from '../../src/did/did-resolver';
 chai.use(chaiAsPromised);
 
 describe('DIDResolver', () => {
-  it('should pick the right DID resolver based on DID method name',  async () => {
+  it('should pick the right DID resolver based on DID method name', async () => {
     const did = 'did:ion:unusedDid';
     const ionDidResolver = new IonDidResolver('unusedResolutionEndpoint');
     const didResolver = new DIDResolver([ionDidResolver]);

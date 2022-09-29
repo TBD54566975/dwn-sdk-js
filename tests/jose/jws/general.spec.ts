@@ -17,7 +17,7 @@ describe('General JWS Sign/Verify', () => {
     sinon.restore();
   });
 
-  it('should sign and verify secp256k1 signature using a key vector correctly',  async () => {
+  it('should sign and verify secp256k1 signature using a key vector correctly', async () => {
     const { privateJwk, publicJwk } = await secp256k1.generateKeyPair();
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
     const protectedHeader = { alg: 'ES256K', kid: 'did:jank:alice#key1' };
@@ -50,7 +50,7 @@ describe('General JWS Sign/Verify', () => {
     expect(verificationResult.signers).to.include('did:jank:alice');
   });
 
-  it('should sign and verify ed25519 signature using a key vector correctly',  async () => {
+  it('should sign and verify ed25519 signature using a key vector correctly', async () => {
     const { privateJwk, publicJwk } = await Ed25519.generateKeyPair();
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
     const protectedHeader = { alg: 'EdDSA', kid: 'did:jank:alice#key1' };
@@ -83,7 +83,7 @@ describe('General JWS Sign/Verify', () => {
     expect(verificatonResult.signers).to.include('did:jank:alice');
   });
 
-  it('should support multiple signatures using different key types',  async () => {
+  it('should support multiple signatures using different key types', async () => {
     const secp256k1Keys = await secp256k1.generateKeyPair();
     const ed25519Keys = await Ed25519.generateKeyPair();
 

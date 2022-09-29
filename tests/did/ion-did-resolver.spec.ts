@@ -25,13 +25,13 @@ describe('IonDidResolver', () => {
     }
   });
 
-  it('should set a default resolution endpoint when none is given in constructor',  async () => {
+  it('should set a default resolution endpoint when none is given in constructor', async () => {
     const ionDidResolver = new IonDidResolver();
 
     expect(ionDidResolver['resolutionEndpoint']).to.equal('https://beta.discover.did.microsoft.com/1.0/identifiers/');
   });
 
-  it('should resolve an ION DID correctly',  async () => {
+  it('should resolve an ION DID correctly', async () => {
     const did = 'did:ion:EiClkZMDxPKqC9c-umQfTkR8vvZ9JPhl_xLDI9Nfk38w5w';
     const ionDidResolver = new IonDidResolver(resolutionEndpoint);
 
@@ -51,7 +51,7 @@ describe('IonDidResolver', () => {
     expect(resolutionDocument.didDocumentMetadata.canonicalId).to.equal(did);
   });
 
-  it('should throw if ION DID cannot be resolved',  async () => {
+  it('should throw if ION DID cannot be resolved', async () => {
     const did = 'did:ion:SomethingThatCannotBeResolved';
     const ionDidResolver = new IonDidResolver(resolutionEndpoint);
 

@@ -6,6 +6,10 @@ import HandlersWrite from './handlers/handlers-write.json' assert { type: 'json'
 import PermissionsDefinitions from './permissions/definitions.json' assert { type: 'json' };
 import PermissionsRequest from './permissions/permissions-request.json' assert { type: 'json' };
 import PermissionsGrant from './permissions/permissions-grant.json' assert { type: 'json' };
+import ProtocolDefinition from './protocol-definition.json' assert { type: 'json' };
+import ProtocolRuleSet from './protocol-rule-set.json' assert { type: 'json' };
+import ProtocolsConfigure from './protocols/protocols-configure.json' assert { type: 'json' };
+import ProtocolsQuery from './protocols/protocols-query.json' assert { type: 'json' };
 import Request from './request.json' assert { type: 'json' };
 
 export const schemas = {
@@ -17,5 +21,9 @@ export const schemas = {
   PermissionsDefinitions,
   PermissionsGrant,
   PermissionsRequest,
+  ProtocolDefinition,
+  ProtocolRuleSet,
+  ProtocolsConfigure,
+  ProtocolsQuery,
   Request
 };

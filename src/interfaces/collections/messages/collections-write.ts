@@ -1,9 +1,7 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
 import type { CollectionsWriteDescriptor, CollectionsWriteMessage } from '../types';
 import { base64url } from 'multiformats/bases/base64';
-import { CID } from 'multiformats/cid';
 import { DIDResolver } from '../../../did/did-resolver';
-import { generateCid } from '../../../utils/cid';
 import { getDagCid } from '../../../utils/data';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
@@ -74,21 +72,6 @@ export class CollectionsWrite extends Message implements Authorizable {
   }
 
   /**
-   * Gets the cid of the given CollectionsWrite message.
-   * NOTE: `encodedData` is ignored when computing the CID of message.
-   */
-  static async getCid(message: CollectionsWriteMessage): Promise<CID> {
-    const messageCopy = { ...message };
-
-    if (messageCopy['encodedData'] !== undefined) {
-      delete messageCopy.encodedData;
-    }
-
-    const cid = await generateCid(messageCopy);
-    return cid;
-  }
-
-  /**
    * @returns newest message in the array. `undefined` if given array is empty.
    */
   static async getNewestMessage(messages: CollectionsWriteMessage[]): Promise<CollectionsWriteMessage | undefined> {
@@ -124,15 +107,7 @@ export class CollectionsWrite extends Message implements Authorizable {
 
     // else `dateCreated` is the same between a and b
     // compare the `dataCid` instead, the < and > operators compare strings in lexicographical order
-    const cidA = await CollectionsWrite.getCid(a);
-    const cidB = await CollectionsWrite.getCid(b);
-    if (cidA > cidB) {
-      return 1;
-    } else if (cidA < cidB) {
-      return -1;
-    } else {
-      return 0;
-    }
+    return Message.compareCid(a, b);
   }
 }
 
