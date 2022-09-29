@@ -65,7 +65,7 @@ describe('MessageStoreLevel Tests', () => {
     });
 
     it('stores messages as cbor/sha256 encoded blocks with CID as key', async () => {
-      const message = await TestDataGenerator.generatePermissionRequestMessage();
+      const message = await TestDataGenerator.generatePermissionsRequestMessage();
 
       await messageStore.put(message);
 
@@ -78,7 +78,7 @@ describe('MessageStoreLevel Tests', () => {
     });
 
     it('adds tenant to index', async () => {
-      const message = await TestDataGenerator.generatePermissionRequestMessage();
+      const message = await TestDataGenerator.generatePermissionsRequestMessage();
 
       await messageStore.put(message);
 
@@ -88,7 +88,7 @@ describe('MessageStoreLevel Tests', () => {
 
     it('should index properties with characters beyond just letters and digits', async () => {
       const schema = 'http://my-awesome-schema/awesomeness_schema#awesome-1?id=awesome_1';
-      const messageData = await TestDataGenerator.generateCollectionWriteMessage({ schema });
+      const messageData = await TestDataGenerator.generateCollectionsWriteMessage({ schema });
 
       await messageStore.put(messageData.message);
 

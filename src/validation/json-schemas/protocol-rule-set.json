@@ -9,6 +9,7 @@
       "oneOf": [
         {
           "type": "object",
+          "additionalProperties": false,
           "properties": {
             "anyone": {
               "type": "object",
@@ -29,10 +30,14 @@
         },
         {
           "type": "object",
+          "additionalProperties": false,
           "properties": {
             "recipient": {
               "type": "object",
               "properties": {
+                "of": {
+                  "type": "string"
+                },
                 "to": {
                   "type": "array",
                   "minItems": 1,

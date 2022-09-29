@@ -190,13 +190,18 @@ export class TestDataGenerator {
       }
     }
 
-    const generatedLabel = 'record' + TestDataGenerator.randomString(10);
-    const definition = {
-      labels  : { },
-      records : { }
-    };
-    definition.labels[generatedLabel] = { schema: `test-object` };
-    definition.records[generatedLabel] = { };
+    // generate protocol definition if not given
+    let definition = input?.protocolDefinition;
+    if (!definition) {
+      const generatedLabel = 'record' + TestDataGenerator.randomString(10);
+
+      definition = {
+        labels  : { },
+        records : { }
+      };
+      definition.labels[generatedLabel] = { schema: `test-object` };
+      definition.records[generatedLabel] = { };
+    }
 
     const options: ProtocolsConfigureOptions = {
       target   : targetDid,
@@ -283,7 +288,7 @@ export class TestDataGenerator {
    * Optional parameters are generated if not given.
    * Implementation currently uses `CollectionsWrite.create()`.
    */
-  public static async generateCollectionWriteMessage(input?: GenerateCollectionsWriteMessageInput): Promise<GenerateCollectionsWriteMessageOutput> {
+  public static async generateCollectionsWriteMessage(input?: GenerateCollectionsWriteMessageInput): Promise<GenerateCollectionsWriteMessageOutput> {
     // generate requester DID if not given
     let requesterDid = input?.requesterDid;
     if (!requesterDid) {
@@ -358,7 +363,7 @@ export class TestDataGenerator {
    * Generates a CollectionsQuery message for testing.
    * If both `requesterDid` and `targetDid` are not given, the generator will use the same DID for both to pass authorization in tests by default.
    */
-  public static async generateCollectionQueryMessage(input?: GenerateCollectionsQueryMessageInput): Promise<GenerateCollectionsQueryMessageOutput> {
+  public static async generateCollectionsQueryMessage(input?: GenerateCollectionsQueryMessageInput): Promise<GenerateCollectionsQueryMessageOutput> {
     // generate requester DID if not given
     let requesterDid = input?.requesterDid;
     if (!requesterDid) {
@@ -482,7 +487,7 @@ export class TestDataGenerator {
   /**
    * Generates a PermissionsRequest message for testing.
    */
-  public static async generatePermissionRequestMessage(): Promise<BaseMessage> {
+  public static async generatePermissionsRequestMessage(): Promise<BaseMessage> {
     const { privateJwk } = await ed25519.generateKeyPair();
     const permissionRequest = await PermissionsRequest.create({
       target         : 'did:jank:alice',

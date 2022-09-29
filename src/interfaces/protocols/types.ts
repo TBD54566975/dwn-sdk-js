@@ -23,6 +23,7 @@ export type ProtocolRuleSet = {
       to: [string];
     };
     recipient?: {
+      of: string,
       to: [string];
     }
   };

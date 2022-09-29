@@ -1,6 +1,6 @@
-import { base64url } from 'multiformats/bases/base64';
 import { CollectionsWriteMessage } from '../interfaces/collections/types';
 import { MessageStore } from '../store/message-store';
+import { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types';
 
 const methodToAllowedActionMap = {
   'CollectionsWrite': 'write',
@@ -21,18 +21,18 @@ export async function protocolAuthorize(
   // fetch ancestor message chain
   const ancestorMessageChain: CollectionsWriteMessage[] = await constructAncestorMessageChain(message, messageStore);
 
-  // record schema -> record type map
-  const recordSchemaToTypeMap: Map<string, string> = new Map();
-  for (const recordTypeName in protocolDefinition.recordTypes) {
-    const schema = protocolDefinition.recordTypes[recordTypeName].schema;
-    recordSchemaToTypeMap[schema] = recordTypeName;
+  // record schema -> schema label map
+  const recordSchemaToLabelMap: Map<string, string> = new Map();
+  for (const schemaLabel in protocolDefinition.labels) {
+    const schema = protocolDefinition.labels[schemaLabel].schema;
+    recordSchemaToLabelMap[schema] = schemaLabel;
   }
 
   // get the rule set for the inbound message
-  const inboundMessageRuleSet = getRuleSet(message, protocolDefinition, ancestorMessageChain, recordSchemaToTypeMap);
+  const inboundMessageRuleSet = getRuleSet(message, protocolDefinition, ancestorMessageChain, recordSchemaToLabelMap);
 
   // verify the requester of the inbound message against allowed requester rule
-  verifyAllowedRequester(requesterDid, message.descriptor.target, inboundMessageRuleSet, ancestorMessageChain, recordSchemaToTypeMap);
+  verifyAllowedRequester(requesterDid, message.descriptor.target, inboundMessageRuleSet, ancestorMessageChain, recordSchemaToLabelMap);
 
   // verify method invoked against the allowed actions
   verifyAllowedActions(requesterDid, message, inboundMessageRuleSet);
@@ -40,10 +40,8 @@ export async function protocolAuthorize(
 
 /**
  * Fetches the protocol definition based on the protocol specified in the given message.
- * NOTE: this is a basic temporary implementation reusing Collections,
- * there will be a dedicated protocol interface for creating and fetching protocol definitions.
  */
-async function fetchProtocolDefinition(message: CollectionsWriteMessage, messageStore: MessageStore): Promise<any> {
+async function fetchProtocolDefinition(message: CollectionsWriteMessage, messageStore: MessageStore): Promise<ProtocolDefinition> {
   // get the protocol URI
   const protocolUri = (message as CollectionsWriteMessage).descriptor.protocol;
 
@@ -52,31 +50,27 @@ async function fetchProtocolDefinition(message: CollectionsWriteMessage, message
     throw new Error('message does not have a protocol property for protocol-based authorization');
   }
 
-  // fetch the corresponding protocol definition, temporary stubbing using collections
+  // fetch the corresponding protocol definition
   const query = {
     target   : message.descriptor.target,
-    method   : 'CollectionsWrite',
-    schema   : 'dwn-protocol',
-    recordId : protocolUri
+    method   : 'ProtocolsConfigure',
+    protocol : protocolUri
   };
-  const protocols = await messageStore.query(query) as CollectionsWriteMessage[];
+  const protocols = await messageStore.query(query) as ProtocolsConfigureMessage[];
 
   if (protocols.length === 0) {
     throw new Error(`unable to find protocol definition for ${protocolUri}}`);
   }
 
   const protocolMessage = protocols[0];
-  const decodedProtocolBytes = base64url.baseDecode(protocolMessage.encodedData);
-  const protocolDefinition = JSON.parse(new TextDecoder().decode(decodedProtocolBytes));
-
-  return protocolDefinition;
+  return protocolMessage.descriptor.definition;
 }
 
 /**
  * Constructs a chain of ancestor messages
  * @returns the ancestor chain of messages where the first element is the root of the chain; returns empty array if no parent is specified.
  */
-async function constructAncestorMessageChain(message: CollectionsWriteMessage, messageStore: MessageStore): Promise<any> {
+async function constructAncestorMessageChain(message: CollectionsWriteMessage, messageStore: MessageStore): Promise<CollectionsWriteMessage[]> {
   const ancestorMessageChain: CollectionsWriteMessage[] = [];
 
   const protocol = message.descriptor.protocol;
@@ -117,37 +111,37 @@ async function constructAncestorMessageChain(message: CollectionsWriteMessage, m
  */
 function getRuleSet(
   inboundMessage: CollectionsWriteMessage,
-  protocolDefinition: any,
+  protocolDefinition: ProtocolDefinition,
   ancestorMessageChain: CollectionsWriteMessage[],
-  recordSchemaToTypeMap: Map<string, string>
-): any {
+  recordSchemaToLabelMap: Map<string, string>
+): ProtocolRuleSet {
   // make a copy of the ancestor messages and include the inbound message in the chain
   const messageChain = [...ancestorMessageChain, inboundMessage];
 
   // walk down the ancestor message chain from the root ancestor record and match against the corresponding rule set at each level
   // to make sure the chain structure is allowed
-  let allowedRecordTypesAtCurrentLevel = protocolDefinition.structures;
+  let allowedRecordsAtCurrentLevel = protocolDefinition.records;
   let currentMessageIndex = 0;
   while (true) {
     const currentRecordSchema = messageChain[currentMessageIndex].descriptor.schema;
-    const currentRecordType = recordSchemaToTypeMap[currentRecordSchema];
+    const currentRecordType = recordSchemaToLabelMap[currentRecordSchema];
 
     if (currentRecordType === undefined) {
-      throw new Error(`record with schema ${currentRecordSchema} not allowed in protocol`);
+      throw new Error(`record with schema '${currentRecordSchema}' not allowed in protocol`);
     }
 
-    if (!(currentRecordType in allowedRecordTypesAtCurrentLevel)) {
-      throw new Error(`record with schema: ${currentRecordSchema} not allowed in structure level ${currentMessageIndex}`);
+    if (!(currentRecordType in allowedRecordsAtCurrentLevel)) {
+      throw new Error(`record with schema: '${currentRecordSchema}' not allowed in structure level ${currentMessageIndex}`);
     }
 
     // if we are looking at the inbound message itself (the last message in the chain),
     // then we have found the access control object we need to evaluate against
     if (currentMessageIndex === messageChain.length - 1) {
-      return allowedRecordTypesAtCurrentLevel[currentRecordType];
+      return allowedRecordsAtCurrentLevel[currentRecordType];
     }
 
     // else we keep going down the message chain
-    allowedRecordTypesAtCurrentLevel = allowedRecordTypesAtCurrentLevel[currentRecordType].records;
+    allowedRecordsAtCurrentLevel = allowedRecordsAtCurrentLevel[currentRecordType].records;
     currentMessageIndex++;
   }
 }
@@ -159,9 +153,9 @@ function getRuleSet(
 function verifyAllowedRequester(
   requesterDid: string,
   targetDid: string,
-  inboundMessageRuleSet: any,
+  inboundMessageRuleSet: ProtocolRuleSet,
   ancestorMessageChain: CollectionsWriteMessage[],
-  recordSchemaToTypeMap: Map<string, string>
+  recordSchemaToLabelMap: Map<string, string>
 ): void {
   const allowRule = inboundMessageRuleSet.allow;
   if (allowRule === undefined) {
@@ -173,7 +167,7 @@ function verifyAllowedRequester(
     // good to go to next check
   } else if (allowRule.recipient !== undefined) {
     // get the message to check for recipient based on the path given
-    const messageForRecipientCheck = getMessage(ancestorMessageChain, allowRule.recipient.of, recordSchemaToTypeMap);
+    const messageForRecipientCheck = getMessage(ancestorMessageChain, allowRule.recipient.of, recordSchemaToLabelMap);
     const expectedRequesterDid = messageForRecipientCheck.descriptor.recipient;
 
     // the requester of the inbound message must be the recipient of the message obtained from the allow rule
@@ -224,7 +218,7 @@ function verifyAllowedActions(requesterDid: string, message: CollectionsWriteMes
 function getMessage(
   messageChain: CollectionsWriteMessage[],
   messagePath: string,
-  recordSchemaToTypeMap: Map<string, string>
+  recordSchemaToLabelMap: Map<string, string>
 ): CollectionsWriteMessage {
   const ancestors = messagePath.split('/');
 
@@ -241,7 +235,7 @@ function getMessage(
       throw new Error('ancestor message cannot be found');
     }
 
-    const actualAncestorType = recordSchemaToTypeMap[ancestorMessage.descriptor.schema];
+    const actualAncestorType = recordSchemaToLabelMap[ancestorMessage.descriptor.schema];
     if (actualAncestorType !== expectedAncestorType) {
       throw new Error(`mismatching message type: expecting ${expectedAncestorType} but actual ${actualAncestorType}`);
     }

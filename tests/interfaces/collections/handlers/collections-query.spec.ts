@@ -37,16 +37,16 @@ describe('handleCollectionsQuery()', () => {
       const targetDid = 'did:example:alice';
       const requesterDid = targetDid;
       const protocol = 'myAwesomeProtocol';
-      const collectionsWriteMessage1Data = await TestDataGenerator.generateCollectionWriteMessage({ targetDid });
-      const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionWriteMessage({ targetDid, protocol, schema: 'schema1' });
-      const collectionsWriteMessage3Data = await TestDataGenerator.generateCollectionWriteMessage({ targetDid, protocol, schema: 'schema2' });
+      const collectionsWriteMessage1Data = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid });
+      const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid, protocol, schema: 'schema1' });
+      const collectionsWriteMessage3Data = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid, protocol, schema: 'schema2' });
 
       await messageStore.put(collectionsWriteMessage1Data.message);
       await messageStore.put(collectionsWriteMessage2Data.message);
       await messageStore.put(collectionsWriteMessage3Data.message);
 
       // testing singular conditional query
-      const messageData = await TestDataGenerator.generateCollectionQueryMessage({ targetDid, requesterDid, filter: { protocol } });
+      const messageData = await TestDataGenerator.generateCollectionsQueryMessage({ targetDid, requesterDid, filter: { protocol } });
 
       // setting up a stub method resolver
       const didResolverStub = TestStubGenerator.createDidResolverStub(
@@ -63,7 +63,7 @@ describe('handleCollectionsQuery()', () => {
       // testing multi-conditional query, reuse data generated above for bob
       const requesterKeyId = messageData.requesterKeyId;
       const requesterKeyPair = messageData.requesterKeyPair;
-      const messageData2 = await TestDataGenerator.generateCollectionQueryMessage({
+      const messageData2 = await TestDataGenerator.generateCollectionsQueryMessage({
         targetDid,
         requesterDid,
         requesterKeyId,
@@ -86,14 +86,14 @@ describe('handleCollectionsQuery()', () => {
       const did1 = 'did:example:alice';
       const did2 = 'did:example:bob';
       const protocol = 'myAwesomeProtocol';
-      const collectionsWriteMessage1Data = await TestDataGenerator.generateCollectionWriteMessage({ targetDid: did1, protocol });
-      const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionWriteMessage({ targetDid: did2, protocol });
+      const collectionsWriteMessage1Data = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid: did1, protocol });
+      const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid: did2, protocol });
 
       // insert data into 2 different tenants
       await messageStore.put(collectionsWriteMessage1Data.message);
       await messageStore.put(collectionsWriteMessage2Data.message);
 
-      const did1QueryMessageData = await TestDataGenerator.generateCollectionQueryMessage({
+      const did1QueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
         requesterDid : did1,
         targetDid    : did1,
         filter       : { protocol }
@@ -114,7 +114,7 @@ describe('handleCollectionsQuery()', () => {
   });
 
   it('should return 401 if signature check fails', async () => {
-    const messageData = await TestDataGenerator.generateCollectionQueryMessage();
+    const messageData = await TestDataGenerator.generateCollectionsQueryMessage();
 
     // setting up a stub did resolver & message store
     const differentKeyPair = await secp256k1.generateKeyPair(); // used to return a different public key to simulate invalid signature
@@ -134,7 +134,7 @@ describe('handleCollectionsQuery()', () => {
   it('should return 401 if requester is not the same as the target', async () => {
     const requesterDid = 'did:example:alice';
     const targetDid = 'did:example:bob'; // requester and target are different
-    const { message, requesterKeyId, requesterKeyPair } = await TestDataGenerator.generateCollectionQueryMessage({ requesterDid, targetDid });
+    const { message, requesterKeyId, requesterKeyPair } = await TestDataGenerator.generateCollectionsQueryMessage({ requesterDid, targetDid });
 
     // setting up a stub did resolver & message store
     const didResolverStub = TestStubGenerator.createDidResolverStub(requesterDid, requesterKeyId, requesterKeyPair.publicJwk );
@@ -146,7 +146,7 @@ describe('handleCollectionsQuery()', () => {
   });
 
   it('should return 500 if authorization fails', async () => {
-    const messageData = await TestDataGenerator.generateCollectionQueryMessage();
+    const messageData = await TestDataGenerator.generateCollectionsQueryMessage();
 
     // setting up a stub method resolver & message store
     const didResolverStub = TestStubGenerator.createDidResolverStub(
@@ -163,7 +163,7 @@ describe('handleCollectionsQuery()', () => {
   });
 
   it('should return 500 if query contains `dateSort`', async () => {
-    const messageData = await TestDataGenerator.generateCollectionQueryMessage({ dateSort: 'createdAscending' });
+    const messageData = await TestDataGenerator.generateCollectionsQueryMessage({ dateSort: 'createdAscending' });
 
     // setting up a stub method resolver & message store
     const didResolverStub = TestStubGenerator.createDidResolverStub(
