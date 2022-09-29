@@ -210,20 +210,17 @@ describe('handleCollectionsWrite()', () => {
             }
           }
         };
-        const aliceDid = 'did:example:alice';
+        const alice = await TestDataGenerator.generatePersona();
 
         const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
-          targetDid    : aliceDid,
-          requesterDid : aliceDid,
+          requester : alice,
+          targetDid : alice.did,
           protocol,
           protocolDefinition
         });
 
-        const aliceKeyId = protocolsConfigureMessageData.requesterKeyId;
-        const aliceKeyPair = protocolsConfigureMessageData.requesterKeyPair;
-
         // setting up a stub did resolver
-        const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(aliceDid, aliceKeyId, aliceKeyPair.publicJwk);
+        const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(alice.did, alice.keyId, alice.keyPair.publicJwk);
 
         const protocolWriteReply = await handleProtocolsConfigure(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
         expect(protocolWriteReply.status.code).to.equal(202);
@@ -233,8 +230,8 @@ describe('handleCollectionsWrite()', () => {
         const bobData = new TextEncoder().encode('data from bob');
         const emailMessageDataFromBob = await TestDataGenerator.generateCollectionsWriteMessage(
           {
-            targetDid    : aliceDid,
             requesterDid : bobDid,
+            targetDid    : alice.did,
             protocol,
             contextId    : 'bob email X',
             schema       : 'email',
@@ -251,10 +248,10 @@ describe('handleCollectionsWrite()', () => {
 
         // verify bob's message got written to the DB
         const messageDataForQueryingBobsWrite = await TestDataGenerator.generateCollectionsQueryMessage({
-          targetDid        : aliceDid,
-          requesterDid     : aliceDid,
-          requesterKeyId   : aliceKeyId,
-          requesterKeyPair : aliceKeyPair,
+          targetDid        : alice.did,
+          requesterDid     : alice.did,
+          requesterKeyId   : alice.keyId,
+          requesterKeyPair : alice.keyPair,
           filter           : { recordId: emailMessageDataFromBob.message.descriptor.recordId }
         });
         const bobRecordQueryReply = await handleCollectionsQuery(messageDataForQueryingBobsWrite.message, messageStore, aliceDidResolverStub);
@@ -265,7 +262,7 @@ describe('handleCollectionsWrite()', () => {
     });
 
     it('should allow write with recipient rule', async () => {
-      // scenario: SSI writes into Alice's DWN an asynchronous credential response upon receiving Alice's credential application
+      // scenario: VC issuer writes into Alice's DWN an asynchronous credential response upon receiving Alice's credential application
 
       // write a protocol definition with an allow-anyone rule
       const protocol = 'credential-issuance';
@@ -295,35 +292,33 @@ describe('handleCollectionsWrite()', () => {
           }
         }
       };
-      const aliceDid = 'did:example:alice';
+
+      const alice = await TestDataGenerator.generatePersona();
 
       const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
-        targetDid    : aliceDid,
-        requesterDid : aliceDid,
+        requester : alice,
+        targetDid : alice.did,
         protocol,
         protocolDefinition
       });
 
-      const aliceKeyId = protocolsConfigureMessageData.requesterKeyId;
-      const aliceKeyPair = protocolsConfigureMessageData.requesterKeyPair;
-
       // setting up a stub did resolver
-      const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(aliceDid, aliceKeyId, aliceKeyPair.publicJwk);
+      const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(alice.did, alice.keyId, alice.keyPair.publicJwk);
 
-      const protocolWriteReply = await handleCollectionsWrite(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
+      const protocolWriteReply = await handleProtocolsConfigure(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
       expect(protocolWriteReply.status.code).to.equal(202);
 
-      // write a credential application to Alice's DWN to simulate that she has sent a credential application to the PFI
-      const ssiDid = 'did:example:ssi';
+      // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
+      const vcIssuerDid = 'did:example:vc-issuer';
       const credentialApplicationContextId = 'alice credential application thread';
       const credentialApplicationRecordId = uuidv4();
       const encodedCredentialApplication = new TextEncoder().encode('credential application data');
       const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
-        requesterDid     : aliceDid,
-        requesterKeyId   : aliceKeyId,
-        requesterKeyPair : aliceKeyPair,
-        targetDid        : aliceDid,
-        recipientDid     : ssiDid,
+        requesterDid     : alice.did,
+        requesterKeyId   : alice.keyId,
+        requesterKeyPair : alice.keyPair,
+        targetDid        : alice.did,
+        recipientDid     : vcIssuerDid,
         protocol ,
         contextId        : credentialApplicationContextId,
         recordId         : credentialApplicationRecordId,
@@ -334,13 +329,13 @@ describe('handleCollectionsWrite()', () => {
       const credentialApplicationReply = await handleCollectionsWrite(credentialApplicationMessageData.message, messageStore, aliceDidResolverStub);
       expect(credentialApplicationReply.status.code).to.equal(202);
 
-      // generate a credential application response message from PFI
+      // generate a credential application response message from VC issuer
       const encodedCredentialResponse = new TextEncoder().encode('credential response data');
       const credentialResponseMessageData = await TestDataGenerator.generateCollectionsWriteMessage(
         {
-          targetDid    : aliceDid,
-          recipientDid : aliceDid,
-          requesterDid : ssiDid,
+          targetDid    : alice.did,
+          recipientDid : alice.did,
+          requesterDid : vcIssuerDid,
           protocol ,
           contextId    : credentialApplicationContextId,
           parentId     : credentialApplicationRecordId,
@@ -348,20 +343,20 @@ describe('handleCollectionsWrite()', () => {
           data         : encodedCredentialResponse
         }
       );
-      const ssiKeyId = credentialResponseMessageData.requesterKeyId;
-      const ssiKeyPair = credentialResponseMessageData.requesterKeyPair;
+      const vcIssuerKeyId = credentialResponseMessageData.requesterKeyId;
+      const vcIssuerKeyPair = credentialResponseMessageData.requesterKeyPair;
 
-      const pfiDidResolverStub = TestStubGenerator.createDidResolverStub(ssiDid, ssiKeyId, ssiKeyPair.publicJwk);
+      const vcIssuerDidResolverStub = TestStubGenerator.createDidResolverStub(vcIssuerDid, vcIssuerKeyId, vcIssuerKeyPair.publicJwk);
 
-      const ssiCredentialResponseReply = await handleCollectionsWrite(credentialResponseMessageData.message, messageStore, pfiDidResolverStub);
-      expect(ssiCredentialResponseReply.status.code).to.equal(202);
+      const vcIssuerCredentialResponseReply = await handleCollectionsWrite(credentialResponseMessageData.message, messageStore, vcIssuerDidResolverStub);
+      expect(vcIssuerCredentialResponseReply.status.code).to.equal(202);
 
-      // verify SSI's message got written to the DB
+      // verify VC issuer's message got written to the DB
       const messageDataForQueryingCredentialResponse = await TestDataGenerator.generateCollectionsQueryMessage({
-        targetDid        : aliceDid,
-        requesterDid     : aliceDid,
-        requesterKeyId   : aliceKeyId,
-        requesterKeyPair : aliceKeyPair,
+        targetDid        : alice.did,
+        requesterDid     : alice.did,
+        requesterKeyId   : alice.keyId,
+        requesterKeyPair : alice.keyPair,
         filter           : { recordId: credentialResponseMessageData.message.descriptor.recordId }
       });
       const applicationResponseQueryReply = await handleCollectionsQuery(
@@ -376,7 +371,8 @@ describe('handleCollectionsWrite()', () => {
     });
 
     it('should block unauthorized write with recipient rule', async () => {
-      // scenario: fake SSI attempts write into Alice's DWN a credential response upon learning the ID of Alice's credential application to actual SSI
+      // scenario: fake VC issuer attempts write into Alice's DWN a credential response
+      // upon learning the ID of Alice's credential application to actual issuer
 
       // write a protocol definition with an allow-anyone rule
       const protocol = 'credential-issuance';
@@ -406,35 +402,33 @@ describe('handleCollectionsWrite()', () => {
           }
         }
       };
-      const aliceDid = 'did:example:alice';
+
+      const alice = await TestDataGenerator.generatePersona();
 
       const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
-        targetDid    : aliceDid,
-        requesterDid : aliceDid,
+        requester : alice,
+        targetDid : alice.did,
         protocol,
         protocolDefinition
       });
 
-      const aliceKeyId = protocolsConfigureMessageData.requesterKeyId;
-      const aliceKeyPair = protocolsConfigureMessageData.requesterKeyPair;
-
       // setting up a stub did resolver
-      const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(aliceDid, aliceKeyId, aliceKeyPair.publicJwk);
+      const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(alice.did, alice.keyId, alice.keyPair.publicJwk);
 
       const protocolWriteReply = await handleCollectionsWrite(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
       expect(protocolWriteReply.status.code).to.equal(202);
 
-      // write a credential application to Alice's DWN to simulate that she has sent a credential application to the SSI
-      const ssiDid = 'did:example:ssi';
+      // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
+      const vcIssuerDid = 'did:example:vc-issuer';
       const credentialApplicationContextId = 'alice credential application thread';
       const credentialApplicationRecordId = uuidv4();
       const encodedCredentialApplication = new TextEncoder().encode('credential application data');
       const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
-        requesterDid     : aliceDid,
-        requesterKeyId   : aliceKeyId,
-        requesterKeyPair : aliceKeyPair,
-        targetDid        : aliceDid,
-        recipientDid     : ssiDid,
+        requesterDid     : alice.did,
+        requesterKeyId   : alice.keyId,
+        requesterKeyPair : alice.keyPair,
+        targetDid        : alice.did,
+        recipientDid     : vcIssuerDid,
         protocol ,
         contextId        : credentialApplicationContextId,
         recordId         : credentialApplicationRecordId,
@@ -445,14 +439,14 @@ describe('handleCollectionsWrite()', () => {
       const credentialApplicationReply = await handleCollectionsWrite(credentialApplicationMessageData.message, messageStore, aliceDidResolverStub);
       expect(credentialApplicationReply.status.code).to.equal(202);
 
-      // generate a credential application response message from a fake PFI
-      const fakeSsiDid = 'did:example:fake-ssi';
+      // generate a credential application response message from a fake VC issuer
+      const fakevcIssuerDid = 'did:example:fake-vc-issuer';
       const encodedCredentialResponse = new TextEncoder().encode('credential response data');
       const credentialResponseMessageData = await TestDataGenerator.generateCollectionsWriteMessage(
         {
-          targetDid    : aliceDid,
-          recipientDid : aliceDid,
-          requesterDid : fakeSsiDid,
+          targetDid    : alice.did,
+          recipientDid : alice.did,
+          requesterDid : fakevcIssuerDid,
           protocol ,
           contextId    : credentialApplicationContextId,
           parentId     : credentialApplicationRecordId,
@@ -460,14 +454,14 @@ describe('handleCollectionsWrite()', () => {
           data         : encodedCredentialResponse
         }
       );
-      const fakeSsiKeyId = credentialResponseMessageData.requesterKeyId;
-      const fakeSsiKeyPair = credentialResponseMessageData.requesterKeyPair;
+      const fakevcIssuerKeyId = credentialResponseMessageData.requesterKeyId;
+      const fakevcIssuerKeyPair = credentialResponseMessageData.requesterKeyPair;
 
-      const ssiDidResolverStub = TestStubGenerator.createDidResolverStub(fakeSsiDid, fakeSsiKeyId, fakeSsiKeyPair.publicJwk);
+      const vcIssuerDidResolverStub = TestStubGenerator.createDidResolverStub(fakevcIssuerDid, fakevcIssuerKeyId, fakevcIssuerKeyPair.publicJwk);
 
-      const ssiCredentialResponseReply = await handleCollectionsWrite(credentialResponseMessageData.message, messageStore, ssiDidResolverStub);
-      expect(ssiCredentialResponseReply.status.code).to.equal(401);
-      expect(ssiCredentialResponseReply.status.detail).to.contain('unexpected inbound message author');
+      const vcIssuerCredentialResponseReply = await handleCollectionsWrite(credentialResponseMessageData.message, messageStore, vcIssuerDidResolverStub);
+      expect(vcIssuerCredentialResponseReply.status.code).to.equal(401);
+      expect(vcIssuerCredentialResponseReply.status.detail).to.contain('unexpected inbound message author');
     });
   });
 

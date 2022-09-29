@@ -33,19 +33,15 @@ describe('handleProtocolsQuery()', () => {
     });
 
     it('should return entries matching the query', async () => {
-      const targetDid = 'did:example:alice';
-      const requesterDid = targetDid;
-      const requesterKeyId = `${targetDid}#key1`;
-      const requesterKeyPair = await ed25519.generateKeyPair();
-
+      const alice = await TestDataGenerator.generatePersona();
 
       // setting up a stub method resolver
-      const didResolverStub = TestStubGenerator.createDidResolverStub(requesterDid, requesterKeyId, requesterKeyPair.publicJwk);
+      const didResolverStub = TestStubGenerator.createDidResolverStub(alice.did, alice.keyId, alice.keyPair.publicJwk);
 
       // insert three messages into DB, two with matching protocol
-      const message1Data = await TestDataGenerator.generateProtocolsConfigureMessage({ targetDid, requesterDid, requesterKeyId, requesterKeyPair });
-      const message2Data = await TestDataGenerator.generateProtocolsConfigureMessage({ targetDid, requesterDid, requesterKeyId, requesterKeyPair });
-      const message3Data = await TestDataGenerator.generateProtocolsConfigureMessage({ targetDid, requesterDid, requesterKeyId, requesterKeyPair });
+      const message1Data = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, targetDid: alice.did });
+      const message2Data = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, targetDid: alice.did });
+      const message3Data = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, targetDid: alice.did });
 
       await handleProtocolsConfigure(message1Data.message, messageStore, didResolverStub);
       await handleProtocolsConfigure(message2Data.message, messageStore, didResolverStub);
@@ -53,11 +49,9 @@ describe('handleProtocolsQuery()', () => {
 
       // testing singular conditional query
       const queryMessageData = await TestDataGenerator.generateProtocolsQueryMessage({
-        targetDid,
-        requesterDid,
-        requesterKeyId,
-        requesterKeyPair,
-        filter: { protocol: message1Data.message.descriptor.protocol }
+        requester : alice,
+        targetDid : alice.did,
+        filter    : { protocol: message1Data.message.descriptor.protocol }
       });
 
       const reply = await handleProtocolsQuery(queryMessageData.message, messageStore, didResolverStub);
@@ -67,10 +61,8 @@ describe('handleProtocolsQuery()', () => {
 
       // testing fetch-all query without filter
       const queryMessageData2 = await TestDataGenerator.generateProtocolsQueryMessage({
-        targetDid,
-        requesterDid,
-        requesterKeyId,
-        requesterKeyPair
+        requester : alice,
+        targetDid : alice.did
       });
 
       const reply2 = await handleProtocolsQuery(queryMessageData2.message, messageStore, didResolverStub);

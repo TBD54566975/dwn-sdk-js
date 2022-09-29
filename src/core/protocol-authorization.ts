@@ -59,7 +59,7 @@ async function fetchProtocolDefinition(message: CollectionsWriteMessage, message
   const protocols = await messageStore.query(query) as ProtocolsConfigureMessage[];
 
   if (protocols.length === 0) {
-    throw new Error(`unable to find protocol definition for ${protocolUri}}`);
+    throw new Error(`unable to find protocol definition for ${protocolUri}`);
   }
 
   const protocolMessage = protocols[0];
