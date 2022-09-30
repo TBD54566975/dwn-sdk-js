@@ -34,20 +34,20 @@ export type Persona = {
 
 export type GenerateProtocolsConfigureMessageInput = {
   requester?: Persona;
-  targetDid?: string;
+  target?: Persona;
   protocol?: string;
   protocolDefinition?: ProtocolDefinition;
 };
 
 export type GenerateProtocolsConfigureMessageOutput = {
   requester: Persona;
-  targetDid: string;
+  target: Persona;
   message: ProtocolsConfigureMessage;
 };
 
 export type GenerateProtocolsQueryMessageInput = {
   requester?: Persona;
-  targetDid?: string;
+  target?: Persona;
   filter?: {
     protocol: string;
   }
@@ -55,7 +55,7 @@ export type GenerateProtocolsQueryMessageInput = {
 
 export type GenerateProtocolsQueryMessageOutput = {
   requester: Persona;
-  targetDid: string;
+  target: Persona;
   message: ProtocolsQueryMessage;
 };
 
@@ -176,20 +176,7 @@ export class TestDataGenerator {
     input?: GenerateProtocolsConfigureMessageInput
   ): Promise<GenerateProtocolsConfigureMessageOutput> {
     // generate requester persona if not given
-    const requester = input?.requester ?? await TestDataGenerator.generatePersona();
-
-    // generate target DID if not given
-    let targetDid = input?.targetDid;
-    if (!targetDid) {
-      // if `requesterDid` and `targetDid` are both not given in input,
-      // use the same DID as the `requesterDid` to pass authorization in tests by default.
-      if (!input?.requester) {
-        targetDid = requester.did;
-      } else {
-        const didSuffix = TestDataGenerator.randomString(32);
-        targetDid = `did:example:${didSuffix}`;
-      }
-    }
+    const { requester, target } = await TestDataGenerator.generateRequesterAndTargetPersonas(input);
 
     // generate protocol definition if not given
     let definition = input?.protocolDefinition;
@@ -213,7 +200,7 @@ export class TestDataGenerator {
     };
 
     const options: ProtocolsConfigureOptions = {
-      target   : targetDid,
+      target   : target.did,
       protocol : input?.protocol ?? TestDataGenerator.randomString(20),
       definition,
       signatureInput
@@ -223,7 +210,7 @@ export class TestDataGenerator {
 
     return {
       requester,
-      targetDid,
+      target,
       message
     };
   };
@@ -235,20 +222,7 @@ export class TestDataGenerator {
    */
   public static async generateProtocolsQueryMessage(input?: GenerateProtocolsQueryMessageInput): Promise<GenerateProtocolsQueryMessageOutput> {
     // generate requester persona if not given
-    const requester = input?.requester ?? await TestDataGenerator.generatePersona();
-
-    // generate target DID if not given
-    let targetDid = input?.targetDid;
-    if (!targetDid) {
-      // if `requesterDid` and `targetDid` are both not given in input,
-      // use the same DID as the `requesterDid` to pass authorization in tests by default.
-      if (!input?.requester.did) {
-        targetDid = requester.did;
-      } else {
-        const didSuffix = TestDataGenerator.randomString(32);
-        targetDid = `did:example:${didSuffix}`;
-      }
-    }
+    const { requester, target } = await TestDataGenerator.generateRequesterAndTargetPersonas(input);
 
     const signatureInput = {
       jwkPrivate      : requester.keyPair.privateJwk,
@@ -259,7 +233,7 @@ export class TestDataGenerator {
     };
 
     const options: ProtocolsQueryOptions = {
-      target : targetDid,
+      target : target.did,
       filter : input?.filter,
       signatureInput
     };
@@ -269,7 +243,7 @@ export class TestDataGenerator {
 
     return {
       requester,
-      targetDid,
+      target,
       message,
     };
   };
@@ -544,5 +518,25 @@ export class TestDataGenerator {
     }
 
     return segments[1];
+  }
+
+  /**
+   * Generates requester and target personas if not given.
+   * If `requester` and `target` are both not given, use the same persona to pass authorization in tests by default.
+   */
+  private static async generateRequesterAndTargetPersonas(
+    input?: { requester?: Persona, target?: Persona}
+  ): Promise<{ requester: Persona, target: Persona}> {
+    // generate requester & target persona if not given
+    let requester = input?.requester ?? await TestDataGenerator.generatePersona();
+    const target = input?.target ?? await TestDataGenerator.generatePersona();
+
+    // if `requester` and `target` are both not given, use the same persona to pass authorization in tests by default
+    if (input?.requester === undefined &&
+        input?.target === undefined) {
+      requester = target;
+    }
+
+    return { requester, target };
   }
 }

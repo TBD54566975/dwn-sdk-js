@@ -214,7 +214,7 @@ describe('handleCollectionsWrite()', () => {
 
         const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
           requester : alice,
-          targetDid : alice.did,
+          target    : alice,
           protocol,
           protocolDefinition
         });
@@ -297,7 +297,7 @@ describe('handleCollectionsWrite()', () => {
 
       const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
         requester : alice,
-        targetDid : alice.did,
+        target    : alice,
         protocol,
         protocolDefinition
       });
@@ -348,8 +348,8 @@ describe('handleCollectionsWrite()', () => {
 
       const vcIssuerDidResolverStub = TestStubGenerator.createDidResolverStub(vcIssuerDid, vcIssuerKeyId, vcIssuerKeyPair.publicJwk);
 
-      const vcIssuerCredentialResponseReply = await handleCollectionsWrite(credentialResponseMessageData.message, messageStore, vcIssuerDidResolverStub);
-      expect(vcIssuerCredentialResponseReply.status.code).to.equal(202);
+      const credentialResponseReply = await handleCollectionsWrite(credentialResponseMessageData.message, messageStore, vcIssuerDidResolverStub);
+      expect(credentialResponseReply.status.code).to.equal(202);
 
       // verify VC issuer's message got written to the DB
       const messageDataForQueryingCredentialResponse = await TestDataGenerator.generateCollectionsQueryMessage({
@@ -407,7 +407,7 @@ describe('handleCollectionsWrite()', () => {
 
       const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
         requester : alice,
-        targetDid : alice.did,
+        target    : alice,
         protocol,
         protocolDefinition
       });
@@ -459,9 +459,9 @@ describe('handleCollectionsWrite()', () => {
 
       const vcIssuerDidResolverStub = TestStubGenerator.createDidResolverStub(fakevcIssuerDid, fakevcIssuerKeyId, fakevcIssuerKeyPair.publicJwk);
 
-      const vcIssuerCredentialResponseReply = await handleCollectionsWrite(credentialResponseMessageData.message, messageStore, vcIssuerDidResolverStub);
-      expect(vcIssuerCredentialResponseReply.status.code).to.equal(401);
-      expect(vcIssuerCredentialResponseReply.status.detail).to.contain('unexpected inbound message author');
+      const credentialResponseReply = await handleCollectionsWrite(credentialResponseMessageData.message, messageStore, vcIssuerDidResolverStub);
+      expect(credentialResponseReply.status.code).to.equal(401);
+      expect(credentialResponseReply.status.detail).to.contain('unexpected inbound message author');
     });
   });
 

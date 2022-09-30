@@ -1,6 +1,5 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { ed25519 } from '../../../../src/jose/algorithms/signing/ed25519';
 import { handleProtocolsConfigure } from '../../../../src/interfaces/protocols/handlers/protocols-configure';
 import { handleProtocolsQuery } from '../../../../src/interfaces/protocols/handlers/protocols-query';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level';
@@ -39,9 +38,9 @@ describe('handleProtocolsQuery()', () => {
       const didResolverStub = TestStubGenerator.createDidResolverStub(alice.did, alice.keyId, alice.keyPair.publicJwk);
 
       // insert three messages into DB, two with matching protocol
-      const message1Data = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, targetDid: alice.did });
-      const message2Data = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, targetDid: alice.did });
-      const message3Data = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, targetDid: alice.did });
+      const message1Data = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, target: alice });
+      const message2Data = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, target: alice });
+      const message3Data = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, target: alice });
 
       await handleProtocolsConfigure(message1Data.message, messageStore, didResolverStub);
       await handleProtocolsConfigure(message2Data.message, messageStore, didResolverStub);
@@ -50,7 +49,7 @@ describe('handleProtocolsQuery()', () => {
       // testing singular conditional query
       const queryMessageData = await TestDataGenerator.generateProtocolsQueryMessage({
         requester : alice,
-        targetDid : alice.did,
+        target    : alice,
         filter    : { protocol: message1Data.message.descriptor.protocol }
       });
 
@@ -62,7 +61,7 @@ describe('handleProtocolsQuery()', () => {
       // testing fetch-all query without filter
       const queryMessageData2 = await TestDataGenerator.generateProtocolsQueryMessage({
         requester : alice,
-        targetDid : alice.did
+        target    : alice
       });
 
       const reply2 = await handleProtocolsQuery(queryMessageData2.message, messageStore, didResolverStub);
