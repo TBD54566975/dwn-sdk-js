@@ -1,16 +1,18 @@
+import chai, { expect } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
+import sinon from 'sinon';
 import { base64url } from 'multiformats/bases/base64';
 import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/types';
 import { DIDResolutionResult, DIDResolver } from '../../../../src/did/did-resolver';
 import { GenerateCollectionsWriteMessageOutput, TestDataGenerator } from '../../../utils/test-data-generator';
 import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query';
 import { handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write';
+import { handleProtocolsConfigure } from '../../../../src/interfaces/protocols/handlers/protocols-configure';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level';
+import { ProtocolDefinition } from '../../../../src';
 import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
 import { TestStubGenerator } from '../../../utils/test-stub-generator';
 import { v4 as uuidv4 } from 'uuid';
-import chai, { expect } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
-import sinon from 'sinon';
 
 chai.use(chaiAsPromised);
 
@@ -43,7 +45,7 @@ describe('handleCollectionsWrite()', () => {
       const requesterDid = targetDid;
       const recordId = uuidv4();
       const data1 = new TextEncoder().encode('data1');
-      const collectionsWriteMessageData = await TestDataGenerator.generateCollectionWriteMessage({ targetDid, requesterDid, recordId, data: data1 });
+      const collectionsWriteMessageData = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid, requesterDid, recordId, data: data1 });
       const { requesterKeyId, requesterKeyPair } = collectionsWriteMessageData;
 
       // setting up a stub did resolver
@@ -52,7 +54,7 @@ describe('handleCollectionsWrite()', () => {
       const collectionsWriteReply = await handleCollectionsWrite(collectionsWriteMessageData.message, messageStore, didResolverStub);
       expect(collectionsWriteReply.status.code).to.equal(202);
 
-      const collectionsQueryMessageData = await TestDataGenerator.generateCollectionQueryMessage({
+      const collectionsQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
         targetDid,
         requesterDid,
         requesterKeyId,
@@ -69,7 +71,7 @@ describe('handleCollectionsWrite()', () => {
       // generate and write a new CollectionsWrite to overwrite the existing record
       // a new CollectionsWrite by default will have a later `dateCreate` due to the default Date.now() call
       const data2 = new TextEncoder().encode('data2');
-      const newCollectionsWriteMessageData = await TestDataGenerator.generateCollectionWriteMessage({
+      const newCollectionsWriteMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
         targetDid,
         requesterDid,
         requesterKeyId,
@@ -104,7 +106,7 @@ describe('handleCollectionsWrite()', () => {
       const requesterDid = targetDid;
       const recordId = uuidv4();
       const dateCreated = Date.now();
-      const collectionsWriteMessageData1 = await TestDataGenerator.generateCollectionWriteMessage({
+      const collectionsWriteMessageData1 = await TestDataGenerator.generateCollectionsWriteMessage({
         targetDid,
         requesterDid,
         recordId,
@@ -113,7 +115,7 @@ describe('handleCollectionsWrite()', () => {
       });
       const { requesterKeyId, requesterKeyPair } = collectionsWriteMessageData1;
 
-      const collectionsWriteMessageData2 = await TestDataGenerator.generateCollectionWriteMessage({
+      const collectionsWriteMessageData2 = await TestDataGenerator.generateCollectionsWriteMessage({
         targetDid,
         requesterDid,
         requesterKeyId,
@@ -142,7 +144,7 @@ describe('handleCollectionsWrite()', () => {
       expect(collectionsWriteReply.status.code).to.equal(202);
 
       // query to fetch the record
-      const collectionsQueryMessageData = await TestDataGenerator.generateCollectionQueryMessage({
+      const collectionsQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
         targetDid,
         requesterDid,
         requesterKeyId,
@@ -189,13 +191,14 @@ describe('handleCollectionsWrite()', () => {
         // scenario, Bob writes into Alice's DWN given Alice's "email" protocol allow-anyone rule
 
         // write a protocol definition with an allow-anyone rule
-        const protocolDefinition = {
-          recordTypes: {
+        const protocol = 'email-protocol';
+        const protocolDefinition: ProtocolDefinition = {
+          labels: {
             email: {
               schema: 'email'
             }
           },
-          structures: {
+          records: {
             email: {
               allow: {
                 anyone: {
@@ -207,46 +210,29 @@ describe('handleCollectionsWrite()', () => {
             }
           }
         };
-        const aliceDid = 'did:example:alice';
-        const emailProtocolId = uuidv4();
-        const encodedProtocolDefinition = new TextEncoder().encode(JSON.stringify(protocolDefinition));
-        const protocolWriteMessageData = await TestDataGenerator.generateCollectionWriteMessage({
-          targetDid    : aliceDid,
-          requesterDid : aliceDid,
-          recordId     : emailProtocolId,
-          schema       : 'dwn-protocol',
-          data         : encodedProtocolDefinition
+        const alice = await TestDataGenerator.generatePersona();
+
+        const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+          requester : alice,
+          target    : alice,
+          protocol,
+          protocolDefinition
         });
-        const aliceKeyId = protocolWriteMessageData.requesterKeyId;
-        const aliceKeyPair = protocolWriteMessageData.requesterKeyPair;
 
         // setting up a stub did resolver
-        const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(aliceDid, aliceKeyId, aliceKeyPair.publicJwk);
+        const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(alice.did, alice.keyId, alice.keyPair.publicJwk);
 
-        const protocolWriteReply = await handleCollectionsWrite(protocolWriteMessageData.message, messageStore, aliceDidResolverStub);
+        const protocolWriteReply = await handleProtocolsConfigure(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
         expect(protocolWriteReply.status.code).to.equal(202);
-
-        // verify the protocol got written to the DB
-        const collectionsQueryMessageData = await TestDataGenerator.generateCollectionQueryMessage({
-          targetDid        : aliceDid,
-          requesterDid     : aliceDid,
-          requesterKeyId   : aliceKeyId,
-          requesterKeyPair : aliceKeyPair,
-          filter           : { recordId: emailProtocolId }
-        });
-        const collectionsQueryReply = await handleCollectionsQuery(collectionsQueryMessageData.message, messageStore, aliceDidResolverStub);
-        expect(collectionsQueryReply.status.code).to.equal(200);
-        expect(collectionsQueryReply.entries?.length).to.equal(1);
-        expect((collectionsQueryReply.entries![0] as CollectionsWriteMessage).encodedData).to.equal(base64url.baseEncode(encodedProtocolDefinition));
 
         // generate a collections write message from bob allowed by anyone
         const bobDid = 'did:example:bob';
         const bobData = new TextEncoder().encode('data from bob');
-        const emailMessageDataFromBob = await TestDataGenerator.generateCollectionWriteMessage(
+        const emailMessageDataFromBob = await TestDataGenerator.generateCollectionsWriteMessage(
           {
-            targetDid    : aliceDid,
             requesterDid : bobDid,
-            protocol     : emailProtocolId,
+            targetDid    : alice.did,
+            protocol,
             contextId    : 'bob email X',
             schema       : 'email',
             data         : bobData
@@ -261,11 +247,11 @@ describe('handleCollectionsWrite()', () => {
         expect(bobWriteReply.status.code).to.equal(202);
 
         // verify bob's message got written to the DB
-        const messageDataForQueryingBobsWrite = await TestDataGenerator.generateCollectionQueryMessage({
-          targetDid        : aliceDid,
-          requesterDid     : aliceDid,
-          requesterKeyId   : aliceKeyId,
-          requesterKeyPair : aliceKeyPair,
+        const messageDataForQueryingBobsWrite = await TestDataGenerator.generateCollectionsQueryMessage({
+          targetDid        : alice.did,
+          requesterDid     : alice.did,
+          requesterKeyId   : alice.keyId,
+          requesterKeyPair : alice.keyPair,
           filter           : { recordId: emailMessageDataFromBob.message.descriptor.recordId }
         });
         const bobRecordQueryReply = await handleCollectionsQuery(messageDataForQueryingBobsWrite.message, messageStore, aliceDidResolverStub);
@@ -276,11 +262,12 @@ describe('handleCollectionsWrite()', () => {
     });
 
     it('should allow write with recipient rule', async () => {
-      // scenario: FPI writes into Alice's DWN an asynchronous credential response upon receiving Alice's credential application
+      // scenario: VC issuer writes into Alice's DWN an asynchronous credential response upon receiving Alice's credential application
 
       // write a protocol definition with an allow-anyone rule
-      const protocolDefinition = {
-        recordTypes: {
+      const protocol = 'credential-issuance';
+      const protocolDefinition: ProtocolDefinition = {
+        labels: {
           credentialApplication: {
             schema: 'https://identity.foundation/schemas/credential-application'
           },
@@ -288,7 +275,7 @@ describe('handleCollectionsWrite()', () => {
             schema: 'https://identity.foundation/schemas/credential-response'
           }
         },
-        structures: {
+        records: {
           credentialApplication: {
             records: {
               credentialResponse: {
@@ -305,37 +292,34 @@ describe('handleCollectionsWrite()', () => {
           }
         }
       };
-      const aliceDid = 'did:example:alice';
-      const protocolId = uuidv4();
-      const encodedProtocolDefinition = new TextEncoder().encode(JSON.stringify(protocolDefinition));
-      const protocolWriteMessageData = await TestDataGenerator.generateCollectionWriteMessage({
-        targetDid    : aliceDid,
-        requesterDid : aliceDid,
-        recordId     : protocolId,
-        schema       : 'dwn-protocol',
-        data         : encodedProtocolDefinition
+
+      const alice = await TestDataGenerator.generatePersona();
+
+      const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+        requester : alice,
+        target    : alice,
+        protocol,
+        protocolDefinition
       });
-      const aliceKeyId = protocolWriteMessageData.requesterKeyId;
-      const aliceKeyPair = protocolWriteMessageData.requesterKeyPair;
 
       // setting up a stub did resolver
-      const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(aliceDid, aliceKeyId, aliceKeyPair.publicJwk);
+      const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(alice.did, alice.keyId, alice.keyPair.publicJwk);
 
-      const protocolWriteReply = await handleCollectionsWrite(protocolWriteMessageData.message, messageStore, aliceDidResolverStub);
+      const protocolWriteReply = await handleProtocolsConfigure(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
       expect(protocolWriteReply.status.code).to.equal(202);
 
-      // write a credential application to Alice's DWN to simulate that she has sent a credential application to the PFI
-      const pfiDid = 'did:example:pfi';
+      // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
+      const vcIssuerDid = 'did:example:vc-issuer';
       const credentialApplicationContextId = 'alice credential application thread';
       const credentialApplicationRecordId = uuidv4();
       const encodedCredentialApplication = new TextEncoder().encode('credential application data');
-      const credentialApplicationMessageData = await TestDataGenerator.generateCollectionWriteMessage({
-        requesterDid     : aliceDid,
-        requesterKeyId   : aliceKeyId,
-        requesterKeyPair : aliceKeyPair,
-        targetDid        : aliceDid,
-        recipientDid     : pfiDid,
-        protocol         : protocolId,
+      const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+        requesterDid     : alice.did,
+        requesterKeyId   : alice.keyId,
+        requesterKeyPair : alice.keyPair,
+        targetDid        : alice.did,
+        recipientDid     : vcIssuerDid,
+        protocol ,
         contextId        : credentialApplicationContextId,
         recordId         : credentialApplicationRecordId,
         schema           : 'https://identity.foundation/schemas/credential-application',
@@ -345,34 +329,34 @@ describe('handleCollectionsWrite()', () => {
       const credentialApplicationReply = await handleCollectionsWrite(credentialApplicationMessageData.message, messageStore, aliceDidResolverStub);
       expect(credentialApplicationReply.status.code).to.equal(202);
 
-      // generate a credential application response message from PFI
+      // generate a credential application response message from VC issuer
       const encodedCredentialResponse = new TextEncoder().encode('credential response data');
-      const credentialResponseMessageData = await TestDataGenerator.generateCollectionWriteMessage(
+      const credentialResponseMessageData = await TestDataGenerator.generateCollectionsWriteMessage(
         {
-          targetDid    : aliceDid,
-          recipientDid : aliceDid,
-          requesterDid : pfiDid,
-          protocol     : protocolId,
+          targetDid    : alice.did,
+          recipientDid : alice.did,
+          requesterDid : vcIssuerDid,
+          protocol ,
           contextId    : credentialApplicationContextId,
           parentId     : credentialApplicationRecordId,
           schema       : 'https://identity.foundation/schemas/credential-response',
           data         : encodedCredentialResponse
         }
       );
-      const pfiKeyId = credentialResponseMessageData.requesterKeyId;
-      const pfiKeyPair = credentialResponseMessageData.requesterKeyPair;
+      const vcIssuerKeyId = credentialResponseMessageData.requesterKeyId;
+      const vcIssuerKeyPair = credentialResponseMessageData.requesterKeyPair;
 
-      const pfiDidResolverStub = TestStubGenerator.createDidResolverStub(pfiDid, pfiKeyId, pfiKeyPair.publicJwk);
+      const vcIssuerDidResolverStub = TestStubGenerator.createDidResolverStub(vcIssuerDid, vcIssuerKeyId, vcIssuerKeyPair.publicJwk);
 
-      const pfiCredentialResponseReply = await handleCollectionsWrite(credentialResponseMessageData.message, messageStore, pfiDidResolverStub);
-      expect(pfiCredentialResponseReply.status.code).to.equal(202);
+      const credentialResponseReply = await handleCollectionsWrite(credentialResponseMessageData.message, messageStore, vcIssuerDidResolverStub);
+      expect(credentialResponseReply.status.code).to.equal(202);
 
-      // verify PFI's message got written to the DB
-      const messageDataForQueryingCredentialResponse = await TestDataGenerator.generateCollectionQueryMessage({
-        targetDid        : aliceDid,
-        requesterDid     : aliceDid,
-        requesterKeyId   : aliceKeyId,
-        requesterKeyPair : aliceKeyPair,
+      // verify VC issuer's message got written to the DB
+      const messageDataForQueryingCredentialResponse = await TestDataGenerator.generateCollectionsQueryMessage({
+        targetDid        : alice.did,
+        requesterDid     : alice.did,
+        requesterKeyId   : alice.keyId,
+        requesterKeyPair : alice.keyPair,
         filter           : { recordId: credentialResponseMessageData.message.descriptor.recordId }
       });
       const applicationResponseQueryReply = await handleCollectionsQuery(
@@ -387,11 +371,13 @@ describe('handleCollectionsWrite()', () => {
     });
 
     it('should block unauthorized write with recipient rule', async () => {
-      // scenario: fake FPI attempts write into Alice's DWN a credential response upon learning the ID of Alice's credential application to actual PFI
+      // scenario: fake VC issuer attempts write into Alice's DWN a credential response
+      // upon learning the ID of Alice's credential application to actual issuer
 
       // write a protocol definition with an allow-anyone rule
-      const protocolDefinition = {
-        recordTypes: {
+      const protocol = 'credential-issuance';
+      const protocolDefinition: ProtocolDefinition = {
+        labels: {
           credentialApplication: {
             schema: 'https://identity.foundation/schemas/credential-application'
           },
@@ -399,7 +385,7 @@ describe('handleCollectionsWrite()', () => {
             schema: 'https://identity.foundation/schemas/credential-response'
           }
         },
-        structures: {
+        records: {
           credentialApplication: {
             records: {
               credentialResponse: {
@@ -416,37 +402,34 @@ describe('handleCollectionsWrite()', () => {
           }
         }
       };
-      const aliceDid = 'did:example:alice';
-      const protocolId = uuidv4();
-      const encodedProtocolDefinition = new TextEncoder().encode(JSON.stringify(protocolDefinition));
-      const protocolWriteMessageData = await TestDataGenerator.generateCollectionWriteMessage({
-        targetDid    : aliceDid,
-        requesterDid : aliceDid,
-        recordId     : protocolId,
-        schema       : 'dwn-protocol',
-        data         : encodedProtocolDefinition
+
+      const alice = await TestDataGenerator.generatePersona();
+
+      const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+        requester : alice,
+        target    : alice,
+        protocol,
+        protocolDefinition
       });
-      const aliceKeyId = protocolWriteMessageData.requesterKeyId;
-      const aliceKeyPair = protocolWriteMessageData.requesterKeyPair;
 
       // setting up a stub did resolver
-      const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(aliceDid, aliceKeyId, aliceKeyPair.publicJwk);
+      const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(alice.did, alice.keyId, alice.keyPair.publicJwk);
 
-      const protocolWriteReply = await handleCollectionsWrite(protocolWriteMessageData.message, messageStore, aliceDidResolverStub);
+      const protocolWriteReply = await handleCollectionsWrite(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
       expect(protocolWriteReply.status.code).to.equal(202);
 
-      // write a credential application to Alice's DWN to simulate that she has sent a credential application to the PFI
-      const pfiDid = 'did:example:pfi';
+      // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
+      const vcIssuerDid = 'did:example:vc-issuer';
       const credentialApplicationContextId = 'alice credential application thread';
       const credentialApplicationRecordId = uuidv4();
       const encodedCredentialApplication = new TextEncoder().encode('credential application data');
-      const credentialApplicationMessageData = await TestDataGenerator.generateCollectionWriteMessage({
-        requesterDid     : aliceDid,
-        requesterKeyId   : aliceKeyId,
-        requesterKeyPair : aliceKeyPair,
-        targetDid        : aliceDid,
-        recipientDid     : pfiDid,
-        protocol         : protocolId,
+      const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+        requesterDid     : alice.did,
+        requesterKeyId   : alice.keyId,
+        requesterKeyPair : alice.keyPair,
+        targetDid        : alice.did,
+        recipientDid     : vcIssuerDid,
+        protocol ,
         contextId        : credentialApplicationContextId,
         recordId         : credentialApplicationRecordId,
         schema           : 'https://identity.foundation/schemas/credential-application',
@@ -456,34 +439,34 @@ describe('handleCollectionsWrite()', () => {
       const credentialApplicationReply = await handleCollectionsWrite(credentialApplicationMessageData.message, messageStore, aliceDidResolverStub);
       expect(credentialApplicationReply.status.code).to.equal(202);
 
-      // generate a credential application response message from a fake PFI
-      const fakePfiDid = 'did:example:fake-pfi';
+      // generate a credential application response message from a fake VC issuer
+      const fakevcIssuerDid = 'did:example:fake-vc-issuer';
       const encodedCredentialResponse = new TextEncoder().encode('credential response data');
-      const credentialResponseMessageData = await TestDataGenerator.generateCollectionWriteMessage(
+      const credentialResponseMessageData = await TestDataGenerator.generateCollectionsWriteMessage(
         {
-          targetDid    : aliceDid,
-          recipientDid : aliceDid,
-          requesterDid : fakePfiDid,
-          protocol     : protocolId,
+          targetDid    : alice.did,
+          recipientDid : alice.did,
+          requesterDid : fakevcIssuerDid,
+          protocol ,
           contextId    : credentialApplicationContextId,
           parentId     : credentialApplicationRecordId,
           schema       : 'https://identity.foundation/schemas/credential-response',
           data         : encodedCredentialResponse
         }
       );
-      const fakePfiKeyId = credentialResponseMessageData.requesterKeyId;
-      const fakePfiKeyPair = credentialResponseMessageData.requesterKeyPair;
+      const fakevcIssuerKeyId = credentialResponseMessageData.requesterKeyId;
+      const fakevcIssuerKeyPair = credentialResponseMessageData.requesterKeyPair;
 
-      const pfiDidResolverStub = TestStubGenerator.createDidResolverStub(fakePfiDid, fakePfiKeyId, fakePfiKeyPair.publicJwk);
+      const vcIssuerDidResolverStub = TestStubGenerator.createDidResolverStub(fakevcIssuerDid, fakevcIssuerKeyId, fakevcIssuerKeyPair.publicJwk);
 
-      const pfiCredentialResponseReply = await handleCollectionsWrite(credentialResponseMessageData.message, messageStore, pfiDidResolverStub);
-      expect(pfiCredentialResponseReply.status.code).to.equal(401);
-      expect(pfiCredentialResponseReply.status.detail).to.contain('unexpected inbound message author');
+      const credentialResponseReply = await handleCollectionsWrite(credentialResponseMessageData.message, messageStore, vcIssuerDidResolverStub);
+      expect(credentialResponseReply.status.code).to.equal(401);
+      expect(credentialResponseReply.status.detail).to.contain('unexpected inbound message author');
     });
   });
 
   it('should return 400 if actual CID of `data` mismatches with `dataCid` in descriptor', async () => {
-    const messageData = await TestDataGenerator.generateCollectionWriteMessage();
+    const messageData = await TestDataGenerator.generateCollectionsWriteMessage();
     messageData.message.encodedData = base64url.baseEncode(TestDataGenerator.randomBytes(50));
 
     const didResolverStub = sinon.createStubInstance(DIDResolver);
@@ -496,7 +479,7 @@ describe('handleCollectionsWrite()', () => {
   });
 
   it('should return 401 if signature check fails', async () => {
-    const messageData = await TestDataGenerator.generateCollectionWriteMessage();
+    const messageData = await TestDataGenerator.generateCollectionsWriteMessage();
     const { requesterDid, requesterKeyId } = messageData;
 
     // setting up a stub did resolver & message store
@@ -513,7 +496,7 @@ describe('handleCollectionsWrite()', () => {
   it('should return 401 if requester is not the same as the target', async () => {
     const requesterDid = 'did:example:alice';
     const targetDid = 'did:example:bob'; // requester and target are different
-    const { message, requesterKeyId, requesterKeyPair } = await TestDataGenerator.generateCollectionQueryMessage({ requesterDid, targetDid });
+    const { message, requesterKeyId, requesterKeyPair } = await TestDataGenerator.generateCollectionsQueryMessage({ requesterDid, targetDid });
 
     // setting up a stub did resolver & message store
     const didResolverStub = TestStubGenerator.createDidResolverStub(requesterDid, requesterKeyId, requesterKeyPair.publicJwk);
@@ -525,7 +508,7 @@ describe('handleCollectionsWrite()', () => {
   });
 
   it('should return 500 if encounter an internal error', async () => {
-    const messageData = await TestDataGenerator.generateCollectionWriteMessage();
+    const messageData = await TestDataGenerator.generateCollectionsWriteMessage();
     const { requesterDid, requesterKeyId, requesterKeyPair } = messageData;
 
     // setting up a stub method resolver & message store

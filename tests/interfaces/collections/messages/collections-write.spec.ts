@@ -62,7 +62,7 @@ describe('CollectionsWrite', () => {
 
   describe('verifyAuth', () => {
     it('should throw if verification signature check fails', async () => {
-      const messageData = await TestDataGenerator.generateCollectionWriteMessage();
+      const messageData = await TestDataGenerator.generateCollectionsWriteMessage();
       const { requesterDid, requesterKeyId } = messageData;
 
       // setting up a stub method resolver
@@ -82,7 +82,7 @@ describe('CollectionsWrite', () => {
   describe('compareCreationTime', () => {
     it('should return 0 if age is same', async () => {
       const dateCreated = Date.now();
-      const a = (await TestDataGenerator.generateCollectionWriteMessage({ dateCreated })).message;
+      const a = (await TestDataGenerator.generateCollectionsWriteMessage({ dateCreated })).message;
       const b = JSON.parse(JSON.stringify(a)); // create a deep copy of `a`
 
       const compareResult = await CollectionsWrite.compareCreationTime(a, b);
@@ -92,11 +92,11 @@ describe('CollectionsWrite', () => {
 
   describe('getNewestMessage', () => {
     it('should return the newest message', async () => {
-      const a = (await TestDataGenerator.generateCollectionWriteMessage()).message;
+      const a = (await TestDataGenerator.generateCollectionsWriteMessage()).message;
       await sleep(1); // need to sleep for at least one millisecond else some messages get generated with the same time
-      const b = (await TestDataGenerator.generateCollectionWriteMessage()).message;
+      const b = (await TestDataGenerator.generateCollectionsWriteMessage()).message;
       await sleep(1);
-      const c = (await TestDataGenerator.generateCollectionWriteMessage()).message; // c is the newest since its created last
+      const c = (await TestDataGenerator.generateCollectionsWriteMessage()).message; // c is the newest since its created last
 
       const newestMessage = await CollectionsWrite.getNewestMessage([b, c, a]);
       if (newestMessage?.descriptor.recordId !== c.descriptor.recordId) {
@@ -111,7 +111,7 @@ describe('CollectionsWrite', () => {
   describe('getCid', () => {
     it('should return the same value with or without `encodedData`', async () => {
       const dateCreated = Date.now();
-      const messageData = await TestDataGenerator.generateCollectionWriteMessage({ dateCreated });
+      const messageData = await TestDataGenerator.generateCollectionsWriteMessage({ dateCreated });
 
       const messageWithoutEncodedData = { ...messageData.message };
       delete messageWithoutEncodedData.encodedData;

@@ -23,45 +23,40 @@ import { removeUndefinedProperties } from '../../src/utils/object';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1';
 import { v4 as uuidv4 } from 'uuid';
 
+/**
+ * A logical grouping of user data used to generate test messages.
+ */
+export type Persona = {
+  did: string;
+  keyId: string;
+  keyPair: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
+};
+
 export type GenerateProtocolsConfigureMessageInput = {
-  targetDid?: string;
-  requesterDid?: string;
-  requesterKeyId?: string;
-  requesterKeyPair?: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
+  requester?: Persona;
+  target?: Persona;
   protocol?: string;
   protocolDefinition?: ProtocolDefinition;
 };
 
 export type GenerateProtocolsConfigureMessageOutput = {
+  requester: Persona;
+  target: Persona;
   message: ProtocolsConfigureMessage;
-  /**
-   * method name without the `did:` prefix. e.g. "ion"
-   */
-  requesterDidMethod: string;
-  requesterDid: string;
-  requesterKeyId: string;
-  requesterKeyPair: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
 };
 
 export type GenerateProtocolsQueryMessageInput = {
-  targetDid?: string;
-  requesterDid?: string;
-  requesterKeyId?: string;
-  requesterKeyPair?: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
+  requester?: Persona;
+  target?: Persona;
   filter?: {
     protocol: string;
   }
 };
 
 export type GenerateProtocolsQueryMessageOutput = {
+  requester: Persona;
+  target: Persona;
   message: ProtocolsQueryMessage;
-  /**
-   * method name without the `did:` prefix. e.g. "ion"
-   */
-  requesterDidMethod: string;
-  requesterDid: string;
-  requesterKeyId: string;
-  requesterKeyPair: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
 };
 
 export type GenerateCollectionsWriteMessageInput = {
@@ -144,6 +139,34 @@ export type GenerateHandlersWriteMessageOutput = {
  * Utility class for generating data for testing.
  */
 export class TestDataGenerator {
+
+  /**
+   * Generates a persona.
+   */
+  public static async generatePersona(input?: Partial<Persona>): Promise<Persona> {
+    // generate DID if not given
+    let did = input?.did;
+    if (!did) {
+      const didSuffix = TestDataGenerator.randomString(32);
+      did = `did:example:${didSuffix}`;
+    }
+
+    // generate requester key ID if not given
+    const keyIdSuffix = TestDataGenerator.randomString(10);
+    const keyId = input?.keyId ?? `${did}#${keyIdSuffix}`;
+
+    // generate requester key pair if not given
+    const keyPair = input?.keyPair ?? await secp256k1.generateKeyPair();
+
+    const persona: Persona = {
+      did,
+      keyId,
+      keyPair
+    };
+
+    return persona;
+  }
+
   /**
    * Generates a ProtocolsConfigure message for testing.
    * Optional parameters are generated if not given.
@@ -152,54 +175,32 @@ export class TestDataGenerator {
   public static async generateProtocolsConfigureMessage(
     input?: GenerateProtocolsConfigureMessageInput
   ): Promise<GenerateProtocolsConfigureMessageOutput> {
-    // generate requester DID if not given
-    let requesterDid = input?.requesterDid;
-    if (!requesterDid) {
-      const didSuffix = TestDataGenerator.randomString(32);
-      requesterDid = `did:example:${didSuffix}`;
-    }
-    const requesterDidMethod = TestDataGenerator.getDidMethodName(requesterDid);
+    // generate requester persona if not given
+    const { requester, target } = await TestDataGenerator.generateRequesterAndTargetPersonas(input);
 
-    // generate requester key ID if not given
-    const requesterKeyId = input?.requesterKeyId ?? `${requesterDid}#key1`;
+    // generate protocol definition if not given
+    let definition = input?.protocolDefinition;
+    if (!definition) {
+      const generatedLabel = 'record' + TestDataGenerator.randomString(10);
 
-    // generate requester key pair if not given
-    let requesterKeyPair = input?.requesterKeyPair;
-    if (!requesterKeyPair) {
-      requesterKeyPair = await secp256k1.generateKeyPair();
+      definition = {
+        labels  : { },
+        records : { }
+      };
+      definition.labels[generatedLabel] = { schema: `test-object` };
+      definition.records[generatedLabel] = { };
     }
 
     const signatureInput = {
-      jwkPrivate      : requesterKeyPair.privateJwk,
+      jwkPrivate      : requester.keyPair.privateJwk,
       protectedHeader : {
-        alg : requesterKeyPair.privateJwk.alg!,
-        kid : requesterKeyId
+        alg : requester.keyPair.privateJwk.alg!,
+        kid : requester.keyId
       }
     };
-
-    // generate target DID if not given
-    let targetDid = input?.targetDid;
-    if (!targetDid) {
-      // if both `requesterDid` and `targetDid` are both not given in input,
-      // use the same DID as the `requesterDid` to pass authorization in tests by default.
-      if (!input?.requesterDid) {
-        targetDid = requesterDid;
-      } else {
-        const didSuffix = TestDataGenerator.randomString(32);
-        targetDid = `did:example:${didSuffix}`;
-      }
-    }
-
-    const generatedLabel = 'record' + TestDataGenerator.randomString(10);
-    const definition = {
-      labels  : { },
-      records : { }
-    };
-    definition.labels[generatedLabel] = { schema: `test-object` };
-    definition.records[generatedLabel] = { };
 
     const options: ProtocolsConfigureOptions = {
-      target   : targetDid,
+      target   : target.did,
       protocol : input?.protocol ?? TestDataGenerator.randomString(20),
       definition,
       signatureInput
@@ -208,60 +209,31 @@ export class TestDataGenerator {
     const message = await ProtocolsConfigure.create(options);
 
     return {
-      message,
-      requesterDid,
-      requesterDidMethod,
-      requesterKeyId,
-      requesterKeyPair
+      requester,
+      target,
+      message
     };
   };
 
 
   /**
    * Generates a ProtocolsQuery message for testing.
-   * If both `requesterDid` and `targetDid` are not given, the generator will use the same DID for both to pass authorization in tests by default.
+   * if `requesterDid` and `targetDid` are not given, the generator will use the same DID for both to pass authorization in tests by default.
    */
   public static async generateProtocolsQueryMessage(input?: GenerateProtocolsQueryMessageInput): Promise<GenerateProtocolsQueryMessageOutput> {
-    // generate requester DID if not given
-    let requesterDid = input?.requesterDid;
-    if (!requesterDid) {
-      const didSuffix = TestDataGenerator.randomString(32);
-      requesterDid = `did:example:${didSuffix}`;
-    }
-    const requesterDidMethod = TestDataGenerator.getDidMethodName(requesterDid);
-
-    // generate requester key ID if not given
-    const requesterKeyId = input?.requesterKeyId ?? `${requesterDid}#key1`;
-
-    // generate requester key pair if not given
-    let requesterKeyPair = input?.requesterKeyPair;
-    if (!requesterKeyPair) {
-      requesterKeyPair = await secp256k1.generateKeyPair();
-    }
+    // generate requester persona if not given
+    const { requester, target } = await TestDataGenerator.generateRequesterAndTargetPersonas(input);
 
     const signatureInput = {
-      jwkPrivate      : requesterKeyPair.privateJwk,
+      jwkPrivate      : requester.keyPair.privateJwk,
       protectedHeader : {
-        alg : requesterKeyPair.privateJwk.alg!,
-        kid : requesterKeyId
+        alg : requester.keyPair.privateJwk.alg!,
+        kid : requester.keyId
       }
     };
 
-    // generate target DID if not given
-    let targetDid = input?.targetDid;
-    if (!targetDid) {
-      // if both `requesterDid` and `targetDid` are both not given in input,
-      // use the same DID as the `requesterDid` to pass authorization in tests by default.
-      if (!input?.requesterDid) {
-        targetDid = requesterDid;
-      } else {
-        const didSuffix = TestDataGenerator.randomString(32);
-        targetDid = `did:example:${didSuffix}`;
-      }
-    }
-
     const options: ProtocolsQueryOptions = {
-      target : targetDid,
+      target : target.did,
       filter : input?.filter,
       signatureInput
     };
@@ -270,11 +242,9 @@ export class TestDataGenerator {
     const message = await ProtocolsQuery.create(options);
 
     return {
+      requester,
+      target,
       message,
-      requesterDid,
-      requesterDidMethod,
-      requesterKeyId,
-      requesterKeyPair
     };
   };
 
@@ -283,7 +253,7 @@ export class TestDataGenerator {
    * Optional parameters are generated if not given.
    * Implementation currently uses `CollectionsWrite.create()`.
    */
-  public static async generateCollectionWriteMessage(input?: GenerateCollectionsWriteMessageInput): Promise<GenerateCollectionsWriteMessageOutput> {
+  public static async generateCollectionsWriteMessage(input?: GenerateCollectionsWriteMessageInput): Promise<GenerateCollectionsWriteMessageOutput> {
     // generate requester DID if not given
     let requesterDid = input?.requesterDid;
     if (!requesterDid) {
@@ -312,7 +282,7 @@ export class TestDataGenerator {
     // generate target DID if not given
     let targetDid = input?.targetDid;
     if (!targetDid) {
-      // if both `requesterDid` and `targetDid` are both not given in input,
+      // if `requesterDid` and `targetDid` are both not given in input,
       // use the same DID as the `requesterDid` to pass authorization in tests by default.
       if (!input?.requesterDid) {
         targetDid = requesterDid;
@@ -356,9 +326,9 @@ export class TestDataGenerator {
 
   /**
    * Generates a CollectionsQuery message for testing.
-   * If both `requesterDid` and `targetDid` are not given, the generator will use the same DID for both to pass authorization in tests by default.
+   * if `requesterDid` and `targetDid` are not given, the generator will use the same DID for both to pass authorization in tests by default.
    */
-  public static async generateCollectionQueryMessage(input?: GenerateCollectionsQueryMessageInput): Promise<GenerateCollectionsQueryMessageOutput> {
+  public static async generateCollectionsQueryMessage(input?: GenerateCollectionsQueryMessageInput): Promise<GenerateCollectionsQueryMessageOutput> {
     // generate requester DID if not given
     let requesterDid = input?.requesterDid;
     if (!requesterDid) {
@@ -387,7 +357,7 @@ export class TestDataGenerator {
     // generate target DID if not given
     let targetDid = input?.targetDid;
     if (!targetDid) {
-      // if both `requesterDid` and `targetDid` are both not given in input,
+      // if `requesterDid` and `targetDid` are both not given in input,
       // use the same DID as the `requesterDid` to pass authorization in tests by default.
       if (!input?.requesterDid) {
         targetDid = requesterDid;
@@ -420,7 +390,7 @@ export class TestDataGenerator {
 
   /**
    * Generates a HandlersWrite message for testing.
-   * If both `requesterDid` and `targetDid` are not given, the generator will use the same DID for both to pass authorization in tests by default.
+   * if `requesterDid` and `targetDid` are not given, the generator will use the same DID for both to pass authorization in tests by default.
    */
   public static async generateHandlersWriteMessage(input?: GenerateHandlersWriteMessageInput): Promise<GenerateHandlersWriteMessageOutput> {
     // generate requester DID if not given
@@ -451,7 +421,7 @@ export class TestDataGenerator {
     // generate target DID if not given
     let targetDid = input?.targetDid;
     if (!targetDid) {
-      // if both `requesterDid` and `targetDid` are both not given in input,
+      // if `requesterDid` and `targetDid` are both not given in input,
       // use the same DID as the `requesterDid` to pass authorization in tests by default.
       if (!input?.requesterDid) {
         targetDid = requesterDid;
@@ -482,7 +452,7 @@ export class TestDataGenerator {
   /**
    * Generates a PermissionsRequest message for testing.
    */
-  public static async generatePermissionRequestMessage(): Promise<BaseMessage> {
+  public static async generatePermissionsRequestMessage(): Promise<BaseMessage> {
     const { privateJwk } = await ed25519.generateKeyPair();
     const permissionRequest = await PermissionsRequest.create({
       target         : 'did:jank:alice',
@@ -548,5 +518,25 @@ export class TestDataGenerator {
     }
 
     return segments[1];
+  }
+
+  /**
+   * Generates requester and target personas if not given.
+   * If `requester` and `target` are both not given, use the same persona to pass authorization in tests by default.
+   */
+  private static async generateRequesterAndTargetPersonas(
+    input?: { requester?: Persona, target?: Persona}
+  ): Promise<{ requester: Persona, target: Persona}> {
+    // generate requester & target persona if not given
+    let requester = input?.requester ?? await TestDataGenerator.generatePersona();
+    const target = input?.target ?? await TestDataGenerator.generatePersona();
+
+    // if `requester` and `target` are both not given, use the same persona to pass authorization in tests by default
+    if (input?.requester === undefined &&
+        input?.target === undefined) {
+      requester = target;
+    }
+
+    return { requester, target };
   }
 }
