@@ -80,11 +80,11 @@ export type DIDDocument = {
   controller?: string | string[]
   verificationMethod?: VerificationMethod[]
   service?: ServiceEndpoint[]
-  authentication?: VerificationMethod[]
-  assertionMethod?: VerificationMethod[]
-  keyAgreement?: VerificationMethod[]
-  capabilityInvocation?: VerificationMethod[]
-  capabilityDelegation?: VerificationMethod[]
+  authentication?: VerificationMethod[] | string[]
+  assertionMethod?: VerificationMethod[] | string[]
+  keyAgreement?: VerificationMethod[] | string[]
+  capabilityInvocation?: VerificationMethod[] | string[]
+  capabilityDelegation?: VerificationMethod[] | string[]
 };
 
 export type ServiceEndpoint = {
