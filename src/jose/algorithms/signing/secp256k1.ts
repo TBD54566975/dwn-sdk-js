@@ -11,6 +11,37 @@ function validateKey(jwk: PrivateJwk | PublicJwk): void {
   }
 }
 
+function publicKeyToJwk(publicKeyBytes: Uint8Array): PublicJwk {
+  // ensure public key is in uncompressed format so we can convert it into both x and y value
+  let uncompressedPublicKeyBytes;
+  if (publicKeyBytes.byteLength === 33) {
+    // this means given key is compressed
+    const publicKeyHex = Secp256k1.utils.bytesToHex(publicKeyBytes);
+    const curvePoints = Secp256k1.Point.fromHex(publicKeyHex);
+    uncompressedPublicKeyBytes = curvePoints.toRawBytes(false); // isCompressed = false
+  } else {
+    uncompressedPublicKeyBytes = publicKeyBytes;
+  }
+
+  // the first byte is a header that indicates whether the key is uncompressed (0x04 if uncompressed), we can safely ignore
+  // bytes 1 - 32 represent X
+  // bytes 33 - 64 represent Y
+
+  // skip the first byte because it's used as a header to indicate whether the key is uncompressed
+  const x = base64url.baseEncode(uncompressedPublicKeyBytes.subarray(1, 33));
+  const y = base64url.baseEncode(uncompressedPublicKeyBytes.subarray(33, 65));
+
+  const publicJwk: PublicJwk = {
+    alg : 'ES256K',
+    kty : 'EC',
+    crv : 'secp256k1',
+    x,
+    y
+  };
+
+  return publicJwk;
+}
+
 export const secp256k1: Signer = {
   sign: async (content: Uint8Array, privateJwk: PrivateJwk): Promise<Uint8Array> => {
     validateKey(privateJwk);
@@ -45,26 +76,16 @@ export const secp256k1: Signer = {
 
   generateKeyPair: async (): Promise<{publicJwk: PublicJwk, privateJwk: PrivateJwk}> => {
     const privateKeyBytes = Secp256k1.utils.randomPrivateKey();
-    // the public key is uncompressed which means that it contains both the x and y values.
-    // the first byte is a header that indicates whether the key is uncompressed (0x04 if uncompressed).
-    // bytes 1 - 32 represent X
-    // bytes 33 - 64 represent Y
     const publicKeyBytes = await Secp256k1.getPublicKey(privateKeyBytes);
 
     const d = base64url.baseEncode(privateKeyBytes);
-    // skip the first byte because it's used as a header to indicate whether the key is uncompressed
-    const x = base64url.baseEncode(publicKeyBytes.subarray(1, 33));
-    const y = base64url.baseEncode(publicKeyBytes.subarray(33, 65));
-
-    const publicJwk: PublicJwk = {
-      alg : 'ES256K',
-      kty : 'EC',
-      crv : 'secp256k1',
-      x,
-      y
-    };
+    const publicJwk: PublicJwk = publicKeyToJwk(publicKeyBytes);
     const privateJwk: PrivateJwk = { ...publicJwk, d };
 
     return { publicJwk, privateJwk };
+  },
+
+  publicKeyToJwk: async (publicKeyBytes: Uint8Array): Promise<PublicJwk> => {
+    return publicKeyToJwk(publicKeyBytes);
   }
 };

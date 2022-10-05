@@ -52,8 +52,16 @@ export interface Signer {
   verify(content: Uint8Array, signature: Uint8Array, publicJwk: PublicJwk): Promise<boolean>;
 
   /**
-   * generates a random keypair
+   * generates a random key pair
    * @returns the public and private keys as JWKs
    */
   generateKeyPair(): Promise<{ publicJwk: PublicJwk, privateJwk: PrivateJwk }>
+
+
+  /**
+   * converts public key in bytes into a JWK
+   * @param publicKeyBytes - the public key to convert into JWK
+   * @returns the public key in JWK format
+   */
+  publicKeyToJwk(publicKeyBytes: Uint8Array): Promise<PublicJwk>
 }
