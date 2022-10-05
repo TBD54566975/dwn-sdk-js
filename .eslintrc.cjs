@@ -51,7 +51,8 @@ module.exports = {
         'vars'               : 'all',
         'args'               : 'after-used',
         'ignoreRestSiblings' : true,
-        'argsIgnorePattern'  : '^_'
+        'argsIgnorePattern'  : '^_',
+        'varsIgnorePattern'  : '^_'
       }
     ],
     'prefer-const': ['error', { 'destructuring': 'all' }]

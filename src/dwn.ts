@@ -6,6 +6,7 @@ import type { MessageStore } from './store/message-store';
 
 import { addSchema } from './validation/validator';
 import { CollectionsInterface, PermissionsInterface } from './interfaces';
+import { DIDKeyResolver } from './did/did-key-resolver';
 import { DIDResolver } from './did/did-resolver';
 import { IonDidResolver } from './did/ion-did-resolver';
 import { Message, MessageReply, Request, Response } from './core';
@@ -29,7 +30,7 @@ export class DWN {
 
   static async create(config: Config): Promise<DWN> {
     config.messageStore = config.messageStore || new MessageStoreLevel();
-    config.DIDMethodResolvers = config.DIDMethodResolvers || [new IonDidResolver()];
+    config.DIDMethodResolvers = config.DIDMethodResolvers || [new IonDidResolver(), new DIDKeyResolver()];
     config.interfaces = config.interfaces || [];
 
     for (const { methodHandlers, schemas } of config.interfaces) {

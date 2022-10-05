@@ -1,4 +1,5 @@
 import { Config } from '../src/dwn';
+import { DIDKeyResolver } from '../src/did/did-key-resolver';
 import { DIDResolutionResult, DIDMethodResolver } from '../src/did/did-resolver';
 import { DWN } from '../src/dwn';
 import { HandlersWriteMessage } from '../src';
@@ -34,23 +35,22 @@ describe('DWN', () => {
       await messageStore.close();
     });
 
-    it('should process CollectionsWrite message', async () => {
-      const messageData = await TestDataGenerator.generateCollectionsWriteMessage();
-      const { requesterDidMethod, requesterDid, requesterKeyId, requesterKeyPair } = messageData;
+    it('should process CollectionsWrite message signed by a `did:key` DID', async () => {
+      // generate a `did:key` DID
+      const { did, publicJwk, privateJwk } = await DIDKeyResolver.generate();
 
-      // setting up a stub method resolver
-      const didResolutionResult = TestDataGenerator.createDidResolutionResult(requesterDid, requesterKeyId, requesterKeyPair.publicJwk);
-      const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
-      resolveStub.withArgs(requesterDid).resolves(didResolutionResult);
-      const methodResolverStub = <DIDMethodResolver>{
-        method  : () => { return requesterDidMethod; },
-        resolve : resolveStub
-      };
+      // the key ID must also be correct according to the key generated
+      const [_1, _2, uniqueSuffix] = did.split(':', 3);
+      const requesterKeyId = `${did}#${uniqueSuffix}`;
 
-      const dwnConfig: Config = {
-        DIDMethodResolvers: [methodResolverStub],
-        messageStore
-      };
+      const messageData = await TestDataGenerator.generateCollectionsWriteMessage({
+        requesterDid     : did,
+        requesterKeyId,
+        requesterKeyPair : { publicJwk, privateJwk },
+        targetDid        : did
+      });
+
+      const dwnConfig: Config = { messageStore };
       const dwn = await DWN.create(dwnConfig);
 
       const reply = await dwn.processMessage(messageData.message);
