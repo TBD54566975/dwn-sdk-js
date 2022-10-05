@@ -51,9 +51,12 @@ export class DIDKeyResolver implements DIDMethodResolver {
       const multicodecSize = DIDKeyResolver.getMulticodecSize(idBytes);
       const publicKeyBytes = idBytes.slice(multicodecSize);
 
+      // key specific values
+      const keySpecificContext = [];
       let publicJwk: PublicJwk;
       if (multicodec === 0xed) {
         // ed25519-pub multicodec
+        keySpecificContext.push('https://w3id.org/security/suites/ed25519-2020/v1');
         publicJwk = await ed25519.publicKeyToJwk(publicKeyBytes);
       } else if (multicodec === 0xe7) {
         // secp256k1-pub multicodec
@@ -67,8 +70,8 @@ export class DIDKeyResolver implements DIDMethodResolver {
       const didDocument: DIDDocument = {
         '@context': [
           'https://www.w3.org/ns/did/v1',
-          'https://w3id.org/security/suites/ed25519-2020/v1',
-          'https://w3id.org/security/suites/jws-2020/v1'
+          'https://w3id.org/security/suites/jws-2020/v1',
+          ...keySpecificContext
         ],
         'id'                 : did,
         'verificationMethod' : [{

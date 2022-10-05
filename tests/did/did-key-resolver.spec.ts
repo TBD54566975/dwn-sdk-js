@@ -15,6 +15,7 @@ describe('DIDKeyResolver', () => {
 
     const resolutionDocument = await resolver.resolve(did);
     expect(resolutionDocument.didDocument.id).to.equal(did);
+    expect(resolutionDocument.didDocument['@context'].indexOf('https://w3id.org/security/suites/ed25519-2020/v1')).to.not.equal(-1);
     expect(resolutionDocument.didDocument.verificationMethod[0].publicKeyJwk.x).to.equal('O2onvM62pC1io6jQKm8Nc2UyFXcd4kOmOsBIoYtZ2ik');
   });
 
@@ -26,6 +27,7 @@ describe('DIDKeyResolver', () => {
 
     const resolutionDocument = await resolver.resolve(did);
     expect(resolutionDocument.didDocument.id).to.equal(did);
+    expect(resolutionDocument['@context'].indexOf('https://w3id.org/security/suites/ed25519-2020/v1')).to.equal(-1);
     expect(resolutionDocument.didDocument.verificationMethod[0].publicKeyJwk.x).to.equal('RwiZITTa2Dcmq-V1j-5tgPUshOLO31FbsnhVS-7lskc');
     expect(resolutionDocument.didDocument.verificationMethod[0].publicKeyJwk.y).to.equal('3o1-UCc3ABh757P58gDISSc4hOj9qyfSGl3SGGA7xdc');
   });
