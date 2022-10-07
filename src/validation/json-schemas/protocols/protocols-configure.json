@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://identity.foundation/dwn/json-schemas/protocols-configure.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "authorization",
+    "descriptor"
+  ],
+  "properties": {
+    "authorization": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
+    },
+    "descriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target",
+        "method",
+        "protocol",
+        "nonce",
+        "definition"
+      ],
+      "properties": {
+        "method": {
+          "enum": [
+            "ProtocolsConfigure"
+          ],
+          "type": "string"
+        },
+        "target": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+        },
+        "protocol": {
+          "type": "string"
+        },
+        "nonce": {
+          "type": "string"
+        },
+        "definition": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/protocol-definition.json"
+        }
+      }
+    }
+  }
+}

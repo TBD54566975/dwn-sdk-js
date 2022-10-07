@@ -1,8 +1,9 @@
-import { Level } from 'level';
-import { CID } from 'multiformats';
+import type { Blockstore, Options } from 'interface-blockstore';
+import type { AwaitIterable, Pair, Batch, Query, KeyQuery } from 'interface-store';
 
-import type { Options, AwaitIterable, Pair, Batch, Query, KeyQuery } from 'interface-store';
-import type { Blockstore } from 'interface-blockstore';
+import { CID } from 'multiformats';
+import { Level } from 'level';
+import { sleep } from '../utils/time';
 
 // `level` works in Node.js 12+ and Electron 5+ on Linux, Mac OS, Windows and
 // FreeBSD, including any future Node.js and Electron release thanks to Node-API, including ARM
@@ -53,7 +54,7 @@ export class BlockstoreLevel implements Blockstore {
     return this.db.close();
   }
 
-  put(key: CID, val: Uint8Array, _options?: Options): Promise<void> {
+  put(key: CID, val: Uint8Array, _ctx?: Options): Promise<void> {
     return this.db.put(key.toString(), val);
   }
 
@@ -79,11 +80,11 @@ export class BlockstoreLevel implements Blockstore {
     return this.db.del(key.toString());
   }
 
-  async * putMany(source: AwaitIterable<Pair<CID, Uint8Array>>, _options?: Options):
+  async * putMany(source: AwaitIterable<Pair<CID, Uint8Array>>, options?: Options):
     AsyncIterable<Pair<CID, Uint8Array>> {
 
     for await (const entry of source) {
-      await this.put(entry.key, entry.value, _options);
+      await this.put(entry.key, entry.value, options);
 
       yield entry;
     }
@@ -95,9 +96,9 @@ export class BlockstoreLevel implements Blockstore {
     }
   }
 
-  async * deleteMany(source: AwaitIterable<CID>, _options?: Options): AsyncIterable<CID> {
+  async * deleteMany(source: AwaitIterable<CID>, options?: Options): AsyncIterable<CID> {
     for await (const key of source) {
-      await this.delete(key, _options);
+      await this.delete(key, options);
 
       yield key;
     }
@@ -121,13 +122,4 @@ export class BlockstoreLevel implements Blockstore {
   queryKeys(_query: KeyQuery<CID>, _options?: Options): AsyncIterable<CID> {
     throw new Error('not implemented');
   }
-}
-
-/**
- * sleeps for the desired duration
- * @param durationMillis the desired amount of sleep time
- * @returns when the provided duration has passed
- */
-function sleep(durationMillis): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, durationMillis));
 }

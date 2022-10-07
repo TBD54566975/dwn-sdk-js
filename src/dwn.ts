@@ -1,54 +1,189 @@
-import { DIDResolver } from './did/did-resolver';
-import { MessageStoreLevel } from './store/message-store-level';
-import { validateMessage } from './message';
-import { handlePermissionsRequest } from './interfaces/permissions';
-
-import type { DIDMethodResolver } from './did/did-resolver';
-import type { Message } from './message';
+import type { BaseMessage, RequestSchema } from './core/types';
+import type { DidMethodResolver } from './did/did-resolver';
+import type { HandlersWriteMessage } from './interfaces/handlers/types';
+import type { Interface, MethodHandler } from './interfaces/types';
 import type { MessageStore } from './store/message-store';
 
-export class DWN {
-  static methods = {
-    PermissionsRequest: handlePermissionsRequest
+import { addSchema } from './validation/validator';
+import { CollectionsInterface, PermissionsInterface } from './interfaces';
+import { DidKeyResolver } from './did/did-key-resolver';
+import { DidResolver } from './did/did-resolver';
+import { DidIonResolver } from './did/did-ion-resolver';
+import { Message, MessageReply, Request, Response } from './core';
+import { MessageStoreLevel } from './store/message-store-level';
+
+export class Dwn {
+  static methodHandlers: { [key:string]: MethodHandler } = {
+    ...CollectionsInterface.methodHandlers,
+    ...PermissionsInterface.methodHandlers
   };
 
-  DIDResolver: DIDResolver;
-  messageStore: MessageStore;
+  private DidResolver: DidResolver;
+  private messageStore: MessageStore;
+  private customEventHandlers: { handlersWriteMessage: HandlersWriteMessage, eventHandler: EventHandler }[] = [];
 
-  constructor(config: Config) {
-    // override default config with any user-provided config
-    const mergedConfig = { ...defaultConfig,...config };
 
-    this.DIDResolver = new DIDResolver(mergedConfig.DIDMethodResolvers);
-    this.messageStore = mergedConfig.messageStore;
+  private constructor(config: Config) {
+    this.DidResolver = new DidResolver(config.DidMethodResolvers);
+    this.messageStore = config.messageStore;
+  }
+
+  static async create(config: Config): Promise<Dwn> {
+    config.messageStore = config.messageStore || new MessageStoreLevel();
+    config.DidMethodResolvers = config.DidMethodResolvers || [new DidIonResolver(), new DidKeyResolver()];
+    config.interfaces = config.interfaces || [];
+
+    for (const { methodHandlers, schemas } of config.interfaces) {
+
+      for (const messageType in methodHandlers) {
+        if (Dwn.methodHandlers[messageType]) {
+          throw new Error(`methodHandler already exists for ${messageType}`);
+        } else {
+          Dwn.methodHandlers[messageType] = methodHandlers[messageType];
+        }
+      }
+
+      for (const schemaName in schemas) {
+        addSchema(schemaName, schemas[schemaName]);
+      }
+    }
+
+    const dwn = new Dwn(config);
+    await dwn.open();
+
+    return dwn;
+  }
+
+  private async open(): Promise<void> {
+    return this.messageStore.open();
+  }
+
+  async close(): Promise<void> {
+    return this.messageStore.close();
   }
 
   /**
-   * TODO: add docs
-   * @param message
+   * Adds a custom event handler.
+   * Current implementation only allows one matching handler.
    */
-  async processMessage(message: Message): Promise<void> {
-    const { method: methodName } = message.descriptor;
-    const method = DWN.methods[methodName];
+  async addCustomEventHandler(handlersWriteMessage: HandlersWriteMessage, eventHandler: EventHandler): Promise<void> {
+    const matchingHandlers = this.getCustomEventHandlers(handlersWriteMessage);
 
-    if (!method) {
-      throw new Error('{methodName} is not a supported method.');
+    if (matchingHandlers.length !== 0) {
+      throw new Error(`an existing handler matching the filter of the given handler already exists`);
     }
 
-    // throws exception if message is invalid
-    validateMessage(message);
+    this.customEventHandlers.push({
+      handlersWriteMessage,
+      eventHandler
+    });
+  }
 
-    await method(message, this.DIDResolver, this.messageStore);
+  async processRequest(rawRequest: Uint8Array): Promise<Response> {
+    let request: RequestSchema;
+    try {
+      const requestString = new TextDecoder().decode(rawRequest);
+      request = JSON.parse(requestString);
+    } catch {
+      throw new Error('expected request to be valid JSON');
+    }
+
+    try {
+      request = Request.parse(request);
+    } catch (e) {
+      return new Response({
+        status: { code: 400, message: e.message }
+      });
+    }
+
+    const response = new Response();
+
+    for (const message of request.messages) {
+      const result = await this.processMessage(message);
+      response.addMessageResult(result);
+    }
+
+    return response;
+  }
+
+  /**
+   * TODO: add docs, Issue #70 https://github.com/TBD54566975/dwn-sdk-js/issues/70
+   * @param message
+   */
+  async processMessage(rawMessage: object): Promise<MessageReply> {
+    let message: BaseMessage;
+
+    try {
+      message = Message.parse(rawMessage);
+    } catch (e) {
+      return new MessageReply({
+        status: { code: 400, detail: e.message }
+      });
+    }
+
+    try {
+      const interfaceMethodHandler = Dwn.methodHandlers[message.descriptor.method];
+
+      const methodHandlerReply = await interfaceMethodHandler(message, this.messageStore, this.DidResolver);
+
+      const customHandlerReply = await this.triggerEventHandler(message);
+
+      // use custom handler's reply if exists
+      if (customHandlerReply === undefined) {
+        return methodHandlerReply;
+      } else {
+        return customHandlerReply;
+      }
+    } catch (e) {
+      return new MessageReply({
+        status: { code: 500, detail: e.message }
+      });
+    }
+  }
+
+  /**
+   * Gets the matching custom event handlers given a message.
+   */
+  private getCustomEventHandlers(message: BaseMessage): EventHandler[]{
+    const matchingHandlersData = this.customEventHandlers.filter(
+      (handlerData) => message.descriptor.target === handlerData.handlersWriteMessage.descriptor.target &&
+                       message.descriptor.method === handlerData.handlersWriteMessage.descriptor.filter.method);
+
+    const matchingHandlers = matchingHandlersData.map(handlerData => handlerData.eventHandler);
+    return matchingHandlers;
+  }
+
+  /**
+   * Trigger method event handler as needed.
+   * Current implementation only allows one matching handler.
+   */
+  private async triggerEventHandler(message: BaseMessage): Promise<MessageReply | undefined> {
+    // find the matching event handlers
+    const matchingHandlers = this.getCustomEventHandlers(message);
+
+    if (matchingHandlers.length === 0) {
+      return undefined;
+    }
+
+    const handler = matchingHandlers[0];
+    const response = await handler(message);
+    return response;
   }
 };
 
 export type Config = {
-  DIDMethodResolvers: DIDMethodResolver[],
-  messageStore: MessageStore
+  DidMethodResolvers?: DidMethodResolver[],
+  interfaces?: Interface[];
+  messageStore?: MessageStore;
 };
 
-const defaultConfig: Config = {
-  // TODO: include ION resolver as default DIDMethodResolver
-  DIDMethodResolvers : [],
-  messageStore       : new MessageStoreLevel()
-};
+
+/**
+ * An event handler that is triggered after a message passes processing flow of:
+ * DWN message level schema validation -> authentication -> authorization -> message processing/storage.
+ * @param message The message to be handled
+ * @returns the response to be returned back to the caller
+ */
+export interface EventHandler {
+  (message: BaseMessage): Promise<MessageReply>;
+}

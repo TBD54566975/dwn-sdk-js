@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://identity.foundation/dwn/json-schemas/protocols-query.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "authorization",
+    "descriptor"
+  ],
+  "properties": {
+    "authorization": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
+    },
+    "descriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target",
+        "method",
+        "nonce"
+      ],
+      "properties": {
+        "target": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+        },
+        "method": {
+          "enum": [
+            "ProtocolsQuery"
+          ],
+          "type": "string"
+        },
+        "nonce": {
+          "type": "string"
+        },
+        "filter": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": false,
+          "properties": {
+            "protocol": {
+              "type": "string"
+            },
+            "recipient": {
+              "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+            }
+          }
+        }
+      }
+    }
+  }
+}
