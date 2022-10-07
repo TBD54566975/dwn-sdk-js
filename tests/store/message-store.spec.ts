@@ -7,16 +7,23 @@ import { CollectionsWriteMessage } from '../../src/interfaces/collections/types'
 let messageStore: MessageStoreLevel;
 
 describe('MessageStoreLevel Tests', () => {
-
   describe('buildIndexQueryTerms', () => {
-    it('returns an array of terms based on the query object provided', () => {
+    it('returns an array of terms based on the query object type provided', () => {
       const query = {
-        method   : 'CollectionsQuery',
-        schema   : 'https://schema.org/MusicPlaylist',
-        objectId : 'abcd123'
+        method        : 'CollectionsQuery',
+        schema        : 'https://schema.org/MusicPlaylist',
+        objectId      : 'abcd123',
+        published     : true, // boolean type
+        publishedDate : 1234567 // number type
       };
 
-      const expected = ['method:CollectionsQuery', 'schema:https://schema.org/MusicPlaylist', 'objectId:abcd123'];
+      const expected = [
+        { FIELD: ['method'], VALUE: 'CollectionsQuery' },
+        { FIELD: ['schema'], VALUE: 'https://schema.org/MusicPlaylist' },
+        { FIELD: ['objectId'], VALUE: 'abcd123' },
+        { FIELD: ['published'], VALUE: true },
+        { FIELD: ['publishedDate'], VALUE: 1234567 }
+      ];
       const terms = MessageStoreLevel['buildIndexQueryTerms'](query);
 
       expect(terms).to.eql(expected);
@@ -35,10 +42,10 @@ describe('MessageStoreLevel Tests', () => {
       };
 
       const expected = [
-        'requester:AlBorland',
-        'ability.method:CollectionsQuery',
-        'ability.schema:https://schema.org/MusicPlaylist',
-        'ability.doo.bingo:bongo'
+        { FIELD: ['requester'], VALUE: 'AlBorland' },
+        { FIELD: ['ability.method'], VALUE: 'CollectionsQuery' },
+        { FIELD: ['ability.schema'], VALUE: 'https://schema.org/MusicPlaylist' },
+        { FIELD: ['ability.doo.bingo'], VALUE: 'bongo' }
       ];
 
       const terms = MessageStoreLevel['buildIndexQueryTerms'](query);

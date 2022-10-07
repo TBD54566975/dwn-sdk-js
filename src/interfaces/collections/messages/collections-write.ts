@@ -1,12 +1,14 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
 import type { CollectionsWriteDescriptor, CollectionsWriteMessage } from '../types';
+import { authenticate, authorize, validateSchema } from '../../../core/auth';
 import { base64url } from 'multiformats/bases/base64';
 import { DIDResolver } from '../../../did/did-resolver';
 import { getDagCid } from '../../../utils/data';
+import { Jws } from '../../../jose/jws/jws';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
+import { protocolAuthorize } from '../../../core/protocol-authorization';
 import { removeUndefinedProperties } from '../../../utils/object';
-import { sign, verifyAuth } from '../../../core/auth';
 import { validate } from '../../../validation/validator';
 
 export type CollectionsWriteOptions = AuthCreateOptions & {
@@ -59,16 +61,29 @@ export class CollectionsWrite extends Message implements Authorizable {
     validate(messageType, { descriptor, authorization: {} });
 
     const encodedData = base64url.baseEncode(options.data);
-    const authorization = await sign({ descriptor }, options.signatureInput);
+    const authorization = await Jws.sign({ descriptor }, options.signatureInput);
     const message = { descriptor, authorization, encodedData };
 
     return new CollectionsWrite(message);
   }
 
   async verifyAuth(didResolver: DIDResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
+    const message = this.message;
 
-    // TODO: Issue #75 - Add permission verification - https://github.com/TBD54566975/dwn-sdk-js/issues/75
-    return await verifyAuth(this.message, didResolver, messageStore);
+    // signature verification is computationally intensive, so we're going to start by validating the payload.
+    const parsedPayload = await validateSchema(message);
+
+    const signers = await authenticate(message.authorization, didResolver);
+
+    // authorization
+    if (message.descriptor.method === 'CollectionsWrite' &&
+      (message as CollectionsWriteMessage).descriptor.protocol !== undefined) {
+      await protocolAuthorize((message as CollectionsWriteMessage), signers[0], messageStore);
+    } else {
+      await authorize(message, signers);
+    }
+
+    return { payload: parsedPayload, signers };
   }
 
   /**

@@ -2,10 +2,11 @@ import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '..
 import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types';
 import type { PermissionScope, PermissionConditions } from '../types';
 
+import { canonicalAuth } from '../../../core/auth';
 import { DIDResolver } from '../../../did/did-resolver';
+import { Jws } from '../../../jose/jws/jws';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
-import { sign, verifyAuth } from '../../../core/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { validate } from '../../../validation/validator';
 
@@ -45,14 +46,14 @@ export class PermissionsRequest extends Message implements Authorizable {
     const messageType = descriptor.method;
     validate(messageType, { descriptor, authorization: {} });
 
-    const auth = await sign({ descriptor }, opts.signatureInput);
+    const auth = await Jws.sign({ descriptor }, opts.signatureInput);
     const message: PermissionsRequestMessage = { descriptor, authorization: auth };
 
     return new PermissionsRequest(message);
   }
 
   async verifyAuth(didResolver: DIDResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
-    return await verifyAuth(this.message, didResolver, messageStore);
+    return await canonicalAuth(this.message, didResolver, messageStore);
   }
 
   get id(): string {

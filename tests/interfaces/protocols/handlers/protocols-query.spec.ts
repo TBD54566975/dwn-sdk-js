@@ -31,7 +31,7 @@ describe('handleProtocolsQuery()', () => {
       await messageStore.close();
     });
 
-    it('should return entries matching the query', async () => {
+    it('should return protocols matching the query', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
       // setting up a stub method resolver

@@ -496,7 +496,7 @@ describe('handleCollectionsWrite()', () => {
   it('should return 401 if requester is not the same as the target', async () => {
     const requesterDid = 'did:example:alice';
     const targetDid = 'did:example:bob'; // requester and target are different
-    const { message, requesterKeyId, requesterKeyPair } = await TestDataGenerator.generateCollectionsQueryMessage({ requesterDid, targetDid });
+    const { message, requesterKeyId, requesterKeyPair } = await TestDataGenerator.generateCollectionsWriteMessage({ requesterDid, targetDid });
 
     // setting up a stub did resolver & message store
     const didResolverStub = TestStubGenerator.createDidResolverStub(requesterDid, requesterKeyId, requesterKeyPair.publicJwk);

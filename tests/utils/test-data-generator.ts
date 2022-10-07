@@ -70,6 +70,7 @@ export type GenerateCollectionsWriteMessageInput = {
   schema?: string;
   recordId?: string;
   parentId?: string;
+  published?: boolean;
   data?: Uint8Array;
   dataFormat?: string;
   dateCreated? : number;
@@ -303,6 +304,7 @@ export class TestDataGenerator {
       schema      : input?.schema ?? TestDataGenerator.randomString(20),
       recordId    : input?.recordId ?? uuidv4(),
       parentId    : input?.parentId,
+      published   : input?.published,
       dataFormat  : input?.dataFormat ?? 'application/json',
       dateCreated : input?.dateCreated ?? Date.now(),
       data,

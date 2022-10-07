@@ -1,3 +1,5 @@
+import { CollectionsWriteMessage, DIDResolver } from '../../../../src';
+import { DIDKeyResolver } from '../../../../src/did/did-key-resolver';
 import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
@@ -11,6 +13,7 @@ chai.use(chaiAsPromised);
 
 describe('handleCollectionsQuery()', () => {
   describe('functional tests', () => {
+    let didResolver: DIDResolver;
     let messageStore: MessageStoreLevel;
 
     before(async () => {
@@ -22,6 +25,8 @@ describe('handleCollectionsQuery()', () => {
       });
 
       await messageStore.open();
+
+      didResolver = new DIDResolver([new DIDKeyResolver()]);
     });
 
     beforeEach(async () => {
@@ -32,7 +37,7 @@ describe('handleCollectionsQuery()', () => {
       await messageStore.close();
     });
 
-    it('should return entries matching the query', async () => {
+    it('should return records matching the query', async () => {
       // insert three messages into DB, two with matching protocol
       const targetDid = 'did:example:alice';
       const requesterDid = targetDid;
@@ -80,6 +85,80 @@ describe('handleCollectionsQuery()', () => {
       expect(reply2.entries?.length).to.equal(1); // only 1 entry should match the query
     });
 
+    it('should only return published records and unpublished records that is meant for requester', async () => {
+      // write three records into Alice's DB:
+      // 1st is unpublished
+      // 2nd is also unpublished but is meant for bob
+      // 3rd is published
+      const schema = 'schema1';
+      const aliceDidData = await DIDKeyResolver.generate();
+      const bobDidData = await DIDKeyResolver.generate();
+      const record1Data = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid: aliceDidData.did, schema, contextId: '1' });
+      const record2Data = await TestDataGenerator.generateCollectionsWriteMessage(
+        { targetDid: aliceDidData.did, schema, contextId: '2', recipientDid: bobDidData.did }
+      );
+      const record3Data = await TestDataGenerator.generateCollectionsWriteMessage(
+        { targetDid: aliceDidData.did, schema, contextId: '3', published: true }
+      );
+
+      await messageStore.put(record1Data.message);
+      await messageStore.put(record2Data.message);
+      await messageStore.put(record3Data.message);
+
+      // test correctness for Bob's query
+      const bobQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
+        targetDid        : aliceDidData.did,
+        requesterDid     : bobDidData.did,
+        requesterKeyId   : DIDKeyResolver.getKeyId(bobDidData.did),
+        requesterKeyPair : bobDidData, // contains the key pair
+        filter           : { schema }
+      });
+
+      const replyToBobQuery = await handleCollectionsQuery(bobQueryMessageData.message, messageStore, didResolver);
+
+      expect(replyToBobQuery.status.code).to.equal(200);
+      expect(replyToBobQuery.entries?.length).to.equal(2); // expect 2 records
+
+      const actualUnpublishedMessages = replyToBobQuery.entries.filter(message => (message as CollectionsWriteMessage).descriptor.contextId === '2');
+      const actualPublishedMessages = replyToBobQuery.entries.filter(message => (message as CollectionsWriteMessage).descriptor.contextId === '3');
+      expect(actualUnpublishedMessages.length).to.equal(1);
+      expect(actualPublishedMessages.length).to.equal(1);
+
+      // test correctness for Alice's query
+      const aliceQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
+        targetDid        : aliceDidData.did,
+        requesterDid     : aliceDidData.did,
+        requesterKeyId   : DIDKeyResolver.getKeyId(aliceDidData.did),
+        requesterKeyPair : aliceDidData, // contains the key pair
+        filter           : { schema }
+      });
+
+      const replyToAliceQuery = await handleCollectionsQuery(aliceQueryMessageData.message, messageStore, didResolver);
+
+      expect(replyToAliceQuery.status.code).to.equal(200);
+      expect(replyToAliceQuery.entries?.length).to.equal(3); // expect all 3 records
+    });
+
+
+    it('should throw if querying for records not intended for the requester', async () => {
+      const aliceDidData = await DIDKeyResolver.generate();
+      const bobDidData = await DIDKeyResolver.generate();
+      const carolDidData = await DIDKeyResolver.generate();
+
+      // test correctness for Bob's query
+      const bobQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
+        targetDid        : aliceDidData.did,
+        requesterDid     : bobDidData.did,
+        requesterKeyId   : DIDKeyResolver.getKeyId(bobDidData.did),
+        requesterKeyPair : bobDidData,
+        filter           : { recipient: carolDidData.did } // bob querying carol's records
+      });
+
+      const replyToBobQuery = await handleCollectionsQuery(bobQueryMessageData.message, messageStore, didResolver);
+
+      expect(replyToBobQuery.status.code).to.equal(401);
+      expect(replyToBobQuery.status.detail).to.contain('not allowed to query records');
+    });
 
     it('should not fetch entries across tenants', async () => {
       // insert three messages into DB, two with matching schema
@@ -126,21 +205,6 @@ describe('handleCollectionsQuery()', () => {
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
     const reply = await handleCollectionsQuery(messageData.message, messageStoreStub, didResolverStub);
-
-    expect(reply.status.code).to.equal(401);
-  });
-
-
-  it('should return 401 if requester is not the same as the target', async () => {
-    const requesterDid = 'did:example:alice';
-    const targetDid = 'did:example:bob'; // requester and target are different
-    const { message, requesterKeyId, requesterKeyPair } = await TestDataGenerator.generateCollectionsQueryMessage({ requesterDid, targetDid });
-
-    // setting up a stub did resolver & message store
-    const didResolverStub = TestStubGenerator.createDidResolverStub(requesterDid, requesterKeyId, requesterKeyPair.publicJwk );
-    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-
-    const reply = await handleCollectionsQuery(message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(401);
   });

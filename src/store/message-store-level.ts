@@ -97,12 +97,20 @@ export class MessageStoreLevel implements MessageStore {
     return messageJson;
   }
 
-  async query(query: any): Promise<BaseMessage[]> {
+  async query(includeCriteria: any, excludeCriteria: any = {}): Promise<BaseMessage[]> {
     const messages: BaseMessage[] = [];
 
     // parse query into a query that is compatible with the index we're using
-    const indexQueryTerms: string[] = MessageStoreLevel.buildIndexQueryTerms(query);
-    const { RESULT: indexResults } = await this.index.QUERY({ AND: indexQueryTerms });
+    const includeQueryTerms = MessageStoreLevel.buildIndexQueryTerms(includeCriteria);
+    const excludeQueryTerms = MessageStoreLevel.buildIndexQueryTerms(excludeCriteria);
+    const finalQuery = {
+      NOT: {
+        INCLUDE : { AND: includeQueryTerms },
+        EXCLUDE : { AND: excludeQueryTerms }
+      }
+    };
+
+    const { RESULT: indexResults } = await this.index.QUERY(finalQuery);
 
     for (const result of indexResults) {
       const cid = CID.parse(result._id);
@@ -182,26 +190,44 @@ export class MessageStoreLevel implements MessageStore {
    *      schema : 'https://schema.org/MusicPlaylist'
    *    }
    * })
-   * // returns ['ability.method:CollectionsQuery', 'ability.schema:https://schema.org/MusicPlaylist' ]
+   * // returns
+   * [
+        { FIELD: ['ability.method'], VALUE: 'CollectionsQuery' },
+        { FIELD: ['ability.schema'], VALUE: 'https://schema.org/MusicPlaylist' }
+      ]
    * @param query - the query to parse
    * @param terms - internally used to collect terms
    * @param prefix - internally used to pass parent properties into recursive calls
    * @returns the list of terms
    */
-  private static buildIndexQueryTerms(query: any, terms: string[] = [], prefix: string = ''): string[] {
+  private static buildIndexQueryTerms(
+    query: any,
+    terms: SearchIndexTerm[] =[],
+    prefix: string = ''
+  ): SearchIndexTerm[] {
     for (const property in query) {
       const val = query[property];
 
       if (_.isPlainObject(val)) {
         MessageStoreLevel.buildIndexQueryTerms(val, terms, `${prefix}${property}.`);
       } else {
-        terms.push(`${prefix}${property}:${val}`);
+        // NOTE: using object-based expressions because we need to support filters against non-string properties
+        const term = {
+          FIELD : [`${prefix}${property}`],
+          VALUE : val
+        };
+        terms.push(term);
       }
     }
 
     return terms;
   }
 }
+
+type SearchIndexTerm = {
+  FIELD: string[];
+  VALUE: any;
+};
 
 type MessageStoreLevelConfig = {
   blockstoreLocation?: string,

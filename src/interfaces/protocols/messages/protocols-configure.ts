@@ -2,7 +2,7 @@ import type { AuthCreateOptions } from '../../../core/types';
 import type { ProtocolDefinition, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types';
 import randomBytes from 'randombytes';
 import { base64url } from 'multiformats/bases/base64';
-import { sign } from '../../../core/auth';
+import { Jws } from '../../../jose/jws/jws';
 import { validate } from '../../../validation/validator';
 
 export type ProtocolsConfigureOptions = AuthCreateOptions & {
@@ -27,7 +27,7 @@ export class ProtocolsConfigure {
     const messageType = descriptor.method;
     validate(messageType, { descriptor, authorization: {} });
 
-    const authorization = await sign({ descriptor }, options.signatureInput);
+    const authorization = await Jws.sign({ descriptor }, options.signatureInput);
     const message = { descriptor, authorization };
 
     return message;

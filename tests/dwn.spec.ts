@@ -40,8 +40,7 @@ describe('DWN', () => {
       const { did, publicJwk, privateJwk } = await DIDKeyResolver.generate();
 
       // the key ID must also be correct according to the key generated
-      const [_1, _2, uniqueSuffix] = did.split(':', 3);
-      const requesterKeyId = `${did}#${uniqueSuffix}`;
+      const requesterKeyId = DIDKeyResolver.getKeyId(did);
 
       const messageData = await TestDataGenerator.generateCollectionsWriteMessage({
         requesterDid     : did,
@@ -120,8 +119,8 @@ describe('DWN', () => {
       const customHandlerStub2 = sinon.stub<[HandlersWriteMessage], Promise<MessageReply>>();
       customHandlerStub1.resolves(mockHandlerReply);
 
-      dwn.addCustomEventHandler(handlersWriteMessageData1.message, customHandlerStub1);
-      dwn.addCustomEventHandler(handlersWriteMessageData2.message, customHandlerStub2);
+      await dwn.addCustomEventHandler(handlersWriteMessageData1.message, customHandlerStub1);
+      await dwn.addCustomEventHandler(handlersWriteMessageData2.message, customHandlerStub2);
 
       const actualReply = await dwn.processMessage(messageData.message);
       expect(actualReply).to.equal(mockHandlerReply);
