@@ -1,7 +1,7 @@
 import type { GeneralJws, SignatureInput } from '../jose/jws/general/types';
 
 import { CID } from 'multiformats/cid';
-import { DIDResolver } from '../did/did-resolver';
+import { DidResolver } from '../did/did-resolver';
 import { MessageStore } from '../store/message-store';
 
 /**
@@ -55,7 +55,7 @@ export interface Authorizable {
    * validates and verifies the `authorization` property of a given message
    * @param didResolver - used to resolve `kid`'s
    */
-  verifyAuth(didResolver: DIDResolver, messageStore: MessageStore): Promise<AuthVerificationResult>;
+  verifyAuth(didResolver: DidResolver, messageStore: MessageStore): Promise<AuthVerificationResult>;
 }
 
 /**
@@ -63,7 +63,7 @@ export interface Authorizable {
  */
 export interface Attestable {
   attest(): Promise<void>;
-  verifyAttestation(didResolver: DIDResolver): Promise<string>;
+  verifyAttestation(didResolver: DidResolver): Promise<string>;
 }
 
 export type AuthCreateOptions = {

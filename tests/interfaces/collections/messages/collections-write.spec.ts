@@ -1,7 +1,7 @@
 import { base64url } from 'multiformats/bases/base64';
 import { CollectionsWrite } from '../../../../src/interfaces/collections/messages/collections-write';
 import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/types';
-import { DIDResolutionResult, DIDResolver } from '../../../../src/did/did-resolver';
+import { DidResolutionResult, DidResolver } from '../../../../src/did/did-resolver';
 import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
 import { sleep } from '../../../../src/utils/time';
 import { TestDataGenerator } from '../../../utils/test-data-generator';
@@ -68,9 +68,9 @@ describe('CollectionsWrite', () => {
       // setting up a stub method resolver
       const differentKeyPair = await secp256k1.generateKeyPair(); // used to return a different public key to simulate invalid signature
       const didResolutionResult = TestDataGenerator.createDidResolutionResult(requesterDid, requesterKeyId, differentKeyPair.publicJwk);
-      const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
+      const resolveStub = sinon.stub<[string], Promise<DidResolutionResult>>();
       resolveStub.withArgs( requesterDid).resolves(didResolutionResult);
-      const didResolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
+      const didResolverStub = sinon.createStubInstance(DidResolver, { resolve: resolveStub });
       const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
       const collectionsWrite = new CollectionsWrite(messageData.message);

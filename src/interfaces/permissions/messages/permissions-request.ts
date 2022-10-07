@@ -3,7 +3,7 @@ import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '..
 import type { PermissionScope, PermissionConditions } from '../types';
 
 import { canonicalAuth } from '../../../core/auth';
-import { DIDResolver } from '../../../did/did-resolver';
+import { DidResolver } from '../../../did/did-resolver';
 import { Jws } from '../../../jose/jws/jws';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
@@ -52,7 +52,7 @@ export class PermissionsRequest extends Message implements Authorizable {
     return new PermissionsRequest(message);
   }
 
-  async verifyAuth(didResolver: DIDResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
+  async verifyAuth(didResolver: DidResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
     return await canonicalAuth(this.message, didResolver, messageStore);
   }
 

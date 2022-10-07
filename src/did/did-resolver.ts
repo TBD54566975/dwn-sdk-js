@@ -3,11 +3,11 @@ import type { PublicJwk } from '../jose/types';
 /**
  * TODO: add docs, Issue #72 https://github.com/TBD54566975/dwn-sdk-js/issues/72
  */
-export class DIDResolver {
-  didResolvers: Map<string, DIDMethodResolver>;
+export class DidResolver {
+  didResolvers: Map<string, DidMethodResolver>;
 
   // TODO: add DIDCache to constructor method signature, Issue #62 https://github.com/TBD54566975/dwn-sdk-js/issues/62
-  constructor(resolvers: DIDMethodResolver[]) {
+  constructor(resolvers: DidMethodResolver[]) {
     this.didResolvers = new Map();
 
     for (const resolver of resolvers) {
@@ -16,14 +16,14 @@ export class DIDResolver {
   }
 
   /**
-   * attempt to resolve the DID provided using the available DIDMethodResolvers
+   * attempt to resolve the DID provided using the available DidMethodResolvers
    * @throws {Error} if DID is invalid
    * @throws {Error} if DID method is not supported
    * @throws {Error} if resolving DID fails
    * @param did - the DID to resolve
-   * @returns {DIDResolutionResult}
+   * @returns {DidResolutionResult}
    */
-  public async resolve(did: string): Promise<DIDResolutionResult> {
+  public async resolve(did: string): Promise<DidResolutionResult> {
   // naively validate requester DID
   // TODO: add better DID validation, Issue #63 https://github.com/TBD54566975/dwn-sdk-js/issues/63
     const splitDID = did.split(':', 3);
@@ -57,9 +57,9 @@ export class DIDResolver {
  * A generalized interface that can be implemented for individual
  * DID methods
  */
-export interface DIDMethodResolver {
+export interface DidMethodResolver {
   /**
-   * @returns the DID method supported by {@link DIDMethodResolver.resolve}
+   * @returns the DID method supported by {@link DidMethodResolver.resolve}
    */
   method(): string;
 
@@ -70,7 +70,7 @@ export interface DIDMethodResolver {
    * @param did - the DID to resolve
    * @throws {Error} if unable to resolve the DID
    */
-  resolve(did: string): Promise<DIDResolutionResult>;
+  resolve(did: string): Promise<DidResolutionResult>;
 }
 
 export type DIDDocument = {
@@ -110,7 +110,7 @@ export type VerificationMethod = {
   publicKeyMultibase?: string
 };
 
-export type DIDResolutionResult = {
+export type DidResolutionResult = {
   '@context'?: 'https://w3id.org/did-resolution/v1' | string | string[]
   didResolutionMetadata: DIDResolutionMetadata
   didDocument: DIDDocument | null

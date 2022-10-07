@@ -1,6 +1,6 @@
 import type { PermissionsRequestMessage } from '../../../../src/interfaces/permissions/types';
 
-import { DIDResolver } from '../../../../src/did/did-resolver';
+import { DidResolver } from '../../../../src/did/did-resolver';
 import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general';
 import { PermissionsRequest, DEFAULT_CONDITIONS } from '../../../../src/interfaces/permissions/messages/permissions-request';
@@ -116,7 +116,7 @@ describe('PermissionsRequest', () => {
         resolveStub.withArgs('did:jank:alice').resolves(alice.mockResolutionResult);
 
         // @ts-ignore
-        const resolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
+        const resolverStub = sinon.createStubInstance(DidResolver, { resolve: resolveStub });
         const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
         const { signers } = await message.verifyAuth(resolverStub, messageStoreStub);
@@ -157,7 +157,7 @@ describe('PermissionsRequest', () => {
           jsonMessage['authorization'] = jws;
 
           const message = new PermissionsRequest(jsonMessage as PermissionsRequestMessage);
-          const resolverStub = sinon.createStubInstance(DIDResolver);
+          const resolverStub = sinon.createStubInstance(DidResolver);
           const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
           await expect(message.verifyAuth(resolverStub, messageStoreStub))
