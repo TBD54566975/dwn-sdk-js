@@ -106,7 +106,6 @@ async function fetchUnpublishedRecordsForRequester(queryMessage: CollectionsQuer
     ...queryMessage.descriptor.filter
   };
   removeUndefinedProperties(includeCriteria);
-  // TODO: prevent setting of recipient
 
   // then exclude all published records
   const excludeCriteria = {
