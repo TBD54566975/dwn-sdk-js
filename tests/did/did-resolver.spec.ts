@@ -2,7 +2,7 @@ import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import { DidIonResolver } from '../../src/did/did-ion-resolver';
-import { DidResolver, validateDID } from '../../src/did/did-resolver';
+import { DidResolver } from '../../src/did/did-resolver';
 
 // extends chai to test promises
 chai.use(chaiAsPromised);
@@ -21,19 +21,5 @@ describe('DidResolver', () => {
     await didResolver.resolve(did);
 
     expect(ionDidResolveSpy.called).to.be.true;
-  });
-});
-
-describe('validateDID', () => {
-  const VALID_DID_EXAMPLE = 'did:example:123456789abcdefghijk';
-  const INVALID_DID_EXAMPLE = 'did:123456789abcdefghijk';
-
-  it('valid DID', () => {
-    expect(() => validateDID(VALID_DID_EXAMPLE)).to.not.throw();
-  });
-
-  it('invalid DID', () => {
-    expect(() => validateDID(null)).to.throw(TypeError);
-    expect(() => validateDID(INVALID_DID_EXAMPLE)).to.throw(TypeError);
   });
 });

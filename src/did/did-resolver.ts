@@ -1,4 +1,5 @@
 import type { PublicJwk } from '../jose/types';
+import { Did } from './did';
 
 /**
  * TODO: add docs, Issue #72 https://github.com/TBD54566975/dwn-sdk-js/issues/72
@@ -25,7 +26,7 @@ export class DidResolver {
    */
   public async resolve(did: string): Promise<DidResolutionResult> {
     // naively validate requester DID
-    validateDID(did);
+    Did.validate(did);
     const splitDID = did.split(':', 3);
 
     const didMethod = splitDID[1];
@@ -47,22 +48,6 @@ export class DidResolver {
     }
 
     return resolutionResult;
-  }
-}
-
-/**
- * @param did - the DID to validate
- */
-export function validateDID(did: unknown): void {
-  // @see https://www.w3.org/TR/2021/PR-did-core-20210803/#did-syntax
-  const DID_REGEX = /^did:[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+:[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+$/;
-
-  if (typeof did !== 'string') {
-    throw new TypeError(`DID is not string: ${did}`);
-  }
-
-  if (!DID_REGEX.test(did)) {
-    throw new TypeError(`DID is not a valid DID: ${did}`);
   }
 }
 
