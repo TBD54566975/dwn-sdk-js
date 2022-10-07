@@ -29,6 +29,7 @@ module.exports = {
     ],
     'semi'                    : ['off'],
     '@typescript-eslint/semi' : ['error', 'always'],
+    'no-multi-spaces'         : ['error'],
     'no-trailing-spaces'      : ['error'],
     'max-len'                 : ['error', { 'code': 150 }],
     'key-spacing'             : [
@@ -41,6 +42,7 @@ module.exports = {
         }
       }
     ],
+    'keyword-spacing'                                  : ['error', { 'before': true, 'after': true }],
     '@typescript-eslint/explicit-function-return-type' : ['error'],
     'no-unused-vars'                                   : 'off',
     '@typescript-eslint/no-unused-vars'                : [
@@ -49,8 +51,10 @@ module.exports = {
         'vars'               : 'all',
         'args'               : 'after-used',
         'ignoreRestSiblings' : true,
-        'argsIgnorePattern'  : '^_'
+        'argsIgnorePattern'  : '^_',
+        'varsIgnorePattern'  : '^_'
       }
     ],
+    'prefer-const': ['error', { 'destructuring': 'all' }]
   }
 };

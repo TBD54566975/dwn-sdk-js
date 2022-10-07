@@ -26,7 +26,7 @@ jobs:
     # read more about matrix strategies here: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstrategymatrix
     strategy:
       matrix:
-        node-version: [16.x]
+        node-version: [16.17.0, 18.8.0]
 
     steps:
       - uses: actions/checkout@v3
@@ -44,5 +44,3 @@ jobs:
       - run: npm run test:node:ci
       # runs code coverage badge generation, throws if README output differs to README to be checked in (thus detects if tests were not run)
       - run: npm run make-coverage-badges:ci
-
-

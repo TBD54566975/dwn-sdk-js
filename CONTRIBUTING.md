@@ -8,21 +8,9 @@ The general process we hope to follow is:
 - Implement said proposal in this repo and submit a PR
 - Iterate on PR until its ready for `main`
 
-Given that we're still in early stages of development, this contribution guide will certainly change as we near a v1.0 release. Until then, things will be a bit ragtag but there's still plently of opportunities for contribution.
+Given that we're still in early stages of development, this contribution guide will certainly change as we near a [beta release](https://github.com/TBD54566975/dwn-sdk-js/milestone/1). Until then, things will be a bit ragtag but there's still plently of opportunities for contribution.
 
-We'll be focusing on issues in the following order:
-- https://github.com/decentralized-identity/decentralized-web-node/issues/126
-- https://github.com/TBD54566975/dwn-sdk-js/issues/7
-- https://github.com/decentralized-identity/decentralized-web-node/issues/127
-- https://github.com/decentralized-identity/decentralized-web-node/issues/128
-- https://github.com/TBD54566975/dwn-sdk-js/issues/6
-- https://github.com/TBD54566975/dwn-sdk-js/issues/10
-- https://github.com/TBD54566975/dwn-sdk-js/issues/11
-- https://github.com/TBD54566975/dwn-sdk-js/issues/12
-- https://github.com/TBD54566975/dwn-sdk-js/issues/13
-- https://github.com/TBD54566975/dwn-sdk-js/issues/14
-
-As we work our way through these issues, we'll be creating more focused issues with the following labels:
+As we work our way towards a beta release, we'll be creating more focused issues with the following labels:
 - `bug`
 - `documentation`
 - `good first issue`
@@ -43,11 +31,14 @@ We suggest the following process when picking up one of these issues:
 
 | Requirement | Tested Version | Installation Instructions |
 | ----------- | -------------- | ------------------------- |
-| `Node.js`        | `v16.14.0`            | There are many ways to install `Node.js`. Feel free to choose whichever approach you feel the most comfortable with. If you don't have a preferred installation method, you can visit the official [downloads](https://nodejs.org/en/download/) page and choose the the appropriate installer respective to your operating system |
+| `Node.js`        | `v16.17.0`            | There are many ways to install `Node.js`. Feel free to choose whichever approach you feel the most comfortable with. If you don't have a preferred installation method, you can visit the official [downloads](https://nodejs.org/en/download/) page and choose the the appropriate installer respective to your operating system |
 
 We plan on including a Docker container to support all local development soon.
 ### Running tests
-Running the `npm run test` command from the root of the project will run all tests. Please make sure there are no failing tests before switching your PR to ready for review! We hope to have this automated via a github action very soon.
+* Running the `npm run test:node` command from the root of the project will run all tests using node. 
+  * This is run via CI whenever a pull request is opened, or a commit is pushed to a branch that has an open PR
+* Running the `npm run test:browser` command from the root of the project will run the tests in a browser environment
+  * Please make sure there are no failing tests before switching your PR to ready for review! We hope to have this automated via a github action very soon.
 ### Code Style
 Our preferred code style has been codified into `eslint` rules. Feel free to take a look [here](https://github.com/TBD54566975/dwn-sdk-js/blob/main/.eslintrc.cjs). Running `npm run lint` will auto-format as much as `eslint` can. Everything it wasn't able to will be printed out as errors or warnings. Please make sure to run `npm run lint` before switching your PR to ready for review! We hope to have this automated via a github action very soon.
 ### Available NPM Commands
