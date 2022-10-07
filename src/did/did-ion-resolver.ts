@@ -1,10 +1,10 @@
 import crossFetch from 'cross-fetch';
-import { DIDMethodResolver, DIDResolutionResult } from './did-resolver';
+import { DidMethodResolver, DidResolutionResult } from './did-resolver';
 
 /**
  * Resolver for ION DIDs.
  */
-export class IonDidResolver implements DIDMethodResolver {
+export class DidIonResolver implements DidMethodResolver {
   // cross-platform fetch
   private fetch = crossFetch;
 
@@ -17,7 +17,7 @@ export class IonDidResolver implements DIDMethodResolver {
     return 'ion';
   }
 
-  async resolve(did: string): Promise<DIDResolutionResult> {
+  async resolve(did: string): Promise<DidResolutionResult> {
     // using `URL` constructor to handle both existence and absence of trailing slash '/' in resolution endpoint
     // appending './' to DID so 'did' in 'did:ion:abc' doesn't get interpreted as a URL scheme (e.g. like 'http') due to the colon
     const resolutionUrl = new URL('./' + did, this.resolutionEndpoint).toString();

@@ -1,45 +1,45 @@
 import type { BaseMessage, RequestSchema } from './core/types';
-import type { DIDMethodResolver } from './did/did-resolver';
+import type { DidMethodResolver } from './did/did-resolver';
 import type { HandlersWriteMessage } from './interfaces/handlers/types';
 import type { Interface, MethodHandler } from './interfaces/types';
 import type { MessageStore } from './store/message-store';
 
 import { addSchema } from './validation/validator';
 import { CollectionsInterface, PermissionsInterface } from './interfaces';
-import { DIDKeyResolver } from './did/did-key-resolver';
-import { DIDResolver } from './did/did-resolver';
-import { IonDidResolver } from './did/ion-did-resolver';
+import { DidKeyResolver } from './did/did-key-resolver';
+import { DidResolver } from './did/did-resolver';
+import { DidIonResolver } from './did/did-ion-resolver';
 import { Message, MessageReply, Request, Response } from './core';
 import { MessageStoreLevel } from './store/message-store-level';
 
-export class DWN {
+export class Dwn {
   static methodHandlers: { [key:string]: MethodHandler } = {
     ...CollectionsInterface.methodHandlers,
     ...PermissionsInterface.methodHandlers
   };
 
-  private DIDResolver: DIDResolver;
+  private DidResolver: DidResolver;
   private messageStore: MessageStore;
   private customEventHandlers: { handlersWriteMessage: HandlersWriteMessage, eventHandler: EventHandler }[] = [];
 
 
   private constructor(config: Config) {
-    this.DIDResolver = new DIDResolver(config.DIDMethodResolvers);
+    this.DidResolver = new DidResolver(config.DidMethodResolvers);
     this.messageStore = config.messageStore;
   }
 
-  static async create(config: Config): Promise<DWN> {
+  static async create(config: Config): Promise<Dwn> {
     config.messageStore = config.messageStore || new MessageStoreLevel();
-    config.DIDMethodResolvers = config.DIDMethodResolvers || [new IonDidResolver(), new DIDKeyResolver()];
+    config.DidMethodResolvers = config.DidMethodResolvers || [new DidIonResolver(), new DidKeyResolver()];
     config.interfaces = config.interfaces || [];
 
     for (const { methodHandlers, schemas } of config.interfaces) {
 
       for (const messageType in methodHandlers) {
-        if (DWN.methodHandlers[messageType]) {
+        if (Dwn.methodHandlers[messageType]) {
           throw new Error(`methodHandler already exists for ${messageType}`);
         } else {
-          DWN.methodHandlers[messageType] = methodHandlers[messageType];
+          Dwn.methodHandlers[messageType] = methodHandlers[messageType];
         }
       }
 
@@ -48,7 +48,7 @@ export class DWN {
       }
     }
 
-    const dwn = new DWN(config);
+    const dwn = new Dwn(config);
     await dwn.open();
 
     return dwn;
@@ -122,9 +122,9 @@ export class DWN {
     }
 
     try {
-      const interfaceMethodHandler = DWN.methodHandlers[message.descriptor.method];
+      const interfaceMethodHandler = Dwn.methodHandlers[message.descriptor.method];
 
-      const methodHandlerReply = await interfaceMethodHandler(message, this.messageStore, this.DIDResolver);
+      const methodHandlerReply = await interfaceMethodHandler(message, this.messageStore, this.DidResolver);
 
       const customHandlerReply = await this.triggerEventHandler(message);
 
@@ -172,7 +172,7 @@ export class DWN {
 };
 
 export type Config = {
-  DIDMethodResolvers?: DIDMethodResolver[],
+  DidMethodResolvers?: DidMethodResolver[],
   interfaces?: Interface[];
   messageStore?: MessageStore;
 };

@@ -3,7 +3,7 @@ import type { PublicJwk } from '../../types';
 import type { VerificationMethod } from '../../../did/did-resolver';
 
 import { base64url } from 'multiformats/bases/base64';
-import { DIDResolver } from '../../../did/did-resolver';
+import { DidResolver } from '../../../did/did-resolver';
 import { signers as verifiers } from '../../algorithms';
 
 type VerificationResult = {
@@ -19,7 +19,7 @@ export class GeneralJwsVerifier {
     this.jws = jws;
   }
 
-  async verify(didResolver: DIDResolver): Promise<VerificationResult> {
+  async verify(didResolver: DidResolver): Promise<VerificationResult> {
     const signers: string[] = [];
 
     for (const signature of this.jws.signatures) {
@@ -42,7 +42,7 @@ export class GeneralJwsVerifier {
     return { signers };
   }
 
-  static async getPublicKey(did: string, kid: string, didResolver: DIDResolver): Promise<PublicJwk> {
+  static async getPublicKey(did: string, kid: string, didResolver: DidResolver): Promise<PublicJwk> {
     // `resolve` throws exception if DID is invalid, DID method is not supported,
     // or resolving DID fails
 

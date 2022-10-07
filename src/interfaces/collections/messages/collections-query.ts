@@ -1,7 +1,7 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
 import type { CollectionsQueryDescriptor, CollectionsQueryMessage } from '../types';
 import { authenticate, validateSchema } from '../../../core/auth';
-import { DIDResolver } from '../../../did/did-resolver';
+import { DidResolver } from '../../../did/did-resolver';
 import { Jws } from '../../../jose/jws/jws';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
@@ -52,7 +52,7 @@ export class CollectionsQuery extends Message implements Authorizable {
     return new CollectionsQuery(message);
   }
 
-  async verifyAuth(didResolver: DIDResolver, _messageStore: MessageStore): Promise<AuthVerificationResult> {
+  async verifyAuth(didResolver: DidResolver, _messageStore: MessageStore): Promise<AuthVerificationResult> {
     const message = this.message;
 
     // signature verification is computationally intensive, so we're going to start by validating the payload.

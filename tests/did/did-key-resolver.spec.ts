@@ -2,16 +2,16 @@ import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import varint from 'varint';
 import { base58btc } from 'multiformats/bases/base58';
-import { DIDKeyResolver } from '../../src/did/did-key-resolver';
+import { DidKeyResolver } from '../../src/did/did-key-resolver';
 
 // extends chai to test promises
 chai.use(chaiAsPromised);
 
-describe('DIDKeyResolver', () => {
+describe('DidKeyResolver', () => {
   it('should resolve a ed25519 `did:key` DID correctly', async () => {
     // test vector taken from https://w3c-ccg.github.io/did-method-key/#ed25519-x25519
     const did = 'did:key:z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp';
-    const resolver = new DIDKeyResolver();
+    const resolver = new DidKeyResolver();
 
     const resolutionDocument = await resolver.resolve(did);
     expect(resolutionDocument.didDocument.id).to.equal(did);
@@ -23,7 +23,7 @@ describe('DIDKeyResolver', () => {
     // test vector taken from:
     // https://github.com/transmute-industries/did-key.js/blob/main/packages/did-key-test-vectors/src/secp256k1/did-key-secp256k1-case-0.json
     const did = 'did:key:zQ3shjRPgHQQbTtXyofk1ygghRJ75RZpXmWBMY1BKnhyz7zKp';
-    const resolver = new DIDKeyResolver();
+    const resolver = new DidKeyResolver();
 
     const resolutionDocument = await resolver.resolve(did);
     expect(resolutionDocument.didDocument.id).to.equal(did);
@@ -33,8 +33,8 @@ describe('DIDKeyResolver', () => {
   });
 
   it('should resolve a `did:key` DID that the library generates', async () => {
-    const { did, publicJwk } = await DIDKeyResolver.generate();
-    const resolver = new DIDKeyResolver();
+    const { did, publicJwk } = await DidKeyResolver.generate();
+    const resolver = new DidKeyResolver();
 
     const resolutionDocument = await resolver.resolve(did);
     expect(resolutionDocument.didDocument.id).to.equal(did);
@@ -48,18 +48,18 @@ describe('DIDKeyResolver', () => {
     const id = base58btc.encode(idBytes);
 
     const did = `did:key:${id}`;
-    const ionDidResolver = new DIDKeyResolver();
+    const didIonResolver = new DidKeyResolver();
 
-    const resolutionDocument = await ionDidResolver.resolve(did);
+    const resolutionDocument = await didIonResolver.resolve(did);
     expect(resolutionDocument.didDocument).to.equal(null);
     expect(resolutionDocument.didResolutionMetadata.error).to.equal('invalidDid');
   });
 
   it('should throw if key is invalid', async () => {
     const did = 'did:ion:SomethingThatCannotBeResolved';
-    const ionDidResolver = new DIDKeyResolver();
+    const didIonResolver = new DidKeyResolver();
 
-    const resolutionDocument = await ionDidResolver.resolve(did);
+    const resolutionDocument = await didIonResolver.resolve(did);
     expect(resolutionDocument.didDocument).to.equal(null);
     expect(resolutionDocument.didResolutionMetadata.error).to.equal('invalidDid');
   });

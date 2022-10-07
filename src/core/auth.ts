@@ -2,7 +2,7 @@ import type { AuthorizableMessage, BaseMessage } from './types';
 import type { AuthVerificationResult } from './types';
 
 import { CID } from 'multiformats';
-import { DIDResolver } from '../did/did-resolver';
+import { DidResolver } from '../did/did-resolver';
 import { GeneralJws } from '../jose/jws/general/types';
 import { GeneralJwsVerifier } from '../jose/jws/general';
 import { generateCid, parseCid } from '../utils/cid';
@@ -24,7 +24,7 @@ type PayloadConstraints = {
  */
 export async function canonicalAuth(
   message: BaseMessage & AuthorizableMessage,
-  didResolver: DIDResolver,
+  didResolver: DidResolver,
   messageStore: MessageStore,
   payloadConstraints?: PayloadConstraints
 ): Promise<AuthVerificationResult> {
@@ -94,7 +94,7 @@ export async function validateSchema(
   return parsedPayload;
 }
 
-export async function authenticate(jws: GeneralJws, didResolver: DIDResolver): Promise<string[]> {
+export async function authenticate(jws: GeneralJws, didResolver: DidResolver): Promise<string[]> {
   const verifier = new GeneralJwsVerifier(jws);
   const { signers } = await verifier.verify(didResolver);
   return signers;

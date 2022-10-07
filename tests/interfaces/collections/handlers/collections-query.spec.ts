@@ -1,5 +1,5 @@
-import { CollectionsWriteMessage, DIDResolver } from '../../../../src';
-import { DIDKeyResolver } from '../../../../src/did/did-key-resolver';
+import { CollectionsWriteMessage, DidResolver } from '../../../../src';
+import { DidKeyResolver } from '../../../../src/did/did-key-resolver';
 import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
@@ -13,7 +13,7 @@ chai.use(chaiAsPromised);
 
 describe('handleCollectionsQuery()', () => {
   describe('functional tests', () => {
-    let didResolver: DIDResolver;
+    let didResolver: DidResolver;
     let messageStore: MessageStoreLevel;
 
     before(async () => {
@@ -26,7 +26,7 @@ describe('handleCollectionsQuery()', () => {
 
       await messageStore.open();
 
-      didResolver = new DIDResolver([new DIDKeyResolver()]);
+      didResolver = new DidResolver([new DidKeyResolver()]);
     });
 
     beforeEach(async () => {
@@ -91,8 +91,8 @@ describe('handleCollectionsQuery()', () => {
       // 2nd is also unpublished but is meant for bob
       // 3rd is published
       const schema = 'schema1';
-      const aliceDidData = await DIDKeyResolver.generate();
-      const bobDidData = await DIDKeyResolver.generate();
+      const aliceDidData = await DidKeyResolver.generate();
+      const bobDidData = await DidKeyResolver.generate();
       const record1Data = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid: aliceDidData.did, schema, contextId: '1' });
       const record2Data = await TestDataGenerator.generateCollectionsWriteMessage(
         { targetDid: aliceDidData.did, schema, contextId: '2', recipientDid: bobDidData.did }
@@ -109,7 +109,7 @@ describe('handleCollectionsQuery()', () => {
       const bobQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
         targetDid        : aliceDidData.did,
         requesterDid     : bobDidData.did,
-        requesterKeyId   : DIDKeyResolver.getKeyId(bobDidData.did),
+        requesterKeyId   : DidKeyResolver.getKeyId(bobDidData.did),
         requesterKeyPair : bobDidData, // contains the key pair
         filter           : { schema }
       });
@@ -128,7 +128,7 @@ describe('handleCollectionsQuery()', () => {
       const aliceQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
         targetDid        : aliceDidData.did,
         requesterDid     : aliceDidData.did,
-        requesterKeyId   : DIDKeyResolver.getKeyId(aliceDidData.did),
+        requesterKeyId   : DidKeyResolver.getKeyId(aliceDidData.did),
         requesterKeyPair : aliceDidData, // contains the key pair
         filter           : { schema }
       });
@@ -141,15 +141,15 @@ describe('handleCollectionsQuery()', () => {
 
 
     it('should throw if querying for records not intended for the requester', async () => {
-      const aliceDidData = await DIDKeyResolver.generate();
-      const bobDidData = await DIDKeyResolver.generate();
-      const carolDidData = await DIDKeyResolver.generate();
+      const aliceDidData = await DidKeyResolver.generate();
+      const bobDidData = await DidKeyResolver.generate();
+      const carolDidData = await DidKeyResolver.generate();
 
       // test correctness for Bob's query
       const bobQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
         targetDid        : aliceDidData.did,
         requesterDid     : bobDidData.did,
-        requesterKeyId   : DIDKeyResolver.getKeyId(bobDidData.did),
+        requesterKeyId   : DidKeyResolver.getKeyId(bobDidData.did),
         requesterKeyPair : bobDidData,
         filter           : { recipient: carolDidData.did } // bob querying carol's records
       });

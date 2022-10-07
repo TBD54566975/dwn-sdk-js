@@ -1,6 +1,6 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { DIDResolver } from '../../../src/did/did-resolver';
+import { DidResolver } from '../../../src/did/did-resolver';
 import { GeneralJwsSigner } from '../../../src/jose/jws/general/signer';
 import { GeneralJwsVerifier } from '../../../src/jose/jws/general/verifier';
 import { signers } from '../../../src/jose/algorithms';
@@ -37,7 +37,7 @@ describe('General JWS Sign/Verify', () => {
       didDocumentMetadata: {}
     };
 
-    const resolverStub = sinon.createStubInstance(DIDResolver, {
+    const resolverStub = sinon.createStubInstance(DidResolver, {
       // @ts-ignore
       resolve: sinon.stub().withArgs('did:jank:alice').resolves(mockResolutionResult)
     });
@@ -70,7 +70,7 @@ describe('General JWS Sign/Verify', () => {
       didDocumentMetadata: {}
     };
 
-    const resolverStub = sinon.createStubInstance(DIDResolver, {
+    const resolverStub = sinon.createStubInstance(DidResolver, {
       // @ts-ignore
       resolve: sinon.stub().withArgs('did:jank:alice').resolves(mockResolutionResult)
     });
@@ -136,7 +136,7 @@ describe('General JWS Sign/Verify', () => {
     resolveStub.withArgs('did:jank:alice').resolves(alice.mockResolutionResult);
     resolveStub.withArgs('did:jank:bob').resolves(bob.mockResolutionResult);
 
-    const resolverStub = sinon.createStubInstance(DIDResolver, {
+    const resolverStub = sinon.createStubInstance(DidResolver, {
       // @ts-ignore
       resolve: resolveStub
     });

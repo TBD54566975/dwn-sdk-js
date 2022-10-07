@@ -1,4 +1,4 @@
-import type { DIDMethodResolver, DIDResolutionResult, DIDDocument } from './did-resolver';
+import type { DidMethodResolver, DidResolutionResult, DIDDocument } from './did-resolver';
 
 import varint from 'varint';
 import { base58btc } from 'multiformats/bases/base58';
@@ -16,7 +16,7 @@ import { secp256k1 } from '../jose/algorithms/signing/secp256k1';
  * Helpful Resources:
  * * [DID-Key Draft Spec](https://w3c-ccg.github.io/did-method-key/)
  */
-export class DIDKeyResolver implements DIDMethodResolver {
+export class DidKeyResolver implements DidMethodResolver {
   method(): string {
     return 'key';
   }
@@ -43,13 +43,13 @@ export class DIDKeyResolver implements DIDMethodResolver {
     return multicodecHeaderSize;
   }
 
-  async resolve(did): Promise<DIDResolutionResult> {
+  async resolve(did): Promise<DidResolutionResult> {
     const [_scheme, _method, id] = did.split(':', 3);
 
     try {
       const idBytes = base58btc.decode(id);
       const multicodec = varint.decode(idBytes);
-      const multicodecSize = DIDKeyResolver.getMulticodecSize(idBytes);
+      const multicodecSize = DidKeyResolver.getMulticodecSize(idBytes);
       const publicKeyBytes = idBytes.slice(multicodecSize);
 
       // key specific values

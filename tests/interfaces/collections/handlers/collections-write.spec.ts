@@ -3,7 +3,7 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import { base64url } from 'multiformats/bases/base64';
 import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/types';
-import { DIDResolutionResult, DIDResolver } from '../../../../src/did/did-resolver';
+import { DidResolutionResult, DidResolver } from '../../../../src/did/did-resolver';
 import { GenerateCollectionsWriteMessageOutput, TestDataGenerator } from '../../../utils/test-data-generator';
 import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query';
 import { handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write';
@@ -469,7 +469,7 @@ describe('handleCollectionsWrite()', () => {
     const messageData = await TestDataGenerator.generateCollectionsWriteMessage();
     messageData.message.encodedData = base64url.baseEncode(TestDataGenerator.randomBytes(50));
 
-    const didResolverStub = sinon.createStubInstance(DIDResolver);
+    const didResolverStub = sinon.createStubInstance(DidResolver);
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
     const reply = await handleCollectionsWrite(messageData.message, messageStoreStub, didResolverStub);
@@ -513,9 +513,9 @@ describe('handleCollectionsWrite()', () => {
 
     // setting up a stub method resolver & message store
     const didResolutionResult = TestDataGenerator.createDidResolutionResult(requesterDid, requesterKeyId, requesterKeyPair.publicJwk);
-    const resolveStub = sinon.stub<[string], Promise<DIDResolutionResult>>();
+    const resolveStub = sinon.stub<[string], Promise<DidResolutionResult>>();
     resolveStub.withArgs(requesterDid).resolves(didResolutionResult);
-    const didResolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
+    const didResolverStub = sinon.createStubInstance(DidResolver, { resolve: resolveStub });
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
     messageStoreStub.put.throwsException('anyError'); // simulate a DB write error
 

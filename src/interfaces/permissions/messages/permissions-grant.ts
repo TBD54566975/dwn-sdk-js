@@ -5,7 +5,7 @@ import type { SignatureInput } from '../../../jose/jws/general/types';
 
 import { CID } from 'multiformats/cid';
 import { sign, verifyAuth } from '../../../core/auth';
-import { DIDResolver } from '../../../did/did-resolver';
+import { DidResolver } from '../../../did/did-resolver';
 import { generateCid } from '../../../utils/cid';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
@@ -114,7 +114,7 @@ export class PermissionsGrant extends Message implements Authorizable {
     return delegatedGrant;
   }
 
-  verifyAuth(didResolver: DIDResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
+  verifyAuth(didResolver: DidResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
     return verifyAuth(this.message, didResolver, messageStore);
   }
 
