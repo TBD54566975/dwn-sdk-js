@@ -3,6 +3,7 @@ import type { DIDMethodResolver, DIDResolutionResult, DIDDocument } from './did-
 import varint from 'varint';
 import { base58btc } from 'multiformats/bases/base58';
 import { base64url } from 'multiformats/bases/base64';
+import { Did } from './did';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519';
 import { PrivateJwk, PublicJwk } from '../jose/types';
 import { secp256k1 } from '../jose/algorithms/signing/secp256k1';
@@ -122,4 +123,13 @@ export class DIDKeyResolver implements DIDMethodResolver {
 
     return { did, publicJwk, privateJwk };
   }
+
+  /**
+   * Gets the fully qualified key ID of a `did:key` DID. ie. '<did>#<method-specific-id>'
+   */
+  public static getKeyId(did: string): string {
+    const methodSpecificId = Did.getMethodSpecificId(did);
+    const keyId = `${did}#${methodSpecificId}`;
+    return keyId;
+  };
 }

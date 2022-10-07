@@ -10,12 +10,12 @@
 //   - https://github.com/microsoft/TypeScript/issues/40878
 //
 export type { CollectionsQueryMessage, CollectionsWriteMessage } from './interfaces/collections/types';
-export type { DIDResolver } from './did/did-resolver.js';
 export type { EventHandler } from './dwn.js';
 export type { HandlersWriteMessage } from './interfaces/handlers/types';
 export type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolsQueryMessage } from './interfaces/protocols/types';
 export { CollectionsQuery, CollectionsQueryOptions } from './interfaces/collections/messages/collections-query.js';
 export { CollectionsWrite, CollectionsWriteOptions } from './interfaces/collections/messages/collections-write.js';
+export { DIDResolver } from './did/did-resolver.js';
 export { DWN } from './dwn.js';
 export { HandlersWrite, HandlersWriteOptions } from './interfaces/handlers/messages/handlers-write.js';
 export { ProtocolsConfigure, ProtocolsConfigureOptions } from './interfaces/protocols/messages/protocols-configure.js';

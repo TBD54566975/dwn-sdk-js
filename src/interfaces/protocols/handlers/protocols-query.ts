@@ -1,8 +1,8 @@
 import type { MethodHandler } from '../../types';
 import type { ProtocolsQueryMessage } from '../types';
+import { canonicalAuth } from '../../../core/auth';
 import { MessageReply } from '../../../core';
 import { removeUndefinedProperties } from '../../../utils/object';
-import { verifyAuth } from '../../../core/auth';
 
 export const handleProtocolsQuery: MethodHandler = async (
   message,
@@ -12,7 +12,7 @@ export const handleProtocolsQuery: MethodHandler = async (
   const incomingMessage = message as ProtocolsQueryMessage;
 
   try {
-    await verifyAuth(incomingMessage, didResolver, messageStore);
+    await canonicalAuth(incomingMessage, didResolver, messageStore);
   } catch (e) {
     return new MessageReply({
       status: { code: 401, detail: e.message }

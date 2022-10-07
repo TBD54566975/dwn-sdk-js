@@ -1,6 +1,6 @@
-import { sign } from '../../../core/auth';
 import type { AuthCreateOptions } from '../../../core/types';
 import type { HandlersWriteDescriptor, HandlersWriteMessage } from '../../handlers/types';
+import { Jws } from '../../../jose/jws/jws';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { validate } from '../../../validation/validator';
 
@@ -41,7 +41,7 @@ export class HandlersWrite {
     const messageType = descriptor.method;
     validate(messageType, { descriptor, authorization: {} });
 
-    const authorization = await sign({ descriptor }, options.signatureInput);
+    const authorization = await Jws.sign({ descriptor }, options.signatureInput);
     const message = { descriptor, authorization };
 
     return message;

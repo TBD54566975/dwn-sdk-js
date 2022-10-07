@@ -1,15 +1,12 @@
 import type { AuthorizableMessage, BaseMessage } from './types';
 import type { AuthVerificationResult } from './types';
-import type { SignatureInput } from '../jose/jws/general/types';
 
 import { CID } from 'multiformats';
-import { CollectionsWriteMessage } from '../interfaces/collections/types';
 import { DIDResolver } from '../did/did-resolver';
 import { GeneralJws } from '../jose/jws/general/types';
-import { GeneralJwsSigner, GeneralJwsVerifier } from '../jose/jws/general';
+import { GeneralJwsVerifier } from '../jose/jws/general';
 import { generateCid, parseCid } from '../utils/cid';
 import { MessageStore } from '../store/message-store';
-import { protocolAuthorize } from './protocol-authorization';
 import lodash from 'lodash';
 
 const { isPlainObject } = lodash;
@@ -20,10 +17,12 @@ type PayloadConstraints = {
 };
 
 /**
- * Authenticates then authorizes the given Permissions message.
+ * Authenticates then authorizes the given message using the "canonical" auth flow.
+ * Some message auth require special handling such as `CollectionsWrite` and `CollectionsQuery`,
+ * which would be incompatible with this auth flow.
  * @throws {Error} if auth fails
  */
-export async function verifyAuth(
+export async function canonicalAuth(
   message: BaseMessage & AuthorizableMessage,
   didResolver: DIDResolver,
   messageStore: MessageStore,
@@ -34,18 +33,12 @@ export async function verifyAuth(
 
   const signers = await authenticate(message.authorization, didResolver);
 
-  // authorization
-  if (message.descriptor.method === 'CollectionsWrite' &&
-      (message as CollectionsWriteMessage).descriptor.protocol !== undefined) {
-    await protocolAuthorize((message as CollectionsWriteMessage), signers[0], messageStore);
-  } else {
-    await authorize(message, signers);
-  }
+  await authorize(message, signers);
 
   return { payload: parsedPayload, signers };
 }
 
-async function validateSchema(
+export async function validateSchema(
   message: BaseMessage & AuthorizableMessage,
   payloadConstraints?: PayloadConstraints
 ): Promise<{ descriptorCid: CID, [key: string]: CID }> {
@@ -101,42 +94,17 @@ async function validateSchema(
   return parsedPayload;
 }
 
-async function authenticate(jws: GeneralJws, didResolver: DIDResolver): Promise<string[]> {
+export async function authenticate(jws: GeneralJws, didResolver: DIDResolver): Promise<string[]> {
   const verifier = new GeneralJwsVerifier(jws);
   const { signers } = await verifier.verify(didResolver);
   return signers;
 }
 
-async function authorize(message: BaseMessage, signers: string[]): Promise<void> {
+export async function authorize(message: BaseMessage, signers: string[]): Promise<void> {
   // if requester is the same as the target DID, we can directly grant access
   if (signers[0] === message.descriptor.target) {
     return;
   } else {
     throw new Error('message failed authorization, permission grant check not yet implemented');
   }
-}
-
-/**
- * signs the provided message. Signed payload includes the CID of the message's descriptor by default
- * along with any additional payload properties provided
- * @param message - the message to sign
- * @param signatureInput - the signature material to use (e.g. key and header data)
- * @param payloadProperties - additional properties to include in the signed payload
- * @returns General JWS signature
- */
-export async function sign(
-  message: BaseMessage,
-  signatureInput: SignatureInput,
-  payloadProperties?: { [key: string]: CID }
-
-): Promise<GeneralJws> {
-  const descriptorCid = await generateCid(message.descriptor);
-
-  const authPayload = { ...payloadProperties, descriptorCid: descriptorCid.toString() };
-  const authPayloadStr = JSON.stringify(authPayload);
-  const authPayloadBytes = new TextEncoder().encode(authPayloadStr);
-
-  const signer = await GeneralJwsSigner.create(authPayloadBytes, [signatureInput]);
-
-  return signer.getJws();
 }

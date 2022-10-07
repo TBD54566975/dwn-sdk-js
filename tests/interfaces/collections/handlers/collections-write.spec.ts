@@ -415,7 +415,7 @@ describe('handleCollectionsWrite()', () => {
       // setting up a stub did resolver
       const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(alice.did, alice.keyId, alice.keyPair.publicJwk);
 
-      const protocolWriteReply = await handleCollectionsWrite(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
+      const protocolWriteReply = await handleProtocolsConfigure(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
       expect(protocolWriteReply.status.code).to.equal(202);
 
       // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
@@ -496,7 +496,7 @@ describe('handleCollectionsWrite()', () => {
   it('should return 401 if requester is not the same as the target', async () => {
     const requesterDid = 'did:example:alice';
     const targetDid = 'did:example:bob'; // requester and target are different
-    const { message, requesterKeyId, requesterKeyPair } = await TestDataGenerator.generateCollectionsQueryMessage({ requesterDid, targetDid });
+    const { message, requesterKeyId, requesterKeyPair } = await TestDataGenerator.generateCollectionsWriteMessage({ requesterDid, targetDid });
 
     // setting up a stub did resolver & message store
     const didResolverStub = TestStubGenerator.createDidResolverStub(requesterDid, requesterKeyId, requesterKeyPair.publicJwk);

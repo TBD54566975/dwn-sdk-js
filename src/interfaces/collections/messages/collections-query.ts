@@ -1,10 +1,11 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
 import type { CollectionsQueryDescriptor, CollectionsQueryMessage } from '../types';
+import { authenticate, validateSchema } from '../../../core/auth';
 import { DIDResolver } from '../../../did/did-resolver';
+import { Jws } from '../../../jose/jws/jws';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
 import { removeUndefinedProperties } from '../../../utils/object';
-import { sign, verifyAuth } from '../../../core/auth';
 import { validate } from '../../../validation/validator';
 
 export type CollectionsQueryOptions = AuthCreateOptions & {
@@ -45,14 +46,27 @@ export class CollectionsQuery extends Message implements Authorizable {
     const messageType = descriptor.method;
     validate(messageType, { descriptor, authorization: {} });
 
-    const authorization = await sign({ descriptor }, options.signatureInput);
+    const authorization = await Jws.sign({ descriptor }, options.signatureInput);
     const message = { descriptor, authorization };
 
     return new CollectionsQuery(message);
   }
 
-  async verifyAuth(didResolver: DIDResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
-    // TODO: Issue #75 - Add permission verification - https://github.com/TBD54566975/dwn-sdk-js/issues/75
-    return await verifyAuth(this.message, didResolver, messageStore);
+  async verifyAuth(didResolver: DIDResolver, _messageStore: MessageStore): Promise<AuthVerificationResult> {
+    const message = this.message;
+
+    // signature verification is computationally intensive, so we're going to start by validating the payload.
+    const parsedPayload = await validateSchema(message);
+
+    const signers = await authenticate(message.authorization, didResolver);
+    const requesterDid = signers[0];
+
+    const recipientDid = this.message.descriptor.filter.recipient;
+    if (recipientDid !== undefined &&
+        recipientDid !== requesterDid) {
+      throw new Error(`non-owner ${requesterDid}, not allowed to query records intended for ${recipientDid}`);
+    }
+
+    return { payload: parsedPayload, signers };
   }
 }

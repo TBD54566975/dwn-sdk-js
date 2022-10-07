@@ -1,8 +1,8 @@
 import type { ProtocolsConfigureMessage } from '../types';
 import type { MethodHandler } from '../../types';
 
+import { canonicalAuth } from '../../../core/auth';
 import { Message, MessageReply } from '../../../core';
-import { verifyAuth } from '../../../core/auth';
 
 export const handleProtocolsConfigure: MethodHandler = async (
   message,
@@ -14,7 +14,7 @@ export const handleProtocolsConfigure: MethodHandler = async (
 
     // authentication & authorization
     try {
-      await verifyAuth(incomingMessage, didResolver, messageStore);
+      await canonicalAuth(incomingMessage, didResolver, messageStore);
     } catch (e) {
       return new MessageReply({
         status: { code: 401, detail: e.message }
