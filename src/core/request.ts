@@ -3,20 +3,12 @@ import { validate } from '../validation/validator';
 
 export class Request {
   /**
-   * unmarshals the provided payload into a Request.
+   * parses the provided payload into a `RequestSchema`.
    */
-  static parse(rawRequest: any): RequestSchema {
-    if (typeof rawRequest !== 'object') {
-      try {
-        rawRequest = JSON.parse(rawRequest);
-      } catch {
-        throw new Error('expected request to be valid JSON');
-      }
-    }
-
+  static parse(request: object): RequestSchema {
     // throws an error if validation fails
-    validate('Request', rawRequest);
+    validate('Request', request);
 
-    return rawRequest as RequestSchema;
+    return request as RequestSchema;
   }
 }

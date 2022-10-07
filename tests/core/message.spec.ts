@@ -1,4 +1,4 @@
-import type { PermissionsRequestSchema } from '../../src/interfaces/permissions/types';
+import type { PermissionsRequestMessage } from '../../src/interfaces/permissions/types';
 
 import { expect } from 'chai';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1';
@@ -34,7 +34,7 @@ describe('Message', () => {
       }).throws('descriptor');
     });
 
-    it('throws an exception if schema doesnt exist for message type', () => {
+    it('throws an exception if schema does not exist for message type', () => {
       expect(() => {
         const m = { descriptor: { method: 'KakaRequest' } };
         Message.parse(m);
@@ -50,7 +50,7 @@ describe('Message', () => {
       }).throws('required property');
     });
 
-    it('returns parseled message if validation succeeds', async () => {
+    it('returns parsed message if validation succeeds', async () => {
       const { privateJwk } = await secp256k1.generateKeyPair();
       const signatureInput = {
         jwkPrivate      : privateJwk,
@@ -61,6 +61,7 @@ describe('Message', () => {
       };
 
       const creator = await PermissionsRequest.create({
+        target      : 'did:jank:bob',
         description : 'drugs',
         grantedBy   : 'did:jank:bob',
         grantedTo   : 'did:jank:alice',
@@ -71,7 +72,7 @@ describe('Message', () => {
       const jsonMessage = Message.parse(creator.toObject());
 
       expect(jsonMessage).to.not.be.undefined;
-      expect((jsonMessage as PermissionsRequestSchema).authorization).to.not.be.undefined;
+      expect((jsonMessage as PermissionsRequestMessage).authorization).to.not.be.undefined;
     });
   });
 });

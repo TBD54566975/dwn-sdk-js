@@ -1,13 +1,13 @@
-import type { Authorization, BaseMessageSchema } from './types';
+import type { AuthorizableMessage, BaseMessage } from './types';
 import type { AuthVerificationResult } from './types';
-import type { SignatureInput } from '../jose/jws/general/types';
 
-import { GeneralJwsSigner, GeneralJwsVerifier } from '../jose/jws/general';
-import { generateCid, parseCid } from '../utils/cid';
-import lodash from 'lodash';
-import { DIDResolver } from '../did/did-resolver';
 import { CID } from 'multiformats';
+import { DidResolver } from '../did/did-resolver';
 import { GeneralJws } from '../jose/jws/general/types';
+import { GeneralJwsVerifier } from '../jose/jws/general';
+import { generateCid, parseCid } from '../utils/cid';
+import { MessageStore } from '../store/message-store';
+import lodash from 'lodash';
 
 const { isPlainObject } = lodash;
 
@@ -17,48 +17,50 @@ type PayloadConstraints = {
 };
 
 /**
- * validates and verifies `authorization` of the provided message
- * @throws {Error} if auth payload is not a valid JSON object
- * @throws {Error} if descriptorCid is missing from Auth payload
- * @throws {Error} if provided descriptorCid does not match expected descriptor CID
+ * Authenticates then authorizes the given message using the "canonical" auth flow.
+ * Some message auth require special handling such as `CollectionsWrite` and `CollectionsQuery`,
+ * which would be incompatible with this auth flow.
+ * @throws {Error} if auth fails
  */
-export async function verifyAuth(
-  message: BaseMessageSchema & Authorization,
-  didResolver: DIDResolver,
+export async function canonicalAuth(
+  message: BaseMessage & AuthorizableMessage,
+  didResolver: DidResolver,
+  messageStore: MessageStore,
   payloadConstraints?: PayloadConstraints
 ): Promise<AuthVerificationResult> {
+  // signature verification is computationally intensive, so we're going to start by validating the payload.
+  const parsedPayload = await validateSchema(message, payloadConstraints);
+
+  const signers = await authenticate(message.authorization, didResolver);
+
+  await authorize(message, signers);
+
+  return { payload: parsedPayload, signers };
+}
+
+export async function validateSchema(
+  message: BaseMessage & AuthorizableMessage,
+  payloadConstraints?: PayloadConstraints
+): Promise<{ descriptorCid: CID, [key: string]: CID }> {
 
   if (message.authorization.signatures.length !== 1) {
-    throw new Error('Expected no more than 1 signature for authorization');
+    throw new Error('expected no more than 1 signature for authorization');
   }
 
-  const verifier = new GeneralJwsVerifier(message.authorization);
+  const payloadJson = GeneralJwsVerifier.decodeJsonPayload(message.authorization);
 
-  // signature verification is computationally intensive, so we're going to start
-  // by validating the payload.
-
-  const payloadBytes: Uint8Array = verifier.decodePayload();
-  const payloadStr = new TextDecoder().decode(payloadBytes);
-  let payloadJson;
-
-  try {
-    payloadJson = JSON.parse(payloadStr);
-  } catch {
+  if (!isPlainObject(payloadJson)) {
     throw new Error('auth payload must be a valid JSON object');
   }
 
-  if(!isPlainObject(payloadJson)) {
-    throw new Error('auth payload must be a valid JSON object');
-  }
-
+  // the authorization payload should, at minimum, always contain `descriptorCid` regardless
+  // of whatever else is present.
   const { descriptorCid } = payloadJson;
   if (!descriptorCid) {
     throw new Error('descriptorCid must be present in authorization payload');
   }
 
-  // the authorization payload should, at minimum, always contain `descriptorCid` regardless
-  // of whatever else is present. check to ensure that the provided descriptorCid matches
-  // the CID of the actual message
+  // check to ensure that the provided descriptorCid matches the CID of the actual message
 
   // parseCid throws an exception if parsing fails
   const providedDescriptorCid = parseCid(descriptorCid);
@@ -68,6 +70,7 @@ export async function verifyAuth(
     throw new Error('provided descriptorCid does not match expected CID');
   }
 
+  // property bag for all properties inspected
   const parsedPayload = { descriptorCid: providedDescriptorCid };
 
   payloadConstraints = payloadConstraints || { properties: new Set([]) };
@@ -83,37 +86,25 @@ export async function verifyAuth(
 
     try {
       parsedPayload[field] = parseCid(payloadJson[field]);
-    } catch(e) {
+    } catch (e) {
       throw new Error(`${field} must be a valid CID`);
     }
   }
 
-  const { signers } = await verifier.verify(didResolver);
-
-  return { payload: parsedPayload, signers };
+  return parsedPayload;
 }
 
-/**
- * signs the provided message. Signed payload includes the CID of the message's descriptor by default
- * along with any additional payload properties provided
- * @param message - the message to sign
- * @param signatureInput - the signature material to use (e.g. key and header data)
- * @param payloadProperties - additional properties to include in the signed payload
- * @returns General JWS signature
- */
-export async function authenticate(
-  message: BaseMessageSchema,
-  signatureInput: SignatureInput,
-  payloadProperties?: { [key: string]: CID }
+export async function authenticate(jws: GeneralJws, didResolver: DidResolver): Promise<string[]> {
+  const verifier = new GeneralJwsVerifier(jws);
+  const { signers } = await verifier.verify(didResolver);
+  return signers;
+}
 
-): Promise<GeneralJws> {
-  const descriptorCid = await generateCid(message.descriptor);
-
-  const authPayload = { ...payloadProperties, descriptorCid: descriptorCid.toString() };
-  const authPayloadStr = JSON.stringify(authPayload);
-  const authPayloadBytes = new TextEncoder().encode(authPayloadStr);
-
-  const signer = await GeneralJwsSigner.create(authPayloadBytes, [signatureInput]);
-
-  return signer.getJws();
+export async function authorize(message: BaseMessage, signers: string[]): Promise<void> {
+  // if requester is the same as the target DID, we can directly grant access
+  if (signers[0] === message.descriptor.target) {
+    return;
+  } else {
+    throw new Error('message failed authorization, permission grant check not yet implemented');
+  }
 }

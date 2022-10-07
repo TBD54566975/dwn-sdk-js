@@ -1,48 +1,44 @@
-import type { DeepPartial } from '../types';
 import type { GeneralJws, SignatureInput } from '../jose/jws/general/types';
 
 import { CID } from 'multiformats/cid';
-import { DIDResolver } from '../did/did-resolver';
-import { PermissionsRequestSchema, PermissionsGrantSchema } from '../interfaces/permissions/types';
+import { DidResolver } from '../did/did-resolver';
+import { MessageStore } from '../store/message-store';
 
 /**
- * Intersection type for all concrete message schema types (e.g. PermissionsRequestSchema)
+ * Intersection type for all concrete message types.
  */
-export type BaseMessageSchema = {
+export type BaseMessage = {
   descriptor: {
+    target: string;
     method: string;
   };
 };
 
 /**
- * Intersection type for message schema types that include `data`
+ * Message that references `dataCid`.
  */
-export type Data = {
+export type DataReferencingMessage = {
   descriptor: {
     dataCid: string;
   };
 
-  data: string;
-};
-
-export type Attestation = {
-  attestation?: GeneralJws;
+  encodedData: string;
 };
 
 /**
- * Intersection type for message schema types that include `authorization`
+ * Message that includes `attestation` property.
  */
-export type Authorization = {
+export type AttestableMessage = {
+  attestation: GeneralJws;
+};
+
+/**
+ * Message that includes `authorization` property.
+ */
+export type AuthorizableMessage = {
   authorization: GeneralJws;
 };
 
-export type GenericMessageSchema = BaseMessageSchema & DeepPartial<Data> & Partial<Attestation> & Partial<Authorization> & {
-  descriptor: {
-    [key: string]: unknown;
-  }
-};
-
-export type MessageSchema = PermissionsRequestSchema | PermissionsGrantSchema | GenericMessageSchema;
 
 export type AuthVerificationResult = {
   /** DIDs of all signers */
@@ -59,15 +55,15 @@ export interface Authorizable {
    * validates and verifies the `authorization` property of a given message
    * @param didResolver - used to resolve `kid`'s
    */
-  verifyAuth(didResolver: DIDResolver): Promise<AuthVerificationResult>;
+  verifyAuth(didResolver: DidResolver, messageStore: MessageStore): Promise<AuthVerificationResult>;
 }
 
 /**
- * concrete Message classes should implement this interface if the Message contains authorization
+ * concrete Message classes should implement this interface if the Message contains `attestation`
  */
 export interface Attestable {
   attest(): Promise<void>;
-  verifyAttestation(didResolver: DIDResolver): Promise<string>;
+  verifyAttestation(didResolver: DidResolver): Promise<string>;
 }
 
 export type AuthCreateOptions = {
@@ -75,6 +71,5 @@ export type AuthCreateOptions = {
 };
 
 export type RequestSchema = {
-  messages: BaseMessageSchema[]
-  target: string
+  messages: BaseMessage[]
 };

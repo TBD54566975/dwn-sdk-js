@@ -1,6 +1,3 @@
-// we're using babel to transpile ts -> js. We're using `tsc` to generate
-// our type definitions. The reasons why we chose this approach are documented
-// in this repo's Github Wiki.
 {
   "compilerOptions": {
     "lib": [
@@ -8,6 +5,7 @@
       "ES6"
     ],
     "target": "es6",
+    "module": "ESNext", // Required for enabling JavaScript import assertion support
     "declaration": true,
     "declarationMap": true,
     "outDir": "dist/esm",
@@ -19,20 +17,11 @@
     "esModuleInterop": true
   },
   "include": [
-    "./src/index.ts"
+    "./src/index.ts",
+    "tests" // building tests also so we can run tests directly without the need for ts-node, ts-mocha
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "tests"
-  ],
-  "ts-node": {
-    "esm": true,
-    "compilerOptions": {
-      "module": "es2022",
-      "target": "es2017",
-      "moduleResolution": "node",
-      "esModuleInterop": true
-    }
-  }
+    "dist"
+  ]
 }

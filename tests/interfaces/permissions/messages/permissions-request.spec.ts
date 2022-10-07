@@ -1,6 +1,6 @@
-import type { PermissionsRequestSchema } from '../../../../src/interfaces/permissions/types';
+import type { PermissionsRequestMessage } from '../../../../src/interfaces/permissions/types';
 
-import { DIDResolver } from '../../../../src/did/did-resolver';
+import { DidResolver } from '../../../../src/did/did-resolver';
 import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general';
 import { PermissionsRequest, DEFAULT_CONDITIONS } from '../../../../src/interfaces/permissions/messages/permissions-request';
@@ -9,6 +9,7 @@ import { validate } from '../../../../src/validation/validator';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
+import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 
 chai.use(chaiAsPromised);
 
@@ -25,6 +26,7 @@ describe('PermissionsRequest', () => {
       };
 
       const message = await PermissionsRequest.create({
+        target      : 'did:jank:bob',
         description : 'drugs',
         grantedBy   : 'did:jank:bob',
         grantedTo   : 'did:jank:alice',
@@ -53,6 +55,7 @@ describe('PermissionsRequest', () => {
       };
 
       const message = await PermissionsRequest.create({
+        target      : 'did:jank:bob',
         description : 'drugs',
         grantedBy   : 'did:jank:bob',
         grantedTo   : 'did:jank:alice',
@@ -101,6 +104,7 @@ describe('PermissionsRequest', () => {
         };
 
         const message = await PermissionsRequest.create({
+          target         : 'did:jank:alice',
           description    : 'drugs',
           grantedBy      : 'did:jank:bob',
           grantedTo      : 'did:jank:alice',
@@ -112,9 +116,10 @@ describe('PermissionsRequest', () => {
         resolveStub.withArgs('did:jank:alice').resolves(alice.mockResolutionResult);
 
         // @ts-ignore
-        const resolverStub = sinon.createStubInstance(DIDResolver, { resolve: resolveStub });
+        const resolverStub = sinon.createStubInstance(DidResolver, { resolve: resolveStub });
+        const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-        const { signers } = await message.verifyAuth(resolverStub);
+        const { signers } = await message.verifyAuth(resolverStub, messageStoreStub);
 
         expect(signers.length).to.equal(1);
         expect(signers).to.include('did:jank:alice');
@@ -144,17 +149,18 @@ describe('PermissionsRequest', () => {
 
         for (const vector of testVectors) {
           const payloadBytes = new TextEncoder().encode(vector);
-          const protectedHeader = { alg: privateJwk.alg, kid: 'did:jank:alice#key1' };
+          const protectedHeader = { alg: privateJwk.alg!, kid: 'did:jank:alice#key1' };
 
           const signer = await GeneralJwsSigner.create(payloadBytes, [{ jwkPrivate: privateJwk, protectedHeader }]);
           const jws = signer.getJws();
 
           jsonMessage['authorization'] = jws;
 
-          const message = new PermissionsRequest(jsonMessage as PermissionsRequestSchema);
-          const resolverStub = sinon.createStubInstance(DIDResolver);
+          const message = new PermissionsRequest(jsonMessage as PermissionsRequestMessage);
+          const resolverStub = sinon.createStubInstance(DidResolver);
+          const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-          await expect(message.verifyAuth(resolverStub))
+          await expect(message.verifyAuth(resolverStub, messageStoreStub))
             .to.eventually.be.rejectedWith('must be a valid JSON object');
         }
       });

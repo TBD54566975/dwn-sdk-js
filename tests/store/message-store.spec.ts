@@ -1,36 +1,29 @@
 import { expect } from 'chai';
 import { generateCid } from '../../src/utils/cid';
-import { ed25519 } from '../../src/jose/algorithms/signing/ed25519';
-import { Message } from '../../src/core';
 import { MessageStoreLevel } from '../../src/store/message-store-level';
-import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request';
+import { TestDataGenerator } from '../utils/test-data-generator';
+import { CollectionsWriteMessage } from '../../src/interfaces/collections/types';
 
-const messageStore = new MessageStoreLevel({
-  blockstoreLocation : 'TEST-BLOCKSTORE',
-  indexLocation      : 'TEST-INDEX'
-});
-
-async function generateMessage(): Promise<Message> {
-  const { privateJwk } = await ed25519.generateKeyPair();
-  return await PermissionsRequest.create({
-    description    : 'drugs',
-    grantedBy      : 'did:jank:bob',
-    grantedTo      : 'did:jank:alice',
-    scope          : { method: 'CollectionsWrite' },
-    signatureInput : { jwkPrivate: privateJwk, protectedHeader: { alg: privateJwk.alg as string, kid: 'whatev' } }
-  });
-}
+let messageStore: MessageStoreLevel;
 
 describe('MessageStoreLevel Tests', () => {
   describe('buildIndexQueryTerms', () => {
-    it('returns an array of terms based on the query object provided', () => {
+    it('returns an array of terms based on the query object type provided', () => {
       const query = {
-        method   : 'CollectionsQuery',
-        schema   : 'https://schema.org/MusicPlaylist',
-        objectId : 'abcd123'
+        method        : 'CollectionsQuery',
+        schema        : 'https://schema.org/MusicPlaylist',
+        objectId      : 'abcd123',
+        published     : true, // boolean type
+        publishedDate : 1234567 // number type
       };
 
-      const expected = ['method:CollectionsQuery', 'schema:https://schema.org/MusicPlaylist', 'objectId:abcd123'];
+      const expected = [
+        { FIELD: ['method'], VALUE: 'CollectionsQuery' },
+        { FIELD: ['schema'], VALUE: 'https://schema.org/MusicPlaylist' },
+        { FIELD: ['objectId'], VALUE: 'abcd123' },
+        { FIELD: ['published'], VALUE: true },
+        { FIELD: ['publishedDate'], VALUE: 1234567 }
+      ];
       const terms = MessageStoreLevel['buildIndexQueryTerms'](query);
 
       expect(terms).to.eql(expected);
@@ -49,10 +42,10 @@ describe('MessageStoreLevel Tests', () => {
       };
 
       const expected = [
-        'requester:AlBorland',
-        'ability.method:CollectionsQuery',
-        'ability.schema:https://schema.org/MusicPlaylist',
-        'ability.doo.bingo:bongo'
+        { FIELD: ['requester'], VALUE: 'AlBorland' },
+        { FIELD: ['ability.method'], VALUE: 'CollectionsQuery' },
+        { FIELD: ['ability.schema'], VALUE: 'https://schema.org/MusicPlaylist' },
+        { FIELD: ['ability.doo.bingo'], VALUE: 'bongo' }
       ];
 
       const terms = MessageStoreLevel['buildIndexQueryTerms'](query);
@@ -63,11 +56,15 @@ describe('MessageStoreLevel Tests', () => {
 
   describe('put', function () {
     before(async () => {
+      messageStore = new MessageStoreLevel({
+        blockstoreLocation : 'TEST-BLOCKSTORE',
+        indexLocation      : 'TEST-INDEX'
+      });
       await messageStore.open();
     });
 
-    afterEach(async () => {
-      await messageStore.clear();
+    beforeEach(async () => {
+      await messageStore.clear(); // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
     });
 
     after(async () => {
@@ -75,40 +72,37 @@ describe('MessageStoreLevel Tests', () => {
     });
 
     it('stores messages as cbor/sha256 encoded blocks with CID as key', async () => {
-      const ctx = { tenant: 'doodeedoo' };
-      const message = await generateMessage();
+      const message = await TestDataGenerator.generatePermissionsRequestMessage();
 
-      await messageStore.put(message, ctx);
+      await messageStore.put(message);
 
-      const expectedCid = await generateCid(message.toObject());
+      const expectedCid = await generateCid(message);
 
-      const jsonMessage = await messageStore.get(expectedCid, ctx);
+      const jsonMessage = await messageStore.get(expectedCid);
       const resultCid = await generateCid(jsonMessage);
 
       expect(resultCid.equals(expectedCid)).to.be.true;
     });
 
-    it('adds author to index', async () => {
-      const ctx = { tenant: 'did:ex:alice', author: 'did:ex:clifford' };
-      const message = await generateMessage();
+    it('adds tenant to index', async () => {
+      const message = await TestDataGenerator.generatePermissionsRequestMessage();
 
-      await messageStore.put(message, ctx);
+      await messageStore.put(message);
 
-      const results = await messageStore.query({ author: ctx.author }, ctx);
+      const results = await messageStore.query({ target: message.descriptor.target });
       expect(results.length).to.equal(1);
     });
 
-    it('adds tenant to index', async () => {
-      const ctx = { tenant: 'did:ex:alice', author: 'did:ex:clifford' };
-      const message = await generateMessage();
+    it('should index properties with characters beyond just letters and digits', async () => {
+      const schema = 'http://my-awesome-schema/awesomeness_schema#awesome-1?id=awesome_1';
+      const messageData = await TestDataGenerator.generateCollectionsWriteMessage({ schema });
 
-      await messageStore.put(message, ctx);
+      await messageStore.put(messageData.message);
 
-      const results = await messageStore.query({ tenant: ctx.tenant }, ctx);
-      expect(results.length).to.equal(1);
+      const results = await messageStore.query({ schema });
+      expect((results[0] as CollectionsWriteMessage).descriptor.schema).to.equal(schema);
     });
   });
-
 
   // describe('get', () => {
   //   before(async () => {

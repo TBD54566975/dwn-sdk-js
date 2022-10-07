@@ -1,13 +1,17 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
-import type { PermissionsRequestSchema, PermissionsRequestDescriptor } from '../types';
+import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types';
 import type { PermissionScope, PermissionConditions } from '../types';
 
-import { authenticate, verifyAuth } from '../../../core/auth';
-import { DIDResolver } from '../../../did/did-resolver';
+import { canonicalAuth } from '../../../core/auth';
+import { DidResolver } from '../../../did/did-resolver';
+import { Jws } from '../../../jose/jws/jws';
 import { Message } from '../../../core/message';
+import { MessageStore } from '../../../store/message-store';
 import { v4 as uuidv4 } from 'uuid';
+import { validate } from '../../../validation/validator';
 
 type PermissionsRequestOptions = AuthCreateOptions & {
+  target: string;
   conditions?: PermissionConditions;
   description: string;
   grantedTo: string;
@@ -17,18 +21,19 @@ type PermissionsRequestOptions = AuthCreateOptions & {
 };
 
 export class PermissionsRequest extends Message implements Authorizable {
-  protected message: PermissionsRequestSchema;
+  protected message: PermissionsRequestMessage;
 
-  constructor(message: PermissionsRequestSchema) {
+  constructor(message: PermissionsRequestMessage) {
     super(message);
   }
 
   static async create(opts: PermissionsRequestOptions): Promise<PermissionsRequest> {
     const { conditions } = opts;
     const providedConditions = conditions ? conditions : {};
-    const mergedConditions = { ...DEFAULT_CONDITIONS, ...providedConditions  };
+    const mergedConditions = { ...DEFAULT_CONDITIONS, ...providedConditions };
 
     const descriptor: PermissionsRequestDescriptor = {
+      target      : opts.target,
       conditions  : mergedConditions,
       description : opts.description,
       grantedTo   : opts.grantedTo,
@@ -38,14 +43,17 @@ export class PermissionsRequest extends Message implements Authorizable {
       scope       : opts.scope,
     };
 
-    const auth = await authenticate({ descriptor }, opts.signatureInput);
-    const message: PermissionsRequestSchema = { descriptor, authorization: auth };
+    const messageType = descriptor.method;
+    validate(messageType, { descriptor, authorization: {} });
+
+    const auth = await Jws.sign({ descriptor }, opts.signatureInput);
+    const message: PermissionsRequestMessage = { descriptor, authorization: auth };
 
     return new PermissionsRequest(message);
   }
 
-  async verifyAuth(didResolver: DIDResolver): Promise<AuthVerificationResult> {
-    return await verifyAuth(this.message, didResolver);
+  async verifyAuth(didResolver: DidResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
+    return await canonicalAuth(this.message, didResolver, messageStore);
   }
 
   get id(): string {

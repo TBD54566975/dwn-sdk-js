@@ -1,6 +1,6 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { DIDResolver } from '../../../src/did/did-resolver';
+import { DidResolver } from '../../../src/did/did-resolver';
 import { GeneralJwsSigner } from '../../../src/jose/jws/general/signer';
 import { GeneralJwsVerifier } from '../../../src/jose/jws/general/verifier';
 import { signers } from '../../../src/jose/algorithms';
@@ -17,7 +17,7 @@ describe('General JWS Sign/Verify', () => {
     sinon.restore();
   });
 
-  it('should sign and verify secp256k1 signature using a key vector correctly',  async () => {
+  it('should sign and verify secp256k1 signature using a key vector correctly', async () => {
     const { privateJwk, publicJwk } = await secp256k1.generateKeyPair();
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
     const protectedHeader = { alg: 'ES256K', kid: 'did:jank:alice#key1' };
@@ -37,20 +37,20 @@ describe('General JWS Sign/Verify', () => {
       didDocumentMetadata: {}
     };
 
-    const resolverStub = sinon.createStubInstance(DIDResolver, {
+    const resolverStub = sinon.createStubInstance(DidResolver, {
       // @ts-ignore
       resolve: sinon.stub().withArgs('did:jank:alice').resolves(mockResolutionResult)
     });
 
     const verifier = new GeneralJwsVerifier(jws);
 
-    const verificatonResult = await verifier.verify(resolverStub);
+    const verificationResult = await verifier.verify(resolverStub);
 
-    expect(verificatonResult.signers.length).to.equal(1);
-    expect(verificatonResult.signers).to.include('did:jank:alice');
+    expect(verificationResult.signers.length).to.equal(1);
+    expect(verificationResult.signers).to.include('did:jank:alice');
   });
 
-  it('should sign and verify ed25519 signature using a key vector correctly',  async () => {
+  it('should sign and verify ed25519 signature using a key vector correctly', async () => {
     const { privateJwk, publicJwk } = await Ed25519.generateKeyPair();
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
     const protectedHeader = { alg: 'EdDSA', kid: 'did:jank:alice#key1' };
@@ -70,7 +70,7 @@ describe('General JWS Sign/Verify', () => {
       didDocumentMetadata: {}
     };
 
-    const resolverStub = sinon.createStubInstance(DIDResolver, {
+    const resolverStub = sinon.createStubInstance(DidResolver, {
       // @ts-ignore
       resolve: sinon.stub().withArgs('did:jank:alice').resolves(mockResolutionResult)
     });
@@ -83,7 +83,7 @@ describe('General JWS Sign/Verify', () => {
     expect(verificatonResult.signers).to.include('did:jank:alice');
   });
 
-  it('should support multiple signatures using different key types',  async () => {
+  it('should support multiple signatures using different key types', async () => {
     const secp256k1Keys = await secp256k1.generateKeyPair();
     const ed25519Keys = await Ed25519.generateKeyPair();
 
@@ -136,7 +136,7 @@ describe('General JWS Sign/Verify', () => {
     resolveStub.withArgs('did:jank:alice').resolves(alice.mockResolutionResult);
     resolveStub.withArgs('did:jank:bob').resolves(bob.mockResolutionResult);
 
-    const resolverStub = sinon.createStubInstance(DIDResolver, {
+    const resolverStub = sinon.createStubInstance(DidResolver, {
       // @ts-ignore
       resolve: resolveStub
     });

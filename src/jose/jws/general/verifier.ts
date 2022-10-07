@@ -3,7 +3,7 @@ import type { PublicJwk } from '../../types';
 import type { VerificationMethod } from '../../../did/did-resolver';
 
 import { base64url } from 'multiformats/bases/base64';
-import { DIDResolver } from '../../../did/did-resolver';
+import { DidResolver } from '../../../did/did-resolver';
 import { signers as verifiers } from '../../algorithms';
 
 type VerificationResult = {
@@ -11,7 +11,7 @@ type VerificationResult = {
   signers: string[];
 };
 
-// TODO: add logic to prevent validating duplicate signatures
+// TODO: add logic to prevent validating duplicate signatures, Issue #66 https://github.com/TBD54566975/dwn-sdk-js/issues/66
 export class GeneralJwsVerifier {
   jws: GeneralJws;
 
@@ -19,7 +19,7 @@ export class GeneralJwsVerifier {
     this.jws = jws;
   }
 
-  async verify(didResolver: DIDResolver): Promise<VerificationResult> {
+  async verify(didResolver: DidResolver): Promise<VerificationResult> {
     const signers: string[] = [];
 
     for (const signature of this.jws.signatures) {
@@ -42,7 +42,7 @@ export class GeneralJwsVerifier {
     return { signers };
   }
 
-  static async getPublicKey(did: string, kid: string, didResolver: DIDResolver): Promise<PublicJwk> {
+  static async getPublicKey(did: string, kid: string, didResolver: DidResolver): Promise<PublicJwk> {
     // `resolve` throws exception if DID is invalid, DID method is not supported,
     // or resolving DID fails
 
@@ -53,7 +53,9 @@ export class GeneralJwsVerifier {
 
     for (const vm of verificationMethods) {
       // consider optimizing using a set for O(1) lookups if needed
-      if (vm.id === kid) {
+      // key ID in DID Document may or may not be fully qualified. e.g.
+      // `did:ion:alice#key1` or `#key1`
+      if (kid.endsWith(vm.id)) {
         verificationMethod = vm;
         break;
       }
@@ -64,7 +66,7 @@ export class GeneralJwsVerifier {
       throw new Error('public key needed to verify signature not found in DID Document');
     }
 
-    // TODO: replace with JSON Schema based validation
+    // TODO: replace with JSON Schema based validation, Issue 67 https://github.com/TBD54566975/dwn-sdk-js/issues/67
     // more info about the `JsonWebKey2020` type can be found here:
     // https://www.w3.org/TR/did-spec-registries/#jsonwebkey2020
     if (verificationMethod.type !== 'JsonWebKey2020') {
@@ -73,7 +75,7 @@ export class GeneralJwsVerifier {
 
     const { publicKeyJwk: publicJwk } = verificationMethod;
 
-    // TODO: replace with JSON Schema based validation
+    // TODO: replace with JSON Schema based validation, Issue 68 https://github.com/TBD54566975/dwn-sdk-js/issues/68
     // more info about the `publicJwk` property can be found here:
     // https://www.w3.org/TR/did-spec-registries/#publicJwk
     if (!publicJwk) {
@@ -96,8 +98,15 @@ export class GeneralJwsVerifier {
     return await verifier.verify(payload, signatureBytes, jwkPublic);
   }
 
-  decodePayload(): Uint8Array {
-    return base64url.baseDecode(this.jws.payload);
+  static decodeJsonPayload(jws: GeneralJws): any {
+    try {
+      const payloadBytes = base64url.baseDecode(jws.payload);
+      const payloadString = new TextDecoder().decode(payloadBytes);
+      const payloadJson = JSON.parse(payloadString);
+      return payloadJson;
+    } catch {
+      throw new Error('auth payload must be a valid JSON object');
+    }
   }
 
   private static extractDid(kid: string): string {

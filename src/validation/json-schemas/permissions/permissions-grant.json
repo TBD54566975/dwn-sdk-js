@@ -18,13 +18,19 @@
     "descriptor": {
       "type": "object",
       "additionalProperties": false,
+      "required": [
+        "target"
+      ],
       "properties": {
+        "target": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+        },
         "conditions": {
           "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/conditions"
         },
         "delegatedFrom": {
           "description": "CID of the parent grant",
-          "type" :"string"
+          "type": "string"
         },
         "description": {
           "type": "string"
@@ -38,7 +44,9 @@
           "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/grantedBy"
         },
         "method": {
-          "enum": ["PermissionsGrant"],
+          "enum": [
+            "PermissionsGrant"
+          ],
           "type": "string"
         },
         "scope": {

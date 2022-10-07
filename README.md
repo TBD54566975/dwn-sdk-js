@@ -2,8 +2,8 @@
 
 Code Coverage
 
-![Statements](https://img.shields.io/badge/statements-72.66%25-red.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-50%25-red.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-68.75%25-red.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-74.69%25-red.svg?style=flat)
 
+![Statements](https://img.shields.io/badge/statements-78.21%25-red.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-79.25%25-red.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-80.98%25-yellow.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-78.21%25-red.svg?style=flat)
 
 
 ## Introduction
@@ -18,6 +18,7 @@ Since this SDK is still in early stages, we haven't yet published to npm. Until 
 ```bash
 # clone this repo somewhere
 git clone https://github.com/TBD54566975/dwn-sdk-js.git
+cd dwn-sdk-js
 # install deps
 npm install
 # transpile typescript and build bundles
