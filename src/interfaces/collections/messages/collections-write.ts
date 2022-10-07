@@ -68,7 +68,7 @@ export class CollectionsWrite extends Message implements Authorizable {
   }
 
   async verifyAuth(didResolver: DIDResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
-    const message = this.message;
+    const message = this.message as CollectionsWriteMessage;
 
     // signature verification is computationally intensive, so we're going to start by validating the payload.
     const parsedPayload = await validateSchema(message);
@@ -76,9 +76,8 @@ export class CollectionsWrite extends Message implements Authorizable {
     const signers = await authenticate(message.authorization, didResolver);
 
     // authorization
-    if (message.descriptor.method === 'CollectionsWrite' &&
-      (message as CollectionsWriteMessage).descriptor.protocol !== undefined) {
-      await protocolAuthorize((message as CollectionsWriteMessage), signers[0], messageStore);
+    if (message.descriptor.protocol !== undefined) {
+      await protocolAuthorize(message, signers[0], messageStore);
     } else {
       await authorize(message, signers);
     }

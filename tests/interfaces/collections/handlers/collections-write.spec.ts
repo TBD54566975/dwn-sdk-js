@@ -415,7 +415,7 @@ describe('handleCollectionsWrite()', () => {
       // setting up a stub did resolver
       const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(alice.did, alice.keyId, alice.keyPair.publicJwk);
 
-      const protocolWriteReply = await handleCollectionsWrite(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
+      const protocolWriteReply = await handleProtocolsConfigure(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
       expect(protocolWriteReply.status.code).to.equal(202);
 
       // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
