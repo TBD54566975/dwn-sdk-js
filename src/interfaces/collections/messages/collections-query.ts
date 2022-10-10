@@ -59,14 +59,14 @@ export class CollectionsQuery extends Message implements Authorizable {
     const parsedPayload = await validateSchema(message);
 
     const signers = await authenticate(message.authorization, didResolver);
-    const requesterDid = signers[0];
+    const author = signers[0];
 
     const recipientDid = this.message.descriptor.filter.recipient;
     if (recipientDid !== undefined &&
-        recipientDid !== requesterDid) {
-      throw new Error(`non-owner ${requesterDid}, not allowed to query records intended for ${recipientDid}`);
+        recipientDid !== author) {
+      throw new Error(`non-owner ${author}, not allowed to query records intended for ${recipientDid}`);
     }
 
-    return { payload: parsedPayload, signers };
+    return { payload: parsedPayload, author };
   }
 }

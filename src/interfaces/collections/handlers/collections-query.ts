@@ -16,7 +16,7 @@ export const handleCollectionsQuery: MethodHandler = async (
   let requesterDid: string;
   try {
     const authResult = await collectionsQueryMessage.verifyAuth(didResolver, messageStore);
-    requesterDid = authResult.signers[0];
+    requesterDid = authResult.author;
   } catch (e) {
     return new MessageReply({
       status: { code: 401, detail: e.message }
@@ -72,7 +72,8 @@ async function fetchRecordsAsNonOwner(queryMessage: CollectionsQueryMessage, mes
   : Promise<BaseMessage[]> {
   const publishedRecords = await fetchPublishedRecords(queryMessage, messageStore);
   const unpublishedRecordsForRequester = await fetchUnpublishedRecordsForRequester(queryMessage, messageStore, requesterDid);
-  const records = [...publishedRecords, ...unpublishedRecordsForRequester];
+  const unpublishedRecordsByRequester = await fetchUnpublishedRecordsByRequester(queryMessage, messageStore, requesterDid);
+  const records = [...publishedRecords, ...unpublishedRecordsForRequester, ...unpublishedRecordsByRequester];
   return records;
 }
 
@@ -107,7 +108,30 @@ async function fetchUnpublishedRecordsForRequester(queryMessage: CollectionsQuer
   };
   removeUndefinedProperties(includeCriteria);
 
-  // then exclude all published records
+  // exclude all published records
+  const excludeCriteria = {
+    published: true
+  };
+
+  const unpublishedRecordsForRequester = await messageStore.query(includeCriteria, excludeCriteria);
+  return unpublishedRecordsForRequester;
+}
+
+/**
+ * Fetches only unpublished records that are authored by the requester.
+ */
+async function fetchUnpublishedRecordsByRequester(queryMessage: CollectionsQueryMessage, messageStore: MessageStore, requesterDid: string)
+ : Promise<BaseMessage[]> {
+  // include records where recipient is requester
+  const includeCriteria = {
+    target : queryMessage.descriptor.target,
+    author : requesterDid,
+    method : 'CollectionsWrite',
+    ...queryMessage.descriptor.filter
+  };
+  removeUndefinedProperties(includeCriteria);
+
+  // exclude all published records
   const excludeCriteria = {
     published: true
   };

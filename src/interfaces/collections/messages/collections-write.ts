@@ -74,15 +74,16 @@ export class CollectionsWrite extends Message implements Authorizable {
     const parsedPayload = await validateSchema(message);
 
     const signers = await authenticate(message.authorization, didResolver);
+    const author = signers[0];
 
     // authorization
     if (message.descriptor.protocol !== undefined) {
-      await protocolAuthorize(message, signers[0], messageStore);
+      await protocolAuthorize(message, author, messageStore);
     } else {
-      await authorize(message, signers);
+      await authorize(message, author);
     }
 
-    return { payload: parsedPayload, signers };
+    return { payload: parsedPayload, author };
   }
 
   /**
