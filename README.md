@@ -3,7 +3,13 @@
 Code Coverage
 
 
-![Statements](https://img.shields.io/badge/statements-78.21%25-red.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-79.25%25-red.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-80.98%25-yellow.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-78.21%25-red.svg?style=flat)
+<<<<<<< Updated upstream
+![Statements](https://img.shields.io/badge/statements-78.27%25-red.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-79.44%25-red.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-80.82%25-yellow.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-78.27%25-red.svg?style=flat)
+||||||| constructed merge base
+![Statements](https://img.shields.io/badge/statements-78.42%25-red.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-79.32%25-red.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-81.11%25-yellow.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-78.42%25-red.svg?style=flat)
+=======
+![Statements](https://img.shields.io/badge/statements-77.85%25-red.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-79.07%25-red.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-80.55%25-yellow.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-77.85%25-red.svg?style=flat)
+>>>>>>> Stashed changes
 
 
 ## Introduction
