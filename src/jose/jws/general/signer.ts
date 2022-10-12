@@ -1,6 +1,6 @@
 import type { GeneralJws, SignatureInput } from './types';
 
-import { base64url } from 'multiformats/bases/base64';
+import * as encoder from '../../../utils/encoder';
 import { signers } from '../../algorithms';
 
 export class GeneralJwsSigner {
@@ -12,7 +12,7 @@ export class GeneralJwsSigner {
 
   static async create(payload: Uint8Array, signatureInputs: SignatureInput[] = []): Promise<GeneralJwsSigner> {
     const jws: GeneralJws = {
-      payload    : base64url.baseEncode(payload),
+      payload    : encoder.bytesToBase64Url(payload),
       signatures : []
     };
 
@@ -34,14 +34,13 @@ export class GeneralJwsSigner {
     }
 
     const protectedHeaderString = JSON.stringify(protectedHeader);
-    const protectedHeaderBytes = new TextEncoder().encode(protectedHeaderString);
-    const protectedHeaderBase64UrlString = base64url.baseEncode(protectedHeaderBytes);
+    const protectedHeaderBase64UrlString = encoder.stringToBase64Url(protectedHeaderString);
 
-    const signingInputBase64urlString = `${protectedHeaderBase64UrlString}.${this.jws.payload}`;
-    const signingInputBytes = new TextEncoder().encode(signingInputBase64urlString);
+    const signingInputString = `${protectedHeaderBase64UrlString}.${this.jws.payload}`;
+    const signingInputBytes = encoder.stringToBytes(signingInputString);
 
     const signatureBytes = await signer.sign(signingInputBytes, jwkPrivate);
-    const signature = base64url.baseEncode(signatureBytes);
+    const signature = encoder.bytesToBase64Url(signatureBytes);
 
     this.jws.signatures.push({ protected: protectedHeaderBase64UrlString, signature });
   }

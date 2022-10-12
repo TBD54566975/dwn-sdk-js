@@ -1,6 +1,7 @@
 import { base64url } from 'multiformats/bases/base64';
 import { expect } from 'chai';
 import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
+import { TestDataGenerator } from '../../../utils/test-data-generator';
 
 describe('secp256k1', () => {
   describe('publicKeyToJwk', () => {
@@ -17,5 +18,14 @@ describe('secp256k1', () => {
       expect(publicJwk1.x).to.equal(publicJwk2.x);
       expect(publicJwk1.y).to.equal(publicJwk2.y);
     });
+  });
+
+  it('should generate the signature in compact format', async () => {
+    const { privateJwk } = await secp256k1.generateKeyPair();
+
+    const contentBytes = TestDataGenerator.randomBytes(16);
+    const signatureBytes = await secp256k1.sign(contentBytes, privateJwk);
+
+    expect(signatureBytes.length).to.equal(64); // DER format would be 70 bytes
   });
 });

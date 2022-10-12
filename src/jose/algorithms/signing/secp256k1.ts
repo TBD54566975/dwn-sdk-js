@@ -51,7 +51,7 @@ export const secp256k1: Signer = {
     const hashedContent = await sha256.encode(content);
     const privateKeyBytes = base64url.baseDecode(privateJwk.d);
 
-    return await Secp256k1.sign(hashedContent, privateKeyBytes);
+    return await Secp256k1.sign(hashedContent, privateKeyBytes, { der: false });
   },
 
   verify: async (content: Uint8Array, signature: Uint8Array, publicJwk: PublicJwk): Promise<boolean> => {
