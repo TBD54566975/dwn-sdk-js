@@ -13,9 +13,11 @@ export interface MessageStore {
   close(): Promise<void>;
   /**
    * adds a message to the underlying store. Uses the message's cid as the key
-   * @param messageJson
+   * @param author Author who signed the `authorization` property.
+   *               This is included mainly as a performance optimization, because the data can technically be extracted from the given message itself.
+   *               We may want to pass in a wrapper class of the message that encapsulate this info as a further improvement.
    */
-  put(messageJson: BaseMessage): Promise<void>;
+  put(messageJson: BaseMessage, author: string): Promise<void>;
   /**
    * fetches a single message by `cid` from the underlying store. Returns `undefined`
    * if no message was found

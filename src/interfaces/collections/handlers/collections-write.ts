@@ -26,9 +26,11 @@ export const handleCollectionsWrite: MethodHandler = async (
     }
 
     // authentication & authorization
+    let author;
     try {
       const collectionsWriteMessage = new CollectionsWrite(incomingMessage);
-      await collectionsWriteMessage.verifyAuth(didResolver, messageStore);
+      const authResult = await collectionsWriteMessage.verifyAuth(didResolver, messageStore);
+      author = authResult.author;
     } catch (e) {
       return new MessageReply({
         status: { code: 401, detail: e.message }
@@ -54,7 +56,7 @@ export const handleCollectionsWrite: MethodHandler = async (
     // write the incoming message to DB if incoming message is newest
     let messageReply: MessageReply;
     if (incomingMessageIsNewest) {
-      await messageStore.put(message);
+      await messageStore.put(message, author);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }

@@ -74,7 +74,7 @@ describe('MessageStoreLevel Tests', () => {
     it('stores messages as cbor/sha256 encoded blocks with CID as key', async () => {
       const message = await TestDataGenerator.generatePermissionsRequestMessage();
 
-      await messageStore.put(message);
+      await messageStore.put(message, 'did:example:irrelevant');
 
       const expectedCid = await generateCid(message);
 
@@ -87,7 +87,7 @@ describe('MessageStoreLevel Tests', () => {
     it('adds tenant to index', async () => {
       const message = await TestDataGenerator.generatePermissionsRequestMessage();
 
-      await messageStore.put(message);
+      await messageStore.put(message, 'did:example:irrelevant');
 
       const results = await messageStore.query({ target: message.descriptor.target });
       expect(results.length).to.equal(1);
@@ -97,7 +97,7 @@ describe('MessageStoreLevel Tests', () => {
       const schema = 'http://my-awesome-schema/awesomeness_schema#awesome-1?id=awesome_1';
       const messageData = await TestDataGenerator.generateCollectionsWriteMessage({ schema });
 
-      await messageStore.put(messageData.message);
+      await messageStore.put(messageData.message, 'did:example:irrelevant');
 
       const results = await messageStore.query({ schema });
       expect((results[0] as CollectionsWriteMessage).descriptor.schema).to.equal(schema);

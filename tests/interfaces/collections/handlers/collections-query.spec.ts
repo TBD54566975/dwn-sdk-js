@@ -46,9 +46,9 @@ describe('handleCollectionsQuery()', () => {
       const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid, protocol, schema: 'schema1' });
       const collectionsWriteMessage3Data = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid, protocol, schema: 'schema2' });
 
-      await messageStore.put(collectionsWriteMessage1Data.message);
-      await messageStore.put(collectionsWriteMessage2Data.message);
-      await messageStore.put(collectionsWriteMessage3Data.message);
+      await messageStore.put(collectionsWriteMessage1Data.message, requesterDid);
+      await messageStore.put(collectionsWriteMessage2Data.message, requesterDid);
+      await messageStore.put(collectionsWriteMessage3Data.message, requesterDid);
 
       // testing singular conditional query
       const messageData = await TestDataGenerator.generateCollectionsQueryMessage({ targetDid, requesterDid, filter: { protocol } });
@@ -88,8 +88,9 @@ describe('handleCollectionsQuery()', () => {
     it('should only return published records and unpublished records that is meant for requester', async () => {
       // write three records into Alice's DB:
       // 1st is unpublished
-      // 2nd is also unpublished but is meant for bob
-      // 3rd is published
+      // 2nd is also unpublished but is meant for (has recipient as) Bob
+      // 3rd is also unpublished but is authored (sent) by Bob
+      // 4th is published
       const schema = 'schema1';
       const aliceDidData = await DidKeyResolver.generate();
       const bobDidData = await DidKeyResolver.generate();
@@ -97,13 +98,23 @@ describe('handleCollectionsQuery()', () => {
       const record2Data = await TestDataGenerator.generateCollectionsWriteMessage(
         { targetDid: aliceDidData.did, schema, contextId: '2', recipientDid: bobDidData.did }
       );
-      const record3Data = await TestDataGenerator.generateCollectionsWriteMessage(
-        { targetDid: aliceDidData.did, schema, contextId: '3', published: true }
+      const record3Data = await TestDataGenerator.generateCollectionsWriteMessage( {
+        targetDid        : aliceDidData.did,
+        schema,
+        contextId        : '3',
+        recipientDid     : aliceDidData.did,
+        requesterDid     : bobDidData.did,
+        requesterKeyId   : DidKeyResolver.getKeyId(bobDidData.did),
+        requesterKeyPair : bobDidData // contains the key pair
+      });
+      const record4Data = await TestDataGenerator.generateCollectionsWriteMessage(
+        { targetDid: aliceDidData.did, schema, contextId: '4', published: true }
       );
 
-      await messageStore.put(record1Data.message);
-      await messageStore.put(record2Data.message);
-      await messageStore.put(record3Data.message);
+      await messageStore.put(record1Data.message, aliceDidData.did);
+      await messageStore.put(record2Data.message, aliceDidData.did);
+      await messageStore.put(record3Data.message, bobDidData.did);
+      await messageStore.put(record4Data.message, aliceDidData.did);
 
       // test correctness for Bob's query
       const bobQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
@@ -117,12 +128,14 @@ describe('handleCollectionsQuery()', () => {
       const replyToBobQuery = await handleCollectionsQuery(bobQueryMessageData.message, messageStore, didResolver);
 
       expect(replyToBobQuery.status.code).to.equal(200);
-      expect(replyToBobQuery.entries?.length).to.equal(2); // expect 2 records
+      expect(replyToBobQuery.entries?.length).to.equal(3); // expect 3 records
 
-      const actualUnpublishedMessages = replyToBobQuery.entries.filter(message => (message as CollectionsWriteMessage).descriptor.contextId === '2');
-      const actualPublishedMessages = replyToBobQuery.entries.filter(message => (message as CollectionsWriteMessage).descriptor.contextId === '3');
-      expect(actualUnpublishedMessages.length).to.equal(1);
-      expect(actualPublishedMessages.length).to.equal(1);
+      const privateRecordsForBob = replyToBobQuery.entries.filter(message => (message as CollectionsWriteMessage).descriptor.contextId === '2');
+      const privateRecordsFromBob = replyToBobQuery.entries.filter(message => (message as CollectionsWriteMessage).descriptor.contextId === '3');
+      const publicRecords = replyToBobQuery.entries.filter(message => (message as CollectionsWriteMessage).descriptor.contextId === '4');
+      expect(privateRecordsForBob.length).to.equal(1);
+      expect(privateRecordsFromBob.length).to.equal(1);
+      expect(publicRecords.length).to.equal(1);
 
       // test correctness for Alice's query
       const aliceQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
@@ -136,7 +149,7 @@ describe('handleCollectionsQuery()', () => {
       const replyToAliceQuery = await handleCollectionsQuery(aliceQueryMessageData.message, messageStore, didResolver);
 
       expect(replyToAliceQuery.status.code).to.equal(200);
-      expect(replyToAliceQuery.entries?.length).to.equal(3); // expect all 3 records
+      expect(replyToAliceQuery.entries?.length).to.equal(4); // expect all 4 records
     });
 
 
@@ -169,8 +182,8 @@ describe('handleCollectionsQuery()', () => {
       const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid: did2, protocol });
 
       // insert data into 2 different tenants
-      await messageStore.put(collectionsWriteMessage1Data.message);
-      await messageStore.put(collectionsWriteMessage2Data.message);
+      await messageStore.put(collectionsWriteMessage1Data.message, 'did:example:irrelevant');
+      await messageStore.put(collectionsWriteMessage2Data.message, 'did:example:irrelevant');
 
       const did1QueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
         requesterDid : did1,

@@ -41,8 +41,8 @@ export type AuthorizableMessage = {
 
 
 export type AuthVerificationResult = {
-  /** DIDs of all signers */
-  signers: string[];
+  /** Author DID */
+  author: string;
   /** parsed JWS payload */
   payload: { descriptorCid: CID, [key: string]: CID }
 };

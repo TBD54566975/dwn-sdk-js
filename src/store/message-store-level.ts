@@ -130,7 +130,7 @@ export class MessageStoreLevel implements MessageStore {
     return;
   }
 
-  async put(messageJson: BaseMessage): Promise<void> {
+  async put(messageJson: BaseMessage, author: string): Promise<void> {
 
     // delete `encodedData` if it exists so `messageJson` is stored without it, `encodedData` will be decoded, chunked and stored separately below
     let encodedData = undefined;
@@ -159,6 +159,7 @@ export class MessageStoreLevel implements MessageStore {
     }
 
     const indexDocument = {
+      author, // add author to the index
       ...messageJson.descriptor,
       _id: encodedBlock.cid.toString()
     };
