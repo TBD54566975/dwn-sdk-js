@@ -53,10 +53,9 @@ describe('CollectionsWrite', () => {
       const resolverStub = TestStubGenerator.createDidResolverStub(requesterDid, keyId, publicJwk);
       const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-      const { signers } = await collectionsWrite.verifyAuth(resolverStub, messageStoreStub);
+      const { author } = await collectionsWrite.verifyAuth(resolverStub, messageStoreStub);
 
-      expect(signers.length).to.equal(1);
-      expect(signers).to.include(requesterDid);
+      expect(author).to.equal(requesterDid);
     });
   });
 
