@@ -33,12 +33,12 @@ describe('DidKeyResolver', () => {
   });
 
   it('should resolve a `did:key` DID that the library generates', async () => {
-    const { did, publicJwk } = await DidKeyResolver.generate();
+    const { did, keyPair } = await DidKeyResolver.generate();
     const resolver = new DidKeyResolver();
 
     const resolutionDocument = await resolver.resolve(did);
     expect(resolutionDocument.didDocument.id).to.equal(did);
-    expect(resolutionDocument.didDocument.verificationMethod[0].publicKeyJwk.x).to.equal(publicJwk.x);
+    expect(resolutionDocument.didDocument.verificationMethod[0].publicKeyJwk.x).to.equal(keyPair.publicJwk.x);
   });
 
   it('should throw if DID is using unsupported multicodec', async () => {

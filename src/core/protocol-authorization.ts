@@ -43,12 +43,7 @@ export async function protocolAuthorize(
  */
 async function fetchProtocolDefinition(message: CollectionsWriteMessage, messageStore: MessageStore): Promise<ProtocolDefinition> {
   // get the protocol URI
-  const protocolUri = (message as CollectionsWriteMessage).descriptor.protocol;
-
-  // fail if not a protocol-based object
-  if (protocolUri === undefined) {
-    throw new Error('message does not have a protocol property for protocol-based authorization');
-  }
+  const protocolUri = message.descriptor.protocol;
 
   // fetch the corresponding protocol definition
   const query = {
@@ -150,7 +145,7 @@ function getRuleSet(
  * Verifies the requester of the given message is allowed actions based on the rule set.
  * @throws {Error} if requester not allowed.
  */
-function verifyAllowedRequester(
+export function verifyAllowedRequester(
   requesterDid: string,
   targetDid: string,
   inboundMessageRuleSet: ProtocolRuleSet,
@@ -161,7 +156,7 @@ function verifyAllowedRequester(
   if (allowRule === undefined) {
     // if no allow rule is defined, still allow if requester is the same as target, but throw otherwise
     if (requesterDid !== targetDid) {
-      throw new Error(`no allow rule defined, ${requesterDid} is unauthorized`);
+      throw new Error(`no allow rule defined for requester, ${requesterDid} is unauthorized`);
     }
   } else if (allowRule.anyone !== undefined) {
     // good to go to next check
@@ -183,7 +178,7 @@ function verifyAllowedRequester(
  * Verifies the actions specified in the given message matches the allowed actions in the rule set.
  * @throws {Error} if action not allowed.
  */
-function verifyAllowedActions(requesterDid: string, message: CollectionsWriteMessage, inboundMessageRuleSet: any,): void {
+export function verifyAllowedActions(requesterDid: string, message: CollectionsWriteMessage, inboundMessageRuleSet: ProtocolRuleSet): void {
   const allowRule = inboundMessageRuleSet.allow;
 
   if (allowRule === undefined) {
@@ -191,7 +186,7 @@ function verifyAllowedActions(requesterDid: string, message: CollectionsWriteMes
     if (requesterDid === message.descriptor.target) {
       return;
     } else {
-      throw new Error(`no allow rule defined, ${requesterDid} is unauthorized`);
+      throw new Error(`no allow rule defined for ${message.descriptor.method}, ${requesterDid} is unauthorized`);
     }
   }
 
@@ -204,7 +199,7 @@ function verifyAllowedActions(requesterDid: string, message: CollectionsWriteMes
 
   const inboundMessageAction = methodToAllowedActionMap[message.descriptor.method];
   if (!allowedActions.includes(inboundMessageAction)) {
-    throw new Error(`inbound message action ${inboundMessageAction} not in list of allowed actions ${allowedActions}`);
+    throw new Error(`inbound message action '${inboundMessageAction}' not in list of allowed actions ${allowedActions}`);
   }
 }
 
@@ -216,32 +211,29 @@ function verifyAllowedActions(requesterDid: string, message: CollectionsWriteMes
  *                    NOTE: the path scheme use here may be temporary dependent on final protocol spec.
  */
 function getMessage(
-  messageChain: CollectionsWriteMessage[],
+  ancestorMessageChain: CollectionsWriteMessage[],
   messagePath: string,
   recordSchemaToLabelMap: Map<string, string>
 ): CollectionsWriteMessage {
-  const ancestors = messagePath.split('/');
+  const expectedAncestors = messagePath.split('/');
+
+  // consider moving this check to ProtocolsConfigure message ingestion
+  if (expectedAncestors.length > ancestorMessageChain.length) {
+    throw new Error('specified path to expected recipient is longer than actual length of ancestor message chain');
+  }
 
   let i = 0;
   while (true) {
-    const expectedAncestorType = ancestors[i];
-    const ancestorMessage = messageChain[i];
-
-    if (expectedAncestorType === undefined) {
-      throw new Error('expected ancestor cannot be undefined');
-    }
-
-    if (ancestorMessage === undefined) {
-      throw new Error('ancestor message cannot be found');
-    }
+    const expectedAncestorType = expectedAncestors[i];
+    const ancestorMessage = ancestorMessageChain[i];
 
     const actualAncestorType = recordSchemaToLabelMap[ancestorMessage.descriptor.schema];
     if (actualAncestorType !== expectedAncestorType) {
-      throw new Error(`mismatching message type: expecting ${expectedAncestorType} but actual ${actualAncestorType}`);
+      throw new Error(`mismatching record schema: expecting ${expectedAncestorType} but actual ${actualAncestorType}`);
     }
 
     // we have found the message if we are looking at the last message specified by the path
-    if (i + 1 === ancestors.length) {
+    if (i + 1 === expectedAncestors.length) {
       return ancestorMessage;
     }
 
