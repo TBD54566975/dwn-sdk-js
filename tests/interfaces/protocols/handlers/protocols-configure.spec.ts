@@ -2,7 +2,7 @@ import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import { compareCids } from '../../../../src/utils/cid';
-import { DidResolver, ProtocolsConfigureMessage } from '../../../../src';
+import { DidResolver } from '../../../../src';
 import { Message } from '../../../../src/core';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver';
 import { handleProtocolsConfigure } from '../../../../src/interfaces/protocols/handlers/protocols-configure';
