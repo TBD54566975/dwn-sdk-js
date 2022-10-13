@@ -37,14 +37,14 @@ npm link ../path/to/where/you/cloned/dwn-sdk-js
 
 - **ESM**
   ```javascript
-  import { DWN } from 'dwn-sdk';
+  import { Dwn } from 'dwn-sdk';
 
   // cool things
   ```
 
 - **CJS**
   ```javascript
-  const { DWN } = require('dwn-sdk');
+  const { Dwn } = require('dwn-sdk');
 
   // cool things
   ```
