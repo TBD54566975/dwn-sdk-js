@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { ProtocolRuleSet } from '../../src';
-import { verifyAllowedActions, verifyAllowedRequester } from '../../src/core/protocol-authorization';
+import { ProtocolAuthorization } from '../../src/core/protocol-authorization';
 import { TestDataGenerator } from '../utils/test-data-generator';
 
 describe('Protocol-Based Authorization', async () => {
@@ -16,7 +16,7 @@ describe('Protocol-Based Authorization', async () => {
       };
 
       expect(() => {
-        verifyAllowedRequester(did, did, ruleSet as any, [], new Map());
+        ProtocolAuthorization['verifyAllowedRequester'](did, did, ruleSet as any, [], new Map());
       }).throws('no matching allow requester condition');
     });
   });
@@ -29,7 +29,7 @@ describe('Protocol-Based Authorization', async () => {
       const ruleSet: ProtocolRuleSet = { };
 
       expect(() => {
-        verifyAllowedActions(bobDid, collectionsWriteData.message, ruleSet);
+        ProtocolAuthorization['verifyAllowedActions'](bobDid, collectionsWriteData.message, ruleSet);
       }).throws('no allow rule defined for CollectionsWrite');
     });
 
@@ -45,7 +45,7 @@ describe('Protocol-Based Authorization', async () => {
       };
 
       expect(() => {
-        verifyAllowedActions(did, collectionsWriteData.message, ruleSet);
+        ProtocolAuthorization['verifyAllowedActions'](did, collectionsWriteData.message, ruleSet);
       }).throws('not in list of allowed actions');
     });
   });

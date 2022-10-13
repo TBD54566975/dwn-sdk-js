@@ -7,7 +7,7 @@ import { getDagCid } from '../../../utils/data';
 import { Jws } from '../../../jose/jws/jws';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
-import { protocolAuthorize } from '../../../core/protocol-authorization';
+import { ProtocolAuthorization } from '../../../core/protocol-authorization';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { validate } from '../../../validation/validator';
 
@@ -78,7 +78,7 @@ export class CollectionsWrite extends Message implements Authorizable {
 
     // authorization
     if (message.descriptor.protocol !== undefined) {
-      await protocolAuthorize(message, author, messageStore);
+      await ProtocolAuthorization.authorize(message, author, messageStore);
     } else {
       await authorize(message, author);
     }
