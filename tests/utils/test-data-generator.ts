@@ -35,6 +35,7 @@ export type Persona = {
 export type GenerateProtocolsConfigureMessageInput = {
   requester?: Persona;
   target?: Persona;
+  dateCreated?: number;
   protocol?: string;
   protocolDefinition?: ProtocolDefinition;
 };
@@ -48,6 +49,7 @@ export type GenerateProtocolsConfigureMessageOutput = {
 export type GenerateProtocolsQueryMessageInput = {
   requester?: Persona;
   target?: Persona;
+  dateCreated?: number;
   filter?: {
     protocol: string;
   }
@@ -94,6 +96,7 @@ export type GenerateCollectionsQueryMessageInput = {
   requesterDid?: string;
   requesterKeyId?: string;
   requesterKeyPair?: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
+  dateCreated?: number;
   filter?: {
     recipient?: string;
     protocol?: string;
@@ -122,6 +125,7 @@ export type GenerateHooksWriteMessageInput = {
   requesterDid?: string;
   requesterKeyId?: string;
   requesterKeyPair?: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
+  dateCreated?: number;
   filter?: {
     method: string;
   }
@@ -201,8 +205,9 @@ export class TestDataGenerator {
     };
 
     const options: ProtocolsConfigureOptions = {
-      target   : target.did,
-      protocol : input?.protocol ?? TestDataGenerator.randomString(20),
+      target      : target.did,
+      dateCreated : input?.dateCreated,
+      protocol    : input?.protocol ?? TestDataGenerator.randomString(20),
       definition,
       signatureInput
     };
@@ -215,7 +220,6 @@ export class TestDataGenerator {
       message
     };
   };
-
 
   /**
    * Generates a ProtocolsQuery message for testing.
@@ -234,8 +238,9 @@ export class TestDataGenerator {
     };
 
     const options: ProtocolsQueryOptions = {
-      target : target.did,
-      filter : input?.filter,
+      target      : target.did,
+      dateCreated : input?.dateCreated,
+      filter      : input?.filter,
       signatureInput
     };
     removeUndefinedProperties(options);
@@ -298,7 +303,6 @@ export class TestDataGenerator {
     const options = {
       target      : targetDid,
       recipient   : input?.recipientDid ?? targetDid, // use target if recipient is not explicitly set
-      nonce       : TestDataGenerator.randomString(32),
       protocol    : input?.protocol,
       contextId   : input?.contextId,
       schema      : input?.schema ?? TestDataGenerator.randomString(20),
@@ -306,7 +310,7 @@ export class TestDataGenerator {
       parentId    : input?.parentId,
       published   : input?.published,
       dataFormat  : input?.dataFormat ?? 'application/json',
-      dateCreated : input?.dateCreated ?? Date.now(),
+      dateCreated : input?.dateCreated,
       data,
       signatureInput
     };
@@ -370,11 +374,11 @@ export class TestDataGenerator {
     }
 
     const options = {
-      target   : targetDid,
-      nonce    : TestDataGenerator.randomString(32),
+      target      : targetDid,
+      dateCreated : input?.dateCreated,
       signatureInput,
-      filter   : input?.filter ?? { schema: TestDataGenerator.randomString(10) }, // must have one filter property if no filter is given
-      dateSort : input?.dateSort
+      filter      : input?.filter ?? { schema: TestDataGenerator.randomString(10) }, // must have one filter property if no filter is given
+      dateSort    : input?.dateSort
     };
     removeUndefinedProperties(options);
 
@@ -434,9 +438,10 @@ export class TestDataGenerator {
     }
 
     const options = {
-      target : targetDid,
+      target      : targetDid,
+      dateCreated : input?.dateCreated,
       signatureInput,
-      filter : input?.filter ?? { method: 'CollectionsWrite' }, // hardcode to filter on `CollectionsWrite` if no filter is given
+      filter      : input?.filter ?? { method: 'CollectionsWrite' }, // hardcode to filter on `CollectionsWrite` if no filter is given
     };
     removeUndefinedProperties(options);
 
@@ -458,6 +463,7 @@ export class TestDataGenerator {
     const { privateJwk } = await ed25519.generateKeyPair();
     const permissionRequest = await PermissionsRequest.create({
       target         : 'did:jank:alice',
+      dateCreated    : Date.now(),
       description    : 'drugs',
       grantedBy      : 'did:jank:bob',
       grantedTo      : 'did:jank:alice',

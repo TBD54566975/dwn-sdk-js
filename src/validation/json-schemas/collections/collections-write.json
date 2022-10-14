@@ -18,7 +18,6 @@
         "target",
         "method",
         "recordId",
-        "nonce",
         "dataCid",
         "dateCreated",
         "dataFormat"
@@ -50,9 +49,6 @@
         },
         "parentId": {
           "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/uuid"
-        },
-        "nonce": {
-          "type": "string"
         },
         "dataCid": {
           "type": "string"

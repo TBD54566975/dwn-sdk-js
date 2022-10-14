@@ -6,6 +6,7 @@ import type { AuthorizableMessage } from '../../core/types';
 export type HooksWriteDescriptor = {
   method: 'HooksWrite';
   target: string;
+  dateCreated: number;
 
   /**
    * Leave as `undefined` for customer handler.

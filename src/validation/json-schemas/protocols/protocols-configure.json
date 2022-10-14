@@ -18,7 +18,7 @@
         "target",
         "method",
         "protocol",
-        "nonce",
+        "dateCreated",
         "definition"
       ],
       "properties": {
@@ -34,8 +34,9 @@
         "protocol": {
           "type": "string"
         },
-        "nonce": {
-          "type": "string"
+        "dateCreated": {
+          "type": "number",
+          "minimum": 0
         },
         "definition": {
           "$ref": "https://identity.foundation/dwn/json-schemas/protocol-definition.json"

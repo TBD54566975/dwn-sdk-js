@@ -22,11 +22,11 @@ describe('ProtocolsConfigure schema definition', () => {
 
     const message = {
       descriptor: {
-        target     : 'did:example:anyDid',
-        method     : 'ProtocolsConfigure',
-        nonce      : 'anyNonce',
-        protocol   : 'anyProtocolUri',
-        definition : protocolDefinition
+        target      : 'did:example:anyDid',
+        method      : 'ProtocolsConfigure',
+        dateCreated : 123,
+        protocol    : 'anyProtocolUri',
+        definition  : protocolDefinition
       },
       authorization: {
         payload    : 'anyPayload',
