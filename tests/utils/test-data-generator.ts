@@ -5,8 +5,8 @@ import {
   CollectionsQueryMessage,
   CollectionsWrite,
   CollectionsWriteMessage,
-  HandlersWrite,
-  HandlersWriteMessage,
+  HooksWrite,
+  HooksWriteMessage,
   ProtocolDefinition,
   ProtocolsConfigure,
   ProtocolsConfigureMessage,
@@ -117,7 +117,7 @@ export type GenerateCollectionsQueryMessageOutput = {
   requesterKeyPair: { publicJwk: PublicJwk, privateJwk: PrivateJwk };
 };
 
-export type GenerateHandlersWriteMessageInput = {
+export type GenerateHooksWriteMessageInput = {
   targetDid?: string;
   requesterDid?: string;
   requesterKeyId?: string;
@@ -128,8 +128,8 @@ export type GenerateHandlersWriteMessageInput = {
   uri?: string;
 };
 
-export type GenerateHandlersWriteMessageOutput = {
-  message: HandlersWriteMessage;
+export type GenerateHooksWriteMessageOutput = {
+  message: HooksWriteMessage;
   requesterDidMethod: string;
   requesterDid: string;
   requesterKeyId: string;
@@ -391,10 +391,10 @@ export class TestDataGenerator {
   };
 
   /**
-   * Generates a HandlersWrite message for testing.
+   * Generates a HooksWrite message for testing.
    * if `requesterDid` and `targetDid` are not given, the generator will use the same DID for both to pass authorization in tests by default.
    */
-  public static async generateHandlersWriteMessage(input?: GenerateHandlersWriteMessageInput): Promise<GenerateHandlersWriteMessageOutput> {
+  public static async generateHooksWriteMessage(input?: GenerateHooksWriteMessageInput): Promise<GenerateHooksWriteMessageOutput> {
     // generate requester DID if not given
     let requesterDid = input?.requesterDid;
     if (!requesterDid) {
@@ -440,7 +440,7 @@ export class TestDataGenerator {
     };
     removeUndefinedProperties(options);
 
-    const message = await HandlersWrite.create(options);
+    const message = await HooksWrite.create(options);
 
     return {
       message,
