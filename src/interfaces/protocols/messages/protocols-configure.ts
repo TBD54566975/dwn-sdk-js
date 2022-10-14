@@ -1,7 +1,5 @@
 import type { AuthCreateOptions } from '../../../core/types';
 import type { ProtocolDefinition, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types';
-import randomBytes from 'randombytes';
-import { base64url } from 'multiformats/bases/base64';
 import { Jws } from '../../../jose/jws/jws';
 import { validate } from '../../../validation/validator';
 
