@@ -17,6 +17,8 @@
       "required": [
         "target",
         "method",
+        "dateCreated",
+        "uri",
         "filter"
       ],
       "properties": {
@@ -27,6 +29,13 @@
           "enum": [
             "HooksWrite"
           ],
+          "type": "string"
+        },
+        "dateCreated": {
+          "type": "number",
+          "minimum": 0
+        },
+        "schema": {
           "type": "string"
         },
         "filter": {

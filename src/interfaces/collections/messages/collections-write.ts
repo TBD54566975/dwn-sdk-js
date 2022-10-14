@@ -19,9 +19,8 @@ export type CollectionsWriteOptions = AuthCreateOptions & {
   schema?: string;
   recordId: string;
   parentId?: string;
-  nonce: string;
   data: Uint8Array;
-  dateCreated: number;
+  dateCreated?: number;
   published?: boolean;
   datePublished?: number;
   dataFormat: string;
@@ -45,9 +44,8 @@ export class CollectionsWrite extends Message implements Authorizable {
       schema        : options.schema,
       recordId      : options.recordId,
       parentId      : options.parentId,
-      nonce         : options.nonce,
       dataCid       : dataCid.toString(),
-      dateCreated   : options.dateCreated,
+      dateCreated   : options?.dateCreated ?? Date.now(),
       published     : options.published,
       datePublished : options.datePublished,
       dataFormat    : options.dataFormat

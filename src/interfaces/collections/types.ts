@@ -7,7 +7,6 @@ export type CollectionsWriteDescriptor = {
   protocol?: string;
   contextId?: string;
   schema?: string;
-  nonce: string;
   recordId: string;
   parentId?: string;
   dataCid: string;
@@ -25,7 +24,7 @@ export type CollectionsWriteMessage = AuthorizableMessage & {
 export type CollectionsQueryDescriptor = {
   target: string;
   method: 'CollectionsQuery';
-  nonce: string;
+  dateCreated: number;
   filter: {
     recipient?: string;
     protocol?: string;

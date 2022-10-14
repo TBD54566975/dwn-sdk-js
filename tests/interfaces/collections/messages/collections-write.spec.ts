@@ -35,7 +35,6 @@ describe('CollectionsWrite', () => {
         data        : TestDataGenerator.randomBytes(10),
         dataFormat  : 'application/json',
         dateCreated : 123,
-        nonce       : 'anyNonce',
         recordId    : uuidv4(),
         signatureInput
       };
@@ -47,7 +46,6 @@ describe('CollectionsWrite', () => {
       expect(message.encodedData).to.equal(base64url.baseEncode(options.data));
       expect(message.descriptor.dataFormat).to.equal(options.dataFormat);
       expect(message.descriptor.dateCreated).to.equal(options.dateCreated);
-      expect(message.descriptor.nonce).to.equal(options.nonce);
       expect(message.descriptor.recordId).to.equal(options.recordId);
 
       const resolverStub = TestStubGenerator.createDidResolverStub(requesterDid, keyId, publicJwk);

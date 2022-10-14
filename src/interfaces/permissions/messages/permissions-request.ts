@@ -12,6 +12,7 @@ import { validate } from '../../../validation/validator';
 
 type PermissionsRequestOptions = AuthCreateOptions & {
   target: string;
+  dateCreated?: number;
   conditions?: PermissionConditions;
   description: string;
   grantedTo: string;
@@ -34,6 +35,7 @@ export class PermissionsRequest extends Message implements Authorizable {
 
     const descriptor: PermissionsRequestDescriptor = {
       target      : opts.target,
+      dateCreated : opts.dateCreated ?? Date.now(),
       conditions  : mergedConditions,
       description : opts.description,
       grantedTo   : opts.grantedTo,

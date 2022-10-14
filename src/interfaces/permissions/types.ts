@@ -33,6 +33,7 @@ export type PermissionConditions = {
 
 export type PermissionsRequestDescriptor = {
   target: string;
+  dateCreated: number;
   conditions: PermissionConditions
   description: string
   grantedTo: string

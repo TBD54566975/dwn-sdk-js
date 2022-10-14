@@ -9,6 +9,7 @@ import { validate } from '../../../validation/validator';
  */
 export type HooksWriteOptions = AuthCreateOptions & {
   target: string,
+  dateCreated?: number,
   /**
    * leave as `undefined` for customer handler.
    * ie. DWN processing will use `undefined` check to attempt to invoke the registered handler.
@@ -28,10 +29,11 @@ export class HooksWrite {
    */
   static async create(options: HooksWriteOptions): Promise<HooksWriteMessage> {
     const descriptor: HooksWriteDescriptor = {
-      target : options.target,
-      method : 'HooksWrite',
-      uri    : options.uri,
-      filter : options.filter
+      target      : options.target,
+      method      : 'HooksWrite',
+      dateCreated : options?.dateCreated ?? Date.now(),
+      uri         : options.uri,
+      filter      : options.filter
     };
 
     // delete all descriptor properties that are `undefined` else the code will encounter the following IPLD issue when attempting to generate CID:

@@ -17,7 +17,7 @@
       "required": [
         "target",
         "method",
-        "nonce",
+        "dateCreated",
         "filter"
       ],
       "properties": {
@@ -30,8 +30,9 @@
           ],
           "type": "string"
         },
-        "nonce": {
-          "type": "string"
+        "dateCreated": {
+          "type": "number",
+          "minimum": 0
         },
         "filter": {
           "type": "object",
