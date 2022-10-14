@@ -17,7 +17,7 @@ export class ProtocolsConfigure {
     const descriptor: ProtocolsConfigureDescriptor = {
       target      : options.target,
       method      : 'ProtocolsConfigure',
-      dateCreated : options?.dateCreated ?? Date.now(),
+      dateCreated : options.dateCreated ?? Date.now(),
       protocol    : options.protocol,
       definition  : options.definition
     };

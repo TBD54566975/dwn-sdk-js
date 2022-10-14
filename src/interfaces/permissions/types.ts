@@ -49,6 +49,7 @@ export type PermissionsRequestMessage = AuthorizableMessage & {
 
 export type PermissionsGrantDescriptor = {
   target: string;
+  dateCreated: number;
   conditions: PermissionConditions;
   delegatedFrom?: string;
   description: string;

@@ -31,7 +31,7 @@ export class HooksWrite {
     const descriptor: HooksWriteDescriptor = {
       target      : options.target,
       method      : 'HooksWrite',
-      dateCreated : options?.dateCreated ?? Date.now(),
+      dateCreated : options.dateCreated ?? Date.now(),
       uri         : options.uri,
       filter      : options.filter
     };

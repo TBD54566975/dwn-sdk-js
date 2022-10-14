@@ -34,7 +34,7 @@ export class CollectionsQuery extends Message implements Authorizable {
     const descriptor: CollectionsQueryDescriptor = {
       target      : options.target,
       method      : 'CollectionsQuery',
-      dateCreated : options?.dateCreated ?? Date.now(),
+      dateCreated : options.dateCreated ?? Date.now(),
       filter      : options.filter,
       dateSort    : options.dateSort
     };

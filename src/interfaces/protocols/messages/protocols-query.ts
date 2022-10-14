@@ -17,7 +17,7 @@ export class ProtocolsQuery {
     const descriptor: ProtocolsQueryDescriptor = {
       target      : options.target,
       method      : 'ProtocolsQuery',
-      dateCreated : options?.dateCreated ?? Date.now(),
+      dateCreated : options.dateCreated ?? Date.now(),
       filter      : options.filter,
     };
 

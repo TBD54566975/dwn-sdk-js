@@ -45,7 +45,7 @@ export class CollectionsWrite extends Message implements Authorizable {
       recordId      : options.recordId,
       parentId      : options.parentId,
       dataCid       : dataCid.toString(),
-      dateCreated   : options?.dateCreated ?? Date.now(),
+      dateCreated   : options.dateCreated ?? Date.now(),
       published     : options.published,
       datePublished : options.datePublished,
       dataFormat    : options.dataFormat
