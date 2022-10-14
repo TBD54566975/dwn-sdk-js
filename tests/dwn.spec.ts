@@ -37,7 +37,7 @@ describe('DWN', () => {
 
     it('should process CollectionsWrite message signed by a `did:key` DID', async () => {
       // generate a `did:key` DID
-      const { did, publicJwk, privateJwk } = await DidKeyResolver.generate();
+      const { did, keyPair } = await DidKeyResolver.generate();
 
       // the key ID must also be correct according to the key generated
       const requesterKeyId = DidKeyResolver.getKeyId(did);
@@ -45,7 +45,7 @@ describe('DWN', () => {
       const messageData = await TestDataGenerator.generateCollectionsWriteMessage({
         requesterDid     : did,
         requesterKeyId,
-        requesterKeyPair : { publicJwk, privateJwk },
+        requesterKeyPair : keyPair,
         targetDid        : did
       });
 

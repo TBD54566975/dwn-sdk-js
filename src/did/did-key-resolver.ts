@@ -108,7 +108,11 @@ export class DidKeyResolver implements DidMethodResolver {
    * generates a new ed25519 public/private key pair. Creates a DID using the private key
    * @returns did, public key, private key
    */
-  public static async generate(): Promise<{ did: string, publicJwk: PublicJwk, privateJwk: PrivateJwk }> {
+  public static async generate(): Promise<{
+    did: string,
+    keyId: string,
+    keyPair: { publicJwk: PublicJwk, privateJwk: PrivateJwk }
+  }> {
     const { publicJwk, privateJwk } = await ed25519.generateKeyPair();
 
     // multicodec code for Ed25519 public keys
@@ -120,8 +124,9 @@ export class DidKeyResolver implements DidMethodResolver {
 
     const id = base58btc.encode(idBytes);
     const did = `did:key:${id}`;
+    const keyId = DidKeyResolver.getKeyId(did);
 
-    return { did, publicJwk, privateJwk };
+    return { did, keyId, keyPair: { publicJwk, privateJwk } };
   }
 
   /**

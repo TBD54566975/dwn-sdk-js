@@ -105,7 +105,7 @@ describe('handleCollectionsQuery()', () => {
         recipientDid     : aliceDidData.did,
         requesterDid     : bobDidData.did,
         requesterKeyId   : DidKeyResolver.getKeyId(bobDidData.did),
-        requesterKeyPair : bobDidData // contains the key pair
+        requesterKeyPair : bobDidData.keyPair
       });
       const record4Data = await TestDataGenerator.generateCollectionsWriteMessage(
         { targetDid: aliceDidData.did, schema, contextId: '4', published: true }
@@ -121,7 +121,7 @@ describe('handleCollectionsQuery()', () => {
         targetDid        : aliceDidData.did,
         requesterDid     : bobDidData.did,
         requesterKeyId   : DidKeyResolver.getKeyId(bobDidData.did),
-        requesterKeyPair : bobDidData, // contains the key pair
+        requesterKeyPair : bobDidData.keyPair,
         filter           : { schema }
       });
 
@@ -142,7 +142,7 @@ describe('handleCollectionsQuery()', () => {
         targetDid        : aliceDidData.did,
         requesterDid     : aliceDidData.did,
         requesterKeyId   : DidKeyResolver.getKeyId(aliceDidData.did),
-        requesterKeyPair : aliceDidData, // contains the key pair
+        requesterKeyPair : aliceDidData.keyPair,
         filter           : { schema }
       });
 
@@ -163,7 +163,7 @@ describe('handleCollectionsQuery()', () => {
         targetDid        : aliceDidData.did,
         requesterDid     : bobDidData.did,
         requesterKeyId   : DidKeyResolver.getKeyId(bobDidData.did),
-        requesterKeyPair : bobDidData,
+        requesterKeyPair : bobDidData.keyPair,
         filter           : { recipient: carolDidData.did } // bob querying carol's records
       });
 

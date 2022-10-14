@@ -20,11 +20,11 @@ export type ProtocolDefinition = {
 export type ProtocolRuleSet = {
   allow?: {
     anyone?: {
-      to: [string];
+      to: string[];
     };
     recipient?: {
       of: string,
-      to: [string];
+      to: string[];
     }
   };
   records?: {
