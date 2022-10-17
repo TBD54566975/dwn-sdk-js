@@ -1,7 +1,7 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
 import type { CollectionsWriteDescriptor, CollectionsWriteMessage } from '../types';
 import { authenticate, authorize, validateSchema } from '../../../core/auth';
-import { base64url } from 'multiformats/bases/base64';
+import * as encoder from '../../../utils/encoder';
 import { DidResolver } from '../../../did/did-resolver';
 import { getDagCid } from '../../../utils/data';
 import { Jws } from '../../../jose/jws/jws';
@@ -58,7 +58,7 @@ export class CollectionsWrite extends Message implements Authorizable {
     const messageType = descriptor.method;
     validate(messageType, { descriptor, authorization: {} });
 
-    const encodedData = base64url.baseEncode(options.data);
+    const encodedData = encoder.bytesToBase64Url(options.data);
     const authorization = await Jws.sign({ descriptor }, options.signatureInput);
     const message = { descriptor, authorization, encodedData };
 
