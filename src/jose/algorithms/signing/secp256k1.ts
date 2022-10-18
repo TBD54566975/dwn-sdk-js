@@ -1,5 +1,6 @@
 import * as Secp256k1 from '@noble/secp256k1';
 import * as encoder from '../../../utils/encoder';
+import * as decoder from '../../../utils/decoder';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 import type { PublicJwk, PrivateJwk, Signer } from '../../types';
@@ -48,7 +49,7 @@ export const secp256k1: Signer = {
     // the underlying lib expects us to hash the content ourselves:
     // https://github.com/paulmillr/noble-secp256k1/blob/97aa518b9c12563544ea87eba471b32ecf179916/index.ts#L1160
     const hashedContent = await sha256.encode(content);
-    const privateKeyBytes = encoder.base64urlToBytes(privateJwk.d);
+    const privateKeyBytes = decoder.base64urlToBytes(privateJwk.d);
 
     return await Secp256k1.sign(hashedContent, privateKeyBytes, { der: false });
   },
@@ -56,8 +57,8 @@ export const secp256k1: Signer = {
   verify: async (content: Uint8Array, signature: Uint8Array, publicJwk: PublicJwk): Promise<boolean> => {
     validateKey(publicJwk);
 
-    const xBytes = encoder.base64urlToBytes(publicJwk.x);
-    const yBytes = encoder.base64urlToBytes(publicJwk.y);
+    const xBytes = decoder.base64urlToBytes(publicJwk.x);
+    const yBytes = decoder.base64urlToBytes(publicJwk.y);
 
     const publicKeyBytes = new Uint8Array(xBytes.length + yBytes.length + 1);
 

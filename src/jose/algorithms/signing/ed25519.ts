@@ -1,5 +1,6 @@
 import * as Ed25519 from '@noble/ed25519';
 import * as encoder from '../../../utils/encoder';
+import * as decoder from '../../../utils/decoder';
 import type { PrivateJwk, PublicJwk, Signer } from '../../types';
 
 function validateKey(jwk: PrivateJwk | PublicJwk): void {
@@ -25,14 +26,14 @@ export const ed25519: Signer = {
   sign: (content: Uint8Array, privateJwk: PrivateJwk): Promise<Uint8Array> => {
     validateKey(privateJwk);
 
-    const privateKeyBytes = encoder.base64urlToBytes(privateJwk.d);
+    const privateKeyBytes = decoder.base64urlToBytes(privateJwk.d);
 
     return Ed25519.sign(content, privateKeyBytes);
   },
 
   verify: (content: Uint8Array, signature: Uint8Array, publicJwk: PublicJwk): Promise<boolean> => {
     validateKey(publicJwk);
-    const publicKeyBytes = encoder.base64urlToBytes(publicJwk.x);
+    const publicKeyBytes = decoder.base64urlToBytes(publicJwk.x);
 
     return Ed25519.verify(signature, content, publicKeyBytes);
   },

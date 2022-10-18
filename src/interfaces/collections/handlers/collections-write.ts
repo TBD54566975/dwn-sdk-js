@@ -1,6 +1,6 @@
 import type { CollectionsWriteMessage } from '../types';
 import type { MethodHandler } from '../../types';
-import * as encoder from '../../../utils/encoder';
+import * as decoder from '../../../utils/decoder';
 import { CollectionsWrite } from '../messages/collections-write';
 import { getDagCid } from '../../../utils/data';
 import { MessageReply } from '../../../core';
@@ -14,7 +14,7 @@ export const handleCollectionsWrite: MethodHandler = async (
     // verify dataCid matches given data
     const incomingMessage = message as CollectionsWriteMessage;
     if (incomingMessage.encodedData !== undefined) {
-      const rawData = encoder.base64urlToBytes(incomingMessage.encodedData);
+      const rawData = decoder.base64urlToBytes(incomingMessage.encodedData);
       const actualDataCid = (await getDagCid(rawData)).toString();
 
       if (actualDataCid !== incomingMessage.descriptor.dataCid) {

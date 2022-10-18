@@ -1,6 +1,7 @@
 import type { BaseMessage, DataReferencingMessage } from '../core/types';
 import type { MessageStore } from './message-store';
 import * as encoder from '../utils/encoder';
+import * as decoder from '../utils/decoder';
 import { BlockstoreLevel } from './blockstore-level';
 import { CID } from 'multiformats/cid';
 import { exporter } from 'ipfs-unixfs-exporter';
@@ -146,7 +147,7 @@ export class MessageStoreLevel implements MessageStore {
 
     // if `encodedData` is present we'll decode it then chunk it and store it as unix-fs dag-pb encoded
     if (encodedData) {
-      const content = encoder.base64urlToBytes(encodedData);
+      const content = decoder.base64urlToBytes(encodedData);
       const chunk = importer([{ content }], this.db, { cidVersion: 1 });
 
       // for some reason no-unused-vars doesn't work in for loops. it's not entirely surprising because
