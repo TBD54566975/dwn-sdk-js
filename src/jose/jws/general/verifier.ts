@@ -2,7 +2,7 @@ import type { GeneralJws, Signature } from './types';
 import type { PublicJwk } from '../../types';
 import type { VerificationMethod } from '../../../did/did-resolver';
 import * as encoder from '../../../utils/encoder';
-import * as decoder from '../../../utils/decoder'
+import * as decoder from '../../../utils/decoder';
 import { DidResolver } from '../../../did/did-resolver';
 import { signers as verifiers } from '../../algorithms';
 

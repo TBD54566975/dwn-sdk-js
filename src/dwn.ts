@@ -2,7 +2,7 @@ import type { BaseMessage, RequestSchema } from './core/types';
 import type { DidMethodResolver } from './did/did-resolver';
 import type { Interface, MethodHandler } from './interfaces/types';
 import type { MessageStore } from './store/message-store';
-import * as decoder from '../src/utils/decoder'
+import * as decoder from '../src/utils/decoder';
 import { addSchema } from './validation/validator';
 import { CollectionsInterface, PermissionsInterface } from './interfaces';
 import { DidKeyResolver } from './did/did-key-resolver';
