@@ -1,5 +1,4 @@
 import { BaseMessage } from '../../src/core/types';
-import { CID } from 'multiformats/cid';
 import {
   CollectionsQuery,
   CollectionsQueryMessage,
@@ -103,7 +102,7 @@ export type GenerateCollectionsQueryMessageInput = {
 export type GenerateCollectionsQueryMessageOutput = {
   requester: Persona;
   target: Persona;
-  message: CollectionsQueryMessage; 
+  message: CollectionsQueryMessage;
 };
 
 export type GenerateHooksWriteMessageInput = {
@@ -162,7 +161,7 @@ export class TestDataGenerator {
   public static async generateProtocolsConfigureMessage(
     input?: GenerateProtocolsConfigureMessageInput
   ): Promise<GenerateProtocolsConfigureMessageOutput> {
-    
+
     const { requester, target } = await TestDataGenerator.generateRequesterAndTargetPersonas(input);
 
     // generate protocol definition if not given
@@ -241,7 +240,7 @@ export class TestDataGenerator {
    * Implementation currently uses `CollectionsWrite.create()`.
    */
   public static async generateCollectionsWriteMessage(input?: GenerateCollectionsWriteMessageInput): Promise<GenerateCollectionsWriteMessageOutput> {
-  
+
     const { requester, target } = await TestDataGenerator.generateRequesterAndTargetPersonas(input);
 
     const signatureInput = {
@@ -268,7 +267,7 @@ export class TestDataGenerator {
       data,
       signatureInput
     };
-    
+
 
     const collectionsWrite = await CollectionsWrite.create(options);
     const message = collectionsWrite.toObject() as CollectionsWriteMessage;
@@ -282,10 +281,10 @@ export class TestDataGenerator {
 
   /**
    * Generates a CollectionsQuery message for testing.
-   
+
    */
   public static async generateCollectionsQueryMessage(input?: GenerateCollectionsQueryMessageInput): Promise<GenerateCollectionsQueryMessageOutput> {
-    const { requester, target } = await TestDataGenerator.generateRequesterAndTargetPersonas(input)
+    const { requester, target } = await TestDataGenerator.generateRequesterAndTargetPersonas(input);
 
     const signatureInput = {
       jwkPrivate      : requester.keyPair.privateJwk,
@@ -319,7 +318,7 @@ export class TestDataGenerator {
    * Generates a HooksWrite message for testing.
    */
   public static async generateHooksWriteMessage(input?: GenerateHooksWriteMessageInput): Promise<GenerateHooksWriteMessageOutput> {
-    
+
     const { requester, target } = await TestDataGenerator.generateRequesterAndTargetPersonas(input);
 
     const signatureInput = {

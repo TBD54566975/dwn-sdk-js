@@ -2,6 +2,7 @@ import { base64url } from 'multiformats/bases/base64';
 import { CollectionsWrite } from '../../../../src/interfaces/collections/messages/collections-write';
 import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/types';
 import { DidResolutionResult, DidResolver } from '../../../../src/did/did-resolver';
+import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
 import { sleep } from '../../../../src/utils/time';
 import { TestDataGenerator } from '../../../utils/test-data-generator';
@@ -10,7 +11,6 @@ import { v4 as uuidv4 } from 'uuid';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
-import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 
 chai.use(chaiAsPromised);
 
@@ -59,18 +59,17 @@ describe('CollectionsWrite', () => {
 
   describe('verifyAuth', () => {
     it('should throw if verification signature check fails', async () => {
-      const messageData = await TestDataGenerator.generateCollectionsWriteMessage();
-      const { requesterDid, requesterKeyId } = messageData;
+      const { requester, message } = await TestDataGenerator.generateCollectionsWriteMessage();
 
       // setting up a stub method resolver
       const differentKeyPair = await secp256k1.generateKeyPair(); // used to return a different public key to simulate invalid signature
-      const didResolutionResult = TestDataGenerator.createDidResolutionResult(requesterDid, requesterKeyId, differentKeyPair.publicJwk);
+      const didResolutionResult = TestDataGenerator.createDidResolutionResult(requester.did, requester.keyId, differentKeyPair.publicJwk);
       const resolveStub = sinon.stub<[string], Promise<DidResolutionResult>>();
-      resolveStub.withArgs( requesterDid).resolves(didResolutionResult);
+      resolveStub.withArgs(requester.did).resolves(didResolutionResult);
       const didResolverStub = sinon.createStubInstance(DidResolver, { resolve: resolveStub });
       const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-      const collectionsWrite = new CollectionsWrite(messageData.message);
+      const collectionsWrite = new CollectionsWrite(message);
       expect(collectionsWrite.verifyAuth(didResolverStub, messageStoreStub))
         .to.be.rejectedWith('signature verification failed for did:example:alice');
     });
