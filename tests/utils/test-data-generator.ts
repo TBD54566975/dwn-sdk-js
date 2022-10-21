@@ -66,6 +66,7 @@ export type GenerateProtocolsQueryMessageOutput = {
 export type GenerateCollectionsWriteMessageInput = {
   requester?: Persona;
   target?: Persona;
+  recipientDid?: string;
   protocol?: string;
   contextId?: string;
   schema?: string;
@@ -255,7 +256,7 @@ export class TestDataGenerator {
 
     const options: CollectionsWriteOptions = {
       target      : target.did,
-      recipient   : requester.did,
+      recipient   : input?.recipientDid ?? target.did, // use target if recipient is not explicitly set
       protocol    : input?.protocol,
       contextId   : input?.contextId,
       schema      : input?.schema ?? TestDataGenerator.randomString(20),
@@ -390,16 +391,16 @@ export class TestDataGenerator {
   /**
    * Creates a mock DID resolution result for testing purposes.
    */
-  public static createDidResolutionResult(did: string, keyId: string, publicJwk: PublicJwk): DidResolutionResult {
+  public static createDidResolutionResult(persona: Persona): DidResolutionResult {
     return {
       didResolutionMetadata : {},
       didDocument           : {
-        id                 : did,
+        id                 : persona.did,
         verificationMethod : [{
-          controller   : did,
-          id           : keyId,
+          controller   : persona.did,
+          id           : persona.keyId,
           type         : 'JsonWebKey2020',
-          publicKeyJwk : publicJwk
+          publicKeyJwk : persona.keyPair.publicJwk
         }]
       },
       didDocumentMetadata: {}

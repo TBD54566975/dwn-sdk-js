@@ -41,7 +41,7 @@ describe('handleProtocolsQuery()', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       // setting up a stub method resolver
-      const didResolverStub = TestStubGenerator.createDidResolverStub(alice.did, alice.keyId, alice.keyPair.publicJwk);
+      const didResolverStub = TestStubGenerator.createDidResolverStub(alice);
 
       // insert three messages into DB, two with matching protocol
       const message1Data = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, target: alice });

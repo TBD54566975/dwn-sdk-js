@@ -7,6 +7,7 @@ import { TestDataGenerator } from './utils/test-data-generator';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
+import { Did } from '../src/did/did';
 
 chai.use(chaiAsPromised);
 
@@ -35,16 +36,11 @@ describe('DWN', () => {
 
     it('should process CollectionsWrite message signed by a `did:key` DID', async () => {
       // generate a `did:key` DID
-      const { did, keyPair } = await DidKeyResolver.generate();
-
-      // the key ID must also be correct according to the key generated
-      const requesterKeyId = DidKeyResolver.getKeyId(did);
+      const alice = await DidKeyResolver.generate();
 
       const messageData = await TestDataGenerator.generateCollectionsWriteMessage({
-        requesterDid     : did,
-        requesterKeyId,
-        requesterKeyPair : keyPair,
-        targetDid        : did
+        requester : alice,
+        target    : alice
       });
 
       const dwnConfig: Config = { messageStore };
@@ -56,18 +52,15 @@ describe('DWN', () => {
     });
 
     it('should process CollectionsQuery message', async () => {
-      const messageData = await TestDataGenerator.generateCollectionsQueryMessage();
+      const { requester, message } = await TestDataGenerator.generateCollectionsQueryMessage();
+      const generatedDidMethod = Did.getMethodName(requester.did);
 
       // setting up a stub method resolver
-      const didResolutionResult = TestDataGenerator.createDidResolutionResult(
-        messageData.requesterDid,
-        messageData.requesterKeyId,
-        messageData.requesterKeyPair.publicJwk
-      );
+      const didResolutionResult = TestDataGenerator.createDidResolutionResult(requester);
       const resolveStub = sinon.stub<[string], Promise<DidResolutionResult>>();
-      resolveStub.withArgs(messageData.requesterDid).resolves(didResolutionResult);
+      resolveStub.withArgs(requester.did).resolves(didResolutionResult);
       const methodResolverStub = <DidMethodResolver>{
-        method  : () => { return messageData.requesterDidMethod; },
+        method  : () => { return generatedDidMethod; },
         resolve : resolveStub
       };
 
@@ -77,7 +70,7 @@ describe('DWN', () => {
       };
       const dwn = await Dwn.create(dwnConfig);
 
-      const reply = await dwn.processMessage(messageData.message);
+      const reply = await dwn.processMessage(message);
 
       expect(reply.status.code).to.equal(200);
       expect(reply.entries).to.be.empty;
