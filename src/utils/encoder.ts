@@ -2,7 +2,10 @@ import { base64url } from 'multiformats/bases/base64';
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
+<<<<<<< HEAD
 
+=======
+>>>>>>> 43906c4 (changes requested from PR)
 
 export function stringToBytes(content: string): Uint8Array {
   const bytes = textEncoder.encode(content);
