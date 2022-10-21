@@ -1,4 +1,5 @@
 import { Config } from '../src/dwn';
+import { Did } from '../src/did/did';
 import { DidKeyResolver } from '../src/did/did-key-resolver';
 import { DidResolutionResult, DidMethodResolver } from '../src/did/did-resolver';
 import { Dwn } from '../src/dwn';
@@ -7,7 +8,6 @@ import { TestDataGenerator } from './utils/test-data-generator';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
-import { Did } from '../src/did/did';
 
 chai.use(chaiAsPromised);
 
