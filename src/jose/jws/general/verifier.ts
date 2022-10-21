@@ -2,7 +2,6 @@ import type { GeneralJws, Signature } from './types';
 import type { PublicJwk } from '../../types';
 import type { VerificationMethod } from '../../../did/did-resolver';
 import * as encoder from '../../../utils/encoder';
-import * as decoder from '../../../utils/decoder';
 import { DidResolver } from '../../../did/did-resolver';
 import { signers as verifiers } from '../../algorithms';
 
@@ -23,8 +22,8 @@ export class GeneralJwsVerifier {
     const signers: string[] = [];
 
     for (const signature of this.jws.signatures) {
-      const protectedBytes = decoder.base64urlToBytes(signature.protected);
-      const protectedJson = decoder.bytesToString(protectedBytes);
+      const protectedBytes = encoder.base64urlToBytes(signature.protected);
+      const protectedJson = encoder.bytesToString(protectedBytes);
 
       const { kid } = JSON.parse(protectedJson);
       const did = GeneralJwsVerifier.extractDid(kid);
@@ -93,15 +92,15 @@ export class GeneralJwsVerifier {
     }
 
     const payload = encoder.stringToBytes(`${signature.protected}.${base64UrlPayload}`);
-    const signatureBytes = decoder.base64urlToBytes(signature.signature);
+    const signatureBytes = encoder.base64urlToBytes(signature.signature);
 
     return await verifier.verify(payload, signatureBytes, jwkPublic);
   }
 
   static decodeJsonPayload(jws: GeneralJws): any {
     try {
-      const payloadBytes = decoder.base64urlToBytes(jws.payload);
-      const payloadString = decoder.bytesToString(payloadBytes);
+      const payloadBytes = encoder.base64urlToBytes(jws.payload);
+      const payloadString = encoder.bytesToString(payloadBytes);
       const payloadJson = JSON.parse(payloadString);
       return payloadJson;
     } catch {

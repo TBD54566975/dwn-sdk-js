@@ -2,7 +2,7 @@ import type { DidMethodResolver, DidResolutionResult, DIDDocument } from './did-
 
 import varint from 'varint';
 import { base58btc } from 'multiformats/bases/base58';
-import * as decoder from '../utils/decoder';
+import * as encoder from '../utils/encoder';
 import { Did } from './did';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519';
 import { PrivateJwk, PublicJwk } from '../jose/types';
@@ -117,7 +117,7 @@ export class DidKeyResolver implements DidMethodResolver {
 
     // multicodec code for Ed25519 public keys
     const ed25519Multicodec = varint.encode(0xed);
-    const publicKeyBytes = decoder.base64urlToBytes(publicJwk.x);
+    const publicKeyBytes = encoder.base64urlToBytes(publicJwk.x);
     const idBytes = new Uint8Array(ed25519Multicodec.length + publicKeyBytes.byteLength);
     idBytes.set(ed25519Multicodec, 0);
     idBytes.set(publicKeyBytes, ed25519Multicodec.length);
