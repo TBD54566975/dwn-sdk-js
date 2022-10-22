@@ -4,7 +4,7 @@ import type { Interface, MethodHandler } from './interfaces/types';
 import type { MessageStore } from './store/message-store';
 import * as encoder from '../src/utils/encoder';
 import { addSchema } from './validation/validator';
-import { CollectionsInterface, PermissionsInterface } from './interfaces';
+import { CollectionsInterface, PermissionsInterface, ProtocolsInterface } from './interfaces';
 import { DidKeyResolver } from './did/did-key-resolver';
 import { DidResolver } from './did/did-resolver';
 import { DidIonResolver } from './did/did-ion-resolver';
@@ -15,7 +15,8 @@ import { MessageStoreLevel } from './store/message-store-level';
 export class Dwn {
   static methodHandlers: { [key:string]: MethodHandler } = {
     ...CollectionsInterface.methodHandlers,
-    ...PermissionsInterface.methodHandlers
+    ...PermissionsInterface.methodHandlers,
+    ...ProtocolsInterface.methodHandlers
   };
 
   private DidResolver: DidResolver;
