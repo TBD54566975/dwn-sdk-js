@@ -890,8 +890,8 @@ describe('handleCollectionsWrite()', () => {
       });
 
       // we have to insert the two records directly into Alice's DWN because handler does not allow such condition to occur under expected operation
-      await messageStore.put(application2Data.message, alice.did);
-      await messageStore.put(application1Data.message, alice.did);
+      await messageStore.put(application2Data.message, { author: alice.did });
+      await messageStore.put(application1Data.message, { author: alice.did });
 
       // sanity verify there are two applications with the same recordId, this should not happen under normal operation
       // verify the fulfillment message is stored

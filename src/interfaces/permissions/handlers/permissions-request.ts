@@ -24,7 +24,7 @@ export const handlePermissionsRequest: MethodHandler = async (
   }
 
   try {
-    await messageStore.put(message, author);
+    await messageStore.put(message, { author });
 
     return new MessageReply({
       status: { code: 202, detail: 'Accepted' }

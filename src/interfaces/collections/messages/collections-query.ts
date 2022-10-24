@@ -2,7 +2,6 @@ import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '..
 import type { CollectionsQueryDescriptor, CollectionsQueryMessage } from '../types';
 import { authenticate, validateSchema } from '../../../core/auth';
 import { DidResolver } from '../../../did/did-resolver';
-import { Jws } from '../../../jose/jws/jws';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
 import { removeUndefinedProperties } from '../../../utils/object';
@@ -46,7 +45,7 @@ export class CollectionsQuery extends Message implements Authorizable {
     const messageType = descriptor.method;
     validate(messageType, { descriptor, authorization: {} });
 
-    const authorization = await Jws.sign({ descriptor }, options.signatureInput);
+    const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
     const message = { descriptor, authorization };
 
     return new CollectionsQuery(message);

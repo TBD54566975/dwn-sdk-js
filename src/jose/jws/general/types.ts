@@ -6,14 +6,13 @@ import type { PrivateJwk } from '../../types';
  */
 export type GeneralJws = {
   payload: string
-  signatures: Signature[]
+  signatures: SignatureEntry[]
 };
 
 /**
- * Flattened JWS definition for verify function inputs, allows payload as
- * Uint8Array for detached signature validation.
+ * An entry of the `signatures` array in a general JWS.
  */
-export type Signature = {
+export type SignatureEntry = {
   /**
    * The "protected" member MUST be present and contain the value
    * BASE64URL(UTF8(JWS Protected Header)) when the JWS Protected

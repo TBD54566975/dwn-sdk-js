@@ -1,10 +1,10 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
 import type { CollectionsWriteDescriptor, CollectionsWriteMessage } from '../types';
-import { authenticate, authorize, validateSchema } from '../../../core/auth';
 import * as encoder from '../../../utils/encoder';
+import { authenticate, authorize, validateSchema } from '../../../core/auth';
 import { DidResolver } from '../../../did/did-resolver';
+import { generateCid } from '../../../utils/cid';
 import { getDagCid } from '../../../utils/data';
-import { Jws } from '../../../jose/jws/jws';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
 import { ProtocolAuthorization } from '../../../core/protocol-authorization';
@@ -59,7 +59,7 @@ export class CollectionsWrite extends Message implements Authorizable {
     validate(messageType, { descriptor, authorization: {} });
 
     const encodedData = encoder.bytesToBase64Url(options.data);
-    const authorization = await Jws.sign({ descriptor }, options.signatureInput);
+    const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
     const message = { descriptor, authorization, encodedData };
 
     return new CollectionsWrite(message);
@@ -85,9 +85,22 @@ export class CollectionsWrite extends Message implements Authorizable {
   }
 
   /**
+   * Computes the canonical ID of this message.
+   */
+  public async getCanonicalId(): Promise<string> {
+    const descriptor = { ...this.message.descriptor };
+    delete descriptor.target;
+    (descriptor as any).author = this.author;
+
+    const cid = await generateCid(descriptor);
+    const cidString = cid.toString();
+    return cidString;
+  };
+
+  /**
    * @returns newest message in the array. `undefined` if given array is empty.
    */
-  static async getNewestMessage(messages: CollectionsWriteMessage[]): Promise<CollectionsWriteMessage | undefined> {
+  public static async getNewestMessage(messages: CollectionsWriteMessage[]): Promise<CollectionsWriteMessage | undefined> {
     let currentNewestMessage: CollectionsWriteMessage | undefined = undefined;
     for (const message of messages) {
       if (currentNewestMessage === undefined || await CollectionsWrite.isNewer(message, currentNewestMessage)) {
@@ -102,7 +115,7 @@ export class CollectionsWrite extends Message implements Authorizable {
    * Compares the age of two messages.
    * @returns `true` if `a` is newer than `b`; `false` otherwise
    */
-  static async isNewer(a: CollectionsWriteMessage, b: CollectionsWriteMessage): Promise<boolean> {
+  public static async isNewer(a: CollectionsWriteMessage, b: CollectionsWriteMessage): Promise<boolean> {
     const aIsNewer = (await CollectionsWrite.compareCreationTime(a, b) > 0);
     return aIsNewer;
   }
@@ -111,7 +124,7 @@ export class CollectionsWrite extends Message implements Authorizable {
    * Compares the `dateCreated` of the given records with a fallback to message CID according to the spec.
    * @returns 1 if `a` is larger/newer than `b`; -1 if `a` is smaller/older than `b`; 0 otherwise (same age)
    */
-  static async compareCreationTime(a: CollectionsWriteMessage, b: CollectionsWriteMessage): Promise<number> {
+  public static async compareCreationTime(a: CollectionsWriteMessage, b: CollectionsWriteMessage): Promise<number> {
     if (a.descriptor.dateCreated > b.descriptor.dateCreated) {
       return 1;
     } else if (a.descriptor.dateCreated < b.descriptor.dateCreated) {

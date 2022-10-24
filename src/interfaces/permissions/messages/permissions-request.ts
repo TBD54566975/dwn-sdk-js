@@ -4,7 +4,6 @@ import type { PermissionScope, PermissionConditions } from '../types';
 
 import { canonicalAuth } from '../../../core/auth';
 import { DidResolver } from '../../../did/did-resolver';
-import { Jws } from '../../../jose/jws/jws';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
 import { v4 as uuidv4 } from 'uuid';
@@ -48,7 +47,7 @@ export class PermissionsRequest extends Message implements Authorizable {
     const messageType = descriptor.method;
     validate(messageType, { descriptor, authorization: {} });
 
-    const auth = await Jws.sign({ descriptor }, opts.signatureInput);
+    const auth = await Message.signAsAuthorization(descriptor, opts.signatureInput);
     const message: PermissionsRequestMessage = { descriptor, authorization: auth };
 
     return new PermissionsRequest(message);

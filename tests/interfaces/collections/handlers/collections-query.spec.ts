@@ -46,9 +46,9 @@ describe('handleCollectionsQuery()', () => {
       const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid, protocol, schema: 'schema1' });
       const collectionsWriteMessage3Data = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid, protocol, schema: 'schema2' });
 
-      await messageStore.put(collectionsWriteMessage1Data.message, requesterDid);
-      await messageStore.put(collectionsWriteMessage2Data.message, requesterDid);
-      await messageStore.put(collectionsWriteMessage3Data.message, requesterDid);
+      await messageStore.put(collectionsWriteMessage1Data.message, { author: requesterDid });
+      await messageStore.put(collectionsWriteMessage2Data.message, { author: requesterDid });
+      await messageStore.put(collectionsWriteMessage3Data.message, { author: requesterDid });
 
       // testing singular conditional query
       const messageData = await TestDataGenerator.generateCollectionsQueryMessage({ targetDid, requesterDid, filter: { protocol } });
@@ -111,10 +111,10 @@ describe('handleCollectionsQuery()', () => {
         { targetDid: aliceDidData.did, schema, contextId: '4', published: true }
       );
 
-      await messageStore.put(record1Data.message, aliceDidData.did);
-      await messageStore.put(record2Data.message, aliceDidData.did);
-      await messageStore.put(record3Data.message, bobDidData.did);
-      await messageStore.put(record4Data.message, aliceDidData.did);
+      await messageStore.put(record1Data.message, { author: aliceDidData.did });
+      await messageStore.put(record2Data.message, { author: aliceDidData.did });
+      await messageStore.put(record3Data.message, { author: bobDidData.did });
+      await messageStore.put(record4Data.message, { author: aliceDidData.did });
 
       // test correctness for Bob's query
       const bobQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
@@ -182,8 +182,8 @@ describe('handleCollectionsQuery()', () => {
       const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid: did2, protocol });
 
       // insert data into 2 different tenants
-      await messageStore.put(collectionsWriteMessage1Data.message, 'did:example:irrelevant');
-      await messageStore.put(collectionsWriteMessage2Data.message, 'did:example:irrelevant');
+      await messageStore.put(collectionsWriteMessage1Data.message, { });
+      await messageStore.put(collectionsWriteMessage2Data.message, { });
 
       const did1QueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
         requesterDid : did1,

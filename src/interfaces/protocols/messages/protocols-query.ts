@@ -1,6 +1,6 @@
 import type { AuthCreateOptions } from '../../../core/types';
 import type { ProtocolsQueryDescriptor, ProtocolsQueryMessage } from '../types';
-import { Jws } from '../../../jose/jws/jws';
+import { Message } from '../../../core';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { validate } from '../../../validation/validator';
 
@@ -28,7 +28,7 @@ export class ProtocolsQuery {
     const messageType = descriptor.method;
     validate(messageType, { descriptor, authorization: {} });
 
-    const authorization = await Jws.sign({ descriptor }, options.signatureInput);
+    const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
     const message = { descriptor, authorization };
 
     return message;
