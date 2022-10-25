@@ -1,8 +1,7 @@
 import type { GeneralJws, Signature } from './types';
 import type { PublicJwk } from '../../types';
 import type { VerificationMethod } from '../../../did/did-resolver';
-
-import { base64url } from 'multiformats/bases/base64';
+import * as encoder from '../../../utils/encoder';
 import { DidResolver } from '../../../did/did-resolver';
 import { signers as verifiers } from '../../algorithms';
 
@@ -23,8 +22,8 @@ export class GeneralJwsVerifier {
     const signers: string[] = [];
 
     for (const signature of this.jws.signatures) {
-      const protectedBytes = base64url.baseDecode(signature.protected);
-      const protectedJson = new TextDecoder().decode(protectedBytes);
+      const protectedBytes = encoder.base64urlToBytes(signature.protected);
+      const protectedJson = encoder.bytesToString(protectedBytes);
 
       const { kid } = JSON.parse(protectedJson);
       const did = GeneralJwsVerifier.extractDid(kid);
@@ -92,16 +91,16 @@ export class GeneralJwsVerifier {
       throw new Error(`unsupported crv. crv must be one of ${Object.keys(verifiers)}`);
     }
 
-    const payload = new TextEncoder().encode(`${signature.protected}.${base64UrlPayload}`);
-    const signatureBytes = base64url.baseDecode(signature.signature);
+    const payload = encoder.stringToBytes(`${signature.protected}.${base64UrlPayload}`);
+    const signatureBytes = encoder.base64urlToBytes(signature.signature);
 
     return await verifier.verify(payload, signatureBytes, jwkPublic);
   }
 
   static decodeJsonPayload(jws: GeneralJws): any {
     try {
-      const payloadBytes = base64url.baseDecode(jws.payload);
-      const payloadString = new TextDecoder().decode(payloadBytes);
+      const payloadBytes = encoder.base64urlToBytes(jws.payload);
+      const payloadString = encoder.bytesToString(payloadBytes);
       const payloadJson = JSON.parse(payloadString);
       return payloadJson;
     } catch {

@@ -2,7 +2,7 @@ import type { BaseMessage, RequestSchema } from './core/types';
 import type { DidMethodResolver } from './did/did-resolver';
 import type { Interface, MethodHandler } from './interfaces/types';
 import type { MessageStore } from './store/message-store';
-
+import * as encoder from '../src/utils/encoder';
 import { addSchema } from './validation/validator';
 import { CollectionsInterface, PermissionsInterface, ProtocolsInterface } from './interfaces';
 import { DidKeyResolver } from './did/did-key-resolver';
@@ -10,6 +10,7 @@ import { DidResolver } from './did/did-resolver';
 import { DidIonResolver } from './did/did-ion-resolver';
 import { Message, MessageReply, Request, Response } from './core';
 import { MessageStoreLevel } from './store/message-store-level';
+
 
 export class Dwn {
   static methodHandlers: { [key:string]: MethodHandler } = {
@@ -63,7 +64,7 @@ export class Dwn {
   async processRequest(rawRequest: Uint8Array): Promise<Response> {
     let request: RequestSchema;
     try {
-      const requestString = new TextDecoder().decode(rawRequest);
+      const requestString = encoder.bytesToString(rawRequest);
       request = JSON.parse(requestString);
     } catch {
       throw new Error('expected request to be valid JSON');
