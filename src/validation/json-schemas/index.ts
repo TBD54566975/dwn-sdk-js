@@ -2,6 +2,7 @@ import CollectionsQuery from './collections/collections-query.json' assert { typ
 import CollectionsWrite from './collections/collections-write.json' assert { type: 'json' };
 import Definitions from './definitions.json' assert { type: 'json' };
 import GeneralJws from './general-jws.json' assert { type: 'json' };
+import GeneralJsonWebToken2020 from './general-jwk-2020.json' assert {type: 'json'};
 import HooksWrite from './hooks/hooks-write.json' assert { type: 'json' };
 import PermissionsDefinitions from './permissions/definitions.json' assert { type: 'json' };
 import PermissionsRequest from './permissions/permissions-request.json' assert { type: 'json' };
@@ -17,6 +18,7 @@ export const schemas = {
   CollectionsWrite,
   Definitions,
   GeneralJws,
+  GeneralJsonWebToken2020,
   HooksWrite,
   PermissionsDefinitions,
   PermissionsGrant,
