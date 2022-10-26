@@ -1,7 +1,8 @@
 import * as encoder from '../../../../src/utils/encoder';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import credentialIssuanceProtocolDefinition from '../../../vectors/protocol-definition-credential-issuance.json' assert { type: 'json' };
+import credentialIssuanceProtocolDefinition from '../../../vectors/protocol-definitions/credential-issuance.json' assert { type: 'json' };
+import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import sinon from 'sinon';
 import { base64url } from 'multiformats/bases/base64';
 import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/types';
@@ -184,7 +185,7 @@ describe('handleCollectionsWrite()', () => {
         .to.equal(largerCollectionWriteMessageData.message.descriptor.dataCid); // expecting unchanged
     });
 
-    describe('protocol authorized writes', () => {
+    describe('protocol based writes', () => {
       it('should allow write with allow-anyone rule', async () => {
         // scenario, Bob writes into Alice's DWN given Alice's "email" protocol allow-anyone rule
 
@@ -231,7 +232,6 @@ describe('handleCollectionsWrite()', () => {
             requester : bob,
             target    : alice,
             protocol,
-            contextId : 'bob email X',
             schema    : 'email',
             data      : bobData
           }
@@ -253,618 +253,561 @@ describe('handleCollectionsWrite()', () => {
         expect(bobRecordQueryReply.entries?.length).to.equal(1);
         expect((bobRecordQueryReply.entries![0] as CollectionsWriteMessage).encodedData).to.equal(base64url.baseEncode(bobData));
       });
-    });
 
-    it('should allow write with recipient rule', async () => {
+      it('should allow write with recipient rule', async () => {
       // scenario: VC issuer writes into Alice's DWN an asynchronous credential response upon receiving Alice's credential application
 
-      const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-      const protocolDefinition = credentialIssuanceProtocolDefinition;
-      const credentialApplicationSchema = protocolDefinition.labels.credentialApplication.schema;
-      const credentialResponseSchema = protocolDefinition.labels.credentialResponse.schema;
+        const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
+        const protocolDefinition = credentialIssuanceProtocolDefinition;
+        const credentialApplicationSchema = protocolDefinition.labels.credentialApplication.schema;
+        const credentialResponseSchema = protocolDefinition.labels.credentialResponse.schema;
 
-      const alice = await TestDataGenerator.generatePersona();
+        const alice = await TestDataGenerator.generatePersona();
 
-      const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
-        requester : alice,
-        target    : alice,
-        protocol,
-        protocolDefinition
-      });
+        const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+          requester : alice,
+          target    : alice,
+          protocol,
+          protocolDefinition
+        });
 
-      // setting up a stub did resolver
-      const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(alice);
+        // setting up a stub did resolver
+        const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(alice);
 
-      const protocolWriteReply = await handleProtocolsConfigure(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
-      expect(protocolWriteReply.status.code).to.equal(202);
+        const protocolWriteReply = await handleProtocolsConfigure(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
+        expect(protocolWriteReply.status.code).to.equal(202);
 
-      // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
-      const vcIssuer = await TestDataGenerator.generatePersona();
-      const credentialApplicationContextId = 'alice credential application thread';
-      const credentialApplicationRecordId = uuidv4();
-      const encodedCredentialApplication = new TextEncoder().encode('credential application data');
-      const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester    : alice,
-        target       : alice,
-        recipientDid : vcIssuer.did,
-        protocol ,
-        contextId    : credentialApplicationContextId,
-        recordId     : credentialApplicationRecordId,
-        schema       : credentialApplicationSchema,
-        data         : encodedCredentialApplication
-      });
-
-      const credentialApplicationReply = await handleCollectionsWrite(credentialApplicationMessageData.message, messageStore, aliceDidResolverStub);
-      expect(credentialApplicationReply.status.code).to.equal(202);
-
-      // generate a credential application response message from VC issuer
-      const encodedCredentialResponse = new TextEncoder().encode('credential response data');
-      const credentialResponseMessageData = await TestDataGenerator.generateCollectionsWriteMessage(
-        {
-          requester    : vcIssuer,
+        // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
+        const vcIssuer = await TestDataGenerator.generatePersona();
+        const credentialApplicationRecordId = uuidv4();
+        const encodedCredentialApplication = new TextEncoder().encode('credential application data');
+        const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+          requester    : alice,
           target       : alice,
-          recipientDid : alice.did,
+          recipientDid : vcIssuer.did,
           protocol ,
-          contextId    : credentialApplicationContextId,
-          parentId     : credentialApplicationRecordId,
-          schema       : credentialResponseSchema,
-          data         : encodedCredentialResponse
-        }
-      );
+          recordId     : credentialApplicationRecordId,
+          schema       : credentialApplicationSchema,
+          data         : encodedCredentialApplication
+        });
+        const credentialApplicationContextId = await credentialApplicationMessageData.collectionsWrite.getCanonicalId();
 
-      const vcIssuerDidResolverStub = TestStubGenerator.createDidResolverStub(vcIssuer);
+        const credentialApplicationReply = await handleCollectionsWrite(credentialApplicationMessageData.message, messageStore, aliceDidResolverStub);
+        expect(credentialApplicationReply.status.code).to.equal(202);
 
-      const credentialResponseReply = await handleCollectionsWrite(credentialResponseMessageData.message, messageStore, vcIssuerDidResolverStub);
-      expect(credentialResponseReply.status.code).to.equal(202);
+        // generate a credential application response message from VC issuer
+        const encodedCredentialResponse = new TextEncoder().encode('credential response data');
+        const credentialResponseMessageData = await TestDataGenerator.generateCollectionsWriteMessage(
+          {
+            requester    : vcIssuer,
+            target       : alice,
+            recipientDid : alice.did,
+            protocol ,
+            contextId    : credentialApplicationContextId,
+            parentId     : credentialApplicationRecordId,
+            schema       : credentialResponseSchema,
+            data         : encodedCredentialResponse
+          }
+        );
 
-      // verify VC issuer's message got written to the DB
-      const messageDataForQueryingCredentialResponse = await TestDataGenerator.generateCollectionsQueryMessage({
-        requester : alice,
-        target    : alice,
-        filter    : { recordId: credentialResponseMessageData.message.descriptor.recordId }
+        const vcIssuerDidResolverStub = TestStubGenerator.createDidResolverStub(vcIssuer);
+
+        const credentialResponseReply = await handleCollectionsWrite(credentialResponseMessageData.message, messageStore, vcIssuerDidResolverStub);
+        expect(credentialResponseReply.status.code).to.equal(202);
+
+        // verify VC issuer's message got written to the DB
+        const messageDataForQueryingCredentialResponse = await TestDataGenerator.generateCollectionsQueryMessage({
+          requester : alice,
+          target    : alice,
+          filter    : { recordId: credentialResponseMessageData.message.descriptor.recordId }
+        });
+        const applicationResponseQueryReply = await handleCollectionsQuery(
+          messageDataForQueryingCredentialResponse.message,
+          messageStore,
+          aliceDidResolverStub
+        );
+        expect(applicationResponseQueryReply.status.code).to.equal(200);
+        expect(applicationResponseQueryReply.entries?.length).to.equal(1);
+        expect((applicationResponseQueryReply.entries![0] as CollectionsWriteMessage).encodedData)
+          .to.equal(base64url.baseEncode(encodedCredentialResponse));
       });
-      const applicationResponseQueryReply = await handleCollectionsQuery(
-        messageDataForQueryingCredentialResponse.message,
-        messageStore,
-        aliceDidResolverStub
-      );
-      expect(applicationResponseQueryReply.status.code).to.equal(200);
-      expect(applicationResponseQueryReply.entries?.length).to.equal(1);
-      expect((applicationResponseQueryReply.entries![0] as CollectionsWriteMessage).encodedData)
-        .to.equal(base64url.baseEncode(encodedCredentialResponse));
-    });
 
-    it('should block unauthorized write with recipient rule', async () => {
+      it('should block unauthorized write with recipient rule', async () => {
       // scenario: fake VC issuer attempts write into Alice's DWN a credential response
       // upon learning the ID of Alice's credential application to actual issuer
 
-      const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-      const protocolDefinition = credentialIssuanceProtocolDefinition;
-      const credentialApplicationSchema = protocolDefinition.labels.credentialApplication.schema;
-      const credentialResponseSchema = protocolDefinition.labels.credentialResponse.schema;
+        const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
+        const protocolDefinition = credentialIssuanceProtocolDefinition;
+        const credentialApplicationSchema = protocolDefinition.labels.credentialApplication.schema;
+        const credentialResponseSchema = protocolDefinition.labels.credentialResponse.schema;
 
-      const alice = await TestDataGenerator.generatePersona();
+        const alice = await TestDataGenerator.generatePersona();
 
-      const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
-        requester : alice,
-        target    : alice,
-        protocol,
-        protocolDefinition
+        const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+          requester : alice,
+          target    : alice,
+          protocol,
+          protocolDefinition
+        });
+
+        // setting up a stub did resolver
+        const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(alice);
+
+        const protocolWriteReply = await handleProtocolsConfigure(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
+        expect(protocolWriteReply.status.code).to.equal(202);
+
+        // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
+        const vcIssuer = await TestDataGenerator.generatePersona();
+        const credentialApplicationRecordId = uuidv4();
+        const encodedCredentialApplication = new TextEncoder().encode('credential application data');
+        const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+          requester    : alice,
+          target       : alice,
+          recipientDid : vcIssuer.did,
+          protocol ,
+          recordId     : credentialApplicationRecordId,
+          schema       : credentialApplicationSchema,
+          data         : encodedCredentialApplication
+        });
+        const credentialApplicationContextId = await credentialApplicationMessageData.collectionsWrite.getCanonicalId();
+
+        const credentialApplicationReply = await handleCollectionsWrite(credentialApplicationMessageData.message, messageStore, aliceDidResolverStub);
+        expect(credentialApplicationReply.status.code).to.equal(202);
+
+        // generate a credential application response message from a fake VC issuer
+        const fakeVcIssuer = await TestDataGenerator.generatePersona();
+        const encodedCredentialResponse = new TextEncoder().encode('credential response data');
+        const credentialResponseMessageData = await TestDataGenerator.generateCollectionsWriteMessage(
+          {
+            requester    : fakeVcIssuer,
+            target       : alice,
+            recipientDid : alice.did,
+            protocol ,
+            contextId    : credentialApplicationContextId,
+            parentId     : credentialApplicationRecordId,
+            schema       : credentialResponseSchema,
+            data         : encodedCredentialResponse
+          }
+        );
+
+        const vcIssuerDidResolverStub = TestStubGenerator.createDidResolverStub(fakeVcIssuer);
+
+        const credentialResponseReply = await handleCollectionsWrite(credentialResponseMessageData.message, messageStore, vcIssuerDidResolverStub);
+        expect(credentialResponseReply.status.code).to.equal(401);
+        expect(credentialResponseReply.status.detail).to.contain('unexpected inbound message author');
       });
 
-      // setting up a stub did resolver
-      const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(alice);
-
-      const protocolWriteReply = await handleProtocolsConfigure(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
-      expect(protocolWriteReply.status.code).to.equal(202);
-
-      // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
-      const vcIssuer = await TestDataGenerator.generatePersona();
-      const credentialApplicationContextId = 'alice credential application thread';
-      const credentialApplicationRecordId = uuidv4();
-      const encodedCredentialApplication = new TextEncoder().encode('credential application data');
-      const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester    : alice,
-        target       : alice,
-        recipientDid : vcIssuer.did,
-        protocol ,
-        contextId    : credentialApplicationContextId,
-        recordId     : credentialApplicationRecordId,
-        schema       : credentialApplicationSchema,
-        data         : encodedCredentialApplication
-      });
-
-      const credentialApplicationReply = await handleCollectionsWrite(credentialApplicationMessageData.message, messageStore, aliceDidResolverStub);
-      expect(credentialApplicationReply.status.code).to.equal(202);
-
-      // generate a credential application response message from a fake VC issuer
-      const fakeVcIssuer = await TestDataGenerator.generatePersona();
-      const encodedCredentialResponse = new TextEncoder().encode('credential response data');
-      const credentialResponseMessageData = await TestDataGenerator.generateCollectionsWriteMessage(
-        {
-          requester    : fakeVcIssuer,
+      it('should fail authorization if protocol cannot be found for a protocol-based CollectionsWrite', async () => {
+        const alice = await DidKeyResolver.generate();
+        const protocol = 'nonExistentProtocol';
+        const data = encoder.stringToBytes('any data');
+        const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+          requester    : alice,
           target       : alice,
           recipientDid : alice.did,
           protocol ,
-          contextId    : credentialApplicationContextId,
-          parentId     : credentialApplicationRecordId,
-          schema       : credentialResponseSchema,
-          data         : encodedCredentialResponse
-        }
-      );
+          data
+        });
 
-      const vcIssuerDidResolverStub = TestStubGenerator.createDidResolverStub(fakeVcIssuer);
-
-      const credentialResponseReply = await handleCollectionsWrite(credentialResponseMessageData.message, messageStore, vcIssuerDidResolverStub);
-      expect(credentialResponseReply.status.code).to.equal(401);
-      expect(credentialResponseReply.status.detail).to.contain('unexpected inbound message author');
-    });
-
-    it('should fail authorization if protocol cannot be found for a protocol-based CollectionsWrite', async () => {
-      const alice = await DidKeyResolver.generate();
-      const protocol = 'nonExistentProtocol';
-      const data = encoder.stringToBytes('any data');
-      const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester    : alice,
-        target       : alice,
-        recipientDid : alice.did,
-        protocol ,
-        data
+        const reply = await handleCollectionsWrite(credentialApplicationMessageData.message, messageStore, didResolver);
+        expect(reply.status.code).to.equal(401);
+        expect(reply.status.detail).to.contain('unable to find protocol definition');
       });
 
-      const reply = await handleCollectionsWrite(credentialApplicationMessageData.message, messageStore, didResolver);
-      expect(reply.status.code).to.equal(401);
-      expect(reply.status.detail).to.contain('unable to find protocol definition');
-    });
+      it('should fail authorization if record schema is not an allowed type for protocol-based CollectionsWrite', async () => {
+        const alice = await DidKeyResolver.generate();
 
-    it('should fail authorization if `contextId` is undefined for a protocol-based CollectionsWrite', async () => {
-      const alice = await DidKeyResolver.generate();
+        const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
+        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+          target             : alice,
+          requester          : alice,
+          protocol,
+          protocolDefinition : credentialIssuanceProtocolDefinition
+        });
 
-      const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-      const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
-        target             : alice,
-        requester          : alice,
-        protocol,
-        protocolDefinition : credentialIssuanceProtocolDefinition
+        const protocolConfigureReply = await handleProtocolsConfigure(protocolConfigureMessageData.message, messageStore, didResolver);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+
+        const data = encoder.stringToBytes('any data');
+        const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+          requester    : alice,
+          target       : alice,
+          recipientDid : alice.did,
+          protocol,
+          schema       : 'unexpectedSchema',
+          data
+        });
+
+        const reply = await handleCollectionsWrite(credentialApplicationMessageData.message, messageStore, didResolver);
+        expect(reply.status.code).to.equal(401);
+        expect(reply.status.detail).to.equal('record with schema \'unexpectedSchema\' not allowed in protocol');
       });
 
-      const protocolConfigureReply = await handleProtocolsConfigure(protocolConfigureMessageData.message, messageStore, didResolver);
-      expect(protocolConfigureReply.status.code).to.equal(202);
+      it('should fail authorization if record schema is not allowed at the hierarchical level attempted for the CollectionsWrite', async () => {
+        const alice = await DidKeyResolver.generate();
 
-      const data = encoder.stringToBytes('any data');
-      const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester    : alice,
-        target       : alice,
-        recipientDid : alice.did,
-        schema       : 'irrelevantValue',
-        // contextId: 'aContextId', // intentionally missing
-        protocol ,
-        data
+        const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
+        const protocolDefinition = credentialIssuanceProtocolDefinition;
+        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+          target    : alice,
+          requester : alice,
+          protocol,
+          protocolDefinition
+        });
+        const credentialResponseSchema = protocolDefinition.labels.credentialResponse.schema;
+
+        const protocolConfigureReply = await handleProtocolsConfigure(protocolConfigureMessageData.message, messageStore, didResolver);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+
+        const data = encoder.stringToBytes('any data');
+        const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+          requester    : alice,
+          target       : alice,
+          recipientDid : alice.did,
+          protocol,
+          schema       : credentialResponseSchema, // this is an allowed schema type, but not allowed as a root level record
+          data
+        });
+
+        const reply = await handleCollectionsWrite(credentialApplicationMessageData.message, messageStore, didResolver);
+        expect(reply.status.code).to.equal(401);
+        expect(reply.status.detail).to.contain('not allowed in structure level');
       });
 
-      const reply = await handleCollectionsWrite(credentialApplicationMessageData.message, messageStore, didResolver);
-      expect(reply.status.code).to.equal(401);
-      expect(reply.status.detail).to.contain('`contextId` must exist');
-    });
+      it('should only allow DWN owner to write if record does not have an allow rule defined', async () => {
+        const alice = await DidKeyResolver.generate();
 
-    it('should fail authorization if record schema is not an allowed type for protocol-based CollectionsWrite', async () => {
-      const alice = await DidKeyResolver.generate();
-
-      const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-      const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
-        target             : alice,
-        requester          : alice,
-        protocol,
-        protocolDefinition : credentialIssuanceProtocolDefinition
-      });
-
-      const protocolConfigureReply = await handleProtocolsConfigure(protocolConfigureMessageData.message, messageStore, didResolver);
-      expect(protocolConfigureReply.status.code).to.equal(202);
-
-      const data = encoder.stringToBytes('any data');
-      const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester    : alice,
-        target       : alice,
-        recipientDid : alice.did,
-        protocol,
-        schema       : 'unexpectedSchema',
-        contextId    : 'aContextId',
-        data
-      });
-
-      const reply = await handleCollectionsWrite(credentialApplicationMessageData.message, messageStore, didResolver);
-      expect(reply.status.code).to.equal(401);
-      expect(reply.status.detail).to.equal('record with schema \'unexpectedSchema\' not allowed in protocol');
-    });
-
-    it('should fail authorization if record schema is not allowed at the hierarchical level attempted for the CollectionsWrite', async () => {
-      const alice = await DidKeyResolver.generate();
-
-      const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-      const protocolDefinition = credentialIssuanceProtocolDefinition;
-      const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
-        target    : alice,
-        requester : alice,
-        protocol,
-        protocolDefinition
-      });
-      const credentialResponseSchema = protocolDefinition.labels.credentialResponse.schema;
-
-      const protocolConfigureReply = await handleProtocolsConfigure(protocolConfigureMessageData.message, messageStore, didResolver);
-      expect(protocolConfigureReply.status.code).to.equal(202);
-
-      const data = encoder.stringToBytes('any data');
-      const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester    : alice,
-        target       : alice,
-        recipientDid : alice.did,
-        protocol,
-        schema       : credentialResponseSchema, // this is an allowed schema type, but not allowed as a root level record
-        contextId    : 'aContextId',
-        data
-      });
-
-      const reply = await handleCollectionsWrite(credentialApplicationMessageData.message, messageStore, didResolver);
-      expect(reply.status.code).to.equal(401);
-      expect(reply.status.detail).to.contain('not allowed in structure level');
-    });
-
-    it('should only allow DWN owner to write if record does not have an allow rule defined', async () => {
-      const alice = await DidKeyResolver.generate();
-
-      // write a protocol definition without an explicit allow rule
-      const protocol = 'private-protocol';
-      const protocolDefinition: ProtocolDefinition = {
-        labels: {
-          privateNote: {
-            schema: 'private-note'
+        // write a protocol definition without an explicit allow rule
+        const protocol = 'private-protocol';
+        const protocolDefinition: ProtocolDefinition = {
+          labels: {
+            privateNote: {
+              schema: 'private-note'
+            }
+          },
+          records: {
+            privateNote: { }
           }
-        },
-        records: {
-          privateNote: { }
-        }
-      };
-      const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
-        target    : alice,
-        requester : alice,
-        protocol,
-        protocolDefinition
+        };
+        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+          target    : alice,
+          requester : alice,
+          protocol,
+          protocolDefinition
+        });
+
+        const protocolConfigureReply = await handleProtocolsConfigure(protocolConfigureMessageData.message, messageStore, didResolver);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+
+        // test that Alice is allowed to write to her own DWN
+        const data = encoder.stringToBytes('any data');
+        const aliceWriteMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+          requester    : alice,
+          target       : alice,
+          recipientDid : alice.did,
+          protocol,
+          schema       : 'private-note',
+          data
+        });
+
+        let reply = await handleCollectionsWrite(aliceWriteMessageData.message, messageStore, didResolver);
+        expect(reply.status.code).to.equal(202);
+
+        // test that Bob is not allowed to write to Alice's DWN
+        const bob = await DidKeyResolver.generate();
+        const bobWriteMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+          requester    : bob,
+          target       : alice,
+          recipientDid : alice.did,
+          protocol,
+          schema       : 'private-note',
+          data
+        });
+
+        reply = await handleCollectionsWrite(bobWriteMessageData.message, messageStore, didResolver);
+        expect(reply.status.code).to.equal(401);
+        expect(reply.status.detail).to.contain('no allow rule defined for requester');
       });
 
-      const protocolConfigureReply = await handleProtocolsConfigure(protocolConfigureMessageData.message, messageStore, didResolver);
-      expect(protocolConfigureReply.status.code).to.equal(202);
+      it('should fail authorization if path to expected recipient in definition is longer than actual length of ancestor message chain', async () => {
+        const alice = await DidKeyResolver.generate();
+        const issuer = await DidKeyResolver.generate();
 
-      // test that Alice is allowed to write to her own DWN
-      const data = encoder.stringToBytes('any data');
-      const aliceWriteMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester    : alice,
-        target       : alice,
-        recipientDid : alice.did,
-        protocol,
-        schema       : 'private-note',
-        contextId    : 'anyContextId',
-        data
-      });
-
-      let reply = await handleCollectionsWrite(aliceWriteMessageData.message, messageStore, didResolver);
-      expect(reply.status.code).to.equal(202);
-
-      // test that Bob is not allowed to write to Alice's DWN
-      const bob = await DidKeyResolver.generate();
-      const bobWriteMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester    : bob,
-        target       : alice,
-        recipientDid : alice.did,
-        protocol,
-        schema       : 'private-note',
-        contextId    : 'anyContextId',
-        data
-      });
-
-      reply = await handleCollectionsWrite(bobWriteMessageData.message, messageStore, didResolver);
-      expect(reply.status.code).to.equal(401);
-      expect(reply.status.detail).to.contain('no allow rule defined for requester');
-    });
-
-    it('should fail authorization if path to expected recipient in definition is longer than actual length of ancestor message chain', async () => {
-      const alice = await DidKeyResolver.generate();
-      const issuer = await DidKeyResolver.generate();
-
-      // create an invalid ancestor path that is longer than possible
-      const invalidProtocolDefinition = { ...credentialIssuanceProtocolDefinition };
-      invalidProtocolDefinition.records.credentialApplication.records.credentialResponse.allow.recipient.of
+        // create an invalid ancestor path that is longer than possible
+        const invalidProtocolDefinition = { ...credentialIssuanceProtocolDefinition };
+        invalidProtocolDefinition.records.credentialApplication.records.credentialResponse.allow.recipient.of
         = 'credentialApplication/credentialResponse'; // this is invalid as the ancestor can only be just `credentialApplication`
 
-      // write the VC issuance protocol
-      const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-      const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
-        target             : alice,
-        requester          : alice,
-        protocol,
-        protocolDefinition : invalidProtocolDefinition
+        // write the VC issuance protocol
+        const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
+        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+          target             : alice,
+          requester          : alice,
+          protocol,
+          protocolDefinition : invalidProtocolDefinition
+        });
+
+        const protocolConfigureReply = await handleProtocolsConfigure(protocolConfigureMessageData.message, messageStore, didResolver);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+
+        // simulate Alice's VC applications with both issuer
+        const data = encoder.stringToBytes('irrelevant');
+        const messageDataWithIssuerA = await TestDataGenerator.generateCollectionsWriteMessage({
+          requester    : alice,
+          target       : alice,
+          recipientDid : issuer.did,
+          schema       : credentialIssuanceProtocolDefinition.labels.credentialApplication.schema,
+          protocol,
+          data
+        });
+        const contextId = await messageDataWithIssuerA.collectionsWrite.getCanonicalId();
+
+        let reply = await handleCollectionsWrite(messageDataWithIssuerA.message, messageStore, didResolver);
+        expect(reply.status.code).to.equal(202);
+
+        // simulate issuer attempting to respond to Alice's VC application
+        const invalidResponseDataByIssuerA = await TestDataGenerator.generateCollectionsWriteMessage({
+          requester    : issuer,
+          target       : alice,
+          recipientDid : alice.did,
+          schema       : credentialIssuanceProtocolDefinition.labels.credentialResponse.schema,
+          contextId,
+          parentId     : messageDataWithIssuerA.message.descriptor.recordId,
+          protocol,
+          data
+        });
+
+        reply = await handleCollectionsWrite(invalidResponseDataByIssuerA.message, messageStore, didResolver);
+        expect(reply.status.code).to.equal(401);
+        expect(reply.status.detail).to.contain('path to expected recipient is longer than actual length of ancestor message chain');
       });
 
-      const protocolConfigureReply = await handleProtocolsConfigure(protocolConfigureMessageData.message, messageStore, didResolver);
-      expect(protocolConfigureReply.status.code).to.equal(202);
+      it('should fail authorization if path to expected recipient in definition has incorrect label', async () => {
+        const alice = await DidKeyResolver.generate();
+        const issuer = await DidKeyResolver.generate();
 
-      // simulate Alice's VC applications with both issuer
-      const data = encoder.stringToBytes('irrelevant');
-      const messageDataWithIssuerA = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester    : alice,
-        target       : alice,
-        recipientDid : issuer.did,
-        schema       : credentialIssuanceProtocolDefinition.labels.credentialApplication.schema,
-        contextId    : 'issuer',
-        protocol,
-        data
-      });
-
-      let reply = await handleCollectionsWrite(messageDataWithIssuerA.message, messageStore, didResolver);
-      expect(reply.status.code).to.equal(202);
-
-      // simulate issuer attempting to respond to Alice's VC application
-      const invalidResponseDataByIssuerA = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester    : issuer,
-        target       : alice,
-        recipientDid : alice.did,
-        schema       : credentialIssuanceProtocolDefinition.labels.credentialResponse.schema,
-        contextId    : 'issuer',
-        parentId     : messageDataWithIssuerA.message.descriptor.recordId,
-        protocol ,
-        data
-      });
-
-      reply = await handleCollectionsWrite(invalidResponseDataByIssuerA.message, messageStore, didResolver);
-      expect(reply.status.code).to.equal(401);
-      expect(reply.status.detail).to.contain('path to expected recipient is longer than actual length of ancestor message chain');
-    });
-
-    it('should fail authorization if path to expected recipient in definition has incorrect label', async () => {
-      const alice = await DidKeyResolver.generate();
-      const issuer = await DidKeyResolver.generate();
-
-      // create an invalid ancestor path that is longer than possible
-      const invalidProtocolDefinition = { ...credentialIssuanceProtocolDefinition };
-      invalidProtocolDefinition.records.credentialApplication.records.credentialResponse.allow.recipient.of
+        // create an invalid ancestor path that is longer than possible
+        const invalidProtocolDefinition = { ...credentialIssuanceProtocolDefinition };
+        invalidProtocolDefinition.records.credentialApplication.records.credentialResponse.allow.recipient.of
         = 'credentialResponse'; // this is invalid as the root ancestor can only be `credentialApplication` based on record structure
 
-      // write the VC issuance protocol
-      const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-      const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
-        target             : alice,
-        requester          : alice,
-        protocol,
-        protocolDefinition : invalidProtocolDefinition
+        // write the VC issuance protocol
+        const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
+        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+          target             : alice,
+          requester          : alice,
+          protocol,
+          protocolDefinition : invalidProtocolDefinition
+        });
+
+        const protocolConfigureReply = await handleProtocolsConfigure(protocolConfigureMessageData.message, messageStore, didResolver);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+
+        // simulate Alice's VC application to an issuer
+        const data = encoder.stringToBytes('irrelevant');
+        const messageDataWithIssuerA = await TestDataGenerator.generateCollectionsWriteMessage({
+          requester    : alice,
+          target       : alice,
+          recipientDid : issuer.did,
+          schema       : credentialIssuanceProtocolDefinition.labels.credentialApplication.schema,
+          protocol,
+          data
+        });
+        const contextId = await messageDataWithIssuerA.collectionsWrite.getCanonicalId();
+
+        let reply = await handleCollectionsWrite(messageDataWithIssuerA.message, messageStore, didResolver);
+        expect(reply.status.code).to.equal(202);
+
+        // simulate issuer attempting to respond to Alice's VC application
+        const invalidResponseDataByIssuerA = await TestDataGenerator.generateCollectionsWriteMessage({
+          requester    : issuer,
+          target       : alice,
+          recipientDid : alice.did,
+          schema       : credentialIssuanceProtocolDefinition.labels.credentialResponse.schema,
+          contextId,
+          parentId     : messageDataWithIssuerA.message.descriptor.recordId,
+          protocol,
+          data
+        });
+
+        reply = await handleCollectionsWrite(invalidResponseDataByIssuerA.message, messageStore, didResolver);
+        expect(reply.status.code).to.equal(401);
+        expect(reply.status.detail).to.contain('mismatching record schema');
       });
 
-      const protocolConfigureReply = await handleProtocolsConfigure(protocolConfigureMessageData.message, messageStore, didResolver);
-      expect(protocolConfigureReply.status.code).to.equal(202);
-
-      // simulate Alice's VC applications with both issuer
-      const data = encoder.stringToBytes('irrelevant');
-      const messageDataWithIssuerA = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester    : alice,
-        target       : alice,
-        recipientDid : issuer.did,
-        schema       : credentialIssuanceProtocolDefinition.labels.credentialApplication.schema,
-        contextId    : 'issuer',
-        protocol,
-        data
-      });
-
-      let reply = await handleCollectionsWrite(messageDataWithIssuerA.message, messageStore, didResolver);
-      expect(reply.status.code).to.equal(202);
-
-      // simulate issuer attempting to respond to Alice's VC application
-      const invalidResponseDataByIssuerA = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester    : issuer,
-        target       : alice,
-        recipientDid : alice.did,
-        schema       : credentialIssuanceProtocolDefinition.labels.credentialResponse.schema,
-        contextId    : 'issuer',
-        parentId     : messageDataWithIssuerA.message.descriptor.recordId,
-        protocol ,
-        data
-      });
-
-      reply = await handleCollectionsWrite(invalidResponseDataByIssuerA.message, messageStore, didResolver);
-      expect(reply.status.code).to.equal(401);
-      expect(reply.status.detail).to.contain('mismatching record schema');
-    });
-
-    it('should look up recipient path with more than 1 ancestor in allow rule correctly', async () => {
+      it('should look up recipient path with more than 1 ancestor in allow rule correctly', async () => {
       // simulate a DEX protocol with at least 3 layers of message exchange: ask -> offer -> fulfillment
       // make sure recipient of offer can send fulfillment
 
-      const alice = await DidKeyResolver.generate();
-      const pfi = await DidKeyResolver.generate();
+        const alice = await DidKeyResolver.generate();
+        const pfi = await DidKeyResolver.generate();
 
-      // write a DEX protocol definition
-      const protocol = 'dex-protocol';
-      const protocolDefinition: ProtocolDefinition = {
-        labels: {
-          ask: {
-            schema: 'ask'
-          },
-          offer: {
-            schema: 'offer'
-          },
-          fulfillment: {
-            schema: 'fulfillment'
-          }
-        },
-        records: {
-          ask: {
-            allow: {
-              anyone: {
-                to: [ 'write' ]
-              }
-            },
-            records: {
-              offer: {
-                allow: {
-                  recipient: {
-                    of : 'ask',
-                    to : [ 'write' ]
-                  }
-                },
-                records: {
-                  fulfillment: {
-                    allow: {
-                      recipient: {
-                        of : 'ask/offer', // 2+ layers in path required by this test
-                        to : [ 'write' ]
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      };
+        // write a DEX protocol definition
+        const protocol = 'dex-protocol';
+        const protocolDefinition: ProtocolDefinition = dexProtocolDefinition;
 
-      // write the DEX protocol in the PFI
-      const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
-        target             : pfi,
-        requester          : pfi,
-        protocol,
-        protocolDefinition : protocolDefinition
+        // write the DEX protocol in the PFI
+        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+          target             : pfi,
+          requester          : pfi,
+          protocol,
+          protocolDefinition : protocolDefinition
+        });
+
+        const protocolConfigureReply = await handleProtocolsConfigure(protocolConfigureMessageData.message, messageStore, didResolver);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+
+        // simulate Alice's ask and PFI's offer already occurred
+        const data = encoder.stringToBytes('irrelevant');
+        const askMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+          requester    : alice,
+          target       : pfi,
+          recipientDid : pfi.did,
+          schema       : 'ask',
+          protocol,
+          data
+        });
+        const contextId = await askMessageData.collectionsWrite.getCanonicalId();
+
+        let reply = await handleCollectionsWrite(askMessageData.message, messageStore, didResolver);
+        expect(reply.status.code).to.equal(202);
+
+        const offerMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+          requester    : pfi,
+          target       : pfi,
+          recipientDid : alice.did,
+          schema       : 'offer',
+          contextId,
+          parentId     : askMessageData.message.descriptor.recordId,
+          protocol,
+          data
+        });
+
+        reply = await handleCollectionsWrite(offerMessageData.message, messageStore, didResolver);
+        expect(reply.status.code).to.equal(202);
+
+        // the actual test: making sure fulfillment message is accepted
+        const fulfillmentMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+          requester    : alice,
+          target       : pfi,
+          recipientDid : pfi.did,
+          schema       : 'fulfillment',
+          contextId,
+          parentId     : offerMessageData.message.descriptor.recordId,
+          protocol,
+          data
+        });
+        reply = await handleCollectionsWrite(fulfillmentMessageData.message, messageStore, didResolver);
+        expect(reply.status.code).to.equal(202);
+
+        // verify the fulfillment message is stored
+        const collectionsQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
+          requester : pfi,
+          target    : pfi,
+          filter    : { recordId: fulfillmentMessageData.message.descriptor.recordId }
+        });
+
+        // verify the data is written
+        const collectionsQueryReply = await handleCollectionsQuery(collectionsQueryMessageData.message, messageStore, didResolver);
+        expect(collectionsQueryReply.status.code).to.equal(200);
+        expect(collectionsQueryReply.entries?.length).to.equal(1);
+        expect((collectionsQueryReply.entries![0] as CollectionsWriteMessage).descriptor.dataCid)
+          .to.equal(fulfillmentMessageData.message.descriptor.dataCid);
       });
 
-      const protocolConfigureReply = await handleProtocolsConfigure(protocolConfigureMessageData.message, messageStore, didResolver);
-      expect(protocolConfigureReply.status.code).to.equal(202);
+      it('should fail authorization incoming message contains `parentId` that leads to more than one record', async () => {
+        // 1. DEX protocol with at least 3 layers of message exchange: ask -> offer -> fulfillment
+        // 2. 2 offers with the same `recordId` for the same ask in the PFI
+        // 3. Alice sends a fulfillment to an offer should fail due to the ambiguity
 
-      // simulate Alice's ask and PFI's offer already occurred
-      const contextId = 'aliceInteraction';
-      const data = encoder.stringToBytes('irrelevant');
-      const askMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester    : alice,
-        target       : pfi,
-        recipientDid : pfi.did,
-        schema       : 'ask',
-        contextId,
-        protocol,
-        data
+        const alice = await DidKeyResolver.generate();
+        const pfi = await DidKeyResolver.generate();
+
+        // write a DEX protocol definition
+        const protocol = 'dex-protocol';
+        const protocolDefinition: ProtocolDefinition = dexProtocolDefinition;
+
+        // write the DEX protocol in the PFI
+        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+          target             : pfi,
+          requester          : pfi,
+          protocol,
+          protocolDefinition : protocolDefinition
+        });
+
+        const protocolConfigureReply = await handleProtocolsConfigure(protocolConfigureMessageData.message, messageStore, didResolver);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+
+        // simulate Alice's ask
+        const data = encoder.stringToBytes('irrelevant');
+        const askMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+          requester    : alice,
+          target       : pfi,
+          recipientDid : pfi.did,
+          schema       : 'ask',
+          protocol,
+          data
+        });
+        const contextId = await askMessageData.collectionsWrite.getCanonicalId();
+
+        let reply = await handleCollectionsWrite(askMessageData.message, messageStore, didResolver);
+        expect(reply.status.code).to.equal(202);
+
+        // generate two offers with the same `recordId`
+        const duplicatedOfferRecordId = uuidv4();
+        const offer1MessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+          requester    : pfi,
+          target       : pfi,
+          recipientDid : alice.did,
+          schema       : 'offer',
+          contextId,
+          parentId     : askMessageData.message.descriptor.recordId,
+          protocol,
+          recordId     : duplicatedOfferRecordId,
+          data
+        });
+
+        const offer2MessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+          requester    : pfi,
+          target       : pfi,
+          recipientDid : alice.did,
+          schema       : 'offer',
+          contextId,
+          parentId     : askMessageData.message.descriptor.recordId,
+          protocol,
+          recordId     : duplicatedOfferRecordId,
+          data
+        });
+
+        // we have to insert the two records directly into Alice's DWN because handler does not allow such condition to occur under expected operation
+        await messageStore.put(offer1MessageData.message, { author: alice.did });
+        await messageStore.put(offer2MessageData.message, { author: alice.did });
+
+        // verify both offers are stored in PFI's DB
+        const offersQueryDaa = await TestDataGenerator.generateCollectionsQueryMessage({
+          requester : pfi,
+          target    : pfi,
+          filter    : { recordId: duplicatedOfferRecordId }
+        });
+        const collectionsQueryReply = await handleCollectionsQuery(offersQueryDaa.message, messageStore, didResolver);
+        expect(collectionsQueryReply.status.code).to.equal(200);
+        expect(collectionsQueryReply.entries?.length).to.equal(2);
+
+        // the actual test: making sure fulfillment message fails
+        const fulfillmentMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+          requester    : alice,
+          target       : pfi,
+          recipientDid : pfi.did,
+          schema       : 'fulfillment',
+          contextId,
+          parentId     : duplicatedOfferRecordId,
+          protocol,
+          data
+        });
+        reply = await handleCollectionsWrite(fulfillmentMessageData.message, messageStore, didResolver);
+        expect(reply.status.code).to.equal(401);
+        expect(reply.status.detail).to.contain('must have exactly one parent');
       });
-
-      let reply = await handleCollectionsWrite(askMessageData.message, messageStore, didResolver);
-      expect(reply.status.code).to.equal(202);
-
-      const offerMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester    : pfi,
-        target       : pfi,
-        recipientDid : alice.did,
-        schema       : 'offer',
-        contextId,
-        parentId     : askMessageData.message.descriptor.recordId,
-        protocol,
-        data
-      });
-
-      reply = await handleCollectionsWrite(offerMessageData.message, messageStore, didResolver);
-      expect(reply.status.code).to.equal(202);
-
-      // the actual test: making sure fulfillment message is accepted
-      const fulfillmentMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester    : alice,
-        target       : pfi,
-        recipientDid : pfi.did,
-        schema       : 'fulfillment',
-        contextId,
-        parentId     : offerMessageData.message.descriptor.recordId,
-        protocol,
-        data
-      });
-      reply = await handleCollectionsWrite(fulfillmentMessageData.message, messageStore, didResolver);
-      expect(reply.status.code).to.equal(202);
-
-      // verify the fulfillment message is stored
-      const collectionsQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
-        requester : pfi,
-        target    : pfi,
-        filter    : { recordId: fulfillmentMessageData.message.descriptor.recordId }
-      });
-
-      // verify the data is written
-      const collectionsQueryReply = await handleCollectionsQuery(collectionsQueryMessageData.message, messageStore, didResolver);
-      expect(collectionsQueryReply.status.code).to.equal(200);
-      expect(collectionsQueryReply.entries?.length).to.equal(1);
-      expect((collectionsQueryReply.entries![0] as CollectionsWriteMessage).descriptor.dataCid)
-        .to.equal(fulfillmentMessageData.message.descriptor.dataCid);
-    });
-
-    it('should fail authorization incoming message contains `parentId` that leads to more than one record', async () => {
-      const alice = await DidKeyResolver.generate();
-      const issuer = await DidKeyResolver.generate();
-
-      // write VC issuance protocol to Alice's DWN
-      const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-      const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
-        target             : alice,
-        requester          : alice,
-        protocol,
-        protocolDefinition : credentialIssuanceProtocolDefinition
-      });
-
-      const protocolConfigureReply = await handleProtocolsConfigure(protocolConfigureMessageData.message, messageStore, didResolver);
-      expect(protocolConfigureReply.status.code).to.equal(202);
-
-      // generate two applications with the same `recordId`
-      const recordId = uuidv4();
-      const contextId = 'aliceInteraction';
-      const application1Data = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester    : alice,
-        target       : alice,
-        recipientDid : issuer.did,
-        schema       : credentialIssuanceProtocolDefinition.labels.credentialApplication.schema,
-        contextId,
-        protocol,
-        recordId,
-        data         : encoder.stringToBytes('data1')
-      });
-
-      const application2Data = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester    : alice,
-        target       : alice,
-        recipientDid : issuer.did,
-        schema       : credentialIssuanceProtocolDefinition.labels.credentialApplication.schema,
-        contextId,
-        protocol,
-        recordId,
-        data         : encoder.stringToBytes('data2')
-      });
-
-      // we have to insert the two records directly into Alice's DWN because handler does not allow such condition to occur under expected operation
-      await messageStore.put(application2Data.message, { author: alice.did });
-      await messageStore.put(application1Data.message, { author: alice.did });
-
-      // sanity verify there are two applications with the same recordId, this should not happen under normal operation
-      // verify the fulfillment message is stored
-      const applicationQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
-        requester : alice,
-        target    : alice,
-        filter    : { recordId }
-      });
-      let reply = await handleCollectionsQuery(applicationQueryMessageData.message, messageStore, didResolver);
-      expect(reply.status.code).to.equal(200);
-      expect(reply.entries.length).to.equal(2);
-
-      // now test that an issuer's offer message will fail due to ambiguous parent
-      const responseMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester    : issuer,
-        target       : alice,
-        recipientDid : alice.did,
-        schema       : credentialIssuanceProtocolDefinition.labels.credentialResponse.schema,
-        contextId,
-        parentId     : recordId,
-        protocol,
-        data         : encoder.stringToBytes('irrelevant')
-      });
-
-      reply = await handleCollectionsWrite(responseMessageData.message, messageStore, didResolver);
-      expect(reply.status.code).to.equal(401);
-      expect(reply.status.detail).to.contain('must have exactly one parent');
     });
   });
 

@@ -76,14 +76,10 @@ export class ProtocolAuthorization {
     const protocol = message.descriptor.protocol;
     const contextId = message.descriptor.contextId;
 
-    if (contextId === undefined) {
-      throw new Error('`contextId` must exist for a protocol scoped message but is not specified');
-    }
-
     // keep walking up the chain from the inbound message's parent, until there is no more parent
     let currentParentId = message.descriptor.parentId;
     while (currentParentId !== undefined) {
-    // fetch parent
+      // fetch parent
       const query = {
         target   : message.descriptor.target,
         method   : 'CollectionsWrite',

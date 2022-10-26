@@ -1,5 +1,6 @@
-import { CollectionsWriteMessage, DidResolver } from '../../../../src';
+import * as encoder from '../../../../src/utils/encoder';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver';
+import { DidResolver } from '../../../../src';
 import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 import { TestDataGenerator } from '../../../utils/test-data-generator';
@@ -84,19 +85,17 @@ describe('handleCollectionsQuery()', () => {
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
       const schema = 'schema1';
-      const record1Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, schema, contextId: '1' });
-      const record2Data = await TestDataGenerator.generateCollectionsWriteMessage(
-        { requester: alice, target: alice, schema, contextId: '2', recipientDid: bob.did }
+      const record1Data = await TestDataGenerator.generateCollectionsWriteMessage(
+        { requester: alice, target: alice, schema, data: encoder.stringToBytes('1') }
       );
-      const record3Data = await TestDataGenerator.generateCollectionsWriteMessage( {
-        requester    : bob,
-        target       : alice,
-        recipientDid : alice.did,
-        schema,
-        contextId    : '3',
-      });
+      const record2Data = await TestDataGenerator.generateCollectionsWriteMessage(
+        { requester: alice, target: alice, schema, data: encoder.stringToBytes('2'), recipientDid: bob.did }
+      );
+      const record3Data = await TestDataGenerator.generateCollectionsWriteMessage(
+        { requester: bob, target: alice, recipientDid: alice.did, schema, data: encoder.stringToBytes('3') }
+      );
       const record4Data = await TestDataGenerator.generateCollectionsWriteMessage(
-        { requester: alice, target: alice, schema, contextId: '4', published: true }
+        { requester: alice, target: alice, schema, data: encoder.stringToBytes('4'), published: true }
       );
 
       await messageStore.put(record1Data.message, { author: alice.did });
@@ -111,14 +110,14 @@ describe('handleCollectionsQuery()', () => {
         filter    : { schema }
       });
 
-      const replyToBobQuery = await handleCollectionsQuery(bobQueryMessageData.message, messageStore, didResolver);
+      const replyToBob = await handleCollectionsQuery(bobQueryMessageData.message, messageStore, didResolver);
 
-      expect(replyToBobQuery.status.code).to.equal(200);
-      expect(replyToBobQuery.entries?.length).to.equal(3); // expect 3 records
+      expect(replyToBob.status.code).to.equal(200);
+      expect(replyToBob.entries?.length).to.equal(3); // expect 3 records
 
-      const privateRecordsForBob = replyToBobQuery.entries.filter(message => (message as CollectionsWriteMessage).descriptor.contextId === '2');
-      const privateRecordsFromBob = replyToBobQuery.entries.filter(message => (message as CollectionsWriteMessage).descriptor.contextId === '3');
-      const publicRecords = replyToBobQuery.entries.filter(message => (message as CollectionsWriteMessage).descriptor.contextId === '4');
+      const privateRecordsForBob = replyToBob.entries.filter(message => (message as any).encodedData === encoder.stringToBase64Url('2'));
+      const privateRecordsFromBob = replyToBob.entries.filter(message => (message as any).encodedData === encoder.stringToBase64Url('3'));
+      const publicRecords = replyToBob.entries.filter(message => (message as any).encodedData === encoder.stringToBase64Url('4'));
       expect(privateRecordsForBob.length).to.equal(1);
       expect(privateRecordsFromBob.length).to.equal(1);
       expect(publicRecords.length).to.equal(1);
