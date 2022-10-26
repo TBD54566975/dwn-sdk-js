@@ -1,8 +1,9 @@
 import type { BaseMessage } from './types';
+
 import lodash from 'lodash';
 import { CID } from 'multiformats/cid';
 import { CollectionsWriteMessage } from '../interfaces/collections/types';
-import { generateCid } from '../utils/cid';
+import { compareCids, generateCid } from '../utils/cid';
 import { validate } from '../validation/validator';
 
 const { cloneDeep, isPlainObject } = lodash;
@@ -65,13 +66,7 @@ export abstract class Message {
     // the < and > operators compare strings in lexicographical order
     const cidA = await Message.getCid(a);
     const cidB = await Message.getCid(b);
-    if (cidA > cidB) {
-      return 1;
-    } else if (cidA < cidB) {
-      return -1;
-    } else {
-      return 0;
-    }
+    return compareCids(cidA, cidB);
   }
 
   /**

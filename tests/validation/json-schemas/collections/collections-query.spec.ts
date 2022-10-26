@@ -5,10 +5,10 @@ describe('CollectionsQuery schema definition', () => {
   it('should allow descriptor with only required properties', async () => {
     const validMessage = {
       descriptor: {
-        target : 'did:example:anyDid',
-        method : 'CollectionsQuery',
-        nonce  : 'anyNonce',
-        filter : { schema: 'anySchema' }
+        target      : 'did:example:anyDid',
+        method      : 'CollectionsQuery',
+        dateCreated : 123,
+        filter      : { schema: 'anySchema' }
       },
       authorization: {
         payload    : 'anyPayload',
@@ -27,10 +27,10 @@ describe('CollectionsQuery schema definition', () => {
   it('should throws if `authorization` is missing', () => {
     const invalidMessage = {
       descriptor: {
-        target : 'did:example:anyDid',
-        method : 'CollectionsQuery',
-        nonce  : 'anyNonce',
-        filter : { schema: 'anySchema' }
+        target      : 'did:example:anyDid',
+        method      : 'CollectionsQuery',
+        dateCreated : 123,
+        filter      : { schema: 'anySchema' }
       }
     };
 
@@ -42,10 +42,10 @@ describe('CollectionsQuery schema definition', () => {
   it('should throws if unknown property is given in message', () => {
     const invalidMessage = {
       descriptor: {
-        target : 'did:example:anyDid',
-        method : 'CollectionsQuery',
-        nonce  : 'anyNonce',
-        filter : { schema: 'anySchema' }
+        target      : 'did:example:anyDid',
+        method      : 'CollectionsQuery',
+        dateCreated : 123,
+        filter      : { schema: 'anySchema' }
       },
       authorization: {
         payload    : 'anyPayload',
@@ -67,7 +67,7 @@ describe('CollectionsQuery schema definition', () => {
       descriptor: {
         target          : 'did:example:anyDid',
         method          : 'CollectionsQuery',
-        nonce           : 'anyNonce',
+        dateCreated     : 123,
         filter          : { schema: 'anySchema' },
         unknownProperty : 'unknownProperty' // unknown property
       },
@@ -88,10 +88,10 @@ describe('CollectionsQuery schema definition', () => {
   it('should throws if empty `filter` property is given in the `descriptor`', () => {
     const invalidMessage = {
       descriptor: {
-        target : 'did:example:anyDid',
-        method : 'CollectionsQuery',
-        nonce  : 'anyNonce',
-        filter : { }
+        target      : 'did:example:anyDid',
+        method      : 'CollectionsQuery',
+        dateCreated : 123,
+        filter      : { }
       },
       authorization: {
         payload    : 'anyPayload',
@@ -113,11 +113,11 @@ describe('CollectionsQuery schema definition', () => {
     for (const dateSortValue of allowedDateSortValues) {
       const validMessage = {
         descriptor: {
-          target   : 'did:example:anyDid',
-          method   : 'CollectionsQuery',
-          nonce    : 'anyNonce',
-          filter   : { schema: 'anySchema' },
-          dateSort : dateSortValue
+          target      : 'did:example:anyDid',
+          method      : 'CollectionsQuery',
+          dateCreated : 123,
+          filter      : { schema: 'anySchema' },
+          dateSort    : dateSortValue
         },
         authorization: {
           payload    : 'anyPayload',
@@ -137,11 +137,11 @@ describe('CollectionsQuery schema definition', () => {
     // test an invalid values of `dateSort`
     const invalidMessage = {
       descriptor: {
-        target   : 'did:example:anyDid',
-        method   : 'CollectionsQuery',
-        nonce    : 'anyNonce',
-        filter   : { schema: 'anySchema' },
-        dateSort : 'unacceptable', // bad value
+        target      : 'did:example:anyDid',
+        method      : 'CollectionsQuery',
+        dateCreated : 123,
+        filter      : { schema: 'anySchema' },
+        dateSort    : 'unacceptable', // bad value
       },
       authorization: {
         payload    : 'anyPayload',

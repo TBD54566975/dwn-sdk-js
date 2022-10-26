@@ -1,27 +1,26 @@
 import type { BaseMessage, RequestSchema } from './core/types';
 import type { DidMethodResolver } from './did/did-resolver';
-import type { HandlersWriteMessage } from './interfaces/handlers/types';
 import type { Interface, MethodHandler } from './interfaces/types';
 import type { MessageStore } from './store/message-store';
-
+import * as encoder from '../src/utils/encoder';
 import { addSchema } from './validation/validator';
-import { CollectionsInterface, PermissionsInterface } from './interfaces';
+import { CollectionsInterface, PermissionsInterface, ProtocolsInterface } from './interfaces';
 import { DidKeyResolver } from './did/did-key-resolver';
 import { DidResolver } from './did/did-resolver';
 import { DidIonResolver } from './did/did-ion-resolver';
 import { Message, MessageReply, Request, Response } from './core';
 import { MessageStoreLevel } from './store/message-store-level';
 
+
 export class Dwn {
   static methodHandlers: { [key:string]: MethodHandler } = {
     ...CollectionsInterface.methodHandlers,
-    ...PermissionsInterface.methodHandlers
+    ...PermissionsInterface.methodHandlers,
+    ...ProtocolsInterface.methodHandlers
   };
 
   private DidResolver: DidResolver;
   private messageStore: MessageStore;
-  private customEventHandlers: { handlersWriteMessage: HandlersWriteMessage, eventHandler: EventHandler }[] = [];
-
 
   private constructor(config: Config) {
     this.DidResolver = new DidResolver(config.DidMethodResolvers);
@@ -62,27 +61,10 @@ export class Dwn {
     return this.messageStore.close();
   }
 
-  /**
-   * Adds a custom event handler.
-   * Current implementation only allows one matching handler.
-   */
-  async addCustomEventHandler(handlersWriteMessage: HandlersWriteMessage, eventHandler: EventHandler): Promise<void> {
-    const matchingHandlers = this.getCustomEventHandlers(handlersWriteMessage);
-
-    if (matchingHandlers.length !== 0) {
-      throw new Error(`an existing handler matching the filter of the given handler already exists`);
-    }
-
-    this.customEventHandlers.push({
-      handlersWriteMessage,
-      eventHandler
-    });
-  }
-
   async processRequest(rawRequest: Uint8Array): Promise<Response> {
     let request: RequestSchema;
     try {
-      const requestString = new TextDecoder().decode(rawRequest);
+      const requestString = encoder.bytesToString(rawRequest);
       request = JSON.parse(requestString);
     } catch {
       throw new Error('expected request to be valid JSON');
@@ -107,8 +89,7 @@ export class Dwn {
   }
 
   /**
-   * TODO: add docs, Issue #70 https://github.com/TBD54566975/dwn-sdk-js/issues/70
-   * @param message
+   * Processes the given DWN message.
    */
   async processMessage(rawMessage: object): Promise<MessageReply> {
     let message: BaseMessage;
@@ -125,49 +106,12 @@ export class Dwn {
       const interfaceMethodHandler = Dwn.methodHandlers[message.descriptor.method];
 
       const methodHandlerReply = await interfaceMethodHandler(message, this.messageStore, this.DidResolver);
-
-      const customHandlerReply = await this.triggerEventHandler(message);
-
-      // use custom handler's reply if exists
-      if (customHandlerReply === undefined) {
-        return methodHandlerReply;
-      } else {
-        return customHandlerReply;
-      }
+      return methodHandlerReply;
     } catch (e) {
       return new MessageReply({
         status: { code: 500, detail: e.message }
       });
     }
-  }
-
-  /**
-   * Gets the matching custom event handlers given a message.
-   */
-  private getCustomEventHandlers(message: BaseMessage): EventHandler[]{
-    const matchingHandlersData = this.customEventHandlers.filter(
-      (handlerData) => message.descriptor.target === handlerData.handlersWriteMessage.descriptor.target &&
-                       message.descriptor.method === handlerData.handlersWriteMessage.descriptor.filter.method);
-
-    const matchingHandlers = matchingHandlersData.map(handlerData => handlerData.eventHandler);
-    return matchingHandlers;
-  }
-
-  /**
-   * Trigger method event handler as needed.
-   * Current implementation only allows one matching handler.
-   */
-  private async triggerEventHandler(message: BaseMessage): Promise<MessageReply | undefined> {
-    // find the matching event handlers
-    const matchingHandlers = this.getCustomEventHandlers(message);
-
-    if (matchingHandlers.length === 0) {
-      return undefined;
-    }
-
-    const handler = matchingHandlers[0];
-    const response = await handler(message);
-    return response;
   }
 };
 

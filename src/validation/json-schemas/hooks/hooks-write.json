@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://identity.foundation/dwn/json-schemas/handlers-write.json",
+  "$id": "https://identity.foundation/dwn/json-schemas/hooks-write.json",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -17,6 +17,8 @@
       "required": [
         "target",
         "method",
+        "dateCreated",
+        "uri",
         "filter"
       ],
       "properties": {
@@ -25,8 +27,15 @@
         },
         "method": {
           "enum": [
-            "HandlersWrite"
+            "HooksWrite"
           ],
+          "type": "string"
+        },
+        "dateCreated": {
+          "type": "number",
+          "minimum": 0
+        },
+        "schema": {
           "type": "string"
         },
         "filter": {

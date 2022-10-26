@@ -15,11 +15,16 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "target"
+        "target",
+        "dateCreated"
       ],
       "properties": {
         "target": {
           "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+        },
+        "dateCreated": {
+          "type": "number",
+          "minimum": 0
         },
         "conditions": {
           "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/conditions"

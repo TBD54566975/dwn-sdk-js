@@ -11,7 +11,6 @@ describe('CollectionsWrite schema definition', () => {
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
         dateCreated : 123,
-        nonce       : 'anyNonce',
         recordId    : uuidv4(),
       },
       authorization: {
@@ -36,7 +35,6 @@ describe('CollectionsWrite schema definition', () => {
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
         dateCreated : 123,
-        nonce       : 'anyNonce',
         recordId    : uuidv4(),
       }
     };
@@ -54,7 +52,6 @@ describe('CollectionsWrite schema definition', () => {
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
         dateCreated : 123,
-        nonce       : 'anyNonce',
         recordId    : uuidv4(),
       },
       authorization: {
@@ -80,7 +77,6 @@ describe('CollectionsWrite schema definition', () => {
         dataCid         : 'anyCid',
         dataFormat      : 'application/json',
         dateCreated     : 123,
-        nonce           : 'anyNonce',
         recordId        : uuidv4(),
         unknownProperty : 'unknownProperty' // unknown property
       },
@@ -106,7 +102,6 @@ describe('CollectionsWrite schema definition', () => {
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
         dateCreated : 123,
-        nonce       : 'anyNonce',
         recordId    : uuidv4(),
       },
       authorization: {

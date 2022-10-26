@@ -1,13 +1,13 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
 import type { CollectionsWriteDescriptor, CollectionsWriteMessage } from '../types';
 import { authenticate, authorize, validateSchema } from '../../../core/auth';
-import { base64url } from 'multiformats/bases/base64';
+import * as encoder from '../../../utils/encoder';
 import { DidResolver } from '../../../did/did-resolver';
 import { getDagCid } from '../../../utils/data';
 import { Jws } from '../../../jose/jws/jws';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
-import { protocolAuthorize } from '../../../core/protocol-authorization';
+import { ProtocolAuthorization } from '../../../core/protocol-authorization';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { validate } from '../../../validation/validator';
 
@@ -19,9 +19,8 @@ export type CollectionsWriteOptions = AuthCreateOptions & {
   schema?: string;
   recordId: string;
   parentId?: string;
-  nonce: string;
   data: Uint8Array;
-  dateCreated: number;
+  dateCreated?: number;
   published?: boolean;
   datePublished?: number;
   dataFormat: string;
@@ -45,9 +44,8 @@ export class CollectionsWrite extends Message implements Authorizable {
       schema        : options.schema,
       recordId      : options.recordId,
       parentId      : options.parentId,
-      nonce         : options.nonce,
       dataCid       : dataCid.toString(),
-      dateCreated   : options.dateCreated,
+      dateCreated   : options.dateCreated ?? Date.now(),
       published     : options.published,
       datePublished : options.datePublished,
       dataFormat    : options.dataFormat
@@ -60,7 +58,7 @@ export class CollectionsWrite extends Message implements Authorizable {
     const messageType = descriptor.method;
     validate(messageType, { descriptor, authorization: {} });
 
-    const encodedData = base64url.baseEncode(options.data);
+    const encodedData = encoder.bytesToBase64Url(options.data);
     const authorization = await Jws.sign({ descriptor }, options.signatureInput);
     const message = { descriptor, authorization, encodedData };
 
@@ -74,15 +72,16 @@ export class CollectionsWrite extends Message implements Authorizable {
     const parsedPayload = await validateSchema(message);
 
     const signers = await authenticate(message.authorization, didResolver);
+    const author = signers[0];
 
     // authorization
     if (message.descriptor.protocol !== undefined) {
-      await protocolAuthorize(message, signers[0], messageStore);
+      await ProtocolAuthorization.authorize(message, author, messageStore);
     } else {
-      await authorize(message, signers);
+      await authorize(message, author);
     }
 
-    return { payload: parsedPayload, signers };
+    return { payload: parsedPayload, author };
   }
 
   /**

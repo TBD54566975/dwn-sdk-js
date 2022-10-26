@@ -2,7 +2,6 @@ import { CollectionsWriteMessage, DidResolver } from '../../../../src';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver';
 import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level';
-import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
 import { TestDataGenerator } from '../../../utils/test-data-generator';
 import { TestStubGenerator } from '../../../utils/test-stub-generator';
 import chai, { expect } from 'chai';
@@ -39,26 +38,21 @@ describe('handleCollectionsQuery()', () => {
 
     it('should return records matching the query', async () => {
       // insert three messages into DB, two with matching protocol
-      const targetDid = 'did:example:alice';
-      const requesterDid = targetDid;
+      const alice = await TestDataGenerator.generatePersona();
       const protocol = 'myAwesomeProtocol';
-      const collectionsWriteMessage1Data = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid });
-      const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid, protocol, schema: 'schema1' });
-      const collectionsWriteMessage3Data = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid, protocol, schema: 'schema2' });
+      const write1Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice });
+      const write2Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, protocol, schema: 'schema1' });
+      const write3Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, protocol, schema: 'schema2' });
 
-      await messageStore.put(collectionsWriteMessage1Data.message);
-      await messageStore.put(collectionsWriteMessage2Data.message);
-      await messageStore.put(collectionsWriteMessage3Data.message);
+      await messageStore.put(write1Data.message, alice.did);
+      await messageStore.put(write2Data.message, alice.did);
+      await messageStore.put(write3Data.message, alice.did);
 
       // testing singular conditional query
-      const messageData = await TestDataGenerator.generateCollectionsQueryMessage({ targetDid, requesterDid, filter: { protocol } });
+      const messageData = await TestDataGenerator.generateCollectionsQueryMessage({ requester: alice, target: alice, filter: { protocol } });
 
       // setting up a stub method resolver
-      const didResolverStub = TestStubGenerator.createDidResolverStub(
-        messageData.requesterDid,
-        messageData.requesterKeyId,
-        messageData.requesterKeyPair.publicJwk
-      );
+      const didResolverStub = TestStubGenerator.createDidResolverStub(alice);
 
       const reply = await handleCollectionsQuery(messageData.message, messageStore, didResolverStub);
 
@@ -66,14 +60,10 @@ describe('handleCollectionsQuery()', () => {
       expect(reply.entries?.length).to.equal(2); // only 2 entries should match the query on protocol
 
       // testing multi-conditional query, reuse data generated above for bob
-      const requesterKeyId = messageData.requesterKeyId;
-      const requesterKeyPair = messageData.requesterKeyPair;
       const messageData2 = await TestDataGenerator.generateCollectionsQueryMessage({
-        targetDid,
-        requesterDid,
-        requesterKeyId,
-        requesterKeyPair,
-        filter: {
+        requester : alice,
+        target    : alice,
+        filter    : {
           protocol,
           schema: 'schema1'
         }
@@ -88,70 +78,75 @@ describe('handleCollectionsQuery()', () => {
     it('should only return published records and unpublished records that is meant for requester', async () => {
       // write three records into Alice's DB:
       // 1st is unpublished
-      // 2nd is also unpublished but is meant for bob
-      // 3rd is published
+      // 2nd is also unpublished but is meant for (has recipient as) Bob
+      // 3rd is also unpublished but is authored (sent) by Bob
+      // 4th is published
+      const alice = await DidKeyResolver.generate();
+      const bob = await DidKeyResolver.generate();
       const schema = 'schema1';
-      const aliceDidData = await DidKeyResolver.generate();
-      const bobDidData = await DidKeyResolver.generate();
-      const record1Data = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid: aliceDidData.did, schema, contextId: '1' });
+      const record1Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, schema, contextId: '1' });
       const record2Data = await TestDataGenerator.generateCollectionsWriteMessage(
-        { targetDid: aliceDidData.did, schema, contextId: '2', recipientDid: bobDidData.did }
+        { requester: alice, target: alice, schema, contextId: '2', recipientDid: bob.did }
       );
-      const record3Data = await TestDataGenerator.generateCollectionsWriteMessage(
-        { targetDid: aliceDidData.did, schema, contextId: '3', published: true }
+      const record3Data = await TestDataGenerator.generateCollectionsWriteMessage( {
+        requester    : bob,
+        target       : alice,
+        recipientDid : alice.did,
+        schema,
+        contextId    : '3',
+      });
+      const record4Data = await TestDataGenerator.generateCollectionsWriteMessage(
+        { requester: alice, target: alice, schema, contextId: '4', published: true }
       );
 
-      await messageStore.put(record1Data.message);
-      await messageStore.put(record2Data.message);
-      await messageStore.put(record3Data.message);
+      await messageStore.put(record1Data.message, alice.did);
+      await messageStore.put(record2Data.message, alice.did);
+      await messageStore.put(record3Data.message, bob.did);
+      await messageStore.put(record4Data.message, alice.did);
 
       // test correctness for Bob's query
       const bobQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
-        targetDid        : aliceDidData.did,
-        requesterDid     : bobDidData.did,
-        requesterKeyId   : DidKeyResolver.getKeyId(bobDidData.did),
-        requesterKeyPair : bobDidData, // contains the key pair
-        filter           : { schema }
+        requester : bob,
+        target    : alice,
+        filter    : { schema }
       });
 
       const replyToBobQuery = await handleCollectionsQuery(bobQueryMessageData.message, messageStore, didResolver);
 
       expect(replyToBobQuery.status.code).to.equal(200);
-      expect(replyToBobQuery.entries?.length).to.equal(2); // expect 2 records
+      expect(replyToBobQuery.entries?.length).to.equal(3); // expect 3 records
 
-      const actualUnpublishedMessages = replyToBobQuery.entries.filter(message => (message as CollectionsWriteMessage).descriptor.contextId === '2');
-      const actualPublishedMessages = replyToBobQuery.entries.filter(message => (message as CollectionsWriteMessage).descriptor.contextId === '3');
-      expect(actualUnpublishedMessages.length).to.equal(1);
-      expect(actualPublishedMessages.length).to.equal(1);
+      const privateRecordsForBob = replyToBobQuery.entries.filter(message => (message as CollectionsWriteMessage).descriptor.contextId === '2');
+      const privateRecordsFromBob = replyToBobQuery.entries.filter(message => (message as CollectionsWriteMessage).descriptor.contextId === '3');
+      const publicRecords = replyToBobQuery.entries.filter(message => (message as CollectionsWriteMessage).descriptor.contextId === '4');
+      expect(privateRecordsForBob.length).to.equal(1);
+      expect(privateRecordsFromBob.length).to.equal(1);
+      expect(publicRecords.length).to.equal(1);
 
       // test correctness for Alice's query
       const aliceQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
-        targetDid        : aliceDidData.did,
-        requesterDid     : aliceDidData.did,
-        requesterKeyId   : DidKeyResolver.getKeyId(aliceDidData.did),
-        requesterKeyPair : aliceDidData, // contains the key pair
-        filter           : { schema }
+        requester : alice,
+        target    : alice,
+        filter    : { schema }
       });
 
       const replyToAliceQuery = await handleCollectionsQuery(aliceQueryMessageData.message, messageStore, didResolver);
 
       expect(replyToAliceQuery.status.code).to.equal(200);
-      expect(replyToAliceQuery.entries?.length).to.equal(3); // expect all 3 records
+      expect(replyToAliceQuery.entries?.length).to.equal(4); // expect all 4 records
     });
 
 
     it('should throw if querying for records not intended for the requester', async () => {
-      const aliceDidData = await DidKeyResolver.generate();
-      const bobDidData = await DidKeyResolver.generate();
-      const carolDidData = await DidKeyResolver.generate();
+      const alice = await DidKeyResolver.generate();
+      const bob = await DidKeyResolver.generate();
+      const carol = await DidKeyResolver.generate();
 
       // test correctness for Bob's query
       const bobQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
-        targetDid        : aliceDidData.did,
-        requesterDid     : bobDidData.did,
-        requesterKeyId   : DidKeyResolver.getKeyId(bobDidData.did),
-        requesterKeyPair : bobDidData,
-        filter           : { recipient: carolDidData.did } // bob querying carol's records
+        requester : bob,
+        target    : alice,
+        filter    : { recipient: carol.did } // bob querying carol's records
       });
 
       const replyToBobQuery = await handleCollectionsQuery(bobQueryMessageData.message, messageStore, didResolver);
@@ -162,30 +157,26 @@ describe('handleCollectionsQuery()', () => {
 
     it('should not fetch entries across tenants', async () => {
       // insert three messages into DB, two with matching schema
-      const did1 = 'did:example:alice';
-      const did2 = 'did:example:bob';
+      const alice = await DidKeyResolver.generate();
+      const bob = await DidKeyResolver.generate();
       const protocol = 'myAwesomeProtocol';
-      const collectionsWriteMessage1Data = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid: did1, protocol });
-      const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionsWriteMessage({ targetDid: did2, protocol });
+      const collectionsWriteMessage1Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, protocol });
+      const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: bob, target: bob, protocol });
 
       // insert data into 2 different tenants
-      await messageStore.put(collectionsWriteMessage1Data.message);
-      await messageStore.put(collectionsWriteMessage2Data.message);
+      await messageStore.put(collectionsWriteMessage1Data.message, 'did:example:irrelevant');
+      await messageStore.put(collectionsWriteMessage2Data.message, 'did:example:irrelevant');
 
-      const did1QueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
-        requesterDid : did1,
-        targetDid    : did1,
-        filter       : { protocol }
+      const aliceQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
+        requester : alice,
+        target    : alice,
+        filter    : { protocol }
       });
 
       // setting up a stub method resolver
-      const didResolverStub = TestStubGenerator.createDidResolverStub(
-        did1QueryMessageData.requesterDid,
-        did1QueryMessageData.requesterKeyId,
-        did1QueryMessageData.requesterKeyPair.publicJwk
-      );
+      const didResolverStub = TestStubGenerator.createDidResolverStub(alice);
 
-      const reply = await handleCollectionsQuery(did1QueryMessageData.message, messageStore, didResolverStub);
+      const reply = await handleCollectionsQuery(aliceQueryMessageData.message, messageStore, didResolverStub);
 
       expect(reply.status.code).to.equal(200);
       expect(reply.entries?.length).to.equal(1);
@@ -193,52 +184,41 @@ describe('handleCollectionsQuery()', () => {
   });
 
   it('should return 401 if signature check fails', async () => {
-    const messageData = await TestDataGenerator.generateCollectionsQueryMessage();
+    const { requester, message } = await TestDataGenerator.generateCollectionsQueryMessage();
 
     // setting up a stub did resolver & message store
-    const differentKeyPair = await secp256k1.generateKeyPair(); // used to return a different public key to simulate invalid signature
-    const didResolverStub = TestStubGenerator.createDidResolverStub(
-      messageData.requesterDid,
-      messageData.requesterKeyId,
-      differentKeyPair.publicJwk
-    );
+    // intentionally not supplying the public key so a different public key is generated to simulate invalid signature
+    const mismatchingPersona = await TestDataGenerator.generatePersona({ did: requester.did, keyId: requester.keyId });
+    const didResolverStub = TestStubGenerator.createDidResolverStub(mismatchingPersona);
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-    const reply = await handleCollectionsQuery(messageData.message, messageStoreStub, didResolverStub);
+    const reply = await handleCollectionsQuery(message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(401);
   });
 
   it('should return 500 if authorization fails', async () => {
-    const messageData = await TestDataGenerator.generateCollectionsQueryMessage();
+    const { requester, message } = await TestDataGenerator.generateCollectionsQueryMessage();
 
     // setting up a stub method resolver & message store
-    const didResolverStub = TestStubGenerator.createDidResolverStub(
-      messageData.requesterDid,
-      messageData.requesterKeyId,
-      messageData.requesterKeyPair.publicJwk
-    );
+    const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
     messageStoreStub.query.throwsException('anyError'); // simulate a DB query error
 
-    const reply = await handleCollectionsQuery(messageData.message, messageStoreStub, didResolverStub);
+    const reply = await handleCollectionsQuery(message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(500);
   });
 
   it('should return 500 if query contains `dateSort`', async () => {
-    const messageData = await TestDataGenerator.generateCollectionsQueryMessage({ dateSort: 'createdAscending' });
+    const { requester, message } = await TestDataGenerator.generateCollectionsQueryMessage({ dateSort: 'createdAscending' });
 
     // setting up a stub method resolver & message store
-    const didResolverStub = TestStubGenerator.createDidResolverStub(
-      messageData.requesterDid,
-      messageData.requesterKeyId,
-      messageData.requesterKeyPair.publicJwk
-    );
+    const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
     messageStoreStub.query.throwsException('anyError'); // simulate a DB query error
 
-    const reply = await handleCollectionsQuery(messageData.message, messageStoreStub, didResolverStub);
+    const reply = await handleCollectionsQuery(message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(500);
     expect(reply.status.detail).to.equal('`dateSort` not implemented');

@@ -1,14 +1,15 @@
 import type { AuthCreateOptions } from '../../../core/types';
-import type { HandlersWriteDescriptor, HandlersWriteMessage } from '../../handlers/types';
+import type { HooksWriteDescriptor, HooksWriteMessage } from '../../hooks/types';
 import { Jws } from '../../../jose/jws/jws';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { validate } from '../../../validation/validator';
 
 /**
- * Input to `HandlersWrite.create()`.
+ * Input to `HookssWrite.create()`.
  */
-export type HandlersWriteOptions = AuthCreateOptions & {
+export type HooksWriteOptions = AuthCreateOptions & {
   target: string,
+  dateCreated?: number,
   /**
    * leave as `undefined` for customer handler.
    * ie. DWN processing will use `undefined` check to attempt to invoke the registered handler.
@@ -20,18 +21,19 @@ export type HandlersWriteOptions = AuthCreateOptions & {
 };
 
 /**
- * Class that provides `HandlersWrite` related operations.
+ * Class that provides `HooksWrite` related operations.
  */
-export class HandlersWrite {
+export class HooksWrite {
   /**
-   * Creates a HandlersWrite message
+   * Creates a HooksWrite message
    */
-  static async create(options: HandlersWriteOptions): Promise<HandlersWriteMessage> {
-    const descriptor: HandlersWriteDescriptor = {
-      target : options.target,
-      method : 'HandlersWrite',
-      uri    : options.uri,
-      filter : options.filter
+  static async create(options: HooksWriteOptions): Promise<HooksWriteMessage> {
+    const descriptor: HooksWriteDescriptor = {
+      target      : options.target,
+      method      : 'HooksWrite',
+      dateCreated : options.dateCreated ?? Date.now(),
+      uri         : options.uri,
+      filter      : options.filter
     };
 
     // delete all descriptor properties that are `undefined` else the code will encounter the following IPLD issue when attempting to generate CID:

@@ -1,4 +1,4 @@
-import { base64url } from 'multiformats/bases/base64';
+import * as encoder from '../utils/encoder';
 import { CID } from 'multiformats/cid';
 import { importer } from 'ipfs-unixfs-importer';
 
@@ -21,7 +21,7 @@ export function toBytes(data: Data): Uint8Array {
 
 export function base64UrlEncode(data: Data): string {
   const dataBytes = toBytes(data);
-  return base64url.baseEncode(dataBytes);
+  return encoder.bytesToBase64Url(dataBytes);
 }
 
 /**

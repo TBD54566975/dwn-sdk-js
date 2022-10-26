@@ -10,7 +10,7 @@ import { validate } from '../../../validation/validator';
 
 export type CollectionsQueryOptions = AuthCreateOptions & {
   target: string;
-  nonce: string;
+  dateCreated?: number;
   filter: {
     recipient?: string;
     protocol?: string;
@@ -32,11 +32,11 @@ export class CollectionsQuery extends Message implements Authorizable {
 
   static async create(options: CollectionsQueryOptions): Promise<CollectionsQuery> {
     const descriptor: CollectionsQueryDescriptor = {
-      target   : options.target,
-      method   : 'CollectionsQuery',
-      nonce    : options.nonce,
-      filter   : options.filter,
-      dateSort : options.dateSort
+      target      : options.target,
+      method      : 'CollectionsQuery',
+      dateCreated : options.dateCreated ?? Date.now(),
+      filter      : options.filter,
+      dateSort    : options.dateSort
     };
 
     // delete all descriptor properties that are `undefined` else the code will encounter the following IPLD issue when attempting to generate CID:
@@ -59,14 +59,14 @@ export class CollectionsQuery extends Message implements Authorizable {
     const parsedPayload = await validateSchema(message);
 
     const signers = await authenticate(message.authorization, didResolver);
-    const requesterDid = signers[0];
+    const author = signers[0];
 
     const recipientDid = this.message.descriptor.filter.recipient;
     if (recipientDid !== undefined &&
-        recipientDid !== requesterDid) {
-      throw new Error(`non-owner ${requesterDid}, not allowed to query records intended for ${recipientDid}`);
+        recipientDid !== author) {
+      throw new Error(`non-owner ${author}, not allowed to query records intended for ${recipientDid}`);
     }
 
-    return { payload: parsedPayload, signers };
+    return { payload: parsedPayload, author };
   }
 }

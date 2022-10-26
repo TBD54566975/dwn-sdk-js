@@ -1,7 +1,6 @@
 import type { CollectionsWriteMessage } from '../types';
 import type { MethodHandler } from '../../types';
-
-import { base64url } from 'multiformats/bases/base64';
+import * as encoder from '../../../utils/encoder';
 import { CollectionsWrite } from '../messages/collections-write';
 import { getDagCid } from '../../../utils/data';
 import { MessageReply } from '../../../core';
@@ -15,7 +14,7 @@ export const handleCollectionsWrite: MethodHandler = async (
     // verify dataCid matches given data
     const incomingMessage = message as CollectionsWriteMessage;
     if (incomingMessage.encodedData !== undefined) {
-      const rawData = base64url.baseDecode(incomingMessage.encodedData);
+      const rawData = encoder.base64urlToBytes(incomingMessage.encodedData);
       const actualDataCid = (await getDagCid(rawData)).toString();
 
       if (actualDataCid !== incomingMessage.descriptor.dataCid) {
@@ -26,9 +25,11 @@ export const handleCollectionsWrite: MethodHandler = async (
     }
 
     // authentication & authorization
+    let author;
     try {
       const collectionsWriteMessage = new CollectionsWrite(incomingMessage);
-      await collectionsWriteMessage.verifyAuth(didResolver, messageStore);
+      const authResult = await collectionsWriteMessage.verifyAuth(didResolver, messageStore);
+      author = authResult.author;
     } catch (e) {
       return new MessageReply({
         status: { code: 401, detail: e.message }
@@ -54,7 +55,7 @@ export const handleCollectionsWrite: MethodHandler = async (
     // write the incoming message to DB if incoming message is newest
     let messageReply: MessageReply;
     if (incomingMessageIsNewest) {
-      await messageStore.put(message);
+      await messageStore.put(message, author);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }

@@ -1,11 +1,12 @@
 import type { AuthorizableMessage } from '../../core/types';
 
 /**
- * Descriptor structure for HandlersWrite
+ * Descriptor structure for HooksWrite
  */
-export type HandlersWriteDescriptor = {
-  method: 'HandlersWrite';
+export type HooksWriteDescriptor = {
+  method: 'HooksWrite';
   target: string;
+  dateCreated: number;
 
   /**
    * Leave as `undefined` for customer handler.
@@ -22,8 +23,8 @@ export type HandlersWriteDescriptor = {
 };
 
 /**
- * Structure for HandlersWrite message.
+ * Structure for HooksWrite message.
  */
-export type HandlersWriteMessage = AuthorizableMessage & {
-  descriptor: HandlersWriteDescriptor;
+export type HooksWriteMessage = AuthorizableMessage & {
+  descriptor: HooksWriteDescriptor;
 };

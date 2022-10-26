@@ -2,7 +2,7 @@ import type { DidMethodResolver, DidResolutionResult, DIDDocument } from './did-
 
 import varint from 'varint';
 import { base58btc } from 'multiformats/bases/base58';
-import { base64url } from 'multiformats/bases/base64';
+import * as encoder from '../utils/encoder';
 import { Did } from './did';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519';
 import { PrivateJwk, PublicJwk } from '../jose/types';
@@ -108,20 +108,25 @@ export class DidKeyResolver implements DidMethodResolver {
    * generates a new ed25519 public/private key pair. Creates a DID using the private key
    * @returns did, public key, private key
    */
-  public static async generate(): Promise<{ did: string, publicJwk: PublicJwk, privateJwk: PrivateJwk }> {
+  public static async generate(): Promise<{
+    did: string,
+    keyId: string,
+    keyPair: { publicJwk: PublicJwk, privateJwk: PrivateJwk }
+  }> {
     const { publicJwk, privateJwk } = await ed25519.generateKeyPair();
 
     // multicodec code for Ed25519 public keys
     const ed25519Multicodec = varint.encode(0xed);
-    const publicKeyBytes = base64url.baseDecode(publicJwk.x);
+    const publicKeyBytes = encoder.base64urlToBytes(publicJwk.x);
     const idBytes = new Uint8Array(ed25519Multicodec.length + publicKeyBytes.byteLength);
     idBytes.set(ed25519Multicodec, 0);
     idBytes.set(publicKeyBytes, ed25519Multicodec.length);
 
     const id = base58btc.encode(idBytes);
     const did = `did:key:${id}`;
+    const keyId = DidKeyResolver.getKeyId(did);
 
-    return { did, publicJwk, privateJwk };
+    return { did, keyId, keyPair: { publicJwk, privateJwk } };
   }
 
   /**

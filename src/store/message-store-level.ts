@@ -1,7 +1,6 @@
 import type { BaseMessage, DataReferencingMessage } from '../core/types';
 import type { MessageStore } from './message-store';
-
-import { base64url } from 'multiformats/bases/base64';
+import * as encoder from '../utils/encoder';
 import { BlockstoreLevel } from './blockstore-level';
 import { CID } from 'multiformats/cid';
 import { exporter } from 'ipfs-unixfs-exporter';
@@ -51,7 +50,6 @@ export class MessageStoreLevel implements MessageStore {
     await this.db.open();
 
     // TODO: look into using the same level we're using for blockstore, Issue #49 https://github.com/TBD54566975/dwn-sdk-js/issues/49
-    // TODO: parameterize `name`, Issue #50 https://github.com/TBD54566975/dwn-sdk-js/issues/50
     // calling `searchIndex()` twice without closing its DB causes the process to hang (ie. calling this method consecutively),
     // so check to see if the index has already been "opened" before opening it again.
     if (!this.index) {
@@ -92,7 +90,7 @@ export class MessageStoreLevel implements MessageStore {
       offset += chunk.length;
     }
 
-    dataReferencingMessage.encodedData = base64url.baseEncode(dataBytes);
+    dataReferencingMessage.encodedData = encoder.bytesToBase64Url(dataBytes);
 
     return messageJson;
   }
@@ -131,7 +129,7 @@ export class MessageStoreLevel implements MessageStore {
     return;
   }
 
-  async put(messageJson: BaseMessage): Promise<void> {
+  async put(messageJson: BaseMessage, author: string): Promise<void> {
 
     // delete `encodedData` if it exists so `messageJson` is stored without it, `encodedData` will be decoded, chunked and stored separately below
     let encodedData = undefined;
@@ -148,7 +146,7 @@ export class MessageStoreLevel implements MessageStore {
 
     // if `encodedData` is present we'll decode it then chunk it and store it as unix-fs dag-pb encoded
     if (encodedData) {
-      const content = base64url.baseDecode(encodedData);
+      const content = encoder.base64urlToBytes(encodedData);
       const chunk = importer([{ content }], this.db, { cidVersion: 1 });
 
       // for some reason no-unused-vars doesn't work in for loops. it's not entirely surprising because
@@ -160,6 +158,7 @@ export class MessageStoreLevel implements MessageStore {
     }
 
     const indexDocument = {
+      author, // add author to the index
       ...messageJson.descriptor,
       _id: encodedBlock.cid.toString()
     };
