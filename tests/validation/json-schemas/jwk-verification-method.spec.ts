@@ -49,7 +49,7 @@ describe('JwkVerificationMethod', async () => {
     ).to.throw('publicKeyJwk');
   });
 
-  it('should throw an exception if publicKeyJwk isn\'t present in verificationMethod', () => {
+  it('should throw an exception if publicKeyJwk isn\'t an object', () => {
     expect(
       () => validate('JwkVerificationMethod', {
         id           : 'did:jank:alice#key1',
