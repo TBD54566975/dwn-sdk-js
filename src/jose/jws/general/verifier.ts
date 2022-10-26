@@ -85,7 +85,7 @@ export class GeneralJwsVerifier {
       throw new Error('public key needed to verify signature not found in DID Document');
     }
 
-    validate('GeneralJsonWebToken2020', verificationMethod);
+    validate('JwkVerificationMethod', verificationMethod);
 
     const { publicKeyJwk: publicJwk } = verificationMethod;
 
