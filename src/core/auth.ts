@@ -1,5 +1,5 @@
-import type { AuthorizableMessage, BaseMessage } from './types';
 import type { AuthVerificationResult } from './types';
+import type { BaseMessage } from './types';
 
 import { CID } from 'multiformats';
 import { DidResolver } from '../did/did-resolver';
@@ -22,7 +22,7 @@ type PayloadConstraints = {
  * @throws {Error} if auth fails
  */
 export async function canonicalAuth(
-  message: BaseMessage & AuthorizableMessage,
+  message: BaseMessage,
   didResolver: DidResolver,
   messageStore: MessageStore,
   payloadConstraints?: PayloadConstraints
@@ -39,7 +39,7 @@ export async function canonicalAuth(
 }
 
 export async function validateSchema(
-  message: BaseMessage & AuthorizableMessage,
+  message: BaseMessage,
   payloadConstraints?: PayloadConstraints
 ): Promise<{ descriptorCid: CID, [key: string]: CID }> {
 

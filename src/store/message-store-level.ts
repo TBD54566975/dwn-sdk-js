@@ -22,8 +22,8 @@ export class MessageStoreLevel implements MessageStore {
   db: BlockstoreLevel;
   // levelDB doesn't natively provide the querying capabilities needed for DWN. To accommodate, we're leveraging
   // a level-backed inverted index
-  // TODO: search-index lib does not import type `SearchIndex`. find a workaround, Issue #48, https://github.com/TBD54566975/dwn-sdk-js/issues/48
-  index;
+  // search-index lib does not import type `SearchIndex`. get the awaited return type as a workaround
+  index: Awaited<ReturnType<typeof searchIndex>>;
 
   /**
    * @param {MessageStoreLevelConfig} config
@@ -129,7 +129,7 @@ export class MessageStoreLevel implements MessageStore {
     return;
   }
 
-  async put(messageJson: BaseMessage, author: string): Promise<void> {
+  async put(messageJson: BaseMessage, additionalIndexes: {[key: string]: string}): Promise<void> {
 
     // delete `encodedData` if it exists so `messageJson` is stored without it, `encodedData` will be decoded, chunked and stored separately below
     let encodedData = undefined;
@@ -158,9 +158,9 @@ export class MessageStoreLevel implements MessageStore {
     }
 
     const indexDocument = {
-      author, // add author to the index
+      _id: encodedBlock.cid.toString(),
       ...messageJson.descriptor,
-      _id: encodedBlock.cid.toString()
+      ...additionalIndexes
     };
 
     // tokenSplitRegex is used to tokenize values. By default, only letters and digits are indexed,

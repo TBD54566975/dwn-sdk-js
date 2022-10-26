@@ -118,4 +118,56 @@ describe('CollectionsWrite schema definition', () => {
       Message.parse(invalidMessage);
     }).throws('must match pattern "^[A-Za-z0-9_-]+$"');
   });
+
+  it('should throw if contextId is set but parentId is missing', () => {
+    const invalidMessage = {
+      descriptor: {
+        target      : 'did:example:anyDid',
+        method      : 'CollectionsWrite',
+        contextId   : 'invalid', // must have `parentId` to exist
+        dataCid     : 'anyCid',
+        dataFormat  : 'application/json',
+        dateCreated : 123,
+        recordId    : uuidv4(),
+      },
+      authorization: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      },
+      encodedData: 'anything'
+    };
+
+    expect(() => {
+      Message.parse(invalidMessage);
+    }).throws('must have required property \'parentId\'');
+  });
+
+  it('should throw if parentId is set but contextId is missing', () => {
+    const invalidMessage = {
+      descriptor: {
+        target      : 'did:example:anyDid',
+        method      : 'CollectionsWrite',
+        parentId    : 'invalid', // must have `contextId` to exist
+        dataCid     : 'anyCid',
+        dataFormat  : 'application/json',
+        dateCreated : 123,
+        recordId    : uuidv4(),
+      },
+      authorization: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      },
+      encodedData: 'anything'
+    };
+
+    expect(() => {
+      Message.parse(invalidMessage);
+    }).throws('must have required property \'contextId\'');
+  });
 });

@@ -1,4 +1,4 @@
-import type { AuthorizableMessage } from '../../core/types';
+import { BaseMessage } from '../../core/types';
 
 export type CollectionsWriteDescriptor = {
   target: string;
@@ -16,7 +16,7 @@ export type CollectionsWriteDescriptor = {
   dataFormat: string;
 };
 
-export type CollectionsWriteMessage = AuthorizableMessage & {
+export type CollectionsWriteMessage = BaseMessage & {
   descriptor: CollectionsWriteDescriptor;
   encodedData?: string;
 };
@@ -37,6 +37,6 @@ export type CollectionsQueryDescriptor = {
   dateSort?: string;
 };
 
-export type CollectionsQueryMessage = AuthorizableMessage & {
+export type CollectionsQueryMessage = BaseMessage & {
   descriptor: CollectionsQueryDescriptor;
 };
