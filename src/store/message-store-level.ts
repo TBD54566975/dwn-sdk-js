@@ -1,7 +1,6 @@
 import type { BaseMessage, DataReferencingMessage } from '../core/types';
 import type { MessageStore } from './message-store';
-
-import { base64url } from 'multiformats/bases/base64';
+import * as encoder from '../utils/encoder';
 import { BlockstoreLevel } from './blockstore-level';
 import { CID } from 'multiformats/cid';
 import { exporter } from 'ipfs-unixfs-exporter';
@@ -91,7 +90,7 @@ export class MessageStoreLevel implements MessageStore {
       offset += chunk.length;
     }
 
-    dataReferencingMessage.encodedData = base64url.baseEncode(dataBytes);
+    dataReferencingMessage.encodedData = encoder.bytesToBase64Url(dataBytes);
 
     return messageJson;
   }
@@ -130,7 +129,7 @@ export class MessageStoreLevel implements MessageStore {
     return;
   }
 
-  async put(messageJson: BaseMessage): Promise<void> {
+  async put(messageJson: BaseMessage, additionalIndexes: {[key: string]: string}): Promise<void> {
 
     // delete `encodedData` if it exists so `messageJson` is stored without it, `encodedData` will be decoded, chunked and stored separately below
     let encodedData = undefined;
@@ -147,7 +146,7 @@ export class MessageStoreLevel implements MessageStore {
 
     // if `encodedData` is present we'll decode it then chunk it and store it as unix-fs dag-pb encoded
     if (encodedData) {
-      const content = base64url.baseDecode(encodedData);
+      const content = encoder.base64urlToBytes(encodedData);
       const chunk = importer([{ content }], this.db, { cidVersion: 1 });
 
       // for some reason no-unused-vars doesn't work in for loops. it's not entirely surprising because
@@ -159,8 +158,9 @@ export class MessageStoreLevel implements MessageStore {
     }
 
     const indexDocument = {
+      _id: encodedBlock.cid.toString(),
       ...messageJson.descriptor,
-      _id: encodedBlock.cid.toString()
+      ...additionalIndexes
     };
 
     // tokenSplitRegex is used to tokenize values. By default, only letters and digits are indexed,

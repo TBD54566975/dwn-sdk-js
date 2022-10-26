@@ -1,8 +1,7 @@
 import { base64url } from 'multiformats/bases/base64';
 import { CollectionsWrite } from '../../../../src/interfaces/collections/messages/collections-write';
 import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/types';
-import { DidResolutionResult, DidResolver } from '../../../../src/did/did-resolver';
-import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
+import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 import { sleep } from '../../../../src/utils/time';
 import { TestDataGenerator } from '../../../utils/test-data-generator';
 import { TestStubGenerator } from '../../../utils/test-stub-generator';
@@ -10,7 +9,6 @@ import { v4 as uuidv4 } from 'uuid';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
-import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 
 chai.use(chaiAsPromised);
 
@@ -18,24 +16,21 @@ describe('CollectionsWrite', () => {
   describe('create() & verifyAuth()', () => {
     it('should be able to create and verify a valid CollectionsWrite message', async () => {
       // testing `create()` first
-      const requesterDid = 'did:example:alice';
-      const keyId = `${requesterDid}#key1`;
-      const { privateJwk, publicJwk } = await secp256k1.generateKeyPair();
+      const alice = await TestDataGenerator.generatePersona();
       const signatureInput = {
-        jwkPrivate      : privateJwk,
+        jwkPrivate      : alice.keyPair.privateJwk,
         protectedHeader : {
-          alg : privateJwk.alg as string,
-          kid : keyId
+          alg : alice.keyPair.privateJwk.alg as string,
+          kid : alice.keyId
         }
       };
 
       const options = {
-        target      : 'did:example:alice',
-        recipient   : 'did:example:alice',
+        target      : alice.did,
+        recipient   : alice.did,
         data        : TestDataGenerator.randomBytes(10),
         dataFormat  : 'application/json',
         dateCreated : 123,
-        nonce       : 'anyNonce',
         recordId    : uuidv4(),
         signatureInput
       };
@@ -47,33 +42,29 @@ describe('CollectionsWrite', () => {
       expect(message.encodedData).to.equal(base64url.baseEncode(options.data));
       expect(message.descriptor.dataFormat).to.equal(options.dataFormat);
       expect(message.descriptor.dateCreated).to.equal(options.dateCreated);
-      expect(message.descriptor.nonce).to.equal(options.nonce);
       expect(message.descriptor.recordId).to.equal(options.recordId);
 
-      const resolverStub = TestStubGenerator.createDidResolverStub(requesterDid, keyId, publicJwk);
+      const resolverStub = TestStubGenerator.createDidResolverStub(alice);
       const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-      const { signers } = await collectionsWrite.verifyAuth(resolverStub, messageStoreStub);
+      const { author } = await collectionsWrite.verifyAuth(resolverStub, messageStoreStub);
 
-      expect(signers.length).to.equal(1);
-      expect(signers).to.include(requesterDid);
+      expect(author).to.equal(alice.did);
     });
   });
 
   describe('verifyAuth', () => {
     it('should throw if verification signature check fails', async () => {
-      const messageData = await TestDataGenerator.generateCollectionsWriteMessage();
-      const { requesterDid, requesterKeyId } = messageData;
+      const { requester, message } = await TestDataGenerator.generateCollectionsWriteMessage();
 
       // setting up a stub method resolver
-      const differentKeyPair = await secp256k1.generateKeyPair(); // used to return a different public key to simulate invalid signature
-      const didResolutionResult = TestDataGenerator.createDidResolutionResult(requesterDid, requesterKeyId, differentKeyPair.publicJwk);
-      const resolveStub = sinon.stub<[string], Promise<DidResolutionResult>>();
-      resolveStub.withArgs( requesterDid).resolves(didResolutionResult);
-      const didResolverStub = sinon.createStubInstance(DidResolver, { resolve: resolveStub });
+      // intentionally not supplying the public key so a different public key is generated to simulate invalid signature
+      const mismatchingPersona = await TestDataGenerator.generatePersona({ did: requester.did, keyId: requester.keyId });
+      const didResolverStub = TestStubGenerator.createDidResolverStub(mismatchingPersona);
+
       const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-      const collectionsWrite = new CollectionsWrite(messageData.message);
+      const collectionsWrite = new CollectionsWrite(message);
       expect(collectionsWrite.verifyAuth(didResolverStub, messageStoreStub))
         .to.be.rejectedWith('signature verification failed for did:example:alice');
     });

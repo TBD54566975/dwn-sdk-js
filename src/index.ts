@@ -11,13 +11,13 @@
 //
 export type { CollectionsQueryMessage, CollectionsWriteMessage } from './interfaces/collections/types';
 export type { EventHandler } from './dwn.js';
-export type { HandlersWriteMessage } from './interfaces/handlers/types';
+export type { HooksWriteMessage } from './interfaces/hooks/types';
 export type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolsQueryMessage } from './interfaces/protocols/types';
 export { CollectionsQuery, CollectionsQueryOptions } from './interfaces/collections/messages/collections-query.js';
 export { CollectionsWrite, CollectionsWriteOptions } from './interfaces/collections/messages/collections-write.js';
 export { DidResolver } from './did/did-resolver.js';
 export { Dwn } from './dwn.js';
-export { HandlersWrite, HandlersWriteOptions } from './interfaces/handlers/messages/handlers-write.js';
+export { HooksWrite, HooksWriteOptions } from './interfaces/hooks/messages/hooks-write.js';
 export { ProtocolsConfigure, ProtocolsConfigureOptions } from './interfaces/protocols/messages/protocols-configure.js';
 export { ProtocolsQuery, ProtocolsQueryOptions } from './interfaces/protocols/messages/protocols-query.js';
 export { Response } from './core/response.js';

@@ -1,0 +1,48 @@
+{
+  "labels": {
+    "ask": {
+      "schema": "ask"
+    },
+    "offer": {
+      "schema": "offer"
+    },
+    "fulfillment": {
+      "schema": "fulfillment"
+    }
+  },
+  "records": {
+    "ask": {
+      "allow": {
+        "anyone": {
+          "to": [
+            "write"
+          ]
+        }
+      },
+      "records": {
+        "offer": {
+          "allow": {
+            "recipient": {
+              "of": "ask",
+              "to": [
+                "write"
+              ]
+            }
+          },
+          "records": {
+            "fulfillment": {
+              "allow": {
+                "recipient": {
+                  "of": "ask/offer",
+                  "to": [
+                    "write"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

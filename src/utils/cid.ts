@@ -55,3 +55,18 @@ export function parseCid(str: string): CID {
 
   return cid;
 }
+
+/**
+ * Compares two CIDs given in lexicographical order.
+ * @returns 1 if `a` is larger than `b`; -1 if `a` is smaller/older than `b`; 0 otherwise (same message)
+ */
+export function compareCids(a: CID, b: CID): number {
+  // the < and > operators compare strings in lexicographical order
+  if (a > b) {
+    return 1;
+  } else if (a < b) {
+    return -1;
+  } else {
+    return 0;
+  }
+}

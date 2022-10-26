@@ -1,13 +1,22 @@
-import type { BaseMessage } from './types';
+import type { BaseMessage, Descriptor } from './types';
+import type { SignatureInput } from '../jose/jws/general/types';
+
 import lodash from 'lodash';
 import { CID } from 'multiformats/cid';
 import { CollectionsWriteMessage } from '../interfaces/collections/types';
-import { generateCid } from '../utils/cid';
+import { compareCids, generateCid } from '../utils/cid';
+import { GeneralJws } from '../jose/jws/general/types';
+import { GeneralJwsSigner, GeneralJwsVerifier } from '../jose/jws/general';
 import { validate } from '../validation/validator';
+
 
 const { cloneDeep, isPlainObject } = lodash;
 export abstract class Message {
-  constructor(protected message: BaseMessage) {}
+  readonly author: string;
+
+  constructor(protected message: BaseMessage) {
+    this.author = GeneralJwsVerifier.getDid(message.authorization.signatures[0]);
+  }
 
   static parse(rawMessage: object): BaseMessage {
     const descriptor = rawMessage['descriptor'];
@@ -42,6 +51,8 @@ export abstract class Message {
     return this.message;
   }
 
+
+
   /**
    * Gets the CID of the given message.
    * NOTE: `encodedData` is ignored when computing the CID of message.
@@ -65,13 +76,7 @@ export abstract class Message {
     // the < and > operators compare strings in lexicographical order
     const cidA = await Message.getCid(a);
     const cidB = await Message.getCid(b);
-    if (cidA > cidB) {
-      return 1;
-    } else if (cidA < cidB) {
-      return -1;
-    } else {
-      return 0;
-    }
+    return compareCids(cidA, cidB);
   }
 
   /**
@@ -82,7 +87,6 @@ export abstract class Message {
     const aIsLarger = (await Message.compareCid(a, b) > 0);
     return aIsLarger;
   }
-
 
   /**
    * @returns message with the largest CID in the array using lexicographical compare. `undefined` if given array is empty.
@@ -96,5 +100,27 @@ export abstract class Message {
     }
 
     return currentNewestMessage;
+  }
+
+  /**
+   * Signs the provided message to be used an `authorization` property. Signed payload includes the CID of the message's descriptor by default
+   * along with any additional payload properties provided
+   * @param descriptor - the message to sign
+   * @param signatureInput - the signature material to use (e.g. key and header data)
+   * @returns General JWS signature used as an `authorization` property.
+   */
+  public static async signAsAuthorization(
+    descriptor: Descriptor,
+    signatureInput: SignatureInput
+  ): Promise<GeneralJws> {
+    const descriptorCid = await generateCid(descriptor);
+
+    const authPayload = { descriptorCid: descriptorCid.toString() };
+    const authPayloadStr = JSON.stringify(authPayload);
+    const authPayloadBytes = new TextEncoder().encode(authPayloadStr);
+
+    const signer = await GeneralJwsSigner.create(authPayloadBytes, [signatureInput]);
+
+    return signer.getJws();
   }
 }

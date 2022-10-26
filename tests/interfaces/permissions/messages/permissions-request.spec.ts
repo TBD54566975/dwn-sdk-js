@@ -119,10 +119,9 @@ describe('PermissionsRequest', () => {
         const resolverStub = sinon.createStubInstance(DidResolver, { resolve: resolveStub });
         const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-        const { signers } = await message.verifyAuth(resolverStub, messageStoreStub);
+        const { author } = await message.verifyAuth(resolverStub, messageStoreStub);
 
-        expect(signers.length).to.equal(1);
-        expect(signers).to.include('did:jank:alice');
+        expect(author).to.equal('did:jank:alice');
       });
 
       it('throws an exception if payload is not valid JSON', async () => {

@@ -1,4 +1,4 @@
-import type { AuthorizableMessage } from '../../core/types';
+import { BaseMessage } from '../../core/types';
 
 export type CollectionsWriteDescriptor = {
   target: string;
@@ -7,7 +7,6 @@ export type CollectionsWriteDescriptor = {
   protocol?: string;
   contextId?: string;
   schema?: string;
-  nonce: string;
   recordId: string;
   parentId?: string;
   dataCid: string;
@@ -17,7 +16,7 @@ export type CollectionsWriteDescriptor = {
   dataFormat: string;
 };
 
-export type CollectionsWriteMessage = AuthorizableMessage & {
+export type CollectionsWriteMessage = BaseMessage & {
   descriptor: CollectionsWriteDescriptor;
   encodedData?: string;
 };
@@ -25,7 +24,7 @@ export type CollectionsWriteMessage = AuthorizableMessage & {
 export type CollectionsQueryDescriptor = {
   target: string;
   method: 'CollectionsQuery';
-  nonce: string;
+  dateCreated: number;
   filter: {
     recipient?: string;
     protocol?: string;
@@ -38,6 +37,6 @@ export type CollectionsQueryDescriptor = {
   dateSort?: string;
 };
 
-export type CollectionsQueryMessage = AuthorizableMessage & {
+export type CollectionsQueryMessage = BaseMessage & {
   descriptor: CollectionsQueryDescriptor;
 };

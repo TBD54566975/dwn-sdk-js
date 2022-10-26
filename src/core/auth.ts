@@ -1,5 +1,5 @@
-import type { AuthorizableMessage, BaseMessage } from './types';
 import type { AuthVerificationResult } from './types';
+import type { BaseMessage } from './types';
 
 import { CID } from 'multiformats';
 import { DidResolver } from '../did/did-resolver';
@@ -23,7 +23,7 @@ type PayloadConstraints = {
  * @throws {Error} if auth fails
  */
 export async function canonicalAuth(
-  message: BaseMessage & AuthorizableMessage,
+  message: BaseMessage,
   didResolver: DidResolver,
   messageStore: MessageStore,
   payloadConstraints?: PayloadConstraints
@@ -32,14 +32,15 @@ export async function canonicalAuth(
   const parsedPayload = await validateSchema(message, payloadConstraints);
 
   const signers = await authenticate(message.authorization, didResolver);
+  const author = signers[0];
 
-  await authorize(message, signers);
+  await authorize(message, author);
 
-  return { payload: parsedPayload, signers };
+  return { payload: parsedPayload, author };
 }
 
 export async function validateSchema(
-  message: BaseMessage & AuthorizableMessage,
+  message: BaseMessage,
   payloadConstraints?: PayloadConstraints
 ): Promise<{ descriptorCid: CID, [key: string]: CID }> {
 
@@ -95,14 +96,15 @@ export async function validateSchema(
 }
 
 export async function authenticate(jws: GeneralJws, didResolver: DidResolver): Promise<string[]> {
+  // TODO: should we add an explicit check to ensure that there's only 1 signer?, Issue #65 https://github.com/TBD54566975/dwn-sdk-js/issues/65
   const verifier = new GeneralJwsVerifier(jws);
   const { signers } = await verifier.verify(didResolver);
   return signers;
 }
 
-export async function authorize(message: BaseMessage, signers: string[]): Promise<void> {
-  // if requester is the same as the target DID, we can directly grant access
-  if (signers[0] === message.descriptor.target) {
+export async function authorize(message: BaseMessage, author: string): Promise<void> {
+  // if author/requester is the same as the target DID, we can directly grant access
+  if (author === message.descriptor.target) {
     return;
   } else {
     throw new Error('message failed authorization, permission grant check not yet implemented');

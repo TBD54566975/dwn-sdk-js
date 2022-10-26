@@ -1,9 +1,9 @@
-import type { AuthorizableMessage } from '../../core/types';
+import type { BaseMessage } from '../../core/types';
 
 export type ProtocolsConfigureDescriptor = {
   target: string;
   method: 'ProtocolsConfigure';
-  nonce: string;
+  dateCreated: number;
   protocol: string;
   definition: ProtocolDefinition;
 };
@@ -20,11 +20,11 @@ export type ProtocolDefinition = {
 export type ProtocolRuleSet = {
   allow?: {
     anyone?: {
-      to: [string];
+      to: string[];
     };
     recipient?: {
       of: string,
-      to: [string];
+      to: string[];
     }
   };
   records?: {
@@ -32,19 +32,19 @@ export type ProtocolRuleSet = {
   }
 };
 
-export type ProtocolsConfigureMessage = AuthorizableMessage & {
+export type ProtocolsConfigureMessage = BaseMessage & {
   descriptor: ProtocolsConfigureDescriptor;
 };
 
 export type ProtocolsQueryDescriptor = {
   target: string;
   method: 'ProtocolsQuery';
-  nonce: string;
+  dateCreated: number;
   filter?: {
     protocol: string;
   }
 };
 
-export type ProtocolsQueryMessage = AuthorizableMessage & {
+export type ProtocolsQueryMessage = BaseMessage & {
   descriptor: ProtocolsQueryDescriptor;
 };
