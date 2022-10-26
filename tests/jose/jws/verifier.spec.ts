@@ -13,56 +13,121 @@ describe('GeneralJwsVerifier', () => {
     sinon.restore();
   });
   describe('getPublicKey', () => {
-    const buildVm = (id: string, type: string, controller: string, publicKeyJwk?: object): object => {
+    const buildDidResolutionResult = (
+      id: string,
+      type: string,
+      controller: string,
+      publicKeyJwk?: object
+    ): object => {
       return {
-        id, type, controller, publicKeyJwk
+        didResolutionMetadata : {},
+        didDocument           : {
+          verificationMethod: [{ id, type, controller, publicKeyJwk }],
+        },
+        didDocumentMetadata: {},
       };
     };
     it('throws an exception if publicKeyJwk isn\'t present in verificationMethod', async () => {
       const resolverStub = sinon.createStubInstance(DidResolver, {
         // @ts-ignore
-        resolve: sinon.stub().withArgs('did:jank:alice').resolves({
-          didResolutionMetadata : {},
-          didDocument           : {
-            verificationMethod: [buildVm(
+        resolve: sinon
+          .stub()
+          .withArgs('did:jank:alice')
+          .resolves(
+            buildDidResolutionResult(
               'did:jank:alice#key1',
               'JsonWebKey2020',
               'did:jank:alice'
-            )]
-          },
-          didDocumentMetadata: {}
-        })
+            )
+          ),
       });
-      await expect(GeneralJwsVerifier.getPublicKey('did:jank:alice', 'did:jank:alice#key1', resolverStub))
-        .to.eventually.be.rejectedWith('publicKeyJwk');
+      await expect(
+        GeneralJwsVerifier.getPublicKey(
+          'did:jank:alice',
+          'did:jank:alice#key1',
+          resolverStub
+        )
+      ).to.eventually.be.rejectedWith('publicKeyJwk');
     });
-    xit('throws an exception if DID could not be resolved', () => {});
-    xit('throws an exception if appropriate key isnt present in DID Doc', () => {});
+    xit('throws an exception if DID could not be resolved', () => { });
+    xit('throws an exception if appropriate key isnt present in DID Doc', () => { });
     it('throws an exception if verificationMethod type isn\'t JsonWebKey2020', async () => {
       const { publicJwk } = await secp256k1.generateKeyPair();
       const resolverStub = sinon.createStubInstance(DidResolver, {
         // @ts-ignore
-        resolve: sinon.stub().withArgs('did:jank:alice').resolves({
-          didResolutionMetadata : {},
-          didDocument           : {
-            verificationMethod: [buildVm(
+        resolve: sinon
+          .stub()
+          .withArgs('did:jank:alice')
+          .resolves(
+            buildDidResolutionResult(
               'did:jank:alice#key1',
               'JsonWebKey20202',
               'did:jank:alice',
               publicJwk
-            )]
-          },
-          didDocumentMetadata: {}
-        })
+            )
+          ),
       });
-      await expect(GeneralJwsVerifier.getPublicKey('did:jank:alice', 'did:jank:alice#key1', resolverStub))
-        .to.eventually.be.rejectedWith('type: must be equal to constant');
+      await expect(
+        GeneralJwsVerifier.getPublicKey(
+          'did:jank:alice',
+          'did:jank:alice#key1',
+          resolverStub
+        )
+      ).to.eventually.be.rejectedWith('type: must be equal to constant');
     });
-    xit('returns public key', () => {});
+    it('throws an exception if id is not a did', async () => {
+      const { publicJwk } = await secp256k1.generateKeyPair();
+      const resolverStub = sinon.createStubInstance(DidResolver, {
+        // @ts-ignore
+        resolve: sinon
+          .stub()
+          .withArgs('did:jank:alice')
+          .resolves(
+            buildDidResolutionResult(
+              'nodid:jank:alice#key1',
+              'JsonWebKey2020',
+              'did:jank:alice',
+              publicJwk
+            )
+          ),
+      });
+      await expect(
+        GeneralJwsVerifier.getPublicKey(
+          'did:jank:alice',
+          'nodid:jank:alice#key1',
+          resolverStub
+        )
+      ).to.eventually.be.rejectedWith('id: must match pattern');
+    });
+    it('doesn\'t throw an exception if verificationMethod is valid', async () => {
+      const { publicJwk } = await secp256k1.generateKeyPair();
+      const resolverStub = sinon.createStubInstance(DidResolver, {
+        // @ts-ignore
+        resolve: sinon
+          .stub()
+          .withArgs('did:jank:alice')
+          .resolves(
+            buildDidResolutionResult(
+              'did:jank:alice#key1',
+              'JsonWebKey2020',
+              'did:jank:alice',
+              publicJwk
+            )
+          ),
+      });
+      await expect(
+        GeneralJwsVerifier.getPublicKey(
+          'did:jank:alice',
+          'did:jank:alice#key1',
+          resolverStub
+        )
+      ).to.eventually.not.be.rejectedWith();
+    });
+    xit('returns public key', () => { });
   });
   describe('verifySignature', () => {
-    xit('throws an exception if signature does not match', () => {});
-    xit('returns true if signature is successfully verified', () => {});
+    xit('throws an exception if signature does not match', () => { });
+    xit('returns true if signature is successfully verified', () => { });
   });
-  describe('extractDid', () => {});
+  describe('extractDid', () => { });
 });
