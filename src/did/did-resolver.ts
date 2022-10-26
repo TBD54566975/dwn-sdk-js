@@ -1,14 +1,19 @@
 import type { PublicJwk } from '../jose/types';
+<<<<<<< HEAD
 import { Did } from './did';
 import { DidIonResolver } from './did-ion-resolver';
 import { DidKeyResolver } from './did-key-resolver';
 
+=======
+import { MemoryCache } from '../utils/memory-cache';
+>>>>>>> 468cc6e (added a cache for didresolver)
 /**
  * A DID resolver that by default supports `did:key` and `did:ion` DIDs.
  */
 export class DidResolver {
   didResolvers: Map<string, DidMethodResolver>;
 
+  memoryCache = new MemoryCache(86400);//Time to live in seconds is 24 hours
   // TODO: add DIDCache to constructor method signature, Issue #62 https://github.com/TBD54566975/dwn-sdk-js/issues/62
   constructor(resolvers?: DidMethodResolver[]) {
     // construct default DID method resolvers if none given
@@ -46,7 +51,8 @@ export class DidResolver {
       throw new Error(`${didMethod} DID method not supported`);
     }
 
-    const resolutionResult = await didResolver.resolve(did);
+    const resolutionResult = await this.memoryCache.has(did) ? await this.memoryCache.get(did): await didResolver.resolve(did);
+    const cache = await this.memoryCache.has(did) ? '': await this.memoryCache.set(did,resolutionResult);
     const { didDocument, didResolutionMetadata } = resolutionResult;
 
     if (!didDocument || didResolutionMetadata?.error) {
@@ -56,7 +62,6 @@ export class DidResolver {
 
       throw new Error(errMsg);
     }
-
     return resolutionResult;
   }
 }

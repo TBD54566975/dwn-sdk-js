@@ -10,7 +10,6 @@ import { MessageStore } from '../store/message-store';
 import lodash from 'lodash';
 
 const { isPlainObject } = lodash;
-
 type PayloadConstraints = {
   /** permissible properties within payload. Note that `descriptorCid` is implied and does not need to be added */
   properties: Set<string>;
