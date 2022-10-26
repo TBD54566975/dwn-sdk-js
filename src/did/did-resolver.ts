@@ -1,8 +1,12 @@
 import type { PublicJwk } from '../jose/types';
 <<<<<<< HEAD
 import { Did } from './did';
+<<<<<<< HEAD
 import { DidIonResolver } from './did-ion-resolver';
 import { DidKeyResolver } from './did-key-resolver';
+=======
+import { MemoryCache } from '../utils/memory-cache';
+>>>>>>> cdbff6c (added cache for didresolver)
 
 =======
 import { MemoryCache } from '../utils/memory-cache';
@@ -52,7 +56,13 @@ export class DidResolver {
     }
 
     const resolutionResult = await this.memoryCache.has(did) ? await this.memoryCache.get(did): await didResolver.resolve(did);
-    const cache = await this.memoryCache.has(did) ? '': await this.memoryCache.set(did,resolutionResult);
+    const cache = await this.memoryCache.has(did);
+    if (cache){
+      await this.memoryCache.set(did,resolutionResult);
+    } else {
+
+    }
+
     const { didDocument, didResolutionMetadata } = resolutionResult;
 
     if (!didDocument || didResolutionMetadata?.error) {
