@@ -82,6 +82,7 @@ export type GenerateCollectionsWriteMessageOutput = {
   requester: Persona;
   target: Persona;
   message: CollectionsWriteMessage;
+  collectionsWrite: CollectionsWrite;
 };
 
 export type GenerateCollectionsQueryMessageInput = {
@@ -276,7 +277,8 @@ export class TestDataGenerator {
     return {
       target,
       requester,
-      message
+      message,
+      collectionsWrite
     };
   };
 

@@ -8,10 +8,16 @@ import { MessageStore } from '../store/message-store';
  * Intersection type for all concrete message types.
  */
 export type BaseMessage = {
-  descriptor: {
-    target: string;
-    method: string;
-  };
+  descriptor: Descriptor
+  authorization: GeneralJws;
+};
+
+/**
+ * Intersection type for all DWN message descriptor.
+ */
+export type Descriptor = {
+  target: string;
+  method: string;
 };
 
 /**
@@ -31,14 +37,6 @@ export type DataReferencingMessage = {
 export type AttestableMessage = {
   attestation: GeneralJws;
 };
-
-/**
- * Message that includes `authorization` property.
- */
-export type AuthorizableMessage = {
-  authorization: GeneralJws;
-};
-
 
 export type AuthVerificationResult = {
   /** Author DID */

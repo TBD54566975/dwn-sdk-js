@@ -2,7 +2,7 @@
 
 Code Coverage
 
-![Statements](https://img.shields.io/badge/statements-79.75%25-red.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-87.05%25-yellow.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-81.63%25-yellow.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-79.75%25-red.svg?style=flat)
+![Statements](https://img.shields.io/badge/statements-79.97%25-red.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-87.08%25-yellow.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-82%25-yellow.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-79.97%25-red.svg?style=flat)
 
 ## Introduction
 
