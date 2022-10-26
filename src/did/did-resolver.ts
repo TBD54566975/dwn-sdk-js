@@ -1,5 +1,6 @@
 import type { PublicJwk } from '../jose/types';
-import { MemoryCache } from '../utils/memory-cache';
+import { Did } from './did';
+
 /**
  * TODO: add docs, Issue #72 https://github.com/TBD54566975/dwn-sdk-js/issues/72
  */
@@ -25,12 +26,9 @@ export class DidResolver {
    * @returns {DidResolutionResult}
    */
   public async resolve(did: string): Promise<DidResolutionResult> {
-  // naively validate requester DID
-  // TODO: add better DID validation, Issue #63 https://github.com/TBD54566975/dwn-sdk-js/issues/63
+    // naively validate requester DID
+    Did.validate(did);
     const splitDID = did.split(':', 3);
-    if (splitDID.length < 3) {
-      throw new Error(`${did} is not a valid DID`);
-    }
 
     const didMethod = splitDID[1];
     const didResolver = this.didResolvers.get(didMethod);

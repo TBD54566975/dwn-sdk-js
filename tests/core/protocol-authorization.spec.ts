@@ -23,13 +23,13 @@ describe('Protocol-Based Authorization', async () => {
 
   describe('verifyAllowedActions()', async () => {
     it('should throw if requester DID is not the target DWN owner when no allow rule defined', async () => {
-      const aliceDid = 'did:example:alice';
-      const bobDid = 'did:example:bob';
-      const collectionsWriteData = await TestDataGenerator.generateCollectionsWriteMessage({ requesterDid: bobDid, targetDid: aliceDid });
+      const alice = await TestDataGenerator.generatePersona();
+      const bob = await TestDataGenerator.generatePersona();
+      const collectionsWriteData = await TestDataGenerator.generateCollectionsWriteMessage({ requester: bob, target: alice });
       const ruleSet: ProtocolRuleSet = { };
 
       expect(() => {
-        ProtocolAuthorization['verifyAllowedActions'](bobDid, collectionsWriteData.message, ruleSet);
+        ProtocolAuthorization['verifyAllowedActions'](bob.did, collectionsWriteData.message, ruleSet);
       }).throws('no allow rule defined for CollectionsWrite');
     });
 
