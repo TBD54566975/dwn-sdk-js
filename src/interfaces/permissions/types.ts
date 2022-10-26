@@ -1,4 +1,4 @@
-import type { AuthorizableMessage } from '../../core/types';
+import type { BaseMessage } from '../../core/types';
 
 export type PermissionScope = {
   method: string
@@ -43,7 +43,7 @@ export type PermissionsRequestDescriptor = {
   scope: PermissionScope
 };
 
-export type PermissionsRequestMessage = AuthorizableMessage & {
+export type PermissionsRequestMessage = BaseMessage & {
   descriptor: PermissionsRequestDescriptor;
 };
 
@@ -61,7 +61,7 @@ export type PermissionsGrantDescriptor = {
   scope: PermissionScope;
 };
 
-export type PermissionsGrantMessage = AuthorizableMessage & {
+export type PermissionsGrantMessage = BaseMessage & {
   descriptor: PermissionsGrantDescriptor;
   delegationChain?: PermissionsGrantMessage;
 };

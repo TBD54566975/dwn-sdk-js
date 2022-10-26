@@ -1,4 +1,4 @@
-import type { AuthorizableMessage } from '../../core/types';
+import type { BaseMessage } from '../../core/types';
 
 export type ProtocolsConfigureDescriptor = {
   target: string;
@@ -32,7 +32,7 @@ export type ProtocolRuleSet = {
   }
 };
 
-export type ProtocolsConfigureMessage = AuthorizableMessage & {
+export type ProtocolsConfigureMessage = BaseMessage & {
   descriptor: ProtocolsConfigureDescriptor;
 };
 
@@ -45,6 +45,6 @@ export type ProtocolsQueryDescriptor = {
   }
 };
 
-export type ProtocolsQueryMessage = AuthorizableMessage & {
+export type ProtocolsQueryMessage = BaseMessage & {
   descriptor: ProtocolsQueryDescriptor;
 };

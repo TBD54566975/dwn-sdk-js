@@ -26,9 +26,10 @@ export const handleCollectionsWrite: MethodHandler = async (
 
     // authentication & authorization
     let author;
+    let collectionsWrite: CollectionsWrite;
     try {
-      const collectionsWriteMessage = new CollectionsWrite(incomingMessage);
-      const authResult = await collectionsWriteMessage.verifyAuth(didResolver, messageStore);
+      collectionsWrite = new CollectionsWrite(incomingMessage);
+      const authResult = await collectionsWrite.verifyAuth(didResolver, messageStore);
       author = authResult.author;
     } catch (e) {
       return new MessageReply({
@@ -55,7 +56,15 @@ export const handleCollectionsWrite: MethodHandler = async (
     // write the incoming message to DB if incoming message is newest
     let messageReply: MessageReply;
     if (incomingMessageIsNewest) {
-      await messageStore.put(message, author);
+      const additionalIndexes: {[key:string]: string} = { author };
+
+      // add computed `contextId` as required if undefined
+      if (incomingMessage.descriptor.contextId === undefined) {
+        const contextId = await collectionsWrite.getCanonicalId();
+        additionalIndexes.contextId = contextId;
+      }
+
+      await messageStore.put(message, additionalIndexes);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }

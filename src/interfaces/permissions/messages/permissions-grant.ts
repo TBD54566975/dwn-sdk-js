@@ -3,8 +3,8 @@ import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../typ
 import type { PermissionScope, PermissionConditions } from '../types';
 import type { SignatureInput } from '../../../jose/jws/general/types';
 
+import { canonicalAuth } from '../../../core/auth';
 import { CID } from 'multiformats/cid';
-import { sign, verifyAuth } from '../../../core/auth';
 import { DidResolver } from '../../../did/did-resolver';
 import { generateCid } from '../../../utils/cid';
 import { Message } from '../../../core/message';
@@ -52,8 +52,8 @@ export class PermissionsGrant extends Message implements Authorizable {
     const messageType = descriptor.method;
     validate(messageType, { descriptor, authorization: {} });
 
-    const auth = await sign({ descriptor }, options.signatureInput);
-    const message: PermissionsGrantMessage = { descriptor, authorization: auth };
+    const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
+    const message: PermissionsGrantMessage = { descriptor, authorization };
 
     return new PermissionsGrant(message);
   }
@@ -117,7 +117,7 @@ export class PermissionsGrant extends Message implements Authorizable {
   }
 
   verifyAuth(didResolver: DidResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
-    return verifyAuth(this.message, didResolver, messageStore);
+    return canonicalAuth(this.message, didResolver, messageStore);
   }
 
   get id(): string {

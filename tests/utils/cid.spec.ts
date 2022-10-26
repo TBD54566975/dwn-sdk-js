@@ -15,7 +15,7 @@ describe('CID', () => {
     xit('throws an error if multihasher is not supported');
     xit('generates a cbor/sha256 v1 cid by default');
 
-    it('generates a CBOR SHA256 CID identical to IPFS block encoding algorithm', async () => {
+    it(' should generate a CBOR SHA256 CID identical to IPFS block encoding algorithm', async () => {
       const anyTestData = {
         a : TestDataGenerator.randomString(32),
         b : TestDataGenerator.randomString(32),
@@ -25,6 +25,24 @@ describe('CID', () => {
       const encodedBlock = await block.encode({ value: anyTestData, codec: cbor, hasher: sha256 });
 
       expect(generatedCid.toString()).to.equal(encodedBlock.cid.toString());
+    });
+
+    it('should canonicalize JSON input before hashing', async () => {
+      const data1 = {
+        a : 'a',
+        b : 'b',
+        c : 'c'
+      };
+
+      const data2 = {
+        b : 'b',
+        c : 'c',
+        a : 'a'
+      };
+      const cid1 = await generateCid(data1);
+      const cid2 = await generateCid(data2);
+
+      expect(cid1.toString()).to.equal(cid2.toString());
     });
   });
 
