@@ -1,11 +1,12 @@
 import type { PublicJwk } from '../jose/types';
-
+import { MemoryCache } from '../utils/memory-cache';
 /**
  * TODO: add docs, Issue #72 https://github.com/TBD54566975/dwn-sdk-js/issues/72
  */
 export class DidResolver {
   didResolvers: Map<string, DidMethodResolver>;
 
+  memoryCache = new MemoryCache(86400);//Time to live in seconds is 24 hours
   // TODO: add DIDCache to constructor method signature, Issue #62 https://github.com/TBD54566975/dwn-sdk-js/issues/62
   constructor(resolvers: DidMethodResolver[]) {
     this.didResolvers = new Map();
@@ -38,7 +39,8 @@ export class DidResolver {
       throw new Error(`${didMethod} DID method not supported`);
     }
 
-    const resolutionResult = await didResolver.resolve(did);
+    const resolutionResult = await this.memoryCache.has(did) ? await this.memoryCache.get(did): await didResolver.resolve(did);
+    const cache = await this.memoryCache.has(did) ? '': await this.memoryCache.set(did,resolutionResult);
     const { didDocument, didResolutionMetadata } = resolutionResult;
 
     if (!didDocument || didResolutionMetadata?.error) {
@@ -48,7 +50,6 @@ export class DidResolver {
 
       throw new Error(errMsg);
     }
-
     return resolutionResult;
   }
 }

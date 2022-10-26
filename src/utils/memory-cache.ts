@@ -28,4 +28,7 @@ export class MemoryCache implements Cache {
   async get(key: string): Promise<any | undefined> {
     return this.cache.get(key);
   }
+  async has(key: string): Promise<boolean>{
+    return this.cache.has(key);
+  }
 }
