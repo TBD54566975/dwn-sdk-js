@@ -22,8 +22,8 @@ export class MessageStoreLevel implements MessageStore {
   db: BlockstoreLevel;
   // levelDB doesn't natively provide the querying capabilities needed for DWN. To accommodate, we're leveraging
   // a level-backed inverted index
-  // TODO: search-index lib does not import type `SearchIndex`. find a workaround, Issue #48, https://github.com/TBD54566975/dwn-sdk-js/issues/48
-  index;
+  // search-index lib does not import type `SearchIndex`. get the awaited return type as a workaround
+  index: Awaited<ReturnType<typeof searchIndex>>;
 
   /**
    * @param {MessageStoreLevelConfig} config
