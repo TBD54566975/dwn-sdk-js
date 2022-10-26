@@ -1,5 +1,6 @@
 import type { PublicJwk } from '../jose/types';
 import { Did } from './did';
+import { MemoryCache } from '../utils/memory-cache';
 
 /**
  * TODO: add docs, Issue #72 https://github.com/TBD54566975/dwn-sdk-js/issues/72
@@ -38,7 +39,13 @@ export class DidResolver {
     }
 
     const resolutionResult = await this.memoryCache.has(did) ? await this.memoryCache.get(did): await didResolver.resolve(did);
-    const cache = await this.memoryCache.has(did) ? '': await this.memoryCache.set(did,resolutionResult);
+    const cache = await this.memoryCache.has(did);
+    if (cache){
+      await this.memoryCache.set(did,resolutionResult);
+    } else {
+
+    }
+
     const { didDocument, didResolutionMetadata } = resolutionResult;
 
     if (!didDocument || didResolutionMetadata?.error) {
