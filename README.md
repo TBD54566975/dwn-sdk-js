@@ -4,7 +4,6 @@ Code Coverage
 
 ![Statements](https://img.shields.io/badge/statements-79.75%25-red.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-87.05%25-yellow.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-81.63%25-yellow.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-79.75%25-red.svg?style=flat)
 
-
 ## Introduction
 
 This repository contains a reference implementation of Decentralized Web Node (DWN) as per the [specification](https://identity.foundation/decentralized-web-node/spec/). This specification is in a draft state and very much so a WIP. For the foreseeable future, a lot of the work on DWN will be split across this repo and the repo that houses the specification, which you can find [here](https://github.com/decentralized-identity/decentralized-web-node). The current goal is to produce a [beta implementation](https://github.com/TBD54566975/dwn-sdk-js/milestone/1) by Q4 2022. This won't include all interfaces described in the spec, but enough to begin building applications.
