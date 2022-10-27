@@ -1,0 +1,21 @@
+{
+  "$id": "https://identity.foundation/dwn/json-schemas/general-jwk-2020.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "type", "controller", "publicKeyJwk"],
+  "properties": {
+    "id": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+    },
+    "type": {
+      "const": "JsonWebKey2020"
+    },
+    "controller": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+    },
+    "publicKeyJwk": {
+      "type": "object"
+    }
+  }
+}

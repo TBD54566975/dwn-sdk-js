@@ -31,6 +31,7 @@ describe('General JWS Sign/Verify', () => {
         verificationMethod: [{
           id           : 'did:jank:alice#key1',
           type         : 'JsonWebKey2020',
+          controller   : 'did:jank:alice',
           publicKeyJwk : publicJwk
         }]
       },
@@ -64,6 +65,7 @@ describe('General JWS Sign/Verify', () => {
         verificationMethod: [{
           id           : 'did:jank:alice#key1',
           type         : 'JsonWebKey2020',
+          controller   : 'did:jank:alice',
           publicKeyJwk : publicJwk
         }]
       },
@@ -98,6 +100,7 @@ describe('General JWS Sign/Verify', () => {
           verificationMethod: [{
             id           : 'did:jank:alice#key1',
             type         : 'JsonWebKey2020',
+            controller   : 'did:jank:alice',
             publicKeyJwk : secp256k1Keys.publicJwk
           }]
         },
@@ -116,6 +119,7 @@ describe('General JWS Sign/Verify', () => {
           verificationMethod: [{
             id           : 'did:jank:bob#key1',
             type         : 'JsonWebKey2020',
+            controller   : 'did:jank:bob',
             publicKeyJwk : ed25519Keys.publicJwk,
           }]
         },

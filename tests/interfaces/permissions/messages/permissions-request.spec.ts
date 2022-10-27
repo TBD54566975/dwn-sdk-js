@@ -96,6 +96,7 @@ describe('PermissionsRequest', () => {
               verificationMethod: [{
                 id           : 'did:jank:alice#key1',
                 type         : 'JsonWebKey2020',
+                controller   : 'did:jank:alice',
                 publicKeyJwk : publicJwk
               }]
             },
