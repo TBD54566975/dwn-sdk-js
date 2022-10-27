@@ -18,10 +18,7 @@ describe('CollectionsQuery schema definition', () => {
         }]
       },
     };
-    const message = Message.validateJsonSchema(validMessage);
-
-    expect(message).to.not.be.undefined;
-    expect(message.descriptor).to.not.be.undefined;
+    Message.validateJsonSchema(validMessage);
   });
 
   it('should throws if `authorization` is missing', () => {
@@ -128,10 +125,7 @@ describe('CollectionsQuery schema definition', () => {
         },
       };
 
-      const message = Message.validateJsonSchema(validMessage);
-
-      expect(message).to.not.be.undefined;
-      expect(message.descriptor).to.not.be.undefined;
+      Message.validateJsonSchema(validMessage);
     }
 
     // test an invalid values of `dateSort`
