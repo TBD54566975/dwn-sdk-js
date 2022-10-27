@@ -1,4 +1,4 @@
-import type { AuthorizableMessage } from '../../core/types';
+import type { BaseMessage } from '../../core/types';
 
 /**
  * Descriptor structure for HooksWrite
@@ -25,6 +25,6 @@ export type HooksWriteDescriptor = {
 /**
  * Structure for HooksWrite message.
  */
-export type HooksWriteMessage = AuthorizableMessage & {
+export type HooksWriteMessage = BaseMessage & {
   descriptor: HooksWriteDescriptor;
 };

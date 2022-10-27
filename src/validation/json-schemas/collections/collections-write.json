@@ -13,15 +13,6 @@
     },
     "descriptor": {
       "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "target",
-        "method",
-        "recordId",
-        "dataCid",
-        "dateCreated",
-        "dataFormat"
-      ],
       "properties": {
         "method": {
           "enum": [
@@ -67,7 +58,42 @@
         "dataFormat": {
           "type": "string"
         }
-      }
+      },
+      "additionalProperties": false,
+      "required": [
+        "target",
+        "method",
+        "recordId",
+        "dataCid",
+        "dateCreated",
+        "dataFormat"
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "parentId",
+            "contextId"
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "not": {
+                "required": [
+                  "parentId"
+                ]
+              }
+            },
+            {
+              "not": {
+                "required": [
+                  "contextId"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     },
     "encodedData": {
       "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/base64url"
