@@ -17,6 +17,7 @@ import { MemoryCache } from '../utils/memory-cache';
 export class DidResolver {
   didResolvers: Map<string, DidMethodResolver>;
 
+<<<<<<< HEAD
   memoryCache = new MemoryCache(86400);//Time to live in seconds is 24 hours
   // TODO: add DIDCache to constructor method signature, Issue #62 https://github.com/TBD54566975/dwn-sdk-js/issues/62
   constructor(resolvers?: DidMethodResolver[]) {
@@ -28,6 +29,10 @@ export class DidResolver {
       ];
     }
 
+=======
+  memoryCache = new MemoryCache(600);//Time to live in seconds is 10 minutes 
+  constructor(resolvers: DidMethodResolver[], cache?: Cache) {
+>>>>>>> db8c655 (requested changes added)
     this.didResolvers = new Map();
 
     for (const resolver of resolvers) {
@@ -55,9 +60,9 @@ export class DidResolver {
       throw new Error(`${didMethod} DID method not supported`);
     }
 
-    const resolutionResult = await this.memoryCache.has(did) ? await this.memoryCache.get(did): await didResolver.resolve(did);
-    const cache = await this.memoryCache.has(did);
-    if (cache){
+    const resolutionResult = await this.memoryCache.get(did) !== undefined ? await this.memoryCache.get(did): await didResolver.resolve(did);
+    const isCached = await this.memoryCache.get(did) !== undefined;
+    if (!isCached){
       await this.memoryCache.set(did,resolutionResult);
     } else {
 
