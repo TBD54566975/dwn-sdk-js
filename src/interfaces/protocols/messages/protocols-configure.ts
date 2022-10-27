@@ -1,7 +1,6 @@
 import type { AuthCreateOptions } from '../../../core/types';
 import type { ProtocolDefinition, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types';
 import { Message } from '../../../core';
-import { validate } from '../../../validation/validator';
 
 export type ProtocolsConfigureOptions = AuthCreateOptions & {
   target: string;
@@ -10,8 +9,14 @@ export type ProtocolsConfigureOptions = AuthCreateOptions & {
   definition : ProtocolDefinition;
 };
 
-export class ProtocolsConfigure {
-  static async create(options: ProtocolsConfigureOptions): Promise<ProtocolsConfigureMessage> {
+export class ProtocolsConfigure extends Message {
+  readonly message: ProtocolsConfigureMessage; // a more specific type than the base type defined in parent `Message` class
+
+  constructor(message: ProtocolsConfigureMessage) {
+    super(message);
+  }
+
+  static async create(options: ProtocolsConfigureOptions): Promise<ProtocolsConfigure> {
     const descriptor: ProtocolsConfigureDescriptor = {
       target      : options.target,
       method      : 'ProtocolsConfigure',
@@ -20,12 +25,12 @@ export class ProtocolsConfigure {
       definition  : options.definition
     };
 
-    const messageType = descriptor.method;
-    validate(messageType, { descriptor, authorization: {} });
+    Message.validateJsonSchema({ descriptor, authorization: { } });
 
     const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
     const message = { descriptor, authorization };
 
-    return message;
+    const protocolsConfigure = new ProtocolsConfigure(message);
+    return protocolsConfigure;
   }
 }

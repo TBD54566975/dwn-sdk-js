@@ -7,7 +7,6 @@ import { DidResolver } from '../../../did/did-resolver';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
 import { v4 as uuidv4 } from 'uuid';
-import { validate } from '../../../validation/validator';
 
 type PermissionsRequestOptions = AuthCreateOptions & {
   target: string;
@@ -21,7 +20,7 @@ type PermissionsRequestOptions = AuthCreateOptions & {
 };
 
 export class PermissionsRequest extends Message implements Authorizable {
-  protected message: PermissionsRequestMessage;
+  readonly message: PermissionsRequestMessage; // a more specific type than the base type defined in parent `Message` class
 
   constructor(message: PermissionsRequestMessage) {
     super(message);
@@ -44,8 +43,7 @@ export class PermissionsRequest extends Message implements Authorizable {
       scope       : opts.scope,
     };
 
-    const messageType = descriptor.method;
-    validate(messageType, { descriptor, authorization: {} });
+    Message.validateJsonSchema({ descriptor, authorization: { } });
 
     const auth = await Message.signAsAuthorization(descriptor, opts.signatureInput);
     const message: PermissionsRequestMessage = { descriptor, authorization: auth };

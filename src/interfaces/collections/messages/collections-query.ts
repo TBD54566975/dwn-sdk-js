@@ -5,7 +5,6 @@ import { DidResolver } from '../../../did/did-resolver';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
 import { removeUndefinedProperties } from '../../../utils/object';
-import { validate } from '../../../validation/validator';
 
 export type CollectionsQueryOptions = AuthCreateOptions & {
   target: string;
@@ -23,7 +22,7 @@ export type CollectionsQueryOptions = AuthCreateOptions & {
 };
 
 export class CollectionsQuery extends Message implements Authorizable {
-  protected message: CollectionsQueryMessage;
+  readonly message: CollectionsQueryMessage; // a more specific type than the base type defined in parent `Message` class
 
   constructor(message: CollectionsQueryMessage) {
     super(message);
@@ -42,8 +41,7 @@ export class CollectionsQuery extends Message implements Authorizable {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const messageType = descriptor.method;
-    validate(messageType, { descriptor, authorization: {} });
+    Message.validateJsonSchema({ descriptor, authorization: { } });
 
     const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
     const message = { descriptor, authorization };

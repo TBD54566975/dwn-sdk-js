@@ -11,7 +11,6 @@ import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
 import { PermissionsRequest, DEFAULT_CONDITIONS } from './permissions-request';
 import { v4 as uuidv4 } from 'uuid';
-import { validate } from '../../../validation/validator';
 
 type PermissionsGrantOptions = AuthCreateOptions & {
   target: string,
@@ -26,7 +25,7 @@ type PermissionsGrantOptions = AuthCreateOptions & {
 };
 
 export class PermissionsGrant extends Message implements Authorizable {
-  protected message: PermissionsGrantMessage;
+  readonly message: PermissionsGrantMessage; // a more specific type than the base type defined in parent `Message` class
 
   constructor(message: PermissionsGrantMessage) {
     super(message);
@@ -49,8 +48,7 @@ export class PermissionsGrant extends Message implements Authorizable {
       scope       : options.scope,
     };
 
-    const messageType = descriptor.method;
-    validate(messageType, { descriptor, authorization: {} });
+    Message.validateJsonSchema({ descriptor, authorization: { } });
 
     const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
     const message: PermissionsGrantMessage = { descriptor, authorization };

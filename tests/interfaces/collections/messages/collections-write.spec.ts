@@ -36,7 +36,7 @@ describe('CollectionsWrite', () => {
       };
       const collectionsWrite = await CollectionsWrite.create(options);
 
-      const message = collectionsWrite.toObject() as CollectionsWriteMessage;
+      const message = collectionsWrite.message as CollectionsWriteMessage;
 
       expect(message.authorization).to.exist;
       expect(message.encodedData).to.equal(base64url.baseEncode(options.data));
