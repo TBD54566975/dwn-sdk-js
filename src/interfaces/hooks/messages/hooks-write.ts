@@ -2,7 +2,6 @@ import type { AuthCreateOptions } from '../../../core/types';
 import type { HooksWriteDescriptor, HooksWriteMessage } from '../../hooks/types';
 import { Message } from '../../../core';
 import { removeUndefinedProperties } from '../../../utils/object';
-import { validate } from '../../../validation/validator';
 
 /**
  * Input to `HookssWrite.create()`.
@@ -23,11 +22,17 @@ export type HooksWriteOptions = AuthCreateOptions & {
 /**
  * Class that provides `HooksWrite` related operations.
  */
-export class HooksWrite {
+export class HooksWrite extends Message {
+  readonly message: HooksWriteMessage; // a more specific type than the base type defined in parent class
+
+  constructor(message: HooksWriteMessage) {
+    super(message);
+  }
+
   /**
    * Creates a HooksWrite message
    */
-  static async create(options: HooksWriteOptions): Promise<HooksWriteMessage> {
+  static async create(options: HooksWriteOptions): Promise<HooksWrite> {
     const descriptor: HooksWriteDescriptor = {
       target      : options.target,
       method      : 'HooksWrite',
@@ -40,12 +45,12 @@ export class HooksWrite {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const messageType = descriptor.method;
-    validate(messageType, { descriptor, authorization: {} });
+    Message.validateJsonSchema({ descriptor, authorization: { } });
 
     const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
     const message = { descriptor, authorization };
 
-    return message;
+    const hooksWrite = new HooksWrite(message);
+    return hooksWrite;
   }
 }

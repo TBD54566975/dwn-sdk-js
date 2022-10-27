@@ -18,10 +18,7 @@ describe('CollectionsQuery schema definition', () => {
         }]
       },
     };
-    const message = Message.parse(validMessage);
-
-    expect(message).to.not.be.undefined;
-    expect(message.descriptor).to.not.be.undefined;
+    Message.validateJsonSchema(validMessage);
   });
 
   it('should throws if `authorization` is missing', () => {
@@ -35,7 +32,7 @@ describe('CollectionsQuery schema definition', () => {
     };
 
     expect(() => {
-      Message.parse(invalidMessage);
+      Message.validateJsonSchema(invalidMessage);
     }).throws('must have required property \'authorization\'');
   });
 
@@ -58,7 +55,7 @@ describe('CollectionsQuery schema definition', () => {
     };
 
     expect(() => {
-      Message.parse(invalidMessage);
+      Message.validateJsonSchema(invalidMessage);
     }).throws('must NOT have additional properties');
   });
 
@@ -81,7 +78,7 @@ describe('CollectionsQuery schema definition', () => {
     };
 
     expect(() => {
-      Message.parse(invalidMessage);
+      Message.validateJsonSchema(invalidMessage);
     }).throws('must NOT have additional properties');
   });
 
@@ -103,7 +100,7 @@ describe('CollectionsQuery schema definition', () => {
     };
 
     expect(() => {
-      Message.parse(invalidMessage);
+      Message.validateJsonSchema(invalidMessage);
     }).throws('/descriptor/filter: must NOT have fewer than 1 properties');
   });
 
@@ -128,10 +125,7 @@ describe('CollectionsQuery schema definition', () => {
         },
       };
 
-      const message = Message.parse(validMessage);
-
-      expect(message).to.not.be.undefined;
-      expect(message.descriptor).to.not.be.undefined;
+      Message.validateJsonSchema(validMessage);
     }
 
     // test an invalid values of `dateSort`
@@ -153,7 +147,7 @@ describe('CollectionsQuery schema definition', () => {
     };
 
     expect(() => {
-      Message.parse(invalidMessage);
+      Message.validateJsonSchema(invalidMessage);
     }).throws('dateSort: must be equal to one of the allowed values');
   });
 });

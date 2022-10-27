@@ -1,7 +1,6 @@
 import type { BaseMessage, Descriptor } from './types';
 import type { SignatureInput } from '../jose/jws/general/types';
 
-import lodash from 'lodash';
 import { CID } from 'multiformats/cid';
 import { CollectionsWriteMessage } from '../interfaces/collections/types';
 import { compareCids, generateCid } from '../utils/cid';
@@ -9,49 +8,40 @@ import { GeneralJws } from '../jose/jws/general/types';
 import { GeneralJwsSigner, GeneralJwsVerifier } from '../jose/jws/general';
 import { validate } from '../validation/validator';
 
+export enum DwnMethodName {
+  CollectionsWrite = 'CollectionsWrite',
+  CollectionsQuery = 'CollectionsQuery',
+  HooksWrite = 'HooksWrite',
+  ProtocolsConfigure = 'ProtocolsConfigure',
+  ProtocolsQuery = 'ProtocolsQuery'
+}
 
-const { cloneDeep, isPlainObject } = lodash;
 export abstract class Message {
   readonly author: string;
+  readonly message: BaseMessage;
 
-  constructor(protected message: BaseMessage) {
+  constructor(message: BaseMessage) {
     this.author = GeneralJwsVerifier.getDid(message.authorization.signatures[0]);
+    this.message = message;
   }
 
-  static parse(rawMessage: object): BaseMessage {
-    const descriptor = rawMessage['descriptor'];
-    if (!descriptor) {
-      throw new Error('message must contain descriptor');
-    }
-
-    if (!isPlainObject(descriptor)) {
-      throw new Error('descriptor: must be object');
-    }
-
-    const messageType = descriptor['method'];
-    if (!messageType) {
-      throw new Error('descriptor must contain method');
-    }
-
-    // validate throws an error if message is invalid
-    validate(messageType, rawMessage);
-
-    return rawMessage as BaseMessage;
-  };
-
-  getMethod(): string {
-    return this.message.descriptor.method;
-  }
-
-  toObject(): BaseMessage {
-    return cloneDeep(this.message);
-  }
-
+  /**
+   * Called by `JSON.stringify(...)` automatically.
+   */
   toJSON(): BaseMessage {
     return this.message;
   }
 
+  /**
+   * Validates the given message against the corresponding JSON schema.
+   * @throws {Error} if fails validation.
+   */
+  public static validateJsonSchema(rawMessage: any): BaseMessage {
+    // validate throws an error if message is invalid
+    validate(rawMessage.descriptor.method, rawMessage);
 
+    return rawMessage as BaseMessage;
+  };
 
   /**
    * Gets the CID of the given message.

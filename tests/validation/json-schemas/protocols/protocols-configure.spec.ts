@@ -38,7 +38,7 @@ describe('ProtocolsConfigure schema definition', () => {
     };
 
     expect(() => {
-      Message.parse(message);
+      Message.validateJsonSchema(message);
     }).throws('must NOT have additional properties');
   });
 });

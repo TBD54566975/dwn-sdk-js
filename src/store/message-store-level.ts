@@ -20,10 +20,9 @@ import searchIndex from 'search-index';
 export class MessageStoreLevel implements MessageStore {
   config: MessageStoreLevelConfig;
   db: BlockstoreLevel;
-  // levelDB doesn't natively provide the querying capabilities needed for DWN. To accommodate, we're leveraging
-  // a level-backed inverted index
-  // search-index lib does not import type `SearchIndex`. get the awaited return type as a workaround
-  index: Awaited<ReturnType<typeof searchIndex>>;
+  // levelDB doesn't natively provide the querying capabilities needed for DWN,
+  // to accommodate, we're leveraging a level-backed inverted index.
+  index: Awaited<ReturnType<typeof searchIndex>>; // type `SearchIndex` is not exported. So we construct it indirectly from function return type
 
   /**
    * @param {MessageStoreLevelConfig} config

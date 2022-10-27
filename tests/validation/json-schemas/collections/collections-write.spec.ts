@@ -21,10 +21,7 @@ describe('CollectionsWrite schema definition', () => {
         }]
       },
     };
-    const message = Message.parse(validMessage);
-
-    expect(message).to.not.be.undefined;
-    expect(message.descriptor).to.not.be.undefined;
+    Message.validateJsonSchema(validMessage);
   });
 
   it('should throws if `authorization` is missing', () => {
@@ -40,7 +37,7 @@ describe('CollectionsWrite schema definition', () => {
     };
 
     expect(() => {
-      Message.parse(invalidMessage);
+      Message.validateJsonSchema(invalidMessage);
     }).throws('must have required property \'authorization\'');
   });
 
@@ -65,7 +62,7 @@ describe('CollectionsWrite schema definition', () => {
     };
 
     expect(() => {
-      Message.parse(invalidMessage);
+      Message.validateJsonSchema(invalidMessage);
     }).throws('must NOT have additional properties');
   });
 
@@ -90,7 +87,7 @@ describe('CollectionsWrite schema definition', () => {
     };
 
     expect(() => {
-      Message.parse(invalidMessage);
+      Message.validateJsonSchema(invalidMessage);
     }).throws('must NOT have additional properties');
   });
 
@@ -115,7 +112,7 @@ describe('CollectionsWrite schema definition', () => {
     };
 
     expect(() => {
-      Message.parse(invalidMessage);
+      Message.validateJsonSchema(invalidMessage);
     }).throws('must match pattern "^[A-Za-z0-9_-]+$"');
   });
 
@@ -141,7 +138,7 @@ describe('CollectionsWrite schema definition', () => {
     };
 
     expect(() => {
-      Message.parse(invalidMessage);
+      Message.validateJsonSchema(invalidMessage);
     }).throws('must have required property \'parentId\'');
   });
 
@@ -167,7 +164,7 @@ describe('CollectionsWrite schema definition', () => {
     };
 
     expect(() => {
-      Message.parse(invalidMessage);
+      Message.validateJsonSchema(invalidMessage);
     }).throws('must have required property \'contextId\'');
   });
 });

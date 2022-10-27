@@ -195,12 +195,12 @@ export class TestDataGenerator {
       signatureInput
     };
 
-    const message = await ProtocolsConfigure.create(options);
+    const protocolsConfigure = await ProtocolsConfigure.create(options);
 
     return {
       requester,
       target,
-      message
+      message: protocolsConfigure.message
     };
   };
 
@@ -227,12 +227,12 @@ export class TestDataGenerator {
     };
     removeUndefinedProperties(options);
 
-    const message = await ProtocolsQuery.create(options);
+    const protocolsQuery = await ProtocolsQuery.create(options);
 
     return {
       requester,
       target,
-      message
+      message: protocolsQuery.message
     };
   };
 
@@ -272,7 +272,7 @@ export class TestDataGenerator {
 
 
     const collectionsWrite = await CollectionsWrite.create(options);
-    const message = collectionsWrite.toObject() as CollectionsWriteMessage;
+    const message = collectionsWrite.message as CollectionsWriteMessage;
 
     return {
       target,
@@ -308,7 +308,7 @@ export class TestDataGenerator {
     removeUndefinedProperties(options);
 
     const collectionsQuery = await CollectionsQuery.create(options);
-    const message = collectionsQuery.toObject() as CollectionsQueryMessage;
+    const message = collectionsQuery.message as CollectionsQueryMessage;
 
     return {
       target,
@@ -340,12 +340,12 @@ export class TestDataGenerator {
     };
     removeUndefinedProperties(options);
 
-    const message = await HooksWrite.create(options);
+    const hooksWrite = await HooksWrite.create(options);
 
     return {
       target,
       requester,
-      message
+      message: hooksWrite.message
     };
   };
 
@@ -364,7 +364,7 @@ export class TestDataGenerator {
       signatureInput : { jwkPrivate: privateJwk, protectedHeader: { alg: privateJwk.alg as string, kid: 'whatev' } }
     });
 
-    return permissionRequest.toObject();
+    return permissionRequest.message;
   }
 
   /**
