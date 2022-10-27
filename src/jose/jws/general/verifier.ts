@@ -4,6 +4,7 @@ import type { VerificationMethod } from '../../../did/did-resolver';
 import * as encoder from '../../../utils/encoder';
 import { DidResolver } from '../../../did/did-resolver';
 import { signers as verifiers } from '../../algorithms';
+import { validate } from '../../../validation/validator';
 
 type VerificationResult = {
   /** DIDs of all signers */
@@ -84,12 +85,7 @@ export class GeneralJwsVerifier {
       throw new Error('public key needed to verify signature not found in DID Document');
     }
 
-    // TODO: replace with JSON Schema based validation, Issue 67 https://github.com/TBD54566975/dwn-sdk-js/issues/67
-    // more info about the `JsonWebKey2020` type can be found here:
-    // https://www.w3.org/TR/did-spec-registries/#jsonwebkey2020
-    if (verificationMethod.type !== 'JsonWebKey2020') {
-      throw new Error(`verification method [${kid}] must be JsonWebKey2020`);
-    }
+    validate('JwkVerificationMethod', verificationMethod);
 
     const { publicKeyJwk: publicJwk } = verificationMethod;
 
