@@ -26,7 +26,7 @@ export type CollectionsWriteOptions = AuthCreateOptions & {
 };
 
 export class CollectionsWrite extends Message implements Authorizable {
-  readonly message: CollectionsWriteMessage; // a more specific type than the base type defined in parent `Message` class
+  readonly message: CollectionsWriteMessage; // a more specific type than the base type defined in parent class
 
   constructor(message: CollectionsWriteMessage) {
     super(message);

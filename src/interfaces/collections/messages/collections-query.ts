@@ -22,7 +22,7 @@ export type CollectionsQueryOptions = AuthCreateOptions & {
 };
 
 export class CollectionsQuery extends Message implements Authorizable {
-  readonly message: CollectionsQueryMessage; // a more specific type than the base type defined in parent `Message` class
+  readonly message: CollectionsQueryMessage; // a more specific type than the base type defined in parent class
 
   constructor(message: CollectionsQueryMessage) {
     super(message);

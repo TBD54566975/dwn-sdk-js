@@ -12,7 +12,7 @@ export type ProtocolsQueryOptions = AuthCreateOptions & {
 };
 
 export class ProtocolsQuery extends Message {
-  readonly message: ProtocolsQueryMessage; // a more specific type than the base type defined in parent `Message` class
+  readonly message: ProtocolsQueryMessage; // a more specific type than the base type defined in parent class
 
   constructor(message: ProtocolsQueryMessage) {
     super(message);

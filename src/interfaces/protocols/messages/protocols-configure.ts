@@ -10,7 +10,7 @@ export type ProtocolsConfigureOptions = AuthCreateOptions & {
 };
 
 export class ProtocolsConfigure extends Message {
-  readonly message: ProtocolsConfigureMessage; // a more specific type than the base type defined in parent `Message` class
+  readonly message: ProtocolsConfigureMessage; // a more specific type than the base type defined in parent class
 
   constructor(message: ProtocolsConfigureMessage) {
     super(message);

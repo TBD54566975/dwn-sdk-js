@@ -23,7 +23,7 @@ export type HooksWriteOptions = AuthCreateOptions & {
  * Class that provides `HooksWrite` related operations.
  */
 export class HooksWrite extends Message {
-  readonly message: HooksWriteMessage; // a more specific type than the base type defined in parent `Message` class
+  readonly message: HooksWriteMessage; // a more specific type than the base type defined in parent class
 
   constructor(message: HooksWriteMessage) {
     super(message);

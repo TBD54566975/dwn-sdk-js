@@ -20,7 +20,7 @@ type PermissionsRequestOptions = AuthCreateOptions & {
 };
 
 export class PermissionsRequest extends Message implements Authorizable {
-  readonly message: PermissionsRequestMessage; // a more specific type than the base type defined in parent `Message` class
+  readonly message: PermissionsRequestMessage; // a more specific type than the base type defined in parent class
 
   constructor(message: PermissionsRequestMessage) {
     super(message);
