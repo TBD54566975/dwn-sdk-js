@@ -7,10 +7,10 @@
   "engines": {
     "node": ">= 16"
   },
-  "module": "./dist/esm/src/index.js",
+  "module": "./dist/bundles/index.cjs",
   "exports": {
-    "require": "./dist/cjs/index.js",
-    "import": "./dist/esm/src/index.js"
+    "require": "./dist/bundles/index.cjs",
+    "import": "./dist/bundles/index.cjs"
   },
   "browser": {
     "events": "events",
