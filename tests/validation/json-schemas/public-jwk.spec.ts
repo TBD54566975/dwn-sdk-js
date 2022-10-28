@@ -5,15 +5,14 @@ import { PublicJwk } from '../../../src/jose/types';
 
 const { Ed25519, secp256k1 } = signers;
 
-describe('PublicKeyJwk', async () => {
+describe('PublicJwk Schema', async () => {
   const { publicJwk: publicJwkSecp256k1 } = await secp256k1.generateKeyPair();
   const { publicJwk: publicJwkEd25519 } = await Ed25519.generateKeyPair();
 
   [publicJwkSecp256k1, publicJwkEd25519].forEach((publicJwk): void => {
-    console.log(publicJwk);
     it('should not throw an exception if properly formatted publicJwk', () => {
       expect(
-        () => validate('PublicKeyJwk', publicJwk)
+        () => validate('PublicJwk', publicJwk)
       ).to.not.throw();
     });
   });
@@ -28,10 +27,9 @@ describe('PublicKeyJwk', async () => {
       d: 'supersecret',
       ...publicJwk
     };
-    console.log(invalidPublicJwk);
     it('should throw an exception if publicJwk is invalid', () => {
       expect(
-        () => validate('PublicKeyJwk', invalidPublicJwk)
+        () => validate('PublicJwk', invalidPublicJwk)
       ).to.throw(err);
     });
   });

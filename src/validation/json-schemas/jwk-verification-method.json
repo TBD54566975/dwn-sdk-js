@@ -20,7 +20,7 @@
       "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
     },
     "publicKeyJwk": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/public-key-jwk.json"
+      "$ref": "https://identity.foundation/dwn/json-schemas/public-jwk.json"
     }
   }
 }

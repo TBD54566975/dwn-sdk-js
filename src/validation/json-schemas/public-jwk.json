@@ -1,5 +1,5 @@
 {
-  "$id": "https://identity.foundation/dwn/json-schemas/public-key-jwk.json",
+  "$id": "https://identity.foundation/dwn/json-schemas/public-jwk.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "required": ["kty", "crv", "x"],
