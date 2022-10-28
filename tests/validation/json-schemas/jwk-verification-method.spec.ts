@@ -14,18 +14,29 @@ describe('JwkVerificationMethod', async () => {
         controller   : 'did:jank:alice',
         publicKeyJwk : publicJwk
       })
-    ).to.not.throw('publicKeyJwk');
+    ).to.not.throw();
   });
 
-  it('should throw an exception if id isn\'t a did', () => {
+  it('should not throw if `id` does not have the DID as prefix', () => {
     expect(
       () => validate('JwkVerificationMethod', {
-        id           : 'notadid:jank:alice#key1',
+        id           : '#key1',
         type         : 'JsonWebKey2020',
         controller   : 'did:jank:alice',
         publicKeyJwk : publicJwk
       })
-    ).to.throw('id: must match pattern');
+    ).to.not.throw();
+  });
+
+  it('should throw an exception if id isn\'t a string', () => {
+    expect(
+      () => validate('JwkVerificationMethod', {
+        id           : { },
+        type         : 'JsonWebKey2020',
+        controller   : 'did:jank:alice',
+        publicKeyJwk : publicJwk
+      })
+    ).to.throw('id: must be string');
   });
 
   it('should throw an exception if controller isn\'t a did', () => {

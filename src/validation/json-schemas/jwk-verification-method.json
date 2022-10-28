@@ -3,10 +3,15 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id", "type", "controller", "publicKeyJwk"],
+  "required": [
+    "id",
+    "type",
+    "controller",
+    "publicKeyJwk"
+  ],
   "properties": {
     "id": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+      "type": "string"
     },
     "type": {
       "const": "JsonWebKey2020"
