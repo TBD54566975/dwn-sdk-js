@@ -11,6 +11,7 @@ import ProtocolDefinition from './protocol-definition.json' assert { type: 'json
 import ProtocolRuleSet from './protocol-rule-set.json' assert { type: 'json' };
 import ProtocolsConfigure from './protocols/protocols-configure.json' assert { type: 'json' };
 import ProtocolsQuery from './protocols/protocols-query.json' assert { type: 'json' };
+import PublicKeyJwk from './public-key-jwk.json' assert { type: 'json' };
 import Request from './request.json' assert { type: 'json' };
 
 export const schemas = {
@@ -27,5 +28,6 @@ export const schemas = {
   ProtocolRuleSet,
   ProtocolsConfigure,
   ProtocolsQuery,
+  PublicKeyJwk,
   Request
 };

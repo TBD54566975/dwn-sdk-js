@@ -1,0 +1,46 @@
+{
+  "$id": "https://identity.foundation/dwn/json-schemas/public-key-jwk.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["kty", "crv", "x"],
+  "properties": {
+    "alg": {
+      "type": "string"
+    },
+    "kid": {
+      "type": "string"
+    },
+    "kty": {
+      "enum": ["EC", "RSA", "oct", "OKP"]
+    },
+    "crv": {
+      "type": "string"
+    },
+    "x": {
+      "type": "string"
+    },
+    "y": {
+      "type": "string"
+    }
+  },
+  "not": {
+    "anyOf": [
+      {
+        "properties": {
+          "kty": {
+            "const": "EC"
+          }
+        },
+        "anyOf": [{ "required": ["d"] }]
+      },
+      {
+        "properties": {
+          "kty": {
+            "const": "OKP"
+          }
+        },
+        "anyOf": [{ "required": ["d"] }]
+      }
+    ]
+  }
+}
