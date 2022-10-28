@@ -23,6 +23,28 @@
       "type": "string"
     }
   },
+  "anyOf": [
+    {
+      "properties": {
+        "kty": {
+          "const": "OKP"
+        },
+        "crv": {
+          "enum": ["Ed25519"]
+        }
+      }
+    },
+    {
+      "properties": {
+        "kty": {
+          "const": "EC"
+        },
+        "crv": {
+          "enum": ["secp256k1"]
+        }
+      }
+    }
+  ],
   "not": {
     "anyOf": [
       {
