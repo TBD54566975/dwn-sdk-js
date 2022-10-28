@@ -4,7 +4,6 @@ import { DidResolver } from '../../../../src/did/did-resolver';
 import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general';
 import { PermissionsRequest, DEFAULT_CONDITIONS } from '../../../../src/interfaces/permissions/messages/permissions-request';
-import { validate } from '../../../../src/validation/validator';
 
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
@@ -33,9 +32,6 @@ describe('PermissionsRequest', () => {
         scope       : { method: 'CollectionsWrite' },
         signatureInput
       });
-
-      // this would throw an exception if the underlying message was invalid
-      validate('PermissionsRequest', message.toObject());
 
       expect(message.grantedTo).to.equal('did:jank:alice');
       expect(message.grantedBy).to.equal('did:jank:bob');
@@ -96,6 +92,7 @@ describe('PermissionsRequest', () => {
               verificationMethod: [{
                 id           : 'did:jank:alice#key1',
                 type         : 'JsonWebKey2020',
+                controller   : 'did:jank:alice',
                 publicKeyJwk : publicJwk
               }]
             },

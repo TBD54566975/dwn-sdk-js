@@ -3,6 +3,7 @@ import CollectionsWrite from './collections/collections-write.json' assert { typ
 import Definitions from './definitions.json' assert { type: 'json' };
 import GeneralJws from './general-jws.json' assert { type: 'json' };
 import HooksWrite from './hooks/hooks-write.json' assert { type: 'json' };
+import JwkVerificationMethod from './jwk-verification-method.json' assert {type: 'json'};
 import PermissionsDefinitions from './permissions/definitions.json' assert { type: 'json' };
 import PermissionsRequest from './permissions/permissions-request.json' assert { type: 'json' };
 import PermissionsGrant from './permissions/permissions-grant.json' assert { type: 'json' };
@@ -18,6 +19,7 @@ export const schemas = {
   Definitions,
   GeneralJws,
   HooksWrite,
+  JwkVerificationMethod,
   PermissionsDefinitions,
   PermissionsGrant,
   PermissionsRequest,

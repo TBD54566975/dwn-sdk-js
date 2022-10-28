@@ -2,7 +2,6 @@ import type { AuthCreateOptions } from '../../../core/types';
 import type { ProtocolsQueryDescriptor, ProtocolsQueryMessage } from '../types';
 import { Message } from '../../../core';
 import { removeUndefinedProperties } from '../../../utils/object';
-import { validate } from '../../../validation/validator';
 
 export type ProtocolsQueryOptions = AuthCreateOptions & {
   target: string;
@@ -12,8 +11,14 @@ export type ProtocolsQueryOptions = AuthCreateOptions & {
   }
 };
 
-export class ProtocolsQuery {
-  static async create(options: ProtocolsQueryOptions): Promise<ProtocolsQueryMessage> {
+export class ProtocolsQuery extends Message {
+  readonly message: ProtocolsQueryMessage; // a more specific type than the base type defined in parent class
+
+  constructor(message: ProtocolsQueryMessage) {
+    super(message);
+  }
+
+  static async create(options: ProtocolsQueryOptions): Promise<ProtocolsQuery> {
     const descriptor: ProtocolsQueryDescriptor = {
       target      : options.target,
       method      : 'ProtocolsQuery',
@@ -25,12 +30,12 @@ export class ProtocolsQuery {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const messageType = descriptor.method;
-    validate(messageType, { descriptor, authorization: {} });
+    Message.validateJsonSchema({ descriptor, authorization: { } });
 
     const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
     const message = { descriptor, authorization };
 
-    return message;
+    const protocolsQuery = new ProtocolsQuery(message);
+    return protocolsQuery;
   }
 }

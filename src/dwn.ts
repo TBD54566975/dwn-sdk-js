@@ -8,7 +8,7 @@ import { CollectionsInterface, PermissionsInterface, ProtocolsInterface } from '
 import { DidKeyResolver } from './did/did-key-resolver';
 import { DidResolver } from './did/did-resolver';
 import { DidIonResolver } from './did/did-ion-resolver';
-import { Message, MessageReply, Request, Response } from './core';
+import { MessageReply, Request, Response } from './core';
 import { MessageStoreLevel } from './store/message-store-level';
 
 
@@ -91,21 +91,18 @@ export class Dwn {
   /**
    * Processes the given DWN message.
    */
-  async processMessage(rawMessage: object): Promise<MessageReply> {
-    let message: BaseMessage;
-
-    try {
-      message = Message.parse(rawMessage);
-    } catch (e) {
+  async processMessage(rawMessage: any): Promise<MessageReply> {
+    const dwnMethod = rawMessage?.descriptor?.method;
+    if (dwnMethod === undefined) {
       return new MessageReply({
-        status: { code: 400, detail: e.message }
+        status: { code: 400, detail: 'invalid message' }
       });
     }
 
     try {
-      const interfaceMethodHandler = Dwn.methodHandlers[message.descriptor.method];
+      const interfaceMethodHandler = Dwn.methodHandlers[dwnMethod];
 
-      const methodHandlerReply = await interfaceMethodHandler(message, this.messageStore, this.DidResolver);
+      const methodHandlerReply = await interfaceMethodHandler(rawMessage as BaseMessage, this.messageStore, this.DidResolver);
       return methodHandlerReply;
     } catch (e) {
       return new MessageReply({
