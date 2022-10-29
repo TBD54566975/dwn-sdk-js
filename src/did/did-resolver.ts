@@ -92,8 +92,6 @@ export type ServiceEndpoint = {
   description?: string
 };
 
-// TODO: figure out if we need to support ALL verification method properties, Issue #64 https://github.com/TBD54566975/dwn-sdk-js/issues/64
-//       listed here: https://www.w3.org/TR/did-spec-registries/#verification-method-properties
 export type VerificationMethod = {
   id: string
   // one of the valid verification method types as per
@@ -103,9 +101,6 @@ export type VerificationMethod = {
   controller: string
   // a JSON Web Key that conforms to https://datatracker.ietf.org/doc/html/rfc7517
   publicKeyJwk?: PublicJwk
-  // a string representation of
-  // https://datatracker.ietf.org/doc/html/draft-multiformats-multibase-05
-  publicKeyMultibase?: string
 };
 
 export type DidResolutionResult = {
