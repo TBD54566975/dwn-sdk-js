@@ -31,11 +31,9 @@ module.exports = function(config) {
     esbuild: {
       mainFields : ['browser', 'module', 'main'],
       target     : ['chrome101'],
-      plugins    : [NodeGlobalsPolyfillPlugin({
-        process: true
-      })],
-      sourcemap : true,
-      define    : {
+      plugins    : [NodeGlobalsPolyfillPlugin({ process: true })],
+      sourcemap  : true,
+      define     : {
         'global': 'window'
       },
     },

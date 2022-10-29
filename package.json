@@ -7,15 +7,8 @@
   "engines": {
     "node": ">= 16"
   },
-  "module": "./dist/bundles/index.cjs",
-  "exports": {
-    "require": "./dist/bundles/index.cjs",
-    "import": "./dist/bundles/index.cjs"
-  },
-  "browser": {
-    "events": "events",
-    "util": "util"
-  },
+  "module": "./dist/bundles/browser.js",
+  "exports": "./dist/esm/src/index.js",
   "@comment files": [
     "the files property informs npm about which files we want to include in our published package.",
     "dist will include all transpiled js. There's no point in including .ts files"
