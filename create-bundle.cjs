@@ -3,7 +3,6 @@ const { NodeGlobalsPolyfillPlugin } = require('@esbuild-plugins/node-globals-pol
 require('esbuild').build({
   entryPoints : ['./src/index.ts'],
   bundle      : true,
-  // minify      : true,
   format      : 'esm',
   sourcemap   : true,
   platform    : 'browser',
