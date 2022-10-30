@@ -7,9 +7,9 @@
   "engines": {
     "node": ">= 16"
   },
-  "exports": {
-    ".": "./dist/esm/src/index.js",
-    "./browser": "./dist/bundles/browser.js"
+  "exports": "./dist/esm/src/index.js",
+  "browser": {
+    "./dist/esm/src/index.js": "./dist/bundles/browser.js"
   },
   "@comment files": [
     "the files property informs npm about which files we want to include in our published package.",
@@ -23,7 +23,7 @@
     "build:esm": "tsc",
     "build": "npm-run-all -l clean -p build:esm bundle",
     "clean": "rimraf dist",
-    "bundle": "node create-bundle.cjs",
+    "bundle": "node create-browser-bundle.cjs",
     "lint": "eslint . --ext .ts --max-warnings 0",
     "lint:fix": "eslint . --ext .ts --fix",
     "test:node": "tsc && c8 mocha --es-module-specifier-resolution=node \"dist/esm/tests/**/*.spec.js\" && npm run make-coverage-badges",
