@@ -1,6 +1,6 @@
 const { NodeGlobalsPolyfillPlugin } = require('@esbuild-plugins/node-globals-polyfill');
 
-require('esbuild').build({
+module.exports = {
   entryPoints : ['./src/index.ts'],
   bundle      : true,
   format      : 'esm',
@@ -10,6 +10,5 @@ require('esbuild').build({
   plugins     : [NodeGlobalsPolyfillPlugin({ process: true })],
   define      : {
     'global': 'window'
-  },
-  outfile: 'dist/bundles/browser.js',
-});
+  }
+};
