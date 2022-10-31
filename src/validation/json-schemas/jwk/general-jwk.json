@@ -49,6 +49,9 @@
         },
         "y": {
           "type": "string"
+        },
+        "d": {
+          "type": "string"
         }
       },
       "required": ["crv", "x"]
@@ -62,6 +65,9 @@
           "type": "string"
         },
         "x": {
+          "type": "string"
+        },
+        "d": {
           "type": "string"
         }
       },
@@ -77,6 +83,27 @@
         },
         "e": {
           "type": "string"
+        },
+        "d": {
+          "type": "string"
+        },
+        "p": {
+          "type": "string"
+        },
+        "q": {
+          "type": "string"
+        },
+        "dp": {
+          "type": "string"
+        },
+        "dq": {
+          "type": "string"
+        },
+        "qi": {
+          "type": "string"
+        },
+        "oth": {
+          "type": "object"
         }
       },
       "required": ["n", "e"]

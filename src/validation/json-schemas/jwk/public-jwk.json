@@ -33,7 +33,15 @@
           "qi": {},
           "oth": { "type": "object" }
         },
-        "anyOf": [{ "required": ["d"] }]
+        "anyOf": [
+          { "required": ["d"] },
+          { "required": ["p"] },
+          { "required": ["q"] },
+          { "required": ["dp"] },
+          { "required": ["dq"] },
+          { "required": ["qi"] },
+          { "required": ["oth"] }
+        ]
       }
     ]
   }

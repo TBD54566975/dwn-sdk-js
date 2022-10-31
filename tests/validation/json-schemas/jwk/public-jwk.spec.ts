@@ -15,19 +15,31 @@ describe('PublicJwk Schema', async () => {
     'alg' : 'RS256',
     'n'   : 'abcd1234'
   };
-
-  [publicJwkSecp256k1, publicJwkEd25519, publicJwkRsa].forEach((publicJwk): void => {
-    it('should not throw an exception if properly formatted publicJwk', () => {
-      expect(
-        () => validate('PublicJwk', publicJwk)
-      ).to.not.throw();
-    });
-
-    it('should throw an exception if publicJwk has private property', () => {
-      expect(
-        () => validate('PublicJwk', { ...publicJwk, d: 'notAllowedInPublicJwk' })
-      ).to.throw();
-    });
-
+  it('should not throw an exception if properly formatted publicJwk', () => {
+    expect(
+      () => validate('PublicJwk', publicJwkSecp256k1)
+    ).to.not.throw();
+    expect(
+      () => validate('PublicJwk', publicJwkEd25519)
+    ).to.not.throw();
+    expect(
+      () => validate('PublicJwk', publicJwkRsa)
+    ).to.not.throw();
   });
+
+  it('should throw an exception if publicJwk has private property', () => {
+    expect(
+      () => validate('PublicJwk', { ...publicJwkSecp256k1, d: "supersecret" })
+    ).to.throw();
+    expect(
+      () => validate('PublicJwk', { ...publicJwkEd25519, d: "supersecret" })
+    ).to.throw();
+    expect(
+      () => validate('PublicJwk', { ...publicJwkRsa, oth: {} })
+    ).to.throw();
+    expect(
+      () => validate('PublicJwk', { ...publicJwkRsa, d: "supersecret", oth: {} })
+    ).to.throw();
+  });
+
 });
