@@ -29,16 +29,16 @@ describe('PublicJwk Schema', async () => {
 
   it('should throw an exception if publicJwk has private property', () => {
     expect(
-      () => validate('PublicJwk', { ...publicJwkSecp256k1, d: "supersecret" })
+      () => validate('PublicJwk', { ...publicJwkSecp256k1, d: 'supersecret' })
     ).to.throw();
     expect(
-      () => validate('PublicJwk', { ...publicJwkEd25519, d: "supersecret" })
+      () => validate('PublicJwk', { ...publicJwkEd25519, d: 'supersecret' })
     ).to.throw();
     expect(
       () => validate('PublicJwk', { ...publicJwkRsa, oth: {} })
     ).to.throw();
     expect(
-      () => validate('PublicJwk', { ...publicJwkRsa, d: "supersecret", oth: {} })
+      () => validate('PublicJwk', { ...publicJwkRsa, d: 'supersecret', oth: {} })
     ).to.throw();
   });
 
