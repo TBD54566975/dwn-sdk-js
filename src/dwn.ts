@@ -117,14 +117,3 @@ export type Config = {
   interfaces?: Interface[];
   messageStore?: MessageStore;
 };
-
-
-/**
- * An event handler that is triggered after a message passes processing flow of:
- * DWN message level schema validation -> authentication -> authorization -> message processing/storage.
- * @param message The message to be handled
- * @returns the response to be returned back to the caller
- */
-export interface EventHandler {
-  (message: BaseMessage): Promise<MessageReply>;
-}
