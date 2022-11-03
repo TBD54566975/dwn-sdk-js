@@ -152,4 +152,57 @@ describe('General JWS Sign/Verify', () => {
     expect(verificatonResult.signers).to.include(alice.did);
     expect(verificatonResult.signers).to.include(bob.did);
   });
+
+  it('should not verify the same signature more than once', async () => {
+    const { privateJwk: privateJwkEd25519, publicJwk: publicJwkEd25519 } = await Ed25519.generateKeyPair();
+    const { privateJwk: privateJwkSecp256k1, publicJwk: publicJwkSecp256k1 } = await secp256k1.generateKeyPair();
+    const payloadBytes = new TextEncoder().encode('anyPayloadValue');
+    const protectedHeaderEd25519 = { alg: 'EdDSA', kid: 'did:jank:alice#key1' };
+    const protectedHeaderSecp256k1 = { alg: 'ES256K', kid: 'did:jank:alice#key2' };
+
+    const signer = await GeneralJwsSigner.create(
+      payloadBytes,
+      [
+        { jwkPrivate: privateJwkEd25519, protectedHeader: protectedHeaderEd25519 },
+        { jwkPrivate: privateJwkEd25519, protectedHeader: protectedHeaderEd25519 },
+        { jwkPrivate: privateJwkSecp256k1, protectedHeader: protectedHeaderSecp256k1 }
+      ]
+    );
+    const jws = signer.getJws();
+
+    const mockResolutionResult = {
+      didResolutionMetadata : {},
+      didDocument           : {
+        verificationMethod: [{
+          id           : 'did:jank:alice#key1',
+          type         : 'JsonWebKey2020',
+          controller   : 'did:jank:alice',
+          publicKeyJwk : publicJwkEd25519
+        }, {
+          id           : 'did:jank:alice#key2',
+          type         : 'JsonWebKey2020',
+          controller   : 'did:jank:alice',
+          publicKeyJwk : publicJwkSecp256k1
+        }]
+      },
+      didDocumentMetadata: {}
+    };
+
+    const resolverStub = sinon.createStubInstance(DidResolver, {
+      // @ts-ignore
+      resolve: sinon.stub().withArgs('did:jank:alice').resolves(mockResolutionResult)
+    });
+
+    const verifier = new GeneralJwsVerifier(jws);
+
+    const verifySignatureSpy = sinon.spy(GeneralJwsVerifier, 'verifySignature');
+    const cacheSpy = sinon.spy(verifier.cache, 'set');
+
+    const verificationResult = await verifier.verify(resolverStub);
+
+    sinon.assert.calledTwice(verifySignatureSpy);
+    sinon.assert.calledTwice(cacheSpy);
+    expect(verificationResult.signers.length).to.equal(3);
+  });
+
 });
