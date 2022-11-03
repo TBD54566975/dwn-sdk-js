@@ -26,14 +26,18 @@ export class GeneralJwsVerifier {
     const signers: string[] = [];
 
     for (const signatureEntry of this.jws.signatures) {
+      let isVerified: boolean;
       const cacheKey = `${signatureEntry.protected}.${this.jws.payload}.${signatureEntry.signature}`;
       const kid = GeneralJwsVerifier.getKid(signatureEntry);
       const publicJwk = await GeneralJwsVerifier.getPublicKey(kid, didResolver);
 
-      let isVerified = await this.cache.get(cacheKey);
-      if (isVerified === undefined) {
+      const cachedValue = await this.cache.get(cacheKey);
+
+      if (cachedValue === undefined) {
         isVerified = await GeneralJwsVerifier.verifySignature(this.jws.payload, signatureEntry, publicJwk);
-        await this.cache.set(cacheKey, isVerified);
+        await this.cache.set(cacheKey, isVerified.toString());
+      } else {
+        isVerified = cachedValue === 'true' ? true : false;
       }
 
       const did = GeneralJwsVerifier.extractDid(kid);
