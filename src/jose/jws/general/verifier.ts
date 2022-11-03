@@ -89,13 +89,6 @@ export class GeneralJwsVerifier {
 
     const { publicKeyJwk: publicJwk } = verificationMethod;
 
-    // TODO: replace with JSON Schema based validation, Issue 68 https://github.com/TBD54566975/dwn-sdk-js/issues/68
-    // more info about the `publicJwk` property can be found here:
-    // https://www.w3.org/TR/did-spec-registries/#publicJwk
-    if (!publicJwk) {
-      throw new Error(`publicKeyJwk property not found on verification method [${kid}]`);
-    }
-
     return publicJwk as PublicJwk;
   }
 
