@@ -164,7 +164,6 @@ describe('General JWS Sign/Verify', () => {
       payloadBytes,
       [
         { jwkPrivate: privateJwkEd25519, protectedHeader: protectedHeaderEd25519 },
-        { jwkPrivate: privateJwkEd25519, protectedHeader: protectedHeaderEd25519 },
         { jwkPrivate: privateJwkSecp256k1, protectedHeader: protectedHeaderSecp256k1 }
       ]
     );
@@ -196,13 +195,13 @@ describe('General JWS Sign/Verify', () => {
     const verifier = new GeneralJwsVerifier(jws);
 
     const verifySignatureSpy = sinon.spy(GeneralJwsVerifier, 'verifySignature');
-    const cacheSpy = sinon.spy(verifier.cache, 'set');
+    const cacheSetSpy = sinon.spy(verifier.cache, 'set');
 
-    const verificationResult = await verifier.verify(resolverStub);
+    await verifier.verify(resolverStub);
+    await verifier.verify(resolverStub);
 
+    sinon.assert.calledTwice(cacheSetSpy);
     sinon.assert.calledTwice(verifySignatureSpy);
-    sinon.assert.calledTwice(cacheSpy);
-    expect(verificationResult.signers.length).to.equal(3);
   });
 
 });
