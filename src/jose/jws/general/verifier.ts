@@ -37,7 +37,7 @@ export class GeneralJwsVerifier {
         isVerified = await GeneralJwsVerifier.verifySignature(this.jws.payload, signatureEntry, publicJwk);
         await this.cache.set(cacheKey, isVerified);
       } else {
-        isVerified = cachedValue === 'true' ? true : false;
+        isVerified = cachedValue;
       }
 
       const did = GeneralJwsVerifier.extractDid(kid);
