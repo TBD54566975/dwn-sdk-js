@@ -1,4 +1,4 @@
-import type { DidMethodResolver, DidResolutionResult, DIDDocument } from './did-resolver';
+import type { DidMethodResolver, DidResolutionResult, DidDocument } from './did-resolver';
 
 import varint from 'varint';
 import { base58btc } from 'multiformats/bases/base58';
@@ -68,7 +68,7 @@ export class DidKeyResolver implements DidMethodResolver {
 
       const keyId = `${did}#${id}`;
 
-      const didDocument: DIDDocument = {
+      const didDocument: DidDocument = {
         '@context': [
           'https://www.w3.org/ns/did/v1',
           'https://w3id.org/security/suites/jws-2020/v1',

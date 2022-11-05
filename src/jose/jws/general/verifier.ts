@@ -1,10 +1,10 @@
+import type { Cache } from '../../../utils/types';
 import type { GeneralJws, SignatureEntry } from './types';
 import type { PublicJwk } from '../../types';
 import type { VerificationMethod } from '../../../did/did-resolver';
 import * as encoder from '../../../utils/encoder';
-import { MemoryCache } from '../../../utils/memory-cache';
-import { Cache } from '../../../utils/types';
 import { DidResolver } from '../../../did/did-resolver';
+import { MemoryCache } from '../../../utils/memory-cache';
 import { signers as verifiers } from '../../algorithms';
 import { validate } from '../../../validation/validator';
 
@@ -33,6 +33,7 @@ export class GeneralJwsVerifier {
 
       const cachedValue = await this.cache.get(cacheKey);
 
+      // explicit strict equalities check to avoid potential buggy cache implementation causing incorrect truthy compare e.g. "false"
       if (cachedValue === undefined) {
         isVerified = await GeneralJwsVerifier.verifySignature(this.jws.payload, signatureEntry, publicJwk);
         await this.cache.set(cacheKey, isVerified);

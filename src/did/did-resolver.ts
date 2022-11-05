@@ -1,14 +1,24 @@
 import type { PublicJwk } from '../jose/types';
 import { Did } from './did';
+import { DidIonResolver } from './did-ion-resolver';
+import { DidKeyResolver } from './did-key-resolver';
 
 /**
- * TODO: add docs, Issue #72 https://github.com/TBD54566975/dwn-sdk-js/issues/72
+ * A DID resolver that by default supports `did:key` and `did:ion` DIDs.
  */
 export class DidResolver {
   didResolvers: Map<string, DidMethodResolver>;
 
   // TODO: add DIDCache to constructor method signature, Issue #62 https://github.com/TBD54566975/dwn-sdk-js/issues/62
-  constructor(resolvers: DidMethodResolver[]) {
+  constructor(resolvers?: DidMethodResolver[]) {
+    // construct default DID method resolvers if none given
+    if (resolvers === undefined || resolvers.length === 0) {
+      resolvers = [
+        new DidIonResolver(),
+        new DidKeyResolver()
+      ];
+    }
+
     this.didResolvers = new Map();
 
     for (const resolver of resolvers) {
@@ -71,7 +81,7 @@ export interface DidMethodResolver {
   resolve(did: string): Promise<DidResolutionResult>;
 }
 
-export type DIDDocument = {
+export type DidDocument = {
   '@context'?: 'https://www.w3.org/ns/did/v1' | string | string[]
   id: string
   alsoKnownAs?: string[]
@@ -85,10 +95,14 @@ export type DIDDocument = {
   capabilityDelegation?: VerificationMethod[] | string[]
 };
 
+export type DwnServiceEndpoint = {
+  nodes: string[]
+};
+
 export type ServiceEndpoint = {
   id: string
   type: string
-  serviceEndpoint: string
+  serviceEndpoint: string | DwnServiceEndpoint
   description?: string
 };
 
@@ -105,18 +119,18 @@ export type VerificationMethod = {
 
 export type DidResolutionResult = {
   '@context'?: 'https://w3id.org/did-resolution/v1' | string | string[]
-  didResolutionMetadata: DIDResolutionMetadata
-  didDocument: DIDDocument | null
-  didDocumentMetadata: DIDDocumentMetadata
+  didResolutionMetadata: DidResolutionMetadata
+  didDocument?: DidDocument
+  didDocumentMetadata: DidDocumentMetadata
 };
 
-export type DIDResolutionMetadata = {
+export type DidResolutionMetadata = {
   contentType?: string
   error?: 'invalidDid' | 'notFound' | 'representationNotSupported' |
   'unsupportedDidMethod' | string
 };
 
-export type DIDDocumentMetadata = {
+export type DidDocumentMetadata = {
   // indicates the timestamp of the Create operation. ISO8601 timestamp
   created?: string
   // indicates the timestamp of the last Update operation for the document version which was
