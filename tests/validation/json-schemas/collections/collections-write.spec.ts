@@ -220,6 +220,6 @@ describe('CollectionsWrite schema definition', () => {
 
     expect(() => {
       Message.validateJsonSchema(invalidMessage);
-    }).throws('must not have property \'datePublished\'');
+    }).throws('must have required property \'datePublished\'');
   });
 });
