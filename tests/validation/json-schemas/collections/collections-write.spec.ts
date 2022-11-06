@@ -220,4 +220,30 @@ describe('CollectionsWrite schema definition', () => {
       Message.validateJsonSchema(invalidMessage);
     }).throws('must have required property \'datePublished\'');
   });
+
+  it('should throw if published is missing and datePublished is present', () => {
+    const invalidMessage = {
+      descriptor: {
+        target        : 'did:example:anyDid',
+        method        : 'CollectionsWrite',
+        dataCid       : 'anyCid',
+        dataFormat    : 'application/json',
+        dateCreated   : 123,
+        recordId      : uuidv4(),
+        datePublished : 123 //published must be present
+      },
+      authorization: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      },
+      encodedData: 'anything'
+    };
+
+    expect(() => {
+      Message.validateJsonSchema(invalidMessage);
+    }).throws('must have required property \'published\'');
+  });
 });

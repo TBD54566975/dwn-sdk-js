@@ -70,34 +70,56 @@
       ],
       "allOf": [
         {
-          "anyOf": [
+          "allOf": [
             {
-              "properties": {
-                "published": {
-                  "type": "boolean",
-                  "enum": [
-                    true
-                  ]
-                }
-              },
-              "required": [
-                "datePublished"
-              ]
-            },
-            {
-              "properties": {
-                "published": {
-                  "type": "boolean",
-                  "enum": [
-                    false
-                  ]
-                }
-              },
               "not": {
-                "required": [
-                  "datePublished"
+                "allOf": [
+                  {
+                    "not": {
+                      "required": [
+                        "published"
+                      ]
+                    }
+                  },
+                  {
+                    "required": [
+                      "datePublished"
+                    ]
+                  }
                 ]
               }
+            },
+            {
+              "anyOf": [
+                {
+                  "properties": {
+                    "published": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "datePublished"
+                  ]
+                },
+                {
+                  "properties": {
+                    "published": {
+                      "type": "boolean",
+                      "enum": [
+                        false
+                      ]
+                    }
+                  },
+                  "not": {
+                    "required": [
+                      "datePublished"
+                    ]
+                  }
+                }
+              ]
             }
           ]
         },
