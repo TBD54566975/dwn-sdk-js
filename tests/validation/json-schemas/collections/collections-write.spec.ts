@@ -189,12 +189,12 @@ describe('CollectionsWrite schema definition', () => {
         }]
       },
       encodedData: 'anything'
-    }
+    };
 
     expect(() => {
       Message.validateJsonSchema(invalidMessage);
     }).throws('must not have property \'datePublished\'');
-  })
+  });
 
   it('should throw if published is true and datePublished is missing', () => {
     const invalidMessage = {
@@ -216,10 +216,10 @@ describe('CollectionsWrite schema definition', () => {
         }]
       },
       encodedData: 'anything'
-    }
+    };
 
     expect(() => {
       Message.validateJsonSchema(invalidMessage);
     }).throws('must have required property \'datePublished\'');
-  })
+  });
 });
