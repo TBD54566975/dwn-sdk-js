@@ -192,7 +192,7 @@ describe('CollectionsWrite schema definition', () => {
 
     expect(() => {
       Message.validateJsonSchema(invalidMessage);
-    }).throws('must not have property \'datePublished\'');
+    }).throws('published: must be equal to one of the allowed values');
   });
 
   it('should throw if published is true and datePublished is missing', () => {
