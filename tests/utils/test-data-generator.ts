@@ -76,6 +76,7 @@ export type GenerateCollectionsWriteMessageInput = {
   data?: Uint8Array;
   dataFormat?: string;
   dateCreated? : number;
+  datePublished? : number;
 };
 
 export type GenerateCollectionsWriteMessageOutput = {

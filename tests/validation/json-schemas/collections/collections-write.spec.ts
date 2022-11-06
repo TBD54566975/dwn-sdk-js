@@ -173,13 +173,12 @@ describe('CollectionsWrite schema definition', () => {
       descriptor: {
         target        : 'did:example:anyDid',
         method        : 'CollectionsWrite',
-        parentId      : 'invalid', // must have `contextId` to exist
         dataCid       : 'anyCid',
         dataFormat    : 'application/json',
         dateCreated   : 123,
         recordId      : uuidv4(),
         published     : false,
-        datePublished : 123
+        datePublished : 123 // must not be present when not published
       },
       authorization: {
         payload    : 'anyPayload',
@@ -201,12 +200,11 @@ describe('CollectionsWrite schema definition', () => {
       descriptor: {
         target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
-        parentId    : 'invalid', // must have `contextId` to exist
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
         dateCreated : 123,
         recordId    : uuidv4(),
-        published   : true
+        published   : true //datePublished must be present
       },
       authorization: {
         payload    : 'anyPayload',
