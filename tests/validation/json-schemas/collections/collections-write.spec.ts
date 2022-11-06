@@ -167,4 +167,59 @@ describe('CollectionsWrite schema definition', () => {
       Message.validateJsonSchema(invalidMessage);
     }).throws('must have required property \'contextId\'');
   });
+
+  it('should throw if published is false and datePublished is present', () => {
+    const invalidMessage = {
+      descriptor: {
+        target        : 'did:example:anyDid',
+        method        : 'CollectionsWrite',
+        parentId      : 'invalid', // must have `contextId` to exist
+        dataCid       : 'anyCid',
+        dataFormat    : 'application/json',
+        dateCreated   : 123,
+        recordId      : uuidv4(),
+        published     : false,
+        datePublished : 123
+      },
+      authorization: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      },
+      encodedData: 'anything'
+    }
+
+    expect(() => {
+      Message.validateJsonSchema(invalidMessage);
+    }).throws('must not have property \'datePublished\'');
+  })
+
+  it('should throw if published is true and datePublished is missing', () => {
+    const invalidMessage = {
+      descriptor: {
+        target        : 'did:example:anyDid',
+        method        : 'CollectionsWrite',
+        parentId      : 'invalid', // must have `contextId` to exist
+        dataCid       : 'anyCid',
+        dataFormat    : 'application/json',
+        dateCreated   : 123,
+        recordId      : uuidv4(),
+        published     : true,
+      },
+      authorization: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      },
+      encodedData: 'anything'
+    }
+
+    expect(() => {
+      Message.validateJsonSchema(invalidMessage);
+    }).throws('must have required property \'datePublished\'');
+  })
 });

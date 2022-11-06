@@ -68,28 +68,52 @@
         "dateCreated",
         "dataFormat"
       ],
-      "oneOf": [
+      "allOf": [
         {
-          "required": [
-            "parentId",
-            "contextId"
+          "anyOf": [
+            {
+              "properties": {
+                "published": true
+              },
+              "required": ["datePublished"]
+            },
+            {
+              "properties": {
+                "published": false
+              },
+              "not": {
+                "required": [
+                  "datePublished"
+                ]
+              }
+            }          
           ]
         },
         {
-          "allOf": [
+          "oneOf": [
             {
-              "not": {
-                "required": [
-                  "parentId"
-                ]
-              }
+              "required": [
+                "parentId",
+                "contextId"
+              ]
             },
             {
-              "not": {
-                "required": [
-                  "contextId"
-                ]
-              }
+              "allOf": [
+                {
+                  "not": {
+                    "required": [
+                      "parentId"
+                    ]
+                  }
+                },
+                {
+                  "not": {
+                    "required": [
+                      "contextId"
+                    ]
+                  }
+                }
+              ]
             }
           ]
         }
