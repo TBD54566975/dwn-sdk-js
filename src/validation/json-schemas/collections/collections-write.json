@@ -73,20 +73,32 @@
           "anyOf": [
             {
               "properties": {
-                "published": true
+                "published": {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
               },
-              "required": ["datePublished"]
+              "required": [
+                "datePublished"
+              ]
             },
             {
               "properties": {
-                "published": false
+                "published": {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                }
               },
               "not": {
                 "required": [
                   "datePublished"
                 ]
               }
-            }          
+            }
           ]
         },
         {
