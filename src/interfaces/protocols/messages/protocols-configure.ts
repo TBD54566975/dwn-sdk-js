@@ -1,10 +1,11 @@
 import type { AuthCreateOptions } from '../../../core/types';
 import type { ProtocolDefinition, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types';
 import { Message } from '../../../core';
+import { getCurrentDateInHighPrecision } from '../../../utils/time';
 
 export type ProtocolsConfigureOptions = AuthCreateOptions & {
   target: string;
-  dateCreated? : number;
+  dateCreated? : string;
   protocol: string;
   definition : ProtocolDefinition;
 };
@@ -20,7 +21,7 @@ export class ProtocolsConfigure extends Message {
     const descriptor: ProtocolsConfigureDescriptor = {
       target      : options.target,
       method      : 'ProtocolsConfigure',
-      dateCreated : options.dateCreated ?? Date.now(),
+      dateCreated : options.dateCreated ?? getCurrentDateInHighPrecision(),
       protocol    : options.protocol,
       definition  : options.definition
     };

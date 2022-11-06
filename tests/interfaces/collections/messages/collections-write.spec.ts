@@ -2,7 +2,7 @@ import { base64url } from 'multiformats/bases/base64';
 import { CollectionsWrite } from '../../../../src/interfaces/collections/messages/collections-write';
 import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/types';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level';
-import { sleep } from '../../../../src/utils/time';
+import { getCurrentDateInHighPrecision, sleep } from '../../../../src/utils/time';
 import { TestDataGenerator } from '../../../utils/test-data-generator';
 import { TestStubGenerator } from '../../../utils/test-stub-generator';
 import { v4 as uuidv4 } from 'uuid';
@@ -30,7 +30,7 @@ describe('CollectionsWrite', () => {
         recipient   : alice.did,
         data        : TestDataGenerator.randomBytes(10),
         dataFormat  : 'application/json',
-        dateCreated : 123,
+        dateCreated : '2022-10-14T10:20:30.405060',
         recordId    : uuidv4(),
         signatureInput
       };
@@ -72,7 +72,7 @@ describe('CollectionsWrite', () => {
 
   describe('compareCreationTime', () => {
     it('should return 0 if age is same', async () => {
-      const dateCreated = Date.now();
+      const dateCreated = getCurrentDateInHighPrecision();
       const a = (await TestDataGenerator.generateCollectionsWriteMessage({ dateCreated })).message;
       const b = JSON.parse(JSON.stringify(a)); // create a deep copy of `a`
 
@@ -101,7 +101,7 @@ describe('CollectionsWrite', () => {
 
   describe('getCid', () => {
     it('should return the same value with or without `encodedData`', async () => {
-      const dateCreated = Date.now();
+      const dateCreated = getCurrentDateInHighPrecision();
       const messageData = await TestDataGenerator.generateCollectionsWriteMessage({ dateCreated });
 
       const messageWithoutEncodedData = { ...messageData.message };

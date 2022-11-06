@@ -10,7 +10,7 @@ describe('CollectionsWrite schema definition', () => {
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
-        dateCreated : 123,
+        dateCreated : '123',
         recordId    : uuidv4(),
       },
       authorization: {
@@ -31,7 +31,7 @@ describe('CollectionsWrite schema definition', () => {
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
-        dateCreated : 123,
+        dateCreated : '123',
         recordId    : uuidv4(),
       }
     };
@@ -48,7 +48,7 @@ describe('CollectionsWrite schema definition', () => {
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
-        dateCreated : 123,
+        dateCreated : '123',
         recordId    : uuidv4(),
       },
       authorization: {
@@ -73,7 +73,7 @@ describe('CollectionsWrite schema definition', () => {
         method          : 'CollectionsWrite',
         dataCid         : 'anyCid',
         dataFormat      : 'application/json',
-        dateCreated     : 123,
+        dateCreated     : '123',
         recordId        : uuidv4(),
         unknownProperty : 'unknownProperty' // unknown property
       },
@@ -98,7 +98,7 @@ describe('CollectionsWrite schema definition', () => {
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
-        dateCreated : 123,
+        dateCreated : '123',
         recordId    : uuidv4(),
       },
       authorization: {
@@ -124,7 +124,7 @@ describe('CollectionsWrite schema definition', () => {
         contextId   : 'invalid', // must have `parentId` to exist
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
-        dateCreated : 123,
+        dateCreated : '123',
         recordId    : uuidv4(),
       },
       authorization: {
@@ -150,7 +150,7 @@ describe('CollectionsWrite schema definition', () => {
         parentId    : 'invalid', // must have `contextId` to exist
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
-        dateCreated : 123,
+        dateCreated : '123',
         recordId    : uuidv4(),
       },
       authorization: {

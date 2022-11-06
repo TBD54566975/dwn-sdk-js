@@ -35,8 +35,7 @@
           "type": "string"
         },
         "dateCreated": {
-          "type": "number",
-          "minimum": 0
+          "type": "string"
         },
         "definition": {
           "$ref": "https://identity.foundation/dwn/json-schemas/protocol-definition.json"
