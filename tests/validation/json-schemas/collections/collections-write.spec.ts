@@ -199,14 +199,14 @@ describe('CollectionsWrite schema definition', () => {
   it('should throw if published is true and datePublished is missing', () => {
     const invalidMessage = {
       descriptor: {
-        target        : 'did:example:anyDid',
-        method        : 'CollectionsWrite',
-        parentId      : 'invalid', // must have `contextId` to exist
-        dataCid       : 'anyCid',
-        dataFormat    : 'application/json',
-        dateCreated   : 123,
-        recordId      : uuidv4(),
-        published     : true,
+        target      : 'did:example:anyDid',
+        method      : 'CollectionsWrite',
+        parentId    : 'invalid', // must have `contextId` to exist
+        dataCid     : 'anyCid',
+        dataFormat  : 'application/json',
+        dateCreated : 123,
+        recordId    : uuidv4(),
+        published   : true
       },
       authorization: {
         payload    : 'anyPayload',
@@ -220,6 +220,6 @@ describe('CollectionsWrite schema definition', () => {
 
     expect(() => {
       Message.validateJsonSchema(invalidMessage);
-    }).throws('must have required property \'datePublished\'');
+    }).throws('must not have property \'datePublished\'');
   });
 });
