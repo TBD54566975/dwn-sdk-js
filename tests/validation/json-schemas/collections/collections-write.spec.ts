@@ -167,4 +167,83 @@ describe('CollectionsWrite schema definition', () => {
       Message.validateJsonSchema(invalidMessage);
     }).throws('must have required property \'contextId\'');
   });
+
+  it('should throw if published is false and datePublished is present', () => {
+    const invalidMessage = {
+      descriptor: {
+        target        : 'did:example:anyDid',
+        method        : 'CollectionsWrite',
+        dataCid       : 'anyCid',
+        dataFormat    : 'application/json',
+        dateCreated   : 123,
+        recordId      : uuidv4(),
+        published     : false,
+        datePublished : 123 // must not be present when not published
+      },
+      authorization: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      },
+      encodedData: 'anything'
+    };
+
+    expect(() => {
+      Message.validateJsonSchema(invalidMessage);
+    }).throws('published: must be equal to one of the allowed values');
+  });
+
+  it('should throw if published is true and datePublished is missing', () => {
+    const invalidMessage = {
+      descriptor: {
+        target      : 'did:example:anyDid',
+        method      : 'CollectionsWrite',
+        dataCid     : 'anyCid',
+        dataFormat  : 'application/json',
+        dateCreated : 123,
+        recordId    : uuidv4(),
+        published   : true //datePublished must be present
+      },
+      authorization: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      },
+      encodedData: 'anything'
+    };
+
+    expect(() => {
+      Message.validateJsonSchema(invalidMessage);
+    }).throws('must have required property \'datePublished\'');
+  });
+
+  it('should throw if published is missing and datePublished is present', () => {
+    const invalidMessage = {
+      descriptor: {
+        target        : 'did:example:anyDid',
+        method        : 'CollectionsWrite',
+        dataCid       : 'anyCid',
+        dataFormat    : 'application/json',
+        dateCreated   : 123,
+        recordId      : uuidv4(),
+        datePublished : 123 //published must be present
+      },
+      authorization: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      },
+      encodedData: 'anything'
+    };
+
+    expect(() => {
+      Message.validateJsonSchema(invalidMessage);
+    }).throws('must have required property \'published\'');
+  });
 });

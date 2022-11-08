@@ -76,6 +76,7 @@ export type GenerateCollectionsWriteMessageInput = {
   data?: Uint8Array;
   dataFormat?: string;
   dateCreated? : number;
+  datePublished? : number;
 };
 
 export type GenerateCollectionsWriteMessageOutput = {
@@ -256,16 +257,17 @@ export class TestDataGenerator {
     const data = input?.data ?? TestDataGenerator.randomBytes(32);
 
     const options: CollectionsWriteOptions = {
-      target      : target.did,
-      recipient   : input?.recipientDid ?? target.did, // use target if recipient is not explicitly set
-      protocol    : input?.protocol,
-      contextId   : input?.contextId,
-      schema      : input?.schema ?? TestDataGenerator.randomString(20),
-      recordId    : input?.recordId ?? uuidv4(),
-      parentId    : input?.parentId,
-      published   : input?.published,
-      dataFormat  : input?.dataFormat ?? 'application/json',
-      dateCreated : input?.dateCreated,
+      target        : target.did,
+      recipient     : input?.recipientDid ?? target.did, // use target if recipient is not explicitly set
+      protocol      : input?.protocol,
+      contextId     : input?.contextId,
+      schema        : input?.schema ?? TestDataGenerator.randomString(20),
+      recordId      : input?.recordId ?? uuidv4(),
+      parentId      : input?.parentId,
+      published     : input?.published,
+      dataFormat    : input?.dataFormat ?? 'application/json',
+      dateCreated   : input?.dateCreated,
+      datePublished : input?.datePublished,
       data,
       signatureInput
     };
