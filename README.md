@@ -4,7 +4,7 @@
 
 Code Coverage
 
-![Statements](https://img.shields.io/badge/statements-80.01%25-yellow.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-86.42%25-yellow.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-82.23%25-yellow.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-80.01%25-yellow.svg?style=flat)
+![Statements](https://img.shields.io/badge/statements-50.97%25-red.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-71.42%25-red.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-31.46%25-red.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-50.97%25-red.svg?style=flat)
 
 ## Introduction
 
@@ -13,64 +13,19 @@ This repository contains a reference implementation of Decentralized Web Node (D
 Proposals and issues for the specification itself should be submitted as pull requests to the [spec repo](https://github.com/decentralized-identity/decentralized-web-node).
 
 ## Installation
-
-Since this SDK is still in early stages, we haven't yet published to npm. Until then, we suggest using [`npm link`](https://docs.npmjs.com/cli/v8/commands/npm-link) to use this SDK in your own project. Steps:
-
 ```bash
-# clone this repo somewhere
-git clone https://github.com/TBD54566975/dwn-sdk-js.git
-cd dwn-sdk-js
-# install deps
-npm install
-# transpile typescript and build bundles
-npm run build
-
-# cd into your project dir
-cd /path/to/your/project
-# first creates a global link, and then links the global installation target into your project's node_modules folder.
-npm link ../path/to/where/you/cloned/dwn-sdk-js
-
-# profit
+npm install @tbd54566975/dwn-sdk-js
 ```
 
 ## Usage
+```javascript
+import { Dwn } from '@tbd54566975/dwn-sdk-js';
 
-### nodeJS
+// cool things
+```
+_Note: Works in both node and browser environments_
 
-- **ESM**
-
-  ```javascript
-  import { Dwn } from "dwn-sdk";
-
-  // cool things
-  ```
-
-- **CJS**
-
-  ```javascript
-  const { Dwn } = require("dwn-sdk");
-
-  // cool things
-  ```
-
-### Browser:
-
-- **UMD Bundle**
-
-  ```html
-  <script
-    type="text/javascript"
-    src="node_modules/dwn-sdk/dist/bundles/bundle.umd.js"
-  ></script>
-  ```
-
-- **ESM Bundle**
-  ```html
-  <script
-    type="text/javascript"
-    src="node_modules/dwn-sdk/dist/bundles/bundle.esm.js"
-  ></script>
-  ```
+⚠ Currently, in order to use this sdk in **node environments** you'll have to include the `--es-module-specifier-resolution=node` flag when running your javascript. 
 
 ## Project Resources
 

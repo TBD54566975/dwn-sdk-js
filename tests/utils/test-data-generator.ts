@@ -24,6 +24,7 @@ import { PrivateJwk, PublicJwk } from '../../src/jose/types';
 import { removeUndefinedProperties } from '../../src/utils/object';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1';
 import { v4 as uuidv4 } from 'uuid';
+import { getCurrentDateInHighPrecision } from '../../src/utils/time';
 
 /**
  * A logical grouping of user data used to generate test messages.
@@ -37,7 +38,7 @@ export type Persona = {
 export type GenerateProtocolsConfigureMessageInput = {
   requester?: Persona;
   target?: Persona;
-  dateCreated?: number;
+  dateCreated?: string;
   protocol?: string;
   protocolDefinition?: ProtocolDefinition;
 };
@@ -51,7 +52,7 @@ export type GenerateProtocolsConfigureMessageOutput = {
 export type GenerateProtocolsQueryMessageInput = {
   requester?: Persona;
   target?: Persona;
-  dateCreated?: number;
+  dateCreated?: string;
   filter?: {
     protocol: string;
   }
@@ -75,7 +76,8 @@ export type GenerateCollectionsWriteMessageInput = {
   published?: boolean;
   data?: Uint8Array;
   dataFormat?: string;
-  dateCreated? : number;
+  dateCreated? : string;
+  datePublished? : number;
 };
 
 export type GenerateCollectionsWriteMessageOutput = {
@@ -88,7 +90,7 @@ export type GenerateCollectionsWriteMessageOutput = {
 export type GenerateCollectionsQueryMessageInput = {
   requester?: Persona;
   target?: Persona;
-  dateCreated?: number;
+  dateCreated?: string;
   filter?: {
     recipient?: string;
     protocol?: string;
@@ -110,7 +112,7 @@ export type GenerateCollectionsQueryMessageOutput = {
 export type GenerateHooksWriteMessageInput = {
   requester?: Persona;
   target?: Persona;
-  dateCreated?: number;
+  dateCreated?: string;
   filter?: {
     method: string;
   }
@@ -256,16 +258,17 @@ export class TestDataGenerator {
     const data = input?.data ?? TestDataGenerator.randomBytes(32);
 
     const options: CollectionsWriteOptions = {
-      target      : target.did,
-      recipient   : input?.recipientDid ?? target.did, // use target if recipient is not explicitly set
-      protocol    : input?.protocol,
-      contextId   : input?.contextId,
-      schema      : input?.schema ?? TestDataGenerator.randomString(20),
-      recordId    : input?.recordId ?? uuidv4(),
-      parentId    : input?.parentId,
-      published   : input?.published,
-      dataFormat  : input?.dataFormat ?? 'application/json',
-      dateCreated : input?.dateCreated,
+      target        : target.did,
+      recipient     : input?.recipientDid ?? target.did, // use target if recipient is not explicitly set
+      protocol      : input?.protocol,
+      contextId     : input?.contextId,
+      schema        : input?.schema ?? TestDataGenerator.randomString(20),
+      recordId      : input?.recordId ?? uuidv4(),
+      parentId      : input?.parentId,
+      published     : input?.published,
+      dataFormat    : input?.dataFormat ?? 'application/json',
+      dateCreated   : input?.dateCreated,
+      datePublished : input?.datePublished,
       data,
       signatureInput
     };
@@ -356,7 +359,7 @@ export class TestDataGenerator {
     const { privateJwk } = await ed25519.generateKeyPair();
     const permissionRequest = await PermissionsRequest.create({
       target         : 'did:jank:alice',
-      dateCreated    : Date.now(),
+      dateCreated    : getCurrentDateInHighPrecision(),
       description    : 'drugs',
       grantedBy      : 'did:jank:bob',
       grantedTo      : 'did:jank:alice',

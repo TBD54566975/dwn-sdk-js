@@ -67,7 +67,7 @@ export async function validateSchema(
   const expectedDescriptorCid = await generateCid(message.descriptor);
 
   if (!providedDescriptorCid.equals(expectedDescriptorCid)) {
-    throw new Error('provided descriptorCid does not match expected CID');
+    throw new Error(`provided descriptorCid ${providedDescriptorCid} does not match expected CID ${expectedDescriptorCid}`);
   }
 
   // property bag for all properties inspected

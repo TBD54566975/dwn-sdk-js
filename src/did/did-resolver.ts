@@ -1,21 +1,29 @@
 import type { PublicJwk } from '../jose/types';
 import { Did } from './did';
 import { MemoryCache } from '../utils/memory-cache';
+import { DidIonResolver } from './did-ion-resolver';
+import { DidKeyResolver } from './did-key-resolver';
 
 /**
- * TODO: add docs, Issue #72 https://github.com/TBD54566975/dwn-sdk-js/issues/72
+ * A DID resolver that by default supports `did:key` and `did:ion` DIDs.
  */
 export class DidResolver {
   didResolvers: Map<string, DidMethodResolver>;
   cache;
-    /**
+  
+  /**
    * attempt to instantiate a cache instance with a boolean that determines whether its memorycache or not
    * expect a timeout if memory cache is wanted else defualt value is 600
-   * 
-   * 
-   * 
    */
-  constructor(resolvers: DidMethodResolver[], cache?: Cache) {
+  constructor(resolvers?: DidMethodResolver[], cache?: Cache) {
+    // construct default DID method resolvers if none given
+    if (resolvers === undefined || resolvers.length === 0) {
+      resolvers = [
+        new DidIonResolver(),
+        new DidKeyResolver()
+      ];
+    }
+
     this.didResolvers = new Map();
     this.cache = cache || new MemoryCache(600);
     for (const resolver of resolvers) {
@@ -84,7 +92,7 @@ export interface DidMethodResolver {
   resolve(did: string): Promise<DidResolutionResult>;
 }
 
-export type DIDDocument = {
+export type DidDocument = {
   '@context'?: 'https://www.w3.org/ns/did/v1' | string | string[]
   id: string
   alsoKnownAs?: string[]
@@ -98,15 +106,17 @@ export type DIDDocument = {
   capabilityDelegation?: VerificationMethod[] | string[]
 };
 
+export type DwnServiceEndpoint = {
+  nodes: string[]
+};
+
 export type ServiceEndpoint = {
   id: string
   type: string
-  serviceEndpoint: string
+  serviceEndpoint: string | DwnServiceEndpoint
   description?: string
 };
 
-// TODO: figure out if we need to support ALL verification method properties, Issue #64 https://github.com/TBD54566975/dwn-sdk-js/issues/64
-//       listed here: https://www.w3.org/TR/did-spec-registries/#verification-method-properties
 export type VerificationMethod = {
   id: string
   // one of the valid verification method types as per
@@ -116,25 +126,22 @@ export type VerificationMethod = {
   controller: string
   // a JSON Web Key that conforms to https://datatracker.ietf.org/doc/html/rfc7517
   publicKeyJwk?: PublicJwk
-  // a string representation of
-  // https://datatracker.ietf.org/doc/html/draft-multiformats-multibase-05
-  publicKeyMultibase?: string
 };
 
 export type DidResolutionResult = {
   '@context'?: 'https://w3id.org/did-resolution/v1' | string | string[]
-  didResolutionMetadata: DIDResolutionMetadata
-  didDocument: DIDDocument | null
-  didDocumentMetadata: DIDDocumentMetadata
+  didResolutionMetadata: DidResolutionMetadata
+  didDocument?: DidDocument
+  didDocumentMetadata: DidDocumentMetadata
 };
 
-export type DIDResolutionMetadata = {
+export type DidResolutionMetadata = {
   contentType?: string
   error?: 'invalidDid' | 'notFound' | 'representationNotSupported' |
   'unsupportedDidMethod' | string
 };
 
-export type DIDDocumentMetadata = {
+export type DidDocumentMetadata = {
   // indicates the timestamp of the Create operation. ISO8601 timestamp
   created?: string
   // indicates the timestamp of the last Update operation for the document version which was

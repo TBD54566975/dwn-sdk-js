@@ -7,6 +7,9 @@
   "include": [
     "dist/esm/src/**"
   ],
+  "exclude": [
+    "**/types.js"
+  ],
   "reporter": [
     "text",
     "cobertura",

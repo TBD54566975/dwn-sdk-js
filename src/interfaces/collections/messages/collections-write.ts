@@ -9,6 +9,7 @@ import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
 import { ProtocolAuthorization } from '../../../core/protocol-authorization';
 import { removeUndefinedProperties } from '../../../utils/object';
+import { getCurrentDateInHighPrecision } from '../../../utils/time';
 
 export type CollectionsWriteOptions = AuthCreateOptions & {
   target: string;
@@ -19,7 +20,7 @@ export type CollectionsWriteOptions = AuthCreateOptions & {
   recordId: string;
   parentId?: string;
   data: Uint8Array;
-  dateCreated?: number;
+  dateCreated?: string;
   published?: boolean;
   datePublished?: number;
   dataFormat: string;
@@ -44,7 +45,7 @@ export class CollectionsWrite extends Message implements Authorizable {
       recordId      : options.recordId,
       parentId      : options.parentId,
       dataCid       : dataCid.toString(),
-      dateCreated   : options.dateCreated ?? Date.now(),
+      dateCreated   : options.dateCreated ?? getCurrentDateInHighPrecision(),
       published     : options.published,
       datePublished : options.datePublished,
       dataFormat    : options.dataFormat

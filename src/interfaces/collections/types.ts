@@ -10,7 +10,7 @@ export type CollectionsWriteDescriptor = {
   recordId: string;
   parentId?: string;
   dataCid: string;
-  dateCreated: number;
+  dateCreated: string;
   published?: boolean;
   datePublished?: number;
   dataFormat: string;
@@ -24,7 +24,7 @@ export type CollectionsWriteMessage = BaseMessage & {
 export type CollectionsQueryDescriptor = {
   target: string;
   method: 'CollectionsQuery';
-  dateCreated: number;
+  dateCreated: string;
   filter: {
     recipient?: string;
     protocol?: string;

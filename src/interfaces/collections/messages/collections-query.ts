@@ -5,10 +5,11 @@ import { DidResolver } from '../../../did/did-resolver';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
 import { removeUndefinedProperties } from '../../../utils/object';
+import { getCurrentDateInHighPrecision } from '../../../utils/time';
 
 export type CollectionsQueryOptions = AuthCreateOptions & {
   target: string;
-  dateCreated?: number;
+  dateCreated?: string;
   filter: {
     recipient?: string;
     protocol?: string;
@@ -32,7 +33,7 @@ export class CollectionsQuery extends Message implements Authorizable {
     const descriptor: CollectionsQueryDescriptor = {
       target      : options.target,
       method      : 'CollectionsQuery',
-      dateCreated : options.dateCreated ?? Date.now(),
+      dateCreated : options.dateCreated ?? getCurrentDateInHighPrecision(),
       filter      : options.filter,
       dateSort    : options.dateSort
     };

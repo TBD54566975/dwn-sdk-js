@@ -45,8 +45,7 @@
           "type": "string"
         },
         "dateCreated": {
-          "type": "number",
-          "minimum": 0
+          "type": "string"
         },
         "published": {
           "type": "boolean"
@@ -68,28 +67,83 @@
         "dateCreated",
         "dataFormat"
       ],
-      "oneOf": [
+      "allOf": [
         {
-          "required": [
-            "parentId",
-            "contextId"
-          ]
-        },
-        {
-          "allOf": [
+          "$comment": "rule defining published and datePublished relationship",
+          "anyOf": [
             {
+              "properties": {
+                "published": {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              },
+              "required": [
+                "published", "datePublished"
+              ]
+            },
+            {
+              "properties": {
+                "published": {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                }
+              },
               "not": {
                 "required": [
-                  "parentId"
+                  "datePublished"
                 ]
               }
             },
             {
-              "not": {
-                "required": [
-                  "contextId"
-                ]
-              }
+              "allOf": [
+                {
+                  "not": {
+                    "required": [
+                      "published"
+                    ]
+                  }
+                },
+                {
+                  "not": {
+                    "required": [
+                      "datePublished"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "oneOf": [
+            {
+              "required": [
+                "parentId",
+                "contextId"
+              ]
+            },
+            {
+              "allOf": [
+                {
+                  "not": {
+                    "required": [
+                      "parentId"
+                    ]
+                  }
+                },
+                {
+                  "not": {
+                    "required": [
+                      "contextId"
+                    ]
+                  }
+                }
+              ]
             }
           ]
         }

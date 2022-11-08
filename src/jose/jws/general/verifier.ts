@@ -1,8 +1,10 @@
+import type { Cache } from '../../../utils/types';
 import type { GeneralJws, SignatureEntry } from './types';
 import type { PublicJwk } from '../../types';
 import type { VerificationMethod } from '../../../did/did-resolver';
 import * as encoder from '../../../utils/encoder';
 import { DidResolver } from '../../../did/did-resolver';
+import { MemoryCache } from '../../../utils/memory-cache';
 import { signers as verifiers } from '../../algorithms';
 import { validate } from '../../../validation/validator';
 
@@ -11,22 +13,34 @@ type VerificationResult = {
   signers: string[];
 };
 
-// TODO: add logic to prevent validating duplicate signatures, Issue #66 https://github.com/TBD54566975/dwn-sdk-js/issues/66
 export class GeneralJwsVerifier {
   jws: GeneralJws;
+  cache: Cache;
 
-  constructor(jws: GeneralJws) {
+  constructor(jws: GeneralJws, cache?: Cache) {
     this.jws = jws;
+    this.cache = cache || new MemoryCache(600);
   }
 
   async verify(didResolver: DidResolver): Promise<VerificationResult> {
     const signers: string[] = [];
 
     for (const signatureEntry of this.jws.signatures) {
+      let isVerified: boolean;
+      const cacheKey = `${signatureEntry.protected}.${this.jws.payload}.${signatureEntry.signature}`;
       const kid = GeneralJwsVerifier.getKid(signatureEntry);
       const publicJwk = await GeneralJwsVerifier.getPublicKey(kid, didResolver);
 
-      const isVerified = await GeneralJwsVerifier.verifySignature(this.jws.payload, signatureEntry, publicJwk);
+      const cachedValue = await this.cache.get(cacheKey);
+
+      // explicit strict equalities check to avoid potential buggy cache implementation causing incorrect truthy compare e.g. "false"
+      if (cachedValue === undefined) {
+        isVerified = await GeneralJwsVerifier.verifySignature(this.jws.payload, signatureEntry, publicJwk);
+        await this.cache.set(cacheKey, isVerified);
+      } else {
+        isVerified = cachedValue;
+      }
+
       const did = GeneralJwsVerifier.extractDid(kid);
 
       if (isVerified) {
@@ -88,13 +102,6 @@ export class GeneralJwsVerifier {
     validate('JwkVerificationMethod', verificationMethod);
 
     const { publicKeyJwk: publicJwk } = verificationMethod;
-
-    // TODO: replace with JSON Schema based validation, Issue 68 https://github.com/TBD54566975/dwn-sdk-js/issues/68
-    // more info about the `publicJwk` property can be found here:
-    // https://www.w3.org/TR/did-spec-registries/#publicJwk
-    if (!publicJwk) {
-      throw new Error(`publicKeyJwk property not found on verification method [${kid}]`);
-    }
 
     return publicJwk as PublicJwk;
   }

@@ -31,8 +31,7 @@
           "type": "string"
         },
         "dateCreated": {
-          "type": "number",
-          "minimum": 0
+          "type": "string"
         },
         "filter": {
           "type": "object",

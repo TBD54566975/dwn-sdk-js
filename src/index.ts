@@ -9,15 +9,18 @@
 //   - https://stackoverflow.com/questions/44979976/typescript-compiler-is-forgetting-to-add-file-extensions-to-es6-module-imports
 //   - https://github.com/microsoft/TypeScript/issues/40878
 //
-export type { CollectionsQueryMessage, CollectionsWriteMessage } from './interfaces/collections/types';
-export type { EventHandler } from './dwn.js';
-export type { HooksWriteMessage } from './interfaces/hooks/types';
-export type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolsQueryMessage } from './interfaces/protocols/types';
+export type { CollectionsQueryMessage, CollectionsWriteMessage } from './interfaces/collections/types.js';
+export type { HooksWriteMessage } from './interfaces/hooks/types.js';
+export type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolsQueryMessage } from './interfaces/protocols/types.js';
+export type { DwnServiceEndpoint, ServiceEndpoint, DidDocument, DidResolutionResult, DidResolutionMetadata, DidDocumentMetadata, VerificationMethod } from './did/did-resolver.js';
 export { CollectionsQuery, CollectionsQueryOptions } from './interfaces/collections/messages/collections-query.js';
 export { CollectionsWrite, CollectionsWriteOptions } from './interfaces/collections/messages/collections-write.js';
+export { DidKeyResolver } from './did/did-key-resolver.js';
+export { DidIonResolver } from './did/did-ion-resolver.js';
 export { DidResolver } from './did/did-resolver.js';
 export { Dwn } from './dwn.js';
 export { HooksWrite, HooksWriteOptions } from './interfaces/hooks/messages/hooks-write.js';
+export { PrivateJwk, PublicJwk } from './jose/types';
 export { ProtocolsConfigure, ProtocolsConfigureOptions } from './interfaces/protocols/messages/protocols-configure.js';
 export { ProtocolsQuery, ProtocolsQueryOptions } from './interfaces/protocols/messages/protocols-query.js';
 export { Response } from './core/response.js';

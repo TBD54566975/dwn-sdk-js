@@ -3,7 +3,7 @@ import type { BaseMessage } from '../../core/types';
 export type ProtocolsConfigureDescriptor = {
   target: string;
   method: 'ProtocolsConfigure';
-  dateCreated: number;
+  dateCreated: string;
   protocol: string;
   definition: ProtocolDefinition;
 };
@@ -39,7 +39,7 @@ export type ProtocolsConfigureMessage = BaseMessage & {
 export type ProtocolsQueryDescriptor = {
   target: string;
   method: 'ProtocolsQuery';
-  dateCreated: number;
+  dateCreated: string;
   filter?: {
     protocol: string;
   }
