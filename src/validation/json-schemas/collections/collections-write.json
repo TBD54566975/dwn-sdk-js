@@ -70,49 +70,48 @@
       ],
       "allOf": [
         {
-          "allOf": [
+          "anyOf": [
             {
+              "$comment": "rule defining published and datePublished relationship"
+            },
+            {
+              "properties": {
+                "published": {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              },
+              "required": [
+                "datePublished"
+              ]
+            },
+            {
+              "properties": {
+                "published": {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                }
+              },
               "not": {
-                "allOf": [
-                  {
-                    "not": {
-                      "required": [
-                        "published"
-                      ]
-                    }
-                  },
-                  {
-                    "required": [
-                      "datePublished"
-                    ]
-                  }
+                "required": [
+                  "datePublished"
                 ]
               }
             },
             {
-              "anyOf": [
+              "allOf": [
                 {
-                  "properties": {
-                    "published": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    }
-                  },
-                  "required": [
-                    "datePublished"
-                  ]
+                  "not": {
+                    "required": [
+                      "published"
+                    ]
+                  }
                 },
                 {
-                  "properties": {
-                    "published": {
-                      "type": "boolean",
-                      "enum": [
-                        false
-                      ]
-                    }
-                  },
                   "not": {
                     "required": [
                       "datePublished"
