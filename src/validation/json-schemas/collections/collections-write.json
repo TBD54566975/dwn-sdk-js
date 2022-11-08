@@ -82,7 +82,7 @@
                 }
               },
               "required": [
-                "datePublished"
+                "published", "datePublished"
               ]
             },
             {
