@@ -96,7 +96,7 @@ describe('handleCollectionsQuery()', () => {
         { requester: bob, target: alice, recipientDid: alice.did, schema, data: encoder.stringToBytes('3') }
       );
       const record4Data = await TestDataGenerator.generateCollectionsWriteMessage(
-        { requester: alice, target: alice, schema, data: encoder.stringToBytes('4'), published: true }
+        { requester: alice, target: alice, schema, data: encoder.stringToBytes('4'), published: true, datePublished: 123 }
       );
 
       await messageStore.put(record1Data.message, { author: alice.did });
