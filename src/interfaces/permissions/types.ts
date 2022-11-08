@@ -38,7 +38,7 @@ export type PermissionsRequestDescriptor = {
   description: string
   grantedTo: string
   grantedBy: string
-  method: 'PermissionsRequest'
+  method: DwnMethodName.PermissionsRequest
   objectId?: string
   scope: PermissionScope
 };
@@ -55,7 +55,7 @@ export type PermissionsGrantDescriptor = {
   description: string;
   grantedTo: string;
   grantedBy: string;
-  method: 'PermissionsGrant';
+  method: DwnMethodName.PermissionsGrant;
   objectId: string;
   permissionsRequestId?: string;
   scope: PermissionScope;

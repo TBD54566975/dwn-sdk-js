@@ -5,8 +5,8 @@ import { ProtocolsQuery } from './messages/protocols-query';
 
 export const ProtocolsInterface = {
   methodHandlers: {
-    'ProtocolsConfigure' : handleProtocolsConfigure,
-    'ProtocolsQuery'     : handleProtocolsQuery
+    DwnMethodName.ProtocolsConfigure : handleProtocolsConfigure,
+    DwnMethodName.ProtocolsQuery     : handleProtocolsQuery
   },
   messages: [
     ProtocolsConfigure,

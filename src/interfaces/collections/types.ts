@@ -3,7 +3,7 @@ import { BaseMessage } from '../../core/types';
 export type CollectionsWriteDescriptor = {
   target: string;
   recipient: string;
-  method: 'CollectionsWrite';
+  method: DwnMethodName.CollectionsWrite;
   protocol?: string;
   contextId?: string;
   schema?: string;
@@ -23,7 +23,7 @@ export type CollectionsWriteMessage = BaseMessage & {
 
 export type CollectionsQueryDescriptor = {
   target: string;
-  method: 'CollectionsQuery';
+  method: DwnMethodName.CollectionsQuery;
   dateCreated: number;
   filter: {
     recipient?: string;

@@ -53,8 +53,8 @@ export const handleCollectionsQuery: MethodHandler = async (
 async function fetchRecordsAsOwner(queryMessage: CollectionsQueryMessage, messageStore: MessageStore): Promise<BaseMessage[]> {
   // fetch all published records matching the query
   const includeCriteria = {
-    target : queryMessage.descriptor.target,
-    method : 'CollectionsWrite',
+    target : ueryMessage.descriptor.target,
+    method : DwnMethodName.CollectionsWrite',
     ...queryMessage.descriptor.filter
   };
   removeUndefinedProperties(includeCriteria);
@@ -84,7 +84,7 @@ async function fetchPublishedRecords(queryMessage: CollectionsQueryMessage, mess
   // fetch all published records matching the query
   const includeCriteria = {
     target    : queryMessage.descriptor.target,
-    method    : 'CollectionsWrite',
+    method    : DwnMethodName.CollectionsWrite,
     published : true,
     ...queryMessage.descriptor.filter
   };
@@ -103,7 +103,7 @@ async function fetchUnpublishedRecordsForRequester(queryMessage: CollectionsQuer
   const includeCriteria = {
     target    : queryMessage.descriptor.target,
     recipient : requesterDid,
-    method    : 'CollectionsWrite',
+    method    : DwnMethodName.CollectionsWrite,
     ...queryMessage.descriptor.filter
   };
   removeUndefinedProperties(includeCriteria);
@@ -126,7 +126,7 @@ async function fetchUnpublishedRecordsByRequester(queryMessage: CollectionsQuery
   const includeCriteria = {
     target : queryMessage.descriptor.target,
     author : requesterDid,
-    method : 'CollectionsWrite',
+    method : DwnMethodName.CollectionsWrite,
     ...queryMessage.descriptor.filter
   };
   removeUndefinedProperties(includeCriteria);

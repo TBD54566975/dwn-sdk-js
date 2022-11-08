@@ -25,7 +25,7 @@
         },
         "method": {
           "enum": [
-            "ProtocolsQuery"
+            "DwnMethodName.ProtocolsQuery"
           ],
           "type": "string"
         },

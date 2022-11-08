@@ -35,7 +35,7 @@ export class HooksWrite extends Message {
   static async create(options: HooksWriteOptions): Promise<HooksWrite> {
     const descriptor: HooksWriteDescriptor = {
       target      : options.target,
-      method      : 'HooksWrite',
+      method      : DwnMethodName.HooksWrite,
       dateCreated : options.dateCreated ?? Date.now(),
       uri         : options.uri,
       filter      : options.filter

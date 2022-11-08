@@ -10,7 +10,7 @@ describe('MessageStoreLevel Tests', () => {
   describe('buildIndexQueryTerms', () => {
     it('returns an array of terms based on the query object type provided', () => {
       const query = {
-        method        : 'CollectionsQuery',
+        method        : DwnMethodName.CollectionsQuery,
         schema        : 'https://schema.org/MusicPlaylist',
         objectId      : 'abcd123',
         published     : true, // boolean type
@@ -18,7 +18,7 @@ describe('MessageStoreLevel Tests', () => {
       };
 
       const expected = [
-        { FIELD: ['method'], VALUE: 'CollectionsQuery' },
+        { FIELD: ['method'], VALUE: DwnMethodName.CollectionsQuery },
         { FIELD: ['schema'], VALUE: 'https://schema.org/MusicPlaylist' },
         { FIELD: ['objectId'], VALUE: 'abcd123' },
         { FIELD: ['published'], VALUE: true },
@@ -33,7 +33,7 @@ describe('MessageStoreLevel Tests', () => {
       const query = {
         requester : 'AlBorland',
         ability   : {
-          method : 'CollectionsQuery',
+          method : DwnMethodName.CollectionsQuery,
           schema : 'https://schema.org/MusicPlaylist',
           doo    : {
             bingo: 'bongo'
@@ -43,7 +43,7 @@ describe('MessageStoreLevel Tests', () => {
 
       const expected = [
         { FIELD: ['requester'], VALUE: 'AlBorland' },
-        { FIELD: ['ability.method'], VALUE: 'CollectionsQuery' },
+        { FIELD: ['ability.method'], VALUE: DwnMethodName.CollectionsQuery },
         { FIELD: ['ability.schema'], VALUE: 'https://schema.org/MusicPlaylist' },
         { FIELD: ['ability.doo.bingo'], VALUE: 'bongo' }
       ];

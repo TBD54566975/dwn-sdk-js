@@ -31,7 +31,7 @@ export class CollectionsQuery extends Message implements Authorizable {
   static async create(options: CollectionsQueryOptions): Promise<CollectionsQuery> {
     const descriptor: CollectionsQueryDescriptor = {
       target      : options.target,
-      method      : 'CollectionsQuery',
+      method      : DwnMethodName.CollectionsQuery,
       dateCreated : options.dateCreated ?? Date.now(),
       filter      : options.filter,
       dateSort    : options.dateSort

@@ -6,7 +6,7 @@ describe('CollectionsQuery schema definition', () => {
     const validMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
-        method      : 'CollectionsQuery',
+        method      : DwnMethodName.CollectionsQuery,
         dateCreated : 123,
         filter      : { schema: 'anySchema' }
       },
@@ -25,7 +25,7 @@ describe('CollectionsQuery schema definition', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
-        method      : 'CollectionsQuery',
+        method      : DwnMethodName.CollectionsQuery,
         dateCreated : 123,
         filter      : { schema: 'anySchema' }
       }
@@ -40,7 +40,7 @@ describe('CollectionsQuery schema definition', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
-        method      : 'CollectionsQuery',
+        method      : DwnMethodName.CollectionsQuery,
         dateCreated : 123,
         filter      : { schema: 'anySchema' }
       },
@@ -63,7 +63,7 @@ describe('CollectionsQuery schema definition', () => {
     const invalidMessage = {
       descriptor: {
         target          : 'did:example:anyDid',
-        method          : 'CollectionsQuery',
+        method          : DwnMethodName.CollectionsQuery,
         dateCreated     : 123,
         filter          : { schema: 'anySchema' },
         unknownProperty : 'unknownProperty' // unknown property
@@ -86,7 +86,7 @@ describe('CollectionsQuery schema definition', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
-        method      : 'CollectionsQuery',
+        method      : DwnMethodName.CollectionsQuery,
         dateCreated : 123,
         filter      : { }
       },
@@ -111,7 +111,7 @@ describe('CollectionsQuery schema definition', () => {
       const validMessage = {
         descriptor: {
           target      : 'did:example:anyDid',
-          method      : 'CollectionsQuery',
+          method      : DwnMethodName.CollectionsQuery,
           dateCreated : 123,
           filter      : { schema: 'anySchema' },
           dateSort    : dateSortValue
@@ -132,7 +132,7 @@ describe('CollectionsQuery schema definition', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
-        method      : 'CollectionsQuery',
+        method      : DwnMethodName.CollectionsQuery,
         dateCreated : 123,
         filter      : { schema: 'anySchema' },
         dateSort    : 'unacceptable', // bad value

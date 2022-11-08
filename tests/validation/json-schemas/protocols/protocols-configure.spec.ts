@@ -23,7 +23,7 @@ describe('ProtocolsConfigure schema definition', () => {
     const message = {
       descriptor: {
         target      : 'did:example:anyDid',
-        method      : 'ProtocolsConfigure',
+        method      : DwnMethodName.ProtocolsConfigure,
         dateCreated : 123,
         protocol    : 'anyProtocolUri',
         definition  : protocolDefinition

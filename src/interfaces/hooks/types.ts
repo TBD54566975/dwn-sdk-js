@@ -4,7 +4,7 @@ import type { BaseMessage } from '../../core/types';
  * Descriptor structure for HooksWrite
  */
 export type HooksWriteDescriptor = {
-  method: 'HooksWrite';
+  method: DwnMethodName.HooksWrite;
   target: string;
   dateCreated: number;
 

@@ -37,7 +37,7 @@ export class CollectionsWrite extends Message implements Authorizable {
     const descriptor: CollectionsWriteDescriptor = {
       target        : options.target,
       recipient     : options.recipient,
-      method        : 'CollectionsWrite',
+      method        : DwnMethodName.CollectionsWrite,
       protocol      : options.protocol,
       contextId     : options.contextId,
       schema        : options.schema,

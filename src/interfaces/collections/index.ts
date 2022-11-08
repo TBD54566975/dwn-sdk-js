@@ -5,8 +5,8 @@ import { handleCollectionsWrite } from './handlers/collections-write';
 
 export const CollectionsInterface = {
   methodHandlers: {
-    'CollectionsQuery' : handleCollectionsQuery,
-    'CollectionsWrite' : handleCollectionsWrite
+    DwnMethodName.CollectionsQuery : handleCollectionsQuery,
+    DwnMethodName.CollectionsWrite : handleCollectionsWrite
   },
   messages: [
     CollectionsQuery,

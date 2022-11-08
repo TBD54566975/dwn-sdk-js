@@ -40,7 +40,7 @@ export const handleCollectionsWrite: MethodHandler = async (
     // get existing records matching the `recordId`
     const query = {
       target   : incomingMessage.descriptor.target,
-      method   : 'CollectionsWrite',
+      method   : DwnMethodName.CollectionsWrite,
       recordId : incomingMessage.descriptor.recordId
     };
     const existingMessages = await messageStore.query(query) as CollectionsWriteMessage[];

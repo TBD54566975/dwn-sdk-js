@@ -336,7 +336,7 @@ export class TestDataGenerator {
       target      : target.did,
       dateCreated : input?.dateCreated,
       signatureInput,
-      filter      : input?.filter ?? { method: 'CollectionsWrite' }, // hardcode to filter on `CollectionsWrite` if no filter is given
+      filter      : input?.filter ?? { method: DwnMethodName.CollectionsWrite }, // hardcode to filter on `CollectionsWrite` if no filter is given
     };
     removeUndefinedProperties(options);
 
@@ -360,7 +360,7 @@ export class TestDataGenerator {
       description    : 'drugs',
       grantedBy      : 'did:jank:bob',
       grantedTo      : 'did:jank:alice',
-      scope          : { method: 'CollectionsWrite' },
+      scope          : { method: DwnMethodName.CollectionsWrite },
       signatureInput : { jwkPrivate: privateJwk, protectedHeader: { alg: privateJwk.alg as string, kid: 'whatev' } }
     });
 

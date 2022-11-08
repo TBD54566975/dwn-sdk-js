@@ -7,7 +7,7 @@ describe('CollectionsWrite schema definition', () => {
     const validMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
-        method      : 'CollectionsWrite',
+        method      : DwnMethodName.CollectionsWrite,
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
         dateCreated : 123,
@@ -28,7 +28,7 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
-        method      : 'CollectionsWrite',
+        method      : DwnMethodName.CollectionsWrite,
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
         dateCreated : 123,
@@ -45,7 +45,7 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
-        method      : 'CollectionsWrite',
+        method      : DwnMethodName.CollectionsWrite,
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
         dateCreated : 123,
@@ -70,7 +70,7 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       descriptor: {
         target          : 'did:example:anyDid',
-        method          : 'CollectionsWrite',
+        method          : DwnMethodName.CollectionsWrite,
         dataCid         : 'anyCid',
         dataFormat      : 'application/json',
         dateCreated     : 123,
@@ -95,7 +95,7 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
-        method      : 'CollectionsWrite',
+        method      : DwnMethodName.CollectionsWrite,
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
         dateCreated : 123,
@@ -120,7 +120,7 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
-        method      : 'CollectionsWrite',
+        method      : DwnMethodName.CollectionsWrite,
         contextId   : 'invalid', // must have `parentId` to exist
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
@@ -146,7 +146,7 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
-        method      : 'CollectionsWrite',
+        method      : DwnMethodName.CollectionsWrite,
         parentId    : 'invalid', // must have `contextId` to exist
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',

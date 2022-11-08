@@ -16,7 +16,7 @@
       "properties": {
         "method": {
           "enum": [
-            "CollectionsWrite"
+            "DwnMethodName.CollectionsWrite"
           ],
           "type": "string"
         },

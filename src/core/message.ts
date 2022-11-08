@@ -9,11 +9,11 @@ import { GeneralJwsSigner, GeneralJwsVerifier } from '../jose/jws/general';
 import { validate } from '../validation/validator';
 
 export enum DwnMethodName {
-  CollectionsWrite = 'CollectionsWrite',
-  CollectionsQuery = 'CollectionsQuery',
-  HooksWrite = 'HooksWrite',
-  ProtocolsConfigure = 'ProtocolsConfigure',
-  ProtocolsQuery = 'ProtocolsQuery'
+  CollectionsWrite = DwnMethodName.CollectionsWrite,
+  CollectionsQuery = DwnMethodName.CollectionsQuery,
+  HooksWrite = DwnMethodName.HooksWrite,
+  ProtocolsConfigure = DwnMethodName.ProtocolsConfigure,
+  ProtocolsQuery = DwnMethodName.ProtocolsQuery
 }
 
 export abstract class Message {

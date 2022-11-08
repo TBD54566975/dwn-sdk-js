@@ -22,7 +22,7 @@ export const handleProtocolsQuery: MethodHandler = async (
   try {
     const query = {
       target : incomingMessage.descriptor.target,
-      method : 'ProtocolsConfigure',
+      method : DwnMethodName.ProtocolsConfigure,
       ...incomingMessage.descriptor.filter
     };
     removeUndefinedProperties(query);

@@ -19,7 +19,7 @@ export class ProtocolsConfigure extends Message {
   static async create(options: ProtocolsConfigureOptions): Promise<ProtocolsConfigure> {
     const descriptor: ProtocolsConfigureDescriptor = {
       target      : options.target,
-      method      : 'ProtocolsConfigure',
+      method      : DwnMethodName.ProtocolsConfigure,
       dateCreated : options.dateCreated ?? Date.now(),
       protocol    : options.protocol,
       definition  : options.definition

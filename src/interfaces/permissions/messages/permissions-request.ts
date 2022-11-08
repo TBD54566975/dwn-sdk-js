@@ -38,7 +38,7 @@ export class PermissionsRequest extends Message implements Authorizable {
       description : opts.description,
       grantedTo   : opts.grantedTo,
       grantedBy   : opts.grantedBy,
-      method      : 'PermissionsRequest',
+      method      : DwnMethodName.PermissionsRequest,
       objectId    : opts.objectId ? opts.objectId : uuidv4(),
       scope       : opts.scope,
     };
