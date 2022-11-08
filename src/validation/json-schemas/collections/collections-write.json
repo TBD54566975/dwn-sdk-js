@@ -70,10 +70,8 @@
       ],
       "allOf": [
         {
+          "$comment": "rule defining published and datePublished relationship",
           "anyOf": [
-            {
-              "$comment": "rule defining published and datePublished relationship"
-            },
             {
               "properties": {
                 "published": {
