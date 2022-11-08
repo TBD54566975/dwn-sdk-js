@@ -8,5 +8,5 @@ export function sleep(durationInMillisecond): Promise<void> {
 }
 
 export function getCurrentDateInHighPrecision(): string {
-  return (new Date().toISOString().replace('Z',Math.floor(Math.random()*(999-100+1)+100).toString())).toString();
+  return new Date().toISOString().replace('Z','000');
 }
