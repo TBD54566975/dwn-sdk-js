@@ -7,11 +7,17 @@ import { MemoryCache } from '../utils/memory-cache';
  */
 export class DidResolver {
   didResolvers: Map<string, DidMethodResolver>;
-
-  memoryCache = new MemoryCache(600);//Time to live in seconds is 10 minutes 
+  cache;
+    /**
+   * attempt to instantiate a cache instance with a boolean that determines whether its memorycache or not
+   * expect a timeout if memory cache is wanted else defualt value is 600
+   * 
+   * 
+   * 
+   */
   constructor(resolvers: DidMethodResolver[], cache?: Cache) {
     this.didResolvers = new Map();
-
+    this.cache = cache || new MemoryCache(600);
     for (const resolver of resolvers) {
       this.didResolvers.set(resolver.method(), resolver);
     }
@@ -37,10 +43,10 @@ export class DidResolver {
       throw new Error(`${didMethod} DID method not supported`);
     }
 
-    const resolutionResult = await this.memoryCache.get(did) !== undefined ? await this.memoryCache.get(did): await didResolver.resolve(did);
-    const isCached = await this.memoryCache.get(did) !== undefined;
+    const resolutionResult = await this.cache.get(did) !== undefined ? await this.cache.get(did): await didResolver.resolve(did);
+    const isCached = await this.cache.get(did) !== undefined;
     if (!isCached){
-      await this.memoryCache.set(did,resolutionResult);
+      await this.cache.set(did,resolutionResult);
     } else {
 
     }
