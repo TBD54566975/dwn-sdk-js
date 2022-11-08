@@ -12,10 +12,9 @@ export function addSchema(schemaName: string, schema): void {
 }
 
 /**
- * TODO: add JSDoc, Issue #71 https://github.com/TBD54566975/dwn-sdk-js/issues/71
- * @param schemaName
- * @param payload
- * @returns
+ * Validates the given payload using JSON schema keyed by the given schema name. Throws if the given payload fails validation.
+ * @param schemaName the schema name use to look up the JSON schema to be used for schema validation
+ * @param payload javascript object to be validated
  */
 export function validate(schemaName: string, payload: any): void {
   const validateFn = validator.getSchema(schemaName);

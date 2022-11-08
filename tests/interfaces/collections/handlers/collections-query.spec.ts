@@ -8,6 +8,7 @@ import { TestStubGenerator } from '../../../utils/test-stub-generator';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
+import { handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write';
 
 chai.use(chaiAsPromised);
 
@@ -158,24 +159,22 @@ describe('handleCollectionsQuery()', () => {
       // insert three messages into DB, two with matching schema
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
-      const protocol = 'myAwesomeProtocol';
-      const collectionsWriteMessage1Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, protocol });
-      const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: bob, target: bob, protocol });
-
-      // insert data into 2 different tenants
-      await messageStore.put(collectionsWriteMessage1Data.message, { });
-      await messageStore.put(collectionsWriteMessage2Data.message, { });
+      const schema = 'myAwesomeSchema';
+      const collectionsWriteMessage1Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, schema });
+      const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: bob, target: bob, schema });
 
       const aliceQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
         requester : alice,
         target    : alice,
-        filter    : { protocol }
+        filter    : { schema }
       });
 
-      // setting up a stub method resolver
-      const didResolverStub = TestStubGenerator.createDidResolverStub(alice);
+      // insert data into 2 different tenants
+      const didResolver = new DidResolver([new DidKeyResolver()]);
+      await handleCollectionsWrite(collectionsWriteMessage1Data.message, messageStore, didResolver);
+      await handleCollectionsWrite(collectionsWriteMessage2Data.message, messageStore, didResolver);
 
-      const reply = await handleCollectionsQuery(aliceQueryMessageData.message, messageStore, didResolverStub);
+      const reply = await handleCollectionsQuery(aliceQueryMessageData.message, messageStore, didResolver);
 
       expect(reply.status.code).to.equal(200);
       expect(reply.entries?.length).to.equal(1);

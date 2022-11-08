@@ -1,20 +1,15 @@
 {
   "name": "@tbd54566975/dwn-sdk-js",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "A reference implementation of https://identity.foundation/decentralized-web-node/spec/",
   "type": "module",
   "types": "./dist/esm/src/index.d.ts",
   "engines": {
     "node": ">= 16"
   },
-  "module": "./dist/esm/src/index.js",
-  "exports": {
-    "require": "./dist/cjs/index.js",
-    "import": "./dist/esm/src/index.js"
-  },
+  "exports": "./dist/esm/src/index.js",
   "browser": {
-    "events": "events",
-    "util": "util"
+    "./dist/esm/src/index.js": "./dist/bundles/browser.js"
   },
   "@comment files": [
     "the files property informs npm about which files we want to include in our published package.",
@@ -28,7 +23,7 @@
     "build:esm": "tsc",
     "build": "npm-run-all -l clean -p build:esm bundle",
     "clean": "rimraf dist",
-    "bundle": "node create-bundle.cjs",
+    "bundle": "node create-browser-bundle.cjs",
     "lint": "eslint . --ext .ts --max-warnings 0",
     "lint:fix": "eslint . --ext .ts --fix",
     "test:node": "tsc && c8 mocha --es-module-specifier-resolution=node \"dist/esm/tests/**/*.spec.js\" && npm run make-coverage-badges",
