@@ -24,7 +24,7 @@ describe('ProtocolsConfigure schema definition', () => {
       descriptor: {
         target      : 'did:example:anyDid',
         method      : 'ProtocolsConfigure',
-        dateCreated : 123,
+        dateCreated : '123',
         protocol    : 'anyProtocolUri',
         definition  : protocolDefinition
       },

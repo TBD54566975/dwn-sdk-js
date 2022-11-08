@@ -2,13 +2,14 @@ import type { AuthCreateOptions } from '../../../core/types';
 import type { HooksWriteDescriptor, HooksWriteMessage } from '../../hooks/types';
 import { Message } from '../../../core';
 import { removeUndefinedProperties } from '../../../utils/object';
+import { getCurrentDateInHighPrecision } from '../../../utils/time';
 
 /**
  * Input to `HookssWrite.create()`.
  */
 export type HooksWriteOptions = AuthCreateOptions & {
   target: string,
-  dateCreated?: number,
+  dateCreated?: string,
   /**
    * leave as `undefined` for customer handler.
    * ie. DWN processing will use `undefined` check to attempt to invoke the registered handler.
@@ -36,7 +37,7 @@ export class HooksWrite extends Message {
     const descriptor: HooksWriteDescriptor = {
       target      : options.target,
       method      : 'HooksWrite',
-      dateCreated : options.dateCreated ?? Date.now(),
+      dateCreated : options.dateCreated ?? getCurrentDateInHighPrecision(),
       uri         : options.uri,
       filter      : options.filter
     };

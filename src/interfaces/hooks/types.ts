@@ -6,7 +6,7 @@ import type { BaseMessage } from '../../core/types';
 export type HooksWriteDescriptor = {
   method: 'HooksWrite';
   target: string;
-  dateCreated: number;
+  dateCreated: string;
 
   /**
    * Leave as `undefined` for customer handler.

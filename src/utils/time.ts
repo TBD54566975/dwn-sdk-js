@@ -6,3 +6,7 @@
 export function sleep(durationInMillisecond): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, durationInMillisecond));
 }
+
+export function getCurrentDateInHighPrecision(): string {
+  return new Date().toISOString().replace('Z','000');
+}

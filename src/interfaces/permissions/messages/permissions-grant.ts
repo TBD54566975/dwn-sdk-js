@@ -11,10 +11,11 @@ import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
 import { PermissionsRequest, DEFAULT_CONDITIONS } from './permissions-request';
 import { v4 as uuidv4 } from 'uuid';
+import { getCurrentDateInHighPrecision } from '../../../utils/time';
 
 type PermissionsGrantOptions = AuthCreateOptions & {
   target: string,
-  dateCreated?: number;
+  dateCreated?: string;
   conditions?: PermissionConditions;
   description: string;
   grantedTo: string;
@@ -38,7 +39,7 @@ export class PermissionsGrant extends Message implements Authorizable {
 
     const descriptor: PermissionsGrantDescriptor = {
       target      : options.target,
-      dateCreated : options.dateCreated ?? Date.now(),
+      dateCreated : options.dateCreated ?? getCurrentDateInHighPrecision(),
       conditions  : mergedConditions,
       description : options.description,
       grantedTo   : options.grantedTo,

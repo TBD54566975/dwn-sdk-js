@@ -7,10 +7,11 @@ import { DidResolver } from '../../../did/did-resolver';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
 import { v4 as uuidv4 } from 'uuid';
+import { getCurrentDateInHighPrecision } from '../../../utils/time';
 
 type PermissionsRequestOptions = AuthCreateOptions & {
   target: string;
-  dateCreated?: number;
+  dateCreated?: string;
   conditions?: PermissionConditions;
   description: string;
   grantedTo: string;
@@ -33,7 +34,7 @@ export class PermissionsRequest extends Message implements Authorizable {
 
     const descriptor: PermissionsRequestDescriptor = {
       target      : opts.target,
-      dateCreated : opts.dateCreated ?? Date.now(),
+      dateCreated : opts.dateCreated ?? getCurrentDateInHighPrecision(),
       conditions  : mergedConditions,
       description : opts.description,
       grantedTo   : opts.grantedTo,

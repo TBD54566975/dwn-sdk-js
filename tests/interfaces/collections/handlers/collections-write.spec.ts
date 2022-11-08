@@ -17,6 +17,7 @@ import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 import { ProtocolDefinition } from '../../../../src';
 import { TestStubGenerator } from '../../../utils/test-stub-generator';
 import { v4 as uuidv4 } from 'uuid';
+import { getCurrentDateInHighPrecision } from '../../../../src/utils/time';
 
 chai.use(chaiAsPromised);
 
@@ -107,7 +108,7 @@ describe('handleCollectionsWrite()', () => {
       const requester = await TestDataGenerator.generatePersona();
       const target = requester;
       const recordId = uuidv4();
-      const dateCreated = Date.now();
+      const dateCreated = getCurrentDateInHighPrecision();
       const collectionsWriteMessageData1 = await TestDataGenerator.generateCollectionsWriteMessage({
         requester,
         target,
