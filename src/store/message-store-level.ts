@@ -167,7 +167,7 @@ export class MessageStoreLevel implements MessageStore {
     // 'did:example:alice'                    - ':'
     // '337970c4-52e0-4bd7-b606-bfc1d6fe2350' - '-'
     // 'application/json'                     - '/'
-    await this.index.PUT([indexDocument], { tokenSplitRegex: /.+/ });
+    await this.index.PUT([indexDocument]);
   }
 
   /**
