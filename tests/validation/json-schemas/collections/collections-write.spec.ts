@@ -244,6 +244,6 @@ describe('CollectionsWrite schema definition', () => {
 
     expect(() => {
       Message.validateJsonSchema(invalidMessage);
-    }).throws('must NOT be valid');
+    }).throws('must have required property \'published\'');
   });
 });
