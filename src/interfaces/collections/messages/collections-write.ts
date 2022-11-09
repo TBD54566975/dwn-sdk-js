@@ -40,7 +40,6 @@ export class CollectionsWrite extends Message implements Authorizable {
       recipient     : options.recipient,
       method        : 'CollectionsWrite',
       protocol      : options.protocol,
-      contextId     : options.contextId,
       schema        : options.schema,
       recordId      : options.recordId,
       parentId      : options.parentId,
@@ -55,11 +54,17 @@ export class CollectionsWrite extends Message implements Authorizable {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    Message.validateJsonSchema({ descriptor, authorization: { } });
-
     const encodedData = encoder.bytesToBase64Url(options.data);
     const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
-    const message = { descriptor, authorization, encodedData };
+    const message: CollectionsWriteMessage = {
+      descriptor,
+      authorization,
+      encodedData
+    };
+
+    if (options.contextId !== undefined) { message.contextId = options.contextId; } // assign `contextId` to message only if it is defined
+
+    Message.validateJsonSchema(message);
 
     return new CollectionsWrite(message);
   }

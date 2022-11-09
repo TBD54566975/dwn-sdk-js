@@ -116,12 +116,60 @@ describe('CollectionsWrite schema definition', () => {
     }).throws('must match pattern "^[A-Za-z0-9_-]+$"');
   });
 
-  it('should throw if contextId is set but parentId is missing', () => {
+  it('should pass if contextId and parentId are both present', () => {
+    const invalidMessage = {
+      contextId  : 'someContext', // parentId must exist
+      descriptor : {
+        target      : 'did:example:anyDid',
+        method      : 'CollectionsWrite',
+        parentId    : 'someParentId', // contextId must exist
+        dataCid     : 'anyCid',
+        dataFormat  : 'application/json',
+        dateCreated : '123',
+        recordId    : uuidv4(),
+      },
+      authorization: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      },
+      encodedData: 'anything'
+    };
+
+    Message.validateJsonSchema(invalidMessage);
+  });
+
+  it('should pass if contextId and parentId are both not present', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
-        contextId   : 'invalid', // must have `parentId` to exist
+        dataCid     : 'anyCid',
+        dataFormat  : 'application/json',
+        dateCreated : '123',
+        recordId    : uuidv4(),
+      },
+      authorization: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      },
+      encodedData: 'anything'
+    };
+
+    Message.validateJsonSchema(invalidMessage);
+  });
+
+  it('should throw if contextId is set but parentId is missing', () => {
+    const invalidMessage = {
+      contextId  : 'invalid', // must have `parentId` to exist
+      descriptor : {
+        target      : 'did:example:anyDid',
+        method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
         dateCreated : '123',

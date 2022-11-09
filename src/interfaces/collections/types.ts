@@ -5,7 +5,6 @@ export type CollectionsWriteDescriptor = {
   recipient: string;
   method: 'CollectionsWrite';
   protocol?: string;
-  contextId?: string;
   schema?: string;
   recordId: string;
   parentId?: string;
@@ -17,6 +16,7 @@ export type CollectionsWriteDescriptor = {
 };
 
 export type CollectionsWriteMessage = BaseMessage & {
+  contextId?: string;
   descriptor: CollectionsWriteDescriptor;
   encodedData?: string;
 };

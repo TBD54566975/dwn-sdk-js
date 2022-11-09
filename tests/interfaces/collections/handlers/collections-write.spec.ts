@@ -636,7 +636,7 @@ describe('handleCollectionsWrite()', () => {
         expect(reply.status.detail).to.contain('mismatching record schema');
       });
 
-      it('should look up recipient path with more than 1 ancestor in allow rule correctly', async () => {
+      it('should look up recipient path with ancestor depth of 2+ (excluding self) in allow rule correctly', async () => {
       // simulate a DEX protocol with at least 3 layers of message exchange: ask -> offer -> fulfillment
       // make sure recipient of offer can send fulfillment
 
@@ -714,7 +714,7 @@ describe('handleCollectionsWrite()', () => {
         expect(collectionsQueryReply.entries?.length).to.equal(1);
         expect((collectionsQueryReply.entries![0] as CollectionsWriteMessage).descriptor.dataCid)
           .to.equal(fulfillmentMessageData.message.descriptor.dataCid);
-      });
+      }).timeout(9999999);
 
       it('should fail authorization incoming message contains `parentId` that leads to more than one record', async () => {
         // 1. DEX protocol with at least 3 layers of message exchange: ask -> offer -> fulfillment
