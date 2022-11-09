@@ -4,6 +4,7 @@
       "DOM",
       "ES6"
     ],
+    "allowJs": true,
     "target": "es6",
     "module": "ESNext", // Required for enabling JavaScript import assertion support
     "declaration": true,
