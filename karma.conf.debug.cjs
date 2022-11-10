@@ -1,7 +1,8 @@
 // Karma is what we're using to run our tests in browser environments
 // Karma does not support .mjs
 
-const { NodeGlobalsPolyfillPlugin } = require('@esbuild-plugins/node-globals-polyfill');
+const esbuildBrowserConfig = require('./build/esbuild-browser-config.cjs');
+
 module.exports = function(config) {
   config.set({
     plugins: [
@@ -26,17 +27,7 @@ module.exports = function(config) {
       'tests/**/*.ts': ['esbuild']
     },
 
-    esbuild: {
-      mainFields : ['browser', 'module', 'main'],
-      target     : ['chrome101'],
-      plugins    : [NodeGlobalsPolyfillPlugin({
-        process: true
-      })],
-      sourcemap : true,
-      define    : {
-        'global': 'window'
-      },
-    },
+    esbuild: esbuildBrowserConfig,
 
     // list of files / patterns to exclude
     exclude: [],
