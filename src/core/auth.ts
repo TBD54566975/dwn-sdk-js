@@ -7,9 +7,6 @@ import { GeneralJws } from '../jose/jws/general/types';
 import { GeneralJwsVerifier } from '../jose/jws/general';
 import { generateCid, parseCid } from '../utils/cid';
 import { MessageStore } from '../store/message-store';
-import lodash from 'lodash';
-
-const { isPlainObject } = lodash;
 
 type AuthorizationPayloadConstraints = {
   /** permissible properties within payload. Note that `descriptorCid` is implied and does not need to be added */
@@ -48,11 +45,7 @@ export async function validateSchema(
     throw new Error('expected no more than 1 signature for authorization');
   }
 
-  const payloadJson = GeneralJwsVerifier.decodeJsonPayload(message.authorization);
-
-  if (!isPlainObject(payloadJson)) {
-    throw new Error('auth payload must be a valid JSON object');
-  }
+  const payloadJson = GeneralJwsVerifier.decodePlainObjectPayload(message.authorization);
 
   // the authorization payload should, at minimum, always contain `descriptorCid` regardless
   // of whatever else is present.

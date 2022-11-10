@@ -108,12 +108,12 @@ export class CollectionsWrite extends Message implements Authorizable {
       await authorize(message, author);
     }
 
-    // TODO: what is payload?!
     return { payload: parsedPayload, author };
   }
 
   /**
    * Validates the integrity of the message assuming the message passed basic schema validation.
+   * There is opportunity to integrate better with `validateSchema(...)`
    */
   private async validateIntegrity(): Promise<void> {
     // if the message is a root protocol message, the `contextId` must match the expected computed value
@@ -126,7 +126,12 @@ export class CollectionsWrite extends Message implements Authorizable {
       }
     }
 
-    // TODO: make sure contextId in authorization, message, and computed value all must match!
+    // if `contextId` is given in message, make sure the same `contextId` is in the `authorization`
+    if (this.message.contextId !== this.authorizationPayload.contextId) {
+      throw new Error(
+        `contextId in message ${this.message.contextId} does not match contextId in authorization: ${this.authorizationPayload.contextId}`
+      );
+    }
   }
 
   /**
@@ -141,8 +146,6 @@ export class CollectionsWrite extends Message implements Authorizable {
    * Computes the canonical ID of this message.
    */
   public static async getCanonicalId(author: string, descriptor: CollectionsWriteDescriptor): Promise<string> {
-    // TODO: add safety guard, this function should never be called unless it is a root object.
-
     const canonicalIdInput = { ...descriptor };
     delete canonicalIdInput.target;
     (canonicalIdInput as any).author = author;

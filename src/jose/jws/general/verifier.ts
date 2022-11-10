@@ -3,6 +3,7 @@ import type { GeneralJws, SignatureEntry } from './types';
 import type { PublicJwk } from '../../types';
 import type { VerificationMethod } from '../../../did/did-resolver';
 import * as encoder from '../../../utils/encoder';
+import lodash from 'lodash';
 import { DidResolver } from '../../../did/did-resolver';
 import { MemoryCache } from '../../../utils/memory-cache';
 import { signers as verifiers } from '../../algorithms';
@@ -76,7 +77,7 @@ export class GeneralJwsVerifier {
   /**
    * Gets the public key given a fully qualified key ID (`kid`).
    */
-  static async getPublicKey(kid: string, didResolver: DidResolver): Promise<PublicJwk> {
+  public static async getPublicKey(kid: string, didResolver: DidResolver): Promise<PublicJwk> {
     // `resolve` throws exception if DID is invalid, DID method is not supported,
     // or resolving DID fails
     const did = GeneralJwsVerifier.extractDid(kid);
@@ -106,7 +107,7 @@ export class GeneralJwsVerifier {
     return publicJwk as PublicJwk;
   }
 
-  static async verifySignature(base64UrlPayload: string, signatureEntry: SignatureEntry, jwkPublic: PublicJwk): Promise<boolean> {
+  public static async verifySignature(base64UrlPayload: string, signatureEntry: SignatureEntry, jwkPublic: PublicJwk): Promise<boolean> {
     const verifier = verifiers[jwkPublic.crv];
 
     if (!verifier) {
@@ -119,15 +120,22 @@ export class GeneralJwsVerifier {
     return await verifier.verify(payload, signatureBytes, jwkPublic);
   }
 
-  static decodeJsonPayload(jws: GeneralJws): any {
+  public static decodePlainObjectPayload(jws: GeneralJws): any {
+    let payloadJson;
     try {
       const payloadBytes = encoder.base64urlToBytes(jws.payload);
       const payloadString = encoder.bytesToString(payloadBytes);
-      const payloadJson = JSON.parse(payloadString);
-      return payloadJson;
+      payloadJson = JSON.parse(payloadString);
+
     } catch {
+      throw new Error('authorization payload is not a JSON object');
+    }
+
+    if (!lodash.isPlainObject(payloadJson)) {
       throw new Error('auth payload must be a valid JSON object');
     }
+
+    return payloadJson;
   }
 
   /**
