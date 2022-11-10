@@ -3,15 +3,16 @@ import { Did } from './did';
 import { DidIonResolver } from './did-ion-resolver';
 import { DidKeyResolver } from './did-key-resolver';
 import { MemoryCache } from '../utils/memory-cache';
+import { Cache } from '../utils/types';
 
 /**
  * A DID resolver that by default supports `did:key` and `did:ion` DIDs.
  */
 export class DidResolver {
   didResolvers: Map<string, DidMethodResolver>;
-
+  cache: Cache;
   // TODO: add DIDCache to constructor method signature, Issue #62 https://github.com/TBD54566975/dwn-sdk-js/issues/62
-  constructor(resolvers: DidMethodResolver[]) {
+  constructor(resolvers: DidMethodResolver[], cache? :Cache) {
     this.didResolvers = new Map();
     this.cache = cache || new MemoryCache(600);
     for (const resolver of resolvers) {
