@@ -7,7 +7,7 @@ describe('CollectionsQuery schema definition', () => {
       descriptor: {
         target      : 'did:example:anyDid',
         method      : 'CollectionsQuery',
-        dateCreated : 123,
+        dateCreated : '123',
         filter      : { schema: 'anySchema' }
       },
       authorization: {
@@ -26,7 +26,7 @@ describe('CollectionsQuery schema definition', () => {
       descriptor: {
         target      : 'did:example:anyDid',
         method      : 'CollectionsQuery',
-        dateCreated : 123,
+        dateCreated : '123',
         filter      : { schema: 'anySchema' }
       }
     };
@@ -41,7 +41,7 @@ describe('CollectionsQuery schema definition', () => {
       descriptor: {
         target      : 'did:example:anyDid',
         method      : 'CollectionsQuery',
-        dateCreated : 123,
+        dateCreated : '123',
         filter      : { schema: 'anySchema' }
       },
       authorization: {
@@ -64,7 +64,7 @@ describe('CollectionsQuery schema definition', () => {
       descriptor: {
         target          : 'did:example:anyDid',
         method          : 'CollectionsQuery',
-        dateCreated     : 123,
+        dateCreated     : '123',
         filter          : { schema: 'anySchema' },
         unknownProperty : 'unknownProperty' // unknown property
       },
@@ -87,7 +87,7 @@ describe('CollectionsQuery schema definition', () => {
       descriptor: {
         target      : 'did:example:anyDid',
         method      : 'CollectionsQuery',
-        dateCreated : 123,
+        dateCreated : '123',
         filter      : { }
       },
       authorization: {
@@ -112,7 +112,7 @@ describe('CollectionsQuery schema definition', () => {
         descriptor: {
           target      : 'did:example:anyDid',
           method      : 'CollectionsQuery',
-          dateCreated : 123,
+          dateCreated : '123',
           filter      : { schema: 'anySchema' },
           dateSort    : dateSortValue
         },
@@ -133,7 +133,7 @@ describe('CollectionsQuery schema definition', () => {
       descriptor: {
         target      : 'did:example:anyDid',
         method      : 'CollectionsQuery',
-        dateCreated : 123,
+        dateCreated : '123',
         filter      : { schema: 'anySchema' },
         dateSort    : 'unacceptable', // bad value
       },

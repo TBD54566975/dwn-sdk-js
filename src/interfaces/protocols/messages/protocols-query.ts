@@ -2,10 +2,11 @@ import type { AuthCreateOptions } from '../../../core/types';
 import type { ProtocolsQueryDescriptor, ProtocolsQueryMessage } from '../types';
 import { Message } from '../../../core';
 import { removeUndefinedProperties } from '../../../utils/object';
+import { getCurrentDateInHighPrecision } from '../../../utils/time';
 
 export type ProtocolsQueryOptions = AuthCreateOptions & {
   target: string;
-  dateCreated?: number;
+  dateCreated?: string;
   filter?: {
     protocol: string;
   }
@@ -22,7 +23,7 @@ export class ProtocolsQuery extends Message {
     const descriptor: ProtocolsQueryDescriptor = {
       target      : options.target,
       method      : 'ProtocolsQuery',
-      dateCreated : options.dateCreated ?? Date.now(),
+      dateCreated : options.dateCreated ?? getCurrentDateInHighPrecision(),
       filter      : options.filter,
     };
 

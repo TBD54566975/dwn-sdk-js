@@ -33,7 +33,7 @@ export type PermissionConditions = {
 
 export type PermissionsRequestDescriptor = {
   target: string;
-  dateCreated: number;
+  dateCreated: string;
   conditions: PermissionConditions
   description: string
   grantedTo: string
@@ -49,7 +49,7 @@ export type PermissionsRequestMessage = BaseMessage & {
 
 export type PermissionsGrantDescriptor = {
   target: string;
-  dateCreated: number;
+  dateCreated: string;
   conditions: PermissionConditions;
   delegatedFrom?: string;
   description: string;
