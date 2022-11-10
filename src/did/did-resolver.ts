@@ -1,66 +1,30 @@
 import type { PublicJwk } from '../jose/types';
-<<<<<<< HEAD
 import { Did } from './did';
-<<<<<<< HEAD
 import { DidIonResolver } from './did-ion-resolver';
 import { DidKeyResolver } from './did-key-resolver';
-=======
+import {Cache} from '../../src/utils/types';
 import { MemoryCache } from '../utils/memory-cache';
-<<<<<<< HEAD
->>>>>>> cdbff6c (added cache for didresolver)
-=======
-import { Cache } from '../utils/types';
->>>>>>> 04e11f0 (not been tested yet)
-
-=======
-import { MemoryCache } from '../utils/memory-cache';
->>>>>>> 468cc6e (added a cache for didresolver)
 /**
  * A DID resolver that by default supports `did:key` and `did:ion` DIDs.
  */
 export class DidResolver {
   didResolvers: Map<string, DidMethodResolver>;
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-<<<<<<< HEAD
-  memoryCache = new MemoryCache(86400);//Time to live in seconds is 24 hours
-  // TODO: add DIDCache to constructor method signature, Issue #62 https://github.com/TBD54566975/dwn-sdk-js/issues/62
-  constructor(resolvers?: DidMethodResolver[]) {
+  cache:Cache;
+  constructor(resolvers?: DidMethodResolver[], cache?:Cache) {
+    this.didResolvers = new Map();
+    this.cache = cache || new MemoryCache(600);
     // construct default DID method resolvers if none given
     if (resolvers === undefined || resolvers.length === 0) {
       resolvers = [
         new DidIonResolver(),
         new DidKeyResolver()
       ];
+      for (const resolver of resolvers) {
+        this.didResolvers.set(resolver.method(), resolver);
+      }
     }
-
-=======
-  memoryCache = new MemoryCache(600);//Time to live in seconds is 10 minutes 
-=======
-  cache;
-    /**
-   * attempt to instantiate a cache instance with a boolean that determines whether its memorycache or not
-   * expect a timeout if memory cache is wanted else defualt value is 600
-   * 
-   * 
-   * 
-   */
->>>>>>> 93935ec (cache)
-  constructor(resolvers: DidMethodResolver[], cache?: Cache) {
->>>>>>> db8c655 (requested changes added)
-=======
-  cache: Cache;
+  } 
   // TODO: add DIDCache to constructor method signature, Issue #62 https://github.com/TBD54566975/dwn-sdk-js/issues/62
-  constructor(resolvers: DidMethodResolver[], cache? :Cache) {
->>>>>>> 04e11f0 (not been tested yet)
-    this.didResolvers = new Map();
-    this.cache = cache || new MemoryCache(600);
-    for (const resolver of resolvers) {
-      this.didResolvers.set(resolver.method(), resolver);
-    }
-  }
-
   /**
    * attempt to resolve the DID provided using the available DidMethodResolvers
    * @throws {Error} if DID is invalid
