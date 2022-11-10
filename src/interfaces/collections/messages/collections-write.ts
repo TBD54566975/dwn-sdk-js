@@ -122,7 +122,7 @@ export class CollectionsWrite extends Message implements Authorizable {
       const expectedContextId = await this.getCanonicalId();
 
       if (this.message.contextId !== expectedContextId) {
-        throw new Error(`expecting contextId: ${expectedContextId}, but contextId in message is: ${this.message.contextId}`);
+        throw new Error(`contextId in message: ${this.message.contextId} does not match computed contextId: ${expectedContextId}`);
       }
     }
 

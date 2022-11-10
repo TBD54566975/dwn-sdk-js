@@ -24,7 +24,7 @@ describe('CollectionsWrite schema definition', () => {
     Message.validateJsonSchema(validMessage);
   });
 
-  it('should throws if `authorization` is missing', () => {
+  it('should throw if `authorization` is missing', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
@@ -41,7 +41,7 @@ describe('CollectionsWrite schema definition', () => {
     }).throws('must have required property \'authorization\'');
   });
 
-  it('should throws if unknown property is given in message', () => {
+  it('should throw if unknown property is given in message', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
@@ -66,7 +66,7 @@ describe('CollectionsWrite schema definition', () => {
     }).throws('must NOT have additional properties');
   });
 
-  it('should throws if unknown property is given in the `descriptor`', () => {
+  it('should throw if unknown property is given in the `descriptor`', () => {
     const invalidMessage = {
       descriptor: {
         target          : 'did:example:anyDid',
@@ -91,7 +91,7 @@ describe('CollectionsWrite schema definition', () => {
     }).throws('must NOT have additional properties');
   });
 
-  it('should throws if `encodedData` is not using base64url character set', () => {
+  it('should throw if `encodedData` is not using base64url character set', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
