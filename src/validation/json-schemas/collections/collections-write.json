@@ -69,7 +69,7 @@
       ],
       "allOf": [
         {
-          "$comment": "rule defining published and datePublished relationship",
+          "$comment": "rule defining `published` and `datePublished` relationship",
           "anyOf": [
             {
               "properties": {
@@ -126,13 +126,13 @@
       "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/base64url"
     }
   },
-  "$comment": "rule defining parentId and contextId relationship",
+  "$comment": "rule defining `protocol` and `contextId` relationship",
   "anyOf": [
     {
       "properties": {
         "descriptor": {
           "required": [
-            "parentId"
+            "protocol"
           ]
         }
       },
@@ -154,7 +154,7 @@
             "descriptor": {
               "not": {
                 "required": [
-                  "parentId"
+                  "protocol"
                 ]
               }
             }

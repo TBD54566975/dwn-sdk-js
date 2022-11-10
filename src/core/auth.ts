@@ -11,9 +11,9 @@ import lodash from 'lodash';
 
 const { isPlainObject } = lodash;
 
-type PayloadConstraints = {
+type AuthorizationPayloadConstraints = {
   /** permissible properties within payload. Note that `descriptorCid` is implied and does not need to be added */
-  properties: Set<string>;
+  allowedProperties: Set<string>;
 };
 
 /**
@@ -26,10 +26,10 @@ export async function canonicalAuth(
   message: BaseMessage,
   didResolver: DidResolver,
   messageStore: MessageStore,
-  payloadConstraints?: PayloadConstraints
+  authorizationPayloadConstraints?: AuthorizationPayloadConstraints
 ): Promise<AuthVerificationResult> {
   // signature verification is computationally intensive, so we're going to start by validating the payload.
-  const parsedPayload = await validateSchema(message, payloadConstraints);
+  const parsedPayload = await validateSchema(message, authorizationPayloadConstraints);
 
   const signers = await authenticate(message.authorization, didResolver);
   const author = signers[0];
@@ -41,7 +41,7 @@ export async function canonicalAuth(
 
 export async function validateSchema(
   message: BaseMessage,
-  payloadConstraints?: PayloadConstraints
+  authorizationPayloadConstraints?: AuthorizationPayloadConstraints
 ): Promise<{ descriptorCid: CID, [key: string]: CID }> {
 
   if (message.authorization.signatures.length !== 1) {
@@ -74,14 +74,14 @@ export async function validateSchema(
   // property bag for all properties inspected
   const parsedPayload = { descriptorCid: providedDescriptorCid };
 
-  payloadConstraints = payloadConstraints || { properties: new Set([]) };
+  authorizationPayloadConstraints ??= { allowedProperties: new Set([]) };
 
   // add `descriptorCid` because it's always required
-  payloadConstraints.properties.add('descriptorCid');
+  authorizationPayloadConstraints.allowedProperties.add('descriptorCid');
 
   // check to ensure that no unexpected properties exist in payload.
   for (const field in payloadJson) {
-    if (!payloadConstraints.properties.has(field)) {
+    if (!authorizationPayloadConstraints.allowedProperties.has(field)) {
       throw new Error(`${field} not allowed in auth payload.`);
     }
 

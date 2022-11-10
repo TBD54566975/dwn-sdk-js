@@ -33,7 +33,7 @@ export class GeneralJwsVerifier {
 
       const cachedValue = await this.cache.get(cacheKey);
 
-      // explicit strict equalities check to avoid potential buggy cache implementation causing incorrect truthy compare e.g. "false"
+      // explicit strict equality check to avoid potential buggy cache implementation causing incorrect truthy compare e.g. "false"
       if (cachedValue === undefined) {
         isVerified = await GeneralJwsVerifier.verifySignature(this.jws.payload, signatureEntry, publicJwk);
         await this.cache.set(cacheKey, isVerified);

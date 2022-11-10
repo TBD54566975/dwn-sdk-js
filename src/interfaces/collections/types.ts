@@ -37,6 +37,11 @@ export type CollectionsQueryDescriptor = {
   dateSort?: string;
 };
 
+export type CollectionsWriteAuthorizationPayload = {
+  contextId?: string;
+  descriptorCid: string;
+};
+
 export type CollectionsQueryMessage = BaseMessage & {
   descriptor: CollectionsQueryDescriptor;
 };

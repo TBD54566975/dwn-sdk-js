@@ -1,15 +1,17 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
-import type { CollectionsWriteDescriptor, CollectionsWriteMessage } from '../types';
+import type { CollectionsWriteAuthorizationPayload, CollectionsWriteDescriptor, CollectionsWriteMessage } from '../types';
 import * as encoder from '../../../utils/encoder';
 import { authenticate, authorize, validateSchema } from '../../../core/auth';
 import { DidResolver } from '../../../did/did-resolver';
 import { generateCid } from '../../../utils/cid';
 import { getDagCid } from '../../../utils/data';
+import { getCurrentDateInHighPrecision } from '../../../utils/time';
+import { GeneralJws, SignatureInput } from '../../../jose/jws/general/types';
+import { GeneralJwsSigner, GeneralJwsVerifier } from '../../../jose/jws/general';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
 import { ProtocolAuthorization } from '../../../core/protocol-authorization';
 import { removeUndefinedProperties } from '../../../utils/object';
-import { getCurrentDateInHighPrecision } from '../../../utils/time';
 
 export type CollectionsWriteOptions = AuthCreateOptions & {
   target: string;
@@ -50,19 +52,38 @@ export class CollectionsWrite extends Message implements Authorizable {
       dataFormat    : options.dataFormat
     };
 
+    // generate `datePublished` if the message is to be published but `datePublished` is not given
+    if (options.published === true &&
+        options.datePublished === undefined) {
+      descriptor.datePublished = Date.now();
+    }
+
     // delete all descriptor properties that are `undefined` else the code will encounter the following IPLD issue when attempting to generate CID:
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
+    const author = GeneralJwsVerifier.extractDid(options.signatureInput.protectedHeader.kid);
+
+    // `contextId` computation
+    let contextId: string | undefined;
+    if (options.contextId !== undefined) {
+      contextId = options.contextId;
+    } else { // `contextId` is undefined
+      // we compute the contextId for the caller if `protocol` is specified but not the `contextId`
+      if (descriptor.protocol !== undefined) {
+        contextId = await CollectionsWrite.getCanonicalId(author, descriptor);
+      }
+    }
+
     const encodedData = encoder.bytesToBase64Url(options.data);
-    const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
+    const authorization = await CollectionsWrite.signAsCollectionsWriteAuthorization(contextId, descriptor, options.signatureInput);
     const message: CollectionsWriteMessage = {
       descriptor,
       authorization,
       encodedData
     };
 
-    if (options.contextId !== undefined) { message.contextId = options.contextId; } // assign `contextId` to message only if it is defined
+    if (contextId !== undefined) { message.contextId = contextId; } // assign `contextId` only if it is defined
 
     Message.validateJsonSchema(message);
 
@@ -73,7 +94,9 @@ export class CollectionsWrite extends Message implements Authorizable {
     const message = this.message as CollectionsWriteMessage;
 
     // signature verification is computationally intensive, so we're going to start by validating the payload.
-    const parsedPayload = await validateSchema(message);
+    const parsedPayload = await validateSchema(message, { allowedProperties: new Set(['contextId']) });
+
+    await this.validateIntegrity();
 
     const signers = await authenticate(message.authorization, didResolver);
     const author = signers[0];
@@ -85,21 +108,70 @@ export class CollectionsWrite extends Message implements Authorizable {
       await authorize(message, author);
     }
 
+    // TODO: what is payload?!
     return { payload: parsedPayload, author };
+  }
+
+  /**
+   * Validates the integrity of the message assuming the message passed basic schema validation.
+   */
+  private async validateIntegrity(): Promise<void> {
+    // if the message is a root protocol message, the `contextId` must match the expected computed value
+    if (this.message.descriptor.protocol !== undefined &&
+        this.message.descriptor.parentId === undefined) {
+      const expectedContextId = await this.getCanonicalId();
+
+      if (this.message.contextId !== expectedContextId) {
+        throw new Error(`expecting contextId: ${expectedContextId}, but contextId in message is: ${this.message.contextId}`);
+      }
+    }
+
+    // TODO: make sure contextId in authorization, message, and computed value all must match!
   }
 
   /**
    * Computes the canonical ID of this message.
    */
   public async getCanonicalId(): Promise<string> {
-    const descriptor = { ...this.message.descriptor };
-    delete descriptor.target;
-    (descriptor as any).author = this.author;
+    const canonicalId = await CollectionsWrite.getCanonicalId(this.author, this.message.descriptor);
+    return canonicalId;
+  };
 
-    const cid = await generateCid(descriptor);
+  /**
+   * Computes the canonical ID of this message.
+   */
+  public static async getCanonicalId(author: string, descriptor: CollectionsWriteDescriptor): Promise<string> {
+    // TODO: add safety guard, this function should never be called unless it is a root object.
+
+    const canonicalIdInput = { ...descriptor };
+    delete canonicalIdInput.target;
+    (canonicalIdInput as any).author = author;
+
+    const cid = await generateCid(canonicalIdInput);
     const cidString = cid.toString();
     return cidString;
   };
+
+  /**
+   * Creates the `authorization` property for a CollectionsWrite message.
+   */
+  private static async signAsCollectionsWriteAuthorization(
+    contextId: string | undefined,
+    descriptor: CollectionsWriteDescriptor,
+    signatureInput: SignatureInput
+  ): Promise<GeneralJws> {
+    const descriptorCid = await generateCid(descriptor);
+
+    const authorizationPayload: CollectionsWriteAuthorizationPayload = { descriptorCid: descriptorCid.toString() };
+
+    if (contextId !== undefined) { authorizationPayload.contextId = contextId; } // assign `contextId` only if it is defined
+
+    const authorizationPayloadBytes = encoder.objectToBytes(authorizationPayload);
+
+    const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
+
+    return signer.getJws();
+  }
 
   /**
    * @returns newest message in the array. `undefined` if given array is empty.

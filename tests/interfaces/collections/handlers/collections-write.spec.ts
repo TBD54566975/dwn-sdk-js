@@ -714,7 +714,7 @@ describe('handleCollectionsWrite()', () => {
         expect(collectionsQueryReply.entries?.length).to.equal(1);
         expect((collectionsQueryReply.entries![0] as CollectionsWriteMessage).descriptor.dataCid)
           .to.equal(fulfillmentMessageData.message.descriptor.dataCid);
-      }).timeout(9999999);
+      });
 
       it('should fail authorization incoming message contains `parentId` that leads to more than one record', async () => {
         // 1. DEX protocol with at least 3 layers of message exchange: ask -> offer -> fulfillment

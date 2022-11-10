@@ -116,13 +116,13 @@ describe('CollectionsWrite schema definition', () => {
     }).throws('must match pattern "^[A-Za-z0-9_-]+$"');
   });
 
-  it('should pass if contextId and parentId are both present', () => {
+  it('should pass if `contextId` and `protocol` are both present', () => {
     const invalidMessage = {
-      contextId  : 'someContext', // parentId must exist
+      contextId  : 'someContext', // protocol must exist
       descriptor : {
         target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
-        parentId    : 'someParentId', // contextId must exist
+        protocol    : 'someProtocolId', // contextId must exist
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
         dateCreated : '123',
@@ -141,7 +141,7 @@ describe('CollectionsWrite schema definition', () => {
     Message.validateJsonSchema(invalidMessage);
   });
 
-  it('should pass if contextId and parentId are both not present', () => {
+  it('should pass if `contextId` and `protocol` are both not present', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
@@ -164,9 +164,9 @@ describe('CollectionsWrite schema definition', () => {
     Message.validateJsonSchema(invalidMessage);
   });
 
-  it('should throw if contextId is set but parentId is missing', () => {
+  it('should throw if `contextId` is set but `protocol` is missing', () => {
     const invalidMessage = {
-      contextId  : 'invalid', // must have `parentId` to exist
+      contextId  : 'invalid', // must have `protocol` to exist
       descriptor : {
         target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
@@ -187,15 +187,15 @@ describe('CollectionsWrite schema definition', () => {
 
     expect(() => {
       Message.validateJsonSchema(invalidMessage);
-    }).throws('must have required property \'parentId\'');
+    }).throws('must have required property \'protocol\'');
   });
 
-  it('should throw if parentId is set but contextId is missing', () => {
+  it('should throw if `protocol` is set but `contextId` is missing', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
-        parentId    : 'invalid', // must have `contextId` to exist
+        protocol    : 'invalid', // must have `contextId` to exist
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
         dateCreated : '123',
