@@ -6,7 +6,11 @@ import { DidIonResolver } from './did-ion-resolver';
 import { DidKeyResolver } from './did-key-resolver';
 =======
 import { MemoryCache } from '../utils/memory-cache';
+<<<<<<< HEAD
 >>>>>>> cdbff6c (added cache for didresolver)
+=======
+import { Cache } from '../utils/types';
+>>>>>>> 04e11f0 (not been tested yet)
 
 =======
 import { MemoryCache } from '../utils/memory-cache';
@@ -16,6 +20,7 @@ import { MemoryCache } from '../utils/memory-cache';
  */
 export class DidResolver {
   didResolvers: Map<string, DidMethodResolver>;
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 <<<<<<< HEAD
@@ -44,6 +49,11 @@ export class DidResolver {
 >>>>>>> 93935ec (cache)
   constructor(resolvers: DidMethodResolver[], cache?: Cache) {
 >>>>>>> db8c655 (requested changes added)
+=======
+  cache: Cache;
+  // TODO: add DIDCache to constructor method signature, Issue #62 https://github.com/TBD54566975/dwn-sdk-js/issues/62
+  constructor(resolvers: DidMethodResolver[], cache? :Cache) {
+>>>>>>> 04e11f0 (not been tested yet)
     this.didResolvers = new Map();
     this.cache = cache || new MemoryCache(600);
     for (const resolver of resolvers) {
