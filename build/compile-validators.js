@@ -1,3 +1,15 @@
+/**
+ * Pre-compiles Ajv validators from json schemas
+ * Ajv supports generating standalone validation functions from JSON Schemas at compile/build time.
+ * These functions can then be used during runtime to do validation without initializing Ajv.
+ * It is useful for several reasons:
+ * - to avoid dynamic code evaluation with Function constructor (used for schema compilation) -
+ *   when it is prohibited by the browser page [Content Security Policy](https://ajv.js.org/security.html#content-security-policy).
+ * - to reduce the browser bundle size - Ajv is not included in the bundle
+ * - to reduce the start-up time - the validation and compilation of schemas will happen during build time.
+ */
+
+
 import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
