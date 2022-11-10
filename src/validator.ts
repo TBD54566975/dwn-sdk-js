@@ -1,16 +1,4 @@
-import * as precompiledValidators from './precompiled-validator';
-// import Ajv from 'ajv';
-// import { schemas } from './json-schemas';
-
-// const validator = new Ajv();
-
-// for (const schemaName in schemas) {
-//   addSchema(schemaName, schemas[schemaName]);
-// }
-
-// export function addSchema(schemaName: string, schema): void {
-//   validator.addSchema(schema, schemaName);
-// }
+import * as precompiledValidators from '../generated/precompiled-validators';
 
 /**
  * Validates the given payload using JSON schema keyed by the given schema name. Throws if the given payload fails validation.
