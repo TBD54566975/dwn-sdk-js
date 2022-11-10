@@ -1,10 +1,9 @@
 import type { PublicJwk } from '../jose/types';
 import { Did } from './did';
+import { MemoryCache } from '../utils/memory-cache';
 import { DidIonResolver } from './did-ion-resolver';
 import { DidKeyResolver } from './did-key-resolver';
-import { MemoryCache } from '../utils/memory-cache';
-import { Cache } from '../utils/types';
-
+import {Cache} from 'util/types';
 /**
  * A DID resolver that by default supports `did:key` and `did:ion` DIDs.
  */
