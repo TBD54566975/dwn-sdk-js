@@ -131,6 +131,7 @@
     {
       "properties": {
         "descriptor": {
+          "type": "object",
           "required": [
             "protocol"
           ]
@@ -152,6 +153,7 @@
         {
           "properties": {
             "descriptor": {
+              "type": "object",
               "not": {
                 "required": [
                   "protocol"
