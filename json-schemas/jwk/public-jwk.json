@@ -5,6 +5,7 @@
   "not": {
     "anyOf": [
       {
+        "type": "object",
         "properties": {
           "kty": {
             "const": "EC"
@@ -13,6 +14,7 @@
         "anyOf": [{ "required": ["d"] }]
       },
       {
+        "type": "object",
         "properties": {
           "kty": {
             "const": "OKP"
@@ -21,6 +23,7 @@
         "anyOf": [{ "required": ["d"] }]
       },
       {
+        "type": "object",
         "properties": {
           "kty": {
             "const": "RSA"

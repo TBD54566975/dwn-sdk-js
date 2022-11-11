@@ -3,7 +3,6 @@ import type { DidMethodResolver } from './did/did-resolver';
 import type { Interface, MethodHandler } from './interfaces/types';
 import type { MessageStore } from './store/message-store';
 import * as encoder from '../src/utils/encoder';
-import { addSchema } from './validation/validator';
 import { CollectionsInterface, PermissionsInterface, ProtocolsInterface } from './interfaces';
 import { DidResolver } from './did/did-resolver';
 import { MessageReply, Request, Response } from './core';
@@ -29,7 +28,7 @@ export class Dwn {
     config.messageStore ??= new MessageStoreLevel();
     config.interfaces ??= [];
 
-    for (const { methodHandlers, schemas } of config.interfaces) {
+    for (const { methodHandlers } of config.interfaces) {
 
       for (const messageType in methodHandlers) {
         if (Dwn.methodHandlers[messageType]) {
@@ -37,10 +36,6 @@ export class Dwn {
         } else {
           Dwn.methodHandlers[messageType] = methodHandlers[messageType];
         }
-      }
-
-      for (const schemaName in schemas) {
-        addSchema(schemaName, schemas[schemaName]);
       }
     }
 

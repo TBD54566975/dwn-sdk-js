@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { validate } from '../../../../src/validation/validator';
+import { validate } from '../../../../src/validator';
 import { signers } from '../../../../src/jose/algorithms';
 
 const { Ed25519, secp256k1 } = signers;
