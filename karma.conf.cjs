@@ -1,7 +1,7 @@
 // Karma is what we're using to run our tests in browser environments
 // Karma does not support .mjs
 
-const esbuildBrowserConfig = require('./esbuild-browser-config.cjs');
+const esbuildBrowserConfig = require('./build/esbuild-browser-config.cjs');
 
 module.exports = function(config) {
   config.set({

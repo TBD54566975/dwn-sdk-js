@@ -7,7 +7,7 @@ import lodash from 'lodash';
 import { DidResolver } from '../../../did/did-resolver';
 import { MemoryCache } from '../../../utils/memory-cache';
 import { signers as verifiers } from '../../algorithms';
-import { validate } from '../../../validation/validator';
+import { validate } from '../../../validator';
 
 type VerificationResult = {
   /** DIDs of all signers */

@@ -6,7 +6,7 @@ import { CollectionsWriteMessage } from '../interfaces/collections/types';
 import { compareCids, generateCid } from '../utils/cid';
 import { GeneralJws } from '../jose/jws/general/types';
 import { GeneralJwsSigner, GeneralJwsVerifier } from '../jose/jws/general';
-import { validate } from '../validation/validator';
+import { validate } from '../validator';
 
 export enum DwnMethodName {
   CollectionsWrite = 'CollectionsWrite',
