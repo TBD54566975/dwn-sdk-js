@@ -17,3 +17,5 @@ TEST-INDEX
 # folders used by code coverage
 .nyc_output/
 coverage
+
+generated

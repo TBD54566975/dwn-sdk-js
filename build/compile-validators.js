@@ -9,13 +9,13 @@
  * - to reduce the start-up time - the validation and compilation of schemas will happen during build time.
  */
 
-
 import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
 
 import Ajv from 'ajv';
 import standaloneCode from 'ajv/dist/standalone';
+import mkdirp from 'mkdirp';
 
 import CollectionsQuery from '../json-schemas/collections/collections-query.json' assert { type: 'json' };
 import CollectionsWrite from '../json-schemas/collections/collections-write.json' assert { type: 'json' };
@@ -63,4 +63,5 @@ const moduleCode = standaloneCode(ajv);
 
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
+await mkdirp(path.join(__dirname, '../generated'));
 fs.writeFileSync(path.join(__dirname, '../generated/precompiled-validators.js'), moduleCode);
