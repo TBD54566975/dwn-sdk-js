@@ -12,6 +12,12 @@ export class DidResolver {
   cache:Cache;
   constructor(resolvers?: DidMethodResolver[], cache?:Cache) {
     this.didResolvers = new Map();
+    if (resolvers === undefined || resolvers.length === 0) {
+      resolvers = [
+        new DidIonResolver(),
+        new DidKeyResolver()
+      ];
+    }
     this.cache = cache || new MemoryCache(600);
     // construct default DID method resolvers if none given
     if (resolvers === undefined || resolvers.length === 0) {
