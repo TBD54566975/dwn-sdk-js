@@ -1,5 +1,5 @@
 import { RequestSchema } from './types';
-import { validate } from '../validation/validator';
+import { validate } from '../validator';
 
 export class Request {
   /**

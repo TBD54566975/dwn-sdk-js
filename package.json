@@ -1,6 +1,6 @@
 {
   "name": "@tbd54566975/dwn-sdk-js",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "A reference implementation of https://identity.foundation/decentralized-web-node/spec/",
   "type": "module",
   "types": "./dist/esm/src/index.d.ts",
@@ -21,17 +21,18 @@
   ],
   "scripts": {
     "build:esm": "tsc",
-    "build": "npm-run-all -l clean -p build:esm bundle",
-    "clean": "rimraf dist",
-    "bundle": "node create-browser-bundle.cjs",
+    "build": "npm-run-all -l clean compile-validators -p build:esm bundle",
+    "bundle": "node ./build/create-browser-bundle.cjs",
+    "clean": "rimraf dist && rimraf generated/*",
+    "compile-validators": "node --es-module-specifier-resolution=node ./build/compile-validators.js",
     "lint": "eslint . --ext .ts --max-warnings 0",
     "lint:fix": "eslint . --ext .ts --fix",
-    "test:node": "tsc && c8 mocha --es-module-specifier-resolution=node \"dist/esm/tests/**/*.spec.js\" && npm run make-coverage-badges",
-    "test:node:ci": "tsc && c8 mocha --es-module-specifier-resolution=node \"dist/esm/tests/**/*.spec.js\"",
-    "test:browser": "cross-env karma start karma.conf.cjs",
-    "test:browser-debug": "cross-env karma start karma.conf.debug.cjs",
     "make-coverage-badges": "istanbul-badges-readme",
-    "make-coverage-badges:ci": "npm run make-coverage-badges -- --ci"
+    "make-coverage-badges:ci": "npm run make-coverage-badges -- --ci",
+    "test:node": "npm run compile-validators && tsc && c8 mocha --es-module-specifier-resolution=node \"dist/esm/tests/**/*.spec.js\" && npm run make-coverage-badges",
+    "test:node:ci": "npm run compile-validators && tsc && c8 mocha --es-module-specifier-resolution=node \"dist/esm/tests/**/*.spec.js\"",
+    "test:browser": "npm run compile-validators && cross-env karma start karma.conf.cjs",
+    "test:browser-debug": "npm run compile-validators && cross-env karma start karma.conf.debug.cjs"
   },
   "dependencies": {
     "@ipld/dag-cbor": "7.0.1",
@@ -83,6 +84,7 @@
     "karma-mocha": "2.0.1",
     "karma-mocha-reporter": "2.2.5",
     "mocha": "10.1.0",
+    "mkdirp": "1.0.4",
     "mockdate": "3.0.5",
     "ms": "2.1.3",
     "npm-run-all": "4.1.5",
