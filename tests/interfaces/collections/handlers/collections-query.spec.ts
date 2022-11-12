@@ -222,4 +222,3 @@ describe('handleCollectionsQuery()', () => {
     expect(reply.status.detail).to.equal('`dateSort` not implemented');
   });
 });
-
