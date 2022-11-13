@@ -9,6 +9,6 @@ module.exports = {
   target      : ['chrome101'],
   plugins     : [NodeGlobalsPolyfillPlugin()],
   define      : {
-    'global': 'window'
+    'global': 'globalThis'
   }
 };
