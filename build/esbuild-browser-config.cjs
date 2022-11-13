@@ -7,8 +7,8 @@ module.exports = {
   sourcemap   : true,
   platform    : 'browser',
   target      : ['chrome101'],
-  plugins     : [NodeGlobalsPolyfillPlugin({ process: true })],
+  plugins     : [NodeGlobalsPolyfillPlugin()],
   define      : {
-    'global': 'window'
+    'global': 'globalThis'
   }
 };
