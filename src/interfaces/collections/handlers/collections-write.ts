@@ -4,6 +4,7 @@ import * as encoder from '../../../utils/encoder';
 import { CollectionsWrite } from '../messages/collections-write';
 import { getDagCid } from '../../../utils/data';
 import { MessageReply } from '../../../core';
+import { DwnMethodName } from '../../../core/message';
 
 export const handleCollectionsWrite: MethodHandler = async (
   message,
@@ -40,7 +41,7 @@ export const handleCollectionsWrite: MethodHandler = async (
     // get existing records matching the `recordId`
     const query = {
       target   : incomingMessage.descriptor.target,
-      method   : 'CollectionsWrite',
+      method   : DwnMethodName.CollectionsWrite,
       recordId : incomingMessage.descriptor.recordId
     };
     const existingMessages = await messageStore.query(query) as CollectionsWriteMessage[];

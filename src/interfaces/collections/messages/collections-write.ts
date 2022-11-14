@@ -10,6 +10,7 @@ import { MessageStore } from '../../../store/message-store';
 import { ProtocolAuthorization } from '../../../core/protocol-authorization';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { getCurrentDateInHighPrecision } from '../../../utils/time';
+import { DwnMethodName } from '../../../core/message';
 
 export type CollectionsWriteOptions = AuthCreateOptions & {
   target: string;
@@ -38,7 +39,7 @@ export class CollectionsWrite extends Message implements Authorizable {
     const descriptor: CollectionsWriteDescriptor = {
       target        : options.target,
       recipient     : options.recipient,
-      method        : 'CollectionsWrite',
+      method        : DwnMethodName.CollectionsWrite,
       protocol      : options.protocol,
       contextId     : options.contextId,
       schema        : options.schema,

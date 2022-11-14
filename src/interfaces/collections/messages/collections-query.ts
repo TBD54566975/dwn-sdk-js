@@ -6,6 +6,7 @@ import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { getCurrentDateInHighPrecision } from '../../../utils/time';
+import { DwnMethodName } from '../../../core/message';
 
 export type CollectionsQueryOptions = AuthCreateOptions & {
   target: string;
@@ -32,7 +33,7 @@ export class CollectionsQuery extends Message implements Authorizable {
   static async create(options: CollectionsQueryOptions): Promise<CollectionsQuery> {
     const descriptor: CollectionsQueryDescriptor = {
       target      : options.target,
-      method      : 'CollectionsQuery',
+      method      : DwnMethodName.CollectionsQuery,
       dateCreated : options.dateCreated ?? getCurrentDateInHighPrecision(),
       filter      : options.filter,
       dateSort    : options.dateSort

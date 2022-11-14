@@ -1,10 +1,13 @@
 import { CollectionsWriteMessage } from '../interfaces/collections/types';
 import { MessageStore } from '../store/message-store';
 import { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types';
+import { DwnMethodName } from './message';
+
 
 const methodToAllowedActionMap = {
-  'CollectionsWrite': 'write',
+  methodString : 'write',
 };
+methodToAllowedActionMap.methodString = DwnMethodName.CollectionsWrite;
 
 export class ProtocolAuthorization {
 
@@ -52,7 +55,7 @@ export class ProtocolAuthorization {
     // fetch the corresponding protocol definition
     const query = {
       target   : message.descriptor.target,
-      method   : 'ProtocolsConfigure',
+      method   : DwnMethodName.ProtocolsConfigure,
       protocol : protocolUri
     };
     const protocols = await messageStore.query(query) as ProtocolsConfigureMessage[];
@@ -82,7 +85,7 @@ export class ProtocolAuthorization {
       // fetch parent
       const query = {
         target   : message.descriptor.target,
-        method   : 'CollectionsWrite',
+        method   : DwnMethodName.CollectionsWrite,
         protocol,
         contextId,
         recordId : currentParentId
