@@ -5,9 +5,9 @@ import { DwnMethodName } from './message';
 
 
 const methodToAllowedActionMap = {
-  methodString : 'write',
+  CollectionsWriteMethodString: 'write',
 };
-methodToAllowedActionMap.methodString = DwnMethodName.CollectionsWrite;
+methodToAllowedActionMap.CollectionsWriteMethodString = DwnMethodName.CollectionsWrite;
 
 export class ProtocolAuthorization {
 
