@@ -3,11 +3,9 @@ import { MessageStore } from '../store/message-store';
 import { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types';
 import { DwnMethodName } from './message';
 
-
 const methodToAllowedActionMap = {
-  CollectionsWriteMethodString: 'write',
+  'CollectionsWrite': 'write',
 };
-methodToAllowedActionMap.CollectionsWriteMethodString = DwnMethodName.CollectionsWrite;
 
 export class ProtocolAuthorization {
 
