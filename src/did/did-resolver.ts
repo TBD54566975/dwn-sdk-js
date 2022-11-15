@@ -1,16 +1,17 @@
 import type { PublicJwk } from '../jose/types';
 import { Did } from './did';
+import { MemoryCache } from '../utils/memory-cache';
 import { DidIonResolver } from './did-ion-resolver';
 import { DidKeyResolver } from './did-key-resolver';
-import {Cache} from '../../src/utils/types';
-import { MemoryCache } from '../utils/memory-cache';
+import { Cache } from '../utils/types';
 /**
  * A DID resolver that by default supports `did:key` and `did:ion` DIDs.
  */
 export class DidResolver {
   didResolvers: Map<string, DidMethodResolver>;
-  cache:Cache;
-  constructor(resolvers?: DidMethodResolver[], cache?:Cache) {
+  cache: Cache;
+  // TODO: add DIDCache to constructor method signature, Issue #62 https://github.com/TBD54566975/dwn-sdk-js/issues/62
+  constructor(resolvers?: DidMethodResolver[], cache? :Cache) {
     this.didResolvers = new Map();
     if (resolvers === undefined || resolvers.length === 0) {
       resolvers = [
