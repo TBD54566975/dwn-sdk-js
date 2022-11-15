@@ -13,12 +13,6 @@ export class DidResolver {
   // TODO: add DIDCache to constructor method signature, Issue #62 https://github.com/TBD54566975/dwn-sdk-js/issues/62
   constructor(resolvers?: DidMethodResolver[], cache? :Cache) {
     this.didResolvers = new Map();
-    if (resolvers === undefined || resolvers.length === 0) {
-      resolvers = [
-        new DidIonResolver(),
-        new DidKeyResolver()
-      ];
-    }
     this.cache = cache || new MemoryCache(600);
     // construct default DID method resolvers if none given
     if (resolvers === undefined || resolvers.length === 0) {

@@ -3,13 +3,7 @@ import type { DidMethodResolver } from './did/did-resolver';
 import type { Interface, MethodHandler } from './interfaces/types';
 import type { MessageStore } from './store/message-store';
 import * as encoder from '../src/utils/encoder';
-<<<<<<< HEAD
 import { CollectionsInterface, PermissionsInterface, ProtocolsInterface } from './interfaces';
-=======
-import { addSchema } from './validation/validator';
-import { CollectionsInterface, PermissionsInterface } from './interfaces';
-import { DidKeyResolver } from './did/did-key-resolver';
->>>>>>> 43906c4 (changes requested from PR)
 import { DidResolver } from './did/did-resolver';
 import { MessageReply, Request, Response } from './core';
 import { MessageStoreLevel } from './store/message-store-level';
