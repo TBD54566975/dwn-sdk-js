@@ -4,7 +4,7 @@ import { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '
 import { DwnMethodName } from './message';
 
 const methodToAllowedActionMap = {
-  'CollectionsWrite': 'write',
+  [DwnMethodName.CollectionsWrite]: 'write',
 };
 
 export class ProtocolAuthorization {
