@@ -6,8 +6,8 @@ import { DwnMethodName } from '../../core/message';
 
 export const CollectionsInterface = {
   methodHandlers: {
-    [DwnMethodName.CollectionsQuery]: handleCollectionsQuery,
-    [DwnMethodName.CollectionsWrite]: handleCollectionsWrite
+    [DwnMethodName.CollectionsQuery] : handleCollectionsQuery,
+    [DwnMethodName.CollectionsWrite] : handleCollectionsWrite
   },
   messages: [
     CollectionsQuery,
