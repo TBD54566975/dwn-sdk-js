@@ -99,6 +99,8 @@ export async function authenticate(jws: GeneralJws, didResolver: DidResolver): P
   // TODO: should we add an explicit check to ensure that there's only 1 signer?, Issue #65 https://github.com/TBD54566975/dwn-sdk-js/issues/65
   const verifier = new GeneralJwsVerifier(jws);
   const { signers } = await verifier.verify(didResolver);
+  if (signers.length!=1)
+    throw new Error('There must be just 1 signer');
   return signers;
 }
 
