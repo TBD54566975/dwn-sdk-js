@@ -8,6 +8,9 @@
     "descriptor"
   ],
   "properties": {
+    "contextId": {
+      "type": "string"
+    },
     "authorization": {
       "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
     },
@@ -29,9 +32,6 @@
         "protocol": {
           "type": "string"
         },
-        "contextId": {
-          "type": "string"
-        },
         "schema": {
           "type": "string"
         },
@@ -39,7 +39,7 @@
           "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/uuid"
         },
         "parentId": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/uuid"
+          "type": "string"
         },
         "dataCid": {
           "type": "string"
@@ -69,7 +69,7 @@
       ],
       "allOf": [
         {
-          "$comment": "rule defining published and datePublished relationship",
+          "$comment": "rule defining `published` and `datePublished` relationship",
           "anyOf": [
             {
               "properties": {
@@ -81,7 +81,8 @@
                 }
               },
               "required": [
-                "published", "datePublished"
+                "published",
+                "datePublished"
               ]
             },
             {
@@ -118,39 +119,50 @@
               ]
             }
           ]
-        },
-        {
-          "oneOf": [
-            {
-              "required": [
-                "parentId",
-                "contextId"
-              ]
-            },
-            {
-              "allOf": [
-                {
-                  "not": {
-                    "required": [
-                      "parentId"
-                    ]
-                  }
-                },
-                {
-                  "not": {
-                    "required": [
-                      "contextId"
-                    ]
-                  }
-                }
-              ]
-            }
-          ]
         }
       ]
     },
     "encodedData": {
       "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/base64url"
     }
-  }
+  },
+  "$comment": "rule defining `protocol` and `contextId` relationship",
+  "anyOf": [
+    {
+      "properties": {
+        "descriptor": {
+          "type": "object",
+          "required": [
+            "protocol"
+          ]
+        }
+      },
+      "required": [
+        "contextId"
+      ]
+    },
+    {
+      "allOf": [
+        {
+          "not": {
+            "required": [
+              "contextId"
+            ]
+          }
+        },
+        {
+          "properties": {
+            "descriptor": {
+              "type": "object",
+              "not": {
+                "required": [
+                  "protocol"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
 }

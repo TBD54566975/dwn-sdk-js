@@ -24,7 +24,7 @@ describe('CollectionsWrite schema definition', () => {
     Message.validateJsonSchema(validMessage);
   });
 
-  it('should throws if `authorization` is missing', () => {
+  it('should throw if `authorization` is missing', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
@@ -41,7 +41,7 @@ describe('CollectionsWrite schema definition', () => {
     }).throws('must have required property \'authorization\'');
   });
 
-  it('should throws if unknown property is given in message', () => {
+  it('should throw if unknown property is given in message', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
@@ -66,7 +66,7 @@ describe('CollectionsWrite schema definition', () => {
     }).throws('must NOT have additional properties');
   });
 
-  it('should throws if unknown property is given in the `descriptor`', () => {
+  it('should throw if unknown property is given in the `descriptor`', () => {
     const invalidMessage = {
       descriptor: {
         target          : 'did:example:anyDid',
@@ -91,7 +91,7 @@ describe('CollectionsWrite schema definition', () => {
     }).throws('must NOT have additional properties');
   });
 
-  it('should throws if `encodedData` is not using base64url character set', () => {
+  it('should throw if `encodedData` is not using base64url character set', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
@@ -116,12 +116,60 @@ describe('CollectionsWrite schema definition', () => {
     }).throws('must match pattern "^[A-Za-z0-9_-]+$"');
   });
 
-  it('should throw if contextId is set but parentId is missing', () => {
+  it('should pass if `contextId` and `protocol` are both present', () => {
+    const invalidMessage = {
+      contextId  : 'someContext', // protocol must exist
+      descriptor : {
+        target      : 'did:example:anyDid',
+        method      : 'CollectionsWrite',
+        protocol    : 'someProtocolId', // contextId must exist
+        dataCid     : 'anyCid',
+        dataFormat  : 'application/json',
+        dateCreated : '123',
+        recordId    : uuidv4(),
+      },
+      authorization: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      },
+      encodedData: 'anything'
+    };
+
+    Message.validateJsonSchema(invalidMessage);
+  });
+
+  it('should pass if `contextId` and `protocol` are both not present', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
-        contextId   : 'invalid', // must have `parentId` to exist
+        dataCid     : 'anyCid',
+        dataFormat  : 'application/json',
+        dateCreated : '123',
+        recordId    : uuidv4(),
+      },
+      authorization: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      },
+      encodedData: 'anything'
+    };
+
+    Message.validateJsonSchema(invalidMessage);
+  });
+
+  it('should throw if `contextId` is set but `protocol` is missing', () => {
+    const invalidMessage = {
+      contextId  : 'invalid', // must have `protocol` to exist
+      descriptor : {
+        target      : 'did:example:anyDid',
+        method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
         dateCreated : '123',
@@ -139,15 +187,15 @@ describe('CollectionsWrite schema definition', () => {
 
     expect(() => {
       Message.validateJsonSchema(invalidMessage);
-    }).throws('must have required property \'parentId\'');
+    }).throws('must have required property \'protocol\'');
   });
 
-  it('should throw if parentId is set but contextId is missing', () => {
+  it('should throw if `protocol` is set but `contextId` is missing', () => {
     const invalidMessage = {
       descriptor: {
         target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
-        parentId    : 'invalid', // must have `contextId` to exist
+        protocol    : 'invalid', // must have `contextId` to exist
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
         dateCreated : '123',
