@@ -27,7 +27,6 @@ import { PrivateJwk, PublicJwk } from '../../src/jose/types';
 import { removeUndefinedProperties } from '../../src/utils/object';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1';
 import { sha256 } from 'multiformats/hashes/sha2';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * A logical grouping of user data used to generate test messages.
