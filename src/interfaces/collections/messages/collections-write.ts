@@ -1,7 +1,7 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
 import type { CollectionsWriteAuthorizationPayload, CollectionsWriteDescriptor, CollectionsWriteMessage } from '../types';
 import * as encoder from '../../../utils/encoder';
-import { authenticate, authorize, validateSchema } from '../../../core/auth';
+import { authenticate, authorize, validateAuthorizationIntegrity } from '../../../core/auth';
 import { DidResolver } from '../../../did/did-resolver';
 import { generateCid } from '../../../utils/cid';
 import { getDagCid } from '../../../utils/data';
@@ -94,7 +94,7 @@ export class CollectionsWrite extends Message implements Authorizable {
     const message = this.message as CollectionsWriteMessage;
 
     // signature verification is computationally intensive, so we're going to start by validating the payload.
-    const parsedPayload = await validateSchema(message, { allowedProperties: new Set(['recordId', 'contextId']) });
+    const parsedPayload = await validateAuthorizationIntegrity(message, { allowedProperties: new Set(['recordId', 'contextId']) });
 
     await this.validateIntegrity();
 
@@ -112,7 +112,7 @@ export class CollectionsWrite extends Message implements Authorizable {
   }
 
   /**
-   * Validates the integrity of the message assuming the message passed basic schema validation.
+   * Validates the integrity of the CollectionsWrite message assuming the message passed basic schema validation.
    * There is opportunity to integrate better with `validateSchema(...)`
    */
   private async validateIntegrity(): Promise<void> {

@@ -26,7 +26,7 @@ export async function canonicalAuth(
   authorizationPayloadConstraints?: AuthorizationPayloadConstraints
 ): Promise<AuthVerificationResult> {
   // signature verification is computationally intensive, so we're going to start by validating the payload.
-  const parsedPayload = await validateSchema(message, authorizationPayloadConstraints);
+  const parsedPayload = await validateAuthorizationIntegrity(message, authorizationPayloadConstraints);
 
   const signers = await authenticate(message.authorization, didResolver);
   const author = signers[0];
@@ -36,7 +36,11 @@ export async function canonicalAuth(
   return { payload: parsedPayload, author };
 }
 
-export async function validateSchema(
+/**
+ * Validates the data integrity of the `authorization` property.
+ * NOTE signature is not verified.
+ */
+export async function validateAuthorizationIntegrity(
   message: BaseMessage,
   authorizationPayloadConstraints?: AuthorizationPayloadConstraints
 ): Promise<{ descriptorCid: CID, [key: string]: CID }> {
@@ -89,7 +93,6 @@ export async function validateSchema(
 }
 
 export async function authenticate(jws: GeneralJws, didResolver: DidResolver): Promise<string[]> {
-  // TODO: should we add an explicit check to ensure that there's only 1 signer?, Issue #65 https://github.com/TBD54566975/dwn-sdk-js/issues/65
   const verifier = new GeneralJwsVerifier(jws);
   const { signers } = await verifier.verify(didResolver);
   return signers;
