@@ -50,13 +50,10 @@ export class DidResolver {
     if (!didResolver) {
       throw new Error(`${didMethod} DID method not supported`);
     }
-
-    const resolutionResult = await this.cache.get(did) !== undefined ? await this.cache.get(did): await didResolver.resolve(did);
-    const isCached = await this.cache.get(did) !== undefined;
-    if (!isCached){
+    const isCached = await this.cache.get(did)
+    const resolutionResult = isCached !== undefined ? isCached : await didResolver.resolve(did);
+    if (isCached === undefined){
       await this.cache.set(did,resolutionResult);
-    } else {
-
     }
     const { didDocument, didResolutionMetadata } = resolutionResult;
 

@@ -33,7 +33,10 @@ describe('DidResolver', () => {
       didDocumentMetadata   : 'unused' as any,
       didResolutionMetadata : 'unused' as any
     });
-    await didResolver.resolve(did);
+    const result = await didResolver.cache.get(did);
+    if (result === undefined){
+      await didResolver.resolve(did);
+    }
 
     expect(ionDidResolveSpy.called).to.be.true;
   });
