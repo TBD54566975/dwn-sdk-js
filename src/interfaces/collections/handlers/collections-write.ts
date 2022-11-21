@@ -41,7 +41,7 @@ export const handleCollectionsWrite: MethodHandler = async (
     const query = {
       target   : incomingMessage.descriptor.target,
       method   : 'CollectionsWrite',
-      recordId : incomingMessage.descriptor.recordId
+      recordId : incomingMessage.recordId
     };
     const existingMessages = await messageStore.query(query) as CollectionsWriteMessage[];
 
@@ -56,7 +56,10 @@ export const handleCollectionsWrite: MethodHandler = async (
     // write the incoming message to DB if incoming message is newest
     let messageReply: MessageReply;
     if (incomingMessageIsNewest) {
-      const additionalIndexes: {[key:string]: string} = { author };
+      const additionalIndexes: {[key:string]: string} = {
+        recordId: incomingMessage.recordId,
+        author
+      };
 
       // add `contextId` to additional index if the message is a protocol based message
       if (incomingMessage.contextId !== undefined) { additionalIndexes.contextId = incomingMessage.contextId; }

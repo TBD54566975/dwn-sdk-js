@@ -51,10 +51,10 @@
               "type": "string"
             },
             "recordId": {
-              "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/uuid"
+              "type": "string"
             },
             "parentId": {
-              "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/uuid"
+              "type": "string"
             },
             "dataFormat": {
               "type": "string"

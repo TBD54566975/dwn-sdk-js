@@ -18,7 +18,6 @@ import { Message } from '../../../../src/core';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 import { ProtocolDefinition } from '../../../../src';
 import { TestStubGenerator } from '../../../utils/test-stub-generator';
-import { v4 as uuidv4 } from 'uuid';
 
 chai.use(chaiAsPromised);
 
@@ -52,7 +51,7 @@ describe('handleCollectionsWrite()', () => {
       // write a message into DB
       const requester = await TestDataGenerator.generatePersona();
       const target = requester;
-      const recordId = uuidv4();
+      const recordId = await TestDataGenerator.randomCborSha256Cid();
       const data1 = new TextEncoder().encode('data1');
       const collectionsWriteMessageData = await TestDataGenerator.generateCollectionsWriteMessage({ requester, target, recordId, data: data1 });
 
@@ -108,7 +107,7 @@ describe('handleCollectionsWrite()', () => {
       // generate two messages with the same `dateCreated` value
       const requester = await TestDataGenerator.generatePersona();
       const target = requester;
-      const recordId = uuidv4();
+      const recordId = await TestDataGenerator.randomCborSha256Cid();
       const dateCreated = getCurrentDateInHighPrecision();
       const collectionsWriteMessageData1 = await TestDataGenerator.generateCollectionsWriteMessage({
         requester,
@@ -248,7 +247,7 @@ describe('handleCollectionsWrite()', () => {
         const messageDataForQueryingBobsWrite = await TestDataGenerator.generateCollectionsQueryMessage({
           requester : alice,
           target    : alice,
-          filter    : { recordId: emailMessageDataFromBob.message.descriptor.recordId }
+          filter    : { recordId: emailMessageDataFromBob.message.recordId }
         });
         const bobRecordQueryReply = await handleCollectionsQuery(messageDataForQueryingBobsWrite.message, messageStore, aliceDidResolverStub);
         expect(bobRecordQueryReply.status.code).to.equal(200);
@@ -281,7 +280,7 @@ describe('handleCollectionsWrite()', () => {
 
         // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
         const vcIssuer = await TestDataGenerator.generatePersona();
-        const credentialApplicationRecordId = uuidv4();
+        const credentialApplicationRecordId = await TestDataGenerator.randomCborSha256Cid();
         const encodedCredentialApplication = new TextEncoder().encode('credential application data');
         const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
           requester    : alice,
@@ -321,7 +320,7 @@ describe('handleCollectionsWrite()', () => {
         const messageDataForQueryingCredentialResponse = await TestDataGenerator.generateCollectionsQueryMessage({
           requester : alice,
           target    : alice,
-          filter    : { recordId: credentialResponseMessageData.message.descriptor.recordId }
+          filter    : { recordId: credentialResponseMessageData.message.recordId }
         });
         const applicationResponseQueryReply = await handleCollectionsQuery(
           messageDataForQueryingCredentialResponse.message,
@@ -360,7 +359,7 @@ describe('handleCollectionsWrite()', () => {
 
         // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
         const vcIssuer = await TestDataGenerator.generatePersona();
-        const credentialApplicationRecordId = uuidv4();
+        const credentialApplicationRecordId = await TestDataGenerator.randomCborSha256Cid();
         const encodedCredentialApplication = new TextEncoder().encode('credential application data');
         const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
           requester    : alice,
@@ -574,7 +573,7 @@ describe('handleCollectionsWrite()', () => {
           recipientDid : alice.did,
           schema       : credentialIssuanceProtocolDefinition.labels.credentialResponse.schema,
           contextId,
-          parentId     : messageDataWithIssuerA.message.descriptor.recordId,
+          parentId     : messageDataWithIssuerA.message.recordId,
           protocol,
           data
         });
@@ -627,7 +626,7 @@ describe('handleCollectionsWrite()', () => {
           recipientDid : alice.did,
           schema       : credentialIssuanceProtocolDefinition.labels.credentialResponse.schema,
           contextId,
-          parentId     : messageDataWithIssuerA.message.descriptor.recordId,
+          parentId     : messageDataWithIssuerA.message.recordId,
           protocol,
           data
         });
@@ -680,7 +679,7 @@ describe('handleCollectionsWrite()', () => {
           recipientDid : alice.did,
           schema       : 'offer',
           contextId,
-          parentId     : askMessageData.message.descriptor.recordId,
+          parentId     : askMessageData.message.recordId,
           protocol,
           data
         });
@@ -695,7 +694,7 @@ describe('handleCollectionsWrite()', () => {
           recipientDid : pfi.did,
           schema       : 'fulfillment',
           contextId,
-          parentId     : offerMessageData.message.descriptor.recordId,
+          parentId     : offerMessageData.message.recordId,
           protocol,
           data
         });
@@ -706,7 +705,7 @@ describe('handleCollectionsWrite()', () => {
         const collectionsQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
           requester : pfi,
           target    : pfi,
-          filter    : { recordId: fulfillmentMessageData.message.descriptor.recordId }
+          filter    : { recordId: fulfillmentMessageData.message.recordId }
         });
 
         // verify the data is written
@@ -756,14 +755,14 @@ describe('handleCollectionsWrite()', () => {
         expect(reply.status.code).to.equal(202);
 
         // generate two offers with the same `recordId`
-        const duplicatedOfferRecordId = uuidv4();
+        const duplicatedOfferRecordId = await TestDataGenerator.randomCborSha256Cid();
         const offer1MessageData = await TestDataGenerator.generateCollectionsWriteMessage({
           requester    : pfi,
           target       : pfi,
           recipientDid : alice.did,
           schema       : 'offer',
           contextId,
-          parentId     : askMessageData.message.descriptor.recordId,
+          parentId     : askMessageData.message.recordId,
           protocol,
           recordId     : duplicatedOfferRecordId,
           data
@@ -775,15 +774,15 @@ describe('handleCollectionsWrite()', () => {
           recipientDid : alice.did,
           schema       : 'offer',
           contextId,
-          parentId     : askMessageData.message.descriptor.recordId,
+          parentId     : askMessageData.message.recordId,
           protocol,
           recordId     : duplicatedOfferRecordId,
           data
         });
 
         // we have to insert the two records directly into Alice's DWN because handler does not allow such condition to occur under expected operation
-        await messageStore.put(offer1MessageData.message, { author: alice.did });
-        await messageStore.put(offer2MessageData.message, { author: alice.did });
+        await messageStore.put(offer1MessageData.message, { recordId: duplicatedOfferRecordId, author: alice.did });
+        await messageStore.put(offer2MessageData.message, { recordId: duplicatedOfferRecordId, author: alice.did });
 
         // verify both offers are stored in PFI's DB
         const offersQueryDaa = await TestDataGenerator.generateCollectionsQueryMessage({

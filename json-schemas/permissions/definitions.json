@@ -8,14 +8,20 @@
       "additionalProperties": false,
       "properties": {
         "attestation": {
-          "enum": ["optional", "required"],
+          "enum": [
+            "optional",
+            "required"
+          ],
           "type": "string"
         },
         "delegation": {
           "type": "boolean"
         },
         "encryption": {
-          "enum": ["optional", "required"],
+          "enum": [
+            "optional",
+            "required"
+          ],
           "type": "string"
         },
         "publication": {
@@ -38,7 +44,7 @@
           "type": "string"
         },
         "objectId": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/uuid"
+          "type": "string"
         },
         "schema": {
           "type": "string"
