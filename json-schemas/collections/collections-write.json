@@ -5,9 +5,13 @@
   "additionalProperties": false,
   "required": [
     "authorization",
-    "descriptor"
+    "descriptor",
+    "recordId"
   ],
   "properties": {
+    "recordId": {
+      "type": "string"
+    },
     "contextId": {
       "type": "string"
     },
@@ -35,9 +39,6 @@
         "schema": {
           "type": "string"
         },
-        "recordId": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/uuid"
-        },
         "parentId": {
           "type": "string"
         },
@@ -62,7 +63,6 @@
       "required": [
         "target",
         "method",
-        "recordId",
         "dataCid",
         "dateCreated",
         "dataFormat"

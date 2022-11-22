@@ -27,7 +27,6 @@ import { PrivateJwk, PublicJwk } from '../../src/jose/types';
 import { removeUndefinedProperties } from '../../src/utils/object';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1';
 import { sha256 } from 'multiformats/hashes/sha2';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * A logical grouping of user data used to generate test messages.
@@ -266,7 +265,7 @@ export class TestDataGenerator {
       protocol      : input?.protocol,
       contextId     : input?.contextId,
       schema        : input?.schema ?? TestDataGenerator.randomString(20),
-      recordId      : input?.recordId ?? uuidv4(),
+      recordId      : input?.recordId ?? await TestDataGenerator.randomCborSha256Cid(),
       parentId      : input?.parentId,
       published     : input?.published,
       dataFormat    : input?.dataFormat ?? 'application/json',

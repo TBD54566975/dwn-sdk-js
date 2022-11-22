@@ -1,7 +1,7 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
 import type { CollectionsWriteAuthorizationPayload, CollectionsWriteDescriptor, CollectionsWriteMessage } from '../types';
 import * as encoder from '../../../utils/encoder';
-import { authenticate, authorize, validateSchema } from '../../../core/auth';
+import { authenticate, authorize, validateAuthorizationIntegrity } from '../../../core/auth';
 import { DidResolver } from '../../../did/did-resolver';
 import { generateCid } from '../../../utils/cid';
 import { getDagCid } from '../../../utils/data';
@@ -43,7 +43,6 @@ export class CollectionsWrite extends Message implements Authorizable {
       method        : 'CollectionsWrite',
       protocol      : options.protocol,
       schema        : options.schema,
-      recordId      : options.recordId,
       parentId      : options.parentId,
       dataCid       : dataCid.toString(),
       dateCreated   : options.dateCreated ?? getCurrentDateInHighPrecision(),
@@ -76,8 +75,9 @@ export class CollectionsWrite extends Message implements Authorizable {
     }
 
     const encodedData = encoder.bytesToBase64Url(options.data);
-    const authorization = await CollectionsWrite.signAsCollectionsWriteAuthorization(contextId, descriptor, options.signatureInput);
+    const authorization = await CollectionsWrite.signAsCollectionsWriteAuthorization(options.recordId, contextId, descriptor, options.signatureInput);
     const message: CollectionsWriteMessage = {
+      recordId: options.recordId,
       descriptor,
       authorization,
       encodedData
@@ -94,7 +94,7 @@ export class CollectionsWrite extends Message implements Authorizable {
     const message = this.message as CollectionsWriteMessage;
 
     // signature verification is computationally intensive, so we're going to start by validating the payload.
-    const parsedPayload = await validateSchema(message, { allowedProperties: new Set(['contextId']) });
+    const parsedPayload = await validateAuthorizationIntegrity(message, { allowedProperties: new Set(['recordId', 'contextId']) });
 
     await this.validateIntegrity();
 
@@ -112,7 +112,7 @@ export class CollectionsWrite extends Message implements Authorizable {
   }
 
   /**
-   * Validates the integrity of the message assuming the message passed basic schema validation.
+   * Validates the integrity of the CollectionsWrite message assuming the message passed basic schema validation.
    * There is opportunity to integrate better with `validateSchema(...)`
    */
   private async validateIntegrity(): Promise<void> {
@@ -159,13 +159,17 @@ export class CollectionsWrite extends Message implements Authorizable {
    * Creates the `authorization` property for a CollectionsWrite message.
    */
   private static async signAsCollectionsWriteAuthorization(
+    recordId: string,
     contextId: string | undefined,
     descriptor: CollectionsWriteDescriptor,
     signatureInput: SignatureInput
   ): Promise<GeneralJws> {
     const descriptorCid = await generateCid(descriptor);
 
-    const authorizationPayload: CollectionsWriteAuthorizationPayload = { descriptorCid: descriptorCid.toString() };
+    const authorizationPayload: CollectionsWriteAuthorizationPayload = {
+      recordId,
+      descriptorCid: descriptorCid.toString()
+    };
 
     if (contextId !== undefined) { authorizationPayload.contextId = contextId; } // assign `contextId` only if it is defined
 
