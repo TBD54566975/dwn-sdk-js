@@ -58,11 +58,8 @@ export const handleCollectionsWrite: MethodHandler = async (
     if (incomingMessageIsNewest) {
       const additionalIndexes: {[key:string]: string} = { author };
 
-      // add computed `contextId` as required if undefined
-      if (incomingMessage.descriptor.contextId === undefined) {
-        const contextId = await collectionsWrite.getCanonicalId();
-        additionalIndexes.contextId = contextId;
-      }
+      // add `contextId` to additional index if the message is a protocol based message
+      if (incomingMessage.contextId !== undefined) { additionalIndexes.contextId = incomingMessage.contextId; }
 
       await messageStore.put(message, additionalIndexes);
 

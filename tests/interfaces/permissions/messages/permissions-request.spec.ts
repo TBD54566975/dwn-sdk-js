@@ -13,6 +13,47 @@ import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 chai.use(chaiAsPromised);
 
 describe('PermissionsRequest', () => {
+  describe('constructor', () => {
+    it('throws an exception if payload is not valid JSON', async () => {
+      const jsonMessage = {
+        descriptor: {
+          conditions: {
+            attestation  : 'optional',
+            delegation   : false,
+            encryption   : 'optional',
+            publication  : false,
+            sharedAccess : false
+          },
+          description : 'drugs',
+          grantedTo   : 'did:jank:alice',
+          grantedBy   : 'did:jank:bob',
+          method      : 'PermissionsRequest',
+          objectId    : '331806c4-ce15-4759-b1c3-0f742312aae9',
+          scope       : { method: 'CollectionsWrite' }
+        }
+      };
+
+      const testVectors = [
+        { input: 'dookie', expectedError: 'payload is not a JSON object' },
+        { input: JSON.stringify([]), expectedError: 'must be a valid JSON object' }
+      ];
+      const { privateJwk } = await secp256k1.generateKeyPair();
+
+      for (const vector of testVectors) {
+        const payloadBytes = new TextEncoder().encode(vector.input);
+        const protectedHeader = { alg: privateJwk.alg!, kid: 'did:jank:alice#key1' };
+
+        const signer = await GeneralJwsSigner.create(payloadBytes, [{ jwkPrivate: privateJwk, protectedHeader }]);
+        const jws = signer.getJws();
+
+        jsonMessage['authorization'] = jws;
+
+        expect(() => new PermissionsRequest(jsonMessage as PermissionsRequestMessage))
+          .to.throw(vector.expectedError);
+      }
+    });
+  });
+
   describe('create', () => {
     it('creates a PermissionsRequest message', async () => {
       const { privateJwk } = await secp256k1.generateKeyPair();
@@ -119,46 +160,6 @@ describe('PermissionsRequest', () => {
         const { author } = await message.verifyAuth(resolverStub, messageStoreStub);
 
         expect(author).to.equal('did:jank:alice');
-      });
-
-      it('throws an exception if payload is not valid JSON', async () => {
-        const jsonMessage = {
-          descriptor: {
-            conditions: {
-              attestation  : 'optional',
-              delegation   : false,
-              encryption   : 'optional',
-              publication  : false,
-              sharedAccess : false
-            },
-            description : 'drugs',
-            grantedTo   : 'did:jank:alice',
-            grantedBy   : 'did:jank:bob',
-            method      : 'PermissionsRequest',
-            objectId    : '331806c4-ce15-4759-b1c3-0f742312aae9',
-            scope       : { method: 'CollectionsWrite' }
-          }
-        };
-
-        const testVectors = [ 'dookie', JSON.stringify([])];
-        const { privateJwk } = await secp256k1.generateKeyPair();
-
-        for (const vector of testVectors) {
-          const payloadBytes = new TextEncoder().encode(vector);
-          const protectedHeader = { alg: privateJwk.alg!, kid: 'did:jank:alice#key1' };
-
-          const signer = await GeneralJwsSigner.create(payloadBytes, [{ jwkPrivate: privateJwk, protectedHeader }]);
-          const jws = signer.getJws();
-
-          jsonMessage['authorization'] = jws;
-
-          const message = new PermissionsRequest(jsonMessage as PermissionsRequestMessage);
-          const resolverStub = sinon.createStubInstance(DidResolver);
-          const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-
-          await expect(message.verifyAuth(resolverStub, messageStoreStub))
-            .to.eventually.be.rejectedWith('must be a valid JSON object');
-        }
       });
     });
   });

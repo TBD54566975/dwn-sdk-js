@@ -18,7 +18,6 @@ export function stringToBase64Url(content: string): string {
   return base64UrlString;
 }
 
-
 export function bytesToBase64Url(bytes: Uint8Array): string {
   const base64UrlString = base64url.baseEncode(bytes);
   return base64UrlString;
@@ -27,4 +26,10 @@ export function bytesToBase64Url(bytes: Uint8Array): string {
 export function base64urlToBytes(base64urlString: string): Uint8Array {
   const content = base64url.baseDecode(base64urlString);
   return content;
+}
+
+export function objectToBytes(obj: any): Uint8Array {
+  const objectString = JSON.stringify(obj);
+  const objectBytes = textEncoder.encode(objectString);
+  return objectBytes;
 }
