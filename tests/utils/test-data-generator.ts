@@ -265,7 +265,7 @@ export class TestDataGenerator {
       protocol      : input?.protocol,
       contextId     : input?.contextId,
       schema        : input?.schema ?? TestDataGenerator.randomString(20),
-      recordId      : input?.recordId ?? await TestDataGenerator.randomCborSha256Cid(),
+      recordId      : input?.recordId,
       parentId      : input?.parentId,
       published     : input?.published,
       dataFormat    : input?.dataFormat ?? 'application/json',

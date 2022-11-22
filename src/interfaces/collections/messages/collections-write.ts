@@ -19,7 +19,7 @@ export type CollectionsWriteOptions = AuthCreateOptions & {
   protocol?: string;
   contextId?: string;
   schema?: string;
-  recordId: string;
+  recordId?: string;
   parentId?: string;
   data: Uint8Array;
   dateCreated?: string;
@@ -63,6 +63,14 @@ export class CollectionsWrite extends Message implements Authorizable {
 
     const author = GeneralJwsVerifier.extractDid(options.signatureInput.protectedHeader.kid);
 
+    // `recordId` computation
+    let recordId: string | undefined;
+    if (options.recordId !== undefined) {
+      recordId = options.recordId;
+    } else { // `recordId` is undefined
+      recordId = await CollectionsWrite.getCanonicalId(author, descriptor);
+    }
+
     // `contextId` computation
     let contextId: string | undefined;
     if (options.contextId !== undefined) {
@@ -75,9 +83,9 @@ export class CollectionsWrite extends Message implements Authorizable {
     }
 
     const encodedData = encoder.bytesToBase64Url(options.data);
-    const authorization = await CollectionsWrite.signAsCollectionsWriteAuthorization(options.recordId, contextId, descriptor, options.signatureInput);
+    const authorization = await CollectionsWrite.signAsCollectionsWriteAuthorization(recordId, contextId, descriptor, options.signatureInput);
     const message: CollectionsWriteMessage = {
-      recordId: options.recordId,
+      recordId,
       descriptor,
       authorization,
       encodedData

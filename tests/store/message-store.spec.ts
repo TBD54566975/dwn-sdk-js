@@ -103,31 +103,4 @@ describe('MessageStoreLevel Tests', () => {
       expect((results[0] as CollectionsWriteMessage).descriptor.schema).to.equal(schema);
     });
   });
-
-  // describe('get', () => {
-  //   before(async () => {
-  //     await messageStore.open();
-  //   });
-
-  //   afterEach(async () => {
-  //     await messageStore.clear();
-  //   });
-
-  //   after(async () => {
-  //     await messageStore.close();
-  //   });
-
-
-  //   it('returns undefined if message does not exist', async () => {
-  //     const { cid } = await block.encode({ value: { beep: 'boop' }, codec: cbor, hasher: sha256 });
-  //     const message = await messageStore.get(cid);
-
-  //     expect(message).to.be.undefined;
-  //   });
-  // });
-
-  // describe('query', () => {});
-
-  // describe('delete', () => {});
-
 });
