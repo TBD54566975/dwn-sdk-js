@@ -21,10 +21,7 @@ describe('DidResolver', () => {
       didResolutionMetadata : 'unused' as any
     });
 
-    const resolutionresult = await didResolver.cache.get(did);
-    if (resolutionresult === undefined){
-      await didResolver.resolve(did);
-    }
+    const resolutionresult = await didResolver.cache.get(did) ?? await didResolver.resolve(did);
     await didResolver.cache.set(did,resolutionresult);
 
 
