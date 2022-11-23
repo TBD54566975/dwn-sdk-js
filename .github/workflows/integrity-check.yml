@@ -46,7 +46,7 @@ jobs:
       # https://docs.npmjs.com/cli/v8/commands/npm-ci
       - run: npm clean-install
       # check the licences allow list to avoid incorrectly licensed dependencies creeping in: 
-      - run: npm run license:check
+      - run: npm run license-check
       # builds all bundles
       - run: npm run build
       # runs linter. Job will fail if there are any warnings or errors
