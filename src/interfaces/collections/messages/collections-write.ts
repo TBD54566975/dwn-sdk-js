@@ -12,7 +12,6 @@ import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
 import { ProtocolAuthorization } from '../../../core/protocol-authorization';
 import { removeUndefinedProperties } from '../../../utils/object';
-import { getCurrentDateInHighPrecision } from '../../../utils/time';
 import { DwnMethodName } from '../../../core/message';
 
 export type CollectionsWriteOptions = AuthCreateOptions & {
