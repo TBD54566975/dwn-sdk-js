@@ -18,10 +18,12 @@ export enum DwnMethodName {
 
 export abstract class Message {
   readonly author: string;
+  readonly authorizationPayload: any;
   readonly message: BaseMessage;
 
   constructor(message: BaseMessage) {
     this.author = GeneralJwsVerifier.getDid(message.authorization.signatures[0]);
+    this.authorizationPayload = GeneralJwsVerifier.decodePlainObjectPayload(message.authorization);
     this.message = message;
   }
 

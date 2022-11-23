@@ -7,13 +7,10 @@ import { GeneralJws } from '../jose/jws/general/types';
 import { GeneralJwsVerifier } from '../jose/jws/general';
 import { generateCid, parseCid } from '../utils/cid';
 import { MessageStore } from '../store/message-store';
-import lodash from 'lodash';
 
-const { isPlainObject } = lodash;
-
-type PayloadConstraints = {
+type AuthorizationPayloadConstraints = {
   /** permissible properties within payload. Note that `descriptorCid` is implied and does not need to be added */
-  properties: Set<string>;
+  allowedProperties: Set<string>;
 };
 
 /**
@@ -26,10 +23,10 @@ export async function canonicalAuth(
   message: BaseMessage,
   didResolver: DidResolver,
   messageStore: MessageStore,
-  payloadConstraints?: PayloadConstraints
+  authorizationPayloadConstraints?: AuthorizationPayloadConstraints
 ): Promise<AuthVerificationResult> {
   // signature verification is computationally intensive, so we're going to start by validating the payload.
-  const parsedPayload = await validateSchema(message, payloadConstraints);
+  const parsedPayload = await validateAuthorizationIntegrity(message, authorizationPayloadConstraints);
 
   const signers = await authenticate(message.authorization, didResolver);
   const author = signers[0];
@@ -39,20 +36,20 @@ export async function canonicalAuth(
   return { payload: parsedPayload, author };
 }
 
-export async function validateSchema(
+/**
+ * Validates the data integrity of the `authorization` property.
+ * NOTE signature is not verified.
+ */
+export async function validateAuthorizationIntegrity(
   message: BaseMessage,
-  payloadConstraints?: PayloadConstraints
+  authorizationPayloadConstraints?: AuthorizationPayloadConstraints
 ): Promise<{ descriptorCid: CID, [key: string]: CID }> {
 
   if (message.authorization.signatures.length !== 1) {
     throw new Error('expected no more than 1 signature for authorization');
   }
 
-  const payloadJson = GeneralJwsVerifier.decodeJsonPayload(message.authorization);
-
-  if (!isPlainObject(payloadJson)) {
-    throw new Error('auth payload must be a valid JSON object');
-  }
+  const payloadJson = GeneralJwsVerifier.decodePlainObjectPayload(message.authorization);
 
   // the authorization payload should, at minimum, always contain `descriptorCid` regardless
   // of whatever else is present.
@@ -74,14 +71,14 @@ export async function validateSchema(
   // property bag for all properties inspected
   const parsedPayload = { descriptorCid: providedDescriptorCid };
 
-  payloadConstraints = payloadConstraints || { properties: new Set([]) };
+  authorizationPayloadConstraints ??= { allowedProperties: new Set([]) };
 
   // add `descriptorCid` because it's always required
-  payloadConstraints.properties.add('descriptorCid');
+  authorizationPayloadConstraints.allowedProperties.add('descriptorCid');
 
   // check to ensure that no unexpected properties exist in payload.
   for (const field in payloadJson) {
-    if (!payloadConstraints.properties.has(field)) {
+    if (!authorizationPayloadConstraints.allowedProperties.has(field)) {
       throw new Error(`${field} not allowed in auth payload.`);
     }
 
@@ -96,7 +93,6 @@ export async function validateSchema(
 }
 
 export async function authenticate(jws: GeneralJws, didResolver: DidResolver): Promise<string[]> {
-  // TODO: should we add an explicit check to ensure that there's only 1 signer?, Issue #65 https://github.com/TBD54566975/dwn-sdk-js/issues/65
   const verifier = new GeneralJwsVerifier(jws);
   const { signers } = await verifier.verify(didResolver);
   return signers;

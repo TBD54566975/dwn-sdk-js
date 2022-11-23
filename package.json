@@ -1,6 +1,6 @@
 {
   "name": "@tbd54566975/dwn-sdk-js",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "A reference implementation of https://identity.foundation/decentralized-web-node/spec/",
   "type": "module",
   "types": "./dist/esm/src/index.d.ts",
@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "@ipld/dag-cbor": "7.0.1",
+    "@js-temporal/polyfill": "0.4.3",
     "@noble/ed25519": "1.6.0",
     "@noble/secp256k1": "1.5.5",
     "@swc/helpers": "0.3.8",

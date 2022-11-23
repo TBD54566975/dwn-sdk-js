@@ -5,9 +5,7 @@ export type CollectionsWriteDescriptor = {
   recipient: string;
   method: 'CollectionsWrite';
   protocol?: string;
-  contextId?: string;
   schema?: string;
-  recordId: string;
   parentId?: string;
   dataCid: string;
   dateCreated: string;
@@ -17,6 +15,8 @@ export type CollectionsWriteDescriptor = {
 };
 
 export type CollectionsWriteMessage = BaseMessage & {
+  recordId: string,
+  contextId?: string;
   descriptor: CollectionsWriteDescriptor;
   encodedData?: string;
 };
@@ -35,6 +35,12 @@ export type CollectionsQueryDescriptor = {
     dataFormat?: string;
   }
   dateSort?: string;
+};
+
+export type CollectionsWriteAuthorizationPayload = {
+  recordId: string;
+  contextId?: string;
+  descriptorCid: string;
 };
 
 export type CollectionsQueryMessage = BaseMessage & {
