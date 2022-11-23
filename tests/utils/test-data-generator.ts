@@ -1,3 +1,4 @@
+import * as cbor from '@ipld/dag-cbor';
 import { BaseMessage } from '../../src/core/types';
 import {
   CollectionsQuery,
@@ -17,14 +18,15 @@ import {
   ProtocolsQueryMessage,
   ProtocolsQueryOptions
 } from '../../src';
-import { ed25519 } from '../../src/jose/algorithms/signing/ed25519';
+import { CID } from 'multiformats/cid';
 import { DidResolutionResult } from '../../src/did/did-resolver';
+import { ed25519 } from '../../src/jose/algorithms/signing/ed25519';
+import { getCurrentDateInHighPrecision } from '../../src/utils/time';
 import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request';
 import { PrivateJwk, PublicJwk } from '../../src/jose/types';
 import { removeUndefinedProperties } from '../../src/utils/object';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1';
-import { v4 as uuidv4 } from 'uuid';
-import { getCurrentDateInHighPrecision } from '../../src/utils/time';
+import { sha256 } from 'multiformats/hashes/sha2';
 
 /**
  * A logical grouping of user data used to generate test messages.
@@ -263,7 +265,7 @@ export class TestDataGenerator {
       protocol      : input?.protocol,
       contextId     : input?.contextId,
       schema        : input?.schema ?? TestDataGenerator.randomString(20),
-      recordId      : input?.recordId ?? uuidv4(),
+      recordId      : input?.recordId ?? await TestDataGenerator.randomCborSha256Cid(),
       parentId      : input?.parentId,
       published     : input?.published,
       dataFormat    : input?.dataFormat ?? 'application/json',
@@ -386,12 +388,22 @@ export class TestDataGenerator {
   };
 
   /**
-   * Generates a random byte array of given length
+   * Generates a random byte array of given length.
    */
   public static randomBytes(length: number): Uint8Array {
     const randomString = TestDataGenerator.randomString(length);
     return new TextEncoder().encode(randomString);
   };
+
+  /**
+   * Generates a random CBOR SHA256 CID.
+   */
+  public static async randomCborSha256Cid(): Promise<string> {
+    const randomBytes = TestDataGenerator.randomBytes(32);
+    const randomMultihash = await sha256.digest(randomBytes);
+    const cid = await CID.createV1(cbor.code, randomMultihash);
+    return cid.toString();
+  }
 
   /**
    * Creates a mock DID resolution result for testing purposes.

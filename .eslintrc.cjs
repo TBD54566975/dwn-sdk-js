@@ -12,6 +12,7 @@ module.exports = {
     browser : true
   },
   rules: {
+    'curly'      : ['error', 'all'],
     'no-console' : 'off',
     'indent'     : [
       'error',
@@ -31,7 +32,7 @@ module.exports = {
     '@typescript-eslint/semi' : ['error', 'always'],
     'no-multi-spaces'         : ['error'],
     'no-trailing-spaces'      : ['error'],
-    'max-len'                 : ['error', { 'code': 150 }],
+    'max-len'                 : ['error', { 'code': 150, 'ignoreStrings': true }],
     'key-spacing'             : [
       'error',
       {
