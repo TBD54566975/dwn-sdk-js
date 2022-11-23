@@ -74,7 +74,7 @@ export class ProtocolAuthorization {
     const ancestorMessageChain: CollectionsWriteMessage[] = [];
 
     const protocol = message.descriptor.protocol;
-    const contextId = message.descriptor.contextId;
+    const contextId = message.contextId;
 
     // keep walking up the chain from the inbound message's parent, until there is no more parent
     let currentParentId = message.descriptor.parentId;

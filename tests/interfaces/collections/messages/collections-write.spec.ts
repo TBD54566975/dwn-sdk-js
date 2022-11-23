@@ -5,7 +5,6 @@ import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 import { getCurrentDateInHighPrecision, sleep } from '../../../../src/utils/time';
 import { TestDataGenerator } from '../../../utils/test-data-generator';
 import { TestStubGenerator } from '../../../utils/test-stub-generator';
-import { v4 as uuidv4 } from 'uuid';
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -31,7 +30,7 @@ describe('CollectionsWrite', () => {
         data        : TestDataGenerator.randomBytes(10),
         dataFormat  : 'application/json',
         dateCreated : '2022-10-14T10:20:30.405060',
-        recordId    : uuidv4(),
+        recordId    : await TestDataGenerator.randomCborSha256Cid(),
         signatureInput
       };
       const collectionsWrite = await CollectionsWrite.create(options);
@@ -42,7 +41,7 @@ describe('CollectionsWrite', () => {
       expect(message.encodedData).to.equal(base64url.baseEncode(options.data));
       expect(message.descriptor.dataFormat).to.equal(options.dataFormat);
       expect(message.descriptor.dateCreated).to.equal(options.dateCreated);
-      expect(message.descriptor.recordId).to.equal(options.recordId);
+      expect(message.recordId).to.equal(options.recordId);
 
       const resolverStub = TestStubGenerator.createDidResolverStub(alice);
       const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
@@ -90,12 +89,12 @@ describe('CollectionsWrite', () => {
       const c = (await TestDataGenerator.generateCollectionsWriteMessage()).message; // c is the newest since its created last
 
       const newestMessage = await CollectionsWrite.getNewestMessage([b, c, a]);
-      if (newestMessage?.descriptor.recordId !== c.descriptor.recordId) {
+      if (newestMessage?.recordId !== c.recordId) {
         console.log(`a: ${a.descriptor.dateCreated}`);
         console.log(`b: ${b.descriptor.dateCreated}`);
         console.log(`c: ${c.descriptor.dateCreated}`);
       }
-      expect(newestMessage?.descriptor.recordId).to.equal(c.descriptor.recordId);
+      expect(newestMessage?.recordId).to.equal(c.recordId);
     });
   });
 

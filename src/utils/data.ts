@@ -32,7 +32,7 @@ export async function getDagCid(data: Data): Promise<CID> {
   const chunk = importer([{ content: dataBytes }], undefined, { onlyHash: true, cidVersion: 1 });
   let root;
 
-  for await (root of chunk);
+  for await (root of chunk) { ; }
 
   return root.cid;
 }
