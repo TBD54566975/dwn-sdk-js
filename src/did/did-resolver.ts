@@ -1,16 +1,16 @@
+import type { Cache } from '../utils/types';
 import type { PublicJwk } from '../jose/types';
-import { MemoryCache } from '../utils/memory-cache';
 import { Did } from './did';
 import { DidIonResolver } from './did-ion-resolver';
 import { DidKeyResolver } from './did-key-resolver';
-import type { Cache } from '../utils/types';
+import { MemoryCache } from '../utils/memory-cache';
 
 /**
  * A DID resolver that by default supports `did:key` and `did:ion` DIDs.
  */
 export class DidResolver {
-  didResolvers: Map<string, DidMethodResolver>;
-  cache: Cache;
+  private didResolvers: Map<string, DidMethodResolver>;
+  private cache: Cache;
 
   constructor(resolvers?: DidMethodResolver[], cache?:Cache) {
 
@@ -50,11 +50,14 @@ export class DidResolver {
     if (!didResolver) {
       throw new Error(`${didMethod} DID method not supported`);
     }
+
+    // use cached result if exists
     const cachedResolutionResult = await this.cache.get(did);
     const resolutionResult = cachedResolutionResult ?? await didResolver.resolve(did);
     if (cachedResolutionResult === undefined){
-      await this.cache.set(did,resolutionResult);
+      await this.cache.set(did, resolutionResult);
     }
+
     const { didDocument, didResolutionMetadata } = resolutionResult;
 
     if (!didDocument || didResolutionMetadata?.error) {

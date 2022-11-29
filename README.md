@@ -4,7 +4,7 @@
 
 Code Coverage
 
-![Statements](https://img.shields.io/badge/statements-91.35%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-89.12%25-yellow.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-87.75%25-yellow.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-91.35%25-brightgreen.svg?style=flat)
+![Statements](https://img.shields.io/badge/statements-91.36%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-89.09%25-yellow.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-87.75%25-yellow.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-91.36%25-brightgreen.svg?style=flat)
 
 ## Introduction
 
@@ -21,7 +21,7 @@ npm install @tbd54566975/dwn-sdk-js
 ## Usage
 
 ```javascript
-import { Dwn } from "@tbd54566975/dwn-sdk-js";
+import { Dwn } from '@tbd54566975/dwn-sdk-js';
 
 // cool things
 ```
