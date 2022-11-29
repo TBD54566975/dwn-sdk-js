@@ -1,7 +1,8 @@
 import type { AuthCreateOptions } from '../../../core/types';
 import type { ProtocolDefinition, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types';
-import { Message } from '../../../core';
+import { DwnMethodName } from '../../../core/message';
 import { getCurrentDateInHighPrecision } from '../../../utils/time';
+import { Message } from '../../../core';
 
 export type ProtocolsConfigureOptions = AuthCreateOptions & {
   target: string;
@@ -20,7 +21,7 @@ export class ProtocolsConfigure extends Message {
   static async create(options: ProtocolsConfigureOptions): Promise<ProtocolsConfigure> {
     const descriptor: ProtocolsConfigureDescriptor = {
       target      : options.target,
-      method      : 'ProtocolsConfigure',
+      method      : DwnMethodName.ProtocolsConfigure,
       dateCreated : options.dateCreated ?? getCurrentDateInHighPrecision(),
       protocol    : options.protocol,
       definition  : options.definition

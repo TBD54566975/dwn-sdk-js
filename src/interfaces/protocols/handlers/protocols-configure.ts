@@ -2,6 +2,7 @@ import type { ProtocolsConfigureMessage } from '../types';
 import type { MethodHandler } from '../../types';
 
 import { canonicalAuth } from '../../../core/auth';
+import { DwnMethodName } from '../../../core/message';
 import { Message, MessageReply } from '../../../core';
 
 export const handleProtocolsConfigure: MethodHandler = async (
@@ -26,7 +27,7 @@ export const handleProtocolsConfigure: MethodHandler = async (
     // attempt to get existing protocol
     const query = {
       target   : incomingMessage.descriptor.target,
-      method   : 'ProtocolsConfigure',
+      method   : DwnMethodName.ProtocolsConfigure,
       protocol : incomingMessage.descriptor.protocol
     };
     const existingMessages = await messageStore.query(query) as ProtocolsConfigureMessage[];

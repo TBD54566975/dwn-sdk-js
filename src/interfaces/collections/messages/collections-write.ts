@@ -3,6 +3,7 @@ import type { CollectionsWriteAuthorizationPayload, CollectionsWriteDescriptor, 
 import * as encoder from '../../../utils/encoder';
 import { authenticate, authorize, validateAuthorizationIntegrity } from '../../../core/auth';
 import { DidResolver } from '../../../did/did-resolver';
+import { DwnMethodName } from '../../../core/message';
 import { generateCid } from '../../../utils/cid';
 import { getDagCid } from '../../../utils/data';
 import { getCurrentDateInHighPrecision } from '../../../utils/time';
@@ -40,7 +41,7 @@ export class CollectionsWrite extends Message implements Authorizable {
     const descriptor: CollectionsWriteDescriptor = {
       target        : options.target,
       recipient     : options.recipient,
-      method        : 'CollectionsWrite',
+      method        : DwnMethodName.CollectionsWrite,
       protocol      : options.protocol,
       schema        : options.schema,
       parentId      : options.parentId,
