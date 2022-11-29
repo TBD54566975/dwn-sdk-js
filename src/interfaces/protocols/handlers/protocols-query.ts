@@ -1,9 +1,9 @@
 import type { MethodHandler } from '../../types';
 import type { ProtocolsQueryMessage } from '../types';
 import { canonicalAuth } from '../../../core/auth';
+import { DwnMethodName } from '../../../core/message';
 import { MessageReply } from '../../../core';
 import { removeUndefinedProperties } from '../../../utils/object';
-import { DwnMethodName } from '../../../core/message';
 
 export const handleProtocolsQuery: MethodHandler = async (
   message,

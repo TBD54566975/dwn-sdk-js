@@ -2,11 +2,11 @@ import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '..
 import type { CollectionsQueryDescriptor, CollectionsQueryMessage } from '../types';
 import { authenticate, validateAuthorizationIntegrity } from '../../../core/auth';
 import { DidResolver } from '../../../did/did-resolver';
+import { DwnMethodName } from '../../../core/message';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { getCurrentDateInHighPrecision } from '../../../utils/time';
-import { DwnMethodName } from '../../../core/message';
 
 export type CollectionsQueryOptions = AuthCreateOptions & {
   target: string;

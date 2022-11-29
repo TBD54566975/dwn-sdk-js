@@ -1,7 +1,7 @@
 import { CollectionsWriteMessage } from '../interfaces/collections/types';
+import { DwnMethodName } from './message';
 import { MessageStore } from '../store/message-store';
 import { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types';
-import { DwnMethodName } from './message';
 
 const methodToAllowedActionMap = {
   [DwnMethodName.CollectionsWrite]: 'write',

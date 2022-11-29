@@ -2,10 +2,10 @@ import type { MethodHandler } from '../../types';
 import type { CollectionsQueryMessage } from '../types';
 import { BaseMessage } from '../../../core/types';
 import { CollectionsQuery } from '../messages/collections-query';
+import { DwnMethodName } from '../../../core/message';
 import { MessageReply } from '../../../core';
 import { MessageStore } from '../../../store/message-store';
 import { removeUndefinedProperties } from '../../../utils/object';
-import { DwnMethodName } from '../../../core/message';
 
 export const handleCollectionsQuery: MethodHandler = async (
   message,

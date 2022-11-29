@@ -2,9 +2,9 @@ import type { CollectionsWriteMessage } from '../types';
 import type { MethodHandler } from '../../types';
 import * as encoder from '../../../utils/encoder';
 import { CollectionsWrite } from '../messages/collections-write';
+import { DwnMethodName } from '../../../core/message';
 import { getDagCid } from '../../../utils/data';
 import { MessageReply } from '../../../core';
-import { DwnMethodName } from '../../../core/message';
 
 export const handleCollectionsWrite: MethodHandler = async (
   message,

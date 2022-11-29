@@ -1,9 +1,9 @@
 import type { AuthCreateOptions } from '../../../core/types';
 import type { HooksWriteDescriptor, HooksWriteMessage } from '../../hooks/types';
+import { DwnMethodName } from '../../../core/message';
 import { Message } from '../../../core';
 import { removeUndefinedProperties } from '../../../utils/object';
 import { getCurrentDateInHighPrecision } from '../../../utils/time';
-import { DwnMethodName } from '../../../core/message';
 
 /**
  * Input to `HookssWrite.create()`.

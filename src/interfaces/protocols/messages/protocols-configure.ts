@@ -1,8 +1,8 @@
 import type { AuthCreateOptions } from '../../../core/types';
 import type { ProtocolDefinition, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types';
-import { Message } from '../../../core';
-import { getCurrentDateInHighPrecision } from '../../../utils/time';
 import { DwnMethodName } from '../../../core/message';
+import { getCurrentDateInHighPrecision } from '../../../utils/time';
+import { Message } from '../../../core';
 
 export type ProtocolsConfigureOptions = AuthCreateOptions & {
   target: string;
