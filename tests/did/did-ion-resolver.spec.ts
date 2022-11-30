@@ -1,7 +1,8 @@
-import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import sinon from 'sinon';
 import fetch from 'cross-fetch';
+import sinon from 'sinon';
+import chai, { expect } from 'chai';
+
 import { DidIonResolver } from '../../src/did/did-ion-resolver';
 
 // extends chai to test promises

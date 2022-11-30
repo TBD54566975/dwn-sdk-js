@@ -1,6 +1,6 @@
+import sinon from 'sinon';
 import { DidResolutionResult, DidResolver } from '../../src/did/did-resolver';
 import { Persona, TestDataGenerator } from './test-data-generator';
-import sinon from 'sinon';
 
 /**
  * Utility class for generating stub for testing.

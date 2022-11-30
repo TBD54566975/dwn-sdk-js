@@ -1,8 +1,8 @@
-import * as Secp256k1 from '@noble/secp256k1';
 import * as encoder from '../../../utils/encoder';
+import * as Secp256k1 from '@noble/secp256k1';
 import { sha256 } from 'multiformats/hashes/sha2';
 
-import type { PublicJwk, PrivateJwk, Signer } from '../../types';
+import type { PrivateJwk, PublicJwk, Signer } from '../../types';
 
 function validateKey(jwk: PrivateJwk | PublicJwk): void {
   if (jwk.kty !== 'EC' || jwk.crv !== 'secp256k1') {

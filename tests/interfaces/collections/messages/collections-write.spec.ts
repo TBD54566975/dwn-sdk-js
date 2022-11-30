@@ -1,13 +1,15 @@
+import chaiAsPromised from 'chai-as-promised';
+import sinon from 'sinon';
+import chai, { expect } from 'chai';
+
 import { base64url } from 'multiformats/bases/base64';
 import { CollectionsWrite } from '../../../../src/interfaces/collections/messages/collections-write';
 import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/types';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level';
-import { getCurrentDateInHighPrecision, sleep } from '../../../../src/utils/time';
 import { TestDataGenerator } from '../../../utils/test-data-generator';
 import { TestStubGenerator } from '../../../utils/test-stub-generator';
-import chai, { expect } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
-import sinon from 'sinon';
+import { getCurrentDateInHighPrecision, sleep } from '../../../../src/utils/time';
+
 
 chai.use(chaiAsPromised);
 

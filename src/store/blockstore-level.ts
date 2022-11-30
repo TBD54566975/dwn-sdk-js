@@ -1,5 +1,5 @@
+import type { AwaitIterable, Batch, KeyQuery, Pair, Query } from 'interface-store';
 import type { Blockstore, Options } from 'interface-blockstore';
-import type { AwaitIterable, Pair, Batch, Query, KeyQuery } from 'interface-store';
 
 import { CID } from 'multiformats';
 import { Level } from 'level';

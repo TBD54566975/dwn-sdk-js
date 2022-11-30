@@ -1,6 +1,6 @@
 import { expect } from 'chai';
-import { ProtocolRuleSet } from '../../src';
 import { ProtocolAuthorization } from '../../src/core/protocol-authorization';
+import { ProtocolRuleSet } from '../../src';
 import { TestDataGenerator } from '../utils/test-data-generator';
 
 describe('Protocol-Based Authorization', async () => {

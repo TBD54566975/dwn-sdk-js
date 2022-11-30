@@ -1,17 +1,20 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
 import type { CollectionsWriteAuthorizationPayload, CollectionsWriteDescriptor, CollectionsWriteMessage } from '../types';
+
 import * as encoder from '../../../utils/encoder';
-import { authenticate, authorize, validateAuthorizationIntegrity } from '../../../core/auth';
 import { DidResolver } from '../../../did/did-resolver';
+import { DwnMethodName } from '../../../core/message';
 import { generateCid } from '../../../utils/cid';
-import { getDagCid } from '../../../utils/data';
 import { getCurrentDateInHighPrecision } from '../../../utils/time';
-import { GeneralJws, SignatureInput } from '../../../jose/jws/general/types';
-import { GeneralJwsSigner, GeneralJwsVerifier } from '../../../jose/jws/general';
+import { getDagCid } from '../../../utils/data';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
 import { ProtocolAuthorization } from '../../../core/protocol-authorization';
 import { removeUndefinedProperties } from '../../../utils/object';
+
+import { authenticate, authorize, validateAuthorizationIntegrity } from '../../../core/auth';
+import { GeneralJws, SignatureInput } from '../../../jose/jws/general/types';
+import { GeneralJwsSigner, GeneralJwsVerifier } from '../../../jose/jws/general';
 
 export type CollectionsWriteOptions = AuthCreateOptions & {
   target: string;
@@ -40,7 +43,7 @@ export class CollectionsWrite extends Message implements Authorizable {
     const descriptor: CollectionsWriteDescriptor = {
       target        : options.target,
       recipient     : options.recipient,
-      method        : 'CollectionsWrite',
+      method        : DwnMethodName.CollectionsWrite,
       protocol      : options.protocol,
       schema        : options.schema,
       parentId      : options.parentId,

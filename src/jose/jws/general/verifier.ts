@@ -1,13 +1,15 @@
 import type { Cache } from '../../../utils/types';
-import type { GeneralJws, SignatureEntry } from './types';
 import type { PublicJwk } from '../../types';
 import type { VerificationMethod } from '../../../did/did-resolver';
+import type { GeneralJws, SignatureEntry } from './types';
+
 import * as encoder from '../../../utils/encoder';
 import lodash from 'lodash';
+
 import { DidResolver } from '../../../did/did-resolver';
 import { MemoryCache } from '../../../utils/memory-cache';
-import { signers as verifiers } from '../../algorithms';
 import { validate } from '../../../validator';
+import { signers as verifiers } from '../../algorithms';
 
 type VerificationResult = {
   /** DIDs of all signers */

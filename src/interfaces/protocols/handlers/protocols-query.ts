@@ -1,6 +1,8 @@
 import type { MethodHandler } from '../../types';
 import type { ProtocolsQueryMessage } from '../types';
+
 import { canonicalAuth } from '../../../core/auth';
+import { DwnMethodName } from '../../../core/message';
 import { MessageReply } from '../../../core';
 import { removeUndefinedProperties } from '../../../utils/object';
 
@@ -22,7 +24,7 @@ export const handleProtocolsQuery: MethodHandler = async (
   try {
     const query = {
       target : incomingMessage.descriptor.target,
-      method : 'ProtocolsConfigure',
+      method : DwnMethodName.ProtocolsConfigure,
       ...incomingMessage.descriptor.filter
     };
     removeUndefinedProperties(query);

@@ -1,17 +1,17 @@
-import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
-import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types';
-import type { PermissionScope, PermissionConditions } from '../types';
 import type { SignatureInput } from '../../../jose/jws/general/types';
+import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
+import type { PermissionConditions, PermissionScope } from '../types';
+import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types';
 
 import { canonicalAuth } from '../../../core/auth';
 import { CID } from 'multiformats/cid';
 import { DidResolver } from '../../../did/did-resolver';
 import { generateCid } from '../../../utils/cid';
+import { getCurrentDateInHighPrecision } from '../../../utils/time';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
-import { PermissionsRequest, DEFAULT_CONDITIONS } from './permissions-request';
 import { v4 as uuidv4 } from 'uuid';
-import { getCurrentDateInHighPrecision } from '../../../utils/time';
+import { DEFAULT_CONDITIONS, PermissionsRequest } from './permissions-request';
 
 type PermissionsGrantOptions = AuthCreateOptions & {
   target: string,

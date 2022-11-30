@@ -28,8 +28,8 @@ module.exports = {
       'single',
       { 'allowTemplateLiterals': true }
     ],
-    'semi'                    : ['off'],
     '@typescript-eslint/semi' : ['error', 'always'],
+    'semi'                    : ['off'],
     'no-multi-spaces'         : ['error'],
     'no-trailing-spaces'      : ['error'],
     'max-len'                 : ['error', { 'code': 150, 'ignoreStrings': true }],
@@ -56,6 +56,13 @@ module.exports = {
         'varsIgnorePattern'  : '^_'
       }
     ],
-    'prefer-const': ['error', { 'destructuring': 'all' }]
+    'prefer-const' : ['error', { 'destructuring': 'all' }],
+    'sort-imports' : ['error', {
+      'ignoreCase'            : true,
+      'ignoreDeclarationSort' : false,
+      'ignoreMemberSort'      : false,
+      'memberSyntaxSortOrder' : ['none', 'all', 'single', 'multiple'],
+      'allowSeparatedGroups'  : true
+    }]
   }
 };

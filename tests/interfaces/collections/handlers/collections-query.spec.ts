@@ -1,14 +1,15 @@
+import chaiAsPromised from 'chai-as-promised';
+import sinon from 'sinon';
+import chai, { expect } from 'chai';
+
 import * as encoder from '../../../../src/utils/encoder';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver';
 import { DidResolver } from '../../../../src';
 import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query';
+import { handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 import { TestDataGenerator } from '../../../utils/test-data-generator';
 import { TestStubGenerator } from '../../../utils/test-stub-generator';
-import chai, { expect } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
-import sinon from 'sinon';
-import { handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write';
 
 chai.use(chaiAsPromised);
 
