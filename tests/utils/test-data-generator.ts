@@ -74,6 +74,7 @@ export type GenerateCollectionsWriteMessageInput = {
   contextId?: string;
   schema?: string;
   recordId?: string;
+  lineageParent?: string;
   parentId?: string;
   published?: boolean;
   data?: Uint8Array;
@@ -266,6 +267,7 @@ export class TestDataGenerator {
       contextId     : input?.contextId,
       schema        : input?.schema ?? TestDataGenerator.randomString(20),
       recordId      : input?.recordId,
+      lineageParent : input?.lineageParent,
       parentId      : input?.parentId,
       published     : input?.published,
       dataFormat    : input?.dataFormat ?? 'application/json',

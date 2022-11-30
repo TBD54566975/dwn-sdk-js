@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import { generateCid } from '../../src/utils/cid';
 import { MessageStoreLevel } from '../../src/store/message-store-level';
 import { TestDataGenerator } from '../utils/test-data-generator';
+import { Message } from '../../src/core';
 
 let messageStore: MessageStoreLevel;
 
@@ -91,6 +92,30 @@ describe('MessageStoreLevel Tests', () => {
 
       const results = await messageStore.query({ target: message.descriptor.target });
       expect(results.length).to.equal(1);
+    });
+
+    it('should be able to update indexes to an existing message', async () => {
+      const { message } = await TestDataGenerator.generateCollectionsWriteMessage();
+
+      // inserting the message indicating it is the 'latest' in the index
+      await messageStore.put(message, { latest: 'true' });
+
+      const results1 = await messageStore.query({ target: message.descriptor.target, latest: 'true' });
+      expect(results1.length).to.equal(1);
+
+      const results2 = await messageStore.query({ target: message.descriptor.target, latest: 'false' });
+      expect(results2.length).to.equal(0);
+
+      // deleting the existing indexes and replacing it indicating it is no longer the 'latest'
+      const cid = await Message.getCid(message);
+      await messageStore.delete(cid);
+      await messageStore.put(message, { latest: 'false' });
+
+      const results3 = await messageStore.query({ target: message.descriptor.target, latest: 'true' });
+      expect(results3.length).to.equal(0);
+
+      const results4 = await messageStore.query({ target: message.descriptor.target, latest: 'false' });
+      expect(results4.length).to.equal(1);
     });
 
     it('should index properties with characters beyond just letters and digits', async () => {

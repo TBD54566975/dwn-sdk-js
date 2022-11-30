@@ -128,7 +128,7 @@ export class MessageStoreLevel implements MessageStore {
     return;
   }
 
-  async put(messageJson: BaseMessage, additionalIndexes: {[key: string]: string}): Promise<void> {
+  async put(messageJson: BaseMessage, additionalIndexes: { [key: string]: string }): Promise<void> {
 
     // delete `encodedData` if it exists so `messageJson` is stored without it, `encodedData` will be decoded, chunked and stored separately below
     let encodedData = undefined;

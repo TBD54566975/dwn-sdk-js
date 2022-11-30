@@ -5,7 +5,7 @@ import * as encoder from '../../../utils/encoder';
 import { CollectionsWrite } from '../messages/collections-write';
 import { DwnMethodName } from '../../../core/message';
 import { getDagCid } from '../../../utils/data';
-import { MessageReply } from '../../../core';
+import { Message, MessageReply } from '../../../core';
 
 export const handleCollectionsWrite: MethodHandler = async (
   message,
@@ -27,12 +27,9 @@ export const handleCollectionsWrite: MethodHandler = async (
     }
 
     // authentication & authorization
-    let author;
-    let collectionsWrite: CollectionsWrite;
     try {
-      collectionsWrite = new CollectionsWrite(incomingMessage);
-      const authResult = await collectionsWrite.verifyAuth(didResolver, messageStore);
-      author = authResult.author;
+      const collectionsWrite = new CollectionsWrite(incomingMessage);
+      await collectionsWrite.verifyAuth(didResolver, messageStore);
     } catch (e) {
       return new MessageReply({
         status: { code: 401, detail: e.message }
@@ -51,6 +48,14 @@ export const handleCollectionsWrite: MethodHandler = async (
     let newestMessage = await CollectionsWrite.getNewestMessage(existingMessages);
     let incomingMessageIsNewest = false;
     if (newestMessage === undefined || await CollectionsWrite.isNewer(incomingMessage, newestMessage)) {
+      const expectedLineageParent = newestMessage ? newestMessage.recordId : undefined; // logic will change when CollectionsDelete is implemented
+      const incomingMessageLineageParent = incomingMessage.descriptor.lineageParent;
+      if (incomingMessageLineageParent !== expectedLineageParent) {
+        return new MessageReply({
+          status: { code: 400, detail: `expecting lineageParent to be ${expectedLineageParent} but got ${incomingMessageLineageParent}` }
+        });
+      }
+
       incomingMessageIsNewest = true;
       newestMessage = incomingMessage;
     }
@@ -58,15 +63,10 @@ export const handleCollectionsWrite: MethodHandler = async (
     // write the incoming message to DB if incoming message is newest
     let messageReply: MessageReply;
     if (incomingMessageIsNewest) {
-      const additionalIndexes: {[key:string]: string} = {
-        recordId: incomingMessage.recordId,
-        author
-      };
+      const isLatestBaseState = true;
+      const additionalIndexes = constructAdditionalIndexes(incomingMessage, isLatestBaseState);
 
-      // add `contextId` to additional index if the message is a protocol based message
-      if (incomingMessage.contextId !== undefined) { additionalIndexes.contextId = incomingMessage.contextId; }
-
-      await messageStore.put(message, additionalIndexes);
+      await messageStore.put(incomingMessage, additionalIndexes);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }
@@ -77,11 +77,24 @@ export const handleCollectionsWrite: MethodHandler = async (
       });
     }
 
-    // delete all existing records that are not newest
+    // delete all existing messages that are not newest, except for the originating record
+    // NOTE: in theory, there can only be at most two existing messages per record ID (prior to CollectionsDelete implementation)
     for (const message of existingMessages) {
-      if (await CollectionsWrite.isNewer(newestMessage, message)) {
-        const cid = await CollectionsWrite.getCid(message);
+      const messageIsOld = await CollectionsWrite.isOlder(message, newestMessage);
+      if (messageIsOld) {
+        // the easiest implementation here is delete all old messages
+        // and re-create it with the right index (isLatestBaseState == false) if the message is the originating message,
+        // but there is room for better/more efficient implementation here
+        const cid = await Message.getCid(message);
         await messageStore.delete(cid);
+
+        // if the message is the originating message
+        // we need to keep it BUT, need to ensure message is no longer marked as the latest state
+        if (message.descriptor.lineageParent === undefined) {
+          const isLatestBaseState = false;
+          const additionalIndexes = constructAdditionalIndexes(message, isLatestBaseState);
+          await messageStore.put(message, additionalIndexes);
+        }
       }
     }
 
@@ -92,3 +105,16 @@ export const handleCollectionsWrite: MethodHandler = async (
     });
   }
 };
+
+export function constructAdditionalIndexes(message: CollectionsWriteMessage, isLatestBaseState: boolean): { [key:string]: string } {
+  const additionalIndexes: { [key:string]: string } = {
+    isLatestBaseState : isLatestBaseState.toString(), // NOTE: underlying search-index library does not support boolean, so convert to string
+    recordId          : message.recordId,
+    author            : Message.getAuthor(message)
+  };
+
+  // add `contextId` to additional index if part if given
+  if (message.contextId !== undefined) { additionalIndexes.contextId = message.contextId; }
+
+  return additionalIndexes;
+}

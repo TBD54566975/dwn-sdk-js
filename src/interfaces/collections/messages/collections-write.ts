@@ -23,6 +23,7 @@ export type CollectionsWriteOptions = AuthCreateOptions & {
   contextId?: string;
   schema?: string;
   recordId?: string;
+  lineageParent? : string;
   parentId?: string;
   data: Uint8Array;
   dateCreated?: string;
@@ -38,6 +39,11 @@ export class CollectionsWrite extends Message implements Authorizable {
     super(message);
   }
 
+  /**
+   * Creates a CollectionsWrite message.
+   * @param options.recordId If `undefined`, will be auto-filled as a originating message as convenience for developer.
+   * @param options.lineageParent If `undefined`, it will be auto-filled with value of `options.recordId` as convenience for developer.
+   */
   static async create(options: CollectionsWriteOptions): Promise<CollectionsWrite> {
     const dataCid = await getDagCid(options.data);
     const descriptor: CollectionsWriteDescriptor = {
@@ -46,6 +52,7 @@ export class CollectionsWrite extends Message implements Authorizable {
       method        : DwnMethodName.CollectionsWrite,
       protocol      : options.protocol,
       schema        : options.schema,
+      lineageParent : options.lineageParent ?? options.recordId, // convenience for developer
       parentId      : options.parentId,
       dataCid       : dataCid.toString(),
       dateCreated   : options.dateCreated ?? getCurrentDateInHighPrecision(),
@@ -54,6 +61,7 @@ export class CollectionsWrite extends Message implements Authorizable {
       dataFormat    : options.dataFormat
     };
 
+    // TODO: https://github.com/TBD54566975/dwn-sdk-js/issues/145 - Change datePublished to higher precision format (ISO 8601)
     // generate `datePublished` if the message is to be published but `datePublished` is not given
     if (options.published === true &&
         options.datePublished === undefined) {
@@ -72,6 +80,11 @@ export class CollectionsWrite extends Message implements Authorizable {
       recordId = options.recordId;
     } else { // `recordId` is undefined
       recordId = await CollectionsWrite.getCanonicalId(author, descriptor);
+
+      // lineageParent must not exist if this message is the originating message
+      if (options.lineageParent !== undefined) {
+        throw new Error('originating message must not have a lineage parent');
+      }
     }
 
     // `contextId` computation
@@ -79,7 +92,7 @@ export class CollectionsWrite extends Message implements Authorizable {
     if (options.contextId !== undefined) {
       contextId = options.contextId;
     } else { // `contextId` is undefined
-      // we compute the contextId for the caller if `protocol` is specified but not the `contextId`
+      // we compute the contextId for the caller if `protocol` is specified (this is the case of the root message of a protocol context)
       if (descriptor.protocol !== undefined) {
         contextId = await CollectionsWrite.getCanonicalId(author, descriptor);
       }
@@ -127,6 +140,15 @@ export class CollectionsWrite extends Message implements Authorizable {
    * There is opportunity to integrate better with `validateSchema(...)`
    */
   private async validateIntegrity(): Promise<void> {
+    // if the message is a originating message, the `recordId` must match the expected computed value
+    if (this.message.descriptor.lineageParent === undefined) {
+      const expectedRecordId = await this.getCanonicalId();
+
+      if (this.message.recordId !== expectedRecordId) {
+        throw new Error(`recordId in message: ${this.message.recordId} does not match computed recordId: ${expectedRecordId}`);
+      }
+    }
+
     // if the message is a root protocol message, the `contextId` must match the expected computed value
     if (this.message.descriptor.protocol !== undefined &&
         this.message.descriptor.parentId === undefined) {
@@ -206,11 +228,20 @@ export class CollectionsWrite extends Message implements Authorizable {
   }
 
   /**
-   * Compares the age of two messages.
+   * Checks if first message is newer than second message.
    * @returns `true` if `a` is newer than `b`; `false` otherwise
    */
   public static async isNewer(a: CollectionsWriteMessage, b: CollectionsWriteMessage): Promise<boolean> {
     const aIsNewer = (await CollectionsWrite.compareCreationTime(a, b) > 0);
+    return aIsNewer;
+  }
+
+  /**
+   * Checks if first message is older than second message.
+   * @returns `true` if `a` is older than `b`; `false` otherwise
+   */
+  public static async isOlder(a: CollectionsWriteMessage, b: CollectionsWriteMessage): Promise<boolean> {
+    const aIsNewer = (await CollectionsWrite.compareCreationTime(a, b) < 0);
     return aIsNewer;
   }
 
