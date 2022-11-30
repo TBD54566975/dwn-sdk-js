@@ -776,7 +776,7 @@ describe('handleCollectionsWrite()', () => {
         });
         reply = await handleCollectionsWrite(fulfillmentMessageData.message, messageStore, didResolver);
         expect(reply.status.code).to.equal(401);
-        expect(reply.status.detail).to.contain('must have exactly one parent');
+        expect(reply.status.detail).to.contain('no parent found');
       });
     });
   });
