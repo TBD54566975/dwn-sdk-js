@@ -1,5 +1,6 @@
 import type { Cache } from '../utils/types';
 import type { PublicJwk } from '../jose/types';
+
 import { Did } from './did';
 import { DidIonResolver } from './did-ion-resolver';
 import { DidKeyResolver } from './did-key-resolver';

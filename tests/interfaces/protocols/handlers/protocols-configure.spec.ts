@@ -1,14 +1,15 @@
-import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
+import chai, { expect } from 'chai';
+
 import { compareCids } from '../../../../src/utils/cid';
-import { DidResolver } from '../../../../src';
-import { Message } from '../../../../src/core';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver';
+import { DidResolver } from '../../../../src';
 import { handleProtocolsConfigure } from '../../../../src/interfaces/protocols/handlers/protocols-configure';
+import { handleProtocolsQuery } from '../../../../src/interfaces/protocols/handlers/protocols-query';
+import { Message } from '../../../../src/core';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 import { TestDataGenerator } from '../../../utils/test-data-generator';
-import { handleProtocolsQuery } from '../../../../src/interfaces/protocols/handlers/protocols-query';
 
 chai.use(chaiAsPromised);
 

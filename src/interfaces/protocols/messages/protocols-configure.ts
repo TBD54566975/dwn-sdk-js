@@ -1,5 +1,6 @@
 import type { AuthCreateOptions } from '../../../core/types';
 import type { ProtocolDefinition, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types';
+
 import { DwnMethodName } from '../../../core/message';
 import { getCurrentDateInHighPrecision } from '../../../utils/time';
 import { Message } from '../../../core';

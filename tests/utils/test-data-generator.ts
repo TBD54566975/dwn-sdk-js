@@ -1,5 +1,13 @@
 import * as cbor from '@ipld/dag-cbor';
 import { BaseMessage } from '../../src/core/types';
+import { CID } from 'multiformats/cid';
+import { DidResolutionResult } from '../../src/did/did-resolver';
+import { ed25519 } from '../../src/jose/algorithms/signing/ed25519';
+import { getCurrentDateInHighPrecision } from '../../src/utils/time';
+import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request';
+import { removeUndefinedProperties } from '../../src/utils/object';
+import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1';
+import { sha256 } from 'multiformats/hashes/sha2';
 import {
   CollectionsQuery,
   CollectionsQueryMessage,
@@ -18,15 +26,7 @@ import {
   ProtocolsQueryMessage,
   ProtocolsQueryOptions
 } from '../../src';
-import { CID } from 'multiformats/cid';
-import { DidResolutionResult } from '../../src/did/did-resolver';
-import { ed25519 } from '../../src/jose/algorithms/signing/ed25519';
-import { getCurrentDateInHighPrecision } from '../../src/utils/time';
-import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request';
 import { PrivateJwk, PublicJwk } from '../../src/jose/types';
-import { removeUndefinedProperties } from '../../src/utils/object';
-import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1';
-import { sha256 } from 'multiformats/hashes/sha2';
 
 /**
  * A logical grouping of user data used to generate test messages.

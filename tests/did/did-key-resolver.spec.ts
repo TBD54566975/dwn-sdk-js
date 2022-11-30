@@ -1,6 +1,7 @@
-import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import varint from 'varint';
+import chai, { expect } from 'chai';
+
 import { base58btc } from 'multiformats/bases/base58';
 import { DidKeyResolver } from '../../src/did/did-key-resolver';
 

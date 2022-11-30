@@ -5,8 +5,8 @@ import { CID } from 'multiformats';
 import { DidResolver } from '../did/did-resolver';
 import { GeneralJws } from '../jose/jws/general/types';
 import { GeneralJwsVerifier } from '../jose/jws/general';
-import { generateCid, parseCid } from '../utils/cid';
 import { MessageStore } from '../store/message-store';
+import { generateCid, parseCid } from '../utils/cid';
 
 type AuthorizationPayloadConstraints = {
   /** permissible properties within payload. Note that `descriptorCid` is implied and does not need to be added */

@@ -1,13 +1,14 @@
+import chaiAsPromised from 'chai-as-promised';
+import sinon from 'sinon';
+import chai, { expect } from 'chai';
+
 import { Config } from '../src/dwn';
 import { Did } from '../src/did/did';
 import { DidKeyResolver } from '../src/did/did-key-resolver';
-import { DidResolutionResult, DidMethodResolver } from '../src/did/did-resolver';
 import { Dwn } from '../src/dwn';
 import { MessageStoreLevel } from '../src/store/message-store-level';
 import { TestDataGenerator } from './utils/test-data-generator';
-import chai, { expect } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
-import sinon from 'sinon';
+import { DidMethodResolver, DidResolutionResult } from '../src/did/did-resolver';
 
 chai.use(chaiAsPromised);
 

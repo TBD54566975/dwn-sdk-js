@@ -1,6 +1,6 @@
 import { expect } from 'chai';
-import { validate } from '../../../../src/validator';
 import { signers } from '../../../../src/jose/algorithms';
+import { validate } from '../../../../src/validator';
 
 const { Ed25519, secp256k1 } = signers;
 

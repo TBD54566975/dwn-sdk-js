@@ -1,5 +1,6 @@
 import type { CollectionsWriteMessage } from '../types';
 import type { MethodHandler } from '../../types';
+
 import * as encoder from '../../../utils/encoder';
 import { CollectionsWrite } from '../messages/collections-write';
 import { DwnMethodName } from '../../../core/message';

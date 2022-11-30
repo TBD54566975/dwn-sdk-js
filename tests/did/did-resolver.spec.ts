@@ -1,6 +1,7 @@
-import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
+import chai, { expect } from 'chai';
+
 import { DidIonResolver } from '../../src/did/did-ion-resolver';
 import { DidResolver } from '../../src/did/did-resolver';
 

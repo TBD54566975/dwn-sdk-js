@@ -1,8 +1,9 @@
-import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
-import { DidResolver } from '../../../../src';
+import chai, { expect } from 'chai';
+
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver';
+import { DidResolver } from '../../../../src';
 import { handleProtocolsConfigure } from '../../../../src/interfaces/protocols/handlers/protocols-configure';
 import { handleProtocolsQuery } from '../../../../src/interfaces/protocols/handlers/protocols-query';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level';

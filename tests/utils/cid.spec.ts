@@ -1,10 +1,12 @@
+
+import * as block from 'multiformats/block';
+import * as cbor from '@ipld/dag-cbor';
+import chaiAsPromised from 'chai-as-promised';
+import chai, { expect } from 'chai';
+
 import { generateCid } from '../../src/utils/cid';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { TestDataGenerator } from '../utils/test-data-generator';
-import * as block from 'multiformats/block';
-import * as cbor from '@ipld/dag-cbor';
-import chai, { expect } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
 
 // extend chai to test promises
 chai.use(chaiAsPromised);
