@@ -1,17 +1,18 @@
-import type { BaseMessage, DataReferencingMessage } from '../core/types';
 import type { MessageStore } from './message-store';
+import type { BaseMessage, DataReferencingMessage } from '../core/types';
+
+import * as block from 'multiformats/block';
+import * as cbor from '@ipld/dag-cbor';
 import * as encoder from '../utils/encoder';
+import _ from 'lodash';
+import searchIndex from 'search-index';
+
 import { BlockstoreLevel } from './blockstore-level';
 import { CID } from 'multiformats/cid';
 import { exporter } from 'ipfs-unixfs-exporter';
 import { importer } from 'ipfs-unixfs-importer';
 import { sha256 } from 'multiformats/hashes/sha2';
 
-import * as cbor from '@ipld/dag-cbor';
-import * as block from 'multiformats/block';
-
-import _ from 'lodash';
-import searchIndex from 'search-index';
 
 /**
  * A simple implementation of {@link MessageStore} that works in both the browser and server-side.

@@ -1,14 +1,16 @@
 import type { PermissionsRequestMessage } from '../../../../src/interfaces/permissions/types';
 
-import { DidResolver } from '../../../../src/did/did-resolver';
-import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
-import { GeneralJwsSigner } from '../../../../src/jose/jws/general';
-import { PermissionsRequest, DEFAULT_CONDITIONS } from '../../../../src/interfaces/permissions/messages/permissions-request';
-
-import chai, { expect } from 'chai';
+import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
+
+import { DidResolver } from '../../../../src/did/did-resolver';
+import { expect } from 'chai';
+import { GeneralJwsSigner } from '../../../../src/jose/jws/general';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level';
+import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
+import { DEFAULT_CONDITIONS, PermissionsRequest } from '../../../../src/interfaces/permissions/messages/permissions-request';
+
 
 chai.use(chaiAsPromised);
 

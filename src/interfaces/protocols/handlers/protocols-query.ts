@@ -1,5 +1,6 @@
 import type { MethodHandler } from '../../types';
 import type { ProtocolsQueryMessage } from '../types';
+
 import { canonicalAuth } from '../../../core/auth';
 import { DwnMethodName } from '../../../core/message';
 import { MessageReply } from '../../../core';

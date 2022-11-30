@@ -1,12 +1,14 @@
-import type { BaseMessage, RequestSchema } from './core/types';
 import type { DidMethodResolver } from './did/did-resolver';
-import type { Interface, MethodHandler } from './interfaces/types';
 import type { MessageStore } from './store/message-store';
+import type { BaseMessage, RequestSchema } from './core/types';
+import type { Interface, MethodHandler } from './interfaces/types';
+
 import * as encoder from '../src/utils/encoder';
-import { CollectionsInterface, PermissionsInterface, ProtocolsInterface } from './interfaces';
 import { DidResolver } from './did/did-resolver';
-import { MessageReply, Request, Response } from './core';
 import { MessageStoreLevel } from './store/message-store-level';
+
+import { CollectionsInterface, PermissionsInterface, ProtocolsInterface } from './interfaces';
+import { MessageReply, Request, Response } from './core';
 
 
 export class Dwn {

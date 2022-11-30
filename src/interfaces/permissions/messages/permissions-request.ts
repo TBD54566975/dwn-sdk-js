@@ -1,13 +1,13 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
+import type { PermissionConditions, PermissionScope } from '../types';
 import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types';
-import type { PermissionScope, PermissionConditions } from '../types';
 
 import { canonicalAuth } from '../../../core/auth';
 import { DidResolver } from '../../../did/did-resolver';
+import { getCurrentDateInHighPrecision } from '../../../utils/time';
 import { Message } from '../../../core/message';
 import { MessageStore } from '../../../store/message-store';
 import { v4 as uuidv4 } from 'uuid';
-import { getCurrentDateInHighPrecision } from '../../../utils/time';
 
 type PermissionsRequestOptions = AuthCreateOptions & {
   target: string;

@@ -1,5 +1,6 @@
-import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
+import chai, { expect } from 'chai';
+
 import { MemoryCache } from '../../src/utils/memory-cache';
 import sinon from 'sinon';
 

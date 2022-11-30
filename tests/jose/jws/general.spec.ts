@@ -1,5 +1,6 @@
-import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
+import chai, { expect } from 'chai';
+
 import { DidResolver } from '../../../src/did/did-resolver';
 import { GeneralJwsSigner } from '../../../src/jose/jws/general/signer';
 import { GeneralJwsVerifier } from '../../../src/jose/jws/general/verifier';

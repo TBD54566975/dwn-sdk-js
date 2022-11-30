@@ -1,5 +1,6 @@
-import type { MethodHandler } from '../../types';
 import type { CollectionsQueryMessage } from '../types';
+import type { MethodHandler } from '../../types';
+
 import { BaseMessage } from '../../../core/types';
 import { CollectionsQuery } from '../messages/collections-query';
 import { DwnMethodName } from '../../../core/message';

@@ -1,15 +1,15 @@
 import * as encoder from '../../../../src/utils/encoder';
-import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import credentialIssuanceProtocolDefinition from '../../../vectors/protocol-definitions/credential-issuance.json' assert { type: 'json' };
 import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import sinon from 'sinon';
+import chai, { expect } from 'chai';
+
 import { base64url } from 'multiformats/bases/base64';
 import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/types';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver';
 import { DidResolver } from '../../../../src/did/did-resolver';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general';
-import { GenerateCollectionsWriteMessageOutput, TestDataGenerator } from '../../../utils/test-data-generator';
 import { getCurrentDateInHighPrecision } from '../../../../src/utils/time';
 import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query';
 import { handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write';
@@ -18,6 +18,7 @@ import { Message } from '../../../../src/core';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level';
 import { ProtocolDefinition } from '../../../../src';
 import { TestStubGenerator } from '../../../utils/test-stub-generator';
+import { GenerateCollectionsWriteMessageOutput, TestDataGenerator } from '../../../utils/test-data-generator';
 
 chai.use(chaiAsPromised);
 

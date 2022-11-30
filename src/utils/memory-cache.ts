@@ -1,5 +1,5 @@
-import LruCache from 'lru-cache';
 import type { Cache } from './types';
+import LruCache from 'lru-cache';
 
 /**
  * A cache using local memory.

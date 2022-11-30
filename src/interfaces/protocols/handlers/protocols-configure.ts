@@ -1,5 +1,5 @@
-import type { ProtocolsConfigureMessage } from '../types';
 import type { MethodHandler } from '../../types';
+import type { ProtocolsConfigureMessage } from '../types';
 
 import { canonicalAuth } from '../../../core/auth';
 import { DwnMethodName } from '../../../core/message';

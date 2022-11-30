@@ -1,12 +1,13 @@
-import type { BaseMessage, Descriptor } from './types';
 import type { SignatureInput } from '../jose/jws/general/types';
+import type { BaseMessage, Descriptor } from './types';
 
 import { CID } from 'multiformats/cid';
 import { CollectionsWriteMessage } from '../interfaces/collections/types';
-import { compareCids, generateCid } from '../utils/cid';
 import { GeneralJws } from '../jose/jws/general/types';
-import { GeneralJwsSigner, GeneralJwsVerifier } from '../jose/jws/general';
 import { validate } from '../validator';
+
+import { compareCids, generateCid } from '../utils/cid';
+import { GeneralJwsSigner, GeneralJwsVerifier } from '../jose/jws/general';
 
 export enum DwnMethodName {
   CollectionsWrite = 'CollectionsWrite',
