@@ -140,22 +140,29 @@ export class CollectionsWrite extends Message implements Authorizable {
    * There is opportunity to integrate better with `validateSchema(...)`
    */
   private async validateIntegrity(): Promise<void> {
-    // if the message is a originating message, the `recordId` must match the expected computed value
+    // make sure the same `recordId` in message is the same as the `recordId` in `authorization`
+    if (this.message.recordId !== this.authorizationPayload.recordId) {
+      throw new Error(
+        `recordId in message ${this.message.recordId} does not match recordId in authorization: ${this.authorizationPayload.recordId}`
+      );
+    }
+
+    // if the message is a originating message, the `recordId` must match the expected deterministic value
     if (this.message.descriptor.lineageParent === undefined) {
       const expectedRecordId = await this.getCanonicalId();
 
       if (this.message.recordId !== expectedRecordId) {
-        throw new Error(`recordId in message: ${this.message.recordId} does not match computed recordId: ${expectedRecordId}`);
+        throw new Error(`recordId in message: ${this.message.recordId} does not match deterministic recordId: ${expectedRecordId}`);
       }
     }
 
-    // if the message is a root protocol message, the `contextId` must match the expected computed value
+    // if the message is a root protocol message, the `contextId` must match the expected deterministic value
     if (this.message.descriptor.protocol !== undefined &&
         this.message.descriptor.parentId === undefined) {
       const expectedContextId = await this.getCanonicalId();
 
       if (this.message.contextId !== expectedContextId) {
-        throw new Error(`contextId in message: ${this.message.contextId} does not match computed contextId: ${expectedContextId}`);
+        throw new Error(`contextId in message: ${this.message.contextId} does not match deterministic contextId: ${expectedContextId}`);
       }
     }
 

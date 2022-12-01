@@ -199,6 +199,27 @@ describe('handleCollectionsWrite()', () => {
         .to.equal(largerCollectionWriteMessageData.message.descriptor.dataCid); // expecting unchanged
     });
 
+    it('should return 400 if lineageParent is referencing a non-root message', async () => {
+      const rootMessageData = await TestDataGenerator.generateCollectionsWriteMessage();
+      const didResolverStub = TestStubGenerator.createDidResolverStub(rootMessageData.requester);
+      const rootMessageWriteReply = await handleCollectionsWrite(rootMessageData.message, messageStore, didResolverStub);
+      expect(rootMessageWriteReply.status.code).to.equal(202);
+
+      const recordId = rootMessageData.message.recordId;
+      const nonExistentCid = await TestDataGenerator.randomCborSha256Cid();
+      const childMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+        requester     : rootMessageData.requester,
+        target        : rootMessageData.target,
+        recordId,
+        lineageParent : nonExistentCid
+      });
+
+      const reply = await handleCollectionsWrite(childMessageData.message, messageStore, didResolverStub);
+
+      expect(reply.status.code).to.equal(400);
+      expect(reply.status.detail).to.contain(`expecting lineageParent to be ${recordId}`);
+    });
+
     describe('protocol based writes', () => {
       it('should allow write with allow-anyone rule', async () => {
         // scenario, Bob writes into Alice's DWN given Alice's "email" protocol allow-anyone rule
@@ -781,7 +802,60 @@ describe('handleCollectionsWrite()', () => {
     });
   });
 
-  it('should return 400 if computed `contextId` for a root protocol record mismatches with `contextId` in the message', async () => {
+  it('should return 401 if `recordId` in `authorization` payload mismatches with `recordId` in the message', async () => {
+    const { requester, message, collectionsWrite } = await TestDataGenerator.generateCollectionsWriteMessage();
+
+    // replace `authorization` with mismatching `record`, even though signature is still valid
+    const authorizationPayload = { ...collectionsWrite.authorizationPayload };
+    authorizationPayload.recordId = await TestDataGenerator.randomCborSha256Cid(); // make recordId mismatch in authorization payload
+    const authorizationPayloadBytes = encoder.objectToBytes(authorizationPayload);
+    const signatureInput = {
+      jwkPrivate      : requester.keyPair.privateJwk,
+      protectedHeader : {
+        kid : requester.keyId,
+        alg : requester.keyPair.privateJwk.alg!
+      }
+    };
+    const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
+    message.authorization = signer.getJws();
+
+    const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
+    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+    const reply = await handleCollectionsWrite(message, messageStoreStub, didResolverStub);
+
+    expect(reply.status.code).to.equal(401);
+    expect(reply.status.detail).to.contain('does not match recordId in authorization');
+  });
+
+  it('should return 401 if `recordId` in root CollectionsWrite message is mismatches with the expected deterministic `recordId`', async () => {
+    const { requester, message, collectionsWrite } = await TestDataGenerator.generateCollectionsWriteMessage();
+
+    const incorrectRecordId = await TestDataGenerator.randomCborSha256Cid();
+    message.recordId = incorrectRecordId; // intentionally mismatch with the expected deterministic recordId
+
+    // replace `authorization` with mismatching `record`, even though signature is still valid
+    const authorizationPayload = { ...collectionsWrite.authorizationPayload };
+    authorizationPayload.recordId = incorrectRecordId; // match with the overwritten recordId above
+    const authorizationPayloadBytes = encoder.objectToBytes(authorizationPayload);
+    const signatureInput = {
+      jwkPrivate      : requester.keyPair.privateJwk,
+      protectedHeader : {
+        kid : requester.keyId,
+        alg : requester.keyPair.privateJwk.alg!
+      }
+    };
+    const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
+    message.authorization = signer.getJws();
+
+    const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
+    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+    const reply = await handleCollectionsWrite(message, messageStoreStub, didResolverStub);
+
+    expect(reply.status.code).to.equal(401);
+    expect(reply.status.detail).to.contain('does not match deterministic recordId');
+  });
+
+  it('should return 401 if computed `contextId` for a root protocol record mismatches with `contextId` in the message', async () => {
     // generate a message with protocol so that computed contextId is also computed and included in message
     const { message } = await TestDataGenerator.generateCollectionsWriteMessage({ protocol: 'anyValue' });
 
@@ -792,14 +866,14 @@ describe('handleCollectionsWrite()', () => {
 
     const reply = await handleCollectionsWrite(message, messageStoreStub, didResolverStub);
     expect(reply.status.code).to.equal(401);
-    expect(reply.status.detail).to.contain('does not match computed contextId');
+    expect(reply.status.detail).to.contain('does not match deterministic contextId');
   });
 
-  it('should return 400 if `contextId` in `authorization` payload mismatches with `contextId` in the message', async () => {
+  it('should return 401 if `contextId` in `authorization` payload mismatches with `contextId` in the message', async () => {
     // generate a message with protocol so that computed contextId is also computed and included in message
     const { requester, message, collectionsWrite } = await TestDataGenerator.generateCollectionsWriteMessage({ protocol: 'anyValue' });
 
-    // replace `authorization` with mismatching `contextId`
+    // replace `authorization` with mismatching `contextId`, even though signature is still valid
     const authorizationPayload = { ...collectionsWrite.authorizationPayload };
     authorizationPayload.contextId = await TestDataGenerator.randomCborSha256Cid(); // make contextId mismatch in authorization payload
     const authorizationPayloadBytes = encoder.objectToBytes(authorizationPayload);
@@ -832,6 +906,20 @@ describe('handleCollectionsWrite()', () => {
 
     expect(reply.status.code).to.equal(400);
     expect(reply.status.detail).to.equal('actual CID of data and `dataCid` in descriptor mismatch');
+  });
+
+  it('should return 400 if lineageParent is referencing a non-existent message', async () => {
+    const nonExistentCid = await TestDataGenerator.randomCborSha256Cid();
+    const messageData = await TestDataGenerator.generateCollectionsWriteMessage({ recordId: nonExistentCid });
+
+    const didResolverStub = TestStubGenerator.createDidResolverStub(messageData.requester);
+    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+    messageStoreStub.query.returns(Promise.resolve([])); // mock to simulate non-existing record
+
+    const reply = await handleCollectionsWrite(messageData.message, messageStoreStub, didResolverStub);
+
+    expect(reply.status.code).to.equal(400);
+    expect(reply.status.detail).to.contain('expecting lineageParent to be undefined');
   });
 
   it('should return 401 if signature check fails', async () => {

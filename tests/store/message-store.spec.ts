@@ -1,9 +1,9 @@
 import { CollectionsWriteMessage } from '../../src/interfaces/collections/types';
 import { expect } from 'chai';
 import { generateCid } from '../../src/utils/cid';
+import { Message } from '../../src/core';
 import { MessageStoreLevel } from '../../src/store/message-store-level';
 import { TestDataGenerator } from '../utils/test-data-generator';
-import { Message } from '../../src/core';
 
 let messageStore: MessageStoreLevel;
 

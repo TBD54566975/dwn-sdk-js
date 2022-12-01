@@ -27,6 +27,7 @@ import {
   ProtocolsQueryOptions
 } from '../../src';
 import { PrivateJwk, PublicJwk } from '../../src/jose/types';
+import { SignatureInput } from '../../src/jose/jws/general/types';
 
 /**
  * A logical grouping of user data used to generate test messages.
@@ -161,6 +162,21 @@ export class TestDataGenerator {
   }
 
   /**
+   * Creates a SignatureInput from the given Persona.
+   */
+  public static createSignatureInputFromPersona(persona: Persona): SignatureInput {
+    const signatureInput = {
+      jwkPrivate      : persona.keyPair.privateJwk,
+      protectedHeader : {
+        alg : persona.keyPair.privateJwk.alg as string,
+        kid : persona.keyId
+      }
+    };
+
+    return signatureInput;
+  }
+
+  /**
    * Generates a ProtocolsConfigure message for testing.
    * Optional parameters are generated if not given.
    * Implementation currently uses `ProtocolsConfigure.create()`.
@@ -244,6 +260,7 @@ export class TestDataGenerator {
   /**
    * Generates a CollectionsWrite message for testing.
    * Optional parameters are generated if not given.
+   * If `requester` and `target` are both not given, use the same persona to pass authorization in tests by default.
    * Implementation currently uses `CollectionsWrite.create()`.
    */
   public static async generateCollectionsWriteMessage(input?: GenerateCollectionsWriteMessageInput): Promise<GenerateCollectionsWriteMessageOutput> {
