@@ -8,6 +8,7 @@ import { PermissionsRequest } from '../../src/interfaces/permissions/messages/pe
 import { removeUndefinedProperties } from '../../src/utils/object';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1';
 import { sha256 } from 'multiformats/hashes/sha2';
+import { SignatureInput } from '../../src/jose/jws/general/types';
 import {
   CollectionsQuery,
   CollectionsQueryMessage,
@@ -27,7 +28,6 @@ import {
   ProtocolsQueryOptions
 } from '../../src';
 import { PrivateJwk, PublicJwk } from '../../src/jose/types';
-import { SignatureInput } from '../../src/jose/jws/general/types';
 
 /**
  * A logical grouping of user data used to generate test messages.
