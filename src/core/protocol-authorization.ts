@@ -90,8 +90,8 @@ export class ProtocolAuthorization {
       };
       const parentMessages = await messageStore.query(query) as CollectionsWriteMessage[];
 
-      if (parentMessages.length !== 1) {
-        throw new Error(`must have exactly one parent but found ${parentMessages.length}}`);
+      if (parentMessages.length === 0) {
+        throw new Error(`no parent found with ID ${currentParentId}`);
       }
 
       const parent = parentMessages[0];

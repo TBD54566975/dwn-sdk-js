@@ -52,9 +52,8 @@ describe('handleCollectionsWrite()', () => {
       // write a message into DB
       const requester = await TestDataGenerator.generatePersona();
       const target = requester;
-      const recordId = await TestDataGenerator.randomCborSha256Cid();
       const data1 = new TextEncoder().encode('data1');
-      const collectionsWriteMessageData = await TestDataGenerator.generateCollectionsWriteMessage({ requester, target, recordId, data: data1 });
+      const collectionsWriteMessageData = await TestDataGenerator.generateCollectionsWriteMessage({ requester, target, data: data1 });
 
       // setting up a stub did resolver
       const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
@@ -62,6 +61,7 @@ describe('handleCollectionsWrite()', () => {
       const collectionsWriteReply = await handleCollectionsWrite(collectionsWriteMessageData.message, messageStore, didResolverStub);
       expect(collectionsWriteReply.status.code).to.equal(202);
 
+      const recordId = collectionsWriteMessageData.message.recordId;
       const collectionsQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
         requester,
         target,
@@ -75,7 +75,7 @@ describe('handleCollectionsWrite()', () => {
       expect((collectionsQueryReply.entries![0] as CollectionsWriteMessage).encodedData).to.equal(base64url.baseEncode(data1));
 
       // generate and write a new CollectionsWrite to overwrite the existing record
-      // a new CollectionsWrite by default will have a later `dateCreate` due to the default Date.now() call
+      // a new CollectionsWrite by default will have a later `dateCreate`
       const data2 = new TextEncoder().encode('data2');
       const newCollectionsWriteMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
         requester,
@@ -105,10 +105,25 @@ describe('handleCollectionsWrite()', () => {
     });
 
     it('should only be able to overwrite existing record if new message CID is larger when `dateCreated` value is the same', async () => {
-      // generate two messages with the same `dateCreated` value
+      // start by writing an originating message
       const requester = await TestDataGenerator.generatePersona();
       const target = requester;
-      const recordId = await TestDataGenerator.randomCborSha256Cid();
+      const originatingMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+        requester,
+        target,
+        dateCreated : getCurrentDateInHighPrecision(),
+        data        : encoder.stringToBytes('unused')
+      });
+
+      // setting up a stub did resolver
+      const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
+
+      // sanity check that originating message got written
+      const originatingMessageWriteReply = await handleCollectionsWrite(originatingMessageData.message, messageStore, didResolverStub);
+      expect(originatingMessageWriteReply.status.code).to.equal(202);
+      const recordId = originatingMessageData.message.recordId;
+
+      // generate two new CollectionsWrite messages with the same `dateCreated` value
       const dateCreated = getCurrentDateInHighPrecision();
       const collectionsWriteMessageData1 = await TestDataGenerator.generateCollectionsWriteMessage({
         requester,
@@ -138,9 +153,6 @@ describe('handleCollectionsWrite()', () => {
         largerCollectionWriteMessageData = collectionsWriteMessageData2;
         smallerCollectionWriteMessageData = collectionsWriteMessageData1;
       }
-
-      // setting up a stub did resolver
-      const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
 
       // write the message with the smaller lexicographical message CID first
       const collectionsWriteReply = await handleCollectionsWrite(smallerCollectionWriteMessageData.message, messageStore, didResolverStub);
@@ -185,6 +197,27 @@ describe('handleCollectionsWrite()', () => {
       expect(thirdCollectionsQueryReply.entries?.length).to.equal(1);
       expect((thirdCollectionsQueryReply.entries![0] as CollectionsWriteMessage).descriptor.dataCid)
         .to.equal(largerCollectionWriteMessageData.message.descriptor.dataCid); // expecting unchanged
+    });
+
+    it('should return 400 if lineageParent is referencing a non-root message', async () => {
+      const rootMessageData = await TestDataGenerator.generateCollectionsWriteMessage();
+      const didResolverStub = TestStubGenerator.createDidResolverStub(rootMessageData.requester);
+      const rootMessageWriteReply = await handleCollectionsWrite(rootMessageData.message, messageStore, didResolverStub);
+      expect(rootMessageWriteReply.status.code).to.equal(202);
+
+      const recordId = rootMessageData.message.recordId;
+      const nonExistentCid = await TestDataGenerator.randomCborSha256Cid();
+      const childMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+        requester     : rootMessageData.requester,
+        target        : rootMessageData.target,
+        recordId,
+        lineageParent : nonExistentCid
+      });
+
+      const reply = await handleCollectionsWrite(childMessageData.message, messageStore, didResolverStub);
+
+      expect(reply.status.code).to.equal(400);
+      expect(reply.status.detail).to.contain(`expecting lineageParent to be ${recordId}`);
     });
 
     describe('protocol based writes', () => {
@@ -281,14 +314,12 @@ describe('handleCollectionsWrite()', () => {
 
         // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
         const vcIssuer = await TestDataGenerator.generatePersona();
-        const credentialApplicationRecordId = await TestDataGenerator.randomCborSha256Cid();
         const encodedCredentialApplication = new TextEncoder().encode('credential application data');
         const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
           requester    : alice,
           target       : alice,
           recipientDid : vcIssuer.did,
           protocol ,
-          recordId     : credentialApplicationRecordId,
           schema       : credentialApplicationSchema,
           data         : encodedCredentialApplication
         });
@@ -306,7 +337,7 @@ describe('handleCollectionsWrite()', () => {
             recipientDid : alice.did,
             protocol ,
             contextId    : credentialApplicationContextId,
-            parentId     : credentialApplicationRecordId,
+            parentId     : credentialApplicationContextId,
             schema       : credentialResponseSchema,
             data         : encodedCredentialResponse
           }
@@ -360,14 +391,12 @@ describe('handleCollectionsWrite()', () => {
 
         // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
         const vcIssuer = await TestDataGenerator.generatePersona();
-        const credentialApplicationRecordId = await TestDataGenerator.randomCborSha256Cid();
         const encodedCredentialApplication = new TextEncoder().encode('credential application data');
         const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
           requester    : alice,
           target       : alice,
           recipientDid : vcIssuer.did,
           protocol ,
-          recordId     : credentialApplicationRecordId,
           schema       : credentialApplicationSchema,
           data         : encodedCredentialApplication
         });
@@ -386,7 +415,7 @@ describe('handleCollectionsWrite()', () => {
             recipientDid : alice.did,
             protocol ,
             contextId    : credentialApplicationContextId,
-            parentId     : credentialApplicationRecordId,
+            parentId     : credentialApplicationContextId,
             schema       : credentialResponseSchema,
             data         : encodedCredentialResponse
           }
@@ -717,10 +746,10 @@ describe('handleCollectionsWrite()', () => {
           .to.equal(fulfillmentMessageData.message.descriptor.dataCid);
       });
 
-      it('should fail authorization incoming message contains `parentId` that leads to more than one record', async () => {
+      it('should fail authorization if incoming message contains `parentId` that leads to no record', async () => {
         // 1. DEX protocol with at least 3 layers of message exchange: ask -> offer -> fulfillment
-        // 2. 2 offers with the same `recordId` for the same ask in the PFI
-        // 3. Alice sends a fulfillment to an offer should fail due to the ambiguity
+        // 2. Alice sends an ask to a PFI
+        // 3. Alice sends a fulfillment to an non-existent offer to the PFI
 
         const alice = await DidKeyResolver.generate();
         const pfi = await DidKeyResolver.generate();
@@ -755,46 +784,6 @@ describe('handleCollectionsWrite()', () => {
         let reply = await handleCollectionsWrite(askMessageData.message, messageStore, didResolver);
         expect(reply.status.code).to.equal(202);
 
-        // generate two offers with the same `recordId`
-        const duplicatedOfferRecordId = await TestDataGenerator.randomCborSha256Cid();
-        const offer1MessageData = await TestDataGenerator.generateCollectionsWriteMessage({
-          requester    : pfi,
-          target       : pfi,
-          recipientDid : alice.did,
-          schema       : 'offer',
-          contextId,
-          parentId     : askMessageData.message.recordId,
-          protocol,
-          recordId     : duplicatedOfferRecordId,
-          data
-        });
-
-        const offer2MessageData = await TestDataGenerator.generateCollectionsWriteMessage({
-          requester    : pfi,
-          target       : pfi,
-          recipientDid : alice.did,
-          schema       : 'offer',
-          contextId,
-          parentId     : askMessageData.message.recordId,
-          protocol,
-          recordId     : duplicatedOfferRecordId,
-          data
-        });
-
-        // we have to insert the two records directly into Alice's DWN because handler does not allow such condition to occur under expected operation
-        await messageStore.put(offer1MessageData.message, { recordId: duplicatedOfferRecordId, author: alice.did });
-        await messageStore.put(offer2MessageData.message, { recordId: duplicatedOfferRecordId, author: alice.did });
-
-        // verify both offers are stored in PFI's DB
-        const offersQueryDaa = await TestDataGenerator.generateCollectionsQueryMessage({
-          requester : pfi,
-          target    : pfi,
-          filter    : { recordId: duplicatedOfferRecordId }
-        });
-        const collectionsQueryReply = await handleCollectionsQuery(offersQueryDaa.message, messageStore, didResolver);
-        expect(collectionsQueryReply.status.code).to.equal(200);
-        expect(collectionsQueryReply.entries?.length).to.equal(2);
-
         // the actual test: making sure fulfillment message fails
         const fulfillmentMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
           requester    : alice,
@@ -802,18 +791,71 @@ describe('handleCollectionsWrite()', () => {
           recipientDid : pfi.did,
           schema       : 'fulfillment',
           contextId,
-          parentId     : duplicatedOfferRecordId,
+          parentId     : 'non-existent-id',
           protocol,
           data
         });
         reply = await handleCollectionsWrite(fulfillmentMessageData.message, messageStore, didResolver);
         expect(reply.status.code).to.equal(401);
-        expect(reply.status.detail).to.contain('must have exactly one parent');
+        expect(reply.status.detail).to.contain('no parent found');
       });
     });
   });
 
-  it('should return 400 if computed `contextId` for a root protocol record mismatches with `contextId` in the message', async () => {
+  it('should return 401 if `recordId` in `authorization` payload mismatches with `recordId` in the message', async () => {
+    const { requester, message, collectionsWrite } = await TestDataGenerator.generateCollectionsWriteMessage();
+
+    // replace `authorization` with mismatching `record`, even though signature is still valid
+    const authorizationPayload = { ...collectionsWrite.authorizationPayload };
+    authorizationPayload.recordId = await TestDataGenerator.randomCborSha256Cid(); // make recordId mismatch in authorization payload
+    const authorizationPayloadBytes = encoder.objectToBytes(authorizationPayload);
+    const signatureInput = {
+      jwkPrivate      : requester.keyPair.privateJwk,
+      protectedHeader : {
+        kid : requester.keyId,
+        alg : requester.keyPair.privateJwk.alg!
+      }
+    };
+    const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
+    message.authorization = signer.getJws();
+
+    const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
+    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+    const reply = await handleCollectionsWrite(message, messageStoreStub, didResolverStub);
+
+    expect(reply.status.code).to.equal(401);
+    expect(reply.status.detail).to.contain('does not match recordId in authorization');
+  });
+
+  it('should return 401 if `recordId` in root CollectionsWrite message is mismatches with the expected deterministic `recordId`', async () => {
+    const { requester, message, collectionsWrite } = await TestDataGenerator.generateCollectionsWriteMessage();
+
+    const incorrectRecordId = await TestDataGenerator.randomCborSha256Cid();
+    message.recordId = incorrectRecordId; // intentionally mismatch with the expected deterministic recordId
+
+    // replace `authorization` with mismatching `record`, even though signature is still valid
+    const authorizationPayload = { ...collectionsWrite.authorizationPayload };
+    authorizationPayload.recordId = incorrectRecordId; // match with the overwritten recordId above
+    const authorizationPayloadBytes = encoder.objectToBytes(authorizationPayload);
+    const signatureInput = {
+      jwkPrivate      : requester.keyPair.privateJwk,
+      protectedHeader : {
+        kid : requester.keyId,
+        alg : requester.keyPair.privateJwk.alg!
+      }
+    };
+    const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
+    message.authorization = signer.getJws();
+
+    const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
+    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+    const reply = await handleCollectionsWrite(message, messageStoreStub, didResolverStub);
+
+    expect(reply.status.code).to.equal(401);
+    expect(reply.status.detail).to.contain('does not match deterministic recordId');
+  });
+
+  it('should return 401 if computed `contextId` for a root protocol record mismatches with `contextId` in the message', async () => {
     // generate a message with protocol so that computed contextId is also computed and included in message
     const { message } = await TestDataGenerator.generateCollectionsWriteMessage({ protocol: 'anyValue' });
 
@@ -824,14 +866,14 @@ describe('handleCollectionsWrite()', () => {
 
     const reply = await handleCollectionsWrite(message, messageStoreStub, didResolverStub);
     expect(reply.status.code).to.equal(401);
-    expect(reply.status.detail).to.contain('does not match computed contextId');
+    expect(reply.status.detail).to.contain('does not match deterministic contextId');
   });
 
-  it('should return 400 if `contextId` in `authorization` payload mismatches with `contextId` in the message', async () => {
+  it('should return 401 if `contextId` in `authorization` payload mismatches with `contextId` in the message', async () => {
     // generate a message with protocol so that computed contextId is also computed and included in message
     const { requester, message, collectionsWrite } = await TestDataGenerator.generateCollectionsWriteMessage({ protocol: 'anyValue' });
 
-    // replace `authorization` with mismatching `contextId`
+    // replace `authorization` with mismatching `contextId`, even though signature is still valid
     const authorizationPayload = { ...collectionsWrite.authorizationPayload };
     authorizationPayload.contextId = await TestDataGenerator.randomCborSha256Cid(); // make contextId mismatch in authorization payload
     const authorizationPayloadBytes = encoder.objectToBytes(authorizationPayload);
@@ -864,6 +906,20 @@ describe('handleCollectionsWrite()', () => {
 
     expect(reply.status.code).to.equal(400);
     expect(reply.status.detail).to.equal('actual CID of data and `dataCid` in descriptor mismatch');
+  });
+
+  it('should return 400 if lineageParent is referencing a non-existent message', async () => {
+    const nonExistentCid = await TestDataGenerator.randomCborSha256Cid();
+    const messageData = await TestDataGenerator.generateCollectionsWriteMessage({ recordId: nonExistentCid });
+
+    const didResolverStub = TestStubGenerator.createDidResolverStub(messageData.requester);
+    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+    messageStoreStub.query.returns(Promise.resolve([])); // mock to simulate non-existing record
+
+    const reply = await handleCollectionsWrite(messageData.message, messageStoreStub, didResolverStub);
+
+    expect(reply.status.code).to.equal(400);
+    expect(reply.status.detail).to.contain('expecting lineageParent to be undefined');
   });
 
   it('should return 401 if signature check fails', async () => {

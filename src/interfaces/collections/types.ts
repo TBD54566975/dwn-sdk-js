@@ -7,6 +7,7 @@ export type CollectionsWriteDescriptor = {
   method: DwnMethodName.CollectionsWrite;
   protocol?: string;
   schema?: string;
+  lineageParent?: string;
   parentId?: string;
   dataCid: string;
   dateCreated: string;

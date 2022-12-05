@@ -23,7 +23,7 @@ export abstract class Message {
   readonly message: BaseMessage;
 
   constructor(message: BaseMessage) {
-    this.author = GeneralJwsVerifier.getDid(message.authorization.signatures[0]);
+    this.author = Message.getAuthor(message);
     this.authorizationPayload = GeneralJwsVerifier.decodePlainObjectPayload(message.authorization);
     this.message = message;
   }
@@ -45,6 +45,14 @@ export abstract class Message {
 
     return rawMessage as BaseMessage;
   };
+
+  /**
+   * Gets the DID of the author of the given message.
+   */
+  public static getAuthor(message: BaseMessage): string {
+    const author = GeneralJwsVerifier.getDid(message.authorization.signatures[0]);
+    return author;
+  }
 
   /**
    * Gets the CID of the given message.

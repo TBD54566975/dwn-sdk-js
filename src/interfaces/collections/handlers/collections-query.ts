@@ -55,8 +55,9 @@ export const handleCollectionsQuery: MethodHandler = async (
 async function fetchRecordsAsOwner(queryMessage: CollectionsQueryMessage, messageStore: MessageStore): Promise<BaseMessage[]> {
   // fetch all published records matching the query
   const includeCriteria = {
-    target : queryMessage.descriptor.target,
-    method : DwnMethodName.CollectionsWrite,
+    target            : queryMessage.descriptor.target,
+    method            : DwnMethodName.CollectionsWrite,
+    isLatestBaseState : 'true',
     ...queryMessage.descriptor.filter
   };
   removeUndefinedProperties(includeCriteria);
@@ -85,9 +86,10 @@ async function fetchRecordsAsNonOwner(queryMessage: CollectionsQueryMessage, mes
 async function fetchPublishedRecords(queryMessage: CollectionsQueryMessage, messageStore: MessageStore): Promise<BaseMessage[]> {
   // fetch all published records matching the query
   const includeCriteria = {
-    target    : queryMessage.descriptor.target,
-    method    : DwnMethodName.CollectionsWrite,
-    published : true,
+    target            : queryMessage.descriptor.target,
+    method            : DwnMethodName.CollectionsWrite,
+    published         : true,
+    isLatestBaseState : 'true',
     ...queryMessage.descriptor.filter
   };
   removeUndefinedProperties(includeCriteria);
@@ -103,9 +105,10 @@ async function fetchUnpublishedRecordsForRequester(queryMessage: CollectionsQuer
   : Promise<BaseMessage[]> {
   // include records where recipient is requester
   const includeCriteria = {
-    target    : queryMessage.descriptor.target,
-    recipient : requesterDid,
-    method    : DwnMethodName.CollectionsWrite,
+    target            : queryMessage.descriptor.target,
+    recipient         : requesterDid,
+    method            : DwnMethodName.CollectionsWrite,
+    isLatestBaseState : 'true',
     ...queryMessage.descriptor.filter
   };
   removeUndefinedProperties(includeCriteria);
@@ -126,9 +129,10 @@ async function fetchUnpublishedRecordsByRequester(queryMessage: CollectionsQuery
  : Promise<BaseMessage[]> {
   // include records where recipient is requester
   const includeCriteria = {
-    target : queryMessage.descriptor.target,
-    author : requesterDid,
-    method : DwnMethodName.CollectionsWrite,
+    target            : queryMessage.descriptor.target,
+    author            : requesterDid,
+    method            : DwnMethodName.CollectionsWrite,
+    isLatestBaseState : 'true',
     ...queryMessage.descriptor.filter
   };
   removeUndefinedProperties(includeCriteria);

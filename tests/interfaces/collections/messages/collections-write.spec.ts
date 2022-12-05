@@ -18,22 +18,15 @@ describe('CollectionsWrite', () => {
     it('should be able to create and verify a valid CollectionsWrite message', async () => {
       // testing `create()` first
       const alice = await TestDataGenerator.generatePersona();
-      const signatureInput = {
-        jwkPrivate      : alice.keyPair.privateJwk,
-        protectedHeader : {
-          alg : alice.keyPair.privateJwk.alg as string,
-          kid : alice.keyId
-        }
-      };
 
       const options = {
-        target      : alice.did,
-        recipient   : alice.did,
-        data        : TestDataGenerator.randomBytes(10),
-        dataFormat  : 'application/json',
-        dateCreated : '2022-10-14T10:20:30.405060',
-        recordId    : await TestDataGenerator.randomCborSha256Cid(),
-        signatureInput
+        target         : alice.did,
+        recipient      : alice.did,
+        data           : TestDataGenerator.randomBytes(10),
+        dataFormat     : 'application/json',
+        dateCreated    : '2022-10-14T10:20:30.405060',
+        recordId       : await TestDataGenerator.randomCborSha256Cid(),
+        signatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
       };
       const collectionsWrite = await CollectionsWrite.create(options);
 
@@ -51,6 +44,42 @@ describe('CollectionsWrite', () => {
       const { author } = await collectionsWrite.verifyAuth(resolverStub, messageStoreStub);
 
       expect(author).to.equal(alice.did);
+    });
+
+    it('should be able to auto-fill `datePublished` when `published` set to `true` but `datePublished` not given', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+
+      const options = {
+        target         : alice.did,
+        recipient      : alice.did,
+        data           : TestDataGenerator.randomBytes(10),
+        dataFormat     : 'application/json',
+        recordId       : await TestDataGenerator.randomCborSha256Cid(),
+        published      : true,
+        signatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+      };
+      const collectionsWrite = await CollectionsWrite.create(options);
+
+      const message = collectionsWrite.message as CollectionsWriteMessage;
+
+      expect(message.descriptor.datePublished).to.exist;
+    });
+
+    it('should throw if given a root message but also contains `lineageParent`', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+
+      // not specifying `recordId` implies a root message
+      const options = {
+        target         : alice.did,
+        recipient      : alice.did,
+        lineageParent  : await TestDataGenerator.randomCborSha256Cid(),
+        data           : TestDataGenerator.randomBytes(10),
+        dataFormat     : 'application/json',
+        published      : true,
+        signatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+      };
+
+      await expect(CollectionsWrite.create(options)).to.be.rejectedWith('originating message must not have a lineage parent');
     });
   });
 
