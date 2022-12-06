@@ -88,33 +88,33 @@ describe('MessageStoreLevel Tests', () => {
     it('adds tenant to index', async () => {
       const { target, message } = await TestDataGenerator.generatePermissionsRequestMessage();
 
-      await messageStore.put(message, { });
+      await messageStore.put(message, { target });
 
       const results = await messageStore.query({ target });
       expect(results.length).to.equal(1);
     });
 
-    it('should be able to update indexes to an existing message', async () => {
+    it('should be able to update (delete and insert new) indexes to an existing message', async () => {
       const { target, message } = await TestDataGenerator.generateCollectionsWriteMessage();
 
       // inserting the message indicating it is the 'latest' in the index
-      await messageStore.put(message, { latest: 'true' });
+      await messageStore.put(message, { target: target.did, latest: 'true' });
 
-      const results1 = await messageStore.query({ target, latest: 'true' });
+      const results1 = await messageStore.query({ target: target.did, latest: 'true' });
       expect(results1.length).to.equal(1);
 
-      const results2 = await messageStore.query({ target, latest: 'false' });
+      const results2 = await messageStore.query({ target: target.did, latest: 'false' });
       expect(results2.length).to.equal(0);
 
       // deleting the existing indexes and replacing it indicating it is no longer the 'latest'
       const cid = await Message.getCid(message);
       await messageStore.delete(cid);
-      await messageStore.put(message, { latest: 'false' });
+      await messageStore.put(message, { target: target.did, latest: 'false' });
 
-      const results3 = await messageStore.query({ target, latest: 'true' });
+      const results3 = await messageStore.query({ target: target.did, latest: 'true' });
       expect(results3.length).to.equal(0);
 
-      const results4 = await messageStore.query({ target, latest: 'false' });
+      const results4 = await messageStore.query({ target: target.did, latest: 'false' });
       expect(results4.length).to.equal(1);
     });
 

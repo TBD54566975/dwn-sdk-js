@@ -10,6 +10,7 @@ export const handlePermissionsRequest: MethodHandler = async (
   didResolver
 ): Promise<MessageReply> => {
   const request = await PermissionsRequest.parse(message as PermissionsRequestMessage);
+  const { author, target } = request;
 
   if (request.target !== request.grantedBy && request.target !== request.grantedTo) {
     return new MessageReply({
@@ -17,14 +18,14 @@ export const handlePermissionsRequest: MethodHandler = async (
     });
   }
 
-  const { author } = await request.verifyAuth(didResolver, messageStore);
+  await request.verifyAuth(didResolver, messageStore);
 
   if (author !== request.grantedTo) {
     throw new Error('grantee must be signer');
   }
 
   try {
-    await messageStore.put(message, { author });
+    await messageStore.put(message, { author, target });
 
     return new MessageReply({
       status: { code: 202, detail: 'Accepted' }

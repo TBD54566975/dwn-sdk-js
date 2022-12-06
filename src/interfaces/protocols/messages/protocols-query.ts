@@ -27,7 +27,6 @@ export class ProtocolsQuery extends Message {
 
   public static async create(options: ProtocolsQueryOptions): Promise<ProtocolsQuery> {
     const descriptor: ProtocolsQueryDescriptor = {
-      target      : options.target,
       method      : DwnMethodName.ProtocolsQuery,
       dateCreated : options.dateCreated ?? getCurrentDateInHighPrecision(),
       filter      : options.filter,

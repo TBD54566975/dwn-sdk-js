@@ -37,7 +37,6 @@ export type ProtocolsConfigureMessage = BaseMessage & {
 };
 
 export type ProtocolsQueryDescriptor = {
-  target: string;
   method: DwnMethodName.ProtocolsQuery;
   dateCreated: string;
   filter?: {

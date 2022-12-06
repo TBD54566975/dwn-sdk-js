@@ -2,6 +2,7 @@ import type { AuthVerificationResult } from './types';
 import type { BaseMessage } from './types';
 
 import { CID } from 'multiformats';
+import { Did } from '../did/did';
 import { DidResolver } from '../did/did-resolver';
 import { GeneralJws } from '../jose/jws/general/types';
 import { GeneralJwsVerifier } from '../jose/jws/general';
@@ -23,7 +24,7 @@ type AuthorizationPayloadConstraints = {
 export async function canonicalAuth(
   incomingMessage: Message,
   didResolver: DidResolver,
-  messageStore: MessageStore,
+  messageStore: MessageStore, // TODO: wait what? messageStore not used?
   authorizationPayloadConstraints?: AuthorizationPayloadConstraints
 ): Promise<AuthVerificationResult> {
   // signature verification is computationally intensive, so we're going to start by validating the payload.
@@ -39,62 +40,49 @@ export async function canonicalAuth(
 
 /**
  * Validates the data integrity of the `authorization` property.
+ * NOTE: `target` and `descriptorCid` are both checked by default
  * NOTE signature is not verified.
  */
 export async function validateAuthorizationIntegrity(
   message: BaseMessage,
   authorizationPayloadConstraints?: AuthorizationPayloadConstraints
-): Promise<{ descriptorCid: CID, [key: string]: CID }> {
+): Promise<{target: string, descriptorCid: CID, [key: string]: any }> {
 
   if (message.authorization.signatures.length !== 1) {
     throw new Error('expected no more than 1 signature for authorization');
   }
 
   const payloadJson = GeneralJwsVerifier.decodePlainObjectPayload(message.authorization);
-
-  // the authorization payload should, at minimum, always contain `descriptorCid` regardless
-  // of whatever else is present.
   const { target, descriptorCid } = payloadJson;
-  if (!target) {
-    throw new Error(`target must be present in authorization payload`);
-  }
 
-  if (!descriptorCid) {
-    throw new Error('descriptorCid must be present in authorization payload');
-  }
+  // `target` validation
+  Did.validate(target);
 
-  // check to ensure that the provided descriptorCid matches the CID of the actual message
-
-  // parseCid throws an exception if parsing fails
-  const providedDescriptorCid = parseCid(descriptorCid);
+  // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
+  const providedDescriptorCid = parseCid(descriptorCid); // parseCid throws an exception if parsing fails
   const expectedDescriptorCid = await generateCid(message.descriptor);
-
   if (!providedDescriptorCid.equals(expectedDescriptorCid)) {
     throw new Error(`provided descriptorCid ${providedDescriptorCid} does not match expected CID ${expectedDescriptorCid}`);
   }
 
-  // property bag for all properties inspected
-  const parsedPayload = { descriptorCid: providedDescriptorCid };
-
-  authorizationPayloadConstraints ??= { allowedProperties: new Set([]) };
-
-  // add `descriptorCid` because it's always required
-  authorizationPayloadConstraints.allowedProperties.add('descriptorCid');
-
-  // check to ensure that no unexpected properties exist in payload.
-  for (const field in payloadJson) {
-    if (!authorizationPayloadConstraints.allowedProperties.has(field)) {
-      throw new Error(`${field} not allowed in auth payload.`);
-    }
+  // check to ensure that no other unexpected properties exist in payload.
+  const allowedProperties = authorizationPayloadConstraints?.allowedProperties ?? new Set();
+  const customProperties = { ...payloadJson };
+  delete customProperties.target;
+  delete customProperties.descriptorCid;
+  for (const propertyName in customProperties) {
+    {if (!allowedProperties.has(propertyName)) {
+      throw new Error(`${propertyName} not allowed in auth payload.`);
+    }}
 
     try {
-      parsedPayload[field] = parseCid(payloadJson[field]);
+      parseCid(payloadJson[propertyName]);
     } catch (e) {
-      throw new Error(`${field} must be a valid CID`);
+      throw new Error(`${propertyName} must be a valid CID`);
     }
   }
 
-  return parsedPayload;
+  return payloadJson;
 }
 
 export async function authenticate(jws: GeneralJws, didResolver: DidResolver): Promise<string[]> {

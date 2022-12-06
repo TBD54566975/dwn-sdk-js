@@ -96,7 +96,7 @@ describe('CollectionsWrite', () => {
 
       const collectionsWrite = await CollectionsWrite.parse(message);
       await expect(collectionsWrite.verifyAuth(didResolverStub, messageStoreStub))
-        .to.be.rejectedWith('signature verification failed for did:example:alice');
+        .to.be.rejectedWith(`signature verification failed for ${requester.did}`);
     });
   });
 

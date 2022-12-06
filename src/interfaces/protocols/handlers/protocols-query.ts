@@ -14,8 +14,9 @@ export const handleProtocolsQuery: MethodHandler = async (
 ): Promise<MessageReply> => {
   const incomingMessage = message as ProtocolsQueryMessage;
 
+  let protocolsQuery;
   try {
-    const protocolsQuery = await ProtocolsQuery.parse(incomingMessage);
+    protocolsQuery = await ProtocolsQuery.parse(incomingMessage);
     await canonicalAuth(protocolsQuery, didResolver, messageStore);
   } catch (e) {
     return new MessageReply({
@@ -25,7 +26,7 @@ export const handleProtocolsQuery: MethodHandler = async (
 
   try {
     const query = {
-      target : incomingMessage.descriptor.target,
+      target : protocolsQuery.target,
       method : DwnMethodName.ProtocolsConfigure,
       ...incomingMessage.descriptor.filter
     };

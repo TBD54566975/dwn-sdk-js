@@ -50,8 +50,8 @@ describe('PermissionsRequest', () => {
 
         jsonMessage['authorization'] = jws;
 
-        await expect(() => PermissionsRequest.parse(jsonMessage as PermissionsRequestMessage))
-          .to.throw(vector.expectedError);
+        await expect(PermissionsRequest.parse(jsonMessage as PermissionsRequestMessage))
+          .to.be.rejectedWith(vector.expectedError);
       }
     });
   });

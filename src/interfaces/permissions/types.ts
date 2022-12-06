@@ -47,7 +47,6 @@ export type PermissionsRequestMessage = BaseMessage & {
 };
 
 export type PermissionsGrantDescriptor = {
-  target: string;
   dateCreated: string;
   conditions: PermissionConditions;
   delegatedFrom?: string;

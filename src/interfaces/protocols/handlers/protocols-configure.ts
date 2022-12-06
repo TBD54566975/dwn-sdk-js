@@ -14,12 +14,11 @@ export const handleProtocolsConfigure: MethodHandler = async (
   try {
     const incomingMessage = message as ProtocolsConfigureMessage;
     const protocolsConfigure = await ProtocolsConfigure.parse(incomingMessage);
+    const { author, target } = protocolsConfigure;
 
     // authentication & authorization
-    let author: string;
     try {
-      const authResult = await canonicalAuth(protocolsConfigure, didResolver, messageStore);
-      author = authResult.author;
+      await canonicalAuth(protocolsConfigure, didResolver, messageStore);
     } catch (e) {
       return new MessageReply({
         status: { code: 401, detail: e.message }
@@ -45,7 +44,7 @@ export const handleProtocolsConfigure: MethodHandler = async (
     // write the incoming message to DB if incoming message is largest
     let messageReply: MessageReply;
     if (incomingMessageIsNewest) {
-      await messageStore.put(message, { author });
+      await messageStore.put(message, { author, target });
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }
