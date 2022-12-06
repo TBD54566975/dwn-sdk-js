@@ -13,10 +13,17 @@ export type BaseMessage = {
 };
 
 /**
+ * Type of common decoded `authorization`property payload.
+ */
+export type BaseDecodedAuthorizationPayload = {
+  target: string;
+  descriptorCid: string;
+};
+
+/**
  * Intersection type for all DWN message descriptor.
  */
 export type Descriptor = {
-  target: string;
   method: string;
 };
 

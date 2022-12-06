@@ -2,7 +2,6 @@ import { BaseMessage } from '../../core/types';
 import { DwnMethodName } from '../../core/message';
 
 export type CollectionsWriteDescriptor = {
-  target: string;
   recipient: string;
   method: DwnMethodName.CollectionsWrite;
   protocol?: string;
@@ -24,7 +23,6 @@ export type CollectionsWriteMessage = BaseMessage & {
 };
 
 export type CollectionsQueryDescriptor = {
-  target: string;
   method: DwnMethodName.CollectionsQuery;
   dateCreated: string;
   filter: {
@@ -40,6 +38,7 @@ export type CollectionsQueryDescriptor = {
 };
 
 export type CollectionsWriteAuthorizationPayload = {
+  target: string;
   recordId: string;
   contextId?: string;
   descriptorCid: string;

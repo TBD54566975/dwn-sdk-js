@@ -27,9 +27,6 @@
           ],
           "type": "string"
         },
-        "target": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
-        },
         "recipient": {
           "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
         },
@@ -64,7 +61,6 @@
       },
       "additionalProperties": false,
       "required": [
-        "target",
         "method",
         "dataCid",
         "dateCreated",

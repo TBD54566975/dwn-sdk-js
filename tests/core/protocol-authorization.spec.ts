@@ -25,17 +25,17 @@ describe('Protocol-Based Authorization', async () => {
     it('should throw if requester DID is not the target DWN owner when no allow rule defined', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const bob = await TestDataGenerator.generatePersona();
-      const collectionsWriteData = await TestDataGenerator.generateCollectionsWriteMessage({ requester: bob, target: alice });
+      const { collectionsWrite } = await TestDataGenerator.generateCollectionsWriteMessage({ requester: bob, target: alice });
       const ruleSet: ProtocolRuleSet = { };
 
       expect(() => {
-        ProtocolAuthorization['verifyAllowedActions'](bob.did, collectionsWriteData.message, ruleSet);
+        ProtocolAuthorization['verifyAllowedActions'](bob.did, collectionsWrite, ruleSet);
       }).throws('no allow rule defined for CollectionsWrite');
     });
 
     it('should throw if action performed is not in an allowed action list', async () => {
       const did = 'did:example:alice';
-      const collectionsWriteData = await TestDataGenerator.generateCollectionsWriteMessage();
+      const { collectionsWrite } = await TestDataGenerator.generateCollectionsWriteMessage();
       const ruleSet: ProtocolRuleSet = {
         allow: {
           anyone: {
@@ -45,7 +45,7 @@ describe('Protocol-Based Authorization', async () => {
       };
 
       expect(() => {
-        ProtocolAuthorization['verifyAllowedActions'](did, collectionsWriteData.message, ruleSet);
+        ProtocolAuthorization['verifyAllowedActions'](did, collectionsWrite, ruleSet);
       }).throws('not in list of allowed actions');
     });
   });

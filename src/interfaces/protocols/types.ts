@@ -2,7 +2,6 @@ import type { BaseMessage } from '../../core/types';
 import { DwnMethodName } from '../../core/message';
 
 export type ProtocolsConfigureDescriptor = {
-  target: string;
   method: DwnMethodName.ProtocolsConfigure;
   dateCreated: string;
   protocol: string;

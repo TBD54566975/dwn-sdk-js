@@ -94,8 +94,8 @@ describe('CollectionsWrite', () => {
 
       const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-      const collectionsWrite = new CollectionsWrite(message);
-      expect(collectionsWrite.verifyAuth(didResolverStub, messageStoreStub))
+      const collectionsWrite = await CollectionsWrite.parse(message);
+      await expect(collectionsWrite.verifyAuth(didResolverStub, messageStoreStub))
         .to.be.rejectedWith('signature verification failed for did:example:alice');
     });
   });

@@ -5,6 +5,7 @@ import { CID } from 'multiformats';
 import { DidResolver } from '../did/did-resolver';
 import { GeneralJws } from '../jose/jws/general/types';
 import { GeneralJwsVerifier } from '../jose/jws/general';
+import { Message } from './message';
 import { MessageStore } from '../store/message-store';
 import { generateCid, parseCid } from '../utils/cid';
 
@@ -20,18 +21,18 @@ type AuthorizationPayloadConstraints = {
  * @throws {Error} if auth fails
  */
 export async function canonicalAuth(
-  message: BaseMessage,
+  incomingMessage: Message,
   didResolver: DidResolver,
   messageStore: MessageStore,
   authorizationPayloadConstraints?: AuthorizationPayloadConstraints
 ): Promise<AuthVerificationResult> {
   // signature verification is computationally intensive, so we're going to start by validating the payload.
-  const parsedPayload = await validateAuthorizationIntegrity(message, authorizationPayloadConstraints);
+  const parsedPayload = await validateAuthorizationIntegrity(incomingMessage.message, authorizationPayloadConstraints);
 
-  const signers = await authenticate(message.authorization, didResolver);
+  const signers = await authenticate(incomingMessage.message.authorization, didResolver);
   const author = signers[0];
 
-  await authorize(message, author);
+  await authorize(incomingMessage);
 
   return { payload: parsedPayload, author };
 }
@@ -53,7 +54,11 @@ export async function validateAuthorizationIntegrity(
 
   // the authorization payload should, at minimum, always contain `descriptorCid` regardless
   // of whatever else is present.
-  const { descriptorCid } = payloadJson;
+  const { target, descriptorCid } = payloadJson;
+  if (!target) {
+    throw new Error(`target must be present in authorization payload`);
+  }
+
   if (!descriptorCid) {
     throw new Error('descriptorCid must be present in authorization payload');
   }
@@ -98,9 +103,9 @@ export async function authenticate(jws: GeneralJws, didResolver: DidResolver): P
   return signers;
 }
 
-export async function authorize(message: BaseMessage, author: string): Promise<void> {
+export async function authorize(incomingMessage: Message): Promise<void> {
   // if author/requester is the same as the target DID, we can directly grant access
-  if (author === message.descriptor.target) {
+  if (incomingMessage.author === incomingMessage.target) {
     return;
   } else {
     throw new Error('message failed authorization, permission grant check not yet implemented');

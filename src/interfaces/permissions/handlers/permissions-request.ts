@@ -9,9 +9,9 @@ export const handlePermissionsRequest: MethodHandler = async (
   messageStore,
   didResolver
 ): Promise<MessageReply> => {
-  const request = new PermissionsRequest(message as PermissionsRequestMessage);
+  const request = await PermissionsRequest.parse(message as PermissionsRequestMessage);
 
-  if (message.descriptor.target !== request.grantedBy && message.descriptor.target !== request.grantedTo) {
+  if (request.target !== request.grantedBy && request.target !== request.grantedTo) {
     return new MessageReply({
       status: { code: 400, detail: 'grantedBy or grantedTo must be the targeted message recipient' }
     });

@@ -27,8 +27,9 @@ export const handleCollectionsWrite: MethodHandler = async (
     }
 
     // authentication & authorization
+    let collectionsWrite;
     try {
-      const collectionsWrite = new CollectionsWrite(incomingMessage);
+      collectionsWrite = await CollectionsWrite.parse(incomingMessage);
       await collectionsWrite.verifyAuth(didResolver, messageStore);
     } catch (e) {
       return new MessageReply({
@@ -38,7 +39,7 @@ export const handleCollectionsWrite: MethodHandler = async (
 
     // get existing records matching the `recordId`
     const query = {
-      target   : incomingMessage.descriptor.target,
+      target   : collectionsWrite.target,
       method   : DwnMethodName.CollectionsWrite,
       recordId : incomingMessage.recordId
     };
