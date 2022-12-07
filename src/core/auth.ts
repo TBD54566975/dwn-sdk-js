@@ -7,7 +7,6 @@ import { DidResolver } from '../did/did-resolver';
 import { GeneralJws } from '../jose/jws/general/types';
 import { GeneralJwsVerifier } from '../jose/jws/general';
 import { Message } from './message';
-import { MessageStore } from '../store/message-store';
 import { generateCid, parseCid } from '../utils/cid';
 
 type AuthorizationPayloadConstraints = {
@@ -24,7 +23,6 @@ type AuthorizationPayloadConstraints = {
 export async function canonicalAuth(
   incomingMessage: Message,
   didResolver: DidResolver,
-  messageStore: MessageStore, // TODO: wait what? messageStore not used?
   authorizationPayloadConstraints?: AuthorizationPayloadConstraints
 ): Promise<AuthVerificationResult> {
   // signature verification is computationally intensive, so we're going to start by validating the payload.

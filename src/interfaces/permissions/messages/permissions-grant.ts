@@ -114,8 +114,8 @@ export class PermissionsGrant extends Message implements Authorizable {
     return delegatedGrant;
   }
 
-  verifyAuth(didResolver: DidResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
-    return canonicalAuth(this, didResolver, messageStore);
+  verifyAuth(didResolver: DidResolver, _messageStore: MessageStore): Promise<AuthVerificationResult> {
+    return canonicalAuth(this, didResolver);
   }
 
   get id(): string {

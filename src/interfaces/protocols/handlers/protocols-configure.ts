@@ -18,7 +18,7 @@ export const handleProtocolsConfigure: MethodHandler = async (
 
     // authentication & authorization
     try {
-      await canonicalAuth(protocolsConfigure, didResolver, messageStore);
+      await canonicalAuth(protocolsConfigure, didResolver);
     } catch (e) {
       return new MessageReply({
         status: { code: 401, detail: e.message }

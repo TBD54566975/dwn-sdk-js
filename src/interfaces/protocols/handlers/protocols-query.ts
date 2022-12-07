@@ -17,7 +17,7 @@ export const handleProtocolsQuery: MethodHandler = async (
   let protocolsQuery;
   try {
     protocolsQuery = await ProtocolsQuery.parse(incomingMessage);
-    await canonicalAuth(protocolsQuery, didResolver, messageStore);
+    await canonicalAuth(protocolsQuery, didResolver);
   } catch (e) {
     return new MessageReply({
       status: { code: 401, detail: e.message }

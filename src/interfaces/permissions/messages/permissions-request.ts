@@ -55,8 +55,8 @@ export class PermissionsRequest extends Message implements Authorizable {
     return new PermissionsRequest(message);
   }
 
-  async verifyAuth(didResolver: DidResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
-    return await canonicalAuth(this, didResolver, messageStore);
+  async verifyAuth(didResolver: DidResolver, _messageStore: MessageStore): Promise<AuthVerificationResult> {
+    return await canonicalAuth(this, didResolver);
   }
 
   get id(): string {
