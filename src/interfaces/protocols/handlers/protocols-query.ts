@@ -4,6 +4,7 @@ import type { ProtocolsQueryMessage } from '../types';
 import { canonicalAuth } from '../../../core/auth';
 import { DwnMethodName } from '../../../core/message';
 import { MessageReply } from '../../../core';
+import { ProtocolsQuery } from '../messages/protocols-query';
 import { removeUndefinedProperties } from '../../../utils/object';
 
 export const handleProtocolsQuery: MethodHandler = async (
@@ -13,8 +14,10 @@ export const handleProtocolsQuery: MethodHandler = async (
 ): Promise<MessageReply> => {
   const incomingMessage = message as ProtocolsQueryMessage;
 
+  let protocolsQuery;
   try {
-    await canonicalAuth(incomingMessage, didResolver, messageStore);
+    protocolsQuery = await ProtocolsQuery.parse(incomingMessage);
+    await canonicalAuth(protocolsQuery, didResolver);
   } catch (e) {
     return new MessageReply({
       status: { code: 401, detail: e.message }
@@ -23,7 +26,7 @@ export const handleProtocolsQuery: MethodHandler = async (
 
   try {
     const query = {
-      target : incomingMessage.descriptor.target,
+      target : protocolsQuery.target,
       method : DwnMethodName.ProtocolsConfigure,
       ...incomingMessage.descriptor.filter
     };

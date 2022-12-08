@@ -19,13 +19,9 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "target",
         "dateCreated"
       ],
       "properties": {
-        "target": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
-        },
         "dateCreated": {
           "type": "string"
         },

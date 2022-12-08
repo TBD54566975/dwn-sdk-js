@@ -376,10 +376,11 @@ export class TestDataGenerator {
   /**
    * Generates a PermissionsRequest message for testing.
    */
-  public static async generatePermissionsRequestMessage(): Promise<BaseMessage> {
+  public static async generatePermissionsRequestMessage(): Promise<{target, message: BaseMessage}> {
     const { privateJwk } = await ed25519.generateKeyPair();
+    const target = 'did:jank:alice';
     const permissionRequest = await PermissionsRequest.create({
-      target         : 'did:jank:alice',
+      target,
       dateCreated    : getCurrentDateInHighPrecision(),
       description    : 'drugs',
       grantedBy      : 'did:jank:bob',
@@ -388,7 +389,7 @@ export class TestDataGenerator {
       signatureInput : { jwkPrivate: privateJwk, protectedHeader: { alg: privateJwk.alg as string, kid: 'whatev' } }
     });
 
-    return permissionRequest.message;
+    return { target, message: permissionRequest.message };
   }
 
   /**

@@ -1,6 +1,7 @@
+import { CollectionsWrite } from '../interfaces/collections/messages/collections-write';
 import { CollectionsWriteMessage } from '../interfaces/collections/types';
-import { DwnMethodName } from './message';
 import { MessageStore } from '../store/message-store';
+import { DwnMethodName, Message } from './message';
 import { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types';
 
 const methodToAllowedActionMap = {
@@ -14,15 +15,15 @@ export class ProtocolAuthorization {
    * @throws {Error} if authorization fails.
    */
   public static async authorize(
-    message: CollectionsWriteMessage,
+    collectionsWrite: CollectionsWrite,
     requesterDid: string,
     messageStore: MessageStore
   ): Promise<void> {
   // fetch the protocol definition
-    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(message, messageStore);
+    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(collectionsWrite, messageStore);
 
     // fetch ancestor message chain
-    const ancestorMessageChain: CollectionsWriteMessage[] = await ProtocolAuthorization.constructAncestorMessageChain(message, messageStore);
+    const ancestorMessageChain: CollectionsWriteMessage[] = await ProtocolAuthorization.constructAncestorMessageChain(collectionsWrite, messageStore);
 
     // record schema -> schema label map
     const recordSchemaToLabelMap: Map<string, string> = new Map();
@@ -32,27 +33,31 @@ export class ProtocolAuthorization {
     }
 
     // get the rule set for the inbound message
-    const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(message, protocolDefinition, ancestorMessageChain, recordSchemaToLabelMap);
+    const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
+      collectionsWrite.message,
+      protocolDefinition, ancestorMessageChain,
+      recordSchemaToLabelMap
+    );
 
     // verify the requester of the inbound message against allowed requester rule
     ProtocolAuthorization.verifyAllowedRequester(
-      requesterDid, message.descriptor.target, inboundMessageRuleSet, ancestorMessageChain, recordSchemaToLabelMap
+      requesterDid, collectionsWrite.target, inboundMessageRuleSet, ancestorMessageChain, recordSchemaToLabelMap
     );
 
     // verify method invoked against the allowed actions
-    ProtocolAuthorization.verifyAllowedActions(requesterDid, message, inboundMessageRuleSet);
+    ProtocolAuthorization.verifyAllowedActions(requesterDid, collectionsWrite, inboundMessageRuleSet);
   }
 
   /**
    * Fetches the protocol definition based on the protocol specified in the given message.
    */
-  private static async fetchProtocolDefinition(message: CollectionsWriteMessage, messageStore: MessageStore): Promise<ProtocolDefinition> {
+  private static async fetchProtocolDefinition(collectionsWrite: CollectionsWrite, messageStore: MessageStore): Promise<ProtocolDefinition> {
   // get the protocol URI
-    const protocolUri = message.descriptor.protocol;
+    const protocolUri = collectionsWrite.message.descriptor.protocol;
 
     // fetch the corresponding protocol definition
     const query = {
-      target   : message.descriptor.target,
+      target   : collectionsWrite.target,
       method   : DwnMethodName.ProtocolsConfigure,
       protocol : protocolUri
     };
@@ -70,19 +75,19 @@ export class ProtocolAuthorization {
    * Constructs a chain of ancestor messages
    * @returns the ancestor chain of messages where the first element is the root of the chain; returns empty array if no parent is specified.
    */
-  private static async constructAncestorMessageChain(message: CollectionsWriteMessage, messageStore: MessageStore)
+  private static async constructAncestorMessageChain(collectionsWrite: CollectionsWrite, messageStore: MessageStore)
     : Promise<CollectionsWriteMessage[]> {
     const ancestorMessageChain: CollectionsWriteMessage[] = [];
 
-    const protocol = message.descriptor.protocol;
-    const contextId = message.contextId;
+    const protocol = collectionsWrite.message.descriptor.protocol;
+    const contextId = collectionsWrite.message.contextId;
 
     // keep walking up the chain from the inbound message's parent, until there is no more parent
-    let currentParentId = message.descriptor.parentId;
+    let currentParentId = collectionsWrite.message.descriptor.parentId;
     while (currentParentId !== undefined) {
       // fetch parent
       const query = {
-        target   : message.descriptor.target,
+        target   : collectionsWrite.target,
         method   : DwnMethodName.CollectionsWrite,
         protocol,
         contextId,
@@ -180,15 +185,16 @@ export class ProtocolAuthorization {
    * Verifies the actions specified in the given message matches the allowed actions in the rule set.
    * @throws {Error} if action not allowed.
    */
-  private static verifyAllowedActions(requesterDid: string, message: CollectionsWriteMessage, inboundMessageRuleSet: ProtocolRuleSet): void {
+  private static verifyAllowedActions(requesterDid: string, incomingMessage: Message, inboundMessageRuleSet: ProtocolRuleSet): void {
     const allowRule = inboundMessageRuleSet.allow;
+    const incomingMessageMethod = incomingMessage.message.descriptor.method;
 
     if (allowRule === undefined) {
     // if no allow rule is defined, owner of DWN can do everything
-      if (requesterDid === message.descriptor.target) {
+      if (requesterDid === incomingMessage.target) {
         return;
       } else {
-        throw new Error(`no allow rule defined for ${message.descriptor.method}, ${requesterDid} is unauthorized`);
+        throw new Error(`no allow rule defined for ${incomingMessageMethod}, ${requesterDid} is unauthorized`);
       }
     }
 
@@ -199,7 +205,7 @@ export class ProtocolAuthorization {
       allowedActions = allowRule.recipient.to;
     } // not possible to have `else` because of same check already done by verifyAllowedRequester()
 
-    const inboundMessageAction = methodToAllowedActionMap[message.descriptor.method];
+    const inboundMessageAction = methodToAllowedActionMap[incomingMessageMethod];
     if (!allowedActions.includes(inboundMessageAction)) {
       throw new Error(`inbound message action '${inboundMessageAction}' not in list of allowed actions ${allowedActions}`);
     }

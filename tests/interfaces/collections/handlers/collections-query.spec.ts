@@ -105,10 +105,10 @@ describe('handleCollectionsQuery()', () => {
       );
 
       // directly inserting data to datastore so that we don't have to setup to grant Bob permission to write to Alice's DWN
-      const additionalIndexes1 = constructAdditionalIndexes(record1Data.message, true);
-      const additionalIndexes2 = constructAdditionalIndexes(record2Data.message, true);
-      const additionalIndexes3 = constructAdditionalIndexes(record3Data.message, true);
-      const additionalIndexes4 = constructAdditionalIndexes(record4Data.message, true);
+      const additionalIndexes1 = constructAdditionalIndexes(record1Data.collectionsWrite, true);
+      const additionalIndexes2 = constructAdditionalIndexes(record2Data.collectionsWrite, true);
+      const additionalIndexes3 = constructAdditionalIndexes(record3Data.collectionsWrite, true);
+      const additionalIndexes4 = constructAdditionalIndexes(record4Data.collectionsWrite, true);
       await messageStore.put(record1Data.message, additionalIndexes1);
       await messageStore.put(record2Data.message, additionalIndexes2);
       await messageStore.put(record3Data.message, additionalIndexes3);

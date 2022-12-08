@@ -3,6 +3,7 @@ import type { ProtocolsConfigureMessage } from '../types';
 
 import { canonicalAuth } from '../../../core/auth';
 import { DwnMethodName } from '../../../core/message';
+import { ProtocolsConfigure } from '../messages/protocols-configure';
 import { Message, MessageReply } from '../../../core';
 
 export const handleProtocolsConfigure: MethodHandler = async (
@@ -12,12 +13,12 @@ export const handleProtocolsConfigure: MethodHandler = async (
 ): Promise<MessageReply> => {
   try {
     const incomingMessage = message as ProtocolsConfigureMessage;
+    const protocolsConfigure = await ProtocolsConfigure.parse(incomingMessage);
+    const { author, target } = protocolsConfigure;
 
     // authentication & authorization
-    let author: string;
     try {
-      const authResult = await canonicalAuth(incomingMessage, didResolver, messageStore);
-      author = authResult.author;
+      await canonicalAuth(protocolsConfigure, didResolver);
     } catch (e) {
       return new MessageReply({
         status: { code: 401, detail: e.message }
@@ -26,7 +27,7 @@ export const handleProtocolsConfigure: MethodHandler = async (
 
     // attempt to get existing protocol
     const query = {
-      target   : incomingMessage.descriptor.target,
+      target   : protocolsConfigure.target,
       method   : DwnMethodName.ProtocolsConfigure,
       protocol : incomingMessage.descriptor.protocol
     };
@@ -43,7 +44,7 @@ export const handleProtocolsConfigure: MethodHandler = async (
     // write the incoming message to DB if incoming message is largest
     let messageReply: MessageReply;
     if (incomingMessageIsNewest) {
-      await messageStore.put(message, { author });
+      await messageStore.put(message, { author, target });
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }

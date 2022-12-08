@@ -15,15 +15,11 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "target",
         "method",
         "dateCreated",
         "filter"
       ],
       "properties": {
-        "target": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
-        },
         "method": {
           "enum": [
             "CollectionsQuery"

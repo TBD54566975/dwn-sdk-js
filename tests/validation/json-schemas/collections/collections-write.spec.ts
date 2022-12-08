@@ -6,7 +6,6 @@ describe('CollectionsWrite schema definition', () => {
     const validMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
@@ -26,7 +25,6 @@ describe('CollectionsWrite schema definition', () => {
   it('should throw if `recordId` is missing', async () => {
     const message = {
       descriptor: {
-        target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
@@ -50,7 +48,6 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
@@ -67,7 +64,6 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
@@ -92,7 +88,6 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        target          : 'did:example:anyDid',
         method          : 'CollectionsWrite',
         dataCid         : 'anyCid',
         dataFormat      : 'application/json',
@@ -117,7 +112,6 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
@@ -143,7 +137,6 @@ describe('CollectionsWrite schema definition', () => {
       recordId   : 'anyRecordId',
       contextId  : 'someContext', // protocol must exist
       descriptor : {
-        target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
         protocol    : 'someProtocolId', // contextId must exist
         dataCid     : 'anyCid',
@@ -167,7 +160,6 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
@@ -191,7 +183,6 @@ describe('CollectionsWrite schema definition', () => {
       recordId   : 'anyRecordId',
       contextId  : 'invalid', // must have `protocol` to exist
       descriptor : {
-        target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
@@ -216,7 +207,6 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
         protocol    : 'invalid', // must have `contextId` to exist
         dataCid     : 'anyCid',
@@ -242,7 +232,6 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        target        : 'did:example:anyDid',
         method        : 'CollectionsWrite',
         dataCid       : 'anyCid',
         dataFormat    : 'application/json',
@@ -269,7 +258,6 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        target      : 'did:example:anyDid',
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
@@ -295,7 +283,6 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        target        : 'did:example:anyDid',
         method        : 'CollectionsWrite',
         dataCid       : 'anyCid',
         dataFormat    : 'application/json',

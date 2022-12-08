@@ -27,8 +27,9 @@ export const handleCollectionsWrite: MethodHandler = async (
     }
 
     // authentication & authorization
+    let collectionsWrite;
     try {
-      const collectionsWrite = new CollectionsWrite(incomingMessage);
+      collectionsWrite = await CollectionsWrite.parse(incomingMessage);
       await collectionsWrite.verifyAuth(didResolver, messageStore);
     } catch (e) {
       return new MessageReply({
@@ -38,7 +39,7 @@ export const handleCollectionsWrite: MethodHandler = async (
 
     // get existing records matching the `recordId`
     const query = {
-      target   : incomingMessage.descriptor.target,
+      target   : collectionsWrite.target,
       method   : DwnMethodName.CollectionsWrite,
       recordId : incomingMessage.recordId
     };
@@ -70,7 +71,7 @@ export const handleCollectionsWrite: MethodHandler = async (
     let messageReply: MessageReply;
     if (incomingMessageIsNewest) {
       const isLatestBaseState = true;
-      const additionalIndexes = constructAdditionalIndexes(incomingMessage, isLatestBaseState);
+      const additionalIndexes = constructAdditionalIndexes(collectionsWrite, isLatestBaseState);
 
       await messageStore.put(incomingMessage, additionalIndexes);
 
@@ -99,8 +100,9 @@ export const handleCollectionsWrite: MethodHandler = async (
         // if the message is the originating message
         // we actually need to keep it BUT, need to ensure the message is no longer marked as the latest state
         if (message.descriptor.lineageParent === undefined) {
+          const existingCollectionsWrite = await CollectionsWrite.parse(message);
           const isLatestBaseState = false;
-          const additionalIndexes = constructAdditionalIndexes(message, isLatestBaseState);
+          const additionalIndexes = constructAdditionalIndexes(existingCollectionsWrite, isLatestBaseState);
           await messageStore.put(message, additionalIndexes);
         }
       }
@@ -114,11 +116,13 @@ export const handleCollectionsWrite: MethodHandler = async (
   }
 };
 
-export function constructAdditionalIndexes(message: CollectionsWriteMessage, isLatestBaseState: boolean): { [key:string]: string } {
+export function constructAdditionalIndexes(collectionsWrite: CollectionsWrite, isLatestBaseState: boolean): { [key:string]: string } {
+  const message = collectionsWrite.message;
   const additionalIndexes: { [key:string]: string } = {
     isLatestBaseState : isLatestBaseState.toString(), // NOTE: underlying search-index library does not support boolean, so convert to string
+    author            : collectionsWrite.author,
+    target            : collectionsWrite.target,
     recordId          : message.recordId,
-    author            : Message.getAuthor(message)
   };
 
   // add `contextId` to additional index if part if given

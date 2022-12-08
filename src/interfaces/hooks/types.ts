@@ -6,7 +6,6 @@ import { DwnMethodName } from '../../core/message';
  */
 export type HooksWriteDescriptor = {
   method: DwnMethodName.HooksWrite;
-  target: string;
   dateCreated: string;
 
   /**

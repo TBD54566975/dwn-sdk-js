@@ -15,7 +15,6 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "target",
         "method",
         "protocol",
         "dateCreated",
@@ -27,9 +26,6 @@
             "ProtocolsConfigure"
           ],
           "type": "string"
-        },
-        "target": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
         },
         "protocol": {
           "type": "string"

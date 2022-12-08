@@ -42,9 +42,9 @@ describe('handleProtocolsQuery()', () => {
     it('should return 401 if auth fails', async () => {
       const alice = await DidKeyResolver.generate();
       alice.keyId = 'wrongValue'; // to fail authentication
-      const messageData = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, target: alice });
+      const { message } = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, target: alice });
 
-      const reply = await handleProtocolsConfigure(messageData.message, messageStore, didResolver);
+      const reply = await handleProtocolsConfigure(message, messageStore, didResolver);
       expect(reply.status.code).to.equal(401);
       expect(reply.status.detail).to.contain('not a valid DID');
     });

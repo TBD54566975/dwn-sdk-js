@@ -23,37 +23,40 @@ type PermissionsRequestOptions = AuthCreateOptions & {
 export class PermissionsRequest extends Message implements Authorizable {
   readonly message: PermissionsRequestMessage; // a more specific type than the base type defined in parent class
 
-  constructor(message: PermissionsRequestMessage) {
+  private constructor(message: PermissionsRequestMessage) {
     super(message);
   }
 
-  static async create(opts: PermissionsRequestOptions): Promise<PermissionsRequest> {
-    const { conditions } = opts;
+  public static async parse(message: PermissionsRequestMessage): Promise<PermissionsRequest> {
+    return new PermissionsRequest(message);
+  }
+
+  public static async create(options: PermissionsRequestOptions): Promise<PermissionsRequest> {
+    const { conditions } = options;
     const providedConditions = conditions ? conditions : {};
     const mergedConditions = { ...DEFAULT_CONDITIONS, ...providedConditions };
 
     const descriptor: PermissionsRequestDescriptor = {
-      target      : opts.target,
-      dateCreated : opts.dateCreated ?? getCurrentDateInHighPrecision(),
+      dateCreated : options.dateCreated ?? getCurrentDateInHighPrecision(),
       conditions  : mergedConditions,
-      description : opts.description,
-      grantedTo   : opts.grantedTo,
-      grantedBy   : opts.grantedBy,
+      description : options.description,
+      grantedTo   : options.grantedTo,
+      grantedBy   : options.grantedBy,
       method      : 'PermissionsRequest',
-      objectId    : opts.objectId ? opts.objectId : uuidv4(),
-      scope       : opts.scope,
+      objectId    : options.objectId ? options.objectId : uuidv4(),
+      scope       : options.scope,
     };
 
     Message.validateJsonSchema({ descriptor, authorization: { } });
 
-    const auth = await Message.signAsAuthorization(descriptor, opts.signatureInput);
+    const auth = await Message.signAsAuthorization(options.target, descriptor, options.signatureInput);
     const message: PermissionsRequestMessage = { descriptor, authorization: auth };
 
     return new PermissionsRequest(message);
   }
 
-  async verifyAuth(didResolver: DidResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
-    return await canonicalAuth(this.message, didResolver, messageStore);
+  async verifyAuth(didResolver: DidResolver, _messageStore: MessageStore): Promise<AuthVerificationResult> {
+    return await canonicalAuth(this, didResolver);
   }
 
   get id(): string {

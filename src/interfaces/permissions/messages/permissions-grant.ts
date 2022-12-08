@@ -38,7 +38,6 @@ export class PermissionsGrant extends Message implements Authorizable {
     const mergedConditions = { ...DEFAULT_CONDITIONS, ...providedConditions };
 
     const descriptor: PermissionsGrantDescriptor = {
-      target      : options.target,
       dateCreated : options.dateCreated ?? getCurrentDateInHighPrecision(),
       conditions  : mergedConditions,
       description : options.description,
@@ -51,7 +50,7 @@ export class PermissionsGrant extends Message implements Authorizable {
 
     Message.validateJsonSchema({ descriptor, authorization: { } });
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
+    const authorization = await Message.signAsAuthorization(options.target, descriptor, options.signatureInput);
     const message: PermissionsGrantMessage = { descriptor, authorization };
 
     return new PermissionsGrant(message);
@@ -115,8 +114,8 @@ export class PermissionsGrant extends Message implements Authorizable {
     return delegatedGrant;
   }
 
-  verifyAuth(didResolver: DidResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
-    return canonicalAuth(this.message, didResolver, messageStore);
+  verifyAuth(didResolver: DidResolver, _messageStore: MessageStore): Promise<AuthVerificationResult> {
+    return canonicalAuth(this, didResolver);
   }
 
   get id(): string {

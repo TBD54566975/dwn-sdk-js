@@ -27,13 +27,16 @@ export type CollectionsQueryOptions = AuthCreateOptions & {
 export class CollectionsQuery extends Message implements Authorizable {
   readonly message: CollectionsQueryMessage; // a more specific type than the base type defined in parent class
 
-  constructor(message: CollectionsQueryMessage) {
+  private constructor(message: CollectionsQueryMessage) {
     super(message);
   }
 
-  static async create(options: CollectionsQueryOptions): Promise<CollectionsQuery> {
+  public static async parse(message: CollectionsQueryMessage): Promise<CollectionsQuery> {
+    return new CollectionsQuery(message);
+  }
+
+  public static async create(options: CollectionsQueryOptions): Promise<CollectionsQuery> {
     const descriptor: CollectionsQueryDescriptor = {
-      target      : options.target,
       method      : DwnMethodName.CollectionsQuery,
       dateCreated : options.dateCreated ?? getCurrentDateInHighPrecision(),
       filter      : options.filter,
@@ -46,7 +49,7 @@ export class CollectionsQuery extends Message implements Authorizable {
 
     Message.validateJsonSchema({ descriptor, authorization: { } });
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
+    const authorization = await Message.signAsAuthorization(options.target, descriptor, options.signatureInput);
     const message = { descriptor, authorization };
 
     return new CollectionsQuery(message);

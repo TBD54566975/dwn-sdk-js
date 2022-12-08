@@ -35,8 +35,12 @@ export type CollectionsWriteOptions = AuthCreateOptions & {
 export class CollectionsWrite extends Message implements Authorizable {
   readonly message: CollectionsWriteMessage; // a more specific type than the base type defined in parent class
 
-  constructor(message: CollectionsWriteMessage) {
+  private constructor(message: CollectionsWriteMessage) {
     super(message);
+  }
+
+  public static async parse(message: CollectionsWriteMessage): Promise<CollectionsWrite> {
+    return new CollectionsWrite(message);
   }
 
   /**
@@ -44,10 +48,9 @@ export class CollectionsWrite extends Message implements Authorizable {
    * @param options.recordId If `undefined`, will be auto-filled as a originating message as convenience for developer.
    * @param options.lineageParent If `undefined`, it will be auto-filled with value of `options.recordId` as convenience for developer.
    */
-  static async create(options: CollectionsWriteOptions): Promise<CollectionsWrite> {
+  public static async create(options: CollectionsWriteOptions): Promise<CollectionsWrite> {
     const dataCid = await getDagCid(options.data);
     const descriptor: CollectionsWriteDescriptor = {
-      target        : options.target,
       recipient     : options.recipient,
       method        : DwnMethodName.CollectionsWrite,
       protocol      : options.protocol,
@@ -99,7 +102,13 @@ export class CollectionsWrite extends Message implements Authorizable {
     }
 
     const encodedData = encoder.bytesToBase64Url(options.data);
-    const authorization = await CollectionsWrite.signAsCollectionsWriteAuthorization(recordId, contextId, descriptor, options.signatureInput);
+    const authorization = await CollectionsWrite.signAsCollectionsWriteAuthorization(
+      options.target,
+      recordId,
+      contextId,
+      descriptor,
+      options.signatureInput
+    );
     const message: CollectionsWriteMessage = {
       recordId,
       descriptor,
@@ -127,9 +136,9 @@ export class CollectionsWrite extends Message implements Authorizable {
 
     // authorization
     if (message.descriptor.protocol !== undefined) {
-      await ProtocolAuthorization.authorize(message, author, messageStore);
+      await ProtocolAuthorization.authorize(this, author, messageStore);
     } else {
-      await authorize(message, author);
+      await authorize(this);
     }
 
     return { payload: parsedPayload, author };
@@ -187,7 +196,6 @@ export class CollectionsWrite extends Message implements Authorizable {
    */
   public static async getCanonicalId(author: string, descriptor: CollectionsWriteDescriptor): Promise<string> {
     const canonicalIdInput = { ...descriptor };
-    delete canonicalIdInput.target;
     (canonicalIdInput as any).author = author;
 
     const cid = await generateCid(canonicalIdInput);
@@ -199,6 +207,7 @@ export class CollectionsWrite extends Message implements Authorizable {
    * Creates the `authorization` property for a CollectionsWrite message.
    */
   private static async signAsCollectionsWriteAuthorization(
+    target: string,
     recordId: string,
     contextId: string | undefined,
     descriptor: CollectionsWriteDescriptor,
@@ -207,6 +216,7 @@ export class CollectionsWrite extends Message implements Authorizable {
     const descriptorCid = await generateCid(descriptor);
 
     const authorizationPayload: CollectionsWriteAuthorizationPayload = {
+      target,
       recordId,
       descriptorCid: descriptorCid.toString()
     };
