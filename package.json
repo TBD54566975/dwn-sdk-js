@@ -24,7 +24,7 @@
     "build": "npm-run-all -l clean compile-validators -p build:esm bundle",
     "bundle": "node ./build/create-browser-bundle.cjs",
     "clean": "rimraf dist && rimraf generated/*",
-    "compile-validators": "node --es-module-specifier-resolution=node ./build/compile-validators.js",
+    "compile-validators": "node ./build/compile-validators.js",
     "lint": "eslint . --ext .ts --max-warnings 0",
     "lint:fix": "eslint . --ext .ts --fix",
     "make-coverage-badges": "istanbul-badges-readme",
