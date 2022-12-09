@@ -11,7 +11,7 @@
     "declarationMap": true,
     "outDir": "dist/esm",
     "sourceMap": true,
-    "moduleResolution": "node",
+    "moduleResolution": "NodeNext",
     // allows us to import json files
     "resolveJsonModule": true,
     // required otherwise `ms` lib doesn't import

@@ -2,14 +2,14 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
-import * as encoder from '../../../../src/utils/encoder';
-import { DidKeyResolver } from '../../../../src/did/did-key-resolver';
-import { DidResolver } from '../../../../src';
-import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query';
-import { MessageStoreLevel } from '../../../../src/store/message-store-level';
-import { TestDataGenerator } from '../../../utils/test-data-generator';
-import { TestStubGenerator } from '../../../utils/test-stub-generator';
-import { constructAdditionalIndexes, handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write';
+import * as encoder from '../../../../src/utils/encoder.js';
+import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
+import { DidResolver } from '../../../../src/index.js';
+import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query.js';
+import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
+import { TestDataGenerator } from '../../../utils/test-data-generator.js';
+import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
+import { constructAdditionalIndexes, handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write.js';
 
 chai.use(chaiAsPromised);
 

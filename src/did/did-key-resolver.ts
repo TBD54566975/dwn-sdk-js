@@ -1,13 +1,13 @@
-import type { DidDocument, DidMethodResolver, DidResolutionResult } from './did-resolver';
+import type { DidDocument, DidMethodResolver, DidResolutionResult } from './did-resolver.js';
 
-import * as encoder from '../utils/encoder';
+import * as encoder from '../utils/encoder.js';
 import varint from 'varint';
 
 import { base58btc } from 'multiformats/bases/base58';
-import { Did } from './did';
-import { ed25519 } from '../../src/jose/algorithms/signing/ed25519';
-import { secp256k1 } from '../jose/algorithms/signing/secp256k1';
-import { PrivateJwk, PublicJwk } from '../jose/types';
+import { Did } from './did.js';
+import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
+import { secp256k1 } from '../jose/algorithms/signing/secp256k1.js';
+import { PrivateJwk, PublicJwk } from '../jose/types.js';
 
 /**
  * did:key Resolver.

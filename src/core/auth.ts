@@ -1,13 +1,13 @@
-import type { AuthVerificationResult } from './types';
-import type { BaseMessage } from './types';
+import type { AuthVerificationResult } from './types.js';
+import type { BaseMessage } from './types.js';
 
 import { CID } from 'multiformats';
-import { Did } from '../did/did';
-import { DidResolver } from '../did/did-resolver';
-import { GeneralJws } from '../jose/jws/general/types';
-import { GeneralJwsVerifier } from '../jose/jws/general';
-import { Message } from './message';
-import { generateCid, parseCid } from '../utils/cid';
+import { Did } from '../did/did.js';
+import { DidResolver } from '../did/did-resolver.js';
+import { GeneralJws } from '../jose/jws/general/types.js';
+import { GeneralJwsVerifier } from '../jose/jws/general/index.js';
+import { Message } from './message.js';
+import { generateCid, parseCid } from '../utils/cid.js';
 
 type AuthorizationPayloadConstraints = {
   /** permissible properties within payload. Note that `descriptorCid` is implied and does not need to be added */

@@ -1,5 +1,5 @@
 import crossFetch from 'cross-fetch';
-import { DidMethodResolver, DidResolutionResult } from './did-resolver';
+import { DidMethodResolver, DidResolutionResult } from './did-resolver.js';
 
 /**
  * Resolver for ION DIDs.

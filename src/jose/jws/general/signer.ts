@@ -1,7 +1,7 @@
-import type { GeneralJws, SignatureInput } from './types';
+import type { GeneralJws, SignatureInput } from './types.js';
 
-import * as encoder from '../../../utils/encoder';
-import { signers } from '../../algorithms';
+import * as encoder from '../../../utils/encoder.js';
+import { signers } from '../../algorithms/index.js';
 
 export class GeneralJwsSigner {
   private jws: GeneralJws;

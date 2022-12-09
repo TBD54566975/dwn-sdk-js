@@ -1,7 +1,7 @@
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
-import { MemoryCache } from '../../src/utils/memory-cache';
+import { MemoryCache } from '../../src/utils/memory-cache.js';
 import sinon from 'sinon';
 
 // extends chai to test promises

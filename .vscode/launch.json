@@ -10,7 +10,6 @@
             "name": "Tests - Node",
             "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/mocha",
             "runtimeArgs": [
-                "--es-module-specifier-resolution=node",
                 "dist/esm/tests/**/*.spec.js"
             ],
             "console": "internalConsole"

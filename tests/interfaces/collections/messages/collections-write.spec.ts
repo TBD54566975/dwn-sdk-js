@@ -3,12 +3,12 @@ import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import { base64url } from 'multiformats/bases/base64';
-import { CollectionsWrite } from '../../../../src/interfaces/collections/messages/collections-write';
-import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/types';
-import { MessageStoreLevel } from '../../../../src/store/message-store-level';
-import { TestDataGenerator } from '../../../utils/test-data-generator';
-import { TestStubGenerator } from '../../../utils/test-stub-generator';
-import { getCurrentDateInHighPrecision, sleep } from '../../../../src/utils/time';
+import { CollectionsWrite } from '../../../../src/interfaces/collections/messages/collections-write.js';
+import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/types.js';
+import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
+import { TestDataGenerator } from '../../../utils/test-data-generator.js';
+import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
+import { getCurrentDateInHighPrecision, sleep } from '../../../../src/utils/time.js';
 
 
 chai.use(chaiAsPromised);

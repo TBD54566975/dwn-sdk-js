@@ -1,13 +1,13 @@
-import type { SignatureInput } from '../jose/jws/general/types';
-import type { BaseDecodedAuthorizationPayload, BaseMessage, Descriptor } from './types';
+import type { SignatureInput } from '../jose/jws/general/types.js';
+import type { BaseDecodedAuthorizationPayload, BaseMessage, Descriptor } from './types.js';
 
 import { CID } from 'multiformats/cid';
-import { CollectionsWriteMessage } from '../interfaces/collections/types';
-import { GeneralJws } from '../jose/jws/general/types';
-import { validate } from '../validator';
+import { CollectionsWriteMessage } from '../interfaces/collections/types.js';
+import { GeneralJws } from '../jose/jws/general/types.js';
+import { validate } from '../validator.js';
 
-import { compareCids, generateCid } from '../utils/cid';
-import { GeneralJwsSigner, GeneralJwsVerifier } from '../jose/jws/general';
+import { compareCids, generateCid } from '../utils/cid.js';
+import { GeneralJwsSigner, GeneralJwsVerifier } from '../jose/jws/general/index.js';
 
 export enum DwnMethodName {
   CollectionsWrite = 'CollectionsWrite',

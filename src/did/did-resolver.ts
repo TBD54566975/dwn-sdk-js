@@ -1,10 +1,10 @@
-import type { Cache } from '../utils/types';
-import type { PublicJwk } from '../jose/types';
+import type { Cache } from '../utils/types.js';
+import type { PublicJwk } from '../jose/types.js';
 
-import { Did } from './did';
-import { DidIonResolver } from './did-ion-resolver';
-import { DidKeyResolver } from './did-key-resolver';
-import { MemoryCache } from '../utils/memory-cache';
+import { Did } from './did.js';
+import { DidIonResolver } from './did-ion-resolver.js';
+import { DidKeyResolver } from './did-key-resolver.js';
+import { MemoryCache } from '../utils/memory-cache.js';
 
 /**
  * A DID resolver that by default supports `did:key` and `did:ion` DIDs.

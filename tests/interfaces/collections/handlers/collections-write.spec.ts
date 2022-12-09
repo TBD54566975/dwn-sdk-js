@@ -1,4 +1,4 @@
-import * as encoder from '../../../../src/utils/encoder';
+import * as encoder from '../../../../src/utils/encoder.js';
 import chaiAsPromised from 'chai-as-promised';
 import credentialIssuanceProtocolDefinition from '../../../vectors/protocol-definitions/credential-issuance.json' assert { type: 'json' };
 import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
@@ -6,19 +6,19 @@ import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import { base64url } from 'multiformats/bases/base64';
-import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/types';
-import { DidKeyResolver } from '../../../../src/did/did-key-resolver';
-import { DidResolver } from '../../../../src/did/did-resolver';
-import { GeneralJwsSigner } from '../../../../src/jose/jws/general';
-import { getCurrentDateInHighPrecision } from '../../../../src/utils/time';
-import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query';
-import { handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write';
-import { handleProtocolsConfigure } from '../../../../src/interfaces/protocols/handlers/protocols-configure';
-import { Message } from '../../../../src/core';
-import { MessageStoreLevel } from '../../../../src/store/message-store-level';
-import { ProtocolDefinition } from '../../../../src';
-import { TestStubGenerator } from '../../../utils/test-stub-generator';
-import { GenerateCollectionsWriteMessageOutput, TestDataGenerator } from '../../../utils/test-data-generator';
+import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/types.js';
+import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
+import { DidResolver } from '../../../../src/did/did-resolver.js';
+import { GeneralJwsSigner } from '../../../../src/jose/jws/general/index.js';
+import { getCurrentDateInHighPrecision } from '../../../../src/utils/time.js';
+import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query.js';
+import { handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write.js';
+import { handleProtocolsConfigure } from '../../../../src/interfaces/protocols/handlers/protocols-configure.js';
+import { Message } from '../../../../src/core/index.js';
+import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
+import { ProtocolDefinition } from '../../../../src/index.js';
+import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
+import { GenerateCollectionsWriteMessageOutput, TestDataGenerator } from '../../../utils/test-data-generator.js';
 
 chai.use(chaiAsPromised);
 

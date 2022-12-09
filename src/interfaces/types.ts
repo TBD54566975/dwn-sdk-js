@@ -1,8 +1,8 @@
-import type { BaseMessage } from '../core/types';
-import type { MessageReply } from '../core/message-reply';
-import type { MessageStore } from '../store/message-store';
+import type { BaseMessage } from '../core/types.js';
+import type { MessageReply } from '../core/message-reply.js';
+import type { MessageStore } from '../store/message-store.js';
 
-import { DidResolver } from '../did/did-resolver';
+import { DidResolver } from '../did/did-resolver.js';
 
 export type MethodHandler = (
   message: BaseMessage,

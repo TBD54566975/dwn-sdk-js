@@ -3,7 +3,7 @@ import varint from 'varint';
 import chai, { expect } from 'chai';
 
 import { base58btc } from 'multiformats/bases/base58';
-import { DidKeyResolver } from '../../src/did/did-key-resolver';
+import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 
 // extends chai to test promises
 chai.use(chaiAsPromised);

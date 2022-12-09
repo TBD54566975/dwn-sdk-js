@@ -28,8 +28,6 @@ import { Dwn } from '@tbd54566975/dwn-sdk-js';
 
 _Note: Works in both node and browser environments_
 
-⚠ Currently, in order to use this sdk in **node environments** you'll have to include the `--es-module-specifier-resolution=node` flag when running your javascript.
-
 ## Project Resources
 
 | Resource                                                                                     | Description                                                                   |

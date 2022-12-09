@@ -1,6 +1,6 @@
 {
   "name": "@tbd54566975/dwn-sdk-js",
-  "version": "0.0.13",
+  "version": "0.0.13-unstable-20221208-1",
   "description": "A reference implementation of https://identity.foundation/decentralized-web-node/spec/",
   "type": "module",
   "types": "./dist/esm/src/index.d.ts",
@@ -29,8 +29,8 @@
     "lint:fix": "eslint . --ext .ts --fix",
     "make-coverage-badges": "istanbul-badges-readme",
     "make-coverage-badges:ci": "npm run make-coverage-badges -- --ci",
-    "test:node": "npm run compile-validators && tsc && c8 mocha --es-module-specifier-resolution=node \"dist/esm/tests/**/*.spec.js\" && npm run make-coverage-badges",
-    "test:node:ci": "npm run compile-validators && tsc && c8 mocha --es-module-specifier-resolution=node \"dist/esm/tests/**/*.spec.js\"",
+    "test:node": "npm run compile-validators && tsc && c8 mocha \"dist/esm/tests/**/*.spec.js\" && npm run make-coverage-badges",
+    "test:node:ci": "npm run compile-validators && tsc && c8 mocha \"dist/esm/tests/**/*.spec.js\"",
     "test:browser": "npm run compile-validators && cross-env karma start karma.conf.cjs",
     "test:browser-debug": "npm run compile-validators && cross-env karma start karma.conf.debug.cjs",
     "license-check": "license-report --only=prod > license-report.json && node ./build/license-check.cjs"
@@ -94,7 +94,7 @@
     "sinon": "13.0.1",
     "typescript": "4.8.2",
     "util": "0.12.4",
-    "license-report" : "6.3.0"
+    "license-report": "6.3.0"
   },
   "repository": {
     "type": "git",

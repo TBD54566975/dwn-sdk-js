@@ -1,4 +1,4 @@
-import * as encoder from '../utils/encoder';
+import * as encoder from '../utils/encoder.js';
 import { CID } from 'multiformats/cid';
 import { importer } from 'ipfs-unixfs-importer';
 

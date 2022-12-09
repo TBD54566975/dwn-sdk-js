@@ -1,8 +1,8 @@
-import type { GeneralJws, SignatureInput } from '../jose/jws/general/types';
+import type { GeneralJws, SignatureInput } from '../jose/jws/general/types.js';
 
 import { CID } from 'multiformats/cid';
-import { DidResolver } from '../did/did-resolver';
-import { MessageStore } from '../store/message-store';
+import { DidResolver } from '../did/did-resolver.js';
+import { MessageStore } from '../store/message-store.js';
 
 /**
  * Intersection type for all concrete message types.

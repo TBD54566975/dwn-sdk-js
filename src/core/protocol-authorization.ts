@@ -1,8 +1,8 @@
-import { CollectionsWrite } from '../interfaces/collections/messages/collections-write';
-import { CollectionsWriteMessage } from '../interfaces/collections/types';
-import { MessageStore } from '../store/message-store';
-import { DwnMethodName, Message } from './message';
-import { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types';
+import { CollectionsWrite } from '../interfaces/collections/messages/collections-write.js';
+import { CollectionsWriteMessage } from '../interfaces/collections/types.js';
+import { MessageStore } from '../store/message-store.js';
+import { DwnMethodName, Message } from './message.js';
+import { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
 
 const methodToAllowedActionMap = {
   [DwnMethodName.CollectionsWrite]: 'write',

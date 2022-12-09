@@ -1,4 +1,4 @@
-import { BaseMessage } from './types';
+import { BaseMessage } from './types.js';
 
 type Status = {
   code: number

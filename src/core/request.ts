@@ -1,5 +1,5 @@
-import { RequestSchema } from './types';
-import { validate } from '../validator';
+import { RequestSchema } from './types.js';
+import { validate } from '../validator.js';
 
 export class Request {
   /**

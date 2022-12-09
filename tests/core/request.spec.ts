@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { Request } from '../../src/core';
+import { Request } from '../../src/core/index.js';
 
 describe('Request', () => {
   describe('parse', () => {

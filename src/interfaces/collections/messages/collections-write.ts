@@ -1,20 +1,20 @@
-import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
-import type { CollectionsWriteAuthorizationPayload, CollectionsWriteDescriptor, CollectionsWriteMessage } from '../types';
+import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types.js';
+import type { CollectionsWriteAuthorizationPayload, CollectionsWriteDescriptor, CollectionsWriteMessage } from '../types.js';
 
-import * as encoder from '../../../utils/encoder';
-import { DidResolver } from '../../../did/did-resolver';
-import { DwnMethodName } from '../../../core/message';
-import { generateCid } from '../../../utils/cid';
-import { getCurrentDateInHighPrecision } from '../../../utils/time';
-import { getDagCid } from '../../../utils/data';
-import { Message } from '../../../core/message';
-import { MessageStore } from '../../../store/message-store';
-import { ProtocolAuthorization } from '../../../core/protocol-authorization';
-import { removeUndefinedProperties } from '../../../utils/object';
+import * as encoder from '../../../utils/encoder.js';
+import { DidResolver } from '../../../did/did-resolver.js';
+import { DwnMethodName } from '../../../core/message.js';
+import { generateCid } from '../../../utils/cid.js';
+import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
+import { getDagCid } from '../../../utils/data.js';
+import { Message } from '../../../core/message.js';
+import { MessageStore } from '../../../store/message-store.js';
+import { ProtocolAuthorization } from '../../../core/protocol-authorization.js';
+import { removeUndefinedProperties } from '../../../utils/object.js';
 
-import { authenticate, authorize, validateAuthorizationIntegrity } from '../../../core/auth';
-import { GeneralJws, SignatureInput } from '../../../jose/jws/general/types';
-import { GeneralJwsSigner, GeneralJwsVerifier } from '../../../jose/jws/general';
+import { authenticate, authorize, validateAuthorizationIntegrity } from '../../../core/auth.js';
+import { GeneralJws, SignatureInput } from '../../../jose/jws/general/types.js';
+import { GeneralJwsSigner, GeneralJwsVerifier } from '../../../jose/jws/general/index.js';
 
 export type CollectionsWriteOptions = AuthCreateOptions & {
   target: string;

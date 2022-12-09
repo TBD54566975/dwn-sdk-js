@@ -1,11 +1,11 @@
-import type { MethodHandler } from '../../types';
-import type { ProtocolsQueryMessage } from '../types';
+import type { MethodHandler } from '../../types.js';
+import type { ProtocolsQueryMessage } from '../types.js';
 
-import { canonicalAuth } from '../../../core/auth';
-import { DwnMethodName } from '../../../core/message';
-import { MessageReply } from '../../../core';
-import { ProtocolsQuery } from '../messages/protocols-query';
-import { removeUndefinedProperties } from '../../../utils/object';
+import { canonicalAuth } from '../../../core/auth.js';
+import { DwnMethodName } from '../../../core/message.js';
+import { MessageReply } from '../../../core/index.js';
+import { ProtocolsQuery } from '../messages/protocols-query.js';
+import { removeUndefinedProperties } from '../../../utils/object.js';
 
 export const handleProtocolsQuery: MethodHandler = async (
   message,

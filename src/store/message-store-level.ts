@@ -1,13 +1,13 @@
-import type { MessageStore } from './message-store';
-import type { BaseMessage, DataReferencingMessage } from '../core/types';
+import type { MessageStore } from './message-store.js';
+import type { BaseMessage, DataReferencingMessage } from '../core/types.js';
 
 import * as block from 'multiformats/block';
 import * as cbor from '@ipld/dag-cbor';
-import * as encoder from '../utils/encoder';
+import * as encoder from '../utils/encoder.js';
 import _ from 'lodash';
 import searchIndex from 'search-index';
 
-import { BlockstoreLevel } from './blockstore-level';
+import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
 import { exporter } from 'ipfs-unixfs-exporter';
 import { importer } from 'ipfs-unixfs-importer';

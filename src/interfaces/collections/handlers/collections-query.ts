@@ -1,12 +1,12 @@
-import type { CollectionsQueryMessage } from '../types';
-import type { MethodHandler } from '../../types';
+import type { CollectionsQueryMessage } from '../types.js';
+import type { MethodHandler } from '../../types.js';
 
-import { BaseMessage } from '../../../core/types';
-import { CollectionsQuery } from '../messages/collections-query';
-import { DwnMethodName } from '../../../core/message';
-import { MessageReply } from '../../../core';
-import { MessageStore } from '../../../store/message-store';
-import { removeUndefinedProperties } from '../../../utils/object';
+import { BaseMessage } from '../../../core/types.js';
+import { CollectionsQuery } from '../messages/collections-query.js';
+import { DwnMethodName } from '../../../core/message.js';
+import { MessageReply } from '../../../core/index.js';
+import { MessageStore } from '../../../store/message-store.js';
+import { removeUndefinedProperties } from '../../../utils/object.js';
 
 export const handleCollectionsQuery: MethodHandler = async (
   message,

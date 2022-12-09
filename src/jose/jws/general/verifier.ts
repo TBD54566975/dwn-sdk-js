@@ -1,15 +1,15 @@
-import type { Cache } from '../../../utils/types';
-import type { PublicJwk } from '../../types';
-import type { VerificationMethod } from '../../../did/did-resolver';
-import type { GeneralJws, SignatureEntry } from './types';
+import type { Cache } from '../../../utils/types.js';
+import type { PublicJwk } from '../../types.js';
+import type { VerificationMethod } from '../../../did/did-resolver.js';
+import type { GeneralJws, SignatureEntry } from './types.js';
 
-import * as encoder from '../../../utils/encoder';
+import * as encoder from '../../../utils/encoder.js';
 import lodash from 'lodash';
 
-import { DidResolver } from '../../../did/did-resolver';
-import { MemoryCache } from '../../../utils/memory-cache';
-import { validate } from '../../../validator';
-import { signers as verifiers } from '../../algorithms';
+import { DidResolver } from '../../../did/did-resolver.js';
+import { MemoryCache } from '../../../utils/memory-cache.js';
+import { validate } from '../../../validator.js';
+import { signers as verifiers } from '../../algorithms/index.js';
 
 type VerificationResult = {
   /** DIDs of all signers */

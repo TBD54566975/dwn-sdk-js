@@ -1,15 +1,15 @@
-import type { PermissionsRequestMessage } from '../../../../src/interfaces/permissions/types';
+import type { PermissionsRequestMessage } from '../../../../src/interfaces/permissions/types.js';
 
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 
-import { DidResolver } from '../../../../src/did/did-resolver';
+import { DidResolver } from '../../../../src/did/did-resolver.js';
 import { expect } from 'chai';
-import { GeneralJwsSigner } from '../../../../src/jose/jws/general';
-import { MessageStoreLevel } from '../../../../src/store/message-store-level';
-import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
-import { DEFAULT_CONDITIONS, PermissionsRequest } from '../../../../src/interfaces/permissions/messages/permissions-request';
+import { GeneralJwsSigner } from '../../../../src/jose/jws/general/index.js';
+import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
+import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1.js';
+import { DEFAULT_CONDITIONS, PermissionsRequest } from '../../../../src/interfaces/permissions/messages/permissions-request.js';
 
 
 chai.use(chaiAsPromised);

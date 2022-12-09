@@ -1,13 +1,13 @@
-import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
-import type { CollectionsQueryDescriptor, CollectionsQueryMessage } from '../types';
+import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types.js';
+import type { CollectionsQueryDescriptor, CollectionsQueryMessage } from '../types.js';
 
-import { DidResolver } from '../../../did/did-resolver';
-import { DwnMethodName } from '../../../core/message';
-import { getCurrentDateInHighPrecision } from '../../../utils/time';
-import { Message } from '../../../core/message';
-import { MessageStore } from '../../../store/message-store';
-import { removeUndefinedProperties } from '../../../utils/object';
-import { authenticate, validateAuthorizationIntegrity } from '../../../core/auth';
+import { DidResolver } from '../../../did/did-resolver.js';
+import { DwnMethodName } from '../../../core/message.js';
+import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
+import { Message } from '../../../core/message.js';
+import { MessageStore } from '../../../store/message-store.js';
+import { removeUndefinedProperties } from '../../../utils/object.js';
+import { authenticate, validateAuthorizationIntegrity } from '../../../core/auth.js';
 
 export type CollectionsQueryOptions = AuthCreateOptions & {
   target: string;

@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { removeUndefinedProperties } from '../../src/utils/object';
+import { removeUndefinedProperties } from '../../src/utils/object.js';
 
 describe('Object', () => {
   describe('removeUndefinedProperties', () => {

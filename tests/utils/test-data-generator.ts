@@ -1,14 +1,14 @@
 import * as cbor from '@ipld/dag-cbor';
-import { BaseMessage } from '../../src/core/types';
+import { BaseMessage } from '../../src/core/types.js';
 import { CID } from 'multiformats/cid';
-import { DidResolutionResult } from '../../src/did/did-resolver';
-import { ed25519 } from '../../src/jose/algorithms/signing/ed25519';
-import { getCurrentDateInHighPrecision } from '../../src/utils/time';
-import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request';
-import { removeUndefinedProperties } from '../../src/utils/object';
-import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1';
+import { DidResolutionResult } from '../../src/did/did-resolver.js';
+import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
+import { getCurrentDateInHighPrecision } from '../../src/utils/time.js';
+import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request.js';
+import { removeUndefinedProperties } from '../../src/utils/object.js';
+import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1.js';
 import { sha256 } from 'multiformats/hashes/sha2';
-import { SignatureInput } from '../../src/jose/jws/general/types';
+import { SignatureInput } from '../../src/jose/jws/general/types.js';
 import {
   CollectionsQuery,
   CollectionsQueryMessage,
@@ -26,8 +26,8 @@ import {
   ProtocolsQuery,
   ProtocolsQueryMessage,
   ProtocolsQueryOptions
-} from '../../src';
-import { PrivateJwk, PublicJwk } from '../../src/jose/types';
+} from '../../src/index.js';
+import { PrivateJwk, PublicJwk } from '../../src/jose/types.js';
 
 /**
  * A logical grouping of user data used to generate test messages.

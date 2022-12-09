@@ -1,4 +1,4 @@
-import { MessageReply } from './message-reply';
+import { MessageReply } from './message-reply.js';
 
 type ResponseStatus = {
   code: number
