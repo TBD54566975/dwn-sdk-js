@@ -25,14 +25,14 @@ export const ed25519: Signer = {
   sign: (content: Uint8Array, privateJwk: PrivateJwk): Promise<Uint8Array> => {
     validateKey(privateJwk);
 
-    const privateKeyBytes = encoder.base64urlToBytes(privateJwk.d);
+    const privateKeyBytes = encoder.base64UrlToBytes(privateJwk.d);
 
     return Ed25519.sign(content, privateKeyBytes);
   },
 
   verify: (content: Uint8Array, signature: Uint8Array, publicJwk: PublicJwk): Promise<boolean> => {
     validateKey(publicJwk);
-    const publicKeyBytes = encoder.base64urlToBytes(publicJwk.x);
+    const publicKeyBytes = encoder.base64UrlToBytes(publicJwk.x);
 
     return Ed25519.verify(signature, content, publicKeyBytes);
   },

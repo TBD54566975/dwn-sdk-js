@@ -60,10 +60,7 @@ export class GeneralJwsVerifier {
    * Gets the `kid` from a general JWS signature entry.
    */
   private static getKid(signatureEntry: SignatureEntry): string {
-    const protectedHeaderBytes = encoder.base64urlToBytes(signatureEntry.protected);
-    const protectedHeaderJson = encoder.bytesToString(protectedHeaderBytes);
-
-    const { kid } = JSON.parse(protectedHeaderJson);
+    const { kid } = encoder.base64UrlToObject(signatureEntry.protected);
     return kid;
   }
 
@@ -117,7 +114,7 @@ export class GeneralJwsVerifier {
     }
 
     const payload = encoder.stringToBytes(`${signatureEntry.protected}.${base64UrlPayload}`);
-    const signatureBytes = encoder.base64urlToBytes(signatureEntry.signature);
+    const signatureBytes = encoder.base64UrlToBytes(signatureEntry.signature);
 
     return await verifier.verify(payload, signatureBytes, jwkPublic);
   }
@@ -125,10 +122,7 @@ export class GeneralJwsVerifier {
   public static decodePlainObjectPayload(jws: GeneralJws): any {
     let payloadJson;
     try {
-      const payloadBytes = encoder.base64urlToBytes(jws.payload);
-      const payloadString = encoder.bytesToString(payloadBytes);
-      payloadJson = JSON.parse(payloadString);
-
+      payloadJson = encoder.base64UrlToObject(jws.payload);
     } catch {
       throw new Error('authorization payload is not a JSON object');
     }

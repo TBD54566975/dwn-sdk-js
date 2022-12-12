@@ -16,7 +16,7 @@ export const handleCollectionsWrite: MethodHandler = async (
     // verify dataCid matches given data
     const incomingMessage = message as CollectionsWriteMessage;
     if (incomingMessage.encodedData !== undefined) {
-      const rawData = encoder.base64urlToBytes(incomingMessage.encodedData);
+      const rawData = encoder.base64UrlToBytes(incomingMessage.encodedData);
       const actualDataCid = (await getDagCid(rawData)).toString();
 
       if (actualDataCid !== incomingMessage.descriptor.dataCid) {

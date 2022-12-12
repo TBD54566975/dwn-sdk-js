@@ -145,7 +145,7 @@ export class MessageStoreLevel implements MessageStore {
 
     // if `encodedData` is present we'll decode it then chunk it and store it as unix-fs dag-pb encoded
     if (encodedData) {
-      const content = encoder.base64urlToBytes(encodedData);
+      const content = encoder.base64UrlToBytes(encodedData);
       const chunk = importer([{ content }], this.db, { cidVersion: 1 });
 
       // for some reason no-unused-vars doesn't work in for loops. it's not entirely surprising because

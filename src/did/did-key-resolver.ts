@@ -118,7 +118,7 @@ export class DidKeyResolver implements DidMethodResolver {
 
     // multicodec code for Ed25519 public keys
     const ed25519Multicodec = varint.encode(0xed);
-    const publicKeyBytes = encoder.base64urlToBytes(publicJwk.x);
+    const publicKeyBytes = encoder.base64UrlToBytes(publicJwk.x);
     const idBytes = new Uint8Array(ed25519Multicodec.length + publicKeyBytes.byteLength);
     idBytes.set(ed25519Multicodec, 0);
     idBytes.set(publicKeyBytes, ed25519Multicodec.length);
