@@ -1,12 +1,10 @@
 import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types.js';
 import type { CollectionsWriteAuthorizationPayload, CollectionsWriteDescriptor, CollectionsWriteMessage } from '../types.js';
 
-import * as encoder from '../../../utils/encoder.js';
 import { DidResolver } from '../../../did/did-resolver.js';
 import { DwnMethodName } from '../../../core/message.js';
-import { generateCid } from '../../../utils/cid.js';
+import { Encoder } from '../../../utils/encoder.js';
 import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
-import { getDagCid } from '../../../utils/data.js';
 import { Message } from '../../../core/message.js';
 import { MessageStore } from '../../../store/message-store.js';
 import { ProtocolAuthorization } from '../../../core/protocol-authorization.js';
@@ -15,6 +13,7 @@ import { removeUndefinedProperties } from '../../../utils/object.js';
 import { authenticate, authorize, validateAuthorizationIntegrity } from '../../../core/auth.js';
 import { GeneralJws, SignatureInput } from '../../../jose/jws/general/types.js';
 import { GeneralJwsSigner, GeneralJwsVerifier } from '../../../jose/jws/general/index.js';
+import { generateCid, getDagPbCid } from '../../../utils/cid.js';
 
 export type CollectionsWriteOptions = AuthCreateOptions & {
   target: string;
@@ -49,7 +48,7 @@ export class CollectionsWrite extends Message implements Authorizable {
    * @param options.lineageParent If `undefined`, it will be auto-filled with value of `options.recordId` as convenience for developer.
    */
   public static async create(options: CollectionsWriteOptions): Promise<CollectionsWrite> {
-    const dataCid = await getDagCid(options.data);
+    const dataCid = await getDagPbCid(options.data);
     const descriptor: CollectionsWriteDescriptor = {
       recipient     : options.recipient,
       method        : DwnMethodName.CollectionsWrite,
@@ -101,7 +100,7 @@ export class CollectionsWrite extends Message implements Authorizable {
       }
     }
 
-    const encodedData = encoder.bytesToBase64Url(options.data);
+    const encodedData = Encoder.bytesToBase64Url(options.data);
     const authorization = await CollectionsWrite.signAsCollectionsWriteAuthorization(
       options.target,
       recordId,
@@ -223,7 +222,7 @@ export class CollectionsWrite extends Message implements Authorizable {
 
     if (contextId !== undefined) { authorizationPayload.contextId = contextId; } // assign `contextId` only if it is defined
 
-    const authorizationPayloadBytes = encoder.objectToBytes(authorizationPayload);
+    const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
 
     const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
 

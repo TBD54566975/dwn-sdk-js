@@ -3,12 +3,12 @@ import type { BaseMessage, DataReferencingMessage } from '../core/types.js';
 
 import * as block from 'multiformats/block';
 import * as cbor from '@ipld/dag-cbor';
-import * as encoder from '../utils/encoder.js';
 import _ from 'lodash';
 import searchIndex from 'search-index';
 
 import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
+import { Encoder } from '../utils/encoder.js';
 import { exporter } from 'ipfs-unixfs-exporter';
 import { importer } from 'ipfs-unixfs-importer';
 import { sha256 } from 'multiformats/hashes/sha2';
@@ -89,7 +89,7 @@ export class MessageStoreLevel implements MessageStore {
       offset += chunk.length;
     }
 
-    dataReferencingMessage.encodedData = encoder.bytesToBase64Url(dataBytes);
+    dataReferencingMessage.encodedData = Encoder.bytesToBase64Url(dataBytes);
 
     return messageJson;
   }
@@ -145,7 +145,7 @@ export class MessageStoreLevel implements MessageStore {
 
     // if `encodedData` is present we'll decode it then chunk it and store it as unix-fs dag-pb encoded
     if (encodedData) {
-      const content = encoder.base64UrlToBytes(encodedData);
+      const content = Encoder.base64UrlToBytes(encodedData);
       const chunk = importer([{ content }], this.db, { cidVersion: 1 });
 
       // for some reason no-unused-vars doesn't work in for loops. it's not entirely surprising because

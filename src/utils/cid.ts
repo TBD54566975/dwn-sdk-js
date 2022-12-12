@@ -1,6 +1,7 @@
 import * as cbor from '@ipld/dag-cbor';
 
 import { CID } from 'multiformats/cid';
+import { importer } from 'ipfs-unixfs-importer';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 // a map of all supported CID hashing algorithms. This map is used to select the appropriate hasher
@@ -15,8 +16,21 @@ const codecs = {
   [cbor.code]: cbor
 };
 
+
 /**
- * generates a CID for the provided payload
+ * @returns V1 CID of the DAG comprised by chunking data into unixfs dag-pb encoded blocks
+ */
+export async function getDagPbCid(content: Uint8Array): Promise<CID> {
+  const chunk = importer([{ content }], undefined, { onlyHash: true, cidVersion: 1 });
+  let root;
+
+  for await (root of chunk) { ; }
+
+  return root.cid;
+}
+
+/**
+ * generates a V1 CID for the provided payload
  * @param payload
  * @param codecCode - the codec to use. Defaults to cbor
  * @param multihashCode - the multihasher to use. Defaults to sha256

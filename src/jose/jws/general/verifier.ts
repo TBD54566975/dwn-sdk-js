@@ -3,10 +3,10 @@ import type { PublicJwk } from '../../types.js';
 import type { VerificationMethod } from '../../../did/did-resolver.js';
 import type { GeneralJws, SignatureEntry } from './types.js';
 
-import * as encoder from '../../../utils/encoder.js';
 import lodash from 'lodash';
 
 import { DidResolver } from '../../../did/did-resolver.js';
+import { Encoder } from '../../../utils/encoder.js';
 import { MemoryCache } from '../../../utils/memory-cache.js';
 import { validate } from '../../../validator.js';
 import { signers as verifiers } from '../../algorithms/index.js';
@@ -60,7 +60,7 @@ export class GeneralJwsVerifier {
    * Gets the `kid` from a general JWS signature entry.
    */
   private static getKid(signatureEntry: SignatureEntry): string {
-    const { kid } = encoder.base64UrlToObject(signatureEntry.protected);
+    const { kid } = Encoder.base64UrlToObject(signatureEntry.protected);
     return kid;
   }
 
@@ -113,8 +113,8 @@ export class GeneralJwsVerifier {
       throw new Error(`unsupported crv. crv must be one of ${Object.keys(verifiers)}`);
     }
 
-    const payload = encoder.stringToBytes(`${signatureEntry.protected}.${base64UrlPayload}`);
-    const signatureBytes = encoder.base64UrlToBytes(signatureEntry.signature);
+    const payload = Encoder.stringToBytes(`${signatureEntry.protected}.${base64UrlPayload}`);
+    const signatureBytes = Encoder.base64UrlToBytes(signatureEntry.signature);
 
     return await verifier.verify(payload, signatureBytes, jwkPublic);
   }
@@ -122,7 +122,7 @@ export class GeneralJwsVerifier {
   public static decodePlainObjectPayload(jws: GeneralJws): any {
     let payloadJson;
     try {
-      payloadJson = encoder.base64UrlToObject(jws.payload);
+      payloadJson = Encoder.base64UrlToObject(jws.payload);
     } catch {
       throw new Error('authorization payload is not a JSON object');
     }

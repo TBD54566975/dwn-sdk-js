@@ -1,5 +1,5 @@
-import * as encoder from '../../../utils/encoder.js';
 import * as Secp256k1 from '@noble/secp256k1';
+import { Encoder } from '../../../utils/encoder.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 import type { PrivateJwk, PublicJwk, Signer } from '../../types.js';
@@ -27,8 +27,8 @@ function publicKeyToJwk(publicKeyBytes: Uint8Array): PublicJwk {
   // bytes 33 - 64 represent Y
 
   // skip the first byte because it's used as a header to indicate whether the key is uncompressed
-  const x = encoder.bytesToBase64Url(uncompressedPublicKeyBytes.subarray(1, 33));
-  const y = encoder.bytesToBase64Url(uncompressedPublicKeyBytes.subarray(33, 65));
+  const x = Encoder.bytesToBase64Url(uncompressedPublicKeyBytes.subarray(1, 33));
+  const y = Encoder.bytesToBase64Url(uncompressedPublicKeyBytes.subarray(33, 65));
 
   const publicJwk: PublicJwk = {
     alg : 'ES256K',
@@ -48,7 +48,7 @@ export const secp256k1: Signer = {
     // the underlying lib expects us to hash the content ourselves:
     // https://github.com/paulmillr/noble-secp256k1/blob/97aa518b9c12563544ea87eba471b32ecf179916/index.ts#L1160
     const hashedContent = await sha256.encode(content);
-    const privateKeyBytes = encoder.base64UrlToBytes(privateJwk.d);
+    const privateKeyBytes = Encoder.base64UrlToBytes(privateJwk.d);
 
     return await Secp256k1.sign(hashedContent, privateKeyBytes, { der: false });
   },
@@ -56,8 +56,8 @@ export const secp256k1: Signer = {
   verify: async (content: Uint8Array, signature: Uint8Array, publicJwk: PublicJwk): Promise<boolean> => {
     validateKey(publicJwk);
 
-    const xBytes = encoder.base64UrlToBytes(publicJwk.x);
-    const yBytes = encoder.base64UrlToBytes(publicJwk.y);
+    const xBytes = Encoder.base64UrlToBytes(publicJwk.x);
+    const yBytes = Encoder.base64UrlToBytes(publicJwk.y);
 
     const publicKeyBytes = new Uint8Array(xBytes.length + yBytes.length + 1);
 
@@ -77,7 +77,7 @@ export const secp256k1: Signer = {
     const privateKeyBytes = Secp256k1.utils.randomPrivateKey();
     const publicKeyBytes = await Secp256k1.getPublicKey(privateKeyBytes);
 
-    const d = encoder.bytesToBase64Url(privateKeyBytes);
+    const d = Encoder.bytesToBase64Url(privateKeyBytes);
     const publicJwk: PublicJwk = publicKeyToJwk(publicKeyBytes);
     const privateJwk: PrivateJwk = { ...publicJwk, d };
 
