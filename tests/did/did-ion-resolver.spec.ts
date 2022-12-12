@@ -34,7 +34,7 @@ describe('DidIonResolver', () => {
 
   it('should resolve an ION DID correctly', async () => {
     const did = 'did:ion:EiClkZMDxPKqC9c-umQfTkR8vvZ9JPhl_xLDI9Nfk38w5w';
-    const didIonResolver = new DidIonResolver(defaultResolutionEndpoint);
+    const didIonResolver = new DidIonResolver();
 
     // stub network call if network is not available
     if (!networkAvailable) {
@@ -54,7 +54,7 @@ describe('DidIonResolver', () => {
 
   it('should throw if ION DID cannot be resolved', async () => {
     const did = 'did:ion:SomethingThatCannotBeResolved';
-    const didIonResolver = new DidIonResolver(defaultResolutionEndpoint);
+    const didIonResolver = new DidIonResolver();
 
     // stub network call if network is not available
     if (!networkAvailable) {
