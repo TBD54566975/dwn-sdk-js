@@ -1,2 +1,2 @@
-export * from './signer';
-export * from './verifier';
+export * from './signer.js';
+export * from './verifier.js';

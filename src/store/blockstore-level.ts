@@ -3,7 +3,7 @@ import type { Blockstore, Options } from 'interface-blockstore';
 
 import { CID } from 'multiformats';
 import { Level } from 'level';
-import { sleep } from '../utils/time';
+import { sleep } from '../utils/time.js';
 
 // `level` works in Node.js 12+ and Electron 5+ on Linux, Mac OS, Windows and
 // FreeBSD, including any future Node.js and Electron release thanks to Node-API, including ARM

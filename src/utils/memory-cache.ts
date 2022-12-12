@@ -1,4 +1,4 @@
-import type { Cache } from './types';
+import type { Cache } from './types.js';
 import LruCache from 'lru-cache';
 
 /**

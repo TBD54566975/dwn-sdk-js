@@ -1,4 +1,4 @@
-import * as precompiledValidators from '../generated/precompiled-validators';
+import * as precompiledValidators from '../generated/precompiled-validators.js';
 
 /**
  * Validates the given payload using JSON schema keyed by the given schema name. Throws if the given payload fails validation.

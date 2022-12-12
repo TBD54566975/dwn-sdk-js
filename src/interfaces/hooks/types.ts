@@ -1,5 +1,5 @@
-import type { BaseMessage } from '../../core/types';
-import { DwnMethodName } from '../../core/message';
+import type { BaseMessage } from '../../core/types.js';
+import { DwnMethodName } from '../../core/message.js';
 
 /**
  * Descriptor structure for HooksWrite

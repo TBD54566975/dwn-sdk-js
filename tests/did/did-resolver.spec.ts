@@ -2,8 +2,8 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
-import { DidIonResolver } from '../../src/did/did-ion-resolver';
-import { DidResolver } from '../../src/did/did-resolver';
+import { DidIonResolver } from '../../src/did/did-ion-resolver.js';
+import { DidResolver } from '../../src/did/did-resolver.js';
 
 // extends chai to test promises
 chai.use(chaiAsPromised);

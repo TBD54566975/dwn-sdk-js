@@ -1,10 +1,10 @@
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
-import { DidResolver } from '../../../src/did/did-resolver';
-import { GeneralJwsSigner } from '../../../src/jose/jws/general/signer';
-import { GeneralJwsVerifier } from '../../../src/jose/jws/general/verifier';
-import { signers } from '../../../src/jose/algorithms';
+import { DidResolver } from '../../../src/did/did-resolver.js';
+import { GeneralJwsSigner } from '../../../src/jose/jws/general/signer.js';
+import { GeneralJwsVerifier } from '../../../src/jose/jws/general/verifier.js';
+import { signers } from '../../../src/jose/algorithms/index.js';
 import sinon from 'sinon';
 
 const { Ed25519, secp256k1 } = signers;

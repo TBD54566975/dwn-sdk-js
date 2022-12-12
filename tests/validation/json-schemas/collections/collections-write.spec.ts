@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { Message } from '../../../../src/core/message';
+import { Message } from '../../../../src/core/message.js';
 
 describe('CollectionsWrite schema definition', () => {
   it('should allow descriptor with only required properties', async () => {

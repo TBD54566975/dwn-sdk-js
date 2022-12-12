@@ -3,7 +3,7 @@ import fetch from 'cross-fetch';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
-import { DidIonResolver } from '../../src/did/did-ion-resolver';
+import { DidIonResolver } from '../../src/did/did-ion-resolver.js';
 
 // extends chai to test promises
 chai.use(chaiAsPromised);

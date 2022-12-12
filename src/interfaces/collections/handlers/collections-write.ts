@@ -1,11 +1,11 @@
-import type { CollectionsWriteMessage } from '../types';
-import type { MethodHandler } from '../../types';
+import type { CollectionsWriteMessage } from '../types.js';
+import type { MethodHandler } from '../../types.js';
 
-import * as encoder from '../../../utils/encoder';
-import { CollectionsWrite } from '../messages/collections-write';
-import { DwnMethodName } from '../../../core/message';
-import { getDagCid } from '../../../utils/data';
-import { Message, MessageReply } from '../../../core';
+import * as encoder from '../../../utils/encoder.js';
+import { CollectionsWrite } from '../messages/collections-write.js';
+import { DwnMethodName } from '../../../core/message.js';
+import { getDagCid } from '../../../utils/data.js';
+import { Message, MessageReply } from '../../../core/index.js';
 
 export const handleCollectionsWrite: MethodHandler = async (
   message,

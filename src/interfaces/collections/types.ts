@@ -1,5 +1,5 @@
-import { BaseMessage } from '../../core/types';
-import { DwnMethodName } from '../../core/message';
+import { BaseMessage } from '../../core/types.js';
+import { DwnMethodName } from '../../core/message.js';
 
 export type CollectionsWriteDescriptor = {
   recipient: string;

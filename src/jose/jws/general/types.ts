@@ -1,4 +1,4 @@
-import type { PrivateJwk } from '../../types';
+import type { PrivateJwk } from '../../types.js';
 /**
  * General JWS definition. Payload is returned as an empty
  * string when JWS Unencoded Payload Option

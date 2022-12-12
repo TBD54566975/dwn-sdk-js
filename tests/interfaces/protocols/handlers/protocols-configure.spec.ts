@@ -2,14 +2,14 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
-import { compareCids } from '../../../../src/utils/cid';
-import { DidKeyResolver } from '../../../../src/did/did-key-resolver';
-import { DidResolver } from '../../../../src';
-import { handleProtocolsConfigure } from '../../../../src/interfaces/protocols/handlers/protocols-configure';
-import { handleProtocolsQuery } from '../../../../src/interfaces/protocols/handlers/protocols-query';
-import { Message } from '../../../../src/core';
-import { MessageStoreLevel } from '../../../../src/store/message-store-level';
-import { TestDataGenerator } from '../../../utils/test-data-generator';
+import { compareCids } from '../../../../src/utils/cid.js';
+import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
+import { DidResolver } from '../../../../src/index.js';
+import { handleProtocolsConfigure } from '../../../../src/interfaces/protocols/handlers/protocols-configure.js';
+import { handleProtocolsQuery } from '../../../../src/interfaces/protocols/handlers/protocols-query.js';
+import { Message } from '../../../../src/core/index.js';
+import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
+import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 
 chai.use(chaiAsPromised);
 

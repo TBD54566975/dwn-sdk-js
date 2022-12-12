@@ -1,4 +1,4 @@
-import type { BaseMessage } from '../../core/types';
+import type { BaseMessage } from '../../core/types.js';
 
 export type PermissionScope = {
   method: string

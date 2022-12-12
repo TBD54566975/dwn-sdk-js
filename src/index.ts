@@ -20,7 +20,7 @@ export { DidIonResolver } from './did/did-ion-resolver.js';
 export { DidResolver } from './did/did-resolver.js';
 export { Dwn } from './dwn.js';
 export { HooksWrite, HooksWriteOptions } from './interfaces/hooks/messages/hooks-write.js';
-export { PrivateJwk, PublicJwk } from './jose/types';
+export { PrivateJwk, PublicJwk } from './jose/types.js';
 export { ProtocolsConfigure, ProtocolsConfigureOptions } from './interfaces/protocols/messages/protocols-configure.js';
 export { ProtocolsQuery, ProtocolsQueryOptions } from './interfaces/protocols/messages/protocols-query.js';
 export { Response } from './core/response.js';

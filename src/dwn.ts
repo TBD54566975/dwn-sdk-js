@@ -1,14 +1,14 @@
-import type { DidMethodResolver } from './did/did-resolver';
-import type { MessageStore } from './store/message-store';
-import type { BaseMessage, RequestSchema } from './core/types';
-import type { Interface, MethodHandler } from './interfaces/types';
+import type { DidMethodResolver } from './did/did-resolver.js';
+import type { MessageStore } from './store/message-store.js';
+import type { BaseMessage, RequestSchema } from './core/types.js';
+import type { Interface, MethodHandler } from './interfaces/types.js';
 
-import * as encoder from '../src/utils/encoder';
-import { DidResolver } from './did/did-resolver';
-import { MessageStoreLevel } from './store/message-store-level';
+import * as encoder from '../src/utils/encoder.js';
+import { DidResolver } from './did/did-resolver.js';
+import { MessageStoreLevel } from './store/message-store-level.js';
 
-import { CollectionsInterface, PermissionsInterface, ProtocolsInterface } from './interfaces';
-import { MessageReply, Request, Response } from './core';
+import { CollectionsInterface, PermissionsInterface, ProtocolsInterface } from './interfaces/index.js';
+import { MessageReply, Request, Response } from './core/index.js';
 
 
 export class Dwn {

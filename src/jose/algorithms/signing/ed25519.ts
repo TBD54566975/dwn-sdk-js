@@ -1,6 +1,6 @@
 import * as Ed25519 from '@noble/ed25519';
-import * as encoder from '../../../utils/encoder';
-import type { PrivateJwk, PublicJwk, Signer } from '../../types';
+import * as encoder from '../../../utils/encoder.js';
+import type { PrivateJwk, PublicJwk, Signer } from '../../types.js';
 
 function validateKey(jwk: PrivateJwk | PublicJwk): void {
   if (jwk.kty !== 'OKP' || jwk.crv !== 'Ed25519') {

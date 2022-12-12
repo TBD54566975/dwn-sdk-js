@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { Message } from '../../../../src/core/message';
+import { Message } from '../../../../src/core/message.js';
 
 describe('ProtocolsConfigure schema definition', () => {
   it('should throw if when unknown allow rule is encountered', async () => {

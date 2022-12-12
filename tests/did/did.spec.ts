@@ -1,7 +1,7 @@
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
-import { Did } from '../../src/did/did';
+import { Did } from '../../src/did/did.js';
 
 // extends chai to test promises
 chai.use(chaiAsPromised);

@@ -1,7 +1,7 @@
 import { base64url } from 'multiformats/bases/base64';
 import { expect } from 'chai';
-import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1';
-import { TestDataGenerator } from '../../../utils/test-data-generator';
+import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1.js';
+import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 
 describe('secp256k1', () => {
   describe('publicKeyToJwk', () => {

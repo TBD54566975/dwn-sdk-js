@@ -4,9 +4,9 @@ import * as cbor from '@ipld/dag-cbor';
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
-import { generateCid } from '../../src/utils/cid';
+import { generateCid } from '../../src/utils/cid.js';
 import { sha256 } from 'multiformats/hashes/sha2';
-import { TestDataGenerator } from '../utils/test-data-generator';
+import { TestDataGenerator } from '../utils/test-data-generator.js';
 
 // extend chai to test promises
 chai.use(chaiAsPromised);

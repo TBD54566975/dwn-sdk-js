@@ -1,8 +1,8 @@
-import type { MethodHandler } from '../../types';
-import type { PermissionsRequestMessage } from '../types';
+import type { MethodHandler } from '../../types.js';
+import type { PermissionsRequestMessage } from '../types.js';
 
-import { MessageReply } from '../../../core';
-import { PermissionsRequest } from '../messages/permissions-request';
+import { MessageReply } from '../../../core/index.js';
+import { PermissionsRequest } from '../messages/permissions-request.js';
 
 export const handlePermissionsRequest: MethodHandler = async (
   message,

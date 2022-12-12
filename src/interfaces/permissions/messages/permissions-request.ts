@@ -1,12 +1,12 @@
-import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
-import type { PermissionConditions, PermissionScope } from '../types';
-import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types';
+import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types.js';
+import type { PermissionConditions, PermissionScope } from '../types.js';
+import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types.js';
 
-import { canonicalAuth } from '../../../core/auth';
-import { DidResolver } from '../../../did/did-resolver';
-import { getCurrentDateInHighPrecision } from '../../../utils/time';
-import { Message } from '../../../core/message';
-import { MessageStore } from '../../../store/message-store';
+import { canonicalAuth } from '../../../core/auth.js';
+import { DidResolver } from '../../../did/did-resolver.js';
+import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
+import { Message } from '../../../core/message.js';
+import { MessageStore } from '../../../store/message-store.js';
 import { v4 as uuidv4 } from 'uuid';
 
 type PermissionsRequestOptions = AuthCreateOptions & {
