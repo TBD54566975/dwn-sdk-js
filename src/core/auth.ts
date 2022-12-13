@@ -24,7 +24,6 @@ export async function canonicalAuth(
   didResolver: DidResolver
 ): Promise<void> {
   await authenticate(incomingMessage.message.authorization, didResolver);
-
   await authorize(incomingMessage);
 }
 
@@ -75,12 +74,19 @@ export async function validateAuthorizationIntegrity(
   return payloadJson;
 }
 
-export async function authenticate(jws: GeneralJws, didResolver: DidResolver): Promise<string[]> {
+/**
+ * Validates the given JWS is valid.
+ * @throws {Error} if fails authentication
+ */
+export async function authenticate(jws: GeneralJws, didResolver: DidResolver): Promise<void> {
   const verifier = new GeneralJwsVerifier(jws);
-  const { signers } = await verifier.verify(didResolver);
-  return signers;
+  await verifier.verify(didResolver);
 }
 
+/**
+ * Authorizes the incoming message.
+ * @throws {Error} if fails authentication
+ */
 export async function authorize(incomingMessage: Message): Promise<void> {
   // if author/requester is the same as the target DID, we can directly grant access
   if (incomingMessage.author === incomingMessage.target) {

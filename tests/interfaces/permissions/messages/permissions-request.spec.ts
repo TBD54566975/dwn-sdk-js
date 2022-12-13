@@ -4,13 +4,10 @@ import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 
-import { DidResolver } from '../../../../src/did/did-resolver.js';
 import { expect } from 'chai';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general/index.js';
-import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1.js';
 import { DEFAULT_CONDITIONS, PermissionsRequest } from '../../../../src/interfaces/permissions/messages/permissions-request.js';
-
 
 chai.use(chaiAsPromised);
 
@@ -119,47 +116,6 @@ describe('PermissionsRequest', () => {
         // restores all fakes, stubs, spies etc. not restoring causes a memory leak.
         // more info here: https://sinonjs.org/releases/v13/general-setup/
         sinon.restore();
-      });
-
-      it('should be able to successfully validate a valid message', async () => {
-        const { privateJwk, publicJwk } = await secp256k1.generateKeyPair();
-
-        const alice = {
-          did                  : 'did:jank:alice',
-          privateJwk           : privateJwk,
-          publicJwk            : publicJwk,
-          protectedHeader      : { alg: 'ES256K', kid: 'did:jank:alice#key1' },
-          mockResolutionResult : {
-            didResolutionMetadata : {},
-            didDocument           : {
-              verificationMethod: [{
-                id           : 'did:jank:alice#key1',
-                type         : 'JsonWebKey2020',
-                controller   : 'did:jank:alice',
-                publicKeyJwk : publicJwk
-              }]
-            },
-            didDocumentMetadata: {}
-          }
-        };
-
-        const message = await PermissionsRequest.create({
-          target         : 'did:jank:alice',
-          description    : 'drugs',
-          grantedBy      : 'did:jank:bob',
-          grantedTo      : 'did:jank:alice',
-          scope          : { method: 'CollectionsWrite' },
-          signatureInput : { jwkPrivate: alice.privateJwk, protectedHeader: alice.protectedHeader }
-        });
-
-        const resolveStub = sinon.stub();
-        resolveStub.withArgs('did:jank:alice').resolves(alice.mockResolutionResult);
-
-        // @ts-ignore
-        const resolverStub = sinon.createStubInstance(DidResolver, { resolve: resolveStub });
-        const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-
-        await message.verifyAuth(resolverStub, messageStoreStub);
       });
     });
   });

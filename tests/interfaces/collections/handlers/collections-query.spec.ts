@@ -147,12 +147,11 @@ describe('handleCollectionsQuery()', () => {
     });
 
 
-    it('should throw if querying for records not intended for the requester', async () => {
+    it('should throw if a non-owner requester querying for records not intended for the requester (as recipient)', async () => {
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
       const carol = await DidKeyResolver.generate();
 
-      // test correctness for Bob's query
       const bobQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
         requester : bob,
         target    : alice,
@@ -163,6 +162,21 @@ describe('handleCollectionsQuery()', () => {
 
       expect(replyToBobQuery.status.code).to.equal(401);
       expect(replyToBobQuery.status.detail).to.contain('not allowed to query records');
+    });
+
+    it('should allow DWN owner to use `recipient` as a filter in queries', async () => {
+      const alice = await DidKeyResolver.generate();
+      const bob = await DidKeyResolver.generate();
+
+      const bobQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
+        requester : alice,
+        target    : alice,
+        filter    : { recipient: bob.did } // alice as the DWN owner querying bob's records
+      });
+
+      const replyToBobQuery = await handleCollectionsQuery(bobQueryMessageData.message, messageStore, didResolver);
+
+      expect(replyToBobQuery.status.code).to.equal(200);
     });
 
     it('should not fetch entries across tenants', async () => {

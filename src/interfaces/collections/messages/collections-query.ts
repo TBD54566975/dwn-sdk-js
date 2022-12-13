@@ -1,4 +1,4 @@
-import type { AuthCreateOptions, Authorizable } from '../../../core/types.js';
+import type { AuthCreateOptions } from '../../../core/types.js';
 import type { CollectionsQueryDescriptor, CollectionsQueryMessage } from '../types.js';
 
 import { DidResolver } from '../../../did/did-resolver.js';
@@ -24,7 +24,7 @@ export type CollectionsQueryOptions = AuthCreateOptions & {
   dateSort?: string;
 };
 
-export class CollectionsQuery extends Message implements Authorizable {
+export class CollectionsQuery extends Message {
   readonly message: CollectionsQueryMessage; // a more specific type than the base type defined in parent class
 
   private constructor(message: CollectionsQueryMessage) {
@@ -64,13 +64,20 @@ export class CollectionsQuery extends Message implements Authorizable {
   async verifyAuth(didResolver: DidResolver, _messageStore: MessageStore): Promise<void> {
     const message = this.message;
 
-    const signers = await authenticate(message.authorization, didResolver);
-    const author = signers[0];
+    await authenticate(message.authorization, didResolver);
 
+    // DWN owner can do any query
+    if (this.author === this.target) {
+      return;
+    }
+
+    // extra checks if a recipient filter is specified
     const recipientDid = this.message.descriptor.filter.recipient;
-    if (recipientDid !== undefined &&
-        recipientDid !== author) {
-      throw new Error(`non-owner ${author}, not allowed to query records intended for ${recipientDid}`);
+    if (recipientDid !== undefined) {
+      // make sure the recipient is the author
+      if (recipientDid !== this.author) {
+        throw new Error(`${this.author} is not allowed to query records intended for another recipient: ${recipientDid}`);
+      }
     }
   }
 }

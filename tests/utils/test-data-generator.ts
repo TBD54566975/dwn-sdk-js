@@ -50,6 +50,7 @@ export type GenerateProtocolsConfigureMessageOutput = {
   requester: Persona;
   target: Persona;
   message: ProtocolsConfigureMessage;
+  protocolsConfigure: ProtocolsConfigure;
 };
 
 export type GenerateProtocolsQueryMessageInput = {
@@ -65,6 +66,7 @@ export type GenerateProtocolsQueryMessageOutput = {
   requester: Persona;
   target: Persona;
   message: ProtocolsQueryMessage;
+  protocolsQuery: ProtocolsQuery;
 };
 
 export type GenerateCollectionsWriteMessageInput = {
@@ -221,7 +223,8 @@ export class TestDataGenerator {
     return {
       requester,
       target,
-      message: protocolsConfigure.message
+      message: protocolsConfigure.message,
+      protocolsConfigure
     };
   };
 
@@ -253,7 +256,8 @@ export class TestDataGenerator {
     return {
       requester,
       target,
-      message: protocolsQuery.message
+      message: protocolsQuery.message,
+      protocolsQuery
     };
   };
 

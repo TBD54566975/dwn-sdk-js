@@ -4,12 +4,15 @@ import chai, { expect } from 'chai';
 
 import { compareCids } from '../../../../src/utils/cid.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
-import { DidResolver } from '../../../../src/index.js';
+import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { handleProtocolsConfigure } from '../../../../src/interfaces/protocols/handlers/protocols-configure.js';
 import { handleProtocolsQuery } from '../../../../src/interfaces/protocols/handlers/protocols-query.js';
 import { Message } from '../../../../src/core/index.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
+import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
+
+import { DidResolver, Encoder } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -37,6 +40,27 @@ describe('handleProtocolsQuery()', () => {
 
     after(async () => {
       await messageStore.close();
+    });
+
+    it('should return 400 if failed to parse the message', async () => {
+      const { requester, message, protocolsConfigure } = await TestDataGenerator.generateProtocolsConfigureMessage();
+
+      // intentionally create more than one signature, which is not allowed
+      const extraRandomPersona = await TestDataGenerator.generatePersona();
+      const signatureInput1 = TestDataGenerator.createSignatureInputFromPersona(requester);
+      const signatureInput2 = TestDataGenerator.createSignatureInputFromPersona(extraRandomPersona);
+
+      const authorizationPayloadBytes = Encoder.objectToBytes(protocolsConfigure.authorizationPayload);
+
+      const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput1, signatureInput2]);
+      message.authorization = signer.getJws();
+
+      const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
+      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+      const reply = await handleProtocolsConfigure(message, messageStoreStub, didResolverStub);
+
+      expect(reply.status.code).to.equal(400);
+      expect(reply.status.detail).to.contain('expected no more than 1 signature');
     });
 
     it('should return 401 if auth fails', async () => {

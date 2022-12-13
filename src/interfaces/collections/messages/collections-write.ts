@@ -1,4 +1,4 @@
-import type { AuthCreateOptions, Authorizable } from '../../../core/types.js';
+import type { AuthCreateOptions } from '../../../core/types.js';
 import type { CollectionsWriteAuthorizationPayload, CollectionsWriteDescriptor, CollectionsWriteMessage } from '../types.js';
 
 import { DidResolver } from '../../../did/did-resolver.js';
@@ -31,7 +31,7 @@ export type CollectionsWriteOptions = AuthCreateOptions & {
   dataFormat: string;
 };
 
-export class CollectionsWrite extends Message implements Authorizable {
+export class CollectionsWrite extends Message {
   readonly message: CollectionsWriteMessage; // a more specific type than the base type defined in parent class
 
   private constructor(message: CollectionsWriteMessage) {
@@ -131,12 +131,11 @@ export class CollectionsWrite extends Message implements Authorizable {
   async verifyAuth(didResolver: DidResolver, messageStore: MessageStore): Promise<void> {
     const message = this.message as CollectionsWriteMessage;
 
-    const signers = await authenticate(message.authorization, didResolver);
-    const author = signers[0];
+    await authenticate(message.authorization, didResolver);
 
     // authorization
     if (message.descriptor.protocol !== undefined) {
-      await ProtocolAuthorization.authorize(this, author, messageStore);
+      await ProtocolAuthorization.authorize(this, this.author, messageStore);
     } else {
       await authorize(this);
     }

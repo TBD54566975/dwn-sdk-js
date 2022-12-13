@@ -1,6 +1,7 @@
 import type { MethodHandler } from '../../types.js';
 import type { PermissionsRequestMessage } from '../types.js';
 
+import { canonicalAuth } from '../../../core/auth.js';
 import { MessageReply } from '../../../core/index.js';
 import { PermissionsRequest } from '../messages/permissions-request.js';
 
@@ -9,18 +10,18 @@ export const handlePermissionsRequest: MethodHandler = async (
   messageStore,
   didResolver
 ): Promise<MessageReply> => {
-  const request = await PermissionsRequest.parse(message as PermissionsRequestMessage);
-  const { author, target } = request;
+  const permissionRequest = await PermissionsRequest.parse(message as PermissionsRequestMessage);
+  const { author, target } = permissionRequest;
 
-  if (request.target !== request.grantedBy && request.target !== request.grantedTo) {
+  if (permissionRequest.target !== permissionRequest.grantedBy && permissionRequest.target !== permissionRequest.grantedTo) {
     return new MessageReply({
       status: { code: 400, detail: 'grantedBy or grantedTo must be the targeted message recipient' }
     });
   }
 
-  await request.verifyAuth(didResolver, messageStore);
+  await canonicalAuth(permissionRequest, didResolver);
 
-  if (author !== request.grantedTo) {
+  if (author !== permissionRequest.grantedTo) {
     throw new Error('grantee must be signer');
   }
 
