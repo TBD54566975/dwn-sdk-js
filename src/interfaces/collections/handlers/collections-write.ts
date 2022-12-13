@@ -1,10 +1,10 @@
 import type { CollectionsWriteMessage } from '../types.js';
 import type { MethodHandler } from '../../types.js';
 
-import * as encoder from '../../../utils/encoder.js';
 import { CollectionsWrite } from '../messages/collections-write.js';
 import { DwnMethodName } from '../../../core/message.js';
-import { getDagCid } from '../../../utils/data.js';
+import { Encoder } from '../../../utils/encoder.js';
+import { getDagPbCid } from '../../../utils/cid.js';
 import { Message, MessageReply } from '../../../core/index.js';
 
 export const handleCollectionsWrite: MethodHandler = async (
@@ -16,8 +16,8 @@ export const handleCollectionsWrite: MethodHandler = async (
     // verify dataCid matches given data
     const incomingMessage = message as CollectionsWriteMessage;
     if (incomingMessage.encodedData !== undefined) {
-      const rawData = encoder.base64urlToBytes(incomingMessage.encodedData);
-      const actualDataCid = (await getDagCid(rawData)).toString();
+      const rawData = Encoder.base64UrlToBytes(incomingMessage.encodedData);
+      const actualDataCid = (await getDagPbCid(rawData)).toString();
 
       if (actualDataCid !== incomingMessage.descriptor.dataCid) {
         return new MessageReply({

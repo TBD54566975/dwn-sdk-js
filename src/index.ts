@@ -19,6 +19,7 @@ export { DidKeyResolver } from './did/did-key-resolver.js';
 export { DidIonResolver } from './did/did-ion-resolver.js';
 export { DidResolver } from './did/did-resolver.js';
 export { Dwn } from './dwn.js';
+export { Encoder } from './utils/encoder.js';
 export { HooksWrite, HooksWriteOptions } from './interfaces/hooks/messages/hooks-write.js';
 export { PrivateJwk, PublicJwk } from './jose/types.js';
 export { ProtocolsConfigure, ProtocolsConfigureOptions } from './interfaces/protocols/messages/protocols-configure.js';
