@@ -21,12 +21,8 @@ type AuthorizationPayloadConstraints = {
  */
 export async function canonicalAuth(
   incomingMessage: Message,
-  didResolver: DidResolver,
-  authorizationPayloadConstraints?: AuthorizationPayloadConstraints
+  didResolver: DidResolver
 ): Promise<void> {
-  // signature verification is computationally intensive, so we're going to start by validating the payload.
-  await validateAuthorizationIntegrity(incomingMessage.message, authorizationPayloadConstraints);
-
   await authenticate(incomingMessage.message.authorization, didResolver);
 
   await authorize(incomingMessage);

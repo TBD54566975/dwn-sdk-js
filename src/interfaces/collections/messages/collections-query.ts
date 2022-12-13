@@ -32,6 +32,8 @@ export class CollectionsQuery extends Message implements Authorizable {
   }
 
   public static async parse(message: CollectionsQueryMessage): Promise<CollectionsQuery> {
+    await validateAuthorizationIntegrity(message);
+
     return new CollectionsQuery(message);
   }
 
@@ -57,9 +59,6 @@ export class CollectionsQuery extends Message implements Authorizable {
 
   async verifyAuth(didResolver: DidResolver, _messageStore: MessageStore): Promise<void> {
     const message = this.message;
-
-    // signature verification is computationally intensive, so we're going to start by validating the payload.
-    await validateAuthorizationIntegrity(message);
 
     const signers = await authenticate(message.authorization, didResolver);
     const author = signers[0];

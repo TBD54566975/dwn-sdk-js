@@ -4,6 +4,7 @@ import type { ProtocolDefinition, ProtocolsConfigureDescriptor, ProtocolsConfigu
 import { DwnMethodName } from '../../../core/message.js';
 import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/index.js';
+import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 
 export type ProtocolsConfigureOptions = AuthCreateOptions & {
   target: string;
@@ -20,6 +21,8 @@ export class ProtocolsConfigure extends Message {
   }
 
   public static async parse(message: ProtocolsConfigureMessage): Promise<ProtocolsConfigure> {
+    await validateAuthorizationIntegrity(message);
+
     return new ProtocolsConfigure(message);
   }
 

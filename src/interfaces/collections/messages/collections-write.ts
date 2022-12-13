@@ -39,7 +39,13 @@ export class CollectionsWrite extends Message implements Authorizable {
   }
 
   public static async parse(message: CollectionsWriteMessage): Promise<CollectionsWrite> {
-    return new CollectionsWrite(message);
+    await validateAuthorizationIntegrity(message, { allowedProperties: new Set(['recordId', 'contextId']) });
+
+    const collectionsWrite = new CollectionsWrite(message);
+
+    await collectionsWrite.validateIntegrity(); // CollectionsWrite specific data integrity check
+
+    return collectionsWrite;
   }
 
   /**
@@ -124,11 +130,6 @@ export class CollectionsWrite extends Message implements Authorizable {
 
   async verifyAuth(didResolver: DidResolver, messageStore: MessageStore): Promise<void> {
     const message = this.message as CollectionsWriteMessage;
-
-    // signature verification is computationally intensive, so we're going to start by validating the payload.
-    await validateAuthorizationIntegrity(message, { allowedProperties: new Set(['recordId', 'contextId']) });
-
-    await this.validateIntegrity();
 
     const signers = await authenticate(message.authorization, didResolver);
     const author = signers[0];

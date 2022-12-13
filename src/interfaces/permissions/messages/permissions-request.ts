@@ -8,6 +8,7 @@ import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/message.js';
 import { MessageStore } from '../../../store/message-store.js';
 import { v4 as uuidv4 } from 'uuid';
+import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 
 type PermissionsRequestOptions = AuthCreateOptions & {
   target: string;
@@ -28,6 +29,8 @@ export class PermissionsRequest extends Message implements Authorizable {
   }
 
   public static async parse(message: PermissionsRequestMessage): Promise<PermissionsRequest> {
+    await validateAuthorizationIntegrity(message);
+
     return new PermissionsRequest(message);
   }
 
