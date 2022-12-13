@@ -218,7 +218,7 @@ describe('handleCollectionsQuery()', () => {
     expect(reply.status.code).to.equal(500);
   });
 
-  it('should return 500 if query contains `dateSort`', async () => {
+  it('should return 400 if query contains `dateSort`', async () => {
     const { requester, message } = await TestDataGenerator.generateCollectionsQueryMessage({ dateSort: 'createdAscending' });
 
     // setting up a stub method resolver & message store
@@ -228,7 +228,7 @@ describe('handleCollectionsQuery()', () => {
 
     const reply = await handleCollectionsQuery(message, messageStoreStub, didResolverStub);
 
-    expect(reply.status.code).to.equal(500);
+    expect(reply.status.code).to.equal(400);
     expect(reply.status.detail).to.equal('`dateSort` not implemented');
   });
 });

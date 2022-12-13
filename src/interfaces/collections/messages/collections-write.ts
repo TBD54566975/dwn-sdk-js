@@ -147,6 +147,16 @@ export class CollectionsWrite extends Message implements Authorizable {
    * There is opportunity to integrate better with `validateSchema(...)`
    */
   private async validateIntegrity(): Promise<void> {
+    // verify dataCid matches given data
+    if (this.message.encodedData !== undefined) {
+      const rawData = Encoder.base64UrlToBytes(this.message.encodedData);
+      const actualDataCid = (await getDagPbCid(rawData)).toString();
+
+      if (actualDataCid !== this.message.descriptor.dataCid) {
+        throw new Error('actual CID of data and `dataCid` in descriptor mismatch');
+      }
+    }
+
     // make sure the same `recordId` in message is the same as the `recordId` in `authorization`
     if (this.message.recordId !== this.authorizationPayload.recordId) {
       throw new Error(

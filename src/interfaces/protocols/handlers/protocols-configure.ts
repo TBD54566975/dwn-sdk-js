@@ -13,8 +13,15 @@ export const handleProtocolsConfigure: MethodHandler = async (
 ): Promise<MessageReply> => {
   try {
     const incomingMessage = message as ProtocolsConfigureMessage;
-    const protocolsConfigure = await ProtocolsConfigure.parse(incomingMessage);
-    const { author, target } = protocolsConfigure;
+
+    let protocolsConfigure: ProtocolsConfigure;
+    try {
+      protocolsConfigure = await ProtocolsConfigure.parse(incomingMessage);
+    } catch (e) {
+      return new MessageReply({
+        status: { code: 400, detail: e.message }
+      });
+    }
 
     // authentication & authorization
     try {
@@ -44,6 +51,7 @@ export const handleProtocolsConfigure: MethodHandler = async (
     // write the incoming message to DB if incoming message is largest
     let messageReply: MessageReply;
     if (incomingMessageIsNewest) {
+      const { author, target } = protocolsConfigure;
       await messageStore.put(message, { author, target });
 
       messageReply = new MessageReply({

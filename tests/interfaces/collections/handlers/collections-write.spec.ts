@@ -802,7 +802,7 @@ describe('handleCollectionsWrite()', () => {
     });
   });
 
-  it('should return 401 if `recordId` in `authorization` payload mismatches with `recordId` in the message', async () => {
+  it('should return 400 if `recordId` in `authorization` payload mismatches with `recordId` in the message', async () => {
     const { requester, message, collectionsWrite } = await TestDataGenerator.generateCollectionsWriteMessage();
 
     // replace `authorization` with mismatching `record`, even though signature is still valid
@@ -823,11 +823,11 @@ describe('handleCollectionsWrite()', () => {
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
     const reply = await handleCollectionsWrite(message, messageStoreStub, didResolverStub);
 
-    expect(reply.status.code).to.equal(401);
+    expect(reply.status.code).to.equal(400);
     expect(reply.status.detail).to.contain('does not match recordId in authorization');
   });
 
-  it('should return 401 if `recordId` in root CollectionsWrite message is mismatches with the expected deterministic `recordId`', async () => {
+  it('should return 400 if `recordId` in root CollectionsWrite message is mismatches with the expected deterministic `recordId`', async () => {
     const { requester, message, collectionsWrite } = await TestDataGenerator.generateCollectionsWriteMessage();
 
     const incorrectRecordId = await TestDataGenerator.randomCborSha256Cid();
@@ -851,11 +851,11 @@ describe('handleCollectionsWrite()', () => {
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
     const reply = await handleCollectionsWrite(message, messageStoreStub, didResolverStub);
 
-    expect(reply.status.code).to.equal(401);
+    expect(reply.status.code).to.equal(400);
     expect(reply.status.detail).to.contain('does not match deterministic recordId');
   });
 
-  it('should return 401 if computed `contextId` for a root protocol record mismatches with `contextId` in the message', async () => {
+  it('should return 400 if computed `contextId` for a root protocol record mismatches with `contextId` in the message', async () => {
     // generate a message with protocol so that computed contextId is also computed and included in message
     const { message } = await TestDataGenerator.generateCollectionsWriteMessage({ protocol: 'anyValue' });
 
@@ -865,11 +865,11 @@ describe('handleCollectionsWrite()', () => {
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
     const reply = await handleCollectionsWrite(message, messageStoreStub, didResolverStub);
-    expect(reply.status.code).to.equal(401);
+    expect(reply.status.code).to.equal(400);
     expect(reply.status.detail).to.contain('does not match deterministic contextId');
   });
 
-  it('should return 401 if `contextId` in `authorization` payload mismatches with `contextId` in the message', async () => {
+  it('should return 400 if `contextId` in `authorization` payload mismatches with `contextId` in the message', async () => {
     // generate a message with protocol so that computed contextId is also computed and included in message
     const { requester, message, collectionsWrite } = await TestDataGenerator.generateCollectionsWriteMessage({ protocol: 'anyValue' });
 
@@ -891,7 +891,7 @@ describe('handleCollectionsWrite()', () => {
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
     const reply = await handleCollectionsWrite(message, messageStoreStub, didResolverStub);
 
-    expect(reply.status.code).to.equal(401);
+    expect(reply.status.code).to.equal(400);
     expect(reply.status.detail).to.contain('does not match contextId in authorization');
   });
 

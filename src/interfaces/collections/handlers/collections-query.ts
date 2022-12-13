@@ -13,7 +13,14 @@ export const handleCollectionsQuery: MethodHandler = async (
   messageStore,
   didResolver
 ): Promise<MessageReply> => {
-  const collectionsQuery = await CollectionsQuery.parse(message as CollectionsQueryMessage);
+  let collectionsQuery: CollectionsQuery;
+  try {
+    collectionsQuery = await CollectionsQuery.parse(message as CollectionsQueryMessage);
+  } catch (e) {
+    return new MessageReply({
+      status: { code: 400, detail: e.message }
+    });
+  }
 
   try {
     await collectionsQuery.verifyAuth(didResolver, messageStore);
@@ -24,10 +31,6 @@ export const handleCollectionsQuery: MethodHandler = async (
   }
 
   try {
-    if (collectionsQuery.message.descriptor.dateSort) {
-      throw new Error('`dateSort` not implemented');
-    }
-
     let entries: BaseMessage[];
     if (collectionsQuery.author === collectionsQuery.target) {
       entries = await fetchRecordsAsOwner(collectionsQuery, messageStore);
