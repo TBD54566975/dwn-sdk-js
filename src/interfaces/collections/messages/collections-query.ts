@@ -1,4 +1,4 @@
-import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types.js';
+import type { AuthCreateOptions, Authorizable } from '../../../core/types.js';
 import type { CollectionsQueryDescriptor, CollectionsQueryMessage } from '../types.js';
 
 import { DidResolver } from '../../../did/did-resolver.js';
@@ -55,7 +55,7 @@ export class CollectionsQuery extends Message implements Authorizable {
     return new CollectionsQuery(message);
   }
 
-  async verifyAuth(didResolver: DidResolver, _messageStore: MessageStore): Promise<AuthVerificationResult> {
+  async verifyAuth(didResolver: DidResolver, _messageStore: MessageStore): Promise<void> {
     const message = this.message;
 
     // signature verification is computationally intensive, so we're going to start by validating the payload.
@@ -69,7 +69,5 @@ export class CollectionsQuery extends Message implements Authorizable {
         recipientDid !== author) {
       throw new Error(`non-owner ${author}, not allowed to query records intended for ${recipientDid}`);
     }
-
-    return { payload: parsedPayload, author };
   }
 }

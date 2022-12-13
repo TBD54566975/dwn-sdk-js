@@ -121,7 +121,7 @@ describe('PermissionsRequest', () => {
         sinon.restore();
       });
 
-      it('returns signer DID if verification succeeds', async () => {
+      it('should be able to successfully validate a valid message', async () => {
         const { privateJwk, publicJwk } = await secp256k1.generateKeyPair();
 
         const alice = {
@@ -159,9 +159,7 @@ describe('PermissionsRequest', () => {
         const resolverStub = sinon.createStubInstance(DidResolver, { resolve: resolveStub });
         const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-        const { author } = await message.verifyAuth(resolverStub, messageStoreStub);
-
-        expect(author).to.equal('did:jank:alice');
+        await message.verifyAuth(resolverStub, messageStoreStub);
       });
     });
   });

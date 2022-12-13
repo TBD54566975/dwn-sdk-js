@@ -45,13 +45,6 @@ export type AttestableMessage = {
   attestation: GeneralJws;
 };
 
-export type AuthVerificationResult = {
-  /** Author DID */
-  author: string;
-  /** parsed JWS payload */
-  payload: { descriptorCid: CID, [key: string]: CID }
-};
-
 /**
  * concrete Message classes should implement this interface if the Message contains authorization
  */
@@ -59,8 +52,10 @@ export interface Authorizable {
   /**
    * validates and verifies the `authorization` property of a given message
    * @param didResolver - used to resolve `kid`'s
+   * @throws {Error} if auth fails
+   *
    */
-  verifyAuth(didResolver: DidResolver, messageStore: MessageStore): Promise<AuthVerificationResult>;
+  verifyAuth(didResolver: DidResolver, messageStore: MessageStore): Promise<void>;
 }
 
 /**

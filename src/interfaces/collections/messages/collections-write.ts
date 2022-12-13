@@ -1,4 +1,4 @@
-import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types.js';
+import type { AuthCreateOptions, Authorizable } from '../../../core/types.js';
 import type { CollectionsWriteAuthorizationPayload, CollectionsWriteDescriptor, CollectionsWriteMessage } from '../types.js';
 
 import { DidResolver } from '../../../did/did-resolver.js';
@@ -122,11 +122,11 @@ export class CollectionsWrite extends Message implements Authorizable {
     return new CollectionsWrite(message);
   }
 
-  async verifyAuth(didResolver: DidResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
+  async verifyAuth(didResolver: DidResolver, messageStore: MessageStore): Promise<void> {
     const message = this.message as CollectionsWriteMessage;
 
     // signature verification is computationally intensive, so we're going to start by validating the payload.
-    const parsedPayload = await validateAuthorizationIntegrity(message, { allowedProperties: new Set(['recordId', 'contextId']) });
+    await validateAuthorizationIntegrity(message, { allowedProperties: new Set(['recordId', 'contextId']) });
 
     await this.validateIntegrity();
 
@@ -139,8 +139,6 @@ export class CollectionsWrite extends Message implements Authorizable {
     } else {
       await authorize(this);
     }
-
-    return { payload: parsedPayload, author };
   }
 
   /**

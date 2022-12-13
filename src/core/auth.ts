@@ -1,4 +1,3 @@
-import type { AuthVerificationResult } from './types.js';
 import type { BaseMessage } from './types.js';
 
 import { CID } from 'multiformats';
@@ -24,16 +23,13 @@ export async function canonicalAuth(
   incomingMessage: Message,
   didResolver: DidResolver,
   authorizationPayloadConstraints?: AuthorizationPayloadConstraints
-): Promise<AuthVerificationResult> {
+): Promise<void> {
   // signature verification is computationally intensive, so we're going to start by validating the payload.
-  const parsedPayload = await validateAuthorizationIntegrity(incomingMessage.message, authorizationPayloadConstraints);
+  await validateAuthorizationIntegrity(incomingMessage.message, authorizationPayloadConstraints);
 
-  const signers = await authenticate(incomingMessage.message.authorization, didResolver);
-  const author = signers[0];
+  await authenticate(incomingMessage.message.authorization, didResolver);
 
   await authorize(incomingMessage);
-
-  return { payload: parsedPayload, author };
 }
 
 /**

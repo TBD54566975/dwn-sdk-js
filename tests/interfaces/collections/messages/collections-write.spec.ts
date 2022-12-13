@@ -41,9 +41,7 @@ describe('CollectionsWrite', () => {
       const resolverStub = TestStubGenerator.createDidResolverStub(alice);
       const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-      const { author } = await collectionsWrite.verifyAuth(resolverStub, messageStoreStub);
-
-      expect(author).to.equal(alice.did);
+      await collectionsWrite.verifyAuth(resolverStub, messageStoreStub);
     });
 
     it('should be able to auto-fill `datePublished` when `published` set to `true` but `datePublished` not given', async () => {

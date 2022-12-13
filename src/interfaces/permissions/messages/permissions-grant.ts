@@ -1,5 +1,5 @@
 import type { SignatureInput } from '../../../jose/jws/general/types';
-import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
+import type { AuthCreateOptions, Authorizable } from '../../../core/types';
 import type { PermissionConditions, PermissionScope } from '../types';
 import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types';
 
@@ -114,7 +114,7 @@ export class PermissionsGrant extends Message implements Authorizable {
     return delegatedGrant;
   }
 
-  verifyAuth(didResolver: DidResolver, _messageStore: MessageStore): Promise<AuthVerificationResult> {
+  verifyAuth(didResolver: DidResolver, _messageStore: MessageStore): Promise<void> {
     return canonicalAuth(this, didResolver);
   }
 

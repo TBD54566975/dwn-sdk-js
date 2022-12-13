@@ -1,4 +1,4 @@
-import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types.js';
+import type { AuthCreateOptions, Authorizable } from '../../../core/types.js';
 import type { PermissionConditions, PermissionScope } from '../types.js';
 import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types.js';
 
@@ -55,8 +55,8 @@ export class PermissionsRequest extends Message implements Authorizable {
     return new PermissionsRequest(message);
   }
 
-  async verifyAuth(didResolver: DidResolver, _messageStore: MessageStore): Promise<AuthVerificationResult> {
-    return await canonicalAuth(this, didResolver);
+  async verifyAuth(didResolver: DidResolver, _messageStore: MessageStore): Promise<void> {
+    return canonicalAuth(this, didResolver);
   }
 
   get id(): string {
