@@ -8,7 +8,7 @@ import lodash from 'lodash';
 import { DidResolver } from '../../../did/did-resolver.js';
 import { Encoder } from '../../../utils/encoder.js';
 import { MemoryCache } from '../../../utils/memory-cache.js';
-import { validate } from '../../../validator.js';
+import { validateJsonSchema } from '../../../validator.js';
 import { signers as verifiers } from '../../algorithms/index.js';
 
 type VerificationResult = {
@@ -99,7 +99,7 @@ export class GeneralJwsVerifier {
       throw new Error('public key needed to verify signature not found in DID Document');
     }
 
-    validate('JwkVerificationMethod', verificationMethod);
+    validateJsonSchema('JwkVerificationMethod', verificationMethod);
 
     const { publicKeyJwk: publicJwk } = verificationMethod;
 

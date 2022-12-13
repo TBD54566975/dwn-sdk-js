@@ -2,10 +2,11 @@ import * as precompiledValidators from '../generated/precompiled-validators.js';
 
 /**
  * Validates the given payload using JSON schema keyed by the given schema name. Throws if the given payload fails validation.
- * @param schemaName the schema name use to look up the JSON schema to be used for schema validation
+ * @param schemaName the schema name use to look up the JSON schema to be used for schema validation.
+ *                   The list of schema names can be found in compile-validators.js
  * @param payload javascript object to be validated
  */
-export function validate(schemaName: string, payload: any): void {
+export function validateJsonSchema(schemaName: string, payload: any): void {
   // const validateFn = validator.getSchema(schemaName);
   const validateFn = precompiledValidators[schemaName];
 

@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { signers } from '../../../../src/jose/algorithms/index.js';
-import { validate } from '../../../../src/validator.js';
+import { validateJsonSchema } from '../../../../src/validator.js';
 
 const { Ed25519, secp256k1 } = signers;
 
@@ -38,10 +38,10 @@ describe('GeneralJwk Schema', async () => {
   ].forEach((jwk): void => {
     it('should not throw an exception if properly formatted jwk', () => {
       expect(
-        () => validate('GeneralJwk', jwk.publicJwk)
+        () => validateJsonSchema('GeneralJwk', jwk.publicJwk)
       ).to.not.throw();
       expect(
-        () => validate('GeneralJwk', jwk.privateJwk)
+        () => validateJsonSchema('GeneralJwk', jwk.privateJwk)
       ).to.not.throw();
     });
   });

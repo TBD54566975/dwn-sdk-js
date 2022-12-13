@@ -4,7 +4,7 @@ import type { BaseDecodedAuthorizationPayload, BaseMessage, Descriptor } from '.
 import { CID } from 'multiformats/cid';
 import { CollectionsWriteMessage } from '../interfaces/collections/types.js';
 import { GeneralJws } from '../jose/jws/general/types.js';
-import { validate } from '../validator.js';
+import { validateJsonSchema } from '../validator.js';
 
 import { compareCids, generateCid } from '../utils/cid.js';
 import { GeneralJwsSigner, GeneralJwsVerifier } from '../jose/jws/general/index.js';
@@ -46,7 +46,7 @@ export abstract class Message {
    */
   public static validateJsonSchema(rawMessage: any): BaseMessage {
     // validate throws an error if message is invalid
-    validate(rawMessage.descriptor.method, rawMessage);
+    validateJsonSchema(rawMessage.descriptor.method, rawMessage);
 
     return rawMessage as BaseMessage;
   };

@@ -59,7 +59,7 @@ export class CollectionsQuery extends Message implements Authorizable {
     const message = this.message;
 
     // signature verification is computationally intensive, so we're going to start by validating the payload.
-    const parsedPayload = await validateAuthorizationIntegrity(message);
+    await validateAuthorizationIntegrity(message);
 
     const signers = await authenticate(message.authorization, didResolver);
     const author = signers[0];
