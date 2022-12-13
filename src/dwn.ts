@@ -3,8 +3,8 @@ import type { MessageStore } from './store/message-store.js';
 import type { BaseMessage, RequestSchema } from './core/types.js';
 import type { Interface, MethodHandler } from './interfaces/types.js';
 
-import * as encoder from '../src/utils/encoder.js';
 import { DidResolver } from './did/did-resolver.js';
+import { Encoder } from './utils/encoder.js';
 import { MessageStoreLevel } from './store/message-store-level.js';
 
 import { CollectionsInterface, PermissionsInterface, ProtocolsInterface } from './interfaces/index.js';
@@ -58,7 +58,7 @@ export class Dwn {
   async processRequest(rawRequest: Uint8Array): Promise<Response> {
     let request: RequestSchema;
     try {
-      const requestString = encoder.bytesToString(rawRequest);
+      const requestString = Encoder.bytesToString(rawRequest);
       request = JSON.parse(requestString);
     } catch {
       throw new Error('expected request to be valid JSON');

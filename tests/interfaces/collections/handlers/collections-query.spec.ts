@@ -2,9 +2,9 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
-import * as encoder from '../../../../src/utils/encoder.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DidResolver } from '../../../../src/index.js';
+import { Encoder } from '../../../../src/utils/encoder.js';
 import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
@@ -92,16 +92,16 @@ describe('handleCollectionsQuery()', () => {
       const bob = await DidKeyResolver.generate();
       const schema = 'schema1';
       const record1Data = await TestDataGenerator.generateCollectionsWriteMessage(
-        { requester: alice, target: alice, schema, data: encoder.stringToBytes('1') }
+        { requester: alice, target: alice, schema, data: Encoder.stringToBytes('1') }
       );
       const record2Data = await TestDataGenerator.generateCollectionsWriteMessage(
-        { requester: alice, target: alice, schema, data: encoder.stringToBytes('2'), recipientDid: bob.did }
+        { requester: alice, target: alice, schema, data: Encoder.stringToBytes('2'), recipientDid: bob.did }
       );
       const record3Data = await TestDataGenerator.generateCollectionsWriteMessage(
-        { requester: bob, target: alice, recipientDid: alice.did, schema, data: encoder.stringToBytes('3') }
+        { requester: bob, target: alice, recipientDid: alice.did, schema, data: Encoder.stringToBytes('3') }
       );
       const record4Data = await TestDataGenerator.generateCollectionsWriteMessage(
-        { requester: alice, target: alice, schema, data: encoder.stringToBytes('4'), published: true, datePublished: 123 }
+        { requester: alice, target: alice, schema, data: Encoder.stringToBytes('4'), published: true, datePublished: 123 }
       );
 
       // directly inserting data to datastore so that we don't have to setup to grant Bob permission to write to Alice's DWN
@@ -126,9 +126,9 @@ describe('handleCollectionsQuery()', () => {
       expect(replyToBob.status.code).to.equal(200);
       expect(replyToBob.entries?.length).to.equal(3); // expect 3 records
 
-      const privateRecordsForBob = replyToBob.entries.filter(message => (message as any).encodedData === encoder.stringToBase64Url('2'));
-      const privateRecordsFromBob = replyToBob.entries.filter(message => (message as any).encodedData === encoder.stringToBase64Url('3'));
-      const publicRecords = replyToBob.entries.filter(message => (message as any).encodedData === encoder.stringToBase64Url('4'));
+      const privateRecordsForBob = replyToBob.entries.filter(message => (message as any).encodedData === Encoder.stringToBase64Url('2'));
+      const privateRecordsFromBob = replyToBob.entries.filter(message => (message as any).encodedData === Encoder.stringToBase64Url('3'));
+      const publicRecords = replyToBob.entries.filter(message => (message as any).encodedData === Encoder.stringToBase64Url('4'));
       expect(privateRecordsForBob.length).to.equal(1);
       expect(privateRecordsFromBob.length).to.equal(1);
       expect(publicRecords.length).to.equal(1);

@@ -1,4 +1,3 @@
-import * as encoder from '../../../../src/utils/encoder.js';
 import chaiAsPromised from 'chai-as-promised';
 import credentialIssuanceProtocolDefinition from '../../../vectors/protocol-definitions/credential-issuance.json' assert { type: 'json' };
 import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
@@ -9,6 +8,7 @@ import { base64url } from 'multiformats/bases/base64';
 import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/types.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DidResolver } from '../../../../src/did/did-resolver.js';
+import { Encoder } from '../../../../src/utils/encoder.js';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general/index.js';
 import { getCurrentDateInHighPrecision } from '../../../../src/utils/time.js';
 import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query.js';
@@ -112,7 +112,7 @@ describe('handleCollectionsWrite()', () => {
         requester,
         target,
         dateCreated : getCurrentDateInHighPrecision(),
-        data        : encoder.stringToBytes('unused')
+        data        : Encoder.stringToBytes('unused')
       });
 
       // setting up a stub did resolver
@@ -431,7 +431,7 @@ describe('handleCollectionsWrite()', () => {
       it('should fail authorization if protocol cannot be found for a protocol-based CollectionsWrite', async () => {
         const alice = await DidKeyResolver.generate();
         const protocol = 'nonExistentProtocol';
-        const data = encoder.stringToBytes('any data');
+        const data = Encoder.stringToBytes('any data');
         const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
           requester    : alice,
           target       : alice,
@@ -459,7 +459,7 @@ describe('handleCollectionsWrite()', () => {
         const protocolConfigureReply = await handleProtocolsConfigure(protocolConfigureMessageData.message, messageStore, didResolver);
         expect(protocolConfigureReply.status.code).to.equal(202);
 
-        const data = encoder.stringToBytes('any data');
+        const data = Encoder.stringToBytes('any data');
         const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
           requester    : alice,
           target       : alice,
@@ -490,7 +490,7 @@ describe('handleCollectionsWrite()', () => {
         const protocolConfigureReply = await handleProtocolsConfigure(protocolConfigureMessageData.message, messageStore, didResolver);
         expect(protocolConfigureReply.status.code).to.equal(202);
 
-        const data = encoder.stringToBytes('any data');
+        const data = Encoder.stringToBytes('any data');
         const credentialApplicationMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
           requester    : alice,
           target       : alice,
@@ -531,7 +531,7 @@ describe('handleCollectionsWrite()', () => {
         expect(protocolConfigureReply.status.code).to.equal(202);
 
         // test that Alice is allowed to write to her own DWN
-        const data = encoder.stringToBytes('any data');
+        const data = Encoder.stringToBytes('any data');
         const aliceWriteMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
           requester    : alice,
           target       : alice,
@@ -582,7 +582,7 @@ describe('handleCollectionsWrite()', () => {
         expect(protocolConfigureReply.status.code).to.equal(202);
 
         // simulate Alice's VC applications with both issuer
-        const data = encoder.stringToBytes('irrelevant');
+        const data = Encoder.stringToBytes('irrelevant');
         const messageDataWithIssuerA = await TestDataGenerator.generateCollectionsWriteMessage({
           requester    : alice,
           target       : alice,
@@ -635,7 +635,7 @@ describe('handleCollectionsWrite()', () => {
         expect(protocolConfigureReply.status.code).to.equal(202);
 
         // simulate Alice's VC application to an issuer
-        const data = encoder.stringToBytes('irrelevant');
+        const data = Encoder.stringToBytes('irrelevant');
         const messageDataWithIssuerA = await TestDataGenerator.generateCollectionsWriteMessage({
           requester    : alice,
           target       : alice,
@@ -689,7 +689,7 @@ describe('handleCollectionsWrite()', () => {
         expect(protocolConfigureReply.status.code).to.equal(202);
 
         // simulate Alice's ask and PFI's offer already occurred
-        const data = encoder.stringToBytes('irrelevant');
+        const data = Encoder.stringToBytes('irrelevant');
         const askMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
           requester    : alice,
           target       : pfi,
@@ -770,7 +770,7 @@ describe('handleCollectionsWrite()', () => {
         expect(protocolConfigureReply.status.code).to.equal(202);
 
         // simulate Alice's ask
-        const data = encoder.stringToBytes('irrelevant');
+        const data = Encoder.stringToBytes('irrelevant');
         const askMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
           requester    : alice,
           target       : pfi,
@@ -808,7 +808,7 @@ describe('handleCollectionsWrite()', () => {
     // replace `authorization` with mismatching `record`, even though signature is still valid
     const authorizationPayload = { ...collectionsWrite.authorizationPayload };
     authorizationPayload.recordId = await TestDataGenerator.randomCborSha256Cid(); // make recordId mismatch in authorization payload
-    const authorizationPayloadBytes = encoder.objectToBytes(authorizationPayload);
+    const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
     const signatureInput = {
       jwkPrivate      : requester.keyPair.privateJwk,
       protectedHeader : {
@@ -836,7 +836,7 @@ describe('handleCollectionsWrite()', () => {
     // replace `authorization` with mismatching `record`, even though signature is still valid
     const authorizationPayload = { ...collectionsWrite.authorizationPayload };
     authorizationPayload.recordId = incorrectRecordId; // match with the overwritten recordId above
-    const authorizationPayloadBytes = encoder.objectToBytes(authorizationPayload);
+    const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
     const signatureInput = {
       jwkPrivate      : requester.keyPair.privateJwk,
       protectedHeader : {
@@ -876,7 +876,7 @@ describe('handleCollectionsWrite()', () => {
     // replace `authorization` with mismatching `contextId`, even though signature is still valid
     const authorizationPayload = { ...collectionsWrite.authorizationPayload };
     authorizationPayload.contextId = await TestDataGenerator.randomCborSha256Cid(); // make contextId mismatch in authorization payload
-    const authorizationPayloadBytes = encoder.objectToBytes(authorizationPayload);
+    const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
     const signatureInput = {
       jwkPrivate      : requester.keyPair.privateJwk,
       protectedHeader : {
