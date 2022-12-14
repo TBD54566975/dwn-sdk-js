@@ -168,7 +168,7 @@ export class TestDataGenerator {
    */
   public static createSignatureInputFromPersona(persona: Persona): SignatureInput {
     const signatureInput = {
-      jwkPrivate      : persona.keyPair.privateJwk,
+      privateJwk      : persona.keyPair.privateJwk,
       protectedHeader : {
         alg : persona.keyPair.privateJwk.alg as string,
         kid : persona.keyId
@@ -359,7 +359,7 @@ export class TestDataGenerator {
       grantedBy      : 'did:jank:bob',
       grantedTo      : 'did:jank:alice',
       scope          : { method: 'CollectionsWrite' },
-      signatureInput : { jwkPrivate: privateJwk, protectedHeader: { alg: privateJwk.alg as string, kid: 'whatev' } }
+      signatureInput : { privateJwk: privateJwk, protectedHeader: { alg: privateJwk.alg as string, kid: 'whatev' } }
     });
 
     return { target, message: permissionRequest.message };

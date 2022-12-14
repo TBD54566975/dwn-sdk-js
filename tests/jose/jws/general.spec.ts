@@ -23,7 +23,7 @@ describe('General JWS Sign/Verify', () => {
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
     const protectedHeader = { alg: 'ES256K', kid: 'did:jank:alice#key1' };
 
-    const signer = await GeneralJwsSigner.create(payloadBytes, [{ jwkPrivate: privateJwk, protectedHeader }]);
+    const signer = await GeneralJwsSigner.create(payloadBytes, [{ privateJwk, protectedHeader }]);
     const jws = signer.getJws();
 
     const mockResolutionResult = {
@@ -57,7 +57,7 @@ describe('General JWS Sign/Verify', () => {
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
     const protectedHeader = { alg: 'EdDSA', kid: 'did:jank:alice#key1' };
 
-    const signer = await GeneralJwsSigner.create(payloadBytes, [{ jwkPrivate: privateJwk, protectedHeader }]);
+    const signer = await GeneralJwsSigner.create(payloadBytes, [{ privateJwk, protectedHeader }]);
     const jws = signer.getJws();
 
     const mockResolutionResult = {
@@ -92,7 +92,7 @@ describe('General JWS Sign/Verify', () => {
 
     const alice = {
       did                  : 'did:jank:alice',
-      jwkPrivate           : secp256k1Keys.privateJwk,
+      privateJwk           : secp256k1Keys.privateJwk,
       jwkPublic            : secp256k1Keys.publicJwk,
       protectedHeader      : { alg: 'ES256K', kid: 'did:jank:alice#key1' },
       mockResolutionResult : {
@@ -111,7 +111,7 @@ describe('General JWS Sign/Verify', () => {
 
     const bob = {
       did                  : 'did:jank:bob',
-      jwkPrivate           : ed25519Keys.privateJwk,
+      privateJwk           : ed25519Keys.privateJwk,
       jwkPublic            : ed25519Keys.publicJwk,
       protectedHeader      : { alg: 'EdDSA', kid: 'did:jank:bob#key1' },
       mockResolutionResult : {
@@ -129,8 +129,8 @@ describe('General JWS Sign/Verify', () => {
     };
 
     const signatureInputs = [
-      { jwkPrivate: alice.jwkPrivate, protectedHeader: alice.protectedHeader },
-      { jwkPrivate: bob.jwkPrivate, protectedHeader: bob.protectedHeader },
+      { privateJwk: alice.privateJwk, protectedHeader: alice.protectedHeader },
+      { privateJwk: bob.privateJwk, protectedHeader: bob.protectedHeader },
     ];
 
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
@@ -164,8 +164,8 @@ describe('General JWS Sign/Verify', () => {
     const signer = await GeneralJwsSigner.create(
       payloadBytes,
       [
-        { jwkPrivate: privateJwkEd25519, protectedHeader: protectedHeaderEd25519 },
-        { jwkPrivate: privateJwkSecp256k1, protectedHeader: protectedHeaderSecp256k1 }
+        { privateJwk: privateJwkEd25519, protectedHeader: protectedHeaderEd25519 },
+        { privateJwk: privateJwkSecp256k1, protectedHeader: protectedHeaderSecp256k1 }
       ]
     );
     const jws = signer.getJws();
