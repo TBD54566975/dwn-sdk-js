@@ -1,7 +1,6 @@
-import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types.js';
+import type { AuthCreateOptions } from '../../../core/types.js';
 import type { CollectionsWriteAuthorizationPayload, CollectionsWriteDescriptor, CollectionsWriteMessage } from '../types.js';
 
-import { DidResolver } from '../../../did/did-resolver.js';
 import { DwnMethodName } from '../../../core/message.js';
 import { Encoder } from '../../../utils/encoder.js';
 import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
@@ -10,7 +9,7 @@ import { MessageStore } from '../../../store/message-store.js';
 import { ProtocolAuthorization } from '../../../core/protocol-authorization.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 
-import { authenticate, authorize, validateAuthorizationIntegrity } from '../../../core/auth.js';
+import { authorize, validateAuthorizationIntegrity } from '../../../core/auth.js';
 import { GeneralJws, SignatureInput } from '../../../jose/jws/general/types.js';
 import { GeneralJwsSigner, GeneralJwsVerifier } from '../../../jose/jws/general/index.js';
 import { generateCid, getDagPbCid } from '../../../utils/cid.js';
@@ -31,7 +30,7 @@ export type CollectionsWriteOptions = AuthCreateOptions & {
   dataFormat: string;
 };
 
-export class CollectionsWrite extends Message implements Authorizable {
+export class CollectionsWrite extends Message {
   readonly message: CollectionsWriteMessage; // a more specific type than the base type defined in parent class
 
   private constructor(message: CollectionsWriteMessage) {
@@ -39,7 +38,13 @@ export class CollectionsWrite extends Message implements Authorizable {
   }
 
   public static async parse(message: CollectionsWriteMessage): Promise<CollectionsWrite> {
-    return new CollectionsWrite(message);
+    await validateAuthorizationIntegrity(message, { allowedProperties: new Set(['recordId', 'contextId']) });
+
+    const collectionsWrite = new CollectionsWrite(message);
+
+    await collectionsWrite.validateIntegrity(); // CollectionsWrite specific data integrity check
+
+    return collectionsWrite;
   }
 
   /**
@@ -122,25 +127,12 @@ export class CollectionsWrite extends Message implements Authorizable {
     return new CollectionsWrite(message);
   }
 
-  async verifyAuth(didResolver: DidResolver, messageStore: MessageStore): Promise<AuthVerificationResult> {
-    const message = this.message as CollectionsWriteMessage;
-
-    // signature verification is computationally intensive, so we're going to start by validating the payload.
-    const parsedPayload = await validateAuthorizationIntegrity(message, { allowedProperties: new Set(['recordId', 'contextId']) });
-
-    await this.validateIntegrity();
-
-    const signers = await authenticate(message.authorization, didResolver);
-    const author = signers[0];
-
-    // authorization
-    if (message.descriptor.protocol !== undefined) {
-      await ProtocolAuthorization.authorize(this, author, messageStore);
+  public async authorize(messageStore: MessageStore): Promise<void> {
+    if (this.message.descriptor.protocol !== undefined) {
+      await ProtocolAuthorization.authorize(this, this.author, messageStore);
     } else {
       await authorize(this);
     }
-
-    return { payload: parsedPayload, author };
   }
 
   /**
@@ -148,6 +140,16 @@ export class CollectionsWrite extends Message implements Authorizable {
    * There is opportunity to integrate better with `validateSchema(...)`
    */
   private async validateIntegrity(): Promise<void> {
+    // verify dataCid matches given data
+    if (this.message.encodedData !== undefined) {
+      const rawData = Encoder.base64UrlToBytes(this.message.encodedData);
+      const actualDataCid = (await getDagPbCid(rawData)).toString();
+
+      if (actualDataCid !== this.message.descriptor.dataCid) {
+        throw new Error('actual CID of data and `dataCid` in descriptor mismatch');
+      }
+    }
+
     // make sure the same `recordId` in message is the same as the `recordId` in `authorization`
     if (this.message.recordId !== this.authorizationPayload.recordId) {
       throw new Error(

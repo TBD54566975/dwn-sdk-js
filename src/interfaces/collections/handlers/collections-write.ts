@@ -1,10 +1,9 @@
 import type { CollectionsWriteMessage } from '../types.js';
 import type { MethodHandler } from '../../types.js';
 
+import { authenticate } from '../../../core/auth.js';
 import { CollectionsWrite } from '../messages/collections-write.js';
 import { DwnMethodName } from '../../../core/message.js';
-import { Encoder } from '../../../utils/encoder.js';
-import { getDagPbCid } from '../../../utils/cid.js';
 import { Message, MessageReply } from '../../../core/index.js';
 
 export const handleCollectionsWrite: MethodHandler = async (
@@ -13,24 +12,21 @@ export const handleCollectionsWrite: MethodHandler = async (
   didResolver
 ): Promise<MessageReply> => {
   try {
-    // verify dataCid matches given data
     const incomingMessage = message as CollectionsWriteMessage;
-    if (incomingMessage.encodedData !== undefined) {
-      const rawData = Encoder.base64UrlToBytes(incomingMessage.encodedData);
-      const actualDataCid = (await getDagPbCid(rawData)).toString();
 
-      if (actualDataCid !== incomingMessage.descriptor.dataCid) {
-        return new MessageReply({
-          status: { code: 400, detail: 'actual CID of data and `dataCid` in descriptor mismatch' }
-        });
-      }
+    let collectionsWrite: CollectionsWrite;
+    try {
+      collectionsWrite = await CollectionsWrite.parse(incomingMessage);
+    } catch (e) {
+      return new MessageReply({
+        status: { code: 400, detail: e.message }
+      });
     }
 
     // authentication & authorization
-    let collectionsWrite;
     try {
-      collectionsWrite = await CollectionsWrite.parse(incomingMessage);
-      await collectionsWrite.verifyAuth(didResolver, messageStore);
+      await authenticate(message.authorization, didResolver);
+      await collectionsWrite.authorize(messageStore);
     } catch (e) {
       return new MessageReply({
         status: { code: 401, detail: e.message }

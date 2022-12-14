@@ -1,6 +1,6 @@
 {
   "name": "@tbd54566975/dwn-sdk-js",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "A reference implementation of https://identity.foundation/decentralized-web-node/spec/",
   "type": "module",
   "types": "./dist/esm/src/index.d.ts",

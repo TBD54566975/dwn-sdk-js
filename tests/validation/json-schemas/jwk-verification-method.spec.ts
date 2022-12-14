@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { signers } from '../../../src/jose/algorithms/index.js';
-import { validate } from '../../../src/validator.js';
+import { validateJsonSchema } from '../../../src/validator.js';
 
 const { secp256k1 } = signers;
 
@@ -8,7 +8,7 @@ describe('JwkVerificationMethod', async () => {
   const { publicJwk } = await secp256k1.generateKeyPair();
   it('should not throw an exception if properly formatted verificationMethod', () => {
     expect(
-      () => validate('JwkVerificationMethod', {
+      () => validateJsonSchema('JwkVerificationMethod', {
         id           : 'did:jank:alice#key1',
         type         : 'JsonWebKey2020',
         controller   : 'did:jank:alice',
@@ -19,7 +19,7 @@ describe('JwkVerificationMethod', async () => {
 
   it('should not throw if `id` does not have the DID as prefix', () => {
     expect(
-      () => validate('JwkVerificationMethod', {
+      () => validateJsonSchema('JwkVerificationMethod', {
         id           : '#key1',
         type         : 'JsonWebKey2020',
         controller   : 'did:jank:alice',
@@ -30,7 +30,7 @@ describe('JwkVerificationMethod', async () => {
 
   it('should throw an exception if id isn\'t a string', () => {
     expect(
-      () => validate('JwkVerificationMethod', {
+      () => validateJsonSchema('JwkVerificationMethod', {
         id           : { },
         type         : 'JsonWebKey2020',
         controller   : 'did:jank:alice',
@@ -41,7 +41,7 @@ describe('JwkVerificationMethod', async () => {
 
   it('should throw an exception if controller isn\'t a did', () => {
     expect(
-      () => validate('JwkVerificationMethod', {
+      () => validateJsonSchema('JwkVerificationMethod', {
         id           : 'did:jank:alice#key1',
         type         : 'JsonWebKey2020',
         controller   : 'notadid:jank:alice',
@@ -52,7 +52,7 @@ describe('JwkVerificationMethod', async () => {
 
   it('should throw an exception if publicKeyJwk isn\'t present in verificationMethod', () => {
     expect(
-      () => validate('JwkVerificationMethod', {
+      () => validateJsonSchema('JwkVerificationMethod', {
         id         : 'did:jank:alice#key1',
         type       : 'JsonWebKey2020',
         controller : 'did:jank:alice'
@@ -62,7 +62,7 @@ describe('JwkVerificationMethod', async () => {
 
   it('should throw an exception if publicKeyJwk isn\'t an object', () => {
     expect(
-      () => validate('JwkVerificationMethod', {
+      () => validateJsonSchema('JwkVerificationMethod', {
         id           : 'did:jank:alice#key1',
         type         : 'JsonWebKey2020',
         controller   : 'did:jank:alice',

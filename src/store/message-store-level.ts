@@ -13,7 +13,6 @@ import { exporter } from 'ipfs-unixfs-exporter';
 import { importer } from 'ipfs-unixfs-importer';
 import { sha256 } from 'multiformats/hashes/sha2';
 
-
 /**
  * A simple implementation of {@link MessageStore} that works in both the browser and server-side.
  * Leverages LevelDB under the hood.

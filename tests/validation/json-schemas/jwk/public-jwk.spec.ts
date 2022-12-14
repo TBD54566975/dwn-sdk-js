@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { signers } from '../../../../src/jose/algorithms/index.js';
-import { validate } from '../../../../src/validator.js';
+import { validateJsonSchema } from '../../../../src/validator.js';
 
 const { Ed25519, secp256k1 } = signers;
 
@@ -17,28 +17,28 @@ describe('PublicJwk Schema', async () => {
   };
   it('should not throw an exception if properly formatted publicJwk', () => {
     expect(
-      () => validate('PublicJwk', publicJwkSecp256k1)
+      () => validateJsonSchema('PublicJwk', publicJwkSecp256k1)
     ).to.not.throw();
     expect(
-      () => validate('PublicJwk', publicJwkEd25519)
+      () => validateJsonSchema('PublicJwk', publicJwkEd25519)
     ).to.not.throw();
     expect(
-      () => validate('PublicJwk', publicJwkRsa)
+      () => validateJsonSchema('PublicJwk', publicJwkRsa)
     ).to.not.throw();
   });
 
   it('should throw an exception if publicJwk has private property', () => {
     expect(
-      () => validate('PublicJwk', { ...publicJwkSecp256k1, d: 'supersecret' })
+      () => validateJsonSchema('PublicJwk', { ...publicJwkSecp256k1, d: 'supersecret' })
     ).to.throw();
     expect(
-      () => validate('PublicJwk', { ...publicJwkEd25519, d: 'supersecret' })
+      () => validateJsonSchema('PublicJwk', { ...publicJwkEd25519, d: 'supersecret' })
     ).to.throw();
     expect(
-      () => validate('PublicJwk', { ...publicJwkRsa, oth: {} })
+      () => validateJsonSchema('PublicJwk', { ...publicJwkRsa, oth: {} })
     ).to.throw();
     expect(
-      () => validate('PublicJwk', { ...publicJwkRsa, d: 'supersecret', oth: {} })
+      () => validateJsonSchema('PublicJwk', { ...publicJwkRsa, d: 'supersecret', oth: {} })
     ).to.throw();
   });
 

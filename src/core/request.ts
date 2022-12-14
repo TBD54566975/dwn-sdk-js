@@ -1,5 +1,5 @@
 import { RequestSchema } from './types.js';
-import { validate } from '../validator.js';
+import { validateJsonSchema } from '../validator.js';
 
 export class Request {
   /**
@@ -7,7 +7,7 @@ export class Request {
    */
   static parse(request: object): RequestSchema {
     // throws an error if validation fails
-    validate('Request', request);
+    validateJsonSchema('Request', request);
 
     return request as RequestSchema;
   }

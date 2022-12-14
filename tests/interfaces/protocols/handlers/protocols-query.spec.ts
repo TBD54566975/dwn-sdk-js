@@ -3,12 +3,14 @@ import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
-import { DidResolver } from '../../../../src/index.js';
+import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { handleProtocolsConfigure } from '../../../../src/interfaces/protocols/handlers/protocols-configure.js';
 import { handleProtocolsQuery } from '../../../../src/interfaces/protocols/handlers/protocols-query.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
+
+import { DidResolver, Encoder } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -75,6 +77,26 @@ describe('handleProtocolsQuery()', () => {
 
       expect(reply2.status.code).to.equal(200);
       expect(reply2.entries?.length).to.equal(3); // expecting all 3 entries written above match the query
+    });
+
+    it('should return 400 if failed to parse the message', async () => {
+      const { requester, message, protocolsQuery } = await TestDataGenerator.generateProtocolsQueryMessage();
+
+      // replace `authorization` with incorrect `descriptorCid`, even though signature is still valid
+      const incorrectDescriptorCid = await TestDataGenerator.randomCborSha256Cid();
+      const authorizationPayload = { ...protocolsQuery.authorizationPayload };
+      authorizationPayload.descriptorCid = incorrectDescriptorCid;
+      const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
+      const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
+      const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
+      message.authorization = signer.getJws();
+
+      const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
+      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+      const reply = await handleProtocolsQuery(message, messageStoreStub, didResolverStub);
+
+      expect(reply.status.code).to.equal(400);
+      expect(reply.status.detail).to.contain(`${incorrectDescriptorCid} does not match expected CID`);
     });
 
     it('should return 401 if auth fails', async () => {

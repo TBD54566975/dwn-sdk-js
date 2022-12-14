@@ -1,13 +1,11 @@
-import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types.js';
+import type { AuthCreateOptions } from '../../../core/types.js';
 import type { CollectionsQueryDescriptor, CollectionsQueryMessage } from '../types.js';
 
-import { DidResolver } from '../../../did/did-resolver.js';
 import { DwnMethodName } from '../../../core/message.js';
 import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/message.js';
-import { MessageStore } from '../../../store/message-store.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
-import { authenticate, validateAuthorizationIntegrity } from '../../../core/auth.js';
+import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 
 export type CollectionsQueryOptions = AuthCreateOptions & {
   target: string;
@@ -24,7 +22,7 @@ export type CollectionsQueryOptions = AuthCreateOptions & {
   dateSort?: string;
 };
 
-export class CollectionsQuery extends Message implements Authorizable {
+export class CollectionsQuery extends Message {
   readonly message: CollectionsQueryMessage; // a more specific type than the base type defined in parent class
 
   private constructor(message: CollectionsQueryMessage) {
@@ -32,6 +30,12 @@ export class CollectionsQuery extends Message implements Authorizable {
   }
 
   public static async parse(message: CollectionsQueryMessage): Promise<CollectionsQuery> {
+    await validateAuthorizationIntegrity(message);
+
+    if (message.descriptor.dateSort) {
+      throw new Error('`dateSort` not implemented');
+    }
+
     return new CollectionsQuery(message);
   }
 
@@ -55,21 +59,19 @@ export class CollectionsQuery extends Message implements Authorizable {
     return new CollectionsQuery(message);
   }
 
-  async verifyAuth(didResolver: DidResolver, _messageStore: MessageStore): Promise<AuthVerificationResult> {
-    const message = this.message;
-
-    // signature verification is computationally intensive, so we're going to start by validating the payload.
-    const parsedPayload = await validateAuthorizationIntegrity(message);
-
-    const signers = await authenticate(message.authorization, didResolver);
-    const author = signers[0];
-
-    const recipientDid = this.message.descriptor.filter.recipient;
-    if (recipientDid !== undefined &&
-        recipientDid !== author) {
-      throw new Error(`non-owner ${author}, not allowed to query records intended for ${recipientDid}`);
+  public async authorize(): Promise<void> {
+    // DWN owner can do any query
+    if (this.author === this.target) {
+      return;
     }
 
-    return { payload: parsedPayload, author };
+    // extra checks if a recipient filter is specified
+    const recipientDid = this.message.descriptor.filter.recipient;
+    if (recipientDid !== undefined) {
+      // make sure the recipient is the author
+      if (recipientDid !== this.author) {
+        throw new Error(`${this.author} is not allowed to query records intended for another recipient: ${recipientDid}`);
+      }
+    }
   }
 }

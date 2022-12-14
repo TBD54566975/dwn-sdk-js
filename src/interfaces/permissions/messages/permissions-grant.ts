@@ -1,15 +1,12 @@
+import type { AuthCreateOptions } from '../../../core/types';
 import type { SignatureInput } from '../../../jose/jws/general/types';
-import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types';
 import type { PermissionConditions, PermissionScope } from '../types';
 import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types';
 
-import { canonicalAuth } from '../../../core/auth';
 import { CID } from 'multiformats/cid';
-import { DidResolver } from '../../../did/did-resolver';
 import { generateCid } from '../../../utils/cid';
 import { getCurrentDateInHighPrecision } from '../../../utils/time';
 import { Message } from '../../../core/message';
-import { MessageStore } from '../../../store/message-store';
 import { v4 as uuidv4 } from 'uuid';
 import { DEFAULT_CONDITIONS, PermissionsRequest } from './permissions-request';
 
@@ -25,7 +22,7 @@ type PermissionsGrantOptions = AuthCreateOptions & {
   scope: PermissionScope;
 };
 
-export class PermissionsGrant extends Message implements Authorizable {
+export class PermissionsGrant extends Message {
   readonly message: PermissionsGrantMessage; // a more specific type than the base type defined in parent class
 
   constructor(message: PermissionsGrantMessage) {
@@ -112,10 +109,6 @@ export class PermissionsGrant extends Message implements Authorizable {
     delegatedGrant.delegationChain = this.message;
 
     return delegatedGrant;
-  }
-
-  verifyAuth(didResolver: DidResolver, _messageStore: MessageStore): Promise<AuthVerificationResult> {
-    return canonicalAuth(this, didResolver);
   }
 
   get id(): string {

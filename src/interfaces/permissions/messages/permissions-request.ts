@@ -1,13 +1,11 @@
-import type { AuthCreateOptions, Authorizable, AuthVerificationResult } from '../../../core/types.js';
+import type { AuthCreateOptions } from '../../../core/types.js';
 import type { PermissionConditions, PermissionScope } from '../types.js';
 import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types.js';
 
-import { canonicalAuth } from '../../../core/auth.js';
-import { DidResolver } from '../../../did/did-resolver.js';
 import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/message.js';
-import { MessageStore } from '../../../store/message-store.js';
 import { v4 as uuidv4 } from 'uuid';
+import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 
 type PermissionsRequestOptions = AuthCreateOptions & {
   target: string;
@@ -20,7 +18,7 @@ type PermissionsRequestOptions = AuthCreateOptions & {
   scope: PermissionScope;
 };
 
-export class PermissionsRequest extends Message implements Authorizable {
+export class PermissionsRequest extends Message {
   readonly message: PermissionsRequestMessage; // a more specific type than the base type defined in parent class
 
   private constructor(message: PermissionsRequestMessage) {
@@ -28,6 +26,8 @@ export class PermissionsRequest extends Message implements Authorizable {
   }
 
   public static async parse(message: PermissionsRequestMessage): Promise<PermissionsRequest> {
+    await validateAuthorizationIntegrity(message);
+
     return new PermissionsRequest(message);
   }
 
@@ -53,10 +53,6 @@ export class PermissionsRequest extends Message implements Authorizable {
     const message: PermissionsRequestMessage = { descriptor, authorization: auth };
 
     return new PermissionsRequest(message);
-  }
-
-  async verifyAuth(didResolver: DidResolver, _messageStore: MessageStore): Promise<AuthVerificationResult> {
-    return await canonicalAuth(this, didResolver);
   }
 
   get id(): string {

@@ -1,4 +1,3 @@
-import type { AuthVerificationResult } from './types.js';
 import type { BaseMessage } from './types.js';
 
 import { CID } from 'multiformats';
@@ -22,18 +21,10 @@ type AuthorizationPayloadConstraints = {
  */
 export async function canonicalAuth(
   incomingMessage: Message,
-  didResolver: DidResolver,
-  authorizationPayloadConstraints?: AuthorizationPayloadConstraints
-): Promise<AuthVerificationResult> {
-  // signature verification is computationally intensive, so we're going to start by validating the payload.
-  const parsedPayload = await validateAuthorizationIntegrity(incomingMessage.message, authorizationPayloadConstraints);
-
-  const signers = await authenticate(incomingMessage.message.authorization, didResolver);
-  const author = signers[0];
-
+  didResolver: DidResolver
+): Promise<void> {
+  await authenticate(incomingMessage.message.authorization, didResolver);
   await authorize(incomingMessage);
-
-  return { payload: parsedPayload, author };
 }
 
 /**
@@ -83,12 +74,19 @@ export async function validateAuthorizationIntegrity(
   return payloadJson;
 }
 
-export async function authenticate(jws: GeneralJws, didResolver: DidResolver): Promise<string[]> {
+/**
+ * Validates the signature(s) of the given JWS.
+ * @throws {Error} if fails authentication
+ */
+export async function authenticate(jws: GeneralJws, didResolver: DidResolver): Promise<void> {
   const verifier = new GeneralJwsVerifier(jws);
-  const { signers } = await verifier.verify(didResolver);
-  return signers;
+  await verifier.verify(didResolver);
 }
 
+/**
+ * Authorizes the incoming message.
+ * @throws {Error} if fails authentication
+ */
 export async function authorize(incomingMessage: Message): Promise<void> {
   // if author/requester is the same as the target DID, we can directly grant access
   if (incomingMessage.author === incomingMessage.target) {

@@ -1,6 +1,7 @@
 import type { CollectionsQueryMessage } from '../types.js';
 import type { MethodHandler } from '../../types.js';
 
+import { authenticate } from '../../../core/auth.js';
 import { BaseMessage } from '../../../core/types.js';
 import { CollectionsQuery } from '../messages/collections-query.js';
 import { DwnMethodName } from '../../../core/message.js';
@@ -13,10 +14,18 @@ export const handleCollectionsQuery: MethodHandler = async (
   messageStore,
   didResolver
 ): Promise<MessageReply> => {
-  const collectionsQuery = await CollectionsQuery.parse(message as CollectionsQueryMessage);
+  let collectionsQuery: CollectionsQuery;
+  try {
+    collectionsQuery = await CollectionsQuery.parse(message as CollectionsQueryMessage);
+  } catch (e) {
+    return new MessageReply({
+      status: { code: 400, detail: e.message }
+    });
+  }
 
   try {
-    await collectionsQuery.verifyAuth(didResolver, messageStore);
+    await authenticate(message.authorization, didResolver);
+    await collectionsQuery.authorize();
   } catch (e) {
     return new MessageReply({
       status: { code: 401, detail: e.message }
@@ -24,10 +33,6 @@ export const handleCollectionsQuery: MethodHandler = async (
   }
 
   try {
-    if (collectionsQuery.message.descriptor.dateSort) {
-      throw new Error('`dateSort` not implemented');
-    }
-
     let entries: BaseMessage[];
     if (collectionsQuery.author === collectionsQuery.target) {
       entries = await fetchRecordsAsOwner(collectionsQuery, messageStore);
