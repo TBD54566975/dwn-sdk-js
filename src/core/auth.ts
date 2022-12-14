@@ -75,7 +75,7 @@ export async function validateAuthorizationIntegrity(
 }
 
 /**
- * Validates the given JWS is valid.
+ * Validates the signature(s) of the given JWS.
  * @throws {Error} if fails authentication
  */
 export async function authenticate(jws: GeneralJws, didResolver: DidResolver): Promise<void> {
