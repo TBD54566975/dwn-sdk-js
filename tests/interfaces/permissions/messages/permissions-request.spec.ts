@@ -42,7 +42,7 @@ describe('PermissionsRequest', () => {
         const payloadBytes = new TextEncoder().encode(vector.input);
         const protectedHeader = { alg: privateJwk.alg!, kid: 'did:jank:alice#key1' };
 
-        const signer = await GeneralJwsSigner.create(payloadBytes, [{ jwkPrivate: privateJwk, protectedHeader }]);
+        const signer = await GeneralJwsSigner.create(payloadBytes, [{ privateJwk, protectedHeader }]);
         const jws = signer.getJws();
 
         jsonMessage['authorization'] = jws;
@@ -57,8 +57,8 @@ describe('PermissionsRequest', () => {
     it('creates a PermissionsRequest message', async () => {
       const { privateJwk } = await secp256k1.generateKeyPair();
       const signatureInput = {
-        jwkPrivate      : privateJwk,
-        protectedHeader : {
+        privateJwk,
+        protectedHeader: {
           alg : privateJwk.alg as string,
           kid : 'did:jank:bob'
         }
@@ -83,8 +83,8 @@ describe('PermissionsRequest', () => {
     it('uses default conditions if none are provided', async () => {
       const { privateJwk } = await secp256k1.generateKeyPair();
       const signatureInput = {
-        jwkPrivate      : privateJwk,
-        protectedHeader : {
+        privateJwk,
+        protectedHeader: {
           alg : privateJwk.alg as string,
           kid : 'did:jank:bob'
         }

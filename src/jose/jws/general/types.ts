@@ -37,5 +37,5 @@ export type JwsHeaderParameters = {
 
 export type SignatureInput = {
   protectedHeader: JwsHeaderParameters
-  jwkPrivate: PrivateJwk
+  privateJwk: PrivateJwk
 };

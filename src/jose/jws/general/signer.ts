@@ -26,8 +26,8 @@ export class GeneralJwsSigner {
   }
 
   async addSignature(signatureInput: SignatureInput): Promise<void> {
-    const { jwkPrivate, protectedHeader } = signatureInput;
-    const signer = signers[jwkPrivate.crv];
+    const { privateJwk, protectedHeader } = signatureInput;
+    const signer = signers[privateJwk.crv];
 
     if (!signer) {
       throw new Error(`unsupported crv. crv must be one of ${Object.keys(signers)}`);
@@ -39,7 +39,7 @@ export class GeneralJwsSigner {
     const signingInputString = `${protectedHeaderBase64UrlString}.${this.jws.payload}`;
     const signingInputBytes = Encoder.stringToBytes(signingInputString);
 
-    const signatureBytes = await signer.sign(signingInputBytes, jwkPrivate);
+    const signatureBytes = await signer.sign(signingInputBytes, privateJwk);
     const signature = Encoder.bytesToBase64Url(signatureBytes);
 
     this.jws.signatures.push({ protected: protectedHeaderBase64UrlString, signature });
