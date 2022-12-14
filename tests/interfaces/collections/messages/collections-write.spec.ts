@@ -7,15 +7,14 @@ import { CollectionsWrite } from '../../../../src/interfaces/collections/message
 import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/types.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
-import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 import { getCurrentDateInHighPrecision, sleep } from '../../../../src/utils/time.js';
 
 
 chai.use(chaiAsPromised);
 
 describe('CollectionsWrite', () => {
-  describe('create() & verifyAuth()', () => {
-    it('should be able to create and verify a valid CollectionsWrite message', async () => {
+  describe('create()', () => {
+    it('should be able to create and authorize a valid CollectionsWrite message', async () => {
       // testing `create()` first
       const alice = await TestDataGenerator.generatePersona();
 
@@ -38,10 +37,9 @@ describe('CollectionsWrite', () => {
       expect(message.descriptor.dateCreated).to.equal(options.dateCreated);
       expect(message.recordId).to.equal(options.recordId);
 
-      const resolverStub = TestStubGenerator.createDidResolverStub(alice);
       const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-      await collectionsWrite.verifyAuth(resolverStub, messageStoreStub);
+      await collectionsWrite.authorize(messageStoreStub);
     });
 
     it('should be able to auto-fill `datePublished` when `published` set to `true` but `datePublished` not given', async () => {
@@ -78,23 +76,6 @@ describe('CollectionsWrite', () => {
       };
 
       await expect(CollectionsWrite.create(options)).to.be.rejectedWith('originating message must not have a lineage parent');
-    });
-  });
-
-  describe('verifyAuth', () => {
-    it('should throw if verification signature check fails', async () => {
-      const { requester, message } = await TestDataGenerator.generateCollectionsWriteMessage();
-
-      // setting up a stub method resolver
-      // intentionally not supplying the public key so a different public key is generated to simulate invalid signature
-      const mismatchingPersona = await TestDataGenerator.generatePersona({ did: requester.did, keyId: requester.keyId });
-      const didResolverStub = TestStubGenerator.createDidResolverStub(mismatchingPersona);
-
-      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-
-      const collectionsWrite = await CollectionsWrite.parse(message);
-      await expect(collectionsWrite.verifyAuth(didResolverStub, messageStoreStub))
-        .to.be.rejectedWith(`signature verification failed for ${requester.did}`);
     });
   });
 

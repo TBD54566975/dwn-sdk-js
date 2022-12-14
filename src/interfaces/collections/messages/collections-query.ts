@@ -1,13 +1,11 @@
 import type { AuthCreateOptions } from '../../../core/types.js';
 import type { CollectionsQueryDescriptor, CollectionsQueryMessage } from '../types.js';
 
-import { DidResolver } from '../../../did/did-resolver.js';
 import { DwnMethodName } from '../../../core/message.js';
 import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/message.js';
-import { MessageStore } from '../../../store/message-store.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
-import { authenticate, validateAuthorizationIntegrity } from '../../../core/auth.js';
+import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 
 export type CollectionsQueryOptions = AuthCreateOptions & {
   target: string;
@@ -61,11 +59,7 @@ export class CollectionsQuery extends Message {
     return new CollectionsQuery(message);
   }
 
-  async verifyAuth(didResolver: DidResolver, _messageStore: MessageStore): Promise<void> {
-    const message = this.message;
-
-    await authenticate(message.authorization, didResolver);
-
+  public async authorize(): Promise<void> {
     // DWN owner can do any query
     if (this.author === this.target) {
       return;

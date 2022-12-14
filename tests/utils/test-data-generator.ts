@@ -202,13 +202,7 @@ export class TestDataGenerator {
       definition.records[generatedLabel] = { };
     }
 
-    const signatureInput = {
-      jwkPrivate      : requester.keyPair.privateJwk,
-      protectedHeader : {
-        alg : requester.keyPair.privateJwk.alg!,
-        kid : requester.keyId
-      }
-    };
+    const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
 
     const options: ProtocolsConfigureOptions = {
       target      : target.did,
@@ -235,13 +229,7 @@ export class TestDataGenerator {
     // generate requester persona if not given
     const { requester, target } = await TestDataGenerator.generateRequesterAndTargetPersonas(input);
 
-    const signatureInput = {
-      jwkPrivate      : requester.keyPair.privateJwk,
-      protectedHeader : {
-        alg : requester.keyPair.privateJwk.alg!,
-        kid : requester.keyId
-      }
-    };
+    const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
 
     const options: ProtocolsQueryOptions = {
       target      : target.did,
@@ -271,13 +259,7 @@ export class TestDataGenerator {
 
     const { requester, target } = await TestDataGenerator.generateRequesterAndTargetPersonas(input);
 
-    const signatureInput = {
-      jwkPrivate      : requester.keyPair.privateJwk,
-      protectedHeader : {
-        alg : requester.keyPair.privateJwk.alg!,
-        kid : requester.keyId
-      }
-    };
+    const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
 
     const data = input?.data ?? TestDataGenerator.randomBytes(32);
 
@@ -317,14 +299,7 @@ export class TestDataGenerator {
   public static async generateCollectionsQueryMessage(input?: GenerateCollectionsQueryMessageInput): Promise<GenerateCollectionsQueryMessageOutput> {
     const { requester, target } = await TestDataGenerator.generateRequesterAndTargetPersonas(input);
 
-    const signatureInput = {
-      jwkPrivate      : requester.keyPair.privateJwk,
-      protectedHeader : {
-        alg : requester.keyPair.privateJwk.alg!,
-        kid : requester.keyId
-      }
-    };
-
+    const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
 
     const options: CollectionsQueryOptions = {
       target      : target.did,
@@ -352,13 +327,7 @@ export class TestDataGenerator {
 
     const { requester, target } = await TestDataGenerator.generateRequesterAndTargetPersonas(input);
 
-    const signatureInput = {
-      jwkPrivate      : requester.keyPair.privateJwk,
-      protectedHeader : {
-        alg : requester.keyPair.privateJwk.alg!,
-        kid : requester.keyId
-      }
-    };
+    const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
 
     const options: HooksWriteOptions = {
       target      : target.did,

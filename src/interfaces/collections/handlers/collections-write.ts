@@ -1,6 +1,7 @@
 import type { CollectionsWriteMessage } from '../types.js';
 import type { MethodHandler } from '../../types.js';
 
+import { authenticate } from '../../../core/auth.js';
 import { CollectionsWrite } from '../messages/collections-write.js';
 import { DwnMethodName } from '../../../core/message.js';
 import { Message, MessageReply } from '../../../core/index.js';
@@ -24,7 +25,8 @@ export const handleCollectionsWrite: MethodHandler = async (
 
     // authentication & authorization
     try {
-      await collectionsWrite.verifyAuth(didResolver, messageStore);
+      await authenticate(message.authorization, didResolver);
+      await collectionsWrite.authorize(messageStore);
     } catch (e) {
       return new MessageReply({
         status: { code: 401, detail: e.message }

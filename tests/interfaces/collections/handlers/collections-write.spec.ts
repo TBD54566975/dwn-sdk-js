@@ -809,13 +809,7 @@ describe('handleCollectionsWrite()', () => {
     const authorizationPayload = { ...collectionsWrite.authorizationPayload };
     authorizationPayload.recordId = await TestDataGenerator.randomCborSha256Cid(); // make recordId mismatch in authorization payload
     const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
-    const signatureInput = {
-      jwkPrivate      : requester.keyPair.privateJwk,
-      protectedHeader : {
-        kid : requester.keyId,
-        alg : requester.keyPair.privateJwk.alg!
-      }
-    };
+    const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
     const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
     message.authorization = signer.getJws();
 
@@ -837,13 +831,7 @@ describe('handleCollectionsWrite()', () => {
     const authorizationPayload = { ...collectionsWrite.authorizationPayload };
     authorizationPayload.recordId = incorrectRecordId; // match with the overwritten recordId above
     const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
-    const signatureInput = {
-      jwkPrivate      : requester.keyPair.privateJwk,
-      protectedHeader : {
-        kid : requester.keyId,
-        alg : requester.keyPair.privateJwk.alg!
-      }
-    };
+    const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
     const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
     message.authorization = signer.getJws();
 
@@ -877,13 +865,7 @@ describe('handleCollectionsWrite()', () => {
     const authorizationPayload = { ...collectionsWrite.authorizationPayload };
     authorizationPayload.contextId = await TestDataGenerator.randomCborSha256Cid(); // make contextId mismatch in authorization payload
     const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
-    const signatureInput = {
-      jwkPrivate      : requester.keyPair.privateJwk,
-      protectedHeader : {
-        kid : requester.keyId,
-        alg : requester.keyPair.privateJwk.alg!
-      }
-    };
+    const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
     const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
     message.authorization = signer.getJws();
 

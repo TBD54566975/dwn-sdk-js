@@ -87,13 +87,7 @@ describe('handleProtocolsQuery()', () => {
       const authorizationPayload = { ...protocolsQuery.authorizationPayload };
       authorizationPayload.descriptorCid = incorrectDescriptorCid;
       const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
-      const signatureInput = {
-        jwkPrivate      : requester.keyPair.privateJwk,
-        protectedHeader : {
-          kid : requester.keyId,
-          alg : requester.keyPair.privateJwk.alg!
-        }
-      };
+      const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
       const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
       message.authorization = signer.getJws();
 

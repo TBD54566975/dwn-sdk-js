@@ -1,7 +1,6 @@
 import type { AuthCreateOptions } from '../../../core/types.js';
 import type { CollectionsWriteAuthorizationPayload, CollectionsWriteDescriptor, CollectionsWriteMessage } from '../types.js';
 
-import { DidResolver } from '../../../did/did-resolver.js';
 import { DwnMethodName } from '../../../core/message.js';
 import { Encoder } from '../../../utils/encoder.js';
 import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
@@ -10,7 +9,7 @@ import { MessageStore } from '../../../store/message-store.js';
 import { ProtocolAuthorization } from '../../../core/protocol-authorization.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 
-import { authenticate, authorize, validateAuthorizationIntegrity } from '../../../core/auth.js';
+import { authorize, validateAuthorizationIntegrity } from '../../../core/auth.js';
 import { GeneralJws, SignatureInput } from '../../../jose/jws/general/types.js';
 import { GeneralJwsSigner, GeneralJwsVerifier } from '../../../jose/jws/general/index.js';
 import { generateCid, getDagPbCid } from '../../../utils/cid.js';
@@ -128,13 +127,8 @@ export class CollectionsWrite extends Message {
     return new CollectionsWrite(message);
   }
 
-  async verifyAuth(didResolver: DidResolver, messageStore: MessageStore): Promise<void> {
-    const message = this.message as CollectionsWriteMessage;
-
-    await authenticate(message.authorization, didResolver);
-
-    // authorization
-    if (message.descriptor.protocol !== undefined) {
+  public async authorize(messageStore: MessageStore): Promise<void> {
+    if (this.message.descriptor.protocol !== undefined) {
       await ProtocolAuthorization.authorize(this, this.author, messageStore);
     } else {
       await authorize(this);
