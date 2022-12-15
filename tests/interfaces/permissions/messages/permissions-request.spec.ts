@@ -5,7 +5,7 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 
 import { expect } from 'chai';
-import { GeneralJwsSigner } from '../../../../src/jose/jws/general/index.js';
+import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1.js';
 import { DEFAULT_CONDITIONS, PermissionsRequest } from '../../../../src/interfaces/permissions/messages/permissions-request.js';
 

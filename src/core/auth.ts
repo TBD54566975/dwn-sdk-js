@@ -4,7 +4,7 @@ import { CID } from 'multiformats';
 import { Did } from '../did/did.js';
 import { DidResolver } from '../did/did-resolver.js';
 import { GeneralJws } from '../jose/jws/general/types.js';
-import { GeneralJwsVerifier } from '../jose/jws/general/index.js';
+import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
 import { Message } from './message.js';
 import { generateCid, parseCid } from '../utils/cid.js';
 

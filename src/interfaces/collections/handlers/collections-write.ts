@@ -3,8 +3,9 @@ import type { MethodHandler } from '../../types.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { CollectionsWrite } from '../messages/collections-write.js';
-import { DwnMethodName } from '../../../core/message.js';
-import { Message, MessageReply } from '../../../core/index.js';
+import { MessageReply } from '../../../core/message-reply.js';
+
+import { DwnMethodName, Message } from '../../../core/message.js';
 
 export const handleCollectionsWrite: MethodHandler = async (
   message,

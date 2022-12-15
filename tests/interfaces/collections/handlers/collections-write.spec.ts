@@ -9,12 +9,12 @@ import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DidResolver } from '../../../../src/did/did-resolver.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
-import { GeneralJwsSigner } from '../../../../src/jose/jws/general/index.js';
+import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { getCurrentDateInHighPrecision } from '../../../../src/utils/time.js';
 import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query.js';
 import { handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write.js';
 import { handleProtocolsConfigure } from '../../../../src/interfaces/protocols/handlers/protocols-configure.js';
-import { Message } from '../../../../src/core/index.js';
+import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { ProtocolDefinition } from '../../../../src/index.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';

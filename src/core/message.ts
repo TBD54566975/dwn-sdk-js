@@ -4,10 +4,11 @@ import type { BaseDecodedAuthorizationPayload, BaseMessage, Descriptor } from '.
 import { CID } from 'multiformats/cid';
 import { CollectionsWriteMessage } from '../interfaces/collections/types.js';
 import { GeneralJws } from '../jose/jws/general/types.js';
+import { GeneralJwsSigner } from '../jose/jws/general/signer.js';
+import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
 import { validateJsonSchema } from '../validator.js';
 
 import { compareCids, generateCid } from '../utils/cid.js';
-import { GeneralJwsSigner, GeneralJwsVerifier } from '../jose/jws/general/index.js';
 
 export enum DwnMethodName {
   CollectionsWrite = 'CollectionsWrite',

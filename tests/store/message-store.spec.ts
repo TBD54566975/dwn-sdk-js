@@ -1,7 +1,7 @@
 import { CollectionsWriteMessage } from '../../src/interfaces/collections/types.js';
 import { expect } from 'chai';
 import { generateCid } from '../../src/utils/cid.js';
-import { Message } from '../../src/core/index.js';
+import { Message } from '../../src/core/message.js';
 import { MessageStoreLevel } from '../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 

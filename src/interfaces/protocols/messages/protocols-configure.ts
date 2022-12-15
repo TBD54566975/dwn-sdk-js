@@ -1,10 +1,10 @@
 import type { AuthCreateOptions } from '../../../core/types.js';
 import type { ProtocolDefinition, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types.js';
 
-import { DwnMethodName } from '../../../core/message.js';
 import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
-import { Message } from '../../../core/index.js';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
+
+import { DwnMethodName, Message } from '../../../core/message.js';
 
 export type ProtocolsConfigureOptions = AuthCreateOptions & {
   target: string;

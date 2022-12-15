@@ -5,7 +5,7 @@ import { authenticate } from '../../../core/auth.js';
 import { BaseMessage } from '../../../core/types.js';
 import { CollectionsQuery } from '../messages/collections-query.js';
 import { DwnMethodName } from '../../../core/message.js';
-import { MessageReply } from '../../../core/index.js';
+import { MessageReply } from '../../../core/message-reply.js';
 import { MessageStore } from '../../../store/message-store.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 

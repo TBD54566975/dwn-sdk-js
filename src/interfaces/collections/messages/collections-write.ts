@@ -3,6 +3,8 @@ import type { CollectionsWriteAuthorizationPayload, CollectionsWriteDescriptor, 
 
 import { DwnMethodName } from '../../../core/message.js';
 import { Encoder } from '../../../utils/encoder.js';
+import { GeneralJwsSigner } from '../../../jose/jws/general/signer.js';
+import { GeneralJwsVerifier } from '../../../jose/jws/general/verifier.js';
 import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/message.js';
 import { MessageStore } from '../../../store/message-store.js';
@@ -11,7 +13,6 @@ import { removeUndefinedProperties } from '../../../utils/object.js';
 
 import { authorize, validateAuthorizationIntegrity } from '../../../core/auth.js';
 import { GeneralJws, SignatureInput } from '../../../jose/jws/general/types.js';
-import { GeneralJwsSigner, GeneralJwsVerifier } from '../../../jose/jws/general/index.js';
 import { generateCid, getDagPbCid } from '../../../utils/cid.js';
 
 export type CollectionsWriteOptions = AuthCreateOptions & {

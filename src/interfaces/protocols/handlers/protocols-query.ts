@@ -3,7 +3,7 @@ import type { ProtocolsQueryMessage } from '../types.js';
 
 import { canonicalAuth } from '../../../core/auth.js';
 import { DwnMethodName } from '../../../core/message.js';
-import { MessageReply } from '../../../core/index.js';
+import { MessageReply } from '../../../core/message-reply.js';
 import { ProtocolsQuery } from '../messages/protocols-query.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 
