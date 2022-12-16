@@ -2,7 +2,7 @@ import type { MethodHandler } from '../../types.js';
 import type { PermissionsRequestMessage } from '../types.js';
 
 import { canonicalAuth } from '../../../core/auth.js';
-import { MessageReply } from '../../../core/index.js';
+import { MessageReply } from '../../../core/message-reply.js';
 import { PermissionsRequest } from '../messages/permissions-request.js';
 
 export const handlePermissionsRequest: MethodHandler = async (

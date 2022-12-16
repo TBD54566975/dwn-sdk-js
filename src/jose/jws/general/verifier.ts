@@ -9,7 +9,7 @@ import { DidResolver } from '../../../did/did-resolver.js';
 import { Encoder } from '../../../utils/encoder.js';
 import { MemoryCache } from '../../../utils/memory-cache.js';
 import { validateJsonSchema } from '../../../validator.js';
-import { signers as verifiers } from '../../algorithms/index.js';
+import { signers as verifiers } from '../../algorithms/signing/signers.js';
 
 type VerificationResult = {
   /** DIDs of all signers */

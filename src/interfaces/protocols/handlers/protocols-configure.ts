@@ -2,9 +2,10 @@ import type { MethodHandler } from '../../types.js';
 import type { ProtocolsConfigureMessage } from '../types.js';
 
 import { canonicalAuth } from '../../../core/auth.js';
-import { DwnMethodName } from '../../../core/message.js';
+import { MessageReply } from '../../../core/message-reply.js';
 import { ProtocolsConfigure } from '../messages/protocols-configure.js';
-import { Message, MessageReply } from '../../../core/index.js';
+
+import { DwnMethodName, Message } from '../../../core/message.js';
 
 export const handleProtocolsConfigure: MethodHandler = async (
   message,

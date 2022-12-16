@@ -5,10 +5,14 @@ import type { Interface, MethodHandler } from './interfaces/types.js';
 
 import { DidResolver } from './did/did-resolver.js';
 import { Encoder } from './utils/encoder.js';
+import { MessageReply } from './core/message-reply.js';
 import { MessageStoreLevel } from './store/message-store-level.js';
+import { Request } from './core/request.js';
+import { Response } from './core/response.js';
 
-import { CollectionsInterface, PermissionsInterface, ProtocolsInterface } from './interfaces/index.js';
-import { MessageReply, Request, Response } from './core/index.js';
+import { CollectionsInterface } from './interfaces/collections/collections-interface.js';
+import { PermissionsInterface } from './interfaces/permissions/permissions-interface.js';
+import { ProtocolsInterface } from './interfaces/protocols/protocols-interface.js';
 
 
 export class Dwn {

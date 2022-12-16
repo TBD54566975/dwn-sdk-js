@@ -1,10 +1,10 @@
 import type { AuthCreateOptions } from '../../../core/types.js';
 import type { HooksWriteDescriptor, HooksWriteMessage } from '../../hooks/types.js';
 
-import { DwnMethodName } from '../../../core/message.js';
 import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
-import { Message } from '../../../core/index.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
+
+import { DwnMethodName, Message } from '../../../core/message.js';
 
 /**
  * Input to `HookssWrite.create()`.
