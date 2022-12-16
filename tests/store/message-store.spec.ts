@@ -94,7 +94,8 @@ describe('MessageStoreLevel Tests', () => {
       expect(results.length).to.equal(1);
     });
 
-    it('should be able to update (delete and insert new) indexes to an existing message', async () => {
+    // https://github.com/TBD54566975/dwn-sdk-js/issues/170
+    it('#170 - should be able to update (delete and insert new) indexes to an existing message', async () => {
       const { target, message } = await TestDataGenerator.generateCollectionsWriteMessage();
 
       // inserting the message indicating it is the 'latest' in the index
@@ -122,7 +123,7 @@ describe('MessageStoreLevel Tests', () => {
       const schema = 'http://my-awesome-schema/awesomeness_schema#awesome-1?id=awesome_1';
       const messageData = await TestDataGenerator.generateCollectionsWriteMessage({ schema });
 
-      await messageStore.put(messageData.message, { });
+      await messageStore.put(messageData.message, { schema });
 
       const results = await messageStore.query({ schema });
       expect((results[0] as CollectionsWriteMessage).descriptor.schema).to.equal(schema);

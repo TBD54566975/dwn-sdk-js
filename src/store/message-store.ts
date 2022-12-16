@@ -15,9 +15,9 @@ export interface MessageStore {
 
   /**
    * adds a message to the underlying store. Uses the message's cid as the key
-   * @param additionalIndexes additional indexes (key-value pairs) to be included as part of this put operation
+   * @param indexes indexes (key-value pairs) to be included as part of this put operation
    */
-  put(messageJson: BaseMessage, additionalIndexes: { [key: string]: string }): Promise<void>;
+  put(messageJson: BaseMessage, indexes: { [key: string]: string }): Promise<void>;
 
   /**
    * fetches a single message by `cid` from the underlying store. Returns `undefined`

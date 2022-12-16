@@ -9,7 +9,7 @@ import { handleCollectionsQuery } from '../../../../src/interfaces/collections/h
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
-import { constructAdditionalIndexes, handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write.js';
+import { constructIndexes, handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write.js';
 
 chai.use(chaiAsPromised);
 
@@ -105,10 +105,10 @@ describe('handleCollectionsQuery()', () => {
       );
 
       // directly inserting data to datastore so that we don't have to setup to grant Bob permission to write to Alice's DWN
-      const additionalIndexes1 = constructAdditionalIndexes(record1Data.collectionsWrite, true);
-      const additionalIndexes2 = constructAdditionalIndexes(record2Data.collectionsWrite, true);
-      const additionalIndexes3 = constructAdditionalIndexes(record3Data.collectionsWrite, true);
-      const additionalIndexes4 = constructAdditionalIndexes(record4Data.collectionsWrite, true);
+      const additionalIndexes1 = constructIndexes(record1Data.collectionsWrite, true);
+      const additionalIndexes2 = constructIndexes(record2Data.collectionsWrite, true);
+      const additionalIndexes3 = constructIndexes(record3Data.collectionsWrite, true);
+      const additionalIndexes4 = constructIndexes(record4Data.collectionsWrite, true);
       await messageStore.put(record1Data.message, additionalIndexes1);
       await messageStore.put(record2Data.message, additionalIndexes2);
       await messageStore.put(record3Data.message, additionalIndexes3);
@@ -146,6 +146,38 @@ describe('handleCollectionsQuery()', () => {
       expect(replyToAliceQuery.entries?.length).to.equal(4); // expect all 4 records
     });
 
+    // https://github.com/TBD54566975/dwn-sdk-js/issues/170
+    it('#170 - should treat records with `published` explicitly set to `false` as unpublished', async () => {
+      const alice = await DidKeyResolver.generate();
+      const bob = await DidKeyResolver.generate();
+      const schema = 'schema1';
+      const unpublishedCollectionsWrite = await TestDataGenerator.generateCollectionsWriteMessage(
+        { requester: alice, target: alice, schema, data: Encoder.stringToBytes('1'), published: false } // explicitly setting `published` to `false`
+      );
+
+      const result1 = await handleCollectionsWrite(unpublishedCollectionsWrite.message, messageStore, didResolver);
+      expect(result1.status.code).to.equal(202);
+
+      // alice should be able to see the unpublished record
+      const queryByAlice = await TestDataGenerator.generateCollectionsQueryMessage({
+        requester : alice,
+        target    : alice,
+        filter    : { schema }
+      });
+      const replyToAliceQuery = await handleCollectionsQuery(queryByAlice.message, messageStore, didResolver);
+      expect(replyToAliceQuery.status.code).to.equal(200);
+      expect(replyToAliceQuery.entries?.length).to.equal(1);
+
+      // actual test: bob should not be able to see unpublished record
+      const queryByBob = await TestDataGenerator.generateCollectionsQueryMessage({
+        requester : bob,
+        target    : alice,
+        filter    : { schema }
+      });
+      const replyToBobQuery = await handleCollectionsQuery(queryByBob.message, messageStore, didResolver);
+      expect(replyToBobQuery.status.code).to.equal(200);
+      expect(replyToBobQuery.entries?.length).to.equal(0);
+    });
 
     it('should throw if a non-owner requester querying for records not intended for the requester (as recipient)', async () => {
       const alice = await DidKeyResolver.generate();

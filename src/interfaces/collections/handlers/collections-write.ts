@@ -68,9 +68,9 @@ export const handleCollectionsWrite: MethodHandler = async (
     let messageReply: MessageReply;
     if (incomingMessageIsNewest) {
       const isLatestBaseState = true;
-      const additionalIndexes = constructAdditionalIndexes(collectionsWrite, isLatestBaseState);
+      const indexes = constructIndexes(collectionsWrite, isLatestBaseState);
 
-      await messageStore.put(incomingMessage, additionalIndexes);
+      await messageStore.put(incomingMessage, indexes);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }
@@ -99,8 +99,8 @@ export const handleCollectionsWrite: MethodHandler = async (
         if (message.descriptor.lineageParent === undefined) {
           const existingCollectionsWrite = await CollectionsWrite.parse(message);
           const isLatestBaseState = false;
-          const additionalIndexes = constructAdditionalIndexes(existingCollectionsWrite, isLatestBaseState);
-          await messageStore.put(message, additionalIndexes);
+          const indexes = constructIndexes(existingCollectionsWrite, isLatestBaseState);
+          await messageStore.put(message, indexes);
         }
       }
     }
@@ -113,17 +113,32 @@ export const handleCollectionsWrite: MethodHandler = async (
   }
 };
 
-export function constructAdditionalIndexes(collectionsWrite: CollectionsWrite, isLatestBaseState: boolean): { [key:string]: string } {
+export function constructIndexes(collectionsWrite: CollectionsWrite, isLatestBaseState: boolean): { [key:string]: string } {
   const message = collectionsWrite.message;
-  const additionalIndexes: { [key:string]: string } = {
-    isLatestBaseState : isLatestBaseState.toString(), // NOTE: underlying search-index library does not support boolean, so convert to string
+  const descriptor = { ...message.descriptor };
+  delete descriptor.published; // handle `published` specifically further down
+
+  const indexes: { [key:string]: any } = {
+    // NOTE: underlying search-index library does not support boolean, so converting boolean to string before storing
+    // https://github.com/TBD54566975/dwn-sdk-js/issues/170
+    isLatestBaseState : isLatestBaseState.toString(),
     author            : collectionsWrite.author,
     target            : collectionsWrite.target,
     recordId          : message.recordId,
+    ...descriptor
   };
 
   // add `contextId` to additional index if part if given
-  if (message.contextId !== undefined) { additionalIndexes.contextId = message.contextId; }
+  if (message.contextId !== undefined) { indexes.contextId = message.contextId; }
 
-  return additionalIndexes;
+  // add `published` index
+  // NOTE: underlying search-index library does not support boolean, so converting boolean to string before storing
+  // https://github.com/TBD54566975/dwn-sdk-js/issues/170
+  if (message.descriptor.published === true) {
+    indexes.published = 'true';
+  } else {
+    indexes.published = 'false';
+  }
+
+  return indexes;
 }

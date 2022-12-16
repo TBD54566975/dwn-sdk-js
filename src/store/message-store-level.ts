@@ -127,7 +127,7 @@ export class MessageStoreLevel implements MessageStore {
     return;
   }
 
-  async put(messageJson: BaseMessage, additionalIndexes: { [key: string]: string }): Promise<void> {
+  async put(messageJson: BaseMessage, indexes: { [key: string]: string }): Promise<void> {
 
     // delete `encodedData` if it exists so `messageJson` is stored without it, `encodedData` will be decoded, chunked and stored separately below
     let encodedData = undefined;
@@ -157,8 +157,7 @@ export class MessageStoreLevel implements MessageStore {
 
     const indexDocument = {
       _id: encodedBlock.cid.toString(),
-      ...messageJson.descriptor,
-      ...additionalIndexes
+      ...indexes
     };
 
     // tokenSplitRegex is used to tokenize values. By default, only letters and digits are indexed,
