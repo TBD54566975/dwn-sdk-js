@@ -89,7 +89,7 @@ async function fetchPublishedRecords(collectionsQuery: CollectionsQuery, message
   const includeCriteria = {
     target            : collectionsQuery.target,
     method            : DwnMethodName.CollectionsWrite,
-    published         : true,
+    published         : 'true',
     isLatestBaseState : 'true',
     ...collectionsQuery.message.descriptor.filter
   };
@@ -116,7 +116,7 @@ async function fetchUnpublishedRecordsForRequester(collectionsQuery: Collections
 
   // exclude all published records
   const excludeCriteria = {
-    published: true
+    published: 'true'
   };
 
   const unpublishedRecordsForRequester = await messageStore.query(includeCriteria, excludeCriteria);
@@ -140,7 +140,7 @@ async function fetchUnpublishedRecordsByRequester(collectionsQuery: CollectionsQ
 
   // exclude all published records
   const excludeCriteria = {
-    published: true
+    published: 'true'
   };
 
   const unpublishedRecordsForRequester = await messageStore.query(includeCriteria, excludeCriteria);

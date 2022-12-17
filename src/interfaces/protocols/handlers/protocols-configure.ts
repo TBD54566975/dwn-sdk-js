@@ -53,7 +53,8 @@ export const handleProtocolsConfigure: MethodHandler = async (
     let messageReply: MessageReply;
     if (incomingMessageIsNewest) {
       const { author, target } = protocolsConfigure;
-      await messageStore.put(message, { author, target });
+      const index = { author, target, ... message.descriptor };
+      await messageStore.put(message, index);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }
