@@ -1,4 +1,4 @@
-import { BaseMessage } from './types.js';
+import { Descriptor } from './types.js';
 
 type Status = {
   code: number
@@ -7,14 +7,14 @@ type Status = {
 
 type MessageReplyOptions = {
   status: Status,
-  entries?: BaseMessage[];
+  entries?: { descriptor: Descriptor }[];
 };
 
 export class MessageReply {
   status: Status;
   // resulting message entries returned from the invocation of the corresponding message
   // e.g. the resulting messages from a CollectionsQuery
-  entries?: BaseMessage[];
+  entries?: { descriptor: Descriptor }[];
 
   constructor(opts: MessageReplyOptions) {
     const { status, entries } = opts;
