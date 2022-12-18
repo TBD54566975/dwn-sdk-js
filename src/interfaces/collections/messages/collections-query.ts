@@ -7,6 +7,13 @@ import { Message } from '../../../core/message.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 
+export enum DateSortName {
+  CreatedAscending = 'createdAscending',
+  CreatedDescending = 'createdDescending',
+  PublishedAscending = 'publishedAscending',
+  PublishedDescending = 'publishedDescending'
+}
+
 export type CollectionsQueryOptions = AuthCreateOptions & {
   target: string;
   dateCreated?: string;
