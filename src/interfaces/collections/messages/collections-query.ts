@@ -38,11 +38,6 @@ export class CollectionsQuery extends Message {
 
   public static async parse(message: CollectionsQueryMessage): Promise<CollectionsQuery> {
     await validateAuthorizationIntegrity(message);
-
-    if (message.descriptor.dateSort) {
-      throw new Error('`dateSort` not implemented');
-    }
-
     return new CollectionsQuery(message);
   }
 
