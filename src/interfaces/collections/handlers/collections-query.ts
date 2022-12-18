@@ -170,43 +170,39 @@ async function handleDateSort(
   entries: BaseMessage[]
 ): Promise<BaseMessage[]> {
 
-  const publishedFilter = (message): boolean => {
-    return message.descriptor.published;
-  };
-
-  const compareDateCreatedAscending = (left, right): number => {
-    return Number(left.descriptor.dateCreated) - Number(right.descriptor.dateCreated);
-  };
-
-  const compareDateCreatedDescending = (left, right): number => {
-    return Number(right.descriptor.dateCreated) - Number(left.descriptor.dateCreated);
-  };
-
-  const compareDatePublishedAscending = (left, right): number => {
-    return Number(left.descriptor.datePublished) - Number(right.descriptor.datePublished);
-  };
-
-  const compareDatePublishedDescending = (left, right): number => {
-    return Number(right.descriptor.datePublished) - Number(left.descriptor.datePublished);
-  };
-
   const { dateSort } = collectionsQuery.message.descriptor;
   const collectionMessages = entries as CollectionsWriteMessage[];
 
   switch (dateSort) {
   case DateSortName.CreatedAscending:
-    return collectionMessages.sort(compareDateCreatedAscending);
+    return collectionMessages.sort(getCompareByPropertyFn('dateCreated', 'asc'));
   case DateSortName.CreatedDescending:
-    return collectionMessages.sort(compareDateCreatedDescending);
-  case DateSortName.PublishedAscending:
+    return collectionMessages.sort(getCompareByPropertyFn('dateCreated', 'desc'));
+  case DateSortName.PublishedAscending: 
     return collectionMessages
-      .filter(publishedFilter)
-      .sort(compareDatePublishedAscending);
-  case DateSortName.PublishedDescending:
+      .filter(m => m.descriptor.published)
+      .sort(getCompareByPropertyFn('datePublished', 'asc'));
+  case DateSortName.PublishedDescending: 
     return collectionMessages
-      .filter(publishedFilter)
-      .sort(compareDatePublishedDescending);
+      .filter(m => m.descriptor.published)
+      .sort(getCompareByPropertyFn('datePublished', 'desc'));
   default:
     throw new Error(`Invalid DateSort String: ${dateSort}`);
+  }
+}
+
+function getCompareByPropertyFn(
+  property: string, 
+  direction: 'asc' | 'desc'
+): (left: CollectionsWriteMessage, right: CollectionsWriteMessage) => number {
+
+  if (direction === 'asc') {
+   return (left, right): number => {
+      return Number(left.descriptor[property]) - Number(right.descriptor[property]);
+    }; 
+  }
+
+  return (left, right): number => {
+    return  Number(right.descriptor[property]) - Number(left.descriptor[property]);
   }
 }
