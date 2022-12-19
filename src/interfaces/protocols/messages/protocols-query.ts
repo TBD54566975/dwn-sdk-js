@@ -1,7 +1,7 @@
 import type { AuthCreateOptions } from '../../../core/types.js';
 import type { ProtocolsQueryDescriptor, ProtocolsQueryMessage } from '../types.js';
 
-import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
+import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 
@@ -31,7 +31,7 @@ export class ProtocolsQuery extends Message {
   public static async create(options: ProtocolsQueryOptions): Promise<ProtocolsQuery> {
     const descriptor: ProtocolsQueryDescriptor = {
       method      : DwnMethodName.ProtocolsQuery,
-      dateCreated : options.dateCreated ?? getCurrentDateInHighPrecision(),
+      dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
       filter      : options.filter,
     };
 

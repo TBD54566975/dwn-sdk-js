@@ -10,7 +10,7 @@ import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DidResolver } from '../../../../src/did/did-resolver.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
-import { getCurrentDateInHighPrecision } from '../../../../src/utils/time.js';
+import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
 import { handleCollectionsQuery } from '../../../../src/interfaces/collections/handlers/collections-query.js';
 import { handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write.js';
 import { handleProtocolsConfigure } from '../../../../src/interfaces/protocols/handlers/protocols-configure.js';
@@ -111,7 +111,7 @@ describe('handleCollectionsWrite()', () => {
       const originatingMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
         requester,
         target,
-        dateCreated : getCurrentDateInHighPrecision(),
+        dateCreated : getCurrentTimeInHighPrecision(),
         data        : Encoder.stringToBytes('unused')
       });
 
@@ -124,7 +124,7 @@ describe('handleCollectionsWrite()', () => {
       const recordId = originatingMessageData.message.recordId;
 
       // generate two new CollectionsWrite messages with the same `dateCreated` value
-      const dateCreated = getCurrentDateInHighPrecision();
+      const dateCreated = getCurrentTimeInHighPrecision();
       const collectionsWriteMessageData1 = await TestDataGenerator.generateCollectionsWriteMessage({
         requester,
         target,

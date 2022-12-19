@@ -124,7 +124,7 @@ describe('handleCollectionsQuery()', () => {
         { requester: bob, target: alice, recipientDid: alice.did, schema, data: Encoder.stringToBytes('3') }
       );
       const record4Data = await TestDataGenerator.generateCollectionsWriteMessage(
-        { requester: alice, target: alice, schema, data: Encoder.stringToBytes('4'), published: true, datePublished: 123 }
+        { requester: alice, target: alice, schema, data: Encoder.stringToBytes('4'), published: true }
       );
 
       // directly inserting data to datastore so that we don't have to setup to grant Bob permission to write to Alice's DWN

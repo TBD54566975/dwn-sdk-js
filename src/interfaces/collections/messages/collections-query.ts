@@ -2,7 +2,7 @@ import type { AuthCreateOptions } from '../../../core/types.js';
 import type { CollectionsQueryDescriptor, CollectionsQueryMessage } from '../types.js';
 
 import { DwnMethodName } from '../../../core/message.js';
-import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
+import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/message.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
@@ -42,7 +42,7 @@ export class CollectionsQuery extends Message {
   public static async create(options: CollectionsQueryOptions): Promise<CollectionsQuery> {
     const descriptor: CollectionsQueryDescriptor = {
       method      : DwnMethodName.CollectionsQuery,
-      dateCreated : options.dateCreated ?? getCurrentDateInHighPrecision(),
+      dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
       filter      : options.filter,
       dateSort    : options.dateSort
     };

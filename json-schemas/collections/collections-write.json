@@ -52,8 +52,7 @@
           "type": "boolean"
         },
         "datePublished": {
-          "type": "number",
-          "minimum": 0
+          "type": "string"
         },
         "dataFormat": {
           "type": "string"

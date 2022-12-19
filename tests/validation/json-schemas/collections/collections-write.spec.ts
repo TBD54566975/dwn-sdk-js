@@ -9,7 +9,7 @@ describe('CollectionsWrite schema definition', () => {
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
-        dateCreated : '123',
+        dateCreated : '2022-12-19T10:20:30.123456',
       },
       authorization: {
         payload    : 'anyPayload',
@@ -28,7 +28,7 @@ describe('CollectionsWrite schema definition', () => {
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
-        dateCreated : '123'
+        dateCreated : '2022-12-19T10:20:30.123456'
       },
       authorization: {
         payload    : 'anyPayload',
@@ -51,7 +51,7 @@ describe('CollectionsWrite schema definition', () => {
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
-        dateCreated : '123'
+        dateCreated : '2022-12-19T10:20:30.123456'
       }
     };
 
@@ -67,7 +67,7 @@ describe('CollectionsWrite schema definition', () => {
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
-        dateCreated : '123'
+        dateCreated : '2022-12-19T10:20:30.123456'
       },
       authorization: {
         payload    : 'anyPayload',
@@ -91,7 +91,7 @@ describe('CollectionsWrite schema definition', () => {
         method          : 'CollectionsWrite',
         dataCid         : 'anyCid',
         dataFormat      : 'application/json',
-        dateCreated     : '123',
+        dateCreated     : '2022-12-19T10:20:30.123456',
         unknownProperty : 'unknownProperty' // unknown property
       },
       authorization: {
@@ -115,7 +115,7 @@ describe('CollectionsWrite schema definition', () => {
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
-        dateCreated : '123'
+        dateCreated : '2022-12-19T10:20:30.123456'
       },
       authorization: {
         payload    : 'anyPayload',
@@ -141,7 +141,7 @@ describe('CollectionsWrite schema definition', () => {
         protocol    : 'someProtocolId', // contextId must exist
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
-        dateCreated : '123'
+        dateCreated : '2022-12-19T10:20:30.123456'
       },
       authorization: {
         payload    : 'anyPayload',
@@ -163,7 +163,7 @@ describe('CollectionsWrite schema definition', () => {
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
-        dateCreated : '123'
+        dateCreated : '2022-12-19T10:20:30.123456'
       },
       authorization: {
         payload    : 'anyPayload',
@@ -186,7 +186,7 @@ describe('CollectionsWrite schema definition', () => {
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
-        dateCreated : '123'
+        dateCreated : '2022-12-19T10:20:30.123456'
       },
       authorization: {
         payload    : 'anyPayload',
@@ -211,7 +211,7 @@ describe('CollectionsWrite schema definition', () => {
         protocol    : 'invalid', // must have `contextId` to exist
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
-        dateCreated : '123'
+        dateCreated : '2022-12-19T10:20:30.123456'
       },
       authorization: {
         payload    : 'anyPayload',
@@ -228,16 +228,16 @@ describe('CollectionsWrite schema definition', () => {
     }).throws('must have required property \'contextId\'');
   });
 
-  it('should throw if published is false and datePublished is present', () => {
+  it('should throw if published is false but datePublished is present', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
         method        : 'CollectionsWrite',
         dataCid       : 'anyCid',
         dataFormat    : 'application/json',
-        dateCreated   : 123,
+        dateCreated   : '2022-12-19T10:20:30.123456',
         published     : false,
-        datePublished : 123 // must not be present when not published
+        datePublished : '2022-12-19T10:20:30.123456' // must not be present when not published
       },
       authorization: {
         payload    : 'anyPayload',
@@ -254,14 +254,14 @@ describe('CollectionsWrite schema definition', () => {
     }).throws('published: must be equal to one of the allowed values');
   });
 
-  it('should throw if published is true and datePublished is missing', () => {
+  it('should throw if published is true but datePublished is missing', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
         method      : 'CollectionsWrite',
         dataCid     : 'anyCid',
         dataFormat  : 'application/json',
-        dateCreated : 123,
+        dateCreated : '2022-12-19T10:20:30.123456',
         published   : true //datePublished must be present
       },
       authorization: {
@@ -286,8 +286,8 @@ describe('CollectionsWrite schema definition', () => {
         method        : 'CollectionsWrite',
         dataCid       : 'anyCid',
         dataFormat    : 'application/json',
-        dateCreated   : 123,
-        datePublished : 123 //published must be present
+        dateCreated   : '2022-12-19T10:20:30.123456',
+        datePublished : '2022-12-19T10:20:30.123456' //published must be present
       },
       authorization: {
         payload    : 'anyPayload',
