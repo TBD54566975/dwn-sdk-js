@@ -294,7 +294,6 @@ export class TestDataGenerator {
 
   /**
    * Generates a CollectionsQuery message for testing.
-
    */
   public static async generateCollectionsQueryMessage(input?: GenerateCollectionsQueryMessageInput): Promise<GenerateCollectionsQueryMessageOutput> {
     const { requester, target } = await TestDataGenerator.generateRequesterAndTargetPersonas(input);
