@@ -7,7 +7,7 @@ import { CollectionsWrite } from '../../../../src/interfaces/collections/message
 import { CollectionsWriteMessage } from '../../../../src/interfaces/collections/types.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
-import { getCurrentDateInHighPrecision, sleep } from '../../../../src/utils/time.js';
+import { getCurrentTimeInHighPrecision, sleep } from '../../../../src/utils/time.js';
 
 
 chai.use(chaiAsPromised);
@@ -81,7 +81,7 @@ describe('CollectionsWrite', () => {
 
   describe('compareCreationTime', () => {
     it('should return 0 if age is same', async () => {
-      const dateCreated = getCurrentDateInHighPrecision();
+      const dateCreated = getCurrentTimeInHighPrecision();
       const a = (await TestDataGenerator.generateCollectionsWriteMessage({ dateCreated })).message;
       const b = JSON.parse(JSON.stringify(a)); // create a deep copy of `a`
 
@@ -110,7 +110,7 @@ describe('CollectionsWrite', () => {
 
   describe('getCid', () => {
     it('should return the same value with or without `encodedData`', async () => {
-      const dateCreated = getCurrentDateInHighPrecision();
+      const dateCreated = getCurrentTimeInHighPrecision();
       const messageData = await TestDataGenerator.generateCollectionsWriteMessage({ dateCreated });
 
       const messageWithoutEncodedData = { ...messageData.message };

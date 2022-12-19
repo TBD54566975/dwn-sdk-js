@@ -3,7 +3,7 @@ import { BaseMessage } from '../../src/core/types.js';
 import { CID } from 'multiformats/cid';
 import { DidResolutionResult } from '../../src/did/did-resolver.js';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
-import { getCurrentDateInHighPrecision } from '../../src/utils/time.js';
+import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request.js';
 import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1.js';
@@ -83,7 +83,7 @@ export type GenerateCollectionsWriteMessageInput = {
   data?: Uint8Array;
   dataFormat?: string;
   dateCreated? : string;
-  datePublished? : number;
+  datePublished? : string;
 };
 
 export type GenerateCollectionsWriteMessageOutput = {
@@ -353,7 +353,7 @@ export class TestDataGenerator {
     const target = 'did:jank:alice';
     const permissionRequest = await PermissionsRequest.create({
       target,
-      dateCreated    : getCurrentDateInHighPrecision(),
+      dateCreated    : getCurrentTimeInHighPrecision(),
       description    : 'drugs',
       grantedBy      : 'did:jank:bob',
       grantedTo      : 'did:jank:alice',

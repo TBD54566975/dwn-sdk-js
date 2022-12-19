@@ -1,7 +1,7 @@
 import type { AuthCreateOptions } from '../../../core/types.js';
 import type { HooksWriteDescriptor, HooksWriteMessage } from '../../hooks/types.js';
 
-import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
+import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 
 import { DwnMethodName, Message } from '../../../core/message.js';
@@ -38,7 +38,7 @@ export class HooksWrite extends Message {
   static async create(options: HooksWriteOptions): Promise<HooksWrite> {
     const descriptor: HooksWriteDescriptor = {
       method      : DwnMethodName.HooksWrite,
-      dateCreated : options.dateCreated ?? getCurrentDateInHighPrecision(),
+      dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
       uri         : options.uri,
       filter      : options.filter
     };
