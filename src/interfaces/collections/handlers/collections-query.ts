@@ -178,11 +178,11 @@ async function handleDateSort(
     return collectionMessages.sort(getCompareByPropertyFn('dateCreated', 'asc'));
   case DateSortName.CreatedDescending:
     return collectionMessages.sort(getCompareByPropertyFn('dateCreated', 'desc'));
-  case DateSortName.PublishedAscending: 
+  case DateSortName.PublishedAscending:
     return collectionMessages
       .filter(m => m.descriptor.published)
       .sort(getCompareByPropertyFn('datePublished', 'asc'));
-  case DateSortName.PublishedDescending: 
+  case DateSortName.PublishedDescending:
     return collectionMessages
       .filter(m => m.descriptor.published)
       .sort(getCompareByPropertyFn('datePublished', 'desc'));
@@ -192,17 +192,17 @@ async function handleDateSort(
 }
 
 function getCompareByPropertyFn(
-  property: string, 
+  property: string,
   direction: 'asc' | 'desc'
 ): (left: CollectionsWriteMessage, right: CollectionsWriteMessage) => number {
 
   if (direction === 'asc') {
-   return (left, right): number => {
+    return (left, right): number => {
       return Number(left.descriptor[property]) - Number(right.descriptor[property]);
-    }; 
+    };
   }
 
   return (left, right): number => {
-    return  Number(right.descriptor[property]) - Number(left.descriptor[property]);
-  }
+    return Number(right.descriptor[property]) - Number(left.descriptor[property]);
+  };
 }
