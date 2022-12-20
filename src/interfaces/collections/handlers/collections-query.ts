@@ -198,11 +198,23 @@ function getCompareByPropertyFn(
 
   if (direction === 'asc') {
     return (left, right): number => {
-      return left.descriptor[property] - right.descriptor[property];
+      if (left.descriptor[property] > right.descriptor[property]) {
+        return 1;
+      } else if (left.descriptor[property] < right.descriptor[property]) {
+        return -1;
+      } else {
+        return 0;
+      }
     };
   }
 
   return (left, right): number => {
-    return right.descriptor[property] - left.descriptor[property];
+    if (right.descriptor[property] > left.descriptor[property]) {
+      return 1;
+    } else if (right.descriptor[property] < left.descriptor[property]) {
+      return -1;
+    } else {
+      return 0;
+    }
   };
 }

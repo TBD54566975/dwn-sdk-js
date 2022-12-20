@@ -2,7 +2,6 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
-import { DateSortName } from '../../../../src/interfaces/collections/messages/collections-query.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DidResolver } from '../../../../src/index.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
@@ -10,6 +9,7 @@ import { handleCollectionsQuery } from '../../../../src/interfaces/collections/h
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
+import { CollectionsQuery, DateSortName } from '../../../../src/interfaces/collections/messages/collections-query.js';
 import { constructIndexes, handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write.js';
 
 chai.use(chaiAsPromised);
@@ -33,6 +33,7 @@ describe('handleCollectionsQuery()', () => {
     });
 
     beforeEach(async () => {
+      sinon.restore(); // wipe all previous stubs/spies/mocks/fakes
       await messageStore.clear(); // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
     });
 
@@ -87,9 +88,10 @@ describe('handleCollectionsQuery()', () => {
       // insert three messages into DB, two with matching protocol
       const alice = await TestDataGenerator.generatePersona();
       const schema = 'aSchema';
-      const write1Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, schema });
-      const write2Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, schema });
-      const write3Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, schema });
+      const published = true;
+      const write1Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, schema, published });
+      const write2Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, schema, published });
+      const write3Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, schema, published });
 
       // setting up a stub method resolver
       const didResolverStub = TestStubGenerator.createDidResolverStub(alice);
@@ -335,6 +337,19 @@ describe('handleCollectionsQuery()', () => {
     const reply = await handleCollectionsQuery(message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(500);
+  });
+
+  it('should return 400 if fail parsing the message', async () => {
+    const { requester, message } = await TestDataGenerator.generateCollectionsQueryMessage({ dateSort: 'createdAscending' });
+
+    // setting up a stub method resolver & message store
+    const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
+    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+
+    sinon.stub(CollectionsQuery, 'parse').throws('anyError');
+    const reply = await handleCollectionsQuery(message, messageStoreStub, didResolverStub);
+
+    expect(reply.status.code).to.equal(400);
   });
 });
 
