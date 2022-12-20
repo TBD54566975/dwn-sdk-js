@@ -198,11 +198,11 @@ function getCompareByPropertyFn(
 
   if (direction === 'asc') {
     return (left, right): number => {
-      return Number(left.descriptor[property]) - Number(right.descriptor[property]);
+      return left.descriptor[property] - right.descriptor[property];
     };
   }
 
   return (left, right): number => {
-    return Number(right.descriptor[property]) - Number(left.descriptor[property]);
+    return right.descriptor[property] - left.descriptor[property];
   };
 }
