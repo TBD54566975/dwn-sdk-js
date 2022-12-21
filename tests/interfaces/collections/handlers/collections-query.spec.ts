@@ -107,6 +107,51 @@ describe('handleCollectionsQuery()', () => {
       expect(queryReply.entries[0]['authorization']).to.equal(undefined);
     });
 
+    it.only('should omit records that are not published if `dateSort` sorts on `datePublished`', async () => {
+      // insert three messages into DB, two with matching protocol
+      const alice = await TestDataGenerator.generatePersona();
+      const schema = 'aSchema';
+      const publishedWriteData = await TestDataGenerator.generateCollectionsWriteMessage({
+        requester: alice, target: alice, schema, published: true
+      });
+      const unpublishedWriteData = await TestDataGenerator.generateCollectionsWriteMessage({
+        requester: alice, target: alice, schema
+      });
+
+      // setting up a stub method resolver
+      const didResolverStub = TestStubGenerator.createDidResolverStub(alice);
+
+      // insert data
+      const publishedWriteReply = await handleCollectionsWrite(publishedWriteData.message, messageStore, didResolverStub);
+      const unpublishedWriteReply = await handleCollectionsWrite(unpublishedWriteData.message, messageStore, didResolverStub);
+      expect(publishedWriteReply.status.code).to.equal(202);
+      expect(unpublishedWriteReply.status.code).to.equal(202);
+
+      // test published date ascending sort does not include any records that is not published
+      const publishedAscendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
+        requester : alice,
+        target    : alice,
+        dateSort  : DateSortName.PublishedAscending,
+        filter    : { schema }
+      });
+      const publishedAscendingQueryReply = await handleCollectionsQuery(publishedAscendingQueryData.message, messageStore, didResolverStub);
+
+      expect(publishedAscendingQueryReply.entries?.length).to.equal(1);
+      expect(publishedAscendingQueryReply.entries[0].descriptor['datePublished']).to.equal(publishedWriteData.message.descriptor.datePublished);
+
+      // test published date scending sort does not include any records that is not published
+      const publishedDescendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
+        requester : alice,
+        target    : alice,
+        dateSort  : DateSortName.PublishedDescending,
+        filter    : { schema }
+      });
+      const publishedDescendingQueryReply = await handleCollectionsQuery(publishedDescendingQueryData.message, messageStore, didResolverStub);
+
+      expect(publishedDescendingQueryReply.entries?.length).to.equal(1);
+      expect(publishedDescendingQueryReply.entries[0].descriptor['datePublished']).to.equal(publishedWriteData.message.descriptor.datePublished);
+    });
+
     it('should sort records if `dateSort` is specified', async () => {
       // insert three messages into DB, two with matching protocol
       const alice = await TestDataGenerator.generatePersona();
