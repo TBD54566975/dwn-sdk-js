@@ -14,7 +14,6 @@ import { CollectionsInterface } from './interfaces/collections/collections-inter
 import { PermissionsInterface } from './interfaces/permissions/permissions-interface.js';
 import { ProtocolsInterface } from './interfaces/protocols/protocols-interface.js';
 
-
 export class Dwn {
   static methodHandlers: { [key:string]: MethodHandler } = {
     ...CollectionsInterface.methodHandlers,

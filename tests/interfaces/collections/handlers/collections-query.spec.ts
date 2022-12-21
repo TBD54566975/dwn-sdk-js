@@ -83,6 +83,29 @@ describe('handleCollectionsQuery()', () => {
       expect(reply2.status.code).to.equal(200);
       expect(reply2.entries?.length).to.equal(1); // only 1 entry should match the query
     });
+    
+    it('should not include `authorization` in returned records', async () => {
+      // insert three messages into DB, two with matching protocol
+      const alice = await TestDataGenerator.generatePersona();
+      const { message } = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice });
+
+      // setting up a stub method resolver
+      const didResolverStub = TestStubGenerator.createDidResolverStub(alice);
+
+      const writeReply = await handleCollectionsWrite(message, messageStore, didResolverStub);
+      expect(writeReply.status.code).to.equal(202);
+
+      const queryData = await TestDataGenerator.generateCollectionsQueryMessage({
+        requester : alice,
+        target    : alice,
+        filter    : { schema: message.descriptor.schema }
+      });
+
+      const queryReply = await handleCollectionsQuery(queryData.message, messageStore, didResolverStub);
+      expect(queryReply.status.code).to.equal(200);
+      expect(queryReply.entries?.length).to.equal(1);
+      expect(queryReply.entries[0]['authorization']).to.equal(undefined);
+    });
 
     it('should sort records if `dateSort` is specified', async () => {
       // insert three messages into DB, two with matching protocol
@@ -176,7 +199,7 @@ describe('handleCollectionsQuery()', () => {
         { requester: bob, target: alice, recipientDid: alice.did, schema, data: Encoder.stringToBytes('3') }
       );
       const record4Data = await TestDataGenerator.generateCollectionsWriteMessage(
-        { requester: alice, target: alice, schema, data: Encoder.stringToBytes('4'), published: true, datePublished: 123 }
+        { requester: alice, target: alice, schema, data: Encoder.stringToBytes('4'), published: true }
       );
 
       // directly inserting data to datastore so that we don't have to setup to grant Bob permission to write to Alice's DWN

@@ -1,7 +1,7 @@
 import type { AuthCreateOptions } from '../../../core/types.js';
 import type { ProtocolDefinition, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types.js';
 
-import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
+import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 
 import { DwnMethodName, Message } from '../../../core/message.js';
@@ -29,7 +29,7 @@ export class ProtocolsConfigure extends Message {
   public static async create(options: ProtocolsConfigureOptions): Promise<ProtocolsConfigure> {
     const descriptor: ProtocolsConfigureDescriptor = {
       method      : DwnMethodName.ProtocolsConfigure,
-      dateCreated : options.dateCreated ?? getCurrentDateInHighPrecision(),
+      dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
       protocol    : options.protocol,
       definition  : options.definition
     };

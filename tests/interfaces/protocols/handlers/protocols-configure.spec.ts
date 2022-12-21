@@ -9,8 +9,8 @@ import { handleProtocolsConfigure } from '../../../../src/interfaces/protocols/h
 import { handleProtocolsQuery } from '../../../../src/interfaces/protocols/handlers/protocols-query.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
-import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
+import { GenerateProtocolsConfigureMessageOutput, TestDataGenerator } from '../../../utils/test-data-generator.js';
 
 import { DidResolver, Encoder } from '../../../../src/index.js';
 
@@ -104,7 +104,8 @@ describe('handleProtocolsQuery()', () => {
         messageDataWithSmallestLexicographicValue,
         messageDataWithMediumLexicographicValue,
         messageDataWithLargestLexicographicValue
-      ] = messageDataWithCid.sort((messageDataA, messageDataB) => { return compareCids(messageDataA.cid, messageDataB.cid); });
+      ]: GenerateProtocolsConfigureMessageOutput[]
+        = messageDataWithCid.sort((messageDataA, messageDataB) => { return compareCids(messageDataA.cid, messageDataB.cid); });
 
       // write the protocol with the middle lexicographic value
       let reply = await handleProtocolsConfigure(messageDataWithMediumLexicographicValue.message, messageStore, didResolver);
@@ -125,8 +126,11 @@ describe('handleProtocolsQuery()', () => {
       expect(reply.status.code).to.equal(200);
       expect(reply.entries.length).to.equal(1);
 
-      const actualMessageCid = await Message.getCid(reply.entries[0]);
-      expect(actualMessageCid.toString()).to.equal(messageDataWithLargestLexicographicValue.cid.toString());
+      const initialDefinition = JSON.stringify(messageDataWithMediumLexicographicValue.message.descriptor.definition);
+      const expectedDefinition = JSON.stringify(messageDataWithLargestLexicographicValue.message.descriptor.definition);
+      const actualDefinition = JSON.stringify(reply.entries[0]['descriptor']['definition']);
+      expect(actualDefinition).to.not.equal(initialDefinition);
+      expect(actualDefinition).to.equal(expectedDefinition);
     });
   });
 });

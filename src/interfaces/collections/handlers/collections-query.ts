@@ -33,11 +33,19 @@ export const handleCollectionsQuery: MethodHandler = async (
   }
 
   try {
-    let entries: BaseMessage[];
+    let records: BaseMessage[];
     if (collectionsQuery.author === collectionsQuery.target) {
-      entries = await fetchRecordsAsOwner(collectionsQuery, messageStore);
+      records = await fetchRecordsAsOwner(collectionsQuery, messageStore);
     } else {
-      entries = await fetchRecordsAsNonOwner(collectionsQuery, messageStore);
+      records = await fetchRecordsAsNonOwner(collectionsQuery, messageStore);
+    }
+
+    // strip away `authorization` property for each record before responding
+    const entries = [];
+    for (const record of records) {
+      const recordDuplicate = { ...record };
+      delete recordDuplicate.authorization;
+      entries.push(recordDuplicate);
     }
 
     if (collectionsQuery.message.descriptor.dateSort) {

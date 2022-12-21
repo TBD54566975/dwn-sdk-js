@@ -5,7 +5,7 @@ import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../typ
 
 import { CID } from 'multiformats/cid';
 import { generateCid } from '../../../utils/cid';
-import { getCurrentDateInHighPrecision } from '../../../utils/time';
+import { getCurrentTimeInHighPrecision } from '../../../utils/time';
 import { Message } from '../../../core/message';
 import { v4 as uuidv4 } from 'uuid';
 import { DEFAULT_CONDITIONS, PermissionsRequest } from './permissions-request';
@@ -35,7 +35,7 @@ export class PermissionsGrant extends Message {
     const mergedConditions = { ...DEFAULT_CONDITIONS, ...providedConditions };
 
     const descriptor: PermissionsGrantDescriptor = {
-      dateCreated : options.dateCreated ?? getCurrentDateInHighPrecision(),
+      dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
       conditions  : mergedConditions,
       description : options.description,
       grantedTo   : options.grantedTo,

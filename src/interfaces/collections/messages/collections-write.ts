@@ -5,7 +5,7 @@ import { DwnMethodName } from '../../../core/message.js';
 import { Encoder } from '../../../utils/encoder.js';
 import { GeneralJwsSigner } from '../../../jose/jws/general/signer.js';
 import { GeneralJwsVerifier } from '../../../jose/jws/general/verifier.js';
-import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
+import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/message.js';
 import { MessageStore } from '../../../store/message-store.js';
 import { ProtocolAuthorization } from '../../../core/protocol-authorization.js';
@@ -27,7 +27,7 @@ export type CollectionsWriteOptions = AuthCreateOptions & {
   data: Uint8Array;
   dateCreated?: string;
   published?: boolean;
-  datePublished?: number;
+  datePublished?: string;
   dataFormat: string;
 };
 
@@ -63,17 +63,16 @@ export class CollectionsWrite extends Message {
       lineageParent : options.lineageParent ?? options.recordId, // convenience for developer
       parentId      : options.parentId,
       dataCid       : dataCid.toString(),
-      dateCreated   : options.dateCreated ?? getCurrentDateInHighPrecision(),
+      dateCreated   : options.dateCreated ?? getCurrentTimeInHighPrecision(),
       published     : options.published,
       datePublished : options.datePublished,
       dataFormat    : options.dataFormat
     };
 
-    // TODO: https://github.com/TBD54566975/dwn-sdk-js/issues/145 - Change datePublished to higher precision format (ISO 8601)
     // generate `datePublished` if the message is to be published but `datePublished` is not given
     if (options.published === true &&
         options.datePublished === undefined) {
-      descriptor.datePublished = Date.now();
+      descriptor.datePublished = getCurrentTimeInHighPrecision();
     }
 
     // delete all descriptor properties that are `undefined` else the code will encounter the following IPLD issue when attempting to generate CID:

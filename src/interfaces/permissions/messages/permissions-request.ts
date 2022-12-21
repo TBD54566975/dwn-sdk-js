@@ -2,7 +2,7 @@ import type { AuthCreateOptions } from '../../../core/types.js';
 import type { PermissionConditions, PermissionScope } from '../types.js';
 import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types.js';
 
-import { getCurrentDateInHighPrecision } from '../../../utils/time.js';
+import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/message.js';
 import { v4 as uuidv4 } from 'uuid';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
@@ -37,7 +37,7 @@ export class PermissionsRequest extends Message {
     const mergedConditions = { ...DEFAULT_CONDITIONS, ...providedConditions };
 
     const descriptor: PermissionsRequestDescriptor = {
-      dateCreated : options.dateCreated ?? getCurrentDateInHighPrecision(),
+      dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
       conditions  : mergedConditions,
       description : options.description,
       grantedTo   : options.grantedTo,
