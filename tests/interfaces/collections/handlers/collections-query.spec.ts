@@ -83,7 +83,7 @@ describe('handleCollectionsQuery()', () => {
       expect(reply2.status.code).to.equal(200);
       expect(reply2.entries?.length).to.equal(1); // only 1 entry should match the query
     });
-    
+
     it('should not include `authorization` in returned records', async () => {
       // insert three messages into DB, two with matching protocol
       const alice = await TestDataGenerator.generatePersona();

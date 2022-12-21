@@ -40,16 +40,17 @@ export const handleCollectionsQuery: MethodHandler = async (
       records = await fetchRecordsAsNonOwner(collectionsQuery, messageStore);
     }
 
+    // sort if `dataSort` is specified
+    if (collectionsQuery.message.descriptor.dateSort) {
+      records = await handleDateSort(collectionsQuery, records);
+    }
+
     // strip away `authorization` property for each record before responding
     const entries = [];
     for (const record of records) {
       const recordDuplicate = { ...record };
       delete recordDuplicate.authorization;
       entries.push(recordDuplicate);
-    }
-
-    if (collectionsQuery.message.descriptor.dateSort) {
-      entries = await handleDateSort(collectionsQuery, entries);
     }
 
     return new MessageReply({
