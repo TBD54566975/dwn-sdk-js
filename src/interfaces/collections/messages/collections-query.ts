@@ -7,7 +7,7 @@ import { Message } from '../../../core/message.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 
-export enum DateSortName {
+export enum DateSort {
   CreatedAscending = 'createdAscending',
   CreatedDescending = 'createdDescending',
   PublishedAscending = 'publishedAscending',
@@ -26,7 +26,7 @@ export type CollectionsQueryOptions = AuthCreateOptions & {
     parentId?: string;
     dataFormat?: string;
   },
-  dateSort?: string;
+  dateSort?: DateSort;
 };
 
 export class CollectionsQuery extends Message {

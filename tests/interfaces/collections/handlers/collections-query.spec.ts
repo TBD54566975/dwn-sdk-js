@@ -9,7 +9,7 @@ import { handleCollectionsQuery } from '../../../../src/interfaces/collections/h
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
-import { CollectionsQuery, DateSortName } from '../../../../src/interfaces/collections/messages/collections-query.js';
+import { CollectionsQuery, DateSort } from '../../../../src/interfaces/collections/messages/collections-query.js';
 import { constructIndexes, handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write.js';
 
 chai.use(chaiAsPromised);
@@ -131,7 +131,7 @@ describe('handleCollectionsQuery()', () => {
       const publishedAscendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
         requester : alice,
         target    : alice,
-        dateSort  : DateSortName.PublishedAscending,
+        dateSort  : DateSort.PublishedAscending,
         filter    : { schema }
       });
       const publishedAscendingQueryReply = await handleCollectionsQuery(publishedAscendingQueryData.message, messageStore, didResolverStub);
@@ -143,7 +143,7 @@ describe('handleCollectionsQuery()', () => {
       const publishedDescendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
         requester : alice,
         target    : alice,
-        dateSort  : DateSortName.PublishedDescending,
+        dateSort  : DateSort.PublishedDescending,
         filter    : { schema }
       });
       const publishedDescendingQueryReply = await handleCollectionsQuery(publishedDescendingQueryData.message, messageStore, didResolverStub);
@@ -176,7 +176,7 @@ describe('handleCollectionsQuery()', () => {
       const createdAscendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
         requester : alice,
         target    : alice,
-        dateSort  : DateSortName.CreatedAscending,
+        dateSort  : DateSort.CreatedAscending,
         filter    : { schema }
       });
       const createdAscendingQueryReply = await handleCollectionsQuery(createdAscendingQueryData.message, messageStore, didResolverStub);
@@ -189,7 +189,7 @@ describe('handleCollectionsQuery()', () => {
       const createdDescendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
         requester : alice,
         target    : alice,
-        dateSort  : DateSortName.CreatedDescending,
+        dateSort  : DateSort.CreatedDescending,
         filter    : { schema }
       });
       const createdDescendingQueryReply = await handleCollectionsQuery(createdDescendingQueryData.message, messageStore, didResolverStub);
@@ -202,7 +202,7 @@ describe('handleCollectionsQuery()', () => {
       const publishedAscendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
         requester : alice,
         target    : alice,
-        dateSort  : DateSortName.PublishedAscending,
+        dateSort  : DateSort.PublishedAscending,
         filter    : { schema }
       });
       const publishedAscendingQueryReply = await handleCollectionsQuery(publishedAscendingQueryData.message, messageStore, didResolverStub);
@@ -215,7 +215,7 @@ describe('handleCollectionsQuery()', () => {
       const publishedDescendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
         requester : alice,
         target    : alice,
-        dateSort  : DateSortName.PublishedDescending,
+        dateSort  : DateSort.PublishedDescending,
         filter    : { schema }
       });
       const publishedDescendingQueryReply = await handleCollectionsQuery(publishedDescendingQueryData.message, messageStore, didResolverStub);
@@ -408,12 +408,13 @@ describe('handleCollectionsQuery()', () => {
   });
 
   it('should return 400 if fail parsing the message', async () => {
-    const { requester, message } = await TestDataGenerator.generateCollectionsQueryMessage({ dateSort: 'createdAscending' });
+    const { requester, message } = await TestDataGenerator.generateCollectionsQueryMessage();
 
     // setting up a stub method resolver & message store
     const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
+    // stub the `parse()` function to throw an error
     sinon.stub(CollectionsQuery, 'parse').throws('anyError');
     const reply = await handleCollectionsQuery(message, messageStoreStub, didResolverStub);
 
