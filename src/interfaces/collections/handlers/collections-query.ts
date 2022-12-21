@@ -4,6 +4,7 @@ import type { CollectionsQueryMessage, CollectionsWriteMessage } from '../types.
 import { authenticate } from '../../../core/auth.js';
 import { BaseMessage } from '../../../core/types.js';
 import { DwnMethodName } from '../../../core/message.js';
+import { lexicographicalCompare } from '../../../utils/string.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { MessageStore } from '../../../store/message-store.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
@@ -184,46 +185,18 @@ async function handleDateSort(
 
   switch (dateSort) {
   case DateSortName.CreatedAscending:
-    return collectionMessages.sort(getCompareByPropertyFn('dateCreated', 'asc'));
+    return collectionMessages.sort((a, b) => lexicographicalCompare(a.descriptor.dateCreated, b.descriptor.dateCreated));
   case DateSortName.CreatedDescending:
-    return collectionMessages.sort(getCompareByPropertyFn('dateCreated', 'desc'));
+    return collectionMessages.sort((a, b) => lexicographicalCompare(b.descriptor.dateCreated, a.descriptor.dateCreated));
   case DateSortName.PublishedAscending:
     return collectionMessages
       .filter(m => m.descriptor.published)
-      .sort(getCompareByPropertyFn('datePublished', 'asc'));
+      .sort((a, b) => lexicographicalCompare(a.descriptor.datePublished, b.descriptor.datePublished));
   case DateSortName.PublishedDescending:
     return collectionMessages
       .filter(m => m.descriptor.published)
-      .sort(getCompareByPropertyFn('datePublished', 'desc'));
+      .sort((a, b) => lexicographicalCompare(b.descriptor.datePublished, a.descriptor.datePublished));
   default:
-    throw new Error(`Invalid DateSort String: ${dateSort}`);
+    throw new Error(`Invalid dateSort string: ${dateSort}`);
   }
-}
-
-function getCompareByPropertyFn(
-  property: string,
-  direction: 'asc' | 'desc'
-): (left: CollectionsWriteMessage, right: CollectionsWriteMessage) => number {
-
-  if (direction === 'asc') {
-    return (left, right): number => {
-      if (left.descriptor[property] > right.descriptor[property]) {
-        return 1;
-      } else if (left.descriptor[property] < right.descriptor[property]) {
-        return -1;
-      } else {
-        return 0;
-      }
-    };
-  }
-
-  return (left, right): number => {
-    if (right.descriptor[property] > left.descriptor[property]) {
-      return 1;
-    } else if (right.descriptor[property] < left.descriptor[property]) {
-      return -1;
-    } else {
-      return 0;
-    }
-  };
 }

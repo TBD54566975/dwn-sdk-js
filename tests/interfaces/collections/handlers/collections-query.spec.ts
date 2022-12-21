@@ -107,7 +107,7 @@ describe('handleCollectionsQuery()', () => {
       expect(queryReply.entries[0]['authorization']).to.equal(undefined);
     });
 
-    it.only('should omit records that are not published if `dateSort` sorts on `datePublished`', async () => {
+    it('should omit records that are not published if `dateSort` sorts on `datePublished`', async () => {
       // insert three messages into DB, two with matching protocol
       const alice = await TestDataGenerator.generatePersona();
       const schema = 'aSchema';

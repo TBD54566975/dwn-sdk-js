@@ -2,11 +2,11 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
-import { compareCids } from '../../../../src/utils/cid.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { handleProtocolsConfigure } from '../../../../src/interfaces/protocols/handlers/protocols-configure.js';
 import { handleProtocolsQuery } from '../../../../src/interfaces/protocols/handlers/protocols-query.js';
+import { lexicographicalCompare } from '../../../../src/utils/string.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
@@ -105,7 +105,7 @@ describe('handleProtocolsQuery()', () => {
         messageDataWithMediumLexicographicValue,
         messageDataWithLargestLexicographicValue
       ]: GenerateProtocolsConfigureMessageOutput[]
-        = messageDataWithCid.sort((messageDataA, messageDataB) => { return compareCids(messageDataA.cid, messageDataB.cid); });
+        = messageDataWithCid.sort((messageDataA, messageDataB) => { return lexicographicalCompare(messageDataA.cid, messageDataB.cid); });
 
       // write the protocol with the middle lexicographic value
       let reply = await handleProtocolsConfigure(messageDataWithMediumLexicographicValue.message, messageStore, didResolver);
