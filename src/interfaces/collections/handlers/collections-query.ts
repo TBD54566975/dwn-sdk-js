@@ -43,7 +43,7 @@ export const handleCollectionsQuery: MethodHandler = async (
 
     // sort if `dataSort` is specified
     if (collectionsQuery.message.descriptor.dateSort) {
-      records = await handleDateSort(collectionsQuery, records);
+      records = await sortRecords(records, collectionsQuery.message.descriptor.dateSort);
     }
 
     // strip away `authorization` property for each record before responding
@@ -162,25 +162,22 @@ async function fetchUnpublishedRecordsByRequester(collectionsQuery: CollectionsQ
 }
 
 /**
- * Handles dateSort field passed in the CollectionsQuery. There are 4 options for dateSort:
+ * Sorts the given records. There are 4 options for dateSort:
  * 1. createdAscending - Sort in ascending order based on when the message was created
  * 2. createdDescending - Sort in descending order based on when the message was created
  * 3. publishedAscending - If the message is published, sort in asc based on publish date
  * 4. publishedDescending - If the message is published, sort in desc based on publish date
  *
- * If dateSort is not present we return the unmodified list of entries. This method throws
- * if there is an unsupported DateSort operation.
- *
- * @param collectionsQuery - Underlying Collections Query
+ * If sorting is based on date published, records that are not published are filtered out.
  * @param entries - Entries to be sorted if dateSort is present
- * @returns List of Messages
+ * @param dateSort - Sorting scheme
+ * @returns Sorted Messages
  */
-async function handleDateSort(
-  collectionsQuery: CollectionsQuery,
-  entries: BaseMessage[]
+async function sortRecords(
+  entries: BaseMessage[],
+  dateSort: DateSort
 ): Promise<BaseMessage[]> {
 
-  const { dateSort } = collectionsQuery.message.descriptor;
   const collectionMessages = entries as CollectionsWriteMessage[];
 
   switch (dateSort) {
