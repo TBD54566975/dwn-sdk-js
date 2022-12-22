@@ -196,7 +196,5 @@ async function handleDateSort(
     return collectionMessages
       .filter(m => m.descriptor.published)
       .sort((a, b) => lexicographicalCompare(b.descriptor.datePublished, a.descriptor.datePublished));
-  default:
-    throw new Error(`Invalid dateSort string: ${dateSort}`);
   }
 }
