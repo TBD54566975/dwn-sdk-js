@@ -15,6 +15,7 @@ export type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, Pr
 export type { DwnServiceEndpoint, ServiceEndpoint, DidDocument, DidResolutionResult, DidResolutionMetadata, DidDocumentMetadata, VerificationMethod } from './did/did-resolver.js';
 export { CollectionsQuery, CollectionsQueryOptions } from './interfaces/collections/messages/collections-query.js';
 export { CollectionsWrite, CollectionsWriteOptions } from './interfaces/collections/messages/collections-write.js';
+export { DateSort } from './interfaces/collections/messages/collections-query.js';
 export { DidKeyResolver } from './did/did-key-resolver.js';
 export { DidIonResolver } from './did/did-ion-resolver.js';
 export { DidResolver } from './did/did-resolver.js';

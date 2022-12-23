@@ -279,5 +279,3 @@ export class CollectionsWrite extends Message {
     return Message.compareCid(a, b);
   }
 }
-
-

@@ -9,6 +9,7 @@ import { handleCollectionsQuery } from '../../../../src/interfaces/collections/h
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
+import { CollectionsQuery, DateSort } from '../../../../src/interfaces/collections/messages/collections-query.js';
 import { constructIndexes, handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write.js';
 
 chai.use(chaiAsPromised);
@@ -32,6 +33,7 @@ describe('handleCollectionsQuery()', () => {
     });
 
     beforeEach(async () => {
+      sinon.restore(); // wipe all previous stubs/spies/mocks/fakes
       await messageStore.clear(); // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
     });
 
@@ -50,7 +52,7 @@ describe('handleCollectionsQuery()', () => {
       // setting up a stub method resolver
       const didResolverStub = TestStubGenerator.createDidResolverStub(alice);
 
-      // insert data into 3 different tenants
+      // insert data
       const writeReply1 = await handleCollectionsWrite(write1Data.message, messageStore, didResolverStub);
       const writeReply2 = await handleCollectionsWrite(write2Data.message, messageStore, didResolverStub);
       const writeReply3 = await handleCollectionsWrite(write3Data.message, messageStore, didResolverStub);
@@ -103,6 +105,124 @@ describe('handleCollectionsQuery()', () => {
       expect(queryReply.status.code).to.equal(200);
       expect(queryReply.entries?.length).to.equal(1);
       expect(queryReply.entries[0]['authorization']).to.equal(undefined);
+    });
+
+    it('should omit records that are not published if `dateSort` sorts on `datePublished`', async () => {
+      // insert three messages into DB, two with matching protocol
+      const alice = await TestDataGenerator.generatePersona();
+      const schema = 'aSchema';
+      const publishedWriteData = await TestDataGenerator.generateCollectionsWriteMessage({
+        requester: alice, target: alice, schema, published: true
+      });
+      const unpublishedWriteData = await TestDataGenerator.generateCollectionsWriteMessage({
+        requester: alice, target: alice, schema
+      });
+
+      // setting up a stub method resolver
+      const didResolverStub = TestStubGenerator.createDidResolverStub(alice);
+
+      // insert data
+      const publishedWriteReply = await handleCollectionsWrite(publishedWriteData.message, messageStore, didResolverStub);
+      const unpublishedWriteReply = await handleCollectionsWrite(unpublishedWriteData.message, messageStore, didResolverStub);
+      expect(publishedWriteReply.status.code).to.equal(202);
+      expect(unpublishedWriteReply.status.code).to.equal(202);
+
+      // test published date ascending sort does not include any records that is not published
+      const publishedAscendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
+        requester : alice,
+        target    : alice,
+        dateSort  : DateSort.PublishedAscending,
+        filter    : { schema }
+      });
+      const publishedAscendingQueryReply = await handleCollectionsQuery(publishedAscendingQueryData.message, messageStore, didResolverStub);
+
+      expect(publishedAscendingQueryReply.entries?.length).to.equal(1);
+      expect(publishedAscendingQueryReply.entries[0].descriptor['datePublished']).to.equal(publishedWriteData.message.descriptor.datePublished);
+
+      // test published date scending sort does not include any records that is not published
+      const publishedDescendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
+        requester : alice,
+        target    : alice,
+        dateSort  : DateSort.PublishedDescending,
+        filter    : { schema }
+      });
+      const publishedDescendingQueryReply = await handleCollectionsQuery(publishedDescendingQueryData.message, messageStore, didResolverStub);
+
+      expect(publishedDescendingQueryReply.entries?.length).to.equal(1);
+      expect(publishedDescendingQueryReply.entries[0].descriptor['datePublished']).to.equal(publishedWriteData.message.descriptor.datePublished);
+    });
+
+    it('should sort records if `dateSort` is specified', async () => {
+      // insert three messages into DB, two with matching protocol
+      const alice = await TestDataGenerator.generatePersona();
+      const schema = 'aSchema';
+      const published = true;
+      const write1Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, schema, published });
+      const write2Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, schema, published });
+      const write3Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, schema, published });
+
+      // setting up a stub method resolver
+      const didResolverStub = TestStubGenerator.createDidResolverStub(alice);
+
+      // insert data, intentionally out of order
+      const writeReply2 = await handleCollectionsWrite(write2Data.message, messageStore, didResolverStub);
+      const writeReply1 = await handleCollectionsWrite(write1Data.message, messageStore, didResolverStub);
+      const writeReply3 = await handleCollectionsWrite(write3Data.message, messageStore, didResolverStub);
+      expect(writeReply1.status.code).to.equal(202);
+      expect(writeReply2.status.code).to.equal(202);
+      expect(writeReply3.status.code).to.equal(202);
+
+      // createdAscending test
+      const createdAscendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
+        requester : alice,
+        target    : alice,
+        dateSort  : DateSort.CreatedAscending,
+        filter    : { schema }
+      });
+      const createdAscendingQueryReply = await handleCollectionsQuery(createdAscendingQueryData.message, messageStore, didResolverStub);
+
+      expect(createdAscendingQueryReply.entries[0].descriptor['dateCreated']).to.equal(write1Data.message.descriptor.dateCreated);
+      expect(createdAscendingQueryReply.entries[1].descriptor['dateCreated']).to.equal(write2Data.message.descriptor.dateCreated);
+      expect(createdAscendingQueryReply.entries[2].descriptor['dateCreated']).to.equal(write3Data.message.descriptor.dateCreated);
+
+      // createdDescending test
+      const createdDescendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
+        requester : alice,
+        target    : alice,
+        dateSort  : DateSort.CreatedDescending,
+        filter    : { schema }
+      });
+      const createdDescendingQueryReply = await handleCollectionsQuery(createdDescendingQueryData.message, messageStore, didResolverStub);
+
+      expect(createdDescendingQueryReply.entries[0].descriptor['dateCreated']).to.equal(write3Data.message.descriptor.dateCreated);
+      expect(createdDescendingQueryReply.entries[1].descriptor['dateCreated']).to.equal(write2Data.message.descriptor.dateCreated);
+      expect(createdDescendingQueryReply.entries[2].descriptor['dateCreated']).to.equal(write1Data.message.descriptor.dateCreated);
+
+      // publishedAscending test
+      const publishedAscendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
+        requester : alice,
+        target    : alice,
+        dateSort  : DateSort.PublishedAscending,
+        filter    : { schema }
+      });
+      const publishedAscendingQueryReply = await handleCollectionsQuery(publishedAscendingQueryData.message, messageStore, didResolverStub);
+
+      expect(publishedAscendingQueryReply.entries[0].descriptor['datePublished']).to.equal(write1Data.message.descriptor.datePublished);
+      expect(publishedAscendingQueryReply.entries[1].descriptor['datePublished']).to.equal(write2Data.message.descriptor.datePublished);
+      expect(publishedAscendingQueryReply.entries[2].descriptor['datePublished']).to.equal(write3Data.message.descriptor.datePublished);
+
+      // publishedDescending test
+      const publishedDescendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
+        requester : alice,
+        target    : alice,
+        dateSort  : DateSort.PublishedDescending,
+        filter    : { schema }
+      });
+      const publishedDescendingQueryReply = await handleCollectionsQuery(publishedDescendingQueryData.message, messageStore, didResolverStub);
+
+      expect(publishedDescendingQueryReply.entries[0].descriptor['datePublished']).to.equal(write3Data.message.descriptor.datePublished);
+      expect(publishedDescendingQueryReply.entries[1].descriptor['datePublished']).to.equal(write2Data.message.descriptor.datePublished);
+      expect(publishedDescendingQueryReply.entries[2].descriptor['datePublished']).to.equal(write1Data.message.descriptor.datePublished);
     });
 
     it('should only return published records and unpublished records that is meant for requester', async () => {
@@ -287,18 +407,18 @@ describe('handleCollectionsQuery()', () => {
     expect(reply.status.code).to.equal(500);
   });
 
-  it('should return 400 if query contains `dateSort`', async () => {
-    const { requester, message } = await TestDataGenerator.generateCollectionsQueryMessage({ dateSort: 'createdAscending' });
+  it('should return 400 if fail parsing the message', async () => {
+    const { requester, message } = await TestDataGenerator.generateCollectionsQueryMessage();
 
     // setting up a stub method resolver & message store
     const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-    messageStoreStub.query.throwsException('anyError'); // simulate a DB query error
 
+    // stub the `parse()` function to throw an error
+    sinon.stub(CollectionsQuery, 'parse').throws('anyError');
     const reply = await handleCollectionsQuery(message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(400);
-    expect(reply.status.detail).to.equal('`dateSort` not implemented');
   });
 });
 

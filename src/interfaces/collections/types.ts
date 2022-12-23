@@ -1,4 +1,5 @@
 import { BaseMessage } from '../../core/types.js';
+import { DateSort } from './messages/collections-query.js';
 import { DwnMethodName } from '../../core/message.js';
 
 export type CollectionsWriteDescriptor = {
@@ -34,7 +35,7 @@ export type CollectionsQueryDescriptor = {
     parentId?: string;
     dataFormat?: string;
   }
-  dateSort?: string;
+  dateSort?: DateSort;
 };
 
 export type CollectionsWriteAuthorizationPayload = {

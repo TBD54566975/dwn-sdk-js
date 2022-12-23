@@ -7,6 +7,13 @@ import { Message } from '../../../core/message.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 
+export enum DateSort {
+  CreatedAscending = 'createdAscending',
+  CreatedDescending = 'createdDescending',
+  PublishedAscending = 'publishedAscending',
+  PublishedDescending = 'publishedDescending'
+}
+
 export type CollectionsQueryOptions = AuthCreateOptions & {
   target: string;
   dateCreated?: string;
@@ -19,7 +26,7 @@ export type CollectionsQueryOptions = AuthCreateOptions & {
     parentId?: string;
     dataFormat?: string;
   },
-  dateSort?: string;
+  dateSort?: DateSort;
 };
 
 export class CollectionsQuery extends Message {
@@ -31,11 +38,6 @@ export class CollectionsQuery extends Message {
 
   public static async parse(message: CollectionsQueryMessage): Promise<CollectionsQuery> {
     await validateAuthorizationIntegrity(message);
-
-    if (message.descriptor.dateSort) {
-      throw new Error('`dateSort` not implemented');
-    }
-
     return new CollectionsQuery(message);
   }
 

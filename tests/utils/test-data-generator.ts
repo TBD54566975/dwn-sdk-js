@@ -16,6 +16,7 @@ import {
   CollectionsWrite,
   CollectionsWriteMessage,
   CollectionsWriteOptions,
+  DateSort,
   HooksWrite,
   HooksWriteMessage,
   HooksWriteOptions,
@@ -106,7 +107,7 @@ export type GenerateCollectionsQueryMessageInput = {
     parentId?: string;
     dataFormat?: string;
   }
-  dateSort?: string;
+  dateSort?: DateSort;
 };
 
 export type GenerateCollectionsQueryMessageOutput = {

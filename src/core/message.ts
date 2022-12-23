@@ -6,9 +6,10 @@ import { CollectionsWriteMessage } from '../interfaces/collections/types.js';
 import { GeneralJws } from '../jose/jws/general/types.js';
 import { GeneralJwsSigner } from '../jose/jws/general/signer.js';
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
+import { generateCid } from '../utils/cid.js';
+import { lexicographicalCompare } from '../utils/string.js';
 import { validateJsonSchema } from '../validator.js';
 
-import { compareCids, generateCid } from '../utils/cid.js';
 
 export enum DwnMethodName {
   CollectionsWrite = 'CollectionsWrite',
@@ -83,7 +84,7 @@ export abstract class Message {
     // the < and > operators compare strings in lexicographical order
     const cidA = await Message.getCid(a);
     const cidB = await Message.getCid(b);
-    return compareCids(cidA, cidB);
+    return lexicographicalCompare(cidA, cidB);
   }
 
   /**

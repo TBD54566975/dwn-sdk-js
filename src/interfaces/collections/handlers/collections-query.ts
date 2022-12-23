@@ -1,13 +1,14 @@
-import type { CollectionsQueryMessage } from '../types.js';
 import type { MethodHandler } from '../../types.js';
+import type { CollectionsQueryMessage, CollectionsWriteMessage } from '../types.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { BaseMessage } from '../../../core/types.js';
-import { CollectionsQuery } from '../messages/collections-query.js';
 import { DwnMethodName } from '../../../core/message.js';
+import { lexicographicalCompare } from '../../../utils/string.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { MessageStore } from '../../../store/message-store.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
+import { CollectionsQuery, DateSort } from '../messages/collections-query.js';
 
 export const handleCollectionsQuery: MethodHandler = async (
   message,
@@ -38,6 +39,11 @@ export const handleCollectionsQuery: MethodHandler = async (
       records = await fetchRecordsAsOwner(collectionsQuery, messageStore);
     } else {
       records = await fetchRecordsAsNonOwner(collectionsQuery, messageStore);
+    }
+
+    // sort if `dataSort` is specified
+    if (collectionsQuery.message.descriptor.dateSort) {
+      records = await sortRecords(records, collectionsQuery.message.descriptor.dateSort);
     }
 
     // strip away `authorization` property for each record before responding
@@ -153,4 +159,39 @@ async function fetchUnpublishedRecordsByRequester(collectionsQuery: CollectionsQ
 
   const unpublishedRecordsForRequester = await messageStore.query(includeCriteria, excludeCriteria);
   return unpublishedRecordsForRequester;
+}
+
+/**
+ * Sorts the given records. There are 4 options for dateSort:
+ * 1. createdAscending - Sort in ascending order based on when the message was created
+ * 2. createdDescending - Sort in descending order based on when the message was created
+ * 3. publishedAscending - If the message is published, sort in asc based on publish date
+ * 4. publishedDescending - If the message is published, sort in desc based on publish date
+ *
+ * If sorting is based on date published, records that are not published are filtered out.
+ * @param entries - Entries to be sorted if dateSort is present
+ * @param dateSort - Sorting scheme
+ * @returns Sorted Messages
+ */
+async function sortRecords(
+  entries: BaseMessage[],
+  dateSort: DateSort
+): Promise<BaseMessage[]> {
+
+  const collectionMessages = entries as CollectionsWriteMessage[];
+
+  switch (dateSort) {
+  case DateSort.CreatedAscending:
+    return collectionMessages.sort((a, b) => lexicographicalCompare(a.descriptor.dateCreated, b.descriptor.dateCreated));
+  case DateSort.CreatedDescending:
+    return collectionMessages.sort((a, b) => lexicographicalCompare(b.descriptor.dateCreated, a.descriptor.dateCreated));
+  case DateSort.PublishedAscending:
+    return collectionMessages
+      .filter(m => m.descriptor.published)
+      .sort((a, b) => lexicographicalCompare(a.descriptor.datePublished, b.descriptor.datePublished));
+  case DateSort.PublishedDescending:
+    return collectionMessages
+      .filter(m => m.descriptor.published)
+      .sort((a, b) => lexicographicalCompare(b.descriptor.datePublished, a.descriptor.datePublished));
+  }
 }
