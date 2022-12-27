@@ -9,7 +9,7 @@ import { DidIonResolver } from '../../src/did/did-ion-resolver.js';
 chai.use(chaiAsPromised);
 
 describe('DidIonResolver', () => {
-  const defaultResolutionEndpoint = 'https://discover.did.microsoft.com/1.0/identifiers/';
+  const defaultResolutionEndpoint = 'https://beta.discover.did.microsoft.com/1.0/identifiers/';
   let networkAvailable = false;
   before(async () => {
     // test network connectivity, `networkAvailable` is used by tests to decide whether to run tests through real network calls or stubs
@@ -38,7 +38,7 @@ describe('DidIonResolver', () => {
 
     // stub network call if network is not available
     if (!networkAvailable) {
-      sinon.stub(didIonResolver as any, 'fetch').resolves({
+      sinon.stub(globalThis as any, 'fetch').resolves({
         status : 200,
         json   : async () => Promise.resolve({
           didDocument         : { id: did },
@@ -58,7 +58,7 @@ describe('DidIonResolver', () => {
 
     // stub network call if network is not available
     if (!networkAvailable) {
-      sinon.stub(didIonResolver as any, 'fetch').resolves({ status: 404 });
+      sinon.stub(globalThis as any, 'fetch').resolves({ status: 404 });
     }
 
     const resolutionPromise = didIonResolver.resolve(did);
