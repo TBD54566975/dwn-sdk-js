@@ -9,7 +9,7 @@ import { DidIonResolver } from '../../src/did/did-ion-resolver.js';
 chai.use(chaiAsPromised);
 
 describe('DidIonResolver', () => {
-  const defaultResolutionEndpoint = 'https://beta.discover.did.microsoft.com/1.0/identifiers/';
+  const defaultResolutionEndpoint = 'https://discover.did.msidentity.com/1.0/identifiers/';
   let networkAvailable = false;
   before(async () => {
     // test network connectivity, `networkAvailable` is used by tests to decide whether to run tests through real network calls or stubs
