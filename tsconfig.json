@@ -19,6 +19,20 @@
     // required otherwise `ms` lib doesn't import
     "esModuleInterop": true
   },
+  "typedocOptions": {
+    "entryPoints": ["src/index.ts"],
+    "out": "documentation",
+    "readme": "none",
+    "excludePrivate": "true",
+    "excludeProtected": "true",
+    "excludeExternals": "true",
+    "name": "DWN-SDK Documentation",
+    "includeVersion": "true",
+    "validation": {
+      "notDocumented": false,
+      "notExported": false
+    }
+  },
   "include": [
     "./src/index.ts",
     "tests" // building tests also so we can run tests directly without the need for ts-node, ts-mocha
