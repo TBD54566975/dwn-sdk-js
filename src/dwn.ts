@@ -78,7 +78,15 @@ export class Dwn {
     const response = new Response();
 
     for (const message of request.messages) {
-      const result = await this.processMessage(message);
+      let result;
+      try {
+        result = await this.processMessage(message);
+      } catch (error) {
+        result = new MessageReply({
+          status: { code: 500, detail: error.message }
+        });
+      }
+
       response.addMessageResult(result);
     }
 
@@ -96,16 +104,10 @@ export class Dwn {
       });
     }
 
-    try {
-      const interfaceMethodHandler = Dwn.methodHandlers[dwnMethod];
+    const interfaceMethodHandler = Dwn.methodHandlers[dwnMethod];
 
-      const methodHandlerReply = await interfaceMethodHandler(rawMessage as BaseMessage, this.messageStore, this.DidResolver);
-      return methodHandlerReply;
-    } catch (e) {
-      return new MessageReply({
-        status: { code: 500, detail: e.message }
-      });
-    }
+    const methodHandlerReply = await interfaceMethodHandler(rawMessage as BaseMessage, this.messageStore, this.DidResolver);
+    return methodHandlerReply;
   }
 };
 

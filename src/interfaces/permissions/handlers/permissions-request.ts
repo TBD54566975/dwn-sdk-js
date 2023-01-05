@@ -25,16 +25,10 @@ export const handlePermissionsRequest: MethodHandler = async (
     throw new Error('grantee must be signer');
   }
 
-  try {
-    const index = { author, target, ... message.descriptor };
-    await messageStore.put(message, index);
+  const index = { author, target, ... message.descriptor };
+  await messageStore.put(message, index);
 
-    return new MessageReply({
-      status: { code: 202, detail: 'Accepted' }
-    });
-  } catch (e) {
-    return new MessageReply({
-      status: { code: 500, detail: e.message }
-    });
-  }
+  return new MessageReply({
+    status: { code: 202, detail: 'Accepted' }
+  });
 };
