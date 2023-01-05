@@ -1,8 +1,9 @@
 import { expect } from 'chai';
 import { Message } from '../../../../src/core/message.js';
+import { validateJsonSchema } from '../../../../src/validator.js';
 
 describe('ProtocolsConfigure schema definition', () => {
-  it('should throw if when unknown allow rule is encountered', async () => {
+  it('should throw if unknown allow rule is encountered', async () => {
     const protocolDefinition = {
       labels: {
         email: {
@@ -39,5 +40,47 @@ describe('ProtocolsConfigure schema definition', () => {
     expect(() => {
       Message.validateJsonSchema(message);
     }).throws('must NOT have additional properties');
+  });
+
+  describe('rule-set tests', () => {
+    it('#183 - should throw if required `to` is missing in rule-set', async () => {
+      const invalidRuleSet1 = {
+        allow: {
+          anyone: {
+          // to: ['write'] // intentionally missing
+          }
+        }
+      };
+
+      const invalidRuleSet2 = {
+        allow: {
+          recipient: {
+            of: 'thread'
+          // to: ['write'] // intentionally missing
+          }
+        }
+      };
+
+      for (const ruleSet of [invalidRuleSet1, invalidRuleSet2]) {
+        expect(() => {
+          validateJsonSchema('ProtocolRuleSet', ruleSet);
+        }).throws(); // error message is misleading thus not checking explicitly
+      }
+    });
+
+    it('#183 - should throw if required `of` is missing in rule-set', async () => {
+      const invalidRuleSet = {
+        allow: {
+          recipient: {
+          // of : 'thread', // intentionally missing
+            to: ['write']
+          }
+        }
+      };
+
+      expect(() => {
+        validateJsonSchema('ProtocolRuleSet', invalidRuleSet);
+      }).throws(); // error message is misleading thus not checking explicitly
+    });
   });
 });

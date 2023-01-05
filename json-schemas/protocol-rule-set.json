@@ -13,6 +13,7 @@
           "properties": {
             "anyone": {
               "type": "object",
+              "additionalProperties": false,
               "properties": {
                 "to": {
                   "type": "array",
@@ -24,7 +25,10 @@
                     ]
                   }
                 }
-              }
+              },
+              "required": [
+                "to"
+              ]
             }
           }
         },
@@ -34,6 +38,7 @@
           "properties": {
             "recipient": {
               "type": "object",
+              "additionalProperties": false,
               "properties": {
                 "of": {
                   "type": "string"
@@ -48,7 +53,11 @@
                     ]
                   }
                 }
-              }
+              },
+              "required": [
+                "of",
+                "to"
+              ]
             }
           }
         }
