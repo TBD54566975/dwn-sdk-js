@@ -41,9 +41,22 @@ export const handleCollectionsWrite: MethodHandler = async (
       recordId : incomingMessage.recordId
     };
     const existingMessages = await messageStore.query(query) as CollectionsWriteMessage[];
-    const newestExistingMessage = await CollectionsWrite.getNewestMessage(existingMessages);
+
+    // if the incoming write is not the lineage root, then it must not modify any immutable properties defined by the lineage root
+    if (incomingMessage.descriptor.lineageParent !== undefined) {
+      try {
+        const lineageRootMessage = CollectionsWrite.getLineageRootMessage(existingMessages);
+        CollectionsWrite.verifyEqualityOfImmutableProperties(lineageRootMessage, incomingMessage);
+      } catch (e) {
+        return new MessageReply({
+          status: { code: 400, detail: e.message }
+        });
+      }
+    }
+
 
     // find which message is the newest, and if the incoming message is the newest
+    const newestExistingMessage = await CollectionsWrite.getNewestMessage(existingMessages);
     let incomingMessageIsNewest = false;
     let newestMessage;
     // if incoming message is newest
@@ -68,7 +81,7 @@ export const handleCollectionsWrite: MethodHandler = async (
     let messageReply: MessageReply;
     if (incomingMessageIsNewest) {
       const isLatestBaseState = true;
-      const indexes = constructIndexes(collectionsWrite, isLatestBaseState);
+      const indexes = await constructIndexes(collectionsWrite, isLatestBaseState);
 
       await messageStore.put(incomingMessage, indexes);
 
@@ -99,7 +112,7 @@ export const handleCollectionsWrite: MethodHandler = async (
         if (message.descriptor.lineageParent === undefined) {
           const existingCollectionsWrite = await CollectionsWrite.parse(message);
           const isLatestBaseState = false;
-          const indexes = constructIndexes(existingCollectionsWrite, isLatestBaseState);
+          const indexes = await constructIndexes(existingCollectionsWrite, isLatestBaseState);
           await messageStore.put(message, indexes);
         }
       }
@@ -113,7 +126,7 @@ export const handleCollectionsWrite: MethodHandler = async (
   }
 };
 
-export function constructIndexes(collectionsWrite: CollectionsWrite, isLatestBaseState: boolean): { [key:string]: string } {
+export async function constructIndexes(collectionsWrite: CollectionsWrite, isLatestBaseState: boolean): Promise<{ [key:string]: string }> {
   const message = collectionsWrite.message;
   const descriptor = { ...message.descriptor };
   delete descriptor.published; // handle `published` specifically further down
@@ -125,6 +138,7 @@ export function constructIndexes(collectionsWrite: CollectionsWrite, isLatestBas
     author            : collectionsWrite.author,
     target            : collectionsWrite.target,
     recordId          : message.recordId,
+    entryId           : await CollectionsWrite.getCanonicalId(collectionsWrite.author, collectionsWrite.message.descriptor),
     ...descriptor
   };
 
