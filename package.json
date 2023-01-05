@@ -33,7 +33,8 @@
     "test:node:ci": "npm run compile-validators && tsc && c8 mocha \"dist/esm/tests/**/*.spec.js\"",
     "test:browser": "npm run compile-validators && cross-env karma start karma.conf.cjs",
     "test:browser-debug": "npm run compile-validators && cross-env karma start karma.conf.debug.cjs",
-    "license-check": "license-report --only=prod > license-report.json && node ./build/license-check.cjs"
+    "license-check": "license-report --only=prod > license-report.json && node ./build/license-check.cjs",
+    "publish:unstable": "./build/publish-unstable.sh"
   },
   "dependencies": {
     "@ipld/dag-cbor": "7.0.1",
