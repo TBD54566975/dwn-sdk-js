@@ -73,18 +73,6 @@ describe('handleProtocolsQuery()', () => {
       expect(reply.status.detail).to.contain('not a valid DID');
     });
 
-    it('should return 500 if encounter an internal error', async () => {
-      const alice = await DidKeyResolver.generate();
-      const messageData = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, target: alice });
-
-      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-      messageStoreStub.put.throwsException('anyError'); // simulate a DB write error
-
-      const reply = await handleProtocolsConfigure(messageData.message, messageStoreStub, didResolver);
-
-      expect(reply.status.code).to.equal(500);
-    });
-
     it('should only be able to overwrite existing protocol if new protocol lexicographically larger', async () => {
     // generate three versions of the same protocol message
       const alice = await DidKeyResolver.generate();

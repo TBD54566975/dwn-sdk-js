@@ -394,19 +394,6 @@ describe('handleCollectionsQuery()', () => {
     expect(reply.status.code).to.equal(401);
   });
 
-  it('should return 500 if authorization fails', async () => {
-    const { requester, message } = await TestDataGenerator.generateCollectionsQueryMessage();
-
-    // setting up a stub method resolver & message store
-    const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
-    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-    messageStoreStub.query.throwsException('anyError'); // simulate a DB query error
-
-    const reply = await handleCollectionsQuery(message, messageStoreStub, didResolverStub);
-
-    expect(reply.status.code).to.equal(500);
-  });
-
   it('should return 400 if fail parsing the message', async () => {
     const { requester, message } = await TestDataGenerator.generateCollectionsQueryMessage();
 

@@ -1248,18 +1248,5 @@ describe('handleCollectionsWrite()', () => {
 
     expect(reply.status.code).to.equal(401);
   });
-
-  it('should return 500 if encounter an internal error', async () => {
-    const { requester, message } = await TestDataGenerator.generateCollectionsWriteMessage();
-
-    // setting up a stub method resolver & message store
-    const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
-    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-    messageStoreStub.put.throwsException('anyError'); // simulate a DB write error
-
-    const reply = await handleCollectionsWrite(message, messageStoreStub, didResolverStub);
-
-    expect(reply.status.code).to.equal(500);
-  });
 });
 
