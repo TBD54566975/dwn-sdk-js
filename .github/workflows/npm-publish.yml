@@ -24,6 +24,8 @@ jobs:
       - run: npm run build
       # runs tests in node environment without attempting to generate code coverage badges
       - run: npm run test:node:ci
-      - run: npm publish      
+      # Note - this is not required but it gives a clean failure prior to attempting a release if the GH workflow runner is not authenticated with npm.js
+      - run: npm whoami
+      - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
