@@ -26,6 +26,8 @@ jobs:
       - run: npm run test:node:ci
       # Note - this is not required but it gives a clean failure prior to attempting a release if the GH workflow runner is not authenticated with npm.js
       - run: npm whoami
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
