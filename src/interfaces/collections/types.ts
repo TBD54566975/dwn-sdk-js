@@ -11,6 +11,7 @@ export type CollectionsWriteDescriptor = {
   parentId?: string;
   dataCid: string;
   dateCreated: string;
+  dateModified: string;
   published?: boolean;
   datePublished?: string;
   dataFormat: string;

@@ -26,6 +26,7 @@ export type CollectionsWriteOptions = AuthCreateOptions & {
   parentId?: string;
   data: Uint8Array;
   dateCreated?: string;
+  dateModified?: string;
   published?: boolean;
   datePublished?: string;
   dataFormat: string;
@@ -52,8 +53,11 @@ export class CollectionsWrite extends Message {
    * Creates a CollectionsWrite message.
    * @param options.recordId If `undefined`, will be auto-filled as a originating message as convenience for developer.
    * @param options.lineageParent If `undefined`, it will be auto-filled with value of `options.recordId` as convenience for developer.
+   * @param options.dateCreated If `undefined`, it will be auto-filled with current time.
+   * @param options.dateModified If `undefined`, it will be auto-filled with current time.
    */
   public static async create(options: CollectionsWriteOptions): Promise<CollectionsWrite> {
+    const currentTime = getCurrentTimeInHighPrecision();
     const dataCid = await getDagPbCid(options.data);
     const descriptor: CollectionsWriteDescriptor = {
       recipient     : options.recipient,
@@ -63,7 +67,8 @@ export class CollectionsWrite extends Message {
       lineageParent : options.lineageParent ?? options.recordId, // convenience for developer
       parentId      : options.parentId,
       dataCid       : dataCid.toString(),
-      dateCreated   : options.dateCreated ?? getCurrentTimeInHighPrecision(),
+      dateCreated   : options.dateCreated ?? currentTime,
+      dateModified  : options.dateModified ?? currentTime,
       published     : options.published,
       datePublished : options.datePublished,
       dataFormat    : options.dataFormat
@@ -157,22 +162,29 @@ export class CollectionsWrite extends Message {
       );
     }
 
-    // if the message is a originating message, the `recordId` must match the expected deterministic value
+    // if the message is the lineage root
     if (this.message.descriptor.lineageParent === undefined) {
-      const expectedRecordId = await this.getCanonicalId();
+      // `dateModified` and `dateCreated` equality check
+      const dateCreated = this.message.descriptor.dateCreated;
+      const dateModified = this.message.descriptor.dateModified;
+      if (dateModified !== dateCreated) {
+        throw new Error(`dateModified ${dateModified} must match dateCreated ${dateCreated} for a lineage root write`);
+      }
 
+      // the `recordId` must match the expected deterministic value
+      const expectedRecordId = await this.getCanonicalId();
       if (this.message.recordId !== expectedRecordId) {
         throw new Error(`recordId in message: ${this.message.recordId} does not match deterministic recordId: ${expectedRecordId}`);
       }
-    }
 
-    // if the message is a root protocol message, the `contextId` must match the expected deterministic value
-    if (this.message.descriptor.protocol !== undefined &&
-        this.message.descriptor.parentId === undefined) {
-      const expectedContextId = await this.getCanonicalId();
+      // if the message is a protocol context root (AND it is a lineage root), the `contextId` must match the expected deterministic value
+      if (this.message.descriptor.protocol !== undefined &&
+          this.message.descriptor.parentId === undefined) {
+        const expectedContextId = await this.getCanonicalId();
 
-      if (this.message.contextId !== expectedContextId) {
-        throw new Error(`contextId in message: ${this.message.contextId} does not match deterministic contextId: ${expectedContextId}`);
+        if (this.message.contextId !== expectedContextId) {
+          throw new Error(`contextId in message: ${this.message.contextId} does not match deterministic contextId: ${expectedContextId}`);
+        }
       }
     }
 
@@ -236,7 +248,7 @@ export class CollectionsWrite extends Message {
    * @throws {Error} if immutable properties between two CollectionsWrite message
    */
   public static verifyEqualityOfImmutableProperties(lineageRoot: CollectionsWriteMessage, newMessage: CollectionsWriteMessage): boolean {
-    const mutableDescriptorProperties = ['dataCid', 'datePublished', 'published', 'lineageParent', 'dateCreated'];
+    const mutableDescriptorProperties = ['dataCid', 'datePublished', 'published', 'lineageParent', 'dateModified'];
 
     // get distinct property names that exist in either lineage root or new message
     let descriptorPropertyNames = [];
@@ -293,7 +305,7 @@ export class CollectionsWrite extends Message {
    * @returns `true` if `a` is newer than `b`; `false` otherwise
    */
   public static async isNewer(a: CollectionsWriteMessage, b: CollectionsWriteMessage): Promise<boolean> {
-    const aIsNewer = (await CollectionsWrite.compareCreationTime(a, b) > 0);
+    const aIsNewer = (await CollectionsWrite.compareModifiedTime(a, b) > 0);
     return aIsNewer;
   }
 
@@ -302,22 +314,22 @@ export class CollectionsWrite extends Message {
    * @returns `true` if `a` is older than `b`; `false` otherwise
    */
   public static async isOlder(a: CollectionsWriteMessage, b: CollectionsWriteMessage): Promise<boolean> {
-    const aIsNewer = (await CollectionsWrite.compareCreationTime(a, b) < 0);
+    const aIsNewer = (await CollectionsWrite.compareModifiedTime(a, b) < 0);
     return aIsNewer;
   }
 
   /**
-   * Compares the `dateCreated` of the given records with a fallback to message CID according to the spec.
+   * Compares the `dateModified` of the given messages with a fallback to message CID according to the spec.
    * @returns 1 if `a` is larger/newer than `b`; -1 if `a` is smaller/older than `b`; 0 otherwise (same age)
    */
-  public static async compareCreationTime(a: CollectionsWriteMessage, b: CollectionsWriteMessage): Promise<number> {
-    if (a.descriptor.dateCreated > b.descriptor.dateCreated) {
+  public static async compareModifiedTime(a: CollectionsWriteMessage, b: CollectionsWriteMessage): Promise<number> {
+    if (a.descriptor.dateModified > b.descriptor.dateModified) {
       return 1;
-    } else if (a.descriptor.dateCreated < b.descriptor.dateCreated) {
+    } else if (a.descriptor.dateModified < b.descriptor.dateModified) {
       return -1;
     }
 
-    // else `dateCreated` is the same between a and b
+    // else `dateModified` is the same between a and b
     // compare the `dataCid` instead, the < and > operators compare strings in lexicographical order
     return Message.compareCid(a, b);
   }

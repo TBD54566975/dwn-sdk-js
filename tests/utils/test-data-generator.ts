@@ -84,6 +84,16 @@ export type GenerateCollectionsWriteMessageInput = {
   data?: Uint8Array;
   dataFormat?: string;
   dateCreated? : string;
+  dateModified? : string;
+  datePublished? : string;
+};
+
+export type GenerateLineageChildCollectionsWriteInput = {
+  requester: Persona,
+  lineageParent: CollectionsWrite,
+  data?: Uint8Array;
+  published?: boolean;
+  dateModified? : string;
   datePublished? : string;
 };
 
@@ -276,6 +286,7 @@ export class TestDataGenerator {
       published     : input?.published,
       dataFormat    : input?.dataFormat ?? 'application/json',
       dateCreated   : input?.dateCreated,
+      dateModified  : input?.dateModified,
       datePublished : input?.datePublished,
       data,
       signatureInput
@@ -292,6 +303,40 @@ export class TestDataGenerator {
       collectionsWrite
     };
   };
+
+  /**
+   * Generates a valid CollectionsWrite that modifies the given lineage parent.
+   */
+  public static async generateLineageChildCollectionsWrite(input?: GenerateLineageChildCollectionsWriteInput): Promise<CollectionsWrite> {
+    const parentMessage = input.lineageParent.message;
+    const currentTime = getCurrentTimeInHighPrecision();
+
+    const published = input.published ?? parentMessage.descriptor.published ? false : true; // toggle from the parent value if not given explicitly
+    const datePublished = input.datePublished ?? published ? currentTime : undefined; //
+
+    const options: CollectionsWriteOptions = {
+      signatureInput : TestDataGenerator.createSignatureInputFromPersona(input.requester),
+      // immutable properties below, just inherit from lineage parent
+      target         : input.lineageParent.target,
+      recipient      : parentMessage.descriptor.recipient,
+      recordId       : parentMessage.recordId,
+      dateCreated    : parentMessage.descriptor.dateCreated,
+      contextId      : parentMessage.contextId,
+      protocol       : parentMessage.descriptor.protocol,
+      parentId       : parentMessage.descriptor.parentId,
+      schema         : parentMessage.descriptor.schema,
+      dataFormat     : parentMessage.descriptor.dataFormat,
+      // mutable properties below
+      lineageParent  : await input.lineageParent.getCanonicalId(),
+      dateModified   : input.dateModified ?? currentTime,
+      published,
+      datePublished,
+      data           : input.data ?? TestDataGenerator.randomBytes(32),
+    };
+
+    const collectionsWrite = await CollectionsWrite.create(options);
+    return collectionsWrite;
+  }
 
   /**
    * Generates a CollectionsQuery message for testing.
