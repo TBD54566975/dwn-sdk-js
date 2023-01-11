@@ -29,11 +29,9 @@ export interface MessageStore {
   /**
    * queries the underlying store for messages that match the query provided.
    * returns an empty array if no messages are found
-   * @param includeCriteria - "AND" criteria for what to include
-   * @param excludeCriteriay - "AND" criteria for what to exclude
+   * @param criteria - "AND" criteria for what to include
    */
-  // TODO: change type of `query`, Issue $69 https://github.com/TBD54566975/dwn-sdk-js/issues/69
-  query(includeCriteria: any, excludeCriteria?: any): Promise<BaseMessage[]>;
+  query(criteria: any): Promise<BaseMessage[]>;
 
   /**
    * deletes the message associated to the id provided
