@@ -46,6 +46,9 @@ export class ProtocolAuthorization {
 
     // verify method invoked against the allowed actions
     ProtocolAuthorization.verifyAllowedActions(requesterDid, collectionsWrite, inboundMessageRuleSet);
+
+    // verify allowed condition of the write
+    await ProtocolAuthorization.verifyActionCondition(collectionsWrite, messageStore);
   }
 
   /**
@@ -208,6 +211,30 @@ export class ProtocolAuthorization {
     const inboundMessageAction = methodToAllowedActionMap[incomingMessageMethod];
     if (!allowedActions.includes(inboundMessageAction)) {
       throw new Error(`inbound message action '${inboundMessageAction}' not in list of allowed actions ${allowedActions}`);
+    }
+  }
+
+  /**
+   * Verifies if the desired action can be taken.
+   * Currently the only check is: if the write is an "update", the author must be the same as the lineage parent
+   * @throws {Error} if fails verification
+   */
+  private static async verifyActionCondition(collectionsWrite: CollectionsWrite, messageStore: MessageStore): Promise<void> {
+    if (collectionsWrite.message.descriptor.lineageParent !== undefined) {
+      // fetch the lineage parent
+      const query = {
+        target  : collectionsWrite.target,
+        method  : DwnMethodName.CollectionsWrite,
+        entryId : collectionsWrite.message.descriptor.lineageParent
+      };
+      const result = await messageStore.query(query) as CollectionsWriteMessage[];
+
+      // check the author of lineage parent matches the lineage of the incoming message
+      const lineageParent = result[0];
+      const authorOfLineageParent = Message.getAuthor(lineageParent);
+      if (collectionsWrite.author !== authorOfLineageParent) {
+        throw new Error(`author of incoming message '${collectionsWrite.author}' must match to author of lineage parent '${authorOfLineageParent}'`);
+      }
     }
   }
 

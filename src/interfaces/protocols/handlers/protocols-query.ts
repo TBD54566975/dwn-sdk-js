@@ -31,23 +31,17 @@ export const handleProtocolsQuery: MethodHandler = async (
     });
   }
 
-  try {
-    const query = {
-      target : protocolsQuery.target,
-      method : DwnMethodName.ProtocolsConfigure,
-      ...incomingMessage.descriptor.filter
-    };
-    removeUndefinedProperties(query);
+  const query = {
+    target : protocolsQuery.target,
+    method : DwnMethodName.ProtocolsConfigure,
+    ...incomingMessage.descriptor.filter
+  };
+  removeUndefinedProperties(query);
 
-    const entries = await messageStore.query(query);
+  const entries = await messageStore.query(query);
 
-    return new MessageReply({
-      status: { code: 200, detail: 'OK' },
-      entries
-    });
-  } catch (e) {
-    return new MessageReply({
-      status: { code: 500, detail: e.message }
-    });
-  }
+  return new MessageReply({
+    status: { code: 200, detail: 'OK' },
+    entries
+  });
 };

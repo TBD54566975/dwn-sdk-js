@@ -1,0 +1,27 @@
+name: publish unstable
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  publish-npm-unstable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.8.0
+          registry-url: https://registry.npmjs.org/
+      - run: npm install
+      # builds all bundles
+      - run: npm run build
+      # Note - this is not required but it gives a clean failure prior to attempting a release if the GH workflow runner is not authenticated with npm.js
+      - run: npm whoami
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
+      - run: npm run publish:unstable
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.npm_token}}

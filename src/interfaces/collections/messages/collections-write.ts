@@ -232,6 +232,49 @@ export class CollectionsWrite extends Message {
   }
 
   /**
+   * Verifies that immutable properties of the two given messages are identical.
+   * @throws {Error} if immutable properties between two CollectionsWrite message
+   */
+  public static verifyEqualityOfImmutableProperties(lineageRoot: CollectionsWriteMessage, newMessage: CollectionsWriteMessage): boolean {
+    const mutableDescriptorProperties = ['dataCid', 'datePublished', 'published', 'lineageParent', 'dateCreated'];
+
+    // get distinct property names that exist in either lineage root or new message
+    let descriptorPropertyNames = [];
+    descriptorPropertyNames.push(...Object.keys(lineageRoot.descriptor));
+    descriptorPropertyNames.push(...Object.keys(newMessage.descriptor));
+    descriptorPropertyNames = [...new Set(descriptorPropertyNames)]; // step to remove duplicates
+
+    // ensure all immutable properties are not modified
+    for (const descriptorPropertyName of descriptorPropertyNames) {
+      // if property is supposed to be immutable
+      if (mutableDescriptorProperties.indexOf(descriptorPropertyName) === -1) {
+        const valueInLineageRoot = lineageRoot.descriptor[descriptorPropertyName];
+        const valueInNewMessage = newMessage.descriptor[descriptorPropertyName];
+        if (valueInNewMessage !== valueInLineageRoot) {
+          throw new Error(`${descriptorPropertyName} is an immutable property: cannot change '${valueInLineageRoot}' to '${valueInNewMessage}'`);
+        }
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Gets the lineage root message from the given list of messages.
+   * @returns the lineage root in the given list of messages
+   */
+  public static getLineageRootMessage(messages: CollectionsWriteMessage[]): CollectionsWriteMessage {
+    for (const message of messages) {
+      // lineage root does not have lineage parent
+      if (message.descriptor.lineageParent === undefined) {
+        return message;
+      }
+    }
+
+    throw new Error(`unable to find the lineage root of the given list of messages`);
+  }
+
+  /**
    * @returns newest message in the array. `undefined` if given array is empty.
    */
   public static async getNewestMessage(messages: CollectionsWriteMessage[]): Promise<CollectionsWriteMessage | undefined> {

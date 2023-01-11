@@ -248,10 +248,10 @@ describe('handleCollectionsQuery()', () => {
       );
 
       // directly inserting data to datastore so that we don't have to setup to grant Bob permission to write to Alice's DWN
-      const additionalIndexes1 = constructIndexes(record1Data.collectionsWrite, true);
-      const additionalIndexes2 = constructIndexes(record2Data.collectionsWrite, true);
-      const additionalIndexes3 = constructIndexes(record3Data.collectionsWrite, true);
-      const additionalIndexes4 = constructIndexes(record4Data.collectionsWrite, true);
+      const additionalIndexes1 = await constructIndexes(record1Data.collectionsWrite, true);
+      const additionalIndexes2 = await constructIndexes(record2Data.collectionsWrite, true);
+      const additionalIndexes3 = await constructIndexes(record3Data.collectionsWrite, true);
+      const additionalIndexes4 = await constructIndexes(record4Data.collectionsWrite, true);
       await messageStore.put(record1Data.message, additionalIndexes1);
       await messageStore.put(record2Data.message, additionalIndexes2);
       await messageStore.put(record3Data.message, additionalIndexes3);
@@ -392,19 +392,6 @@ describe('handleCollectionsQuery()', () => {
     const reply = await handleCollectionsQuery(message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(401);
-  });
-
-  it('should return 500 if authorization fails', async () => {
-    const { requester, message } = await TestDataGenerator.generateCollectionsQueryMessage();
-
-    // setting up a stub method resolver & message store
-    const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
-    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-    messageStoreStub.query.throwsException('anyError'); // simulate a DB query error
-
-    const reply = await handleCollectionsQuery(message, messageStoreStub, didResolverStub);
-
-    expect(reply.status.code).to.equal(500);
   });
 
   it('should return 400 if fail parsing the message', async () => {

@@ -33,36 +33,30 @@ export const handleCollectionsQuery: MethodHandler = async (
     });
   }
 
-  try {
-    let records: BaseMessage[];
-    if (collectionsQuery.author === collectionsQuery.target) {
-      records = await fetchRecordsAsOwner(collectionsQuery, messageStore);
-    } else {
-      records = await fetchRecordsAsNonOwner(collectionsQuery, messageStore);
-    }
-
-    // sort if `dataSort` is specified
-    if (collectionsQuery.message.descriptor.dateSort) {
-      records = await sortRecords(records, collectionsQuery.message.descriptor.dateSort);
-    }
-
-    // strip away `authorization` property for each record before responding
-    const entries = [];
-    for (const record of records) {
-      const recordDuplicate = { ...record };
-      delete recordDuplicate.authorization;
-      entries.push(recordDuplicate);
-    }
-
-    return new MessageReply({
-      status: { code: 200, detail: 'OK' },
-      entries
-    });
-  } catch (e) {
-    return new MessageReply({
-      status: { code: 500, detail: e.message }
-    });
+  let records: BaseMessage[];
+  if (collectionsQuery.author === collectionsQuery.target) {
+    records = await fetchRecordsAsOwner(collectionsQuery, messageStore);
+  } else {
+    records = await fetchRecordsAsNonOwner(collectionsQuery, messageStore);
   }
+
+  // sort if `dataSort` is specified
+  if (collectionsQuery.message.descriptor.dateSort) {
+    records = await sortRecords(records, collectionsQuery.message.descriptor.dateSort);
+  }
+
+  // strip away `authorization` property for each record before responding
+  const entries = [];
+  for (const record of records) {
+    const recordDuplicate = { ...record };
+    delete recordDuplicate.authorization;
+    entries.push(recordDuplicate);
+  }
+
+  return new MessageReply({
+    status: { code: 200, detail: 'OK' },
+    entries
+  });
 };
 /**
  * Fetches the records as the owner of the DWN with no additional filtering.

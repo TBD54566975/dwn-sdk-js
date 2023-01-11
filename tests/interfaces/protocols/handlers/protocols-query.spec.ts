@@ -109,17 +109,5 @@ describe('handleProtocolsQuery()', () => {
       expect(reply.status.code).to.equal(401);
       expect(reply.status.detail).to.contain('not a valid DID');
     });
-
-    it('should return 500 if encounter an internal error', async () => {
-      const alice = await DidKeyResolver.generate();
-      const messageData = await TestDataGenerator.generateProtocolsQueryMessage({ requester: alice, target: alice });
-
-      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-      messageStoreStub.query.throwsException('anyError'); // simulate a DB read error
-
-      const reply = await handleProtocolsQuery(messageData.message, messageStoreStub, didResolver);
-
-      expect(reply.status.code).to.equal(500);
-    });
   });
 });

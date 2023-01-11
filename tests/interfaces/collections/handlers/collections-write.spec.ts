@@ -76,11 +76,13 @@ describe('handleCollectionsWrite()', () => {
 
       // generate and write a new CollectionsWrite to overwrite the existing record
       // a new CollectionsWrite by default will have a later `dateCreate`
+      const schema = collectionsWriteMessageData.message.descriptor.schema;
       const data2 = new TextEncoder().encode('data2');
       const newCollectionsWriteMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
         requester,
         target,
         recordId,
+        schema,
         data: data2 // new data value
       });
       const newCollectionsWriteReply = await handleCollectionsWrite(newCollectionsWriteMessageData.message, messageStore, didResolverStub);
@@ -122,6 +124,7 @@ describe('handleCollectionsWrite()', () => {
       const originatingMessageWriteReply = await handleCollectionsWrite(originatingMessageData.message, messageStore, didResolverStub);
       expect(originatingMessageWriteReply.status.code).to.equal(202);
       const recordId = originatingMessageData.message.recordId;
+      const schema = originatingMessageData.message.descriptor.schema;
 
       // generate two new CollectionsWrite messages with the same `dateCreated` value
       const dateCreated = getCurrentTimeInHighPrecision();
@@ -129,6 +132,7 @@ describe('handleCollectionsWrite()', () => {
         requester,
         target,
         recordId,
+        schema,
         dateCreated,
         data: new TextEncoder().encode('data1')
       });
@@ -137,6 +141,7 @@ describe('handleCollectionsWrite()', () => {
         requester,
         target,
         recordId,
+        schema,
         dateCreated, // simulate the exact same dateCreated as message 1 above
         data: new TextEncoder().encode('data2') // a different CID value
       });
@@ -199,25 +204,82 @@ describe('handleCollectionsWrite()', () => {
         .to.equal(largerCollectionWriteMessageData.message.descriptor.dataCid); // expecting unchanged
     });
 
-    it('should return 400 if lineageParent is referencing a non-root message', async () => {
+    it('should not allow changes to immutable properties', async () => {
       const rootMessageData = await TestDataGenerator.generateCollectionsWriteMessage();
       const didResolverStub = TestStubGenerator.createDidResolverStub(rootMessageData.requester);
       const rootMessageWriteReply = await handleCollectionsWrite(rootMessageData.message, messageStore, didResolverStub);
       expect(rootMessageWriteReply.status.code).to.equal(202);
 
+      // schema test
       const recordId = rootMessageData.message.recordId;
-      const nonExistentCid = await TestDataGenerator.randomCborSha256Cid();
-      const childMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+      let childMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
         requester     : rootMessageData.requester,
         target        : rootMessageData.target,
         recordId,
-        lineageParent : nonExistentCid
+        lineageParent : recordId,
+        schema        : 'should-not-allowed-to-be-modified',
+        dateCreated   : rootMessageData.message.descriptor.dateCreated,
+        dataFormat    : rootMessageData.message.descriptor.dataFormat
       });
 
-      const reply = await handleCollectionsWrite(childMessageData.message, messageStore, didResolverStub);
+      let reply = await handleCollectionsWrite(childMessageData.message, messageStore, didResolverStub);
 
       expect(reply.status.code).to.equal(400);
-      expect(reply.status.detail).to.contain(`expecting lineageParent to be ${recordId}`);
+      expect(reply.status.detail).to.contain('schema is an immutable property');
+
+      // dataFormat test
+      childMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+        requester     : rootMessageData.requester,
+        target        : rootMessageData.target,
+        recordId,
+        lineageParent : recordId,
+        schema        : rootMessageData.message.descriptor.schema,
+        dateCreated   : rootMessageData.message.descriptor.dateCreated,
+        dataFormat    : 'should-not-be-allowed-to-change'
+      });
+
+      reply = await handleCollectionsWrite(childMessageData.message, messageStore, didResolverStub);
+
+      expect(reply.status.code).to.equal(400);
+      expect(reply.status.detail).to.contain('dataFormat is an immutable property');
+    });
+
+    describe('lineage tests', () => {
+      it('should fail with 400 if modifying a record but its lineage root cannot be found', async () => {
+        const recordId = await TestDataGenerator.randomCborSha256Cid();
+        const { message, requester } = await TestDataGenerator.generateCollectionsWriteMessage({
+          recordId,
+          lineageParent: recordId // simulating modification of a message
+        });
+
+        const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
+        const reply = await handleCollectionsWrite(message, messageStore, didResolverStub);
+
+        expect(reply.status.code).to.equal(400);
+        expect(reply.status.detail).to.contain('unable to find the lineage root');
+      });
+
+      it('should fail with 400 if lineageParent is referencing a non-existent/unknown lineage root message', async () => {
+        const rootMessageData = await TestDataGenerator.generateCollectionsWriteMessage();
+        const didResolverStub = TestStubGenerator.createDidResolverStub(rootMessageData.requester);
+        const rootMessageWriteReply = await handleCollectionsWrite(rootMessageData.message, messageStore, didResolverStub);
+        expect(rootMessageWriteReply.status.code).to.equal(202);
+
+        const recordId = rootMessageData.message.recordId;
+        const nonExistentCid = await TestDataGenerator.randomCborSha256Cid();
+        const childMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
+          requester     : rootMessageData.requester,
+          target        : rootMessageData.target,
+          recordId,
+          schema        : rootMessageData.message.descriptor.schema,
+          lineageParent : nonExistentCid
+        });
+
+        const reply = await handleCollectionsWrite(childMessageData.message, messageStore, didResolverStub);
+
+        expect(reply.status.code).to.equal(400);
+        expect(reply.status.detail).to.contain(`expecting lineageParent to be ${recordId}`);
+      });
     });
 
     describe('protocol based writes', () => {
@@ -363,6 +425,274 @@ describe('handleCollectionsWrite()', () => {
         expect(applicationResponseQueryReply.entries?.length).to.equal(1);
         expect((applicationResponseQueryReply.entries![0] as CollectionsWriteMessage).encodedData)
           .to.equal(base64url.baseEncode(encodedCredentialResponse));
+      });
+
+      it('should allow overwriting records by the same author', async () => {
+        // scenario: Bob writes into Alice's DWN given Alice's "notes" protocol allow-anyone rule, then modifies the note
+
+        // write a protocol definition with an allow-anyone rule
+        const protocol = 'notes-protocol';
+        const protocolDefinition: ProtocolDefinition = {
+          labels: {
+            notes: {
+              schema: 'notes'
+            }
+          },
+          records: {
+            notes: {
+              allow: {
+                anyone: {
+                  to: [
+                    'write'
+                  ]
+                }
+              }
+            }
+          }
+        };
+        const alice = await TestDataGenerator.generatePersona();
+
+        const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+          requester : alice,
+          target    : alice,
+          protocol,
+          protocolDefinition
+        });
+
+        // setting up a stub did resolver
+        const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(alice);
+
+        const protocolWriteReply = await handleProtocolsConfigure(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
+        expect(protocolWriteReply.status.code).to.equal(202);
+
+        // generate a collections write message from bob
+        const bob = await TestDataGenerator.generatePersona();
+        const bobData = new TextEncoder().encode('data from bob');
+        const notesMessageDataFromBob = await TestDataGenerator.generateCollectionsWriteMessage(
+          {
+            requester : bob,
+            target    : alice,
+            protocol,
+            schema    : 'notes',
+            data      : bobData
+          }
+        );
+
+        const bobDidResolverStub = TestStubGenerator.createDidResolverStub(bob);
+
+        const bobWriteReply = await handleCollectionsWrite(notesMessageDataFromBob.message, messageStore, bobDidResolverStub);
+        expect(bobWriteReply.status.code).to.equal(202);
+
+        // verify bob's message got written to the DB
+        const messageDataForQueryingBobsWrite = await TestDataGenerator.generateCollectionsQueryMessage({
+          requester : alice,
+          target    : alice,
+          filter    : { recordId: notesMessageDataFromBob.message.recordId }
+        });
+        const bobRecordQueryReply = await handleCollectionsQuery(messageDataForQueryingBobsWrite.message, messageStore, aliceDidResolverStub);
+        expect(bobRecordQueryReply.status.code).to.equal(200);
+        expect(bobRecordQueryReply.entries?.length).to.equal(1);
+        expect((bobRecordQueryReply.entries![0] as CollectionsWriteMessage).encodedData).to.equal(base64url.baseEncode(bobData));
+
+        // generate a new message from bob updating the existing notes
+        const newNotesData = new TextEncoder().encode('new data from bob');
+        const newNotesMessageDataFromBob = await TestDataGenerator.generateCollectionsWriteMessage(
+          {
+            requester     : bob,
+            target        : alice,
+            protocol,
+            schema        : 'notes',
+            data          : newNotesData,
+            recordId      : notesMessageDataFromBob.message.recordId,
+            lineageParent : notesMessageDataFromBob.message.recordId
+          }
+        );
+
+        const newWriteReply = await handleCollectionsWrite(newNotesMessageDataFromBob.message, messageStore, bobDidResolverStub);
+        expect(newWriteReply.status.code).to.equal(202);
+
+        // verify bob's message got written to the DB
+        const newRecordQueryReply = await handleCollectionsQuery(messageDataForQueryingBobsWrite.message, messageStore, aliceDidResolverStub);
+        expect(newRecordQueryReply.status.code).to.equal(200);
+        expect(newRecordQueryReply.entries?.length).to.equal(1);
+        expect((newRecordQueryReply.entries![0] as CollectionsWriteMessage).encodedData).to.equal(base64url.baseEncode(newNotesData));
+      });
+
+      it('should disallow overwriting existing records by a different author', async () => {
+        // scenario: Bob writes into Alice's DWN given Alice's "notes" protocol allow-anyone rule, Carol then attempts to  modify the existing note
+
+        // write a protocol definition with an allow-anyone rule
+        const protocol = 'notes-protocol';
+        const protocolDefinition: ProtocolDefinition = {
+          labels: {
+            notes: {
+              schema: 'notes'
+            }
+          },
+          records: {
+            notes: {
+              allow: {
+                anyone: {
+                  to: [
+                    'write'
+                  ]
+                }
+              }
+            }
+          }
+        };
+        const alice = await TestDataGenerator.generatePersona();
+
+        const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+          requester : alice,
+          target    : alice,
+          protocol,
+          protocolDefinition
+        });
+
+        // setting up a stub did resolver
+        const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(alice);
+
+        const protocolWriteReply = await handleProtocolsConfigure(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
+        expect(protocolWriteReply.status.code).to.equal(202);
+
+        // generate a collections write message from bob
+        const bob = await TestDataGenerator.generatePersona();
+        const bobData = new TextEncoder().encode('data from bob');
+        const notesMessageDataFromBob = await TestDataGenerator.generateCollectionsWriteMessage(
+          {
+            requester : bob,
+            target    : alice,
+            protocol,
+            schema    : 'notes',
+            data      : bobData
+          }
+        );
+
+        const bobDidResolverStub = TestStubGenerator.createDidResolverStub(bob);
+
+        const bobWriteReply = await handleCollectionsWrite(notesMessageDataFromBob.message, messageStore, bobDidResolverStub);
+        expect(bobWriteReply.status.code).to.equal(202);
+
+        // verify bob's message got written to the DB
+        const messageDataForQueryingBobsWrite = await TestDataGenerator.generateCollectionsQueryMessage({
+          requester : alice,
+          target    : alice,
+          filter    : { recordId: notesMessageDataFromBob.message.recordId }
+        });
+        const bobRecordQueryReply = await handleCollectionsQuery(messageDataForQueryingBobsWrite.message, messageStore, aliceDidResolverStub);
+        expect(bobRecordQueryReply.status.code).to.equal(200);
+        expect(bobRecordQueryReply.entries?.length).to.equal(1);
+        expect((bobRecordQueryReply.entries![0] as CollectionsWriteMessage).encodedData).to.equal(base64url.baseEncode(bobData));
+
+        // generate a new message from carol updating the existing notes, which should not be allowed/accepted
+        const carol = await TestDataGenerator.generatePersona();
+        const newNotesData = new TextEncoder().encode('different data by carol');
+        const newNotesMessageDataFromBob = await TestDataGenerator.generateCollectionsWriteMessage(
+          {
+            requester     : carol,
+            target        : alice,
+            protocol,
+            schema        : 'notes',
+            data          : newNotesData,
+            recordId      : notesMessageDataFromBob.message.recordId,
+            lineageParent : notesMessageDataFromBob.message.recordId
+          }
+        );
+
+        const carolDidResolverStub = TestStubGenerator.createDidResolverStub(carol);
+        const carolWriteReply = await handleCollectionsWrite(newNotesMessageDataFromBob.message, messageStore, carolDidResolverStub);
+        expect(carolWriteReply.status.code).to.equal(401);
+        expect(carolWriteReply.status.detail).to.contain('must match to author of lineage parent');
+      });
+
+      it('should not allow to change immutable recipientDid', async () => {
+        // scenario: Bob writes into Alice's DWN given Alice's "notes" protocol allow-anyone rule, then tries to modify immutable recipientDid
+
+        // NOTE: no need to test the same for parent, protocol, and contextId
+        // because changing them will result in other error conditions
+
+        // write a protocol definition with an allow-anyone rule
+        const protocol = 'notes-protocol';
+        const protocolDefinition: ProtocolDefinition = {
+          labels: {
+            notes: {
+              schema: 'notes'
+            }
+          },
+          records: {
+            notes: {
+              allow: {
+                anyone: {
+                  to: [
+                    'write'
+                  ]
+                }
+              }
+            }
+          }
+        };
+        const alice = await TestDataGenerator.generatePersona();
+
+        const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+          requester : alice,
+          target    : alice,
+          protocol,
+          protocolDefinition
+        });
+
+        // setting up a stub did resolver
+        const aliceDidResolverStub = TestStubGenerator.createDidResolverStub(alice);
+
+        const protocolWriteReply = await handleProtocolsConfigure(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
+        expect(protocolWriteReply.status.code).to.equal(202);
+
+        // generate a collections write message from bob
+        const bob = await TestDataGenerator.generatePersona();
+        const bobData = new TextEncoder().encode('data from bob');
+        const notesMessageDataFromBob = await TestDataGenerator.generateCollectionsWriteMessage(
+          {
+            requester : bob,
+            target    : alice,
+            protocol,
+            schema    : 'notes',
+            data      : bobData
+          }
+        );
+
+        const bobDidResolverStub = TestStubGenerator.createDidResolverStub(bob);
+
+        const bobWriteReply = await handleCollectionsWrite(notesMessageDataFromBob.message, messageStore, bobDidResolverStub);
+        expect(bobWriteReply.status.code).to.equal(202);
+
+        // verify bob's message got written to the DB
+        const messageDataForQueryingBobsWrite = await TestDataGenerator.generateCollectionsQueryMessage({
+          requester : alice,
+          target    : alice,
+          filter    : { recordId: notesMessageDataFromBob.message.recordId }
+        });
+        const bobRecordQueryReply = await handleCollectionsQuery(messageDataForQueryingBobsWrite.message, messageStore, aliceDidResolverStub);
+        expect(bobRecordQueryReply.status.code).to.equal(200);
+        expect(bobRecordQueryReply.entries?.length).to.equal(1);
+        expect((bobRecordQueryReply.entries![0] as CollectionsWriteMessage).encodedData).to.equal(base64url.baseEncode(bobData));
+
+        // generate a new message from bob changing immutable recipientDid
+        const newNotesMessageDataFromBob = await TestDataGenerator.generateCollectionsWriteMessage(
+          {
+            requester     : bob,
+            target        : alice,
+            protocol,
+            schema        : 'notes',
+            data          : bobData,
+            recordId      : notesMessageDataFromBob.message.recordId,
+            lineageParent : notesMessageDataFromBob.message.recordId,
+            recipientDid  : bob.did // this immutable property was Alice's DID initially
+          }
+        );
+
+        const newWriteReply = await handleCollectionsWrite(newNotesMessageDataFromBob.message, messageStore, bobDidResolverStub);
+        expect(newWriteReply.status.code).to.equal(400);
+        expect(newWriteReply.status.detail).to.contain('recipient is an immutable property');
       });
 
       it('should block unauthorized write with recipient rule', async () => {
@@ -890,20 +1220,6 @@ describe('handleCollectionsWrite()', () => {
     expect(reply.status.detail).to.equal('actual CID of data and `dataCid` in descriptor mismatch');
   });
 
-  it('should return 400 if lineageParent is referencing a non-existent message', async () => {
-    const nonExistentCid = await TestDataGenerator.randomCborSha256Cid();
-    const messageData = await TestDataGenerator.generateCollectionsWriteMessage({ recordId: nonExistentCid });
-
-    const didResolverStub = TestStubGenerator.createDidResolverStub(messageData.requester);
-    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-    messageStoreStub.query.returns(Promise.resolve([])); // mock to simulate non-existing record
-
-    const reply = await handleCollectionsWrite(messageData.message, messageStoreStub, didResolverStub);
-
-    expect(reply.status.code).to.equal(400);
-    expect(reply.status.detail).to.contain('expecting lineageParent to be undefined');
-  });
-
   it('should return 401 if signature check fails', async () => {
     const { requester, message } = await TestDataGenerator.generateCollectionsWriteMessage();
 
@@ -931,19 +1247,6 @@ describe('handleCollectionsWrite()', () => {
     const reply = await handleCollectionsWrite(message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(401);
-  });
-
-  it('should return 500 if encounter an internal error', async () => {
-    const { requester, message } = await TestDataGenerator.generateCollectionsWriteMessage();
-
-    // setting up a stub method resolver & message store
-    const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
-    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-    messageStoreStub.put.throwsException('anyError'); // simulate a DB write error
-
-    const reply = await handleCollectionsWrite(message, messageStoreStub, didResolverStub);
-
-    expect(reply.status.code).to.equal(500);
   });
 });
 
