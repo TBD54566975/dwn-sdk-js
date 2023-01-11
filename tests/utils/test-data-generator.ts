@@ -307,13 +307,15 @@ export class TestDataGenerator {
 
   /**
    * Generates a valid CollectionsWrite that modifies the given lineage parent.
+   * Any mutable property is not specified will be automatically mutated.
+   * e.g. if `published` is not specified, it will be toggled from the lineage parent state.
    */
   public static async generateLineageChildCollectionsWrite(input?: GenerateLineageChildCollectionsWriteInput): Promise<CollectionsWrite> {
     const parentMessage = input.lineageParent.message;
     const currentTime = getCurrentTimeInHighPrecision();
 
     const published = input.published ?? parentMessage.descriptor.published ? false : true; // toggle from the parent value if not given explicitly
-    const datePublished = input.datePublished ?? (published ? currentTime : undefined); //
+    const datePublished = input.datePublished ?? (published ? currentTime : undefined);
 
     const options: LineageChildCollectionsWriteOptions = {
       lineageParent  : input.lineageParent,
@@ -323,26 +325,6 @@ export class TestDataGenerator {
       dateModified   : input.dateModified,
       signatureInput : TestDataGenerator.createSignatureInputFromPersona(input.requester)
     };
-
-    // const options: CollectionsWriteOptions = {
-    //   signatureInput : TestDataGenerator.createSignatureInputFromPersona(input.requester),
-    //   // immutable properties below, just inherit from lineage parent
-    //   target         : input.lineageParent.target,
-    //   recipient      : parentMessage.descriptor.recipient,
-    //   recordId       : parentMessage.recordId,
-    //   dateCreated    : parentMessage.descriptor.dateCreated,
-    //   contextId      : parentMessage.contextId,
-    //   protocol       : parentMessage.descriptor.protocol,
-    //   parentId       : parentMessage.descriptor.parentId,
-    //   schema         : parentMessage.descriptor.schema,
-    //   dataFormat     : parentMessage.descriptor.dataFormat,
-    //   // mutable properties below
-    //   lineageParent  : await input.lineageParent.getCanonicalId(),
-    //   dateModified   : input.dateModified ?? currentTime,
-    //   published,
-    //   datePublished,
-    //   data           : input.data ?? TestDataGenerator.randomBytes(32),
-    // };
 
     const collectionsWrite = await CollectionsWrite.createLineageChild(options);
     return collectionsWrite;

@@ -76,7 +76,7 @@ export class CollectionsWrite extends Message {
       parentId      : options.parentId,
       dataCid       : dataCid.toString(),
       dateCreated   : options.dateCreated ?? currentTime,
-      dateModified  : options.dateModified ?? currentTime,
+      dateModified  : options.dateModified ?? options.dateCreated ?? currentTime,
       published     : options.published,
       datePublished : options.datePublished,
       dataFormat    : options.dataFormat
