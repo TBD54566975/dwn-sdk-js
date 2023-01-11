@@ -62,10 +62,14 @@ export class CollectionsWrite extends Message {
    * @param options.recordId If `undefined`, will be auto-filled as a originating message as convenience for developer.
    * @param options.lineageParent If `undefined`, it will be auto-filled with value of `options.recordId` as convenience for developer.
    * @param options.dateCreated If `undefined`, it will be auto-filled with current time.
-   * @param options.dateModified If `undefined`, it will be auto-filled with current time.
+   * @param options.dateModified If `undefined`:
+   * - current time will be used if this is a lineage child; else
+   * - dateCreated will be used if given; else
+   * - current time will be used;
    */
   public static async create(options: CollectionsWriteOptions): Promise<CollectionsWrite> {
     const currentTime = getCurrentTimeInHighPrecision();
+
     const dataCid = await getDagPbCid(options.data);
     const descriptor: CollectionsWriteDescriptor = {
       recipient     : options.recipient,
@@ -76,7 +80,7 @@ export class CollectionsWrite extends Message {
       parentId      : options.parentId,
       dataCid       : dataCid.toString(),
       dateCreated   : options.dateCreated ?? currentTime,
-      dateModified  : options.dateModified ?? options.dateCreated ?? currentTime,
+      dateModified  : options.dateModified ?? (options.lineageParent ? currentTime : (options.dateCreated ?? currentTime)),
       published     : options.published,
       datePublished : options.datePublished,
       dataFormat    : options.dataFormat
@@ -85,7 +89,7 @@ export class CollectionsWrite extends Message {
     // generate `datePublished` if the message is to be published but `datePublished` is not given
     if (options.published === true &&
         options.datePublished === undefined) {
-      descriptor.datePublished = getCurrentTimeInHighPrecision();
+      descriptor.datePublished = currentTime;
     }
 
     // delete all descriptor properties that are `undefined` else the code will encounter the following IPLD issue when attempting to generate CID:
@@ -148,9 +152,9 @@ export class CollectionsWrite extends Message {
    * @param options.published The new published state. If not given, then will be set to `true` if {options.dateModified} is given;
    * else the state from lineage parent will be used.
    * @param options.publishedDate The new date the record is modified. If not given, then:
-   * 1. will not be set if the record will be unpublished as the result of this CollectionsWrite; else
-   * 2. will be set to the same published date as the lineage parent if it wss already published; else
-   * 3. will be set to current time (because this is a toggle from unpublished to published)
+   * - will not be set if the record will be unpublished as the result of this CollectionsWrite; else
+   * - will be set to the same published date as the lineage parent if it wss already published; else
+   * - will be set to current time (because this is a toggle from unpublished to published)
    * @returns the CollectionsWrite that overwrites its lineage parent
    */
   public static async createLineageChild(options: LineageChildCollectionsWriteOptions): Promise<CollectionsWrite> {
