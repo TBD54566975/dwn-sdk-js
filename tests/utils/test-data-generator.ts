@@ -4,6 +4,7 @@ import { CID } from 'multiformats/cid';
 import { DidResolutionResult } from '../../src/did/did-resolver.js';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
+import { LineageChildCollectionsWriteOptions } from '../../src/interfaces/collections/messages/collections-write.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request.js';
 import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1.js';
@@ -312,29 +313,38 @@ export class TestDataGenerator {
     const currentTime = getCurrentTimeInHighPrecision();
 
     const published = input.published ?? parentMessage.descriptor.published ? false : true; // toggle from the parent value if not given explicitly
-    const datePublished = input.datePublished ?? published ? currentTime : undefined; //
+    const datePublished = input.datePublished ?? (published ? currentTime : undefined); //
 
-    const options: CollectionsWriteOptions = {
-      signatureInput : TestDataGenerator.createSignatureInputFromPersona(input.requester),
-      // immutable properties below, just inherit from lineage parent
-      target         : input.lineageParent.target,
-      recipient      : parentMessage.descriptor.recipient,
-      recordId       : parentMessage.recordId,
-      dateCreated    : parentMessage.descriptor.dateCreated,
-      contextId      : parentMessage.contextId,
-      protocol       : parentMessage.descriptor.protocol,
-      parentId       : parentMessage.descriptor.parentId,
-      schema         : parentMessage.descriptor.schema,
-      dataFormat     : parentMessage.descriptor.dataFormat,
-      // mutable properties below
-      lineageParent  : await input.lineageParent.getCanonicalId(),
-      dateModified   : input.dateModified ?? currentTime,
+    const options: LineageChildCollectionsWriteOptions = {
+      lineageParent  : input.lineageParent,
+      data           : input.data ?? TestDataGenerator.randomBytes(32),
       published,
       datePublished,
-      data           : input.data ?? TestDataGenerator.randomBytes(32),
+      dateModified   : input.dateModified,
+      signatureInput : TestDataGenerator.createSignatureInputFromPersona(input.requester)
     };
 
-    const collectionsWrite = await CollectionsWrite.create(options);
+    // const options: CollectionsWriteOptions = {
+    //   signatureInput : TestDataGenerator.createSignatureInputFromPersona(input.requester),
+    //   // immutable properties below, just inherit from lineage parent
+    //   target         : input.lineageParent.target,
+    //   recipient      : parentMessage.descriptor.recipient,
+    //   recordId       : parentMessage.recordId,
+    //   dateCreated    : parentMessage.descriptor.dateCreated,
+    //   contextId      : parentMessage.contextId,
+    //   protocol       : parentMessage.descriptor.protocol,
+    //   parentId       : parentMessage.descriptor.parentId,
+    //   schema         : parentMessage.descriptor.schema,
+    //   dataFormat     : parentMessage.descriptor.dataFormat,
+    //   // mutable properties below
+    //   lineageParent  : await input.lineageParent.getCanonicalId(),
+    //   dateModified   : input.dateModified ?? currentTime,
+    //   published,
+    //   datePublished,
+    //   data           : input.data ?? TestDataGenerator.randomBytes(32),
+    // };
+
+    const collectionsWrite = await CollectionsWrite.createLineageChild(options);
     return collectionsWrite;
   }
 

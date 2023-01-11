@@ -32,6 +32,14 @@ export type CollectionsWriteOptions = AuthCreateOptions & {
   dataFormat: string;
 };
 
+export type LineageChildCollectionsWriteOptions = AuthCreateOptions & {
+  lineageParent: CollectionsWrite,
+  data?: Uint8Array;
+  published?: boolean;
+  dateModified? : string;
+  datePublished? : string;
+};
+
 export class CollectionsWrite extends Message {
   readonly message: CollectionsWriteMessage; // a more specific type than the base type defined in parent class
 
@@ -130,6 +138,68 @@ export class CollectionsWrite extends Message {
     Message.validateJsonSchema(message);
 
     return new CollectionsWrite(message);
+  }
+
+  /**
+   * Convenience method that creates a lineage child message replacing the existing record state using the given lineage parent.
+   * @param options.lineageParent Lineage parent that the new CollectionsWrite will be based from.
+   * @param options.dateModified The new date the record is modified. If not given, current time will be used .
+   * @param options.data The new data or the record. If not given, data from lineage parent will be used.
+   * @param options.published The new published state. If not given, then will be set to `true` if {options.dateModified} is given;
+   * else the state from lineage parent will be used.
+   * @param options.publishedDate The new date the record is modified. If not given, then:
+   * 1. will not be set if the record will be unpublished as the result of this CollectionsWrite; else
+   * 2. will be set to the same published date as the lineage parent if it wss already published; else
+   * 3. will be set to current time (because this is a toggle from unpublished to published)
+   * @returns the CollectionsWrite that overwrites its lineage parent
+   */
+  public static async createLineageChild(options: LineageChildCollectionsWriteOptions): Promise<CollectionsWrite> {
+    const parentMessage = options.lineageParent.message;
+    const currentTime = getCurrentTimeInHighPrecision();
+
+    // inherit published value from parent if neither published nor datePublished is specified
+    const published = options.published ?? ( options.datePublished ? true : parentMessage.descriptor.published);
+    // use current time if published but no explicit time given
+    let datePublished = undefined;
+    // if given explicitly published dated
+    if (options.datePublished) {
+      datePublished = options.datePublished;
+    } else {
+      // if this CollectionsWrite will publish the record
+      if (published) {
+        // the parent was already published, inherit the same published date
+        if (parentMessage.descriptor.published) {
+          datePublished = parentMessage.descriptor.datePublished;
+        } else {
+          // this is a toggle from unpublished to published, use current time
+          datePublished = currentTime;
+        }
+      }
+    }
+
+    const createOptions: CollectionsWriteOptions = {
+      // immutable properties below, just inherit from lineage parent
+      target         : options.lineageParent.target,
+      recipient      : parentMessage.descriptor.recipient,
+      recordId       : parentMessage.recordId,
+      dateCreated    : parentMessage.descriptor.dateCreated,
+      contextId      : parentMessage.contextId,
+      protocol       : parentMessage.descriptor.protocol,
+      parentId       : parentMessage.descriptor.parentId,
+      schema         : parentMessage.descriptor.schema,
+      dataFormat     : parentMessage.descriptor.dataFormat,
+      // mutable properties below, if not given, inherit from lineage parent
+      lineageParent  : await options.lineageParent.getCanonicalId(),
+      dateModified   : options.dateModified ?? currentTime,
+      published,
+      datePublished,
+      data           : options.data ?? Encoder.base64UrlToBytes(parentMessage.encodedData), // there is opportunity for improvement here
+      // finally still need input for signing
+      signatureInput : options.signatureInput,
+    };
+
+    const collectionsWrite = await CollectionsWrite.create(createOptions);
+    return collectionsWrite;
   }
 
   public async authorize(messageStore: MessageStore): Promise<void> {

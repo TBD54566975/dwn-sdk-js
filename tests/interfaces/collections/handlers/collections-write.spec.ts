@@ -258,6 +258,81 @@ describe('handleCollectionsWrite()', () => {
     });
 
     describe('lineage tests', () => {
+      describe('createLineageChild()', () => {
+        it('should accept a publish CollectionsWrite using createLineageChild without specifying datePublished', async () => {
+          const { message, requester, collectionsWrite } = await TestDataGenerator.generateCollectionsWriteMessage({
+            published: false
+          });
+
+          // setting up a stub DID resolver
+          const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
+          const reply = await handleCollectionsWrite(message, messageStore, didResolverStub);
+
+          expect(reply.status.code).to.equal(202);
+
+          const lineageChild = await CollectionsWrite.createLineageChild({
+            lineageParent  : collectionsWrite,
+            published      : true,
+            signatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
+          });
+
+          const newWriterReply = await handleCollectionsWrite(lineageChild.message, messageStore, didResolverStub);
+
+          expect(newWriterReply.status.code).to.equal(202);
+
+          // verify the new record state can be queried
+          const collectionsQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
+            requester,
+            target : requester,
+            filter : { recordId: message.recordId }
+          });
+
+          const collectionsQueryReply = await handleCollectionsQuery(collectionsQueryMessageData.message, messageStore, didResolverStub);
+          expect(collectionsQueryReply.status.code).to.equal(200);
+          expect(collectionsQueryReply.entries?.length).to.equal(1);
+          expect((collectionsQueryReply.entries![0] as CollectionsWriteMessage).descriptor.published).to.equal(true);
+        });
+
+        it('should inherit parent published state when using createLineageChild() to create CollectionsWrite', async () => {
+          const { message, requester, collectionsWrite } = await TestDataGenerator.generateCollectionsWriteMessage({
+            published: true
+          });
+
+          // setting up a stub DID resolver
+          const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
+          const reply = await handleCollectionsWrite(message, messageStore, didResolverStub);
+
+          expect(reply.status.code).to.equal(202);
+
+          const newData = Encoder.stringToBytes('new data');
+          const lineageChild = await CollectionsWrite.createLineageChild({
+            lineageParent  : collectionsWrite,
+            data           : newData,
+            signatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
+          });
+
+          const newWriterReply = await handleCollectionsWrite(lineageChild.message, messageStore, didResolverStub);
+
+          expect(newWriterReply.status.code).to.equal(202);
+
+          // verify the new record state can be queried
+          const collectionsQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
+            requester,
+            target : requester,
+            filter : { recordId: message.recordId }
+          });
+
+          const collectionsQueryReply = await handleCollectionsQuery(collectionsQueryMessageData.message, messageStore, didResolverStub);
+          expect(collectionsQueryReply.status.code).to.equal(200);
+          expect(collectionsQueryReply.entries?.length).to.equal(1);
+
+          const collectionsWriteReturned = collectionsQueryReply.entries![0] as CollectionsWriteMessage;
+          expect(collectionsWriteReturned.encodedData).to.equal(Encoder.bytesToBase64Url(newData));
+          expect(collectionsWriteReturned.descriptor.published).to.equal(true);
+          expect(collectionsWriteReturned.descriptor.datePublished).to.equal(message.descriptor.datePublished);
+        });
+      });
+
       it('should fail with 400 if modifying a record but its lineage root cannot be found', async () => {
         const recordId = await TestDataGenerator.randomCborSha256Cid();
         const { message, requester } = await TestDataGenerator.generateCollectionsWriteMessage({
@@ -294,6 +369,55 @@ describe('handleCollectionsWrite()', () => {
 
         expect(reply.status.code).to.equal(400);
         expect(reply.status.detail).to.contain(`expecting lineageParent to be ${recordId}`);
+      });
+
+      it('should return 400 if `dateCreated` and `dateModified` are not the same for a lineage root', async () => {
+        const { requester, message } = await TestDataGenerator.generateCollectionsWriteMessage({
+          dateCreated  : '2023-01-10T10:20:30.405060',
+          dateModified : getCurrentTimeInHighPrecision() // this always generate a different timestamp
+        });
+
+        const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
+        const reply = await handleCollectionsWrite(message, messageStore, didResolverStub);
+
+        expect(reply.status.code).to.equal(400);
+        expect(reply.status.detail).to.contain('must match dateCreated');
+      });
+
+      it('should return 400 if `recordId` in root CollectionsWrite message is mismatches with the expected deterministic `recordId`', async () => {
+        const { requester, message, collectionsWrite } = await TestDataGenerator.generateCollectionsWriteMessage();
+
+        const incorrectRecordId = await TestDataGenerator.randomCborSha256Cid();
+        message.recordId = incorrectRecordId; // intentionally mismatch with the expected deterministic recordId
+
+        // replace `authorization` with mismatching `record`, even though signature is still valid
+        const authorizationPayload = { ...collectionsWrite.authorizationPayload };
+        authorizationPayload.recordId = incorrectRecordId; // match with the overwritten recordId above
+        const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
+        const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
+        const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
+        message.authorization = signer.getJws();
+
+        const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
+        const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+        const reply = await handleCollectionsWrite(message, messageStoreStub, didResolverStub);
+
+        expect(reply.status.code).to.equal(400);
+        expect(reply.status.detail).to.contain('does not match deterministic recordId');
+      });
+
+      it('should return 400 if computed `contextId` for a root protocol record mismatches with `contextId` in the message', async () => {
+        // generate a message with protocol so that computed contextId is also computed and included in message
+        const { message } = await TestDataGenerator.generateCollectionsWriteMessage({ protocol: 'anyValue' });
+
+        message.contextId = await TestDataGenerator.randomCborSha256Cid(); // make contextId mismatch from computed value
+
+        const didResolverStub = sinon.createStubInstance(DidResolver);
+        const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+
+        const reply = await handleCollectionsWrite(message, messageStoreStub, didResolverStub);
+        expect(reply.status.code).to.equal(400);
+        expect(reply.status.detail).to.contain('does not match deterministic contextId');
       });
     });
 
@@ -1158,42 +1282,6 @@ describe('handleCollectionsWrite()', () => {
 
     expect(reply.status.code).to.equal(400);
     expect(reply.status.detail).to.contain('does not match recordId in authorization');
-  });
-
-  it('should return 400 if `recordId` in root CollectionsWrite message is mismatches with the expected deterministic `recordId`', async () => {
-    const { requester, message, collectionsWrite } = await TestDataGenerator.generateCollectionsWriteMessage();
-
-    const incorrectRecordId = await TestDataGenerator.randomCborSha256Cid();
-    message.recordId = incorrectRecordId; // intentionally mismatch with the expected deterministic recordId
-
-    // replace `authorization` with mismatching `record`, even though signature is still valid
-    const authorizationPayload = { ...collectionsWrite.authorizationPayload };
-    authorizationPayload.recordId = incorrectRecordId; // match with the overwritten recordId above
-    const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
-    const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
-    const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
-    message.authorization = signer.getJws();
-
-    const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
-    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-    const reply = await handleCollectionsWrite(message, messageStoreStub, didResolverStub);
-
-    expect(reply.status.code).to.equal(400);
-    expect(reply.status.detail).to.contain('does not match deterministic recordId');
-  });
-
-  it('should return 400 if computed `contextId` for a root protocol record mismatches with `contextId` in the message', async () => {
-    // generate a message with protocol so that computed contextId is also computed and included in message
-    const { message } = await TestDataGenerator.generateCollectionsWriteMessage({ protocol: 'anyValue' });
-
-    message.contextId = await TestDataGenerator.randomCborSha256Cid(); // make contextId mismatch from computed value
-
-    const didResolverStub = sinon.createStubInstance(DidResolver);
-    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-
-    const reply = await handleCollectionsWrite(message, messageStoreStub, didResolverStub);
-    expect(reply.status.code).to.equal(400);
-    expect(reply.status.detail).to.contain('does not match deterministic contextId');
   });
 
   it('should return 400 if `contextId` in `authorization` payload mismatches with `contextId` in the message', async () => {

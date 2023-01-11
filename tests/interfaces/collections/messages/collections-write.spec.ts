@@ -79,6 +79,22 @@ describe('CollectionsWrite', () => {
     });
   });
 
+  describe('createLineageChild()', () => {
+    it('should create a CollectionsWrite with `published` set to `true` with just `publishedDate` given', async () => {
+      const { requester, collectionsWrite } = await TestDataGenerator.generateCollectionsWriteMessage({
+        published: false
+      });
+
+      const lineageChild = await CollectionsWrite.createLineageChild({
+        lineageParent  : collectionsWrite,
+        datePublished  : getCurrentTimeInHighPrecision(),
+        signatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
+      });
+
+      expect(lineageChild.message.descriptor.published).to.be.true;
+    });
+  });
+
   describe('compareModifiedTime', () => {
     it('should return 0 if age is same', async () => {
       const dateModified = getCurrentTimeInHighPrecision();
