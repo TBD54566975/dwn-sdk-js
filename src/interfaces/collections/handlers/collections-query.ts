@@ -118,16 +118,12 @@ async function fetchUnpublishedRecordsForRequester(collectionsQuery: Collections
     recipient         : collectionsQuery.author,
     method            : DwnMethodName.CollectionsWrite,
     isLatestBaseState : 'true',
+    published         : 'false',
     ...collectionsQuery.message.descriptor.filter
   };
   removeUndefinedProperties(includeCriteria);
 
-  // exclude all published records
-  const excludeCriteria = {
-    published: 'true'
-  };
-
-  const unpublishedRecordsForRequester = await messageStore.query(includeCriteria, excludeCriteria);
+  const unpublishedRecordsForRequester = await messageStore.query(includeCriteria);
   return unpublishedRecordsForRequester;
 }
 
@@ -142,16 +138,12 @@ async function fetchUnpublishedRecordsByRequester(collectionsQuery: CollectionsQ
     author            : collectionsQuery.author,
     method            : DwnMethodName.CollectionsWrite,
     isLatestBaseState : 'true',
+    published         : 'false',
     ...collectionsQuery.message.descriptor.filter
   };
   removeUndefinedProperties(includeCriteria);
 
-  // exclude all published records
-  const excludeCriteria = {
-    published: 'true'
-  };
-
-  const unpublishedRecordsForRequester = await messageStore.query(includeCriteria, excludeCriteria);
+  const unpublishedRecordsForRequester = await messageStore.query(includeCriteria);
   return unpublishedRecordsForRequester;
 }
 
