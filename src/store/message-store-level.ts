@@ -93,20 +93,13 @@ export class MessageStoreLevel implements MessageStore {
     return messageJson;
   }
 
-  async query(includeCriteria: any, excludeCriteria: any = {}): Promise<BaseMessage[]> {
+  async query(criteria: any): Promise<BaseMessage[]> {
     const messages: BaseMessage[] = [];
 
     // parse query into a query that is compatible with the index we're using
-    const includeQueryTerms = MessageStoreLevel.buildIndexQueryTerms(includeCriteria);
-    const excludeQueryTerms = MessageStoreLevel.buildIndexQueryTerms(excludeCriteria);
-    const finalQuery = {
-      NOT: {
-        INCLUDE : { AND: includeQueryTerms },
-        EXCLUDE : { AND: excludeQueryTerms }
-      }
-    };
+    const queryTerms = MessageStoreLevel.buildIndexQueryTerms(criteria);
 
-    const { RESULT: indexResults } = await this.index.QUERY(finalQuery);
+    const { RESULT: indexResults } = await this.index.QUERY({ AND: queryTerms });
 
     for (const result of indexResults) {
       const cid = CID.parse(result._id);
