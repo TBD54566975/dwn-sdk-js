@@ -24,6 +24,16 @@ export type CollectionsWriteMessage = BaseMessage & {
   encodedData?: string;
 };
 
+/**
+ * Used by the entries returned by queries.
+ */
+export type UnsignedCollectionsWriteMessage = {
+  recordId: string,
+  contextId?: string;
+  descriptor: CollectionsWriteDescriptor;
+  encodedData?: string;
+};
+
 export type CollectionsQueryDescriptor = {
   method: DwnMethodName.CollectionsQuery;
   dateCreated: string;

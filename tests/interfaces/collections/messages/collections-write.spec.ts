@@ -86,9 +86,9 @@ describe('CollectionsWrite', () => {
       });
 
       const lineageChild = await CollectionsWrite.createLineageChild({
-        lineageParent  : collectionsWrite,
-        datePublished  : getCurrentTimeInHighPrecision(),
-        signatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
+        unsignedLineageParentMessage : collectionsWrite.message,
+        datePublished                : getCurrentTimeInHighPrecision(),
+        signatureInput               : TestDataGenerator.createSignatureInputFromPersona(requester)
       });
 
       expect(lineageChild.message.descriptor.published).to.be.true;
