@@ -5,6 +5,7 @@ import type { Interface, MethodHandler } from './interfaces/types.js';
 
 import { DidResolver } from './did/did-resolver.js';
 import { Encoder } from './utils/encoder.js';
+import { Message } from './core/message.js';
 import { MessageReply } from './core/message-reply.js';
 import { MessageStoreLevel } from './store/message-store-level.js';
 import { Request } from './core/request.js';
@@ -100,7 +101,16 @@ export class Dwn {
     const dwnMethod = rawMessage?.descriptor?.method;
     if (dwnMethod === undefined) {
       return new MessageReply({
-        status: { code: 400, detail: 'invalid message' }
+        status: { code: 400, detail: `unknown DWN method ${dwnMethod}` }
+      });
+    }
+
+    try {
+      // consider to push this down to individual handlers
+      Message.validateJsonSchema(rawMessage);
+    } catch (error) {
+      return new MessageReply({
+        status: { code: 400, detail: error.message }
       });
     }
 

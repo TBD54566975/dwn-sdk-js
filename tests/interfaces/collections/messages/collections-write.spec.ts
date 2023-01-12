@@ -61,7 +61,7 @@ describe('CollectionsWrite', () => {
       expect(message.descriptor.datePublished).to.exist;
     });
 
-    it('should throw if given a root message but also contains `lineageParent`', async () => {
+    it('should throw if given a lineage root but also contains `lineageParent`', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
       // not specifying `recordId` implies a root message
