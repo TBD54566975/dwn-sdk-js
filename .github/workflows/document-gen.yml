@@ -1,0 +1,26 @@
+name: Documentation generator
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v3
+      - name: setup node.js
+        uses: actions/setup-node@v3
+      
+      - run: npm clean-install
+      - run: npm run build 
+      - run: npx typedoc
+
+      - name: push documentation files to docs branch
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          branch: docs
+          folder: documentation
