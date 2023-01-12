@@ -121,17 +121,19 @@ export class MessageStoreLevel implements MessageStore {
   }
 
   async put(messageJson: BaseMessage, indexes: { [key: string]: string }): Promise<void> {
+    // make a shallow copy so we don't mess up the references (e.g. `encodedData`) of original message
+    const messageCopy = { ...messageJson };
 
     // delete `encodedData` if it exists so `messageJson` is stored without it, `encodedData` will be decoded, chunked and stored separately below
     let encodedData = undefined;
-    if (messageJson['encodedData'] !== undefined) {
-      const messageJsonWithEncodedData = messageJson as unknown as DataReferencingMessage;
+    if (messageCopy['encodedData'] !== undefined) {
+      const messageJsonWithEncodedData = messageCopy as unknown as DataReferencingMessage;
       encodedData = messageJsonWithEncodedData.encodedData;
 
       delete messageJsonWithEncodedData.encodedData;
     }
 
-    const encodedBlock = await block.encode({ value: messageJson, codec: cbor, hasher: sha256 });
+    const encodedBlock = await block.encode({ value: messageCopy, codec: cbor, hasher: sha256 });
 
     await this.db.put(encodedBlock.cid, encodedBlock.bytes);
 

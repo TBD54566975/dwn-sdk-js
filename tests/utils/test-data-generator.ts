@@ -4,6 +4,7 @@ import { CID } from 'multiformats/cid';
 import { DidResolutionResult } from '../../src/did/did-resolver.js';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
+import { LineageChildCollectionsWriteOptions } from '../../src/interfaces/collections/messages/collections-write.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request.js';
 import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1.js';
@@ -84,6 +85,16 @@ export type GenerateCollectionsWriteMessageInput = {
   data?: Uint8Array;
   dataFormat?: string;
   dateCreated? : string;
+  dateModified? : string;
+  datePublished? : string;
+};
+
+export type GenerateLineageChildCollectionsWriteInput = {
+  requester: Persona,
+  lineageParent: CollectionsWrite,
+  data?: Uint8Array;
+  published?: boolean;
+  dateModified? : string;
   datePublished? : string;
 };
 
@@ -276,6 +287,7 @@ export class TestDataGenerator {
       published     : input?.published,
       dataFormat    : input?.dataFormat ?? 'application/json',
       dateCreated   : input?.dateCreated,
+      dateModified  : input?.dateModified,
       datePublished : input?.datePublished,
       data,
       signatureInput
@@ -292,6 +304,31 @@ export class TestDataGenerator {
       collectionsWrite
     };
   };
+
+  /**
+   * Generates a valid CollectionsWrite that modifies the given lineage parent.
+   * Any mutable property is not specified will be automatically mutated.
+   * e.g. if `published` is not specified, it will be toggled from the lineage parent state.
+   */
+  public static async generateLineageChildCollectionsWrite(input?: GenerateLineageChildCollectionsWriteInput): Promise<CollectionsWrite> {
+    const parentMessage = input.lineageParent.message;
+    const currentTime = getCurrentTimeInHighPrecision();
+
+    const published = input.published ?? parentMessage.descriptor.published ? false : true; // toggle from the parent value if not given explicitly
+    const datePublished = input.datePublished ?? (published ? currentTime : undefined);
+
+    const options: LineageChildCollectionsWriteOptions = {
+      lineageParent  : input.lineageParent,
+      data           : input.data ?? TestDataGenerator.randomBytes(32),
+      published,
+      datePublished,
+      dateModified   : input.dateModified,
+      signatureInput : TestDataGenerator.createSignatureInputFromPersona(input.requester)
+    };
+
+    const collectionsWrite = await CollectionsWrite.createLineageChild(options);
+    return collectionsWrite;
+  }
 
   /**
    * Generates a CollectionsQuery message for testing.
