@@ -93,20 +93,13 @@ export class MessageStoreLevel implements MessageStore {
     return messageJson;
   }
 
-  async query(includeCriteria: any, excludeCriteria: any = {}): Promise<BaseMessage[]> {
+  async query(criteria: any): Promise<BaseMessage[]> {
     const messages: BaseMessage[] = [];
 
     // parse query into a query that is compatible with the index we're using
-    const includeQueryTerms = MessageStoreLevel.buildIndexQueryTerms(includeCriteria);
-    const excludeQueryTerms = MessageStoreLevel.buildIndexQueryTerms(excludeCriteria);
-    const finalQuery = {
-      NOT: {
-        INCLUDE : { AND: includeQueryTerms },
-        EXCLUDE : { AND: excludeQueryTerms }
-      }
-    };
+    const queryTerms = MessageStoreLevel.buildIndexQueryTerms(criteria);
 
-    const { RESULT: indexResults } = await this.index.QUERY(finalQuery);
+    const { RESULT: indexResults } = await this.index.QUERY({ AND: queryTerms });
 
     for (const result of indexResults) {
       const cid = CID.parse(result._id);
@@ -128,17 +121,19 @@ export class MessageStoreLevel implements MessageStore {
   }
 
   async put(messageJson: BaseMessage, indexes: { [key: string]: string }): Promise<void> {
+    // make a shallow copy so we don't mess up the references (e.g. `encodedData`) of original message
+    const messageCopy = { ...messageJson };
 
     // delete `encodedData` if it exists so `messageJson` is stored without it, `encodedData` will be decoded, chunked and stored separately below
     let encodedData = undefined;
-    if (messageJson['encodedData'] !== undefined) {
-      const messageJsonWithEncodedData = messageJson as unknown as DataReferencingMessage;
+    if (messageCopy['encodedData'] !== undefined) {
+      const messageJsonWithEncodedData = messageCopy as unknown as DataReferencingMessage;
       encodedData = messageJsonWithEncodedData.encodedData;
 
       delete messageJsonWithEncodedData.encodedData;
     }
 
-    const encodedBlock = await block.encode({ value: messageJson, codec: cbor, hasher: sha256 });
+    const encodedBlock = await block.encode({ value: messageCopy, codec: cbor, hasher: sha256 });
 
     await this.db.put(encodedBlock.cid, encodedBlock.bytes);
 

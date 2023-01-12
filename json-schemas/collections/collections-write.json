@@ -48,6 +48,9 @@
         "dateCreated": {
           "type": "string"
         },
+        "dateModified": {
+          "type": "string"
+        },
         "published": {
           "type": "boolean"
         },
@@ -63,6 +66,7 @@
         "method",
         "dataCid",
         "dateCreated",
+        "dateModified",
         "dataFormat"
       ],
       "allOf": [

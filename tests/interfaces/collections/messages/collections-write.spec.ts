@@ -79,13 +79,29 @@ describe('CollectionsWrite', () => {
     });
   });
 
-  describe('compareCreationTime', () => {
+  describe('createLineageChild()', () => {
+    it('should create a CollectionsWrite with `published` set to `true` with just `publishedDate` given', async () => {
+      const { requester, collectionsWrite } = await TestDataGenerator.generateCollectionsWriteMessage({
+        published: false
+      });
+
+      const lineageChild = await CollectionsWrite.createLineageChild({
+        lineageParent  : collectionsWrite,
+        datePublished  : getCurrentTimeInHighPrecision(),
+        signatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
+      });
+
+      expect(lineageChild.message.descriptor.published).to.be.true;
+    });
+  });
+
+  describe('compareModifiedTime', () => {
     it('should return 0 if age is same', async () => {
-      const dateCreated = getCurrentTimeInHighPrecision();
-      const a = (await TestDataGenerator.generateCollectionsWriteMessage({ dateCreated })).message;
+      const dateModified = getCurrentTimeInHighPrecision();
+      const a = (await TestDataGenerator.generateCollectionsWriteMessage({ dateModified })).message;
       const b = JSON.parse(JSON.stringify(a)); // create a deep copy of `a`
 
-      const compareResult = await CollectionsWrite.compareCreationTime(a, b);
+      const compareResult = await CollectionsWrite.compareModifiedTime(a, b);
       expect(compareResult).to.equal(0);
     });
   });
@@ -100,9 +116,9 @@ describe('CollectionsWrite', () => {
 
       const newestMessage = await CollectionsWrite.getNewestMessage([b, c, a]);
       if (newestMessage?.recordId !== c.recordId) {
-        console.log(`a: ${a.descriptor.dateCreated}`);
-        console.log(`b: ${b.descriptor.dateCreated}`);
-        console.log(`c: ${c.descriptor.dateCreated}`);
+        console.log(`a: ${a.descriptor.dateModified}`);
+        console.log(`b: ${b.descriptor.dateModified}`);
+        console.log(`c: ${c.descriptor.dateModified}`);
       }
       expect(newestMessage?.recordId).to.equal(c.recordId);
     });
@@ -110,8 +126,7 @@ describe('CollectionsWrite', () => {
 
   describe('getCid', () => {
     it('should return the same value with or without `encodedData`', async () => {
-      const dateCreated = getCurrentTimeInHighPrecision();
-      const messageData = await TestDataGenerator.generateCollectionsWriteMessage({ dateCreated });
+      const messageData = await TestDataGenerator.generateCollectionsWriteMessage();
 
       const messageWithoutEncodedData = { ...messageData.message };
       delete messageWithoutEncodedData.encodedData;
