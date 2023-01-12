@@ -6,6 +6,7 @@ import { Config } from '../src/dwn.js';
 import { Did } from '../src/did/did.js';
 import { DidKeyResolver } from '../src/did/did-key-resolver.js';
 import { Dwn } from '../src/dwn.js';
+import { Message } from '../src/core/message.js';
 import { MessageStoreLevel } from '../src/store/message-store-level.js';
 import { TestDataGenerator } from './utils/test-data-generator.js';
 import { DidMethodResolver, DidResolutionResult } from '../src/did/did-resolver.js';
@@ -75,6 +76,26 @@ describe('DWN', () => {
 
       expect(reply.status.code).to.equal(200);
       expect(reply.entries).to.be.empty;
+    });
+
+    it('#191 - regression - should run JSON schema validation', async () => {
+      const dwn = await Dwn.create({});
+
+      const invalidMessage = {
+        descriptor: {
+          method: 'CollectionsWrite',
+        },
+        authorization: { }
+      };
+
+      const validateJsonSchemaSpy = sinon.spy(Message, 'validateJsonSchema');
+
+      const reply = await dwn.processMessage(invalidMessage);
+
+      sinon.assert.calledOnce(validateJsonSchemaSpy);
+
+      expect(reply.status.code).to.equal(400);
+      expect(reply.status.detail).to.contain(`must have required property 'recordId'`);
     });
   });
 });
