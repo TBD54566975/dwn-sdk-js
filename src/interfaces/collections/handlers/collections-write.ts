@@ -87,10 +87,9 @@ export const handleCollectionsWrite: MethodHandler = async (
     });
   }
 
-  // delete all existing messages that are not newest, except for the originating record
-  // NOTE: under normal operation, there should only be at most two existing messages per `recordId`
-  // and at most only one message needs to be deleted (prior to CollectionsDelete implementation),
-  // but the DWN may crash before `delete()` is called below, so we use a loop as tactic to clean up lingering data as needed
+  // delete all existing messages that are not newest, except for the initial write
+  // NOTE: under normal operation, there should only be one existing write per `recordId` (the initial write),
+  // but the DWN may crash before `delete()` is called below, so we use a loop as a tactic to clean up lingering data as needed
   for (const message of existingMessages) {
     const messageIsOld = await CollectionsWrite.isOlder(message, newestMessage);
     if (messageIsOld) {
@@ -100,9 +99,10 @@ export const handleCollectionsWrite: MethodHandler = async (
       const cid = await Message.getCid(message);
       await messageStore.delete(cid);
 
-      // if the message is the initial write
+      // if the existing message is the initial write
       // we actually need to keep it BUT, need to ensure the message is no longer marked as the latest state
-      if (newMessageIsInitialWrite) {
+      const existingMessageIsInitialWrite = await CollectionsWrite.isInitialWrite(message);
+      if (existingMessageIsInitialWrite) {
         const existingCollectionsWrite = await CollectionsWrite.parse(message);
         const isLatestBaseState = false;
         const indexes = await constructIndexes(existingCollectionsWrite, isLatestBaseState);

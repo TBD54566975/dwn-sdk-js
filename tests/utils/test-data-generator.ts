@@ -1,10 +1,10 @@
 import * as cbor from '@ipld/dag-cbor';
 import { BaseMessage } from '../../src/core/types.js';
 import { CID } from 'multiformats/cid';
+import { CreateFromOptions } from '../../src/interfaces/collections/messages/collections-write.js';
 import { DidResolutionResult } from '../../src/did/did-resolver.js';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
-import { CreateFromOptions } from '../../src/interfaces/collections/messages/collections-write.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request.js';
 import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1.js';
@@ -88,9 +88,9 @@ export type GenerateCollectionsWriteMessageInput = {
   datePublished? : string;
 };
 
-export type GenerateLineageChildCollectionsWriteInput = {
+export type generateFromCollectionsWriteInput = {
   requester: Persona,
-  lineageParent: CollectionsWrite,
+  existingWrite: CollectionsWrite,
   data?: Uint8Array;
   published?: boolean;
   dateModified? : string;
@@ -304,20 +304,20 @@ export class TestDataGenerator {
   };
 
   /**
-   * Generates a valid CollectionsWrite that modifies the given lineage parent.
+   * Generates a valid CollectionsWrite that modifies the given an existing write.
    * Any mutable property is not specified will be automatically mutated.
-   * e.g. if `published` is not specified, it will be toggled from the lineage parent state.
+   * e.g. if `published` is not specified, it will be toggled from the state of the given existing write.
    */
-  public static async generateLineageChildCollectionsWrite(input?: GenerateLineageChildCollectionsWriteInput): Promise<CollectionsWrite> {
-    const parentMessage = input.lineageParent.message;
+  public static async generateFromCollectionsWrite(input?: generateFromCollectionsWriteInput): Promise<CollectionsWrite> {
+    const existingMessage = input.existingWrite.message;
     const currentTime = getCurrentTimeInHighPrecision();
 
-    const published = input.published ?? parentMessage.descriptor.published ? false : true; // toggle from the parent value if not given explicitly
+    const published = input.published ?? existingMessage.descriptor.published ? false : true; // toggle from the parent value if not given explicitly
     const datePublished = input.datePublished ?? (published ? currentTime : undefined);
 
     const options: CreateFromOptions = {
-      target                          : input.lineageParent.target,
-      unsignedCollectionsWriteMessage : input.lineageParent.message,
+      target                          : input.existingWrite.target,
+      unsignedCollectionsWriteMessage : input.existingWrite.message,
       data                            : input.data ?? TestDataGenerator.randomBytes(32),
       published,
       datePublished,

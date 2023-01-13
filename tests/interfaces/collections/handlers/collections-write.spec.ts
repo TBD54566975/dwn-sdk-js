@@ -79,16 +79,16 @@ describe('handleCollectionsWrite()', () => {
       // a new CollectionsWrite by default will have a later `dateModified`
       const newDataBytes = Encoder.stringToBytes('new data');
       const newDataEncoded = Encoder.bytesToBase64Url(newDataBytes);
-      const lineageChildCollectionsWrite = await TestDataGenerator.generateLineageChildCollectionsWrite({
+      const newCollectionsWrite = await TestDataGenerator.generateFromCollectionsWrite({
         requester,
-        lineageParent : collectionsWriteMessageData.collectionsWrite,
+        existingWrite : collectionsWriteMessageData.collectionsWrite,
         data          : newDataBytes
       });
 
       // sanity check that old data and new data are different
       expect(newDataEncoded).to.not.equal(collectionsWriteMessageData.message.encodedData);
 
-      const newCollectionsWriteReply = await handleCollectionsWrite(lineageChildCollectionsWrite.message, messageStore, didResolverStub);
+      const newCollectionsWriteReply = await handleCollectionsWrite(newCollectionsWrite.message, messageStore, didResolverStub);
       expect(newCollectionsWriteReply.status.code).to.equal(202);
 
       // verify new record has overwritten the existing record
@@ -128,15 +128,15 @@ describe('handleCollectionsWrite()', () => {
 
       // generate two new CollectionsWrite messages with the same `dateModified` value
       const dateModified = getCurrentTimeInHighPrecision();
-      const collectionsWrite1 = await TestDataGenerator.generateLineageChildCollectionsWrite({
+      const collectionsWrite1 = await TestDataGenerator.generateFromCollectionsWrite({
         requester,
-        lineageParent: originatingMessageData.collectionsWrite,
+        existingWrite: originatingMessageData.collectionsWrite,
         dateModified
       });
 
-      const collectionsWrite2 = await TestDataGenerator.generateLineageChildCollectionsWrite({
+      const collectionsWrite2 = await TestDataGenerator.generateFromCollectionsWrite({
         requester,
-        lineageParent: originatingMessageData.collectionsWrite,
+        existingWrite: originatingMessageData.collectionsWrite,
         dateModified
       });
 
@@ -199,23 +199,23 @@ describe('handleCollectionsWrite()', () => {
     });
 
     it('should not allow changes to immutable properties', async () => {
-      const rootMessageData = await TestDataGenerator.generateCollectionsWriteMessage();
-      const didResolverStub = TestStubGenerator.createDidResolverStub(rootMessageData.requester);
-      const rootMessageWriteReply = await handleCollectionsWrite(rootMessageData.message, messageStore, didResolverStub);
-      expect(rootMessageWriteReply.status.code).to.equal(202);
+      const initialWriteData = await TestDataGenerator.generateCollectionsWriteMessage();
+      const didResolverStub = TestStubGenerator.createDidResolverStub(initialWriteData.requester);
+      const initialWriteReply = await handleCollectionsWrite(initialWriteData.message, messageStore, didResolverStub);
+      expect(initialWriteReply.status.code).to.equal(202);
 
-      const recordId = rootMessageData.message.recordId;
-      const dateCreated = rootMessageData.message.descriptor.dateCreated;
-      const schema = rootMessageData.message.descriptor.schema;
+      const recordId = initialWriteData.message.recordId;
+      const dateCreated = initialWriteData.message.descriptor.dateCreated;
+      const schema = initialWriteData.message.descriptor.schema;
 
       // dateCreated test
       let childMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester   : rootMessageData.requester,
-        target      : rootMessageData.target,
+        requester   : initialWriteData.requester,
+        target      : initialWriteData.target,
         recordId,
         schema,
         dateCreated : getCurrentTimeInHighPrecision(), // should not be allowed to be modified
-        dataFormat  : rootMessageData.message.descriptor.dataFormat
+        dataFormat  : initialWriteData.message.descriptor.dataFormat
       });
 
       let reply = await handleCollectionsWrite(childMessageData.message, messageStore, didResolverStub);
@@ -225,12 +225,12 @@ describe('handleCollectionsWrite()', () => {
 
       // schema test
       childMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester  : rootMessageData.requester,
-        target     : rootMessageData.target,
+        requester  : initialWriteData.requester,
+        target     : initialWriteData.target,
         recordId,
         schema     : 'should-not-allowed-to-be-modified',
         dateCreated,
-        dataFormat : rootMessageData.message.descriptor.dataFormat
+        dataFormat : initialWriteData.message.descriptor.dataFormat
       });
 
       reply = await handleCollectionsWrite(childMessageData.message, messageStore, didResolverStub);
@@ -240,8 +240,8 @@ describe('handleCollectionsWrite()', () => {
 
       // dataFormat test
       childMessageData = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester  : rootMessageData.requester,
-        target     : rootMessageData.target,
+        requester  : initialWriteData.requester,
+        target     : initialWriteData.target,
         recordId,
         schema,
         dateCreated,
@@ -254,7 +254,7 @@ describe('handleCollectionsWrite()', () => {
       expect(reply.status.detail).to.contain('dataFormat is an immutable property');
     });
 
-    describe('lineage tests', () => {
+    describe('initial write tests', () => {
       describe('createFrom()', () => {
         it('should accept a publish CollectionsWrite using createFrom() without specifying datePublished', async () => {
           const { message, requester, collectionsWrite } = await TestDataGenerator.generateCollectionsWriteMessage({
@@ -267,16 +267,16 @@ describe('handleCollectionsWrite()', () => {
 
           expect(reply.status.code).to.equal(202);
 
-          const lineageChild = await CollectionsWrite.createFrom({
+          const newWrite = await CollectionsWrite.createFrom({
             target                          : requester.did,
             unsignedCollectionsWriteMessage : collectionsWrite.message,
             published                       : true,
             signatureInput                  : TestDataGenerator.createSignatureInputFromPersona(requester)
           });
 
-          const newWriterReply = await handleCollectionsWrite(lineageChild.message, messageStore, didResolverStub);
+          const newWriteReply = await handleCollectionsWrite(newWrite.message, messageStore, didResolverStub);
 
-          expect(newWriterReply.status.code).to.equal(202);
+          expect(newWriteReply.status.code).to.equal(202);
 
           // verify the new record state can be queried
           const collectionsQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
@@ -303,16 +303,16 @@ describe('handleCollectionsWrite()', () => {
           expect(reply.status.code).to.equal(202);
 
           const newData = Encoder.stringToBytes('new data');
-          const lineageChild = await CollectionsWrite.createFrom({
+          const newWrite = await CollectionsWrite.createFrom({
             target                          : requester.did,
             unsignedCollectionsWriteMessage : collectionsWrite.message,
             data                            : newData,
             signatureInput                  : TestDataGenerator.createSignatureInputFromPersona(requester)
           });
 
-          const newWriterReply = await handleCollectionsWrite(lineageChild.message, messageStore, didResolverStub);
+          const newWriteReply = await handleCollectionsWrite(newWrite.message, messageStore, didResolverStub);
 
-          expect(newWriterReply.status.code).to.equal(202);
+          expect(newWriteReply.status.code).to.equal(202);
 
           // verify the new record state can be queried
           const collectionsQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
@@ -346,7 +346,7 @@ describe('handleCollectionsWrite()', () => {
         expect(reply.status.detail).to.contain('initial write is not found');
       });
 
-      it('should return 400 if `dateCreated` and `dateModified` are not the same for a lineage root', async () => {
+      it('should return 400 if `dateCreated` and `dateModified` are not the same in an initial write', async () => {
         const { requester, message } = await TestDataGenerator.generateCollectionsWriteMessage({
           dateCreated  : '2023-01-10T10:20:30.405060',
           dateModified : getCurrentTimeInHighPrecision() // this always generate a different timestamp
@@ -359,7 +359,7 @@ describe('handleCollectionsWrite()', () => {
         expect(reply.status.detail).to.contain('must match dateCreated');
       });
 
-      it('should return 400 if computed `contextId` for a root protocol record mismatches with `contextId` in the message', async () => {
+      it('should return 400 if `contextId` in an initial protocol-base write mismatches with the expected deterministic `contextId`', async () => {
         // generate a message with protocol so that computed contextId is also computed and included in message
         const { message } = await TestDataGenerator.generateCollectionsWriteMessage({ protocol: 'anyValue' });
 
@@ -588,9 +588,9 @@ describe('handleCollectionsWrite()', () => {
 
         // generate a new message from bob updating the existing notes
         const newNotesBytes = Encoder.stringToBytes('new data from bob');
-        const newNotesMessageFromBob = await TestDataGenerator.generateLineageChildCollectionsWrite({
+        const newNotesMessageFromBob = await TestDataGenerator.generateFromCollectionsWrite({
           requester     : bob,
-          lineageParent : notesMessageDataFromBob.collectionsWrite,
+          existingWrite : notesMessageDataFromBob.collectionsWrite,
           data          : newNotesBytes
         });
 
@@ -688,7 +688,7 @@ describe('handleCollectionsWrite()', () => {
         const carolDidResolverStub = TestStubGenerator.createDidResolverStub(carol);
         const carolWriteReply = await handleCollectionsWrite(newNotesMessageDataFromBob.message, messageStore, carolDidResolverStub);
         expect(carolWriteReply.status.code).to.equal(401);
-        expect(carolWriteReply.status.detail).to.contain('must match to author of lineage parent');
+        expect(carolWriteReply.status.detail).to.contain('must match to author of initial write');
       });
 
       it('should not allow to change immutable recipientDid', async () => {
@@ -910,7 +910,7 @@ describe('handleCollectionsWrite()', () => {
           target       : alice,
           recipientDid : alice.did,
           protocol,
-          schema       : credentialResponseSchema, // this is an allowed schema type, but not allowed as a root level record
+          schema       : credentialResponseSchema, // this is an known schema type, but not allowed for a protocol root record
           data
         });
 
@@ -1034,7 +1034,7 @@ describe('handleCollectionsWrite()', () => {
         // create an invalid ancestor path that is longer than possible
         const invalidProtocolDefinition = { ...credentialIssuanceProtocolDefinition };
         invalidProtocolDefinition.records.credentialApplication.records.credentialResponse.allow.recipient.of
-        = 'credentialResponse'; // this is invalid as the root ancestor can only be `credentialApplication` based on record structure
+          = 'credentialResponse'; // this is invalid as the root ancestor can only be `credentialApplication` based on record structure
 
         // write the VC issuance protocol
         const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';

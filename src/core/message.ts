@@ -10,7 +10,6 @@ import { generateCid } from '../utils/cid.js';
 import { lexicographicalCompare } from '../utils/string.js';
 import { validateJsonSchema } from '../validator.js';
 
-
 export enum DwnMethodName {
   CollectionsWrite = 'CollectionsWrite',
   CollectionsQuery = 'CollectionsQuery',

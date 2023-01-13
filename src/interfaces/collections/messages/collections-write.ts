@@ -63,10 +63,7 @@ export class CollectionsWrite extends Message {
    * Creates a CollectionsWrite message.
    * @param options.recordId If `undefined`, will be auto-filled as a originating message as convenience for developer.
    * @param options.dateCreated If `undefined`, it will be auto-filled with current time.
-   * @param options.dateModified If `undefined`:
-   * - current time will be used if this is a lineage child; else
-   * - dateCreated will be used if given; else
-   * - current time will be used;
+   * @param options.dateModified If `undefined`, it will be auto-filled with current time.
    */
   public static async create(options: CollectionsWriteOptions): Promise<CollectionsWrite> {
     const currentTime = getCurrentTimeInHighPrecision();
@@ -285,6 +282,15 @@ export class CollectionsWrite extends Message {
   }
 
   /**
+   * Checks if the given message is the initial entry of a record.
+   */
+  public static async isInitialWrite(message: CollectionsWriteMessage): Promise<boolean> {
+    const author = Message.getAuthor(message);
+    const entryId = await CollectionsWrite.getCanonicalId(author, message.descriptor);
+    return (entryId === message.recordId);
+  }
+
+  /**
    * Creates the `authorization` property for a CollectionsWrite message.
    */
   private static async signAsCollectionsWriteAuthorization(
@@ -316,9 +322,9 @@ export class CollectionsWrite extends Message {
    * @throws {Error} if immutable properties between two CollectionsWrite message
    */
   public static verifyEqualityOfImmutableProperties(existingWriteMessage: CollectionsWriteMessage, newMessage: CollectionsWriteMessage): boolean {
-    const mutableDescriptorProperties = ['dataCid', 'datePublished', 'published', 'lineageParent', 'dateModified'];
+    const mutableDescriptorProperties = ['dataCid', 'datePublished', 'published', 'dateModified'];
 
-    // get distinct property names that exist in either lineage root or new message
+    // get distinct property names that exist in either the existing message given or new message
     let descriptorPropertyNames = [];
     descriptorPropertyNames.push(...Object.keys(existingWriteMessage.descriptor));
     descriptorPropertyNames.push(...Object.keys(newMessage.descriptor));

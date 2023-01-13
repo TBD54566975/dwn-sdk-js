@@ -232,7 +232,7 @@ export class ProtocolAuthorization {
       const initialWrite = result[0];
       const authorOfInitialWrite = Message.getAuthor(initialWrite);
       if (collectionsWrite.author !== authorOfInitialWrite) {
-        throw new Error(`author of incoming message '${collectionsWrite.author}' must match to author of lineage parent '${authorOfInitialWrite}'`);
+        throw new Error(`author of incoming message '${collectionsWrite.author}' must match to author of initial write '${authorOfInitialWrite}'`);
       }
     }
   }
