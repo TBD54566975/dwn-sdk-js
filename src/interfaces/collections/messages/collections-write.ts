@@ -46,7 +46,7 @@ export class CollectionsWrite extends Message {
   private constructor(message: CollectionsWriteMessage) {
     super(message);
 
-    // consider converting isInitialWrite() & getCanonicalId() into properties for performance and convenience
+    // consider converting isInitialWrite() & getEntryId() into properties for performance and convenience
   }
 
   public static async parse(message: CollectionsWriteMessage): Promise<CollectionsWrite> {
@@ -96,7 +96,7 @@ export class CollectionsWrite extends Message {
     const author = GeneralJwsVerifier.extractDid(options.signatureInput.protectedHeader.kid);
 
     // `recordId` computation
-    const recordId = options.recordId ?? await CollectionsWrite.getCanonicalId(author, descriptor);
+    const recordId = options.recordId ?? await CollectionsWrite.getEntryId(author, descriptor);
 
     // `contextId` computation
     let contextId: string | undefined;
@@ -105,7 +105,7 @@ export class CollectionsWrite extends Message {
     } else { // `contextId` is undefined
       // we compute the contextId for the caller if `protocol` is specified (this is the case of the root message of a protocol context)
       if (descriptor.protocol !== undefined) {
-        contextId = await CollectionsWrite.getCanonicalId(author, descriptor);
+        contextId = await CollectionsWrite.getEntryId(author, descriptor);
       }
     }
 
@@ -237,7 +237,7 @@ export class CollectionsWrite extends Message {
       // if the message is also a protocol context root, the `contextId` must match the expected deterministic value
       if (this.message.descriptor.protocol !== undefined &&
           this.message.descriptor.parentId === undefined) {
-        const expectedContextId = await this.getCanonicalId();
+        const expectedContextId = await this.getEntryId();
 
         if (this.message.contextId !== expectedContextId) {
           throw new Error(`contextId in message: ${this.message.contextId} does not match deterministic contextId: ${expectedContextId}`);
@@ -254,21 +254,21 @@ export class CollectionsWrite extends Message {
   }
 
   /**
-   * Computes the canonical ID of this message.
+   * Computes the deterministic Entry ID of this message.
    */
-  public async getCanonicalId(): Promise<string> {
-    const canonicalId = await CollectionsWrite.getCanonicalId(this.author, this.message.descriptor);
-    return canonicalId;
+  public async getEntryId(): Promise<string> {
+    const entryId = await CollectionsWrite.getEntryId(this.author, this.message.descriptor);
+    return entryId;
   };
 
   /**
-   * Computes the canonical ID of this message.
+   * Computes the deterministic Entry ID of this message.
    */
-  public static async getCanonicalId(author: string, descriptor: CollectionsWriteDescriptor): Promise<string> {
-    const canonicalIdInput = { ...descriptor };
-    (canonicalIdInput as any).author = author;
+  public static async getEntryId(author: string, descriptor: CollectionsWriteDescriptor): Promise<string> {
+    const entryIdInput = { ...descriptor };
+    (entryIdInput as any).author = author;
 
-    const cid = await generateCid(canonicalIdInput);
+    const cid = await generateCid(entryIdInput);
     const cidString = cid.toString();
     return cidString;
   };
@@ -277,7 +277,7 @@ export class CollectionsWrite extends Message {
    * Checks if the given message is the initial entry of a record.
    */
   public async isInitialWrite(): Promise<boolean> {
-    const entryId = await this.getCanonicalId();
+    const entryId = await this.getEntryId();
     return (entryId === this.message.recordId);
   }
 
@@ -286,7 +286,7 @@ export class CollectionsWrite extends Message {
    */
   public static async isInitialWrite(message: CollectionsWriteMessage): Promise<boolean> {
     const author = Message.getAuthor(message);
-    const entryId = await CollectionsWrite.getCanonicalId(author, message.descriptor);
+    const entryId = await CollectionsWrite.getEntryId(author, message.descriptor);
     return (entryId === message.recordId);
   }
 

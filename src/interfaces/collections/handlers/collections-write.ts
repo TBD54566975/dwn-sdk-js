@@ -126,7 +126,7 @@ export async function constructIndexes(collectionsWrite: CollectionsWrite, isLat
     author            : collectionsWrite.author,
     target            : collectionsWrite.target,
     recordId          : message.recordId,
-    entryId           : await CollectionsWrite.getCanonicalId(collectionsWrite.author, collectionsWrite.message.descriptor),
+    entryId           : await CollectionsWrite.getEntryId(collectionsWrite.author, collectionsWrite.message.descriptor),
     ...descriptor
   };
 

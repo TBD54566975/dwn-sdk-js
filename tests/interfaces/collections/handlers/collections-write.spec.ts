@@ -477,7 +477,7 @@ describe('handleCollectionsWrite()', () => {
           schema       : credentialApplicationSchema,
           data         : encodedCredentialApplication
         });
-        const credentialApplicationContextId = await credentialApplicationMessageData.collectionsWrite.getCanonicalId();
+        const credentialApplicationContextId = await credentialApplicationMessageData.collectionsWrite.getEntryId();
 
         const credentialApplicationReply = await handleCollectionsWrite(credentialApplicationMessageData.message, messageStore, aliceDidResolverStub);
         expect(credentialApplicationReply.status.code).to.equal(202);
@@ -814,7 +814,7 @@ describe('handleCollectionsWrite()', () => {
           schema       : credentialApplicationSchema,
           data         : encodedCredentialApplication
         });
-        const credentialApplicationContextId = await credentialApplicationMessageData.collectionsWrite.getCanonicalId();
+        const credentialApplicationContextId = await credentialApplicationMessageData.collectionsWrite.getEntryId();
 
         const credentialApplicationReply = await handleCollectionsWrite(credentialApplicationMessageData.message, messageStore, aliceDidResolverStub);
         expect(credentialApplicationReply.status.code).to.equal(202);
@@ -1005,7 +1005,7 @@ describe('handleCollectionsWrite()', () => {
           protocol,
           data
         });
-        const contextId = await messageDataWithIssuerA.collectionsWrite.getCanonicalId();
+        const contextId = await messageDataWithIssuerA.collectionsWrite.getEntryId();
 
         let reply = await handleCollectionsWrite(messageDataWithIssuerA.message, messageStore, didResolver);
         expect(reply.status.code).to.equal(202);
@@ -1058,7 +1058,7 @@ describe('handleCollectionsWrite()', () => {
           protocol,
           data
         });
-        const contextId = await messageDataWithIssuerA.collectionsWrite.getCanonicalId();
+        const contextId = await messageDataWithIssuerA.collectionsWrite.getEntryId();
 
         let reply = await handleCollectionsWrite(messageDataWithIssuerA.message, messageStore, didResolver);
         expect(reply.status.code).to.equal(202);
@@ -1112,7 +1112,7 @@ describe('handleCollectionsWrite()', () => {
           protocol,
           data
         });
-        const contextId = await askMessageData.collectionsWrite.getCanonicalId();
+        const contextId = await askMessageData.collectionsWrite.getEntryId();
 
         let reply = await handleCollectionsWrite(askMessageData.message, messageStore, didResolver);
         expect(reply.status.code).to.equal(202);
@@ -1193,7 +1193,7 @@ describe('handleCollectionsWrite()', () => {
           protocol,
           data
         });
-        const contextId = await askMessageData.collectionsWrite.getCanonicalId();
+        const contextId = await askMessageData.collectionsWrite.getEntryId();
 
         let reply = await handleCollectionsWrite(askMessageData.message, messageStore, didResolver);
         expect(reply.status.code).to.equal(202);
