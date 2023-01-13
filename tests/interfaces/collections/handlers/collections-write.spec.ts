@@ -271,6 +271,8 @@ describe('handleCollectionsWrite()', () => {
           expect(reply.status.code).to.equal(202);
 
           const lineageChild = await CollectionsWrite.createLineageChild({
+            target                       : requester.did,
+            lineageParent                : await collectionsWrite.getCanonicalId(),
             unsignedLineageParentMessage : collectionsWrite.message,
             published                    : true,
             signatureInput               : TestDataGenerator.createSignatureInputFromPersona(requester)
@@ -306,6 +308,8 @@ describe('handleCollectionsWrite()', () => {
 
           const newData = Encoder.stringToBytes('new data');
           const lineageChild = await CollectionsWrite.createLineageChild({
+            target                       : requester.did,
+            lineageParent                : await collectionsWrite.getCanonicalId(),
             unsignedLineageParentMessage : collectionsWrite.message,
             data                         : newData,
             signatureInput               : TestDataGenerator.createSignatureInputFromPersona(requester)
