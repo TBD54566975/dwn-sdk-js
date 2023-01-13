@@ -60,40 +60,22 @@ describe('CollectionsWrite', () => {
 
       expect(message.descriptor.datePublished).to.exist;
     });
-
-    it('should throw if given a lineage root but also contains `lineageParent`', async () => {
-      const alice = await TestDataGenerator.generatePersona();
-
-      // not specifying `recordId` implies a root message
-      const options = {
-        target         : alice.did,
-        recipient      : alice.did,
-        lineageParent  : await TestDataGenerator.randomCborSha256Cid(),
-        data           : TestDataGenerator.randomBytes(10),
-        dataFormat     : 'application/json',
-        published      : true,
-        signatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
-      };
-
-      await expect(CollectionsWrite.create(options)).to.be.rejectedWith('originating message must not have a lineage parent');
-    });
   });
 
-  describe('createLineageChild()', () => {
+  describe('createFrom()', () => {
     it('should create a CollectionsWrite with `published` set to `true` with just `publishedDate` given', async () => {
       const { requester, collectionsWrite } = await TestDataGenerator.generateCollectionsWriteMessage({
         published: false
       });
 
-      const lineageChild = await CollectionsWrite.createLineageChild({
-        target                       : requester.did,
-        lineageParent                : await collectionsWrite.getCanonicalId(),
-        unsignedLineageParentMessage : collectionsWrite.message,
-        datePublished                : getCurrentTimeInHighPrecision(),
-        signatureInput               : TestDataGenerator.createSignatureInputFromPersona(requester)
+      const write = await CollectionsWrite.createFrom({
+        target                          : requester.did,
+        unsignedCollectionsWriteMessage : collectionsWrite.message,
+        datePublished                   : getCurrentTimeInHighPrecision(),
+        signatureInput                  : TestDataGenerator.createSignatureInputFromPersona(requester)
       });
 
-      expect(lineageChild.message.descriptor.published).to.be.true;
+      expect(write.message.descriptor.published).to.be.true;
     });
   });
 

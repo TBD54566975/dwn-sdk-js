@@ -22,7 +22,6 @@ export type CollectionsWriteOptions = AuthCreateOptions & {
   contextId?: string;
   schema?: string;
   recordId?: string;
-  lineageParent? : string;
   parentId?: string;
   data: Uint8Array;
   dateCreated?: string;
@@ -32,10 +31,9 @@ export type CollectionsWriteOptions = AuthCreateOptions & {
   dataFormat: string;
 };
 
-export type LineageChildCollectionsWriteOptions = AuthCreateOptions & {
+export type CreateFromOptions = AuthCreateOptions & {
   target: string,
-  lineageParent: string,
-  unsignedLineageParentMessage: UnsignedCollectionsWriteMessage,
+  unsignedCollectionsWriteMessage: UnsignedCollectionsWriteMessage,
   data?: Uint8Array;
   published?: boolean;
   dateModified? : string;
@@ -47,6 +45,8 @@ export class CollectionsWrite extends Message {
 
   private constructor(message: CollectionsWriteMessage) {
     super(message);
+
+    // consider converting isInitialWrite() & getCanonicalId() into properties for performance and convenience
   }
 
   public static async parse(message: CollectionsWriteMessage): Promise<CollectionsWrite> {
@@ -62,7 +62,6 @@ export class CollectionsWrite extends Message {
   /**
    * Creates a CollectionsWrite message.
    * @param options.recordId If `undefined`, will be auto-filled as a originating message as convenience for developer.
-   * @param options.lineageParent If `undefined`, it will be auto-filled with value of `options.recordId` as convenience for developer.
    * @param options.dateCreated If `undefined`, it will be auto-filled with current time.
    * @param options.dateModified If `undefined`:
    * - current time will be used if this is a lineage child; else
@@ -78,11 +77,10 @@ export class CollectionsWrite extends Message {
       method        : DwnMethodName.CollectionsWrite,
       protocol      : options.protocol,
       schema        : options.schema,
-      lineageParent : options.lineageParent ?? options.recordId, // convenience for developer
       parentId      : options.parentId,
       dataCid       : dataCid.toString(),
       dateCreated   : options.dateCreated ?? currentTime,
-      dateModified  : options.dateModified ?? (options.lineageParent ? currentTime : (options.dateCreated ?? currentTime)),
+      dateModified  : options.dateModified ?? currentTime,
       published     : options.published,
       datePublished : options.datePublished,
       dataFormat    : options.dataFormat
@@ -101,17 +99,7 @@ export class CollectionsWrite extends Message {
     const author = GeneralJwsVerifier.extractDid(options.signatureInput.protectedHeader.kid);
 
     // `recordId` computation
-    let recordId: string | undefined;
-    if (options.recordId !== undefined) {
-      recordId = options.recordId;
-    } else { // `recordId` is undefined
-      recordId = await CollectionsWrite.getCanonicalId(author, descriptor);
-
-      // lineageParent must not exist if this message is the originating message
-      if (options.lineageParent !== undefined) {
-        throw new Error('originating message must not have a lineage parent');
-      }
-    }
+    const recordId = options.recordId ?? await CollectionsWrite.getCanonicalId(author, descriptor);
 
     // `contextId` computation
     let contextId: string | undefined;
@@ -147,24 +135,26 @@ export class CollectionsWrite extends Message {
   }
 
   /**
-   * Convenience method that creates a lineage child message replacing the existing record state using the given lineage parent.
-   * @param options.unsignedLineageParentMessage Unsigned lineage parent that the new CollectionsWrite will be based from.
+   * Convenience method that creates a message by:
+   * 1. Copying over immutable properties from the given unsigned message
+   * 2. Copying over mutable properties that are not overwritten from the given unsigned message
+   * 3. Replace the mutable properties that are given new value
+   * @param options.unsignedCollectionsWriteMessage Unsigned message that the new CollectionsWrite will be based from.
    * @param options.dateModified The new date the record is modified. If not given, current time will be used .
-   * @param options.data The new data or the record. If not given, data from lineage parent will be used.
+   * @param options.data The new data or the record. If not given, data from given message will be used.
    * @param options.published The new published state. If not given, then will be set to `true` if {options.dateModified} is given;
-   * else the state from lineage parent will be used.
+   * else the state from given message will be used.
    * @param options.publishedDate The new date the record is modified. If not given, then:
    * - will not be set if the record will be unpublished as the result of this CollectionsWrite; else
-   * - will be set to the same published date as the lineage parent if it wss already published; else
+   * - will be set to the same published date as the given message if it wss already published; else
    * - will be set to current time (because this is a toggle from unpublished to published)
-   * @returns the CollectionsWrite that overwrites its lineage parent
    */
-  public static async createLineageChild(options: LineageChildCollectionsWriteOptions): Promise<CollectionsWrite> {
-    const parentMessage = options.unsignedLineageParentMessage;
+  public static async createFrom(options: CreateFromOptions): Promise<CollectionsWrite> {
+    const unsignedMessage = options.unsignedCollectionsWriteMessage;
     const currentTime = getCurrentTimeInHighPrecision();
 
     // inherit published value from parent if neither published nor datePublished is specified
-    const published = options.published ?? ( options.datePublished ? true : parentMessage.descriptor.published);
+    const published = options.published ?? ( options.datePublished ? true : unsignedMessage.descriptor.published);
     // use current time if published but no explicit time given
     let datePublished = undefined;
     // if given explicitly published dated
@@ -174,8 +164,8 @@ export class CollectionsWrite extends Message {
       // if this CollectionsWrite will publish the record
       if (published) {
         // the parent was already published, inherit the same published date
-        if (parentMessage.descriptor.published) {
-          datePublished = parentMessage.descriptor.datePublished;
+        if (unsignedMessage.descriptor.published) {
+          datePublished = unsignedMessage.descriptor.datePublished;
         } else {
           // this is a toggle from unpublished to published, use current time
           datePublished = currentTime;
@@ -184,22 +174,21 @@ export class CollectionsWrite extends Message {
     }
 
     const createOptions: CollectionsWriteOptions = {
-      // immutable properties below, just inherit from lineage parent
+      // immutable properties below, just inherit from the message given
       target         : options.target,
-      recipient      : parentMessage.descriptor.recipient,
-      recordId       : parentMessage.recordId,
-      dateCreated    : parentMessage.descriptor.dateCreated,
-      contextId      : parentMessage.contextId,
-      protocol       : parentMessage.descriptor.protocol,
-      parentId       : parentMessage.descriptor.parentId,
-      schema         : parentMessage.descriptor.schema,
-      dataFormat     : parentMessage.descriptor.dataFormat,
-      // mutable properties below, if not given, inherit from lineage parent
-      lineageParent  : options.lineageParent,
+      recipient      : unsignedMessage.descriptor.recipient,
+      recordId       : unsignedMessage.recordId,
+      dateCreated    : unsignedMessage.descriptor.dateCreated,
+      contextId      : unsignedMessage.contextId,
+      protocol       : unsignedMessage.descriptor.protocol,
+      parentId       : unsignedMessage.descriptor.parentId,
+      schema         : unsignedMessage.descriptor.schema,
+      dataFormat     : unsignedMessage.descriptor.dataFormat,
+      // mutable properties below, if not given, inherit from message given
       dateModified   : options.dateModified ?? currentTime,
       published,
       datePublished,
-      data           : options.data ?? Encoder.base64UrlToBytes(parentMessage.encodedData), // there is opportunity for improvement here
+      data           : options.data ?? Encoder.base64UrlToBytes(unsignedMessage.encodedData), // there is opportunity for improvement here
       // finally still need input for signing
       signatureInput : options.signatureInput,
     };
@@ -238,22 +227,17 @@ export class CollectionsWrite extends Message {
       );
     }
 
-    // if the message is the lineage root
-    if (this.message.descriptor.lineageParent === undefined) {
+    // if the new message is the initial write
+    const isInitialWrite = await this.isInitialWrite();
+    if (isInitialWrite) {
       // `dateModified` and `dateCreated` equality check
       const dateCreated = this.message.descriptor.dateCreated;
       const dateModified = this.message.descriptor.dateModified;
       if (dateModified !== dateCreated) {
-        throw new Error(`dateModified ${dateModified} must match dateCreated ${dateCreated} for a lineage root write`);
+        throw new Error(`dateModified ${dateModified} must match dateCreated ${dateCreated} for the initial write`);
       }
 
-      // the `recordId` must match the expected deterministic value
-      const expectedRecordId = await this.getCanonicalId();
-      if (this.message.recordId !== expectedRecordId) {
-        throw new Error(`recordId in message: ${this.message.recordId} does not match deterministic recordId: ${expectedRecordId}`);
-      }
-
-      // if the message is a protocol context root (AND it is a lineage root), the `contextId` must match the expected deterministic value
+      // if the message is also a protocol context root, the `contextId` must match the expected deterministic value
       if (this.message.descriptor.protocol !== undefined &&
           this.message.descriptor.parentId === undefined) {
         const expectedContextId = await this.getCanonicalId();
@@ -293,6 +277,14 @@ export class CollectionsWrite extends Message {
   };
 
   /**
+   * Checks if the given message is the initial entry of a record.
+   */
+  public async isInitialWrite(): Promise<boolean> {
+    const entryId = await this.getCanonicalId();
+    return (entryId === this.message.recordId);
+  }
+
+  /**
    * Creates the `authorization` property for a CollectionsWrite message.
    */
   private static async signAsCollectionsWriteAuthorization(
@@ -323,12 +315,12 @@ export class CollectionsWrite extends Message {
    * Verifies that immutable properties of the two given messages are identical.
    * @throws {Error} if immutable properties between two CollectionsWrite message
    */
-  public static verifyEqualityOfImmutableProperties(lineageRoot: CollectionsWriteMessage, newMessage: CollectionsWriteMessage): boolean {
+  public static verifyEqualityOfImmutableProperties(existingWriteMessage: CollectionsWriteMessage, newMessage: CollectionsWriteMessage): boolean {
     const mutableDescriptorProperties = ['dataCid', 'datePublished', 'published', 'lineageParent', 'dateModified'];
 
     // get distinct property names that exist in either lineage root or new message
     let descriptorPropertyNames = [];
-    descriptorPropertyNames.push(...Object.keys(lineageRoot.descriptor));
+    descriptorPropertyNames.push(...Object.keys(existingWriteMessage.descriptor));
     descriptorPropertyNames.push(...Object.keys(newMessage.descriptor));
     descriptorPropertyNames = [...new Set(descriptorPropertyNames)]; // step to remove duplicates
 
@@ -336,30 +328,15 @@ export class CollectionsWrite extends Message {
     for (const descriptorPropertyName of descriptorPropertyNames) {
       // if property is supposed to be immutable
       if (mutableDescriptorProperties.indexOf(descriptorPropertyName) === -1) {
-        const valueInLineageRoot = lineageRoot.descriptor[descriptorPropertyName];
+        const valueInExistingWrite = existingWriteMessage.descriptor[descriptorPropertyName];
         const valueInNewMessage = newMessage.descriptor[descriptorPropertyName];
-        if (valueInNewMessage !== valueInLineageRoot) {
-          throw new Error(`${descriptorPropertyName} is an immutable property: cannot change '${valueInLineageRoot}' to '${valueInNewMessage}'`);
+        if (valueInNewMessage !== valueInExistingWrite) {
+          throw new Error(`${descriptorPropertyName} is an immutable property: cannot change '${valueInExistingWrite}' to '${valueInNewMessage}'`);
         }
       }
     }
 
     return true;
-  }
-
-  /**
-   * Gets the lineage root message from the given list of messages.
-   * @returns the lineage root in the given list of messages
-   */
-  public static getLineageRootMessage(messages: CollectionsWriteMessage[]): CollectionsWriteMessage {
-    for (const message of messages) {
-      // lineage root does not have lineage parent
-      if (message.descriptor.lineageParent === undefined) {
-        return message;
-      }
-    }
-
-    throw new Error(`unable to find the lineage root of the given list of messages`);
   }
 
   /**

@@ -36,9 +36,6 @@
         "schema": {
           "type": "string"
         },
-        "lineageParent": {
-          "type": "string"
-        },
         "parentId": {
           "type": "string"
         },

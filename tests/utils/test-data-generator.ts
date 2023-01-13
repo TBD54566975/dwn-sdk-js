@@ -4,7 +4,7 @@ import { CID } from 'multiformats/cid';
 import { DidResolutionResult } from '../../src/did/did-resolver.js';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
-import { LineageChildCollectionsWriteOptions } from '../../src/interfaces/collections/messages/collections-write.js';
+import { CreateFromOptions } from '../../src/interfaces/collections/messages/collections-write.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request.js';
 import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1.js';
@@ -79,7 +79,6 @@ export type GenerateCollectionsWriteMessageInput = {
   contextId?: string;
   schema?: string;
   recordId?: string;
-  lineageParent?: string;
   parentId?: string;
   published?: boolean;
   data?: Uint8Array;
@@ -282,7 +281,6 @@ export class TestDataGenerator {
       contextId     : input?.contextId,
       schema        : input?.schema ?? TestDataGenerator.randomString(20),
       recordId      : input?.recordId,
-      lineageParent : input?.lineageParent,
       parentId      : input?.parentId,
       published     : input?.published,
       dataFormat    : input?.dataFormat ?? 'application/json',
@@ -317,18 +315,17 @@ export class TestDataGenerator {
     const published = input.published ?? parentMessage.descriptor.published ? false : true; // toggle from the parent value if not given explicitly
     const datePublished = input.datePublished ?? (published ? currentTime : undefined);
 
-    const options: LineageChildCollectionsWriteOptions = {
-      target                       : input.lineageParent.target,
-      lineageParent                : await input.lineageParent.getCanonicalId(),
-      unsignedLineageParentMessage : input.lineageParent.message,
-      data                         : input.data ?? TestDataGenerator.randomBytes(32),
+    const options: CreateFromOptions = {
+      target                          : input.lineageParent.target,
+      unsignedCollectionsWriteMessage : input.lineageParent.message,
+      data                            : input.data ?? TestDataGenerator.randomBytes(32),
       published,
       datePublished,
-      dateModified                 : input.dateModified,
-      signatureInput               : TestDataGenerator.createSignatureInputFromPersona(input.requester)
+      dateModified                    : input.dateModified,
+      signatureInput                  : TestDataGenerator.createSignatureInputFromPersona(input.requester)
     };
 
-    const collectionsWrite = await CollectionsWrite.createLineageChild(options);
+    const collectionsWrite = await CollectionsWrite.createFrom(options);
     return collectionsWrite;
   }
 
