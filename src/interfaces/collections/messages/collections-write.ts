@@ -33,6 +33,8 @@ export type CollectionsWriteOptions = AuthCreateOptions & {
 };
 
 export type LineageChildCollectionsWriteOptions = AuthCreateOptions & {
+  target: string,
+  lineageParent: string,
   unsignedLineageParentMessage: UnsignedCollectionsWriteMessage,
   data?: Uint8Array;
   published?: boolean;
@@ -146,7 +148,7 @@ export class CollectionsWrite extends Message {
 
   /**
    * Convenience method that creates a lineage child message replacing the existing record state using the given lineage parent.
-   * @param options.lineageParent Lineage parent that the new CollectionsWrite will be based from.
+   * @param options.unsignedLineageParentMessage Unsigned lineage parent that the new CollectionsWrite will be based from.
    * @param options.dateModified The new date the record is modified. If not given, current time will be used .
    * @param options.data The new data or the record. If not given, data from lineage parent will be used.
    * @param options.published The new published state. If not given, then will be set to `true` if {options.dateModified} is given;
@@ -181,14 +183,9 @@ export class CollectionsWrite extends Message {
       }
     }
 
-    // get the entry ID of the lineage parent
-    // temporarily assume author of this message is the same as the author of lineage parent
-    const author = GeneralJwsVerifier.extractDid(options.signatureInput.protectedHeader.kid);
-    const lineageParent = await CollectionsWrite.getCanonicalId(author, parentMessage.descriptor);
-
     const createOptions: CollectionsWriteOptions = {
       // immutable properties below, just inherit from lineage parent
-      target         : parentMessage.descriptor.recipient, // temporarily set to the recipient of this new message, `target` will be removed soon
+      target         : options.target,
       recipient      : parentMessage.descriptor.recipient,
       recordId       : parentMessage.recordId,
       dateCreated    : parentMessage.descriptor.dateCreated,
@@ -198,7 +195,7 @@ export class CollectionsWrite extends Message {
       schema         : parentMessage.descriptor.schema,
       dataFormat     : parentMessage.descriptor.dataFormat,
       // mutable properties below, if not given, inherit from lineage parent
-      lineageParent,
+      lineageParent  : options.lineageParent,
       dateModified   : options.dateModified ?? currentTime,
       published,
       datePublished,

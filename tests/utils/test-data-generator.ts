@@ -318,6 +318,8 @@ export class TestDataGenerator {
     const datePublished = input.datePublished ?? (published ? currentTime : undefined);
 
     const options: LineageChildCollectionsWriteOptions = {
+      target                       : input.lineageParent.target,
+      lineageParent                : await input.lineageParent.getCanonicalId(),
       unsignedLineageParentMessage : input.lineageParent.message,
       data                         : input.data ?? TestDataGenerator.randomBytes(32),
       published,
