@@ -1,5 +1,5 @@
 import type { AuthCreateOptions } from '../../../core/types.js';
-import type { CollectionsWriteAuthorizationPayload, CollectionsWriteDescriptor, CollectionsWriteMessage } from '../types.js';
+import type { CollectionsWriteAuthorizationPayload, CollectionsWriteDescriptor, CollectionsWriteMessage, UnsignedCollectionsWriteMessage } from '../types.js';
 
 import { DwnMethodName } from '../../../core/message.js';
 import { Encoder } from '../../../utils/encoder.js';
@@ -33,7 +33,7 @@ export type CollectionsWriteOptions = AuthCreateOptions & {
 };
 
 export type LineageChildCollectionsWriteOptions = AuthCreateOptions & {
-  lineageParent: CollectionsWrite,
+  unsignedLineageParentMessage: UnsignedCollectionsWriteMessage,
   data?: Uint8Array;
   published?: boolean;
   dateModified? : string;
@@ -158,7 +158,7 @@ export class CollectionsWrite extends Message {
    * @returns the CollectionsWrite that overwrites its lineage parent
    */
   public static async createLineageChild(options: LineageChildCollectionsWriteOptions): Promise<CollectionsWrite> {
-    const parentMessage = options.lineageParent.message;
+    const parentMessage = options.unsignedLineageParentMessage;
     const currentTime = getCurrentTimeInHighPrecision();
 
     // inherit published value from parent if neither published nor datePublished is specified
@@ -181,9 +181,14 @@ export class CollectionsWrite extends Message {
       }
     }
 
+    // get the entry ID of the lineage parent
+    // temporarily assume author of this message is the same as the author of lineage parent
+    const author = GeneralJwsVerifier.extractDid(options.signatureInput.protectedHeader.kid);
+    const lineageParent = await CollectionsWrite.getCanonicalId(author, parentMessage.descriptor);
+
     const createOptions: CollectionsWriteOptions = {
       // immutable properties below, just inherit from lineage parent
-      target         : options.lineageParent.target,
+      target         : parentMessage.descriptor.recipient, // temporarily set to the recipient of this new message, `target` will be removed soon
       recipient      : parentMessage.descriptor.recipient,
       recordId       : parentMessage.recordId,
       dateCreated    : parentMessage.descriptor.dateCreated,
@@ -193,7 +198,7 @@ export class CollectionsWrite extends Message {
       schema         : parentMessage.descriptor.schema,
       dataFormat     : parentMessage.descriptor.dataFormat,
       // mutable properties below, if not given, inherit from lineage parent
-      lineageParent  : await options.lineageParent.getCanonicalId(),
+      lineageParent,
       dateModified   : options.dateModified ?? currentTime,
       published,
       datePublished,

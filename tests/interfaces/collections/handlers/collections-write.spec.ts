@@ -271,9 +271,9 @@ describe('handleCollectionsWrite()', () => {
           expect(reply.status.code).to.equal(202);
 
           const lineageChild = await CollectionsWrite.createLineageChild({
-            lineageParent  : collectionsWrite,
-            published      : true,
-            signatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
+            unsignedLineageParentMessage : collectionsWrite.message,
+            published                    : true,
+            signatureInput               : TestDataGenerator.createSignatureInputFromPersona(requester)
           });
 
           const newWriterReply = await handleCollectionsWrite(lineageChild.message, messageStore, didResolverStub);
@@ -306,9 +306,9 @@ describe('handleCollectionsWrite()', () => {
 
           const newData = Encoder.stringToBytes('new data');
           const lineageChild = await CollectionsWrite.createLineageChild({
-            lineageParent  : collectionsWrite,
-            data           : newData,
-            signatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
+            unsignedLineageParentMessage : collectionsWrite.message,
+            data                         : newData,
+            signatureInput               : TestDataGenerator.createSignatureInputFromPersona(requester)
           });
 
           const newWriterReply = await handleCollectionsWrite(lineageChild.message, messageStore, didResolverStub);

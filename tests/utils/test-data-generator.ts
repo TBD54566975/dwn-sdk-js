@@ -318,12 +318,12 @@ export class TestDataGenerator {
     const datePublished = input.datePublished ?? (published ? currentTime : undefined);
 
     const options: LineageChildCollectionsWriteOptions = {
-      lineageParent  : input.lineageParent,
-      data           : input.data ?? TestDataGenerator.randomBytes(32),
+      unsignedLineageParentMessage : input.lineageParent.message,
+      data                         : input.data ?? TestDataGenerator.randomBytes(32),
       published,
       datePublished,
-      dateModified   : input.dateModified,
-      signatureInput : TestDataGenerator.createSignatureInputFromPersona(input.requester)
+      dateModified                 : input.dateModified,
+      signatureInput               : TestDataGenerator.createSignatureInputFromPersona(input.requester)
     };
 
     const collectionsWrite = await CollectionsWrite.createLineageChild(options);
