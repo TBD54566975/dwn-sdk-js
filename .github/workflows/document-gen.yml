@@ -1,0 +1,43 @@
+name: Documentation generator
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v3
+      - name: setup node.js
+        uses: actions/setup-node@v3
+
+      - name: install dependencies
+        run: |
+          npm clean-install
+          npm i -d @types/node
+      - run: npm run build
+      - name: build typedoc site
+        run: |
+          npx typedoc
+      - name: make git repo to push to github actions
+        run: |
+          cd documentation
+          git init
+          git add -A
+          git config user.name 'GitHub Actions'
+          git config user.email 'actions@github.com'
+          git commit -sam "$(date -Iseconds)"
+          touch .nojekyll
+
+      - name: push documentation files to docs branch
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages
+          force: true
+          directory: documentation
