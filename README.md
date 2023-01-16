@@ -19,6 +19,8 @@ npm install @tbd54566975/dwn-sdk-js
 
 ## Usage
 
+[API docs](https://tbd54566975.github.io/dwn-sdk-js/)
+
 ```javascript
 import { Dwn } from '@tbd54566975/dwn-sdk-js';
 
