@@ -413,7 +413,7 @@ describe('handleRecordsWrite()', () => {
         const protocolWriteReply = await handleProtocolsConfigure(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
         expect(protocolWriteReply.status.code).to.equal(202);
 
-        // generate a collections write message from bob allowed by anyone
+        // generate a `RecordsWrite` message from bob allowed by anyone
         const bob = await TestDataGenerator.generatePersona();
         const bobData = new TextEncoder().encode('data from bob');
         const emailMessageDataFromBob = await TestDataGenerator.generateRecordsWriteMessage(
@@ -557,7 +557,7 @@ describe('handleRecordsWrite()', () => {
         const protocolWriteReply = await handleProtocolsConfigure(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
         expect(protocolWriteReply.status.code).to.equal(202);
 
-        // generate a collections write message from bob
+        // generate a `RecordsWrite` message from bob
         const bob = await TestDataGenerator.generatePersona();
         const bobData = new TextEncoder().encode('data from bob');
         const notesMessageDataFromBob = await TestDataGenerator.generateRecordsWriteMessage(
@@ -642,7 +642,7 @@ describe('handleRecordsWrite()', () => {
         const protocolWriteReply = await handleProtocolsConfigure(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
         expect(protocolWriteReply.status.code).to.equal(202);
 
-        // generate a collections write message from bob
+        // generate a `RecordsWrite` message from bob
         const bob = await TestDataGenerator.generatePersona();
         const bobData = new TextEncoder().encode('data from bob');
         const notesMessageDataFromBob = await TestDataGenerator.generateRecordsWriteMessage(
@@ -732,7 +732,7 @@ describe('handleRecordsWrite()', () => {
         const protocolWriteReply = await handleProtocolsConfigure(protocolsConfigureMessageData.message, messageStore, aliceDidResolverStub);
         expect(protocolWriteReply.status.code).to.equal(202);
 
-        // generate a collections write message from bob
+        // generate a `RecordsWrite` message from bob
         const bob = await TestDataGenerator.generatePersona();
         const bobData = new TextEncoder().encode('data from bob');
         const notesMessageDataFromBob = await TestDataGenerator.generateRecordsWriteMessage(

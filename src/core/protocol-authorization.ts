@@ -11,7 +11,7 @@ const methodToAllowedActionMap = {
 export class ProtocolAuthorization {
 
   /**
-   * Performs protocol-based authorization against the given collections message.
+   * Performs protocol-based authorization against the given message.
    * @throws {Error} if authorization fails.
    */
   public static async authorize(

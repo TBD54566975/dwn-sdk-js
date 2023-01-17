@@ -164,19 +164,19 @@ async function sortRecords(
   dateSort: DateSort
 ): Promise<BaseMessage[]> {
 
-  const collectionMessages = entries as RecordsWriteMessage[];
+  const messages = entries as RecordsWriteMessage[];
 
   switch (dateSort) {
   case DateSort.CreatedAscending:
-    return collectionMessages.sort((a, b) => lexicographicalCompare(a.descriptor.dateCreated, b.descriptor.dateCreated));
+    return messages.sort((a, b) => lexicographicalCompare(a.descriptor.dateCreated, b.descriptor.dateCreated));
   case DateSort.CreatedDescending:
-    return collectionMessages.sort((a, b) => lexicographicalCompare(b.descriptor.dateCreated, a.descriptor.dateCreated));
+    return messages.sort((a, b) => lexicographicalCompare(b.descriptor.dateCreated, a.descriptor.dateCreated));
   case DateSort.PublishedAscending:
-    return collectionMessages
+    return messages
       .filter(m => m.descriptor.published)
       .sort((a, b) => lexicographicalCompare(a.descriptor.datePublished, b.descriptor.datePublished));
   case DateSort.PublishedDescending:
-    return collectionMessages
+    return messages
       .filter(m => m.descriptor.published)
       .sort((a, b) => lexicographicalCompare(b.descriptor.datePublished, a.descriptor.datePublished));
   }
