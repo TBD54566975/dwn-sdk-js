@@ -1,5 +1,5 @@
-import { RecordsWrite } from '../interfaces/collections/messages/collections-write.js';
-import { RecordsWriteMessage } from '../interfaces/collections/types.js';
+import { RecordsWrite } from '../interfaces/records/messages/records-write.js';
+import { RecordsWriteMessage } from '../interfaces/records/types.js';
 import { MessageStore } from '../store/message-store.js';
 import { DwnMethodName, Message } from './message.js';
 import { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
@@ -60,9 +60,9 @@ export class ProtocolAuthorization {
 
     // fetch the corresponding protocol definition
     const query = {
-      target: recordsWrite.target,
-      method: DwnMethodName.ProtocolsConfigure,
-      protocol: protocolUri
+      target   : recordsWrite.target,
+      method   : DwnMethodName.ProtocolsConfigure,
+      protocol : protocolUri
     };
     const protocols = await messageStore.query(query) as ProtocolsConfigureMessage[];
 
@@ -90,11 +90,11 @@ export class ProtocolAuthorization {
     while (currentParentId !== undefined) {
       // fetch parent
       const query = {
-        target: recordsWrite.target,
-        method: DwnMethodName.RecordsWrite,
+        target   : recordsWrite.target,
+        method   : DwnMethodName.RecordsWrite,
         protocol,
         contextId,
-        recordId: currentParentId
+        recordId : currentParentId
       };
       const parentMessages = await messageStore.query(query) as RecordsWriteMessage[];
 

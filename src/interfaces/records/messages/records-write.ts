@@ -70,17 +70,17 @@ export class RecordsWrite extends Message {
 
     const dataCid = await getDagPbCid(options.data);
     const descriptor: RecordsWriteDescriptor = {
-      recipient: options.recipient,
-      method: DwnMethodName.RecordsWrite,
-      protocol: options.protocol,
-      schema: options.schema,
-      parentId: options.parentId,
-      dataCid: dataCid.toString(),
-      dateCreated: options.dateCreated ?? currentTime,
-      dateModified: options.dateModified ?? currentTime,
-      published: options.published,
-      datePublished: options.datePublished,
-      dataFormat: options.dataFormat
+      recipient     : options.recipient,
+      method        : DwnMethodName.RecordsWrite,
+      protocol      : options.protocol,
+      schema        : options.schema,
+      parentId      : options.parentId,
+      dataCid       : dataCid.toString(),
+      dateCreated   : options.dateCreated ?? currentTime,
+      dateModified  : options.dateModified ?? currentTime,
+      published     : options.published,
+      datePublished : options.datePublished,
+      dataFormat    : options.dataFormat
     };
 
     // generate `datePublished` if the message is to be published but `datePublished` is not given
@@ -172,22 +172,22 @@ export class RecordsWrite extends Message {
 
     const createOptions: RecordsWriteOptions = {
       // immutable properties below, just inherit from the message given
-      target: options.target,
-      recipient: unsignedMessage.descriptor.recipient,
-      recordId: unsignedMessage.recordId,
-      dateCreated: unsignedMessage.descriptor.dateCreated,
-      contextId: unsignedMessage.contextId,
-      protocol: unsignedMessage.descriptor.protocol,
-      parentId: unsignedMessage.descriptor.parentId,
-      schema: unsignedMessage.descriptor.schema,
-      dataFormat: unsignedMessage.descriptor.dataFormat,
+      target         : options.target,
+      recipient      : unsignedMessage.descriptor.recipient,
+      recordId       : unsignedMessage.recordId,
+      dateCreated    : unsignedMessage.descriptor.dateCreated,
+      contextId      : unsignedMessage.contextId,
+      protocol       : unsignedMessage.descriptor.protocol,
+      parentId       : unsignedMessage.descriptor.parentId,
+      schema         : unsignedMessage.descriptor.schema,
+      dataFormat     : unsignedMessage.descriptor.dataFormat,
       // mutable properties below, if not given, inherit from message given
-      dateModified: options.dateModified ?? currentTime,
+      dateModified   : options.dateModified ?? currentTime,
       published,
       datePublished,
-      data: options.data ?? Encoder.base64UrlToBytes(unsignedMessage.encodedData), // there is opportunity for improvement here
+      data           : options.data ?? Encoder.base64UrlToBytes(unsignedMessage.encodedData), // there is opportunity for improvement here
       // finally still need input for signing
-      signatureInput: options.signatureInput,
+      signatureInput : options.signatureInput,
     };
 
     const recordsWrite = await RecordsWrite.create(createOptions);

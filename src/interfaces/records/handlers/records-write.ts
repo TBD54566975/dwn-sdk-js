@@ -2,7 +2,7 @@ import type { RecordsWriteMessage } from '../types.js';
 import type { MethodHandler } from '../../types.js';
 
 import { authenticate } from '../../../core/auth.js';
-import { RecordsWrite } from '../messages/collections-write.js';
+import { RecordsWrite } from '../messages/records-write.js';
 import { MessageReply } from '../../../core/message-reply.js';
 
 import { DwnMethodName, Message } from '../../../core/message.js';
@@ -35,9 +35,9 @@ export const handleRecordsWrite: MethodHandler = async (
 
   // get existing records matching the `recordId`
   const query = {
-    target: recordsWrite.target,
-    method: DwnMethodName.RecordsWrite,
-    recordId: incomingMessage.recordId
+    target   : recordsWrite.target,
+    method   : DwnMethodName.RecordsWrite,
+    recordId : incomingMessage.recordId
   };
   const existingMessages = await messageStore.query(query) as RecordsWriteMessage[];
 
@@ -122,11 +122,11 @@ export async function constructIndexes(recordsWrite: RecordsWrite, isLatestBaseS
   const indexes: { [key: string]: any } = {
     // NOTE: underlying search-index library does not support boolean, so converting boolean to string before storing
     // https://github.com/TBD54566975/dwn-sdk-js/issues/170
-    isLatestBaseState: isLatestBaseState.toString(),
-    author: recordsWrite.author,
-    target: recordsWrite.target,
-    recordId: message.recordId,
-    entryId: await RecordsWrite.getEntryId(recordsWrite.author, recordsWrite.message.descriptor),
+    isLatestBaseState : isLatestBaseState.toString(),
+    author            : recordsWrite.author,
+    target            : recordsWrite.target,
+    recordId          : message.recordId,
+    entryId           : await RecordsWrite.getEntryId(recordsWrite.author, recordsWrite.message.descriptor),
     ...descriptor
   };
 

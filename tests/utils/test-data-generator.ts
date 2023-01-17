@@ -1,7 +1,7 @@
 import * as cbor from '@ipld/dag-cbor';
 import { BaseMessage } from '../../src/core/types.js';
 import { CID } from 'multiformats/cid';
-import { CreateFromOptions } from '../../src/interfaces/collections/messages/collections-write.js';
+import { CreateFromOptions } from '../../src/interfaces/records/messages/records-write.js';
 import { DidResolutionResult } from '../../src/did/did-resolver.js';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';

@@ -2,7 +2,7 @@ import type { SignatureInput } from '../jose/jws/general/types.js';
 import type { BaseDecodedAuthorizationPayload, BaseMessage, Descriptor } from './types.js';
 
 import { CID } from 'multiformats/cid';
-import { RecordsWriteMessage } from '../interfaces/collections/types.js';
+import { RecordsWriteMessage } from '../interfaces/records/types.js';
 import { GeneralJws } from '../jose/jws/general/types.js';
 import { GeneralJwsSigner } from '../jose/jws/general/signer.js';
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';

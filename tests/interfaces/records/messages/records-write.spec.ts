@@ -3,8 +3,8 @@ import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import { base64url } from 'multiformats/bases/base64';
-import { RecordsWrite } from '../../../../src/interfaces/collections/messages/collections-write.js';
-import { RecordsWriteMessage } from '../../../../src/interfaces/collections/types.js';
+import { RecordsWrite } from '../../../../src/interfaces/records/messages/records-write.js';
+import { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { getCurrentTimeInHighPrecision, sleep } from '../../../../src/utils/time.js';
@@ -19,13 +19,13 @@ describe('RecordsWrite', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {
-        target: alice.did,
-        recipient: alice.did,
-        data: TestDataGenerator.randomBytes(10),
-        dataFormat: 'application/json',
-        dateCreated: '2022-10-14T10:20:30.405060',
-        recordId: await TestDataGenerator.randomCborSha256Cid(),
-        signatureInput: TestDataGenerator.createSignatureInputFromPersona(alice)
+        target         : alice.did,
+        recipient      : alice.did,
+        data           : TestDataGenerator.randomBytes(10),
+        dataFormat     : 'application/json',
+        dateCreated    : '2022-10-14T10:20:30.405060',
+        recordId       : await TestDataGenerator.randomCborSha256Cid(),
+        signatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
       };
       const recordsWrite = await RecordsWrite.create(options);
 
@@ -46,13 +46,13 @@ describe('RecordsWrite', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {
-        target: alice.did,
-        recipient: alice.did,
-        data: TestDataGenerator.randomBytes(10),
-        dataFormat: 'application/json',
-        recordId: await TestDataGenerator.randomCborSha256Cid(),
-        published: true,
-        signatureInput: TestDataGenerator.createSignatureInputFromPersona(alice)
+        target         : alice.did,
+        recipient      : alice.did,
+        data           : TestDataGenerator.randomBytes(10),
+        dataFormat     : 'application/json',
+        recordId       : await TestDataGenerator.randomCborSha256Cid(),
+        published      : true,
+        signatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
       };
       const recordsWrite = await RecordsWrite.create(options);
 
@@ -69,10 +69,10 @@ describe('RecordsWrite', () => {
       });
 
       const write = await RecordsWrite.createFrom({
-        target: requester.did,
-        unsignedRecordsWriteMessage: recordsWrite.message,
-        datePublished: getCurrentTimeInHighPrecision(),
-        signatureInput: TestDataGenerator.createSignatureInputFromPersona(requester)
+        target                      : requester.did,
+        unsignedRecordsWriteMessage : recordsWrite.message,
+        datePublished               : getCurrentTimeInHighPrecision(),
+        signatureInput              : TestDataGenerator.createSignatureInputFromPersona(requester)
       });
 
       expect(write.message.descriptor.published).to.be.true;

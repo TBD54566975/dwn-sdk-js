@@ -5,14 +5,14 @@ import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import { base64url } from 'multiformats/bases/base64';
-import { RecordsWriteMessage } from '../../../../src/interfaces/collections/types.js';
+import { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DidResolver } from '../../../../src/did/did-resolver.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
-import { handleRecordsQuery } from '../../../../src/interfaces/collections/handlers/collections-query.js';
-import { handleRecordsWrite } from '../../../../src/interfaces/collections/handlers/collections-write.js';
+import { handleRecordsQuery } from '../../../../src/interfaces/records/handlers/records-query.js';
+import { handleRecordsWrite } from '../../../../src/interfaces/records/handlers/records-write.js';
 import { handleProtocolsConfigure } from '../../../../src/interfaces/protocols/handlers/protocols-configure.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';

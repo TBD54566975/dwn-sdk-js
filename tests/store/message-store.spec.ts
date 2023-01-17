@@ -1,4 +1,4 @@
-import { RecordsWriteMessage } from '../../src/interfaces/collections/types.js';
+import { RecordsWriteMessage } from '../../src/interfaces/records/types.js';
 import { expect } from 'chai';
 import { generateCid } from '../../src/utils/cid.js';
 import { Message } from '../../src/core/message.js';

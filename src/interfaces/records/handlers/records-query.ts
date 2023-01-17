@@ -8,7 +8,7 @@ import { lexicographicalCompare } from '../../../utils/string.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { MessageStore } from '../../../store/message-store.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
-import { DateSort, RecordsQuery } from '../messages/collections-query.js';
+import { DateSort, RecordsQuery } from '../messages/records-query.js';
 
 export const handleRecordsQuery: MethodHandler = async (
   message,

@@ -1,5 +1,5 @@
 import { BaseMessage } from '../../core/types.js';
-import { DateSort } from './messages/collections-query.js';
+import { DateSort } from './messages/records-query.js';
 import { DwnMethodName } from '../../core/message.js';
 
 export type RecordsWriteDescriptor = {

@@ -5,12 +5,12 @@ import chai, { expect } from 'chai';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DidResolver } from '../../../../src/index.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
-import { handleRecordsQuery } from '../../../../src/interfaces/collections/handlers/collections-query.js';
+import { handleRecordsQuery } from '../../../../src/interfaces/records/handlers/records-query.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
-import { DateSort, RecordsQuery } from '../../../../src/interfaces/collections/messages/collections-query.js';
-import { constructIndexes, handleRecordsWrite } from '../../../../src/interfaces/collections/handlers/collections-write.js';
+import { DateSort, RecordsQuery } from '../../../../src/interfaces/records/messages/records-query.js';
+import { constructIndexes, handleRecordsWrite } from '../../../../src/interfaces/records/handlers/records-write.js';
 
 chai.use(chaiAsPromised);
 

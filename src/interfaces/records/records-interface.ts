@@ -1,8 +1,8 @@
-import { RecordsQuery } from './messages/collections-query.js';
-import { RecordsWrite } from './messages/collections-write.js';
+import { RecordsQuery } from './messages/records-query.js';
+import { RecordsWrite } from './messages/records-write.js';
 import { DwnMethodName } from '../../core/message.js';
-import { handleRecordsQuery } from './handlers/collections-query.js';
-import { handleRecordsWrite } from './handlers/collections-write.js';
+import { handleRecordsQuery } from './handlers/records-query.js';
+import { handleRecordsWrite } from './handlers/records-write.js';
 
 export const CollectionsInterface = {
   methodHandlers: {

@@ -11,7 +11,7 @@ import { MessageStoreLevel } from './store/message-store-level.js';
 import { Request } from './core/request.js';
 import { Response } from './core/response.js';
 
-import { CollectionsInterface } from './interfaces/collections/collections-interface.js';
+import { CollectionsInterface } from './interfaces/records/records-interface.js';
 import { PermissionsInterface } from './interfaces/permissions/permissions-interface.js';
 import { ProtocolsInterface } from './interfaces/protocols/protocols-interface.js';
 
