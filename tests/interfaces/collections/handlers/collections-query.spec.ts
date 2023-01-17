@@ -248,10 +248,10 @@ describe('handleRecordsQuery()', () => {
       );
 
       // directly inserting data to datastore so that we don't have to setup to grant Bob permission to write to Alice's DWN
-      const additionalIndexes1 = await constructIndexes(record1Data.collectionsWrite, true);
-      const additionalIndexes2 = await constructIndexes(record2Data.collectionsWrite, true);
-      const additionalIndexes3 = await constructIndexes(record3Data.collectionsWrite, true);
-      const additionalIndexes4 = await constructIndexes(record4Data.collectionsWrite, true);
+      const additionalIndexes1 = await constructIndexes(record1Data.recordsWrite, true);
+      const additionalIndexes2 = await constructIndexes(record2Data.recordsWrite, true);
+      const additionalIndexes3 = await constructIndexes(record3Data.recordsWrite, true);
+      const additionalIndexes4 = await constructIndexes(record4Data.recordsWrite, true);
       await messageStore.put(record1Data.message, additionalIndexes1);
       await messageStore.put(record2Data.message, additionalIndexes2);
       await messageStore.put(record3Data.message, additionalIndexes3);
@@ -359,8 +359,8 @@ describe('handleRecordsQuery()', () => {
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
       const schema = 'myAwesomeSchema';
-      const collectionsWriteMessage1Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice, target: alice, schema });
-      const collectionsWriteMessage2Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: bob, target: bob, schema });
+      const recordsWriteMessage1Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice, target: alice, schema });
+      const recordsWriteMessage2Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: bob, target: bob, schema });
 
       const aliceQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
         requester : alice,
@@ -370,8 +370,8 @@ describe('handleRecordsQuery()', () => {
 
       // insert data into 2 different tenants
       const didResolver = new DidResolver([new DidKeyResolver()]);
-      await handleRecordsWrite(collectionsWriteMessage1Data.message, messageStore, didResolver);
-      await handleRecordsWrite(collectionsWriteMessage2Data.message, messageStore, didResolver);
+      await handleRecordsWrite(recordsWriteMessage1Data.message, messageStore, didResolver);
+      await handleRecordsWrite(recordsWriteMessage2Data.message, messageStore, didResolver);
 
       const reply = await handleRecordsQuery(aliceQueryMessageData.message, messageStore, didResolver);
 

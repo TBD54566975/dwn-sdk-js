@@ -101,7 +101,7 @@ export type GenerateRecordsWriteMessageOutput = {
   requester: Persona;
   target: Persona;
   message: RecordsWriteMessage;
-  collectionsWrite: RecordsWrite;
+  recordsWrite: RecordsWrite;
 };
 
 export type GenerateRecordsQueryMessageInput = {
@@ -292,14 +292,14 @@ export class TestDataGenerator {
     };
 
 
-    const collectionsWrite = await RecordsWrite.create(options);
-    const message = collectionsWrite.message as RecordsWriteMessage;
+    const recordsWrite = await RecordsWrite.create(options);
+    const message = recordsWrite.message as RecordsWriteMessage;
 
     return {
       target,
       requester,
       message,
-      collectionsWrite
+      recordsWrite
     };
   };
 
@@ -325,8 +325,8 @@ export class TestDataGenerator {
       signatureInput              : TestDataGenerator.createSignatureInputFromPersona(input.requester)
     };
 
-    const collectionsWrite = await RecordsWrite.createFrom(options);
-    return collectionsWrite;
+    const recordsWrite = await RecordsWrite.createFrom(options);
+    return recordsWrite;
   }
 
   /**

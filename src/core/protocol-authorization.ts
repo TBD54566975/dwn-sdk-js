@@ -15,15 +15,15 @@ export class ProtocolAuthorization {
    * @throws {Error} if authorization fails.
    */
   public static async authorize(
-    collectionsWrite: RecordsWrite,
+    recordsWrite: RecordsWrite,
     requesterDid: string,
     messageStore: MessageStore
   ): Promise<void> {
     // fetch the protocol definition
-    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(collectionsWrite, messageStore);
+    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(recordsWrite, messageStore);
 
     // fetch ancestor message chain
-    const ancestorMessageChain: RecordsWriteMessage[] = await ProtocolAuthorization.constructAncestorMessageChain(collectionsWrite, messageStore);
+    const ancestorMessageChain: RecordsWriteMessage[] = await ProtocolAuthorization.constructAncestorMessageChain(recordsWrite, messageStore);
 
     // record schema -> schema label map
     const recordSchemaToLabelMap: Map<string, string> = new Map();
@@ -34,33 +34,33 @@ export class ProtocolAuthorization {
 
     // get the rule set for the inbound message
     const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
-      collectionsWrite.message,
+      recordsWrite.message,
       protocolDefinition, ancestorMessageChain,
       recordSchemaToLabelMap
     );
 
     // verify the requester of the inbound message against allowed requester rule
     ProtocolAuthorization.verifyAllowedRequester(
-      requesterDid, collectionsWrite.target, inboundMessageRuleSet, ancestorMessageChain, recordSchemaToLabelMap
+      requesterDid, recordsWrite.target, inboundMessageRuleSet, ancestorMessageChain, recordSchemaToLabelMap
     );
 
     // verify method invoked against the allowed actions
-    ProtocolAuthorization.verifyAllowedActions(requesterDid, collectionsWrite, inboundMessageRuleSet);
+    ProtocolAuthorization.verifyAllowedActions(requesterDid, recordsWrite, inboundMessageRuleSet);
 
     // verify allowed condition of the write
-    await ProtocolAuthorization.verifyActionCondition(collectionsWrite, messageStore);
+    await ProtocolAuthorization.verifyActionCondition(recordsWrite, messageStore);
   }
 
   /**
    * Fetches the protocol definition based on the protocol specified in the given message.
    */
-  private static async fetchProtocolDefinition(collectionsWrite: RecordsWrite, messageStore: MessageStore): Promise<ProtocolDefinition> {
+  private static async fetchProtocolDefinition(recordsWrite: RecordsWrite, messageStore: MessageStore): Promise<ProtocolDefinition> {
     // get the protocol URI
-    const protocolUri = collectionsWrite.message.descriptor.protocol;
+    const protocolUri = recordsWrite.message.descriptor.protocol;
 
     // fetch the corresponding protocol definition
     const query = {
-      target: collectionsWrite.target,
+      target: recordsWrite.target,
       method: DwnMethodName.ProtocolsConfigure,
       protocol: protocolUri
     };
@@ -78,19 +78,19 @@ export class ProtocolAuthorization {
    * Constructs a chain of ancestor messages
    * @returns the ancestor chain of messages where the first element is the root of the chain; returns empty array if no parent is specified.
    */
-  private static async constructAncestorMessageChain(collectionsWrite: RecordsWrite, messageStore: MessageStore)
+  private static async constructAncestorMessageChain(recordsWrite: RecordsWrite, messageStore: MessageStore)
     : Promise<RecordsWriteMessage[]> {
     const ancestorMessageChain: RecordsWriteMessage[] = [];
 
-    const protocol = collectionsWrite.message.descriptor.protocol;
-    const contextId = collectionsWrite.message.contextId;
+    const protocol = recordsWrite.message.descriptor.protocol;
+    const contextId = recordsWrite.message.contextId;
 
     // keep walking up the chain from the inbound message's parent, until there is no more parent
-    let currentParentId = collectionsWrite.message.descriptor.parentId;
+    let currentParentId = recordsWrite.message.descriptor.parentId;
     while (currentParentId !== undefined) {
       // fetch parent
       const query = {
-        target: collectionsWrite.target,
+        target: recordsWrite.target,
         method: DwnMethodName.RecordsWrite,
         protocol,
         contextId,
@@ -219,20 +219,20 @@ export class ProtocolAuthorization {
    * Currently the only check is: if the write is not the initial write, the author must be the same as the initial write
    * @throws {Error} if fails verification
    */
-  private static async verifyActionCondition(collectionsWrite: RecordsWrite, messageStore: MessageStore): Promise<void> {
-    const isInitialWrite = await collectionsWrite.isInitialWrite();
+  private static async verifyActionCondition(recordsWrite: RecordsWrite, messageStore: MessageStore): Promise<void> {
+    const isInitialWrite = await recordsWrite.isInitialWrite();
     if (!isInitialWrite) {
       // fetch the initialWrite
       const query = {
-        entryId: collectionsWrite.message.recordId
+        entryId: recordsWrite.message.recordId
       };
       const result = await messageStore.query(query) as RecordsWriteMessage[];
 
       // check the author of the initial write matches the author of the incoming message
       const initialWrite = result[0];
       const authorOfInitialWrite = Message.getAuthor(initialWrite);
-      if (collectionsWrite.author !== authorOfInitialWrite) {
-        throw new Error(`author of incoming message '${collectionsWrite.author}' must match to author of initial write '${authorOfInitialWrite}'`);
+      if (recordsWrite.author !== authorOfInitialWrite) {
+        throw new Error(`author of incoming message '${recordsWrite.author}' must match to author of initial write '${authorOfInitialWrite}'`);
       }
     }
   }

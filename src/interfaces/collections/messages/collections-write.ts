@@ -52,11 +52,11 @@ export class RecordsWrite extends Message {
   public static async parse(message: RecordsWriteMessage): Promise<RecordsWrite> {
     await validateAuthorizationIntegrity(message, { allowedProperties: new Set(['recordId', 'contextId']) });
 
-    const collectionsWrite = new RecordsWrite(message);
+    const recordsWrite = new RecordsWrite(message);
 
-    await collectionsWrite.validateIntegrity(); // RecordsWrite specific data integrity check
+    await recordsWrite.validateIntegrity(); // RecordsWrite specific data integrity check
 
-    return collectionsWrite;
+    return recordsWrite;
   }
 
   /**
@@ -190,8 +190,8 @@ export class RecordsWrite extends Message {
       signatureInput: options.signatureInput,
     };
 
-    const collectionsWrite = await RecordsWrite.create(createOptions);
-    return collectionsWrite;
+    const recordsWrite = await RecordsWrite.create(createOptions);
+    return recordsWrite;
   }
 
   public async authorize(messageStore: MessageStore): Promise<void> {

@@ -27,9 +27,9 @@ describe('RecordsWrite', () => {
         recordId: await TestDataGenerator.randomCborSha256Cid(),
         signatureInput: TestDataGenerator.createSignatureInputFromPersona(alice)
       };
-      const collectionsWrite = await RecordsWrite.create(options);
+      const recordsWrite = await RecordsWrite.create(options);
 
-      const message = collectionsWrite.message as RecordsWriteMessage;
+      const message = recordsWrite.message as RecordsWriteMessage;
 
       expect(message.authorization).to.exist;
       expect(message.encodedData).to.equal(base64url.baseEncode(options.data));
@@ -39,7 +39,7 @@ describe('RecordsWrite', () => {
 
       const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-      await collectionsWrite.authorize(messageStoreStub);
+      await recordsWrite.authorize(messageStoreStub);
     });
 
     it('should be able to auto-fill `datePublished` when `published` set to `true` but `datePublished` not given', async () => {
@@ -54,9 +54,9 @@ describe('RecordsWrite', () => {
         published: true,
         signatureInput: TestDataGenerator.createSignatureInputFromPersona(alice)
       };
-      const collectionsWrite = await RecordsWrite.create(options);
+      const recordsWrite = await RecordsWrite.create(options);
 
-      const message = collectionsWrite.message as RecordsWriteMessage;
+      const message = recordsWrite.message as RecordsWriteMessage;
 
       expect(message.descriptor.datePublished).to.exist;
     });
@@ -64,13 +64,13 @@ describe('RecordsWrite', () => {
 
   describe('createFrom()', () => {
     it('should create a RecordsWrite with `published` set to `true` with just `publishedDate` given', async () => {
-      const { requester, collectionsWrite } = await TestDataGenerator.generateRecordsWriteMessage({
+      const { requester, recordsWrite } = await TestDataGenerator.generateRecordsWriteMessage({
         published: false
       });
 
       const write = await RecordsWrite.createFrom({
         target: requester.did,
-        unsignedRecordsWriteMessage: collectionsWrite.message,
+        unsignedRecordsWriteMessage: recordsWrite.message,
         datePublished: getCurrentTimeInHighPrecision(),
         signatureInput: TestDataGenerator.createSignatureInputFromPersona(requester)
       });
