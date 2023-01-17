@@ -63,17 +63,17 @@ describe('handleRecordsWrite()', () => {
       expect(recordsWriteReply.status.code).to.equal(202);
 
       const recordId = recordsWriteMessageData.message.recordId;
-      const collectionsQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
+      const recordsQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
         requester,
         target,
         filter: { recordId }
       });
 
       // verify the message written can be queried
-      const collectionsQueryReply = await handleRecordsQuery(collectionsQueryMessageData.message, messageStore, didResolverStub);
-      expect(collectionsQueryReply.status.code).to.equal(200);
-      expect(collectionsQueryReply.entries?.length).to.equal(1);
-      expect((collectionsQueryReply.entries![0] as RecordsWriteMessage).encodedData).to.equal(base64url.baseEncode(data1));
+      const recordsQueryReply = await handleRecordsQuery(recordsQueryMessageData.message, messageStore, didResolverStub);
+      expect(recordsQueryReply.status.code).to.equal(200);
+      expect(recordsQueryReply.entries?.length).to.equal(1);
+      expect((recordsQueryReply.entries![0] as RecordsWriteMessage).encodedData).to.equal(base64url.baseEncode(data1));
 
       // generate and write a new RecordsWrite to overwrite the existing record
       // a new RecordsWrite by default will have a later `dateModified`
@@ -92,7 +92,7 @@ describe('handleRecordsWrite()', () => {
       expect(newRecordsWriteReply.status.code).to.equal(202);
 
       // verify new record has overwritten the existing record
-      const newRecordsQueryReply = await handleRecordsQuery(collectionsQueryMessageData.message, messageStore, didResolverStub);
+      const newRecordsQueryReply = await handleRecordsQuery(recordsQueryMessageData.message, messageStore, didResolverStub);
 
       expect(newRecordsQueryReply.status.code).to.equal(200);
       expect(newRecordsQueryReply.entries?.length).to.equal(1);
@@ -103,7 +103,7 @@ describe('handleRecordsWrite()', () => {
       expect(thirdRecordsWriteReply.status.code).to.equal(409); // expecting to fail
 
       // expecting unchanged
-      const thirdRecordsQueryReply = await handleRecordsQuery(collectionsQueryMessageData.message, messageStore, didResolverStub);
+      const thirdRecordsQueryReply = await handleRecordsQuery(recordsQueryMessageData.message, messageStore, didResolverStub);
       expect(thirdRecordsQueryReply.status.code).to.equal(200);
       expect(thirdRecordsQueryReply.entries?.length).to.equal(1);
       expect((thirdRecordsQueryReply.entries![0] as RecordsWriteMessage).encodedData).to.equal(newDataEncoded);
@@ -158,17 +158,17 @@ describe('handleRecordsWrite()', () => {
       expect(recordsWriteReply.status.code).to.equal(202);
 
       // query to fetch the record
-      const collectionsQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
+      const recordsQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
         requester,
         target,
         filter: { recordId: originatingMessageData.message.recordId }
       });
 
       // verify the data is written
-      const collectionsQueryReply = await handleRecordsQuery(collectionsQueryMessageData.message, messageStore, didResolverStub);
-      expect(collectionsQueryReply.status.code).to.equal(200);
-      expect(collectionsQueryReply.entries?.length).to.equal(1);
-      expect((collectionsQueryReply.entries![0] as RecordsWriteMessage).descriptor.dataCid)
+      const recordsQueryReply = await handleRecordsQuery(recordsQueryMessageData.message, messageStore, didResolverStub);
+      expect(recordsQueryReply.status.code).to.equal(200);
+      expect(recordsQueryReply.entries?.length).to.equal(1);
+      expect((recordsQueryReply.entries![0] as RecordsWriteMessage).descriptor.dataCid)
         .to.equal(smallerCollectionWrite.message.descriptor.dataCid);
 
       // attempt to write the message with larger lexicographical message CID
@@ -176,7 +176,7 @@ describe('handleRecordsWrite()', () => {
       expect(newRecordsWriteReply.status.code).to.equal(202);
 
       // verify new record has overwritten the existing record
-      const newRecordsQueryReply = await handleRecordsQuery(collectionsQueryMessageData.message, messageStore, didResolverStub);
+      const newRecordsQueryReply = await handleRecordsQuery(recordsQueryMessageData.message, messageStore, didResolverStub);
       expect(newRecordsQueryReply.status.code).to.equal(200);
       expect(newRecordsQueryReply.entries?.length).to.equal(1);
       expect((newRecordsQueryReply.entries![0] as RecordsWriteMessage).descriptor.dataCid)
@@ -191,7 +191,7 @@ describe('handleRecordsWrite()', () => {
       expect(thirdRecordsWriteReply.status.code).to.equal(409); // expecting to fail
 
       // verify the message in store is still the one with larger lexicographical message CID
-      const thirdRecordsQueryReply = await handleRecordsQuery(collectionsQueryMessageData.message, messageStore, didResolverStub);
+      const thirdRecordsQueryReply = await handleRecordsQuery(recordsQueryMessageData.message, messageStore, didResolverStub);
       expect(thirdRecordsQueryReply.status.code).to.equal(200);
       expect(thirdRecordsQueryReply.entries?.length).to.equal(1);
       expect((thirdRecordsQueryReply.entries![0] as RecordsWriteMessage).descriptor.dataCid)
@@ -279,16 +279,16 @@ describe('handleRecordsWrite()', () => {
           expect(newWriteReply.status.code).to.equal(202);
 
           // verify the new record state can be queried
-          const collectionsQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
+          const recordsQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
             requester,
             target : requester,
             filter : { recordId: message.recordId }
           });
 
-          const collectionsQueryReply = await handleRecordsQuery(collectionsQueryMessageData.message, messageStore, didResolverStub);
-          expect(collectionsQueryReply.status.code).to.equal(200);
-          expect(collectionsQueryReply.entries?.length).to.equal(1);
-          expect((collectionsQueryReply.entries![0] as RecordsWriteMessage).descriptor.published).to.equal(true);
+          const recordsQueryReply = await handleRecordsQuery(recordsQueryMessageData.message, messageStore, didResolverStub);
+          expect(recordsQueryReply.status.code).to.equal(200);
+          expect(recordsQueryReply.entries?.length).to.equal(1);
+          expect((recordsQueryReply.entries![0] as RecordsWriteMessage).descriptor.published).to.equal(true);
         });
 
         it('should inherit parent published state when using createFrom() to create RecordsWrite', async () => {
@@ -315,17 +315,17 @@ describe('handleRecordsWrite()', () => {
           expect(newWriteReply.status.code).to.equal(202);
 
           // verify the new record state can be queried
-          const collectionsQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
+          const recordsQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
             requester,
             target : requester,
             filter : { recordId: message.recordId }
           });
 
-          const collectionsQueryReply = await handleRecordsQuery(collectionsQueryMessageData.message, messageStore, didResolverStub);
-          expect(collectionsQueryReply.status.code).to.equal(200);
-          expect(collectionsQueryReply.entries?.length).to.equal(1);
+          const recordsQueryReply = await handleRecordsQuery(recordsQueryMessageData.message, messageStore, didResolverStub);
+          expect(recordsQueryReply.status.code).to.equal(200);
+          expect(recordsQueryReply.entries?.length).to.equal(1);
 
-          const recordsWriteReturned = collectionsQueryReply.entries![0] as RecordsWriteMessage;
+          const recordsWriteReturned = recordsQueryReply.entries![0] as RecordsWriteMessage;
           expect(recordsWriteReturned.encodedData).to.equal(Encoder.bytesToBase64Url(newData));
           expect(recordsWriteReturned.descriptor.published).to.equal(true);
           expect(recordsWriteReturned.descriptor.datePublished).to.equal(message.descriptor.datePublished);
@@ -1146,17 +1146,17 @@ describe('handleRecordsWrite()', () => {
         expect(reply.status.code).to.equal(202);
 
         // verify the fulfillment message is stored
-        const collectionsQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
+        const recordsQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
           requester : pfi,
           target    : pfi,
           filter    : { recordId: fulfillmentMessageData.message.recordId }
         });
 
         // verify the data is written
-        const collectionsQueryReply = await handleRecordsQuery(collectionsQueryMessageData.message, messageStore, didResolver);
-        expect(collectionsQueryReply.status.code).to.equal(200);
-        expect(collectionsQueryReply.entries?.length).to.equal(1);
-        expect((collectionsQueryReply.entries![0] as RecordsWriteMessage).descriptor.dataCid)
+        const recordsQueryReply = await handleRecordsQuery(recordsQueryMessageData.message, messageStore, didResolver);
+        expect(recordsQueryReply.status.code).to.equal(200);
+        expect(recordsQueryReply.entries?.length).to.equal(1);
+        expect((recordsQueryReply.entries![0] as RecordsWriteMessage).descriptor.dataCid)
           .to.equal(fulfillmentMessageData.message.descriptor.dataCid);
       });
 

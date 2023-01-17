@@ -346,8 +346,8 @@ export class TestDataGenerator {
     };
     removeUndefinedProperties(options);
 
-    const collectionsQuery = await RecordsQuery.create(options);
-    const message = collectionsQuery.message as RecordsQueryMessage;
+    const recordsQuery = await RecordsQuery.create(options);
+    const message = recordsQuery.message as RecordsQueryMessage;
 
     return {
       target,
