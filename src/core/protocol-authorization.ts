@@ -216,24 +216,23 @@ export class ProtocolAuthorization {
 
   /**
    * Verifies if the desired action can be taken.
-   * Currently the only check is: if the write is an "update", the author must be the same as the lineage parent
+   * Currently the only check is: if the write is not the initial write, the author must be the same as the initial write
    * @throws {Error} if fails verification
    */
   private static async verifyActionCondition(collectionsWrite: CollectionsWrite, messageStore: MessageStore): Promise<void> {
-    if (collectionsWrite.message.descriptor.lineageParent !== undefined) {
-      // fetch the lineage parent
+    const isInitialWrite = await collectionsWrite.isInitialWrite();
+    if (!isInitialWrite) {
+      // fetch the initialWrite
       const query = {
-        target  : collectionsWrite.target,
-        method  : DwnMethodName.CollectionsWrite,
-        entryId : collectionsWrite.message.descriptor.lineageParent
+        entryId: collectionsWrite.message.recordId
       };
       const result = await messageStore.query(query) as CollectionsWriteMessage[];
 
-      // check the author of lineage parent matches the lineage of the incoming message
-      const lineageParent = result[0];
-      const authorOfLineageParent = Message.getAuthor(lineageParent);
-      if (collectionsWrite.author !== authorOfLineageParent) {
-        throw new Error(`author of incoming message '${collectionsWrite.author}' must match to author of lineage parent '${authorOfLineageParent}'`);
+      // check the author of the initial write matches the author of the incoming message
+      const initialWrite = result[0];
+      const authorOfInitialWrite = Message.getAuthor(initialWrite);
+      if (collectionsWrite.author !== authorOfInitialWrite) {
+        throw new Error(`author of incoming message '${collectionsWrite.author}' must match to author of initial write '${authorOfInitialWrite}'`);
       }
     }
   }

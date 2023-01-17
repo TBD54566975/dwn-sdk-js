@@ -41,11 +41,16 @@ export const handleCollectionsWrite: MethodHandler = async (
   };
   const existingMessages = await messageStore.query(query) as CollectionsWriteMessage[];
 
-  // if the incoming write is not the lineage root, then it must not modify any immutable properties defined by the lineage root
-  if (incomingMessage.descriptor.lineageParent !== undefined) {
+  // if the incoming write is not the initial write, then it must not modify any immutable properties defined by the initial write
+  const newMessageIsInitialWrite = await collectionsWrite.isInitialWrite();
+  if (!newMessageIsInitialWrite) {
     try {
-      const lineageRootMessage = CollectionsWrite.getLineageRootMessage(existingMessages);
-      CollectionsWrite.verifyEqualityOfImmutableProperties(lineageRootMessage, incomingMessage);
+      if (existingMessages.length === 0) {
+        throw new Error(`initial write is not found `);
+      }
+
+      const anExistingWrite = existingMessages[0]; // the assertion here is that any existing write should contain all immutable properties
+      CollectionsWrite.verifyEqualityOfImmutableProperties(anExistingWrite, incomingMessage);
     } catch (e) {
       return new MessageReply({
         status: { code: 400, detail: e.message }
@@ -59,16 +64,6 @@ export const handleCollectionsWrite: MethodHandler = async (
   let newestMessage;
   // if incoming message is newest
   if (newestExistingMessage === undefined || await CollectionsWrite.isNewer(incomingMessage, newestExistingMessage)) {
-    // expected lineage parent of the incoming message should not be specified (ie. an originating message) if no existing record exists
-    // else the expected lineage parent should just point to originating message (logic will change when CollectionsDelete is implemented)
-    const expectedLineageParent = newestExistingMessage?.recordId;
-    const incomingMessageLineageParent = incomingMessage.descriptor.lineageParent;
-    if (incomingMessageLineageParent !== expectedLineageParent) {
-      return new MessageReply({
-        status: { code: 400, detail: `expecting lineageParent to be ${expectedLineageParent} but got ${incomingMessageLineageParent}` }
-      });
-    }
-
     incomingMessageIsNewest = true;
     newestMessage = incomingMessage;
   } else { // existing message is the same age or newer than the incoming message
@@ -92,22 +87,22 @@ export const handleCollectionsWrite: MethodHandler = async (
     });
   }
 
-  // delete all existing messages that are not newest, except for the originating record
-  // NOTE: under normal operation, there should only be at most two existing messages per `recordId`
-  // and at most only one message needs to be deleted (prior to CollectionsDelete implementation),
-  // but the DWN may crash before `delete()` is called below, so we use a loop as tactic to clean up lingering data as needed
+  // delete all existing messages that are not newest, except for the initial write
+  // NOTE: under normal operation, there should only be one existing write per `recordId` (the initial write),
+  // but the DWN may crash before `delete()` is called below, so we use a loop as a tactic to clean up lingering data as needed
   for (const message of existingMessages) {
     const messageIsOld = await CollectionsWrite.isOlder(message, newestMessage);
     if (messageIsOld) {
       // the easiest implementation here is delete each old messages
-      // and re-create it with the right index (isLatestBaseState = 'false') if the message is the originating message,
+      // and re-create it with the right index (isLatestBaseState = 'false') if the message is the initial write,
       // but there is room for better/more efficient implementation here
       const cid = await Message.getCid(message);
       await messageStore.delete(cid);
 
-      // if the message is the originating message
+      // if the existing message is the initial write
       // we actually need to keep it BUT, need to ensure the message is no longer marked as the latest state
-      if (message.descriptor.lineageParent === undefined) {
+      const existingMessageIsInitialWrite = await CollectionsWrite.isInitialWrite(message);
+      if (existingMessageIsInitialWrite) {
         const existingCollectionsWrite = await CollectionsWrite.parse(message);
         const isLatestBaseState = false;
         const indexes = await constructIndexes(existingCollectionsWrite, isLatestBaseState);
@@ -131,7 +126,7 @@ export async function constructIndexes(collectionsWrite: CollectionsWrite, isLat
     author            : collectionsWrite.author,
     target            : collectionsWrite.target,
     recordId          : message.recordId,
-    entryId           : await CollectionsWrite.getCanonicalId(collectionsWrite.author, collectionsWrite.message.descriptor),
+    entryId           : await CollectionsWrite.getEntryId(collectionsWrite.author, collectionsWrite.message.descriptor),
     ...descriptor
   };
 
