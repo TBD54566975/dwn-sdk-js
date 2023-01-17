@@ -177,13 +177,13 @@ export class MessageStoreLevel implements MessageStore {
    * @example
    * buildIndexQueryTerms({
    *    ability : {
-   *      method : 'CollectionsQuery',
+   *      method : 'RecordsQuery',
    *      schema : 'https://schema.org/MusicPlaylist'
    *    }
    * })
    * // returns
    * [
-        { FIELD: ['ability.method'], VALUE: 'CollectionsQuery' },
+        { FIELD: ['ability.method'], VALUE: 'RecordsQuery' },
         { FIELD: ['ability.schema'], VALUE: 'https://schema.org/MusicPlaylist' }
       ]
    * @param query - the query to parse

@@ -11,15 +11,15 @@ describe('MessageStoreLevel Tests', () => {
   describe('buildIndexQueryTerms', () => {
     it('returns an array of terms based on the query object type provided', () => {
       const query = {
-        method: 'CollectionsQuery',
-        schema: 'https://schema.org/MusicPlaylist',
-        objectId: 'abcd123',
-        published: true, // boolean type
-        publishedDate: 1234567 // number type
+        method        : 'RecordsQuery',
+        schema        : 'https://schema.org/MusicPlaylist',
+        objectId      : 'abcd123',
+        published     : true, // boolean type
+        publishedDate : 1234567 // number type
       };
 
       const expected = [
-        { FIELD: ['method'], VALUE: 'CollectionsQuery' },
+        { FIELD: ['method'], VALUE: 'RecordsQuery' },
         { FIELD: ['schema'], VALUE: 'https://schema.org/MusicPlaylist' },
         { FIELD: ['objectId'], VALUE: 'abcd123' },
         { FIELD: ['published'], VALUE: true },
@@ -32,11 +32,11 @@ describe('MessageStoreLevel Tests', () => {
 
     it('flattens nested objects', () => {
       const query = {
-        requester: 'AlBorland',
-        ability: {
-          method: 'CollectionsQuery',
-          schema: 'https://schema.org/MusicPlaylist',
-          doo: {
+        requester : 'AlBorland',
+        ability   : {
+          method : 'RecordsQuery',
+          schema : 'https://schema.org/MusicPlaylist',
+          doo    : {
             bingo: 'bongo'
           }
         }
@@ -44,7 +44,7 @@ describe('MessageStoreLevel Tests', () => {
 
       const expected = [
         { FIELD: ['requester'], VALUE: 'AlBorland' },
-        { FIELD: ['ability.method'], VALUE: 'CollectionsQuery' },
+        { FIELD: ['ability.method'], VALUE: 'RecordsQuery' },
         { FIELD: ['ability.schema'], VALUE: 'https://schema.org/MusicPlaylist' },
         { FIELD: ['ability.doo.bingo'], VALUE: 'bongo' }
       ];
@@ -58,8 +58,8 @@ describe('MessageStoreLevel Tests', () => {
   describe('put', function () {
     before(async () => {
       messageStore = new MessageStoreLevel({
-        blockstoreLocation: 'TEST-BLOCKSTORE',
-        indexLocation: 'TEST-INDEX'
+        blockstoreLocation : 'TEST-BLOCKSTORE',
+        indexLocation      : 'TEST-INDEX'
       });
       await messageStore.open();
     });

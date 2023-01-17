@@ -33,8 +33,8 @@ export type UnsignedRecordsWriteMessage = {
   encodedData?: string;
 };
 
-export type CollectionsQueryDescriptor = {
-  method: DwnMethodName.CollectionsQuery;
+export type RecordsQueryDescriptor = {
+  method: DwnMethodName.RecordsQuery;
   dateCreated: string;
   filter: {
     recipient?: string;
@@ -55,6 +55,6 @@ export type RecordsWriteAuthorizationPayload = {
   descriptorCid: string;
 };
 
-export type CollectionsQueryMessage = BaseMessage & {
-  descriptor: CollectionsQueryDescriptor;
+export type RecordsQueryMessage = BaseMessage & {
+  descriptor: RecordsQueryDescriptor;
 };

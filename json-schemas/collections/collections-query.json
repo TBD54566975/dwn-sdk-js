@@ -22,7 +22,7 @@
       "properties": {
         "method": {
           "enum": [
-            "CollectionsQuery"
+            "RecordsQuery"
           ],
           "type": "string"
         },

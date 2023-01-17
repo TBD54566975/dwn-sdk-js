@@ -21,8 +21,8 @@ describe('DWN', () => {
       // important to follow this pattern to initialize the message store in tests
       // so that different suites can reuse the same block store and index location for testing
       messageStore = new MessageStoreLevel({
-        blockstoreLocation: 'TEST-BLOCKSTORE',
-        indexLocation: 'TEST-INDEX'
+        blockstoreLocation : 'TEST-BLOCKSTORE',
+        indexLocation      : 'TEST-INDEX'
       });
 
       await messageStore.open();
@@ -41,8 +41,8 @@ describe('DWN', () => {
       const alice = await DidKeyResolver.generate();
 
       const messageData = await TestDataGenerator.generateRecordsWriteMessage({
-        requester: alice,
-        target: alice
+        requester : alice,
+        target    : alice
       });
 
       const dwnConfig: Config = { messageStore };
@@ -53,8 +53,8 @@ describe('DWN', () => {
       expect(reply.status.code).to.equal(202);
     });
 
-    it('should process CollectionsQuery message', async () => {
-      const { requester, message } = await TestDataGenerator.generateCollectionsQueryMessage();
+    it('should process RecordsQuery message', async () => {
+      const { requester, message } = await TestDataGenerator.generateRecordsQueryMessage();
       const generatedDidMethod = Did.getMethodName(requester.did);
 
       // setting up a stub method resolver
@@ -62,8 +62,8 @@ describe('DWN', () => {
       const resolveStub = sinon.stub<[string], Promise<DidResolutionResult>>();
       resolveStub.withArgs(requester.did).resolves(didResolutionResult);
       const methodResolverStub = <DidMethodResolver>{
-        method: () => { return generatedDidMethod; },
-        resolve: resolveStub
+        method  : () => { return generatedDidMethod; },
+        resolve : resolveStub
       };
 
       const dwnConfig: Config = {

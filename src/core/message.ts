@@ -12,7 +12,7 @@ import { validateJsonSchema } from '../validator.js';
 
 export enum DwnMethodName {
   RecordsWrite = 'RecordsWrite',
-  CollectionsQuery = 'CollectionsQuery',
+  RecordsQuery = 'RecordsQuery',
   HooksWrite = 'HooksWrite',
   ProtocolsConfigure = 'ProtocolsConfigure',
   ProtocolsQuery = 'ProtocolsQuery'

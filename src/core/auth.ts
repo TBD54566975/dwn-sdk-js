@@ -15,7 +15,7 @@ type AuthorizationPayloadConstraints = {
 
 /**
  * Authenticates then authorizes the given message using the "canonical" auth flow.
- * Some message auth require special handling such as `RecordsWrite` and `CollectionsQuery`,
+ * Some message auth require special handling such as `RecordsWrite` and `RecordsQuery`,
  * which would be incompatible with this auth flow.
  * @throws {Error} if auth fails
  */
