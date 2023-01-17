@@ -23,7 +23,7 @@
       "properties": {
         "method": {
           "enum": [
-            "CollectionsWrite"
+            "RecordsWrite"
           ],
           "type": "string"
         },

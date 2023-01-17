@@ -18,7 +18,7 @@ import mkdirp from 'mkdirp';
 import standaloneCode from 'ajv/dist/standalone/index.js';
 
 import CollectionsQuery from '../json-schemas/collections/collections-query.json' assert { type: 'json' };
-import CollectionsWrite from '../json-schemas/collections/collections-write.json' assert { type: 'json' };
+import RecordsWrite from '../json-schemas/collections/collections-write.json' assert { type: 'json' };
 import Definitions from '../json-schemas/definitions.json' assert { type: 'json' };
 import GeneralJwk from '../json-schemas/jwk/general-jwk.json' assert { type: 'json' };
 import GeneralJws from '../json-schemas/general-jws.json' assert { type: 'json' };
@@ -36,7 +36,7 @@ import Request from '../json-schemas/request.json' assert { type: 'json' };
 
 const schemas = {
   CollectionsQuery,
-  CollectionsWrite,
+  RecordsWrite,
   Definitions,
   GeneralJwk,
   GeneralJws,

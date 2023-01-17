@@ -21,8 +21,8 @@ describe('DWN', () => {
       // important to follow this pattern to initialize the message store in tests
       // so that different suites can reuse the same block store and index location for testing
       messageStore = new MessageStoreLevel({
-        blockstoreLocation : 'TEST-BLOCKSTORE',
-        indexLocation      : 'TEST-INDEX'
+        blockstoreLocation: 'TEST-BLOCKSTORE',
+        indexLocation: 'TEST-INDEX'
       });
 
       await messageStore.open();
@@ -36,13 +36,13 @@ describe('DWN', () => {
       await messageStore.close();
     });
 
-    it('should process CollectionsWrite message signed by a `did:key` DID', async () => {
+    it('should process RecordsWrite message signed by a `did:key` DID', async () => {
       // generate a `did:key` DID
       const alice = await DidKeyResolver.generate();
 
-      const messageData = await TestDataGenerator.generateCollectionsWriteMessage({
-        requester : alice,
-        target    : alice
+      const messageData = await TestDataGenerator.generateRecordsWriteMessage({
+        requester: alice,
+        target: alice
       });
 
       const dwnConfig: Config = { messageStore };
@@ -62,8 +62,8 @@ describe('DWN', () => {
       const resolveStub = sinon.stub<[string], Promise<DidResolutionResult>>();
       resolveStub.withArgs(requester.did).resolves(didResolutionResult);
       const methodResolverStub = <DidMethodResolver>{
-        method  : () => { return generatedDidMethod; },
-        resolve : resolveStub
+        method: () => { return generatedDidMethod; },
+        resolve: resolveStub
       };
 
       const dwnConfig: Config = {
@@ -83,9 +83,9 @@ describe('DWN', () => {
 
       const invalidMessage = {
         descriptor: {
-          method: 'CollectionsWrite',
+          method: 'RecordsWrite',
         },
-        authorization: { }
+        authorization: {}
       };
 
       const validateJsonSchemaSpy = sinon.spy(Message, 'validateJsonSchema');

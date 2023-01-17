@@ -1,11 +1,11 @@
-import { CollectionsWrite } from '../interfaces/collections/messages/collections-write.js';
-import { CollectionsWriteMessage } from '../interfaces/collections/types.js';
+import { RecordsWrite } from '../interfaces/collections/messages/collections-write.js';
+import { RecordsWriteMessage } from '../interfaces/collections/types.js';
 import { MessageStore } from '../store/message-store.js';
 import { DwnMethodName, Message } from './message.js';
 import { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
 
 const methodToAllowedActionMap = {
-  [DwnMethodName.CollectionsWrite]: 'write',
+  [DwnMethodName.RecordsWrite]: 'write',
 };
 
 export class ProtocolAuthorization {
@@ -15,15 +15,15 @@ export class ProtocolAuthorization {
    * @throws {Error} if authorization fails.
    */
   public static async authorize(
-    collectionsWrite: CollectionsWrite,
+    collectionsWrite: RecordsWrite,
     requesterDid: string,
     messageStore: MessageStore
   ): Promise<void> {
-  // fetch the protocol definition
+    // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(collectionsWrite, messageStore);
 
     // fetch ancestor message chain
-    const ancestorMessageChain: CollectionsWriteMessage[] = await ProtocolAuthorization.constructAncestorMessageChain(collectionsWrite, messageStore);
+    const ancestorMessageChain: RecordsWriteMessage[] = await ProtocolAuthorization.constructAncestorMessageChain(collectionsWrite, messageStore);
 
     // record schema -> schema label map
     const recordSchemaToLabelMap: Map<string, string> = new Map();
@@ -54,15 +54,15 @@ export class ProtocolAuthorization {
   /**
    * Fetches the protocol definition based on the protocol specified in the given message.
    */
-  private static async fetchProtocolDefinition(collectionsWrite: CollectionsWrite, messageStore: MessageStore): Promise<ProtocolDefinition> {
-  // get the protocol URI
+  private static async fetchProtocolDefinition(collectionsWrite: RecordsWrite, messageStore: MessageStore): Promise<ProtocolDefinition> {
+    // get the protocol URI
     const protocolUri = collectionsWrite.message.descriptor.protocol;
 
     // fetch the corresponding protocol definition
     const query = {
-      target   : collectionsWrite.target,
-      method   : DwnMethodName.ProtocolsConfigure,
-      protocol : protocolUri
+      target: collectionsWrite.target,
+      method: DwnMethodName.ProtocolsConfigure,
+      protocol: protocolUri
     };
     const protocols = await messageStore.query(query) as ProtocolsConfigureMessage[];
 
@@ -78,9 +78,9 @@ export class ProtocolAuthorization {
    * Constructs a chain of ancestor messages
    * @returns the ancestor chain of messages where the first element is the root of the chain; returns empty array if no parent is specified.
    */
-  private static async constructAncestorMessageChain(collectionsWrite: CollectionsWrite, messageStore: MessageStore)
-    : Promise<CollectionsWriteMessage[]> {
-    const ancestorMessageChain: CollectionsWriteMessage[] = [];
+  private static async constructAncestorMessageChain(collectionsWrite: RecordsWrite, messageStore: MessageStore)
+    : Promise<RecordsWriteMessage[]> {
+    const ancestorMessageChain: RecordsWriteMessage[] = [];
 
     const protocol = collectionsWrite.message.descriptor.protocol;
     const contextId = collectionsWrite.message.contextId;
@@ -90,13 +90,13 @@ export class ProtocolAuthorization {
     while (currentParentId !== undefined) {
       // fetch parent
       const query = {
-        target   : collectionsWrite.target,
-        method   : DwnMethodName.CollectionsWrite,
+        target: collectionsWrite.target,
+        method: DwnMethodName.RecordsWrite,
         protocol,
         contextId,
-        recordId : currentParentId
+        recordId: currentParentId
       };
-      const parentMessages = await messageStore.query(query) as CollectionsWriteMessage[];
+      const parentMessages = await messageStore.query(query) as RecordsWriteMessage[];
 
       if (parentMessages.length === 0) {
         throw new Error(`no parent found with ID ${currentParentId}`);
@@ -115,12 +115,12 @@ export class ProtocolAuthorization {
    * Gets the rule set corresponding to the inbound message.
    */
   private static getRuleSet(
-    inboundMessage: CollectionsWriteMessage,
+    inboundMessage: RecordsWriteMessage,
     protocolDefinition: ProtocolDefinition,
-    ancestorMessageChain: CollectionsWriteMessage[],
+    ancestorMessageChain: RecordsWriteMessage[],
     recordSchemaToLabelMap: Map<string, string>
   ): ProtocolRuleSet {
-  // make a copy of the ancestor messages and include the inbound message in the chain
+    // make a copy of the ancestor messages and include the inbound message in the chain
     const messageChain = [...ancestorMessageChain, inboundMessage];
 
     // walk down the ancestor message chain from the root ancestor record and match against the corresponding rule set at each level
@@ -159,19 +159,19 @@ export class ProtocolAuthorization {
     requesterDid: string,
     targetDid: string,
     inboundMessageRuleSet: ProtocolRuleSet,
-    ancestorMessageChain: CollectionsWriteMessage[],
+    ancestorMessageChain: RecordsWriteMessage[],
     recordSchemaToLabelMap: Map<string, string>
   ): void {
     const allowRule = inboundMessageRuleSet.allow;
     if (allowRule === undefined) {
-    // if no allow rule is defined, still allow if requester is the same as target, but throw otherwise
+      // if no allow rule is defined, still allow if requester is the same as target, but throw otherwise
       if (requesterDid !== targetDid) {
         throw new Error(`no allow rule defined for requester, ${requesterDid} is unauthorized`);
       }
     } else if (allowRule.anyone !== undefined) {
-    // good to go to next check
+      // good to go to next check
     } else if (allowRule.recipient !== undefined) {
-    // get the message to check for recipient based on the path given
+      // get the message to check for recipient based on the path given
       const messageForRecipientCheck = ProtocolAuthorization.getMessage(ancestorMessageChain, allowRule.recipient.of, recordSchemaToLabelMap);
       const expectedRequesterDid = messageForRecipientCheck.descriptor.recipient;
 
@@ -193,7 +193,7 @@ export class ProtocolAuthorization {
     const incomingMessageMethod = incomingMessage.message.descriptor.method;
 
     if (allowRule === undefined) {
-    // if no allow rule is defined, owner of DWN can do everything
+      // if no allow rule is defined, owner of DWN can do everything
       if (requesterDid === incomingMessage.target) {
         return;
       } else {
@@ -219,14 +219,14 @@ export class ProtocolAuthorization {
    * Currently the only check is: if the write is not the initial write, the author must be the same as the initial write
    * @throws {Error} if fails verification
    */
-  private static async verifyActionCondition(collectionsWrite: CollectionsWrite, messageStore: MessageStore): Promise<void> {
+  private static async verifyActionCondition(collectionsWrite: RecordsWrite, messageStore: MessageStore): Promise<void> {
     const isInitialWrite = await collectionsWrite.isInitialWrite();
     if (!isInitialWrite) {
       // fetch the initialWrite
       const query = {
         entryId: collectionsWrite.message.recordId
       };
-      const result = await messageStore.query(query) as CollectionsWriteMessage[];
+      const result = await messageStore.query(query) as RecordsWriteMessage[];
 
       // check the author of the initial write matches the author of the incoming message
       const initialWrite = result[0];
@@ -245,10 +245,10 @@ export class ProtocolAuthorization {
    *                    NOTE: the path scheme use here may be temporary dependent on final protocol spec.
    */
   private static getMessage(
-    ancestorMessageChain: CollectionsWriteMessage[],
+    ancestorMessageChain: RecordsWriteMessage[],
     messagePath: string,
     recordSchemaToLabelMap: Map<string, string>
-  ): CollectionsWriteMessage {
+  ): RecordsWriteMessage {
     const expectedAncestors = messagePath.split('/');
 
     // consider moving this check to ProtocolsConfigure message ingestion

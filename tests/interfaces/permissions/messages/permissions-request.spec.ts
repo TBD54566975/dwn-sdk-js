@@ -17,18 +17,18 @@ describe('PermissionsRequest', () => {
       const jsonMessage = {
         descriptor: {
           conditions: {
-            attestation  : 'optional',
-            delegation   : false,
-            encryption   : 'optional',
-            publication  : false,
-            sharedAccess : false
+            attestation: 'optional',
+            delegation: false,
+            encryption: 'optional',
+            publication: false,
+            sharedAccess: false
           },
-          description : 'drugs',
-          grantedTo   : 'did:jank:alice',
-          grantedBy   : 'did:jank:bob',
-          method      : 'PermissionsRequest',
-          objectId    : '331806c4-ce15-4759-b1c3-0f742312aae9',
-          scope       : { method: 'CollectionsWrite' }
+          description: 'drugs',
+          grantedTo: 'did:jank:alice',
+          grantedBy: 'did:jank:bob',
+          method: 'PermissionsRequest',
+          objectId: '331806c4-ce15-4759-b1c3-0f742312aae9',
+          scope: { method: 'RecordsWrite' }
         }
       };
 
@@ -59,23 +59,23 @@ describe('PermissionsRequest', () => {
       const signatureInput = {
         privateJwk,
         protectedHeader: {
-          alg : privateJwk.alg as string,
-          kid : 'did:jank:bob'
+          alg: privateJwk.alg as string,
+          kid: 'did:jank:bob'
         }
       };
 
       const message = await PermissionsRequest.create({
-        target      : 'did:jank:bob',
-        description : 'drugs',
-        grantedBy   : 'did:jank:bob',
-        grantedTo   : 'did:jank:alice',
-        scope       : { method: 'CollectionsWrite' },
+        target: 'did:jank:bob',
+        description: 'drugs',
+        grantedBy: 'did:jank:bob',
+        grantedTo: 'did:jank:alice',
+        scope: { method: 'RecordsWrite' },
         signatureInput
       });
 
       expect(message.grantedTo).to.equal('did:jank:alice');
       expect(message.grantedBy).to.equal('did:jank:bob');
-      expect(message.scope).to.eql({ method: 'CollectionsWrite' });
+      expect(message.scope).to.eql({ method: 'RecordsWrite' });
       expect(message.conditions).to.eql(DEFAULT_CONDITIONS);
       expect(message.description).to.eql(message.description);
     });
@@ -85,17 +85,17 @@ describe('PermissionsRequest', () => {
       const signatureInput = {
         privateJwk,
         protectedHeader: {
-          alg : privateJwk.alg as string,
-          kid : 'did:jank:bob'
+          alg: privateJwk.alg as string,
+          kid: 'did:jank:bob'
         }
       };
 
       const message = await PermissionsRequest.create({
-        target      : 'did:jank:bob',
-        description : 'drugs',
-        grantedBy   : 'did:jank:bob',
-        grantedTo   : 'did:jank:alice',
-        scope       : { method: 'CollectionsWrite' },
+        target: 'did:jank:bob',
+        description: 'drugs',
+        grantedBy: 'did:jank:bob',
+        grantedTo: 'did:jank:alice',
+        scope: { method: 'RecordsWrite' },
         signatureInput
       });
 

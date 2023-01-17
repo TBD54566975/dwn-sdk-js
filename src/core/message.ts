@@ -2,7 +2,7 @@ import type { SignatureInput } from '../jose/jws/general/types.js';
 import type { BaseDecodedAuthorizationPayload, BaseMessage, Descriptor } from './types.js';
 
 import { CID } from 'multiformats/cid';
-import { CollectionsWriteMessage } from '../interfaces/collections/types.js';
+import { RecordsWriteMessage } from '../interfaces/collections/types.js';
 import { GeneralJws } from '../jose/jws/general/types.js';
 import { GeneralJwsSigner } from '../jose/jws/general/signer.js';
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
@@ -11,7 +11,7 @@ import { lexicographicalCompare } from '../utils/string.js';
 import { validateJsonSchema } from '../validator.js';
 
 export enum DwnMethodName {
-  CollectionsWrite = 'CollectionsWrite',
+  RecordsWrite = 'RecordsWrite',
   CollectionsQuery = 'CollectionsQuery',
   HooksWrite = 'HooksWrite',
   ProtocolsConfigure = 'ProtocolsConfigure',
@@ -68,7 +68,7 @@ export abstract class Message {
     const messageCopy = { ...message };
 
     if (messageCopy['encodedData'] !== undefined) {
-      delete (messageCopy as CollectionsWriteMessage).encodedData;
+      delete (messageCopy as RecordsWriteMessage).encodedData;
     }
 
     const cid = await generateCid(messageCopy);

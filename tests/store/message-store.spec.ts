@@ -1,4 +1,4 @@
-import { CollectionsWriteMessage } from '../../src/interfaces/collections/types.js';
+import { RecordsWriteMessage } from '../../src/interfaces/collections/types.js';
 import { expect } from 'chai';
 import { generateCid } from '../../src/utils/cid.js';
 import { Message } from '../../src/core/message.js';
@@ -11,11 +11,11 @@ describe('MessageStoreLevel Tests', () => {
   describe('buildIndexQueryTerms', () => {
     it('returns an array of terms based on the query object type provided', () => {
       const query = {
-        method        : 'CollectionsQuery',
-        schema        : 'https://schema.org/MusicPlaylist',
-        objectId      : 'abcd123',
-        published     : true, // boolean type
-        publishedDate : 1234567 // number type
+        method: 'CollectionsQuery',
+        schema: 'https://schema.org/MusicPlaylist',
+        objectId: 'abcd123',
+        published: true, // boolean type
+        publishedDate: 1234567 // number type
       };
 
       const expected = [
@@ -32,11 +32,11 @@ describe('MessageStoreLevel Tests', () => {
 
     it('flattens nested objects', () => {
       const query = {
-        requester : 'AlBorland',
-        ability   : {
-          method : 'CollectionsQuery',
-          schema : 'https://schema.org/MusicPlaylist',
-          doo    : {
+        requester: 'AlBorland',
+        ability: {
+          method: 'CollectionsQuery',
+          schema: 'https://schema.org/MusicPlaylist',
+          doo: {
             bingo: 'bongo'
           }
         }
@@ -58,8 +58,8 @@ describe('MessageStoreLevel Tests', () => {
   describe('put', function () {
     before(async () => {
       messageStore = new MessageStoreLevel({
-        blockstoreLocation : 'TEST-BLOCKSTORE',
-        indexLocation      : 'TEST-INDEX'
+        blockstoreLocation: 'TEST-BLOCKSTORE',
+        indexLocation: 'TEST-INDEX'
       });
       await messageStore.open();
     });
@@ -75,7 +75,7 @@ describe('MessageStoreLevel Tests', () => {
     it('stores messages as cbor/sha256 encoded blocks with CID as key', async () => {
       const { message } = await TestDataGenerator.generatePermissionsRequestMessage();
 
-      await messageStore.put(message, { });
+      await messageStore.put(message, {});
 
       const expectedCid = await generateCid(message);
 
@@ -96,7 +96,7 @@ describe('MessageStoreLevel Tests', () => {
 
     // https://github.com/TBD54566975/dwn-sdk-js/issues/170
     it('#170 - should be able to update (delete and insert new) indexes to an existing message', async () => {
-      const { target, message } = await TestDataGenerator.generateCollectionsWriteMessage();
+      const { target, message } = await TestDataGenerator.generateRecordsWriteMessage();
 
       // inserting the message indicating it is the 'latest' in the index
       await messageStore.put(message, { target: target.did, latest: 'true' });
@@ -121,12 +121,12 @@ describe('MessageStoreLevel Tests', () => {
 
     it('should index properties with characters beyond just letters and digits', async () => {
       const schema = 'http://my-awesome-schema/awesomeness_schema#awesome-1?id=awesome_1';
-      const messageData = await TestDataGenerator.generateCollectionsWriteMessage({ schema });
+      const messageData = await TestDataGenerator.generateRecordsWriteMessage({ schema });
 
       await messageStore.put(messageData.message, { schema });
 
       const results = await messageStore.query({ schema });
-      expect((results[0] as CollectionsWriteMessage).descriptor.schema).to.equal(schema);
+      expect((results[0] as RecordsWriteMessage).descriptor.schema).to.equal(schema);
     });
   });
 });

@@ -10,7 +10,7 @@ import { MessageStoreLevel } from '../../../../src/store/message-store-level.js'
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 import { CollectionsQuery, DateSort } from '../../../../src/interfaces/collections/messages/collections-query.js';
-import { constructIndexes, handleCollectionsWrite } from '../../../../src/interfaces/collections/handlers/collections-write.js';
+import { constructIndexes, handleRecordsWrite } from '../../../../src/interfaces/collections/handlers/collections-write.js';
 
 chai.use(chaiAsPromised);
 
@@ -23,8 +23,8 @@ describe('handleCollectionsQuery()', () => {
       // important to follow this pattern to initialize the message store in tests
       // so that different suites can reuse the same block store and index location for testing
       messageStore = new MessageStoreLevel({
-        blockstoreLocation : 'TEST-BLOCKSTORE',
-        indexLocation      : 'TEST-INDEX'
+        blockstoreLocation: 'TEST-BLOCKSTORE',
+        indexLocation: 'TEST-INDEX'
       });
 
       await messageStore.open();
@@ -45,17 +45,17 @@ describe('handleCollectionsQuery()', () => {
       // insert three messages into DB, two with matching protocol
       const alice = await TestDataGenerator.generatePersona();
       const dataFormat = 'myAwesomeDataFormat';
-      const write1Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice });
-      const write2Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, dataFormat, schema: 'schema1' });
-      const write3Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, dataFormat, schema: 'schema2' });
+      const write1Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice, target: alice });
+      const write2Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice, target: alice, dataFormat, schema: 'schema1' });
+      const write3Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice, target: alice, dataFormat, schema: 'schema2' });
 
       // setting up a stub method resolver
       const didResolverStub = TestStubGenerator.createDidResolverStub(alice);
 
       // insert data
-      const writeReply1 = await handleCollectionsWrite(write1Data.message, messageStore, didResolverStub);
-      const writeReply2 = await handleCollectionsWrite(write2Data.message, messageStore, didResolverStub);
-      const writeReply3 = await handleCollectionsWrite(write3Data.message, messageStore, didResolverStub);
+      const writeReply1 = await handleRecordsWrite(write1Data.message, messageStore, didResolverStub);
+      const writeReply2 = await handleRecordsWrite(write2Data.message, messageStore, didResolverStub);
+      const writeReply3 = await handleRecordsWrite(write3Data.message, messageStore, didResolverStub);
       expect(writeReply1.status.code).to.equal(202);
       expect(writeReply2.status.code).to.equal(202);
       expect(writeReply3.status.code).to.equal(202);
@@ -70,9 +70,9 @@ describe('handleCollectionsQuery()', () => {
 
       // testing multi-conditional query, reuse data generated above for bob
       const messageData2 = await TestDataGenerator.generateCollectionsQueryMessage({
-        requester : alice,
-        target    : alice,
-        filter    : {
+        requester: alice,
+        target: alice,
+        filter: {
           dataFormat,
           schema: 'schema1'
         }
@@ -87,18 +87,18 @@ describe('handleCollectionsQuery()', () => {
     it('should not include `authorization` in returned records', async () => {
       // insert three messages into DB, two with matching protocol
       const alice = await TestDataGenerator.generatePersona();
-      const { message } = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice });
+      const { message } = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice, target: alice });
 
       // setting up a stub method resolver
       const didResolverStub = TestStubGenerator.createDidResolverStub(alice);
 
-      const writeReply = await handleCollectionsWrite(message, messageStore, didResolverStub);
+      const writeReply = await handleRecordsWrite(message, messageStore, didResolverStub);
       expect(writeReply.status.code).to.equal(202);
 
       const queryData = await TestDataGenerator.generateCollectionsQueryMessage({
-        requester : alice,
-        target    : alice,
-        filter    : { schema: message.descriptor.schema }
+        requester: alice,
+        target: alice,
+        filter: { schema: message.descriptor.schema }
       });
 
       const queryReply = await handleCollectionsQuery(queryData.message, messageStore, didResolverStub);
@@ -111,10 +111,10 @@ describe('handleCollectionsQuery()', () => {
       // insert three messages into DB, two with matching protocol
       const alice = await TestDataGenerator.generatePersona();
       const schema = 'aSchema';
-      const publishedWriteData = await TestDataGenerator.generateCollectionsWriteMessage({
+      const publishedWriteData = await TestDataGenerator.generateRecordsWriteMessage({
         requester: alice, target: alice, schema, published: true
       });
-      const unpublishedWriteData = await TestDataGenerator.generateCollectionsWriteMessage({
+      const unpublishedWriteData = await TestDataGenerator.generateRecordsWriteMessage({
         requester: alice, target: alice, schema
       });
 
@@ -122,17 +122,17 @@ describe('handleCollectionsQuery()', () => {
       const didResolverStub = TestStubGenerator.createDidResolverStub(alice);
 
       // insert data
-      const publishedWriteReply = await handleCollectionsWrite(publishedWriteData.message, messageStore, didResolverStub);
-      const unpublishedWriteReply = await handleCollectionsWrite(unpublishedWriteData.message, messageStore, didResolverStub);
+      const publishedWriteReply = await handleRecordsWrite(publishedWriteData.message, messageStore, didResolverStub);
+      const unpublishedWriteReply = await handleRecordsWrite(unpublishedWriteData.message, messageStore, didResolverStub);
       expect(publishedWriteReply.status.code).to.equal(202);
       expect(unpublishedWriteReply.status.code).to.equal(202);
 
       // test published date ascending sort does not include any records that is not published
       const publishedAscendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
-        requester : alice,
-        target    : alice,
-        dateSort  : DateSort.PublishedAscending,
-        filter    : { schema }
+        requester: alice,
+        target: alice,
+        dateSort: DateSort.PublishedAscending,
+        filter: { schema }
       });
       const publishedAscendingQueryReply = await handleCollectionsQuery(publishedAscendingQueryData.message, messageStore, didResolverStub);
 
@@ -141,10 +141,10 @@ describe('handleCollectionsQuery()', () => {
 
       // test published date scending sort does not include any records that is not published
       const publishedDescendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
-        requester : alice,
-        target    : alice,
-        dateSort  : DateSort.PublishedDescending,
-        filter    : { schema }
+        requester: alice,
+        target: alice,
+        dateSort: DateSort.PublishedDescending,
+        filter: { schema }
       });
       const publishedDescendingQueryReply = await handleCollectionsQuery(publishedDescendingQueryData.message, messageStore, didResolverStub);
 
@@ -157,27 +157,27 @@ describe('handleCollectionsQuery()', () => {
       const alice = await TestDataGenerator.generatePersona();
       const schema = 'aSchema';
       const published = true;
-      const write1Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, schema, published });
-      const write2Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, schema, published });
-      const write3Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, schema, published });
+      const write1Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice, target: alice, schema, published });
+      const write2Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice, target: alice, schema, published });
+      const write3Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice, target: alice, schema, published });
 
       // setting up a stub method resolver
       const didResolverStub = TestStubGenerator.createDidResolverStub(alice);
 
       // insert data, intentionally out of order
-      const writeReply2 = await handleCollectionsWrite(write2Data.message, messageStore, didResolverStub);
-      const writeReply1 = await handleCollectionsWrite(write1Data.message, messageStore, didResolverStub);
-      const writeReply3 = await handleCollectionsWrite(write3Data.message, messageStore, didResolverStub);
+      const writeReply2 = await handleRecordsWrite(write2Data.message, messageStore, didResolverStub);
+      const writeReply1 = await handleRecordsWrite(write1Data.message, messageStore, didResolverStub);
+      const writeReply3 = await handleRecordsWrite(write3Data.message, messageStore, didResolverStub);
       expect(writeReply1.status.code).to.equal(202);
       expect(writeReply2.status.code).to.equal(202);
       expect(writeReply3.status.code).to.equal(202);
 
       // createdAscending test
       const createdAscendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
-        requester : alice,
-        target    : alice,
-        dateSort  : DateSort.CreatedAscending,
-        filter    : { schema }
+        requester: alice,
+        target: alice,
+        dateSort: DateSort.CreatedAscending,
+        filter: { schema }
       });
       const createdAscendingQueryReply = await handleCollectionsQuery(createdAscendingQueryData.message, messageStore, didResolverStub);
 
@@ -187,10 +187,10 @@ describe('handleCollectionsQuery()', () => {
 
       // createdDescending test
       const createdDescendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
-        requester : alice,
-        target    : alice,
-        dateSort  : DateSort.CreatedDescending,
-        filter    : { schema }
+        requester: alice,
+        target: alice,
+        dateSort: DateSort.CreatedDescending,
+        filter: { schema }
       });
       const createdDescendingQueryReply = await handleCollectionsQuery(createdDescendingQueryData.message, messageStore, didResolverStub);
 
@@ -200,10 +200,10 @@ describe('handleCollectionsQuery()', () => {
 
       // publishedAscending test
       const publishedAscendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
-        requester : alice,
-        target    : alice,
-        dateSort  : DateSort.PublishedAscending,
-        filter    : { schema }
+        requester: alice,
+        target: alice,
+        dateSort: DateSort.PublishedAscending,
+        filter: { schema }
       });
       const publishedAscendingQueryReply = await handleCollectionsQuery(publishedAscendingQueryData.message, messageStore, didResolverStub);
 
@@ -213,10 +213,10 @@ describe('handleCollectionsQuery()', () => {
 
       // publishedDescending test
       const publishedDescendingQueryData = await TestDataGenerator.generateCollectionsQueryMessage({
-        requester : alice,
-        target    : alice,
-        dateSort  : DateSort.PublishedDescending,
-        filter    : { schema }
+        requester: alice,
+        target: alice,
+        dateSort: DateSort.PublishedDescending,
+        filter: { schema }
       });
       const publishedDescendingQueryReply = await handleCollectionsQuery(publishedDescendingQueryData.message, messageStore, didResolverStub);
 
@@ -234,16 +234,16 @@ describe('handleCollectionsQuery()', () => {
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
       const schema = 'schema1';
-      const record1Data = await TestDataGenerator.generateCollectionsWriteMessage(
+      const record1Data = await TestDataGenerator.generateRecordsWriteMessage(
         { requester: alice, target: alice, schema, data: Encoder.stringToBytes('1') }
       );
-      const record2Data = await TestDataGenerator.generateCollectionsWriteMessage(
+      const record2Data = await TestDataGenerator.generateRecordsWriteMessage(
         { requester: alice, target: alice, schema, data: Encoder.stringToBytes('2'), recipientDid: bob.did }
       );
-      const record3Data = await TestDataGenerator.generateCollectionsWriteMessage(
+      const record3Data = await TestDataGenerator.generateRecordsWriteMessage(
         { requester: bob, target: alice, recipientDid: alice.did, schema, data: Encoder.stringToBytes('3') }
       );
-      const record4Data = await TestDataGenerator.generateCollectionsWriteMessage(
+      const record4Data = await TestDataGenerator.generateRecordsWriteMessage(
         { requester: alice, target: alice, schema, data: Encoder.stringToBytes('4'), published: true }
       );
 
@@ -259,9 +259,9 @@ describe('handleCollectionsQuery()', () => {
 
       // test correctness for Bob's query
       const bobQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
-        requester : bob,
-        target    : alice,
-        filter    : { schema }
+        requester: bob,
+        target: alice,
+        filter: { schema }
       });
 
       const replyToBob = await handleCollectionsQuery(bobQueryMessageData.message, messageStore, didResolver);
@@ -278,9 +278,9 @@ describe('handleCollectionsQuery()', () => {
 
       // test correctness for Alice's query
       const aliceQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
-        requester : alice,
-        target    : alice,
-        filter    : { schema }
+        requester: alice,
+        target: alice,
+        filter: { schema }
       });
 
       const replyToAliceQuery = await handleCollectionsQuery(aliceQueryMessageData.message, messageStore, didResolver);
@@ -294,18 +294,18 @@ describe('handleCollectionsQuery()', () => {
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
       const schema = 'schema1';
-      const unpublishedCollectionsWrite = await TestDataGenerator.generateCollectionsWriteMessage(
+      const unpublishedRecordsWrite = await TestDataGenerator.generateRecordsWriteMessage(
         { requester: alice, target: alice, schema, data: Encoder.stringToBytes('1'), published: false } // explicitly setting `published` to `false`
       );
 
-      const result1 = await handleCollectionsWrite(unpublishedCollectionsWrite.message, messageStore, didResolver);
+      const result1 = await handleRecordsWrite(unpublishedRecordsWrite.message, messageStore, didResolver);
       expect(result1.status.code).to.equal(202);
 
       // alice should be able to see the unpublished record
       const queryByAlice = await TestDataGenerator.generateCollectionsQueryMessage({
-        requester : alice,
-        target    : alice,
-        filter    : { schema }
+        requester: alice,
+        target: alice,
+        filter: { schema }
       });
       const replyToAliceQuery = await handleCollectionsQuery(queryByAlice.message, messageStore, didResolver);
       expect(replyToAliceQuery.status.code).to.equal(200);
@@ -313,9 +313,9 @@ describe('handleCollectionsQuery()', () => {
 
       // actual test: bob should not be able to see unpublished record
       const queryByBob = await TestDataGenerator.generateCollectionsQueryMessage({
-        requester : bob,
-        target    : alice,
-        filter    : { schema }
+        requester: bob,
+        target: alice,
+        filter: { schema }
       });
       const replyToBobQuery = await handleCollectionsQuery(queryByBob.message, messageStore, didResolver);
       expect(replyToBobQuery.status.code).to.equal(200);
@@ -328,9 +328,9 @@ describe('handleCollectionsQuery()', () => {
       const carol = await DidKeyResolver.generate();
 
       const bobQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
-        requester : bob,
-        target    : alice,
-        filter    : { recipient: carol.did } // bob querying carol's records
+        requester: bob,
+        target: alice,
+        filter: { recipient: carol.did } // bob querying carol's records
       });
 
       const replyToBobQuery = await handleCollectionsQuery(bobQueryMessageData.message, messageStore, didResolver);
@@ -344,9 +344,9 @@ describe('handleCollectionsQuery()', () => {
       const bob = await DidKeyResolver.generate();
 
       const bobQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
-        requester : alice,
-        target    : alice,
-        filter    : { recipient: bob.did } // alice as the DWN owner querying bob's records
+        requester: alice,
+        target: alice,
+        filter: { recipient: bob.did } // alice as the DWN owner querying bob's records
       });
 
       const replyToBobQuery = await handleCollectionsQuery(bobQueryMessageData.message, messageStore, didResolver);
@@ -359,19 +359,19 @@ describe('handleCollectionsQuery()', () => {
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
       const schema = 'myAwesomeSchema';
-      const collectionsWriteMessage1Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: alice, target: alice, schema });
-      const collectionsWriteMessage2Data = await TestDataGenerator.generateCollectionsWriteMessage({ requester: bob, target: bob, schema });
+      const collectionsWriteMessage1Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice, target: alice, schema });
+      const collectionsWriteMessage2Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: bob, target: bob, schema });
 
       const aliceQueryMessageData = await TestDataGenerator.generateCollectionsQueryMessage({
-        requester : alice,
-        target    : alice,
-        filter    : { schema }
+        requester: alice,
+        target: alice,
+        filter: { schema }
       });
 
       // insert data into 2 different tenants
       const didResolver = new DidResolver([new DidKeyResolver()]);
-      await handleCollectionsWrite(collectionsWriteMessage1Data.message, messageStore, didResolver);
-      await handleCollectionsWrite(collectionsWriteMessage2Data.message, messageStore, didResolver);
+      await handleRecordsWrite(collectionsWriteMessage1Data.message, messageStore, didResolver);
+      await handleRecordsWrite(collectionsWriteMessage2Data.message, messageStore, didResolver);
 
       const reply = await handleCollectionsQuery(aliceQueryMessageData.message, messageStore, didResolver);
 

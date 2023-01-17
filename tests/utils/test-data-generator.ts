@@ -14,9 +14,9 @@ import {
   CollectionsQuery,
   CollectionsQueryMessage,
   CollectionsQueryOptions,
-  CollectionsWrite,
-  CollectionsWriteMessage,
-  CollectionsWriteOptions,
+  RecordsWrite,
+  RecordsWriteMessage,
+  RecordsWriteOptions,
   DateSort,
   HooksWrite,
   HooksWriteMessage,
@@ -71,7 +71,7 @@ export type GenerateProtocolsQueryMessageOutput = {
   protocolsQuery: ProtocolsQuery;
 };
 
-export type GenerateCollectionsWriteMessageInput = {
+export type GenerateRecordsWriteMessageInput = {
   requester?: Persona;
   target?: Persona;
   recipientDid?: string;
@@ -83,25 +83,25 @@ export type GenerateCollectionsWriteMessageInput = {
   published?: boolean;
   data?: Uint8Array;
   dataFormat?: string;
-  dateCreated? : string;
-  dateModified? : string;
-  datePublished? : string;
+  dateCreated?: string;
+  dateModified?: string;
+  datePublished?: string;
 };
 
-export type generateFromCollectionsWriteInput = {
+export type generateFromRecordsWriteInput = {
   requester: Persona,
-  existingWrite: CollectionsWrite,
+  existingWrite: RecordsWrite,
   data?: Uint8Array;
   published?: boolean;
-  dateModified? : string;
-  datePublished? : string;
+  dateModified?: string;
+  datePublished?: string;
 };
 
-export type GenerateCollectionsWriteMessageOutput = {
+export type GenerateRecordsWriteMessageOutput = {
   requester: Persona;
   target: Persona;
-  message: CollectionsWriteMessage;
-  collectionsWrite: CollectionsWrite;
+  message: RecordsWriteMessage;
+  collectionsWrite: RecordsWrite;
 };
 
 export type GenerateCollectionsQueryMessageInput = {
@@ -179,10 +179,10 @@ export class TestDataGenerator {
    */
   public static createSignatureInputFromPersona(persona: Persona): SignatureInput {
     const signatureInput = {
-      privateJwk      : persona.keyPair.privateJwk,
-      protectedHeader : {
-        alg : persona.keyPair.privateJwk.alg as string,
-        kid : persona.keyId
+      privateJwk: persona.keyPair.privateJwk,
+      protectedHeader: {
+        alg: persona.keyPair.privateJwk.alg as string,
+        kid: persona.keyId
       }
     };
 
@@ -206,19 +206,19 @@ export class TestDataGenerator {
       const generatedLabel = 'record' + TestDataGenerator.randomString(10);
 
       definition = {
-        labels  : { },
-        records : { }
+        labels: {},
+        records: {}
       };
       definition.labels[generatedLabel] = { schema: `test-object` };
-      definition.records[generatedLabel] = { };
+      definition.records[generatedLabel] = {};
     }
 
     const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
 
     const options: ProtocolsConfigureOptions = {
-      target      : target.did,
-      dateCreated : input?.dateCreated,
-      protocol    : input?.protocol ?? TestDataGenerator.randomString(20),
+      target: target.did,
+      dateCreated: input?.dateCreated,
+      protocol: input?.protocol ?? TestDataGenerator.randomString(20),
       definition,
       signatureInput
     };
@@ -243,9 +243,9 @@ export class TestDataGenerator {
     const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
 
     const options: ProtocolsQueryOptions = {
-      target      : target.did,
-      dateCreated : input?.dateCreated,
-      filter      : input?.filter,
+      target: target.did,
+      dateCreated: input?.dateCreated,
+      filter: input?.filter,
       signatureInput
     };
     removeUndefinedProperties(options);
@@ -261,12 +261,12 @@ export class TestDataGenerator {
   };
 
   /**
-   * Generates a CollectionsWrite message for testing.
+   * Generates a RecordsWrite message for testing.
    * Optional parameters are generated if not given.
    * If `requester` and `target` are both not given, use the same persona to pass authorization in tests by default.
-   * Implementation currently uses `CollectionsWrite.create()`.
+   * Implementation currently uses `RecordsWrite.create()`.
    */
-  public static async generateCollectionsWriteMessage(input?: GenerateCollectionsWriteMessageInput): Promise<GenerateCollectionsWriteMessageOutput> {
+  public static async generateRecordsWriteMessage(input?: GenerateRecordsWriteMessageInput): Promise<GenerateRecordsWriteMessageOutput> {
 
     const { requester, target } = await TestDataGenerator.generateRequesterAndTargetPersonas(input);
 
@@ -274,26 +274,26 @@ export class TestDataGenerator {
 
     const data = input?.data ?? TestDataGenerator.randomBytes(32);
 
-    const options: CollectionsWriteOptions = {
-      target        : target.did,
-      recipient     : input?.recipientDid ?? target.did, // use target if recipient is not explicitly set
-      protocol      : input?.protocol,
-      contextId     : input?.contextId,
-      schema        : input?.schema ?? TestDataGenerator.randomString(20),
-      recordId      : input?.recordId,
-      parentId      : input?.parentId,
-      published     : input?.published,
-      dataFormat    : input?.dataFormat ?? 'application/json',
-      dateCreated   : input?.dateCreated,
-      dateModified  : input?.dateModified,
-      datePublished : input?.datePublished,
+    const options: RecordsWriteOptions = {
+      target: target.did,
+      recipient: input?.recipientDid ?? target.did, // use target if recipient is not explicitly set
+      protocol: input?.protocol,
+      contextId: input?.contextId,
+      schema: input?.schema ?? TestDataGenerator.randomString(20),
+      recordId: input?.recordId,
+      parentId: input?.parentId,
+      published: input?.published,
+      dataFormat: input?.dataFormat ?? 'application/json',
+      dateCreated: input?.dateCreated,
+      dateModified: input?.dateModified,
+      datePublished: input?.datePublished,
       data,
       signatureInput
     };
 
 
-    const collectionsWrite = await CollectionsWrite.create(options);
-    const message = collectionsWrite.message as CollectionsWriteMessage;
+    const collectionsWrite = await RecordsWrite.create(options);
+    const message = collectionsWrite.message as RecordsWriteMessage;
 
     return {
       target,
@@ -304,11 +304,11 @@ export class TestDataGenerator {
   };
 
   /**
-   * Generates a valid CollectionsWrite that modifies the given an existing write.
+   * Generates a valid RecordsWrite that modifies the given an existing write.
    * Any mutable property is not specified will be automatically mutated.
    * e.g. if `published` is not specified, it will be toggled from the state of the given existing write.
    */
-  public static async generateFromCollectionsWrite(input?: generateFromCollectionsWriteInput): Promise<CollectionsWrite> {
+  public static async generateFromRecordsWrite(input?: generateFromRecordsWriteInput): Promise<RecordsWrite> {
     const existingMessage = input.existingWrite.message;
     const currentTime = getCurrentTimeInHighPrecision();
 
@@ -316,16 +316,16 @@ export class TestDataGenerator {
     const datePublished = input.datePublished ?? (published ? currentTime : undefined);
 
     const options: CreateFromOptions = {
-      target                          : input.existingWrite.target,
-      unsignedCollectionsWriteMessage : input.existingWrite.message,
-      data                            : input.data ?? TestDataGenerator.randomBytes(32),
+      target: input.existingWrite.target,
+      unsignedRecordsWriteMessage: input.existingWrite.message,
+      data: input.data ?? TestDataGenerator.randomBytes(32),
       published,
       datePublished,
-      dateModified                    : input.dateModified,
-      signatureInput                  : TestDataGenerator.createSignatureInputFromPersona(input.requester)
+      dateModified: input.dateModified,
+      signatureInput: TestDataGenerator.createSignatureInputFromPersona(input.requester)
     };
 
-    const collectionsWrite = await CollectionsWrite.createFrom(options);
+    const collectionsWrite = await RecordsWrite.createFrom(options);
     return collectionsWrite;
   }
 
@@ -338,11 +338,11 @@ export class TestDataGenerator {
     const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
 
     const options: CollectionsQueryOptions = {
-      target      : target.did,
-      dateCreated : input?.dateCreated,
+      target: target.did,
+      dateCreated: input?.dateCreated,
       signatureInput,
-      filter      : input?.filter ?? { schema: TestDataGenerator.randomString(10) }, // must have one filter property if no filter is given
-      dateSort    : input?.dateSort
+      filter: input?.filter ?? { schema: TestDataGenerator.randomString(10) }, // must have one filter property if no filter is given
+      dateSort: input?.dateSort
     };
     removeUndefinedProperties(options);
 
@@ -366,10 +366,10 @@ export class TestDataGenerator {
     const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
 
     const options: HooksWriteOptions = {
-      target      : target.did,
-      dateCreated : input?.dateCreated,
+      target: target.did,
+      dateCreated: input?.dateCreated,
       signatureInput,
-      filter      : input?.filter ?? { method: 'CollectionsWrite' }, // hardcode to filter on `CollectionsWrite` if no filter is given
+      filter: input?.filter ?? { method: 'RecordsWrite' }, // hardcode to filter on `RecordsWrite` if no filter is given
     };
     removeUndefinedProperties(options);
 
@@ -385,17 +385,17 @@ export class TestDataGenerator {
   /**
    * Generates a PermissionsRequest message for testing.
    */
-  public static async generatePermissionsRequestMessage(): Promise<{target, message: BaseMessage}> {
+  public static async generatePermissionsRequestMessage(): Promise<{ target, message: BaseMessage }> {
     const { privateJwk } = await ed25519.generateKeyPair();
     const target = 'did:jank:alice';
     const permissionRequest = await PermissionsRequest.create({
       target,
-      dateCreated    : getCurrentTimeInHighPrecision(),
-      description    : 'drugs',
-      grantedBy      : 'did:jank:bob',
-      grantedTo      : 'did:jank:alice',
-      scope          : { method: 'CollectionsWrite' },
-      signatureInput : { privateJwk: privateJwk, protectedHeader: { alg: privateJwk.alg as string, kid: 'whatev' } }
+      dateCreated: getCurrentTimeInHighPrecision(),
+      description: 'drugs',
+      grantedBy: 'did:jank:bob',
+      grantedTo: 'did:jank:alice',
+      scope: { method: 'RecordsWrite' },
+      signatureInput: { privateJwk: privateJwk, protectedHeader: { alg: privateJwk.alg as string, kid: 'whatev' } }
     });
 
     return { target, message: permissionRequest.message };
@@ -439,14 +439,14 @@ export class TestDataGenerator {
    */
   public static createDidResolutionResult(persona: Persona): DidResolutionResult {
     return {
-      didResolutionMetadata : {},
-      didDocument           : {
-        id                 : persona.did,
-        verificationMethod : [{
-          controller   : persona.did,
-          id           : persona.keyId,
-          type         : 'JsonWebKey2020',
-          publicKeyJwk : persona.keyPair.publicJwk
+      didResolutionMetadata: {},
+      didDocument: {
+        id: persona.did,
+        verificationMethod: [{
+          controller: persona.did,
+          id: persona.keyId,
+          type: 'JsonWebKey2020',
+          publicKeyJwk: persona.keyPair.publicJwk
         }]
       },
       didDocumentMetadata: {}
@@ -470,15 +470,15 @@ export class TestDataGenerator {
    * If `requester` and `target` are both not given, use the same persona to pass authorization in tests by default.
    */
   private static async generateRequesterAndTargetPersonas(
-    input?: { requester?: Persona, target?: Persona}
-  ): Promise<{ requester: Persona, target: Persona}> {
+    input?: { requester?: Persona, target?: Persona }
+  ): Promise<{ requester: Persona, target: Persona }> {
     // generate requester & target persona if not given
     let requester = input?.requester ?? await TestDataGenerator.generatePersona();
     const target = input?.target ?? await TestDataGenerator.generatePersona();
 
     // if `requester` and `target` are both not given, use the same persona to pass authorization in tests by default
     if (input?.requester === undefined &&
-        input?.target === undefined) {
+      input?.target === undefined) {
       requester = target;
     }
 

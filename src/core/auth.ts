@@ -15,7 +15,7 @@ type AuthorizationPayloadConstraints = {
 
 /**
  * Authenticates then authorizes the given message using the "canonical" auth flow.
- * Some message auth require special handling such as `CollectionsWrite` and `CollectionsQuery`,
+ * Some message auth require special handling such as `RecordsWrite` and `CollectionsQuery`,
  * which would be incompatible with this auth flow.
  * @throws {Error} if auth fails
  */
@@ -35,7 +35,7 @@ export async function canonicalAuth(
 export async function validateAuthorizationIntegrity(
   message: BaseMessage,
   authorizationPayloadConstraints?: AuthorizationPayloadConstraints
-): Promise<{target: string, descriptorCid: CID, [key: string]: any }> {
+): Promise<{ target: string, descriptorCid: CID, [key: string]: any }> {
 
   if (message.authorization.signatures.length !== 1) {
     throw new Error('expected no more than 1 signature for authorization');
@@ -60,9 +60,11 @@ export async function validateAuthorizationIntegrity(
   delete customProperties.target;
   delete customProperties.descriptorCid;
   for (const propertyName in customProperties) {
-    {if (!allowedProperties.has(propertyName)) {
-      throw new Error(`${propertyName} not allowed in auth payload.`);
-    }}
+    {
+      if (!allowedProperties.has(propertyName)) {
+        throw new Error(`${propertyName} not allowed in auth payload.`);
+      }
+    }
 
     try {
       parseCid(payloadJson[propertyName]);
