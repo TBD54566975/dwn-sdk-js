@@ -1,9 +1,9 @@
-import type { RecordsWriteMessage } from '../types.js';
 import type { MethodHandler } from '../../types.js';
+import type { RecordsWriteMessage } from '../types.js';
 
 import { authenticate } from '../../../core/auth.js';
-import { RecordsWrite } from '../messages/records-write.js';
 import { MessageReply } from '../../../core/message-reply.js';
+import { RecordsWrite } from '../messages/records-write.js';
 
 import { DwnMethodName, Message } from '../../../core/message.js';
 

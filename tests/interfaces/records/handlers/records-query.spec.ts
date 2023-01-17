@@ -9,8 +9,9 @@ import { handleRecordsQuery } from '../../../../src/interfaces/records/handlers/
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
-import { DateSort, RecordsQuery } from '../../../../src/interfaces/records/messages/records-query.js';
+
 import { constructIndexes, handleRecordsWrite } from '../../../../src/interfaces/records/handlers/records-write.js';
+import { DateSort, RecordsQuery } from '../../../../src/interfaces/records/messages/records-query.js';
 
 chai.use(chaiAsPromised);
 

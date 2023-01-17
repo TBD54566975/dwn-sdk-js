@@ -1,6 +1,7 @@
+import { MessageStore } from '../store/message-store.js';
 import { RecordsWrite } from '../interfaces/records/messages/records-write.js';
 import { RecordsWriteMessage } from '../interfaces/records/types.js';
-import { MessageStore } from '../store/message-store.js';
+
 import { DwnMethodName, Message } from './message.js';
 import { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
 

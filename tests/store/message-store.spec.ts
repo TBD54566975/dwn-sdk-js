@@ -1,8 +1,8 @@
-import { RecordsWriteMessage } from '../../src/interfaces/records/types.js';
 import { expect } from 'chai';
 import { generateCid } from '../../src/utils/cid.js';
 import { Message } from '../../src/core/message.js';
 import { MessageStoreLevel } from '../../src/store/message-store-level.js';
+import { RecordsWriteMessage } from '../../src/interfaces/records/types.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 
 let messageStore: MessageStoreLevel;
