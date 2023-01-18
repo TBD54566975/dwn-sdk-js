@@ -36,11 +36,11 @@ describe('DWN', () => {
       await messageStore.close();
     });
 
-    it('should process CollectionsWrite message signed by a `did:key` DID', async () => {
+    it('should process RecordsWrite message signed by a `did:key` DID', async () => {
       // generate a `did:key` DID
       const alice = await DidKeyResolver.generate();
 
-      const messageData = await TestDataGenerator.generateCollectionsWriteMessage({
+      const messageData = await TestDataGenerator.generateRecordsWriteMessage({
         requester : alice,
         target    : alice
       });
@@ -53,8 +53,8 @@ describe('DWN', () => {
       expect(reply.status.code).to.equal(202);
     });
 
-    it('should process CollectionsQuery message', async () => {
-      const { requester, message } = await TestDataGenerator.generateCollectionsQueryMessage();
+    it('should process RecordsQuery message', async () => {
+      const { requester, message } = await TestDataGenerator.generateRecordsQueryMessage();
       const generatedDidMethod = Did.getMethodName(requester.did);
 
       // setting up a stub method resolver
@@ -83,9 +83,9 @@ describe('DWN', () => {
 
       const invalidMessage = {
         descriptor: {
-          method: 'CollectionsWrite',
+          method: 'RecordsWrite',
         },
-        authorization: { }
+        authorization: {}
       };
 
       const validateJsonSchemaSpy = sinon.spy(Message, 'validateJsonSchema');

@@ -1,12 +1,12 @@
 import { expect } from 'chai';
 import { Message } from '../../../../src/core/message.js';
 
-describe('CollectionsWrite schema definition', () => {
+describe('RecordsWrite schema definition', () => {
   it('should allow descriptor with only required properties', async () => {
     const validMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method       : 'CollectionsWrite',
+        method       : 'RecordsWrite',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dateCreated  : '2022-12-19T10:20:30.123456',
@@ -26,7 +26,7 @@ describe('CollectionsWrite schema definition', () => {
   it('should throw if `recordId` is missing', async () => {
     const message = {
       descriptor: {
-        method       : 'CollectionsWrite',
+        method       : 'RecordsWrite',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dateCreated  : '2022-12-19T10:20:30.123456',
@@ -50,7 +50,7 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method       : 'CollectionsWrite',
+        method       : 'RecordsWrite',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dateCreated  : '2022-12-19T10:20:30.123456',
@@ -67,7 +67,7 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method       : 'CollectionsWrite',
+        method       : 'RecordsWrite',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dateCreated  : '2022-12-19T10:20:30.123456',
@@ -92,7 +92,7 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method          : 'CollectionsWrite',
+        method          : 'RecordsWrite',
         dataCid         : 'anyCid',
         dataFormat      : 'application/json',
         dateCreated     : '2022-12-19T10:20:30.123456',
@@ -117,7 +117,7 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method       : 'CollectionsWrite',
+        method       : 'RecordsWrite',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dateCreated  : '2022-12-19T10:20:30.123456',
@@ -143,7 +143,7 @@ describe('CollectionsWrite schema definition', () => {
       recordId   : 'anyRecordId',
       contextId  : 'someContext', // protocol must exist
       descriptor : {
-        method       : 'CollectionsWrite',
+        method       : 'RecordsWrite',
         protocol     : 'someProtocolId', // contextId must exist
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
@@ -167,7 +167,7 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method       : 'CollectionsWrite',
+        method       : 'RecordsWrite',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dateCreated  : '2022-12-19T10:20:30.123456',
@@ -191,7 +191,7 @@ describe('CollectionsWrite schema definition', () => {
       recordId   : 'anyRecordId',
       contextId  : 'invalid', // must have `protocol` to exist
       descriptor : {
-        method       : 'CollectionsWrite',
+        method       : 'RecordsWrite',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dateCreated  : '2022-12-19T10:20:30.123456',
@@ -216,7 +216,7 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method       : 'CollectionsWrite',
+        method       : 'RecordsWrite',
         protocol     : 'invalid', // must have `contextId` to exist
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
@@ -242,7 +242,7 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method        : 'CollectionsWrite',
+        method        : 'RecordsWrite',
         dataCid       : 'anyCid',
         dataFormat    : 'application/json',
         dateModified  : '2022-12-19T10:20:30.123456',
@@ -269,7 +269,7 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method       : 'CollectionsWrite',
+        method       : 'RecordsWrite',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dateCreated  : '2022-12-19T10:20:30.123456',
@@ -295,7 +295,7 @@ describe('CollectionsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method        : 'CollectionsWrite',
+        method        : 'RecordsWrite',
         dataCid       : 'anyCid',
         dataFormat    : 'application/json',
         dateCreated   : '2022-12-19T10:20:30.123456',

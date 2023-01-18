@@ -13,7 +13,7 @@ type MessageReplyOptions = {
 export class MessageReply {
   status: Status;
   // resulting message entries returned from the invocation of the corresponding message
-  // e.g. the resulting messages from a CollectionsQuery
+  // e.g. the resulting messages from a RecordsQuery
   entries?: { descriptor: Descriptor }[];
 
   constructor(opts: MessageReplyOptions) {

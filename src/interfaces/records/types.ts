@@ -1,10 +1,10 @@
 import { BaseMessage } from '../../core/types.js';
-import { DateSort } from './messages/collections-query.js';
+import { DateSort } from './messages/records-query.js';
 import { DwnMethodName } from '../../core/message.js';
 
-export type CollectionsWriteDescriptor = {
+export type RecordsWriteDescriptor = {
   recipient: string;
-  method: DwnMethodName.CollectionsWrite;
+  method: DwnMethodName.RecordsWrite;
   protocol?: string;
   schema?: string;
   parentId?: string;
@@ -16,25 +16,25 @@ export type CollectionsWriteDescriptor = {
   dataFormat: string;
 };
 
-export type CollectionsWriteMessage = BaseMessage & {
+export type RecordsWriteMessage = BaseMessage & {
   recordId: string,
   contextId?: string;
-  descriptor: CollectionsWriteDescriptor;
+  descriptor: RecordsWriteDescriptor;
   encodedData?: string;
 };
 
 /**
  * Used by the entries returned by queries.
  */
-export type UnsignedCollectionsWriteMessage = {
+export type UnsignedRecordsWriteMessage = {
   recordId: string,
   contextId?: string;
-  descriptor: CollectionsWriteDescriptor;
+  descriptor: RecordsWriteDescriptor;
   encodedData?: string;
 };
 
-export type CollectionsQueryDescriptor = {
-  method: DwnMethodName.CollectionsQuery;
+export type RecordsQueryDescriptor = {
+  method: DwnMethodName.RecordsQuery;
   dateCreated: string;
   filter: {
     recipient?: string;
@@ -48,13 +48,13 @@ export type CollectionsQueryDescriptor = {
   dateSort?: DateSort;
 };
 
-export type CollectionsWriteAuthorizationPayload = {
+export type RecordsWriteAuthorizationPayload = {
   target: string;
   recordId: string;
   contextId?: string;
   descriptorCid: string;
 };
 
-export type CollectionsQueryMessage = BaseMessage & {
-  descriptor: CollectionsQueryDescriptor;
+export type RecordsQueryMessage = BaseMessage & {
+  descriptor: RecordsQueryDescriptor;
 };

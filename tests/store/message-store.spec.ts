@@ -1,8 +1,8 @@
-import { CollectionsWriteMessage } from '../../src/interfaces/collections/types.js';
 import { expect } from 'chai';
 import { generateCid } from '../../src/utils/cid.js';
 import { Message } from '../../src/core/message.js';
 import { MessageStoreLevel } from '../../src/store/message-store-level.js';
+import { RecordsWriteMessage } from '../../src/interfaces/records/types.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 
 let messageStore: MessageStoreLevel;
@@ -11,7 +11,7 @@ describe('MessageStoreLevel Tests', () => {
   describe('buildIndexQueryTerms', () => {
     it('returns an array of terms based on the query object type provided', () => {
       const query = {
-        method        : 'CollectionsQuery',
+        method        : 'RecordsQuery',
         schema        : 'https://schema.org/MusicPlaylist',
         objectId      : 'abcd123',
         published     : true, // boolean type
@@ -19,7 +19,7 @@ describe('MessageStoreLevel Tests', () => {
       };
 
       const expected = [
-        { FIELD: ['method'], VALUE: 'CollectionsQuery' },
+        { FIELD: ['method'], VALUE: 'RecordsQuery' },
         { FIELD: ['schema'], VALUE: 'https://schema.org/MusicPlaylist' },
         { FIELD: ['objectId'], VALUE: 'abcd123' },
         { FIELD: ['published'], VALUE: true },
@@ -34,7 +34,7 @@ describe('MessageStoreLevel Tests', () => {
       const query = {
         requester : 'AlBorland',
         ability   : {
-          method : 'CollectionsQuery',
+          method : 'RecordsQuery',
           schema : 'https://schema.org/MusicPlaylist',
           doo    : {
             bingo: 'bongo'
@@ -44,7 +44,7 @@ describe('MessageStoreLevel Tests', () => {
 
       const expected = [
         { FIELD: ['requester'], VALUE: 'AlBorland' },
-        { FIELD: ['ability.method'], VALUE: 'CollectionsQuery' },
+        { FIELD: ['ability.method'], VALUE: 'RecordsQuery' },
         { FIELD: ['ability.schema'], VALUE: 'https://schema.org/MusicPlaylist' },
         { FIELD: ['ability.doo.bingo'], VALUE: 'bongo' }
       ];
@@ -75,7 +75,7 @@ describe('MessageStoreLevel Tests', () => {
     it('stores messages as cbor/sha256 encoded blocks with CID as key', async () => {
       const { message } = await TestDataGenerator.generatePermissionsRequestMessage();
 
-      await messageStore.put(message, { });
+      await messageStore.put(message, {});
 
       const expectedCid = await generateCid(message);
 
@@ -96,7 +96,7 @@ describe('MessageStoreLevel Tests', () => {
 
     // https://github.com/TBD54566975/dwn-sdk-js/issues/170
     it('#170 - should be able to update (delete and insert new) indexes to an existing message', async () => {
-      const { target, message } = await TestDataGenerator.generateCollectionsWriteMessage();
+      const { target, message } = await TestDataGenerator.generateRecordsWriteMessage();
 
       // inserting the message indicating it is the 'latest' in the index
       await messageStore.put(message, { target: target.did, latest: 'true' });
@@ -121,12 +121,12 @@ describe('MessageStoreLevel Tests', () => {
 
     it('should index properties with characters beyond just letters and digits', async () => {
       const schema = 'http://my-awesome-schema/awesomeness_schema#awesome-1?id=awesome_1';
-      const messageData = await TestDataGenerator.generateCollectionsWriteMessage({ schema });
+      const messageData = await TestDataGenerator.generateRecordsWriteMessage({ schema });
 
       await messageStore.put(messageData.message, { schema });
 
       const results = await messageStore.query({ schema });
-      expect((results[0] as CollectionsWriteMessage).descriptor.schema).to.equal(schema);
+      expect((results[0] as RecordsWriteMessage).descriptor.schema).to.equal(schema);
     });
   });
 });

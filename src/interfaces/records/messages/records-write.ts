@@ -1,5 +1,5 @@
 import type { AuthCreateOptions } from '../../../core/types.js';
-import type { CollectionsWriteAuthorizationPayload, CollectionsWriteDescriptor, CollectionsWriteMessage, UnsignedCollectionsWriteMessage } from '../types.js';
+import type { RecordsWriteAuthorizationPayload, RecordsWriteDescriptor, RecordsWriteMessage, UnsignedRecordsWriteMessage } from '../types.js';
 
 import { DwnMethodName } from '../../../core/message.js';
 import { Encoder } from '../../../utils/encoder.js';
@@ -15,7 +15,7 @@ import { authorize, validateAuthorizationIntegrity } from '../../../core/auth.js
 import { GeneralJws, SignatureInput } from '../../../jose/jws/general/types.js';
 import { generateCid, getDagPbCid } from '../../../utils/cid.js';
 
-export type CollectionsWriteOptions = AuthCreateOptions & {
+export type RecordsWriteOptions = AuthCreateOptions & {
   target: string;
   recipient: string;
   protocol?: string;
@@ -33,45 +33,45 @@ export type CollectionsWriteOptions = AuthCreateOptions & {
 
 export type CreateFromOptions = AuthCreateOptions & {
   target: string,
-  unsignedCollectionsWriteMessage: UnsignedCollectionsWriteMessage,
+  unsignedRecordsWriteMessage: UnsignedRecordsWriteMessage,
   data?: Uint8Array;
   published?: boolean;
-  dateModified? : string;
-  datePublished? : string;
+  dateModified?: string;
+  datePublished?: string;
 };
 
-export class CollectionsWrite extends Message {
-  readonly message: CollectionsWriteMessage; // a more specific type than the base type defined in parent class
+export class RecordsWrite extends Message {
+  readonly message: RecordsWriteMessage; // a more specific type than the base type defined in parent class
 
-  private constructor(message: CollectionsWriteMessage) {
+  private constructor(message: RecordsWriteMessage) {
     super(message);
 
     // consider converting isInitialWrite() & getEntryId() into properties for performance and convenience
   }
 
-  public static async parse(message: CollectionsWriteMessage): Promise<CollectionsWrite> {
+  public static async parse(message: RecordsWriteMessage): Promise<RecordsWrite> {
     await validateAuthorizationIntegrity(message, { allowedProperties: new Set(['recordId', 'contextId']) });
 
-    const collectionsWrite = new CollectionsWrite(message);
+    const recordsWrite = new RecordsWrite(message);
 
-    await collectionsWrite.validateIntegrity(); // CollectionsWrite specific data integrity check
+    await recordsWrite.validateIntegrity(); // RecordsWrite specific data integrity check
 
-    return collectionsWrite;
+    return recordsWrite;
   }
 
   /**
-   * Creates a CollectionsWrite message.
+   * Creates a RecordsWrite message.
    * @param options.recordId If `undefined`, will be auto-filled as a originating message as convenience for developer.
    * @param options.dateCreated If `undefined`, it will be auto-filled with current time.
    * @param options.dateModified If `undefined`, it will be auto-filled with current time.
    */
-  public static async create(options: CollectionsWriteOptions): Promise<CollectionsWrite> {
+  public static async create(options: RecordsWriteOptions): Promise<RecordsWrite> {
     const currentTime = getCurrentTimeInHighPrecision();
 
     const dataCid = await getDagPbCid(options.data);
-    const descriptor: CollectionsWriteDescriptor = {
+    const descriptor: RecordsWriteDescriptor = {
       recipient     : options.recipient,
-      method        : DwnMethodName.CollectionsWrite,
+      method        : DwnMethodName.RecordsWrite,
       protocol      : options.protocol,
       schema        : options.schema,
       parentId      : options.parentId,
@@ -85,7 +85,7 @@ export class CollectionsWrite extends Message {
 
     // generate `datePublished` if the message is to be published but `datePublished` is not given
     if (options.published === true &&
-        options.datePublished === undefined) {
+      options.datePublished === undefined) {
       descriptor.datePublished = currentTime;
     }
 
@@ -96,7 +96,7 @@ export class CollectionsWrite extends Message {
     const author = GeneralJwsVerifier.extractDid(options.signatureInput.protectedHeader.kid);
 
     // `recordId` computation
-    const recordId = options.recordId ?? await CollectionsWrite.getEntryId(author, descriptor);
+    const recordId = options.recordId ?? await RecordsWrite.getEntryId(author, descriptor);
 
     // `contextId` computation
     let contextId: string | undefined;
@@ -105,19 +105,19 @@ export class CollectionsWrite extends Message {
     } else { // `contextId` is undefined
       // we compute the contextId for the caller if `protocol` is specified (this is the case of the root message of a protocol context)
       if (descriptor.protocol !== undefined) {
-        contextId = await CollectionsWrite.getEntryId(author, descriptor);
+        contextId = await RecordsWrite.getEntryId(author, descriptor);
       }
     }
 
     const encodedData = Encoder.bytesToBase64Url(options.data);
-    const authorization = await CollectionsWrite.signAsCollectionsWriteAuthorization(
+    const authorization = await RecordsWrite.signAsRecordsWriteAuthorization(
       options.target,
       recordId,
       contextId,
       descriptor,
       options.signatureInput
     );
-    const message: CollectionsWriteMessage = {
+    const message: RecordsWriteMessage = {
       recordId,
       descriptor,
       authorization,
@@ -128,7 +128,7 @@ export class CollectionsWrite extends Message {
 
     Message.validateJsonSchema(message);
 
-    return new CollectionsWrite(message);
+    return new RecordsWrite(message);
   }
 
   /**
@@ -136,29 +136,29 @@ export class CollectionsWrite extends Message {
    * 1. Copying over immutable properties from the given unsigned message
    * 2. Copying over mutable properties that are not overwritten from the given unsigned message
    * 3. Replace the mutable properties that are given new value
-   * @param options.unsignedCollectionsWriteMessage Unsigned message that the new CollectionsWrite will be based from.
+   * @param options.unsignedRecordsWriteMessage Unsigned message that the new RecordsWrite will be based from.
    * @param options.dateModified The new date the record is modified. If not given, current time will be used .
    * @param options.data The new data or the record. If not given, data from given message will be used.
    * @param options.published The new published state. If not given, then will be set to `true` if {options.dateModified} is given;
    * else the state from given message will be used.
    * @param options.publishedDate The new date the record is modified. If not given, then:
-   * - will not be set if the record will be unpublished as the result of this CollectionsWrite; else
+   * - will not be set if the record will be unpublished as the result of this RecordsWrite; else
    * - will be set to the same published date as the given message if it wss already published; else
    * - will be set to current time (because this is a toggle from unpublished to published)
    */
-  public static async createFrom(options: CreateFromOptions): Promise<CollectionsWrite> {
-    const unsignedMessage = options.unsignedCollectionsWriteMessage;
+  public static async createFrom(options: CreateFromOptions): Promise<RecordsWrite> {
+    const unsignedMessage = options.unsignedRecordsWriteMessage;
     const currentTime = getCurrentTimeInHighPrecision();
 
     // inherit published value from parent if neither published nor datePublished is specified
-    const published = options.published ?? ( options.datePublished ? true : unsignedMessage.descriptor.published);
+    const published = options.published ?? (options.datePublished ? true : unsignedMessage.descriptor.published);
     // use current time if published but no explicit time given
     let datePublished = undefined;
     // if given explicitly published dated
     if (options.datePublished) {
       datePublished = options.datePublished;
     } else {
-      // if this CollectionsWrite will publish the record
+      // if this RecordsWrite will publish the record
       if (published) {
         // the parent was already published, inherit the same published date
         if (unsignedMessage.descriptor.published) {
@@ -170,7 +170,7 @@ export class CollectionsWrite extends Message {
       }
     }
 
-    const createOptions: CollectionsWriteOptions = {
+    const createOptions: RecordsWriteOptions = {
       // immutable properties below, just inherit from the message given
       target         : options.target,
       recipient      : unsignedMessage.descriptor.recipient,
@@ -190,8 +190,8 @@ export class CollectionsWrite extends Message {
       signatureInput : options.signatureInput,
     };
 
-    const collectionsWrite = await CollectionsWrite.create(createOptions);
-    return collectionsWrite;
+    const recordsWrite = await RecordsWrite.create(createOptions);
+    return recordsWrite;
   }
 
   public async authorize(messageStore: MessageStore): Promise<void> {
@@ -203,7 +203,7 @@ export class CollectionsWrite extends Message {
   }
 
   /**
-   * Validates the integrity of the CollectionsWrite message assuming the message passed basic schema validation.
+   * Validates the integrity of the RecordsWrite message assuming the message passed basic schema validation.
    * There is opportunity to integrate better with `validateSchema(...)`
    */
   private async validateIntegrity(): Promise<void> {
@@ -236,7 +236,7 @@ export class CollectionsWrite extends Message {
 
       // if the message is also a protocol context root, the `contextId` must match the expected deterministic value
       if (this.message.descriptor.protocol !== undefined &&
-          this.message.descriptor.parentId === undefined) {
+        this.message.descriptor.parentId === undefined) {
         const expectedContextId = await this.getEntryId();
 
         if (this.message.contextId !== expectedContextId) {
@@ -257,14 +257,14 @@ export class CollectionsWrite extends Message {
    * Computes the deterministic Entry ID of this message.
    */
   public async getEntryId(): Promise<string> {
-    const entryId = await CollectionsWrite.getEntryId(this.author, this.message.descriptor);
+    const entryId = await RecordsWrite.getEntryId(this.author, this.message.descriptor);
     return entryId;
   };
 
   /**
    * Computes the deterministic Entry ID of this message.
    */
-  public static async getEntryId(author: string, descriptor: CollectionsWriteDescriptor): Promise<string> {
+  public static async getEntryId(author: string, descriptor: RecordsWriteDescriptor): Promise<string> {
     const entryIdInput = { ...descriptor };
     (entryIdInput as any).author = author;
 
@@ -284,25 +284,25 @@ export class CollectionsWrite extends Message {
   /**
    * Checks if the given message is the initial entry of a record.
    */
-  public static async isInitialWrite(message: CollectionsWriteMessage): Promise<boolean> {
+  public static async isInitialWrite(message: RecordsWriteMessage): Promise<boolean> {
     const author = Message.getAuthor(message);
-    const entryId = await CollectionsWrite.getEntryId(author, message.descriptor);
+    const entryId = await RecordsWrite.getEntryId(author, message.descriptor);
     return (entryId === message.recordId);
   }
 
   /**
-   * Creates the `authorization` property for a CollectionsWrite message.
+   * Creates the `authorization` property for a RecordsWrite message.
    */
-  private static async signAsCollectionsWriteAuthorization(
+  private static async signAsRecordsWriteAuthorization(
     target: string,
     recordId: string,
     contextId: string | undefined,
-    descriptor: CollectionsWriteDescriptor,
+    descriptor: RecordsWriteDescriptor,
     signatureInput: SignatureInput
   ): Promise<GeneralJws> {
     const descriptorCid = await generateCid(descriptor);
 
-    const authorizationPayload: CollectionsWriteAuthorizationPayload = {
+    const authorizationPayload: RecordsWriteAuthorizationPayload = {
       target,
       recordId,
       descriptorCid: descriptorCid.toString()
@@ -319,9 +319,9 @@ export class CollectionsWrite extends Message {
 
   /**
    * Verifies that immutable properties of the two given messages are identical.
-   * @throws {Error} if immutable properties between two CollectionsWrite message
+   * @throws {Error} if immutable properties between two RecordsWrite message
    */
-  public static verifyEqualityOfImmutableProperties(existingWriteMessage: CollectionsWriteMessage, newMessage: CollectionsWriteMessage): boolean {
+  public static verifyEqualityOfImmutableProperties(existingWriteMessage: RecordsWriteMessage, newMessage: RecordsWriteMessage): boolean {
     const mutableDescriptorProperties = ['dataCid', 'datePublished', 'published', 'dateModified'];
 
     // get distinct property names that exist in either the existing message given or new message
@@ -348,10 +348,10 @@ export class CollectionsWrite extends Message {
   /**
    * @returns newest message in the array. `undefined` if given array is empty.
    */
-  public static async getNewestMessage(messages: CollectionsWriteMessage[]): Promise<CollectionsWriteMessage | undefined> {
-    let currentNewestMessage: CollectionsWriteMessage | undefined = undefined;
+  public static async getNewestMessage(messages: RecordsWriteMessage[]): Promise<RecordsWriteMessage | undefined> {
+    let currentNewestMessage: RecordsWriteMessage | undefined = undefined;
     for (const message of messages) {
-      if (currentNewestMessage === undefined || await CollectionsWrite.isNewer(message, currentNewestMessage)) {
+      if (currentNewestMessage === undefined || await RecordsWrite.isNewer(message, currentNewestMessage)) {
         currentNewestMessage = message;
       }
     }
@@ -363,8 +363,8 @@ export class CollectionsWrite extends Message {
    * Checks if first message is newer than second message.
    * @returns `true` if `a` is newer than `b`; `false` otherwise
    */
-  public static async isNewer(a: CollectionsWriteMessage, b: CollectionsWriteMessage): Promise<boolean> {
-    const aIsNewer = (await CollectionsWrite.compareModifiedTime(a, b) > 0);
+  public static async isNewer(a: RecordsWriteMessage, b: RecordsWriteMessage): Promise<boolean> {
+    const aIsNewer = (await RecordsWrite.compareModifiedTime(a, b) > 0);
     return aIsNewer;
   }
 
@@ -372,8 +372,8 @@ export class CollectionsWrite extends Message {
    * Checks if first message is older than second message.
    * @returns `true` if `a` is older than `b`; `false` otherwise
    */
-  public static async isOlder(a: CollectionsWriteMessage, b: CollectionsWriteMessage): Promise<boolean> {
-    const aIsNewer = (await CollectionsWrite.compareModifiedTime(a, b) < 0);
+  public static async isOlder(a: RecordsWriteMessage, b: RecordsWriteMessage): Promise<boolean> {
+    const aIsNewer = (await RecordsWrite.compareModifiedTime(a, b) < 0);
     return aIsNewer;
   }
 
@@ -381,7 +381,7 @@ export class CollectionsWrite extends Message {
    * Compares the `dateModified` of the given messages with a fallback to message CID according to the spec.
    * @returns 1 if `a` is larger/newer than `b`; -1 if `a` is smaller/older than `b`; 0 otherwise (same age)
    */
-  public static async compareModifiedTime(a: CollectionsWriteMessage, b: CollectionsWriteMessage): Promise<number> {
+  public static async compareModifiedTime(a: RecordsWriteMessage, b: RecordsWriteMessage): Promise<number> {
     if (a.descriptor.dateModified > b.descriptor.dateModified) {
       return 1;
     } else if (a.descriptor.dateModified < b.descriptor.dateModified) {

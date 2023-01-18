@@ -1,11 +1,11 @@
 import { expect } from 'chai';
 import { Message } from '../../../../src/core/message.js';
 
-describe('CollectionsQuery schema definition', () => {
+describe('RecordsQuery schema definition', () => {
   it('should allow descriptor with only required properties', async () => {
     const validMessage = {
       descriptor: {
-        method      : 'CollectionsQuery',
+        method      : 'RecordsQuery',
         dateCreated : '123',
         filter      : { schema: 'anySchema' }
       },
@@ -23,7 +23,7 @@ describe('CollectionsQuery schema definition', () => {
   it('should throw if `authorization` is missing', () => {
     const invalidMessage = {
       descriptor: {
-        method      : 'CollectionsQuery',
+        method      : 'RecordsQuery',
         dateCreated : '123',
         filter      : { schema: 'anySchema' }
       }
@@ -37,7 +37,7 @@ describe('CollectionsQuery schema definition', () => {
   it('should throw if unknown property is given in message', () => {
     const invalidMessage = {
       descriptor: {
-        method      : 'CollectionsQuery',
+        method      : 'RecordsQuery',
         dateCreated : '123',
         filter      : { schema: 'anySchema' }
       },
@@ -59,7 +59,7 @@ describe('CollectionsQuery schema definition', () => {
   it('should throw if unknown property is given in the `descriptor`', () => {
     const invalidMessage = {
       descriptor: {
-        method          : 'CollectionsQuery',
+        method          : 'RecordsQuery',
         dateCreated     : '123',
         filter          : { schema: 'anySchema' },
         unknownProperty : 'unknownProperty' // unknown property
@@ -81,7 +81,7 @@ describe('CollectionsQuery schema definition', () => {
   it('should throw if empty `filter` property is given in the `descriptor`', () => {
     const invalidMessage = {
       descriptor: {
-        method      : 'CollectionsQuery',
+        method      : 'RecordsQuery',
         dateCreated : '123',
         filter      : { }
       },
@@ -105,7 +105,7 @@ describe('CollectionsQuery schema definition', () => {
     for (const dateSortValue of allowedDateSortValues) {
       const validMessage = {
         descriptor: {
-          method      : 'CollectionsQuery',
+          method      : 'RecordsQuery',
           dateCreated : '123',
           filter      : { schema: 'anySchema' },
           dateSort    : dateSortValue
@@ -125,7 +125,7 @@ describe('CollectionsQuery schema definition', () => {
     // test an invalid values of `dateSort`
     const invalidMessage = {
       descriptor: {
-        method      : 'CollectionsQuery',
+        method      : 'RecordsQuery',
         dateCreated : '123',
         filter      : { schema: 'anySchema' },
         dateSort    : 'unacceptable', // bad value

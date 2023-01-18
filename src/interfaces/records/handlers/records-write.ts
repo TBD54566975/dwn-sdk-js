@@ -1,22 +1,22 @@
-import type { CollectionsWriteMessage } from '../types.js';
 import type { MethodHandler } from '../../types.js';
+import type { RecordsWriteMessage } from '../types.js';
 
 import { authenticate } from '../../../core/auth.js';
-import { CollectionsWrite } from '../messages/collections-write.js';
 import { MessageReply } from '../../../core/message-reply.js';
+import { RecordsWrite } from '../messages/records-write.js';
 
 import { DwnMethodName, Message } from '../../../core/message.js';
 
-export const handleCollectionsWrite: MethodHandler = async (
+export const handleRecordsWrite: MethodHandler = async (
   message,
   messageStore,
   didResolver
 ): Promise<MessageReply> => {
-  const incomingMessage = message as CollectionsWriteMessage;
+  const incomingMessage = message as RecordsWriteMessage;
 
-  let collectionsWrite: CollectionsWrite;
+  let recordsWrite: RecordsWrite;
   try {
-    collectionsWrite = await CollectionsWrite.parse(incomingMessage);
+    recordsWrite = await RecordsWrite.parse(incomingMessage);
   } catch (e) {
     return new MessageReply({
       status: { code: 400, detail: e.message }
@@ -26,7 +26,7 @@ export const handleCollectionsWrite: MethodHandler = async (
   // authentication & authorization
   try {
     await authenticate(message.authorization, didResolver);
-    await collectionsWrite.authorize(messageStore);
+    await recordsWrite.authorize(messageStore);
   } catch (e) {
     return new MessageReply({
       status: { code: 401, detail: e.message }
@@ -35,14 +35,14 @@ export const handleCollectionsWrite: MethodHandler = async (
 
   // get existing records matching the `recordId`
   const query = {
-    target   : collectionsWrite.target,
-    method   : DwnMethodName.CollectionsWrite,
+    target   : recordsWrite.target,
+    method   : DwnMethodName.RecordsWrite,
     recordId : incomingMessage.recordId
   };
-  const existingMessages = await messageStore.query(query) as CollectionsWriteMessage[];
+  const existingMessages = await messageStore.query(query) as RecordsWriteMessage[];
 
   // if the incoming write is not the initial write, then it must not modify any immutable properties defined by the initial write
-  const newMessageIsInitialWrite = await collectionsWrite.isInitialWrite();
+  const newMessageIsInitialWrite = await recordsWrite.isInitialWrite();
   if (!newMessageIsInitialWrite) {
     try {
       if (existingMessages.length === 0) {
@@ -50,7 +50,7 @@ export const handleCollectionsWrite: MethodHandler = async (
       }
 
       const anExistingWrite = existingMessages[0]; // the assertion here is that any existing write should contain all immutable properties
-      CollectionsWrite.verifyEqualityOfImmutableProperties(anExistingWrite, incomingMessage);
+      RecordsWrite.verifyEqualityOfImmutableProperties(anExistingWrite, incomingMessage);
     } catch (e) {
       return new MessageReply({
         status: { code: 400, detail: e.message }
@@ -59,11 +59,11 @@ export const handleCollectionsWrite: MethodHandler = async (
   }
 
   // find which message is the newest, and if the incoming message is the newest
-  const newestExistingMessage = await CollectionsWrite.getNewestMessage(existingMessages);
+  const newestExistingMessage = await RecordsWrite.getNewestMessage(existingMessages);
   let incomingMessageIsNewest = false;
   let newestMessage;
   // if incoming message is newest
-  if (newestExistingMessage === undefined || await CollectionsWrite.isNewer(incomingMessage, newestExistingMessage)) {
+  if (newestExistingMessage === undefined || await RecordsWrite.isNewer(incomingMessage, newestExistingMessage)) {
     incomingMessageIsNewest = true;
     newestMessage = incomingMessage;
   } else { // existing message is the same age or newer than the incoming message
@@ -74,7 +74,7 @@ export const handleCollectionsWrite: MethodHandler = async (
   let messageReply: MessageReply;
   if (incomingMessageIsNewest) {
     const isLatestBaseState = true;
-    const indexes = await constructIndexes(collectionsWrite, isLatestBaseState);
+    const indexes = await constructIndexes(recordsWrite, isLatestBaseState);
 
     await messageStore.put(incomingMessage, indexes);
 
@@ -91,7 +91,7 @@ export const handleCollectionsWrite: MethodHandler = async (
   // NOTE: under normal operation, there should only be one existing write per `recordId` (the initial write),
   // but the DWN may crash before `delete()` is called below, so we use a loop as a tactic to clean up lingering data as needed
   for (const message of existingMessages) {
-    const messageIsOld = await CollectionsWrite.isOlder(message, newestMessage);
+    const messageIsOld = await RecordsWrite.isOlder(message, newestMessage);
     if (messageIsOld) {
       // the easiest implementation here is delete each old messages
       // and re-create it with the right index (isLatestBaseState = 'false') if the message is the initial write,
@@ -101,11 +101,11 @@ export const handleCollectionsWrite: MethodHandler = async (
 
       // if the existing message is the initial write
       // we actually need to keep it BUT, need to ensure the message is no longer marked as the latest state
-      const existingMessageIsInitialWrite = await CollectionsWrite.isInitialWrite(message);
+      const existingMessageIsInitialWrite = await RecordsWrite.isInitialWrite(message);
       if (existingMessageIsInitialWrite) {
-        const existingCollectionsWrite = await CollectionsWrite.parse(message);
+        const existingRecordsWrite = await RecordsWrite.parse(message);
         const isLatestBaseState = false;
-        const indexes = await constructIndexes(existingCollectionsWrite, isLatestBaseState);
+        const indexes = await constructIndexes(existingRecordsWrite, isLatestBaseState);
         await messageStore.put(message, indexes);
       }
     }
@@ -114,19 +114,19 @@ export const handleCollectionsWrite: MethodHandler = async (
   return messageReply;
 };
 
-export async function constructIndexes(collectionsWrite: CollectionsWrite, isLatestBaseState: boolean): Promise<{ [key:string]: string }> {
-  const message = collectionsWrite.message;
+export async function constructIndexes(recordsWrite: RecordsWrite, isLatestBaseState: boolean): Promise<{ [key: string]: string }> {
+  const message = recordsWrite.message;
   const descriptor = { ...message.descriptor };
   delete descriptor.published; // handle `published` specifically further down
 
-  const indexes: { [key:string]: any } = {
+  const indexes: { [key: string]: any } = {
     // NOTE: underlying search-index library does not support boolean, so converting boolean to string before storing
     // https://github.com/TBD54566975/dwn-sdk-js/issues/170
     isLatestBaseState : isLatestBaseState.toString(),
-    author            : collectionsWrite.author,
-    target            : collectionsWrite.target,
+    author            : recordsWrite.author,
+    target            : recordsWrite.target,
     recordId          : message.recordId,
-    entryId           : await CollectionsWrite.getEntryId(collectionsWrite.author, collectionsWrite.message.descriptor),
+    entryId           : await RecordsWrite.getEntryId(recordsWrite.author, recordsWrite.message.descriptor),
     ...descriptor
   };
 

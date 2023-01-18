@@ -1,5 +1,5 @@
 import type { AuthCreateOptions } from '../../../core/types.js';
-import type { CollectionsQueryDescriptor, CollectionsQueryMessage } from '../types.js';
+import type { RecordsQueryDescriptor, RecordsQueryMessage } from '../types.js';
 
 import { DwnMethodName } from '../../../core/message.js';
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
@@ -14,7 +14,7 @@ export enum DateSort {
   PublishedDescending = 'publishedDescending'
 }
 
-export type CollectionsQueryOptions = AuthCreateOptions & {
+export type RecordsQueryOptions = AuthCreateOptions & {
   target: string;
   dateCreated?: string;
   filter: {
@@ -29,21 +29,21 @@ export type CollectionsQueryOptions = AuthCreateOptions & {
   dateSort?: DateSort;
 };
 
-export class CollectionsQuery extends Message {
-  readonly message: CollectionsQueryMessage; // a more specific type than the base type defined in parent class
+export class RecordsQuery extends Message {
+  readonly message: RecordsQueryMessage; // a more specific type than the base type defined in parent class
 
-  private constructor(message: CollectionsQueryMessage) {
+  private constructor(message: RecordsQueryMessage) {
     super(message);
   }
 
-  public static async parse(message: CollectionsQueryMessage): Promise<CollectionsQuery> {
+  public static async parse(message: RecordsQueryMessage): Promise<RecordsQuery> {
     await validateAuthorizationIntegrity(message);
-    return new CollectionsQuery(message);
+    return new RecordsQuery(message);
   }
 
-  public static async create(options: CollectionsQueryOptions): Promise<CollectionsQuery> {
-    const descriptor: CollectionsQueryDescriptor = {
-      method      : DwnMethodName.CollectionsQuery,
+  public static async create(options: RecordsQueryOptions): Promise<RecordsQuery> {
+    const descriptor: RecordsQueryDescriptor = {
+      method      : DwnMethodName.RecordsQuery,
       dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
       filter      : options.filter,
       dateSort    : options.dateSort
@@ -58,7 +58,7 @@ export class CollectionsQuery extends Message {
     const authorization = await Message.signAsAuthorization(options.target, descriptor, options.signatureInput);
     const message = { descriptor, authorization };
 
-    return new CollectionsQuery(message);
+    return new RecordsQuery(message);
   }
 
   public async authorize(): Promise<void> {

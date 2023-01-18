@@ -28,7 +28,7 @@ describe('PermissionsRequest', () => {
           grantedBy   : 'did:jank:bob',
           method      : 'PermissionsRequest',
           objectId    : '331806c4-ce15-4759-b1c3-0f742312aae9',
-          scope       : { method: 'CollectionsWrite' }
+          scope       : { method: 'RecordsWrite' }
         }
       };
 
@@ -69,13 +69,13 @@ describe('PermissionsRequest', () => {
         description : 'drugs',
         grantedBy   : 'did:jank:bob',
         grantedTo   : 'did:jank:alice',
-        scope       : { method: 'CollectionsWrite' },
+        scope       : { method: 'RecordsWrite' },
         signatureInput
       });
 
       expect(message.grantedTo).to.equal('did:jank:alice');
       expect(message.grantedBy).to.equal('did:jank:bob');
-      expect(message.scope).to.eql({ method: 'CollectionsWrite' });
+      expect(message.scope).to.eql({ method: 'RecordsWrite' });
       expect(message.conditions).to.eql(DEFAULT_CONDITIONS);
       expect(message.description).to.eql(message.description);
     });
@@ -95,7 +95,7 @@ describe('PermissionsRequest', () => {
         description : 'drugs',
         grantedBy   : 'did:jank:bob',
         grantedTo   : 'did:jank:alice',
-        scope       : { method: 'CollectionsWrite' },
+        scope       : { method: 'RecordsWrite' },
         signatureInput
       });
 
