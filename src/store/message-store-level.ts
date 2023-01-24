@@ -113,7 +113,7 @@ export class MessageStoreLevel implements MessageStore {
 
 
   async delete(cid: CID): Promise<void> {
-    // TODO: Implement data deletion in Collections - https://github.com/TBD54566975/dwn-sdk-js/issues/84
+    // TODO: Implement data deletion in Records - https://github.com/TBD54566975/dwn-sdk-js/issues/84
     await this.db.delete(cid);
     await this.index.DELETE(cid.toString());
 

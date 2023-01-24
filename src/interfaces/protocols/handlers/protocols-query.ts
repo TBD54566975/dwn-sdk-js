@@ -8,6 +8,7 @@ import { ProtocolsQuery } from '../messages/protocols-query.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 
 export const handleProtocolsQuery: MethodHandler = async (
+  tenant,
   message,
   messageStore,
   didResolver
@@ -24,7 +25,7 @@ export const handleProtocolsQuery: MethodHandler = async (
   }
 
   try {
-    await canonicalAuth(protocolsQuery, didResolver);
+    await canonicalAuth(tenant, protocolsQuery, didResolver);
   } catch (e) {
     return new MessageReply({
       status: { code: 401, detail: e.message }
@@ -32,7 +33,7 @@ export const handleProtocolsQuery: MethodHandler = async (
   }
 
   const query = {
-    target : protocolsQuery.target,
+    target : tenant,
     method : DwnMethodName.ProtocolsConfigure,
     ...incomingMessage.descriptor.filter
   };

@@ -11,6 +11,7 @@ import { removeUndefinedProperties } from '../../../utils/object.js';
 import { DateSort, RecordsQuery } from '../messages/records-query.js';
 
 export const handleRecordsQuery: MethodHandler = async (
+  tenant,
   message,
   messageStore,
   didResolver
@@ -26,7 +27,7 @@ export const handleRecordsQuery: MethodHandler = async (
 
   try {
     await authenticate(message.authorization, didResolver);
-    await recordsQuery.authorize();
+    await recordsQuery.authorize(tenant);
   } catch (e) {
     return new MessageReply({
       status: { code: 401, detail: e.message }
@@ -34,10 +35,10 @@ export const handleRecordsQuery: MethodHandler = async (
   }
 
   let records: BaseMessage[];
-  if (recordsQuery.author === recordsQuery.target) {
-    records = await fetchRecordsAsOwner(recordsQuery, messageStore);
+  if (recordsQuery.author === tenant) {
+    records = await fetchRecordsAsOwner(tenant, recordsQuery, messageStore);
   } else {
-    records = await fetchRecordsAsNonOwner(recordsQuery, messageStore);
+    records = await fetchRecordsAsNonOwner(tenant, recordsQuery, messageStore);
   }
 
   // sort if `dataSort` is specified
@@ -61,10 +62,10 @@ export const handleRecordsQuery: MethodHandler = async (
 /**
  * Fetches the records as the owner of the DWN with no additional filtering.
  */
-async function fetchRecordsAsOwner(recordsQuery: RecordsQuery, messageStore: MessageStore): Promise<BaseMessage[]> {
+async function fetchRecordsAsOwner(tenant: string, recordsQuery: RecordsQuery, messageStore: MessageStore): Promise<BaseMessage[]> {
   // fetch all published records matching the query
   const includeCriteria = {
-    target            : recordsQuery.target,
+    target            : tenant,
     method            : DwnMethodName.RecordsWrite,
     isLatestBaseState : 'true',
     ...recordsQuery.message.descriptor.filter
@@ -80,11 +81,11 @@ async function fetchRecordsAsOwner(recordsQuery: RecordsQuery, messageStore: Mes
  * 1. published records; and
  * 2. unpublished records intended for the requester (where `recipient` is the requester)
  */
-async function fetchRecordsAsNonOwner(recordsQuery: RecordsQuery, messageStore: MessageStore)
+async function fetchRecordsAsNonOwner(tenant: string, recordsQuery: RecordsQuery, messageStore: MessageStore)
   : Promise<BaseMessage[]> {
-  const publishedRecords = await fetchPublishedRecords(recordsQuery, messageStore);
-  const unpublishedRecordsForRequester = await fetchUnpublishedRecordsForRequester(recordsQuery, messageStore);
-  const unpublishedRecordsByRequester = await fetchUnpublishedRecordsByRequester(recordsQuery, messageStore);
+  const publishedRecords = await fetchPublishedRecords(tenant, recordsQuery, messageStore);
+  const unpublishedRecordsForRequester = await fetchUnpublishedRecordsForRequester(tenant, recordsQuery, messageStore);
+  const unpublishedRecordsByRequester = await fetchUnpublishedRecordsByRequester(tenant, recordsQuery, messageStore);
   const records = [...publishedRecords, ...unpublishedRecordsForRequester, ...unpublishedRecordsByRequester];
   return records;
 }
@@ -92,10 +93,10 @@ async function fetchRecordsAsNonOwner(recordsQuery: RecordsQuery, messageStore: 
 /**
  * Fetches only published records.
  */
-async function fetchPublishedRecords(recordsQuery: RecordsQuery, messageStore: MessageStore): Promise<BaseMessage[]> {
+async function fetchPublishedRecords(tenant: string, recordsQuery: RecordsQuery, messageStore: MessageStore): Promise<BaseMessage[]> {
   // fetch all published records matching the query
   const includeCriteria = {
-    target            : recordsQuery.target,
+    target            : tenant,
     method            : DwnMethodName.RecordsWrite,
     published         : 'true',
     isLatestBaseState : 'true',
@@ -110,11 +111,11 @@ async function fetchPublishedRecords(recordsQuery: RecordsQuery, messageStore: M
 /**
  * Fetches only unpublished records that are intended for the requester (where `recipient` is the requester).
  */
-async function fetchUnpublishedRecordsForRequester(recordsQuery: RecordsQuery, messageStore: MessageStore)
+async function fetchUnpublishedRecordsForRequester(tenant: string, recordsQuery: RecordsQuery, messageStore: MessageStore)
   : Promise<BaseMessage[]> {
   // include records where recipient is requester
   const includeCriteria = {
-    target            : recordsQuery.target,
+    target            : tenant,
     recipient         : recordsQuery.author,
     method            : DwnMethodName.RecordsWrite,
     isLatestBaseState : 'true',
@@ -130,11 +131,11 @@ async function fetchUnpublishedRecordsForRequester(recordsQuery: RecordsQuery, m
 /**
  * Fetches only unpublished records that are authored by the requester.
  */
-async function fetchUnpublishedRecordsByRequester(recordsQuery: RecordsQuery, messageStore: MessageStore)
+async function fetchUnpublishedRecordsByRequester(tenant: string, recordsQuery: RecordsQuery, messageStore: MessageStore)
   : Promise<BaseMessage[]> {
   // include records where recipient is requester
   const includeCriteria = {
-    target            : recordsQuery.target,
+    target            : tenant,
     author            : recordsQuery.author,
     method            : DwnMethodName.RecordsWrite,
     isLatestBaseState : 'true',

@@ -49,7 +49,7 @@ export class PermissionsRequest extends Message {
 
     Message.validateJsonSchema({ descriptor, authorization: { } });
 
-    const auth = await Message.signAsAuthorization(options.target, descriptor, options.signatureInput);
+    const auth = await Message.signAsAuthorization(descriptor, options.signatureInput);
     const message: PermissionsRequestMessage = { descriptor, authorization: auth };
 
     return new PermissionsRequest(message);

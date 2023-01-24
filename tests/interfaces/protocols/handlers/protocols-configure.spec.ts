@@ -44,6 +44,7 @@ describe('handleProtocolsQuery()', () => {
 
     it('should return 400 if failed to parse the message', async () => {
       const { requester, message, protocolsConfigure } = await TestDataGenerator.generateProtocolsConfigureMessage();
+      const tenant = requester.did;
 
       // intentionally create more than one signature, which is not allowed
       const extraRandomPersona = await TestDataGenerator.generatePersona();
@@ -57,7 +58,7 @@ describe('handleProtocolsQuery()', () => {
 
       const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
       const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-      const reply = await handleProtocolsConfigure(message, messageStoreStub, didResolverStub);
+      const reply = await handleProtocolsConfigure(tenant, message, messageStoreStub, didResolverStub);
 
       expect(reply.status.code).to.equal(400);
       expect(reply.status.detail).to.contain('expected no more than 1 signature');
@@ -66,9 +67,9 @@ describe('handleProtocolsQuery()', () => {
     it('should return 401 if auth fails', async () => {
       const alice = await DidKeyResolver.generate();
       alice.keyId = 'wrongValue'; // to fail authentication
-      const { message } = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, target: alice });
+      const { message } = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice });
 
-      const reply = await handleProtocolsConfigure(message, messageStore, didResolver);
+      const reply = await handleProtocolsConfigure(alice.did, message, messageStore, didResolver);
       expect(reply.status.code).to.equal(401);
       expect(reply.status.detail).to.contain('not a valid DID');
     });
@@ -77,9 +78,9 @@ describe('handleProtocolsQuery()', () => {
     // generate three versions of the same protocol message
       const alice = await DidKeyResolver.generate();
       const protocol = 'exampleProtocol';
-      const messageData1 = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, target: alice, protocol });
-      const messageData2 = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, target: alice, protocol });
-      const messageData3 = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, target: alice, protocol });
+      const messageData1 = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, protocol });
+      const messageData2 = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, protocol });
+      const messageData3 = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, protocol });
 
       const messageDataWithCid = [];
       for (const messageData of [messageData1, messageData2, messageData3]) {
@@ -96,20 +97,20 @@ describe('handleProtocolsQuery()', () => {
         = messageDataWithCid.sort((messageDataA, messageDataB) => { return lexicographicalCompare(messageDataA.cid, messageDataB.cid); });
 
       // write the protocol with the middle lexicographic value
-      let reply = await handleProtocolsConfigure(messageDataWithMediumLexicographicValue.message, messageStore, didResolver);
+      let reply = await handleProtocolsConfigure(alice.did, messageDataWithMediumLexicographicValue.message, messageStore, didResolver);
       expect(reply.status.code).to.equal(202);
 
       // test that the protocol with the smallest lexicographic value cannot be written
-      reply = await handleProtocolsConfigure(messageDataWithSmallestLexicographicValue.message, messageStore, didResolver);
+      reply = await handleProtocolsConfigure(alice.did, messageDataWithSmallestLexicographicValue.message, messageStore, didResolver);
       expect(reply.status.code).to.equal(409);
 
       // test that the protocol with the largest lexicographic value can be written
-      reply = await handleProtocolsConfigure(messageDataWithLargestLexicographicValue.message, messageStore, didResolver);
+      reply = await handleProtocolsConfigure(alice.did, messageDataWithLargestLexicographicValue.message, messageStore, didResolver);
       expect(reply.status.code).to.equal(202);
 
       // test that old protocol message is removed from DB and only the newer protocol message remains
-      const queryMessageData = await TestDataGenerator.generateProtocolsQueryMessage({ requester: alice, target: alice, filter: { protocol } });
-      reply = await handleProtocolsQuery(queryMessageData.message, messageStore, didResolver);
+      const queryMessageData = await TestDataGenerator.generateProtocolsQueryMessage({ requester: alice, filter: { protocol } });
+      reply = await handleProtocolsQuery(alice.did, queryMessageData.message, messageStore, didResolver);
 
       expect(reply.status.code).to.equal(200);
       expect(reply.entries.length).to.equal(1);

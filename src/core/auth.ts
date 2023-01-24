@@ -20,11 +20,12 @@ type AuthorizationPayloadConstraints = {
  * @throws {Error} if auth fails
  */
 export async function canonicalAuth(
+  tenant: string,
   incomingMessage: Message,
   didResolver: DidResolver
 ): Promise<void> {
   await authenticate(incomingMessage.message.authorization, didResolver);
-  await authorize(incomingMessage);
+  await authorize(tenant, incomingMessage);
 }
 
 /**
@@ -35,17 +36,14 @@ export async function canonicalAuth(
 export async function validateAuthorizationIntegrity(
   message: BaseMessage,
   authorizationPayloadConstraints?: AuthorizationPayloadConstraints
-): Promise<{ target: string, descriptorCid: CID, [key: string]: any }> {
+): Promise<{ descriptorCid: CID, [key: string]: any }> {
 
   if (message.authorization.signatures.length !== 1) {
     throw new Error('expected no more than 1 signature for authorization');
   }
 
   const payloadJson = GeneralJwsVerifier.decodePlainObjectPayload(message.authorization);
-  const { target, descriptorCid } = payloadJson;
-
-  // `target` validation
-  Did.validate(target);
+  const { descriptorCid } = payloadJson;
 
   // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
   const providedDescriptorCid = parseCid(descriptorCid); // parseCid throws an exception if parsing fails
@@ -89,9 +87,9 @@ export async function authenticate(jws: GeneralJws, didResolver: DidResolver): P
  * Authorizes the incoming message.
  * @throws {Error} if fails authentication
  */
-export async function authorize(incomingMessage: Message): Promise<void> {
-  // if author/requester is the same as the target DID, we can directly grant access
-  if (incomingMessage.author === incomingMessage.target) {
+export async function authorize(tenant: string, incomingMessage: Message): Promise<void> {
+  // if author/requester is the same as the target tenant, we can directly grant access
+  if (incomingMessage.author === tenant) {
     return;
   } else {
     throw new Error('message failed authorization, permission grant check not yet implemented');

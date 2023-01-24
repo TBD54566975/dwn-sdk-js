@@ -42,7 +42,6 @@ export type Persona = {
 
 export type GenerateProtocolsConfigureMessageInput = {
   requester?: Persona;
-  target?: Persona;
   dateCreated?: string;
   protocol?: string;
   protocolDefinition?: ProtocolDefinition;
@@ -50,14 +49,12 @@ export type GenerateProtocolsConfigureMessageInput = {
 
 export type GenerateProtocolsConfigureMessageOutput = {
   requester: Persona;
-  target: Persona;
   message: ProtocolsConfigureMessage;
   protocolsConfigure: ProtocolsConfigure;
 };
 
 export type GenerateProtocolsQueryMessageInput = {
   requester?: Persona;
-  target?: Persona;
   dateCreated?: string;
   filter?: {
     protocol: string;
@@ -66,14 +63,12 @@ export type GenerateProtocolsQueryMessageInput = {
 
 export type GenerateProtocolsQueryMessageOutput = {
   requester: Persona;
-  target: Persona;
   message: ProtocolsQueryMessage;
   protocolsQuery: ProtocolsQuery;
 };
 
 export type GenerateRecordsWriteMessageInput = {
   requester?: Persona;
-  target?: Persona;
   recipientDid?: string;
   protocol?: string;
   contextId?: string;
@@ -99,14 +94,12 @@ export type generateFromRecordsWriteInput = {
 
 export type GenerateRecordsWriteMessageOutput = {
   requester: Persona;
-  target: Persona;
   message: RecordsWriteMessage;
   recordsWrite: RecordsWrite;
 };
 
 export type GenerateRecordsQueryMessageInput = {
   requester?: Persona;
-  target?: Persona;
   dateCreated?: string;
   filter?: {
     recipient?: string;
@@ -122,7 +115,6 @@ export type GenerateRecordsQueryMessageInput = {
 
 export type GenerateRecordsQueryMessageOutput = {
   requester: Persona;
-  target: Persona;
   message: RecordsQueryMessage;
 };
 
@@ -227,7 +219,6 @@ export class TestDataGenerator {
 
     return {
       requester,
-      target,
       message: protocolsConfigure.message,
       protocolsConfigure
     };
@@ -254,7 +245,6 @@ export class TestDataGenerator {
 
     return {
       requester,
-      target,
       message: protocolsQuery.message,
       protocolsQuery
     };
@@ -268,15 +258,14 @@ export class TestDataGenerator {
    */
   public static async generateRecordsWriteMessage(input?: GenerateRecordsWriteMessageInput): Promise<GenerateRecordsWriteMessageOutput> {
 
-    const { requester, target } = await TestDataGenerator.generateRequesterAndTargetPersonas(input);
+    const { requester } = await TestDataGenerator.generateRequesterAndTargetPersonas(input);
 
     const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
 
     const data = input?.data ?? TestDataGenerator.randomBytes(32);
 
     const options: RecordsWriteOptions = {
-      target        : target.did,
-      recipient     : input?.recipientDid ?? target.did, // use target if recipient is not explicitly set
+      recipient     : input?.recipientDid,
       protocol      : input?.protocol,
       contextId     : input?.contextId,
       schema        : input?.schema ?? TestDataGenerator.randomString(20),
@@ -296,7 +285,6 @@ export class TestDataGenerator {
     const message = recordsWrite.message as RecordsWriteMessage;
 
     return {
-      target,
       requester,
       message,
       recordsWrite
@@ -316,7 +304,6 @@ export class TestDataGenerator {
     const datePublished = input.datePublished ?? (published ? currentTime : undefined);
 
     const options: CreateFromOptions = {
-      target                      : input.existingWrite.target,
       unsignedRecordsWriteMessage : input.existingWrite.message,
       data                        : input.data ?? TestDataGenerator.randomBytes(32),
       published,
@@ -333,12 +320,11 @@ export class TestDataGenerator {
    * Generates a RecordsQuery message for testing.
    */
   public static async generateRecordsQueryMessage(input?: GenerateRecordsQueryMessageInput): Promise<GenerateRecordsQueryMessageOutput> {
-    const { requester, target } = await TestDataGenerator.generateRequesterAndTargetPersonas(input);
+    const { requester } = await TestDataGenerator.generateRequesterAndTargetPersonas(input);
 
     const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
 
     const options: RecordsQueryOptions = {
-      target      : target.did,
       dateCreated : input?.dateCreated,
       signatureInput,
       filter      : input?.filter ?? { schema: TestDataGenerator.randomString(10) }, // must have one filter property if no filter is given
@@ -350,7 +336,6 @@ export class TestDataGenerator {
     const message = recordsQuery.message as RecordsQueryMessage;
 
     return {
-      target,
       requester,
       message
     };

@@ -5,6 +5,7 @@ import type { MessageStore } from '../store/message-store.js';
 import { DidResolver } from '../did/did-resolver.js';
 
 export type MethodHandler = (
+  tenant: string,
   message: BaseMessage,
   messageStore: MessageStore,
   didResolver: DidResolver) => Promise<MessageReply>;

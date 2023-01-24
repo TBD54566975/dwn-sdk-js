@@ -49,7 +49,7 @@ export class HooksWrite extends Message {
 
     Message.validateJsonSchema({ descriptor, authorization: { } });
 
-    const authorization = await Message.signAsAuthorization(options.target, descriptor, options.signatureInput);
+    const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
     const message = { descriptor, authorization };
 
     const hooksWrite = new HooksWrite(message);

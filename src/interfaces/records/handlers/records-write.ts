@@ -8,6 +8,7 @@ import { RecordsWrite } from '../messages/records-write.js';
 import { DwnMethodName, Message } from '../../../core/message.js';
 
 export const handleRecordsWrite: MethodHandler = async (
+  tenant,
   message,
   messageStore,
   didResolver
@@ -23,19 +24,30 @@ export const handleRecordsWrite: MethodHandler = async (
     });
   }
 
-  // authentication & authorization
+  // authentication
   try {
     await authenticate(message.authorization, didResolver);
-    await recordsWrite.authorize(messageStore);
   } catch (e) {
     return new MessageReply({
       status: { code: 401, detail: e.message }
     });
   }
 
+  // figure out the implied targets of this message
+
+  // authorization
+  try {
+    await recordsWrite.authorize(tenant, messageStore);
+  } catch (e) {
+    return new MessageReply({
+      status: { code: 401, detail: e.message }
+    });
+  }
+
+
   // get existing records matching the `recordId`
   const query = {
-    target   : recordsWrite.target,
+    target   : tenant,
     method   : DwnMethodName.RecordsWrite,
     recordId : incomingMessage.recordId
   };
@@ -74,7 +86,7 @@ export const handleRecordsWrite: MethodHandler = async (
   let messageReply: MessageReply;
   if (incomingMessageIsNewest) {
     const isLatestBaseState = true;
-    const indexes = await constructIndexes(recordsWrite, isLatestBaseState);
+    const indexes = await constructIndexes(tenant, recordsWrite, isLatestBaseState);
 
     await messageStore.put(incomingMessage, indexes);
 
@@ -105,7 +117,7 @@ export const handleRecordsWrite: MethodHandler = async (
       if (existingMessageIsInitialWrite) {
         const existingRecordsWrite = await RecordsWrite.parse(message);
         const isLatestBaseState = false;
-        const indexes = await constructIndexes(existingRecordsWrite, isLatestBaseState);
+        const indexes = await constructIndexes(tenant, existingRecordsWrite, isLatestBaseState);
         await messageStore.put(message, indexes);
       }
     }
@@ -114,17 +126,17 @@ export const handleRecordsWrite: MethodHandler = async (
   return messageReply;
 };
 
-export async function constructIndexes(recordsWrite: RecordsWrite, isLatestBaseState: boolean): Promise<{ [key: string]: string }> {
+export async function constructIndexes(tenant: string, recordsWrite: RecordsWrite, isLatestBaseState: boolean): Promise<{ [key: string]: string }> {
   const message = recordsWrite.message;
   const descriptor = { ...message.descriptor };
   delete descriptor.published; // handle `published` specifically further down
 
   const indexes: { [key: string]: any } = {
+    target            : tenant,
     // NOTE: underlying search-index library does not support boolean, so converting boolean to string before storing
     // https://github.com/TBD54566975/dwn-sdk-js/issues/170
     isLatestBaseState : isLatestBaseState.toString(),
     author            : recordsWrite.author,
-    target            : recordsWrite.target,
     recordId          : message.recordId,
     entryId           : await RecordsWrite.getEntryId(recordsWrite.author, recordsWrite.message.descriptor),
     ...descriptor

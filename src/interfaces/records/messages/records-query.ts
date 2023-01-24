@@ -15,7 +15,6 @@ export enum DateSort {
 }
 
 export type RecordsQueryOptions = AuthCreateOptions & {
-  target: string;
   dateCreated?: string;
   filter: {
     recipient?: string;
@@ -55,15 +54,15 @@ export class RecordsQuery extends Message {
 
     Message.validateJsonSchema({ descriptor, authorization: { } });
 
-    const authorization = await Message.signAsAuthorization(options.target, descriptor, options.signatureInput);
+    const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
     const message = { descriptor, authorization };
 
     return new RecordsQuery(message);
   }
 
-  public async authorize(): Promise<void> {
+  public async authorize(tenant: string): Promise<void> {
     // DWN owner can do any query
-    if (this.author === this.target) {
+    if (this.author === tenant) {
       return;
     }
 

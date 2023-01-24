@@ -19,7 +19,6 @@ describe('RecordsWrite', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {
-        target         : alice.did,
         recipient      : alice.did,
         data           : TestDataGenerator.randomBytes(10),
         dataFormat     : 'application/json',
@@ -39,7 +38,7 @@ describe('RecordsWrite', () => {
 
       const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-      await recordsWrite.authorize(messageStoreStub);
+      await recordsWrite.authorize(alice.did, messageStoreStub);
     });
 
     it('should be able to auto-fill `datePublished` when `published` set to `true` but `datePublished` not given', async () => {
@@ -69,7 +68,6 @@ describe('RecordsWrite', () => {
       });
 
       const write = await RecordsWrite.createFrom({
-        target                      : requester.did,
         unsignedRecordsWriteMessage : recordsWrite.message,
         datePublished               : getCurrentTimeInHighPrecision(),
         signatureInput              : TestDataGenerator.createSignatureInputFromPersona(requester)
