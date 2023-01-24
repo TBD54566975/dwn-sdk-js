@@ -20,3 +20,4 @@ npm publish --tag unstable --no-git-tag-version
 
 # Reset changes to the package.json
 git checkout -- package.json
+git checkout -- package-lock.json

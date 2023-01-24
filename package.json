@@ -23,7 +23,7 @@
   ],
   "scripts": {
     "build:esm": "tsc",
-    "build:cjs": "tsc --project tsconfig.cjs.json",
+    "build:cjs": "tsc --project tsconfig.cjs.json && echo '{\"type\": \"commonjs\"}' > ./dist/cjs/package.json",
     "build": "npm-run-all -l clean compile-validators -p build:esm build:cjs bundle",
     "bundle": "node ./build/create-browser-bundle.cjs",
     "clean": "rimraf dist && rimraf generated/*",
