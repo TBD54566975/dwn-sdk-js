@@ -7,9 +7,11 @@
   "engines": {
     "node": ">= 16"
   },
+  "main": "./dist/cjs/src/index.js",
   "exports": "./dist/esm/src/index.js",
   "browser": {
-    "./dist/esm/src/index.js": "./dist/bundles/browser.js"
+    "./dist/esm/src/index.js": "./dist/bundles/browser.js",
+    "./dist/cjs/src/index.js": "./dist/bundles/browser.js"
   },
   "@comment files": [
     "the files property informs npm about which files we want to include in our published package.",
@@ -21,7 +23,8 @@
   ],
   "scripts": {
     "build:esm": "tsc",
-    "build": "npm-run-all -l clean compile-validators -p build:esm bundle",
+    "build:cjs": "tsc --project tsconfig.cjs.json",
+    "build": "npm-run-all -l clean compile-validators -p build:esm build:cjs bundle",
     "bundle": "node ./build/create-browser-bundle.cjs",
     "clean": "rimraf dist && rimraf generated/*",
     "compile-validators": "node ./build/compile-validators.js",
