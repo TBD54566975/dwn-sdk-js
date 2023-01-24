@@ -1,3 +1,6 @@
+# bundle metadata
+bundle-metadata.json
+
 # js deps
 node_modules
 # bundler output location
