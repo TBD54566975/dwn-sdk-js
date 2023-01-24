@@ -3,7 +3,7 @@ import type { PublicJwk } from '../../types.js';
 import type { VerificationMethod } from '../../../did/did-resolver.js';
 import type { GeneralJws, SignatureEntry } from './types.js';
 
-import lodash from 'lodash';
+import isPlainObject from 'lodash/isPlainObject.js';
 
 import { DidResolver } from '../../../did/did-resolver.js';
 import { Encoder } from '../../../utils/encoder.js';
@@ -127,7 +127,7 @@ export class GeneralJwsVerifier {
       throw new Error('authorization payload is not a JSON object');
     }
 
-    if (!lodash.isPlainObject(payloadJson)) {
+    if (!isPlainObject(payloadJson)) {
       throw new Error('auth payload must be a valid JSON object');
     }
 

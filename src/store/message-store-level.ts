@@ -3,7 +3,7 @@ import type { BaseMessage, DataReferencingMessage } from '../core/types.js';
 
 import * as block from 'multiformats/block';
 import * as cbor from '@ipld/dag-cbor';
-import _ from 'lodash';
+import isPlainObject from 'lodash/isPlainObject.js';
 import searchIndex from 'search-index';
 
 import { BlockstoreLevel } from './blockstore-level.js';
@@ -199,7 +199,7 @@ export class MessageStoreLevel implements MessageStore {
     for (const property in query) {
       const val = query[property];
 
-      if (_.isPlainObject(val)) {
+      if (isPlainObject(val)) {
         MessageStoreLevel.buildIndexQueryTerms(val, terms, `${prefix}${property}.`);
       } else {
         // NOTE: using object-based expressions because we need to support filters against non-string properties
