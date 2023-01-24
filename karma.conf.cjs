@@ -1,12 +1,19 @@
 // Karma is what we're using to run our tests in browser environments
 // Karma does not support .mjs
 
+// playwright acts as a safari executable on windows and mac
+const playwright = require('playwright');
 const esbuildBrowserConfig = require('./build/esbuild-browser-config.cjs');
+
+// set playwright as run-target for webkit tests
+process.env.WEBKIT_HEADLESS_BIN = playwright.webkit.executablePath();
 
 module.exports = function(config) {
   config.set({
     plugins: [
       require('karma-chrome-launcher'),
+      require('karma-firefox-launcher'),
+      require('karma-webkit-launcher'),
       require('karma-esbuild'),
       require('karma-mocha'),
       require('karma-mocha-reporter')
@@ -47,9 +54,11 @@ module.exports = function(config) {
     // config.LOG_INFO || config.LOG_DEBUG
     logLevel: config.LOG_INFO,
 
+    concurrency: 1,
+
     // start these browsers
     // available browser launchers: https://www.npmjs.com/search?q=keywords:karma-launcher
-    browsers: ['ChromeHeadless'],
+    browsers: ['ChromeHeadless', 'FirefoxHeadless', 'WebkitHeadless'],
 
     // Continuous Integration mode
     // if true, Karma captures browsers, runs the tests and exits
