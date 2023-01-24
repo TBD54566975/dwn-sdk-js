@@ -33,8 +33,8 @@ export const handleProtocolsQuery: MethodHandler = async (
   }
 
   const query = {
-    target : tenant,
-    method : DwnMethodName.ProtocolsConfigure,
+    tenant,
+    method: DwnMethodName.ProtocolsConfigure,
     ...incomingMessage.descriptor.filter
   };
   removeUndefinedProperties(query);

@@ -65,7 +65,7 @@ export const handleRecordsQuery: MethodHandler = async (
 async function fetchRecordsAsOwner(tenant: string, recordsQuery: RecordsQuery, messageStore: MessageStore): Promise<BaseMessage[]> {
   // fetch all published records matching the query
   const includeCriteria = {
-    target            : tenant,
+    tenant,
     method            : DwnMethodName.RecordsWrite,
     isLatestBaseState : 'true',
     ...recordsQuery.message.descriptor.filter
@@ -96,7 +96,7 @@ async function fetchRecordsAsNonOwner(tenant: string, recordsQuery: RecordsQuery
 async function fetchPublishedRecords(tenant: string, recordsQuery: RecordsQuery, messageStore: MessageStore): Promise<BaseMessage[]> {
   // fetch all published records matching the query
   const includeCriteria = {
-    target            : tenant,
+    tenant,
     method            : DwnMethodName.RecordsWrite,
     published         : 'true',
     isLatestBaseState : 'true',
@@ -115,7 +115,7 @@ async function fetchUnpublishedRecordsForRequester(tenant: string, recordsQuery:
   : Promise<BaseMessage[]> {
   // include records where recipient is requester
   const includeCriteria = {
-    target            : tenant,
+    tenant,
     recipient         : recordsQuery.author,
     method            : DwnMethodName.RecordsWrite,
     isLatestBaseState : 'true',
@@ -135,7 +135,7 @@ async function fetchUnpublishedRecordsByRequester(tenant: string, recordsQuery: 
   : Promise<BaseMessage[]> {
   // include records where recipient is requester
   const includeCriteria = {
-    target            : tenant,
+    tenant,
     author            : recordsQuery.author,
     method            : DwnMethodName.RecordsWrite,
     isLatestBaseState : 'true',

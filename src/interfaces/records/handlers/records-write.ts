@@ -47,7 +47,7 @@ export const handleRecordsWrite: MethodHandler = async (
 
   // get existing records matching the `recordId`
   const query = {
-    target   : tenant,
+    tenant,
     method   : DwnMethodName.RecordsWrite,
     recordId : incomingMessage.recordId
   };
@@ -132,7 +132,7 @@ export async function constructIndexes(tenant: string, recordsWrite: RecordsWrit
   delete descriptor.published; // handle `published` specifically further down
 
   const indexes: { [key: string]: any } = {
-    target            : tenant,
+    tenant,
     // NOTE: underlying search-index library does not support boolean, so converting boolean to string before storing
     // https://github.com/TBD54566975/dwn-sdk-js/issues/170
     isLatestBaseState : isLatestBaseState.toString(),

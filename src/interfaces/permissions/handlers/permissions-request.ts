@@ -27,7 +27,7 @@ export const handlePermissionsRequest: MethodHandler = async (
   }
 
   const index = {
-    target: tenant,
+    tenant,
     author,
     ... message.descriptor
   };

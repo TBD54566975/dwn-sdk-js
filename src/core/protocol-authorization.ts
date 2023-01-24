@@ -61,7 +61,7 @@ export class ProtocolAuthorization {
 
     // fetch the corresponding protocol definition
     const query = {
-      target   : tenant,
+      tenant,
       method   : DwnMethodName.ProtocolsConfigure,
       protocol : protocolUri
     };
@@ -91,7 +91,7 @@ export class ProtocolAuthorization {
     while (currentParentId !== undefined) {
       // fetch parent
       const query = {
-        target   : tenant,
+        tenant,
         method   : DwnMethodName.RecordsWrite,
         protocol,
         contextId,

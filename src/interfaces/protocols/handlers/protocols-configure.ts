@@ -35,7 +35,7 @@ export const handleProtocolsConfigure: MethodHandler = async (
 
   // attempt to get existing protocol
   const query = {
-    target   : tenant,
+    tenant,
     method   : DwnMethodName.ProtocolsConfigure,
     protocol : incomingMessage.descriptor.protocol
   };
@@ -54,7 +54,7 @@ export const handleProtocolsConfigure: MethodHandler = async (
   if (incomingMessageIsNewest) {
     const { author } = protocolsConfigure;
     const index = {
-      target: tenant,
+      tenant,
       author,
       ... message.descriptor
     };
