@@ -29,7 +29,6 @@ export async function canonicalAuth(
 
 /**
  * Validates the data integrity of the `authorization` property.
- * NOTE: `target` and `descriptorCid` are both checked by default
  * NOTE signature is not verified.
  */
 export async function validateAuthorizationIntegrity(
@@ -54,7 +53,6 @@ export async function validateAuthorizationIntegrity(
   // check to ensure that no other unexpected properties exist in payload.
   const allowedProperties = authorizationPayloadConstraints?.allowedProperties ?? new Set();
   const customProperties = { ...payloadJson };
-  delete customProperties.target;
   delete customProperties.descriptorCid;
   for (const propertyName in customProperties) {
     {

@@ -15,7 +15,8 @@ type ResponseOptions = {
  */
 export class Response {
   // present ONLY if there is a general request-related issue
-  // e.g. malformed request, invalid target. `status` and `replies` are mutually exclusive
+  // e.g. malformed request.
+  // `status` and `replies` are mutually exclusive
   status?: ResponseStatus;
   // responses to individual messages provided within a request
   replies?: MessageReply[];

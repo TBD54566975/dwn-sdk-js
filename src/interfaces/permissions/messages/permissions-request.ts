@@ -8,7 +8,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 
 type PermissionsRequestOptions = AuthCreateOptions & {
-  target: string;
   dateCreated?: string;
   conditions?: PermissionConditions;
   description: string;

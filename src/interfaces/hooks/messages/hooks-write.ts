@@ -10,7 +10,6 @@ import { DwnMethodName, Message } from '../../../core/message.js';
  * Input to `HookssWrite.create()`.
  */
 export type HooksWriteOptions = AuthCreateOptions & {
-  target: string,
   dateCreated?: string,
   /**
    * leave as `undefined` for customer handler.

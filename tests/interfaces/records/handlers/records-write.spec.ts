@@ -1243,8 +1243,8 @@ describe('handleRecordsWrite()', () => {
     const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
 
-    const target = await TestDataGenerator.generatePersona();
-    const reply = await handleRecordsWrite(target.did, message, messageStoreStub, didResolverStub);
+    const tenant = await TestDataGenerator.generatePersona();
+    const reply = await handleRecordsWrite(tenant.did, message, messageStoreStub, didResolverStub);
 
     expect(reply.status.code).to.equal(401);
   });

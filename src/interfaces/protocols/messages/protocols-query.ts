@@ -8,7 +8,6 @@ import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 import { DwnMethodName, Message } from '../../../core/message.js';
 
 export type ProtocolsQueryOptions = AuthCreateOptions & {
-  target: string;
   dateCreated?: string;
   filter?: {
     protocol: string;

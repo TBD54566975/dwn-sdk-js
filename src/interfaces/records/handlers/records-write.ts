@@ -24,26 +24,15 @@ export const handleRecordsWrite: MethodHandler = async (
     });
   }
 
-  // authentication
+  // authentication & authorization
   try {
     await authenticate(message.authorization, didResolver);
-  } catch (e) {
-    return new MessageReply({
-      status: { code: 401, detail: e.message }
-    });
-  }
-
-  // figure out the implied targets of this message
-
-  // authorization
-  try {
     await recordsWrite.authorize(tenant, messageStore);
   } catch (e) {
     return new MessageReply({
       status: { code: 401, detail: e.message }
     });
   }
-
 
   // get existing records matching the `recordId`
   const query = {

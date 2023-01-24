@@ -45,7 +45,6 @@ describe('RecordsWrite', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {
-        target         : alice.did,
         recipient      : alice.did,
         data           : TestDataGenerator.randomBytes(10),
         dataFormat     : 'application/json',

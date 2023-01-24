@@ -44,11 +44,6 @@ export class RecordsWrite extends Message {
    */
   readonly message: RecordsWriteMessage;
 
-  /**
-   * The implied target DIDs that this RecordsWrite
-   */
-  readonly targets: string[];
-
   private constructor(message: RecordsWriteMessage) {
     super(message);
 

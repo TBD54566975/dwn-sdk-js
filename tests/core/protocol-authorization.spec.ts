@@ -22,7 +22,7 @@ describe('Protocol-Based Authorization', async () => {
   });
 
   describe('verifyAllowedActions()', async () => {
-    it('should throw if requester DID is not the target DWN owner when no allow rule defined', async () => {
+    it('should throw if requester DID is not the target tenant when no allow rule defined', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const bob = await TestDataGenerator.generatePersona();
       const { recordsWrite } = await TestDataGenerator.generateRecordsWriteMessage({ requester: bob });

@@ -165,7 +165,7 @@ export class ProtocolAuthorization {
   ): void {
     const allowRule = inboundMessageRuleSet.allow;
     if (allowRule === undefined) {
-      // if no allow rule is defined, still allow if requester is the same as target, but throw otherwise
+      // if no allow rule is defined, still allow if requester is the same as target tenant, but throw otherwise
       if (requesterDid !== tenant) {
         throw new Error(`no allow rule defined for requester, ${requesterDid} is unauthorized`);
       }
