@@ -21,6 +21,10 @@
     "dist",
     "src"
   ],
+  "@comment react-native": [
+    "directive for metro (react native build tool)."
+  ],
+  "react-native": "./dist/esm/src/index.js",
   "scripts": {
     "build:esm": "tsc",
     "build:cjs": "tsc --project tsconfig.cjs.json && echo '{\"type\": \"commonjs\"}' > ./dist/cjs/package.json",
