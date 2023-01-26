@@ -1,7 +1,6 @@
 import type { BaseMessage } from './types.js';
 
 import { CID } from 'multiformats';
-import { Did } from '../did/did.js';
 import { DidResolver } from '../did/did-resolver.js';
 import { GeneralJws } from '../jose/jws/general/types.js';
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
@@ -20,32 +19,29 @@ type AuthorizationPayloadConstraints = {
  * @throws {Error} if auth fails
  */
 export async function canonicalAuth(
+  tenant: string,
   incomingMessage: Message,
   didResolver: DidResolver
 ): Promise<void> {
   await authenticate(incomingMessage.message.authorization, didResolver);
-  await authorize(incomingMessage);
+  await authorize(tenant, incomingMessage);
 }
 
 /**
  * Validates the data integrity of the `authorization` property.
- * NOTE: `target` and `descriptorCid` are both checked by default
  * NOTE signature is not verified.
  */
 export async function validateAuthorizationIntegrity(
   message: BaseMessage,
   authorizationPayloadConstraints?: AuthorizationPayloadConstraints
-): Promise<{ target: string, descriptorCid: CID, [key: string]: any }> {
+): Promise<{ descriptorCid: CID, [key: string]: any }> {
 
   if (message.authorization.signatures.length !== 1) {
     throw new Error('expected no more than 1 signature for authorization');
   }
 
   const payloadJson = GeneralJwsVerifier.decodePlainObjectPayload(message.authorization);
-  const { target, descriptorCid } = payloadJson;
-
-  // `target` validation
-  Did.validate(target);
+  const { descriptorCid } = payloadJson;
 
   // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
   const providedDescriptorCid = parseCid(descriptorCid); // parseCid throws an exception if parsing fails
@@ -57,7 +53,6 @@ export async function validateAuthorizationIntegrity(
   // check to ensure that no other unexpected properties exist in payload.
   const allowedProperties = authorizationPayloadConstraints?.allowedProperties ?? new Set();
   const customProperties = { ...payloadJson };
-  delete customProperties.target;
   delete customProperties.descriptorCid;
   for (const propertyName in customProperties) {
     {
@@ -89,9 +84,9 @@ export async function authenticate(jws: GeneralJws, didResolver: DidResolver): P
  * Authorizes the incoming message.
  * @throws {Error} if fails authentication
  */
-export async function authorize(incomingMessage: Message): Promise<void> {
-  // if author/requester is the same as the target DID, we can directly grant access
-  if (incomingMessage.author === incomingMessage.target) {
+export async function authorize(tenant: string, incomingMessage: Message): Promise<void> {
+  // if author/requester is the same as the target tenant, we can directly grant access
+  if (incomingMessage.author === tenant) {
     return;
   } else {
     throw new Error('message failed authorization, permission grant check not yet implemented');

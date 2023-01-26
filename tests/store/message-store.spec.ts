@@ -1,3 +1,4 @@
+import { DidKeyResolver } from '../../src/index.js';
 import { expect } from 'chai';
 import { generateCid } from '../../src/utils/cid.js';
 import { Message } from '../../src/core/message.js';
@@ -85,37 +86,30 @@ describe('MessageStoreLevel Tests', () => {
       expect(resultCid.equals(expectedCid)).to.be.true;
     });
 
-    it('adds tenant to index', async () => {
-      const { target, message } = await TestDataGenerator.generatePermissionsRequestMessage();
-
-      await messageStore.put(message, { target });
-
-      const results = await messageStore.query({ target });
-      expect(results.length).to.equal(1);
-    });
-
     // https://github.com/TBD54566975/dwn-sdk-js/issues/170
     it('#170 - should be able to update (delete and insert new) indexes to an existing message', async () => {
-      const { target, message } = await TestDataGenerator.generateRecordsWriteMessage();
+      const alice = await DidKeyResolver.generate();
+
+      const { message } = await TestDataGenerator.generateRecordsWriteMessage();
 
       // inserting the message indicating it is the 'latest' in the index
-      await messageStore.put(message, { target: target.did, latest: 'true' });
+      await messageStore.put(message, { tenant: alice.did, latest: 'true' });
 
-      const results1 = await messageStore.query({ target: target.did, latest: 'true' });
+      const results1 = await messageStore.query({ tenant: alice.did, latest: 'true' });
       expect(results1.length).to.equal(1);
 
-      const results2 = await messageStore.query({ target: target.did, latest: 'false' });
+      const results2 = await messageStore.query({ tenant: alice.did, latest: 'false' });
       expect(results2.length).to.equal(0);
 
       // deleting the existing indexes and replacing it indicating it is no longer the 'latest'
       const cid = await Message.getCid(message);
       await messageStore.delete(cid);
-      await messageStore.put(message, { target: target.did, latest: 'false' });
+      await messageStore.put(message, { tenant: alice.did, latest: 'false' });
 
-      const results3 = await messageStore.query({ target: target.did, latest: 'true' });
+      const results3 = await messageStore.query({ tenant: alice.did, latest: 'true' });
       expect(results3.length).to.equal(0);
 
-      const results4 = await messageStore.query({ target: target.did, latest: 'false' });
+      const results4 = await messageStore.query({ tenant: alice.did, latest: 'false' });
       expect(results4.length).to.equal(1);
     });
 

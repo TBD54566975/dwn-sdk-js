@@ -11,13 +11,13 @@ import { MessageStoreLevel } from './store/message-store-level.js';
 import { Request } from './core/request.js';
 import { Response } from './core/response.js';
 
-import { CollectionsInterface } from './interfaces/records/records-interface.js';
 import { PermissionsInterface } from './interfaces/permissions/permissions-interface.js';
 import { ProtocolsInterface } from './interfaces/protocols/protocols-interface.js';
+import { RecordsInterface } from './interfaces/records/records-interface.js';
 
 export class Dwn {
   static methodHandlers: { [key:string]: MethodHandler } = {
-    ...CollectionsInterface.methodHandlers,
+    ...RecordsInterface.methodHandlers,
     ...PermissionsInterface.methodHandlers,
     ...ProtocolsInterface.methodHandlers
   };
@@ -59,7 +59,11 @@ export class Dwn {
     return this.messageStore.close();
   }
 
-  async processRequest(rawRequest: Uint8Array): Promise<Response> {
+  /**
+   * Processes the given DWN request and returns with a DWN response.
+   * @param tenant The tenant DID to route the given request to.
+   */
+  async processRequest(tenant: string, rawRequest: Uint8Array): Promise<Response> {
     let request: RequestSchema;
     try {
       const requestString = Encoder.bytesToString(rawRequest);
@@ -81,7 +85,7 @@ export class Dwn {
     for (const message of request.messages) {
       let result;
       try {
-        result = await this.processMessage(message);
+        result = await this.processMessage(tenant, message);
       } catch (error) {
         result = new MessageReply({
           status: { code: 500, detail: error.message }
@@ -95,9 +99,10 @@ export class Dwn {
   }
 
   /**
-   * Processes the given DWN message.
+   * Processes the given DWN message and returns with a reply.
+   * @param tenant The tenant DID to route the given message to.
    */
-  async processMessage(rawMessage: any): Promise<MessageReply> {
+  async processMessage(tenant: string, rawMessage: any): Promise<MessageReply> {
     const dwnMethod = rawMessage?.descriptor?.method;
     if (dwnMethod === undefined) {
       return new MessageReply({
@@ -116,7 +121,7 @@ export class Dwn {
 
     const interfaceMethodHandler = Dwn.methodHandlers[dwnMethod];
 
-    const methodHandlerReply = await interfaceMethodHandler(rawMessage as BaseMessage, this.messageStore, this.DidResolver);
+    const methodHandlerReply = await interfaceMethodHandler(tenant, rawMessage as BaseMessage, this.messageStore, this.DidResolver);
     return methodHandlerReply;
   }
 };

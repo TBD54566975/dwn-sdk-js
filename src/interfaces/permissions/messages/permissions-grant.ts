@@ -11,7 +11,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { DEFAULT_CONDITIONS, PermissionsRequest } from './permissions-request';
 
 type PermissionsGrantOptions = AuthCreateOptions & {
-  target: string,
   dateCreated?: string;
   conditions?: PermissionConditions;
   description: string;
@@ -47,7 +46,7 @@ export class PermissionsGrant extends Message {
 
     Message.validateJsonSchema({ descriptor, authorization: { } });
 
-    const authorization = await Message.signAsAuthorization(options.target, descriptor, options.signatureInput);
+    const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
     const message: PermissionsGrantMessage = { descriptor, authorization };
 
     return new PermissionsGrant(message);
@@ -56,13 +55,11 @@ export class PermissionsGrant extends Message {
 
   /**
    * generates a PermissionsGrant using the provided PermissionsRequest
-   * @param target - the DID of the DWN to this grant message will be sent to
    * @param permissionsRequest
    * @param signatureInput - the private key and additional signature material of the grantor
    * @param conditionOverrides - any conditions that the grantor may want to override
    */
   static async fromPermissionsRequest(
-    target: string,
     permissionsRequest: PermissionsRequest,
     signatureInput: SignatureInput,
     conditionOverrides: Partial<PermissionConditions> = {}
@@ -70,7 +67,6 @@ export class PermissionsGrant extends Message {
     const conditions = { ...permissionsRequest.conditions, ...conditionOverrides };
 
     return PermissionsGrant.create({
-      target,
       conditions           : conditions,
       description          : permissionsRequest.description,
       grantedBy            : permissionsRequest.grantedBy,
@@ -83,12 +79,11 @@ export class PermissionsGrant extends Message {
 
   /**
    * delegates the permission to the DID provided
-   * @param target - the DID of the DWN to this grant message will be sent to
    * @param to - the DID of the grantee
    * @param signatureInput - the private key and additional signature material of this permission's `grantedTo`
    * @throws {Error} - if the permission cannot be delegated
    */
-  async delegate(target: string, to: string, signatureInput: SignatureInput): Promise<PermissionsGrant> {
+  async delegate(to: string, signatureInput: SignatureInput): Promise<PermissionsGrant> {
     // throw an exception if the permission cannot be delegated
     if (!this.conditions.delegation) {
       throw new Error('this permission cannot be delegated');
@@ -96,7 +91,6 @@ export class PermissionsGrant extends Message {
 
     // `grantedBy` of the delegated permission will be `grantedTo` of the permission being delegated because the grantee is the delegator
     const delegatedGrant = await PermissionsGrant.create({
-      target,
       conditions     : this.conditions,
       description    : this.description,
       grantedBy      : this.grantedTo,

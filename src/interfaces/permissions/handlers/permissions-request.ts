@@ -6,26 +6,31 @@ import { MessageReply } from '../../../core/message-reply.js';
 import { PermissionsRequest } from '../messages/permissions-request.js';
 
 export const handlePermissionsRequest: MethodHandler = async (
+  tenant,
   message,
   messageStore,
   didResolver
 ): Promise<MessageReply> => {
   const permissionRequest = await PermissionsRequest.parse(message as PermissionsRequestMessage);
-  const { author, target } = permissionRequest;
+  const { author } = permissionRequest;
 
-  if (permissionRequest.target !== permissionRequest.grantedBy && permissionRequest.target !== permissionRequest.grantedTo) {
+  if (tenant !== permissionRequest.grantedBy && tenant !== permissionRequest.grantedTo) {
     return new MessageReply({
       status: { code: 400, detail: 'grantedBy or grantedTo must be the targeted message recipient' }
     });
   }
 
-  await canonicalAuth(permissionRequest, didResolver);
+  await canonicalAuth(tenant, permissionRequest, didResolver);
 
   if (author !== permissionRequest.grantedTo) {
     throw new Error('grantee must be signer');
   }
 
-  const index = { author, target, ... message.descriptor };
+  const index = {
+    tenant,
+    author,
+    ... message.descriptor
+  };
   await messageStore.put(message, index);
 
   return new MessageReply({

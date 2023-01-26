@@ -41,14 +41,13 @@ describe('DWN', () => {
       const alice = await DidKeyResolver.generate();
 
       const messageData = await TestDataGenerator.generateRecordsWriteMessage({
-        requester : alice,
-        target    : alice
+        requester: alice,
       });
 
       const dwnConfig: Config = { messageStore };
       const dwn = await Dwn.create(dwnConfig);
 
-      const reply = await dwn.processMessage(messageData.message);
+      const reply = await dwn.processMessage(alice.did, messageData.message);
 
       expect(reply.status.code).to.equal(202);
     });
@@ -72,7 +71,8 @@ describe('DWN', () => {
       };
       const dwn = await Dwn.create(dwnConfig);
 
-      const reply = await dwn.processMessage(message);
+      const tenant = requester.did;
+      const reply = await dwn.processMessage(tenant, message);
 
       expect(reply.status.code).to.equal(200);
       expect(reply.entries).to.be.empty;
@@ -90,7 +90,8 @@ describe('DWN', () => {
 
       const validateJsonSchemaSpy = sinon.spy(Message, 'validateJsonSchema');
 
-      const reply = await dwn.processMessage(invalidMessage);
+      const alice = await DidKeyResolver.generate();
+      const reply = await dwn.processMessage(alice.did, invalidMessage);
 
       sinon.assert.calledOnce(validateJsonSchemaSpy);
 

@@ -16,8 +16,7 @@ import { GeneralJws, SignatureInput } from '../../../jose/jws/general/types.js';
 import { generateCid, getDagPbCid } from '../../../utils/cid.js';
 
 export type RecordsWriteOptions = AuthCreateOptions & {
-  target: string;
-  recipient: string;
+  recipient?: string;
   protocol?: string;
   contextId?: string;
   schema?: string;
@@ -32,7 +31,6 @@ export type RecordsWriteOptions = AuthCreateOptions & {
 };
 
 export type CreateFromOptions = AuthCreateOptions & {
-  target: string,
   unsignedRecordsWriteMessage: UnsignedRecordsWriteMessage,
   data?: Uint8Array;
   published?: boolean;
@@ -41,7 +39,10 @@ export type CreateFromOptions = AuthCreateOptions & {
 };
 
 export class RecordsWrite extends Message {
-  readonly message: RecordsWriteMessage; // a more specific type than the base type defined in parent class
+  /**
+   * RecordsWrite message adhering to the DWN specification.
+   */
+  readonly message: RecordsWriteMessage;
 
   private constructor(message: RecordsWriteMessage) {
     super(message);
@@ -111,7 +112,6 @@ export class RecordsWrite extends Message {
 
     const encodedData = Encoder.bytesToBase64Url(options.data);
     const authorization = await RecordsWrite.signAsRecordsWriteAuthorization(
-      options.target,
       recordId,
       contextId,
       descriptor,
@@ -172,7 +172,6 @@ export class RecordsWrite extends Message {
 
     const createOptions: RecordsWriteOptions = {
       // immutable properties below, just inherit from the message given
-      target         : options.target,
       recipient      : unsignedMessage.descriptor.recipient,
       recordId       : unsignedMessage.recordId,
       dateCreated    : unsignedMessage.descriptor.dateCreated,
@@ -194,11 +193,11 @@ export class RecordsWrite extends Message {
     return recordsWrite;
   }
 
-  public async authorize(messageStore: MessageStore): Promise<void> {
+  public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
     if (this.message.descriptor.protocol !== undefined) {
-      await ProtocolAuthorization.authorize(this, this.author, messageStore);
+      await ProtocolAuthorization.authorize(tenant, this, this.author, messageStore);
     } else {
-      await authorize(this);
+      await authorize(tenant, this);
     }
   }
 
@@ -294,7 +293,6 @@ export class RecordsWrite extends Message {
    * Creates the `authorization` property for a RecordsWrite message.
    */
   private static async signAsRecordsWriteAuthorization(
-    target: string,
     recordId: string,
     contextId: string | undefined,
     descriptor: RecordsWriteDescriptor,
@@ -303,7 +301,6 @@ export class RecordsWrite extends Message {
     const descriptorCid = await generateCid(descriptor);
 
     const authorizationPayload: RecordsWriteAuthorizationPayload = {
-      target,
       recordId,
       descriptorCid: descriptorCid.toString()
     };

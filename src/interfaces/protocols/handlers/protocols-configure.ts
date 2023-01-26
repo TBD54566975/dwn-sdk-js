@@ -8,6 +8,7 @@ import { ProtocolsConfigure } from '../messages/protocols-configure.js';
 import { DwnMethodName, Message } from '../../../core/message.js';
 
 export const handleProtocolsConfigure: MethodHandler = async (
+  tenant,
   message,
   messageStore,
   didResolver
@@ -25,7 +26,7 @@ export const handleProtocolsConfigure: MethodHandler = async (
 
   // authentication & authorization
   try {
-    await canonicalAuth(protocolsConfigure, didResolver);
+    await canonicalAuth(tenant, protocolsConfigure, didResolver);
   } catch (e) {
     return new MessageReply({
       status: { code: 401, detail: e.message }
@@ -34,7 +35,7 @@ export const handleProtocolsConfigure: MethodHandler = async (
 
   // attempt to get existing protocol
   const query = {
-    target   : protocolsConfigure.target,
+    tenant,
     method   : DwnMethodName.ProtocolsConfigure,
     protocol : incomingMessage.descriptor.protocol
   };
@@ -48,11 +49,15 @@ export const handleProtocolsConfigure: MethodHandler = async (
     newestMessage = incomingMessage;
   }
 
-  // write the incoming message to DB if incoming message is largest
+  // write the incoming message to DB if incoming message is newest
   let messageReply: MessageReply;
   if (incomingMessageIsNewest) {
-    const { author, target } = protocolsConfigure;
-    const index = { author, target, ... message.descriptor };
+    const { author } = protocolsConfigure;
+    const index = {
+      tenant,
+      author,
+      ... message.descriptor
+    };
     await messageStore.put(message, index);
 
     messageReply = new MessageReply({

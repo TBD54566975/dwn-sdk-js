@@ -47,33 +47,31 @@ describe('handleProtocolsQuery()', () => {
       const didResolverStub = TestStubGenerator.createDidResolverStub(alice);
 
       // insert three messages into DB, two with matching protocol
-      const message1Data = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, target: alice });
-      const message2Data = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, target: alice });
-      const message3Data = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, target: alice });
+      const message1Data = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice });
+      const message2Data = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice });
+      const message3Data = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice });
 
-      await handleProtocolsConfigure(message1Data.message, messageStore, didResolverStub);
-      await handleProtocolsConfigure(message2Data.message, messageStore, didResolverStub);
-      await handleProtocolsConfigure(message3Data.message, messageStore, didResolverStub);
+      await handleProtocolsConfigure(alice.did, message1Data.message, messageStore, didResolverStub);
+      await handleProtocolsConfigure(alice.did, message2Data.message, messageStore, didResolverStub);
+      await handleProtocolsConfigure(alice.did, message3Data.message, messageStore, didResolverStub);
 
       // testing singular conditional query
       const queryMessageData = await TestDataGenerator.generateProtocolsQueryMessage({
         requester : alice,
-        target    : alice,
         filter    : { protocol: message1Data.message.descriptor.protocol }
       });
 
-      const reply = await handleProtocolsQuery(queryMessageData.message, messageStore, didResolverStub);
+      const reply = await handleProtocolsQuery(alice.did, queryMessageData.message, messageStore, didResolverStub);
 
       expect(reply.status.code).to.equal(200);
       expect(reply.entries?.length).to.equal(1); // only 1 entry should match the query on protocol
 
       // testing fetch-all query without filter
       const queryMessageData2 = await TestDataGenerator.generateProtocolsQueryMessage({
-        requester : alice,
-        target    : alice
+        requester: alice
       });
 
-      const reply2 = await handleProtocolsQuery(queryMessageData2.message, messageStore, didResolverStub);
+      const reply2 = await handleProtocolsQuery(alice.did, queryMessageData2.message, messageStore, didResolverStub);
 
       expect(reply2.status.code).to.equal(200);
       expect(reply2.entries?.length).to.equal(3); // expecting all 3 entries written above match the query
@@ -81,6 +79,7 @@ describe('handleProtocolsQuery()', () => {
 
     it('should return 400 if failed to parse the message', async () => {
       const { requester, message, protocolsQuery } = await TestDataGenerator.generateProtocolsQueryMessage();
+      const tenant = requester.did;
 
       // replace `authorization` with incorrect `descriptorCid`, even though signature is still valid
       const incorrectDescriptorCid = await TestDataGenerator.randomCborSha256Cid();
@@ -93,7 +92,7 @@ describe('handleProtocolsQuery()', () => {
 
       const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
       const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-      const reply = await handleProtocolsQuery(message, messageStoreStub, didResolverStub);
+      const reply = await handleProtocolsQuery(tenant, message, messageStoreStub, didResolverStub);
 
       expect(reply.status.code).to.equal(400);
       expect(reply.status.detail).to.contain(`${incorrectDescriptorCid} does not match expected CID`);
@@ -102,9 +101,9 @@ describe('handleProtocolsQuery()', () => {
     it('should return 401 if auth fails', async () => {
       const alice = await DidKeyResolver.generate();
       alice.keyId = 'wrongValue'; // to fail authentication
-      const messageData = await TestDataGenerator.generateProtocolsQueryMessage({ requester: alice, target: alice });
+      const messageData = await TestDataGenerator.generateProtocolsQueryMessage({ requester: alice });
 
-      const reply = await handleProtocolsQuery(messageData.message, messageStore, didResolver);
+      const reply = await handleProtocolsQuery(alice.did, messageData.message, messageStore, didResolver);
 
       expect(reply.status.code).to.equal(401);
       expect(reply.status.detail).to.contain('not a valid DID');

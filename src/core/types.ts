@@ -12,7 +12,6 @@ export type BaseMessage = {
  * Type of common decoded `authorization`property payload.
  */
 export type BaseDecodedAuthorizationPayload = {
-  target: string;
   descriptorCid: string;
 };
 

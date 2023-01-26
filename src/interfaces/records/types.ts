@@ -49,7 +49,6 @@ export type RecordsQueryDescriptor = {
 };
 
 export type RecordsWriteAuthorizationPayload = {
-  target: string;
   recordId: string;
   contextId?: string;
   descriptorCid: string;

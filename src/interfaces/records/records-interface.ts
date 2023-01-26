@@ -4,7 +4,7 @@ import { handleRecordsWrite } from './handlers/records-write.js';
 import { RecordsQuery } from './messages/records-query.js';
 import { RecordsWrite } from './messages/records-write.js';
 
-export const CollectionsInterface = {
+export const RecordsInterface = {
   methodHandlers: {
     [DwnMethodName.RecordsQuery] : handleRecordsQuery,
     [DwnMethodName.RecordsWrite] : handleRecordsWrite

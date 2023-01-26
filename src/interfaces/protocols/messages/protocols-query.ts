@@ -8,7 +8,6 @@ import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 import { DwnMethodName, Message } from '../../../core/message.js';
 
 export type ProtocolsQueryOptions = AuthCreateOptions & {
-  target: string;
   dateCreated?: string;
   filter?: {
     protocol: string;
@@ -41,7 +40,7 @@ export class ProtocolsQuery extends Message {
 
     Message.validateJsonSchema({ descriptor, authorization: { } });
 
-    const authorization = await Message.signAsAuthorization(options.target, descriptor, options.signatureInput);
+    const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
     const message = { descriptor, authorization };
 
     const protocolsQuery = new ProtocolsQuery(message);
