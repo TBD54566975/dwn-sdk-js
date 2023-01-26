@@ -1,6 +1,6 @@
+import type { BaseMessage } from './core/types.js';
 import type { DidMethodResolver } from './did/did-resolver.js';
 import type { MessageStore } from './store/message-store.js';
-import type { BaseMessage, RequestSchema } from './core/types.js';
 import type { Interface, MethodHandler } from './interfaces/types.js';
 
 import { DidResolver } from './did/did-resolver.js';
@@ -8,8 +8,6 @@ import { Encoder } from './utils/encoder.js';
 import { Message } from './core/message.js';
 import { MessageReply } from './core/message-reply.js';
 import { MessageStoreLevel } from './store/message-store-level.js';
-import { Request } from './core/request.js';
-import { Response } from './core/response.js';
 
 import { PermissionsInterface } from './interfaces/permissions/permissions-interface.js';
 import { ProtocolsInterface } from './interfaces/protocols/protocols-interface.js';
@@ -60,42 +58,22 @@ export class Dwn {
   }
 
   /**
-   * Processes the given DWN request and returns with a DWN response.
-   * @param tenant The tenant DID to route the given request to.
+   * Processes the given DWN message given as raw bytes and returns with a message reply.
+   * @param tenant The tenant DID to route the given message to.
    */
-  async processRequest(tenant: string, rawRequest: Uint8Array): Promise<Response> {
-    let request: RequestSchema;
+  async processRequest(tenant: string, rawRequest: Uint8Array): Promise<MessageReply> {
+    let message: BaseMessage;
     try {
       const requestString = Encoder.bytesToString(rawRequest);
-      request = JSON.parse(requestString);
-    } catch {
-      throw new Error('expected request to be valid JSON');
-    }
-
-    try {
-      request = Request.parse(request);
-    } catch (e) {
-      return new Response({
-        status: { code: 400, message: e.message }
+      message = JSON.parse(requestString);
+    } catch (error) {
+      return new MessageReply({
+        status: { code: 400, detail: error.message }
       });
     }
 
-    const response = new Response();
-
-    for (const message of request.messages) {
-      let result;
-      try {
-        result = await this.processMessage(tenant, message);
-      } catch (error) {
-        result = new MessageReply({
-          status: { code: 500, detail: error.message }
-        });
-      }
-
-      response.addMessageResult(result);
-    }
-
-    return response;
+    const messageReply = await this.processMessage(tenant, message);
+    return messageReply;
   }
 
   /**

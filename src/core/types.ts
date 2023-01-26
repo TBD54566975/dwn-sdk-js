@@ -36,7 +36,3 @@ export type DataReferencingMessage = {
 export type AuthCreateOptions = {
   signatureInput: SignatureInput
 };
-
-export type RequestSchema = {
-  messages: BaseMessage[]
-};
