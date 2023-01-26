@@ -1,0 +1,30 @@
+{
+    "compilerOptions": {
+        "lib": [
+            "DOM",
+            "ES5"
+        ],
+        "allowJs": true,
+        "target": "ES5",
+        "module": "CommonJS", // Required for enabling JavaScript import assertion support
+        "declaration": true,
+        "declarationMap": true,
+        "outDir": "dist/cjs",
+        "sourceMap": true,
+        // `NodeNext` will throw compilation errors if relative import paths are missing file extension
+        // reference: https://devblogs.microsoft.com/typescript/announcing-typescript-4-7/#ecmascript-module-support-in-node-js
+        "moduleResolution": "NodeNext",
+        // allows us to import json files
+        "resolveJsonModule": true,
+        // required otherwise `ms` lib doesn't import
+        "esModuleInterop": true,
+        "downlevelIteration": true,
+    },
+    "include": [
+        "./src/index.ts"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
+    ]
+}
