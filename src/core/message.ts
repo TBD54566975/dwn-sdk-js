@@ -10,12 +10,18 @@ import { lexicographicalCompare } from '../utils/string.js';
 import { RecordsWriteMessage } from '../interfaces/records/types.js';
 import { validateJsonSchema } from '../validator.js';
 
+export enum DwnInterfaceName {
+  Hooks = 'Hooks',
+  Permissions = 'Permissions',
+  Protocols = 'Protocols',
+  Records = 'Records'
+}
+
 export enum DwnMethodName {
-  RecordsWrite = 'RecordsWrite',
-  RecordsQuery = 'RecordsQuery',
-  HooksWrite = 'HooksWrite',
-  ProtocolsConfigure = 'ProtocolsConfigure',
-  ProtocolsQuery = 'ProtocolsQuery'
+  Configure = 'Configure',
+  Query = 'Query',
+  Request = 'Request',
+  Write = 'Write'
 }
 
 export abstract class Message {
@@ -43,11 +49,13 @@ export abstract class Message {
    * Validates the given message against the corresponding JSON schema.
    * @throws {Error} if fails validation.
    */
-  public static validateJsonSchema(rawMessage: any): BaseMessage {
-    // validate throws an error if message is invalid
-    validateJsonSchema(rawMessage.descriptor.method, rawMessage);
+  public static validateJsonSchema(rawMessage: any): void {
+    const dwnInterface = rawMessage.descriptor.interface;
+    const dwnMethod = rawMessage.descriptor.method;
+    const schemaLookupKey = dwnInterface + dwnMethod;
 
-    return rawMessage as BaseMessage;
+    // throws an error if message is invalid
+    validateJsonSchema(schemaLookupKey, rawMessage);
   };
 
   /**

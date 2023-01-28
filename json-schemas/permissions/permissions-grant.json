@@ -19,6 +19,8 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "interface",
+        "method",
         "dateCreated"
       ],
       "properties": {
@@ -43,9 +45,15 @@
           "description": "DID of the grantor",
           "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/grantedBy"
         },
+        "interface": {
+          "enum": [
+            "Permissions"
+          ],
+          "type": "string"
+        },
         "method": {
           "enum": [
-            "PermissionsGrant"
+            "Grant"
           ],
           "type": "string"
         },

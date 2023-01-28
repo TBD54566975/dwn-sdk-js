@@ -3,9 +3,9 @@ import type { PermissionConditions, PermissionScope } from '../types.js';
 import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types.js';
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
-import { Message } from '../../../core/message.js';
 import { v4 as uuidv4 } from 'uuid';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
+import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
 
 type PermissionsRequestOptions = AuthCreateOptions & {
   dateCreated?: string;
@@ -36,12 +36,13 @@ export class PermissionsRequest extends Message {
     const mergedConditions = { ...DEFAULT_CONDITIONS, ...providedConditions };
 
     const descriptor: PermissionsRequestDescriptor = {
+      interface   : DwnInterfaceName.Permissions,
+      method      : DwnMethodName.Request,
       dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
       conditions  : mergedConditions,
       description : options.description,
       grantedTo   : options.grantedTo,
       grantedBy   : options.grantedBy,
-      method      : 'PermissionsRequest',
       objectId    : options.objectId ? options.objectId : uuidv4(),
       scope       : options.scope,
     };

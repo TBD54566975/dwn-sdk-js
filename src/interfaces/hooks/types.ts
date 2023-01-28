@@ -1,11 +1,12 @@
 import type { BaseMessage } from '../../core/types.js';
-import { DwnMethodName } from '../../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../../core/message.js';
 
 /**
  * Descriptor structure for HooksWrite
  */
 export type HooksWriteDescriptor = {
-  method: DwnMethodName.HooksWrite;
+  interface: DwnInterfaceName.Hooks;
+  method: DwnMethodName.Write;
   dateCreated: string;
 
   /**

@@ -15,15 +15,22 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "interface",
         "method",
         "protocol",
         "dateCreated",
         "definition"
       ],
       "properties": {
+        "interface": {
+          "enum": [
+            "Protocols"
+          ],
+          "type": "string"
+        },
         "method": {
           "enum": [
-            "ProtocolsConfigure"
+            "Configure"
           ],
           "type": "string"
         },

@@ -1,7 +1,6 @@
 import type { AuthCreateOptions } from '../../../core/types.js';
 import type { RecordsWriteAuthorizationPayload, RecordsWriteDescriptor, RecordsWriteMessage, UnsignedRecordsWriteMessage } from '../types.js';
 
-import { DwnMethodName } from '../../../core/message.js';
 import { Encoder } from '../../../utils/encoder.js';
 import { GeneralJwsSigner } from '../../../jose/jws/general/signer.js';
 import { GeneralJwsVerifier } from '../../../jose/jws/general/verifier.js';
@@ -12,6 +11,7 @@ import { ProtocolAuthorization } from '../../../core/protocol-authorization.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 
 import { authorize, validateAuthorizationIntegrity } from '../../../core/auth.js';
+import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 import { GeneralJws, SignatureInput } from '../../../jose/jws/general/types.js';
 import { generateCid, getDagPbCid } from '../../../utils/cid.js';
 
@@ -71,9 +71,10 @@ export class RecordsWrite extends Message {
 
     const dataCid = await getDagPbCid(options.data);
     const descriptor: RecordsWriteDescriptor = {
-      recipient     : options.recipient,
-      method        : DwnMethodName.RecordsWrite,
+      interface     : DwnInterfaceName.Records,
+      method        : DwnMethodName.Write,
       protocol      : options.protocol,
+      recipient     : options.recipient,
       schema        : options.schema,
       parentId      : options.parentId,
       dataCid       : dataCid.toString(),

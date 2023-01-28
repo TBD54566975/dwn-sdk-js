@@ -23,7 +23,8 @@ describe('ProtocolsConfigure schema definition', () => {
 
     const message = {
       descriptor: {
-        method      : 'ProtocolsConfigure',
+        interface   : 'Protocols',
+        method      : 'Configure',
         dateCreated : '123',
         protocol    : 'anyProtocolUri',
         definition  : protocolDefinition

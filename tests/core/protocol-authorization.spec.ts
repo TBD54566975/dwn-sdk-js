@@ -30,7 +30,7 @@ describe('Protocol-Based Authorization', async () => {
 
       expect(() => {
         ProtocolAuthorization['verifyAllowedActions'](alice.did, bob.did, recordsWrite, ruleSet);
-      }).throws('no allow rule defined for RecordsWrite');
+      }).throws('no allow rule defined for Write');
     });
 
     it('should throw if action performed is not in an allowed action list', async () => {

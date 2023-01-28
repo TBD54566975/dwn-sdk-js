@@ -5,7 +5,7 @@ import { canonicalAuth } from '../../../core/auth.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { ProtocolsConfigure } from '../messages/protocols-configure.js';
 
-import { DwnMethodName, Message } from '../../../core/message.js';
+import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
 
 export const handleProtocolsConfigure: MethodHandler = async (
   tenant,
@@ -36,8 +36,9 @@ export const handleProtocolsConfigure: MethodHandler = async (
   // attempt to get existing protocol
   const query = {
     tenant,
-    method   : DwnMethodName.ProtocolsConfigure,
-    protocol : incomingMessage.descriptor.protocol
+    interface : DwnInterfaceName.Protocols,
+    method    : DwnMethodName.Configure,
+    protocol  : incomingMessage.descriptor.protocol
   };
   const existingMessages = await messageStore.query(query) as ProtocolsConfigureMessage[];
 

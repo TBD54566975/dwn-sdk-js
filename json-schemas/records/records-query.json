@@ -15,14 +15,21 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "interface",
         "method",
         "dateCreated",
         "filter"
       ],
       "properties": {
+        "interface": {
+          "enum": [
+            "Records"
+          ],
+          "type": "string"
+        },
         "method": {
           "enum": [
-            "RecordsQuery"
+            "Query"
           ],
           "type": "string"
         },

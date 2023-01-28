@@ -3,12 +3,13 @@ import type { RecordsQueryMessage, RecordsWriteMessage } from '../types.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { BaseMessage } from '../../../core/types.js';
-import { DwnMethodName } from '../../../core/message.js';
 import { lexicographicalCompare } from '../../../utils/string.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { MessageStore } from '../../../store/message-store.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
+
 import { DateSort, RecordsQuery } from '../messages/records-query.js';
+import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 
 export const handleRecordsQuery: MethodHandler = async (
   tenant,
@@ -66,7 +67,8 @@ async function fetchRecordsAsOwner(tenant: string, recordsQuery: RecordsQuery, m
   // fetch all published records matching the query
   const includeCriteria = {
     tenant,
-    method            : DwnMethodName.RecordsWrite,
+    interface         : DwnInterfaceName.Records,
+    method            : DwnMethodName.Write,
     isLatestBaseState : 'true',
     ...recordsQuery.message.descriptor.filter
   };
@@ -97,7 +99,8 @@ async function fetchPublishedRecords(tenant: string, recordsQuery: RecordsQuery,
   // fetch all published records matching the query
   const includeCriteria = {
     tenant,
-    method            : DwnMethodName.RecordsWrite,
+    interface         : DwnInterfaceName.Records,
+    method            : DwnMethodName.Write,
     published         : 'true',
     isLatestBaseState : 'true',
     ...recordsQuery.message.descriptor.filter
@@ -116,8 +119,9 @@ async function fetchUnpublishedRecordsForRequester(tenant: string, recordsQuery:
   // include records where recipient is requester
   const includeCriteria = {
     tenant,
+    interface         : DwnInterfaceName.Records,
+    method            : DwnMethodName.Write,
     recipient         : recordsQuery.author,
-    method            : DwnMethodName.RecordsWrite,
     isLatestBaseState : 'true',
     published         : 'false',
     ...recordsQuery.message.descriptor.filter
@@ -137,7 +141,8 @@ async function fetchUnpublishedRecordsByRequester(tenant: string, recordsQuery: 
   const includeCriteria = {
     tenant,
     author            : recordsQuery.author,
-    method            : DwnMethodName.RecordsWrite,
+    interface         : DwnInterfaceName.Records,
+    method            : DwnMethodName.Write,
     isLatestBaseState : 'true',
     published         : 'false',
     ...recordsQuery.message.descriptor.filter

@@ -1,11 +1,11 @@
 import type { AuthCreateOptions } from '../../../core/types.js';
 import type { RecordsQueryDescriptor, RecordsQueryMessage } from '../types.js';
 
-import { DwnMethodName } from '../../../core/message.js';
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/message.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
+import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 
 export enum DateSort {
   CreatedAscending = 'createdAscending',
@@ -42,7 +42,8 @@ export class RecordsQuery extends Message {
 
   public static async create(options: RecordsQueryOptions): Promise<RecordsQuery> {
     const descriptor: RecordsQueryDescriptor = {
-      method      : DwnMethodName.RecordsQuery,
+      interface   : DwnInterfaceName.Records,
+      method      : DwnMethodName.Query,
       dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
       filter      : options.filter,
       dateSort    : options.dateSort

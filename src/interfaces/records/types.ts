@@ -1,11 +1,12 @@
 import { BaseMessage } from '../../core/types.js';
 import { DateSort } from './messages/records-query.js';
-import { DwnMethodName } from '../../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../../core/message.js';
 
 export type RecordsWriteDescriptor = {
-  recipient: string;
-  method: DwnMethodName.RecordsWrite;
+  interface: DwnInterfaceName.Records;
+  method: DwnMethodName.Write;
   protocol?: string;
+  recipient: string;
   schema?: string;
   parentId?: string;
   dataCid: string;
@@ -34,7 +35,8 @@ export type UnsignedRecordsWriteMessage = {
 };
 
 export type RecordsQueryDescriptor = {
-  method: DwnMethodName.RecordsQuery;
+  interface: DwnInterfaceName.Records;
+  method: DwnMethodName.Query;
   dateCreated: string;
   filter: {
     recipient?: string;

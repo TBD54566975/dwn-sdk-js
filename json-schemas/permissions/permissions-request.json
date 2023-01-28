@@ -15,6 +15,8 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "interface",
+        "method",
         "dateCreated"
       ],
       "properties": {
@@ -33,9 +35,15 @@
         "grantedBy": {
           "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/grantedBy"
         },
+        "interface": {
+          "enum": [
+            "Permissions"
+          ],
+          "type": "string"
+        },
         "method": {
           "enum": [
-            "PermissionsRequest"
+            "Request"
           ],
           "type": "string"
         },

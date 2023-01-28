@@ -81,10 +81,11 @@ export class Dwn {
    * @param tenant The tenant DID to route the given message to.
    */
   async processMessage(tenant: string, rawMessage: any): Promise<MessageReply> {
+    const dwnInterface = rawMessage?.descriptor?.interface;
     const dwnMethod = rawMessage?.descriptor?.method;
-    if (dwnMethod === undefined) {
+    if (dwnInterface === undefined || dwnMethod === undefined) {
       return new MessageReply({
-        status: { code: 400, detail: `unknown DWN method ${dwnMethod}` }
+        status: { code: 400, detail: `DWN interface or method is undefined` }
       });
     }
 
@@ -97,7 +98,8 @@ export class Dwn {
       });
     }
 
-    const interfaceMethodHandler = Dwn.methodHandlers[dwnMethod];
+    const handlerKey = dwnInterface + dwnMethod;
+    const interfaceMethodHandler = Dwn.methodHandlers[handlerKey];
 
     const methodHandlerReply = await interfaceMethodHandler(tenant, rawMessage as BaseMessage, this.messageStore, this.DidResolver);
     return methodHandlerReply;

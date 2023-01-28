@@ -19,6 +19,7 @@ export type BaseDecodedAuthorizationPayload = {
  * Intersection type for all DWN message descriptor.
  */
 export type Descriptor = {
+  interface: string;
   method: string;
 };
 
