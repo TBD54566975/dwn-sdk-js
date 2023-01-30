@@ -49,13 +49,14 @@ export type PermissionsRequestMessage = BaseMessage & {
 };
 
 export type PermissionsGrantDescriptor = {
+  interface : DwnInterfaceName.Permissions
+  method: DwnMethodName.Grant;
   dateCreated: string;
   conditions: PermissionConditions;
   delegatedFrom?: string;
   description: string;
   grantedTo: string;
   grantedBy: string;
-  method: 'PermissionsGrant';
   objectId: string;
   permissionsRequestId?: string;
   scope: PermissionScope;

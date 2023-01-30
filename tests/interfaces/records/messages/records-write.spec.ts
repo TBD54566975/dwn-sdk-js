@@ -96,12 +96,7 @@ describe('RecordsWrite', () => {
       const c = (await TestDataGenerator.generateRecordsWriteMessage()).message; // c is the newest since its created last
 
       const newestMessage = await RecordsWrite.getNewestMessage([b, c, a]);
-      if (newestMessage?.recordId !== c.recordId) {
-        console.log(`a: ${a.descriptor.dateModified}`);
-        console.log(`b: ${b.descriptor.dateModified}`);
-        console.log(`c: ${c.descriptor.dateModified}`);
-      }
-      expect(newestMessage?.recordId).to.equal(c.recordId);
+      expect((newestMessage as any).recordId).to.equal(c.recordId);
     });
   });
 

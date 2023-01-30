@@ -2,10 +2,12 @@ import type { MethodHandler } from '../../types.js';
 import type { RecordsWriteMessage } from '../types.js';
 
 import { authenticate } from '../../../core/auth.js';
+import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
+import { DwnInterfaceName } from '../../../core/message.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsWrite } from '../messages/records-write.js';
+import { TimestampedMessage } from '../../../core/types.js';
 
-import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
 
 export const handleRecordsWrite: MethodHandler = async (
   tenant,
@@ -34,25 +36,20 @@ export const handleRecordsWrite: MethodHandler = async (
     });
   }
 
-  // get existing records matching the `recordId`
+  // get existing messages matching the `recordId`
   const query = {
     tenant,
     interface : DwnInterfaceName.Records,
-    method    : DwnMethodName.Write,
     recordId  : incomingMessage.recordId
   };
-  const existingMessages = await messageStore.query(query) as RecordsWriteMessage[];
+  const existingMessages = await messageStore.query(query) as TimestampedMessage[];
 
   // if the incoming write is not the initial write, then it must not modify any immutable properties defined by the initial write
   const newMessageIsInitialWrite = await recordsWrite.isInitialWrite();
   if (!newMessageIsInitialWrite) {
     try {
-      if (existingMessages.length === 0) {
-        throw new Error(`initial write is not found `);
-      }
-
-      const anExistingWrite = existingMessages[0]; // the assertion here is that any existing write should contain all immutable properties
-      RecordsWrite.verifyEqualityOfImmutableProperties(anExistingWrite, incomingMessage);
+      const initialWrite = RecordsWrite.getInitialWrite(existingMessages);
+      RecordsWrite.verifyEqualityOfImmutableProperties(initialWrite, incomingMessage);
     } catch (e) {
       return new MessageReply({
         status: { code: 400, detail: e.message }
@@ -76,7 +73,7 @@ export const handleRecordsWrite: MethodHandler = async (
   let messageReply: MessageReply;
   if (incomingMessageIsNewest) {
     const isLatestBaseState = true;
-    const indexes = await constructIndexes(tenant, recordsWrite, isLatestBaseState);
+    const indexes = await constructRecordsWriteIndexes(tenant, recordsWrite, isLatestBaseState);
 
     await messageStore.put(incomingMessage, indexes);
 
@@ -90,33 +87,16 @@ export const handleRecordsWrite: MethodHandler = async (
   }
 
   // delete all existing messages that are not newest, except for the initial write
-  // NOTE: under normal operation, there should only be one existing write per `recordId` (the initial write),
-  // but the DWN may crash before `delete()` is called below, so we use a loop as a tactic to clean up lingering data as needed
-  for (const message of existingMessages) {
-    const messageIsOld = await RecordsWrite.isOlder(message, newestMessage);
-    if (messageIsOld) {
-      // the easiest implementation here is delete each old messages
-      // and re-create it with the right index (isLatestBaseState = 'false') if the message is the initial write,
-      // but there is room for better/more efficient implementation here
-      const cid = await Message.getCid(message);
-      await messageStore.delete(cid);
-
-      // if the existing message is the initial write
-      // we actually need to keep it BUT, need to ensure the message is no longer marked as the latest state
-      const existingMessageIsInitialWrite = await RecordsWrite.isInitialWrite(message);
-      if (existingMessageIsInitialWrite) {
-        const existingRecordsWrite = await RecordsWrite.parse(message);
-        const isLatestBaseState = false;
-        const indexes = await constructIndexes(tenant, existingRecordsWrite, isLatestBaseState);
-        await messageStore.put(message, indexes);
-      }
-    }
-  }
+  await deleteAllOlderMessagesButKeepInitialWrite(tenant, existingMessages, newestMessage, messageStore);
 
   return messageReply;
 };
 
-export async function constructIndexes(tenant: string, recordsWrite: RecordsWrite, isLatestBaseState: boolean): Promise<{ [key: string]: string }> {
+export async function constructRecordsWriteIndexes(
+  tenant: string,
+  recordsWrite: RecordsWrite,
+  isLatestBaseState: boolean
+): Promise<{ [key: string]: string }> {
   const message = recordsWrite.message;
   const descriptor = { ...message.descriptor };
   delete descriptor.published; // handle `published` specifically further down
@@ -132,7 +112,7 @@ export async function constructIndexes(tenant: string, recordsWrite: RecordsWrit
     ...descriptor
   };
 
-  // add `contextId` to additional index if part if given
+  // add `contextId` to additional index if given
   if (message.contextId !== undefined) { indexes.contextId = message.contextId; }
 
   // add `published` index

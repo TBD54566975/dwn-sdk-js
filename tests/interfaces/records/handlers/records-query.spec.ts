@@ -10,7 +10,7 @@ import { MessageStoreLevel } from '../../../../src/store/message-store-level.js'
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
-import { constructIndexes, handleRecordsWrite } from '../../../../src/interfaces/records/handlers/records-write.js';
+import { constructRecordsWriteIndexes, handleRecordsWrite } from '../../../../src/interfaces/records/handlers/records-write.js';
 import { DateSort, RecordsQuery } from '../../../../src/interfaces/records/messages/records-query.js';
 
 chai.use(chaiAsPromised);
@@ -241,10 +241,10 @@ describe('handleRecordsQuery()', () => {
       );
 
       // directly inserting data to datastore so that we don't have to setup to grant Bob permission to write to Alice's DWN
-      const additionalIndexes1 = await constructIndexes(alice.did, record1Data.recordsWrite, true);
-      const additionalIndexes2 = await constructIndexes(alice.did, record2Data.recordsWrite, true);
-      const additionalIndexes3 = await constructIndexes(alice.did, record3Data.recordsWrite, true);
-      const additionalIndexes4 = await constructIndexes(alice.did, record4Data.recordsWrite, true);
+      const additionalIndexes1 = await constructRecordsWriteIndexes(alice.did, record1Data.recordsWrite, true);
+      const additionalIndexes2 = await constructRecordsWriteIndexes(alice.did, record2Data.recordsWrite, true);
+      const additionalIndexes3 = await constructRecordsWriteIndexes(alice.did, record3Data.recordsWrite, true);
+      const additionalIndexes4 = await constructRecordsWriteIndexes(alice.did, record4Data.recordsWrite, true);
       await messageStore.put(record1Data.message, additionalIndexes1);
       await messageStore.put(record2Data.message, additionalIndexes2);
       await messageStore.put(record3Data.message, additionalIndexes3);

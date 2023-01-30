@@ -19,9 +19,11 @@ export enum DwnInterfaceName {
 
 export enum DwnMethodName {
   Configure = 'Configure',
+  Grant = 'Grant',
   Query = 'Query',
   Request = 'Request',
-  Write = 'Write'
+  Write = 'Write',
+  Delete = 'Delete'
 }
 
 export abstract class Message {

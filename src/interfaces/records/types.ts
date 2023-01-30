@@ -59,3 +59,14 @@ export type RecordsWriteAuthorizationPayload = {
 export type RecordsQueryMessage = BaseMessage & {
   descriptor: RecordsQueryDescriptor;
 };
+
+export type RecordsDeleteMessage = BaseMessage & {
+  descriptor: RecordsDeleteDescriptor;
+};
+
+export type RecordsDeleteDescriptor = {
+  interface: DwnInterfaceName.Records;
+  method: DwnMethodName.Delete;
+  recordId: string;
+  dateModified: string;
+};

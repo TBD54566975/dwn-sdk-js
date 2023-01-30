@@ -53,10 +53,10 @@ export class RecordsQuery extends Message {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    Message.validateJsonSchema({ descriptor, authorization: { } });
-
     const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
     const message = { descriptor, authorization };
+
+    Message.validateJsonSchema(message);
 
     return new RecordsQuery(message);
   }
