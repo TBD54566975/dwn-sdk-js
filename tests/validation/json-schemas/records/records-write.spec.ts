@@ -6,7 +6,8 @@ describe('RecordsWrite schema definition', () => {
     const validMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method       : 'RecordsWrite',
+        interface    : 'Records',
+        method       : 'Write',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dateCreated  : '2022-12-19T10:20:30.123456',
@@ -26,7 +27,8 @@ describe('RecordsWrite schema definition', () => {
   it('should throw if `recordId` is missing', async () => {
     const message = {
       descriptor: {
-        method       : 'RecordsWrite',
+        interface    : 'Records',
+        method       : 'Write',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dateCreated  : '2022-12-19T10:20:30.123456',
@@ -50,7 +52,8 @@ describe('RecordsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method       : 'RecordsWrite',
+        interface    : 'Records',
+        method       : 'Write',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dateCreated  : '2022-12-19T10:20:30.123456',
@@ -67,7 +70,8 @@ describe('RecordsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method       : 'RecordsWrite',
+        interface    : 'Records',
+        method       : 'Write',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dateCreated  : '2022-12-19T10:20:30.123456',
@@ -92,7 +96,8 @@ describe('RecordsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method          : 'RecordsWrite',
+        interface       : 'Records',
+        method          : 'Write',
         dataCid         : 'anyCid',
         dataFormat      : 'application/json',
         dateCreated     : '2022-12-19T10:20:30.123456',
@@ -117,7 +122,8 @@ describe('RecordsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method       : 'RecordsWrite',
+        interface    : 'Records',
+        method       : 'Write',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dateCreated  : '2022-12-19T10:20:30.123456',
@@ -143,7 +149,8 @@ describe('RecordsWrite schema definition', () => {
       recordId   : 'anyRecordId',
       contextId  : 'someContext', // protocol must exist
       descriptor : {
-        method       : 'RecordsWrite',
+        interface    : 'Records',
+        method       : 'Write',
         protocol     : 'someProtocolId', // contextId must exist
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
@@ -167,7 +174,8 @@ describe('RecordsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method       : 'RecordsWrite',
+        interface    : 'Records',
+        method       : 'Write',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dateCreated  : '2022-12-19T10:20:30.123456',
@@ -191,7 +199,8 @@ describe('RecordsWrite schema definition', () => {
       recordId   : 'anyRecordId',
       contextId  : 'invalid', // must have `protocol` to exist
       descriptor : {
-        method       : 'RecordsWrite',
+        interface    : 'Records',
+        method       : 'Write',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dateCreated  : '2022-12-19T10:20:30.123456',
@@ -216,7 +225,8 @@ describe('RecordsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method       : 'RecordsWrite',
+        interface    : 'Records',
+        method       : 'Write',
         protocol     : 'invalid', // must have `contextId` to exist
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
@@ -242,7 +252,8 @@ describe('RecordsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method        : 'RecordsWrite',
+        interface     : 'Records',
+        method        : 'Write',
         dataCid       : 'anyCid',
         dataFormat    : 'application/json',
         dateModified  : '2022-12-19T10:20:30.123456',
@@ -269,7 +280,8 @@ describe('RecordsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method       : 'RecordsWrite',
+        interface    : 'Records',
+        method       : 'Write',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dateCreated  : '2022-12-19T10:20:30.123456',
@@ -295,7 +307,8 @@ describe('RecordsWrite schema definition', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
-        method        : 'RecordsWrite',
+        interface     : 'Records',
+        method        : 'Write',
         dataCid       : 'anyCid',
         dataFormat    : 'application/json',
         dateCreated   : '2022-12-19T10:20:30.123456',

@@ -5,7 +5,7 @@ import { authenticate } from '../../../core/auth.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsWrite } from '../messages/records-write.js';
 
-import { DwnMethodName, Message } from '../../../core/message.js';
+import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
 
 export const handleRecordsWrite: MethodHandler = async (
   tenant,
@@ -37,8 +37,9 @@ export const handleRecordsWrite: MethodHandler = async (
   // get existing records matching the `recordId`
   const query = {
     tenant,
-    method   : DwnMethodName.RecordsWrite,
-    recordId : incomingMessage.recordId
+    interface : DwnInterfaceName.Records,
+    method    : DwnMethodName.Write,
+    recordId  : incomingMessage.recordId
   };
   const existingMessages = await messageStore.query(query) as RecordsWriteMessage[];
 

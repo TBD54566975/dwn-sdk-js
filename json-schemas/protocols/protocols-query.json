@@ -15,13 +15,20 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
+        "interface",
         "method",
         "dateCreated"
       ],
       "properties": {
+        "interface": {
+          "enum": [
+            "Protocols"
+          ],
+          "type": "string"
+        },
         "method": {
           "enum": [
-            "ProtocolsQuery"
+            "Query"
           ],
           "type": "string"
         },

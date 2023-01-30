@@ -2,11 +2,11 @@ import { MessageStore } from '../store/message-store.js';
 import { RecordsWrite } from '../interfaces/records/messages/records-write.js';
 import { RecordsWriteMessage } from '../interfaces/records/types.js';
 
-import { DwnMethodName, Message } from './message.js';
+import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
 import { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
 
 const methodToAllowedActionMap = {
-  [DwnMethodName.RecordsWrite]: 'write',
+  [DwnMethodName.Write]: 'write',
 };
 
 export class ProtocolAuthorization {
@@ -62,8 +62,9 @@ export class ProtocolAuthorization {
     // fetch the corresponding protocol definition
     const query = {
       tenant,
-      method   : DwnMethodName.ProtocolsConfigure,
-      protocol : protocolUri
+      interface : DwnInterfaceName.Protocols,
+      method    : DwnMethodName.Configure,
+      protocol  : protocolUri
     };
     const protocols = await messageStore.query(query) as ProtocolsConfigureMessage[];
 
@@ -92,10 +93,11 @@ export class ProtocolAuthorization {
       // fetch parent
       const query = {
         tenant,
-        method   : DwnMethodName.RecordsWrite,
+        interface : DwnInterfaceName.Records,
+        method    : DwnMethodName.Write,
         protocol,
         contextId,
-        recordId : currentParentId
+        recordId  : currentParentId
       };
       const parentMessages = await messageStore.query(query) as RecordsWriteMessage[];
 

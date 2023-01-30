@@ -21,9 +21,15 @@
     "descriptor": {
       "type": "object",
       "properties": {
+        "interface": {
+          "enum": [
+            "Records"
+          ],
+          "type": "string"
+        },
         "method": {
           "enum": [
-            "RecordsWrite"
+            "Write"
           ],
           "type": "string"
         },
@@ -60,6 +66,7 @@
       },
       "additionalProperties": false,
       "required": [
+        "interface",
         "method",
         "dataCid",
         "dateCreated",

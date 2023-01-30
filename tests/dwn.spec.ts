@@ -83,7 +83,8 @@ describe('DWN', () => {
 
       const invalidMessage = {
         descriptor: {
-          method: 'RecordsWrite',
+          interface : 'Records',
+          method    : 'Write',
         },
         authorization: {}
       };

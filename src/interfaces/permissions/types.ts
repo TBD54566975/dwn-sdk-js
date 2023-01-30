@@ -1,4 +1,5 @@
 import type { BaseMessage } from '../../core/types.js';
+import { DwnInterfaceName, DwnMethodName } from '../../index.js';
 
 export type PermissionScope = {
   method: string
@@ -32,12 +33,13 @@ export type PermissionConditions = {
 };
 
 export type PermissionsRequestDescriptor = {
+  interface : DwnInterfaceName.Permissions
+  method: DwnMethodName.Request
   dateCreated: string;
   conditions: PermissionConditions
   description: string
   grantedTo: string
   grantedBy: string
-  method: 'PermissionsRequest'
   objectId?: string
   scope: PermissionScope
 };

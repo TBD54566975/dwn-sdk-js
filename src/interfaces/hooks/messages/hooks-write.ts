@@ -4,7 +4,7 @@ import type { HooksWriteDescriptor, HooksWriteMessage } from '../../hooks/types.
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 
-import { DwnMethodName, Message } from '../../../core/message.js';
+import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
 
 /**
  * Input to `HookssWrite.create()`.
@@ -36,7 +36,8 @@ export class HooksWrite extends Message {
    */
   static async create(options: HooksWriteOptions): Promise<HooksWrite> {
     const descriptor: HooksWriteDescriptor = {
-      method      : DwnMethodName.HooksWrite,
+      interface   : DwnInterfaceName.Hooks,
+      method      : DwnMethodName.Write,
       dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
       uri         : options.uri,
       filter      : options.filter
@@ -46,10 +47,10 @@ export class HooksWrite extends Message {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    Message.validateJsonSchema({ descriptor, authorization: { } });
-
     const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
     const message = { descriptor, authorization };
+
+    Message.validateJsonSchema(message);
 
     const hooksWrite = new HooksWrite(message);
     return hooksWrite;
