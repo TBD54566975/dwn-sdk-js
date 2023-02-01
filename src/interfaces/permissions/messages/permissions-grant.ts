@@ -4,7 +4,7 @@ import type { PermissionConditions, PermissionScope } from '../types';
 import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types';
 
 import { CID } from 'multiformats/cid';
-import { generateCid } from '../../../utils/cid';
+import { computeCid } from '../../../utils/cid';
 import { getCurrentTimeInHighPrecision } from '../../../utils/time';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -101,7 +101,7 @@ export class PermissionsGrant extends Message {
       signatureInput : signatureInput
     });
 
-    delegatedGrant.delegatedFrom = await generateCid(this.message);
+    delegatedGrant.delegatedFrom = await computeCid(this.message);
     delegatedGrant.delegationChain = this.message;
 
     return delegatedGrant;

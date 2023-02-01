@@ -30,7 +30,7 @@ export async function getDagPbCid(content: Uint8Array): Promise<CID> {
 }
 
 /**
- * generates a V1 CID for the provided payload
+ * Computes a V1 CID for the provided payload
  * @param payload
  * @param codecCode - the codec to use. Defaults to cbor
  * @param multihashCode - the multihasher to use. Defaults to sha256
@@ -39,7 +39,7 @@ export async function getDagPbCid(content: Uint8Array): Promise<CID> {
  * @throws {Error} encoding fails
  * @throws {Error} if hasher is not supported
  */
-export async function generateCid(payload: any, codecCode = cbor.code, multihashCode = sha256.code): Promise<CID> {
+export async function computeCid(payload: any, codecCode = cbor.code, multihashCode = sha256.code): Promise<CID> {
   const codec = codecs[codecCode];
   if (!codec) {
     throw new Error(`codec [${codecCode}] not supported`);

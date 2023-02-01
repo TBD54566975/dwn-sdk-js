@@ -1,6 +1,6 @@
+import { computeCid } from '../../src/utils/cid.js';
 import { DidKeyResolver } from '../../src/index.js';
 import { expect } from 'chai';
-import { generateCid } from '../../src/utils/cid.js';
 import { Message } from '../../src/core/message.js';
 import { MessageStoreLevel } from '../../src/store/message-store-level.js';
 import { RecordsWriteMessage } from '../../src/interfaces/records/types.js';
@@ -78,10 +78,10 @@ describe('MessageStoreLevel Tests', () => {
 
       await messageStore.put(message, {});
 
-      const expectedCid = await generateCid(message);
+      const expectedCid = await computeCid(message);
 
       const jsonMessage = await messageStore.get(expectedCid);
-      const resultCid = await generateCid(jsonMessage);
+      const resultCid = await computeCid(jsonMessage);
 
       expect(resultCid.equals(expectedCid)).to.be.true;
     });
