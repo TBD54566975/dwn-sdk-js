@@ -1,14 +1,13 @@
 import type { MethodHandler } from '../../types.js';
-import type { RecordsDeleteMessage, RecordsWriteMessage } from '../types.js';
+import type { RecordsDeleteMessage } from '../types.js';
 
 import { authenticate } from '../../../core/auth.js';
+import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
+import { DwnInterfaceName } from '../../../core/message.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsDelete } from '../messages/records-delete.js';
 import { RecordsWrite } from '../messages/records-write.js';
-
-import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
 import { TimestampedMessage } from '../../../core/types.js';
-import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
 
 export const handleRecordsDelete: MethodHandler = async (
   tenant,
@@ -40,8 +39,8 @@ export const handleRecordsDelete: MethodHandler = async (
   // get existing records matching the `recordId`
   const query = {
     tenant,
-    interface: DwnInterfaceName.Records,
-    recordId : incomingMessage.descriptor.recordId
+    interface : DwnInterfaceName.Records,
+    recordId  : incomingMessage.descriptor.recordId
   };
   const existingMessages = await messageStore.query(query) as TimestampedMessage[];
 
@@ -90,7 +89,7 @@ export async function constructIndexes(tenant: string, recordsDelete: RecordsDel
   const indexes: { [key: string]: any } = {
     tenant,
     // isLatestBaseState : "true", // intentionally showing that this index is omitted
-    author            : recordsDelete.author,
+    author: recordsDelete.author,
     ...descriptor
   };
 

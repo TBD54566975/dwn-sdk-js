@@ -1,18 +1,23 @@
+import { handleRecordsDelete } from './handlers/records-delete.js';
 import { handleRecordsQuery } from './handlers/records-query.js';
+import { MessageStore } from '../../store/message-store.js';
+import { RecordsDelete } from './messages/records-delete.js';
 import { RecordsQuery } from './messages/records-query.js';
 import { RecordsWrite } from './messages/records-write.js';
+import { RecordsWriteMessage } from '../../interfaces/records/types.js';
 import { TimestampedMessage } from '../../core/types.js';
 
 import { constructRecordsWriteIndexes, handleRecordsWrite } from './handlers/records-write.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../core/message.js';
-import { MessageStore, RecordsWriteMessage } from '../../index.js';
 
 export const RecordsInterface = {
   methodHandlers: {
+    [DwnInterfaceName.Records + DwnMethodName.Query] : handleRecordsDelete,
     [DwnInterfaceName.Records + DwnMethodName.Query] : handleRecordsQuery,
     [DwnInterfaceName.Records + DwnMethodName.Write] : handleRecordsWrite
   },
   messages: [
+    RecordsDelete,
     RecordsQuery,
     RecordsWrite
   ]

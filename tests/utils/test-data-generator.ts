@@ -12,6 +12,7 @@ import { sha256 } from 'multiformats/hashes/sha2';
 import { SignatureInput } from '../../src/jose/jws/general/types.js';
 import {
   DateSort,
+  DidKeyResolver,
   HooksWrite,
   HooksWriteMessage,
   HooksWriteOptions,
@@ -22,6 +23,8 @@ import {
   ProtocolsQuery,
   ProtocolsQueryMessage,
   ProtocolsQueryOptions,
+  RecordsDelete,
+  RecordsDeleteMessage,
   RecordsQuery,
   RecordsQueryMessage,
   RecordsQueryOptions,
@@ -116,6 +119,12 @@ export type GenerateRecordsQueryMessageInput = {
 export type GenerateRecordsQueryMessageOutput = {
   requester: Persona;
   message: RecordsQueryMessage;
+};
+
+export type GenerateRecordsDeleteOutput = {
+  requester: Persona;
+  recordsDelete: RecordsDelete;
+  message: RecordsDeleteMessage;
 };
 
 export type GenerateHooksWriteMessageInput = {
@@ -334,6 +343,24 @@ export class TestDataGenerator {
       message
     };
   };
+
+  /**
+   * Generates a RecordsDelete for testing.
+   */
+  public static async generateRecordsDelete(): Promise<GenerateRecordsDeleteOutput> {
+    const requester = await DidKeyResolver.generate();
+
+    const recordsDelete = await RecordsDelete.create({
+      recordId       : await TestDataGenerator.randomCborSha256Cid(),
+      signatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
+    });
+
+    return {
+      requester,
+      recordsDelete,
+      message: recordsDelete.message
+    };
+  }
 
   /**
    * Generates a HooksWrite message for testing.

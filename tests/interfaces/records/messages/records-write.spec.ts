@@ -113,5 +113,13 @@ describe('RecordsWrite', () => {
       expect(cidOfMessageWithEncodedData.toString()).to.equal(cidOfMessageWithoutData.toString());
     });
   });
+
+  describe('isInitialWrite', () => {
+    it('should return false if given message is not a RecordsWrite', async () => {
+      const { message }= await TestDataGenerator.generateRecordsQueryMessage();
+      const isInitialWrite = await RecordsWrite.isInitialWrite(message);
+      expect(isInitialWrite).to.be.false;
+    });
+  });
 });
 
