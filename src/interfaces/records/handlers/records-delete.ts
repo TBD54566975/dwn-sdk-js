@@ -1,25 +1,25 @@
 import type { MethodHandler } from '../../types.js';
-import type { RecordsWriteMessage } from '../types.js';
+import type { RecordsDeleteMessage } from '../types.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
 import { DwnInterfaceName } from '../../../core/message.js';
 import { MessageReply } from '../../../core/message-reply.js';
+import { RecordsDelete } from '../messages/records-delete.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { TimestampedMessage } from '../../../core/types.js';
 
-
-export const handleRecordsWrite: MethodHandler = async (
+export const handleRecordsDelete: MethodHandler = async (
   tenant,
   message,
   messageStore,
   didResolver
 ): Promise<MessageReply> => {
-  const incomingMessage = message as RecordsWriteMessage;
+  const incomingMessage = message as RecordsDeleteMessage;
 
-  let recordsWrite: RecordsWrite;
+  let recordsDelete: RecordsDelete;
   try {
-    recordsWrite = await RecordsWrite.parse(incomingMessage);
+    recordsDelete = await RecordsDelete.parse(incomingMessage);
   } catch (e) {
     return new MessageReply({
       status: { code: 400, detail: e.message }
@@ -29,33 +29,20 @@ export const handleRecordsWrite: MethodHandler = async (
   // authentication & authorization
   try {
     await authenticate(message.authorization, didResolver);
-    await recordsWrite.authorize(tenant, messageStore);
+    await recordsDelete.authorize(tenant);
   } catch (e) {
     return new MessageReply({
       status: { code: 401, detail: e.message }
     });
   }
 
-  // get existing messages matching the `recordId`
+  // get existing records matching the `recordId`
   const query = {
     tenant,
     interface : DwnInterfaceName.Records,
-    recordId  : incomingMessage.recordId
+    recordId  : incomingMessage.descriptor.recordId
   };
   const existingMessages = await messageStore.query(query) as TimestampedMessage[];
-
-  // if the incoming write is not the initial write, then it must not modify any immutable properties defined by the initial write
-  const newMessageIsInitialWrite = await recordsWrite.isInitialWrite();
-  if (!newMessageIsInitialWrite) {
-    try {
-      const initialWrite = RecordsWrite.getInitialWrite(existingMessages);
-      RecordsWrite.verifyEqualityOfImmutableProperties(initialWrite, incomingMessage);
-    } catch (e) {
-      return new MessageReply({
-        status: { code: 400, detail: e.message }
-      });
-    }
-  }
 
   // find which message is the newest, and if the incoming message is the newest
   const newestExistingMessage = await RecordsWrite.getNewestMessage(existingMessages);
@@ -72,8 +59,7 @@ export const handleRecordsWrite: MethodHandler = async (
   // write the incoming message to DB if incoming message is newest
   let messageReply: MessageReply;
   if (incomingMessageIsNewest) {
-    const isLatestBaseState = true;
-    const indexes = await constructRecordsWriteIndexes(tenant, recordsWrite, isLatestBaseState);
+    const indexes = await constructIndexes(tenant, recordsDelete);
 
     await messageStore.put(incomingMessage, indexes);
 
@@ -92,37 +78,20 @@ export const handleRecordsWrite: MethodHandler = async (
   return messageReply;
 };
 
-export async function constructRecordsWriteIndexes(
-  tenant: string,
-  recordsWrite: RecordsWrite,
-  isLatestBaseState: boolean
-): Promise<{ [key: string]: string }> {
-  const message = recordsWrite.message;
+export async function constructIndexes(tenant: string, recordsDelete: RecordsDelete): Promise<{ [key: string]: string }> {
+  const message = recordsDelete.message;
   const descriptor = { ...message.descriptor };
-  delete descriptor.published; // handle `published` specifically further down
 
+  // NOTE: the "trick" not may not be apparent on how a query is able to omit deleted records:
+  // we intentionally not add index for `isLatestBaseState` at all, this means that upon a successful delete,
+  // no messages with the record ID will match any query because queries by design filter by `isLatestBaseState = true`,
+  // `isLatestBaseState` for the initial delete would have been toggled to `false`
   const indexes: { [key: string]: any } = {
     tenant,
-    // NOTE: underlying search-index library does not support boolean, so converting boolean to string before storing
-    // https://github.com/TBD54566975/dwn-sdk-js/issues/170
-    isLatestBaseState : isLatestBaseState.toString(),
-    author            : recordsWrite.author,
-    recordId          : message.recordId,
-    entryId           : await RecordsWrite.getEntryId(recordsWrite.author, recordsWrite.message.descriptor),
+    // isLatestBaseState : "true", // intentionally showing that this index is omitted
+    author: recordsDelete.author,
     ...descriptor
   };
-
-  // add `contextId` to additional index if given
-  if (message.contextId !== undefined) { indexes.contextId = message.contextId; }
-
-  // add `published` index
-  // NOTE: underlying search-index library does not support boolean, so converting boolean to string before storing
-  // https://github.com/TBD54566975/dwn-sdk-js/issues/170
-  if (message.descriptor.published === true) {
-    indexes.published = 'true';
-  } else {
-    indexes.published = 'false';
-  }
 
   return indexes;
 }

@@ -75,7 +75,7 @@ describe('handleProtocolsQuery()', () => {
     });
 
     it('should only be able to overwrite existing protocol if new protocol lexicographically larger', async () => {
-    // generate three versions of the same protocol message
+      // generate three versions of the same protocol message
       const alice = await DidKeyResolver.generate();
       const protocol = 'exampleProtocol';
       const messageData1 = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, protocol });

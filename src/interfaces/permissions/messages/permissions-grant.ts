@@ -6,9 +6,10 @@ import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../typ
 import { CID } from 'multiformats/cid';
 import { generateCid } from '../../../utils/cid';
 import { getCurrentTimeInHighPrecision } from '../../../utils/time';
-import { Message } from '../../../core/message';
 import { v4 as uuidv4 } from 'uuid';
+
 import { DEFAULT_CONDITIONS, PermissionsRequest } from './permissions-request';
+import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message';
 
 type PermissionsGrantOptions = AuthCreateOptions & {
   dateCreated?: string;
@@ -34,20 +35,21 @@ export class PermissionsGrant extends Message {
     const mergedConditions = { ...DEFAULT_CONDITIONS, ...providedConditions };
 
     const descriptor: PermissionsGrantDescriptor = {
+      interface   : DwnInterfaceName.Permissions,
+      method      : DwnMethodName.Grant,
       dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
       conditions  : mergedConditions,
       description : options.description,
       grantedTo   : options.grantedTo,
       grantedBy   : options.grantedBy,
-      method      : 'PermissionsGrant',
       objectId    : options.objectId ? options.objectId : uuidv4(),
       scope       : options.scope,
     };
 
-    Message.validateJsonSchema({ descriptor, authorization: { } });
-
     const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
     const message: PermissionsGrantMessage = { descriptor, authorization };
+
+    Message.validateJsonSchema(message);
 
     return new PermissionsGrant(message);
   }

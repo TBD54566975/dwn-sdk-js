@@ -24,6 +24,15 @@ export type Descriptor = {
 };
 
 /**
+ * Messages that have `dateModified` in their `descriptor` property.
+ */
+export type TimestampedMessage = BaseMessage & {
+  descriptor: {
+    dateModified: string;
+  }
+};
+
+/**
  * Message that references `dataCid`.
  */
 export type DataReferencingMessage = {

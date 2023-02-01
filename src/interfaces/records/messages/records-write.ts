@@ -1,4 +1,4 @@
-import type { AuthCreateOptions } from '../../../core/types.js';
+import type { AuthCreateOptions, BaseMessage } from '../../../core/types.js';
 import type { RecordsWriteAuthorizationPayload, RecordsWriteDescriptor, RecordsWriteMessage, UnsignedRecordsWriteMessage } from '../types.js';
 
 import { Encoder } from '../../../utils/encoder.js';
@@ -284,10 +284,17 @@ export class RecordsWrite extends Message {
   /**
    * Checks if the given message is the initial entry of a record.
    */
-  public static async isInitialWrite(message: RecordsWriteMessage): Promise<boolean> {
+  public static async isInitialWrite(message: BaseMessage): Promise<boolean> {
+    // can't be the initial write if the message is not a Records Write
+    if (message.descriptor.interface !== DwnInterfaceName.Records ||
+        message.descriptor.method !== DwnMethodName.Write) {
+      return false;
+    }
+
+    const recordsWriteMessage = message as RecordsWriteMessage;
     const author = Message.getAuthor(message);
-    const entryId = await RecordsWrite.getEntryId(author, message.descriptor);
-    return (entryId === message.recordId);
+    const entryId = await RecordsWrite.getEntryId(author, recordsWriteMessage.descriptor);
+    return (entryId === recordsWriteMessage.recordId);
   }
 
   /**
@@ -316,6 +323,19 @@ export class RecordsWrite extends Message {
   }
 
   /**
+   * Gets the initial write from the given list or record write.
+   */
+  public static getInitialWrite(messages: BaseMessage[]): RecordsWriteMessage{
+    for (const message of messages) {
+      if (RecordsWrite.isInitialWrite(message)) {
+        return message as RecordsWriteMessage;
+      }
+    }
+
+    throw new Error(`initial write is not found `);
+  }
+
+  /**
    * Verifies that immutable properties of the two given messages are identical.
    * @throws {Error} if immutable properties between two RecordsWrite message
    */
@@ -341,53 +361,5 @@ export class RecordsWrite extends Message {
     }
 
     return true;
-  }
-
-  /**
-   * @returns newest message in the array. `undefined` if given array is empty.
-   */
-  public static async getNewestMessage(messages: RecordsWriteMessage[]): Promise<RecordsWriteMessage | undefined> {
-    let currentNewestMessage: RecordsWriteMessage | undefined = undefined;
-    for (const message of messages) {
-      if (currentNewestMessage === undefined || await RecordsWrite.isNewer(message, currentNewestMessage)) {
-        currentNewestMessage = message;
-      }
-    }
-
-    return currentNewestMessage;
-  }
-
-  /**
-   * Checks if first message is newer than second message.
-   * @returns `true` if `a` is newer than `b`; `false` otherwise
-   */
-  public static async isNewer(a: RecordsWriteMessage, b: RecordsWriteMessage): Promise<boolean> {
-    const aIsNewer = (await RecordsWrite.compareModifiedTime(a, b) > 0);
-    return aIsNewer;
-  }
-
-  /**
-   * Checks if first message is older than second message.
-   * @returns `true` if `a` is older than `b`; `false` otherwise
-   */
-  public static async isOlder(a: RecordsWriteMessage, b: RecordsWriteMessage): Promise<boolean> {
-    const aIsNewer = (await RecordsWrite.compareModifiedTime(a, b) < 0);
-    return aIsNewer;
-  }
-
-  /**
-   * Compares the `dateModified` of the given messages with a fallback to message CID according to the spec.
-   * @returns 1 if `a` is larger/newer than `b`; -1 if `a` is smaller/older than `b`; 0 otherwise (same age)
-   */
-  public static async compareModifiedTime(a: RecordsWriteMessage, b: RecordsWriteMessage): Promise<number> {
-    if (a.descriptor.dateModified > b.descriptor.dateModified) {
-      return 1;
-    } else if (a.descriptor.dateModified < b.descriptor.dateModified) {
-      return -1;
-    }
-
-    // else `dateModified` is the same between a and b
-    // compare the `dataCid` instead, the < and > operators compare strings in lexicographical order
-    return Message.compareCid(a, b);
   }
 }
