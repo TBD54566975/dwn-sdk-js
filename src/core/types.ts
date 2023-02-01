@@ -1,4 +1,4 @@
-import type { GeneralJws, SignatureInput } from '../jose/jws/general/types.js';
+import type { GeneralJws } from '../jose/jws/general/types.js';
 
 /**
  * Intersection type for all concrete message types.
@@ -41,8 +41,4 @@ export type DataReferencingMessage = {
   };
 
   encodedData: string;
-};
-
-export type AuthCreateOptions = {
-  signatureInput: SignatureInput
 };

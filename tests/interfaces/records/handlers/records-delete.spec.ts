@@ -63,8 +63,8 @@ describe('handleRecordsDelete()', () => {
 
       // testing delete
       const recordsDelete = await RecordsDelete.create({
-        recordId       : writeData.message.recordId,
-        signatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+        recordId                    : writeData.message.recordId,
+        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
       });
 
       const deleteReply = await handleRecordsDelete(alice.did, recordsDelete.message, messageStore, didResolver);
@@ -87,8 +87,8 @@ describe('handleRecordsDelete()', () => {
       // generate subsequent write and delete with the delete having an earlier timestamp
       // NOTE: creating RecordsDelete first ensures it has an earlier `dateModified` time
       const recordsDelete = await RecordsDelete.create({
-        recordId       : initialWriteData.message.recordId,
-        signatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+        recordId                    : initialWriteData.message.recordId,
+        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
       });
       const subsequentWriteData = await TestDataGenerator.generateFromRecordsWrite({
         existingWrite : initialWriteData.recordsWrite,

@@ -1,4 +1,4 @@
-import type { AuthCreateOptions, BaseMessage } from '../../../core/types.js';
+import type { BaseMessage } from '../../../core/types.js';
 import type { RecordsWriteAttestationPayload, RecordsWriteAuthorizationPayload, RecordsWriteDescriptor, RecordsWriteMessage, UnsignedRecordsWriteMessage } from '../types.js';
 
 import { Encoder } from '../../../utils/encoder.js';
@@ -15,8 +15,7 @@ import { computeCid, getDagPbCid } from '../../../utils/cid.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 import { GeneralJws, SignatureInput } from '../../../jose/jws/general/types.js';
 
-export type RecordsWriteOptions = AuthCreateOptions & {
-  attestationSignatureInputs?: SignatureInput[];
+export type RecordsWriteOptions = {
   recipient?: string;
   protocol?: string;
   contextId?: string;
@@ -29,14 +28,18 @@ export type RecordsWriteOptions = AuthCreateOptions & {
   published?: boolean;
   datePublished?: string;
   dataFormat: string;
+  authorizationSignatureInput: SignatureInput;
+  attestationSignatureInputs?: SignatureInput[];
 };
 
-export type CreateFromOptions = AuthCreateOptions & {
+export type CreateFromOptions = {
   unsignedRecordsWriteMessage: UnsignedRecordsWriteMessage,
   data?: Uint8Array;
   published?: boolean;
   dateModified?: string;
   datePublished?: string;
+  authorizationSignatureInput: SignatureInput;
+  attestationSignatureInputs?: SignatureInput[];
 };
 
 export class RecordsWrite extends Message {
@@ -96,7 +99,7 @@ export class RecordsWrite extends Message {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const author = GeneralJwsVerifier.extractDid(options.signatureInput.protectedHeader.kid);
+    const author = GeneralJwsVerifier.extractDid(options.authorizationSignatureInput.protectedHeader.kid);
 
     // `recordId` computation
     const recordId = options.recordId ?? await RecordsWrite.getEntryId(author, descriptor);
@@ -122,7 +125,7 @@ export class RecordsWrite extends Message {
       contextId,
       descriptorCid,
       attestation,
-      options.signatureInput
+      options.authorizationSignatureInput
     );
 
     const encodedData = Encoder.bytesToBase64Url(options.data);
@@ -182,21 +185,23 @@ export class RecordsWrite extends Message {
 
     const createOptions: RecordsWriteOptions = {
       // immutable properties below, just inherit from the message given
-      recipient      : unsignedMessage.descriptor.recipient,
-      recordId       : unsignedMessage.recordId,
-      dateCreated    : unsignedMessage.descriptor.dateCreated,
-      contextId      : unsignedMessage.contextId,
-      protocol       : unsignedMessage.descriptor.protocol,
-      parentId       : unsignedMessage.descriptor.parentId,
-      schema         : unsignedMessage.descriptor.schema,
-      dataFormat     : unsignedMessage.descriptor.dataFormat,
+      recipient                   : unsignedMessage.descriptor.recipient,
+      recordId                    : unsignedMessage.recordId,
+      dateCreated                 : unsignedMessage.descriptor.dateCreated,
+      contextId                   : unsignedMessage.contextId,
+      protocol                    : unsignedMessage.descriptor.protocol,
+      parentId                    : unsignedMessage.descriptor.parentId,
+      schema                      : unsignedMessage.descriptor.schema,
+      dataFormat                  : unsignedMessage.descriptor.dataFormat,
       // mutable properties below, if not given, inherit from message given
-      dateModified   : options.dateModified ?? currentTime,
+      dateModified                : options.dateModified ?? currentTime,
       published,
       datePublished,
-      data           : options.data ?? Encoder.base64UrlToBytes(unsignedMessage.encodedData), // there is opportunity for improvement here
+      // copying data from the given message may not be always right, there is probably opportunity for improvement here
+      data                        : options.data ?? Encoder.base64UrlToBytes(unsignedMessage.encodedData),
       // finally still need input for signing
-      signatureInput : options.signatureInput,
+      authorizationSignatureInput : options.authorizationSignatureInput,
+      attestationSignatureInputs  : options.attestationSignatureInputs
     };
 
     const recordsWrite = await RecordsWrite.create(createOptions);

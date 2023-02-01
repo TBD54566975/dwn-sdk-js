@@ -1,4 +1,4 @@
-import type { AuthCreateOptions } from '../../../core/types.js';
+import type { SignatureInput } from '../../../jose/jws/general/types.js';
 import type { ProtocolDefinition, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types.js';
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
@@ -6,10 +6,11 @@ import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
 
-export type ProtocolsConfigureOptions = AuthCreateOptions & {
+export type ProtocolsConfigureOptions = {
   dateCreated? : string;
   protocol: string;
   definition : ProtocolDefinition;
+  authorizationSignatureInput: SignatureInput;
 };
 
 export class ProtocolsConfigure extends Message {
@@ -36,7 +37,7 @@ export class ProtocolsConfigure extends Message {
 
     Message.validateJsonSchema({ descriptor, authorization: { } });
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
+    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
     const message = { descriptor, authorization };
 
     const protocolsConfigure = new ProtocolsConfigure(message);

@@ -1,4 +1,4 @@
-import type { AuthCreateOptions } from '../../../core/types.js';
+import type { SignatureInput } from '../../../jose/jws/general/types.js';
 import type { PermissionConditions, PermissionScope } from '../types.js';
 import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types.js';
 
@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
 
-type PermissionsRequestOptions = AuthCreateOptions & {
+type PermissionsRequestOptions = {
   dateCreated?: string;
   conditions?: PermissionConditions;
   description: string;
@@ -15,6 +15,7 @@ type PermissionsRequestOptions = AuthCreateOptions & {
   grantedBy: string;
   objectId?: string;
   scope: PermissionScope;
+  authorizationSignatureInput: SignatureInput;
 };
 
 export class PermissionsRequest extends Message {
@@ -49,7 +50,7 @@ export class PermissionsRequest extends Message {
 
     Message.validateJsonSchema({ descriptor, authorization: { } });
 
-    const auth = await Message.signAsAuthorization(descriptor, options.signatureInput);
+    const auth = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
     const message: PermissionsRequestMessage = { descriptor, authorization: auth };
 
     return new PermissionsRequest(message);

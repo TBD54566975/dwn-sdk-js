@@ -212,13 +212,13 @@ export class TestDataGenerator {
       definition.records[generatedLabel] = {};
     }
 
-    const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
+    const authorizationSignatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
 
     const options: ProtocolsConfigureOptions = {
       dateCreated : input?.dateCreated,
       protocol    : input?.protocol ?? TestDataGenerator.randomString(20),
       definition,
-      signatureInput
+      authorizationSignatureInput
     };
 
     const protocolsConfigure = await ProtocolsConfigure.create(options);
@@ -237,12 +237,12 @@ export class TestDataGenerator {
     // generate requester persona if not given
     const requester = input?.requester ?? await TestDataGenerator.generatePersona();
 
-    const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
+    const authorizationSignatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
 
     const options: ProtocolsQueryOptions = {
       dateCreated : input?.dateCreated,
       filter      : input?.filter,
-      signatureInput
+      authorizationSignatureInput
     };
     removeUndefinedProperties(options);
 
@@ -263,7 +263,7 @@ export class TestDataGenerator {
   public static async generateRecordsWriteMessage(input?: GenerateRecordsWriteMessageInput): Promise<GenerateRecordsWriteMessageOutput> {
     const requester = input?.requester ?? await TestDataGenerator.generatePersona();
 
-    const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
+    const authorizationSignatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
 
     const data = input?.data ?? TestDataGenerator.randomBytes(32);
 
@@ -280,7 +280,7 @@ export class TestDataGenerator {
       dateModified  : input?.dateModified,
       datePublished : input?.datePublished,
       data,
-      signatureInput
+      authorizationSignatureInput
     };
 
 
@@ -312,7 +312,7 @@ export class TestDataGenerator {
       published,
       datePublished,
       dateModified                : input.dateModified,
-      signatureInput              : TestDataGenerator.createSignatureInputFromPersona(input.requester)
+      authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(input.requester)
     };
 
     const recordsWrite = await RecordsWrite.createFrom(options);
@@ -325,11 +325,11 @@ export class TestDataGenerator {
   public static async generateRecordsQueryMessage(input?: GenerateRecordsQueryMessageInput): Promise<GenerateRecordsQueryMessageOutput> {
     const requester = input?.requester ?? await TestDataGenerator.generatePersona();
 
-    const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
+    const authorizationSignatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
 
     const options: RecordsQueryOptions = {
       dateCreated : input?.dateCreated,
-      signatureInput,
+      authorizationSignatureInput,
       filter      : input?.filter ?? { schema: TestDataGenerator.randomString(10) }, // must have one filter property if no filter is given
       dateSort    : input?.dateSort
     };
@@ -351,8 +351,8 @@ export class TestDataGenerator {
     const requester = await DidKeyResolver.generate();
 
     const recordsDelete = await RecordsDelete.create({
-      recordId       : await TestDataGenerator.randomCborSha256Cid(),
-      signatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
+      recordId                    : await TestDataGenerator.randomCborSha256Cid(),
+      authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
     });
 
     return {
@@ -368,11 +368,11 @@ export class TestDataGenerator {
   public static async generateHooksWriteMessage(input?: GenerateHooksWriteMessageInput): Promise<GenerateHooksWriteMessageOutput> {
     const requester = input?.requester ?? await TestDataGenerator.generatePersona();
 
-    const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
+    const authorizationSignatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
 
     const options: HooksWriteOptions = {
       dateCreated : input?.dateCreated,
-      signatureInput,
+      authorizationSignatureInput,
       filter      : input?.filter ?? { method: 'RecordsWrite' }, // hardcode to filter on `RecordsWrite` if no filter is given
     };
     removeUndefinedProperties(options);
@@ -391,12 +391,12 @@ export class TestDataGenerator {
   public static async generatePermissionsRequestMessage(): Promise<{ message: BaseMessage }> {
     const { privateJwk } = await ed25519.generateKeyPair();
     const permissionRequest = await PermissionsRequest.create({
-      dateCreated    : getCurrentTimeInHighPrecision(),
-      description    : 'drugs',
-      grantedBy      : 'did:jank:bob',
-      grantedTo      : 'did:jank:alice',
-      scope          : { method: 'RecordsWrite' },
-      signatureInput : { privateJwk: privateJwk, protectedHeader: { alg: privateJwk.alg as string, kid: 'whatev' } }
+      dateCreated                 : getCurrentTimeInHighPrecision(),
+      description                 : 'drugs',
+      grantedBy                   : 'did:jank:bob',
+      grantedTo                   : 'did:jank:alice',
+      scope                       : { method: 'RecordsWrite' },
+      authorizationSignatureInput : { privateJwk: privateJwk, protectedHeader: { alg: privateJwk.alg as string, kid: 'whatev' } }
     });
 
     return { message: permissionRequest.message };

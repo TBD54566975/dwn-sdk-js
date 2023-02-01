@@ -1,4 +1,4 @@
-import type { AuthCreateOptions } from '../../../core/types.js';
+import type { SignatureInput } from '../../../jose/jws/general/types.js';
 import type { RecordsQueryDescriptor, RecordsQueryMessage } from '../types.js';
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
@@ -14,7 +14,7 @@ export enum DateSort {
   PublishedDescending = 'publishedDescending'
 }
 
-export type RecordsQueryOptions = AuthCreateOptions & {
+export type RecordsQueryOptions = {
   dateCreated?: string;
   filter: {
     recipient?: string;
@@ -26,6 +26,7 @@ export type RecordsQueryOptions = AuthCreateOptions & {
     dataFormat?: string;
   },
   dateSort?: DateSort;
+  authorizationSignatureInput: SignatureInput;
 };
 
 export class RecordsQuery extends Message {
@@ -53,7 +54,7 @@ export class RecordsQuery extends Message {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
+    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

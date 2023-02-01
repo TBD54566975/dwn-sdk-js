@@ -14,9 +14,9 @@ describe('RecordsQuery', () => {
 
       const currentTime = getCurrentTimeInHighPrecision();
       const recordsDelete = await RecordsQuery.create({
-        filter         : { schema: 'anything' },
-        dateCreated    : currentTime,
-        signatureInput : TestDataGenerator.createSignatureInputFromPersona(alice),
+        filter                      : { schema: 'anything' },
+        dateCreated                 : currentTime,
+        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice),
       });
 
       expect(recordsDelete.message.descriptor.dateCreated).to.equal(currentTime);

@@ -19,12 +19,12 @@ describe('RecordsWrite', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {
-        recipient      : alice.did,
-        data           : TestDataGenerator.randomBytes(10),
-        dataFormat     : 'application/json',
-        dateCreated    : '2022-10-14T10:20:30.405060',
-        recordId       : await TestDataGenerator.randomCborSha256Cid(),
-        signatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+        recipient                   : alice.did,
+        data                        : TestDataGenerator.randomBytes(10),
+        dataFormat                  : 'application/json',
+        dateCreated                 : '2022-10-14T10:20:30.405060',
+        recordId                    : await TestDataGenerator.randomCborSha256Cid(),
+        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
       };
       const recordsWrite = await RecordsWrite.create(options);
 
@@ -45,12 +45,12 @@ describe('RecordsWrite', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {
-        recipient      : alice.did,
-        data           : TestDataGenerator.randomBytes(10),
-        dataFormat     : 'application/json',
-        recordId       : await TestDataGenerator.randomCborSha256Cid(),
-        published      : true,
-        signatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+        recipient                   : alice.did,
+        data                        : TestDataGenerator.randomBytes(10),
+        dataFormat                  : 'application/json',
+        recordId                    : await TestDataGenerator.randomCborSha256Cid(),
+        published                   : true,
+        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
       };
       const recordsWrite = await RecordsWrite.create(options);
 
@@ -69,7 +69,7 @@ describe('RecordsWrite', () => {
       const write = await RecordsWrite.createFrom({
         unsignedRecordsWriteMessage : recordsWrite.message,
         datePublished               : getCurrentTimeInHighPrecision(),
-        signatureInput              : TestDataGenerator.createSignatureInputFromPersona(requester)
+        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
       });
 
       expect(write.message.descriptor.published).to.be.true;

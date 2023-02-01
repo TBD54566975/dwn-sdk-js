@@ -261,7 +261,7 @@ describe('handleRecordsWrite()', () => {
           const newWrite = await RecordsWrite.createFrom({
             unsignedRecordsWriteMessage : recordsWrite.message,
             published                   : true,
-            signatureInput              : TestDataGenerator.createSignatureInputFromPersona(requester)
+            authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
           });
 
           const newWriteReply = await handleRecordsWrite(tenant, newWrite.message, messageStore, didResolverStub);
@@ -296,7 +296,7 @@ describe('handleRecordsWrite()', () => {
           const newWrite = await RecordsWrite.createFrom({
             unsignedRecordsWriteMessage : recordsWrite.message,
             data                        : newData,
-            signatureInput              : TestDataGenerator.createSignatureInputFromPersona(requester)
+            authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
           });
 
           const newWriteReply = await handleRecordsWrite(tenant, newWrite.message, messageStore, didResolverStub);

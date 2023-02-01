@@ -1,16 +1,17 @@
-import type { AuthCreateOptions } from '../../../core/types.js';
 import type { RecordsDeleteDescriptor, RecordsDeleteMessage } from '../types.js';
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/message.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
+import { SignatureInput } from '../../../jose/jws/general/types.js';
 
 import { authorize, validateAuthorizationIntegrity } from '../../../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 
-export type RecordsDeleteOptions = AuthCreateOptions & {
+export type RecordsDeleteOptions = {
   recordId: string;
   dateModified?: string;
+  authorizationSignatureInput: SignatureInput;
 };
 
 export class RecordsDelete extends Message {
@@ -50,7 +51,7 @@ export class RecordsDelete extends Message {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
+    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
     const message: RecordsDeleteMessage = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
