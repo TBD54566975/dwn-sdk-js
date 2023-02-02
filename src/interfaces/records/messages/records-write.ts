@@ -265,6 +265,17 @@ export class RecordsWrite extends Message {
         `contextId in message ${this.message.contextId} does not match contextId in authorization: ${this.authorizationPayload.contextId}`
       );
     }
+
+    // if `attestation` is given in message, make sure the correct `attestationCid` is in the `authorization`
+    if (this.message.attestation !== undefined) {
+      const expectedAttestationCid = (await computeCid(this.message.attestation)).toString();
+      const actualAttestationCid = this.authorizationPayload.attestationCid;
+      if (actualAttestationCid !== expectedAttestationCid) {
+        throw new Error(
+          `CID ${expectedAttestationCid} of attestation property in message does not match attestationCid in authorization: ${actualAttestationCid}`
+        );
+      }
+    }
   }
 
   /**

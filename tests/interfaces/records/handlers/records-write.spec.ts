@@ -1165,6 +1165,18 @@ describe('handleRecordsWrite()', () => {
     });
   });
 
+  it('should fail validation with 400 if expected CID of `attestation` mismatches the `attestationCid` in `authorization`', async () => {
+    const alice = await DidKeyResolver.generate();
+    const bob = await DidKeyResolver.generate();
+    const { message } = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [alice, bob] });
+
+    // strip away one signature to cause difference in expected and actual attestation CID
+    message.attestation.signatures = [message.attestation.signatures[0]];
+    const writeReply = await handleRecordsWrite(alice.did, message, messageStore, didResolver);
+    expect(writeReply.status.code).to.equal(400);
+    expect(writeReply.status.detail).to.contain('does not match attestationCid');
+  });
+
   it('should return 400 if `recordId` in `authorization` payload mismatches with `recordId` in the message', async () => {
     const { requester, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
 
