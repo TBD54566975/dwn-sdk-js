@@ -74,7 +74,7 @@ describe('MessageStoreLevel Tests', () => {
     });
 
     it('stores messages as cbor/sha256 encoded blocks with CID as key', async () => {
-      const { message } = await TestDataGenerator.generatePermissionsRequestMessage();
+      const { message } = await TestDataGenerator.generatePermissionsRequest();
 
       await messageStore.put(message, {});
 
@@ -90,7 +90,7 @@ describe('MessageStoreLevel Tests', () => {
     it('#170 - should be able to update (delete and insert new) indexes to an existing message', async () => {
       const alice = await DidKeyResolver.generate();
 
-      const { message } = await TestDataGenerator.generateRecordsWriteMessage();
+      const { message } = await TestDataGenerator.generateRecordsWrite();
 
       // inserting the message indicating it is the 'latest' in the index
       await messageStore.put(message, { tenant: alice.did, latest: 'true' });
@@ -115,7 +115,7 @@ describe('MessageStoreLevel Tests', () => {
 
     it('should index properties with characters beyond just letters and digits', async () => {
       const schema = 'http://my-awesome-schema/awesomeness_schema#awesome-1?id=awesome_1';
-      const messageData = await TestDataGenerator.generateRecordsWriteMessage({ schema });
+      const messageData = await TestDataGenerator.generateRecordsWrite({ schema });
 
       await messageStore.put(messageData.message, { schema });
 

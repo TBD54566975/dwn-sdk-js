@@ -40,7 +40,7 @@ describe('DWN', () => {
       // generate a `did:key` DID
       const alice = await DidKeyResolver.generate();
 
-      const messageData = await TestDataGenerator.generateRecordsWriteMessage({
+      const messageData = await TestDataGenerator.generateRecordsWrite({
         requester: alice,
       });
 
@@ -53,7 +53,7 @@ describe('DWN', () => {
     });
 
     it('should process RecordsQuery message', async () => {
-      const { requester, message } = await TestDataGenerator.generateRecordsQueryMessage();
+      const { requester, message } = await TestDataGenerator.generateRecordsQuery();
       const generatedDidMethod = Did.getMethodName(requester.did);
 
       // setting up a stub method resolver

@@ -341,7 +341,7 @@ export class RecordsWrite extends Message {
       descriptorCid
     };
 
-    const attestationCid = attestation ? await computeCid(attestation) : undefined;
+    const attestationCid = attestation ? (await computeCid(attestation)).toString() : undefined;
 
     if (contextId !== undefined) { authorizationPayload.contextId = contextId; } // assign `contextId` only if it is defined
     if (attestationCid !== undefined) { authorizationPayload.attestationCid = attestationCid; } // assign `attestationCid` only if it is defined
