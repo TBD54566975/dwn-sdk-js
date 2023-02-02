@@ -68,7 +68,7 @@ export class Dwn {
       message = JSON.parse(requestString);
     } catch (error) {
       return new MessageReply({
-        status: { code: 400, detail: error.message }
+        status: { code: 400, detail: 'unable to JSON parse request' }
       });
     }
 
@@ -85,7 +85,7 @@ export class Dwn {
     const dwnMethod = rawMessage?.descriptor?.method;
     if (dwnInterface === undefined || dwnMethod === undefined) {
       return new MessageReply({
-        status: { code: 400, detail: `DWN interface or method is undefined` }
+        status: { code: 400, detail: `Both interface and method must be present, interface: ${dwnInterface}, method: ${dwnMethod}` }
       });
     }
 
