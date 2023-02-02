@@ -1,4 +1,4 @@
-import type { AuthCreateOptions } from '../../../core/types.js';
+import type { SignatureInput } from '../../../jose/jws/general/types.js';
 import type { HooksWriteDescriptor, HooksWriteMessage } from '../../hooks/types.js';
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
@@ -9,7 +9,7 @@ import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.
 /**
  * Input to `HookssWrite.create()`.
  */
-export type HooksWriteOptions = AuthCreateOptions & {
+export type HooksWriteOptions = {
   dateCreated?: string,
   /**
    * leave as `undefined` for customer handler.
@@ -18,7 +18,8 @@ export type HooksWriteOptions = AuthCreateOptions & {
   uri?: string,
   filter: {
     method: string,
-  }
+  },
+  authorizationSignatureInput: SignatureInput;
 };
 
 /**
@@ -47,7 +48,7 @@ export class HooksWrite extends Message {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
+    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

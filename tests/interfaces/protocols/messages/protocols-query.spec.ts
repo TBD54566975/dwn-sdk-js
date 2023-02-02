@@ -2,24 +2,24 @@ import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
-import { RecordsQuery } from '../../../../src/interfaces/records/messages/records-query.js';
+import { ProtocolsQuery } from '../../../../src/interfaces/protocols/messages/protocols-query.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 
 chai.use(chaiAsPromised);
 
-describe('RecordsQuery', () => {
+describe('ProtocolsQuery', () => {
   describe('create()', () => {
     it('should use `dateCreated` as is if given', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const currentTime = getCurrentTimeInHighPrecision();
-      const recordsQuery = await RecordsQuery.create({
-        filter                      : { schema: 'anything' },
+      const protocolsQuery = await ProtocolsQuery.create({
+        filter                      : { protocol: 'anyValue' },
         dateCreated                 : currentTime,
         authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice),
       });
 
-      expect(recordsQuery.message.descriptor.dateCreated).to.equal(currentTime);
+      expect(protocolsQuery.message.descriptor.dateCreated).to.equal(currentTime);
     });
   });
 });

@@ -48,12 +48,12 @@ describe('handleRecordsDelete()', () => {
       const alice = await DidKeyResolver.generate();
 
       // insert data
-      const writeData = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice });
+      const writeData = await TestDataGenerator.generateRecordsWrite({ requester: alice });
       const writeReply = await handleRecordsWrite(alice.did, writeData.message, messageStore, didResolver);
       expect(writeReply.status.code).to.equal(202);
 
       // ensure data is inserted
-      const queryData = await TestDataGenerator.generateRecordsQueryMessage({
+      const queryData = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
         filter    : { recordId: writeData.message.recordId }
       });
@@ -63,8 +63,8 @@ describe('handleRecordsDelete()', () => {
 
       // testing delete
       const recordsDelete = await RecordsDelete.create({
-        recordId       : writeData.message.recordId,
-        signatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+        recordId                    : writeData.message.recordId,
+        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
       });
 
       const deleteReply = await handleRecordsDelete(alice.did, recordsDelete.message, messageStore, didResolver);
@@ -80,15 +80,15 @@ describe('handleRecordsDelete()', () => {
       const alice = await DidKeyResolver.generate();
 
       // initial write
-      const initialWriteData = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice });
+      const initialWriteData = await TestDataGenerator.generateRecordsWrite({ requester: alice });
       const initialWriteReply = await handleRecordsWrite(alice.did, initialWriteData.message, messageStore, didResolver);
       expect(initialWriteReply.status.code).to.equal(202);
 
       // generate subsequent write and delete with the delete having an earlier timestamp
       // NOTE: creating RecordsDelete first ensures it has an earlier `dateModified` time
       const recordsDelete = await RecordsDelete.create({
-        recordId       : initialWriteData.message.recordId,
-        signatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+        recordId                    : initialWriteData.message.recordId,
+        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
       });
       const subsequentWriteData = await TestDataGenerator.generateFromRecordsWrite({
         existingWrite : initialWriteData.recordsWrite,
@@ -104,7 +104,7 @@ describe('handleRecordsDelete()', () => {
       expect(deleteReply.status.code).to.equal(409);
 
       // ensure data still exists
-      const queryData = await TestDataGenerator.generateRecordsQueryMessage({
+      const queryData = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
         filter    : { recordId: initialWriteData.message.recordId }
       });

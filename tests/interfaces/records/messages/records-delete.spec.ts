@@ -14,9 +14,9 @@ describe('RecordsDelete', () => {
 
       const currentTime = getCurrentTimeInHighPrecision();
       const recordsDelete = await RecordsDelete.create({
-        recordId       : 'anything',
-        signatureInput : TestDataGenerator.createSignatureInputFromPersona(alice),
-        dateModified   : currentTime
+        recordId                    : 'anything',
+        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice),
+        dateModified                : currentTime
       });
 
       expect(recordsDelete.message.descriptor.dateModified).to.equal(currentTime);
@@ -26,8 +26,8 @@ describe('RecordsDelete', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const recordsDelete = await RecordsDelete.create({
-        recordId       : 'anything',
-        signatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+        recordId                    : 'anything',
+        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
       });
 
       expect(recordsDelete.message.descriptor.dateModified).to.exist;

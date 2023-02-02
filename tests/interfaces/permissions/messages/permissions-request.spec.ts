@@ -56,7 +56,7 @@ describe('PermissionsRequest', () => {
   describe('create', () => {
     it('creates a PermissionsRequest message', async () => {
       const { privateJwk } = await secp256k1.generateKeyPair();
-      const signatureInput = {
+      const authorizationSignatureInput = {
         privateJwk,
         protectedHeader: {
           alg : privateJwk.alg as string,
@@ -69,7 +69,7 @@ describe('PermissionsRequest', () => {
         grantedBy   : 'did:jank:bob',
         grantedTo   : 'did:jank:alice',
         scope       : { method: 'RecordsWrite' },
-        signatureInput
+        authorizationSignatureInput
       });
 
       expect(message.grantedTo).to.equal('did:jank:alice');
@@ -81,7 +81,7 @@ describe('PermissionsRequest', () => {
 
     it('uses default conditions if none are provided', async () => {
       const { privateJwk } = await secp256k1.generateKeyPair();
-      const signatureInput = {
+      const authorizationSignatureInput = {
         privateJwk,
         protectedHeader: {
           alg : privateJwk.alg as string,
@@ -94,7 +94,7 @@ describe('PermissionsRequest', () => {
         grantedBy   : 'did:jank:bob',
         grantedTo   : 'did:jank:alice',
         scope       : { method: 'RecordsWrite' },
-        signatureInput
+        authorizationSignatureInput
       });
 
       const { conditions } = message;

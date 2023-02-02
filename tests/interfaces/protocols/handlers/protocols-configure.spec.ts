@@ -10,7 +10,7 @@ import { lexicographicalCompare } from '../../../../src/utils/string.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
-import { GenerateProtocolsConfigureMessageOutput, TestDataGenerator } from '../../../utils/test-data-generator.js';
+import { GenerateProtocolsConfigureOutput, TestDataGenerator } from '../../../utils/test-data-generator.js';
 
 import { DidResolver, Encoder } from '../../../../src/index.js';
 
@@ -43,7 +43,7 @@ describe('handleProtocolsQuery()', () => {
     });
 
     it('should return 400 if failed to parse the message', async () => {
-      const { requester, message, protocolsConfigure } = await TestDataGenerator.generateProtocolsConfigureMessage();
+      const { requester, message, protocolsConfigure } = await TestDataGenerator.generateProtocolsConfigure();
       const tenant = requester.did;
 
       // intentionally create more than one signature, which is not allowed
@@ -67,7 +67,7 @@ describe('handleProtocolsQuery()', () => {
     it('should return 401 if auth fails', async () => {
       const alice = await DidKeyResolver.generate();
       alice.keyId = 'wrongValue'; // to fail authentication
-      const { message } = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice });
+      const { message } = await TestDataGenerator.generateProtocolsConfigure({ requester: alice });
 
       const reply = await handleProtocolsConfigure(alice.did, message, messageStore, didResolver);
       expect(reply.status.code).to.equal(401);
@@ -78,9 +78,9 @@ describe('handleProtocolsQuery()', () => {
       // generate three versions of the same protocol message
       const alice = await DidKeyResolver.generate();
       const protocol = 'exampleProtocol';
-      const messageData1 = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, protocol });
-      const messageData2 = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, protocol });
-      const messageData3 = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice, protocol });
+      const messageData1 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol });
+      const messageData2 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol });
+      const messageData3 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol });
 
       const messageDataWithCid = [];
       for (const messageData of [messageData1, messageData2, messageData3]) {
@@ -93,7 +93,7 @@ describe('handleProtocolsQuery()', () => {
         messageDataWithSmallestLexicographicValue,
         messageDataWithMediumLexicographicValue,
         messageDataWithLargestLexicographicValue
-      ]: GenerateProtocolsConfigureMessageOutput[]
+      ]: GenerateProtocolsConfigureOutput[]
         = messageDataWithCid.sort((messageDataA, messageDataB) => { return lexicographicalCompare(messageDataA.cid, messageDataB.cid); });
 
       // write the protocol with the middle lexicographic value
@@ -109,7 +109,7 @@ describe('handleProtocolsQuery()', () => {
       expect(reply.status.code).to.equal(202);
 
       // test that old protocol message is removed from DB and only the newer protocol message remains
-      const queryMessageData = await TestDataGenerator.generateProtocolsQueryMessage({ requester: alice, filter: { protocol } });
+      const queryMessageData = await TestDataGenerator.generateProtocolsQuery({ requester: alice, filter: { protocol } });
       reply = await handleProtocolsQuery(alice.did, queryMessageData.message, messageStore, didResolver);
 
       expect(reply.status.code).to.equal(200);

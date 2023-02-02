@@ -2,10 +2,10 @@ import type { SignatureInput } from '../jose/jws/general/types.js';
 import type { BaseDecodedAuthorizationPayload, BaseMessage, Descriptor, TimestampedMessage } from './types.js';
 
 import { CID } from 'multiformats/cid';
+import { computeCid } from '../utils/cid.js';
 import { GeneralJws } from '../jose/jws/general/types.js';
 import { GeneralJwsSigner } from '../jose/jws/general/signer.js';
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
-import { generateCid } from '../utils/cid.js';
 import { lexicographicalCompare } from '../utils/string.js';
 import { RecordsWriteMessage } from '../interfaces/records/types.js';
 import { validateJsonSchema } from '../validator.js';
@@ -79,7 +79,7 @@ export abstract class Message {
       delete (messageCopy as RecordsWriteMessage).encodedData;
     }
 
-    const cid = await generateCid(messageCopy);
+    const cid = await computeCid(messageCopy);
     return cid;
   }
 
@@ -128,7 +128,7 @@ export abstract class Message {
     descriptor: Descriptor,
     signatureInput: SignatureInput
   ): Promise<GeneralJws> {
-    const descriptorCid = await generateCid(descriptor);
+    const descriptorCid = await computeCid(descriptor);
 
     const authPayload: BaseDecodedAuthorizationPayload = { descriptorCid: descriptorCid.toString() };
     const authPayloadStr = JSON.stringify(authPayload);

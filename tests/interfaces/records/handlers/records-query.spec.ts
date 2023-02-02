@@ -46,9 +46,9 @@ describe('handleRecordsQuery()', () => {
       // insert three messages into DB, two with matching protocol
       const alice = await TestDataGenerator.generatePersona();
       const dataFormat = 'myAwesomeDataFormat';
-      const write1Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice });
-      const write2Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice, dataFormat, schema: 'schema1' });
-      const write3Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice, dataFormat, schema: 'schema2' });
+      const write1Data = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+      const write2Data = await TestDataGenerator.generateRecordsWrite({ requester: alice, dataFormat, schema: 'schema1' });
+      const write3Data = await TestDataGenerator.generateRecordsWrite({ requester: alice, dataFormat, schema: 'schema2' });
 
       // setting up a stub method resolver
       const didResolverStub = TestStubGenerator.createDidResolverStub(alice);
@@ -62,7 +62,7 @@ describe('handleRecordsQuery()', () => {
       expect(writeReply3.status.code).to.equal(202);
 
       // testing singular conditional query
-      const messageData = await TestDataGenerator.generateRecordsQueryMessage({ requester: alice, filter: { dataFormat } });
+      const messageData = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { dataFormat } });
 
       const reply = await handleRecordsQuery(alice.did, messageData.message, messageStore, didResolverStub);
 
@@ -70,7 +70,7 @@ describe('handleRecordsQuery()', () => {
       expect(reply.entries?.length).to.equal(2); // only 2 entries should match the query on protocol
 
       // testing multi-conditional query, reuse data generated above for bob
-      const messageData2 = await TestDataGenerator.generateRecordsQueryMessage({
+      const messageData2 = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
         filter    : {
           dataFormat,
@@ -85,9 +85,8 @@ describe('handleRecordsQuery()', () => {
     });
 
     it('should not include `authorization` in returned records', async () => {
-      // insert three messages into DB, two with matching protocol
       const alice = await TestDataGenerator.generatePersona();
-      const { message } = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice });
+      const { message } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
 
       // setting up a stub method resolver
       const didResolverStub = TestStubGenerator.createDidResolverStub(alice);
@@ -95,7 +94,7 @@ describe('handleRecordsQuery()', () => {
       const writeReply = await handleRecordsWrite(alice.did, message, messageStore, didResolverStub);
       expect(writeReply.status.code).to.equal(202);
 
-      const queryData = await TestDataGenerator.generateRecordsQueryMessage({
+      const queryData = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
         filter    : { schema: message.descriptor.schema }
       });
@@ -106,14 +105,38 @@ describe('handleRecordsQuery()', () => {
       expect(queryReply.entries[0]['authorization']).to.equal(undefined);
     });
 
+    it('should include `attestation` in returned records', async () => {
+      // scenario: alice and bob attest to a message alice authored
+
+      const alice = await DidKeyResolver.generate();
+      const bob = await DidKeyResolver.generate();
+      const { message } = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [alice, bob] });
+
+      const writeReply = await handleRecordsWrite(alice.did, message, messageStore, didResolver);
+      expect(writeReply.status.code).to.equal(202);
+
+      const queryData = await TestDataGenerator.generateRecordsQuery({
+        requester : alice,
+        filter    : { schema: message.descriptor.schema }
+      });
+
+      const queryReply = await handleRecordsQuery(alice.did, queryData.message, messageStore, didResolver);
+      expect(queryReply.status.code).to.equal(200);
+      expect(queryReply.entries?.length).to.equal(1);
+
+      const recordsWriteMessage = queryReply.entries[0] as any;
+      expect(recordsWriteMessage.attestation?.signatures?.length).to.equal(2);
+      expect(recordsWriteMessage.attestation.signatures[0]).to.not.equal(recordsWriteMessage.attestation.signatures[1]);
+    });
+
     it('should omit records that are not published if `dateSort` sorts on `datePublished`', async () => {
       // insert three messages into DB, two with matching protocol
       const alice = await TestDataGenerator.generatePersona();
       const schema = 'aSchema';
-      const publishedWriteData = await TestDataGenerator.generateRecordsWriteMessage({
+      const publishedWriteData = await TestDataGenerator.generateRecordsWrite({
         requester: alice, schema, published: true
       });
-      const unpublishedWriteData = await TestDataGenerator.generateRecordsWriteMessage({
+      const unpublishedWriteData = await TestDataGenerator.generateRecordsWrite({
         requester: alice, schema
       });
 
@@ -127,7 +150,7 @@ describe('handleRecordsQuery()', () => {
       expect(unpublishedWriteReply.status.code).to.equal(202);
 
       // test published date ascending sort does not include any records that is not published
-      const publishedAscendingQueryData = await TestDataGenerator.generateRecordsQueryMessage({
+      const publishedAscendingQueryData = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
         dateSort  : DateSort.PublishedAscending,
         filter    : { schema }
@@ -138,7 +161,7 @@ describe('handleRecordsQuery()', () => {
       expect(publishedAscendingQueryReply.entries[0].descriptor['datePublished']).to.equal(publishedWriteData.message.descriptor.datePublished);
 
       // test published date scending sort does not include any records that is not published
-      const publishedDescendingQueryData = await TestDataGenerator.generateRecordsQueryMessage({
+      const publishedDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
         dateSort  : DateSort.PublishedDescending,
         filter    : { schema }
@@ -154,9 +177,9 @@ describe('handleRecordsQuery()', () => {
       const alice = await TestDataGenerator.generatePersona();
       const schema = 'aSchema';
       const published = true;
-      const write1Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice, schema, published });
-      const write2Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice, schema, published });
-      const write3Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice, schema, published });
+      const write1Data = await TestDataGenerator.generateRecordsWrite({ requester: alice, schema, published });
+      const write2Data = await TestDataGenerator.generateRecordsWrite({ requester: alice, schema, published });
+      const write3Data = await TestDataGenerator.generateRecordsWrite({ requester: alice, schema, published });
 
       // setting up a stub method resolver
       const didResolverStub = TestStubGenerator.createDidResolverStub(alice);
@@ -170,7 +193,7 @@ describe('handleRecordsQuery()', () => {
       expect(writeReply3.status.code).to.equal(202);
 
       // createdAscending test
-      const createdAscendingQueryData = await TestDataGenerator.generateRecordsQueryMessage({
+      const createdAscendingQueryData = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
         dateSort  : DateSort.CreatedAscending,
         filter    : { schema }
@@ -182,7 +205,7 @@ describe('handleRecordsQuery()', () => {
       expect(createdAscendingQueryReply.entries[2].descriptor['dateCreated']).to.equal(write3Data.message.descriptor.dateCreated);
 
       // createdDescending test
-      const createdDescendingQueryData = await TestDataGenerator.generateRecordsQueryMessage({
+      const createdDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
         dateSort  : DateSort.CreatedDescending,
         filter    : { schema }
@@ -194,7 +217,7 @@ describe('handleRecordsQuery()', () => {
       expect(createdDescendingQueryReply.entries[2].descriptor['dateCreated']).to.equal(write1Data.message.descriptor.dateCreated);
 
       // publishedAscending test
-      const publishedAscendingQueryData = await TestDataGenerator.generateRecordsQueryMessage({
+      const publishedAscendingQueryData = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
         dateSort  : DateSort.PublishedAscending,
         filter    : { schema }
@@ -206,7 +229,7 @@ describe('handleRecordsQuery()', () => {
       expect(publishedAscendingQueryReply.entries[2].descriptor['datePublished']).to.equal(write3Data.message.descriptor.datePublished);
 
       // publishedDescending test
-      const publishedDescendingQueryData = await TestDataGenerator.generateRecordsQueryMessage({
+      const publishedDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
         dateSort  : DateSort.PublishedDescending,
         filter    : { schema }
@@ -227,16 +250,16 @@ describe('handleRecordsQuery()', () => {
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
       const schema = 'schema1';
-      const record1Data = await TestDataGenerator.generateRecordsWriteMessage(
+      const record1Data = await TestDataGenerator.generateRecordsWrite(
         { requester: alice, schema, data: Encoder.stringToBytes('1') }
       );
-      const record2Data = await TestDataGenerator.generateRecordsWriteMessage(
+      const record2Data = await TestDataGenerator.generateRecordsWrite(
         { requester: alice, schema, data: Encoder.stringToBytes('2'), recipientDid: bob.did }
       );
-      const record3Data = await TestDataGenerator.generateRecordsWriteMessage(
+      const record3Data = await TestDataGenerator.generateRecordsWrite(
         { requester: bob, recipientDid: alice.did, schema, data: Encoder.stringToBytes('3') }
       );
-      const record4Data = await TestDataGenerator.generateRecordsWriteMessage(
+      const record4Data = await TestDataGenerator.generateRecordsWrite(
         { requester: alice, schema, data: Encoder.stringToBytes('4'), published: true }
       );
 
@@ -251,7 +274,7 @@ describe('handleRecordsQuery()', () => {
       await messageStore.put(record4Data.message, additionalIndexes4);
 
       // test correctness for Bob's query
-      const bobQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
+      const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({
         requester : bob,
         filter    : { schema }
       });
@@ -269,7 +292,7 @@ describe('handleRecordsQuery()', () => {
       expect(publicRecords.length).to.equal(1);
 
       // test correctness for Alice's query
-      const aliceQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
+      const aliceQueryMessageData = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
         filter    : { schema }
       });
@@ -285,7 +308,7 @@ describe('handleRecordsQuery()', () => {
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
       const schema = 'schema1';
-      const unpublishedRecordsWrite = await TestDataGenerator.generateRecordsWriteMessage(
+      const unpublishedRecordsWrite = await TestDataGenerator.generateRecordsWrite(
         { requester: alice, schema, data: Encoder.stringToBytes('1'), published: false } // explicitly setting `published` to `false`
       );
 
@@ -293,7 +316,7 @@ describe('handleRecordsQuery()', () => {
       expect(result1.status.code).to.equal(202);
 
       // alice should be able to see the unpublished record
-      const queryByAlice = await TestDataGenerator.generateRecordsQueryMessage({
+      const queryByAlice = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
         filter    : { schema }
       });
@@ -302,7 +325,7 @@ describe('handleRecordsQuery()', () => {
       expect(replyToAliceQuery.entries?.length).to.equal(1);
 
       // actual test: bob should not be able to see unpublished record
-      const queryByBob = await TestDataGenerator.generateRecordsQueryMessage({
+      const queryByBob = await TestDataGenerator.generateRecordsQuery({
         requester : bob,
         filter    : { schema }
       });
@@ -316,7 +339,7 @@ describe('handleRecordsQuery()', () => {
       const bob = await DidKeyResolver.generate();
       const carol = await DidKeyResolver.generate();
 
-      const bobQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
+      const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({
         requester : bob,
         filter    : { recipient: carol.did } // bob querying carol's records
       });
@@ -331,7 +354,7 @@ describe('handleRecordsQuery()', () => {
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
 
-      const bobQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
+      const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
         filter    : { recipient: bob.did } // alice as the DWN owner querying bob's records
       });
@@ -346,10 +369,10 @@ describe('handleRecordsQuery()', () => {
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
       const schema = 'myAwesomeSchema';
-      const recordsWriteMessage1Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: alice, schema });
-      const recordsWriteMessage2Data = await TestDataGenerator.generateRecordsWriteMessage({ requester: bob, schema });
+      const recordsWriteMessage1Data = await TestDataGenerator.generateRecordsWrite({ requester: alice, schema });
+      const recordsWriteMessage2Data = await TestDataGenerator.generateRecordsWrite({ requester: bob, schema });
 
-      const aliceQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
+      const aliceQueryMessageData = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
         filter    : { schema }
       });
@@ -367,7 +390,7 @@ describe('handleRecordsQuery()', () => {
   });
 
   it('should return 401 if signature check fails', async () => {
-    const { requester, message } = await TestDataGenerator.generateRecordsQueryMessage();
+    const { requester, message } = await TestDataGenerator.generateRecordsQuery();
 
     // setting up a stub did resolver & message store
     // intentionally not supplying the public key so a different public key is generated to simulate invalid signature
@@ -382,7 +405,7 @@ describe('handleRecordsQuery()', () => {
   });
 
   it('should return 400 if fail parsing the message', async () => {
-    const { requester, message } = await TestDataGenerator.generateRecordsQueryMessage();
+    const { requester, message } = await TestDataGenerator.generateRecordsQuery();
     const tenant = requester.did;
 
     // setting up a stub method resolver & message store

@@ -1,17 +1,16 @@
-import type { AuthCreateOptions } from '../../../core/types';
 import type { SignatureInput } from '../../../jose/jws/general/types';
 import type { PermissionConditions, PermissionScope } from '../types';
 import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types';
 
 import { CID } from 'multiformats/cid';
-import { generateCid } from '../../../utils/cid';
+import { computeCid } from '../../../utils/cid';
 import { getCurrentTimeInHighPrecision } from '../../../utils/time';
 import { v4 as uuidv4 } from 'uuid';
 
 import { DEFAULT_CONDITIONS, PermissionsRequest } from './permissions-request';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message';
 
-type PermissionsGrantOptions = AuthCreateOptions & {
+type PermissionsGrantOptions = {
   dateCreated?: string;
   conditions?: PermissionConditions;
   description: string;
@@ -20,6 +19,7 @@ type PermissionsGrantOptions = AuthCreateOptions & {
   objectId?: string;
   permissionsRequestId?: string;
   scope: PermissionScope;
+  authorizationSignatureInput: SignatureInput;
 };
 
 export class PermissionsGrant extends Message {
@@ -46,7 +46,7 @@ export class PermissionsGrant extends Message {
       scope       : options.scope,
     };
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.signatureInput);
+    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
     const message: PermissionsGrantMessage = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
@@ -58,12 +58,12 @@ export class PermissionsGrant extends Message {
   /**
    * generates a PermissionsGrant using the provided PermissionsRequest
    * @param permissionsRequest
-   * @param signatureInput - the private key and additional signature material of the grantor
+   * @param authorizationSignatureInput - the private key and additional signature material of the grantor
    * @param conditionOverrides - any conditions that the grantor may want to override
    */
   static async fromPermissionsRequest(
     permissionsRequest: PermissionsRequest,
-    signatureInput: SignatureInput,
+    authorizationSignatureInput: SignatureInput,
     conditionOverrides: Partial<PermissionConditions> = {}
   ): Promise<PermissionsGrant> {
     const conditions = { ...permissionsRequest.conditions, ...conditionOverrides };
@@ -75,17 +75,17 @@ export class PermissionsGrant extends Message {
       grantedTo            : permissionsRequest.grantedTo,
       permissionsRequestId : permissionsRequest.id,
       scope                : permissionsRequest.scope,
-      signatureInput       : signatureInput
+      authorizationSignatureInput
     });
   }
 
   /**
    * delegates the permission to the DID provided
    * @param to - the DID of the grantee
-   * @param signatureInput - the private key and additional signature material of this permission's `grantedTo`
+   * @param authorizationSignatureInput - the private key and additional signature material of this permission's `grantedTo`
    * @throws {Error} - if the permission cannot be delegated
    */
-  async delegate(to: string, signatureInput: SignatureInput): Promise<PermissionsGrant> {
+  async delegate(to: string, authorizationSignatureInput: SignatureInput): Promise<PermissionsGrant> {
     // throw an exception if the permission cannot be delegated
     if (!this.conditions.delegation) {
       throw new Error('this permission cannot be delegated');
@@ -93,15 +93,15 @@ export class PermissionsGrant extends Message {
 
     // `grantedBy` of the delegated permission will be `grantedTo` of the permission being delegated because the grantee is the delegator
     const delegatedGrant = await PermissionsGrant.create({
-      conditions     : this.conditions,
-      description    : this.description,
-      grantedBy      : this.grantedTo,
-      grantedTo      : to,
-      scope          : this.scope,
-      signatureInput : signatureInput
+      conditions  : this.conditions,
+      description : this.description,
+      grantedBy   : this.grantedTo,
+      grantedTo   : to,
+      scope       : this.scope,
+      authorizationSignatureInput
     });
 
-    delegatedGrant.delegatedFrom = await generateCid(this.message);
+    delegatedGrant.delegatedFrom = await computeCid(this.message);
     delegatedGrant.delegationChain = this.message;
 
     return delegatedGrant;

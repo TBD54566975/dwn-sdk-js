@@ -1,5 +1,6 @@
 import { BaseMessage } from '../../core/types.js';
 import { DateSort } from './messages/records-query.js';
+import { GeneralJws } from '../../jose/jws/general/types.js';
 import { DwnInterfaceName, DwnMethodName } from '../../core/message.js';
 
 export type RecordsWriteDescriptor = {
@@ -21,6 +22,7 @@ export type RecordsWriteMessage = BaseMessage & {
   recordId: string,
   contextId?: string;
   descriptor: RecordsWriteDescriptor;
+  attestation?: GeneralJws;
   encodedData?: string;
 };
 
@@ -50,10 +52,15 @@ export type RecordsQueryDescriptor = {
   dateSort?: DateSort;
 };
 
+export type RecordsWriteAttestationPayload = {
+  descriptorCid: string;
+};
+
 export type RecordsWriteAuthorizationPayload = {
   recordId: string;
   contextId?: string;
   descriptorCid: string;
+  attestationCid?: string;
 };
 
 export type RecordsQueryMessage = BaseMessage & {

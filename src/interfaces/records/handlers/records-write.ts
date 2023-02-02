@@ -8,7 +8,6 @@ import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { TimestampedMessage } from '../../../core/types.js';
 
-
 export const handleRecordsWrite: MethodHandler = async (
   tenant,
   message,

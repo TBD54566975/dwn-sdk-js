@@ -19,12 +19,12 @@ describe('RecordsWrite', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {
-        recipient      : alice.did,
-        data           : TestDataGenerator.randomBytes(10),
-        dataFormat     : 'application/json',
-        dateCreated    : '2022-10-14T10:20:30.405060',
-        recordId       : await TestDataGenerator.randomCborSha256Cid(),
-        signatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+        recipient                   : alice.did,
+        data                        : TestDataGenerator.randomBytes(10),
+        dataFormat                  : 'application/json',
+        dateCreated                 : '2022-10-14T10:20:30.405060',
+        recordId                    : await TestDataGenerator.randomCborSha256Cid(),
+        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
       };
       const recordsWrite = await RecordsWrite.create(options);
 
@@ -45,12 +45,12 @@ describe('RecordsWrite', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {
-        recipient      : alice.did,
-        data           : TestDataGenerator.randomBytes(10),
-        dataFormat     : 'application/json',
-        recordId       : await TestDataGenerator.randomCborSha256Cid(),
-        published      : true,
-        signatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+        recipient                   : alice.did,
+        data                        : TestDataGenerator.randomBytes(10),
+        dataFormat                  : 'application/json',
+        recordId                    : await TestDataGenerator.randomCborSha256Cid(),
+        published                   : true,
+        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
       };
       const recordsWrite = await RecordsWrite.create(options);
 
@@ -62,14 +62,14 @@ describe('RecordsWrite', () => {
 
   describe('createFrom()', () => {
     it('should create a RecordsWrite with `published` set to `true` with just `publishedDate` given', async () => {
-      const { requester, recordsWrite } = await TestDataGenerator.generateRecordsWriteMessage({
+      const { requester, recordsWrite } = await TestDataGenerator.generateRecordsWrite({
         published: false
       });
 
       const write = await RecordsWrite.createFrom({
         unsignedRecordsWriteMessage : recordsWrite.message,
         datePublished               : getCurrentTimeInHighPrecision(),
-        signatureInput              : TestDataGenerator.createSignatureInputFromPersona(requester)
+        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
       });
 
       expect(write.message.descriptor.published).to.be.true;
@@ -79,7 +79,7 @@ describe('RecordsWrite', () => {
   describe('compareModifiedTime', () => {
     it('should return 0 if age is same', async () => {
       const dateModified = getCurrentTimeInHighPrecision();
-      const a = (await TestDataGenerator.generateRecordsWriteMessage({ dateModified })).message;
+      const a = (await TestDataGenerator.generateRecordsWrite({ dateModified })).message;
       const b = JSON.parse(JSON.stringify(a)); // create a deep copy of `a`
 
       const compareResult = await RecordsWrite.compareModifiedTime(a, b);
@@ -89,11 +89,11 @@ describe('RecordsWrite', () => {
 
   describe('getNewestMessage', () => {
     it('should return the newest message', async () => {
-      const a = (await TestDataGenerator.generateRecordsWriteMessage()).message;
+      const a = (await TestDataGenerator.generateRecordsWrite()).message;
       await sleep(1); // need to sleep for at least one millisecond else some messages get generated with the same time
-      const b = (await TestDataGenerator.generateRecordsWriteMessage()).message;
+      const b = (await TestDataGenerator.generateRecordsWrite()).message;
       await sleep(1);
-      const c = (await TestDataGenerator.generateRecordsWriteMessage()).message; // c is the newest since its created last
+      const c = (await TestDataGenerator.generateRecordsWrite()).message; // c is the newest since its created last
 
       const newestMessage = await RecordsWrite.getNewestMessage([b, c, a]);
       expect((newestMessage as any).recordId).to.equal(c.recordId);
@@ -102,7 +102,7 @@ describe('RecordsWrite', () => {
 
   describe('getCid', () => {
     it('should return the same value with or without `encodedData`', async () => {
-      const messageData = await TestDataGenerator.generateRecordsWriteMessage();
+      const messageData = await TestDataGenerator.generateRecordsWrite();
 
       const messageWithoutEncodedData = { ...messageData.message };
       delete messageWithoutEncodedData.encodedData;
@@ -116,7 +116,7 @@ describe('RecordsWrite', () => {
 
   describe('isInitialWrite', () => {
     it('should return false if given message is not a RecordsWrite', async () => {
-      const { message }= await TestDataGenerator.generateRecordsQueryMessage();
+      const { message }= await TestDataGenerator.generateRecordsQuery();
       const isInitialWrite = await RecordsWrite.isInitialWrite(message);
       expect(isInitialWrite).to.be.false;
     });

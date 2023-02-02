@@ -47,16 +47,16 @@ describe('handleProtocolsQuery()', () => {
       const didResolverStub = TestStubGenerator.createDidResolverStub(alice);
 
       // insert three messages into DB, two with matching protocol
-      const message1Data = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice });
-      const message2Data = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice });
-      const message3Data = await TestDataGenerator.generateProtocolsConfigureMessage({ requester: alice });
+      const message1Data = await TestDataGenerator.generateProtocolsConfigure({ requester: alice });
+      const message2Data = await TestDataGenerator.generateProtocolsConfigure({ requester: alice });
+      const message3Data = await TestDataGenerator.generateProtocolsConfigure({ requester: alice });
 
       await handleProtocolsConfigure(alice.did, message1Data.message, messageStore, didResolverStub);
       await handleProtocolsConfigure(alice.did, message2Data.message, messageStore, didResolverStub);
       await handleProtocolsConfigure(alice.did, message3Data.message, messageStore, didResolverStub);
 
       // testing singular conditional query
-      const queryMessageData = await TestDataGenerator.generateProtocolsQueryMessage({
+      const queryMessageData = await TestDataGenerator.generateProtocolsQuery({
         requester : alice,
         filter    : { protocol: message1Data.message.descriptor.protocol }
       });
@@ -67,7 +67,7 @@ describe('handleProtocolsQuery()', () => {
       expect(reply.entries?.length).to.equal(1); // only 1 entry should match the query on protocol
 
       // testing fetch-all query without filter
-      const queryMessageData2 = await TestDataGenerator.generateProtocolsQueryMessage({
+      const queryMessageData2 = await TestDataGenerator.generateProtocolsQuery({
         requester: alice
       });
 
@@ -78,7 +78,7 @@ describe('handleProtocolsQuery()', () => {
     });
 
     it('should return 400 if failed to parse the message', async () => {
-      const { requester, message, protocolsQuery } = await TestDataGenerator.generateProtocolsQueryMessage();
+      const { requester, message, protocolsQuery } = await TestDataGenerator.generateProtocolsQuery();
       const tenant = requester.did;
 
       // replace `authorization` with incorrect `descriptorCid`, even though signature is still valid
@@ -101,7 +101,7 @@ describe('handleProtocolsQuery()', () => {
     it('should return 401 if auth fails', async () => {
       const alice = await DidKeyResolver.generate();
       alice.keyId = 'wrongValue'; // to fail authentication
-      const messageData = await TestDataGenerator.generateProtocolsQueryMessage({ requester: alice });
+      const messageData = await TestDataGenerator.generateProtocolsQuery({ requester: alice });
 
       const reply = await handleProtocolsQuery(alice.did, messageData.message, messageStore, didResolver);
 

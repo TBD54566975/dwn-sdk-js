@@ -4,7 +4,7 @@ import * as cbor from '@ipld/dag-cbor';
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
-import { generateCid } from '../../src/utils/cid.js';
+import { computeCid } from '../../src/utils/cid.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 
@@ -12,7 +12,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 chai.use(chaiAsPromised);
 
 describe('CID', () => {
-  describe('generateCid', () => {
+  describe('computeCid', () => {
     xit('throws an error if codec is not supported');
     xit('throws an error if multihasher is not supported');
     xit('generates a cbor/sha256 v1 cid by default');
@@ -23,7 +23,7 @@ describe('CID', () => {
         b : TestDataGenerator.randomString(32),
         c : TestDataGenerator.randomString(32)
       };
-      const generatedCid = await generateCid(anyTestData);
+      const generatedCid = await computeCid(anyTestData);
       const encodedBlock = await block.encode({ value: anyTestData, codec: cbor, hasher: sha256 });
 
       expect(generatedCid.toString()).to.equal(encodedBlock.cid.toString());
@@ -41,8 +41,8 @@ describe('CID', () => {
         c : 'c',
         a : 'a'
       };
-      const cid1 = await generateCid(data1);
-      const cid2 = await generateCid(data2);
+      const cid1 = await computeCid(data1);
+      const cid2 = await computeCid(data2);
 
       expect(cid1.toString()).to.equal(cid2.toString());
     });

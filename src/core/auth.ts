@@ -5,7 +5,7 @@ import { DidResolver } from '../did/did-resolver.js';
 import { GeneralJws } from '../jose/jws/general/types.js';
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
 import { Message } from './message.js';
-import { generateCid, parseCid } from '../utils/cid.js';
+import { computeCid, parseCid } from '../utils/cid.js';
 
 type AuthorizationPayloadConstraints = {
   /** permissible properties within payload. Note that `descriptorCid` is implied and does not need to be added */
@@ -45,7 +45,7 @@ export async function validateAuthorizationIntegrity(
 
   // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
   const providedDescriptorCid = parseCid(descriptorCid); // parseCid throws an exception if parsing fails
-  const expectedDescriptorCid = await generateCid(message.descriptor);
+  const expectedDescriptorCid = await computeCid(message.descriptor);
   if (!providedDescriptorCid.equals(expectedDescriptorCid)) {
     throw new Error(`provided descriptorCid ${providedDescriptorCid} does not match expected CID ${expectedDescriptorCid}`);
   }

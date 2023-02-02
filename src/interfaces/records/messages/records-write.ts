@@ -1,5 +1,5 @@
-import type { AuthCreateOptions, BaseMessage } from '../../../core/types.js';
-import type { RecordsWriteAuthorizationPayload, RecordsWriteDescriptor, RecordsWriteMessage, UnsignedRecordsWriteMessage } from '../types.js';
+import type { BaseMessage } from '../../../core/types.js';
+import type { RecordsWriteAttestationPayload, RecordsWriteAuthorizationPayload, RecordsWriteDescriptor, RecordsWriteMessage, UnsignedRecordsWriteMessage } from '../types.js';
 
 import { Encoder } from '../../../utils/encoder.js';
 import { GeneralJwsSigner } from '../../../jose/jws/general/signer.js';
@@ -11,11 +11,11 @@ import { ProtocolAuthorization } from '../../../core/protocol-authorization.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 
 import { authorize, validateAuthorizationIntegrity } from '../../../core/auth.js';
+import { computeCid, getDagPbCid } from '../../../utils/cid.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 import { GeneralJws, SignatureInput } from '../../../jose/jws/general/types.js';
-import { generateCid, getDagPbCid } from '../../../utils/cid.js';
 
-export type RecordsWriteOptions = AuthCreateOptions & {
+export type RecordsWriteOptions = {
   recipient?: string;
   protocol?: string;
   contextId?: string;
@@ -28,14 +28,18 @@ export type RecordsWriteOptions = AuthCreateOptions & {
   published?: boolean;
   datePublished?: string;
   dataFormat: string;
+  authorizationSignatureInput: SignatureInput;
+  attestationSignatureInputs?: SignatureInput[];
 };
 
-export type CreateFromOptions = AuthCreateOptions & {
+export type CreateFromOptions = {
   unsignedRecordsWriteMessage: UnsignedRecordsWriteMessage,
   data?: Uint8Array;
   published?: boolean;
   dateModified?: string;
   datePublished?: string;
+  authorizationSignatureInput: SignatureInput;
+  attestationSignatureInputs?: SignatureInput[];
 };
 
 export class RecordsWrite extends Message {
@@ -51,7 +55,7 @@ export class RecordsWrite extends Message {
   }
 
   public static async parse(message: RecordsWriteMessage): Promise<RecordsWrite> {
-    await validateAuthorizationIntegrity(message, { allowedProperties: new Set(['recordId', 'contextId']) });
+    await validateAuthorizationIntegrity(message, { allowedProperties: new Set(['recordId', 'contextId', 'attestationCid']) });
 
     const recordsWrite = new RecordsWrite(message);
 
@@ -95,7 +99,7 @@ export class RecordsWrite extends Message {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const author = GeneralJwsVerifier.extractDid(options.signatureInput.protectedHeader.kid);
+    const author = GeneralJwsVerifier.extractDid(options.authorizationSignatureInput.protectedHeader.kid);
 
     // `recordId` computation
     const recordId = options.recordId ?? await RecordsWrite.getEntryId(author, descriptor);
@@ -111,13 +115,20 @@ export class RecordsWrite extends Message {
       }
     }
 
-    const encodedData = Encoder.bytesToBase64Url(options.data);
-    const authorization = await RecordsWrite.signAsRecordsWriteAuthorization(
+    // `attestation` generation
+    const descriptorCid = (await computeCid(descriptor)).toString();
+    const attestation = await RecordsWrite.createAttestation(descriptorCid, options.attestationSignatureInputs);
+
+    // `authorization` generation
+    const authorization = await RecordsWrite.createAuthorization(
       recordId,
       contextId,
-      descriptor,
-      options.signatureInput
+      descriptorCid,
+      attestation,
+      options.authorizationSignatureInput
     );
+
+    const encodedData = Encoder.bytesToBase64Url(options.data);
     const message: RecordsWriteMessage = {
       recordId,
       descriptor,
@@ -126,6 +137,7 @@ export class RecordsWrite extends Message {
     };
 
     if (contextId !== undefined) { message.contextId = contextId; } // assign `contextId` only if it is defined
+    if (attestation !== undefined) { message.attestation = attestation; } // assign `attestation` only if it is defined
 
     Message.validateJsonSchema(message);
 
@@ -173,21 +185,23 @@ export class RecordsWrite extends Message {
 
     const createOptions: RecordsWriteOptions = {
       // immutable properties below, just inherit from the message given
-      recipient      : unsignedMessage.descriptor.recipient,
-      recordId       : unsignedMessage.recordId,
-      dateCreated    : unsignedMessage.descriptor.dateCreated,
-      contextId      : unsignedMessage.contextId,
-      protocol       : unsignedMessage.descriptor.protocol,
-      parentId       : unsignedMessage.descriptor.parentId,
-      schema         : unsignedMessage.descriptor.schema,
-      dataFormat     : unsignedMessage.descriptor.dataFormat,
+      recipient                   : unsignedMessage.descriptor.recipient,
+      recordId                    : unsignedMessage.recordId,
+      dateCreated                 : unsignedMessage.descriptor.dateCreated,
+      contextId                   : unsignedMessage.contextId,
+      protocol                    : unsignedMessage.descriptor.protocol,
+      parentId                    : unsignedMessage.descriptor.parentId,
+      schema                      : unsignedMessage.descriptor.schema,
+      dataFormat                  : unsignedMessage.descriptor.dataFormat,
       // mutable properties below, if not given, inherit from message given
-      dateModified   : options.dateModified ?? currentTime,
+      dateModified                : options.dateModified ?? currentTime,
       published,
       datePublished,
-      data           : options.data ?? Encoder.base64UrlToBytes(unsignedMessage.encodedData), // there is opportunity for improvement here
+      // copying data from the given message may not be always right, there is probably opportunity for improvement here
+      data                        : options.data ?? Encoder.base64UrlToBytes(unsignedMessage.encodedData),
       // finally still need input for signing
-      signatureInput : options.signatureInput,
+      authorizationSignatureInput : options.authorizationSignatureInput,
+      attestationSignatureInputs  : options.attestationSignatureInputs
     };
 
     const recordsWrite = await RecordsWrite.create(createOptions);
@@ -251,6 +265,17 @@ export class RecordsWrite extends Message {
         `contextId in message ${this.message.contextId} does not match contextId in authorization: ${this.authorizationPayload.contextId}`
       );
     }
+
+    // if `attestation` is given in message, make sure the correct `attestationCid` is in the `authorization`
+    if (this.message.attestation !== undefined) {
+      const expectedAttestationCid = (await computeCid(this.message.attestation)).toString();
+      const actualAttestationCid = this.authorizationPayload.attestationCid;
+      if (actualAttestationCid !== expectedAttestationCid) {
+        throw new Error(
+          `CID ${expectedAttestationCid} of attestation property in message does not match attestationCid in authorization: ${actualAttestationCid}`
+        );
+      }
+    }
   }
 
   /**
@@ -268,7 +293,7 @@ export class RecordsWrite extends Message {
     const entryIdInput = { ...descriptor };
     (entryIdInput as any).author = author;
 
-    const cid = await generateCid(entryIdInput);
+    const cid = await computeCid(entryIdInput);
     const cidString = cid.toString();
     return cidString;
   };
@@ -298,27 +323,43 @@ export class RecordsWrite extends Message {
   }
 
   /**
-   * Creates the `authorization` property for a RecordsWrite message.
+   * Creates the `attestation` property of a RecordsWrite message if given signature inputs; returns `undefined` otherwise.
    */
-  private static async signAsRecordsWriteAuthorization(
+  private static async createAttestation(descriptorCid: string, signatureInputs?: SignatureInput[]): Promise<GeneralJws | undefined> {
+    if (signatureInputs === undefined || signatureInputs.length === 0) {
+      return undefined;
+    }
+
+    const attestationPayload: RecordsWriteAttestationPayload = { descriptorCid };
+    const attestationPayloadBytes = Encoder.objectToBytes(attestationPayload);
+
+    const signer = await GeneralJwsSigner.create(attestationPayloadBytes, signatureInputs);
+    return signer.getJws();
+  }
+
+  /**
+   * Creates the `authorization` property of a RecordsWrite message.
+   */
+  private static async createAuthorization(
     recordId: string,
     contextId: string | undefined,
-    descriptor: RecordsWriteDescriptor,
+    descriptorCid: string,
+    attestation: GeneralJws | undefined,
     signatureInput: SignatureInput
   ): Promise<GeneralJws> {
-    const descriptorCid = await generateCid(descriptor);
-
     const authorizationPayload: RecordsWriteAuthorizationPayload = {
       recordId,
-      descriptorCid: descriptorCid.toString()
+      descriptorCid
     };
 
+    const attestationCid = attestation ? (await computeCid(attestation)).toString() : undefined;
+
     if (contextId !== undefined) { authorizationPayload.contextId = contextId; } // assign `contextId` only if it is defined
+    if (attestationCid !== undefined) { authorizationPayload.attestationCid = attestationCid; } // assign `attestationCid` only if it is defined
 
     const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
 
     const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
-
     return signer.getJws();
   }
 

@@ -53,7 +53,7 @@ describe('handleRecordsWrite()', () => {
       // write a message into DB
       const requester = await DidKeyResolver.generate();
       const data1 = new TextEncoder().encode('data1');
-      const recordsWriteMessageData = await TestDataGenerator.generateRecordsWriteMessage({ requester, data: data1 });
+      const recordsWriteMessageData = await TestDataGenerator.generateRecordsWrite({ requester, data: data1 });
 
       const didResolver = new DidResolver();
 
@@ -62,7 +62,7 @@ describe('handleRecordsWrite()', () => {
       expect(recordsWriteReply.status.code).to.equal(202);
 
       const recordId = recordsWriteMessageData.message.recordId;
-      const recordsQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
+      const recordsQueryMessageData = await TestDataGenerator.generateRecordsQuery({
         requester,
         filter: { recordId }
       });
@@ -111,7 +111,7 @@ describe('handleRecordsWrite()', () => {
       // start by writing an originating message
       const requester = await TestDataGenerator.generatePersona();
       const tenant = requester.did;
-      const originatingMessageData = await TestDataGenerator.generateRecordsWriteMessage({
+      const originatingMessageData = await TestDataGenerator.generateRecordsWrite({
         requester,
         data: Encoder.stringToBytes('unused')
       });
@@ -155,7 +155,7 @@ describe('handleRecordsWrite()', () => {
       expect(recordsWriteReply.status.code).to.equal(202);
 
       // query to fetch the record
-      const recordsQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
+      const recordsQueryMessageData = await TestDataGenerator.generateRecordsQuery({
         requester,
         filter: { recordId: originatingMessageData.message.recordId }
       });
@@ -191,7 +191,7 @@ describe('handleRecordsWrite()', () => {
     });
 
     it('should not allow changes to immutable properties', async () => {
-      const initialWriteData = await TestDataGenerator.generateRecordsWriteMessage();
+      const initialWriteData = await TestDataGenerator.generateRecordsWrite();
       const tenant = initialWriteData.requester.did;
       const didResolverStub = TestStubGenerator.createDidResolverStub(initialWriteData.requester);
       const initialWriteReply = await handleRecordsWrite(tenant, initialWriteData.message, messageStore, didResolverStub);
@@ -202,7 +202,7 @@ describe('handleRecordsWrite()', () => {
       const schema = initialWriteData.message.descriptor.schema;
 
       // dateCreated test
-      let childMessageData = await TestDataGenerator.generateRecordsWriteMessage({
+      let childMessageData = await TestDataGenerator.generateRecordsWrite({
         requester   : initialWriteData.requester,
         recordId,
         schema,
@@ -216,7 +216,7 @@ describe('handleRecordsWrite()', () => {
       expect(reply.status.detail).to.contain('dateCreated is an immutable property');
 
       // schema test
-      childMessageData = await TestDataGenerator.generateRecordsWriteMessage({
+      childMessageData = await TestDataGenerator.generateRecordsWrite({
         requester  : initialWriteData.requester,
         recordId,
         schema     : 'should-not-allowed-to-be-modified',
@@ -230,7 +230,7 @@ describe('handleRecordsWrite()', () => {
       expect(reply.status.detail).to.contain('schema is an immutable property');
 
       // dataFormat test
-      childMessageData = await TestDataGenerator.generateRecordsWriteMessage({
+      childMessageData = await TestDataGenerator.generateRecordsWrite({
         requester  : initialWriteData.requester,
         recordId,
         schema,
@@ -247,7 +247,7 @@ describe('handleRecordsWrite()', () => {
     describe('initial write & subsequent tests', () => {
       describe('createFrom()', () => {
         it('should accept a publish RecordsWrite using createFrom() without specifying datePublished', async () => {
-          const { message, requester, recordsWrite } = await TestDataGenerator.generateRecordsWriteMessage({
+          const { message, requester, recordsWrite } = await TestDataGenerator.generateRecordsWrite({
             published: false
           });
           const tenant = requester.did;
@@ -261,7 +261,7 @@ describe('handleRecordsWrite()', () => {
           const newWrite = await RecordsWrite.createFrom({
             unsignedRecordsWriteMessage : recordsWrite.message,
             published                   : true,
-            signatureInput              : TestDataGenerator.createSignatureInputFromPersona(requester)
+            authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
           });
 
           const newWriteReply = await handleRecordsWrite(tenant, newWrite.message, messageStore, didResolverStub);
@@ -269,7 +269,7 @@ describe('handleRecordsWrite()', () => {
           expect(newWriteReply.status.code).to.equal(202);
 
           // verify the new record state can be queried
-          const recordsQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
+          const recordsQueryMessageData = await TestDataGenerator.generateRecordsQuery({
             requester,
             filter: { recordId: message.recordId }
           });
@@ -281,7 +281,7 @@ describe('handleRecordsWrite()', () => {
         });
 
         it('should inherit parent published state when using createFrom() to create RecordsWrite', async () => {
-          const { message, requester, recordsWrite } = await TestDataGenerator.generateRecordsWriteMessage({
+          const { message, requester, recordsWrite } = await TestDataGenerator.generateRecordsWrite({
             published: true
           });
           const tenant = requester.did;
@@ -296,7 +296,7 @@ describe('handleRecordsWrite()', () => {
           const newWrite = await RecordsWrite.createFrom({
             unsignedRecordsWriteMessage : recordsWrite.message,
             data                        : newData,
-            signatureInput              : TestDataGenerator.createSignatureInputFromPersona(requester)
+            authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
           });
 
           const newWriteReply = await handleRecordsWrite(tenant, newWrite.message, messageStore, didResolverStub);
@@ -304,7 +304,7 @@ describe('handleRecordsWrite()', () => {
           expect(newWriteReply.status.code).to.equal(202);
 
           // verify the new record state can be queried
-          const recordsQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
+          const recordsQueryMessageData = await TestDataGenerator.generateRecordsQuery({
             requester,
             filter: { recordId: message.recordId }
           });
@@ -322,7 +322,7 @@ describe('handleRecordsWrite()', () => {
 
       it('should fail with 400 if modifying a record but its initial write cannot be found in DB', async () => {
         const recordId = await TestDataGenerator.randomCborSha256Cid();
-        const { message, requester } = await TestDataGenerator.generateRecordsWriteMessage({
+        const { message, requester } = await TestDataGenerator.generateRecordsWrite({
           recordId,
           data: Encoder.stringToBytes('anything') // simulating modification of a message
         });
@@ -336,7 +336,7 @@ describe('handleRecordsWrite()', () => {
       });
 
       it('should return 400 if `dateCreated` and `dateModified` are not the same in an initial write', async () => {
-        const { requester, message } = await TestDataGenerator.generateRecordsWriteMessage({
+        const { requester, message } = await TestDataGenerator.generateRecordsWrite({
           dateCreated  : '2023-01-10T10:20:30.405060',
           dateModified : getCurrentTimeInHighPrecision() // this always generate a different timestamp
         });
@@ -351,7 +351,7 @@ describe('handleRecordsWrite()', () => {
 
       it('should return 400 if `contextId` in an initial protocol-base write mismatches with the expected deterministic `contextId`', async () => {
         // generate a message with protocol so that computed contextId is also computed and included in message
-        const { message } = await TestDataGenerator.generateRecordsWriteMessage({ protocol: 'anyValue' });
+        const { message } = await TestDataGenerator.generateRecordsWrite({ protocol: 'anyValue' });
 
         message.contextId = await TestDataGenerator.randomCborSha256Cid(); // make contextId mismatch from computed value
 
@@ -390,7 +390,7 @@ describe('handleRecordsWrite()', () => {
         };
         const alice = await TestDataGenerator.generatePersona();
 
-        const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+        const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,
           protocolDefinition
@@ -405,7 +405,7 @@ describe('handleRecordsWrite()', () => {
         // generate a `RecordsWrite` message from bob allowed by anyone
         const bob = await TestDataGenerator.generatePersona();
         const bobData = new TextEncoder().encode('data from bob');
-        const emailMessageDataFromBob = await TestDataGenerator.generateRecordsWriteMessage(
+        const emailMessageDataFromBob = await TestDataGenerator.generateRecordsWrite(
           {
             requester : bob,
             protocol,
@@ -420,7 +420,7 @@ describe('handleRecordsWrite()', () => {
         expect(bobWriteReply.status.code).to.equal(202);
 
         // verify bob's message got written to the DB
-        const messageDataForQueryingBobsWrite = await TestDataGenerator.generateRecordsQueryMessage({
+        const messageDataForQueryingBobsWrite = await TestDataGenerator.generateRecordsQuery({
           requester : alice,
           filter    : { recordId: emailMessageDataFromBob.message.recordId }
         });
@@ -440,7 +440,7 @@ describe('handleRecordsWrite()', () => {
 
         const alice = await TestDataGenerator.generatePersona();
 
-        const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+        const protocolsConfigureMessageData = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,
           protocolDefinition
@@ -455,7 +455,7 @@ describe('handleRecordsWrite()', () => {
         // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
         const vcIssuer = await TestDataGenerator.generatePersona();
         const encodedCredentialApplication = new TextEncoder().encode('credential application data');
-        const credentialApplicationData = await TestDataGenerator.generateRecordsWriteMessage({
+        const credentialApplicationData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : vcIssuer.did,
           protocol,
@@ -469,7 +469,7 @@ describe('handleRecordsWrite()', () => {
 
         // generate a credential application response message from VC issuer
         const encodedCredentialResponse = new TextEncoder().encode('credential response data');
-        const credentialResponseData = await TestDataGenerator.generateRecordsWriteMessage(
+        const credentialResponseData = await TestDataGenerator.generateRecordsWrite(
           {
             requester    : vcIssuer,
             recipientDid : alice.did,
@@ -487,7 +487,7 @@ describe('handleRecordsWrite()', () => {
         expect(credentialResponseReply.status.code).to.equal(202);
 
         // verify VC issuer's message got written to the DB
-        const messageDataForQueryingCredentialResponse = await TestDataGenerator.generateRecordsQueryMessage({
+        const messageDataForQueryingCredentialResponse = await TestDataGenerator.generateRecordsQuery({
           requester : alice,
           filter    : { recordId: credentialResponseData.message.recordId }
         });
@@ -528,7 +528,7 @@ describe('handleRecordsWrite()', () => {
         };
         const alice = await TestDataGenerator.generatePersona();
 
-        const protocolsConfigureData = await TestDataGenerator.generateProtocolsConfigureMessage({
+        const protocolsConfigureData = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,
           protocolDefinition
@@ -543,7 +543,7 @@ describe('handleRecordsWrite()', () => {
         // generate a `RecordsWrite` message from bob
         const bob = await TestDataGenerator.generatePersona();
         const bobData = new TextEncoder().encode('data from bob');
-        const notesMessageDataFromBob = await TestDataGenerator.generateRecordsWriteMessage(
+        const notesMessageDataFromBob = await TestDataGenerator.generateRecordsWrite(
           {
             requester : bob,
             protocol,
@@ -558,7 +558,7 @@ describe('handleRecordsWrite()', () => {
         expect(bobWriteReply.status.code).to.equal(202);
 
         // verify bob's message got written to the DB
-        const messageDataForQueryingBobsWrite = await TestDataGenerator.generateRecordsQueryMessage({
+        const messageDataForQueryingBobsWrite = await TestDataGenerator.generateRecordsQuery({
           requester : alice,
           filter    : { recordId: notesMessageDataFromBob.message.recordId }
         });
@@ -610,7 +610,7 @@ describe('handleRecordsWrite()', () => {
         };
         const alice = await TestDataGenerator.generatePersona();
 
-        const protocolsConfigureData = await TestDataGenerator.generateProtocolsConfigureMessage({
+        const protocolsConfigureData = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,
           protocolDefinition
@@ -625,7 +625,7 @@ describe('handleRecordsWrite()', () => {
         // generate a `RecordsWrite` message from bob
         const bob = await TestDataGenerator.generatePersona();
         const bobData = new TextEncoder().encode('data from bob');
-        const notesMessageDataFromBob = await TestDataGenerator.generateRecordsWriteMessage(
+        const notesMessageDataFromBob = await TestDataGenerator.generateRecordsWrite(
           {
             requester : bob,
             protocol,
@@ -640,7 +640,7 @@ describe('handleRecordsWrite()', () => {
         expect(bobWriteReply.status.code).to.equal(202);
 
         // verify bob's message got written to the DB
-        const messageDataForQueryingBobsWrite = await TestDataGenerator.generateRecordsQueryMessage({
+        const messageDataForQueryingBobsWrite = await TestDataGenerator.generateRecordsQuery({
           requester : alice,
           filter    : { recordId: notesMessageDataFromBob.message.recordId }
         });
@@ -652,7 +652,7 @@ describe('handleRecordsWrite()', () => {
         // generate a new message from carol updating the existing notes, which should not be allowed/accepted
         const carol = await TestDataGenerator.generatePersona();
         const newNotesData = new TextEncoder().encode('different data by carol');
-        const newNotesMessageDataFromBob = await TestDataGenerator.generateRecordsWriteMessage(
+        const newNotesMessageDataFromBob = await TestDataGenerator.generateRecordsWrite(
           {
             requester : carol,
             protocol,
@@ -696,7 +696,7 @@ describe('handleRecordsWrite()', () => {
         };
         const alice = await TestDataGenerator.generatePersona();
 
-        const protocolsConfigureData = await TestDataGenerator.generateProtocolsConfigureMessage({
+        const protocolsConfigureData = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,
           protocolDefinition
@@ -711,7 +711,7 @@ describe('handleRecordsWrite()', () => {
         // generate a `RecordsWrite` message from bob
         const bob = await TestDataGenerator.generatePersona();
         const bobData = new TextEncoder().encode('data from bob');
-        const notesMessageDataFromBob = await TestDataGenerator.generateRecordsWriteMessage(
+        const notesMessageDataFromBob = await TestDataGenerator.generateRecordsWrite(
           {
             requester : bob,
             protocol,
@@ -726,7 +726,7 @@ describe('handleRecordsWrite()', () => {
         expect(bobWriteReply.status.code).to.equal(202);
 
         // verify bob's message got written to the DB
-        const messageDataForQueryingBobsWrite = await TestDataGenerator.generateRecordsQueryMessage({
+        const messageDataForQueryingBobsWrite = await TestDataGenerator.generateRecordsQuery({
           requester : alice,
           filter    : { recordId: notesMessageDataFromBob.message.recordId }
         });
@@ -736,7 +736,7 @@ describe('handleRecordsWrite()', () => {
         expect((bobRecordQueryReply.entries![0] as RecordsWriteMessage).encodedData).to.equal(base64url.baseEncode(bobData));
 
         // generate a new message from bob changing immutable recipientDid
-        const newNotesMessageDataFromBob = await TestDataGenerator.generateRecordsWriteMessage(
+        const newNotesMessageDataFromBob = await TestDataGenerator.generateRecordsWrite(
           {
             requester    : bob,
             dateCreated  : notesMessageDataFromBob.message.descriptor.dateCreated,
@@ -764,7 +764,7 @@ describe('handleRecordsWrite()', () => {
 
         const alice = await TestDataGenerator.generatePersona();
 
-        const protocolsConfigureData = await TestDataGenerator.generateProtocolsConfigureMessage({
+        const protocolsConfigureData = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,
           protocolDefinition
@@ -779,7 +779,7 @@ describe('handleRecordsWrite()', () => {
         // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
         const vcIssuer = await TestDataGenerator.generatePersona();
         const encodedCredentialApplication = new TextEncoder().encode('credential application data');
-        const credentialApplicationData = await TestDataGenerator.generateRecordsWriteMessage({
+        const credentialApplicationData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : vcIssuer.did,
           protocol,
@@ -794,7 +794,7 @@ describe('handleRecordsWrite()', () => {
         // generate a credential application response message from a fake VC issuer
         const fakeVcIssuer = await TestDataGenerator.generatePersona();
         const encodedCredentialResponse = new TextEncoder().encode('credential response data');
-        const credentialResponseData = await TestDataGenerator.generateRecordsWriteMessage(
+        const credentialResponseData = await TestDataGenerator.generateRecordsWrite(
           {
             requester    : fakeVcIssuer,
             recipientDid : alice.did,
@@ -817,7 +817,7 @@ describe('handleRecordsWrite()', () => {
         const alice = await DidKeyResolver.generate();
         const protocol = 'nonExistentProtocol';
         const data = Encoder.stringToBytes('any data');
-        const credentialApplicationMessageData = await TestDataGenerator.generateRecordsWriteMessage({
+        const credentialApplicationMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : alice.did,
           protocol,
@@ -833,7 +833,7 @@ describe('handleRecordsWrite()', () => {
         const alice = await DidKeyResolver.generate();
 
         const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigure({
           requester          : alice,
           protocol,
           protocolDefinition : credentialIssuanceProtocolDefinition
@@ -843,7 +843,7 @@ describe('handleRecordsWrite()', () => {
         expect(protocolConfigureReply.status.code).to.equal(202);
 
         const data = Encoder.stringToBytes('any data');
-        const credentialApplicationMessageData = await TestDataGenerator.generateRecordsWriteMessage({
+        const credentialApplicationMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : alice.did,
           protocol,
@@ -861,7 +861,7 @@ describe('handleRecordsWrite()', () => {
 
         const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
         const protocolDefinition = credentialIssuanceProtocolDefinition;
-        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,
           protocolDefinition
@@ -872,7 +872,7 @@ describe('handleRecordsWrite()', () => {
         expect(protocolConfigureReply.status.code).to.equal(202);
 
         const data = Encoder.stringToBytes('any data');
-        const credentialApplicationMessageData = await TestDataGenerator.generateRecordsWriteMessage({
+        const credentialApplicationMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : alice.did,
           protocol,
@@ -900,7 +900,7 @@ describe('handleRecordsWrite()', () => {
             privateNote: {}
           }
         };
-        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,
           protocolDefinition
@@ -911,7 +911,7 @@ describe('handleRecordsWrite()', () => {
 
         // test that Alice is allowed to write to her own DWN
         const data = Encoder.stringToBytes('any data');
-        const aliceWriteMessageData = await TestDataGenerator.generateRecordsWriteMessage({
+        const aliceWriteMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : alice.did,
           protocol,
@@ -924,7 +924,7 @@ describe('handleRecordsWrite()', () => {
 
         // test that Bob is not allowed to write to Alice's DWN
         const bob = await DidKeyResolver.generate();
-        const bobWriteMessageData = await TestDataGenerator.generateRecordsWriteMessage({
+        const bobWriteMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : bob,
           recipientDid : alice.did,
           protocol,
@@ -948,7 +948,7 @@ describe('handleRecordsWrite()', () => {
 
         // write the VC issuance protocol
         const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigure({
           requester          : alice,
           protocol,
           protocolDefinition : invalidProtocolDefinition
@@ -959,7 +959,7 @@ describe('handleRecordsWrite()', () => {
 
         // simulate Alice's VC applications with both issuer
         const data = Encoder.stringToBytes('irrelevant');
-        const messageDataWithIssuerA = await TestDataGenerator.generateRecordsWriteMessage({
+        const messageDataWithIssuerA = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : issuer.did,
           schema       : credentialIssuanceProtocolDefinition.labels.credentialApplication.schema,
@@ -972,7 +972,7 @@ describe('handleRecordsWrite()', () => {
         expect(reply.status.code).to.equal(202);
 
         // simulate issuer attempting to respond to Alice's VC application
-        const invalidResponseDataByIssuerA = await TestDataGenerator.generateRecordsWriteMessage({
+        const invalidResponseDataByIssuerA = await TestDataGenerator.generateRecordsWrite({
           requester    : issuer,
           recipientDid : alice.did,
           schema       : credentialIssuanceProtocolDefinition.labels.credentialResponse.schema,
@@ -998,7 +998,7 @@ describe('handleRecordsWrite()', () => {
 
         // write the VC issuance protocol
         const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigure({
           requester          : alice,
           protocol,
           protocolDefinition : invalidProtocolDefinition
@@ -1009,7 +1009,7 @@ describe('handleRecordsWrite()', () => {
 
         // simulate Alice's VC application to an issuer
         const data = Encoder.stringToBytes('irrelevant');
-        const messageDataWithIssuerA = await TestDataGenerator.generateRecordsWriteMessage({
+        const messageDataWithIssuerA = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : issuer.did,
           schema       : credentialIssuanceProtocolDefinition.labels.credentialApplication.schema,
@@ -1022,7 +1022,7 @@ describe('handleRecordsWrite()', () => {
         expect(reply.status.code).to.equal(202);
 
         // simulate issuer attempting to respond to Alice's VC application
-        const invalidResponseDataByIssuerA = await TestDataGenerator.generateRecordsWriteMessage({
+        const invalidResponseDataByIssuerA = await TestDataGenerator.generateRecordsWrite({
           requester    : issuer,
           recipientDid : alice.did,
           schema       : credentialIssuanceProtocolDefinition.labels.credentialResponse.schema,
@@ -1049,7 +1049,7 @@ describe('handleRecordsWrite()', () => {
         const protocolDefinition: ProtocolDefinition = dexProtocolDefinition;
 
         // write the DEX protocol in the PFI
-        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigure({
           requester          : pfi,
           protocol,
           protocolDefinition : protocolDefinition
@@ -1060,7 +1060,7 @@ describe('handleRecordsWrite()', () => {
 
         // simulate Alice's ask and PFI's offer already occurred
         const data = Encoder.stringToBytes('irrelevant');
-        const askMessageData = await TestDataGenerator.generateRecordsWriteMessage({
+        const askMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : pfi.did,
           schema       : 'ask',
@@ -1072,7 +1072,7 @@ describe('handleRecordsWrite()', () => {
         let reply = await handleRecordsWrite(pfi.did, askMessageData.message, messageStore, didResolver);
         expect(reply.status.code).to.equal(202);
 
-        const offerMessageData = await TestDataGenerator.generateRecordsWriteMessage({
+        const offerMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : pfi,
           recipientDid : alice.did,
           schema       : 'offer',
@@ -1086,7 +1086,7 @@ describe('handleRecordsWrite()', () => {
         expect(reply.status.code).to.equal(202);
 
         // the actual test: making sure fulfillment message is accepted
-        const fulfillmentMessageData = await TestDataGenerator.generateRecordsWriteMessage({
+        const fulfillmentMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : pfi.did,
           schema       : 'fulfillment',
@@ -1099,7 +1099,7 @@ describe('handleRecordsWrite()', () => {
         expect(reply.status.code).to.equal(202);
 
         // verify the fulfillment message is stored
-        const recordsQueryMessageData = await TestDataGenerator.generateRecordsQueryMessage({
+        const recordsQueryMessageData = await TestDataGenerator.generateRecordsQuery({
           requester : pfi,
           filter    : { recordId: fulfillmentMessageData.message.recordId }
         });
@@ -1125,7 +1125,7 @@ describe('handleRecordsWrite()', () => {
         const protocolDefinition: ProtocolDefinition = dexProtocolDefinition;
 
         // write the DEX protocol in the PFI
-        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigureMessage({
+        const protocolConfigureMessageData = await TestDataGenerator.generateProtocolsConfigure({
           requester          : pfi,
           protocol,
           protocolDefinition : protocolDefinition
@@ -1136,7 +1136,7 @@ describe('handleRecordsWrite()', () => {
 
         // simulate Alice's ask
         const data = Encoder.stringToBytes('irrelevant');
-        const askMessageData = await TestDataGenerator.generateRecordsWriteMessage({
+        const askMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : pfi.did,
           schema       : 'ask',
@@ -1149,7 +1149,7 @@ describe('handleRecordsWrite()', () => {
         expect(reply.status.code).to.equal(202);
 
         // the actual test: making sure fulfillment message fails
-        const fulfillmentMessageData = await TestDataGenerator.generateRecordsWriteMessage({
+        const fulfillmentMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : pfi.did,
           schema       : 'fulfillment',
@@ -1165,8 +1165,20 @@ describe('handleRecordsWrite()', () => {
     });
   });
 
+  it('should fail validation with 400 if expected CID of `attestation` mismatches the `attestationCid` in `authorization`', async () => {
+    const alice = await DidKeyResolver.generate();
+    const bob = await DidKeyResolver.generate();
+    const { message } = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [alice, bob] });
+
+    // strip away one signature to cause difference in expected and actual attestation CID
+    message.attestation.signatures = [message.attestation.signatures[0]];
+    const writeReply = await handleRecordsWrite(alice.did, message, messageStore, didResolver);
+    expect(writeReply.status.code).to.equal(400);
+    expect(writeReply.status.detail).to.contain('does not match attestationCid');
+  });
+
   it('should return 400 if `recordId` in `authorization` payload mismatches with `recordId` in the message', async () => {
-    const { requester, message, recordsWrite } = await TestDataGenerator.generateRecordsWriteMessage();
+    const { requester, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
 
     // replace `authorization` with mismatching `record`, even though signature is still valid
     const authorizationPayload = { ...recordsWrite.authorizationPayload };
@@ -1187,7 +1199,7 @@ describe('handleRecordsWrite()', () => {
 
   it('should return 400 if `contextId` in `authorization` payload mismatches with `contextId` in the message', async () => {
     // generate a message with protocol so that computed contextId is also computed and included in message
-    const { requester, message, recordsWrite } = await TestDataGenerator.generateRecordsWriteMessage({ protocol: 'anyValue' });
+    const { requester, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ protocol: 'anyValue' });
 
     // replace `authorization` with mismatching `contextId`, even though signature is still valid
     const authorizationPayload = { ...recordsWrite.authorizationPayload };
@@ -1207,7 +1219,7 @@ describe('handleRecordsWrite()', () => {
   });
 
   it('should return 400 if actual CID of `data` mismatches with `dataCid` in descriptor', async () => {
-    const messageData = await TestDataGenerator.generateRecordsWriteMessage();
+    const messageData = await TestDataGenerator.generateRecordsWrite();
     messageData.message.encodedData = base64url.baseEncode(TestDataGenerator.randomBytes(50));
 
     const didResolverStub = sinon.createStubInstance(DidResolver);
@@ -1220,7 +1232,7 @@ describe('handleRecordsWrite()', () => {
   });
 
   it('should return 401 if signature check fails', async () => {
-    const { requester, message } = await TestDataGenerator.generateRecordsWriteMessage();
+    const { requester, message } = await TestDataGenerator.generateRecordsWrite();
 
     // setting up a stub did resolver & message store
     // intentionally not supplying the public key so a different public key is generated to simulate invalid signature
@@ -1237,7 +1249,7 @@ describe('handleRecordsWrite()', () => {
 
   it('should return 401 if an authorized requester is attempting write', async () => {
     const requester = await TestDataGenerator.generatePersona();
-    const { message } = await TestDataGenerator.generateRecordsWriteMessage({ requester });
+    const { message } = await TestDataGenerator.generateRecordsWrite({ requester });
 
     // setting up a stub did resolver & message store
     const didResolverStub = TestStubGenerator.createDidResolverStub(requester);

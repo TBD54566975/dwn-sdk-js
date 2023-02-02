@@ -25,7 +25,7 @@ describe('Protocol-Based Authorization', async () => {
     it('should throw if requester DID is not the target tenant when no allow rule defined', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const bob = await TestDataGenerator.generatePersona();
-      const { recordsWrite } = await TestDataGenerator.generateRecordsWriteMessage({ requester: bob });
+      const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ requester: bob });
       const ruleSet: ProtocolRuleSet = {};
 
       expect(() => {
@@ -35,7 +35,7 @@ describe('Protocol-Based Authorization', async () => {
 
     it('should throw if action performed is not in an allowed action list', async () => {
       const did = 'did:example:alice';
-      const { recordsWrite } = await TestDataGenerator.generateRecordsWriteMessage();
+      const { recordsWrite } = await TestDataGenerator.generateRecordsWrite();
       const ruleSet: ProtocolRuleSet = {
         allow: {
           anyone: {
