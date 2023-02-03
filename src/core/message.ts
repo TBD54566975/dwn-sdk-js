@@ -72,7 +72,7 @@ export abstract class Message {
    * Gets the CID of the given message.
    * NOTE: `encodedData` is ignored when computing the CID of message.
    */
-  public static async getCid(message: BaseMessage): Promise<CID> {
+  public static async getCid(message: BaseMessage): Promise<string> {
     const messageCopy = { ...message };
 
     if (messageCopy['encodedData'] !== undefined) {
@@ -130,7 +130,7 @@ export abstract class Message {
   ): Promise<GeneralJws> {
     const descriptorCid = await computeCid(descriptor);
 
-    const authPayload: BaseDecodedAuthorizationPayload = { descriptorCid: descriptorCid.toString() };
+    const authPayload: BaseDecodedAuthorizationPayload = { descriptorCid };
     const authPayloadStr = JSON.stringify(authPayload);
     const authPayloadBytes = new TextEncoder().encode(authPayloadStr);
 

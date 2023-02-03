@@ -45,10 +45,9 @@ export async function validateAuthorizationIntegrity(
   const { descriptorCid } = payloadJson;
 
   // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
-  const providedDescriptorCid = parseCid(descriptorCid); // parseCid throws an exception if parsing fails
   const expectedDescriptorCid = await computeCid(message.descriptor);
-  if (!providedDescriptorCid.equals(expectedDescriptorCid)) {
-    throw new Error(`provided descriptorCid ${providedDescriptorCid} does not match expected CID ${expectedDescriptorCid}`);
+  if (descriptorCid !== expectedDescriptorCid) {
+    throw new Error(`provided descriptorCid ${descriptorCid} does not match expected CID ${expectedDescriptorCid}`);
   }
 
   // check to ensure that no other unexpected properties exist in payload.

@@ -83,7 +83,7 @@ describe('MessageStoreLevel Tests', () => {
       const jsonMessage = await messageStore.get(expectedCid);
       const resultCid = await computeCid(jsonMessage);
 
-      expect(resultCid.equals(expectedCid)).to.be.true;
+      expect(resultCid).to.equal(expectedCid);
     });
 
     // https://github.com/TBD54566975/dwn-sdk-js/issues/170

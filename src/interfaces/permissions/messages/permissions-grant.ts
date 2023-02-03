@@ -131,8 +131,8 @@ export class PermissionsGrant extends Message {
     return this.message.descriptor.scope;
   }
 
-  private set delegatedFrom(cid: CID) {
-    this.message.descriptor.delegatedFrom = cid.toString();
+  private set delegatedFrom(cid: string) {
+    this.message.descriptor.delegatedFrom = cid;
   }
 
   private set delegationChain(parentGrant: PermissionsGrantMessage) {

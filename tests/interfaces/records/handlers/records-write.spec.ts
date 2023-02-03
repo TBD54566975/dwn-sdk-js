@@ -1257,7 +1257,7 @@ describe('handleRecordsWrite()', () => {
 
       // recreate the `authorization` based on the new` attestationCid`
       const authorizationPayload = { ...recordsWrite.authorizationPayload };
-      authorizationPayload.attestationCid = (await computeCid(attestationPayload)).toString();
+      authorizationPayload.attestationCid = await computeCid(attestationPayload);
       const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
       const authorizationSigner = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
       message.authorization = authorizationSigner.getJws();
@@ -1299,7 +1299,7 @@ describe('handleRecordsWrite()', () => {
 
       // replace valid attestation (the one signed by `authorization` with another attestation to the same message (descriptorCid)
       const bob = await DidKeyResolver.generate();
-      const descriptorCid = (await computeCid(message.descriptor)).toString();
+      const descriptorCid = await computeCid(message.descriptor);
       const attestationNotReferencedByAuthorization = await RecordsWrite['createAttestation'](descriptorCid, TestDataGenerator.createSignatureInputsFromPersonas([bob]));
       message.attestation = attestationNotReferencedByAuthorization;
 

@@ -11,7 +11,7 @@ import { ProtocolAuthorization } from '../../../core/protocol-authorization.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 
 import { authorize, validateAuthorizationIntegrity } from '../../../core/auth.js';
-import { computeCid, getDagPbCid, parseCid } from '../../../utils/cid.js';
+import { computeCid, computeDagPbCid } from '../../../utils/cid.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 import { GeneralJws, SignatureInput } from '../../../jose/jws/general/types.js';
 
@@ -78,7 +78,7 @@ export class RecordsWrite extends Message {
   public static async create(options: RecordsWriteOptions): Promise<RecordsWrite> {
     const currentTime = getCurrentTimeInHighPrecision();
 
-    const dataCid = await getDagPbCid(options.data);
+    const dataCid = await computeDagPbCid(options.data);
     const descriptor: RecordsWriteDescriptor = {
       interface     : DwnInterfaceName.Records,
       method        : DwnMethodName.Write,
@@ -121,7 +121,7 @@ export class RecordsWrite extends Message {
     }
 
     // `attestation` generation
-    const descriptorCid = (await computeCid(descriptor)).toString();
+    const descriptorCid = await computeCid(descriptor);
     const attestation = await RecordsWrite.createAttestation(descriptorCid, options.attestationSignatureInputs);
 
     // `authorization` generation
@@ -229,7 +229,7 @@ export class RecordsWrite extends Message {
     // verify dataCid matches given data
     if (this.message.encodedData !== undefined) {
       const rawData = Encoder.base64UrlToBytes(this.message.encodedData);
-      const actualDataCid = (await getDagPbCid(rawData)).toString();
+      const actualDataCid = (await computeDagPbCid(rawData)).toString();
 
       if (actualDataCid !== this.message.descriptor.dataCid) {
         throw new Error('actual CID of data and `dataCid` in descriptor mismatch');
@@ -273,7 +273,7 @@ export class RecordsWrite extends Message {
 
     // if `attestation` is given in message, make sure the correct `attestationCid` is in the `authorization`
     if (this.message.attestation !== undefined) {
-      const expectedAttestationCid = (await computeCid(this.message.attestation)).toString();
+      const expectedAttestationCid = await computeCid(this.message.attestation);
       const actualAttestationCid = this.authorizationPayload.attestationCid;
       if (actualAttestationCid !== expectedAttestationCid) {
         throw new Error(
@@ -301,10 +301,9 @@ export class RecordsWrite extends Message {
     const { descriptorCid } = payloadJson;
 
     // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
-    const providedDescriptorCid = parseCid(descriptorCid); // parseCid throws an exception if parsing fails
     const expectedDescriptorCid = await computeCid(message.descriptor);
-    if (!providedDescriptorCid.equals(expectedDescriptorCid)) {
-      throw new Error(`descriptorCid ${providedDescriptorCid} does not match expected descriptorCid ${expectedDescriptorCid}`);
+    if (descriptorCid !== expectedDescriptorCid) {
+      throw new Error(`descriptorCid ${descriptorCid} does not match expected descriptorCid ${expectedDescriptorCid}`);
     }
 
     // check to ensure that no other unexpected properties exist in payload.
@@ -330,8 +329,7 @@ export class RecordsWrite extends Message {
     (entryIdInput as any).author = author;
 
     const cid = await computeCid(entryIdInput);
-    const cidString = cid.toString();
-    return cidString;
+    return cid;
   };
 
   /**
@@ -388,7 +386,7 @@ export class RecordsWrite extends Message {
       descriptorCid
     };
 
-    const attestationCid = attestation ? (await computeCid(attestation)).toString() : undefined;
+    const attestationCid = attestation ? await computeCid(attestation) : undefined;
 
     if (contextId !== undefined) { authorizationPayload.contextId = contextId; } // assign `contextId` only if it is defined
     if (attestationCid !== undefined) { authorizationPayload.attestationCid = attestationCid; } // assign `attestationCid` only if it is defined
