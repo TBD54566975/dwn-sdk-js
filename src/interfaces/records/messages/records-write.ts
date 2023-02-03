@@ -11,7 +11,7 @@ import { ProtocolAuthorization } from '../../../core/protocol-authorization.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 
 import { authorize, validateAuthorizationIntegrity } from '../../../core/auth.js';
-import { computeCid, getDagPbCid } from '../../../utils/cid.js';
+import { computeCid, getDagPbCid, parseCid } from '../../../utils/cid.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 import { GeneralJws, SignatureInput } from '../../../jose/jws/general/types.js';
 
@@ -47,15 +47,20 @@ export class RecordsWrite extends Message {
    * RecordsWrite message adhering to the DWN specification.
    */
   readonly message: RecordsWriteMessage;
+  readonly attesters: string[];
 
   private constructor(message: RecordsWriteMessage) {
     super(message);
+
+    this.attesters = RecordsWrite.getAttesters(message);
 
     // consider converting isInitialWrite() & getEntryId() into properties for performance and convenience
   }
 
   public static async parse(message: RecordsWriteMessage): Promise<RecordsWrite> {
+    // asynchronous checks that are required by the constructor to initialize members properly
     await validateAuthorizationIntegrity(message, { allowedProperties: new Set(['recordId', 'contextId', 'attestationCid']) });
+    await RecordsWrite.validateAttestationIntegrity(message);
 
     const recordsWrite = new RecordsWrite(message);
 
@@ -279,6 +284,37 @@ export class RecordsWrite extends Message {
   }
 
   /**
+   * Validates the structural integrity of the `attestation` property.
+   * NOTE: signature is not verified.
+   */
+  private static async validateAttestationIntegrity(message: RecordsWriteMessage): Promise<void> {
+    if (message.attestation === undefined) {
+      return;
+    }
+
+    // TODO: multi-attesters to be unblocked by #205 - Revisit database interfaces (https://github.com/TBD54566975/dwn-sdk-js/issues/205)
+    if (message.attestation.signatures.length !== 1) {
+      throw new Error(`Currently implementation only supports 1 attester, but got ${message.attestation.signatures.length}`);
+    }
+
+    const payloadJson = GeneralJwsVerifier.decodePlainObjectPayload(message.attestation);
+    const { descriptorCid } = payloadJson;
+
+    // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
+    const providedDescriptorCid = parseCid(descriptorCid); // parseCid throws an exception if parsing fails
+    const expectedDescriptorCid = await computeCid(message.descriptor);
+    if (!providedDescriptorCid.equals(expectedDescriptorCid)) {
+      throw new Error(`descriptorCid ${providedDescriptorCid} does not match expected descriptorCid ${expectedDescriptorCid}`);
+    }
+
+    // check to ensure that no other unexpected properties exist in payload.
+    const propertyCount = Object.keys(payloadJson).length;
+    if (propertyCount > 1) {
+      throw new Error(`Only 'descriptorCid' is allowed in attestation payload, but got ${propertyCount} properties.`);
+    }
+  };
+
+  /**
    * Computes the deterministic Entry ID of this message.
    */
   public async getEntryId(): Promise<string> {
@@ -402,5 +438,14 @@ export class RecordsWrite extends Message {
     }
 
     return true;
+  }
+
+  /**
+   * Gets the DID of the author of the given message.
+   */
+  public static getAttesters(message: RecordsWriteMessage): string[] {
+    const attestationSignatures = message.attestation?.signatures ?? [];
+    const attesters = attestationSignatures.map((signature) => GeneralJwsVerifier.getDid(signature));
+    return attesters;
   }
 }

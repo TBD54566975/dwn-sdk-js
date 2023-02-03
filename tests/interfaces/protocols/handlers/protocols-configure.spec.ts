@@ -42,7 +42,7 @@ describe('handleProtocolsQuery()', () => {
       await messageStore.close();
     });
 
-    it('should return 400 if failed to parse the message', async () => {
+    it('should return 400 if more than 1 signature is provided in `authorization`', async () => {
       const { requester, message, protocolsConfigure } = await TestDataGenerator.generateProtocolsConfigure();
       const tenant = requester.did;
 

@@ -28,8 +28,8 @@ export async function canonicalAuth(
 }
 
 /**
- * Validates the data integrity of the `authorization` property.
- * NOTE signature is not verified.
+ * Validates the structural integrity of the `authorization` property.
+ * NOTE: signature is not verified.
  */
 export async function validateAuthorizationIntegrity(
   message: BaseMessage,
