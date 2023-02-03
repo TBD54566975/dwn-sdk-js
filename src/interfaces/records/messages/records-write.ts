@@ -445,7 +445,7 @@ export class RecordsWrite extends Message {
    */
   public static getAttesters(message: RecordsWriteMessage): string[] {
     const attestationSignatures = message.attestation?.signatures ?? [];
-    const attesters = attestationSignatures.map((signature) => GeneralJwsVerifier.getDid(signature));
+    const attesters = attestationSignatures.map((signature) => GeneralJwsVerifier.getSignerDid(signature));
     return attesters;
   }
 }

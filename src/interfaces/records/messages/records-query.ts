@@ -1,5 +1,5 @@
 import type { SignatureInput } from '../../../jose/jws/general/types.js';
-import type { RecordsQueryDescriptor, RecordsQueryMessage } from '../types.js';
+import type { RecordsQueryDescriptor, RecordsQueryFilter, RecordsQueryMessage } from '../types.js';
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/message.js';
@@ -16,15 +16,7 @@ export enum DateSort {
 
 export type RecordsQueryOptions = {
   dateCreated?: string;
-  filter: {
-    recipient?: string;
-    protocol?: string;
-    contextId?: string;
-    schema?: string;
-    recordId?: string;
-    parentId?: string;
-    dataFormat?: string;
-  },
+  filter: RecordsQueryFilter;
   dateSort?: DateSort;
   authorizationSignatureInput: SignatureInput;
 };

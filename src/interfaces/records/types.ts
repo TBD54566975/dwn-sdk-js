@@ -40,16 +40,19 @@ export type RecordsQueryDescriptor = {
   interface: DwnInterfaceName.Records;
   method: DwnMethodName.Query;
   dateCreated: string;
-  filter: {
-    recipient?: string;
-    protocol?: string;
-    contextId?: string;
-    schema?: string;
-    recordId?: string;
-    parentId?: string;
-    dataFormat?: string;
-  }
+  filter: RecordsQueryFilter;
   dateSort?: DateSort;
+};
+
+export type RecordsQueryFilter = {
+  attester?: string;
+  recipient?: string;
+  protocol?: string;
+  contextId?: string;
+  schema?: string;
+  recordId?: string;
+  parentId?: string;
+  dataFormat?: string;
 };
 
 export type RecordsWriteAttestationPayload = {

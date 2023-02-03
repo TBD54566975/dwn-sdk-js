@@ -44,6 +44,9 @@
             "protocol": {
               "type": "string"
             },
+            "attester": {
+              "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+            },
             "recipient": {
               "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
             },

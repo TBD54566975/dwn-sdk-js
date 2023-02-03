@@ -64,7 +64,7 @@ export abstract class Message {
    * Gets the DID of the author of the given message.
    */
   public static getAuthor(message: BaseMessage): string {
-    const author = GeneralJwsVerifier.getDid(message.authorization.signatures[0]);
+    const author = GeneralJwsVerifier.getSignerDid(message.authorization.signatures[0]);
     return author;
   }
 

@@ -3,8 +3,8 @@ import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
-import { DidResolver } from '../../../../src/index.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
+import { GeneralJwsVerifier } from '../../../../src/jose/jws/general/verifier.js';
 import { handleRecordsQuery } from '../../../../src/interfaces/records/handlers/records-query.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
@@ -12,6 +12,7 @@ import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
 import { constructRecordsWriteIndexes, handleRecordsWrite } from '../../../../src/interfaces/records/handlers/records-write.js';
 import { DateSort, RecordsQuery } from '../../../../src/interfaces/records/messages/records-query.js';
+import { DidResolver, RecordsWriteMessage } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -82,6 +83,37 @@ describe('handleRecordsQuery()', () => {
 
       expect(reply2.status.code).to.equal(200);
       expect(reply2.entries?.length).to.equal(1); // only 1 entry should match the query
+    });
+
+    it('should be able to query by attester', async () => {
+      // scenario: 3 records authored by alice, 1st attested by alice, 2nd attested by bob, 3rd attested by carol
+      const alice = await DidKeyResolver.generate();
+      const bob = await DidKeyResolver.generate();
+      const carol = await DidKeyResolver.generate();
+      const recordsWrite1 = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [alice] });
+      const recordsWrite2 = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [bob] });
+      const recordsWrite3 = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [carol] });
+
+      // insert data
+      const writeReply1 = await handleRecordsWrite(alice.did, recordsWrite1.message, messageStore, didResolver);
+      const writeReply2 = await handleRecordsWrite(alice.did, recordsWrite2.message, messageStore, didResolver);
+      const writeReply3 = await handleRecordsWrite(alice.did, recordsWrite3.message, messageStore, didResolver);
+      expect(writeReply1.status.code).to.equal(202);
+      expect(writeReply2.status.code).to.equal(202);
+      expect(writeReply3.status.code).to.equal(202);
+
+      // testing attester filters
+      const recordsQuery1 = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { attester: alice.did } });
+      const reply1 = await handleRecordsQuery(alice.did, recordsQuery1.message, messageStore, didResolver);
+      expect(reply1.entries?.length).to.equal(1);
+      const reply1Attester = GeneralJwsVerifier.getSignerDid((reply1.entries[0] as RecordsWriteMessage).attestation.signatures[0]);
+      expect(reply1Attester).to.equal(alice.did);
+
+      const recordsQuery2 = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { attester: bob.did } });
+      const reply2 = await handleRecordsQuery(alice.did, recordsQuery2.message, messageStore, didResolver);
+      expect(reply2.entries?.length).to.equal(1);
+      const reply2Attester = GeneralJwsVerifier.getSignerDid((reply2.entries[0] as RecordsWriteMessage).attestation.signatures[0]);
+      expect(reply2Attester).to.equal(bob.did);
     });
 
     it('should not include `authorization` in returned records', async () => {

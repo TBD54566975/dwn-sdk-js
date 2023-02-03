@@ -65,9 +65,9 @@ export class GeneralJwsVerifier {
   }
 
   /**
-   * Gets the DID from a general JWS signature entry.
+   * Gets the signer DID from a general JWS signature entry.
    */
-  public static getDid(signatureEntry: SignatureEntry): string {
+  public static getSignerDid(signatureEntry: SignatureEntry): string {
     const kid = GeneralJwsVerifier.getKid(signatureEntry);
     const did = GeneralJwsVerifier.extractDid(kid);
     return did;
