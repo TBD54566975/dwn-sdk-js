@@ -5,6 +5,7 @@ import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import { base64url } from 'multiformats/bases/base64';
+import { computeCid } from '../../../../src/utils/cid.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DidResolver } from '../../../../src/did/did-resolver.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
@@ -1165,57 +1166,147 @@ describe('handleRecordsWrite()', () => {
     });
   });
 
-  it('should fail validation with 400 if expected CID of `attestation` mismatches the `attestationCid` in `authorization`', async () => {
-    const alice = await DidKeyResolver.generate();
-    const bob = await DidKeyResolver.generate();
-    const { message } = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [alice, bob] });
+  describe('authorization validation tests', () => {
 
-    // strip away one signature to cause difference in expected and actual attestation CID
-    message.attestation.signatures = [message.attestation.signatures[0]];
-    const writeReply = await handleRecordsWrite(alice.did, message, messageStore, didResolver);
-    expect(writeReply.status.code).to.equal(400);
-    expect(writeReply.status.detail).to.contain('does not match attestationCid');
-  });
 
-  it('should return 400 if `recordId` in `authorization` payload mismatches with `recordId` in the message', async () => {
-    const { requester, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
+    it('should return 400 if `recordId` in `authorization` payload mismatches with `recordId` in the message', async () => {
+      const { requester, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
 
-    // replace `authorization` with mismatching `record`, even though signature is still valid
-    const authorizationPayload = { ...recordsWrite.authorizationPayload };
-    authorizationPayload.recordId = await TestDataGenerator.randomCborSha256Cid(); // make recordId mismatch in authorization payload
-    const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
-    const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
-    const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
-    message.authorization = signer.getJws();
+      // replace `authorization` with mismatching `record`, even though signature is still valid
+      const authorizationPayload = { ...recordsWrite.authorizationPayload };
+      authorizationPayload.recordId = await TestDataGenerator.randomCborSha256Cid(); // make recordId mismatch in authorization payload
+      const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
+      const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
+      const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
+      message.authorization = signer.getJws();
 
-    const tenant = requester.did;
-    const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
-    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-    const reply = await handleRecordsWrite(tenant, message, messageStoreStub, didResolverStub);
+      const tenant = requester.did;
+      const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
+      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+      const reply = await handleRecordsWrite(tenant, message, messageStoreStub, didResolverStub);
 
-    expect(reply.status.code).to.equal(400);
-    expect(reply.status.detail).to.contain('does not match recordId in authorization');
-  });
+      expect(reply.status.code).to.equal(400);
+      expect(reply.status.detail).to.contain('does not match recordId in authorization');
+    });
 
-  it('should return 400 if `contextId` in `authorization` payload mismatches with `contextId` in the message', async () => {
+    it('should return 400 if `contextId` in `authorization` payload mismatches with `contextId` in the message', async () => {
     // generate a message with protocol so that computed contextId is also computed and included in message
-    const { requester, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ protocol: 'anyValue' });
+      const { requester, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ protocol: 'anyValue' });
 
-    // replace `authorization` with mismatching `contextId`, even though signature is still valid
-    const authorizationPayload = { ...recordsWrite.authorizationPayload };
-    authorizationPayload.contextId = await TestDataGenerator.randomCborSha256Cid(); // make contextId mismatch in authorization payload
-    const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
-    const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
-    const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
-    message.authorization = signer.getJws();
+      // replace `authorization` with mismatching `contextId`, even though signature is still valid
+      const authorizationPayload = { ...recordsWrite.authorizationPayload };
+      authorizationPayload.contextId = await TestDataGenerator.randomCborSha256Cid(); // make contextId mismatch in authorization payload
+      const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
+      const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
+      const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
+      message.authorization = signer.getJws();
 
-    const tenant = requester.did;
-    const didResolverStub = sinon.createStubInstance(DidResolver);
-    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-    const reply = await handleRecordsWrite(tenant, message, messageStoreStub, didResolverStub);
+      const tenant = requester.did;
+      const didResolverStub = sinon.createStubInstance(DidResolver);
+      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+      const reply = await handleRecordsWrite(tenant, message, messageStoreStub, didResolverStub);
 
-    expect(reply.status.code).to.equal(400);
-    expect(reply.status.detail).to.contain('does not match contextId in authorization');
+      expect(reply.status.code).to.equal(400);
+      expect(reply.status.detail).to.contain('does not match contextId in authorization');
+    });
+
+    it('should return 401 if `authorization` signature check fails', async () => {
+      const { requester, message } = await TestDataGenerator.generateRecordsWrite();
+
+      // setting up a stub did resolver & message store
+      // intentionally not supplying the public key so a different public key is generated to simulate invalid signature
+      const mismatchingPersona = await TestDataGenerator.generatePersona({ did: requester.did, keyId: requester.keyId });
+      const didResolverStub = TestStubGenerator.createDidResolverStub(mismatchingPersona);
+
+      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+      const tenant = requester.did;
+
+      const reply = await handleRecordsWrite(tenant, message, messageStoreStub, didResolverStub);
+
+      expect(reply.status.code).to.equal(401);
+    });
+
+    it('should return 401 if an unauthorized requester is attempting write', async () => {
+      const requester = await TestDataGenerator.generatePersona();
+      const { message } = await TestDataGenerator.generateRecordsWrite({ requester });
+
+      // setting up a stub did resolver & message store
+      const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
+      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+
+      const tenant = await TestDataGenerator.generatePersona();
+      const reply = await handleRecordsWrite(tenant.did, message, messageStoreStub, didResolverStub);
+
+      expect(reply.status.code).to.equal(401);
+    });
+
+  });
+
+  describe('attestation validation tests', () => {
+    it('should fail with 400 if `attestation` payload contains properties other than `descriptorCid`', async () => {
+      const { requester, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
+      const tenant = requester.did;
+      const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
+
+      // replace `attestation` with one that has an additional property, but go the extra mile of making sure signature is valid
+      const descriptorCid = recordsWrite.authorizationPayload.descriptorCid;
+      const attestationPayload = { descriptorCid, someAdditionalProperty: 'anyValue' }; // additional property is not allowed
+      const attestationPayloadBytes = Encoder.objectToBytes(attestationPayload);
+      const attestationSigner = await GeneralJwsSigner.create(attestationPayloadBytes, [signatureInput]);
+      message.attestation = attestationSigner.getJws();
+
+      // recreate the `authorization` based on the new` attestationCid`
+      const authorizationPayload = { ...recordsWrite.authorizationPayload };
+      authorizationPayload.attestationCid = (await computeCid(attestationPayload)).toString();
+      const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
+      const authorizationSigner = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
+      message.authorization = authorizationSigner.getJws();
+
+      const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
+      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+      const reply = await handleRecordsWrite(tenant, message, messageStoreStub, didResolverStub);
+
+      expect(reply.status.code).to.equal(400);
+      expect(reply.status.detail).to.contain(`Only 'descriptorCid' is allowed in attestation payload`);
+    });
+
+    it('should fail validation with 400 if more than 1 attester is given ', async () => {
+      const alice = await DidKeyResolver.generate();
+      const bob = await DidKeyResolver.generate();
+      const { message } = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [alice, bob] });
+
+      const writeReply = await handleRecordsWrite(alice.did, message, messageStore, didResolver);
+      expect(writeReply.status.code).to.equal(400);
+      expect(writeReply.status.detail).to.contain('implementation only supports 1 attester');
+    });
+
+    it('should fail validation with 400 if the `attestation` does not include the correct `descriptorCid`', async () => {
+      const alice = await DidKeyResolver.generate();
+      const { message } = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [alice] });
+
+      // create another write and use its `attestation` value instead, that `attestation` will point to an entirely different `descriptorCid`
+      const anotherWrite = await TestDataGenerator.generateRecordsWrite({ attesters: [alice] });
+      message.attestation = anotherWrite.message.attestation;
+
+      const writeReply = await handleRecordsWrite(alice.did, message, messageStore, didResolver);
+      expect(writeReply.status.code).to.equal(400);
+      expect(writeReply.status.detail).to.contain('does not match expected descriptorCid');
+    });
+
+    it('should fail validation with 400 if expected CID of `attestation` mismatches the `attestationCid` in `authorization`', async () => {
+      const alice = await DidKeyResolver.generate();
+      const { message } = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [alice] });
+
+      // replace valid attestation (the one signed by `authorization` with another attestation to the same message (descriptorCid)
+      const bob = await DidKeyResolver.generate();
+      const descriptorCid = (await computeCid(message.descriptor)).toString();
+      const attestationNotReferencedByAuthorization = await RecordsWrite['createAttestation'](descriptorCid, TestDataGenerator.createSignatureInputsFromPersonas([bob]));
+      message.attestation = attestationNotReferencedByAuthorization;
+
+      const writeReply = await handleRecordsWrite(alice.did, message, messageStore, didResolver);
+      expect(writeReply.status.code).to.equal(400);
+      expect(writeReply.status.detail).to.contain('does not match attestationCid');
+    });
   });
 
   it('should return 400 if actual CID of `data` mismatches with `dataCid` in descriptor', async () => {
@@ -1229,36 +1320,6 @@ describe('handleRecordsWrite()', () => {
 
     expect(reply.status.code).to.equal(400);
     expect(reply.status.detail).to.equal('actual CID of data and `dataCid` in descriptor mismatch');
-  });
-
-  it('should return 401 if signature check fails', async () => {
-    const { requester, message } = await TestDataGenerator.generateRecordsWrite();
-
-    // setting up a stub did resolver & message store
-    // intentionally not supplying the public key so a different public key is generated to simulate invalid signature
-    const mismatchingPersona = await TestDataGenerator.generatePersona({ did: requester.did, keyId: requester.keyId });
-    const didResolverStub = TestStubGenerator.createDidResolverStub(mismatchingPersona);
-
-    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-    const tenant = requester.did;
-
-    const reply = await handleRecordsWrite(tenant, message, messageStoreStub, didResolverStub);
-
-    expect(reply.status.code).to.equal(401);
-  });
-
-  it('should return 401 if an authorized requester is attempting write', async () => {
-    const requester = await TestDataGenerator.generatePersona();
-    const { message } = await TestDataGenerator.generateRecordsWrite({ requester });
-
-    // setting up a stub did resolver & message store
-    const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
-    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-
-    const tenant = await TestDataGenerator.generatePersona();
-    const reply = await handleRecordsWrite(tenant.did, message, messageStoreStub, didResolverStub);
-
-    expect(reply.status.code).to.equal(401);
   });
 });
 

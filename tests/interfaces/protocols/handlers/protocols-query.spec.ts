@@ -77,7 +77,7 @@ describe('handleProtocolsQuery()', () => {
       expect(reply2.entries?.length).to.equal(3); // expecting all 3 entries written above match the query
     });
 
-    it('should return 400 if failed to parse the message', async () => {
+    it('should fail with 400 if `authorization` is referencing a different message (`descriptorCid`)', async () => {
       const { requester, message, protocolsQuery } = await TestDataGenerator.generateProtocolsQuery();
       const tenant = requester.did;
 

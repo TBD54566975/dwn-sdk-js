@@ -111,7 +111,10 @@ export async function constructRecordsWriteIndexes(
     ...descriptor
   };
 
-  // add `contextId` to additional index if given
+  // add additional indexes to optional values if given
+  // TODO: only indexing 1 attester, multi-attesters to be unblocked by
+  // #205 - Revisit database interfaces (https://github.com/TBD54566975/dwn-sdk-js/issues/205)
+  if (recordsWrite.attesters.length > 0) { indexes.attester = recordsWrite.attesters[0]; }
   if (message.contextId !== undefined) { indexes.contextId = message.contextId; }
 
   // add `published` index

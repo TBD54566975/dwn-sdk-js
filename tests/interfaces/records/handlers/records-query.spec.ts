@@ -109,8 +109,7 @@ describe('handleRecordsQuery()', () => {
       // scenario: alice and bob attest to a message alice authored
 
       const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
-      const { message } = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [alice, bob] });
+      const { message } = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [alice] });
 
       const writeReply = await handleRecordsWrite(alice.did, message, messageStore, didResolver);
       expect(writeReply.status.code).to.equal(202);
@@ -125,8 +124,7 @@ describe('handleRecordsQuery()', () => {
       expect(queryReply.entries?.length).to.equal(1);
 
       const recordsWriteMessage = queryReply.entries[0] as any;
-      expect(recordsWriteMessage.attestation?.signatures?.length).to.equal(2);
-      expect(recordsWriteMessage.attestation.signatures[0]).to.not.equal(recordsWriteMessage.attestation.signatures[1]);
+      expect(recordsWriteMessage.attestation?.signatures?.length).to.equal(1);
     });
 
     it('should omit records that are not published if `dateSort` sorts on `datePublished`', async () => {

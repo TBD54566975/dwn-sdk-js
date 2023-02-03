@@ -192,7 +192,7 @@ export class TestDataGenerator {
   /**
    * Creates a SignatureInput[] from the given Personas.
    */
-  public static createSignatureInputsFromPersona(personas: Persona[]): SignatureInput[] {
+  public static createSignatureInputsFromPersonas(personas: Persona[]): SignatureInput[] {
     const signatureInputs = personas.map((persona) => this.createSignatureInputFromPersona(persona));
     return signatureInputs;
   }
@@ -277,7 +277,7 @@ export class TestDataGenerator {
     const requester = input?.requester ?? await TestDataGenerator.generatePersona();
 
     const authorizationSignatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
-    const attestationSignatureInputs = TestDataGenerator.createSignatureInputsFromPersona(input?.attesters ?? []);
+    const attestationSignatureInputs = TestDataGenerator.createSignatureInputsFromPersonas(input?.attesters ?? []);
 
     const data = input?.data ?? TestDataGenerator.randomBytes(32);
 
