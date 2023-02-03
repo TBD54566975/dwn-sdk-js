@@ -2,7 +2,6 @@ import type { SignatureInput } from '../../../jose/jws/general/types';
 import type { PermissionConditions, PermissionScope } from '../types';
 import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types';
 
-import { CID } from 'multiformats/cid';
 import { computeCid } from '../../../utils/cid';
 import { getCurrentTimeInHighPrecision } from '../../../utils/time';
 import { v4 as uuidv4 } from 'uuid';

@@ -1,14 +1,13 @@
 import type { SignatureInput } from '../jose/jws/general/types.js';
 import type { BaseDecodedAuthorizationPayload, BaseMessage, Descriptor, TimestampedMessage } from './types.js';
 
-import { CID } from 'multiformats/cid';
 import { computeCid } from '../utils/cid.js';
 import { GeneralJws } from '../jose/jws/general/types.js';
 import { GeneralJwsSigner } from '../jose/jws/general/signer.js';
 import { Jws } from '../utils/jws.js';
 import { lexicographicalCompare } from '../utils/string.js';
 import { RecordsWriteMessage } from '../interfaces/records/types.js';
-import { validateJsonSchema } from '../validator.js';
+import { validateJsonSchema } from '../schema-validator.js';
 
 export enum DwnInterfaceName {
   Hooks = 'Hooks',

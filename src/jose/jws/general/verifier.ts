@@ -6,7 +6,7 @@ import type { VerificationMethod } from '../../../did/did-resolver.js';
 import { DidResolver } from '../../../did/did-resolver.js';
 import { Jws } from '../../../utils/jws.js';
 import { MemoryCache } from '../../../utils/memory-cache.js';
-import { validateJsonSchema } from '../../../validator.js';
+import { validateJsonSchema } from '../../../schema-validator.js';
 
 type VerificationResult = {
   /** DIDs of all signers */
