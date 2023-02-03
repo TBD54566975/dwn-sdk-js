@@ -4,8 +4,8 @@ import chai, { expect } from 'chai';
 
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
-import { GeneralJwsVerifier } from '../../../../src/jose/jws/general/verifier.js';
 import { handleRecordsQuery } from '../../../../src/interfaces/records/handlers/records-query.js';
+import { Jws } from '../../../../src/utils/jws.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
@@ -106,13 +106,13 @@ describe('handleRecordsQuery()', () => {
       const recordsQuery1 = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { attester: alice.did } });
       const reply1 = await handleRecordsQuery(alice.did, recordsQuery1.message, messageStore, didResolver);
       expect(reply1.entries?.length).to.equal(1);
-      const reply1Attester = GeneralJwsVerifier.getSignerDid((reply1.entries[0] as RecordsWriteMessage).attestation.signatures[0]);
+      const reply1Attester = Jws.getSignerDid((reply1.entries[0] as RecordsWriteMessage).attestation.signatures[0]);
       expect(reply1Attester).to.equal(alice.did);
 
       const recordsQuery2 = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { attester: bob.did } });
       const reply2 = await handleRecordsQuery(alice.did, recordsQuery2.message, messageStore, didResolver);
       expect(reply2.entries?.length).to.equal(1);
-      const reply2Attester = GeneralJwsVerifier.getSignerDid((reply2.entries[0] as RecordsWriteMessage).attestation.signatures[0]);
+      const reply2Attester = Jws.getSignerDid((reply2.entries[0] as RecordsWriteMessage).attestation.signatures[0]);
       expect(reply2Attester).to.equal(bob.did);
     });
 

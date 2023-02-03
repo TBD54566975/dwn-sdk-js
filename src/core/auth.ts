@@ -4,6 +4,7 @@ import { CID } from 'multiformats';
 import { DidResolver } from '../did/did-resolver.js';
 import { GeneralJws } from '../jose/jws/general/types.js';
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
+import { Jws } from '../utils/jws.js';
 import { Message } from './message.js';
 import { computeCid, parseCid } from '../utils/cid.js';
 
@@ -40,7 +41,7 @@ export async function validateAuthorizationIntegrity(
     throw new Error('expected no more than 1 signature for authorization');
   }
 
-  const payloadJson = GeneralJwsVerifier.decodePlainObjectPayload(message.authorization);
+  const payloadJson = Jws.decodePlainObjectPayload(message.authorization);
   const { descriptorCid } = payloadJson;
 
   // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message

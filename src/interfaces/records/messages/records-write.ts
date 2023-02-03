@@ -3,8 +3,8 @@ import type { RecordsWriteAttestationPayload, RecordsWriteAuthorizationPayload, 
 
 import { Encoder } from '../../../utils/encoder.js';
 import { GeneralJwsSigner } from '../../../jose/jws/general/signer.js';
-import { GeneralJwsVerifier } from '../../../jose/jws/general/verifier.js';
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
+import { Jws } from '../../../utils/jws.js';
 import { Message } from '../../../core/message.js';
 import { MessageStore } from '../../../store/message-store.js';
 import { ProtocolAuthorization } from '../../../core/protocol-authorization.js';
@@ -104,7 +104,7 @@ export class RecordsWrite extends Message {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const author = GeneralJwsVerifier.extractDid(options.authorizationSignatureInput.protectedHeader.kid);
+    const author = Jws.extractDid(options.authorizationSignatureInput.protectedHeader.kid);
 
     // `recordId` computation
     const recordId = options.recordId ?? await RecordsWrite.getEntryId(author, descriptor);
@@ -297,7 +297,7 @@ export class RecordsWrite extends Message {
       throw new Error(`Currently implementation only supports 1 attester, but got ${message.attestation.signatures.length}`);
     }
 
-    const payloadJson = GeneralJwsVerifier.decodePlainObjectPayload(message.attestation);
+    const payloadJson = Jws.decodePlainObjectPayload(message.attestation);
     const { descriptorCid } = payloadJson;
 
     // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
@@ -445,7 +445,7 @@ export class RecordsWrite extends Message {
    */
   public static getAttesters(message: RecordsWriteMessage): string[] {
     const attestationSignatures = message.attestation?.signatures ?? [];
-    const attesters = attestationSignatures.map((signature) => GeneralJwsVerifier.getSignerDid(signature));
+    const attesters = attestationSignatures.map((signature) => Jws.getSignerDid(signature));
     return attesters;
   }
 }
