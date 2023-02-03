@@ -1,7 +1,5 @@
 import type { BaseMessage } from '../core/types.js';
 
-import { CID } from 'multiformats/cid';
-
 export interface MessageStore {
   /**
    * opens a connection to the underlying store
@@ -22,9 +20,8 @@ export interface MessageStore {
   /**
    * fetches a single message by `cid` from the underlying store. Returns `undefined`
    * if no message was found
-   * @param cid
    */
-  get(cid: CID): Promise<BaseMessage>;
+  get(cid: string): Promise<BaseMessage>;
 
   /**
    * queries the underlying store for messages that match the query provided.
@@ -35,7 +32,6 @@ export interface MessageStore {
 
   /**
    * deletes the message associated to the id provided
-   * @param cid
    */
-  delete(cid: CID): Promise<void>;
+  delete(cid: string): Promise<void>;
 }
