@@ -26,7 +26,7 @@ describe('CID', () => {
       const generatedCid = await computeCid(anyTestData);
       const encodedBlock = await block.encode({ value: anyTestData, codec: cbor, hasher: sha256 });
 
-      expect(generatedCid.toString()).to.equal(encodedBlock.cid.toString());
+      expect(generatedCid).to.equal(encodedBlock.cid.toString());
     });
 
     it('should canonicalize JSON input before hashing', async () => {
@@ -44,7 +44,7 @@ describe('CID', () => {
       const cid1 = await computeCid(data1);
       const cid2 = await computeCid(data2);
 
-      expect(cid1.toString()).to.equal(cid2.toString());
+      expect(cid1).to.equal(cid2);
     });
   });
 

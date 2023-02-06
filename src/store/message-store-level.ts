@@ -60,7 +60,8 @@ export class MessageStoreLevel implements MessageStore {
     await this.index.INDEX.STORE.close(); // MUST close index-search DB, else `searchIndex()` triggered in a different instance will hang indefinitely
   }
 
-  async get(cid: CID): Promise<BaseMessage> {
+  async get(cidString: string): Promise<BaseMessage> {
+    const cid = CID.parse(cidString);
     const bytes = await this.db.get(cid);
 
     if (!bytes) {
@@ -102,8 +103,7 @@ export class MessageStoreLevel implements MessageStore {
     const { RESULT: indexResults } = await this.index.QUERY({ AND: queryTerms });
 
     for (const result of indexResults) {
-      const cid = CID.parse(result._id);
-      const message = await this.get(cid);
+      const message = await this.get(result._id);
 
       messages.push(message);
     }
@@ -112,10 +112,11 @@ export class MessageStoreLevel implements MessageStore {
   }
 
 
-  async delete(cid: CID): Promise<void> {
+  async delete(cidString: string): Promise<void> {
     // TODO: Implement data deletion in Records - https://github.com/TBD54566975/dwn-sdk-js/issues/84
+    const cid = CID.parse(cidString);
     await this.db.delete(cid);
-    await this.index.DELETE(cid.toString());
+    await this.index.DELETE(cidString);
 
     return;
   }

@@ -4,6 +4,7 @@ import chai, { expect } from 'chai';
 import { DidResolver } from '../../../src/did/did-resolver.js';
 import { GeneralJwsSigner } from '../../../src/jose/jws/general/signer.js';
 import { GeneralJwsVerifier } from '../../../src/jose/jws/general/verifier.js';
+import { Jws } from '../../../src/utils/jws.js';
 import { signers } from '../../../src/jose/algorithms/signing/signers.js';
 import sinon from 'sinon';
 
@@ -195,7 +196,7 @@ describe('General JWS Sign/Verify', () => {
 
     const verifier = new GeneralJwsVerifier(jws);
 
-    const verifySignatureSpy = sinon.spy(GeneralJwsVerifier, 'verifySignature');
+    const verifySignatureSpy = sinon.spy(Jws, 'verifySignature');
     const cacheSetSpy = sinon.spy(verifier.cache, 'set');
 
     await verifier.verify(resolverStub);

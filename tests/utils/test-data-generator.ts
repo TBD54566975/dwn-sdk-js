@@ -6,6 +6,7 @@ import { DidResolutionResult } from '../../src/did/did-resolver.js';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request.js';
+import { RecordsQueryFilter } from '../../src/interfaces/records/types.js';
 import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1.js';
 import { sha256 } from 'multiformats/hashes/sha2';
@@ -105,15 +106,7 @@ export type GenerateRecordsWriteOutput = {
 export type GenerateRecordsQueryInput = {
   requester?: Persona;
   dateCreated?: string;
-  filter?: {
-    recipient?: string;
-    protocol?: string;
-    contextId?: string;
-    schema?: string;
-    recordId?: string;
-    parentId?: string;
-    dataFormat?: string;
-  }
+  filter?: RecordsQueryFilter;
   dateSort?: DateSort;
 };
 

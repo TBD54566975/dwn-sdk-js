@@ -34,7 +34,7 @@ describe('PermissionsRequest', () => {
 
       const testVectors = [
         { input: 'dookie', expectedError: 'payload is not a JSON object' },
-        { input: JSON.stringify([]), expectedError: 'must be a valid JSON object' }
+        { input: JSON.stringify([]), expectedError: 'signed payload must be a plain object' }
       ];
       const { privateJwk } = await secp256k1.generateKeyPair();
 

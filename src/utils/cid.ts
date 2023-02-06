@@ -20,7 +20,7 @@ const codecs = {
 /**
  * @returns V1 CID of the DAG comprised by chunking data into unixfs dag-pb encoded blocks
  */
-export async function getDagPbCid(content: Uint8Array): Promise<CID> {
+export async function computeDagPbCid(content: Uint8Array): Promise<CID> {
   const chunk = importer([{ content }], undefined, { onlyHash: true, cidVersion: 1 });
   let root;
 
@@ -39,7 +39,7 @@ export async function getDagPbCid(content: Uint8Array): Promise<CID> {
  * @throws {Error} encoding fails
  * @throws {Error} if hasher is not supported
  */
-export async function computeCid(payload: any, codecCode = cbor.code, multihashCode = sha256.code): Promise<CID> {
+export async function computeCid(payload: any, codecCode = cbor.code, multihashCode = sha256.code): Promise<string> {
   const codec = codecs[codecCode];
   if (!codec) {
     throw new Error(`codec [${codecCode}] not supported`);
@@ -53,11 +53,12 @@ export async function computeCid(payload: any, codecCode = cbor.code, multihashC
   const payloadBytes = codec.encode(payload);
   const payloadHash = await hasher.digest(payloadBytes);
 
-  return await CID.createV1(codec.code, payloadHash);
+  const cid = await CID.createV1(codec.code, payloadHash);
+  return cid.toString();
 }
 
 export function parseCid(str: string): CID {
-  const cid = CID.parse(str).toV1();
+  const cid: CID = CID.parse(str).toV1();
 
   if (!codecs[cid.code]) {
     throw new Error(`codec [${cid.code}] not supported`);

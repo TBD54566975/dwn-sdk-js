@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { Message } from '../../../../src/core/message.js';
-import { validateJsonSchema } from '../../../../src/validator.js';
+import { validateJsonSchema } from '../../../../src/schema-validator.js';
 
 describe('ProtocolsConfigure schema definition', () => {
   it('should throw if unknown allow rule is encountered', async () => {

@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { signers } from '../../../../src/jose/algorithms/signing/signers.js';
-import { validateJsonSchema } from '../../../../src/validator.js';
+import { validateJsonSchema } from '../../../../src/schema-validator.js';
 
 const { Ed25519, secp256k1 } = signers;
 

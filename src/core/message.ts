@@ -1,14 +1,13 @@
 import type { SignatureInput } from '../jose/jws/general/types.js';
 import type { BaseDecodedAuthorizationPayload, BaseMessage, Descriptor, TimestampedMessage } from './types.js';
 
-import { CID } from 'multiformats/cid';
 import { computeCid } from '../utils/cid.js';
 import { GeneralJws } from '../jose/jws/general/types.js';
 import { GeneralJwsSigner } from '../jose/jws/general/signer.js';
-import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
+import { Jws } from '../utils/jws.js';
 import { lexicographicalCompare } from '../utils/string.js';
 import { RecordsWriteMessage } from '../interfaces/records/types.js';
-import { validateJsonSchema } from '../validator.js';
+import { validateJsonSchema } from '../schema-validator.js';
 
 export enum DwnInterfaceName {
   Hooks = 'Hooks',
@@ -35,7 +34,7 @@ export abstract class Message {
 
   constructor(message: BaseMessage) {
     this.message = message;
-    this.authorizationPayload = GeneralJwsVerifier.decodePlainObjectPayload(message.authorization);
+    this.authorizationPayload = Jws.decodePlainObjectPayload(message.authorization);
 
     this.author = Message.getAuthor(message);
   }
@@ -64,7 +63,7 @@ export abstract class Message {
    * Gets the DID of the author of the given message.
    */
   public static getAuthor(message: BaseMessage): string {
-    const author = GeneralJwsVerifier.getDid(message.authorization.signatures[0]);
+    const author = Jws.getSignerDid(message.authorization.signatures[0]);
     return author;
   }
 
@@ -72,7 +71,7 @@ export abstract class Message {
    * Gets the CID of the given message.
    * NOTE: `encodedData` is ignored when computing the CID of message.
    */
-  public static async getCid(message: BaseMessage): Promise<CID> {
+  public static async getCid(message: BaseMessage): Promise<string> {
     const messageCopy = { ...message };
 
     if (messageCopy['encodedData'] !== undefined) {
@@ -130,7 +129,7 @@ export abstract class Message {
   ): Promise<GeneralJws> {
     const descriptorCid = await computeCid(descriptor);
 
-    const authPayload: BaseDecodedAuthorizationPayload = { descriptorCid: descriptorCid.toString() };
+    const authPayload: BaseDecodedAuthorizationPayload = { descriptorCid };
     const authPayloadStr = JSON.stringify(authPayload);
     const authPayloadBytes = new TextEncoder().encode(authPayloadStr);
 

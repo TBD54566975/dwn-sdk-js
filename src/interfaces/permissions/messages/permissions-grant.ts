@@ -2,7 +2,6 @@ import type { SignatureInput } from '../../../jose/jws/general/types';
 import type { PermissionConditions, PermissionScope } from '../types';
 import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types';
 
-import { CID } from 'multiformats/cid';
 import { computeCid } from '../../../utils/cid';
 import { getCurrentTimeInHighPrecision } from '../../../utils/time';
 import { v4 as uuidv4 } from 'uuid';
@@ -131,8 +130,8 @@ export class PermissionsGrant extends Message {
     return this.message.descriptor.scope;
   }
 
-  private set delegatedFrom(cid: CID) {
-    this.message.descriptor.delegatedFrom = cid.toString();
+  private set delegatedFrom(cid: string) {
+    this.message.descriptor.delegatedFrom = cid;
   }
 
   private set delegationChain(parentGrant: PermissionsGrantMessage) {
