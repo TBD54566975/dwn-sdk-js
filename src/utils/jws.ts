@@ -27,6 +27,10 @@ export class Jws {
     return did;
   }
 
+  /**
+   * Verifies the signature against the given payload.
+   * @returns `true` if signature is valid; `false` otherwise
+   */
   public static async verifySignature(base64UrlPayload: string, signatureEntry: SignatureEntry, jwkPublic: PublicJwk): Promise<boolean> {
     const verifier = verifiers[jwkPublic.crv];
 
@@ -40,16 +44,19 @@ export class Jws {
     return await verifier.verify(payload, signatureBytes, jwkPublic);
   }
 
+  /**
+   * Decodes the payload of the given JWS object as a plain object.
+   */
   public static decodePlainObjectPayload(jws: GeneralJws): any {
     let payloadJson;
     try {
       payloadJson = Encoder.base64UrlToObject(jws.payload);
     } catch {
-      throw new Error('signed payload is not a JSON object');
+      throw new Error('payload is not a JSON object');
     }
 
     if (!isPlainObject(payloadJson)) {
-      throw new Error('signed payload must be a valid JSON object');
+      throw new Error('signed payload must be a plain object');
     }
 
     return payloadJson;

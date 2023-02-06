@@ -6,8 +6,4 @@ describe('GeneralJwsVerifier', () => {
     xit('throws an exception if verificationMethod type isn\'t JsonWebKey2020', () => {});
     xit('returns public key', () => {});
   });
-  describe('verifySignature', () => {
-    xit('throws an exception if signature does not match', () => {});
-    xit('returns true if signature is successfully verified', () => {});
-  });
 });

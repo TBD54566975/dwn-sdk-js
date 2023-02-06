@@ -86,34 +86,40 @@ describe('handleRecordsQuery()', () => {
     });
 
     it('should be able to query by attester', async () => {
-      // scenario: 3 records authored by alice, 1st attested by alice, 2nd attested by bob, 3rd attested by carol
+      // scenario: 2 records authored by alice, 1st attested by alice, 2nd attested by bob
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
-      const carol = await DidKeyResolver.generate();
       const recordsWrite1 = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [alice] });
       const recordsWrite2 = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [bob] });
-      const recordsWrite3 = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [carol] });
 
       // insert data
       const writeReply1 = await handleRecordsWrite(alice.did, recordsWrite1.message, messageStore, didResolver);
       const writeReply2 = await handleRecordsWrite(alice.did, recordsWrite2.message, messageStore, didResolver);
-      const writeReply3 = await handleRecordsWrite(alice.did, recordsWrite3.message, messageStore, didResolver);
       expect(writeReply1.status.code).to.equal(202);
       expect(writeReply2.status.code).to.equal(202);
-      expect(writeReply3.status.code).to.equal(202);
 
-      // testing attester filters
+      // testing attester filter
       const recordsQuery1 = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { attester: alice.did } });
       const reply1 = await handleRecordsQuery(alice.did, recordsQuery1.message, messageStore, didResolver);
       expect(reply1.entries?.length).to.equal(1);
       const reply1Attester = Jws.getSignerDid((reply1.entries[0] as RecordsWriteMessage).attestation.signatures[0]);
       expect(reply1Attester).to.equal(alice.did);
 
-      const recordsQuery2 = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { attester: bob.did } });
+      // testing attester + another filter
+      const recordsQuery2 = await TestDataGenerator.generateRecordsQuery({
+        requester : alice,
+        filter    : { attester: bob.did, schema: recordsWrite2.message.descriptor.schema }
+      });
       const reply2 = await handleRecordsQuery(alice.did, recordsQuery2.message, messageStore, didResolver);
       expect(reply2.entries?.length).to.equal(1);
       const reply2Attester = Jws.getSignerDid((reply2.entries[0] as RecordsWriteMessage).attestation.signatures[0]);
       expect(reply2Attester).to.equal(bob.did);
+
+      // testing attester filter that yields no results
+      const carol = await DidKeyResolver.generate();
+      const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { attester: carol.did } });
+      const reply3 = await handleRecordsQuery(alice.did, recordsQuery3.message, messageStore, didResolver);
+      expect(reply3.entries?.length).to.equal(0);
     });
 
     it('should not include `authorization` in returned records', async () => {
