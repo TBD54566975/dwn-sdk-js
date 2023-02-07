@@ -9,7 +9,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 let messageStore: MessageStoreLevel;
 
 describe('MessageStoreLevel Tests', () => {
-  describe('buildIndexQueryTerms', () => {
+  describe('buildExactQueryTerms', () => {
     it('returns an array of terms based on the query object type provided', () => {
       const query = {
         method        : 'RecordsQuery',
@@ -26,7 +26,7 @@ describe('MessageStoreLevel Tests', () => {
         { FIELD: ['published'], VALUE: true },
         { FIELD: ['publishedDate'], VALUE: 1234567 }
       ];
-      const terms = MessageStoreLevel['buildIndexQueryTerms'](query);
+      const terms = MessageStoreLevel['buildExactQueryTerms'](query);
 
       expect(terms).to.eql(expected);
     });
@@ -50,7 +50,7 @@ describe('MessageStoreLevel Tests', () => {
         { FIELD: ['ability.doo.bingo'], VALUE: 'bongo' }
       ];
 
-      const terms = MessageStoreLevel['buildIndexQueryTerms'](query);
+      const terms = MessageStoreLevel['buildExactQueryTerms'](query);
 
       expect(terms).to.eql(expected);
     });

@@ -99,10 +99,10 @@ export class MessageStoreLevel implements MessageStore {
     const messages: BaseMessage[] = [];
 
     // parse criteria into a query that is compatible with the indexing DB (search-index) we're using
-    const queryTerms = MessageStoreLevel.buildIndexQueryTerms(exactCriteria);
-    const rangeTerms = MessageStoreLevel.buildRangeIndexQueryTerms(rangeCriteria);
+    const exactTerms = MessageStoreLevel.buildExactQueryTerms(exactCriteria);
+    const rangeTerms = MessageStoreLevel.buildRangeQueryTerms(rangeCriteria);
 
-    const { RESULT: indexResults } = await this.index.QUERY({ AND: [...queryTerms, ...rangeTerms] });
+    const { RESULT: indexResults } = await this.index.QUERY({ AND: [...exactTerms, ...rangeTerms] });
 
     for (const result of indexResults) {
       const message = await this.get(result._id);
@@ -178,7 +178,7 @@ export class MessageStoreLevel implements MessageStore {
    * recursively parses a query object into a list of flattened terms that can be used to query the search
    * index
    * @example
-   * buildIndexQueryTerms({
+   * buildExactQueryTerms({
    *    ability : {
    *      method : 'RecordsQuery',
    *      schema : 'https://schema.org/MusicPlaylist'
@@ -194,7 +194,7 @@ export class MessageStoreLevel implements MessageStore {
    * @param prefix - internally used to pass parent properties into recursive calls
    * @returns the list of terms
    */
-  private static buildIndexQueryTerms(
+  private static buildExactQueryTerms(
     query: any,
     terms: SearchIndexTerm[] =[],
     prefix: string = ''
@@ -203,7 +203,7 @@ export class MessageStoreLevel implements MessageStore {
       const val = query[property];
 
       if (isPlainObject(val)) {
-        MessageStoreLevel.buildIndexQueryTerms(val, terms, `${prefix}${property}.`);
+        MessageStoreLevel.buildExactQueryTerms(val, terms, `${prefix}${property}.`);
       } else {
         // NOTE: using object-based expressions because we need to support filters against non-string properties
         const term = {
@@ -231,7 +231,7 @@ export class MessageStoreLevel implements MessageStore {
    *   },
    * ]
    */
-  private static buildRangeIndexQueryTerms(
+  private static buildRangeQueryTerms(
     rangeCriteria: { [key: string]: RangeCriterion} = { }
   ): SearchIndexTerm[] {
     const terms = [];
