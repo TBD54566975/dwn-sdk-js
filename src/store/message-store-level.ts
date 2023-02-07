@@ -217,6 +217,20 @@ export class MessageStoreLevel implements MessageStore {
     return terms;
   }
 
+  /**
+   * Builds a list of `search-index` range terms given a list of range criteria.
+   * @example
+   * // example output
+   * [
+   *   {
+   *     FIELD: ['dateCreated'],
+   *     VALUE: {
+   *       GTE: '2023-02-07T10:20:30.123456',
+   *       LTE: '2023-02-08T10:20:30.123456'
+   *     }
+   *   },
+   * ]
+   */
   private static buildRangeIndexQueryTerms(
     rangeCriteria: { [key: string]: RangeCriterion} = { }
   ): SearchIndexTerm[] {
