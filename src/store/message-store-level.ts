@@ -11,6 +11,7 @@ import { CID } from 'multiformats/cid';
 import { Encoder } from '../utils/encoder.js';
 import { exporter } from 'ipfs-unixfs-exporter';
 import { importer } from 'ipfs-unixfs-importer';
+import { RangeCriterion } from '../interfaces/records/types.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 /**
@@ -94,13 +95,14 @@ export class MessageStoreLevel implements MessageStore {
     return messageJson;
   }
 
-  async query(criteria: any): Promise<BaseMessage[]> {
+  async query(exactCriteria: { [key: string]: string }, rangeCriteria?: { [key: string]: RangeCriterion }): Promise<BaseMessage[]> {
     const messages: BaseMessage[] = [];
 
-    // parse query into a query that is compatible with the index we're using
-    const queryTerms = MessageStoreLevel.buildIndexQueryTerms(criteria);
+    // parse criteria into a query that is compatible with the indexing DB (search-index) we're using
+    const queryTerms = MessageStoreLevel.buildIndexQueryTerms(exactCriteria);
+    const rangeTerms = MessageStoreLevel.buildRangeIndexQueryTerms(rangeCriteria);
 
-    const { RESULT: indexResults } = await this.index.QUERY({ AND: queryTerms });
+    const { RESULT: indexResults } = await this.index.QUERY({ AND: [...queryTerms, ...rangeTerms] });
 
     for (const result of indexResults) {
       const message = await this.get(result._id);
@@ -214,11 +216,46 @@ export class MessageStoreLevel implements MessageStore {
 
     return terms;
   }
+
+  private static buildRangeIndexQueryTerms(
+    rangeCriteria: { [key: string]: RangeCriterion} = { }
+  ): SearchIndexTerm[] {
+    const terms = [];
+
+    for (const rangeFilterName in rangeCriteria) {
+      const rangeFilter = rangeCriteria[rangeFilterName];
+
+      const term: RangeSearchIndexTerm = {
+        FIELD : [`${rangeFilterName}`],
+        VALUE : { }
+      };
+
+      if (rangeFilter.from !== undefined) {
+        term.VALUE.GTE = rangeFilter.from;
+      }
+
+      if (rangeFilter.to !== undefined) {
+        term.VALUE.LTE = rangeFilter.to;
+      }
+
+      terms.push(term);
+    }
+
+    return terms;
+  }
 }
 
 type SearchIndexTerm = {
   FIELD: string[];
   VALUE: any;
+};
+
+type RangeSearchIndexTerm = {
+  FIELD: string[],
+  VALUE: {
+    GTE?: string,
+    LTE?: string
+  }
 };
 
 type MessageStoreLevelConfig = {

@@ -7,6 +7,7 @@ import { Encoder } from '../../../../src/utils/encoder.js';
 import { handleRecordsQuery } from '../../../../src/interfaces/records/handlers/records-query.js';
 import { Jws } from '../../../../src/utils/jws.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
+import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
@@ -120,6 +121,71 @@ describe('handleRecordsQuery()', () => {
       const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { attester: carol.did } });
       const reply3 = await handleRecordsQuery(alice.did, recordsQuery3.message, messageStore, didResolver);
       expect(reply3.entries?.length).to.equal(0);
+    });
+
+    it('should be able to range query by `dateCreated`', async () => {
+      // scenario: 3 records authored by alice, created on first of 2021, 2022, and 2023 respectively
+      const firstDayOf2021 = Temporal.PlainDateTime.from({ year: 2021, month: 1, day: 1 }).toString({ smallestUnit: 'microseconds' });
+      const firstDayOf2022 = Temporal.PlainDateTime.from({ year: 2022, month: 1, day: 1 }).toString({ smallestUnit: 'microseconds' });
+      const firstDayOf2023 = Temporal.PlainDateTime.from({ year: 2023, month: 1, day: 1 }).toString({ smallestUnit: 'microseconds' });
+      const alice = await DidKeyResolver.generate();
+      const write1 = await TestDataGenerator.generateRecordsWrite({ requester: alice, dateCreated: firstDayOf2021, dateModified: firstDayOf2021 });
+      const write2 = await TestDataGenerator.generateRecordsWrite({ requester: alice, dateCreated: firstDayOf2022, dateModified: firstDayOf2022 });
+      const write3 = await TestDataGenerator.generateRecordsWrite({ requester: alice, dateCreated: firstDayOf2023, dateModified: firstDayOf2023 });
+
+      // insert data
+      const writeReply1 = await handleRecordsWrite(alice.did, write1.message, messageStore, didResolver);
+      const writeReply2 = await handleRecordsWrite(alice.did, write2.message, messageStore, didResolver);
+      const writeReply3 = await handleRecordsWrite(alice.did, write3.message, messageStore, didResolver);
+      expect(writeReply1.status.code).to.equal(202);
+      expect(writeReply2.status.code).to.equal(202);
+      expect(writeReply3.status.code).to.equal(202);
+
+      // testing `from` range criteria
+      const lastDayOf2021 = Temporal.PlainDateTime.from({ year: 2021, month: 12, day: 31 }).toString({ smallestUnit: 'microseconds' });
+      const recordsQuery1 = await TestDataGenerator.generateRecordsQuery({
+        requester : alice,
+        filter    : { dateCreated: { from: lastDayOf2021 } },
+        dateSort  : DateSort.CreatedAscending
+      });
+      const reply1 = await handleRecordsQuery(alice.did, recordsQuery1.message, messageStore, didResolver);
+      expect(reply1.entries?.length).to.equal(2);
+      expect((reply1.entries[0] as RecordsWriteMessage).encodedData).to.equal(write2.message.encodedData);
+      expect((reply1.entries[1] as RecordsWriteMessage).encodedData).to.equal(write3.message.encodedData);
+
+      // testing `to` range criteria
+      const lastDayOf2022 = Temporal.PlainDateTime.from({ year: 2022, month: 12, day: 31 }).toString({ smallestUnit: 'microseconds' });
+      const recordsQuery2 = await TestDataGenerator.generateRecordsQuery({
+        requester : alice,
+        filter    : { dateCreated: { to: lastDayOf2022 } },
+        dateSort  : DateSort.CreatedAscending
+      });
+      const reply2 = await handleRecordsQuery(alice.did, recordsQuery2.message, messageStore, didResolver);
+      expect(reply2.entries?.length).to.equal(2);
+      expect((reply2.entries[0] as RecordsWriteMessage).encodedData).to.equal(write1.message.encodedData);
+      expect((reply2.entries[1] as RecordsWriteMessage).encodedData).to.equal(write2.message.encodedData);
+
+      // testing `from` and `to` range criteria
+      const lastDayOf2023 = Temporal.PlainDateTime.from({ year: 2023, month: 12, day: 31 }).toString({ smallestUnit: 'microseconds' });
+      const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({
+        requester : alice,
+        filter    : { dateCreated: { from: lastDayOf2022, to: lastDayOf2023 } },
+        dateSort  : DateSort.CreatedAscending
+      });
+      const reply3 = await handleRecordsQuery(alice.did, recordsQuery3.message, messageStore, didResolver);
+      expect(reply3.entries?.length).to.equal(1);
+      expect((reply3.entries[0] as RecordsWriteMessage).encodedData).to.equal(write3.message.encodedData);
+
+      // testing edge case where value equals `from` and `to` criteria
+      const recordsQuery4 = await TestDataGenerator.generateRecordsQuery({
+        requester : alice,
+        filter    : { dateCreated: { from: firstDayOf2022, to: firstDayOf2023 } },
+        dateSort  : DateSort.CreatedAscending
+      });
+      const reply4 = await handleRecordsQuery(alice.did, recordsQuery4.message, messageStore, didResolver);
+      expect(reply4.entries?.length).to.equal(2);
+      expect((reply4.entries[0] as RecordsWriteMessage).encodedData).to.equal(write2.message.encodedData);
+      expect((reply4.entries[1] as RecordsWriteMessage).encodedData).to.equal(write3.message.encodedData);
     });
 
     it('should not include `authorization` in returned records', async () => {

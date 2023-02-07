@@ -64,6 +64,19 @@
             },
             "dataFormat": {
               "type": "string"
+            },
+            "dateCreated": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": false,
+              "properties": {
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "string"
+                }
+              }
             }
           }
         },

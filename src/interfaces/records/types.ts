@@ -53,6 +53,22 @@ export type RecordsQueryFilter = {
   recordId?: string;
   parentId?: string;
   dataFormat?: string;
+  dateCreated?: RangeCriterion;
+};
+
+/**
+ * A range criterion in a query filter.
+ */
+export type RangeCriterion = {
+  /**
+   * Inclusive starting date-time.
+   */
+  from?: string;
+
+  /**
+   * Inclusive end date-time.
+   */
+  to?: string;
 };
 
 export type RecordsWriteAttestationPayload = {
