@@ -78,6 +78,8 @@ export class RecordsQuery extends Message {
     const filterCopy = { ... filter };
     delete filterCopy.dateCreated;
 
+    removeUndefinedProperties(filterCopy);
+
     return filterCopy as { [key:string]: string };
   }
 
