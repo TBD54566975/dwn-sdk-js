@@ -6,7 +6,6 @@ import { BaseMessage } from '../../../core/types.js';
 import { lexicographicalCompare } from '../../../utils/string.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { MessageStore } from '../../../store/message-store.js';
-import { removeUndefinedProperties } from '../../../utils/object.js';
 
 import { DateSort, RecordsQuery } from '../messages/records-query.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
