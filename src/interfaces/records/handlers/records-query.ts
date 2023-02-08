@@ -6,7 +6,6 @@ import { BaseMessage } from '../../../core/types.js';
 import { lexicographicalCompare } from '../../../utils/string.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { MessageStore } from '../../../store/message-store.js';
-import { removeUndefinedProperties } from '../../../utils/object.js';
 
 import { DateSort, RecordsQuery } from '../messages/records-query.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
@@ -65,16 +64,17 @@ export const handleRecordsQuery: MethodHandler = async (
  */
 async function fetchRecordsAsOwner(tenant: string, recordsQuery: RecordsQuery, messageStore: MessageStore): Promise<BaseMessage[]> {
   // fetch all published records matching the query
-  const includeCriteria = {
+  const exactCriteria = RecordsQuery.getExactCriteria(recordsQuery.message.descriptor.filter);
+  const completeExactCriteria = {
     tenant,
     interface         : DwnInterfaceName.Records,
     method            : DwnMethodName.Write,
     isLatestBaseState : 'true',
-    ...recordsQuery.message.descriptor.filter
+    ...exactCriteria
   };
-  removeUndefinedProperties(includeCriteria);
 
-  const records = await messageStore.query(includeCriteria);
+  const rangeCriteria = RecordsQuery.getRangeCriteria(recordsQuery.message.descriptor.filter);
+  const records = await messageStore.query(completeExactCriteria, rangeCriteria);
   return records;
 }
 
@@ -97,17 +97,18 @@ async function fetchRecordsAsNonOwner(tenant: string, recordsQuery: RecordsQuery
  */
 async function fetchPublishedRecords(tenant: string, recordsQuery: RecordsQuery, messageStore: MessageStore): Promise<BaseMessage[]> {
   // fetch all published records matching the query
-  const includeCriteria = {
+  const exactCriteria = RecordsQuery.getExactCriteria(recordsQuery.message.descriptor.filter);
+  const completeExactCriteria = {
     tenant,
     interface         : DwnInterfaceName.Records,
     method            : DwnMethodName.Write,
     published         : 'true',
     isLatestBaseState : 'true',
-    ...recordsQuery.message.descriptor.filter
+    ...exactCriteria
   };
-  removeUndefinedProperties(includeCriteria);
 
-  const publishedRecords = await messageStore.query(includeCriteria);
+  const rangeCriteria = RecordsQuery.getRangeCriteria(recordsQuery.message.descriptor.filter);
+  const publishedRecords = await messageStore.query(completeExactCriteria, rangeCriteria);
   return publishedRecords;
 }
 
@@ -117,18 +118,19 @@ async function fetchPublishedRecords(tenant: string, recordsQuery: RecordsQuery,
 async function fetchUnpublishedRecordsForRequester(tenant: string, recordsQuery: RecordsQuery, messageStore: MessageStore)
   : Promise<BaseMessage[]> {
   // include records where recipient is requester
-  const includeCriteria = {
+  const exactCriteria = RecordsQuery.getExactCriteria(recordsQuery.message.descriptor.filter);
+  const completeExactCriteria = {
     tenant,
     interface         : DwnInterfaceName.Records,
     method            : DwnMethodName.Write,
     recipient         : recordsQuery.author,
     isLatestBaseState : 'true',
     published         : 'false',
-    ...recordsQuery.message.descriptor.filter
+    ...exactCriteria
   };
-  removeUndefinedProperties(includeCriteria);
 
-  const unpublishedRecordsForRequester = await messageStore.query(includeCriteria);
+  const rangeCriteria = RecordsQuery.getRangeCriteria(recordsQuery.message.descriptor.filter);
+  const unpublishedRecordsForRequester = await messageStore.query(completeExactCriteria, rangeCriteria);
   return unpublishedRecordsForRequester;
 }
 
@@ -138,18 +140,20 @@ async function fetchUnpublishedRecordsForRequester(tenant: string, recordsQuery:
 async function fetchUnpublishedRecordsByRequester(tenant: string, recordsQuery: RecordsQuery, messageStore: MessageStore)
   : Promise<BaseMessage[]> {
   // include records where recipient is requester
-  const includeCriteria = {
+  const exactCriteria = RecordsQuery.getExactCriteria(recordsQuery.message.descriptor.filter);
+  const completeExactCriteria = {
     tenant,
     author            : recordsQuery.author,
     interface         : DwnInterfaceName.Records,
     method            : DwnMethodName.Write,
     isLatestBaseState : 'true',
     published         : 'false',
-    ...recordsQuery.message.descriptor.filter
+    ...exactCriteria
   };
-  removeUndefinedProperties(includeCriteria);
 
-  const unpublishedRecordsForRequester = await messageStore.query(includeCriteria);
+  const rangeCriteria = RecordsQuery.getRangeCriteria(recordsQuery.message.descriptor.filter);
+
+  const unpublishedRecordsForRequester = await messageStore.query(completeExactCriteria, rangeCriteria);
   return unpublishedRecordsForRequester;
 }
 

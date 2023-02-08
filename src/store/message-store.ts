@@ -1,4 +1,5 @@
 import type { BaseMessage } from '../core/types.js';
+import { RangeCriterion } from '../interfaces/records/types.js';
 
 export interface MessageStore {
   /**
@@ -24,11 +25,16 @@ export interface MessageStore {
   get(cid: string): Promise<BaseMessage>;
 
   /**
-   * queries the underlying store for messages that match the query provided.
-   * returns an empty array if no messages are found
-   * @param criteria - "AND" criteria for what to include
+   * Queries the underlying store for messages that match the query provided.
+   * The provided criteria are combined to form an AND filter for the query.
+   * Returns an empty array if no messages are found
+   * @param exactCriteria - criteria for exact matches
+   * @param rangeCriteria - criteria for range matches
    */
-  query(criteria: any): Promise<BaseMessage[]>;
+  query(
+    exactCriteria: { [key: string]: string },
+    rangeCriteria?: { [key: string]: RangeCriterion }
+  ): Promise<BaseMessage[]>;
 
   /**
    * deletes the message associated to the id provided
