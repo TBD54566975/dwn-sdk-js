@@ -18,6 +18,7 @@ export { RecordsDelete, RecordsDeleteOptions } from './interfaces/records/messag
 export { RecordsQuery, RecordsQueryOptions } from './interfaces/records/messages/records-query.js';
 export { RecordsWrite, RecordsWriteOptions, CreateFromOptions } from './interfaces/records/messages/records-write.js';
 export { DateSort } from './interfaces/records/messages/records-query.js';
+export { DataStream } from './utils/data-stream.js';
 export { DidKeyResolver } from './did/did-key-resolver.js';
 export { DidIonResolver } from './did/did-ion-resolver.js';
 export { DidResolver, DidMethodResolver } from './did/did-resolver.js';

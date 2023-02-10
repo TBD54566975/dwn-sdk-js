@@ -10,12 +10,9 @@ import { MessageStore } from '../../../store/message-store.js';
 import { DateSort, RecordsQuery } from '../messages/records-query.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 
-export const handleRecordsQuery: MethodHandler = async (
-  tenant,
-  message,
-  messageStore,
-  didResolver
-): Promise<MessageReply> => {
+export const handleRecordsQuery: MethodHandler = async (input): Promise<MessageReply> => {
+  const { tenant, message, messageStore, didResolver } = input;
+
   let recordsQuery: RecordsQuery;
   try {
     recordsQuery = await RecordsQuery.parse(message as RecordsQueryMessage);

@@ -7,12 +7,8 @@ import { ProtocolsConfigure } from '../messages/protocols-configure.js';
 
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
 
-export const handleProtocolsConfigure: MethodHandler = async (
-  tenant,
-  message,
-  messageStore,
-  didResolver
-): Promise<MessageReply> => {
+export const handleProtocolsConfigure: MethodHandler = async (input): Promise<MessageReply> => {
+  const { tenant, message, messageStore, didResolver, dataStream } = input;
   const incomingMessage = message as ProtocolsConfigureMessage;
 
   let protocolsConfigure: ProtocolsConfigure;
@@ -59,7 +55,7 @@ export const handleProtocolsConfigure: MethodHandler = async (
       author,
       ... message.descriptor
     };
-    await messageStore.put(message, index);
+    await messageStore.put(message, index, dataStream);
 
     messageReply = new MessageReply({
       status: { code: 202, detail: 'Accepted' }

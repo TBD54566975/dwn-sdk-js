@@ -9,7 +9,7 @@ import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.
 export type ProtocolsConfigureOptions = {
   dateCreated? : string;
   protocol: string;
-  definition : ProtocolDefinition;
+  definition : ProtocolDefinition; // TODO: REMOVE THIS!
   authorizationSignatureInput: SignatureInput;
 };
 

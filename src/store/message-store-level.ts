@@ -12,7 +12,10 @@ import { Encoder } from '../utils/encoder.js';
 import { exporter } from 'ipfs-unixfs-exporter';
 import { importer } from 'ipfs-unixfs-importer';
 import { RangeCriterion } from '../interfaces/records/types.js';
+import { Readable } from 'readable-stream';
 import { sha256 } from 'multiformats/hashes/sha2';
+
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 /**
  * A simple implementation of {@link MessageStore} that works in both the browser and server-side.
@@ -77,11 +80,20 @@ export class MessageStoreLevel implements MessageStore {
       return messageJson;
     }
 
-    // data is chunked into dag-pb unixfs blocks. re-inflate the chunks.
+    // TODO: #219 (https://github.com/TBD54566975/dwn-sdk-js/issues/219)
+    // temporary placeholder for keeping status-quo of returning data in `encodedData`
+    // once #219 is implemented, `encodedData` will likely not exist directly as part of the returned message here
     const dataReferencingMessage = decodedBlock.value as DataReferencingMessage;
-    const dataCid = CID.parse(dataReferencingMessage.descriptor.dataCid);
+    dataReferencingMessage.encodedData = await this.getDataAsEncodedString(dataReferencingMessage.descriptor.dataCid);
 
-    const dataDagRoot = await exporter(dataCid, this.db);
+    return messageJson;
+  }
+
+  private async getDataAsEncodedString(dataCid: string): Promise<string> {
+    const cid = CID.parse(dataCid);
+
+    // data is chunked into dag-pb unixfs blocks. re-inflate the chunks.
+    const dataDagRoot = await exporter(cid, this.db);
     const dataBytes = new Uint8Array(dataDagRoot.size);
     let offset = 0;
 
@@ -90,9 +102,7 @@ export class MessageStoreLevel implements MessageStore {
       offset += chunk.length;
     }
 
-    dataReferencingMessage.encodedData = Encoder.bytesToBase64Url(dataBytes);
-
-    return messageJson;
+    return Encoder.bytesToBase64Url(dataBytes);
   }
 
   async query(exactCriteria: { [key: string]: string }, rangeCriteria?: { [key: string]: RangeCriterion }): Promise<BaseMessage[]> {
@@ -106,13 +116,11 @@ export class MessageStoreLevel implements MessageStore {
 
     for (const result of indexResults) {
       const message = await this.get(result._id);
-
       messages.push(message);
     }
 
     return messages;
   }
-
 
   async delete(cidString: string): Promise<void> {
     // TODO: Implement data deletion in Records - https://github.com/TBD54566975/dwn-sdk-js/issues/84
@@ -123,38 +131,36 @@ export class MessageStoreLevel implements MessageStore {
     return;
   }
 
-  async put(messageJson: BaseMessage, indexes: { [key: string]: string }): Promise<void> {
-    // make a shallow copy so we don't mess up the references (e.g. `encodedData`) of original message
-    const messageCopy = { ...messageJson };
+  async put(message: BaseMessage, indexes: { [key: string]: string }, readableStream?: Readable): Promise<void> {
+    const encodedMessageBlock = await block.encode({ value: message, codec: cbor, hasher: sha256 });
 
-    // delete `encodedData` if it exists so `messageJson` is stored without it, `encodedData` will be decoded, chunked and stored separately below
-    let encodedData = undefined;
-    if (messageCopy['encodedData'] !== undefined) {
-      const messageJsonWithEncodedData = messageCopy as unknown as DataReferencingMessage;
-      encodedData = messageJsonWithEncodedData.encodedData;
+    await this.db.put(encodedMessageBlock.cid, encodedMessageBlock.bytes);
 
-      delete messageJsonWithEncodedData.encodedData;
+    // if `readableStream` is given, chunk it and store it
+    if (readableStream !== undefined) {
+      const asyncDataBlocks = importer([{ content: readableStream }], this.db, { cidVersion: 1 });
+
+      // NOTE: the last block contains the root cid
+      let block;
+      for await (block of asyncDataBlocks) { ; }
+
+      // MUST verify that the CID of the actual data matches with the given `dataCid`
+      // if data CID is wrong, delete the data we just stored
+      const actualDataCid = block.cid.toString();
+      if (message.descriptor.dataCid !== actualDataCid) {
+        // there is an opportunity to improve here: handle the edge cae of if the delete fails...
+        await this.db.delete(block.cid);
+        throw new DwnError(
+          DwnErrorCode.MessageStoreDataCidMismatch,
+          `actual data CID ${actualDataCid} does not match dataCid in descriptor: ${message.descriptor.dataCid}`
+        );
+      }
     }
 
-    const encodedBlock = await block.encode({ value: messageCopy, codec: cbor, hasher: sha256 });
-
-    await this.db.put(encodedBlock.cid, encodedBlock.bytes);
-
-    // if `encodedData` is present we'll decode it then chunk it and store it as unix-fs dag-pb encoded
-    if (encodedData) {
-      const content = Encoder.base64UrlToBytes(encodedData);
-      const chunk = importer([{ content }], this.db, { cidVersion: 1 });
-
-      // for some reason no-unused-vars doesn't work in for loops. it's not entirely surprising because
-      // it does seem a bit strange to iterate over something you never end up using but in this case
-      // we really don't have to access the result of `chunk` because it's just outputting every unix-fs
-      // entry that's getting written to the blockstore. the last entry contains the root cid
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      for await (const _ of chunk) { ; }
-    }
-
+    // TODO: #218 - Use tenant-scoped IDs - https://github.com/TBD54566975/dwn-sdk-js/issues/218
+    const encodedMessageBlockCid = encodedMessageBlock.cid.toString();
     const indexDocument = {
-      _id: encodedBlock.cid.toString(),
+      _id: encodedMessageBlockCid,
       ...indexes
     };
 

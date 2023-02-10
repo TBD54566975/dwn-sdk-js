@@ -2,7 +2,6 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
-import { base64url } from 'multiformats/bases/base64';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsWrite } from '../../../../src/interfaces/records/messages/records-write.js';
 import { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
@@ -31,7 +30,6 @@ describe('RecordsWrite', () => {
       const message = recordsWrite.message as RecordsWriteMessage;
 
       expect(message.authorization).to.exist;
-      expect(message.encodedData).to.equal(base64url.baseEncode(options.data));
       expect(message.descriptor.dataFormat).to.equal(options.dataFormat);
       expect(message.descriptor.dateCreated).to.equal(options.dateCreated);
       expect(message.recordId).to.equal(options.recordId);
@@ -97,20 +95,6 @@ describe('RecordsWrite', () => {
 
       const newestMessage = await RecordsWrite.getNewestMessage([b, c, a]);
       expect((newestMessage as any).recordId).to.equal(c.recordId);
-    });
-  });
-
-  describe('getCid', () => {
-    it('should return the same value with or without `encodedData`', async () => {
-      const messageData = await TestDataGenerator.generateRecordsWrite();
-
-      const messageWithoutEncodedData = { ...messageData.message };
-      delete messageWithoutEncodedData.encodedData;
-
-      const cidOfMessageWithEncodedData = await RecordsWrite.getCid(messageData.message);
-      const cidOfMessageWithoutData = await RecordsWrite.getCid(messageWithoutEncodedData);
-
-      expect(cidOfMessageWithEncodedData.toString()).to.equal(cidOfMessageWithoutData.toString());
     });
   });
 

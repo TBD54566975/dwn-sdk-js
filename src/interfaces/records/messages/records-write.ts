@@ -133,12 +133,10 @@ export class RecordsWrite extends Message {
       options.authorizationSignatureInput
     );
 
-    const encodedData = Encoder.bytesToBase64Url(options.data);
     const message: RecordsWriteMessage = {
       recordId,
       descriptor,
-      authorization,
-      encodedData
+      authorization
     };
 
     if (contextId !== undefined) { message.contextId = contextId; } // assign `contextId` only if it is defined
@@ -226,16 +224,6 @@ export class RecordsWrite extends Message {
    * There is opportunity to integrate better with `validateSchema(...)`
    */
   private async validateIntegrity(): Promise<void> {
-    // verify dataCid matches given data
-    if (this.message.encodedData !== undefined) {
-      const rawData = Encoder.base64UrlToBytes(this.message.encodedData);
-      const actualDataCid = (await computeDagPbCid(rawData)).toString();
-
-      if (actualDataCid !== this.message.descriptor.dataCid) {
-        throw new Error('actual CID of data and `dataCid` in descriptor mismatch');
-      }
-    }
-
     // make sure the same `recordId` in message is the same as the `recordId` in `authorization`
     if (this.message.recordId !== this.authorizationPayload.recordId) {
       throw new Error(

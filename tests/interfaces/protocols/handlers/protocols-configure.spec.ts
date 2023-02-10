@@ -56,9 +56,9 @@ describe('handleProtocolsQuery()', () => {
       const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput1, signatureInput2]);
       message.authorization = signer.getJws();
 
-      const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
-      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-      const reply = await handleProtocolsConfigure(tenant, message, messageStoreStub, didResolverStub);
+      const didResolver = TestStubGenerator.createDidResolverStub(requester);
+      const messageStore = sinon.createStubInstance(MessageStoreLevel);
+      const reply = await handleProtocolsConfigure({ tenant, message, messageStore, didResolver });
 
       expect(reply.status.code).to.equal(400);
       expect(reply.status.detail).to.contain('expected no more than 1 signature');
@@ -69,12 +69,12 @@ describe('handleProtocolsQuery()', () => {
       alice.keyId = 'wrongValue'; // to fail authentication
       const { message } = await TestDataGenerator.generateProtocolsConfigure({ requester: alice });
 
-      const reply = await handleProtocolsConfigure(alice.did, message, messageStore, didResolver);
+      const reply = await handleProtocolsConfigure({ tenant: alice.did, message, messageStore, didResolver });
       expect(reply.status.code).to.equal(401);
       expect(reply.status.detail).to.contain('not a valid DID');
     });
 
-    it('should only be able to overwrite existing protocol if new protocol lexicographically larger', async () => {
+    it('should only be able to overwrite existing protocol if new protocol is lexicographically larger', async () => {
       // generate three versions of the same protocol message
       const alice = await DidKeyResolver.generate();
       const protocol = 'exampleProtocol';
@@ -90,33 +90,39 @@ describe('handleProtocolsQuery()', () => {
 
       // sort the message in lexicographic order
       const [
-        messageDataWithSmallestLexicographicValue,
-        messageDataWithMediumLexicographicValue,
-        messageDataWithLargestLexicographicValue
+        oldestWrite,
+        middleWrite,
+        newestWrite
       ]: GenerateProtocolsConfigureOutput[]
         = messageDataWithCid.sort((messageDataA, messageDataB) => { return lexicographicalCompare(messageDataA.cid, messageDataB.cid); });
 
       // write the protocol with the middle lexicographic value
-      let reply = await handleProtocolsConfigure(alice.did, messageDataWithMediumLexicographicValue.message, messageStore, didResolver);
+      let reply = await handleProtocolsConfigure({
+        tenant: alice.did, message: middleWrite.message, messageStore, didResolver, dataStream: middleWrite.dataStream
+      });
       expect(reply.status.code).to.equal(202);
 
       // test that the protocol with the smallest lexicographic value cannot be written
-      reply = await handleProtocolsConfigure(alice.did, messageDataWithSmallestLexicographicValue.message, messageStore, didResolver);
+      reply = await handleProtocolsConfigure({
+        tenant: alice.did, message: oldestWrite.message, messageStore, didResolver, dataStream: oldestWrite.dataStream
+      });
       expect(reply.status.code).to.equal(409);
 
       // test that the protocol with the largest lexicographic value can be written
-      reply = await handleProtocolsConfigure(alice.did, messageDataWithLargestLexicographicValue.message, messageStore, didResolver);
+      reply = await handleProtocolsConfigure({
+        tenant: alice.did, message: newestWrite.message, messageStore, didResolver, dataStream: newestWrite.dataStream
+      });
       expect(reply.status.code).to.equal(202);
 
       // test that old protocol message is removed from DB and only the newer protocol message remains
       const queryMessageData = await TestDataGenerator.generateProtocolsQuery({ requester: alice, filter: { protocol } });
-      reply = await handleProtocolsQuery(alice.did, queryMessageData.message, messageStore, didResolver);
+      reply = await handleProtocolsQuery({ tenant: alice.did, message: queryMessageData.message, messageStore, didResolver });
 
       expect(reply.status.code).to.equal(200);
       expect(reply.entries.length).to.equal(1);
 
-      const initialDefinition = JSON.stringify(messageDataWithMediumLexicographicValue.message.descriptor.definition);
-      const expectedDefinition = JSON.stringify(messageDataWithLargestLexicographicValue.message.descriptor.definition);
+      const initialDefinition = JSON.stringify(middleWrite.message.descriptor.definition);
+      const expectedDefinition = JSON.stringify(newestWrite.message.descriptor.definition);
       const actualDefinition = JSON.stringify(reply.entries[0]['descriptor']['definition']);
       expect(actualDefinition).to.not.equal(initialDefinition);
       expect(actualDefinition).to.equal(expectedDefinition);
