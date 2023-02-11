@@ -81,6 +81,9 @@ export const handleRecordsWrite: MethodHandler = async (input): Promise<MessageR
           status: { code: 400, detail: error.message }
         });
       }
+
+      // else throw
+      throw (error);
     }
 
     messageReply = new MessageReply({
