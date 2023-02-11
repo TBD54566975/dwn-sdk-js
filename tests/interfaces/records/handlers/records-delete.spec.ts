@@ -2,7 +2,6 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
-import { DataStream } from '../../../../src/utils/data-stream.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { handleRecordsDelete } from '../../../../src/interfaces/records/handlers/records-delete.js';
 import { handleRecordsQuery } from '../../../../src/interfaces/records/handlers/records-query.js';

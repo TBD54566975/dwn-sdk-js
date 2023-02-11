@@ -55,6 +55,7 @@ export const handleRecordsWrite: MethodHandler = async (input): Promise<MessageR
 
   // find which message is the newest, and if the incoming message is the newest
   const newestExistingMessage = await RecordsWrite.getNewestMessage(existingMessages);
+
   let incomingMessageIsNewest = false;
   let newestMessage;
   // if incoming message is newest
@@ -74,7 +75,8 @@ export const handleRecordsWrite: MethodHandler = async (input): Promise<MessageR
     try {
       await messageStore.put(incomingMessage, indexes, dataStream);
     } catch (error) {
-      if (error.code === DwnErrorCode.MessageStoreDataCidMismatch) {
+      if (error.code === DwnErrorCode.MessageStoreDataCidMismatch ||
+          error.code === DwnErrorCode.MessageStoreDataNotFound) {
         return new MessageReply({
           status: { code: 400, detail: error.message }
         });

@@ -2,6 +2,7 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
+import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsWrite } from '../../../../src/interfaces/records/messages/records-write.js';
 import { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
@@ -95,6 +96,20 @@ describe('RecordsWrite', () => {
 
       const newestMessage = await RecordsWrite.getNewestMessage([b, c, a]);
       expect((newestMessage as any).recordId).to.equal(c.recordId);
+    });
+  });
+
+  describe('getCid', () => {
+    it('should return the same value with or without `encodedData`', async () => {
+      const messageData = await TestDataGenerator.generateRecordsWrite();
+
+      const messageWithEncodedData = { ...messageData.message };
+      messageWithEncodedData['encodedData'] = 'dW51c2Vk';
+
+      const cidOfMessageWithoutEncodedData = await Message.getCid(messageData.message);
+      const cidOfMessageWithEncodedData = await Message.getCid(messageWithEncodedData);
+
+      expect(cidOfMessageWithoutEncodedData).to.equal(cidOfMessageWithEncodedData);
     });
   });
 

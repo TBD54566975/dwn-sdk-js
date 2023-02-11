@@ -43,11 +43,11 @@ describe('DWN', () => {
       // generate a `did:key` DID
       const alice = await DidKeyResolver.generate();
 
-      const messageData = await TestDataGenerator.generateRecordsWrite({
+      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
         requester: alice,
       });
 
-      const reply = await dwn.processMessage(alice.did, messageData.message);
+      const reply = await dwn.processMessage(alice.did, message, dataStream);
 
       expect(reply.status.code).to.equal(202);
     });

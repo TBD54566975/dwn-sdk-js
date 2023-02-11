@@ -88,8 +88,8 @@ export abstract class Message {
    */
   public static async compareCid(a: BaseMessage, b: BaseMessage): Promise<number> {
     // the < and > operators compare strings in lexicographical order
-    const cidA = await computeCid(a);
-    const cidB = await computeCid(b);
+    const cidA = await Message.getCid(a);
+    const cidB = await Message.getCid(b);
     return lexicographicalCompare(cidA, cidB);
   }
 

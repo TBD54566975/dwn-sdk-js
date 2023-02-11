@@ -131,33 +131,50 @@ export class MessageStoreLevel implements MessageStore {
     return;
   }
 
-  async put(message: BaseMessage, indexes: { [key: string]: string }, readableStream?: Readable): Promise<void> {
+  async put(message: BaseMessage, indexes: { [key: string]: string }, dataStream?: Readable): Promise<void> {
     const encodedMessageBlock = await block.encode({ value: message, codec: cbor, hasher: sha256 });
 
     await this.db.put(encodedMessageBlock.cid, encodedMessageBlock.bytes);
 
-    // if `readableStream` is given, chunk it and store it
-    if (readableStream !== undefined) {
-      const asyncDataBlocks = importer([{ content: readableStream }], this.db, { cidVersion: 1 });
+    // if `dataCid` is given, it means there is corresponding data associated with this message
+    // but NOTE: it is possible that a data stream is not given in such case, for instance,
+    // a subsequent RecordsWrite that changes the `published` property, but the data hasn't changed,
+    // in this case requiring re-uploading of the data is extremely inefficient so we take care allow omission of data stream
+    if (message.descriptor.dataCid !== undefined) {
+      if (dataStream === undefined) {
+        // the message implies that the data is already in the DB, so we check to make sure the data already exist
+        // TODO: #218 - Use tenant + record scoped IDs - https://github.com/TBD54566975/dwn-sdk-js/issues/218
+        const dataCid = CID.parse(message.descriptor.dataCid);
+        const rootBlockByte = await this.db.get(dataCid);
 
-      // NOTE: the last block contains the root cid
-      let block;
-      for await (block of asyncDataBlocks) { ; }
+        if (rootBlockByte === undefined) {
+          throw new DwnError(
+            DwnErrorCode.MessageStoreDataNotFound,
+            `data with dataCid ${message.descriptor.dataCid} not found in store`
+          );
+        }
+      } else {
+        const asyncDataBlocks = importer([{ content: dataStream }], this.db, { cidVersion: 1 });
 
-      // MUST verify that the CID of the actual data matches with the given `dataCid`
-      // if data CID is wrong, delete the data we just stored
-      const actualDataCid = block.cid.toString();
-      if (message.descriptor.dataCid !== actualDataCid) {
+        // NOTE: the last block contains the root cid
+        let block;
+        for await (block of asyncDataBlocks) { ; }
+
+        // MUST verify that the CID of the actual data matches with the given `dataCid`
+        // if data CID is wrong, delete the data we just stored
+        const actualDataCid = block.cid.toString();
+        if (message.descriptor.dataCid !== actualDataCid) {
         // there is an opportunity to improve here: handle the edge cae of if the delete fails...
-        await this.db.delete(block.cid);
-        throw new DwnError(
-          DwnErrorCode.MessageStoreDataCidMismatch,
-          `actual data CID ${actualDataCid} does not match dataCid in descriptor: ${message.descriptor.dataCid}`
-        );
+          await this.db.delete(block.cid);
+          throw new DwnError(
+            DwnErrorCode.MessageStoreDataCidMismatch,
+            `actual data CID ${actualDataCid} does not match dataCid in descriptor: ${message.descriptor.dataCid}`
+          );
+        }
       }
     }
 
-    // TODO: #218 - Use tenant-scoped IDs - https://github.com/TBD54566975/dwn-sdk-js/issues/218
+    // TODO: #218 - Use tenant + record scoped IDs - https://github.com/TBD54566975/dwn-sdk-js/issues/218
     const encodedMessageBlockCid = encodedMessageBlock.cid.toString();
     const indexDocument = {
       _id: encodedMessageBlockCid,

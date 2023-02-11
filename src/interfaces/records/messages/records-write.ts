@@ -22,7 +22,8 @@ export type RecordsWriteOptions = {
   schema?: string;
   recordId?: string;
   parentId?: string;
-  data: Uint8Array;
+  data?: Uint8Array;
+  dataCid?: string;
   dateCreated?: string;
   dateModified?: string;
   published?: boolean;
@@ -78,7 +79,11 @@ export class RecordsWrite extends Message {
   public static async create(options: RecordsWriteOptions): Promise<RecordsWrite> {
     const currentTime = getCurrentTimeInHighPrecision();
 
-    const dataCid = await computeDagPbCid(options.data);
+    if (options.data !== undefined && options.dataCid !== undefined) {
+      throw new Error('only one parameter between `data` and `dataCid` is allowed');
+    }
+    const dataCid = options.dataCid ?? await computeDagPbCid(options.data);
+
     const descriptor: RecordsWriteDescriptor = {
       interface     : DwnInterfaceName.Records,
       method        : DwnMethodName.Write,
@@ -86,7 +91,7 @@ export class RecordsWrite extends Message {
       recipient     : options.recipient,
       schema        : options.schema,
       parentId      : options.parentId,
-      dataCid       : dataCid.toString(),
+      dataCid,
       dateCreated   : options.dateCreated ?? currentTime,
       dateModified  : options.dateModified ?? currentTime,
       published     : options.published,
@@ -196,12 +201,12 @@ export class RecordsWrite extends Message {
       parentId                    : unsignedMessage.descriptor.parentId,
       schema                      : unsignedMessage.descriptor.schema,
       dataFormat                  : unsignedMessage.descriptor.dataFormat,
-      // mutable properties below, if not given, inherit from message given
+      // mutable properties below
       dateModified                : options.dateModified ?? currentTime,
       published,
       datePublished,
-      // copying data from the given message may not be always right, there is probably opportunity for improvement here
-      data                        : options.data ?? Encoder.base64UrlToBytes(unsignedMessage.encodedData),
+      data                        : options.data,
+      dataCid                     : options.data ? undefined : unsignedMessage.descriptor.dataCid, // if data not given, use dataCid from base message
       // finally still need input for signing
       authorizationSignatureInput : options.authorizationSignatureInput,
       attestationSignatureInputs  : options.attestationSignatureInputs

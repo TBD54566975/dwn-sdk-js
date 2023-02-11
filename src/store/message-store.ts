@@ -18,6 +18,8 @@ export interface MessageStore {
    * @param indexes indexes (key-value pairs) to be included as part of this put operation
    * @throws {DwnError} with `DwnErrorCode.MessageStoreDataCidMismatch`
    *                    if the data stream resulted in a data CID that mismatches with `dataCid` in the given message
+   * @throws {DwnError} with `DwnErrorCode.MessageStoreDataNotFound`
+   *                    if `dataCid` in `descriptor` is given, and `dataStream` is not given, and data for the message does not exist already
    */
   put(messageJson: BaseMessage, indexes: { [key: string]: string }, dataStream?: Readable): Promise<void>;
 
@@ -40,7 +42,7 @@ export interface MessageStore {
   ): Promise<BaseMessage[]>;
 
   /**
-   * deletes the message associated to the id provided
+   * Deletes the message associated with the id provided.
    */
   delete(cid: string): Promise<void>;
 }

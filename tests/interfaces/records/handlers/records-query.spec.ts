@@ -455,10 +455,10 @@ describe('handleRecordsQuery()', () => {
       const additionalIndexes2 = await constructRecordsWriteIndexes(alice.did, record2Data.recordsWrite, true);
       const additionalIndexes3 = await constructRecordsWriteIndexes(alice.did, record3Data.recordsWrite, true);
       const additionalIndexes4 = await constructRecordsWriteIndexes(alice.did, record4Data.recordsWrite, true);
-      await messageStore.put(record1Data.message, additionalIndexes1);
-      await messageStore.put(record2Data.message, additionalIndexes2);
-      await messageStore.put(record3Data.message, additionalIndexes3);
-      await messageStore.put(record4Data.message, additionalIndexes4);
+      await messageStore.put(record1Data.message, additionalIndexes1, record1Data.dataStream);
+      await messageStore.put(record2Data.message, additionalIndexes2, record2Data.dataStream);
+      await messageStore.put(record3Data.message, additionalIndexes3, record3Data.dataStream);
+      await messageStore.put(record4Data.message, additionalIndexes4, record4Data.dataStream);
 
       // test correctness for Bob's query
       const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({

@@ -9,6 +9,7 @@ import { computeCid } from '../../../../src/utils/cid.js';
 import { DataStream } from '../../../../src/utils/data-stream.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DidResolver } from '../../../../src/did/did-resolver.js';
+import { DwnErrorCode } from '../../../../src/core/dwn-error.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
@@ -127,7 +128,6 @@ describe('handleRecordsWrite()', () => {
       // setting up a stub did resolver
       const didResolver = TestStubGenerator.createDidResolverStub(requester);
 
-      // sanity check that originating message got written
       const originatingMessageWriteReply = await handleRecordsWrite({
         tenant, message: originatingMessageData.message, messageStore, didResolver, dataStream: originatingMessageData.dataStream
       });
@@ -140,7 +140,6 @@ describe('handleRecordsWrite()', () => {
         existingWrite: originatingMessageData.recordsWrite,
         dateModified
       });
-
       const recordsWrite2 = await TestDataGenerator.generateFromRecordsWrite({
         requester,
         existingWrite: originatingMessageData.recordsWrite,
@@ -150,19 +149,19 @@ describe('handleRecordsWrite()', () => {
       // determine the lexicographical order of the two messages
       const message1Cid = await Message.getCid(recordsWrite1.message);
       const message2Cid = await Message.getCid(recordsWrite2.message);
-      let largerCollectionWrite: GenerateFromRecordsWriteOut;
-      let smallerCollectionWrite: GenerateFromRecordsWriteOut;
+      let newerWrite: GenerateFromRecordsWriteOut;
+      let olderWrite: GenerateFromRecordsWriteOut;
       if (message1Cid > message2Cid) {
-        largerCollectionWrite = recordsWrite1;
-        smallerCollectionWrite = recordsWrite2;
+        newerWrite = recordsWrite1;
+        olderWrite = recordsWrite2;
       } else {
-        largerCollectionWrite = recordsWrite2;
-        smallerCollectionWrite = recordsWrite1;
+        newerWrite = recordsWrite2;
+        olderWrite = recordsWrite1;
       }
 
       // write the message with the smaller lexicographical message CID first
       const recordsWriteReply = await handleRecordsWrite({
-        tenant, message: smallerCollectionWrite.message, messageStore, didResolver, dataStream: smallerCollectionWrite.dataStream
+        tenant, message: olderWrite.message, messageStore, didResolver, dataStream: olderWrite.dataStream
       });
       expect(recordsWriteReply.status.code).to.equal(202);
 
@@ -177,11 +176,11 @@ describe('handleRecordsWrite()', () => {
       expect(recordsQueryReply.status.code).to.equal(200);
       expect(recordsQueryReply.entries?.length).to.equal(1);
       expect((recordsQueryReply.entries![0] as RecordsWriteMessage).descriptor.dataCid)
-        .to.equal(smallerCollectionWrite.message.descriptor.dataCid);
+        .to.equal(olderWrite.message.descriptor.dataCid);
 
       // attempt to write the message with larger lexicographical message CID
       const newRecordsWriteReply = await handleRecordsWrite({
-        tenant, message: largerCollectionWrite.message, messageStore, didResolver, dataStream: largerCollectionWrite.dataStream
+        tenant, message: newerWrite.message, messageStore, didResolver, dataStream: newerWrite.dataStream
       });
       expect(newRecordsWriteReply.status.code).to.equal(202);
 
@@ -190,11 +189,15 @@ describe('handleRecordsWrite()', () => {
       expect(newRecordsQueryReply.status.code).to.equal(200);
       expect(newRecordsQueryReply.entries?.length).to.equal(1);
       expect((newRecordsQueryReply.entries![0] as RecordsWriteMessage).descriptor.dataCid)
-        .to.equal(largerCollectionWrite.message.descriptor.dataCid);
+        .to.equal(newerWrite.message.descriptor.dataCid);
 
       // try to write the message with smaller lexicographical message CID again
       const thirdRecordsWriteReply = await handleRecordsWrite({
-        tenant, message: smallerCollectionWrite.message, messageStore, didResolver, dataStream: smallerCollectionWrite.dataStream
+        tenant,
+        message    : olderWrite.message,
+        messageStore,
+        didResolver,
+        dataStream : DataStream.fromBytes(olderWrite.dataBytes) // need to create data stream again since it's already used above
       });
       expect(thirdRecordsWriteReply.status.code).to.equal(409); // expecting to fail
 
@@ -203,7 +206,7 @@ describe('handleRecordsWrite()', () => {
       expect(thirdRecordsQueryReply.status.code).to.equal(200);
       expect(thirdRecordsQueryReply.entries?.length).to.equal(1);
       expect((thirdRecordsQueryReply.entries![0] as RecordsWriteMessage).descriptor.dataCid)
-        .to.equal(largerCollectionWrite.message.descriptor.dataCid); // expecting unchanged
+        .to.equal(newerWrite.message.descriptor.dataCid); // expecting unchanged
     });
 
     it('should not allow changes to immutable properties', async () => {
@@ -278,10 +281,23 @@ describe('handleRecordsWrite()', () => {
       expect(reply.status.detail).to.contain('does not match dataCid in descriptor');
     });
 
+    it('should return 400 if attempting to write a record without data stream and the data does not already exist in DWN', async () => {
+      const alice = await DidKeyResolver.generate();
+
+      const { message } = await TestDataGenerator.generateRecordsWrite({
+        requester: alice,
+      });
+
+      const reply = await handleRecordsWrite({ tenant: alice.did, message, messageStore, didResolver });
+
+      expect(reply.status.code).to.equal(400);
+      expect(reply.status.detail).to.contain(DwnErrorCode.MessageStoreDataNotFound);
+    });
+
     describe('initial write & subsequent write tests', () => {
       describe('createFrom()', () => {
-        it('should accept a publish RecordsWrite using createFrom() without specifying datePublished', async () => {
-          const { message, requester, recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
+        it('should accept a published RecordsWrite using createFrom() without specifying `data` or `datePublished`', async () => {
+          const { message, requester, recordsWrite, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({
             published: false
           });
           const tenant = requester.did;
@@ -298,7 +314,7 @@ describe('handleRecordsWrite()', () => {
             authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
           });
 
-          const newWriteReply = await handleRecordsWrite({ tenant, message: newWrite.message, messageStore, didResolver, dataStream: dataStream });
+          const newWriteReply = await handleRecordsWrite({ tenant, message: newWrite.message, messageStore, didResolver });
 
           expect(newWriteReply.status.code).to.equal(202);
 
@@ -312,6 +328,9 @@ describe('handleRecordsWrite()', () => {
           expect(recordsQueryReply.status.code).to.equal(200);
           expect(recordsQueryReply.entries?.length).to.equal(1);
           expect((recordsQueryReply.entries![0] as RecordsWriteMessage).descriptor.published).to.equal(true);
+
+          // very importantly verify the original data is still returned
+          expect((recordsQueryReply.entries![0] as any).encodedData).to.equal(Encoder.bytesToBase64Url(dataBytes));
         });
 
         it('should inherit parent published state when using createFrom() to create RecordsWrite', async () => {
