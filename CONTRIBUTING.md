@@ -39,8 +39,13 @@ We plan on including a Docker container to support all local development soon.
   * This is run via CI whenever a pull request is opened, or a commit is pushed to a branch that has an open PR
 * Running the `npm run test:browser` command from the root of the project will run the tests in a browser environment
   * Please make sure there are no failing tests before switching your PR to ready for review! We hope to have this automated via a github action very soon.
+
 ### Code Style
 Our preferred code style has been codified into `eslint` rules. Feel free to take a look [here](https://github.com/TBD54566975/dwn-sdk-js/blob/main/.eslintrc.cjs). Running `npm run lint` will auto-format as much as `eslint` can. Everything it wasn't able to will be printed out as errors or warnings. Please make sure to run `npm run lint` before switching your PR to ready for review! We hope to have this automated via a github action very soon.
+
+### Code Guidelines
+1. A `TODO` in comment must always link to a GitHub issue.
+
 ### Available NPM Commands
 | command                           | description                                                                                                        |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------ |

@@ -3,17 +3,14 @@ import type { RecordsWriteMessage } from '../types.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
+import { DwnErrorCode } from '../../../core/dwn-error.js';
 import { DwnInterfaceName } from '../../../core/message.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { TimestampedMessage } from '../../../core/types.js';
 
-export const handleRecordsWrite: MethodHandler = async (
-  tenant,
-  message,
-  messageStore,
-  didResolver
-): Promise<MessageReply> => {
+export const handleRecordsWrite: MethodHandler = async (input): Promise<MessageReply> => {
+  const { tenant, message, messageStore, didResolver, dataStream } = input;
   const incomingMessage = message as RecordsWriteMessage;
 
   let recordsWrite: RecordsWrite;
@@ -58,6 +55,7 @@ export const handleRecordsWrite: MethodHandler = async (
 
   // find which message is the newest, and if the incoming message is the newest
   const newestExistingMessage = await RecordsWrite.getNewestMessage(existingMessages);
+
   let incomingMessageIsNewest = false;
   let newestMessage;
   // if incoming message is newest
@@ -74,7 +72,16 @@ export const handleRecordsWrite: MethodHandler = async (
     const isLatestBaseState = true;
     const indexes = await constructRecordsWriteIndexes(tenant, recordsWrite, isLatestBaseState);
 
-    await messageStore.put(incomingMessage, indexes);
+    try {
+      await messageStore.put(incomingMessage, indexes, dataStream);
+    } catch (error) {
+      if (error.code === DwnErrorCode.MessageStoreDataCidMismatch ||
+          error.code === DwnErrorCode.MessageStoreDataNotFound) {
+        return new MessageReply({
+          status: { code: 400, detail: error.message }
+        });
+      }
+    }
 
     messageReply = new MessageReply({
       status: { code: 202, detail: 'Accepted' }

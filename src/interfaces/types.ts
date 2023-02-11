@@ -3,12 +3,15 @@ import type { MessageReply } from '../core/message-reply.js';
 import type { MessageStore } from '../store/message-store.js';
 
 import { DidResolver } from '../did/did-resolver.js';
+import { Readable } from 'readable-stream';
 
-export type MethodHandler = (
-  tenant: string,
-  message: BaseMessage,
-  messageStore: MessageStore,
-  didResolver: DidResolver) => Promise<MessageReply>;
+export type MethodHandler = (input: {
+  tenant: string;
+  message: BaseMessage;
+  dataStream?: Readable
+  messageStore: MessageStore;
+  didResolver: DidResolver
+}) => Promise<MessageReply>;
 
 export interface Interface {
   methodHandlers: MethodHandler[];
