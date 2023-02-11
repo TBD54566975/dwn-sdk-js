@@ -156,7 +156,7 @@ export class MessageStoreLevel implements MessageStore {
       } else {
         const asyncDataBlocks = importer([{ content: dataStream }], this.db, { cidVersion: 1 });
 
-        // NOTE: the last block contains the root cid
+        // NOTE: the last block contains the root CID
         let block;
         for await (block of asyncDataBlocks) { ; }
 
