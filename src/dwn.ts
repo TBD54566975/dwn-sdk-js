@@ -1,6 +1,7 @@
 import type { BaseMessage } from './core/types.js';
 import type { DidMethodResolver } from './did/did-resolver.js';
 import type { MessageStore } from './store/message-store.js';
+import type { Readable } from 'readable-stream';
 import type { Interface, MethodHandler } from './interfaces/types.js';
 
 import { DidResolver } from './did/did-resolver.js';
@@ -9,7 +10,6 @@ import { MessageReply } from './core/message-reply.js';
 import { MessageStoreLevel } from './store/message-store-level.js';
 import { PermissionsInterface } from './interfaces/permissions/permissions-interface.js';
 import { ProtocolsInterface } from './interfaces/protocols/protocols-interface.js';
-import { Readable } from 'readable-stream';
 import { RecordsInterface } from './interfaces/records/records-interface.js';
 
 export class Dwn {

@@ -1,6 +1,6 @@
 import type { BaseMessage } from '../core/types.js';
-import { RangeCriterion } from '../interfaces/records/types.js';
-import { Readable } from 'readable-stream';
+import type { RangeCriterion } from '../interfaces/records/types.js';
+import type { Readable } from 'readable-stream';
 
 export interface MessageStore {
   /**
