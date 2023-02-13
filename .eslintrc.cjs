@@ -6,6 +6,7 @@ module.exports = {
   },
   plugins: [
     '@typescript-eslint',
+    'todo-plz' // for enforcing TODO formatting to require "github.com/TBD54566975/dwn-sdk-js/issues/"
   ],
   env: {
     node    : true, // Enable Node.js global variables
@@ -63,6 +64,7 @@ module.exports = {
       'ignoreMemberSort'      : false,
       'memberSyntaxSortOrder' : ['none', 'all', 'single', 'multiple'],
       'allowSeparatedGroups'  : true
-    }]
+    }],
+    'todo-plz/ticket-ref': ['error', { 'commentPattern': '.*github\.com\/TBD54566975\/dwn-sdk-js\/issues\/.*' }]
   }
 };
