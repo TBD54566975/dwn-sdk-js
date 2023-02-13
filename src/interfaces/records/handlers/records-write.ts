@@ -83,7 +83,7 @@ export const handleRecordsWrite: MethodHandler = async (input): Promise<MessageR
       }
 
       // else throw
-      throw (error);
+      throw error;
     }
 
     messageReply = new MessageReply({

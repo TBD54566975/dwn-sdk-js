@@ -1463,4 +1463,18 @@ describe('handleRecordsWrite()', () => {
       expect(writeReply.status.detail).to.contain('does not match attestationCid');
     });
   });
+
+  it('should throw if `messageStore.put()` throws unknown error', async () => {
+    const { requester, message, dataStream } = await TestDataGenerator.generateRecordsWrite();
+
+    const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
+
+    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+    messageStoreStub.query.resolves([]);
+    messageStoreStub.put.throws(new Error('an unknown error in messageStore.put()'));
+
+    const tenant = requester.did;
+    const handlerPromise = handleRecordsWrite({ tenant, message, messageStore: messageStoreStub, didResolver: didResolverStub, dataStream });
+    await expect(handlerPromise).to.be.rejectedWith('an unknown error in messageStore.put()');
+  });
 });

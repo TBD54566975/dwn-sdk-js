@@ -16,12 +16,30 @@ export class DataStream {
       });
 
       readableStream.on('end', () => {
-        const uint8Array = new Uint8Array(chunks);
+        const uint8Array = DataStream.concatenateArrayOfBytes(chunks);
         resolve(uint8Array);
       });
 
       readableStream.on('error', reject);
     });
+  }
+
+  /**
+   * Concatenates the array of bytes given into one Uint8Array.
+   */
+  private static concatenateArrayOfBytes(arrayOfBytes: Uint8Array[]): Uint8Array {
+    // sum of individual array lengths
+    const totalLength = arrayOfBytes.reduce((accumulatedValue, currentValue) => accumulatedValue + currentValue.length, 0);
+
+    const result = new Uint8Array(totalLength);
+
+    let length = 0;
+    for (const bytes of arrayOfBytes) {
+      result.set(bytes, length);
+      length += bytes.length;
+    }
+
+    return result;
   }
 
   /**

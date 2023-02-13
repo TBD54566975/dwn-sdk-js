@@ -57,6 +57,40 @@ describe('RecordsWrite', () => {
 
       expect(message.descriptor.datePublished).to.exist;
     });
+
+    it('should not allow `data` and `dataCid` to be both defined or undefined', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+
+      // testing `data` and `dataCid` both defined
+      const options1 = {
+        recipient                   : alice.did,
+        data                        : TestDataGenerator.randomBytes(10),
+        dataCid                     : await TestDataGenerator.randomCborSha256Cid(),
+        dataFormat                  : 'application/json',
+        recordId                    : await TestDataGenerator.randomCborSha256Cid(),
+        published                   : true,
+        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+      };
+      const createPromise1 = RecordsWrite.create(options1);
+
+      await expect(createPromise1).to.be.rejectedWith('one and only one parameter between `data` and `dataCid` is allowed');
+
+      // testing `data` and `dataCid` both undefined
+      const options2 = {
+        recipient                   : alice.did,
+        // intentionally showing both `data` and `dataCid` are undefined
+        // data                        : TestDataGenerator.randomBytes(10),
+        // dataCid                     : await TestDataGenerator.randomCborSha256Cid(),
+        dataFormat                  : 'application/json',
+        recordId                    : await TestDataGenerator.randomCborSha256Cid(),
+        published                   : true,
+        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+      };
+      const createPromise2 = RecordsWrite.create(options2);
+
+      await expect(createPromise2).to.be.rejectedWith('one and only one parameter between `data` and `dataCid` is allowed');
+    });
+
   });
 
   describe('createFrom()', () => {

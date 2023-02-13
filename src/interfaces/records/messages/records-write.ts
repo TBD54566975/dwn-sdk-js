@@ -79,8 +79,9 @@ export class RecordsWrite extends Message {
   public static async create(options: RecordsWriteOptions): Promise<RecordsWrite> {
     const currentTime = getCurrentTimeInHighPrecision();
 
-    if (options.data !== undefined && options.dataCid !== undefined) {
-      throw new Error('only one parameter between `data` and `dataCid` is allowed');
+    if ((options.data === undefined && options.dataCid === undefined) ||
+         options.data !== undefined && options.dataCid !== undefined) {
+      throw new Error('must define one and only one parameter between `data` and `dataCid` is allowed');
     }
     const dataCid = options.dataCid ?? await computeDagPbCid(options.data);
 
