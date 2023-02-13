@@ -9,6 +9,8 @@ Code Coverage
 
 This repository contains a reference implementation of Decentralized Web Node (DWN) as per the [specification](https://identity.foundation/decentralized-web-node/spec/). This specification is in a draft state and very much so a WIP. For the foreseeable future, a lot of the work on DWN will be split across this repo and the repo that houses the specification, which you can find [here](https://github.com/decentralized-identity/decentralized-web-node). The current goal is to produce a beta implementation by March 2023. This won't include all interfaces described in the DWN spec, but will be enough to begin building applications.
 
+This project is used as a dependency by several other projects.
+
 Proposals and issues for the specification itself should be submitted as pull requests to the [spec repo](https://github.com/decentralized-identity/decentralized-web-node).
 
 ## Installation
@@ -21,13 +23,47 @@ npm install @tbd54566975/dwn-sdk-js
 
 [API docs](https://tbd54566975.github.io/dwn-sdk-js/)
 
-```javascript
-import { Dwn } from '@tbd54566975/dwn-sdk-js';
+Some projects that use this library: 
 
-// cool things
+* [Example CLI](https://github.com/TBD54566975/dwn-cli)
+* [Example with a web wallet](https://github.com/TBD54566975/incubating-web5-labs/)
+* [Server side aggregator](https://github.com/TBD54566975/dwn-server)
+
+```javascript
+
+import { Dwn, RecordsWrite, RecordsQuery } from '@tbd54566975/dwn-sdk-js';
+
+export const dwn = await Dwn.create({});
+
+....
+const query = await RecordsWrite.create({
+  data                        : randomBytes(randomInt(50, 500)),
+  dataFormat                  : 'application/json',
+  published                   : true,
+  protocol                    : 'yeeter',
+  schema                      : 'yeeter/post',
+  authorizationSignatureInput : signatureMaterial
+});
+
+let result = await dwn.processMessage(didState.did, query.toJSON());
+
 ```
 
 _Note: Works in both node and browser environments_
+
+With a wallet installed:
+```javascript
+
+  const result = await window.web5.dwn.processMessage({
+    method  : 'RecordsQuery',
+    message : {
+      filter: {
+        schema: 'http://some-schema-registry.org/todo'
+      },
+      dateSort: 'createdAscending'
+    }
+  });
+```  
 
 ## Project Resources
 
