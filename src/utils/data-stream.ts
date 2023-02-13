@@ -39,7 +39,7 @@ export class DataStream {
   }
 
   /**
-   * Creates a readable stream from the bytes given.
+   * Creates a readable stream from the object given.
    */
   public static fromObject(object: { [key: string]: any }): Readable {
     const bytes = Encoder.objectToBytes(object);
