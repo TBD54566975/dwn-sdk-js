@@ -7,8 +7,13 @@ import { ProtocolsConfigure } from '../messages/protocols-configure.js';
 
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
 
-export const handleProtocolsConfigure: MethodHandler = async (input): Promise<MessageReply> => {
-  const { tenant, message, messageStore, didResolver, dataStream } = input;
+export const handleProtocolsConfigure: MethodHandler = async ({
+  tenant,
+  message,
+  messageStore,
+  didResolver,
+  dataStream
+}): Promise<MessageReply> => {
   const incomingMessage = message as ProtocolsConfigureMessage;
 
   let protocolsConfigure: ProtocolsConfigure;

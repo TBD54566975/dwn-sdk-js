@@ -9,8 +9,13 @@ import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { TimestampedMessage } from '../../../core/types.js';
 
-export const handleRecordsWrite: MethodHandler = async (input): Promise<MessageReply> => {
-  const { tenant, message, messageStore, didResolver, dataStream } = input;
+export const handleRecordsWrite: MethodHandler = async ({
+  tenant,
+  message,
+  messageStore,
+  didResolver,
+  dataStream
+}): Promise<MessageReply> => {
   const incomingMessage = message as RecordsWriteMessage;
 
   let recordsWrite: RecordsWrite;

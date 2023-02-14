@@ -5,8 +5,12 @@ import { canonicalAuth } from '../../../core/auth.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { PermissionsRequest } from '../messages/permissions-request.js';
 
-export const handlePermissionsRequest: MethodHandler = async (input): Promise<MessageReply> => {
-  const { tenant, message, messageStore, didResolver } = input;
+export const handlePermissionsRequest: MethodHandler = async ({
+  tenant,
+  message,
+  messageStore,
+  didResolver
+}): Promise<MessageReply> => {
   const permissionRequest = await PermissionsRequest.parse(message as PermissionsRequestMessage);
   const { author } = permissionRequest;
 
