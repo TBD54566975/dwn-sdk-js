@@ -73,6 +73,8 @@ export class RecordsWrite extends Message {
   /**
    * Creates a RecordsWrite message.
    * @param options.recordId If `undefined`, will be auto-filled as a originating message as convenience for developer.
+   * @param options.data Readable stream of the data to be stored. Must specify `option.dataCid` if `undefined`.
+   * @param options.dataCid CID of the data that is already stored in the DWN. Must specify `option.data` if `undefined`.
    * @param options.dateCreated If `undefined`, it will be auto-filled with current time.
    * @param options.dateModified If `undefined`, it will be auto-filled with current time.
    */
@@ -81,7 +83,7 @@ export class RecordsWrite extends Message {
 
     if ((options.data === undefined && options.dataCid === undefined) ||
          options.data !== undefined && options.dataCid !== undefined) {
-      throw new Error('must define one and only one parameter between `data` and `dataCid` is allowed');
+      throw new Error('one and only one parameter between `data` and `dataCid` is allowed');
     }
     const dataCid = options.dataCid ?? await computeDagPbCid(options.data);
 
