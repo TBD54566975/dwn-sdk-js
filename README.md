@@ -23,21 +23,20 @@ npm install @tbd54566975/dwn-sdk-js
 
 [API docs](https://tbd54566975.github.io/dwn-sdk-js/)
 
-Some projects that use this library: 
-
-* [Example CLI](https://github.com/TBD54566975/dwn-cli)
-* [Example with a web wallet](https://github.com/TBD54566975/incubating-web5-labs/)
-* [Server side aggregator](https://github.com/TBD54566975/dwn-server)
-
 ```javascript
 
-import { Dwn, RecordsWrite, RecordsQuery } from '@tbd54566975/dwn-sdk-js';
+import { Dwn, DataStream, RecordsWrite, RecordsQuery } from '@tbd54566975/dwn-sdk-js';
 
 export const dwn = await Dwn.create({});
 
-....
+...
+const data = randomBytes(32); // in node.js
+// or in web
+// const data = new Uint8Array(32);
+// window.crypto.getRandomValues(data);
+
 const query = await RecordsWrite.create({
-  data                        : randomBytes(randomInt(50, 500)),
+  data,
   dataFormat                  : 'application/json',
   published                   : true,
   protocol                    : 'yeeter',
@@ -45,13 +44,12 @@ const query = await RecordsWrite.create({
   authorizationSignatureInput : signatureMaterial
 });
 
-let result = await dwn.processMessage(didState.did, query.toJSON());
+const dataStream = DataStream.fromBytes(data);
+const result = await dwn.processMessage(didState.did, query.toJSON(), dataStream);
 
 ```
 
-_Note: Works in both node and browser environments_
-
-With a wallet installed:
+With a web wallet installed:
 ```javascript
 
   const result = await window.web5.dwn.processMessage({
@@ -64,6 +62,13 @@ With a wallet installed:
     }
   });
 ```  
+
+## Some projects that use this library: 
+
+* [Example CLI](https://github.com/TBD54566975/dwn-cli)
+* [Example with a web wallet](https://github.com/TBD54566975/incubating-web5-labs/)
+* [Server side aggregator](https://github.com/TBD54566975/dwn-server)
+
 
 ## Project Resources
 
