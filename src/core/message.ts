@@ -6,7 +6,6 @@ import { GeneralJws } from '../jose/jws/general/types.js';
 import { GeneralJwsSigner } from '../jose/jws/general/signer.js';
 import { Jws } from '../utils/jws.js';
 import { lexicographicalCompare } from '../utils/string.js';
-import { RecordsWriteMessage } from '../interfaces/records/types.js';
 import { validateJsonSchema } from '../schema-validator.js';
 
 export enum DwnInterfaceName {
@@ -69,13 +68,14 @@ export abstract class Message {
 
   /**
    * Gets the CID of the given message.
-   * NOTE: `encodedData` is ignored when computing the CID of message.
    */
   public static async getCid(message: BaseMessage): Promise<string> {
     const messageCopy = { ...message };
 
+    // TODO: Once #219 (https://github.com/TBD54566975/dwn-sdk-js/issues/219) is implemented,
+    // `encodedData` will likely not exist directly as part of the message
     if (messageCopy['encodedData'] !== undefined) {
-      delete (messageCopy as RecordsWriteMessage).encodedData;
+      delete (messageCopy as any).encodedData;
     }
 
     const cid = await computeCid(messageCopy);

@@ -130,9 +130,6 @@
           ]
         }
       ]
-    },
-    "encodedData": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/base64url"
     }
   },
   "$comment": "rule defining `protocol` and `contextId` relationship",

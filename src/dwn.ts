@@ -1,14 +1,13 @@
 import type { BaseMessage } from './core/types.js';
 import type { DidMethodResolver } from './did/did-resolver.js';
 import type { MessageStore } from './store/message-store.js';
+import type { Readable } from 'readable-stream';
 import type { Interface, MethodHandler } from './interfaces/types.js';
 
 import { DidResolver } from './did/did-resolver.js';
-import { Encoder } from './utils/encoder.js';
 import { Message } from './core/message.js';
 import { MessageReply } from './core/message-reply.js';
 import { MessageStoreLevel } from './store/message-store-level.js';
-
 import { PermissionsInterface } from './interfaces/permissions/permissions-interface.js';
 import { ProtocolsInterface } from './interfaces/protocols/protocols-interface.js';
 import { RecordsInterface } from './interfaces/records/records-interface.js';
@@ -58,29 +57,10 @@ export class Dwn {
   }
 
   /**
-   * Processes the given DWN message given as raw bytes and returns with a message reply.
-   * @param tenant The tenant DID to route the given message to.
-   */
-  async processRequest(tenant: string, rawRequest: Uint8Array): Promise<MessageReply> {
-    let message: BaseMessage;
-    try {
-      const requestString = Encoder.bytesToString(rawRequest);
-      message = JSON.parse(requestString);
-    } catch (error) {
-      return new MessageReply({
-        status: { code: 400, detail: 'unable to JSON parse request' }
-      });
-    }
-
-    const messageReply = await this.processMessage(tenant, message);
-    return messageReply;
-  }
-
-  /**
    * Processes the given DWN message and returns with a reply.
    * @param tenant The tenant DID to route the given message to.
    */
-  async processMessage(tenant: string, rawMessage: any): Promise<MessageReply> {
+  async processMessage(tenant: string, rawMessage: any, dataStream?: Readable): Promise<MessageReply> {
     const dwnInterface = rawMessage?.descriptor?.interface;
     const dwnMethod = rawMessage?.descriptor?.method;
     if (dwnInterface === undefined || dwnMethod === undefined) {
@@ -101,7 +81,13 @@ export class Dwn {
     const handlerKey = dwnInterface + dwnMethod;
     const interfaceMethodHandler = Dwn.methodHandlers[handlerKey];
 
-    const methodHandlerReply = await interfaceMethodHandler(tenant, rawMessage as BaseMessage, this.messageStore, this.DidResolver);
+    const methodHandlerReply = await interfaceMethodHandler({
+      tenant,
+      message      : rawMessage as BaseMessage,
+      messageStore : this.messageStore,
+      didResolver  : this.DidResolver,
+      dataStream
+    });
     return methodHandlerReply;
   }
 };
