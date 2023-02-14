@@ -2,10 +2,12 @@ import * as cbor from '@ipld/dag-cbor';
 import { BaseMessage } from '../../src/core/types.js';
 import { CID } from 'multiformats/cid';
 import { CreateFromOptions } from '../../src/interfaces/records/messages/records-write.js';
+import { DataStream } from '../../src/utils/data-stream.js';
 import { DidResolutionResult } from '../../src/did/did-resolver.js';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request.js';
+import { Readable } from 'readable-stream';
 import { RecordsQueryFilter } from '../../src/interfaces/records/types.js';
 import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1.js';
@@ -54,6 +56,7 @@ export type GenerateProtocolsConfigureInput = {
 export type GenerateProtocolsConfigureOutput = {
   requester: Persona;
   message: ProtocolsConfigureMessage;
+  dataStream: Readable;
   protocolsConfigure: ProtocolsConfigure;
 };
 
@@ -88,7 +91,7 @@ export type GenerateRecordsWriteInput = {
   datePublished?: string;
 };
 
-export type generateFromRecordsWriteInput = {
+export type GenerateFromRecordsWriteInput = {
   requester: Persona,
   existingWrite: RecordsWrite,
   data?: Uint8Array;
@@ -97,9 +100,18 @@ export type generateFromRecordsWriteInput = {
   datePublished?: string;
 };
 
+export type GenerateFromRecordsWriteOut = {
+  message: RecordsWriteMessage;
+  dataBytes: Uint8Array;
+  dataStream: Readable;
+  recordsWrite: RecordsWrite;
+};
+
 export type GenerateRecordsWriteOutput = {
   requester: Persona;
   message: RecordsWriteMessage;
+  dataBytes: Uint8Array;
+  dataStream: Readable;
   recordsWrite: RecordsWrite;
 };
 
@@ -139,7 +151,6 @@ export type GenerateHooksWriteOutput = {
  * Utility class for generating data for testing.
  */
 export class TestDataGenerator {
-
   /**
    * Generates a persona.
    */
@@ -214,6 +225,10 @@ export class TestDataGenerator {
       definition.records[generatedLabel] = {};
     }
 
+    // TODO: #139 - move protocol definition out of the descriptor - https://github.com/TBD54566975/dwn-sdk-js/issues/139
+    // const dataStream = DataStream.fromObject(definition); // intentionally left here to demonstrate the pattern to use when #139 is implemented
+    const dataStream = undefined;
+
     const authorizationSignatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
 
     const options: ProtocolsConfigureOptions = {
@@ -228,6 +243,7 @@ export class TestDataGenerator {
     return {
       requester,
       message: protocolsConfigure.message,
+      dataStream,
       protocolsConfigure
     };
   };
@@ -272,7 +288,8 @@ export class TestDataGenerator {
     const authorizationSignatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
     const attestationSignatureInputs = TestDataGenerator.createSignatureInputsFromPersonas(input?.attesters ?? []);
 
-    const data = input?.data ?? TestDataGenerator.randomBytes(32);
+    const dataBytes = input?.data ?? TestDataGenerator.randomBytes(32);
+    const dataStream = DataStream.fromBytes(dataBytes);
 
     const options: RecordsWriteOptions = {
       recipient     : input?.recipientDid,
@@ -286,7 +303,7 @@ export class TestDataGenerator {
       dateCreated   : input?.dateCreated,
       dateModified  : input?.dateModified,
       datePublished : input?.datePublished,
-      data,
+      data          : dataBytes,
       authorizationSignatureInput,
       attestationSignatureInputs
     };
@@ -298,6 +315,8 @@ export class TestDataGenerator {
     return {
       requester,
       message,
+      dataBytes,
+      dataStream,
       recordsWrite
     };
   };
@@ -307,16 +326,19 @@ export class TestDataGenerator {
    * Any mutable property is not specified will be automatically mutated.
    * e.g. if `published` is not specified, it will be toggled from the state of the given existing write.
    */
-  public static async generateFromRecordsWrite(input?: generateFromRecordsWriteInput): Promise<RecordsWrite> {
+  public static async generateFromRecordsWrite(input?: GenerateFromRecordsWriteInput): Promise<GenerateFromRecordsWriteOut> {
     const existingMessage = input.existingWrite.message;
     const currentTime = getCurrentTimeInHighPrecision();
 
     const published = input.published ?? existingMessage.descriptor.published ? false : true; // toggle from the parent value if not given explicitly
     const datePublished = input.datePublished ?? (published ? currentTime : undefined);
 
+    const dataBytes = input.data ?? TestDataGenerator.randomBytes(32);
+    const dataStream = DataStream.fromBytes(dataBytes);
+
     const options: CreateFromOptions = {
       unsignedRecordsWriteMessage : input.existingWrite.message,
-      data                        : input.data ?? TestDataGenerator.randomBytes(32),
+      data                        : dataBytes,
       published,
       datePublished,
       dateModified                : input.dateModified,
@@ -324,7 +346,12 @@ export class TestDataGenerator {
     };
 
     const recordsWrite = await RecordsWrite.createFrom(options);
-    return recordsWrite;
+    return {
+      message: recordsWrite.message,
+      recordsWrite,
+      dataBytes,
+      dataStream
+    };
   }
 
   /**

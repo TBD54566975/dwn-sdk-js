@@ -118,32 +118,6 @@ describe('RecordsWrite schema definition', () => {
     }).throws('must NOT have additional properties');
   });
 
-  it('should throw if `encodedData` is not using base64url character set', () => {
-    const invalidMessage = {
-      recordId   : 'anyRecordId',
-      descriptor : {
-        interface    : 'Records',
-        method       : 'Write',
-        dataCid      : 'anyCid',
-        dataFormat   : 'application/json',
-        dateCreated  : '2022-12-19T10:20:30.123456',
-        dateModified : '2022-12-19T10:20:30.123456'
-      },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      },
-      encodedData: 'not-base64url-string!!' // incorrect value
-    };
-
-    expect(() => {
-      Message.validateJsonSchema(invalidMessage);
-    }).throws('must match pattern "^[A-Za-z0-9_-]+$"');
-  });
-
   it('should pass if `contextId` and `protocol` are both present', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
@@ -163,8 +137,7 @@ describe('RecordsWrite schema definition', () => {
           protected : 'anyProtectedHeader',
           signature : 'anySignature'
         }]
-      },
-      encodedData: 'anything'
+      }
     };
 
     Message.validateJsonSchema(invalidMessage);
@@ -187,8 +160,7 @@ describe('RecordsWrite schema definition', () => {
           protected : 'anyProtectedHeader',
           signature : 'anySignature'
         }]
-      },
-      encodedData: 'anything'
+      }
     };
 
     Message.validateJsonSchema(invalidMessage);
@@ -212,8 +184,7 @@ describe('RecordsWrite schema definition', () => {
           protected : 'anyProtectedHeader',
           signature : 'anySignature'
         }]
-      },
-      encodedData: 'anything'
+      }
     };
 
     expect(() => {
@@ -239,8 +210,7 @@ describe('RecordsWrite schema definition', () => {
           protected : 'anyProtectedHeader',
           signature : 'anySignature'
         }]
-      },
-      encodedData: 'anything'
+      }
     };
 
     expect(() => {
@@ -267,8 +237,7 @@ describe('RecordsWrite schema definition', () => {
           protected : 'anyProtectedHeader',
           signature : 'anySignature'
         }]
-      },
-      encodedData: 'anything'
+      }
     };
 
     expect(() => {
@@ -294,8 +263,7 @@ describe('RecordsWrite schema definition', () => {
           protected : 'anyProtectedHeader',
           signature : 'anySignature'
         }]
-      },
-      encodedData: 'anything'
+      }
     };
 
     expect(() => {
@@ -321,8 +289,7 @@ describe('RecordsWrite schema definition', () => {
           protected : 'anyProtectedHeader',
           signature : 'anySignature'
         }]
-      },
-      encodedData: 'anything'
+      }
     };
 
     expect(() => {

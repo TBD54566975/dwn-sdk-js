@@ -7,12 +7,12 @@ import { ProtocolsQuery } from '../messages/protocols-query.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 
-export const handleProtocolsQuery: MethodHandler = async (
+export const handleProtocolsQuery: MethodHandler = async ({
   tenant,
   message,
   messageStore,
   didResolver
-): Promise<MessageReply> => {
+}): Promise<MessageReply> => {
   const incomingMessage = message as ProtocolsQueryMessage;
 
   let protocolsQuery: ProtocolsQuery;

@@ -5,7 +5,6 @@ import chai, { expect } from 'chai';
 import { Config } from '../src/dwn.js';
 import { DidKeyResolver } from '../src/did/did-key-resolver.js';
 import { Dwn } from '../src/dwn.js';
-import { Encoder } from '../src/index.js';
 import { Message } from '../src/core/message.js';
 import { MessageStoreLevel } from '../src/store/message-store-level.js';
 import { TestDataGenerator } from './utils/test-data-generator.js';
@@ -39,40 +38,16 @@ describe('DWN', () => {
     dwn.close();
   });
 
-  describe('processRequest()', () => {
-    it('should process a raw request', async () => {
-      const alice = await DidKeyResolver.generate();
-
-      const { message } = await TestDataGenerator.generateRecordsWrite({
-        requester: alice,
-      });
-      const messageBytes = Encoder.objectToBytes(message);
-
-      const reply = await dwn.processRequest(alice.did, messageBytes);
-
-      expect(reply.status.code).to.equal(202);
-    });
-
-    it('should throw 400 if given invalid JSON request', async () => {
-      const messageBytes = Encoder.stringToBytes('{{invalidJson');
-
-      const alice = await DidKeyResolver.generate();
-      const reply = await dwn.processRequest(alice.did, messageBytes);
-      expect(reply.status.code).to.equal(400);
-      expect(reply.status.detail).to.contain('unable to JSON parse request');
-    });
-  });
-
   describe('processMessage()', () => {
     it('should process RecordsWrite message signed by a `did:key` DID', async () => {
       // generate a `did:key` DID
       const alice = await DidKeyResolver.generate();
 
-      const messageData = await TestDataGenerator.generateRecordsWrite({
+      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
         requester: alice,
       });
 
-      const reply = await dwn.processMessage(alice.did, messageData.message);
+      const reply = await dwn.processMessage(alice.did, message, dataStream);
 
       expect(reply.status.code).to.equal(202);
     });

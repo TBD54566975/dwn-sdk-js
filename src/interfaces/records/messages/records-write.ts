@@ -22,7 +22,8 @@ export type RecordsWriteOptions = {
   schema?: string;
   recordId?: string;
   parentId?: string;
-  data: Uint8Array;
+  data?: Uint8Array;
+  dataCid?: string;
   dateCreated?: string;
   dateModified?: string;
   published?: boolean;
@@ -72,13 +73,20 @@ export class RecordsWrite extends Message {
   /**
    * Creates a RecordsWrite message.
    * @param options.recordId If `undefined`, will be auto-filled as a originating message as convenience for developer.
+   * @param options.data Readable stream of the data to be stored. Must specify `option.dataCid` if `undefined`.
+   * @param options.dataCid CID of the data that is already stored in the DWN. Must specify `option.data` if `undefined`.
    * @param options.dateCreated If `undefined`, it will be auto-filled with current time.
    * @param options.dateModified If `undefined`, it will be auto-filled with current time.
    */
   public static async create(options: RecordsWriteOptions): Promise<RecordsWrite> {
     const currentTime = getCurrentTimeInHighPrecision();
 
-    const dataCid = await computeDagPbCid(options.data);
+    if ((options.data === undefined && options.dataCid === undefined) ||
+         options.data !== undefined && options.dataCid !== undefined) {
+      throw new Error('one and only one parameter between `data` and `dataCid` is allowed');
+    }
+    const dataCid = options.dataCid ?? await computeDagPbCid(options.data);
+
     const descriptor: RecordsWriteDescriptor = {
       interface     : DwnInterfaceName.Records,
       method        : DwnMethodName.Write,
@@ -86,7 +94,7 @@ export class RecordsWrite extends Message {
       recipient     : options.recipient,
       schema        : options.schema,
       parentId      : options.parentId,
-      dataCid       : dataCid.toString(),
+      dataCid,
       dateCreated   : options.dateCreated ?? currentTime,
       dateModified  : options.dateModified ?? currentTime,
       published     : options.published,
@@ -133,12 +141,10 @@ export class RecordsWrite extends Message {
       options.authorizationSignatureInput
     );
 
-    const encodedData = Encoder.bytesToBase64Url(options.data);
     const message: RecordsWriteMessage = {
       recordId,
       descriptor,
-      authorization,
-      encodedData
+      authorization
     };
 
     if (contextId !== undefined) { message.contextId = contextId; } // assign `contextId` only if it is defined
@@ -198,12 +204,12 @@ export class RecordsWrite extends Message {
       parentId                    : unsignedMessage.descriptor.parentId,
       schema                      : unsignedMessage.descriptor.schema,
       dataFormat                  : unsignedMessage.descriptor.dataFormat,
-      // mutable properties below, if not given, inherit from message given
+      // mutable properties below
       dateModified                : options.dateModified ?? currentTime,
       published,
       datePublished,
-      // copying data from the given message may not be always right, there is probably opportunity for improvement here
-      data                        : options.data ?? Encoder.base64UrlToBytes(unsignedMessage.encodedData),
+      data                        : options.data,
+      dataCid                     : options.data ? undefined : unsignedMessage.descriptor.dataCid, // if data not given, use dataCid from base message
       // finally still need input for signing
       authorizationSignatureInput : options.authorizationSignatureInput,
       attestationSignatureInputs  : options.attestationSignatureInputs
@@ -226,16 +232,6 @@ export class RecordsWrite extends Message {
    * There is opportunity to integrate better with `validateSchema(...)`
    */
   private async validateIntegrity(): Promise<void> {
-    // verify dataCid matches given data
-    if (this.message.encodedData !== undefined) {
-      const rawData = Encoder.base64UrlToBytes(this.message.encodedData);
-      const actualDataCid = (await computeDagPbCid(rawData)).toString();
-
-      if (actualDataCid !== this.message.descriptor.dataCid) {
-        throw new Error('actual CID of data and `dataCid` in descriptor mismatch');
-      }
-    }
-
     // make sure the same `recordId` in message is the same as the `recordId` in `authorization`
     if (this.message.recordId !== this.authorizationPayload.recordId) {
       throw new Error(

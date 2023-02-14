@@ -20,13 +20,14 @@ const codecs = {
 /**
  * @returns V1 CID of the DAG comprised by chunking data into unixfs dag-pb encoded blocks
  */
-export async function computeDagPbCid(content: Uint8Array): Promise<CID> {
-  const chunk = importer([{ content }], undefined, { onlyHash: true, cidVersion: 1 });
-  let root;
+export async function computeDagPbCid(content: Uint8Array): Promise<string> {
+  const asyncDataBlocks = importer([{ content }], undefined, { onlyHash: true, cidVersion: 1 });
 
-  for await (root of chunk) { ; }
+  // NOTE: the last block contains the root CID
+  let block;
+  for await (block of asyncDataBlocks) { ; }
 
-  return root.cid;
+  return block.cid.toString();
 }
 
 /**

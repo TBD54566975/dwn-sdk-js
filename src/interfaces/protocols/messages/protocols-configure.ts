@@ -32,7 +32,7 @@ export class ProtocolsConfigure extends Message {
       method      : DwnMethodName.Configure,
       dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
       protocol    : options.protocol,
-      definition  : options.definition
+      definition  : options.definition // TODO: #139 - move definition out of the descriptor - https://github.com/TBD54566975/dwn-sdk-js/issues/139
     };
 
     Message.validateJsonSchema({ descriptor, authorization: { } });

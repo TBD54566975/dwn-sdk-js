@@ -9,12 +9,12 @@ import { RecordsDelete } from '../messages/records-delete.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { TimestampedMessage } from '../../../core/types.js';
 
-export const handleRecordsDelete: MethodHandler = async (
+export const handleRecordsDelete: MethodHandler = async ({
   tenant,
   message,
   messageStore,
   didResolver
-): Promise<MessageReply> => {
+}): Promise<MessageReply> => {
   const incomingMessage = message as RecordsDeleteMessage;
 
   let recordsDelete: RecordsDelete;

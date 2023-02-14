@@ -1,5 +1,6 @@
 import type { BaseMessage } from '../core/types.js';
-import { RangeCriterion } from '../interfaces/records/types.js';
+import type { RangeCriterion } from '../interfaces/records/types.js';
+import type { Readable } from 'readable-stream';
 
 export interface MessageStore {
   /**
@@ -15,8 +16,12 @@ export interface MessageStore {
   /**
    * adds a message to the underlying store. Uses the message's cid as the key
    * @param indexes indexes (key-value pairs) to be included as part of this put operation
+   * @throws {DwnError} with `DwnErrorCode.MessageStoreDataCidMismatch`
+   *                    if the data stream resulted in a data CID that mismatches with `dataCid` in the given message
+   * @throws {DwnError} with `DwnErrorCode.MessageStoreDataNotFound`
+   *                    if `dataCid` in `descriptor` is given, and `dataStream` is not given, and data for the message does not exist already
    */
-  put(messageJson: BaseMessage, indexes: { [key: string]: string }): Promise<void>;
+  put(messageJson: BaseMessage, indexes: { [key: string]: string }, dataStream?: Readable): Promise<void>;
 
   /**
    * fetches a single message by `cid` from the underlying store. Returns `undefined`
@@ -37,7 +42,7 @@ export interface MessageStore {
   ): Promise<BaseMessage[]>;
 
   /**
-   * deletes the message associated to the id provided
+   * Deletes the message associated with the id provided.
    */
   delete(cid: string): Promise<void>;
 }

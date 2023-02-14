@@ -2,7 +2,7 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
-import { base64url } from 'multiformats/bases/base64';
+import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsWrite } from '../../../../src/interfaces/records/messages/records-write.js';
 import { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
@@ -31,7 +31,6 @@ describe('RecordsWrite', () => {
       const message = recordsWrite.message as RecordsWriteMessage;
 
       expect(message.authorization).to.exist;
-      expect(message.encodedData).to.equal(base64url.baseEncode(options.data));
       expect(message.descriptor.dataFormat).to.equal(options.dataFormat);
       expect(message.descriptor.dateCreated).to.equal(options.dateCreated);
       expect(message.recordId).to.equal(options.recordId);
@@ -58,6 +57,40 @@ describe('RecordsWrite', () => {
 
       expect(message.descriptor.datePublished).to.exist;
     });
+
+    it('should not allow `data` and `dataCid` to be both defined or undefined', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+
+      // testing `data` and `dataCid` both defined
+      const options1 = {
+        recipient                   : alice.did,
+        data                        : TestDataGenerator.randomBytes(10),
+        dataCid                     : await TestDataGenerator.randomCborSha256Cid(),
+        dataFormat                  : 'application/json',
+        recordId                    : await TestDataGenerator.randomCborSha256Cid(),
+        published                   : true,
+        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+      };
+      const createPromise1 = RecordsWrite.create(options1);
+
+      await expect(createPromise1).to.be.rejectedWith('one and only one parameter between `data` and `dataCid` is allowed');
+
+      // testing `data` and `dataCid` both undefined
+      const options2 = {
+        recipient                   : alice.did,
+        // intentionally showing both `data` and `dataCid` are undefined
+        // data                        : TestDataGenerator.randomBytes(10),
+        // dataCid                     : await TestDataGenerator.randomCborSha256Cid(),
+        dataFormat                  : 'application/json',
+        recordId                    : await TestDataGenerator.randomCborSha256Cid(),
+        published                   : true,
+        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+      };
+      const createPromise2 = RecordsWrite.create(options2);
+
+      await expect(createPromise2).to.be.rejectedWith('one and only one parameter between `data` and `dataCid` is allowed');
+    });
+
   });
 
   describe('createFrom()', () => {
@@ -104,13 +137,13 @@ describe('RecordsWrite', () => {
     it('should return the same value with or without `encodedData`', async () => {
       const messageData = await TestDataGenerator.generateRecordsWrite();
 
-      const messageWithoutEncodedData = { ...messageData.message };
-      delete messageWithoutEncodedData.encodedData;
+      const messageWithEncodedData = { ...messageData.message };
+      messageWithEncodedData['encodedData'] = 'dW51c2Vk';
 
-      const cidOfMessageWithEncodedData = await RecordsWrite.getCid(messageData.message);
-      const cidOfMessageWithoutData = await RecordsWrite.getCid(messageWithoutEncodedData);
+      const cidOfMessageWithoutEncodedData = await Message.getCid(messageData.message);
+      const cidOfMessageWithEncodedData = await Message.getCid(messageWithEncodedData);
 
-      expect(cidOfMessageWithEncodedData.toString()).to.equal(cidOfMessageWithoutData.toString());
+      expect(cidOfMessageWithoutEncodedData).to.equal(cidOfMessageWithEncodedData);
     });
   });
 

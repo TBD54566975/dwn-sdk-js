@@ -23,7 +23,6 @@ export type RecordsWriteMessage = BaseMessage & {
   contextId?: string;
   descriptor: RecordsWriteDescriptor;
   attestation?: GeneralJws;
-  encodedData?: string;
 };
 
 /**

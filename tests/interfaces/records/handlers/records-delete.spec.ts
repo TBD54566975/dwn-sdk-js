@@ -11,7 +11,7 @@ import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
 export { RecordsDelete, RecordsDeleteOptions } from '../../../../src/interfaces/records/messages/records-delete.js';
-import { DidResolver, RecordsDelete, RecordsWriteMessage } from '../../../../src/index.js';
+import { DidResolver, Encoder, RecordsDelete } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -48,30 +48,31 @@ describe('handleRecordsDelete()', () => {
       const alice = await DidKeyResolver.generate();
 
       // insert data
-      const writeData = await TestDataGenerator.generateRecordsWrite({ requester: alice });
-      const writeReply = await handleRecordsWrite(alice.did, writeData.message, messageStore, didResolver);
+      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+      const writeReply = await handleRecordsWrite({ tenant: alice.did, message, messageStore, didResolver, dataStream });
       expect(writeReply.status.code).to.equal(202);
 
       // ensure data is inserted
       const queryData = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
-        filter    : { recordId: writeData.message.recordId }
+        filter    : { recordId: message.recordId }
       });
-      const reply = await handleRecordsQuery(alice.did, queryData.message, messageStore, didResolver);
+
+      const reply = await handleRecordsQuery({ tenant: alice.did, message: queryData.message, messageStore, didResolver });
       expect(reply.status.code).to.equal(200);
       expect(reply.entries?.length).to.equal(1);
 
       // testing delete
       const recordsDelete = await RecordsDelete.create({
-        recordId                    : writeData.message.recordId,
+        recordId                    : message.recordId,
         authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
       });
 
-      const deleteReply = await handleRecordsDelete(alice.did, recordsDelete.message, messageStore, didResolver);
+      const deleteReply = await handleRecordsDelete({ tenant: alice.did, message: recordsDelete.message, messageStore, didResolver });
       expect(deleteReply.status.code).to.equal(202);
 
       // ensure a query will no longer find the deleted record
-      const reply2 = await handleRecordsQuery(alice.did, queryData.message, messageStore, didResolver);
+      const reply2 = await handleRecordsQuery({ tenant: alice.did, message: queryData.message, messageStore, didResolver });
       expect(reply2.status.code).to.equal(200);
       expect(reply2.entries?.length).to.equal(0);
     });
@@ -81,7 +82,9 @@ describe('handleRecordsDelete()', () => {
 
       // initial write
       const initialWriteData = await TestDataGenerator.generateRecordsWrite({ requester: alice });
-      const initialWriteReply = await handleRecordsWrite(alice.did, initialWriteData.message, messageStore, didResolver);
+      const initialWriteReply = await handleRecordsWrite({
+        tenant: alice.did, message: initialWriteData.message, messageStore, didResolver, dataStream: initialWriteData.dataStream
+      });
       expect(initialWriteReply.status.code).to.equal(202);
 
       // generate subsequent write and delete with the delete having an earlier timestamp
@@ -96,11 +99,13 @@ describe('handleRecordsDelete()', () => {
       });
 
       // subsequent write
-      const subsequentWriteReply = await handleRecordsWrite(alice.did, subsequentWriteData.message, messageStore, didResolver);
+      const subsequentWriteReply = await handleRecordsWrite({
+        tenant: alice.did, message: subsequentWriteData.message, messageStore, didResolver, dataStream: subsequentWriteData.dataStream
+      });
       expect(subsequentWriteReply.status.code).to.equal(202);
 
       // test that a delete with an earlier `dateModified` results in a 409
-      const deleteReply = await handleRecordsDelete(alice.did, recordsDelete.message, messageStore, didResolver);
+      const deleteReply = await handleRecordsDelete({ tenant: alice.did, message: recordsDelete.message, messageStore, didResolver });
       expect(deleteReply.status.code).to.equal(409);
 
       // ensure data still exists
@@ -108,10 +113,11 @@ describe('handleRecordsDelete()', () => {
         requester : alice,
         filter    : { recordId: initialWriteData.message.recordId }
       });
-      const reply = await handleRecordsQuery(alice.did, queryData.message, messageStore, didResolver);
+      const expectedEncodedData = Encoder.bytesToBase64Url(subsequentWriteData.dataBytes);
+      const reply = await handleRecordsQuery({ tenant: alice.did, message: queryData.message, messageStore, didResolver });
       expect(reply.status.code).to.equal(200);
       expect(reply.entries?.length).to.equal(1);
-      expect((reply.entries[0] as RecordsWriteMessage).encodedData).to.equal(subsequentWriteData.message.encodedData);
+      expect((reply.entries[0] as any).encodedData).to.equal(expectedEncodedData);
     });
   });
 
@@ -121,11 +127,11 @@ describe('handleRecordsDelete()', () => {
     // setting up a stub did resolver & message store
     // intentionally not supplying the public key so a different public key is generated to simulate invalid signature
     const mismatchingPersona = await TestDataGenerator.generatePersona({ did: requester.did, keyId: requester.keyId });
-    const didResolverStub = TestStubGenerator.createDidResolverStub(mismatchingPersona);
-    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+    const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
+    const messageStore = sinon.createStubInstance(MessageStoreLevel);
 
     const tenant = requester.did;
-    const reply = await handleRecordsDelete(tenant, message, messageStoreStub, didResolverStub);
+    const reply = await handleRecordsDelete({ tenant, message, messageStore, didResolver });
 
     expect(reply.status.code).to.equal(401);
   });
@@ -135,11 +141,11 @@ describe('handleRecordsDelete()', () => {
     const tenant = requester.did;
 
     // setting up a stub method resolver & message store
-    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+    const messageStore = sinon.createStubInstance(MessageStoreLevel);
 
     // stub the `parse()` function to throw an error
     sinon.stub(RecordsDelete, 'parse').throws('anyError');
-    const reply = await handleRecordsDelete(tenant, message, messageStoreStub, didResolver);
+    const reply = await handleRecordsDelete({ tenant, message, messageStore, didResolver });
 
     expect(reply.status.code).to.equal(400);
   });
