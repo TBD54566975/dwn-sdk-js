@@ -22,7 +22,7 @@ import { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
 import { GenerateFromRecordsWriteOut, TestDataGenerator } from '../../../utils/test-data-generator.js';
-import { ProtocolDefinition, RecordsWrite } from '../../../../src/index.js';
+import { Jws, ProtocolDefinition, RecordsWrite } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -311,7 +311,7 @@ describe('handleRecordsWrite()', () => {
           const newWrite = await RecordsWrite.createFrom({
             unsignedRecordsWriteMessage : recordsWrite.message,
             published                   : true,
-            authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
+            authorizationSignatureInput : Jws.createSignatureInput(requester)
           });
 
           const newWriteReply = await handleRecordsWrite({ tenant, message: newWrite.message, messageStore, didResolver });
@@ -349,7 +349,7 @@ describe('handleRecordsWrite()', () => {
           const newWrite = await RecordsWrite.createFrom({
             unsignedRecordsWriteMessage : recordsWrite.message,
             data                        : newData,
-            authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
+            authorizationSignatureInput : Jws.createSignatureInput(requester)
           });
 
           const newWriteReply = await handleRecordsWrite({
@@ -1331,7 +1331,7 @@ describe('handleRecordsWrite()', () => {
       const authorizationPayload = { ...recordsWrite.authorizationPayload };
       authorizationPayload.recordId = await TestDataGenerator.randomCborSha256Cid(); // make recordId mismatch in authorization payload
       const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
-      const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
+      const signatureInput = Jws.createSignatureInput(requester);
       const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
       message.authorization = signer.getJws();
 
@@ -1352,7 +1352,7 @@ describe('handleRecordsWrite()', () => {
       const authorizationPayload = { ...recordsWrite.authorizationPayload };
       authorizationPayload.contextId = await TestDataGenerator.randomCborSha256Cid(); // make contextId mismatch in authorization payload
       const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
-      const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
+      const signatureInput = Jws.createSignatureInput(requester);
       const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
       message.authorization = signer.getJws();
 
@@ -1401,7 +1401,7 @@ describe('handleRecordsWrite()', () => {
     it('should fail with 400 if `attestation` payload contains properties other than `descriptorCid`', async () => {
       const { requester, message, recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite();
       const tenant = requester.did;
-      const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
+      const signatureInput = Jws.createSignatureInput(requester);
 
       // replace `attestation` with one that has an additional property, but go the extra mile of making sure signature is valid
       const descriptorCid = recordsWrite.authorizationPayload.descriptorCid;
@@ -1455,7 +1455,7 @@ describe('handleRecordsWrite()', () => {
       // replace valid attestation (the one signed by `authorization` with another attestation to the same message (descriptorCid)
       const bob = await DidKeyResolver.generate();
       const descriptorCid = await computeCid(message.descriptor);
-      const attestationNotReferencedByAuthorization = await RecordsWrite['createAttestation'](descriptorCid, TestDataGenerator.createSignatureInputsFromPersonas([bob]));
+      const attestationNotReferencedByAuthorization = await RecordsWrite['createAttestation'](descriptorCid, Jws.createSignatureInputs([bob]));
       message.attestation = attestationNotReferencedByAuthorization;
 
       const writeReply = await handleRecordsWrite({ tenant: alice.did, message, messageStore, didResolver, dataStream });

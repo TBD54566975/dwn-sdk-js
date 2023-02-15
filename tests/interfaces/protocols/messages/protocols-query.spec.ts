@@ -2,6 +2,7 @@ import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
+import { Jws } from '../../../../src/index.js';
 import { ProtocolsQuery } from '../../../../src/interfaces/protocols/messages/protocols-query.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 
@@ -16,7 +17,7 @@ describe('ProtocolsQuery', () => {
       const protocolsQuery = await ProtocolsQuery.create({
         filter                      : { protocol: 'anyValue' },
         dateCreated                 : currentTime,
-        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice),
+        authorizationSignatureInput : Jws.createSignatureInput(alice),
       });
 
       expect(protocolsQuery.message.descriptor.dateCreated).to.equal(currentTime);

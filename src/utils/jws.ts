@@ -1,10 +1,11 @@
 import isPlainObject from 'lodash/isPlainObject.js';
 
 import { Encoder } from './encoder.js';
-import { GeneralJws } from '../jose/jws/general/types.js';
-import { PublicJwk } from '../jose/types.js';
 import { SignatureEntry } from '../jose/jws/general/types.js';
 import { signers as verifiers } from '../jose/algorithms/signing/signers.js';
+
+import { GeneralJws, SignatureInput } from '../jose/jws/general/types.js';
+import { KeyMaterial, PublicJwk } from '../jose/types.js';
 
 /**
  * Utility class for JWS related operations.
@@ -68,5 +69,28 @@ export class Jws {
   public static extractDid(kid: string): string {
     const [ did ] = kid.split('#');
     return did;
+  }
+
+  /**
+   * Creates a SignatureInput[] from the given Personas.
+   */
+  public static createSignatureInputs(keyMaterials: KeyMaterial[]): SignatureInput[] {
+    const signatureInputs = keyMaterials.map((keyMaterial) => Jws.createSignatureInput(keyMaterial));
+    return signatureInputs;
+  }
+
+  /**
+   * Creates a SignatureInput from the given Persona.
+   */
+  public static createSignatureInput(keyMaterial: KeyMaterial): SignatureInput {
+    const signatureInput = {
+      privateJwk      : keyMaterial.keyPair.privateJwk,
+      protectedHeader : {
+        alg : keyMaterial.keyPair.privateJwk.alg as string,
+        kid : keyMaterial.keyId
+      }
+    };
+
+    return signatureInput;
   }
 }

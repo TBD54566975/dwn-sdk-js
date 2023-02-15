@@ -11,7 +11,7 @@ import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
 export { RecordsDelete, RecordsDeleteOptions } from '../../../../src/interfaces/records/messages/records-delete.js';
-import { DidResolver, Encoder, RecordsDelete } from '../../../../src/index.js';
+import { DidResolver, Encoder, Jws, RecordsDelete } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -65,7 +65,7 @@ describe('handleRecordsDelete()', () => {
       // testing delete
       const recordsDelete = await RecordsDelete.create({
         recordId                    : message.recordId,
-        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+        authorizationSignatureInput : Jws.createSignatureInput(alice)
       });
 
       const deleteReply = await handleRecordsDelete({ tenant: alice.did, message: recordsDelete.message, messageStore, didResolver });
@@ -91,7 +91,7 @@ describe('handleRecordsDelete()', () => {
       // NOTE: creating RecordsDelete first ensures it has an earlier `dateModified` time
       const recordsDelete = await RecordsDelete.create({
         recordId                    : initialWriteData.message.recordId,
-        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+        authorizationSignatureInput : Jws.createSignatureInput(alice)
       });
       const subsequentWriteData = await TestDataGenerator.generateFromRecordsWrite({
         existingWrite : initialWriteData.recordsWrite,

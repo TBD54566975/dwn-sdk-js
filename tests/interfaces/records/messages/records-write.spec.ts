@@ -2,6 +2,7 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
+import { Jws } from '../../../../src/index.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsWrite } from '../../../../src/interfaces/records/messages/records-write.js';
@@ -24,7 +25,7 @@ describe('RecordsWrite', () => {
         dataFormat                  : 'application/json',
         dateCreated                 : '2022-10-14T10:20:30.405060',
         recordId                    : await TestDataGenerator.randomCborSha256Cid(),
-        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+        authorizationSignatureInput : Jws.createSignatureInput(alice)
       };
       const recordsWrite = await RecordsWrite.create(options);
 
@@ -49,7 +50,7 @@ describe('RecordsWrite', () => {
         dataFormat                  : 'application/json',
         recordId                    : await TestDataGenerator.randomCborSha256Cid(),
         published                   : true,
-        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+        authorizationSignatureInput : Jws.createSignatureInput(alice)
       };
       const recordsWrite = await RecordsWrite.create(options);
 
@@ -69,7 +70,7 @@ describe('RecordsWrite', () => {
         dataFormat                  : 'application/json',
         recordId                    : await TestDataGenerator.randomCborSha256Cid(),
         published                   : true,
-        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+        authorizationSignatureInput : Jws.createSignatureInput(alice)
       };
       const createPromise1 = RecordsWrite.create(options1);
 
@@ -84,7 +85,7 @@ describe('RecordsWrite', () => {
         dataFormat                  : 'application/json',
         recordId                    : await TestDataGenerator.randomCborSha256Cid(),
         published                   : true,
-        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+        authorizationSignatureInput : Jws.createSignatureInput(alice)
       };
       const createPromise2 = RecordsWrite.create(options2);
 
@@ -102,7 +103,7 @@ describe('RecordsWrite', () => {
       const write = await RecordsWrite.createFrom({
         unsignedRecordsWriteMessage : recordsWrite.message,
         datePublished               : getCurrentTimeInHighPrecision(),
-        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
+        authorizationSignatureInput : Jws.createSignatureInput(requester)
       });
 
       expect(write.message.descriptor.published).to.be.true;

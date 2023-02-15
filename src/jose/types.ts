@@ -1,3 +1,11 @@
+/**
+ * Contains a public-private key pair and the associated key ID.
+ */
+export type KeyMaterial = {
+  keyId: string,
+  keyPair: { publicJwk: PublicJwk, privateJwk: PrivateJwk }
+};
+
 export type Jwk = {
   /** The "alg" (algorithm) parameter identifies the algorithm intended for use with the key. */
   alg?: string;

@@ -2,6 +2,7 @@ import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
+import { Jws } from '../../../../src/index.js';
 import { RecordsQuery } from '../../../../src/interfaces/records/messages/records-query.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 
@@ -16,7 +17,7 @@ describe('RecordsQuery', () => {
       const recordsQuery = await RecordsQuery.create({
         filter                      : { schema: 'anything' },
         dateCreated                 : currentTime,
-        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice),
+        authorizationSignatureInput : Jws.createSignatureInput(alice),
       });
 
       expect(recordsQuery.message.descriptor.dateCreated).to.equal(currentTime);
