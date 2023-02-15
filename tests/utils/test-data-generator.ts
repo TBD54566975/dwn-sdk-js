@@ -12,13 +12,13 @@ import { RecordsQueryFilter } from '../../src/interfaces/records/types.js';
 import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1.js';
 import { sha256 } from 'multiformats/hashes/sha2';
-import { SignatureInput } from '../../src/jose/jws/general/types.js';
 import {
   DateSort,
   DidKeyResolver,
   HooksWrite,
   HooksWriteMessage,
   HooksWriteOptions,
+  Jws,
   ProtocolDefinition,
   ProtocolsConfigure,
   ProtocolsConfigureMessage,
@@ -179,29 +179,6 @@ export class TestDataGenerator {
   }
 
   /**
-   * Creates a SignatureInput from the given Persona.
-   */
-  public static createSignatureInputFromPersona(persona: Persona): SignatureInput {
-    const signatureInput = {
-      privateJwk      : persona.keyPair.privateJwk,
-      protectedHeader : {
-        alg : persona.keyPair.privateJwk.alg as string,
-        kid : persona.keyId
-      }
-    };
-
-    return signatureInput;
-  }
-
-  /**
-   * Creates a SignatureInput[] from the given Personas.
-   */
-  public static createSignatureInputsFromPersonas(personas: Persona[]): SignatureInput[] {
-    const signatureInputs = personas.map((persona) => this.createSignatureInputFromPersona(persona));
-    return signatureInputs;
-  }
-
-  /**
    * Generates a ProtocolsConfigure message for testing.
    * Optional parameters are generated if not given.
    * Implementation currently uses `ProtocolsConfigure.create()`.
@@ -229,7 +206,7 @@ export class TestDataGenerator {
     // const dataStream = DataStream.fromObject(definition); // intentionally left here to demonstrate the pattern to use when #139 is implemented
     const dataStream = undefined;
 
-    const authorizationSignatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
+    const authorizationSignatureInput = Jws.createSignatureInput(requester);
 
     const options: ProtocolsConfigureOptions = {
       dateCreated : input?.dateCreated,
@@ -255,7 +232,7 @@ export class TestDataGenerator {
     // generate requester persona if not given
     const requester = input?.requester ?? await TestDataGenerator.generatePersona();
 
-    const authorizationSignatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
+    const authorizationSignatureInput = Jws.createSignatureInput(requester);
 
     const options: ProtocolsQueryOptions = {
       dateCreated : input?.dateCreated,
@@ -285,8 +262,8 @@ export class TestDataGenerator {
   public static async generateRecordsWrite(input?: GenerateRecordsWriteInput): Promise<GenerateRecordsWriteOutput> {
     const requester = input?.requester ?? await TestDataGenerator.generatePersona();
 
-    const authorizationSignatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
-    const attestationSignatureInputs = TestDataGenerator.createSignatureInputsFromPersonas(input?.attesters ?? []);
+    const authorizationSignatureInput = Jws.createSignatureInput(requester);
+    const attestationSignatureInputs = Jws.createSignatureInputs(input?.attesters ?? []);
 
     const dataBytes = input?.data ?? TestDataGenerator.randomBytes(32);
     const dataStream = DataStream.fromBytes(dataBytes);
@@ -342,7 +319,7 @@ export class TestDataGenerator {
       published,
       datePublished,
       dateModified                : input.dateModified,
-      authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(input.requester)
+      authorizationSignatureInput : Jws.createSignatureInput(input.requester)
     };
 
     const recordsWrite = await RecordsWrite.createFrom(options);
@@ -360,7 +337,7 @@ export class TestDataGenerator {
   public static async generateRecordsQuery(input?: GenerateRecordsQueryInput): Promise<GenerateRecordsQueryOutput> {
     const requester = input?.requester ?? await TestDataGenerator.generatePersona();
 
-    const authorizationSignatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
+    const authorizationSignatureInput = Jws.createSignatureInput(requester);
 
     const options: RecordsQueryOptions = {
       dateCreated : input?.dateCreated,
@@ -387,7 +364,7 @@ export class TestDataGenerator {
 
     const recordsDelete = await RecordsDelete.create({
       recordId                    : await TestDataGenerator.randomCborSha256Cid(),
-      authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(requester)
+      authorizationSignatureInput : Jws.createSignatureInput(requester)
     });
 
     return {
@@ -403,7 +380,7 @@ export class TestDataGenerator {
   public static async generateHooksWrite(input?: GenerateHooksWriteInput): Promise<GenerateHooksWriteOutput> {
     const requester = input?.requester ?? await TestDataGenerator.generatePersona();
 
-    const authorizationSignatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
+    const authorizationSignatureInput = Jws.createSignatureInput(requester);
 
     const options: HooksWriteOptions = {
       dateCreated : input?.dateCreated,

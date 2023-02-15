@@ -2,6 +2,7 @@ import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
+import { Jws } from '../../../../src/index.js';
 import { RecordsDelete } from '../../../../src/interfaces/records/messages/records-delete.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 
@@ -15,7 +16,7 @@ describe('RecordsDelete', () => {
       const currentTime = getCurrentTimeInHighPrecision();
       const recordsDelete = await RecordsDelete.create({
         recordId                    : 'anything',
-        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice),
+        authorizationSignatureInput : Jws.createSignatureInput(alice),
         dateModified                : currentTime
       });
 
@@ -27,7 +28,7 @@ describe('RecordsDelete', () => {
 
       const recordsDelete = await RecordsDelete.create({
         recordId                    : 'anything',
-        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice)
+        authorizationSignatureInput : Jws.createSignatureInput(alice)
       });
 
       expect(recordsDelete.message.descriptor.dateModified).to.exist;

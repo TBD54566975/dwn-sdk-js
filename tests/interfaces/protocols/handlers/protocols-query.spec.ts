@@ -10,7 +10,7 @@ import { MessageStoreLevel } from '../../../../src/store/message-store-level.js'
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
-import { DidResolver, Encoder } from '../../../../src/index.js';
+import { DidResolver, Encoder, Jws } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -92,7 +92,7 @@ describe('handleProtocolsQuery()', () => {
       const authorizationPayload = { ...protocolsQuery.authorizationPayload };
       authorizationPayload.descriptorCid = incorrectDescriptorCid;
       const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
-      const signatureInput = TestDataGenerator.createSignatureInputFromPersona(requester);
+      const signatureInput = Jws.createSignatureInput(requester);
       const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
       message.authorization = signer.getJws();
 

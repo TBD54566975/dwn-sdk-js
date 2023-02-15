@@ -12,7 +12,7 @@ import { MessageStoreLevel } from '../../../../src/store/message-store-level.js'
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 import { GenerateProtocolsConfigureOutput, TestDataGenerator } from '../../../utils/test-data-generator.js';
 
-import { DidResolver, Encoder } from '../../../../src/index.js';
+import { DidResolver, Encoder, Jws } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -48,8 +48,8 @@ describe('handleProtocolsQuery()', () => {
 
       // intentionally create more than one signature, which is not allowed
       const extraRandomPersona = await TestDataGenerator.generatePersona();
-      const signatureInput1 = TestDataGenerator.createSignatureInputFromPersona(requester);
-      const signatureInput2 = TestDataGenerator.createSignatureInputFromPersona(extraRandomPersona);
+      const signatureInput1 = Jws.createSignatureInput(requester);
+      const signatureInput2 = Jws.createSignatureInput(extraRandomPersona);
 
       const authorizationPayloadBytes = Encoder.objectToBytes(protocolsConfigure.authorizationPayload);
 

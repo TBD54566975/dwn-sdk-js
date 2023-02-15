@@ -3,8 +3,8 @@ import chai, { expect } from 'chai';
 
 import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
-import { ProtocolsConfigure } from '../../../../src/index.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
+import { Jws, ProtocolsConfigure } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -18,7 +18,7 @@ describe('ProtocolsConfigure', () => {
         dateCreated                 : currentTime,
         protocol                    : 'anyValue',
         definition                  : dexProtocolDefinition,
-        authorizationSignatureInput : TestDataGenerator.createSignatureInputFromPersona(alice),
+        authorizationSignatureInput : Jws.createSignatureInput(alice),
       });
 
       expect(protocolsConfigure.message.descriptor.dateCreated).to.equal(currentTime);
