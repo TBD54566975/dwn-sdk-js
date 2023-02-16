@@ -25,7 +25,7 @@ export class Dwn {
   private messageStore: MessageStore;
   private tenantGate: TenantGate;
 
-  private constructor(config: Config) {
+  private constructor(config: DwnConfig) {
     this.DidResolver = new DidResolver(config.didMethodResolvers);
     this.messageStore = config.messageStore;
     this.tenantGate = config.tenantGate;
@@ -34,7 +34,7 @@ export class Dwn {
   /**
    * Creates an instance of the DWN.
    */
-  static async create(config?: Config): Promise<Dwn> {
+  static async create(config?: DwnConfig): Promise<Dwn> {
     config ??= { };
     config.tenantGate ??= new AllowAllTenantGate();
     config.messageStore ??= new MessageStoreLevel();
@@ -108,7 +108,7 @@ export class Dwn {
   }
 };
 
-export type Config = {
+export type DwnConfig = {
   didMethodResolvers?: DidMethodResolver[],
   interfaces?: Interface[];
   messageStore?: MessageStore;

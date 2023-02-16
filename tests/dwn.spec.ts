@@ -2,13 +2,12 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
-import { Config } from '../src/dwn.js';
 import { DidKeyResolver } from '../src/did/did-key-resolver.js';
 import { Dwn } from '../src/dwn.js';
 import { Message } from '../src/core/message.js';
 import { MessageStoreLevel } from '../src/store/message-store-level.js';
 import { TestDataGenerator } from './utils/test-data-generator.js';
-import { TenantGate } from '../src/index.js';
+import { DwnConfig, TenantGate } from '../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -26,7 +25,7 @@ describe('DWN', () => {
 
     await messageStore.open();
 
-    const dwnConfig: Config = { messageStore };
+    const dwnConfig: DwnConfig = { messageStore };
     dwn = await Dwn.create(dwnConfig);
   });
 
