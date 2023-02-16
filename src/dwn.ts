@@ -2,8 +2,10 @@ import type { BaseMessage } from './core/types.js';
 import type { DidMethodResolver } from './did/did-resolver.js';
 import type { MessageStore } from './store/message-store.js';
 import type { Readable } from 'readable-stream';
+import type { TenantGate } from './core/tenant-gate.js';
 import type { Interface, MethodHandler } from './interfaces/types.js';
 
+import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DidResolver } from './did/did-resolver.js';
 import { Message } from './core/message.js';
 import { MessageReply } from './core/message-reply.js';
@@ -21,13 +23,20 @@ export class Dwn {
 
   private DidResolver: DidResolver;
   private messageStore: MessageStore;
+  private tenantGate: TenantGate;
 
   private constructor(config: Config) {
     this.DidResolver = new DidResolver(config.DidMethodResolvers);
     this.messageStore = config.messageStore;
+    this.tenantGate = config.tenantGate;
   }
 
-  static async create(config: Config): Promise<Dwn> {
+  /**
+   * Creates an instance of the DWN.
+   */
+  static async create(config?: Config): Promise<Dwn> {
+    config ??= { };
+    config.tenantGate ??= new AllowAllTenantGate();
     config.messageStore ??= new MessageStoreLevel();
     config.interfaces ??= [];
 
@@ -61,6 +70,13 @@ export class Dwn {
    * @param tenant The tenant DID to route the given message to.
    */
   async processMessage(tenant: string, rawMessage: any, dataStream?: Readable): Promise<MessageReply> {
+    const isTenant = await this.tenantGate.isTenant(tenant);
+    if (!isTenant) {
+      return new MessageReply({
+        status: { code: 401, detail: `${tenant} is not a tenant` }
+      });
+    }
+
     const dwnInterface = rawMessage?.descriptor?.interface;
     const dwnMethod = rawMessage?.descriptor?.method;
     if (dwnInterface === undefined || dwnMethod === undefined) {
@@ -96,4 +112,5 @@ export type Config = {
   DidMethodResolvers?: DidMethodResolver[],
   interfaces?: Interface[];
   messageStore?: MessageStore;
+  tenantGate?: TenantGate;
 };
