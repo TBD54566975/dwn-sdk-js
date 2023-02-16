@@ -8,6 +8,7 @@ import { Dwn } from '../src/dwn.js';
 import { Message } from '../src/core/message.js';
 import { MessageStoreLevel } from '../src/store/message-store-level.js';
 import { TestDataGenerator } from './utils/test-data-generator.js';
+import { TenantGate } from '../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -36,6 +37,21 @@ describe('DWN', () => {
   after(async () => {
     await messageStore.close();
     dwn.close();
+  });
+
+
+  describe('create()', () => {
+    it('#224 - should be able to initialize a DWN with undefined config', async () => {
+      const dwnWithoutConfig = await Dwn.create(); // without passing in a config
+      const alice = await DidKeyResolver.generate();
+      const { requester, message } = await TestDataGenerator.generateRecordsQuery({ requester: alice });
+
+      const tenant = requester.did;
+      const reply = await dwnWithoutConfig.processMessage(tenant, message);
+
+      expect(reply.status.code).to.equal(200);
+      expect(reply.entries).to.be.empty;
+    });
   });
 
   describe('processMessage()', () => {
@@ -96,6 +112,25 @@ describe('DWN', () => {
       const reply3 = await dwn.processMessage(alice.did, { descriptor: { interface: 'anyValue' } }); // missing `method`
       expect(reply3.status.code).to.equal(400);
       expect(reply3.status.detail).to.contain('Both interface and method must be present');
+    });
+
+    it('should throw 401 if message is targeted at a non-tenant', async () => {
+      // tenant gate that blocks everyone
+      const blockAllTenantGate: TenantGate = {
+        async isTenant(): Promise<boolean> {
+          return false;
+        }
+      };
+
+      const dwnWithConfig = await Dwn.create({ tenantGate: blockAllTenantGate }); // without passing in a config
+      const alice = await DidKeyResolver.generate();
+      const { requester, message } = await TestDataGenerator.generateRecordsQuery({ requester: alice });
+
+      const tenant = requester.did;
+      const reply = await dwnWithConfig.processMessage(tenant, message);
+
+      expect(reply.status.code).to.equal(401);
+      expect(reply.status.detail).to.contain('not a tenant');
     });
   });
 });

@@ -33,7 +33,7 @@ export class DidResolver {
   }
 
   /**
-   * attempt to resolve the DID provided using the available DidMethodResolvers
+   * attempt to resolve the DID provided
    * @throws {Error} if DID is invalid
    * @throws {Error} if DID method is not supported
    * @throws {Error} if resolving DID fails

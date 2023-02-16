@@ -26,7 +26,7 @@ export class Dwn {
   private tenantGate: TenantGate;
 
   private constructor(config: Config) {
-    this.DidResolver = new DidResolver(config.DidMethodResolvers);
+    this.DidResolver = new DidResolver(config.didMethodResolvers);
     this.messageStore = config.messageStore;
     this.tenantGate = config.tenantGate;
   }
@@ -109,7 +109,7 @@ export class Dwn {
 };
 
 export type Config = {
-  DidMethodResolvers?: DidMethodResolver[],
+  didMethodResolvers?: DidMethodResolver[],
   interfaces?: Interface[];
   messageStore?: MessageStore;
   tenantGate?: TenantGate;
