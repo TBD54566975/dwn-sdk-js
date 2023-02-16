@@ -20,7 +20,9 @@
     "esModuleInterop": true
   },
   "typedocOptions": {
-    "entryPoints": ["src/index.ts"],
+    "entryPoints": [
+      "src/index.ts"
+    ],
     "out": "documentation",
     "readme": "none",
     "excludePrivate": "true",
