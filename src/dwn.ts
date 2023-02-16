@@ -1,9 +1,11 @@
 import type { BaseMessage } from './core/types.js';
 import type { DidMethodResolver } from './did/did-resolver.js';
 import type { MessageStore } from './store/message-store.js';
+import type { MethodHandler } from './interfaces/types.js';
 import type { Readable } from 'readable-stream';
-import type { Interface, MethodHandler } from './interfaces/types.js';
+import type { TenantGate } from './core/tenant-gate.js';
 
+import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DidResolver } from './did/did-resolver.js';
 import { Message } from './core/message.js';
 import { MessageReply } from './core/message-reply.js';
@@ -21,26 +23,21 @@ export class Dwn {
 
   private DidResolver: DidResolver;
   private messageStore: MessageStore;
+  private tenantGate: TenantGate;
 
-  private constructor(config: Config) {
-    this.DidResolver = new DidResolver(config.DidMethodResolvers);
+  private constructor(config: DwnConfig) {
+    this.DidResolver = new DidResolver(config.didMethodResolvers);
     this.messageStore = config.messageStore;
+    this.tenantGate = config.tenantGate;
   }
 
-  static async create(config: Config): Promise<Dwn> {
+  /**
+   * Creates an instance of the DWN.
+   */
+  static async create(config?: DwnConfig): Promise<Dwn> {
+    config ??= { };
+    config.tenantGate ??= new AllowAllTenantGate();
     config.messageStore ??= new MessageStoreLevel();
-    config.interfaces ??= [];
-
-    for (const { methodHandlers } of config.interfaces) {
-
-      for (const messageType in methodHandlers) {
-        if (Dwn.methodHandlers[messageType]) {
-          throw new Error(`methodHandler already exists for ${messageType}`);
-        } else {
-          Dwn.methodHandlers[messageType] = methodHandlers[messageType];
-        }
-      }
-    }
 
     const dwn = new Dwn(config);
     await dwn.open();
@@ -61,6 +58,13 @@ export class Dwn {
    * @param tenant The tenant DID to route the given message to.
    */
   async processMessage(tenant: string, rawMessage: any, dataStream?: Readable): Promise<MessageReply> {
+    const isTenant = await this.tenantGate.isTenant(tenant);
+    if (!isTenant) {
+      return new MessageReply({
+        status: { code: 401, detail: `${tenant} is not a tenant` }
+      });
+    }
+
     const dwnInterface = rawMessage?.descriptor?.interface;
     const dwnMethod = rawMessage?.descriptor?.method;
     if (dwnInterface === undefined || dwnMethod === undefined) {
@@ -92,8 +96,8 @@ export class Dwn {
   }
 };
 
-export type Config = {
-  DidMethodResolvers?: DidMethodResolver[],
-  interfaces?: Interface[];
+export type DwnConfig = {
+  didMethodResolvers?: DidMethodResolver[],
   messageStore?: MessageStore;
+  tenantGate?: TenantGate;
 };

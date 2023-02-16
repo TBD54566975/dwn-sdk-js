@@ -12,8 +12,3 @@ export type MethodHandler = (input: {
   messageStore: MessageStore;
   didResolver: DidResolver
 }) => Promise<MessageReply>;
-
-export interface Interface {
-  methodHandlers: MethodHandler[];
-  schemas: { [key:string]: object };
-}

@@ -3,7 +3,7 @@
 # Decentralized Web Node (DWN) SDK
 
 Code Coverage
-![Statements](https://img.shields.io/badge/statements-94.88%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-94.56%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-92.13%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-94.88%25-brightgreen.svg?style=flat)
+![Statements](https://img.shields.io/badge/statements-95.15%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-95.19%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-92.17%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-95.15%25-brightgreen.svg?style=flat)
 
 ## Introduction
 
@@ -27,7 +27,7 @@ npm install @tbd54566975/dwn-sdk-js
 
 import { Dwn, DataStream, DidKeyResolver, Jws, RecordsWrite, RecordsQuery } from '@tbd54566975/dwn-sdk-js';
 
-export const dwn = await Dwn.create({});
+export const dwn = await Dwn.create();
 
 ...
 const didKey = await DidKeyResolver.generate(); // generate a did:key DID
