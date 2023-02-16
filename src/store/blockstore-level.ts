@@ -58,7 +58,7 @@ export class BlockstoreLevel implements Blockstore {
     return this.db.put(key.toString(), val);
   }
 
-  async get(key: CID, _options?: Options): Promise<Uint8Array | undefined> {
+  async get(key: CID, _options?: Options): Promise<Uint8Array> {
     try {
       const val = await this.db.get(key.toString());
       return val;
