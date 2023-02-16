@@ -1,9 +1,9 @@
 import type { BaseMessage } from './core/types.js';
 import type { DidMethodResolver } from './did/did-resolver.js';
 import type { MessageStore } from './store/message-store.js';
+import type { MethodHandler } from './interfaces/types.js';
 import type { Readable } from 'readable-stream';
 import type { TenantGate } from './core/tenant-gate.js';
-import type { Interface, MethodHandler } from './interfaces/types.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DidResolver } from './did/did-resolver.js';
@@ -38,18 +38,6 @@ export class Dwn {
     config ??= { };
     config.tenantGate ??= new AllowAllTenantGate();
     config.messageStore ??= new MessageStoreLevel();
-    config.interfaces ??= [];
-
-    for (const { methodHandlers } of config.interfaces) {
-
-      for (const messageType in methodHandlers) {
-        if (Dwn.methodHandlers[messageType]) {
-          throw new Error(`methodHandler already exists for ${messageType}`);
-        } else {
-          Dwn.methodHandlers[messageType] = methodHandlers[messageType];
-        }
-      }
-    }
 
     const dwn = new Dwn(config);
     await dwn.open();
@@ -110,7 +98,6 @@ export class Dwn {
 
 export type DwnConfig = {
   didMethodResolvers?: DidMethodResolver[],
-  interfaces?: Interface[];
   messageStore?: MessageStore;
   tenantGate?: TenantGate;
 };
