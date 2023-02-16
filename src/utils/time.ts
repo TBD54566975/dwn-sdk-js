@@ -14,5 +14,5 @@ export function sleep(durationInMillisecond): Promise<void> {
  * using @js-temporal/polyfill
  */
 export function getCurrentTimeInHighPrecision(): string {
-  return Temporal.Now.instant().toString({ smallestUnit: 'microseconds'  });
+  return Temporal.Now.instant().toString({ smallestUnit: 'microseconds' });
 }
