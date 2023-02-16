@@ -10,9 +10,9 @@ export function sleep(durationInMillisecond): Promise<void> {
 }
 
 /**
- * returns system time as a plain ISO date string with microsecond precision
+ * returns an UTC ISO-8601 timestamp with microsecond precision
  * using @js-temporal/polyfill
  */
 export function getCurrentTimeInHighPrecision(): string {
-  return Temporal.Now.plainDateTimeISO().toString({ smallestUnit: 'microseconds' });
+  return Temporal.Now.instant().toString({ smallestUnit: 'microseconds'  });
 }
