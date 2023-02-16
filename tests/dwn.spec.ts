@@ -38,7 +38,6 @@ describe('DWN', () => {
     dwn.close();
   });
 
-
   describe('create()', () => {
     it('#224 - should be able to initialize a DWN with undefined config', async () => {
       const dwnWithoutConfig = await Dwn.create(); // without passing in a config
@@ -121,7 +120,7 @@ describe('DWN', () => {
         }
       };
 
-      const dwnWithConfig = await Dwn.create({ tenantGate: blockAllTenantGate }); // without passing in a config
+      const dwnWithConfig = await Dwn.create({ tenantGate: blockAllTenantGate, messageStore }); // block all tenants
       const alice = await DidKeyResolver.generate();
       const { requester, message } = await TestDataGenerator.generateRecordsQuery({ requester: alice });
 
