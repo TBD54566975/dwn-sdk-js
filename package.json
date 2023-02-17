@@ -8,7 +8,11 @@
     "node": ">= 16"
   },
   "main": "./dist/cjs/src/index.js",
-  "exports": "./dist/esm/src/index.js",
+  "module": "./dist/esm/src/index.js",
+  "exports": {
+    "import": "./dist/esm/src/index.js",
+    "require": "./dist/cjs/src/index.js"
+  },
   "browser": {
     "./dist/esm/src/index.js": "./dist/bundles/browser.js",
     "./dist/cjs/src/index.js": "./dist/bundles/browser.js"
