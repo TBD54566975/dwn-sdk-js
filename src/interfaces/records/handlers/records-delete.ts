@@ -8,75 +8,79 @@ import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsDelete } from '../messages/records-delete.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { TimestampedMessage } from '../../../core/types.js';
+import { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
-export const handleRecordsDelete: MethodHandler = async ({
-  tenant,
-  message,
-  messageStore,
-  didResolver
-}): Promise<MessageReply> => {
-  const incomingMessage = message as RecordsDeleteMessage;
+export class RecordsDeleteHandler implements MethodHandler {
 
-  let recordsDelete: RecordsDelete;
-  try {
-    recordsDelete = await RecordsDelete.parse(incomingMessage);
-  } catch (e) {
-    return new MessageReply({
-      status: { code: 400, detail: e.message }
-    });
-  }
+  constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore) { }
 
-  // authentication & authorization
-  try {
-    await authenticate(message.authorization, didResolver);
-    await recordsDelete.authorize(tenant);
-  } catch (e) {
-    return new MessageReply({
-      status: { code: 401, detail: e.message }
-    });
-  }
-
-  // get existing records matching the `recordId`
-  const query = {
+  public async handle({
     tenant,
-    interface : DwnInterfaceName.Records,
-    recordId  : incomingMessage.descriptor.recordId
+    message
+  }): Promise<MessageReply> {
+    const incomingMessage = message as RecordsDeleteMessage;
+
+    let recordsDelete: RecordsDelete;
+    try {
+      recordsDelete = await RecordsDelete.parse(incomingMessage);
+    } catch (e) {
+      return new MessageReply({
+        status: { code: 400, detail: e.message }
+      });
+    }
+
+    // authentication & authorization
+    try {
+      await authenticate(message.authorization, this.didResolver);
+      await recordsDelete.authorize(tenant);
+    } catch (e) {
+      return new MessageReply({
+        status: { code: 401, detail: e.message }
+      });
+    }
+
+    // get existing records matching the `recordId`
+    const query = {
+      tenant,
+      interface : DwnInterfaceName.Records,
+      recordId  : incomingMessage.descriptor.recordId
+    };
+    const existingMessages = await this.messageStore.query(query) as TimestampedMessage[];
+
+    // find which message is the newest, and if the incoming message is the newest
+    const newestExistingMessage = await RecordsWrite.getNewestMessage(existingMessages);
+    let incomingMessageIsNewest = false;
+    let newestMessage;
+    // if incoming message is newest
+    if (newestExistingMessage === undefined || await RecordsWrite.isNewer(incomingMessage, newestExistingMessage)) {
+      incomingMessageIsNewest = true;
+      newestMessage = incomingMessage;
+    } else { // existing message is the same age or newer than the incoming message
+      newestMessage = newestExistingMessage;
+    }
+
+    // write the incoming message to DB if incoming message is newest
+    let messageReply: MessageReply;
+    if (incomingMessageIsNewest) {
+      const indexes = await constructIndexes(tenant, recordsDelete);
+
+      await this.messageStore.put(incomingMessage, indexes);
+
+      messageReply = new MessageReply({
+        status: { code: 202, detail: 'Accepted' }
+      });
+    } else {
+      messageReply = new MessageReply({
+        status: { code: 409, detail: 'Conflict' }
+      });
+    }
+
+    // delete all existing messages that are not newest, except for the initial write
+    await deleteAllOlderMessagesButKeepInitialWrite(tenant, existingMessages, newestMessage, this.messageStore);
+
+    return messageReply;
   };
-  const existingMessages = await messageStore.query(query) as TimestampedMessage[];
-
-  // find which message is the newest, and if the incoming message is the newest
-  const newestExistingMessage = await RecordsWrite.getNewestMessage(existingMessages);
-  let incomingMessageIsNewest = false;
-  let newestMessage;
-  // if incoming message is newest
-  if (newestExistingMessage === undefined || await RecordsWrite.isNewer(incomingMessage, newestExistingMessage)) {
-    incomingMessageIsNewest = true;
-    newestMessage = incomingMessage;
-  } else { // existing message is the same age or newer than the incoming message
-    newestMessage = newestExistingMessage;
-  }
-
-  // write the incoming message to DB if incoming message is newest
-  let messageReply: MessageReply;
-  if (incomingMessageIsNewest) {
-    const indexes = await constructIndexes(tenant, recordsDelete);
-
-    await messageStore.put(incomingMessage, indexes);
-
-    messageReply = new MessageReply({
-      status: { code: 202, detail: 'Accepted' }
-    });
-  } else {
-    messageReply = new MessageReply({
-      status: { code: 409, detail: 'Conflict' }
-    });
-  }
-
-  // delete all existing messages that are not newest, except for the initial write
-  await deleteAllOlderMessagesButKeepInitialWrite(tenant, existingMessages, newestMessage, messageStore);
-
-  return messageReply;
-};
+}
 
 export async function constructIndexes(tenant: string, recordsDelete: RecordsDelete): Promise<{ [key: string]: string }> {
   const message = recordsDelete.message;

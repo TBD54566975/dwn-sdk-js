@@ -5,60 +5,64 @@ import { authenticate } from '../../../core/auth.js';
 import { BaseMessage } from '../../../core/types.js';
 import { lexicographicalCompare } from '../../../utils/string.js';
 import { MessageReply } from '../../../core/message-reply.js';
-import { MessageStore } from '../../../store/message-store.js';
 
+import { DataStore, DidResolver, MessageStore } from '../../../index.js';
 import { DateSort, RecordsQuery } from '../messages/records-query.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 
-export const handleRecordsQuery: MethodHandler = async ({
-  tenant,
-  message,
-  messageStore,
-  didResolver
-}): Promise<MessageReply> => {
-  let recordsQuery: RecordsQuery;
-  try {
-    recordsQuery = await RecordsQuery.parse(message as RecordsQueryMessage);
-  } catch (e) {
+export class RecordsQueryHandler implements MethodHandler {
+
+  constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore) { }
+
+  public async handle({
+    tenant,
+    message
+  }): Promise<MessageReply> {
+    let recordsQuery: RecordsQuery;
+    try {
+      recordsQuery = await RecordsQuery.parse(message as RecordsQueryMessage);
+    } catch (e) {
+      return new MessageReply({
+        status: { code: 400, detail: e.message }
+      });
+    }
+
+    try {
+      await authenticate(message.authorization, this.didResolver);
+      await recordsQuery.authorize(tenant);
+    } catch (e) {
+      return new MessageReply({
+        status: { code: 401, detail: e.message }
+      });
+    }
+
+    let records: BaseMessage[];
+    if (recordsQuery.author === tenant) {
+      records = await fetchRecordsAsOwner(tenant, recordsQuery, this.messageStore);
+    } else {
+      records = await fetchRecordsAsNonOwner(tenant, recordsQuery, this.messageStore);
+    }
+
+    // sort if `dataSort` is specified
+    if (recordsQuery.message.descriptor.dateSort) {
+      records = await sortRecords(records, recordsQuery.message.descriptor.dateSort);
+    }
+
+    // strip away `authorization` property for each record before responding
+    const entries = [];
+    for (const record of records) {
+      const recordDuplicate = { ...record };
+      delete recordDuplicate.authorization;
+      entries.push(recordDuplicate);
+    }
+
     return new MessageReply({
-      status: { code: 400, detail: e.message }
+      status: { code: 200, detail: 'OK' },
+      entries
     });
-  }
+  };
+}
 
-  try {
-    await authenticate(message.authorization, didResolver);
-    await recordsQuery.authorize(tenant);
-  } catch (e) {
-    return new MessageReply({
-      status: { code: 401, detail: e.message }
-    });
-  }
-
-  let records: BaseMessage[];
-  if (recordsQuery.author === tenant) {
-    records = await fetchRecordsAsOwner(tenant, recordsQuery, messageStore);
-  } else {
-    records = await fetchRecordsAsNonOwner(tenant, recordsQuery, messageStore);
-  }
-
-  // sort if `dataSort` is specified
-  if (recordsQuery.message.descriptor.dateSort) {
-    records = await sortRecords(records, recordsQuery.message.descriptor.dateSort);
-  }
-
-  // strip away `authorization` property for each record before responding
-  const entries = [];
-  for (const record of records) {
-    const recordDuplicate = { ...record };
-    delete recordDuplicate.authorization;
-    entries.push(recordDuplicate);
-  }
-
-  return new MessageReply({
-    status: { code: 200, detail: 'OK' },
-    entries
-  });
-};
 /**
  * Fetches the records as the owner of the DWN with no additional filtering.
  */

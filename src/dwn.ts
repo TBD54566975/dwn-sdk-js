@@ -1,34 +1,44 @@
 import type { BaseMessage } from './core/types.js';
-import type { DidMethodResolver } from './did/did-resolver.js';
+import type { DataStore } from './store/data-store.js';
 import type { MessageStore } from './store/message-store.js';
 import type { MethodHandler } from './interfaces/types.js';
 import type { Readable } from 'readable-stream';
 import type { TenantGate } from './core/tenant-gate.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
+import { DataStoreLevel } from './store/data-store-level.js';
 import { DidResolver } from './did/did-resolver.js';
-import { Message } from './core/message.js';
 import { MessageReply } from './core/message-reply.js';
 import { MessageStoreLevel } from './store/message-store-level.js';
-import { PermissionsInterface } from './interfaces/permissions/permissions-interface.js';
-import { ProtocolsInterface } from './interfaces/protocols/protocols-interface.js';
-import { RecordsInterface } from './interfaces/records/records-interface.js';
+import { PermissionsRequestHandler } from './interfaces/permissions/handlers/permissions-request.js';
+import { ProtocolsConfigureHandler } from './interfaces/protocols/handlers/protocols-configure.js';
+import { ProtocolsQueryHandler } from './interfaces/protocols/handlers/protocols-query.js';
+import { RecordsDeleteHandler } from './interfaces/records/handlers/records-delete.js';
+import { RecordsQueryHandler } from './interfaces/records/handlers/records-query.js';
+import { RecordsWriteHandler } from './interfaces/records/handlers/records-write.js';
+import { DwnInterfaceName, DwnMethodName, Message } from './core/message.js';
 
 export class Dwn {
-  static methodHandlers: { [key:string]: MethodHandler } = {
-    ...RecordsInterface.methodHandlers,
-    ...PermissionsInterface.methodHandlers,
-    ...ProtocolsInterface.methodHandlers
-  };
-
-  private DidResolver: DidResolver;
+  private methodHandlers: { [key:string]: MethodHandler };
+  private didResolver: DidResolver;
   private messageStore: MessageStore;
+  private dataStore: DataStore;
   private tenantGate: TenantGate;
 
   private constructor(config: DwnConfig) {
-    this.DidResolver = new DidResolver(config.didMethodResolvers);
+    this.didResolver = config.didResolver;
     this.messageStore = config.messageStore;
+    this.dataStore = config.dataStore;
     this.tenantGate = config.tenantGate;
+
+    this.methodHandlers = {
+      [DwnInterfaceName.Permissions + DwnMethodName.Request] : new PermissionsRequestHandler(this.didResolver, this.messageStore, this.dataStore),
+      [DwnInterfaceName.Protocols + DwnMethodName.Configure] : new ProtocolsConfigureHandler(this.didResolver, this.messageStore, this.dataStore),
+      [DwnInterfaceName.Protocols + DwnMethodName.Query]     : new ProtocolsQueryHandler(this.didResolver, this.messageStore, this.dataStore),
+      [DwnInterfaceName.Records + DwnMethodName.Delete]      : new RecordsDeleteHandler(this.didResolver, this.messageStore, this.dataStore),
+      [DwnInterfaceName.Records + DwnMethodName.Query]       : new RecordsQueryHandler(this.didResolver, this.messageStore, this.dataStore),
+      [DwnInterfaceName.Records + DwnMethodName.Write]       : new RecordsWriteHandler(this.didResolver, this.messageStore, this.dataStore),
+    };
   }
 
   /**
@@ -36,8 +46,10 @@ export class Dwn {
    */
   static async create(config?: DwnConfig): Promise<Dwn> {
     config ??= { };
+    config.didResolver ??= new DidResolver();
     config.tenantGate ??= new AllowAllTenantGate();
     config.messageStore ??= new MessageStoreLevel();
+    config.dataStore ??= new DataStoreLevel((config.messageStore as MessageStoreLevel).blockstore); // TODO decouple
 
     const dwn = new Dwn(config);
     await dwn.open();
@@ -46,11 +58,13 @@ export class Dwn {
   }
 
   private async open(): Promise<void> {
-    return this.messageStore.open();
+    await this.messageStore.open();
+    await this.dataStore.open();
   }
 
   async close(): Promise<void> {
-    return this.messageStore.close();
+    this.messageStore.close();
+    this.dataStore.close();
   }
 
   /**
@@ -83,13 +97,9 @@ export class Dwn {
     }
 
     const handlerKey = dwnInterface + dwnMethod;
-    const interfaceMethodHandler = Dwn.methodHandlers[handlerKey];
-
-    const methodHandlerReply = await interfaceMethodHandler({
+    const methodHandlerReply = await this.methodHandlers[handlerKey].handle({
       tenant,
-      message      : rawMessage as BaseMessage,
-      messageStore : this.messageStore,
-      didResolver  : this.DidResolver,
+      message: rawMessage as BaseMessage,
       dataStream
     });
     return methodHandlerReply;
@@ -97,7 +107,8 @@ export class Dwn {
 };
 
 export type DwnConfig = {
-  didMethodResolvers?: DidMethodResolver[],
+  didResolver?: DidResolver,
   messageStore?: MessageStore;
+  dataStore?: DataStore;
   tenantGate?: TenantGate;
 };

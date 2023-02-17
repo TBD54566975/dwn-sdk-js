@@ -22,7 +22,9 @@ import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
  */
 export class MessageStoreLevel implements MessageStore {
   config: MessageStoreLevelConfig;
-  db: BlockstoreLevel;
+
+  public readonly blockstore: BlockstoreLevel;
+
   // levelDB doesn't natively provide the querying capabilities needed for DWN,
   // to accommodate, we're leveraging a level-backed inverted index.
   index: Awaited<ReturnType<typeof searchIndex>>; // type `SearchIndex` is not exported. So we construct it indirectly from function return type
@@ -43,18 +45,14 @@ export class MessageStoreLevel implements MessageStore {
       ...config
     };
 
-    this.db = new BlockstoreLevel(this.config.blockstoreLocation);
-    this.dataStore = new DataStoreLevel(this.db);
+    this.blockstore = new BlockstoreLevel(this.config.blockstoreLocation);
+    this.dataStore = new DataStoreLevel(this.blockstore);
   }
 
   async open(): Promise<void> {
     await this.dataStore.open();
 
-    if (!this.db) {
-      this.db = new BlockstoreLevel(this.config.blockstoreLocation);
-    }
-
-    await this.db.open();
+    await this.blockstore.open();
 
     // calling `searchIndex()` twice without closing its DB causes the process to hang (ie. calling this method consecutively),
     // so check to see if the index has already been "opened" before opening it again.
@@ -66,13 +64,13 @@ export class MessageStoreLevel implements MessageStore {
   async close(): Promise<void> {
     await this.dataStore.close();
 
-    await this.db.close();
+    await this.blockstore.close();
     await this.index.INDEX.STORE.close(); // MUST close index-search DB, else `searchIndex()` triggered in a different instance will hang indefinitely
   }
 
   async get(cidString: string): Promise<BaseMessage> {
     const cid = CID.parse(cidString);
-    const bytes = await this.db.get(cid);
+    const bytes = await this.blockstore.get(cid);
 
     if (!bytes) {
       return;
@@ -117,7 +115,7 @@ export class MessageStoreLevel implements MessageStore {
   async delete(cidString: string): Promise<void> {
     // TODO: Implement data deletion in Records - https://github.com/TBD54566975/dwn-sdk-js/issues/84
     const cid = CID.parse(cidString);
-    await this.db.delete(cid);
+    await this.blockstore.delete(cid);
     await this.index.DELETE(cidString);
 
     return;
@@ -126,7 +124,7 @@ export class MessageStoreLevel implements MessageStore {
   async put(message: BaseMessage, indexes: { [key: string]: string }, dataStream?: Readable): Promise<void> {
     const encodedMessageBlock = await block.encode({ value: message, codec: cbor, hasher: sha256 });
 
-    await this.db.put(encodedMessageBlock.cid, encodedMessageBlock.bytes);
+    await this.blockstore.put(encodedMessageBlock.cid, encodedMessageBlock.bytes);
 
     // if `dataCid` is given, it means there is corresponding data associated with this message
     // but NOTE: it is possible that a data stream is not given in such case, for instance,
@@ -180,7 +178,7 @@ export class MessageStoreLevel implements MessageStore {
    */
   async clear(): Promise<void> {
     await this.dataStore.clear();
-    await this.db.clear();
+    await this.blockstore.clear();
     await this.index.FLUSH();
   }
 

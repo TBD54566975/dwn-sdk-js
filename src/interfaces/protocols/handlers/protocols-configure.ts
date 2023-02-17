@@ -5,79 +5,83 @@ import { canonicalAuth } from '../../../core/auth.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { ProtocolsConfigure } from '../messages/protocols-configure.js';
 
+import { DataStore, DidResolver, MessageStore } from '../../../index.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
 
-export const handleProtocolsConfigure: MethodHandler = async ({
-  tenant,
-  message,
-  messageStore,
-  didResolver,
-  dataStream
-}): Promise<MessageReply> => {
-  const incomingMessage = message as ProtocolsConfigureMessage;
+export class ProtocolsConfigureHandler implements MethodHandler {
 
-  let protocolsConfigure: ProtocolsConfigure;
-  try {
-    protocolsConfigure = await ProtocolsConfigure.parse(incomingMessage);
-  } catch (e) {
-    return new MessageReply({
-      status: { code: 400, detail: e.message }
-    });
-  }
+  constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore) { }
 
-  // authentication & authorization
-  try {
-    await canonicalAuth(tenant, protocolsConfigure, didResolver);
-  } catch (e) {
-    return new MessageReply({
-      status: { code: 401, detail: e.message }
-    });
-  }
-
-  // attempt to get existing protocol
-  const query = {
+  public async handle({
     tenant,
-    interface : DwnInterfaceName.Protocols,
-    method    : DwnMethodName.Configure,
-    protocol  : incomingMessage.descriptor.protocol
-  };
-  const existingMessages = await messageStore.query(query) as ProtocolsConfigureMessage[];
+    message,
+    dataStream
+  }): Promise<MessageReply> {
+    const incomingMessage = message as ProtocolsConfigureMessage;
 
-  // find lexicographically the largest message, and if the incoming message is the largest
-  let newestMessage = await Message.getMessageWithLargestCid(existingMessages);
-  let incomingMessageIsNewest = false;
-  if (newestMessage === undefined || await Message.isCidLarger(incomingMessage, newestMessage)) {
-    incomingMessageIsNewest = true;
-    newestMessage = incomingMessage;
-  }
-
-  // write the incoming message to DB if incoming message is newest
-  let messageReply: MessageReply;
-  if (incomingMessageIsNewest) {
-    const { author } = protocolsConfigure;
-    const index = {
-      tenant,
-      author,
-      ... message.descriptor
-    };
-    await messageStore.put(message, index, dataStream);
-
-    messageReply = new MessageReply({
-      status: { code: 202, detail: 'Accepted' }
-    });
-  } else {
-    messageReply = new MessageReply({
-      status: { code: 409, detail: 'Conflict' }
-    });
-  }
-
-  // delete all existing records that are smaller
-  for (const message of existingMessages) {
-    if (await Message.isCidLarger(newestMessage, message)) {
-      const cid = await Message.getCid(message);
-      await messageStore.delete(cid);
+    let protocolsConfigure: ProtocolsConfigure;
+    try {
+      protocolsConfigure = await ProtocolsConfigure.parse(incomingMessage);
+    } catch (e) {
+      return new MessageReply({
+        status: { code: 400, detail: e.message }
+      });
     }
-  }
 
-  return messageReply;
-};
+    // authentication & authorization
+    try {
+      await canonicalAuth(tenant, protocolsConfigure, this.didResolver);
+    } catch (e) {
+      return new MessageReply({
+        status: { code: 401, detail: e.message }
+      });
+    }
+
+    // attempt to get existing protocol
+    const query = {
+      tenant,
+      interface : DwnInterfaceName.Protocols,
+      method    : DwnMethodName.Configure,
+      protocol  : incomingMessage.descriptor.protocol
+    };
+    const existingMessages = await this.messageStore.query(query) as ProtocolsConfigureMessage[];
+
+    // find lexicographically the largest message, and if the incoming message is the largest
+    let newestMessage = await Message.getMessageWithLargestCid(existingMessages);
+    let incomingMessageIsNewest = false;
+    if (newestMessage === undefined || await Message.isCidLarger(incomingMessage, newestMessage)) {
+      incomingMessageIsNewest = true;
+      newestMessage = incomingMessage;
+    }
+
+    // write the incoming message to DB if incoming message is newest
+    let messageReply: MessageReply;
+    if (incomingMessageIsNewest) {
+      const { author } = protocolsConfigure;
+      const index = {
+        tenant,
+        author,
+        ... message.descriptor
+      };
+      await this.messageStore.put(message, index, dataStream);
+
+      messageReply = new MessageReply({
+        status: { code: 202, detail: 'Accepted' }
+      });
+    } else {
+      messageReply = new MessageReply({
+        status: { code: 409, detail: 'Conflict' }
+      });
+    }
+
+    // delete all existing records that are smaller
+    for (const message of existingMessages) {
+      if (await Message.isCidLarger(newestMessage, message)) {
+        const cid = await Message.getCid(message);
+        await this.messageStore.delete(cid);
+      }
+    }
+
+    return messageReply;
+  };
+}
