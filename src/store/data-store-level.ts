@@ -10,28 +10,22 @@ import { Readable } from 'readable-stream';
  * Leverages LevelDB under the hood.
  */
 export class DataStoreLevel implements DataStore {
-  private static readonly dataStoreName = 'DATASTORE';
+  blockstore: BlockstoreLevel;
 
-  db: BlockstoreLevel;
-
-  constructor() {
-    this.db = new BlockstoreLevel(DataStoreLevel.dataStoreName);
+  constructor(blockstore: BlockstoreLevel) {
+    this.blockstore = blockstore;
   }
 
   public async open(): Promise<void> {
-    if (!this.db) {
-      this.db = new BlockstoreLevel(DataStoreLevel.dataStoreName);
-    }
-
-    await this.db.open();
+    await this.blockstore.open();
   }
 
   async close(): Promise<void> {
-    await this.db.close();
+    await this.blockstore.close();
   }
 
   async put(tenant: string, recordId: string, dataStream: Readable): Promise<string> {
-    const asyncDataBlocks = importer([{ content: dataStream }], this.db, { cidVersion: 1 });
+    const asyncDataBlocks = importer([{ content: dataStream }], this.blockstore, { cidVersion: 1 });
 
     // NOTE: the last block contains the root CID
     let block;
@@ -45,14 +39,14 @@ export class DataStoreLevel implements DataStore {
 
   public async get(tenant: string, recordId: string, dataCid: string): Promise<Uint8Array | undefined> {
     const cid = CID.parse(dataCid);
-    const bytes = await this.db.get(cid);
+    const bytes = await this.blockstore.get(cid);
 
     if (!bytes) {
       return undefined;
     }
 
     // data is chunked into dag-pb unixfs blocks. re-inflate the chunks.
-    const dataDagRoot = await exporter(dataCid, this.db);
+    const dataDagRoot = await exporter(dataCid, this.blockstore);
     const dataBytes = new Uint8Array(dataDagRoot.size);
     let offset = 0;
 
@@ -67,7 +61,7 @@ export class DataStoreLevel implements DataStore {
   async delete(tenant: string, recordId: string, dataCid: string): Promise<void> {
     // TODO: Implement data deletion in Records - https://github.com/TBD54566975/dwn-sdk-js/issues/84
     const cid = CID.parse(dataCid);
-    await this.db.delete(cid);
+    await this.blockstore.delete(cid);
     return;
   }
 
@@ -75,6 +69,6 @@ export class DataStoreLevel implements DataStore {
    * Deletes everything in the store. Mainly used in tests.
    */
   public async clear(): Promise<void> {
-    await this.db.clear();
+    await this.blockstore.clear();
   }
 }

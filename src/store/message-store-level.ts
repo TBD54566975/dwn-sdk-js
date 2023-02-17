@@ -8,9 +8,8 @@ import searchIndex from 'search-index';
 
 import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
+import { DataStoreLevel } from './data-store-level.js';
 import { Encoder } from '../utils/encoder.js';
-import { exporter } from 'ipfs-unixfs-exporter';
-import { importer } from 'ipfs-unixfs-importer';
 import { RangeCriterion } from '../interfaces/records/types.js';
 import { Readable } from 'readable-stream';
 import { sha256 } from 'multiformats/hashes/sha2';
@@ -28,6 +27,8 @@ export class MessageStoreLevel implements MessageStore {
   // to accommodate, we're leveraging a level-backed inverted index.
   index: Awaited<ReturnType<typeof searchIndex>>; // type `SearchIndex` is not exported. So we construct it indirectly from function return type
 
+  dataStore: DataStoreLevel;
+
   /**
    * @param {MessageStoreLevelConfig} config
    * @param {string} config.blockstoreLocation - must be a directory path (relative or absolute) where
@@ -43,9 +44,12 @@ export class MessageStoreLevel implements MessageStore {
     };
 
     this.db = new BlockstoreLevel(this.config.blockstoreLocation);
+    this.dataStore = new DataStoreLevel(this.db);
   }
 
   async open(): Promise<void> {
+    await this.dataStore.open();
+
     if (!this.db) {
       this.db = new BlockstoreLevel(this.config.blockstoreLocation);
     }
@@ -60,6 +64,8 @@ export class MessageStoreLevel implements MessageStore {
   }
 
   async close(): Promise<void> {
+    await this.dataStore.close();
+
     await this.db.close();
     await this.index.INDEX.STORE.close(); // MUST close index-search DB, else `searchIndex()` triggered in a different instance will hang indefinitely
   }
@@ -84,25 +90,11 @@ export class MessageStoreLevel implements MessageStore {
     // temporary placeholder for keeping status-quo of returning data in `encodedData`
     // once #219 is implemented, `encodedData` will likely not exist directly as part of the returned message here
     const dataReferencingMessage = decodedBlock.value as DataReferencingMessage;
-    dataReferencingMessage.encodedData = await this.getDataAsEncodedString(dataReferencingMessage.descriptor.dataCid);
+    const dataBytes = await this.dataStore.get('not used yet', 'not used yet', dataReferencingMessage.descriptor.dataCid);
+
+    dataReferencingMessage.encodedData = Encoder.bytesToBase64Url(dataBytes);
 
     return messageJson;
-  }
-
-  private async getDataAsEncodedString(dataCid: string): Promise<string> {
-    const cid = CID.parse(dataCid);
-
-    // data is chunked into dag-pb unixfs blocks. re-inflate the chunks.
-    const dataDagRoot = await exporter(cid, this.db);
-    const dataBytes = new Uint8Array(dataDagRoot.size);
-    let offset = 0;
-
-    for await (const chunk of dataDagRoot.content()) {
-      dataBytes.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    return Encoder.bytesToBase64Url(dataBytes);
   }
 
   async query(exactCriteria: { [key: string]: string }, rangeCriteria?: { [key: string]: RangeCriterion }): Promise<BaseMessage[]> {
@@ -154,18 +146,13 @@ export class MessageStoreLevel implements MessageStore {
           );
         }
       } else {
-        const asyncDataBlocks = importer([{ content: dataStream }], this.db, { cidVersion: 1 });
-
-        // NOTE: the last block contains the root CID
-        let block;
-        for await (block of asyncDataBlocks) { ; }
+        const actualDataCid = await this.dataStore.put('not used yet', 'not used yet', dataStream );
 
         // MUST verify that the CID of the actual data matches with the given `dataCid`
         // if data CID is wrong, delete the data we just stored
-        const actualDataCid = block.cid.toString();
         if (message.descriptor.dataCid !== actualDataCid) {
-        // there is an opportunity to improve here: handle the edge cae of if the delete fails...
-          await this.db.delete(block.cid);
+          // there is an opportunity to improve here: handle the edge cae of if the delete fails...
+          await this.dataStore.delete('not used yet', 'not used yet', actualDataCid);
           throw new DwnError(
             DwnErrorCode.MessageStoreDataCidMismatch,
             `actual data CID ${actualDataCid} does not match dataCid in descriptor: ${message.descriptor.dataCid}`
@@ -193,6 +180,7 @@ export class MessageStoreLevel implements MessageStore {
    * deletes everything in the underlying datastore and indices.
    */
   async clear(): Promise<void> {
+    await this.dataStore.clear();
     await this.db.clear();
     await this.index.FLUSH();
   }
