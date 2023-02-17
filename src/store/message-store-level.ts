@@ -1,5 +1,5 @@
+import type { BaseMessage } from '../core/types.js';
 import type { MessageStore } from './message-store.js';
-import type { BaseMessage, DataReferencingMessage } from '../core/types.js';
 
 import * as block from 'multiformats/block';
 import * as cbor from '@ipld/dag-cbor';
@@ -8,8 +8,6 @@ import searchIndex from 'search-index';
 
 import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
-import { DataStoreLevel } from './data-store-level.js';
-import { Encoder } from '../utils/encoder.js';
 import { RangeCriterion } from '../interfaces/records/types.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 
@@ -26,8 +24,6 @@ export class MessageStoreLevel implements MessageStore {
   // to accommodate, we're leveraging a level-backed inverted index.
   index: Awaited<ReturnType<typeof searchIndex>>; // type `SearchIndex` is not exported. So we construct it indirectly from function return type
 
-  dataStore: DataStoreLevel;
-
   /**
    * @param {MessageStoreLevelConfig} config
    * @param {string} config.blockstoreLocation - must be a directory path (relative or absolute) where
@@ -43,12 +39,9 @@ export class MessageStoreLevel implements MessageStore {
     };
 
     this.blockstore = new BlockstoreLevel(this.config.blockstoreLocation);
-    this.dataStore = new DataStoreLevel(this.blockstore);
   }
 
   async open(): Promise<void> {
-    await this.dataStore.open();
-
     await this.blockstore.open();
 
     // calling `searchIndex()` twice without closing its DB causes the process to hang (ie. calling this method consecutively),
@@ -59,40 +52,28 @@ export class MessageStoreLevel implements MessageStore {
   }
 
   async close(): Promise<void> {
-    await this.dataStore.close();
-
     await this.blockstore.close();
     await this.index.INDEX.STORE.close(); // MUST close index-search DB, else `searchIndex()` triggered in a different instance will hang indefinitely
   }
 
-  async get(cidString: string): Promise<BaseMessage> {
+  async get(cidString: string): Promise<BaseMessage | undefined> {
     const cid = CID.parse(cidString);
     const bytes = await this.blockstore.get(cid);
 
     if (!bytes) {
-      return;
+      return undefined;
     }
 
     const decodedBlock = await block.decode({ bytes, codec: cbor, hasher: sha256 });
 
     const messageJson = decodedBlock.value as BaseMessage;
-
-    if (!messageJson.descriptor['dataCid']) {
-      return messageJson;
-    }
-
-    // TODO: #219 (https://github.com/TBD54566975/dwn-sdk-js/issues/219)
-    // temporary placeholder for keeping status-quo of returning data in `encodedData`
-    // once #219 is implemented, `encodedData` will likely not exist directly as part of the returned message here
-    const dataReferencingMessage = decodedBlock.value as DataReferencingMessage;
-    const dataBytes = await this.dataStore.get('not used yet', 'not used yet', dataReferencingMessage.descriptor.dataCid);
-
-    dataReferencingMessage.encodedData = Encoder.bytesToBase64Url(dataBytes);
-
     return messageJson;
   }
 
-  async query(exactCriteria: { [key: string]: string }, rangeCriteria?: { [key: string]: RangeCriterion }): Promise<BaseMessage[]> {
+  async query(
+    exactCriteria: { [key: string]: string },
+    rangeCriteria?: { [key: string]: RangeCriterion }
+  ): Promise<BaseMessage[]> {
     const messages: BaseMessage[] = [];
 
     // parse criteria into a query that is compatible with the indexing DB (search-index) we're using
@@ -142,7 +123,6 @@ export class MessageStoreLevel implements MessageStore {
    * deletes everything in the underlying datastore and indices.
    */
   async clear(): Promise<void> {
-    await this.dataStore.clear();
     await this.blockstore.clear();
     await this.index.FLUSH();
   }

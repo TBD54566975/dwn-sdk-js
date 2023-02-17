@@ -19,10 +19,10 @@ export interface MessageStore {
   put(messageJson: BaseMessage, indexes: { [key: string]: string }): Promise<void>;
 
   /**
-   * fetches a single message by `cid` from the underlying store. Returns `undefined`
-   * if no message was found
+   * Fetches a single message by `cid` from the underlying store.
+   * Returns `undefined` no message was found.
    */
-  get(cid: string): Promise<BaseMessage>;
+  get(cid: string): Promise<BaseMessage | undefined>;
 
   /**
    * Queries the underlying store for messages that match the query provided.
