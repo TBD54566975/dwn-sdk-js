@@ -16,18 +16,27 @@ export interface DataStore {
 
   /**
    * Puts the given data in store.
+   * @param logicalId This may be the ID of a record, or the ID of a protocol definition etc.
    * @returns The CID of the data stored.
    */
-  put(tenant: string, recordId: string, dataStream: Readable): Promise<string>;
+  put(tenant: string, logicalId: string, dataStream: Readable): Promise<string>;
 
   /**
    * Fetches the specified data.
    * TODO: change return type from Uint8Array to a readable stream
+   * @param logicalId This may be the ID of a record, or the ID of a protocol definition etc.
    */
-  get(tenant: string, recordId: string, dataCid: string): Promise<Uint8Array | undefined>;
+  get(tenant: string, logicalId: string, dataCid: string): Promise<Uint8Array | undefined>;
+
+  /**
+   * Checks to see if the store has the specified data.
+   * @param logicalId This may be the ID of a record, or the ID of a protocol definition etc.
+   */
+  has(tenant: string, logicalId: string, dataCid: string): Promise<boolean>;
 
   /**
    * Deletes the specified data;
+   * @param logicalId This may be the ID of a record, or the ID of a protocol definition etc.
    */
-  delete(tenant: string, recordId: string, dataCid: string): Promise<void>;
+  delete(tenant: string, logicalId: string, dataCid: string): Promise<void>;
 }

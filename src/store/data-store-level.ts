@@ -58,7 +58,14 @@ export class DataStoreLevel implements DataStore {
     return dataBytes;
   }
 
-  async delete(tenant: string, recordId: string, dataCid: string): Promise<void> {
+  public async has(tenant: string, recordId: string, dataCid: string): Promise<boolean> {
+    const cid = CID.parse(dataCid);
+    const rootBlockBytes = await this.blockstore.get(cid);
+
+    return (rootBlockBytes !== undefined);
+  }
+
+  public async delete(tenant: string, recordId: string, dataCid: string): Promise<void> {
     // TODO: Implement data deletion in Records - https://github.com/TBD54566975/dwn-sdk-js/issues/84
     const cid = CID.parse(dataCid);
     await this.blockstore.delete(cid);

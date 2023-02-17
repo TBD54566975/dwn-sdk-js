@@ -136,10 +136,9 @@ export class MessageStoreLevel implements MessageStore {
       if (dataStream === undefined) {
         // the message implies that the data is already in the DB, so we check to make sure the data already exist
         // TODO: #218 - Use tenant + record scoped IDs - https://github.com/TBD54566975/dwn-sdk-js/issues/218
-        const dataCid = CID.parse(message.descriptor.dataCid);
-        const rootBlockByte = await this.db.get(dataCid);
+        const hasData = await this.dataStore.has('not used yet', 'not used yet', message.descriptor.dataCid);
 
-        if (rootBlockByte === undefined) {
+        if (!hasData) {
           throw new DwnError(
             DwnErrorCode.MessageStoreDataNotFound,
             `data with dataCid ${message.descriptor.dataCid} not found in store`
