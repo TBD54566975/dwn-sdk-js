@@ -8,6 +8,7 @@ import { Encoder } from '../../../../src/utils/encoder.js';
 import { Jws } from '../../../../src/utils/jws.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsQueryHandler } from '../../../../src/interfaces/records/handlers/records-query.js';
+import { StorageController } from '../../../../src/store/storage-controller.js';
 import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
@@ -423,10 +424,10 @@ describe('handleRecordsQuery()', () => {
       const additionalIndexes2 = await constructRecordsWriteIndexes(alice.did, record2Data.recordsWrite, true);
       const additionalIndexes3 = await constructRecordsWriteIndexes(alice.did, record3Data.recordsWrite, true);
       const additionalIndexes4 = await constructRecordsWriteIndexes(alice.did, record4Data.recordsWrite, true);
-      await messageStore.put(record1Data.message, additionalIndexes1, record1Data.dataStream);
-      await messageStore.put(record2Data.message, additionalIndexes2, record2Data.dataStream);
-      await messageStore.put(record3Data.message, additionalIndexes3, record3Data.dataStream);
-      await messageStore.put(record4Data.message, additionalIndexes4, record4Data.dataStream);
+      await StorageController.put(messageStore, dataStore, record1Data.message, additionalIndexes1, record1Data.dataStream);
+      await StorageController.put(messageStore, dataStore, record2Data.message, additionalIndexes2, record2Data.dataStream);
+      await StorageController.put(messageStore, dataStore, record3Data.message, additionalIndexes3, record3Data.dataStream);
+      await StorageController.put(messageStore, dataStore, record4Data.message, additionalIndexes4, record4Data.dataStream);
 
       // test correctness for Bob's query
       const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({

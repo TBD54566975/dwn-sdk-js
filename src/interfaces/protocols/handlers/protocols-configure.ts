@@ -4,6 +4,7 @@ import type { ProtocolsConfigureMessage } from '../types.js';
 import { canonicalAuth } from '../../../core/auth.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { ProtocolsConfigure } from '../messages/protocols-configure.js';
+import { StorageController } from '../../../store/storage-controller.js';
 
 import { DataStore, DidResolver, MessageStore } from '../../../index.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
@@ -58,12 +59,12 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     let messageReply: MessageReply;
     if (incomingMessageIsNewest) {
       const { author } = protocolsConfigure;
-      const index = {
+      const indexes = {
         tenant,
         author,
         ... message.descriptor
       };
-      await this.messageStore.put(message, index, dataStream);
+      await StorageController.put(this.messageStore, this.dataStore, incomingMessage, indexes, dataStream);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }

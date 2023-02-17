@@ -90,10 +90,10 @@ describe('MessageStoreLevel Tests', () => {
     it('#170 - should be able to update (delete and insert new) indexes to an existing message', async () => {
       const alice = await DidKeyResolver.generate();
 
-      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite();
+      const { message } = await TestDataGenerator.generateRecordsWrite();
 
       // inserting the message indicating it is the 'latest' in the index
-      await messageStore.put(message, { tenant: alice.did, latest: 'true' }, dataStream);
+      await messageStore.put(message, { tenant: alice.did, latest: 'true' });
 
       const results1 = await messageStore.query({ tenant: alice.did, latest: 'true' });
       expect(results1.length).to.equal(1);
@@ -115,9 +115,9 @@ describe('MessageStoreLevel Tests', () => {
 
     it('should index properties with characters beyond just letters and digits', async () => {
       const schema = 'http://my-awesome-schema/awesomeness_schema#awesome-1?id=awesome_1';
-      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ schema });
+      const { message } = await TestDataGenerator.generateRecordsWrite({ schema });
 
-      await messageStore.put(message, { schema }, dataStream);
+      await messageStore.put(message, { schema });
 
       const results = await messageStore.query({ schema });
       expect((results[0] as RecordsWriteMessage).descriptor.schema).to.equal(schema);

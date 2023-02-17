@@ -18,6 +18,7 @@ import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsWriteHandler } from '../../../../src/interfaces/records/handlers/records-write.js';
 import { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
+import { StorageController } from '../../../../src/store/storage-controller.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
 import { Dwn, Jws, ProtocolDefinition, RecordsWrite } from '../../../../src/index.js';
@@ -1347,7 +1348,7 @@ describe('handleRecordsWrite()', () => {
     });
   });
 
-  it('should throw if `messageStore.put()` throws unknown error', async () => {
+  it('should throw if `storageController.put()` throws unknown error', async () => {
     const { requester, message, dataStream } = await TestDataGenerator.generateRecordsWrite();
     const tenant = requester.did;
 
@@ -1355,7 +1356,9 @@ describe('handleRecordsWrite()', () => {
 
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
     messageStoreStub.query.resolves([]);
-    messageStoreStub.put.throws(new Error('an unknown error in messageStore.put()'));
+
+    // simulate throwing unexpected error
+    sinon.stub(StorageController, 'put').throws(new Error('an unknown error in messageStore.put()'));
 
     const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
 
