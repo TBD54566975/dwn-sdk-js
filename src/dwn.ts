@@ -49,7 +49,7 @@ export class Dwn {
     config.didResolver ??= new DidResolver();
     config.tenantGate ??= new AllowAllTenantGate();
     config.messageStore ??= new MessageStoreLevel();
-    config.dataStore ??= new DataStoreLevel((config.messageStore as MessageStoreLevel).blockstore); // TODO decouple
+    config.dataStore ??= new DataStoreLevel();
 
     const dwn = new Dwn(config);
     await dwn.open();

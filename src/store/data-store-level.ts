@@ -12,8 +12,8 @@ import { Readable } from 'readable-stream';
 export class DataStoreLevel implements DataStore {
   blockstore: BlockstoreLevel;
 
-  constructor(blockstore: BlockstoreLevel) {
-    this.blockstore = blockstore;
+  constructor(blockstoreLocation: string = 'DATASTORE') {
+    this.blockstore = new BlockstoreLevel(blockstoreLocation);
   }
 
   public async open(): Promise<void> {
