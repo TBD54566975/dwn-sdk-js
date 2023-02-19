@@ -1,4 +1,4 @@
-import { Descriptor } from './types.js';
+import type { Descriptor } from './types.js';
 
 type Status = {
   code: number

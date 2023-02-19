@@ -7,7 +7,7 @@ import { DwnInterfaceName } from '../../../core/message.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsDelete } from '../messages/records-delete.js';
 import { RecordsWrite } from '../messages/records-write.js';
-import { TimestampedMessage } from '../../../core/types.js';
+import type { TimestampedMessage } from '../../../core/types.js';
 
 export const handleRecordsDelete: MethodHandler = async ({
   tenant,

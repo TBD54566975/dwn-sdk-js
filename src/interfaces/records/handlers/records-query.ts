@@ -2,7 +2,7 @@ import type { MethodHandler } from '../../types.js';
 import type { RecordsQueryMessage, RecordsWriteMessage } from '../types.js';
 
 import { authenticate } from '../../../core/auth.js';
-import { BaseMessage } from '../../../core/types.js';
+import type { BaseMessage } from '../../../core/types.js';
 import { lexicographicalCompare } from '../../../utils/string.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { MessageStore } from '../../../store/message-store.js';

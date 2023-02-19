@@ -11,7 +11,7 @@ import { CID } from 'multiformats/cid';
 import { Encoder } from '../utils/encoder.js';
 import { exporter } from 'ipfs-unixfs-exporter';
 import { importer } from 'ipfs-unixfs-importer';
-import { RangeCriterion } from '../interfaces/records/types.js';
+import type { RangeCriterion } from '../interfaces/records/types.js';
 import { Readable } from 'readable-stream';
 import { sha256 } from 'multiformats/hashes/sha2';
 

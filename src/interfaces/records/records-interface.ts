@@ -4,8 +4,8 @@ import { MessageStore } from '../../store/message-store.js';
 import { RecordsDelete } from './messages/records-delete.js';
 import { RecordsQuery } from './messages/records-query.js';
 import { RecordsWrite } from './messages/records-write.js';
-import { RecordsWriteMessage } from '../../interfaces/records/types.js';
-import { TimestampedMessage } from '../../core/types.js';
+import type { RecordsWriteMessage } from '../../interfaces/records/types.js';
+import type { TimestampedMessage } from '../../core/types.js';
 
 import { constructRecordsWriteIndexes, handleRecordsWrite } from './handlers/records-write.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../core/message.js';

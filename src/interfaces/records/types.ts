@@ -1,6 +1,6 @@
-import { BaseMessage } from '../../core/types.js';
+import type { BaseMessage } from '../../core/types.js';
 import { DateSort } from './messages/records-query.js';
-import { GeneralJws } from '../../jose/jws/general/types.js';
+import type { GeneralJws } from '../../jose/jws/general/types.js';
 import { DwnInterfaceName, DwnMethodName } from '../../core/message.js';
 
 export type RecordsWriteDescriptor = {
