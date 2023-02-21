@@ -1,5 +1,5 @@
+import type { BaseMessage } from '../core/types.js';
 import type { MessageStore } from './message-store.js';
-import type { BaseMessage, DataReferencingMessage } from '../core/types.js';
 
 import * as block from 'multiformats/block';
 import * as cbor from '@ipld/dag-cbor';
@@ -8,14 +8,8 @@ import searchIndex from 'search-index';
 
 import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
-import { Encoder } from '../utils/encoder.js';
-import { exporter } from 'ipfs-unixfs-exporter';
-import { importer } from 'ipfs-unixfs-importer';
 import { RangeCriterion } from '../interfaces/records/types.js';
-import { Readable } from 'readable-stream';
 import { sha256 } from 'multiformats/hashes/sha2';
-
-import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 /**
  * A simple implementation of {@link MessageStore} that works in both the browser and server-side.
@@ -23,7 +17,9 @@ import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
  */
 export class MessageStoreLevel implements MessageStore {
   config: MessageStoreLevelConfig;
-  db: BlockstoreLevel;
+
+  public readonly blockstore: BlockstoreLevel;
+
   // levelDB doesn't natively provide the querying capabilities needed for DWN,
   // to accommodate, we're leveraging a level-backed inverted index.
   index: Awaited<ReturnType<typeof searchIndex>>; // type `SearchIndex` is not exported. So we construct it indirectly from function return type
@@ -42,15 +38,11 @@ export class MessageStoreLevel implements MessageStore {
       ...config
     };
 
-    this.db = new BlockstoreLevel(this.config.blockstoreLocation);
+    this.blockstore = new BlockstoreLevel(this.config.blockstoreLocation);
   }
 
   async open(): Promise<void> {
-    if (!this.db) {
-      this.db = new BlockstoreLevel(this.config.blockstoreLocation);
-    }
-
-    await this.db.open();
+    await this.blockstore.open();
 
     // calling `searchIndex()` twice without closing its DB causes the process to hang (ie. calling this method consecutively),
     // so check to see if the index has already been "opened" before opening it again.
@@ -60,52 +52,28 @@ export class MessageStoreLevel implements MessageStore {
   }
 
   async close(): Promise<void> {
-    await this.db.close();
+    await this.blockstore.close();
     await this.index.INDEX.STORE.close(); // MUST close index-search DB, else `searchIndex()` triggered in a different instance will hang indefinitely
   }
 
-  async get(cidString: string): Promise<BaseMessage> {
+  async get(cidString: string): Promise<BaseMessage | undefined> {
     const cid = CID.parse(cidString);
-    const bytes = await this.db.get(cid);
+    const bytes = await this.blockstore.get(cid);
 
     if (!bytes) {
-      return;
+      return undefined;
     }
 
     const decodedBlock = await block.decode({ bytes, codec: cbor, hasher: sha256 });
 
     const messageJson = decodedBlock.value as BaseMessage;
-
-    if (!messageJson.descriptor['dataCid']) {
-      return messageJson;
-    }
-
-    // TODO: #219 (https://github.com/TBD54566975/dwn-sdk-js/issues/219)
-    // temporary placeholder for keeping status-quo of returning data in `encodedData`
-    // once #219 is implemented, `encodedData` will likely not exist directly as part of the returned message here
-    const dataReferencingMessage = decodedBlock.value as DataReferencingMessage;
-    dataReferencingMessage.encodedData = await this.getDataAsEncodedString(dataReferencingMessage.descriptor.dataCid);
-
     return messageJson;
   }
 
-  private async getDataAsEncodedString(dataCid: string): Promise<string> {
-    const cid = CID.parse(dataCid);
-
-    // data is chunked into dag-pb unixfs blocks. re-inflate the chunks.
-    const dataDagRoot = await exporter(cid, this.db);
-    const dataBytes = new Uint8Array(dataDagRoot.size);
-    let offset = 0;
-
-    for await (const chunk of dataDagRoot.content()) {
-      dataBytes.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    return Encoder.bytesToBase64Url(dataBytes);
-  }
-
-  async query(exactCriteria: { [key: string]: string }, rangeCriteria?: { [key: string]: RangeCriterion }): Promise<BaseMessage[]> {
+  async query(
+    exactCriteria: { [key: string]: string },
+    rangeCriteria?: { [key: string]: RangeCriterion }
+  ): Promise<BaseMessage[]> {
     const messages: BaseMessage[] = [];
 
     // parse criteria into a query that is compatible with the indexing DB (search-index) we're using
@@ -125,54 +93,16 @@ export class MessageStoreLevel implements MessageStore {
   async delete(cidString: string): Promise<void> {
     // TODO: Implement data deletion in Records - https://github.com/TBD54566975/dwn-sdk-js/issues/84
     const cid = CID.parse(cidString);
-    await this.db.delete(cid);
+    await this.blockstore.delete(cid);
     await this.index.DELETE(cidString);
 
     return;
   }
 
-  async put(message: BaseMessage, indexes: { [key: string]: string }, dataStream?: Readable): Promise<void> {
+  async put(message: BaseMessage, indexes: { [key: string]: string }): Promise<void> {
     const encodedMessageBlock = await block.encode({ value: message, codec: cbor, hasher: sha256 });
 
-    await this.db.put(encodedMessageBlock.cid, encodedMessageBlock.bytes);
-
-    // if `dataCid` is given, it means there is corresponding data associated with this message
-    // but NOTE: it is possible that a data stream is not given in such case, for instance,
-    // a subsequent RecordsWrite that changes the `published` property, but the data hasn't changed,
-    // in this case requiring re-uploading of the data is extremely inefficient so we take care allow omission of data stream
-    if (message.descriptor.dataCid !== undefined) {
-      if (dataStream === undefined) {
-        // the message implies that the data is already in the DB, so we check to make sure the data already exist
-        // TODO: #218 - Use tenant + record scoped IDs - https://github.com/TBD54566975/dwn-sdk-js/issues/218
-        const dataCid = CID.parse(message.descriptor.dataCid);
-        const rootBlockByte = await this.db.get(dataCid);
-
-        if (rootBlockByte === undefined) {
-          throw new DwnError(
-            DwnErrorCode.MessageStoreDataNotFound,
-            `data with dataCid ${message.descriptor.dataCid} not found in store`
-          );
-        }
-      } else {
-        const asyncDataBlocks = importer([{ content: dataStream }], this.db, { cidVersion: 1 });
-
-        // NOTE: the last block contains the root CID
-        let block;
-        for await (block of asyncDataBlocks) { ; }
-
-        // MUST verify that the CID of the actual data matches with the given `dataCid`
-        // if data CID is wrong, delete the data we just stored
-        const actualDataCid = block.cid.toString();
-        if (message.descriptor.dataCid !== actualDataCid) {
-        // there is an opportunity to improve here: handle the edge cae of if the delete fails...
-          await this.db.delete(block.cid);
-          throw new DwnError(
-            DwnErrorCode.MessageStoreDataCidMismatch,
-            `actual data CID ${actualDataCid} does not match dataCid in descriptor: ${message.descriptor.dataCid}`
-          );
-        }
-      }
-    }
+    await this.blockstore.put(encodedMessageBlock.cid, encodedMessageBlock.bytes);
 
     // TODO: #218 - Use tenant + record scoped IDs - https://github.com/TBD54566975/dwn-sdk-js/issues/218
     const encodedMessageBlockCid = encodedMessageBlock.cid.toString();
@@ -193,7 +123,7 @@ export class MessageStoreLevel implements MessageStore {
    * deletes everything in the underlying datastore and indices.
    */
   async clear(): Promise<void> {
-    await this.db.clear();
+    await this.blockstore.clear();
     await this.index.FLUSH();
   }
 

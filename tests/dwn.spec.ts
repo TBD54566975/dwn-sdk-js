@@ -2,17 +2,19 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
+import { DataStoreLevel } from '../src/store/data-store-level.js';
 import { DidKeyResolver } from '../src/did/did-key-resolver.js';
 import { Dwn } from '../src/dwn.js';
 import { Message } from '../src/core/message.js';
 import { MessageStoreLevel } from '../src/store/message-store-level.js';
+import { TenantGate } from '../src/index.js';
 import { TestDataGenerator } from './utils/test-data-generator.js';
-import { DwnConfig, TenantGate } from '../src/index.js';
 
 chai.use(chaiAsPromised);
 
 describe('DWN', () => {
   let messageStore: MessageStoreLevel;
+  let dataStore: DataStoreLevel;
   let dwn: Dwn;
 
   before(async () => {
@@ -23,10 +25,9 @@ describe('DWN', () => {
       indexLocation      : 'TEST-INDEX'
     });
 
-    await messageStore.open();
+    dataStore = new DataStoreLevel('TEST-DATASTORE');
 
-    const dwnConfig: DwnConfig = { messageStore };
-    dwn = await Dwn.create(dwnConfig);
+    dwn = await Dwn.create({ messageStore, dataStore });
   });
 
   beforeEach(async () => {
@@ -34,8 +35,7 @@ describe('DWN', () => {
   });
 
   after(async () => {
-    await messageStore.close();
-    dwn.close();
+    await dwn.close();
   });
 
   describe('create()', () => {
@@ -120,7 +120,10 @@ describe('DWN', () => {
         }
       };
 
-      const dwnWithConfig = await Dwn.create({ tenantGate: blockAllTenantGate, messageStore }); // block all tenants
+      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+      const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
+
+      const dwnWithConfig = await Dwn.create({ tenantGate: blockAllTenantGate, messageStore: messageStoreStub, dataStore: dataStoreStub });
       const alice = await DidKeyResolver.generate();
       const { requester, message } = await TestDataGenerator.generateRecordsQuery({ requester: alice });
 

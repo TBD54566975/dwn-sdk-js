@@ -19,4 +19,29 @@ export class TestStubGenerator {
 
     return didResolverStub;
   }
+
+  /**
+   * Stubs resolution results for the given personas.
+   */
+  public static stubDidResolver(didResolver: DidResolver, personas: Persona[]): void {
+    const didToResolutionMap = new Map<string, DidResolutionResult>();
+
+    for (const persona of personas) {
+      const mockResolution = TestDataGenerator.createDidResolutionResult(persona);
+
+      didToResolutionMap.set(persona.did, mockResolution);
+    }
+
+    sinon.stub(didResolver, 'resolve').callsFake((did) => {
+      const mockResolution = didToResolutionMap.get(did);
+
+      return new Promise((resolve, _reject) => {
+        if (mockResolution === undefined) {
+          throw new Error('unexpected DID');
+        }
+
+        resolve(mockResolution);
+      });
+    });
+  }
 }
