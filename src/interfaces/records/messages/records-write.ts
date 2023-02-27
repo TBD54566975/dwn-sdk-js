@@ -11,7 +11,7 @@ import { ProtocolAuthorization } from '../../../core/protocol-authorization.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 
 import { authorize, validateAuthorizationIntegrity } from '../../../core/auth.js';
-import { computeCid, computeDagPbCid } from '../../../utils/cid.js';
+import { Cid, computeCid } from '../../../utils/cid.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 import { GeneralJws, SignatureInput } from '../../../jose/jws/general/types.js';
 
@@ -73,7 +73,7 @@ export class RecordsWrite extends Message {
   /**
    * Creates a RecordsWrite message.
    * @param options.recordId If `undefined`, will be auto-filled as a originating message as convenience for developer.
-   * @param options.data Readable stream of the data to be stored. Must specify `option.dataCid` if `undefined`.
+   * @param options.data Data used to compute the `dataCid`. Must specify `option.dataCid` if `undefined`.
    * @param options.dataCid CID of the data that is already stored in the DWN. Must specify `option.data` if `undefined`.
    * @param options.dateCreated If `undefined`, it will be auto-filled with current time.
    * @param options.dateModified If `undefined`, it will be auto-filled with current time.
@@ -85,7 +85,7 @@ export class RecordsWrite extends Message {
          options.data !== undefined && options.dataCid !== undefined) {
       throw new Error('one and only one parameter between `data` and `dataCid` is allowed');
     }
-    const dataCid = options.dataCid ?? await computeDagPbCid(options.data);
+    const dataCid = options.dataCid ?? await Cid.computeDagPbCidFromBytes(options.data!);
 
     const descriptor: RecordsWriteDescriptor = {
       interface     : DwnInterfaceName.Records,
@@ -177,7 +177,7 @@ export class RecordsWrite extends Message {
     // inherit published value from parent if neither published nor datePublished is specified
     const published = options.published ?? (options.datePublished ? true : unsignedMessage.descriptor.published);
     // use current time if published but no explicit time given
-    let datePublished = undefined;
+    let datePublished: string | undefined = undefined;
     // if given explicitly published dated
     if (options.datePublished) {
       datePublished = options.datePublished;
@@ -396,14 +396,14 @@ export class RecordsWrite extends Message {
   /**
    * Gets the initial write from the given list or record write.
    */
-  public static getInitialWrite(messages: BaseMessage[]): RecordsWriteMessage{
+  public static async getInitialWrite(messages: BaseMessage[]): Promise<RecordsWriteMessage>{
     for (const message of messages) {
-      if (RecordsWrite.isInitialWrite(message)) {
+      if (await RecordsWrite.isInitialWrite(message)) {
         return message as RecordsWriteMessage;
       }
     }
 
-    throw new Error(`initial write is not found `);
+    throw new Error(`initial write is not found`);
   }
 
   /**

@@ -15,6 +15,7 @@ export type { HooksWriteMessage } from './interfaces/hooks/types.js';
 export type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolsQueryMessage } from './interfaces/protocols/types.js';
 export type { RecordsDeleteMessage, RecordsQueryMessage, RecordsWriteMessage } from './interfaces/records/types.js';
 export { AllowAllTenantGate, TenantGate } from './core/tenant-gate.js';
+export { Cid } from './utils/cid.js';
 export { DataStore } from './store/data-store.js';
 export { DateSort } from './interfaces/records/messages/records-query.js';
 export { DataStream } from './utils/data-stream.js';

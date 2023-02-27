@@ -2,6 +2,7 @@ import * as cbor from '@ipld/dag-cbor';
 
 import { CID } from 'multiformats/cid';
 import { importer } from 'ipfs-unixfs-importer';
+import { Readable } from 'stream';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 // a map of all supported CID hashing algorithms. This map is used to select the appropriate hasher
@@ -15,20 +16,6 @@ const hashers = {
 const codecs = {
   [cbor.code]: cbor
 };
-
-
-/**
- * @returns V1 CID of the DAG comprised by chunking data into unixfs dag-pb encoded blocks
- */
-export async function computeDagPbCid(content: Uint8Array): Promise<string> {
-  const asyncDataBlocks = importer([{ content }], undefined, { onlyHash: true, cidVersion: 1 });
-
-  // NOTE: the last block contains the root CID
-  let block;
-  for await (block of asyncDataBlocks) { ; }
-
-  return block.cid.toString();
-}
 
 /**
  * Computes a V1 CID for the provided payload
@@ -70,4 +57,36 @@ export function parseCid(str: string): CID {
   }
 
   return cid;
+}
+
+
+/**
+ * Utility class for creating CIDs. Exported for the convenience of developers.
+ */
+export class Cid {
+  /**
+   * @returns V1 CID of the DAG comprised by chunking data into unixfs DAG-PB encoded blocks
+   */
+  public static async computeDagPbCidFromBytes(content: Uint8Array): Promise<string> {
+    const asyncDataBlocks = importer([{ content }], undefined, { onlyHash: true, cidVersion: 1 });
+
+    // NOTE: the last block contains the root CID
+    let block;
+    for await (block of asyncDataBlocks) { ; }
+
+    return block.cid.toString();
+  }
+
+  /**
+   * @returns V1 CID of the DAG comprised by chunking data into unixfs DAG-PB encoded blocks
+   */
+  public static async computeDagPbCidFromStream(dataStream: Readable): Promise<string> {
+    const asyncDataBlocks = importer([{ content: dataStream }], undefined, { onlyHash: true, cidVersion: 1 });
+
+    // NOTE: the last block contains the root CID
+    let block;
+    for await (block of asyncDataBlocks) { ; }
+
+    return block.cid.toString();
+  }
 }
