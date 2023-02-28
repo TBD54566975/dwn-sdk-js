@@ -39,7 +39,7 @@ describe('CID', () => {
       await expect(computeCidPromise).to.be.rejectedWith('multihash code [unknownHashingAlgorithm] not supported');
     });
 
-    it(' should by default generate a CBOR SHA256 CID identical to IPFS block encoding algorithm', async () => {
+    it('should by default generate a CBOR SHA256 CID identical to IPFS block encoding algorithm', async () => {
       const anyTestData = {
         a : TestDataGenerator.randomString(32),
         b : TestDataGenerator.randomString(32),
