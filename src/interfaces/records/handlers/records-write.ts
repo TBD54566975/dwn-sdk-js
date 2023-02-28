@@ -54,7 +54,7 @@ export class RecordsWriteHandler implements MethodHandler {
     const newMessageIsInitialWrite = await recordsWrite.isInitialWrite();
     if (!newMessageIsInitialWrite) {
       try {
-        const initialWrite = RecordsWrite.getInitialWrite(existingMessages);
+        const initialWrite = await RecordsWrite.getInitialWrite(existingMessages);
         RecordsWrite.verifyEqualityOfImmutableProperties(initialWrite, incomingMessage);
       } catch (e) {
         return new MessageReply({
