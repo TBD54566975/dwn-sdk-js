@@ -1,8 +1,10 @@
 import * as cbor from '@ipld/dag-cbor';
 
+import type { Readable } from 'readable-stream';
+
+
 import { CID } from 'multiformats/cid';
 import { importer } from 'ipfs-unixfs-importer';
-import { Readable } from 'stream';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 // a map of all supported CID hashing algorithms. This map is used to select the appropriate hasher
