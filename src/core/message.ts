@@ -19,6 +19,7 @@ export enum DwnMethodName {
   Configure = 'Configure',
   Grant = 'Grant',
   Query = 'Query',
+  Read = 'Read',
   Request = 'Request',
   Write = 'Write',
   Delete = 'Delete'

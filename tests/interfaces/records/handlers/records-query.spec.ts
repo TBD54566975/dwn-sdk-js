@@ -19,7 +19,7 @@ import { DidResolver, Dwn, RecordsWriteMessage } from '../../../../src/index.js'
 
 chai.use(chaiAsPromised);
 
-describe('handleRecordsQuery()', () => {
+describe('RecordsQueryHandler.handle()', () => {
   describe('functional tests', () => {
     let didResolver: DidResolver;
     let messageStore: MessageStoreLevel;

@@ -85,6 +85,18 @@ export type RecordsQueryMessage = BaseMessage & {
   descriptor: RecordsQueryDescriptor;
 };
 
+export type RecordsReadMessage = {
+  authorization?: GeneralJws;
+  descriptor: RecordsReadDescriptor;
+};
+
+export type RecordsReadDescriptor = {
+  interface: DwnInterfaceName.Records;
+  method: DwnMethodName.Read;
+  recordId: string;
+  date: string;
+};
+
 export type RecordsDeleteMessage = BaseMessage & {
   descriptor: RecordsDeleteDescriptor;
 };

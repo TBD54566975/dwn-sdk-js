@@ -23,11 +23,9 @@ export interface DataStore {
 
   /**
    * Fetches the specified data.
-   * TODO: #205 - https://github.com/TBD54566975/dwn-sdk-js/issues/205
-   * change return type from Uint8Array to a readable stream
    * @param logicalId This may be the ID of a record, or the ID of a protocol definition etc.
    */
-  get(tenant: string, logicalId: string, dataCid: string): Promise<Uint8Array | undefined>;
+  get(tenant: string, logicalId: string, dataCid: string): Promise<Readable | undefined>;
 
   /**
    * Checks to see if the store has the specified data.

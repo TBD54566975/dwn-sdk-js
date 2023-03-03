@@ -15,7 +15,7 @@ import { DidResolver, Dwn, Encoder, Jws } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
 
-describe('handleProtocolsQuery()', () => {
+describe('ProtocolsConfigureHandler.handle()', () => {
   let didResolver: DidResolver;
   let messageStore: MessageStoreLevel;
   let dataStore: DataStoreLevel;

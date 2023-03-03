@@ -1,10 +1,10 @@
 import { BaseMessage } from '../core/types.js';
 import { DataStore } from './data-store.js';
-import { Encoder } from '../index.js';
 import { MessageStore } from './message-store.js';
 import { RangeCriterion } from '../interfaces/records/types.js';
 import { Readable } from 'readable-stream';
 
+import { DataStream, Encoder } from '../index.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 /**
@@ -75,7 +75,8 @@ export class StorageController {
         // TODO: #219 (https://github.com/TBD54566975/dwn-sdk-js/issues/219)
         // temporary placeholder for keeping status-quo of returning data in `encodedData`
         // once #219 is implemented, `encodedData` may or may not exist directly as part of the returned message here
-        const dataBytes = await dataStore.get('not used yet', 'not used yet', dataCid);
+        const readableStream = await dataStore.get('not used yet', 'not used yet', dataCid);
+        const dataBytes = await DataStream.toBytes(readableStream);
 
         message['encodedData'] = Encoder.bytesToBase64Url(dataBytes);
       }

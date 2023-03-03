@@ -32,6 +32,7 @@ import ProtocolsQuery from '../json-schemas/protocols/protocols-query.json' asse
 import PublicJwk from '../json-schemas/jwk/public-jwk.json' assert { type: 'json' };
 import RecordsDelete from '../json-schemas/records/records-delete.json' assert { type: 'json' };
 import RecordsQuery from '../json-schemas/records/records-query.json' assert { type: 'json' };
+import RecordsRead from '../json-schemas/records/records-read.json' assert { type: 'json' };
 import RecordsWrite from '../json-schemas/records/records-write.json' assert { type: 'json' };
 
 const schemas = {
@@ -50,6 +51,7 @@ const schemas = {
   ProtocolRuleSet,
   ProtocolsConfigure,
   ProtocolsQuery,
+  RecordsRead,
   PublicJwk
 };
 
