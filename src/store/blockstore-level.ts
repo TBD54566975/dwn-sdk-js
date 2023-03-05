@@ -1,6 +1,7 @@
 import type { AwaitIterable, Batch, KeyQuery, Pair, Query } from 'interface-store';
 import type { Blockstore, Options } from 'interface-blockstore';
 
+import { abortOr } from '../utils/abort.js';
 import { CID } from 'multiformats';
 import { Level } from 'level';
 import { sleep } from '../utils/time.js';
@@ -54,13 +55,17 @@ export class BlockstoreLevel implements Blockstore {
     return this.db.close();
   }
 
-  put(key: CID, val: Uint8Array, _ctx?: Options): Promise<void> {
-    return this.db.put(key.toString(), val);
+  put(key: CID, val: Uint8Array, options?: Options): Promise<void> {
+    options?.signal?.throwIfAborted();
+
+    return abortOr(options?.signal, this.db.put(key.toString(), val));
   }
 
-  async get(key: CID, _options?: Options): Promise<Uint8Array> {
+  async get(key: CID, options?: Options): Promise<Uint8Array> {
+    options?.signal?.throwIfAborted();
+
     try {
-      const val = await this.db.get(key.toString());
+      const val = await abortOr(options?.signal, this.db.get(key.toString()));
       return val;
     } catch (e) {
       // level throws an error if the key is not present. Return undefined in this case
@@ -72,12 +77,14 @@ export class BlockstoreLevel implements Blockstore {
     }
   }
 
-  async has(key: CID, _options?: Options): Promise<boolean> {
-    return !! await this.get(key);
+  async has(key: CID, options?: Options): Promise<boolean> {
+    return !! await this.get(key, options);
   }
 
-  delete(key: CID, _options?: Options): Promise<void> {
-    return this.db.del(key.toString());
+  delete(key: CID, options?: Options): Promise<void> {
+    options?.signal?.throwIfAborted();
+
+    return abortOr(options?.signal, this.db.del(key.toString()));
   }
 
   async * putMany(source: AwaitIterable<Pair<CID, Uint8Array>>, options?: Options):
@@ -90,9 +97,9 @@ export class BlockstoreLevel implements Blockstore {
     }
   }
 
-  async * getMany(source: AwaitIterable<CID>, _options?: Options): AsyncIterable<Uint8Array> {
+  async * getMany(source: AwaitIterable<CID>, options?: Options): AsyncIterable<Uint8Array> {
     for await (const key of source) {
-      yield this.get(key);
+      yield this.get(key, options);
     }
   }
 
