@@ -26,7 +26,7 @@ import { GenerateFromRecordsWriteOut, TestDataGenerator } from '../../../utils/t
 
 chai.use(chaiAsPromised);
 
-describe('handleRecordsWrite()', () => {
+describe('RecordsWriteHandler.handle()', () => {
   let didResolver: DidResolver;
   let messageStore: MessageStoreLevel;
   let dataStore: DataStoreLevel;

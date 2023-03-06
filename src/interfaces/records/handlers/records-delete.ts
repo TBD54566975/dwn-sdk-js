@@ -12,7 +12,7 @@ import { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 export class RecordsDeleteHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore) { }
+  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore) { }
 
   public async handle({
     tenant,

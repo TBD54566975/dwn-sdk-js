@@ -15,6 +15,7 @@ import { ProtocolsConfigureHandler } from './interfaces/protocols/handlers/proto
 import { ProtocolsQueryHandler } from './interfaces/protocols/handlers/protocols-query.js';
 import { RecordsDeleteHandler } from './interfaces/records/handlers/records-delete.js';
 import { RecordsQueryHandler } from './interfaces/records/handlers/records-query.js';
+import { RecordsReadHandler } from './interfaces/records/handlers/records-read.js';
 import { RecordsWriteHandler } from './interfaces/records/handlers/records-write.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './core/message.js';
 
@@ -37,6 +38,7 @@ export class Dwn {
       [DwnInterfaceName.Protocols + DwnMethodName.Query]     : new ProtocolsQueryHandler(this.didResolver, this.messageStore, this.dataStore),
       [DwnInterfaceName.Records + DwnMethodName.Delete]      : new RecordsDeleteHandler(this.didResolver, this.messageStore, this.dataStore),
       [DwnInterfaceName.Records + DwnMethodName.Query]       : new RecordsQueryHandler(this.didResolver, this.messageStore, this.dataStore),
+      [DwnInterfaceName.Records + DwnMethodName.Read]        : new RecordsReadHandler(this.didResolver, this.messageStore, this.dataStore),
       [DwnInterfaceName.Records + DwnMethodName.Write]       : new RecordsWriteHandler(this.didResolver, this.messageStore, this.dataStore),
     };
   }
@@ -44,7 +46,7 @@ export class Dwn {
   /**
    * Creates an instance of the DWN.
    */
-  static async create(config?: DwnConfig): Promise<Dwn> {
+  public static async create(config?: DwnConfig): Promise<Dwn> {
     config ??= { };
     config.didResolver ??= new DidResolver();
     config.tenantGate ??= new AllowAllTenantGate();
@@ -62,7 +64,7 @@ export class Dwn {
     await this.dataStore.open();
   }
 
-  async close(): Promise<void> {
+  public async close(): Promise<void> {
     this.messageStore.close();
     this.dataStore.close();
   }
@@ -71,7 +73,7 @@ export class Dwn {
    * Processes the given DWN message and returns with a reply.
    * @param tenant The tenant DID to route the given message to.
    */
-  async processMessage(tenant: string, rawMessage: any, dataStream?: Readable): Promise<MessageReply> {
+  public async processMessage(tenant: string, rawMessage: any, dataStream?: Readable): Promise<MessageReply> {
     const isTenant = await this.tenantGate.isTenant(tenant);
     if (!isTenant) {
       return new MessageReply({

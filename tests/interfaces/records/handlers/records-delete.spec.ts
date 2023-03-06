@@ -9,12 +9,11 @@ import { RecordsDeleteHandler } from '../../../../src/interfaces/records/handler
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
-export { RecordsDelete, RecordsDeleteOptions } from '../../../../src/interfaces/records/messages/records-delete.js';
 import { DidResolver, Dwn, Encoder, Jws, RecordsDelete } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
 
-describe('handleRecordsDelete()', () => {
+describe('RecordsDeleteHandler.handle()', () => {
   let didResolver: DidResolver;
   let messageStore: MessageStoreLevel;
   let dataStore: DataStoreLevel;
@@ -49,7 +48,6 @@ describe('handleRecordsDelete()', () => {
     });
 
     it('should handle RecordsDelete successfully', async () => {
-      // setting up a stub method resolver
       const alice = await DidKeyResolver.generate();
 
       // insert data

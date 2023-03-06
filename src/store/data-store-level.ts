@@ -37,7 +37,7 @@ export class DataStoreLevel implements DataStore {
     return dataCid;
   }
 
-  public async get(tenant: string, recordId: string, dataCid: string): Promise<Uint8Array | undefined> {
+  public async get(tenant: string, recordId: string, dataCid: string): Promise<Readable | undefined> {
     const cid = CID.parse(dataCid);
     const bytes = await this.blockstore.get(cid);
 
@@ -47,15 +47,20 @@ export class DataStoreLevel implements DataStore {
 
     // data is chunked into dag-pb unixfs blocks. re-inflate the chunks.
     const dataDagRoot = await exporter(dataCid, this.blockstore);
-    const dataBytes = new Uint8Array(dataDagRoot.size);
-    let offset = 0;
+    const contentIterator = dataDagRoot.content();
 
-    for await (const chunk of dataDagRoot.content()) {
-      dataBytes.set(chunk, offset);
-      offset += chunk.length;
-    }
+    const readableStream = new Readable({
+      async read(): Promise<void> {
+        const result = await contentIterator.next();
+        if (result.done) {
+          this.push(null); // end the stream
+        } else {
+          this.push(result.value);
+        }
+      }
+    });
 
-    return dataBytes;
+    return readableStream;
   }
 
   public async has(tenant: string, recordId: string, dataCid: string): Promise<boolean> {

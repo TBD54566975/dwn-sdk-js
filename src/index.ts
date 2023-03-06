@@ -35,5 +35,6 @@ export { ProtocolsConfigure, ProtocolsConfigureOptions } from './interfaces/prot
 export { ProtocolsQuery, ProtocolsQueryOptions } from './interfaces/protocols/messages/protocols-query.js';
 export { RecordsDelete, RecordsDeleteOptions } from './interfaces/records/messages/records-delete.js';
 export { RecordsQuery, RecordsQueryOptions } from './interfaces/records/messages/records-query.js';
+export { RecordsRead, RecordsReadOptions } from './interfaces/records/messages/records-read.js';
 export { RecordsWrite, RecordsWriteOptions, CreateFromOptions } from './interfaces/records/messages/records-write.js';
 export { SignatureInput } from './jose/jws/general/types.js';

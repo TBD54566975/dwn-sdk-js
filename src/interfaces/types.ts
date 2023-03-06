@@ -1,7 +1,6 @@
 import type { BaseMessage } from '../core/types.js';
 import type { MessageReply } from '../core/message-reply.js';
-
-import { Readable } from 'readable-stream';
+import type { Readable } from 'readable-stream';
 
 /**
  * Interface that defines a message handler of a specific method.
