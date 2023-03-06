@@ -31,8 +31,6 @@ export class DataStoreLevel implements DataStore {
     let block;
     for await (block of asyncDataBlocks) { ; }
 
-    // MUST verify that the CID of the actual data matches with the given `dataCid`
-    // if data CID is wrong, delete the data we just stored
     const dataCid = block.cid.toString();
     return dataCid;
   }
@@ -47,7 +45,7 @@ export class DataStoreLevel implements DataStore {
 
     // data is chunked into dag-pb unixfs blocks. re-inflate the chunks.
     const dataDagRoot = await exporter(dataCid, this.blockstore);
-    const contentIterator = dataDagRoot.content();
+    const contentIterator = dataDagRoot.content()[Symbol.asyncIterator]();
 
     const readableStream = new Readable({
       async read(): Promise<void> {
