@@ -1,11 +1,12 @@
 import type { BaseMessage } from '../core/types.js';
-import type { MessageStore } from './message-store.js';
+import type { MessageStore, Options } from './message-store.js';
 
 import * as block from 'multiformats/block';
 import * as cbor from '@ipld/dag-cbor';
 import isPlainObject from 'lodash/isPlainObject.js';
 import searchIndex from 'search-index';
 
+import { abortOr } from '../utils/abort.js';
 import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
 import { RangeCriterion } from '../interfaces/records/types.js';
@@ -56,15 +57,17 @@ export class MessageStoreLevel implements MessageStore {
     await this.index.INDEX.STORE.close(); // MUST close index-search DB, else `searchIndex()` triggered in a different instance will hang indefinitely
   }
 
-  async get(cidString: string): Promise<BaseMessage | undefined> {
+  async get(cidString: string, options?: Options): Promise<BaseMessage | undefined> {
+    options?.signal?.throwIfAborted();
+
     const cid = CID.parse(cidString);
-    const bytes = await this.blockstore.get(cid);
+    const bytes = await this.blockstore.get(cid, options);
 
     if (!bytes) {
       return undefined;
     }
 
-    const decodedBlock = await block.decode({ bytes, codec: cbor, hasher: sha256 });
+    const decodedBlock = await abortOr<block.Block>(options?.signal, block.decode({ bytes, codec: cbor, hasher: sha256 }));
 
     const messageJson = decodedBlock.value as BaseMessage;
     return messageJson;
@@ -72,37 +75,48 @@ export class MessageStoreLevel implements MessageStore {
 
   async query(
     exactCriteria: { [key: string]: string },
-    rangeCriteria?: { [key: string]: RangeCriterion }
+    rangeCriteria?: { [key: string]: RangeCriterion },
+    options?: Options
   ): Promise<BaseMessage[]> {
+    options?.signal?.throwIfAborted();
+
     const messages: BaseMessage[] = [];
 
     // parse criteria into a query that is compatible with the indexing DB (search-index) we're using
     const exactTerms = MessageStoreLevel.buildExactQueryTerms(exactCriteria);
     const rangeTerms = MessageStoreLevel.buildRangeQueryTerms(rangeCriteria);
 
-    const { RESULT: indexResults } = await this.index.QUERY({ AND: [...exactTerms, ...rangeTerms] });
+    const { RESULT: indexResults } = await abortOr(options?.signal, this.index.QUERY({ AND: [...exactTerms, ...rangeTerms] }));
 
     for (const result of indexResults) {
-      const message = await this.get(result._id);
+      const message = await this.get(result._id, options);
       messages.push(message);
     }
 
     return messages;
   }
 
-  async delete(cidString: string): Promise<void> {
+  async delete(cidString: string, options?: Options): Promise<void> {
+    options?.signal?.throwIfAborted();
+
     // TODO: Implement data deletion in Records - https://github.com/TBD54566975/dwn-sdk-js/issues/84
     const cid = CID.parse(cidString);
-    await this.blockstore.delete(cid);
-    await this.index.DELETE(cidString);
+    await this.blockstore.delete(cid, options);
+    await abortOr(options?.signal, this.index.DELETE(cidString));
 
     return;
   }
 
-  async put(message: BaseMessage, indexes: { [key: string]: string }): Promise<void> {
-    const encodedMessageBlock = await block.encode({ value: message, codec: cbor, hasher: sha256 });
+  async put(
+    message: BaseMessage,
+    indexes: { [key: string]: string },
+    options?: Options
+  ): Promise<void> {
+    options?.signal?.throwIfAborted();
 
-    await this.blockstore.put(encodedMessageBlock.cid, encodedMessageBlock.bytes);
+    const encodedMessageBlock = await abortOr<block.Block>(options?.signal, block.encode({ value: message, codec: cbor, hasher: sha256 }));
+
+    await this.blockstore.put(encodedMessageBlock.cid, encodedMessageBlock.bytes, options);
 
     // TODO: #218 - Use tenant + record scoped IDs - https://github.com/TBD54566975/dwn-sdk-js/issues/218
     const encodedMessageBlockCid = encodedMessageBlock.cid.toString();
@@ -116,7 +130,7 @@ export class MessageStoreLevel implements MessageStore {
     // 'did:example:alice'                    - ':'
     // '337970c4-52e0-4bd7-b606-bfc1d6fe2350' - '-'
     // 'application/json'                     - '/'
-    await this.index.PUT([indexDocument], { tokenSplitRegex: /.+/ });
+    await abortOr(options?.signal, this.index.PUT([indexDocument], { tokenSplitRegex: /.+/ }));
   }
 
   /**

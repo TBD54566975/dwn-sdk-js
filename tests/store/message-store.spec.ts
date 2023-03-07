@@ -122,5 +122,43 @@ describe('MessageStoreLevel Tests', () => {
       const results = await messageStore.query({ schema });
       expect((results[0] as RecordsWriteMessage).descriptor.schema).to.equal(schema);
     });
+
+    it('should not store anything if aborted beforehand', async () => {
+      const { message } = await TestDataGenerator.generateRecordsWrite();
+
+      const controller = new AbortController();
+      controller.signal.throwIfAborted = (): void => { }; // simulate aborting happening async
+      controller.abort('reason');
+
+      try {
+        await messageStore.put(message, {}, { signal: controller.signal });
+      } catch (e) {
+        expect(e).to.equal('reason');
+      }
+
+      const expectedCid = await Message.getCid(message);
+
+      const jsonMessage = await messageStore.get(expectedCid);
+      expect(jsonMessage).to.equal(undefined);
+    });
+
+    it('should not index anything if aborted during', async () => {
+      const schema = 'http://my-awesome-schema/awesomeness_schema#awesome-1?id=awesome_1';
+      const { message } = await TestDataGenerator.generateRecordsWrite({ schema });
+
+      const controller = new AbortController();
+      queueMicrotask(() => {
+        controller.abort('reason');
+      });
+
+      try {
+        await messageStore.put(message, { schema }, { signal: controller.signal });
+      } catch (e) {
+        expect(e).to.equal('reason');
+      }
+
+      const results = await messageStore.query({ schema });
+      expect(results.length).to.equal(0);
+    });
   });
 });

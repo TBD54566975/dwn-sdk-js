@@ -1,6 +1,10 @@
 import type { BaseMessage } from '../core/types.js';
 import type { RangeCriterion } from '../interfaces/records/types.js';
 
+export interface Options {
+  signal?: AbortSignal;
+}
+
 export interface MessageStore {
   /**
    * opens a connection to the underlying store
@@ -16,13 +20,17 @@ export interface MessageStore {
    * adds a message to the underlying store. Uses the message's cid as the key
    * @param indexes indexes (key-value pairs) to be included as part of this put operation
    */
-  put(messageJson: BaseMessage, indexes: { [key: string]: string }): Promise<void>;
+  put(
+    messageJson: BaseMessage,
+    indexes: { [key: string]: string },
+    options?: Options
+  ): Promise<void>;
 
   /**
    * Fetches a single message by `cid` from the underlying store.
    * Returns `undefined` no message was found.
    */
-  get(cid: string): Promise<BaseMessage | undefined>;
+  get(cid: string, options?: Options): Promise<BaseMessage | undefined>;
 
   /**
    * Queries the underlying store for messages that match the query provided.
@@ -33,11 +41,12 @@ export interface MessageStore {
    */
   query(
     exactCriteria: { [key: string]: string },
-    rangeCriteria?: { [key: string]: RangeCriterion }
+    rangeCriteria?: { [key: string]: RangeCriterion },
+    options?: Options
   ): Promise<BaseMessage[]>;
 
   /**
    * Deletes the message associated with the id provided.
    */
-  delete(cid: string): Promise<void>;
+  delete(cid: string, options?: Options): Promise<void>;
 }
