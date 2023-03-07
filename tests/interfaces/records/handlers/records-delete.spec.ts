@@ -30,7 +30,9 @@ describe('RecordsDeleteHandler.handle()', () => {
         indexLocation      : 'TEST-INDEX'
       });
 
-      dataStore = new DataStoreLevel('TEST-DATASTORE');
+      dataStore = new DataStoreLevel({
+        blockstoreLocation: 'TEST-DATASTORE'
+      });
 
       dwn = await Dwn.create({ didResolver, messageStore, dataStore });
     });

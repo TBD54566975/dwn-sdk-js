@@ -5,6 +5,7 @@ import { Message } from '../../src/core/message.js';
 import { MessageStoreLevel } from '../../src/store/message-store-level.js';
 import { RecordsWriteMessage } from '../../src/interfaces/records/types.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { createLevelDatabase, LevelDatabase, LevelDatabaseOptions } from '../../src/store/create-level.js';
 
 let messageStore: MessageStoreLevel;
 
@@ -159,6 +160,24 @@ describe('MessageStoreLevel Tests', () => {
 
       const results = await messageStore.query({ schema });
       expect(results.length).to.equal(0);
+    });
+  });
+
+  describe('createLevelDatabase', function () {
+    it('should be called if provided', async () => {
+      let called = 0;
+
+      new MessageStoreLevel({
+        blockstoreLocation : 'TEST-BLOCKSTORE',
+        indexLocation      : 'TEST-INDEX',
+        createLevelDatabase<K, V>(location, options?: LevelDatabaseOptions<K, V>): LevelDatabase<K, V> {
+          ++called;
+          expect(location).to.equal('TEST-BLOCKSTORE');
+          return createLevelDatabase(location, options);
+        }
+      });
+
+      expect(called).to.equal(1);
     });
   });
 });

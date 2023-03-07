@@ -1,9 +1,10 @@
+import type { LevelDatabase } from './create-level.js';
 import type { AwaitIterable, Batch, KeyQuery, Pair, Query } from 'interface-store';
 import type { Blockstore, Options } from 'interface-blockstore';
 
 import { abortOr } from '../utils/abort.js';
 import { CID } from 'multiformats';
-import { Level } from 'level';
+import { createLevelDatabase } from './create-level.js';
 import { sleep } from '../utils/time.js';
 
 // `level` works in Node.js 12+ and Electron 5+ on Linux, Mac OS, Windows and
@@ -11,7 +12,9 @@ import { sleep } from '../utils/time.js';
 // platforms like Raspberry Pi and Android, as well as in Chrome, Firefox, Edge, Safari, iOS Safari
 //  and Chrome for Android.
 export class BlockstoreLevel implements Blockstore {
-  db: Level<string, Uint8Array>;
+  config: BlockstoreLevelConfig;
+
+  db: LevelDatabase<string, Uint8Array>;
 
   /**
    * @param location - must be a directory path (relative or absolute) where LevelDB will store its
@@ -19,8 +22,13 @@ export class BlockstoreLevel implements Blockstore {
    * the {@link https://developer.mozilla.org/en-US/docs/Web/API/IDBDatabase IDBDatabase}
    * to be opened.
    */
-  constructor(location: string) {
-    this.db = new Level(location, { keyEncoding: 'utf8', valueEncoding: 'binary' });
+  constructor(location: string, config: BlockstoreLevelConfig = {}) {
+    this.config = {
+      createLevelDatabase,
+      ...config
+    };
+
+    this.db = this.config.createLevelDatabase<string, Uint8Array>(location, { keyEncoding: 'utf8', valueEncoding: 'binary' });
   }
 
   async open(): Promise<void> {
@@ -130,3 +138,7 @@ export class BlockstoreLevel implements Blockstore {
     throw new Error('not implemented');
   }
 }
+
+type BlockstoreLevelConfig = {
+  createLevelDatabase?: typeof createLevelDatabase,
+};
