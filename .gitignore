@@ -19,6 +19,7 @@ TEST-BLOCKSTORE
 INDEX
 # location for index specific levelDB data storage levelDB data storage for non-browser tests
 TEST-INDEX
+BENCHMARK-INDEX
 # folders used by code coverage
 .nyc_output/
 coverage

@@ -1,5 +1,5 @@
 import type { SignatureInput } from '../../../jose/jws/general/types.js';
-import type { RangeCriterion, RecordsQueryDescriptor, RecordsQueryFilter, RecordsQueryMessage } from '../types.js';
+import type { ExactCriterion, RangeCriterion, RecordsQueryDescriptor, RecordsQueryFilter, RecordsQueryMessage } from '../types.js';
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/message.js';
@@ -74,13 +74,13 @@ export class RecordsQuery extends Message {
    * Gets the criteria for exact matches and exclude other types of criteria such as range criteria.
    * @returns object contain all exact-match criteria; empty object if no exact-match criterion is found.
    */
-  public static getExactCriteria(filter: RecordsQueryFilter): { [key:string]: string } {
+  public static getExactCriteria(filter: RecordsQueryFilter): { [key:string]: ExactCriterion } {
     const filterCopy = { ... filter };
     delete filterCopy.dateCreated;
 
     removeUndefinedProperties(filterCopy);
 
-    return filterCopy as { [key:string]: string };
+    return filterCopy as { [key:string]: ExactCriterion };
   }
 
   /**

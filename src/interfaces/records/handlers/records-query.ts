@@ -70,10 +70,10 @@ export class RecordsQueryHandler implements MethodHandler {
     // fetch all published records matching the query
     const exactCriteria = RecordsQuery.getExactCriteria(recordsQuery.message.descriptor.filter);
     const completeExactCriteria = {
+      ...exactCriteria,
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
-      isLatestBaseState : 'true',
-      ...exactCriteria
+      isLatestBaseState : true
     };
 
     const rangeCriteria = RecordsQuery.getRangeCriteria(recordsQuery.message.descriptor.filter);
@@ -102,11 +102,11 @@ export class RecordsQueryHandler implements MethodHandler {
     // fetch all published records matching the query
     const exactCriteria = RecordsQuery.getExactCriteria(recordsQuery.message.descriptor.filter);
     const completeExactCriteria = {
+      ...exactCriteria,
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
-      published         : 'true',
-      isLatestBaseState : 'true',
-      ...exactCriteria
+      published         : true,
+      isLatestBaseState : true
     };
 
     const rangeCriteria = RecordsQuery.getRangeCriteria(recordsQuery.message.descriptor.filter);
@@ -121,12 +121,12 @@ export class RecordsQueryHandler implements MethodHandler {
   // include records where recipient is requester
     const exactCriteria = RecordsQuery.getExactCriteria(recordsQuery.message.descriptor.filter);
     const completeExactCriteria = {
+      ...exactCriteria,
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       recipient         : recordsQuery.author,
-      isLatestBaseState : 'true',
-      published         : 'false',
-      ...exactCriteria
+      isLatestBaseState : true,
+      published         : false
     };
 
     const rangeCriteria = RecordsQuery.getRangeCriteria(recordsQuery.message.descriptor.filter);
@@ -147,12 +147,12 @@ export class RecordsQueryHandler implements MethodHandler {
     // include records where recipient is requester
     const exactCriteria = RecordsQuery.getExactCriteria(recordsQuery.message.descriptor.filter);
     const completeExactCriteria = {
+      ...exactCriteria,
       author            : recordsQuery.author,
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
-      isLatestBaseState : 'true',
-      published         : 'false',
-      ...exactCriteria
+      isLatestBaseState : true,
+      published         : false
     };
 
     const rangeCriteria = RecordsQuery.getRangeCriteria(recordsQuery.message.descriptor.filter);

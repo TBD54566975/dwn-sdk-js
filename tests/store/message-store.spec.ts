@@ -4,6 +4,7 @@ import { expect } from 'chai';
 import { Message } from '../../src/core/message.js';
 import { MessageStoreLevel } from '../../src/store/message-store-level.js';
 import { RecordsWriteMessage } from '../../src/interfaces/records/types.js';
+import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { createLevelDatabase, LevelDatabase, LevelDatabaseOptions } from '../../src/store/create-level.js';
 
@@ -11,7 +12,7 @@ let messageStore: MessageStoreLevel;
 
 describe('MessageStoreLevel Tests', () => {
   describe('buildExactQueryTerms', () => {
-    it('returns an array of terms based on the query object type provided', () => {
+    it('returns the query exactly if it already matches the required structure', () => {
       const query = {
         method        : 'RecordsQuery',
         schema        : 'https://schema.org/MusicPlaylist',
@@ -20,13 +21,13 @@ describe('MessageStoreLevel Tests', () => {
         publishedDate : 1234567 // number type
       };
 
-      const expected = [
-        { FIELD: ['method'], VALUE: 'RecordsQuery' },
-        { FIELD: ['schema'], VALUE: 'https://schema.org/MusicPlaylist' },
-        { FIELD: ['objectId'], VALUE: 'abcd123' },
-        { FIELD: ['published'], VALUE: true },
-        { FIELD: ['publishedDate'], VALUE: 1234567 }
-      ];
+      const expected = {
+        'method'        : 'RecordsQuery',
+        'schema'        : 'https://schema.org/MusicPlaylist',
+        'objectId'      : 'abcd123',
+        'published'     : true,
+        'publishedDate' : 1234567
+      };
       const terms = MessageStoreLevel['buildExactQueryTerms'](query);
 
       expect(terms).to.eql(expected);
@@ -44,14 +45,39 @@ describe('MessageStoreLevel Tests', () => {
         }
       };
 
-      const expected = [
-        { FIELD: ['requester'], VALUE: 'AlBorland' },
-        { FIELD: ['ability.method'], VALUE: 'RecordsQuery' },
-        { FIELD: ['ability.schema'], VALUE: 'https://schema.org/MusicPlaylist' },
-        { FIELD: ['ability.doo.bingo'], VALUE: 'bongo' }
-      ];
+      const expected = {
+        'requester'         : 'AlBorland',
+        'ability.method'    : 'RecordsQuery',
+        'ability.schema'    : 'https://schema.org/MusicPlaylist',
+        'ability.doo.bingo' : 'bongo'
+      };
 
       const terms = MessageStoreLevel['buildExactQueryTerms'](query);
+
+      expect(terms).to.eql(expected);
+    });
+  });
+
+  describe('buildRangeQueryTerms', () => {
+    it('converts from `RangeCriterion` to `RangeFilter`', () => {
+      const lastDayOf2021 = Temporal.PlainDateTime.from({ year: 2021, month: 12, day: 31 }).toString({ smallestUnit: 'microseconds' });
+      const lastDayOf2022 = Temporal.PlainDateTime.from({ year: 2022, month: 12, day: 31 }).toString({ smallestUnit: 'microseconds' });
+
+      const query = {
+        dateCreated: {
+          from : lastDayOf2021,
+          to   : lastDayOf2022
+        }
+      };
+
+      const expected = {
+        'dateCreated': {
+          'gte' : lastDayOf2021,
+          'lte' : lastDayOf2022
+        }
+      };
+
+      const terms = MessageStoreLevel['buildRangeQueryTerms'](query);
 
       expect(terms).to.eql(expected);
     });
@@ -173,20 +199,19 @@ describe('MessageStoreLevel Tests', () => {
 
   describe('createLevelDatabase', function () {
     it('should be called if provided', async () => {
-      let called = 0;
+      const locations = new Set;
 
       const messageStore = new MessageStoreLevel({
         blockstoreLocation : 'TEST-BLOCKSTORE',
         indexLocation      : 'TEST-INDEX',
         createLevelDatabase<K, V>(location, options?: LevelDatabaseOptions<K, V>): Promise<LevelDatabase<K, V>> {
-          ++called;
-          expect(location).to.equal('TEST-BLOCKSTORE');
+          locations.add(location);
           return createLevelDatabase(location, options);
         }
       });
       await messageStore.open();
 
-      expect(called).to.equal(1);
+      expect(locations).to.eql(new Set([ 'TEST-BLOCKSTORE', 'TEST-INDEX' ]));
     });
   });
 });

@@ -1,7 +1,7 @@
 import type { BaseMessage } from '../core/types.js';
-import type { RangeCriterion } from '../interfaces/records/types.js';
+import type { ExactCriterion, RangeCriterion } from '../interfaces/records/types.js';
 
-export interface Options {
+export interface MessageStoreOptions {
   signal?: AbortSignal;
 }
 
@@ -24,14 +24,14 @@ export interface MessageStore {
     tenant: string,
     messageJson: BaseMessage,
     indexes: { [key: string]: string },
-    options?: Options
+    options?: MessageStoreOptions
   ): Promise<void>;
 
   /**
    * Fetches a single message by `cid` from the underlying store.
    * Returns `undefined` no message was found.
    */
-  get(tenant: string, cid: string, options?: Options): Promise<BaseMessage | undefined>;
+  get(tenant: string, cid: string, options?: MessageStoreOptions): Promise<BaseMessage | undefined>;
 
   /**
    * Queries the underlying store for messages that match the query provided.
@@ -42,13 +42,13 @@ export interface MessageStore {
    */
   query(
     tenant: string,
-    exactCriteria: { [key: string]: string },
+    exactCriteria: { [key: string]: ExactCriterion },
     rangeCriteria?: { [key: string]: RangeCriterion },
-    options?: Options
+    options?: MessageStoreOptions
   ): Promise<BaseMessage[]>;
 
   /**
    * Deletes the message associated with the id provided.
    */
-  delete(tenant: string, cid: string, options?: Options): Promise<void>;
+  delete(tenant: string, cid: string, options?: MessageStoreOptions): Promise<void>;
 }

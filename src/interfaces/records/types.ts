@@ -57,6 +57,11 @@ export type RecordsQueryFilter = {
 };
 
 /**
+ * An exact criterion in a query filter.
+ */
+export type ExactCriterion = unknown;
+
+/**
  * A range criterion in a query filter.
  */
 export type RangeCriterion = {
