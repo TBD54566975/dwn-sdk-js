@@ -95,7 +95,6 @@ describe('RecordsWrite', () => {
     it('should required `dataCid` and `dataSize` to be both defined or undefined at the same time', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
-      // testing `data` and `dataCid` both defined
       const options1 = {
         recipient                   : alice.did,
         dataCid                     : await TestDataGenerator.randomCborSha256Cid(),
@@ -109,7 +108,6 @@ describe('RecordsWrite', () => {
 
       await expect(createPromise1).to.be.rejectedWith('`dataCid` and `dataSize` must both be defined or undefined at the same time');
 
-      // testing `data` and `dataCid` both undefined
       const options2 = {
         recipient                   : alice.did,
         data                        : TestDataGenerator.randomBytes(10),
