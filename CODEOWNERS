@@ -8,7 +8,7 @@
 # Each line is a file pattern followed by one or more owners.
 # The format is described: https://github.blog/2017-07-06-introducing-code-owners/
 # These owners will be the default owners for everything in the repo.
-* @mistermoe @csuwildcat @thehenrytsai
+* @mistermoe @csuwildcat @thehenrytsai @diehuxx
 
 # -----------------------------------------------
 # BELOW THIS LINE ARE TEMPLATES, UNUSED

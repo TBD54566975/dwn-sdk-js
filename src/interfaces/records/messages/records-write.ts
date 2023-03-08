@@ -24,6 +24,7 @@ export type RecordsWriteOptions = {
   parentId?: string;
   data?: Uint8Array;
   dataCid?: string;
+  dataSize?: number;
   dateCreated?: string;
   dateModified?: string;
   published?: boolean;
@@ -75,6 +76,7 @@ export class RecordsWrite extends Message {
    * @param options.recordId If `undefined`, will be auto-filled as a originating message as convenience for developer.
    * @param options.data Data used to compute the `dataCid`. Must specify `option.dataCid` if `undefined`.
    * @param options.dataCid CID of the data that is already stored in the DWN. Must specify `option.data` if `undefined`.
+   * @param options.dataSize Size of data in number of bytes. Must be defined if `option.dataCid` is defined; must be `undefined` otherwise.
    * @param options.dateCreated If `undefined`, it will be auto-filled with current time.
    * @param options.dateModified If `undefined`, it will be auto-filled with current time.
    */
@@ -82,10 +84,17 @@ export class RecordsWrite extends Message {
     const currentTime = getCurrentTimeInHighPrecision();
 
     if ((options.data === undefined && options.dataCid === undefined) ||
-         options.data !== undefined && options.dataCid !== undefined) {
+        (options.data !== undefined && options.dataCid !== undefined)) {
       throw new Error('one and only one parameter between `data` and `dataCid` is allowed');
     }
+
+    if ((options.dataCid === undefined && options.dataSize !== undefined) ||
+        (options.dataCid !== undefined && options.dataSize === undefined)) {
+      throw new Error('`dataCid` and `dataSize` must both be defined or undefined at the same time');
+    }
+
     const dataCid = options.dataCid ?? await Cid.computeDagPbCidFromBytes(options.data!);
+    const dataSize = options.dataSize ?? options.data!.length;
 
     const descriptor: RecordsWriteDescriptor = {
       interface     : DwnInterfaceName.Records,
@@ -95,6 +104,7 @@ export class RecordsWrite extends Message {
       schema        : options.schema,
       parentId      : options.parentId,
       dataCid,
+      dataSize,
       dateCreated   : options.dateCreated ?? currentTime,
       dateModified  : options.dateModified ?? currentTime,
       published     : options.published,
@@ -209,7 +219,8 @@ export class RecordsWrite extends Message {
       published,
       datePublished,
       data                        : options.data,
-      dataCid                     : options.data ? undefined : unsignedMessage.descriptor.dataCid, // if data not given, use dataCid from base message
+      dataCid                     : options.data ? undefined : unsignedMessage.descriptor.dataCid, // if data not given, use base message dataCid
+      dataSize                    : options.data ? undefined : unsignedMessage.descriptor.dataSize, // if data not given, use base message dataSize
       // finally still need input for signing
       authorizationSignatureInput : options.authorizationSignatureInput,
       attestationSignatureInputs  : options.attestationSignatureInputs
@@ -411,7 +422,7 @@ export class RecordsWrite extends Message {
    * @throws {Error} if immutable properties between two RecordsWrite message
    */
   public static verifyEqualityOfImmutableProperties(existingWriteMessage: RecordsWriteMessage, newMessage: RecordsWriteMessage): boolean {
-    const mutableDescriptorProperties = ['dataCid', 'datePublished', 'published', 'dateModified'];
+    const mutableDescriptorProperties = ['dataCid', 'dataSize', 'datePublished', 'published', 'dateModified'];
 
     // get distinct property names that exist in either the existing message given or new message
     let descriptorPropertyNames = [];

@@ -1,3 +1,6 @@
+import type { ImportResult } from 'ipfs-unixfs-importer';
+import type { PutResult } from './data-store.js';
+
 import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
 import { createLevelDatabase } from './create-level.js';
@@ -7,7 +10,7 @@ import { importer } from 'ipfs-unixfs-importer';
 import { Readable } from 'readable-stream';
 
 /**
- * A simple implementation of {@link MessageStore} that works in both the browser and server-side.
+ * A simple implementation of {@link DataStore} that works in both the browser and server-side.
  * Leverages LevelDB under the hood.
  */
 export class DataStoreLevel implements DataStore {
@@ -35,15 +38,20 @@ export class DataStoreLevel implements DataStore {
     await this.blockstore.close();
   }
 
-  async put(tenant: string, recordId: string, dataStream: Readable): Promise<string> {
+  public async put(tenant: string, recordId: string, dataStream: Readable): Promise<PutResult> {
     const asyncDataBlocks = importer([{ content: dataStream }], this.blockstore, { cidVersion: 1 });
 
-    // NOTE: the last block contains the root CID
-    let block;
+    // NOTE: the last block contains the root CID as well as info to derive the data size
+    let block: ImportResult;
     for await (block of asyncDataBlocks) { ; }
 
     const dataCid = block.cid.toString();
-    return dataCid;
+    const dataSize = block.unixfs ? Number(block.unixfs!.fileSize()) : Number(block.size);
+
+    return {
+      dataCid,
+      dataSize
+    };
   }
 
   public async get(tenant: string, recordId: string, dataCid: string): Promise<Readable | undefined> {

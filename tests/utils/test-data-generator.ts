@@ -433,8 +433,12 @@ export class TestDataGenerator {
    * Generates a random byte array of given length.
    */
   public static randomBytes(length: number): Uint8Array {
-    const randomString = TestDataGenerator.randomString(length);
-    return new TextEncoder().encode(randomString);
+    const randomBytes = new Uint8Array(length);
+    for (let i = 0; i < length; i++) {
+      randomBytes[i] = Math.floor(Math.random() * 256);
+    }
+
+    return randomBytes;
   };
 
   /**

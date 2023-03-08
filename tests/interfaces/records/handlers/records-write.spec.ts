@@ -259,10 +259,28 @@ describe('RecordsWriteHandler.handle()', () => {
       expect(reply.status.detail).to.contain('dataFormat is an immutable property');
     });
 
+    it('should return 400 if actual data size mismatches with `dataSize` in descriptor', async () => {
+      const alice = await DidKeyResolver.generate();
+      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+
+      // replace the dataSize to simulate mismatch, will need to generate `recordId` and `authorization` property again
+      message.descriptor.dataSize = 1;
+      const descriptorCid = await computeCid(message.descriptor);
+      const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
+      const authorizationSignatureInput = Jws.createSignatureInput(alice);
+      const authorization = await RecordsWrite['createAuthorization'](recordId, message.contextId, descriptorCid, message.attestation, authorizationSignatureInput);
+      message.recordId = recordId;
+      message.authorization = authorization;
+
+      const reply = await dwn.processMessage(alice.did, message, dataStream);
+      expect(reply.status.code).to.equal(400);
+      expect(reply.status.detail).to.contain('does not match dataSize in descriptor');
+    });
+
     it('should return 400 if actual data CID of mismatches with `dataCid` in descriptor', async () => {
       const alice = await DidKeyResolver.generate();
       const { message } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
-      const dataStream = DataStream.fromBytes(Encoder.stringToBytes('mismatching data stream')); // mismatch data stream
+      const dataStream = DataStream.fromBytes(TestDataGenerator.randomBytes(32)); // mismatch data stream
 
       const reply = await dwn.processMessage(alice.did, message, dataStream);
       expect(reply.status.code).to.equal(400);

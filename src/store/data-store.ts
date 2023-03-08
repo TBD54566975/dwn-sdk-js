@@ -17,9 +17,9 @@ export interface DataStore {
   /**
    * Puts the given data in store.
    * @param logicalId This may be the ID of a record, or the ID of a protocol definition etc.
-   * @returns The CID of the data stored.
+   * @returns The CID and size in number of bytes of the data stored.
    */
-  put(tenant: string, logicalId: string, dataStream: Readable): Promise<string>;
+  put(tenant: string, logicalId: string, dataStream: Readable): Promise<PutResult>;
 
   /**
    * Fetches the specified data.
@@ -39,3 +39,11 @@ export interface DataStore {
    */
   delete(tenant: string, logicalId: string, dataCid: string): Promise<void>;
 }
+
+/**
+ * Result of a data store `put()` method call.
+ */
+export type PutResult = {
+  dataCid: string;
+  dataSize: number;
+};
