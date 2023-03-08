@@ -36,7 +36,9 @@ export class DataStoreLevel implements DataStore {
   }
 
   async put(tenant: string, recordId: string, dataStream: Readable): Promise<string> {
-    const asyncDataBlocks = importer([{ content: dataStream }], this.blockstore, { cidVersion: 1 });
+    const partition = this.blockstore.partition(tenant);
+
+    const asyncDataBlocks = importer([{ content: dataStream }], partition, { cidVersion: 1 });
 
     // NOTE: the last block contains the root CID
     let block;
@@ -47,15 +49,17 @@ export class DataStoreLevel implements DataStore {
   }
 
   public async get(tenant: string, recordId: string, dataCid: string): Promise<Readable | undefined> {
+    const partition = this.blockstore.partition(tenant);
+
     const cid = CID.parse(dataCid);
-    const bytes = await this.blockstore.get(cid);
+    const bytes = await partition.get(cid);
 
     if (!bytes) {
       return undefined;
     }
 
     // data is chunked into dag-pb unixfs blocks. re-inflate the chunks.
-    const dataDagRoot = await exporter(dataCid, this.blockstore);
+    const dataDagRoot = await exporter(dataCid, partition);
     const contentIterator = dataDagRoot.content()[Symbol.asyncIterator]();
 
     const readableStream = new Readable({
@@ -73,16 +77,20 @@ export class DataStoreLevel implements DataStore {
   }
 
   public async has(tenant: string, recordId: string, dataCid: string): Promise<boolean> {
+    const partition = this.blockstore.partition(tenant);
+
     const cid = CID.parse(dataCid);
-    const rootBlockBytes = await this.blockstore.get(cid);
+    const rootBlockBytes = await partition.get(cid);
 
     return (rootBlockBytes !== undefined);
   }
 
   public async delete(tenant: string, recordId: string, dataCid: string): Promise<void> {
+    const partition = this.blockstore.partition(tenant);
+
     // TODO: Implement data deletion in Records - https://github.com/TBD54566975/dwn-sdk-js/issues/84
     const cid = CID.parse(dataCid);
-    await this.blockstore.delete(cid);
+    await partition.delete(cid);
     return;
   }
 

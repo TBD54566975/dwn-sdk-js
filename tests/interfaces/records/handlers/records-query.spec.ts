@@ -422,14 +422,14 @@ describe('RecordsQueryHandler.handle()', () => {
       );
 
       // directly inserting data to datastore so that we don't have to setup to grant Bob permission to write to Alice's DWN
-      const additionalIndexes1 = await constructRecordsWriteIndexes(alice.did, record1Data.recordsWrite, true);
-      const additionalIndexes2 = await constructRecordsWriteIndexes(alice.did, record2Data.recordsWrite, true);
-      const additionalIndexes3 = await constructRecordsWriteIndexes(alice.did, record3Data.recordsWrite, true);
-      const additionalIndexes4 = await constructRecordsWriteIndexes(alice.did, record4Data.recordsWrite, true);
-      await StorageController.put(messageStore, dataStore, record1Data.message, additionalIndexes1, record1Data.dataStream);
-      await StorageController.put(messageStore, dataStore, record2Data.message, additionalIndexes2, record2Data.dataStream);
-      await StorageController.put(messageStore, dataStore, record3Data.message, additionalIndexes3, record3Data.dataStream);
-      await StorageController.put(messageStore, dataStore, record4Data.message, additionalIndexes4, record4Data.dataStream);
+      const additionalIndexes1 = await constructRecordsWriteIndexes(record1Data.recordsWrite, true);
+      const additionalIndexes2 = await constructRecordsWriteIndexes(record2Data.recordsWrite, true);
+      const additionalIndexes3 = await constructRecordsWriteIndexes(record3Data.recordsWrite, true);
+      const additionalIndexes4 = await constructRecordsWriteIndexes(record4Data.recordsWrite, true);
+      await StorageController.put(messageStore, dataStore, alice.did, record1Data.message, additionalIndexes1, record1Data.dataStream);
+      await StorageController.put(messageStore, dataStore, alice.did, record2Data.message, additionalIndexes2, record2Data.dataStream);
+      await StorageController.put(messageStore, dataStore, alice.did, record3Data.message, additionalIndexes3, record3Data.dataStream);
+      await StorageController.put(messageStore, dataStore, alice.did, record4Data.message, additionalIndexes4, record4Data.dataStream);
 
       // test correctness for Bob's query
       const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({

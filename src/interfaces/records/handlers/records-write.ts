@@ -44,11 +44,10 @@ export class RecordsWriteHandler implements MethodHandler {
 
     // get existing messages matching the `recordId`
     const query = {
-      tenant,
       interface : DwnInterfaceName.Records,
       recordId  : incomingMessage.recordId
     };
-    const existingMessages = await this.messageStore.query(query) as TimestampedMessage[];
+    const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
 
     // if the incoming write is not the initial write, then it must not modify any immutable properties defined by the initial write
     const newMessageIsInitialWrite = await recordsWrite.isInitialWrite();
@@ -80,10 +79,10 @@ export class RecordsWriteHandler implements MethodHandler {
     let messageReply: MessageReply;
     if (incomingMessageIsNewest) {
       const isLatestBaseState = true;
-      const indexes = await constructRecordsWriteIndexes(tenant, recordsWrite, isLatestBaseState);
+      const indexes = await constructRecordsWriteIndexes(recordsWrite, isLatestBaseState);
 
       try {
-        await StorageController.put(this.messageStore, this.dataStore, incomingMessage, indexes, dataStream);
+        await StorageController.put(this.messageStore, this.dataStore, tenant, incomingMessage, indexes, dataStream);
       } catch (error) {
         if (error.code === DwnErrorCode.MessageStoreDataCidMismatch ||
           error.code === DwnErrorCode.MessageStoreDataNotFound) {
@@ -113,7 +112,6 @@ export class RecordsWriteHandler implements MethodHandler {
 }
 
 export async function constructRecordsWriteIndexes(
-  tenant: string,
   recordsWrite: RecordsWrite,
   isLatestBaseState: boolean
 ): Promise<{ [key: string]: string }> {
@@ -122,7 +120,6 @@ export async function constructRecordsWriteIndexes(
   delete descriptor.published; // handle `published` specifically further down
 
   const indexes: { [key: string]: any } = {
-    tenant,
     // NOTE: underlying search-index library does not support boolean, so converting boolean to string before storing
     // https://github.com/TBD54566975/dwn-sdk-js/issues/170
     isLatestBaseState : isLatestBaseState.toString(),

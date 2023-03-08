@@ -75,13 +75,15 @@ describe('MessageStoreLevel Tests', () => {
     });
 
     it('stores messages as cbor/sha256 encoded blocks with CID as key', async () => {
+      const alice = await DidKeyResolver.generate();
+
       const { message } = await TestDataGenerator.generatePermissionsRequest();
 
-      await messageStore.put(message, {});
+      await messageStore.put(alice.did, message, {});
 
       const expectedCid = await computeCid(message);
 
-      const jsonMessage = await messageStore.get(expectedCid);
+      const jsonMessage = await messageStore.get(alice.did, expectedCid);
       const resultCid = await computeCid(jsonMessage);
 
       expect(resultCid).to.equal(expectedCid);
@@ -94,37 +96,41 @@ describe('MessageStoreLevel Tests', () => {
       const { message } = await TestDataGenerator.generateRecordsWrite();
 
       // inserting the message indicating it is the 'latest' in the index
-      await messageStore.put(message, { tenant: alice.did, latest: 'true' });
+      await messageStore.put(alice.did, message, { latest: 'true' });
 
-      const results1 = await messageStore.query({ tenant: alice.did, latest: 'true' });
+      const results1 = await messageStore.query(alice.did, { latest: 'true' });
       expect(results1.length).to.equal(1);
 
-      const results2 = await messageStore.query({ tenant: alice.did, latest: 'false' });
+      const results2 = await messageStore.query(alice.did, { latest: 'false' });
       expect(results2.length).to.equal(0);
 
       // deleting the existing indexes and replacing it indicating it is no longer the 'latest'
       const cid = await Message.getCid(message);
-      await messageStore.delete(cid);
-      await messageStore.put(message, { tenant: alice.did, latest: 'false' });
+      await messageStore.delete(alice.did, cid);
+      await messageStore.put(alice.did, message, { latest: 'false' });
 
-      const results3 = await messageStore.query({ tenant: alice.did, latest: 'true' });
+      const results3 = await messageStore.query(alice.did, { latest: 'true' });
       expect(results3.length).to.equal(0);
 
-      const results4 = await messageStore.query({ tenant: alice.did, latest: 'false' });
+      const results4 = await messageStore.query(alice.did, { latest: 'false' });
       expect(results4.length).to.equal(1);
     });
 
     it('should index properties with characters beyond just letters and digits', async () => {
+      const alice = await DidKeyResolver.generate();
+
       const schema = 'http://my-awesome-schema/awesomeness_schema#awesome-1?id=awesome_1';
       const { message } = await TestDataGenerator.generateRecordsWrite({ schema });
 
-      await messageStore.put(message, { schema });
+      await messageStore.put(alice.did, message, { schema });
 
-      const results = await messageStore.query({ schema });
+      const results = await messageStore.query(alice.did, { schema });
       expect((results[0] as RecordsWriteMessage).descriptor.schema).to.equal(schema);
     });
 
     it('should not store anything if aborted beforehand', async () => {
+      const alice = await DidKeyResolver.generate();
+
       const { message } = await TestDataGenerator.generateRecordsWrite();
 
       const controller = new AbortController();
@@ -132,18 +138,20 @@ describe('MessageStoreLevel Tests', () => {
       controller.abort('reason');
 
       try {
-        await messageStore.put(message, {}, { signal: controller.signal });
+        await messageStore.put(alice.did, message, {}, { signal: controller.signal });
       } catch (e) {
         expect(e).to.equal('reason');
       }
 
       const expectedCid = await Message.getCid(message);
 
-      const jsonMessage = await messageStore.get(expectedCid);
+      const jsonMessage = await messageStore.get(alice.did, expectedCid);
       expect(jsonMessage).to.equal(undefined);
     });
 
     it('should not index anything if aborted during', async () => {
+      const alice = await DidKeyResolver.generate();
+
       const schema = 'http://my-awesome-schema/awesomeness_schema#awesome-1?id=awesome_1';
       const { message } = await TestDataGenerator.generateRecordsWrite({ schema });
 
@@ -153,12 +161,12 @@ describe('MessageStoreLevel Tests', () => {
       });
 
       try {
-        await messageStore.put(message, { schema }, { signal: controller.signal });
+        await messageStore.put(alice.did, message, { schema }, { signal: controller.signal });
       } catch (e) {
         expect(e).to.equal('reason');
       }
 
-      const results = await messageStore.query({ schema });
+      const results = await messageStore.query(alice.did, { schema });
       expect(results.length).to.equal(0);
     });
   });

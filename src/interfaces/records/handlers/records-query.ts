@@ -70,7 +70,6 @@ export class RecordsQueryHandler implements MethodHandler {
     // fetch all published records matching the query
     const exactCriteria = RecordsQuery.getExactCriteria(recordsQuery.message.descriptor.filter);
     const completeExactCriteria = {
-      tenant,
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       isLatestBaseState : 'true',
@@ -78,7 +77,7 @@ export class RecordsQueryHandler implements MethodHandler {
     };
 
     const rangeCriteria = RecordsQuery.getRangeCriteria(recordsQuery.message.descriptor.filter);
-    const records = await StorageController.query(this.messageStore, this.dataStore, completeExactCriteria, rangeCriteria);
+    const records = await StorageController.query(this.messageStore, this.dataStore, tenant, completeExactCriteria, rangeCriteria);
     return records;
   }
 
@@ -103,7 +102,6 @@ export class RecordsQueryHandler implements MethodHandler {
     // fetch all published records matching the query
     const exactCriteria = RecordsQuery.getExactCriteria(recordsQuery.message.descriptor.filter);
     const completeExactCriteria = {
-      tenant,
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       published         : 'true',
@@ -112,7 +110,7 @@ export class RecordsQueryHandler implements MethodHandler {
     };
 
     const rangeCriteria = RecordsQuery.getRangeCriteria(recordsQuery.message.descriptor.filter);
-    const publishedRecords = await StorageController.query(this.messageStore, this.dataStore, completeExactCriteria, rangeCriteria);
+    const publishedRecords = await StorageController.query(this.messageStore, this.dataStore, tenant, completeExactCriteria, rangeCriteria);
     return publishedRecords;
   }
 
@@ -123,7 +121,6 @@ export class RecordsQueryHandler implements MethodHandler {
   // include records where recipient is requester
     const exactCriteria = RecordsQuery.getExactCriteria(recordsQuery.message.descriptor.filter);
     const completeExactCriteria = {
-      tenant,
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       recipient         : recordsQuery.author,
@@ -133,7 +130,13 @@ export class RecordsQueryHandler implements MethodHandler {
     };
 
     const rangeCriteria = RecordsQuery.getRangeCriteria(recordsQuery.message.descriptor.filter);
-    const unpublishedRecordsForRequester = await StorageController.query(this.messageStore, this.dataStore, completeExactCriteria, rangeCriteria);
+    const unpublishedRecordsForRequester = await StorageController.query(
+      this.messageStore,
+      this.dataStore,
+      tenant,
+      completeExactCriteria,
+      rangeCriteria
+    );
     return unpublishedRecordsForRequester;
   }
 
@@ -144,7 +147,6 @@ export class RecordsQueryHandler implements MethodHandler {
     // include records where recipient is requester
     const exactCriteria = RecordsQuery.getExactCriteria(recordsQuery.message.descriptor.filter);
     const completeExactCriteria = {
-      tenant,
       author            : recordsQuery.author,
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
@@ -155,7 +157,13 @@ export class RecordsQueryHandler implements MethodHandler {
 
     const rangeCriteria = RecordsQuery.getRangeCriteria(recordsQuery.message.descriptor.filter);
 
-    const unpublishedRecordsForRequester = await StorageController.query(this.messageStore, this.dataStore, completeExactCriteria, rangeCriteria);
+    const unpublishedRecordsForRequester = await StorageController.query(
+      this.messageStore,
+      this.dataStore,
+      tenant,
+      completeExactCriteria,
+      rangeCriteria
+    );
     return unpublishedRecordsForRequester;
   }
 }

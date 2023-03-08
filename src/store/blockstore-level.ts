@@ -1,6 +1,6 @@
-import type { LevelDatabase } from './create-level.js';
 import type { AwaitIterable, Batch, KeyQuery, Pair, Query } from 'interface-store';
 import type { Blockstore, Options } from 'interface-blockstore';
+import type { LevelDatabase, LevelDatabaseOptions } from './create-level.js';
 
 import { abortOr } from '../utils/abort.js';
 import { CID } from 'multiformats';
@@ -61,6 +61,14 @@ export class BlockstoreLevel implements Blockstore {
     }
 
     return this.db.close();
+  }
+
+  partition(name: string): BlockstoreLevel {
+    return new BlockstoreLevel('', {
+      createLevelDatabase: <K, V>(_location: string, options?: LevelDatabaseOptions<K, V>): LevelDatabase<K, V> => {
+        return this.db.sublevel(name, options);
+      }
+    });
   }
 
   put(key: CID, val: Uint8Array, options?: Options): Promise<void> {

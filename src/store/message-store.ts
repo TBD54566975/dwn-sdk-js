@@ -21,6 +21,7 @@ export interface MessageStore {
    * @param indexes indexes (key-value pairs) to be included as part of this put operation
    */
   put(
+    tenant: string,
     messageJson: BaseMessage,
     indexes: { [key: string]: string },
     options?: Options
@@ -30,7 +31,7 @@ export interface MessageStore {
    * Fetches a single message by `cid` from the underlying store.
    * Returns `undefined` no message was found.
    */
-  get(cid: string, options?: Options): Promise<BaseMessage | undefined>;
+  get(tenant: string, cid: string, options?: Options): Promise<BaseMessage | undefined>;
 
   /**
    * Queries the underlying store for messages that match the query provided.
@@ -40,6 +41,7 @@ export interface MessageStore {
    * @param rangeCriteria - criteria for range matches
    */
   query(
+    tenant: string,
     exactCriteria: { [key: string]: string },
     rangeCriteria?: { [key: string]: RangeCriterion },
     options?: Options
@@ -48,5 +50,5 @@ export interface MessageStore {
   /**
    * Deletes the message associated with the id provided.
    */
-  delete(cid: string, options?: Options): Promise<void>;
+  delete(tenant: string, cid: string, options?: Options): Promise<void>;
 }

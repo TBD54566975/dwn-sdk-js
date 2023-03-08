@@ -30,11 +30,10 @@ export class PermissionsRequestHandler implements MethodHandler {
     }
 
     const index = {
-      tenant,
       author,
       ... message.descriptor
     };
-    await this.messageStore.put(message, index);
+    await this.messageStore.put(tenant, message, index);
 
     return new MessageReply({
       status: { code: 202, detail: 'Accepted' }

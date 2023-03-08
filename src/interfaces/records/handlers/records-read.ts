@@ -42,11 +42,10 @@ export class RecordsReadHandler implements MethodHandler {
 
     // get existing messages matching `recordId` so we can perform authorization
     const query = {
-      tenant,
       interface : DwnInterfaceName.Records,
       recordId  : incomingMessage.descriptor.recordId
     };
-    const existingMessages = await this.messageStore.query(query) as TimestampedMessage[];
+    const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
 
     const newestExistingMessage = await RecordsWrite.getNewestMessage(existingMessages);
 
