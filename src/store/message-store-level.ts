@@ -9,6 +9,7 @@ import searchIndex from 'search-index';
 import { abortOr } from '../utils/abort.js';
 import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
+import { createLevelDatabase } from './create-level.js';
 import { RangeCriterion } from '../interfaces/records/types.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 
@@ -19,7 +20,7 @@ import { sha256 } from 'multiformats/hashes/sha2';
 export class MessageStoreLevel implements MessageStore {
   config: MessageStoreLevelConfig;
 
-  public readonly blockstore: BlockstoreLevel;
+  blockstore: BlockstoreLevel;
 
   // levelDB doesn't natively provide the querying capabilities needed for DWN,
   // to accommodate, we're leveraging a level-backed inverted index.
@@ -36,10 +37,13 @@ export class MessageStoreLevel implements MessageStore {
     this.config = {
       blockstoreLocation : 'BLOCKSTORE',
       indexLocation      : 'INDEX',
+      createLevelDatabase,
       ...config
     };
 
-    this.blockstore = new BlockstoreLevel(this.config.blockstoreLocation);
+    this.blockstore = new BlockstoreLevel(this.config.blockstoreLocation, {
+      createLevelDatabase: this.config.createLevelDatabase,
+    });
   }
 
   async open(): Promise<void> {
@@ -242,4 +246,5 @@ type RangeSearchIndexTerm = {
 type MessageStoreLevelConfig = {
   blockstoreLocation?: string,
   indexLocation?: string,
+  createLevelDatabase?: typeof createLevelDatabase,
 };

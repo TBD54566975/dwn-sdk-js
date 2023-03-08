@@ -1,5 +1,6 @@
 import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
+import { createLevelDatabase } from './create-level.js';
 import { DataStore } from './data-store.js';
 import { exporter } from 'ipfs-unixfs-exporter';
 import { importer } from 'ipfs-unixfs-importer';
@@ -10,10 +11,20 @@ import { Readable } from 'readable-stream';
  * Leverages LevelDB under the hood.
  */
 export class DataStoreLevel implements DataStore {
+  config: DataStoreLevelConfig;
+
   blockstore: BlockstoreLevel;
 
-  constructor(blockstoreLocation: string = 'DATASTORE') {
-    this.blockstore = new BlockstoreLevel(blockstoreLocation);
+  constructor(config: DataStoreLevelConfig = {}) {
+    this.config = {
+      blockstoreLocation: 'DATASTORE',
+      createLevelDatabase,
+      ...config
+    };
+
+    this.blockstore = new BlockstoreLevel(this.config.blockstoreLocation, {
+      createLevelDatabase: this.config.createLevelDatabase,
+    });
   }
 
   public async open(): Promise<void> {
@@ -82,3 +93,8 @@ export class DataStoreLevel implements DataStore {
     await this.blockstore.clear();
   }
 }
+
+type DataStoreLevelConfig = {
+  blockstoreLocation?: string,
+  createLevelDatabase?: typeof createLevelDatabase,
+};

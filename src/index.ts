@@ -17,6 +17,7 @@ export type { RecordsDeleteMessage, RecordsQueryMessage, RecordsWriteMessage } f
 export { AllowAllTenantGate, TenantGate } from './core/tenant-gate.js';
 export { Cid } from './utils/cid.js';
 export { DataStore } from './store/data-store.js';
+export { DataStoreLevel } from './store/data-store-level.js';
 export { DateSort } from './interfaces/records/messages/records-query.js';
 export { DataStream } from './utils/data-stream.js';
 export { DidKeyResolver } from './did/did-key-resolver.js';
