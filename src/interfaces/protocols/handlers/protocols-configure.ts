@@ -40,12 +40,11 @@ export class ProtocolsConfigureHandler implements MethodHandler {
 
     // attempt to get existing protocol
     const query = {
-      tenant,
       interface : DwnInterfaceName.Protocols,
       method    : DwnMethodName.Configure,
       protocol  : incomingMessage.descriptor.protocol
     };
-    const existingMessages = await this.messageStore.query(query) as ProtocolsConfigureMessage[];
+    const existingMessages = await this.messageStore.query(tenant, query) as ProtocolsConfigureMessage[];
 
     // find lexicographically the largest message, and if the incoming message is the largest
     let newestMessage = await Message.getMessageWithLargestCid(existingMessages);
@@ -60,11 +59,10 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     if (incomingMessageIsNewest) {
       const { author } = protocolsConfigure;
       const indexes = {
-        tenant,
         author,
         ... message.descriptor
       };
-      await StorageController.put(this.messageStore, this.dataStore, incomingMessage, indexes, dataStream);
+      await StorageController.put(this.messageStore, this.dataStore, tenant, incomingMessage, indexes, dataStream);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }
@@ -79,7 +77,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     for (const message of existingMessages) {
       if (await Message.isCidLarger(newestMessage, message)) {
         const cid = await Message.getCid(message);
-        await this.messageStore.delete(cid);
+        await this.messageStore.delete(tenant, cid);
       }
     }
 

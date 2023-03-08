@@ -49,7 +49,7 @@ export class ProtocolAuthorization {
     ProtocolAuthorization.verifyAllowedActions(tenant, requesterDid, recordsWrite, inboundMessageRuleSet);
 
     // verify allowed condition of the write
-    await ProtocolAuthorization.verifyActionCondition(recordsWrite, messageStore);
+    await ProtocolAuthorization.verifyActionCondition(tenant, recordsWrite, messageStore);
   }
 
   /**
@@ -61,12 +61,11 @@ export class ProtocolAuthorization {
 
     // fetch the corresponding protocol definition
     const query = {
-      tenant,
       interface : DwnInterfaceName.Protocols,
       method    : DwnMethodName.Configure,
       protocol  : protocolUri
     };
-    const protocols = await messageStore.query(query) as ProtocolsConfigureMessage[];
+    const protocols = await messageStore.query(tenant, query) as ProtocolsConfigureMessage[];
 
     if (protocols.length === 0) {
       throw new Error(`unable to find protocol definition for ${protocolUri}`);
@@ -92,14 +91,13 @@ export class ProtocolAuthorization {
     while (currentParentId !== undefined) {
       // fetch parent
       const query = {
-        tenant,
         interface : DwnInterfaceName.Records,
         method    : DwnMethodName.Write,
         protocol,
         contextId,
         recordId  : currentParentId
       };
-      const parentMessages = await messageStore.query(query) as RecordsWriteMessage[];
+      const parentMessages = await messageStore.query(tenant, query) as RecordsWriteMessage[];
 
       if (parentMessages.length === 0) {
         throw new Error(`no parent found with ID ${currentParentId}`);
@@ -222,14 +220,14 @@ export class ProtocolAuthorization {
    * Currently the only check is: if the write is not the initial write, the author must be the same as the initial write
    * @throws {Error} if fails verification
    */
-  private static async verifyActionCondition(recordsWrite: RecordsWrite, messageStore: MessageStore): Promise<void> {
+  private static async verifyActionCondition(tenant: string, recordsWrite: RecordsWrite, messageStore: MessageStore): Promise<void> {
     const isInitialWrite = await recordsWrite.isInitialWrite();
     if (!isInitialWrite) {
       // fetch the initialWrite
       const query = {
         entryId: recordsWrite.message.recordId
       };
-      const result = await messageStore.query(query) as RecordsWriteMessage[];
+      const result = await messageStore.query(tenant, query) as RecordsWriteMessage[];
 
       // check the author of the initial write matches the author of the incoming message
       const initialWrite = result[0];

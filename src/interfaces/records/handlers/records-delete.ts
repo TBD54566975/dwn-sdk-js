@@ -41,11 +41,10 @@ export class RecordsDeleteHandler implements MethodHandler {
 
     // get existing records matching the `recordId`
     const query = {
-      tenant,
       interface : DwnInterfaceName.Records,
       recordId  : incomingMessage.descriptor.recordId
     };
-    const existingMessages = await this.messageStore.query(query) as TimestampedMessage[];
+    const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
 
     // find which message is the newest, and if the incoming message is the newest
     const newestExistingMessage = await RecordsWrite.getNewestMessage(existingMessages);
@@ -64,7 +63,7 @@ export class RecordsDeleteHandler implements MethodHandler {
     if (incomingMessageIsNewest) {
       const indexes = await constructIndexes(tenant, recordsDelete);
 
-      await this.messageStore.put(incomingMessage, indexes);
+      await this.messageStore.put(tenant, incomingMessage, indexes);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }
@@ -91,7 +90,6 @@ export async function constructIndexes(tenant: string, recordsDelete: RecordsDel
   // no messages with the record ID will match any query because queries by design filter by `isLatestBaseState = true`,
   // `isLatestBaseState` for the initial delete would have been toggled to `false`
   const indexes: { [key: string]: any } = {
-    tenant,
     // isLatestBaseState : "true", // intentionally showing that this index is omitted
     author: recordsDelete.author,
     ...descriptor
