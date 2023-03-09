@@ -175,15 +175,16 @@ describe('MessageStoreLevel Tests', () => {
     it('should be called if provided', async () => {
       let called = 0;
 
-      new MessageStoreLevel({
+      const messageStore = new MessageStoreLevel({
         blockstoreLocation : 'TEST-BLOCKSTORE',
         indexLocation      : 'TEST-INDEX',
-        createLevelDatabase<K, V>(location, options?: LevelDatabaseOptions<K, V>): LevelDatabase<K, V> {
+        createLevelDatabase<K, V>(location, options?: LevelDatabaseOptions<K, V>): Promise<LevelDatabase<K, V>> {
           ++called;
           expect(location).to.equal('TEST-BLOCKSTORE');
           return createLevelDatabase(location, options);
         }
       });
+      await messageStore.open();
 
       expect(called).to.equal(1);
     });
