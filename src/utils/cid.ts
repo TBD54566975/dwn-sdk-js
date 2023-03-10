@@ -29,7 +29,11 @@ const codecs = {
  * @throws {Error} encoding fails
  * @throws {Error} if hasher is not supported
  */
-export async function computeCid(payload: any, codecCode: number = cbor.code, multihashCode: number = sha256.code): Promise<string> {
+export async function computeCid(
+  payload: any,
+  codecCode: number = cbor.code,
+  multihashCode: number = sha256.code
+): Promise<string> {
   const codec = codecs[codecCode];
   if (!codec) {
     throw new Error(`codec [${codecCode}] not supported`);
