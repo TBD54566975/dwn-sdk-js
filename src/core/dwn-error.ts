@@ -14,5 +14,6 @@ export class DwnError extends Error {
  */
 export enum DwnErrorCode {
   MessageStoreDataCidMismatch = 'MessageStoreDataCidMismatch',
-  MessageStoreDataNotFound = 'MessageStoreDataNotFound'
+  MessageStoreDataNotFound = 'MessageStoreDataNotFound',
+  MessageStoreDataSizeMismatch = 'MessageStoreDataSizeMismatch'
 };

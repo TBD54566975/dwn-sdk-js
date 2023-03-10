@@ -92,6 +92,36 @@ describe('RecordsWrite', () => {
       await expect(createPromise2).to.be.rejectedWith('one and only one parameter between `data` and `dataCid` is allowed');
     });
 
+    it('should required `dataCid` and `dataSize` to be both defined or undefined at the same time', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+
+      const options1 = {
+        recipient                   : alice.did,
+        dataCid                     : await TestDataGenerator.randomCborSha256Cid(),
+        // dataSize                  : 123, // intentionally missing
+        dataFormat                  : 'application/json',
+        recordId                    : await TestDataGenerator.randomCborSha256Cid(),
+        published                   : true,
+        authorizationSignatureInput : Jws.createSignatureInput(alice)
+      };
+      const createPromise1 = RecordsWrite.create(options1);
+
+      await expect(createPromise1).to.be.rejectedWith('`dataCid` and `dataSize` must both be defined or undefined at the same time');
+
+      const options2 = {
+        recipient                   : alice.did,
+        data                        : TestDataGenerator.randomBytes(10),
+        // dataCid                   : await TestDataGenerator.randomCborSha256Cid(), // intentionally missing
+        dataSize                    : 123,
+        dataFormat                  : 'application/json',
+        recordId                    : await TestDataGenerator.randomCborSha256Cid(),
+        published                   : true,
+        authorizationSignatureInput : Jws.createSignatureInput(alice)
+      };
+      const createPromise2 = RecordsWrite.create(options2);
+
+      await expect(createPromise2).to.be.rejectedWith('`dataCid` and `dataSize` must both be defined or undefined at the same time');
+    });
   });
 
   describe('createFrom()', () => {

@@ -85,7 +85,8 @@ export class RecordsWriteHandler implements MethodHandler {
         await StorageController.put(this.messageStore, this.dataStore, tenant, incomingMessage, indexes, dataStream);
       } catch (error) {
         if (error.code === DwnErrorCode.MessageStoreDataCidMismatch ||
-          error.code === DwnErrorCode.MessageStoreDataNotFound) {
+            error.code === DwnErrorCode.MessageStoreDataNotFound ||
+            error.code === DwnErrorCode.MessageStoreDataSizeMismatch) {
           return new MessageReply({
             status: { code: 400, detail: error.message }
           });

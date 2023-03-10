@@ -46,10 +46,20 @@ export class DataStream {
    * Creates a readable stream from the bytes given.
    */
   public static fromBytes(bytes: Uint8Array): Readable {
+    // chunk up the bytes to simulate a more real-world like behavior
+    const chunkLength = 100_000;
+    let currentIndex = 0;
     const readableStream = new Readable({
       read(_size): void {
-        this.push(bytes);
-        this.push(null);
+        // if this is the last chunk
+        if (currentIndex + chunkLength > bytes.length) {
+          this.push(bytes.subarray(currentIndex));
+          this.push(null);
+        } else {
+          this.push(bytes.subarray(currentIndex, currentIndex + chunkLength));
+
+          currentIndex = currentIndex + chunkLength;
+        }
       }
     });
 

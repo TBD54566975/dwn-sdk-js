@@ -10,6 +10,7 @@ describe('RecordsWrite schema definition', () => {
         method       : 'Write',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
+        dataSize     : 123,
         dateCreated  : '2022-12-19T10:20:30.123456',
         dateModified : '2022-12-19T10:20:30.123456',
       },
@@ -31,6 +32,7 @@ describe('RecordsWrite schema definition', () => {
         method       : 'Write',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
+        dataSize     : 123,
         dateCreated  : '2022-12-19T10:20:30.123456',
         dateModified : '2022-12-19T10:20:30.123456'
       },
@@ -56,6 +58,7 @@ describe('RecordsWrite schema definition', () => {
         method       : 'Write',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
+        dataSize     : 123,
         dateCreated  : '2022-12-19T10:20:30.123456',
         dateModified : '2022-12-19T10:20:30.123456'
       }
@@ -74,6 +77,7 @@ describe('RecordsWrite schema definition', () => {
         method       : 'Write',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
+        dataSize     : 123,
         dateCreated  : '2022-12-19T10:20:30.123456',
         dateModified : '2022-12-19T10:20:30.123456'
       },
@@ -100,6 +104,7 @@ describe('RecordsWrite schema definition', () => {
         method          : 'Write',
         dataCid         : 'anyCid',
         dataFormat      : 'application/json',
+        dataSize        : 123,
         dateCreated     : '2022-12-19T10:20:30.123456',
         dateModified    : '2022-12-19T10:20:30.123456',
         unknownProperty : 'unknownProperty' // unknown property
@@ -128,6 +133,7 @@ describe('RecordsWrite schema definition', () => {
         protocol     : 'someProtocolId', // contextId must exist
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
+        dataSize     : 123,
         dateCreated  : '2022-12-19T10:20:30.123456',
         dateModified : '2022-12-19T10:20:30.123456'
       },
@@ -151,6 +157,7 @@ describe('RecordsWrite schema definition', () => {
         method       : 'Write',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
+        dataSize     : 123,
         dateCreated  : '2022-12-19T10:20:30.123456',
         dateModified : '2022-12-19T10:20:30.123456'
       },
@@ -175,6 +182,7 @@ describe('RecordsWrite schema definition', () => {
         method       : 'Write',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
+        dataSize     : 123,
         dateCreated  : '2022-12-19T10:20:30.123456',
         dateModified : '2022-12-19T10:20:30.123456'
       },
@@ -201,6 +209,7 @@ describe('RecordsWrite schema definition', () => {
         protocol     : 'invalid', // must have `contextId` to exist
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
+        dataSize     : 123,
         dateCreated  : '2022-12-19T10:20:30.123456',
         dateModified : '2022-12-19T10:20:30.123456'
       },
@@ -226,6 +235,7 @@ describe('RecordsWrite schema definition', () => {
         method        : 'Write',
         dataCid       : 'anyCid',
         dataFormat    : 'application/json',
+        dataSize      : 123,
         dateModified  : '2022-12-19T10:20:30.123456',
         published     : false,
         dateCreated   : '2022-12-19T10:20:30.123456',
@@ -253,6 +263,7 @@ describe('RecordsWrite schema definition', () => {
         method       : 'Write',
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
+        dataSize     : 123,
         dateCreated  : '2022-12-19T10:20:30.123456',
         dateModified : '2022-12-19T10:20:30.123456',
         published    : true //datePublished must be present
@@ -279,6 +290,7 @@ describe('RecordsWrite schema definition', () => {
         method        : 'Write',
         dataCid       : 'anyCid',
         dataFormat    : 'application/json',
+        dataSize      : 123,
         dateCreated   : '2022-12-19T10:20:30.123456',
         dateModified  : '2022-12-19T10:20:30.123456',
         datePublished : '2022-12-19T10:20:30.123456' //published must be present

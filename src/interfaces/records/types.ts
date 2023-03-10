@@ -11,6 +11,7 @@ export type RecordsWriteDescriptor = {
   schema?: string;
   parentId?: string;
   dataCid: string;
+  dataSize: number;
   dateCreated: string;
   dateModified: string;
   published?: boolean;

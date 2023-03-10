@@ -17,6 +17,8 @@ export class StorageController {
    *                    if the data stream resulted in a data CID that mismatches with `dataCid` in the given message
    * @throws {DwnError} with `DwnErrorCode.MessageStoreDataNotFound`
    *                    if `dataCid` in `descriptor` is given, and `dataStream` is not given, and data for the message does not exist already
+   * @throws {DwnError} with `DwnErrorCode.MessageStoreDataSizeMismatch`
+   *                    if `dataSize` in `descriptor` given mismatches the actual data size
    */
   public static async put(
     messageStore: MessageStore,
@@ -43,16 +45,29 @@ export class StorageController {
           );
         }
       } else {
-        const actualDataCid = await dataStore.put(tenant, 'not used yet', dataStream );
+        const { dataCid, dataSize } = await dataStore.put(tenant, 'not used yet', dataStream);
+
+        // MUST verify that the size of the actual data matches with the given `dataSize`
+        // if data size is wrong, delete the data we just stored
+        if (message.descriptor.dataSize !== dataSize) {
+          // there is an opportunity to improve here: handle the edge cae of if the delete fails...
+          await dataStore.delete(tenant, 'not used yet', dataCid);
+
+          throw new DwnError(
+            DwnErrorCode.MessageStoreDataSizeMismatch,
+            `actual data size ${dataSize} bytes does not match dataSize in descriptor: ${message.descriptor.dataSize}`
+          );
+        }
 
         // MUST verify that the CID of the actual data matches with the given `dataCid`
         // if data CID is wrong, delete the data we just stored
-        if (message.descriptor.dataCid !== actualDataCid) {
+        if (message.descriptor.dataCid !== dataCid) {
           // there is an opportunity to improve here: handle the edge cae of if the delete fails...
-          await dataStore.delete(tenant, 'not used yet', actualDataCid);
+          await dataStore.delete(tenant, 'not used yet', dataCid);
+
           throw new DwnError(
             DwnErrorCode.MessageStoreDataCidMismatch,
-            `actual data CID ${actualDataCid} does not match dataCid in descriptor: ${message.descriptor.dataCid}`
+            `actual data CID ${dataCid} does not match dataCid in descriptor: ${message.descriptor.dataCid}`
           );
         }
       }
