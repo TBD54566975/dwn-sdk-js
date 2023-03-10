@@ -24,19 +24,21 @@ describe('CID', () => {
 
   describe('computeCid', () => {
     it('throws an error if codec is not supported', async () => {
+      const unsupportedCodec = 99999;
       const anyTestData = {
         a: TestDataGenerator.randomString(32),
       };
-      const computeCidPromise = computeCid(anyTestData, 'unknownCodec');
-      await expect(computeCidPromise).to.be.rejectedWith('codec [unknownCodec] not supported');
+      const computeCidPromise = computeCid(anyTestData, 99999);
+      await expect(computeCidPromise).to.be.rejectedWith(`codec [${unsupportedCodec}] not supported`);
     });
 
     it('throws an error if multihasher is not supported', async () => {
+      const unsupportedHashAlgorithm = 99999;
       const anyTestData = {
         a: TestDataGenerator.randomString(32),
       };
-      const computeCidPromise = computeCid(anyTestData, '113', 'unknownHashingAlgorithm'); // 113 = CBOR
-      await expect(computeCidPromise).to.be.rejectedWith('multihash code [unknownHashingAlgorithm] not supported');
+      const computeCidPromise = computeCid(anyTestData, 113, 99999); // 113 = CBOR
+      await expect(computeCidPromise).to.be.rejectedWith(`multihash code [${unsupportedHashAlgorithm}] not supported`);
     });
 
     it('should by default generate a CBOR SHA256 CID identical to IPFS block encoding algorithm', async () => {
