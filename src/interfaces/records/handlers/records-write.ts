@@ -121,28 +121,18 @@ export async function constructRecordsWriteIndexes(
   delete descriptor.published; // handle `published` specifically further down
 
   const indexes: { [key: string]: any } = {
-    // NOTE: underlying search-index library does not support boolean, so converting boolean to string before storing
-    // https://github.com/TBD54566975/dwn-sdk-js/issues/170
-    isLatestBaseState : isLatestBaseState.toString(),
-    author            : recordsWrite.author,
-    recordId          : message.recordId,
-    entryId           : await RecordsWrite.getEntryId(recordsWrite.author, recordsWrite.message.descriptor),
-    ...descriptor
+    ...descriptor,
+    isLatestBaseState,
+    published : !!message.descriptor.published,
+    author    : recordsWrite.author,
+    recordId  : message.recordId,
+    entryId   : await RecordsWrite.getEntryId(recordsWrite.author, recordsWrite.message.descriptor)
   };
 
   // add additional indexes to optional values if given
   // TODO: index multi-attesters to be unblocked by #205 - Revisit database interfaces (https://github.com/TBD54566975/dwn-sdk-js/issues/205)
   if (recordsWrite.attesters.length > 0) { indexes.attester = recordsWrite.attesters[0]; }
   if (message.contextId !== undefined) { indexes.contextId = message.contextId; }
-
-  // add `published` index
-  // NOTE: underlying search-index library does not support boolean, so converting boolean to string before storing
-  // https://github.com/TBD54566975/dwn-sdk-js/issues/170
-  if (message.descriptor.published === true) {
-    indexes.published = 'true';
-  } else {
-    indexes.published = 'false';
-  }
 
   return indexes;
 }
