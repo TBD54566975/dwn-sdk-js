@@ -48,7 +48,7 @@
     "publish:unstable": "./build/publish-unstable.sh"
   },
   "dependencies": {
-    "@ipld/dag-cbor": "7.0.1",
+    "@ipld/dag-cbor": "9.0.0",
     "@js-temporal/polyfill": "0.4.3",
     "@noble/ed25519": "1.7.1",
     "@noble/secp256k1": "1.7.1",
