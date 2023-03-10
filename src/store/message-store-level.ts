@@ -73,7 +73,7 @@ export class MessageStoreLevel implements MessageStore {
       return undefined;
     }
 
-    const decodedBlock = await abortOr<block.Block>(options?.signal, block.decode({ bytes, codec: cbor, hasher: sha256 }));
+    const decodedBlock = await abortOr(options?.signal, block.decode({ bytes, codec: cbor, hasher: sha256 }));
 
     const messageJson = decodedBlock.value as BaseMessage;
     return messageJson;
@@ -126,7 +126,7 @@ export class MessageStoreLevel implements MessageStore {
 
     const partition = this.blockstore.partition(tenant);
 
-    const encodedMessageBlock = await abortOr<block.Block>(options?.signal, block.encode({ value: message, codec: cbor, hasher: sha256 }));
+    const encodedMessageBlock = await abortOr(options?.signal, block.encode({ value: message, codec: cbor, hasher: sha256 }));
 
     await partition.put(encodedMessageBlock.cid, encodedMessageBlock.bytes, options);
 
