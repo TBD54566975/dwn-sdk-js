@@ -22,8 +22,9 @@ export class DataStoreLevel implements DataStore {
       ...config
     };
 
-    this.blockstore = new BlockstoreLevel(this.config.blockstoreLocation, {
-      createLevelDatabase: this.config.createLevelDatabase,
+    this.blockstore = new BlockstoreLevel({
+      location            : this.config.blockstoreLocation,
+      createLevelDatabase : this.config.createLevelDatabase,
     });
   }
 
@@ -36,7 +37,7 @@ export class DataStoreLevel implements DataStore {
   }
 
   async put(tenant: string, recordId: string, dataStream: Readable): Promise<string> {
-    const partition = this.blockstore.partition(tenant);
+    const partition = await this.blockstore.partition(tenant);
 
     const asyncDataBlocks = importer([{ content: dataStream }], partition, { cidVersion: 1 });
 
@@ -49,7 +50,7 @@ export class DataStoreLevel implements DataStore {
   }
 
   public async get(tenant: string, recordId: string, dataCid: string): Promise<Readable | undefined> {
-    const partition = this.blockstore.partition(tenant);
+    const partition = await this.blockstore.partition(tenant);
 
     const cid = CID.parse(dataCid);
     const bytes = await partition.get(cid);
@@ -77,7 +78,7 @@ export class DataStoreLevel implements DataStore {
   }
 
   public async has(tenant: string, recordId: string, dataCid: string): Promise<boolean> {
-    const partition = this.blockstore.partition(tenant);
+    const partition = await this.blockstore.partition(tenant);
 
     const cid = CID.parse(dataCid);
     const rootBlockBytes = await partition.get(cid);
@@ -86,7 +87,7 @@ export class DataStoreLevel implements DataStore {
   }
 
   public async delete(tenant: string, recordId: string, dataCid: string): Promise<void> {
-    const partition = this.blockstore.partition(tenant);
+    const partition = await this.blockstore.partition(tenant);
 
     // TODO: Implement data deletion in Records - https://github.com/TBD54566975/dwn-sdk-js/issues/84
     const cid = CID.parse(dataCid);

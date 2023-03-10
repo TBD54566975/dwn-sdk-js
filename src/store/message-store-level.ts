@@ -41,8 +41,9 @@ export class MessageStoreLevel implements MessageStore {
       ...config
     };
 
-    this.blockstore = new BlockstoreLevel(this.config.blockstoreLocation, {
-      createLevelDatabase: this.config.createLevelDatabase,
+    this.blockstore = new BlockstoreLevel({
+      location            : this.config.blockstoreLocation,
+      createLevelDatabase : this.config.createLevelDatabase,
     });
   }
 
@@ -64,7 +65,7 @@ export class MessageStoreLevel implements MessageStore {
   async get(tenant: string, cidString: string, options?: Options): Promise<BaseMessage | undefined> {
     options?.signal?.throwIfAborted();
 
-    const partition = this.blockstore.partition(tenant);
+    const partition = await abortOr(options?.signal, this.blockstore.partition(tenant));
 
     const cid = CID.parse(cidString);
     const bytes = await partition.get(cid, options);
@@ -106,7 +107,7 @@ export class MessageStoreLevel implements MessageStore {
   async delete(tenant: string, cidString: string, options?: Options): Promise<void> {
     options?.signal?.throwIfAborted();
 
-    const partition = this.blockstore.partition(tenant);
+    const partition = await abortOr(options?.signal, this.blockstore.partition(tenant));
 
     // TODO: Implement data deletion in Records - https://github.com/TBD54566975/dwn-sdk-js/issues/84
     const cid = CID.parse(cidString);
@@ -124,7 +125,7 @@ export class MessageStoreLevel implements MessageStore {
   ): Promise<void> {
     options?.signal?.throwIfAborted();
 
-    const partition = this.blockstore.partition(tenant);
+    const partition = await abortOr(options?.signal, this.blockstore.partition(tenant));
 
     const encodedMessageBlock = await abortOr(options?.signal, block.encode({ value: message, codec: cbor, hasher: sha256 }));
 
