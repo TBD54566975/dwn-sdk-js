@@ -1,6 +1,6 @@
-import type { LevelDatabase } from './create-level.js';
 import type { AwaitIterable, Batch, KeyQuery, Pair, Query } from 'interface-store';
 import type { Blockstore, Options } from 'interface-blockstore';
+import type { LevelDatabase, LevelDatabaseOptions } from './create-level.js';
 
 import { abortOr } from '../utils/abort.js';
 import { CID } from 'multiformats';
@@ -22,16 +22,16 @@ export class BlockstoreLevel implements Blockstore {
    * the {@link https://developer.mozilla.org/en-US/docs/Web/API/IDBDatabase IDBDatabase}
    * to be opened.
    */
-  constructor(location: string, config: BlockstoreLevelConfig = {}) {
+  constructor(config: BlockstoreLevelConfig) {
     this.config = {
       createLevelDatabase,
       ...config
     };
-
-    this.db = this.config.createLevelDatabase<string, Uint8Array>(location, { keyEncoding: 'utf8', valueEncoding: 'binary' });
   }
 
   async open(): Promise<void> {
+    await this.createLevelDatabase();
+
     while (this.db.status === 'opening' || this.db.status === 'closing') {
       await sleep(200);
     }
@@ -52,6 +52,10 @@ export class BlockstoreLevel implements Blockstore {
    * releases all file handles and locks held by the underlying db.
    */
   async close(): Promise<void> {
+    if (!this.db) {
+      return;
+    }
+
     while (this.db.status === 'opening' || this.db.status === 'closing') {
       await sleep(200);
     }
@@ -63,14 +67,29 @@ export class BlockstoreLevel implements Blockstore {
     return this.db.close();
   }
 
-  put(key: CID, val: Uint8Array, options?: Options): Promise<void> {
+  async partition(name: string): Promise<BlockstoreLevel> {
+    await this.createLevelDatabase();
+
+    return new BlockstoreLevel({
+      location            : '',
+      createLevelDatabase : async <K, V>(_location: string, options?: LevelDatabaseOptions<K, V>): Promise<LevelDatabase<K, V>> => {
+        return this.db.sublevel(name, options);
+      }
+    });
+  }
+
+  async put(key: CID, val: Uint8Array, options?: Options): Promise<void> {
     options?.signal?.throwIfAborted();
+
+    await abortOr(options?.signal, this.createLevelDatabase());
 
     return abortOr(options?.signal, this.db.put(key.toString(), val));
   }
 
   async get(key: CID, options?: Options): Promise<Uint8Array> {
     options?.signal?.throwIfAborted();
+
+    await abortOr(options?.signal, this.createLevelDatabase());
 
     try {
       const val = await abortOr(options?.signal, this.db.get(key.toString()));
@@ -89,8 +108,10 @@ export class BlockstoreLevel implements Blockstore {
     return !! await this.get(key, options);
   }
 
-  delete(key: CID, options?: Options): Promise<void> {
+  async delete(key: CID, options?: Options): Promise<void> {
     options?.signal?.throwIfAborted();
+
+    await abortOr(options?.signal, this.createLevelDatabase());
 
     return abortOr(options?.signal, this.db.del(key.toString()));
   }
@@ -119,6 +140,10 @@ export class BlockstoreLevel implements Blockstore {
     }
   }
 
+  private async createLevelDatabase(): Promise<void> {
+    this.db ??= await this.config.createLevelDatabase<string, Uint8Array>(this.config.location, { keyEncoding: 'utf8', valueEncoding: 'binary' });
+  }
+
   /**
    * deletes all entries
    */
@@ -140,5 +165,6 @@ export class BlockstoreLevel implements Blockstore {
 }
 
 type BlockstoreLevelConfig = {
+  location: string,
   createLevelDatabase?: typeof createLevelDatabase,
 };

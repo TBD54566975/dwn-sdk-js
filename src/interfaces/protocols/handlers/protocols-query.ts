@@ -37,14 +37,13 @@ export class ProtocolsQueryHandler implements MethodHandler {
     }
 
     const query = {
-      tenant,
       interface : DwnInterfaceName.Protocols,
       method    : DwnMethodName.Configure,
       ...incomingMessage.descriptor.filter
     };
     removeUndefinedProperties(query);
 
-    const entries = await this.messageStore.query(query);
+    const entries = await this.messageStore.query(tenant, query);
 
     return new MessageReply({
       status: { code: 200, detail: 'OK' },

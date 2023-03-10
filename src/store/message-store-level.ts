@@ -41,8 +41,9 @@ export class MessageStoreLevel implements MessageStore {
       ...config
     };
 
-    this.blockstore = new BlockstoreLevel(this.config.blockstoreLocation, {
-      createLevelDatabase: this.config.createLevelDatabase,
+    this.blockstore = new BlockstoreLevel({
+      location            : this.config.blockstoreLocation,
+      createLevelDatabase : this.config.createLevelDatabase,
     });
   }
 
@@ -61,23 +62,26 @@ export class MessageStoreLevel implements MessageStore {
     await this.index.INDEX.STORE.close(); // MUST close index-search DB, else `searchIndex()` triggered in a different instance will hang indefinitely
   }
 
-  async get(cidString: string, options?: Options): Promise<BaseMessage | undefined> {
+  async get(tenant: string, cidString: string, options?: Options): Promise<BaseMessage | undefined> {
     options?.signal?.throwIfAborted();
 
+    const partition = await abortOr(options?.signal, this.blockstore.partition(tenant));
+
     const cid = CID.parse(cidString);
-    const bytes = await this.blockstore.get(cid, options);
+    const bytes = await partition.get(cid, options);
 
     if (!bytes) {
       return undefined;
     }
 
-    const decodedBlock = await abortOr<block.Block>(options?.signal, block.decode({ bytes, codec: cbor, hasher: sha256 }));
+    const decodedBlock = await abortOr(options?.signal, block.decode({ bytes, codec: cbor, hasher: sha256 }));
 
     const messageJson = decodedBlock.value as BaseMessage;
     return messageJson;
   }
 
   async query(
+    tenant: string,
     exactCriteria: { [key: string]: string },
     rangeCriteria?: { [key: string]: RangeCriterion },
     options?: Options
@@ -87,46 +91,52 @@ export class MessageStoreLevel implements MessageStore {
     const messages: BaseMessage[] = [];
 
     // parse criteria into a query that is compatible with the indexing DB (search-index) we're using
-    const exactTerms = MessageStoreLevel.buildExactQueryTerms(exactCriteria);
+    const exactTerms = MessageStoreLevel.buildExactQueryTerms({ ...exactCriteria, tenant });
     const rangeTerms = MessageStoreLevel.buildRangeQueryTerms(rangeCriteria);
 
     const { RESULT: indexResults } = await abortOr(options?.signal, this.index.QUERY({ AND: [...exactTerms, ...rangeTerms] }));
 
     for (const result of indexResults) {
-      const message = await this.get(result._id, options);
+      const message = await this.get(tenant, result._id, options);
       messages.push(message);
     }
 
     return messages;
   }
 
-  async delete(cidString: string, options?: Options): Promise<void> {
+  async delete(tenant: string, cidString: string, options?: Options): Promise<void> {
     options?.signal?.throwIfAborted();
+
+    const partition = await abortOr(options?.signal, this.blockstore.partition(tenant));
 
     // TODO: Implement data deletion in Records - https://github.com/TBD54566975/dwn-sdk-js/issues/84
     const cid = CID.parse(cidString);
-    await this.blockstore.delete(cid, options);
+    await partition.delete(cid, options);
     await abortOr(options?.signal, this.index.DELETE(cidString));
 
     return;
   }
 
   async put(
+    tenant: string,
     message: BaseMessage,
     indexes: { [key: string]: string },
     options?: Options
   ): Promise<void> {
     options?.signal?.throwIfAborted();
 
-    const encodedMessageBlock = await abortOr<block.Block>(options?.signal, block.encode({ value: message, codec: cbor, hasher: sha256 }));
+    const partition = await abortOr(options?.signal, this.blockstore.partition(tenant));
 
-    await this.blockstore.put(encodedMessageBlock.cid, encodedMessageBlock.bytes, options);
+    const encodedMessageBlock = await abortOr(options?.signal, block.encode({ value: message, codec: cbor, hasher: sha256 }));
+
+    await partition.put(encodedMessageBlock.cid, encodedMessageBlock.bytes, options);
 
     // TODO: #218 - Use tenant + record scoped IDs - https://github.com/TBD54566975/dwn-sdk-js/issues/218
     const encodedMessageBlockCid = encodedMessageBlock.cid.toString();
     const indexDocument = {
-      _id: encodedMessageBlockCid,
-      ...indexes
+      ...indexes,
+      tenant,
+      _id: encodedMessageBlockCid
     };
 
     // tokenSplitRegex is used to tokenize values. By default, only letters and digits are indexed,

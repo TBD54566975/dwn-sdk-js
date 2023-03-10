@@ -23,6 +23,7 @@ export class StorageController {
   public static async put(
     messageStore: MessageStore,
     dataStore: DataStore,
+    tenant: string,
     message: BaseMessage,
     indexes: { [key: string]: string },
     dataStream?: Readable
@@ -35,7 +36,7 @@ export class StorageController {
       if (dataStream === undefined) {
         // the message implies that the data is already in the DB, so we check to make sure the data already exist
         // TODO: #218 - Use tenant + record scoped IDs - https://github.com/TBD54566975/dwn-sdk-js/issues/218
-        const hasData = await dataStore.has('not used yet', 'not used yet', message.descriptor.dataCid);
+        const hasData = await dataStore.has(tenant, 'not used yet', message.descriptor.dataCid);
 
         if (!hasData) {
           throw new DwnError(
@@ -44,13 +45,13 @@ export class StorageController {
           );
         }
       } else {
-        const { dataCid, dataSize } = await dataStore.put('not used yet', 'not used yet', dataStream);
+        const { dataCid, dataSize } = await dataStore.put(tenant, 'not used yet', dataStream);
 
         // MUST verify that the size of the actual data matches with the given `dataSize`
         // if data size is wrong, delete the data we just stored
         if (message.descriptor.dataSize !== dataSize) {
           // there is an opportunity to improve here: handle the edge cae of if the delete fails...
-          await dataStore.delete('not used yet', 'not used yet', dataCid);
+          await dataStore.delete(tenant, 'not used yet', dataCid);
 
           throw new DwnError(
             DwnErrorCode.MessageStoreDataSizeMismatch,
@@ -62,7 +63,7 @@ export class StorageController {
         // if data CID is wrong, delete the data we just stored
         if (message.descriptor.dataCid !== dataCid) {
           // there is an opportunity to improve here: handle the edge cae of if the delete fails...
-          await dataStore.delete('not used yet', 'not used yet', dataCid);
+          await dataStore.delete(tenant, 'not used yet', dataCid);
 
           throw new DwnError(
             DwnErrorCode.MessageStoreDataCidMismatch,
@@ -72,17 +73,18 @@ export class StorageController {
       }
     }
 
-    await messageStore.put(message, indexes);
+    await messageStore.put(tenant, message, indexes);
   }
 
   public static async query(
     messageStore: MessageStore,
     dataStore: DataStore,
+    tenant: string,
     exactCriteria: { [key: string]: string },
     rangeCriteria?: { [key: string]: RangeCriterion }
   ): Promise<BaseMessage[]> {
 
-    const messages = await messageStore.query(exactCriteria, rangeCriteria);
+    const messages = await messageStore.query(tenant, exactCriteria, rangeCriteria);
 
     for (const message of messages) {
       const dataCid = message.descriptor.dataCid;
@@ -90,7 +92,7 @@ export class StorageController {
         // TODO: #219 (https://github.com/TBD54566975/dwn-sdk-js/issues/219)
         // temporary placeholder for keeping status-quo of returning data in `encodedData`
         // once #219 is implemented, `encodedData` may or may not exist directly as part of the returned message here
-        const readableStream = await dataStore.get('not used yet', 'not used yet', dataCid);
+        const readableStream = await dataStore.get(tenant, 'not used yet', dataCid);
         const dataBytes = await DataStream.toBytes(readableStream);
 
         message['encodedData'] = Encoder.bytesToBase64Url(dataBytes);
