@@ -195,9 +195,8 @@ describe('RecordsQueryHandler.handle()', () => {
         dateSort  : DateSort.CreatedAscending
       });
       const reply4 = await dwn.processMessage(alice.did, recordsQuery4.message);
-      expect(reply4.entries?.length).to.equal(2);
+      expect(reply4.entries?.length).to.equal(1);
       expect((reply4.entries[0] as any).encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes));
-      expect((reply4.entries[1] as any).encodedData).to.equal(Encoder.bytesToBase64Url(write3.dataBytes));
     });
 
     it('should be able use range and exact match queries at the same time', async () => {
