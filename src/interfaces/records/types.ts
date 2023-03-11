@@ -56,14 +56,6 @@ export type RecordsQueryFilter = {
   dateCreated?: RangeCriterion;
 };
 
-/**
- * An exact criterion in a query filter.
- */
-export type ExactCriterion = unknown;
-
-/**
- * A range criterion in a query filter.
- */
 export type RangeCriterion = {
   /**
    * Inclusive starting date-time.

@@ -4,85 +4,12 @@ import { expect } from 'chai';
 import { Message } from '../../src/core/message.js';
 import { MessageStoreLevel } from '../../src/store/message-store-level.js';
 import { RecordsWriteMessage } from '../../src/interfaces/records/types.js';
-import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { createLevelDatabase, LevelDatabase, LevelDatabaseOptions } from '../../src/store/create-level.js';
 
 let messageStore: MessageStoreLevel;
 
 describe('MessageStoreLevel Tests', () => {
-  describe('buildExactQueryTerms', () => {
-    it('returns the query exactly if it already matches the required structure', () => {
-      const query = {
-        method        : 'RecordsQuery',
-        schema        : 'https://schema.org/MusicPlaylist',
-        objectId      : 'abcd123',
-        published     : true, // boolean type
-        publishedDate : 1234567 // number type
-      };
-
-      const expected = {
-        'method'        : 'RecordsQuery',
-        'schema'        : 'https://schema.org/MusicPlaylist',
-        'objectId'      : 'abcd123',
-        'published'     : true,
-        'publishedDate' : 1234567
-      };
-      const terms = MessageStoreLevel['buildExactQueryTerms'](query);
-
-      expect(terms).to.eql(expected);
-    });
-
-    it('flattens nested objects', () => {
-      const query = {
-        requester : 'AlBorland',
-        ability   : {
-          method : 'RecordsQuery',
-          schema : 'https://schema.org/MusicPlaylist',
-          doo    : {
-            bingo: 'bongo'
-          }
-        }
-      };
-
-      const expected = {
-        'requester'         : 'AlBorland',
-        'ability.method'    : 'RecordsQuery',
-        'ability.schema'    : 'https://schema.org/MusicPlaylist',
-        'ability.doo.bingo' : 'bongo'
-      };
-
-      const terms = MessageStoreLevel['buildExactQueryTerms'](query);
-
-      expect(terms).to.eql(expected);
-    });
-  });
-
-  describe('buildRangeQueryTerms', () => {
-    it('converts from `RangeCriterion` to `RangeFilter`', () => {
-      const lastDayOf2021 = Temporal.PlainDateTime.from({ year: 2021, month: 12, day: 31 }).toString({ smallestUnit: 'microseconds' });
-      const lastDayOf2022 = Temporal.PlainDateTime.from({ year: 2022, month: 12, day: 31 }).toString({ smallestUnit: 'microseconds' });
-
-      const query = {
-        dateCreated: {
-          from : lastDayOf2021,
-          to   : lastDayOf2022
-        }
-      };
-
-      const expected = {
-        'dateCreated': {
-          'gte' : lastDayOf2021,
-          'lte' : lastDayOf2022
-        }
-      };
-
-      const terms = MessageStoreLevel['buildRangeQueryTerms'](query);
-
-      expect(terms).to.eql(expected);
-    });
-  });
-
   describe('put', function () {
     before(async () => {
       messageStore = new MessageStoreLevel({

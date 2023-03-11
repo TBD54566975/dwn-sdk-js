@@ -1,5 +1,4 @@
-import type { BaseMessage } from '../core/types.js';
-import type { ExactCriterion, RangeCriterion } from '../interfaces/records/types.js';
+import type { BaseMessage, Filter } from '../core/types.js';
 
 export interface MessageStoreOptions {
   signal?: AbortSignal;
@@ -34,18 +33,9 @@ export interface MessageStore {
   get(tenant: string, cid: string, options?: MessageStoreOptions): Promise<BaseMessage | undefined>;
 
   /**
-   * Queries the underlying store for messages that match the query provided.
-   * The provided criteria are combined to form an AND filter for the query.
-   * Returns an empty array if no messages are found
-   * @param exactCriteria - criteria for exact matches
-   * @param rangeCriteria - criteria for range matches
+   * Queries the underlying store for messages that match the provided filter.
    */
-  query(
-    tenant: string,
-    exactCriteria: { [key: string]: ExactCriterion },
-    rangeCriteria?: { [key: string]: RangeCriterion },
-    options?: MessageStoreOptions
-  ): Promise<BaseMessage[]>;
+  query(tenant: string, filter: Filter, options?: MessageStoreOptions ): Promise<BaseMessage[]>;
 
   /**
    * Deletes the message associated with the id provided.

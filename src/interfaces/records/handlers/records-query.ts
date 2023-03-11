@@ -68,16 +68,13 @@ export class RecordsQueryHandler implements MethodHandler {
    */
   private async fetchRecordsAsOwner(tenant: string, recordsQuery: RecordsQuery): Promise<BaseMessage[]> {
     // fetch all published records matching the query
-    const exactCriteria = RecordsQuery.getExactCriteria(recordsQuery.message.descriptor.filter);
-    const completeExactCriteria = {
-      ...exactCriteria,
+    const filter = {
+      ...RecordsQuery.convertFilter(recordsQuery.message.descriptor.filter),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       isLatestBaseState : true
     };
-
-    const rangeCriteria = RecordsQuery.getRangeCriteria(recordsQuery.message.descriptor.filter);
-    const records = await StorageController.query(this.messageStore, this.dataStore, tenant, completeExactCriteria, rangeCriteria);
+    const records = await StorageController.query(this.messageStore, this.dataStore, tenant, filter);
     return records;
   }
 
@@ -100,17 +97,14 @@ export class RecordsQueryHandler implements MethodHandler {
    */
   private async fetchPublishedRecords(tenant: string, recordsQuery: RecordsQuery): Promise<BaseMessage[]> {
     // fetch all published records matching the query
-    const exactCriteria = RecordsQuery.getExactCriteria(recordsQuery.message.descriptor.filter);
-    const completeExactCriteria = {
-      ...exactCriteria,
+    const filter = {
+      ...RecordsQuery.convertFilter(recordsQuery.message.descriptor.filter),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       published         : true,
       isLatestBaseState : true
     };
-
-    const rangeCriteria = RecordsQuery.getRangeCriteria(recordsQuery.message.descriptor.filter);
-    const publishedRecords = await StorageController.query(this.messageStore, this.dataStore, tenant, completeExactCriteria, rangeCriteria);
+    const publishedRecords = await StorageController.query(this.messageStore, this.dataStore, tenant, filter);
     return publishedRecords;
   }
 
@@ -119,24 +113,15 @@ export class RecordsQueryHandler implements MethodHandler {
    */
   private async fetchUnpublishedRecordsForRequester(tenant: string, recordsQuery: RecordsQuery): Promise<BaseMessage[]> {
   // include records where recipient is requester
-    const exactCriteria = RecordsQuery.getExactCriteria(recordsQuery.message.descriptor.filter);
-    const completeExactCriteria = {
-      ...exactCriteria,
+    const filter = {
+      ...RecordsQuery.convertFilter(recordsQuery.message.descriptor.filter),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       recipient         : recordsQuery.author,
       isLatestBaseState : true,
       published         : false
     };
-
-    const rangeCriteria = RecordsQuery.getRangeCriteria(recordsQuery.message.descriptor.filter);
-    const unpublishedRecordsForRequester = await StorageController.query(
-      this.messageStore,
-      this.dataStore,
-      tenant,
-      completeExactCriteria,
-      rangeCriteria
-    );
+    const unpublishedRecordsForRequester = await StorageController.query(this.messageStore, this.dataStore, tenant, filter);
     return unpublishedRecordsForRequester;
   }
 
@@ -145,25 +130,15 @@ export class RecordsQueryHandler implements MethodHandler {
    */
   private async fetchUnpublishedRecordsByRequester(tenant: string, recordsQuery: RecordsQuery): Promise<BaseMessage[]> {
     // include records where recipient is requester
-    const exactCriteria = RecordsQuery.getExactCriteria(recordsQuery.message.descriptor.filter);
-    const completeExactCriteria = {
-      ...exactCriteria,
+    const filter = {
+      ...RecordsQuery.convertFilter(recordsQuery.message.descriptor.filter),
       author            : recordsQuery.author,
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       isLatestBaseState : true,
       published         : false
     };
-
-    const rangeCriteria = RecordsQuery.getRangeCriteria(recordsQuery.message.descriptor.filter);
-
-    const unpublishedRecordsForRequester = await StorageController.query(
-      this.messageStore,
-      this.dataStore,
-      tenant,
-      completeExactCriteria,
-      rangeCriteria
-    );
+    const unpublishedRecordsForRequester = await StorageController.query(this.messageStore, this.dataStore, tenant, filter);
     return unpublishedRecordsForRequester;
   }
 }

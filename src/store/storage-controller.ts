@@ -1,8 +1,7 @@
-import { BaseMessage } from '../core/types.js';
 import { DataStore } from './data-store.js';
 import { MessageStore } from './message-store.js';
 import { Readable } from 'readable-stream';
-import { ExactCriterion, RangeCriterion } from '../interfaces/records/types.js';
+import { BaseMessage, Filter } from '../core/types.js';
 
 import { DataStream, Encoder } from '../index.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
@@ -80,11 +79,10 @@ export class StorageController {
     messageStore: MessageStore,
     dataStore: DataStore,
     tenant: string,
-    exactCriteria: { [key: string]: ExactCriterion },
-    rangeCriteria?: { [key: string]: RangeCriterion }
+    filter: Filter
   ): Promise<BaseMessage[]> {
 
-    const messages = await messageStore.query(tenant, exactCriteria, rangeCriteria);
+    const messages = await messageStore.query(tenant, filter);
 
     for (const message of messages) {
       const dataCid = message.descriptor.dataCid;

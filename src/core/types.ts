@@ -44,3 +44,15 @@ export type DataReferencingMessage = {
 
   encodedData: string;
 };
+
+export type EqualFilter = string | number | boolean;
+
+export type OneOfFilter = EqualFilter[];
+
+type GT = ({ gt: string } & { gte?: never }) | ({ gt?: never } & { gte: string });
+type LT = ({ lt: string } & { lte?: never }) | ({ lt?: never } & { lte: string });
+export type RangeFilter = (GT | LT) & Partial<GT> & Partial<LT>;
+
+export type Filter = {
+  [property: string]: EqualFilter | OneOfFilter | RangeFilter
+};
