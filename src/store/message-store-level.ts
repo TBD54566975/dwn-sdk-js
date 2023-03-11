@@ -1,5 +1,4 @@
-import type { BaseMessage } from '../core/types.js';
-import type { Filter, RangeFilter } from './index-level.js';
+import type { BaseMessage, Filter } from '../core/types.js';
 import type { MessageStore, MessageStoreOptions } from './message-store.js';
 
 import * as block from 'multiformats/block';
@@ -9,10 +8,8 @@ import { abortOr } from '../utils/abort.js';
 import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
 import { createLevelDatabase } from './create-level.js';
-import { flatten } from '../utils/object.js';
 import { IndexLevel } from './index-level.js';
 import { sha256 } from 'multiformats/hashes/sha2';
-import { ExactCriterion, RangeCriterion } from '../interfaces/records/types.js';
 
 /**
  * A simple implementation of {@link MessageStore} that works in both the browser and server-side.
@@ -79,21 +76,12 @@ export class MessageStoreLevel implements MessageStore {
     return messageJson;
   }
 
-  async query(
-    tenant: string,
-    exactCriteria: { [key: string]: ExactCriterion },
-    rangeCriteria?: { [key: string]: RangeCriterion },
-    options?: MessageStoreOptions
-  ): Promise<BaseMessage[]> {
+  async query(tenant: string, filter: Filter, options?: MessageStoreOptions): Promise<BaseMessage[]> {
     options?.signal?.throwIfAborted();
 
     const messages: BaseMessage[] = [];
 
-    // parse criteria into a query that is compatible with the indexing DB we're using
-    const exactTerms = MessageStoreLevel.buildExactQueryTerms({ ...exactCriteria, tenant });
-    const rangeTerms = MessageStoreLevel.buildRangeQueryTerms(rangeCriteria);
-
-    const resultIds = await this.index.query({ ...rangeTerms, ...exactTerms }, options);
+    const resultIds = await this.index.query({ ...filter, tenant }, options);
 
     for (const id of resultIds) {
       const message = await this.get(tenant, id, options);
@@ -147,39 +135,6 @@ export class MessageStoreLevel implements MessageStore {
   async clear(): Promise<void> {
     await this.blockstore.clear();
     await this.index.clear();
-  }
-
-  private static buildExactQueryTerms(
-    exactCriteria: { [key: string]: ExactCriterion } = { }
-  ): Filter {
-    return flatten(exactCriteria) as Filter;
-  }
-
-  private static buildRangeQueryTerms(
-    rangeCriteria: { [key: string]: RangeCriterion} = { }
-  ): Filter {
-    const filter: Filter = { };
-
-    for (const propertyName in rangeCriteria) {
-      const rangeCriterion = rangeCriteria[propertyName];
-
-      const rangeFilter: RangeFilter = {
-        gte : rangeCriterion.from,
-        lte : rangeCriterion.to
-      };
-
-      if (rangeFilter.gte === undefined) {
-        delete rangeFilter.gte;
-      }
-
-      if (rangeFilter.lte === undefined) {
-        delete rangeFilter.lte;
-      }
-
-      filter[propertyName] = rangeFilter;
-    }
-
-    return filter;
   }
 }
 

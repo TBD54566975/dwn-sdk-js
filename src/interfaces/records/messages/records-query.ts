@@ -1,5 +1,6 @@
 import type { SignatureInput } from '../../../jose/jws/general/types.js';
-import type { ExactCriterion, RangeCriterion, RecordsQueryDescriptor, RecordsQueryFilter, RecordsQueryMessage } from '../types.js';
+import type { Filter, RangeFilter } from '../../../core/types.js';
+import type { RecordsQueryDescriptor, RecordsQueryFilter, RecordsQueryMessage } from '../types.js';
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/message.js';
@@ -70,25 +71,28 @@ export class RecordsQuery extends Message {
     }
   }
 
-  /**
-   * Gets the criteria for exact matches and exclude other types of criteria such as range criteria.
-   * @returns object contain all exact-match criteria; empty object if no exact-match criterion is found.
-   */
-  public static getExactCriteria(filter: RecordsQueryFilter): { [key:string]: ExactCriterion } {
-    const filterCopy = { ... filter };
-    delete filterCopy.dateCreated;
-
-    removeUndefinedProperties(filterCopy);
-
-    return filterCopy as { [key:string]: ExactCriterion };
-  }
-
-  /**
-   * Gets the list of range criteria (e.g. `dateCreated`) and exclude other types of criteria such as exact matches.
-   * @returns object contain all range criteria; empty object if no range criterion is found.
-   */
-  public static getRangeCriteria(filter: RecordsQueryFilter): { [key:string]: RangeCriterion } {
-    const rangeCriteria = filter.dateCreated ? { dateCreated: filter.dateCreated } : { };
-    return rangeCriteria;
+  public static convertFilter(filter: RecordsQueryFilter): Filter {
+    const result: Filter = { };
+    for (const key in filter) {
+      switch (key) {
+      case 'dateCreated':
+        var rangeFilter: RangeFilter = {
+          gte : filter.dateCreated.from,
+          lte : filter.dateCreated.to
+        };
+        if (rangeFilter.gte === undefined) {
+          delete rangeFilter.gte;
+        }
+        if (rangeFilter.lte === undefined) {
+          delete rangeFilter.lte;
+        }
+        result.dateCreated = rangeFilter;
+        break;
+      default:
+        result[key] = filter[key];
+        break;
+      }
+    }
+    return result;
   }
 }
