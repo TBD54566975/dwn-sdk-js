@@ -15,6 +15,9 @@ export interface IndexLevelOptions {
   signal?: AbortSignal;
 }
 
+/**
+ * A LevelDB implementation for indexing the messages stored in the DWN.
+ */
 export class IndexLevel {
   config: IndexLevelConfig;
 

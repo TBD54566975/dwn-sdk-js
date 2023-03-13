@@ -4,6 +4,7 @@ import chai, { expect } from 'chai';
 
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
+import { DwnConstant } from '../../../../src/core/dwn-constant.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
 import { Jws } from '../../../../src/utils/jws.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
@@ -99,7 +100,7 @@ describe('RecordsQueryHandler.handle()', () => {
     });
 
     it('should return `encodedData` if data size is within the spec threshold', async () => {
-      const data = TestDataGenerator.randomBytes(10_000); // within/on threshold
+      const data = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded); // within/on threshold
       const alice = await DidKeyResolver.generate();
       const write= await TestDataGenerator.generateRecordsWrite({ requester: alice, data });
 
@@ -115,7 +116,7 @@ describe('RecordsQueryHandler.handle()', () => {
     });
 
     it('should not return `encodedData` if data size is greater then spec threshold', async () => {
-      const data = TestDataGenerator.randomBytes(10_001); // exceeding threshold
+      const data = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1); // exceeding threshold
       const alice = await DidKeyResolver.generate();
       const write= await TestDataGenerator.generateRecordsWrite({ requester: alice, data });
 

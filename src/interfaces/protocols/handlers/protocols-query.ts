@@ -1,10 +1,10 @@
 import type { MethodHandler } from '../../types.js';
 import type { ProtocolsQueryMessage } from '../types.js';
+import type { QueryResultEntry } from '../../../core/types.js';
 
 import { canonicalAuth } from '../../../core/auth.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { ProtocolsQuery } from '../messages/protocols-query.js';
-import { QueryResultEntry } from '../../../core/types.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 
 import { DataStore, DidResolver, MessageStore } from '../../../index.js';
