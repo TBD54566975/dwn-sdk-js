@@ -16,6 +16,7 @@ import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
+import { QueryResultEntry } from '../../../../src/core/types.js';
 import { RecordsWriteHandler } from '../../../../src/interfaces/records/handlers/records-write.js';
 import { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
 import { StorageController } from '../../../../src/store/storage-controller.js';
@@ -82,7 +83,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const recordsQueryReply = await dwn.processMessage(tenant, recordsQueryMessageData.message);
       expect(recordsQueryReply.status.code).to.equal(200);
       expect(recordsQueryReply.entries?.length).to.equal(1);
-      expect((recordsQueryReply.entries![0] as any).encodedData).to.equal(base64url.baseEncode(data1));
+      expect(recordsQueryReply.entries![0].encodedData).to.equal(base64url.baseEncode(data1));
 
       // generate and write a new RecordsWrite to overwrite the existing record
       // a new RecordsWrite by default will have a later `dateModified`
@@ -105,7 +106,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
       expect(newRecordsQueryReply.status.code).to.equal(200);
       expect(newRecordsQueryReply.entries?.length).to.equal(1);
-      expect((newRecordsQueryReply.entries![0] as any).encodedData).to.equal(newDataEncoded);
+      expect(newRecordsQueryReply.entries![0].encodedData).to.equal(newDataEncoded);
 
       // try to write the older message to store again and verify that it is not accepted
       const thirdRecordsWriteReply = await dwn.processMessage(tenant, recordsWriteMessageData.message, recordsWriteMessageData.dataStream);
@@ -115,7 +116,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const thirdRecordsQueryReply = await dwn.processMessage(tenant, recordsQueryMessageData.message);
       expect(thirdRecordsQueryReply.status.code).to.equal(200);
       expect(thirdRecordsQueryReply.entries?.length).to.equal(1);
-      expect((thirdRecordsQueryReply.entries![0] as any).encodedData).to.equal(newDataEncoded);
+      expect(thirdRecordsQueryReply.entries![0].encodedData).to.equal(newDataEncoded);
     });
 
     it('should only be able to overwrite existing record if new message CID is larger when `dateModified` value is the same', async () => {
@@ -337,7 +338,7 @@ describe('RecordsWriteHandler.handle()', () => {
           expect((recordsQueryReply.entries![0] as RecordsWriteMessage).descriptor.published).to.equal(true);
 
           // very importantly verify the original data is still returned
-          expect((recordsQueryReply.entries![0] as any).encodedData).to.equal(Encoder.bytesToBase64Url(dataBytes));
+          expect(recordsQueryReply.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(dataBytes));
         });
 
         it('should inherit parent published state when using createFrom() to create RecordsWrite', async () => {
@@ -374,7 +375,7 @@ describe('RecordsWriteHandler.handle()', () => {
           expect(recordsQueryReply.entries?.length).to.equal(1);
 
           const recordsWriteReturned = recordsQueryReply.entries![0] as RecordsWriteMessage;
-          expect((recordsWriteReturned as any).encodedData).to.equal(Encoder.bytesToBase64Url(newData));
+          expect((recordsWriteReturned as QueryResultEntry).encodedData).to.equal(Encoder.bytesToBase64Url(newData));
           expect(recordsWriteReturned.descriptor.published).to.equal(true);
           expect(recordsWriteReturned.descriptor.datePublished).to.equal(message.descriptor.datePublished);
         });
@@ -485,7 +486,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const bobRecordQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingBobsWrite.message);
         expect(bobRecordQueryReply.status.code).to.equal(200);
         expect(bobRecordQueryReply.entries?.length).to.equal(1);
-        expect((bobRecordQueryReply.entries![0] as any).encodedData).to.equal(base64url.baseEncode(bobData));
+        expect(bobRecordQueryReply.entries![0].encodedData).to.equal(base64url.baseEncode(bobData));
       });
 
       it('should allow write with recipient rule', async () => {
@@ -550,7 +551,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const applicationResponseQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingCredentialResponse.message);
         expect(applicationResponseQueryReply.status.code).to.equal(200);
         expect(applicationResponseQueryReply.entries?.length).to.equal(1);
-        expect((applicationResponseQueryReply.entries![0] as any).encodedData)
+        expect(applicationResponseQueryReply.entries![0].encodedData)
           .to.equal(base64url.baseEncode(encodedCredentialResponse));
       });
 
@@ -614,7 +615,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const bobRecordQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingBobsWrite.message);
         expect(bobRecordQueryReply.status.code).to.equal(200);
         expect(bobRecordQueryReply.entries?.length).to.equal(1);
-        expect((bobRecordQueryReply.entries![0] as any).encodedData).to.equal(base64url.baseEncode(bobData));
+        expect(bobRecordQueryReply.entries![0].encodedData).to.equal(base64url.baseEncode(bobData));
 
         // generate a new message from bob updating the existing notes
         const newNotesBytes = Encoder.stringToBytes('new data from bob');
@@ -631,7 +632,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const newRecordQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingBobsWrite.message);
         expect(newRecordQueryReply.status.code).to.equal(200);
         expect(newRecordQueryReply.entries?.length).to.equal(1);
-        expect((newRecordQueryReply.entries![0] as any).encodedData).to.equal(Encoder.bytesToBase64Url(newNotesBytes));
+        expect(newRecordQueryReply.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(newNotesBytes));
       });
 
       it('should disallow overwriting existing records by a different author', async () => {
@@ -695,7 +696,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const bobRecordQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingBobsWrite.message);
         expect(bobRecordQueryReply.status.code).to.equal(200);
         expect(bobRecordQueryReply.entries?.length).to.equal(1);
-        expect((bobRecordQueryReply.entries![0] as any).encodedData).to.equal(base64url.baseEncode(bobData));
+        expect(bobRecordQueryReply.entries![0].encodedData).to.equal(base64url.baseEncode(bobData));
 
         // generate a new message from carol updating the existing notes, which should not be allowed/accepted
         const newNotesData = new TextEncoder().encode('different data by carol');
@@ -777,7 +778,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const bobRecordQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingBobsWrite.message);
         expect(bobRecordQueryReply.status.code).to.equal(200);
         expect(bobRecordQueryReply.entries?.length).to.equal(1);
-        expect((bobRecordQueryReply.entries![0] as any).encodedData).to.equal(base64url.baseEncode(bobData));
+        expect(bobRecordQueryReply.entries![0].encodedData).to.equal(base64url.baseEncode(bobData));
 
         // generate a new message from bob changing immutable recipientDid
         const newNotesFromBob = await TestDataGenerator.generateRecordsWrite(
