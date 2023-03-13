@@ -78,13 +78,13 @@ export class RecordsQuery extends Message {
       case 'dateCreated':
         var rangeFilter: RangeFilter = {
           gte : filter.dateCreated.from,
-          lte : filter.dateCreated.to
+          lt  : filter.dateCreated.to
         };
         if (rangeFilter.gte === undefined) {
           delete rangeFilter.gte;
         }
-        if (rangeFilter.lte === undefined) {
-          delete rangeFilter.lte;
+        if (rangeFilter.lt === undefined) {
+          delete rangeFilter.lt;
         }
         result.dateCreated = rangeFilter;
         break;
