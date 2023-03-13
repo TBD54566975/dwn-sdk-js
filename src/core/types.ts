@@ -49,8 +49,19 @@ export type EqualFilter = string | number | boolean;
 
 export type OneOfFilter = EqualFilter[];
 
-type GT = ({ gt: string } & { gte?: never }) | ({ gt?: never } & { gte: string });
-type LT = ({ lt: string } & { lte?: never }) | ({ lt?: never } & { lte: string });
+/**
+ * "greater than" or "greater than or equal to" range condition. `gt` and `gte` are mutually exclusive.
+ */
+
+/**
+ * "less than" or "less than or equal to" range condition. `lt`, `lte` are mutually exclusive.
+ */
+export type GT = ({ gt: string } & { gte?: never }) | ({ gt?: never } & { gte: string });
+export type LT = ({ lt: string } & { lte?: never }) | ({ lt?: never } & { lte: string });
+
+/**
+ * Ranger filter. 1 condition is required.
+ */
 export type RangeFilter = (GT | LT) & Partial<GT> & Partial<LT>;
 
 export type Filter = {

@@ -98,6 +98,38 @@ describe('RecordsQueryHandler.handle()', () => {
       expect(reply2.entries?.length).to.equal(1); // only 1 entry should match the query
     });
 
+    it('should return `encodedData` if data size is within the spec threshold', async () => {
+      const data = TestDataGenerator.randomBytes(10_000); // within/on threshold
+      const alice = await DidKeyResolver.generate();
+      const write= await TestDataGenerator.generateRecordsWrite({ requester: alice, data });
+
+      const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
+      expect(writeReply.status.code).to.equal(202);
+
+      const messageData = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { recordId: write.message.recordId } });
+      const reply = await dwn.processMessage(alice.did, messageData.message);
+
+      expect(reply.status.code).to.equal(200);
+      expect(reply.entries?.length).to.equal(1);
+      expect((reply.entries[0] as any).encodedData).to.equal(Encoder.bytesToBase64Url(data));
+    });
+
+    it('should not return `encodedData` if data size is greater then spec threshold', async () => {
+      const data = TestDataGenerator.randomBytes(10_001); // exceeding threshold
+      const alice = await DidKeyResolver.generate();
+      const write= await TestDataGenerator.generateRecordsWrite({ requester: alice, data });
+
+      const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
+      expect(writeReply.status.code).to.equal(202);
+
+      const messageData = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { recordId: write.message.recordId } });
+      const reply = await dwn.processMessage(alice.did, messageData.message);
+
+      expect(reply.status.code).to.equal(200);
+      expect(reply.entries?.length).to.equal(1);
+      expect((reply.entries[0] as any).encodedData).to.be.undefined;
+    });
+
     it('should be able to query by attester', async () => {
       // scenario: 2 records authored by alice, 1st attested by alice, 2nd attested by bob
       const alice = await DidKeyResolver.generate();
