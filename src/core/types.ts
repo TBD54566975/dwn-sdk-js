@@ -49,14 +49,15 @@ export type EqualFilter = string | number | boolean;
 
 export type OneOfFilter = EqualFilter[];
 
+
 /**
  * "greater than" or "greater than or equal to" range condition. `gt` and `gte` are mutually exclusive.
  */
+export type GT = ({ gt: string } & { gte?: never }) | ({ gt?: never } & { gte: string });
 
 /**
  * "less than" or "less than or equal to" range condition. `lt`, `lte` are mutually exclusive.
  */
-export type GT = ({ gt: string } & { gte?: never }) | ({ gt?: never } & { gte: string });
 export type LT = ({ lt: string } & { lte?: never }) | ({ lt?: never } & { lte: string });
 
 /**
