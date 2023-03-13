@@ -1,10 +1,8 @@
-import type { LevelDatabase } from './create-level.js';
-import type { AbstractBatchDelOperation, AbstractBatchOperation, AbstractIteratorOptions } from 'abstract-level';
 import type { Filter, RangeFilter } from '../core/types.js';
+import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions } from './level-wrapper.js';
 
-import { abortOr } from '../utils/abort.js';
-import { createLevelDatabase } from './create-level.js';
 import { flatten } from '../utils/object.js';
+import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 
 export type Entry = {
   _id: string,
@@ -21,38 +19,30 @@ export interface IndexLevelOptions {
 export class IndexLevel {
   config: IndexLevelConfig;
 
-  db: LevelDatabase<string, string>;
+  db: LevelWrapper<string>;
 
   constructor(config?: IndexLevelConfig) {
     this.config = {
       createLevelDatabase,
       ...config
     };
+
+    this.db = new LevelWrapper<string>({ ...this.config, valueEncoding: 'utf8' });
   }
 
   async open(): Promise<void> {
-    await this.createLevelDatabase();
-
     return this.db.open();
   }
 
   async close(): Promise<void> {
-    if (!this.db) {
-      return;
-    }
-
     return this.db.close();
   }
 
   async put(entry: Entry, options?: IndexLevelOptions): Promise<void> {
-    options?.signal?.throwIfAborted();
-
-    await abortOr(options?.signal, this.createLevelDatabase());
-
     entry = flatten(entry) as Entry;
     const { _id } = entry;
 
-    const ops: AbstractBatchOperation<LevelDatabase<string, string>, string, string>[] = [ ];
+    const ops: LevelWrapperBatchOperation<string>[] = [ ];
     const prefixes: string[] = [ ];
     for (const property in entry) {
       if (property === '_id') {
@@ -67,14 +57,10 @@ export class IndexLevel {
     }
     ops.push({ type: 'put', key: `__${_id}__prefixes`, value: JSON.stringify(prefixes) });
 
-    await abortOr(options?.signal, this.db.batch(ops));
+    return this.db.batch(ops, options);
   }
 
   async query(filter: Filter, options?: IndexLevelOptions): Promise<Array<string>> {
-    options?.signal?.throwIfAborted();
-
-    await abortOr(options?.signal, this.createLevelDatabase());
-
     const requiredProperties = new Set<string>();
     const missingPropertiesForID: { [id: string]: Set<string> } = { };
     const promises: Promise<Matches>[] = [ ];
@@ -116,32 +102,28 @@ export class IndexLevel {
   }
 
   async delete(id: string, options?: IndexLevelOptions): Promise<void> {
-    options?.signal?.throwIfAborted();
-
-    await abortOr(options?.signal, this.createLevelDatabase());
-
-    const prefixes = await abortOr(options?.signal, this.db.get(`__${id}__prefixes`));
+    const prefixes = await this.db.get(`__${id}__prefixes`, options);
     if (!prefixes) {
       return;
     }
 
-    const ops: AbstractBatchDelOperation<LevelDatabase<string, string>, string>[] = [ ];
+    const ops: LevelWrapperBatchOperation<string>[] = [ ];
     for (const prefix of JSON.parse(prefixes)) {
       ops.push({ type: 'del', key: this.join(prefix, id) });
     }
     ops.push({ type: 'del', key: `__${id}__prefixes` });
 
-    await abortOr(options?.signal, this.db.batch(ops));
+    return this.db.batch(ops, options);
   }
 
-  clear(): Promise<void> {
+  async clear(): Promise<void> {
     return this.db.clear();
   }
 
   private async findExactMatches(propertyName: string, propertyValue: unknown, options?: IndexLevelOptions): Promise<Matches> {
     const propertyKey = this.join(propertyName, this.encodeValue(propertyValue));
 
-    const iteratorOptions: AbstractIteratorOptions<string, string> = {
+    const iteratorOptions: LevelWrapperIteratorOptions<string> = {
       gt: propertyKey
     };
 
@@ -151,7 +133,7 @@ export class IndexLevel {
   private async findRangeMatches(propertyName: string, range: RangeFilter, options?: IndexLevelOptions): Promise<Matches> {
     const propertyKey = this.join(propertyName);
 
-    const iteratorOptions: AbstractIteratorOptions<string, string> = { };
+    const iteratorOptions: LevelWrapperIteratorOptions<string> = { };
     for (const comparator in range) {
       iteratorOptions[comparator] = this.join(propertyName, this.encodeValue(range[comparator]));
     }
@@ -171,7 +153,7 @@ export class IndexLevel {
 
   private async findMatches(
     propertyName: string,
-    iteratorOptions: AbstractIteratorOptions<string, string>,
+    iteratorOptions: LevelWrapperIteratorOptions<string>,
     options?: IndexLevelOptions
   ): Promise<Matches> {
     // Since we will stop iterating if we encounter entries that do not start with the `propertyName`, we need to always start from the upper bound.
@@ -181,9 +163,7 @@ export class IndexLevel {
     }
 
     const matches = new Map<string, string>;
-    for await (const [ key, value ] of this.db.iterator(iteratorOptions)) {
-      options?.signal?.throwIfAborted();
-
+    for await (const [ key, value ] of this.db.iterator(iteratorOptions, options)) {
       if (!key.startsWith(propertyName)) {
         break;
       }
@@ -205,10 +185,6 @@ export class IndexLevel {
 
   private join(...values: unknown[]): string {
     return values.join(`\x00`);
-  }
-
-  private async createLevelDatabase(): Promise<void> {
-    this.db ??= await this.config.createLevelDatabase<string, string>(this.config.location, { keyEncoding: 'utf8', valueEncoding: 'utf8' });
   }
 }
 

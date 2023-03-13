@@ -3,7 +3,7 @@ import type { PutResult } from './data-store.js';
 
 import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
-import { createLevelDatabase } from './create-level.js';
+import { createLevelDatabase } from './level-wrapper.js';
 import { DataStore } from './data-store.js';
 import { exporter } from 'ipfs-unixfs-exporter';
 import { importer } from 'ipfs-unixfs-importer';

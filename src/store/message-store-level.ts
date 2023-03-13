@@ -7,7 +7,7 @@ import * as cbor from '@ipld/dag-cbor';
 import { abortOr } from '../utils/abort.js';
 import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
-import { createLevelDatabase } from './create-level.js';
+import { createLevelDatabase } from './level-wrapper.js';
 import { IndexLevel } from './index-level.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 

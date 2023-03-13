@@ -5,7 +5,7 @@ import { Message } from '../../src/core/message.js';
 import { MessageStoreLevel } from '../../src/store/message-store-level.js';
 import { RecordsWriteMessage } from '../../src/interfaces/records/types.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { createLevelDatabase, LevelDatabase, LevelDatabaseOptions } from '../../src/store/create-level.js';
+import { createLevelDatabase, CreateLevelDatabaseOptions, LevelDatabase } from '../../src/store/level-wrapper.js';
 
 let messageStore: MessageStoreLevel;
 
@@ -131,7 +131,7 @@ describe('MessageStoreLevel Tests', () => {
       const messageStore = new MessageStoreLevel({
         blockstoreLocation : 'TEST-BLOCKSTORE',
         indexLocation      : 'TEST-INDEX',
-        createLevelDatabase<K, V>(location, options?: LevelDatabaseOptions<K, V>): Promise<LevelDatabase<K, V>> {
+        createLevelDatabase<V>(location, options?: CreateLevelDatabaseOptions<V>): Promise<LevelDatabase<V>> {
           locations.add(location);
           return createLevelDatabase(location, options);
         }
