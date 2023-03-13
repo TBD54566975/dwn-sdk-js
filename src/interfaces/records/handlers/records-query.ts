@@ -2,11 +2,11 @@ import type { MethodHandler } from '../../types.js';
 import type { RecordsQueryMessage, RecordsWriteMessage } from '../types.js';
 
 import { authenticate } from '../../../core/auth.js';
-import { BaseMessage } from '../../../core/types.js';
 import { lexicographicalCompare } from '../../../utils/string.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { StorageController } from '../../../store/storage-controller.js';
 
+import { BaseMessage, QueryResultEntry } from '../../../core/types.js';
 import { DataStore, DidResolver, MessageStore } from '../../../index.js';
 import { DateSort, RecordsQuery } from '../messages/records-query.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
@@ -50,11 +50,10 @@ export class RecordsQueryHandler implements MethodHandler {
     }
 
     // strip away `authorization` property for each record before responding
-    const entries = [];
+    const entries: QueryResultEntry[] = [];
     for (const record of records) {
-      const recordDuplicate = { ...record };
-      delete recordDuplicate.authorization;
-      entries.push(recordDuplicate);
+      const { authorization: _, ...objectWithRemainingProperties } = record; // a trick to stripping away `authorization`
+      entries.push(objectWithRemainingProperties);
     }
 
     return new MessageReply({

@@ -35,14 +35,14 @@ export type TimestampedMessage = BaseMessage & {
 };
 
 /**
- * Message that references `dataCid`.
+ * Message returned in a query result.
+ * NOTE: the message structure is a modified version of the message received, the most notable differences are:
+ * 1. does not contain `authorization`
+ * 2. may include encoded data
  */
-export type DataReferencingMessage = {
-  descriptor: {
-    dataCid: string;
-  };
-
-  encodedData: string;
+export type QueryResultEntry = {
+  descriptor: Descriptor;
+  encodedData?: string;
 };
 
 export type EqualFilter = string | number | boolean;
