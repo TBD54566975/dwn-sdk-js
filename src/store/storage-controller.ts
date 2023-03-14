@@ -1,8 +1,9 @@
 import { DataStore } from './data-store.js';
+import { DwnConstant } from '../core/dwn-constant.js';
 import { MessageStore } from './message-store.js';
 import { Readable } from 'readable-stream';
-import { BaseMessage, Filter } from '../core/types.js';
 
+import { BaseMessage, Filter } from '../core/types.js';
 import { DataStream, Encoder } from '../index.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
@@ -84,12 +85,11 @@ export class StorageController {
 
     const messages = await messageStore.query(tenant, filter);
 
+    // for every message, only include the data as `encodedData` if the data size is equal or smaller than the size threshold
     for (const message of messages) {
       const dataCid = message.descriptor.dataCid;
-      if (dataCid !== undefined) {
-        // TODO: #219 (https://github.com/TBD54566975/dwn-sdk-js/issues/219)
-        // temporary placeholder for keeping status-quo of returning data in `encodedData`
-        // once #219 is implemented, `encodedData` may or may not exist directly as part of the returned message here
+      const dataSize = message.descriptor.dataSize;
+      if (dataCid !== undefined && dataSize! <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
         const readableStream = await dataStore.get(tenant, 'not used yet', dataCid);
         const dataBytes = await DataStream.toBytes(readableStream);
 

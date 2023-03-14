@@ -118,7 +118,7 @@ describe('RecordsDeleteHandler.handle()', () => {
       const reply = await dwn.processMessage(alice.did, queryData.message);
       expect(reply.status.code).to.equal(200);
       expect(reply.entries?.length).to.equal(1);
-      expect((reply.entries[0] as any).encodedData).to.equal(expectedEncodedData);
+      expect(reply.entries[0].encodedData).to.equal(expectedEncodedData);
     });
   });
 

@@ -71,15 +71,11 @@ export abstract class Message {
    * Gets the CID of the given message.
    */
   public static async getCid(message: BaseMessage): Promise<string> {
-    const messageCopy = { ...message };
-
-    // TODO: Once #219 (https://github.com/TBD54566975/dwn-sdk-js/issues/219) is implemented,
-    // `encodedData` will likely not exist directly as part of the message
-    if (messageCopy['encodedData'] !== undefined) {
-      delete (messageCopy as any).encodedData;
-    }
-
-    const cid = await computeCid(messageCopy);
+    // NOTE: we wrap the `computeCid()` here in case that
+    // the message will contain properties that should not be part of the CID computation
+    // and we need to strip them out (like `encodedData` that we historically had for a long time),
+    // but we can remove this method entirely if the code becomes stable and it is apparent that the wrapper is not needed
+    const cid = await computeCid(message);
     return cid;
   }
 

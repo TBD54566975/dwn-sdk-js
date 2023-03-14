@@ -1,5 +1,6 @@
 import type { MethodHandler } from '../../types.js';
 import type { ProtocolsQueryMessage } from '../types.js';
+import type { QueryResultEntry } from '../../../core/types.js';
 
 import { canonicalAuth } from '../../../core/auth.js';
 import { MessageReply } from '../../../core/message-reply.js';
@@ -43,7 +44,14 @@ export class ProtocolsQueryHandler implements MethodHandler {
     };
     removeUndefinedProperties(query);
 
-    const entries = await this.messageStore.query(tenant, query);
+    const records = await this.messageStore.query(tenant, query);
+
+    // strip away `authorization` property for each record before responding
+    const entries: QueryResultEntry[] = [];
+    for (const record of records) {
+      const { authorization: _, ...objectWithRemainingProperties } = record; // a trick to stripping away `authorization`
+      entries.push(objectWithRemainingProperties);
+    }
 
     return new MessageReply({
       status: { code: 200, detail: 'OK' },

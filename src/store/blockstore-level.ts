@@ -11,6 +11,11 @@ import { sleep } from '../utils/time.js';
 // FreeBSD, including any future Node.js and Electron release thanks to Node-API, including ARM
 // platforms like Raspberry Pi and Android, as well as in Chrome, Firefox, Edge, Safari, iOS Safari
 //  and Chrome for Android.
+
+/**
+ * Blockstore implementation using LevelDB for storing the actual messages (in the case of MessageStore)
+ * or the data associated with messages (in the case of a DataStore).
+ */
 export class BlockstoreLevel implements Blockstore {
   config: BlockstoreLevelConfig;
 

@@ -1,4 +1,5 @@
-import { Descriptor } from './types.js';
+import type { QueryResultEntry } from './types.js';
+
 import { Readable } from 'readable-stream';
 
 type Status = {
@@ -8,7 +9,7 @@ type Status = {
 
 type MessageReplyOptions = {
   status: Status,
-  entries?: { descriptor: Descriptor }[];
+  entries?: QueryResultEntry[];
   data? : Readable;
 };
 
@@ -20,7 +21,7 @@ export class MessageReply {
    * e.g. the resulting messages from a RecordsQuery
    * Mutually exclusive with `data`.
    */
-  entries?: { descriptor: Descriptor }[];
+  entries?: QueryResultEntry[];
 
   /**
    * Data corresponding to the message received if applicable (e.g. RecordsRead).
