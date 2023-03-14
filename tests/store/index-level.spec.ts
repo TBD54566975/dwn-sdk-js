@@ -31,7 +31,10 @@ describe('Index Level', () => {
         'c'         : 'd'
       });
 
-      const keys = await index.db.keys().all();
+      const keys = [ ];
+      for await (const key of index.db.keys()) {
+        keys.push(key);
+      }
       expect(keys.length).to.equal(4);
     });
 
@@ -57,8 +60,8 @@ describe('Index Level', () => {
       };
       await index.put(doc);
 
-      await expect(index.db.get(index['join']('empty', '[object Object]', doc._id))).to.be.rejected;
-      await expect(index.db.get(index['join']('empty.nested', '[object Object]', doc._id))).to.be.rejected;
+      await expect(index.db.get(index['join']('empty', '[object Object]', doc._id))).to.eventually.be.undefined;
+      await expect(index.db.get(index['join']('empty.nested', '[object Object]', doc._id))).to.eventually.be.undefined;
     });
 
     it('removes empty arrays', async () => {
@@ -68,8 +71,8 @@ describe('Index Level', () => {
       };
       await index.put(doc);
 
-      await expect(index.db.get(index['join']('empty', '', doc._id))).to.be.rejected;
-      await expect(index.db.get(index['join']('empty.0', '', doc._id))).to.be.rejected;
+      await expect(index.db.get(index['join']('empty', '', doc._id))).to.eventually.be.undefined;
+      await expect(index.db.get(index['join']('empty.0', '', doc._id))).to.eventually.be.undefined;
     });
 
     it('should not put anything if aborted beforehand', async () => {
