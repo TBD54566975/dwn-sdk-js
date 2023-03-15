@@ -21,7 +21,7 @@ describe('DWN', () => {
     // important to follow this pattern to initialize the message store in tests
     // so that different suites can reuse the same block store and index location for testing
     messageStore = new MessageStoreLevel({
-      blockstoreLocation : 'TEST-BLOCKSTORE',
+      blockstoreLocation : 'TEST-MESSAGESTORE',
       indexLocation      : 'TEST-INDEX'
     });
 

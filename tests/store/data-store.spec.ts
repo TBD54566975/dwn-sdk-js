@@ -7,7 +7,7 @@ let store: DataStoreLevel;
 
 describe('DataStore Test Suite', () => {
   before(async () => {
-    store = new DataStoreLevel({ blockstoreLocation: 'TEST-BLOCKSTORE' });
+    store = new DataStoreLevel({ blockstoreLocation: 'TEST-MESSAGESTORE' });
     await store.open();
   });
 
