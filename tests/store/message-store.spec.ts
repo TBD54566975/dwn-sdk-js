@@ -13,7 +13,7 @@ describe('MessageStoreLevel Tests', () => {
   describe('put', function () {
     before(async () => {
       messageStore = new MessageStoreLevel({
-        blockstoreLocation : 'TEST-BLOCKSTORE',
+        blockstoreLocation : 'TEST-MESSAGESTORE',
         indexLocation      : 'TEST-INDEX'
       });
       await messageStore.open();
@@ -129,7 +129,7 @@ describe('MessageStoreLevel Tests', () => {
       const locations = new Set;
 
       const messageStore = new MessageStoreLevel({
-        blockstoreLocation : 'TEST-BLOCKSTORE',
+        blockstoreLocation : 'TEST-MESSAGESTORE',
         indexLocation      : 'TEST-INDEX',
         createLevelDatabase<V>(location, options?: CreateLevelDatabaseOptions<V>): Promise<LevelDatabase<V>> {
           locations.add(location);
@@ -138,7 +138,7 @@ describe('MessageStoreLevel Tests', () => {
       });
       await messageStore.open();
 
-      expect(locations).to.eql(new Set([ 'TEST-BLOCKSTORE', 'TEST-INDEX' ]));
+      expect(locations).to.eql(new Set([ 'TEST-MESSAGESTORE', 'TEST-INDEX' ]));
     });
   });
 });

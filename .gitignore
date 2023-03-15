@@ -9,12 +9,14 @@ dist
 try.ts
 # locally used file as a js playground
 try.js
+
 # default location for levelDB data storage in a non-browser env
+MESSAGESTORE
 DATASTORE
-BLOCKSTORE
 # location for levelDB data storage for non-browser tests
 TEST-DATASTORE
-TEST-BLOCKSTORE
+TEST-MESSAGESTORE
+
 # default location for index specific levelDB data storage in a non-browser env
 INDEX
 # location for index specific levelDB data storage levelDB data storage for non-browser tests

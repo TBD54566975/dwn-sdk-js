@@ -31,7 +31,7 @@ export class MessageStoreLevel implements MessageStore {
    */
   constructor(config: MessageStoreLevelConfig = {}) {
     this.config = {
-      blockstoreLocation : 'BLOCKSTORE',
+      blockstoreLocation : 'MESSAGESTORE',
       indexLocation      : 'INDEX',
       createLevelDatabase,
       ...config

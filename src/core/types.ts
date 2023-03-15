@@ -49,7 +49,6 @@ export type EqualFilter = string | number | boolean;
 
 export type OneOfFilter = EqualFilter[];
 
-
 /**
  * "greater than" or "greater than or equal to" range condition. `gt` and `gte` are mutually exclusive.
  */
