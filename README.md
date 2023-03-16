@@ -83,11 +83,11 @@ The version string contains the date as well as the commit hash of the last chan
 
 An example version string:
 
-`0.0.26-unstable-2022-12-31-ccd9e18`
+`0.0.26-unstable-2023-03-16-36ec2ce`
 
 - `0.0.26` came from `version` in `package.json`
-- `2023-12-31` indicates the date of March 15th 2023
-- `ccd9e18` is the commit hash of the last change
+- `2023-03-16` indicates the date of March 16th 2023
+- `36ec2ce` is the commit hash of the last change
 
 ## Some projects that use this library: 
 
