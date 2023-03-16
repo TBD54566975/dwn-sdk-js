@@ -65,8 +65,33 @@ With a web wallet installed:
   });
 ```  
 
+## Release/Build Process
+The DWN JS SDK releases builds to [npmjs.com](https://www.npmjs.com/package/@tbd54566975/dwn-sdk-js). There are two build types: stable build and unstable build.
+
+### Stable Build
+This is triggered manually by:
+ 1. Increment `version` in `package.json` in [Semantic Versioning (semver)](https://semver.org/) format.
+ 2. Merge the change into `main` branch
+ 3. Create a release from GitHub.
+ 
+ An official build with version matching the `package.json` will be published to [npmjs.com](https://www.npmjs.com/package/@tbd54566975/dwn-sdk-js).
+
+### Unstable Build
+Every push to the `main` branch will automatically trigger an unstable build to [npmjs.com](https://www.npmjs.com/package/@tbd54566975/dwn-sdk-js) for developers to experiment and test.
+
+The version string contains the date as well as the commit hash of the last change.
+
+An example version string:
+
+`0.0.26-unstable-2022-12-31-ccd9e18`
+
+- `0.0.26` came from `version` in `package.json`
+- `2023-12-31` indicates the date of March 15th 2023
+- `ccd9e18` is the commit hash of the last change
+
 ## Some projects that use this library: 
 
+* [Web5 JS SDK](https://github.com/TBD54566975/web5-js)
 * [Example CLI](https://github.com/TBD54566975/dwn-cli)
 * [Example with a web wallet](https://github.com/TBD54566975/incubating-web5-labs/)
 * [Server side aggregator](https://github.com/TBD54566975/dwn-server)
