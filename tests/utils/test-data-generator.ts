@@ -85,6 +85,8 @@ export type GenerateRecordsWriteInput = {
   parentId?: string;
   published?: boolean;
   data?: Uint8Array;
+  dataCid?: string;
+  dataSize?: number;
   dataFormat?: string;
   dateCreated?: string;
   dateModified?: string;
@@ -110,7 +112,9 @@ export type GenerateFromRecordsWriteOut = {
 export type GenerateRecordsWriteOutput = {
   requester: Persona;
   message: RecordsWriteMessage;
-  dataBytes: Uint8Array;
+  dataCid?: string;
+  dataSize?: number;
+  dataBytes?: Uint8Array;
   dataStream: Readable;
   recordsWrite: RecordsWrite;
 };
@@ -125,6 +129,11 @@ export type GenerateRecordsQueryInput = {
 export type GenerateRecordsQueryOutput = {
   requester: Persona;
   message: RecordsQueryMessage;
+};
+
+export type GenerateRecordsDeleteInput = {
+  requester?: Persona;
+  recordId?: string;
 };
 
 export type GenerateRecordsDeleteOutput = {
@@ -265,8 +274,14 @@ export class TestDataGenerator {
     const authorizationSignatureInput = Jws.createSignatureInput(requester);
     const attestationSignatureInputs = Jws.createSignatureInputs(input?.attesters ?? []);
 
-    const dataBytes = input?.data ?? TestDataGenerator.randomBytes(32);
-    const dataStream = DataStream.fromBytes(dataBytes);
+    const dataCid = input?.dataCid;
+    const dataSize = input?.dataSize;
+    let dataBytes;
+    let dataStream;
+    if (dataCid === undefined && dataSize === undefined) {
+      dataBytes = input?.data ?? TestDataGenerator.randomBytes(32);
+      dataStream = DataStream.fromBytes(dataBytes);
+    }
 
     const options: RecordsWriteOptions = {
       recipient     : input?.recipientDid,
@@ -281,10 +296,11 @@ export class TestDataGenerator {
       dateModified  : input?.dateModified,
       datePublished : input?.datePublished,
       data          : dataBytes,
+      dataCid,
+      dataSize,
       authorizationSignatureInput,
       attestationSignatureInputs
     };
-
 
     const recordsWrite = await RecordsWrite.create(options);
     const message = recordsWrite.message as RecordsWriteMessage;
@@ -292,6 +308,8 @@ export class TestDataGenerator {
     return {
       requester,
       message,
+      dataCid,
+      dataSize,
       dataBytes,
       dataStream,
       recordsWrite
@@ -359,11 +377,11 @@ export class TestDataGenerator {
   /**
    * Generates a RecordsDelete for testing.
    */
-  public static async generateRecordsDelete(): Promise<GenerateRecordsDeleteOutput> {
-    const requester = await DidKeyResolver.generate();
+  public static async generateRecordsDelete(input?: GenerateRecordsDeleteInput): Promise<GenerateRecordsDeleteOutput> {
+    const requester = input?.requester ?? await DidKeyResolver.generate();
 
     const recordsDelete = await RecordsDelete.create({
-      recordId                    : await TestDataGenerator.randomCborSha256Cid(),
+      recordId                    : input?.recordId ?? await TestDataGenerator.randomCborSha256Cid(),
       authorizationSignatureInput : Jws.createSignatureInput(requester)
     });
 

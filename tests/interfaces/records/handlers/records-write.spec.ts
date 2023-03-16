@@ -5,13 +5,13 @@ import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import { base64url } from 'multiformats/bases/base64';
-import { computeCid } from '../../../../src/utils/cid.js';
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DataStream } from '../../../../src/utils/data-stream.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DidResolver } from '../../../../src/did/did-resolver.js';
 import { DwnErrorCode } from '../../../../src/core/dwn-error.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
+import { fromAsync } from '../../../../src/utils/array.js';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
 import { Message } from '../../../../src/core/message.js';
@@ -21,7 +21,7 @@ import { RecordsWriteHandler } from '../../../../src/interfaces/records/handlers
 import { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
 import { StorageController } from '../../../../src/store/storage-controller.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
-
+import { Cid, computeCid } from '../../../../src/utils/cid.js';
 import { Dwn, Jws, ProtocolDefinition, RecordsWrite } from '../../../../src/index.js';
 import { GenerateFromRecordsWriteOut, TestDataGenerator } from '../../../utils/test-data-generator.js';
 
@@ -304,8 +304,15 @@ describe('RecordsWriteHandler.handle()', () => {
     describe('initial write & subsequent write tests', () => {
       describe('createFrom()', () => {
         it('should accept a published RecordsWrite using createFrom() without specifying `data` or `datePublished`', async () => {
-          const { message, requester, recordsWrite, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({
-            published: false
+          const dataForCid = await dataStore.blockstore.partition('data');
+
+          const data = Encoder.stringToBytes('test');
+          const dataCid = await Cid.computeDagPbCidFromBytes(data);
+          const encodedData = Encoder.bytesToBase64Url(data);
+
+          const { message, requester, recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
+            published: false,
+            data,
           });
           const tenant = requester.did;
 
@@ -313,8 +320,9 @@ describe('RecordsWriteHandler.handle()', () => {
           TestStubGenerator.stubDidResolver(didResolver, [requester]);
 
           const reply = await dwn.processMessage(tenant, message, dataStream);
-
           expect(reply.status.code).to.equal(202);
+
+          expect(fromAsync(dataForCid.db.keys())).to.eventually.eql([ dataCid ]);
 
           const newWrite = await RecordsWrite.createFrom({
             unsignedRecordsWriteMessage : recordsWrite.message,
@@ -323,8 +331,9 @@ describe('RecordsWriteHandler.handle()', () => {
           });
 
           const newWriteReply = await dwn.processMessage(tenant, newWrite.message);
-
           expect(newWriteReply.status.code).to.equal(202);
+
+          expect(fromAsync(dataForCid.db.keys())).to.eventually.eql([ dataCid ]);
 
           // verify the new record state can be queried
           const recordsQueryMessageData = await TestDataGenerator.generateRecordsQuery({
@@ -338,7 +347,9 @@ describe('RecordsWriteHandler.handle()', () => {
           expect((recordsQueryReply.entries![0] as RecordsWriteMessage).descriptor.published).to.equal(true);
 
           // very importantly verify the original data is still returned
-          expect(recordsQueryReply.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(dataBytes));
+          expect(recordsQueryReply.entries![0].encodedData).to.equal(encodedData);
+
+          expect(fromAsync(dataForCid.db.keys())).to.eventually.eql([ dataCid ]);
         });
 
         it('should inherit parent published state when using createFrom() to create RecordsWrite', async () => {

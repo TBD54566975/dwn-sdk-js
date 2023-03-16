@@ -2,16 +2,28 @@ import type { ImportResult } from 'ipfs-unixfs-importer';
 import type { PutResult } from './data-store.js';
 
 import { BlockstoreLevel } from './blockstore-level.js';
-import { CID } from 'multiformats/cid';
 import { createLevelDatabase } from './level-wrapper.js';
 import { DataStore } from './data-store.js';
 import { exporter } from 'ipfs-unixfs-exporter';
 import { importer } from 'ipfs-unixfs-importer';
 import { Readable } from 'readable-stream';
 
+const DATA_PARTITION = 'data';
+const HOST_PARTITION = 'host';
+
+// `BlockstoreLevel` doesn't support being a `Set` (i.e. it always requires a value), so use a placeholder instead.
+const PLACEHOLDER_VALUE = new Uint8Array();
+
 /**
  * A simple implementation of {@link DataStore} that works in both the browser and server-side.
  * Leverages LevelDB under the hood.
+ *
+ * It has the following structure (`+` represents a sublevel and `->` represents a key->value pair):
+ *   'data' + <dataCid> -> <data>
+ *   'host' + <dataCid> + <tenant> + <messageCid> -> PLACEHOLDER_VALUE
+ *
+ * This allows for the <data> to be shared for everything that uses the same <dataCid> while also making
+ * sure that the <data> can only be deleted if there are no <messageCid> for any <tenant> still using it.
  */
 export class DataStoreLevel implements DataStore {
   config: DataStoreLevelConfig;
@@ -39,10 +51,10 @@ export class DataStoreLevel implements DataStore {
     await this.blockstore.close();
   }
 
-  async put(tenant: string, recordId: string, dataStream: Readable): Promise<PutResult> {
-    const partition = await this.blockstore.partition(tenant);
+  async put(tenant: string, messageCid: string, dataStream: Readable): Promise<PutResult> {
+    const dataPartition = await this.blockstore.partition(DATA_PARTITION);
 
-    const asyncDataBlocks = importer([{ content: dataStream }], partition, { cidVersion: 1 });
+    const asyncDataBlocks = importer([{ content: dataStream }], dataPartition, { cidVersion: 1 });
 
     // NOTE: the last block contains the root CID as well as info to derive the data size
     let block: ImportResult;
@@ -51,24 +63,38 @@ export class DataStoreLevel implements DataStore {
     const dataCid = block.cid.toString();
     const dataSize = block.unixfs ? Number(block.unixfs!.fileSize()) : Number(block.size);
 
+    const tenantsForData = await this.blockstore.partition(HOST_PARTITION);
+    const messagesForTenant = await tenantsForData.partition(dataCid);
+    const messages = await messagesForTenant.partition(tenant);
+
+    await messages.put(messageCid, PLACEHOLDER_VALUE);
+
     return {
       dataCid,
       dataSize
     };
   }
 
-  public async get(tenant: string, recordId: string, dataCid: string): Promise<Readable | undefined> {
-    const partition = await this.blockstore.partition(tenant);
+  public async get(tenant: string, messageCid: string, dataCid: string): Promise<Readable | undefined> {
+    const tenantsForData = await this.blockstore.partition(HOST_PARTITION);
+    const messagesForTenant = await tenantsForData.partition(dataCid);
+    const messages = await messagesForTenant.partition(tenant);
 
-    const cid = CID.parse(dataCid);
-    const bytes = await partition.get(cid);
+    const allowed = await messages.has(messageCid);
+    if (!allowed) {
+      return undefined;
+    }
+
+    const dataPartition = await this.blockstore.partition(DATA_PARTITION);
+
+    const bytes = await dataPartition.get(dataCid);
 
     if (!bytes) {
       return undefined;
     }
 
     // data is chunked into dag-pb unixfs blocks. re-inflate the chunks.
-    const dataDagRoot = await exporter(dataCid, partition);
+    const dataDagRoot = await exporter(dataCid, dataPartition);
     const contentIterator = dataDagRoot.content()[Symbol.asyncIterator]();
 
     const readableStream = new Readable({
@@ -85,22 +111,52 @@ export class DataStoreLevel implements DataStore {
     return readableStream;
   }
 
-  public async has(tenant: string, recordId: string, dataCid: string): Promise<boolean> {
-    const partition = await this.blockstore.partition(tenant);
+  public async associate(tenant: string, messageCid: string, dataCid: string): Promise<boolean> {
+    const dataPartition = await this.blockstore.partition(DATA_PARTITION);
 
-    const cid = CID.parse(dataCid);
-    const rootBlockBytes = await partition.get(cid);
+    const exists = await dataPartition.has(dataCid);
+    if (!exists) {
+      return false;
+    }
 
-    return (rootBlockBytes !== undefined);
+    const tenantsForData = await this.blockstore.partition(HOST_PARTITION);
+    const messagesForTenant = await tenantsForData.partition(dataCid);
+    const messages = await messagesForTenant.partition(tenant);
+
+    const isFirstMessage = await messages.isEmpty();
+    if (isFirstMessage) {
+      return false;
+    }
+
+    await messages.put(messageCid, PLACEHOLDER_VALUE);
+
+    return true;
   }
 
-  public async delete(tenant: string, recordId: string, dataCid: string): Promise<void> {
-    const partition = await this.blockstore.partition(tenant);
+  public async delete(tenant: string, messageCid: string, dataCid: string): Promise<void> {
+    const tenantsForData = await this.blockstore.partition(HOST_PARTITION);
+    const messagesForTenant = await tenantsForData.partition(dataCid);
+    const messages = await messagesForTenant.partition(tenant);
 
-    // TODO: Implement data deletion in Records - https://github.com/TBD54566975/dwn-sdk-js/issues/84
-    const cid = CID.parse(dataCid);
-    await partition.delete(cid);
-    return;
+    await messages.delete(messageCid);
+
+    const wasLastMessage = await messages.isEmpty();
+    if (!wasLastMessage) {
+      return;
+    }
+
+    await messagesForTenant.delete(tenant);
+
+    const wasLastTenant = await messagesForTenant.isEmpty();
+    if (!wasLastTenant) {
+      return;
+    }
+
+    await tenantsForData.delete(dataCid);
+
+    const dataPartition = await this.blockstore.partition(DATA_PARTITION);
+
+    await dataPartition.delete(dataCid);
   }
 
   /**

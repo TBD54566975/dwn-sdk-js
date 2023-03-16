@@ -96,12 +96,9 @@ export class MessageStoreLevel implements MessageStore {
 
     const partition = await abortOr(options?.signal, this.blockstore.partition(tenant));
 
-    // TODO: Implement data deletion in Records - https://github.com/TBD54566975/dwn-sdk-js/issues/84
     const cid = CID.parse(cidString);
     await partition.delete(cid, options);
     await this.index.delete(cidString, options);
-
-    return;
   }
 
   async put(
