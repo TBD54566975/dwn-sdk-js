@@ -105,6 +105,10 @@ export class LevelWrapper<V> {
     }
   }
 
+  async has(key: string, options?: LevelWrapperOptions): Promise<boolean> {
+    return !! await this.get(key, options);
+  }
+
   async * keys(options?: LevelWrapperOptions): AsyncGenerator<string> {
     options?.signal?.throwIfAborted();
 
@@ -143,6 +147,13 @@ export class LevelWrapper<V> {
     await abortOr(options?.signal, this.createLevelDatabase());
 
     return abortOr(options?.signal, this.db.del(String(key)));
+  }
+
+  async isEmpty(options?: LevelWrapperOptions): Promise<boolean> {
+    for await (const _key of this.keys(options)) {
+      return false;
+    }
+    return true;
   }
 
   async clear(): Promise<void> {

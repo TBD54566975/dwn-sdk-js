@@ -40,20 +40,24 @@ export class BlockstoreLevel implements Blockstore {
     return new BlockstoreLevel({ ...this.config, location: '' }, db);
   }
 
-  async put(key: CID, val: Uint8Array, options?: Options): Promise<void> {
-    return this.db.put(key.toString(), val, options);
+  async put(key: CID | string, val: Uint8Array, options?: Options): Promise<void> {
+    return this.db.put(String(key), val, options);
   }
 
-  async get(key: CID, options?: Options): Promise<Uint8Array> {
-    return this.db.get(key.toString(), options);
+  async get(key: CID | string, options?: Options): Promise<Uint8Array> {
+    return this.db.get(String(key), options);
   }
 
-  async has(key: CID, options?: Options): Promise<boolean> {
-    return !! await this.get(key, options);
+  async has(key: CID | string, options?: Options): Promise<boolean> {
+    return this.db.has(String(key), options);
   }
 
-  async delete(key: CID, options?: Options): Promise<void> {
-    return this.db.delete(key.toString(), options);
+  async delete(key: CID | string, options?: Options): Promise<void> {
+    return this.db.delete(String(key), options);
+  }
+
+  async isEmpty(options?: Options): Promise<boolean> {
+    return this.db.isEmpty(options);
   }
 
   async * putMany(source: AwaitIterable<Pair<CID, Uint8Array>>, options?: Options):

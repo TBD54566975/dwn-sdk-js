@@ -76,8 +76,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     // delete all existing records that are smaller
     for (const message of existingMessages) {
       if (await Message.isCidLarger(newestMessage, message)) {
-        const cid = await Message.getCid(message);
-        await this.messageStore.delete(tenant, cid);
+        await StorageController.delete(this.messageStore, this.dataStore, tenant, message);
       }
     }
 

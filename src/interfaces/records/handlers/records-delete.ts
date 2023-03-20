@@ -75,7 +75,7 @@ export class RecordsDeleteHandler implements MethodHandler {
     }
 
     // delete all existing messages that are not newest, except for the initial write
-    await deleteAllOlderMessagesButKeepInitialWrite(tenant, existingMessages, newestMessage, this.messageStore);
+    await deleteAllOlderMessagesButKeepInitialWrite(tenant, existingMessages, newestMessage, this.messageStore, this.dataStore);
 
     return messageReply;
   };

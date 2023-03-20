@@ -1,9 +1,10 @@
-import { DataStore } from './data-store.js';
-import { DwnConstant } from '../core/dwn-constant.js';
-import { MessageStore } from './message-store.js';
-import { Readable } from 'readable-stream';
+import type { DataStore } from './data-store.js';
+import type { MessageStore } from './message-store.js';
+import type { Readable } from 'readable-stream';
+import type { BaseMessage, Filter } from '../core/types.js';
 
-import { BaseMessage, Filter } from '../core/types.js';
+import { DwnConstant } from '../core/dwn-constant.js';
+import { Message } from '../core/message.js';
 import { DataStream, Encoder } from '../index.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
@@ -33,10 +34,11 @@ export class StorageController {
     // a subsequent RecordsWrite that changes the `published` property, but the data hasn't changed,
     // in this case requiring re-uploading of the data is extremely inefficient so we take care allow omission of data stream
     if (message.descriptor.dataCid !== undefined) {
+      const messageCid = await Message.getCid(message);
+
       if (dataStream === undefined) {
         // the message implies that the data is already in the DB, so we check to make sure the data already exist
-        // TODO: #218 - Use tenant + record scoped IDs - https://github.com/TBD54566975/dwn-sdk-js/issues/218
-        const hasData = await dataStore.has(tenant, 'not used yet', message.descriptor.dataCid);
+        const hasData = await dataStore.associate(tenant, messageCid, message.descriptor.dataCid);
 
         if (!hasData) {
           throw new DwnError(
@@ -45,13 +47,13 @@ export class StorageController {
           );
         }
       } else {
-        const { dataCid, dataSize } = await dataStore.put(tenant, 'not used yet', dataStream);
+        const { dataCid, dataSize } = await dataStore.put(tenant, messageCid, dataStream);
 
         // MUST verify that the size of the actual data matches with the given `dataSize`
         // if data size is wrong, delete the data we just stored
         if (message.descriptor.dataSize !== dataSize) {
           // there is an opportunity to improve here: handle the edge cae of if the delete fails...
-          await dataStore.delete(tenant, 'not used yet', dataCid);
+          await dataStore.delete(tenant, messageCid, dataCid);
 
           throw new DwnError(
             DwnErrorCode.MessageStoreDataSizeMismatch,
@@ -63,7 +65,7 @@ export class StorageController {
         // if data CID is wrong, delete the data we just stored
         if (message.descriptor.dataCid !== dataCid) {
           // there is an opportunity to improve here: handle the edge cae of if the delete fails...
-          await dataStore.delete(tenant, 'not used yet', dataCid);
+          await dataStore.delete(tenant, messageCid, dataCid);
 
           throw new DwnError(
             DwnErrorCode.MessageStoreDataCidMismatch,
@@ -90,7 +92,8 @@ export class StorageController {
       const dataCid = message.descriptor.dataCid;
       const dataSize = message.descriptor.dataSize;
       if (dataCid !== undefined && dataSize! <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
-        const readableStream = await dataStore.get(tenant, 'not used yet', dataCid);
+        const messageCid = await Message.getCid(message);
+        const readableStream = await dataStore.get(tenant, messageCid, dataCid);
         const dataBytes = await DataStream.toBytes(readableStream);
 
         message['encodedData'] = Encoder.bytesToBase64Url(dataBytes);
@@ -98,5 +101,20 @@ export class StorageController {
     }
 
     return messages;
+  }
+
+  public static async delete(
+    messageStore: MessageStore,
+    dataStore: DataStore,
+    tenant: string,
+    message: BaseMessage
+  ): Promise<void> {
+    const messageCid = await Message.getCid(message);
+
+    if (message.descriptor.dataCid !== undefined) {
+      await dataStore.delete(tenant, messageCid, message.descriptor.dataCid);
+    }
+
+    await messageStore.delete(tenant, messageCid);
   }
 }

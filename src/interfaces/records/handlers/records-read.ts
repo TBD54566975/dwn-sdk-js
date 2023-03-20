@@ -1,13 +1,13 @@
 import type { MethodHandler } from '../../types.js';
+import type { TimestampedMessage } from '../../../core/types.js';
+import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 import type { RecordsReadMessage, RecordsWriteMessage } from '../types.js';
 
 import { authenticate } from '../../../core/auth.js';
+import { Message } from '../../../core/message.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsRead } from '../messages/records-read.js';
 import { RecordsWrite } from '../messages/records-write.js';
-import { TimestampedMessage } from '../../../core/types.js';
-
-import { DataStore, DidResolver, MessageStore } from '../../../index.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 
 export class RecordsReadHandler implements MethodHandler {
@@ -71,7 +71,8 @@ export class RecordsReadHandler implements MethodHandler {
       }
     }
 
-    const readableStream = await this.dataStore.get(tenant, newestRecordsWrite.recordId, newestRecordsWrite.descriptor.dataCid);
+    const messageCid = await Message.getCid(newestRecordsWrite);
+    const readableStream = await this.dataStore.get(tenant, messageCid, newestRecordsWrite.descriptor.dataCid);
 
     if (readableStream === undefined) {
       return new MessageReply({
