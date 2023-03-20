@@ -1,7 +1,10 @@
 import * as cbor from '@ipld/dag-cbor';
 
+import type { Readable } from 'readable-stream';
+
 import { CID } from 'multiformats/cid';
 import { importer } from 'ipfs-unixfs-importer';
+import { MemoryBlockstore } from 'blockstore-core';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 // a map of all supported CID hashing algorithms. This map is used to select the appropriate hasher
@@ -16,20 +19,6 @@ const codecs = {
   [cbor.code]: cbor
 };
 
-
-/**
- * @returns V1 CID of the DAG comprised by chunking data into unixfs dag-pb encoded blocks
- */
-export async function computeDagPbCid(content: Uint8Array): Promise<string> {
-  const asyncDataBlocks = importer([{ content }], undefined, { onlyHash: true, cidVersion: 1 });
-
-  // NOTE: the last block contains the root CID
-  let block;
-  for await (block of asyncDataBlocks) { ; }
-
-  return block.cid.toString();
-}
-
 /**
  * Computes a V1 CID for the provided payload
  * @param payload
@@ -40,7 +29,11 @@ export async function computeDagPbCid(content: Uint8Array): Promise<string> {
  * @throws {Error} encoding fails
  * @throws {Error} if hasher is not supported
  */
-export async function computeCid(payload: any, codecCode = cbor.code, multihashCode = sha256.code): Promise<string> {
+export async function computeCid(
+  payload: any,
+  codecCode: number = cbor.code,
+  multihashCode: number = sha256.code
+): Promise<string> {
   const codec = codecs[codecCode];
   if (!codec) {
     throw new Error(`codec [${codecCode}] not supported`);
@@ -70,4 +63,36 @@ export function parseCid(str: string): CID {
   }
 
   return cid;
+}
+
+
+/**
+ * Utility class for creating CIDs. Exported for the convenience of developers.
+ */
+export class Cid {
+  /**
+   * @returns V1 CID of the DAG comprised by chunking data into unixfs DAG-PB encoded blocks
+   */
+  public static async computeDagPbCidFromBytes(content: Uint8Array): Promise<string> {
+    const asyncDataBlocks = importer([{ content }], new MemoryBlockstore(), { cidVersion: 1 });
+
+    // NOTE: the last block contains the root CID
+    let block;
+    for await (block of asyncDataBlocks) { ; }
+
+    return block.cid.toString();
+  }
+
+  /**
+   * @returns V1 CID of the DAG comprised by chunking data into unixfs DAG-PB encoded blocks
+   */
+  public static async computeDagPbCidFromStream(dataStream: Readable): Promise<string> {
+    const asyncDataBlocks = importer([{ content: dataStream }], new MemoryBlockstore(), { cidVersion: 1 });
+
+    // NOTE: the last block contains the root CID
+    let block;
+    for await (block of asyncDataBlocks) { ; }
+
+    return block.cid.toString();
+  }
 }

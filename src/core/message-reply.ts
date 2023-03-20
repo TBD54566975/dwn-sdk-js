@@ -1,4 +1,6 @@
-import type { Descriptor } from './types.js';
+import type { QueryResultEntry } from './types.js';
+
+import { Readable } from 'readable-stream';
 
 type Status = {
   code: number
@@ -7,19 +9,31 @@ type Status = {
 
 type MessageReplyOptions = {
   status: Status,
-  entries?: { descriptor: Descriptor }[];
+  entries?: QueryResultEntry[];
+  data? : Readable;
 };
 
 export class MessageReply {
   status: Status;
-  // resulting message entries returned from the invocation of the corresponding message
-  // e.g. the resulting messages from a RecordsQuery
-  entries?: { descriptor: Descriptor }[];
+
+  /**
+   * Resulting message entries returned from the invocation of the corresponding message.
+   * e.g. the resulting messages from a RecordsQuery
+   * Mutually exclusive with `data`.
+   */
+  entries?: QueryResultEntry[];
+
+  /**
+   * Data corresponding to the message received if applicable (e.g. RecordsRead).
+   * Mutually exclusive with `entries`.
+   */
+  data?: Readable;
 
   constructor(opts: MessageReplyOptions) {
-    const { status, entries } = opts;
+    const { status, entries, data } = opts;
 
     this.status = status;
     this.entries = entries;
+    this.data = data;
   }
 }

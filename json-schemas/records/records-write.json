@@ -51,6 +51,9 @@
         "dataCid": {
           "type": "string"
         },
+        "dataSize": {
+          "type": "number"
+        },
         "dateCreated": {
           "type": "string"
         },
@@ -72,6 +75,7 @@
         "interface",
         "method",
         "dataCid",
+        "dataSize",
         "dateCreated",
         "dateModified",
         "dataFormat"

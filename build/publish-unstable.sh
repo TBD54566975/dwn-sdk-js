@@ -9,8 +9,8 @@ export PATH="$PATH:node_modules/.bin"
 # Fetch the current version from the package.json
 new_version=$(node -pe "require('./package.json').version")
 
-# Fetch the new unstable version
-new_unstable_version=$new_version"-unstable.$(git rev-parse --short HEAD)-$(date +'%Y.%m.%d-%H-%M-%S') "
+# Generate the new unstable version
+new_unstable_version=$new_version"-unstable-$(date +'%Y-%m-%d')-$(git rev-parse --short HEAD)"
 
 # Set the unstable version in the package.json
 npm version $new_unstable_version --no-git-tag-version

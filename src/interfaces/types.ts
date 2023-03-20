@@ -1,14 +1,17 @@
 import type { BaseMessage } from '../core/types.js';
 import type { MessageReply } from '../core/message-reply.js';
-import type { MessageStore } from '../store/message-store.js';
+import type { Readable } from 'readable-stream';
 
-import { DidResolver } from '../did/did-resolver.js';
-import { Readable } from 'readable-stream';
-
-export type MethodHandler = (input: {
-  tenant: string;
-  message: BaseMessage;
-  dataStream?: Readable
-  messageStore: MessageStore;
-  didResolver: DidResolver
-}) => Promise<MessageReply>;
+/**
+ * Interface that defines a message handler of a specific method.
+ */
+export interface MethodHandler {
+  /**
+   * Handles the given message and returns a `MessageReply` response.
+   */
+  handle(input: {
+    tenant: string;
+    message: BaseMessage;
+    dataStream?: Readable
+  }): Promise<MessageReply>;
+}

@@ -11,6 +11,7 @@ export type RecordsWriteDescriptor = {
   schema?: string;
   parentId?: string;
   dataCid: string;
+  dataSize: number;
   dateCreated: string;
   dateModified: string;
   published?: boolean;
@@ -55,9 +56,6 @@ export type RecordsQueryFilter = {
   dateCreated?: RangeCriterion;
 };
 
-/**
- * A range criterion in a query filter.
- */
 export type RangeCriterion = {
   /**
    * Inclusive starting date-time.
@@ -83,6 +81,18 @@ export type RecordsWriteAuthorizationPayload = {
 
 export type RecordsQueryMessage = BaseMessage & {
   descriptor: RecordsQueryDescriptor;
+};
+
+export type RecordsReadMessage = {
+  authorization?: GeneralJws;
+  descriptor: RecordsReadDescriptor;
+};
+
+export type RecordsReadDescriptor = {
+  interface: DwnInterfaceName.Records;
+  method: DwnMethodName.Read;
+  recordId: string;
+  date: string;
 };
 
 export type RecordsDeleteMessage = BaseMessage & {

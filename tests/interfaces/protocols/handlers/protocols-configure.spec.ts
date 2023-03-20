@@ -2,44 +2,53 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
+import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
-import { handleProtocolsConfigure } from '../../../../src/interfaces/protocols/handlers/protocols-configure.js';
-import { handleProtocolsQuery } from '../../../../src/interfaces/protocols/handlers/protocols-query.js';
 import { lexicographicalCompare } from '../../../../src/utils/string.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 import { GenerateProtocolsConfigureOutput, TestDataGenerator } from '../../../utils/test-data-generator.js';
 
-import { DidResolver, Encoder, Jws } from '../../../../src/index.js';
+import { DidResolver, Dwn, Encoder, Jws } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
 
-describe('handleProtocolsQuery()', () => {
-  describe('functional tests', () => {
-    let didResolver: DidResolver;
-    let messageStore: MessageStoreLevel;
+describe('ProtocolsConfigureHandler.handle()', () => {
+  let didResolver: DidResolver;
+  let messageStore: MessageStoreLevel;
+  let dataStore: DataStoreLevel;
+  let dwn: Dwn;
 
+  describe('functional tests', () => {
     before(async () => {
       didResolver = new DidResolver([new DidKeyResolver()]);
 
-      // important to follow this pattern to initialize the message store in tests
+      // important to follow this pattern to initialize and clean the message and data store in tests
       // so that different suites can reuse the same block store and index location for testing
       messageStore = new MessageStoreLevel({
-        blockstoreLocation : 'TEST-BLOCKSTORE',
+        blockstoreLocation : 'TEST-MESSAGESTORE',
         indexLocation      : 'TEST-INDEX'
       });
 
-      await messageStore.open();
+      dataStore = new DataStoreLevel({
+        blockstoreLocation: 'TEST-DATASTORE'
+      });
+
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore });
     });
 
     beforeEach(async () => {
-      await messageStore.clear(); // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
+      sinon.restore(); // wipe all previous stubs/spies/mocks/fakes
+
+      // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
+      await messageStore.clear();
+      await dataStore.clear();
     });
 
     after(async () => {
-      await messageStore.close();
+      await dwn.close();
     });
 
     it('should return 400 if more than 1 signature is provided in `authorization`', async () => {
@@ -56,9 +65,9 @@ describe('handleProtocolsQuery()', () => {
       const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput1, signatureInput2]);
       message.authorization = signer.getJws();
 
-      const didResolver = TestStubGenerator.createDidResolverStub(requester);
-      const messageStore = sinon.createStubInstance(MessageStoreLevel);
-      const reply = await handleProtocolsConfigure({ tenant, message, messageStore, didResolver });
+      TestStubGenerator.stubDidResolver(didResolver, [requester]);
+
+      const reply = await dwn.processMessage(tenant, message);
 
       expect(reply.status.code).to.equal(400);
       expect(reply.status.detail).to.contain('expected no more than 1 signature');
@@ -69,7 +78,7 @@ describe('handleProtocolsQuery()', () => {
       alice.keyId = 'wrongValue'; // to fail authentication
       const { message } = await TestDataGenerator.generateProtocolsConfigure({ requester: alice });
 
-      const reply = await handleProtocolsConfigure({ tenant: alice.did, message, messageStore, didResolver });
+      const reply = await dwn.processMessage(alice.did, message);
       expect(reply.status.code).to.equal(401);
       expect(reply.status.detail).to.contain('not a valid DID');
     });
@@ -97,26 +106,20 @@ describe('handleProtocolsQuery()', () => {
         = messageDataWithCid.sort((messageDataA, messageDataB) => { return lexicographicalCompare(messageDataA.cid, messageDataB.cid); });
 
       // write the protocol with the middle lexicographic value
-      let reply = await handleProtocolsConfigure({
-        tenant: alice.did, message: middleWrite.message, messageStore, didResolver, dataStream: middleWrite.dataStream
-      });
+      let reply = await dwn.processMessage(alice.did, middleWrite.message, middleWrite.dataStream);
       expect(reply.status.code).to.equal(202);
 
       // test that the protocol with the smallest lexicographic value cannot be written
-      reply = await handleProtocolsConfigure({
-        tenant: alice.did, message: oldestWrite.message, messageStore, didResolver, dataStream: oldestWrite.dataStream
-      });
+      reply = await dwn.processMessage(alice.did, oldestWrite.message, oldestWrite.dataStream);
       expect(reply.status.code).to.equal(409);
 
       // test that the protocol with the largest lexicographic value can be written
-      reply = await handleProtocolsConfigure({
-        tenant: alice.did, message: newestWrite.message, messageStore, didResolver, dataStream: newestWrite.dataStream
-      });
+      reply = await dwn.processMessage(alice.did, newestWrite.message, newestWrite.dataStream);
       expect(reply.status.code).to.equal(202);
 
       // test that old protocol message is removed from DB and only the newer protocol message remains
       const queryMessageData = await TestDataGenerator.generateProtocolsQuery({ requester: alice, filter: { protocol } });
-      reply = await handleProtocolsQuery({ tenant: alice.did, message: queryMessageData.message, messageStore, didResolver });
+      reply = await dwn.processMessage(alice.did, queryMessageData.message);
 
       expect(reply.status.code).to.equal(200);
       expect(reply.entries.length).to.equal(1);

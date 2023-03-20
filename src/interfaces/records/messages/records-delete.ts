@@ -2,7 +2,6 @@ import type { RecordsDeleteDescriptor, RecordsDeleteMessage } from '../types.js'
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/message.js';
-import { removeUndefinedProperties } from '../../../utils/object.js';
 import type { SignatureInput } from '../../../jose/jws/general/types.js';
 
 import { authorize, validateAuthorizationIntegrity } from '../../../core/auth.js';
@@ -16,7 +15,7 @@ export type RecordsDeleteOptions = {
 
 export class RecordsDelete extends Message {
   /**
-   * RecordsWrite message adhering to the DWN specification.
+   * RecordsDelete message adhering to the DWN specification.
    */
   readonly message: RecordsDeleteMessage;
 
@@ -46,10 +45,6 @@ export class RecordsDelete extends Message {
       recordId,
       dateModified : options.dateModified ?? currentTime
     };
-
-    // delete all descriptor properties that are `undefined` else the code will encounter the following IPLD issue when attempting to generate CID:
-    // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
-    removeUndefinedProperties(descriptor);
 
     const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
     const message: RecordsDeleteMessage = { descriptor, authorization };

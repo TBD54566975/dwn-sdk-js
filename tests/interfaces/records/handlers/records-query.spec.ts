@@ -2,46 +2,58 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
+import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
+import { DwnConstant } from '../../../../src/core/dwn-constant.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
-import { handleRecordsQuery } from '../../../../src/interfaces/records/handlers/records-query.js';
 import { Jws } from '../../../../src/utils/jws.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
+import { RecordsQueryHandler } from '../../../../src/interfaces/records/handlers/records-query.js';
+import { StorageController } from '../../../../src/store/storage-controller.js';
 import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
-import { constructRecordsWriteIndexes, handleRecordsWrite } from '../../../../src/interfaces/records/handlers/records-write.js';
+import { constructRecordsWriteIndexes } from '../../../../src/interfaces/records/handlers/records-write.js';
 import { DateSort, RecordsQuery } from '../../../../src/interfaces/records/messages/records-query.js';
-import { DidResolver, RecordsWriteMessage } from '../../../../src/index.js';
+import { DidResolver, Dwn, RecordsWriteMessage } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
 
-describe('handleRecordsQuery()', () => {
+describe('RecordsQueryHandler.handle()', () => {
   describe('functional tests', () => {
     let didResolver: DidResolver;
     let messageStore: MessageStoreLevel;
+    let dataStore: DataStoreLevel;
+    let dwn: Dwn;
 
     before(async () => {
-      // important to follow this pattern to initialize the message store in tests
+      didResolver = new DidResolver([new DidKeyResolver()]);
+
+      // important to follow this pattern to initialize and clean the message and data store in tests
       // so that different suites can reuse the same block store and index location for testing
       messageStore = new MessageStoreLevel({
-        blockstoreLocation : 'TEST-BLOCKSTORE',
+        blockstoreLocation : 'TEST-MESSAGESTORE',
         indexLocation      : 'TEST-INDEX'
       });
 
-      await messageStore.open();
+      dataStore = new DataStoreLevel({
+        blockstoreLocation: 'TEST-DATASTORE'
+      });
 
-      didResolver = new DidResolver([new DidKeyResolver()]);
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore });
     });
 
     beforeEach(async () => {
       sinon.restore(); // wipe all previous stubs/spies/mocks/fakes
-      await messageStore.clear(); // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
+
+      // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
+      await messageStore.clear();
+      await dataStore.clear();
     });
 
     after(async () => {
-      await messageStore.close();
+      await dwn.close();
     });
 
     it('should return records matching the query', async () => {
@@ -52,19 +64,14 @@ describe('handleRecordsQuery()', () => {
       const write2 = await TestDataGenerator.generateRecordsWrite({ requester: alice, dataFormat, schema: 'schema1' });
       const write3 = await TestDataGenerator.generateRecordsWrite({ requester: alice, dataFormat, schema: 'schema2' });
 
-      // setting up a stub method resolver
-      const didResolver = TestStubGenerator.createDidResolverStub(alice);
+      // setting up a stub resolver
+      const mockResolution = TestDataGenerator.createDidResolutionResult(alice);;
+      sinon.stub(didResolver, 'resolve').resolves(mockResolution);
 
       // insert data
-      const writeReply1 = await handleRecordsWrite({
-        tenant: alice.did, message: write1.message, messageStore, didResolver, dataStream: write1.dataStream
-      });
-      const writeReply2 = await handleRecordsWrite({
-        tenant: alice.did, message: write2.message, messageStore, didResolver, dataStream: write2.dataStream
-      });
-      const writeReply3 = await handleRecordsWrite({
-        tenant: alice.did, message: write3.message, messageStore, didResolver, dataStream: write3.dataStream
-      });
+      const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
+      const writeReply2 = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
+      const writeReply3 = await dwn.processMessage(alice.did, write3.message, write3.dataStream);
       expect(writeReply1.status.code).to.equal(202);
       expect(writeReply2.status.code).to.equal(202);
       expect(writeReply3.status.code).to.equal(202);
@@ -72,7 +79,7 @@ describe('handleRecordsQuery()', () => {
       // testing singular conditional query
       const messageData = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { dataFormat } });
 
-      const reply = await handleRecordsQuery({ tenant: alice.did, message: messageData.message, messageStore, didResolver });
+      const reply = await dwn.processMessage(alice.did, messageData.message);
 
       expect(reply.status.code).to.equal(200);
       expect(reply.entries?.length).to.equal(2); // only 2 entries should match the query on protocol
@@ -86,10 +93,42 @@ describe('handleRecordsQuery()', () => {
         }
       });
 
-      const reply2 = await handleRecordsQuery({ tenant: alice.did, message: messageData2.message, messageStore, didResolver });
+      const reply2 = await dwn.processMessage(alice.did, messageData2.message);
 
       expect(reply2.status.code).to.equal(200);
       expect(reply2.entries?.length).to.equal(1); // only 1 entry should match the query
+    });
+
+    it('should return `encodedData` if data size is within the spec threshold', async () => {
+      const data = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded); // within/on threshold
+      const alice = await DidKeyResolver.generate();
+      const write= await TestDataGenerator.generateRecordsWrite({ requester: alice, data });
+
+      const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
+      expect(writeReply.status.code).to.equal(202);
+
+      const messageData = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { recordId: write.message.recordId } });
+      const reply = await dwn.processMessage(alice.did, messageData.message);
+
+      expect(reply.status.code).to.equal(200);
+      expect(reply.entries?.length).to.equal(1);
+      expect(reply.entries[0].encodedData).to.equal(Encoder.bytesToBase64Url(data));
+    });
+
+    it('should not return `encodedData` if data size is greater then spec threshold', async () => {
+      const data = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1); // exceeding threshold
+      const alice = await DidKeyResolver.generate();
+      const write= await TestDataGenerator.generateRecordsWrite({ requester: alice, data });
+
+      const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
+      expect(writeReply.status.code).to.equal(202);
+
+      const messageData = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { recordId: write.message.recordId } });
+      const reply = await dwn.processMessage(alice.did, messageData.message);
+
+      expect(reply.status.code).to.equal(200);
+      expect(reply.entries?.length).to.equal(1);
+      expect(reply.entries[0].encodedData).to.be.undefined;
     });
 
     it('should be able to query by attester', async () => {
@@ -100,18 +139,14 @@ describe('handleRecordsQuery()', () => {
       const recordsWrite2 = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [bob] });
 
       // insert data
-      const writeReply1 = await handleRecordsWrite({
-        tenant: alice.did, message: recordsWrite1.message, messageStore, didResolver, dataStream: recordsWrite1.dataStream
-      });
-      const writeReply2 = await handleRecordsWrite({
-        tenant: alice.did, message: recordsWrite2.message, messageStore, didResolver, dataStream: recordsWrite2.dataStream
-      });
+      const writeReply1 = await dwn.processMessage(alice.did, recordsWrite1.message, recordsWrite1.dataStream);
+      const writeReply2 = await dwn.processMessage(alice.did, recordsWrite2.message, recordsWrite2.dataStream);
       expect(writeReply1.status.code).to.equal(202);
       expect(writeReply2.status.code).to.equal(202);
 
       // testing attester filter
       const recordsQuery1 = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { attester: alice.did } });
-      const reply1 = await handleRecordsQuery({ tenant: alice.did, message: recordsQuery1.message, messageStore, didResolver });
+      const reply1 = await dwn.processMessage(alice.did, recordsQuery1.message);
       expect(reply1.entries?.length).to.equal(1);
       const reply1Attester = Jws.getSignerDid((reply1.entries[0] as RecordsWriteMessage).attestation.signatures[0]);
       expect(reply1Attester).to.equal(alice.did);
@@ -121,7 +156,7 @@ describe('handleRecordsQuery()', () => {
         requester : alice,
         filter    : { attester: bob.did, schema: recordsWrite2.message.descriptor.schema }
       });
-      const reply2 = await handleRecordsQuery({ tenant: alice.did, message: recordsQuery2.message, messageStore, didResolver });
+      const reply2 = await dwn.processMessage(alice.did, recordsQuery2.message);
       expect(reply2.entries?.length).to.equal(1);
       const reply2Attester = Jws.getSignerDid((reply2.entries[0] as RecordsWriteMessage).attestation.signatures[0]);
       expect(reply2Attester).to.equal(bob.did);
@@ -129,7 +164,7 @@ describe('handleRecordsQuery()', () => {
       // testing attester filter that yields no results
       const carol = await DidKeyResolver.generate();
       const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { attester: carol.did } });
-      const reply3 = await handleRecordsQuery({ tenant: alice.did, message: recordsQuery3.message, messageStore, didResolver });
+      const reply3 = await dwn.processMessage(alice.did, recordsQuery3.message);
       expect(reply3.entries?.length).to.equal(0);
     });
 
@@ -144,15 +179,9 @@ describe('handleRecordsQuery()', () => {
       const write3 = await TestDataGenerator.generateRecordsWrite({ requester: alice, dateCreated: firstDayOf2023, dateModified: firstDayOf2023 });
 
       // insert data
-      const writeReply1 = await handleRecordsWrite({
-        tenant: alice.did, message: write1.message, messageStore, didResolver, dataStream: write1.dataStream
-      });
-      const writeReply2 = await handleRecordsWrite({
-        tenant: alice.did, message: write2.message, messageStore, didResolver, dataStream: write2.dataStream
-      });
-      const writeReply3 = await handleRecordsWrite({
-        tenant: alice.did, message: write3.message, messageStore, didResolver, dataStream: write3.dataStream
-      });
+      const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
+      const writeReply2 = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
+      const writeReply3 = await dwn.processMessage(alice.did, write3.message, write3.dataStream);
       expect(writeReply1.status.code).to.equal(202);
       expect(writeReply2.status.code).to.equal(202);
       expect(writeReply3.status.code).to.equal(202);
@@ -164,10 +193,10 @@ describe('handleRecordsQuery()', () => {
         filter    : { dateCreated: { from: lastDayOf2021 } },
         dateSort  : DateSort.CreatedAscending
       });
-      const reply1 = await handleRecordsQuery({ tenant: alice.did, message: recordsQuery1.message, messageStore, didResolver });
+      const reply1 = await dwn.processMessage(alice.did, recordsQuery1.message);
       expect(reply1.entries?.length).to.equal(2);
-      expect((reply1.entries[0] as any).encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes));
-      expect((reply1.entries[1] as any).encodedData).to.equal(Encoder.bytesToBase64Url(write3.dataBytes));
+      expect(reply1.entries[0].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes));
+      expect(reply1.entries[1].encodedData).to.equal(Encoder.bytesToBase64Url(write3.dataBytes));
 
       // testing `to` range
       const lastDayOf2022 = Temporal.PlainDateTime.from({ year: 2022, month: 12, day: 31 }).toString({ smallestUnit: 'microseconds' });
@@ -176,10 +205,10 @@ describe('handleRecordsQuery()', () => {
         filter    : { dateCreated: { to: lastDayOf2022 } },
         dateSort  : DateSort.CreatedAscending
       });
-      const reply2 = await handleRecordsQuery({ tenant: alice.did, message: recordsQuery2.message, messageStore, didResolver });
+      const reply2 = await dwn.processMessage(alice.did, recordsQuery2.message);
       expect(reply2.entries?.length).to.equal(2);
-      expect((reply2.entries[0] as any).encodedData).to.equal(Encoder.bytesToBase64Url(write1.dataBytes));
-      expect((reply2.entries[1] as any).encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes));
+      expect(reply2.entries[0].encodedData).to.equal(Encoder.bytesToBase64Url(write1.dataBytes));
+      expect(reply2.entries[1].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes));
 
       // testing `from` and `to` range
       const lastDayOf2023 = Temporal.PlainDateTime.from({ year: 2023, month: 12, day: 31 }).toString({ smallestUnit: 'microseconds' });
@@ -188,9 +217,9 @@ describe('handleRecordsQuery()', () => {
         filter    : { dateCreated: { from: lastDayOf2022, to: lastDayOf2023 } },
         dateSort  : DateSort.CreatedAscending
       });
-      const reply3 = await handleRecordsQuery({ tenant: alice.did, message: recordsQuery3.message, messageStore, didResolver });
+      const reply3 = await dwn.processMessage(alice.did, recordsQuery3.message);
       expect(reply3.entries?.length).to.equal(1);
-      expect((reply3.entries[0] as any).encodedData).to.equal(Encoder.bytesToBase64Url(write3.dataBytes));
+      expect(reply3.entries[0].encodedData).to.equal(Encoder.bytesToBase64Url(write3.dataBytes));
 
       // testing edge case where value equals `from` and `to`
       const recordsQuery4 = await TestDataGenerator.generateRecordsQuery({
@@ -198,10 +227,9 @@ describe('handleRecordsQuery()', () => {
         filter    : { dateCreated: { from: firstDayOf2022, to: firstDayOf2023 } },
         dateSort  : DateSort.CreatedAscending
       });
-      const reply4 = await handleRecordsQuery({ tenant: alice.did, message: recordsQuery4.message, messageStore, didResolver });
-      expect(reply4.entries?.length).to.equal(2);
-      expect((reply4.entries[0] as any).encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes));
-      expect((reply4.entries[1] as any).encodedData).to.equal(Encoder.bytesToBase64Url(write3.dataBytes));
+      const reply4 = await dwn.processMessage(alice.did, recordsQuery4.message);
+      expect(reply4.entries?.length).to.equal(1);
+      expect(reply4.entries[0].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes));
     });
 
     it('should be able use range and exact match queries at the same time', async () => {
@@ -222,15 +250,9 @@ describe('handleRecordsQuery()', () => {
       });
 
       // insert data
-      const writeReply1 = await handleRecordsWrite({
-        tenant: alice.did, message: write1.message, messageStore, didResolver, dataStream: write1.dataStream
-      });
-      const writeReply2 = await handleRecordsWrite({
-        tenant: alice.did, message: write2.message, messageStore, didResolver, dataStream: write2.dataStream
-      });
-      const writeReply3 = await handleRecordsWrite({
-        tenant: alice.did, message: write3.message, messageStore, didResolver, dataStream: write3.dataStream
-      });
+      const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
+      const writeReply2 = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
+      const writeReply3 = await dwn.processMessage(alice.did, write3.message, write3.dataStream);
       expect(writeReply1.status.code).to.equal(202);
       expect(writeReply2.status.code).to.equal(202);
       expect(writeReply3.status.code).to.equal(202);
@@ -246,9 +268,9 @@ describe('handleRecordsQuery()', () => {
         },
         dateSort: DateSort.CreatedAscending
       });
-      const reply = await handleRecordsQuery({ tenant: alice.did, message: recordsQuery5.message, messageStore, didResolver });
+      const reply = await dwn.processMessage(alice.did, recordsQuery5.message);
       expect(reply.entries?.length).to.equal(1);
-      expect((reply.entries[0] as any).encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes));
+      expect(reply.entries[0].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes));
     });
 
     it('should not include `authorization` in returned records', async () => {
@@ -256,9 +278,10 @@ describe('handleRecordsQuery()', () => {
       const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
 
       // setting up a stub method resolver
-      const didResolver = TestStubGenerator.createDidResolverStub(alice);
+      const mockResolution = TestDataGenerator.createDidResolutionResult(alice);;
+      sinon.stub(didResolver, 'resolve').resolves(mockResolution);
 
-      const writeReply = await handleRecordsWrite({ tenant: alice.did, message, messageStore, didResolver, dataStream });
+      const writeReply = await dwn.processMessage(alice.did, message, dataStream);
       expect(writeReply.status.code).to.equal(202);
 
       const queryData = await TestDataGenerator.generateRecordsQuery({
@@ -266,7 +289,7 @@ describe('handleRecordsQuery()', () => {
         filter    : { schema: message.descriptor.schema }
       });
 
-      const queryReply = await handleRecordsQuery({ tenant: alice.did, message: queryData.message, messageStore, didResolver });
+      const queryReply = await dwn.processMessage(alice.did, queryData.message);
       expect(queryReply.status.code).to.equal(200);
       expect(queryReply.entries?.length).to.equal(1);
       expect(queryReply.entries[0]['authorization']).to.equal(undefined);
@@ -278,7 +301,7 @@ describe('handleRecordsQuery()', () => {
       const alice = await DidKeyResolver.generate();
       const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [alice] });
 
-      const writeReply = await handleRecordsWrite({ tenant: alice.did, message: message, messageStore, didResolver, dataStream });
+      const writeReply = await dwn.processMessage(alice.did, message, dataStream);
       expect(writeReply.status.code).to.equal(202);
 
       const queryData = await TestDataGenerator.generateRecordsQuery({
@@ -286,7 +309,7 @@ describe('handleRecordsQuery()', () => {
         filter    : { schema: message.descriptor.schema }
       });
 
-      const queryReply = await handleRecordsQuery({ tenant: alice.did, message: queryData.message, messageStore, didResolver });
+      const queryReply = await dwn.processMessage(alice.did, queryData.message);
       expect(queryReply.status.code).to.equal(200);
       expect(queryReply.entries?.length).to.equal(1);
 
@@ -306,15 +329,12 @@ describe('handleRecordsQuery()', () => {
       });
 
       // setting up a stub method resolver
-      const didResolver = TestStubGenerator.createDidResolverStub(alice);
+      const mockResolution = TestDataGenerator.createDidResolutionResult(alice);;
+      sinon.stub(didResolver, 'resolve').resolves(mockResolution);
 
       // insert data
-      const publishedWriteReply = await handleRecordsWrite({
-        tenant: alice.did, message: publishedWriteData.message, messageStore, didResolver, dataStream: publishedWriteData.dataStream
-      });
-      const unpublishedWriteReply = await handleRecordsWrite({
-        tenant: alice.did, message: unpublishedWriteData.message, messageStore, didResolver, dataStream: unpublishedWriteData.dataStream
-      });
+      const publishedWriteReply = await dwn.processMessage(alice.did, publishedWriteData.message, publishedWriteData.dataStream);
+      const unpublishedWriteReply = await dwn.processMessage(alice.did, unpublishedWriteData.message, unpublishedWriteData.dataStream);
       expect(publishedWriteReply.status.code).to.equal(202);
       expect(unpublishedWriteReply.status.code).to.equal(202);
 
@@ -324,9 +344,7 @@ describe('handleRecordsQuery()', () => {
         dateSort  : DateSort.PublishedAscending,
         filter    : { schema }
       });
-      const publishedAscendingQueryReply = await handleRecordsQuery({
-        tenant: alice.did, message: publishedAscendingQueryData.message, messageStore, didResolver
-      });
+      const publishedAscendingQueryReply = await dwn.processMessage(alice.did, publishedAscendingQueryData.message);
 
       expect(publishedAscendingQueryReply.entries?.length).to.equal(1);
       expect(publishedAscendingQueryReply.entries[0].descriptor['datePublished']).to.equal(publishedWriteData.message.descriptor.datePublished);
@@ -337,9 +355,7 @@ describe('handleRecordsQuery()', () => {
         dateSort  : DateSort.PublishedDescending,
         filter    : { schema }
       });
-      const publishedDescendingQueryReply = await handleRecordsQuery({
-        tenant: alice.did, message: publishedDescendingQueryData.message, messageStore, didResolver
-      });
+      const publishedDescendingQueryReply = await dwn.processMessage(alice.did, publishedDescendingQueryData.message);
 
       expect(publishedDescendingQueryReply.entries?.length).to.equal(1);
       expect(publishedDescendingQueryReply.entries[0].descriptor['datePublished']).to.equal(publishedWriteData.message.descriptor.datePublished);
@@ -355,18 +371,13 @@ describe('handleRecordsQuery()', () => {
       const write3Data = await TestDataGenerator.generateRecordsWrite({ requester: alice, schema, published });
 
       // setting up a stub method resolver
-      const didResolver = TestStubGenerator.createDidResolverStub(alice);
+      const mockResolution = TestDataGenerator.createDidResolutionResult(alice);;
+      sinon.stub(didResolver, 'resolve').resolves(mockResolution);
 
       // insert data, intentionally out of order
-      const writeReply2 = await handleRecordsWrite({
-        tenant: alice.did, message: write2Data.message, messageStore, didResolver, dataStream: write2Data.dataStream
-      });
-      const writeReply1 = await handleRecordsWrite({
-        tenant: alice.did, message: write1Data.message, messageStore, didResolver, dataStream: write1Data.dataStream
-      });
-      const writeReply3 = await handleRecordsWrite({
-        tenant: alice.did, message: write3Data.message, messageStore, didResolver, dataStream: write3Data.dataStream
-      });
+      const writeReply2 = await dwn.processMessage(alice.did, write2Data.message, write2Data.dataStream);
+      const writeReply1 = await dwn.processMessage(alice.did, write1Data.message, write1Data.dataStream);
+      const writeReply3 = await dwn.processMessage(alice.did, write3Data.message, write3Data.dataStream);
       expect(writeReply1.status.code).to.equal(202);
       expect(writeReply2.status.code).to.equal(202);
       expect(writeReply3.status.code).to.equal(202);
@@ -377,9 +388,7 @@ describe('handleRecordsQuery()', () => {
         dateSort  : DateSort.CreatedAscending,
         filter    : { schema }
       });
-      const createdAscendingQueryReply = await handleRecordsQuery({
-        tenant: alice.did, message: createdAscendingQueryData.message, messageStore, didResolver
-      });
+      const createdAscendingQueryReply = await dwn.processMessage(alice.did, createdAscendingQueryData.message);
 
       expect(createdAscendingQueryReply.entries[0].descriptor['dateCreated']).to.equal(write1Data.message.descriptor.dateCreated);
       expect(createdAscendingQueryReply.entries[1].descriptor['dateCreated']).to.equal(write2Data.message.descriptor.dateCreated);
@@ -391,9 +400,7 @@ describe('handleRecordsQuery()', () => {
         dateSort  : DateSort.CreatedDescending,
         filter    : { schema }
       });
-      const createdDescendingQueryReply = await handleRecordsQuery({
-        tenant: alice.did, message: createdDescendingQueryData.message, messageStore, didResolver
-      });
+      const createdDescendingQueryReply = await dwn.processMessage(alice.did, createdDescendingQueryData.message);
 
       expect(createdDescendingQueryReply.entries[0].descriptor['dateCreated']).to.equal(write3Data.message.descriptor.dateCreated);
       expect(createdDescendingQueryReply.entries[1].descriptor['dateCreated']).to.equal(write2Data.message.descriptor.dateCreated);
@@ -405,9 +412,7 @@ describe('handleRecordsQuery()', () => {
         dateSort  : DateSort.PublishedAscending,
         filter    : { schema }
       });
-      const publishedAscendingQueryReply = await handleRecordsQuery({
-        tenant: alice.did, message: publishedAscendingQueryData.message, messageStore, didResolver
-      });
+      const publishedAscendingQueryReply = await dwn.processMessage(alice.did, publishedAscendingQueryData.message);
 
       expect(publishedAscendingQueryReply.entries[0].descriptor['datePublished']).to.equal(write1Data.message.descriptor.datePublished);
       expect(publishedAscendingQueryReply.entries[1].descriptor['datePublished']).to.equal(write2Data.message.descriptor.datePublished);
@@ -419,9 +424,7 @@ describe('handleRecordsQuery()', () => {
         dateSort  : DateSort.PublishedDescending,
         filter    : { schema }
       });
-      const publishedDescendingQueryReply = await handleRecordsQuery({
-        tenant: alice.did, message: publishedDescendingQueryData.message, messageStore, didResolver
-      });
+      const publishedDescendingQueryReply = await dwn.processMessage(alice.did, publishedDescendingQueryData.message);
 
       expect(publishedDescendingQueryReply.entries[0].descriptor['datePublished']).to.equal(write3Data.message.descriptor.datePublished);
       expect(publishedDescendingQueryReply.entries[1].descriptor['datePublished']).to.equal(write2Data.message.descriptor.datePublished);
@@ -451,14 +454,14 @@ describe('handleRecordsQuery()', () => {
       );
 
       // directly inserting data to datastore so that we don't have to setup to grant Bob permission to write to Alice's DWN
-      const additionalIndexes1 = await constructRecordsWriteIndexes(alice.did, record1Data.recordsWrite, true);
-      const additionalIndexes2 = await constructRecordsWriteIndexes(alice.did, record2Data.recordsWrite, true);
-      const additionalIndexes3 = await constructRecordsWriteIndexes(alice.did, record3Data.recordsWrite, true);
-      const additionalIndexes4 = await constructRecordsWriteIndexes(alice.did, record4Data.recordsWrite, true);
-      await messageStore.put(record1Data.message, additionalIndexes1, record1Data.dataStream);
-      await messageStore.put(record2Data.message, additionalIndexes2, record2Data.dataStream);
-      await messageStore.put(record3Data.message, additionalIndexes3, record3Data.dataStream);
-      await messageStore.put(record4Data.message, additionalIndexes4, record4Data.dataStream);
+      const additionalIndexes1 = await constructRecordsWriteIndexes(record1Data.recordsWrite, true);
+      const additionalIndexes2 = await constructRecordsWriteIndexes(record2Data.recordsWrite, true);
+      const additionalIndexes3 = await constructRecordsWriteIndexes(record3Data.recordsWrite, true);
+      const additionalIndexes4 = await constructRecordsWriteIndexes(record4Data.recordsWrite, true);
+      await StorageController.put(messageStore, dataStore, alice.did, record1Data.message, additionalIndexes1, record1Data.dataStream);
+      await StorageController.put(messageStore, dataStore, alice.did, record2Data.message, additionalIndexes2, record2Data.dataStream);
+      await StorageController.put(messageStore, dataStore, alice.did, record3Data.message, additionalIndexes3, record3Data.dataStream);
+      await StorageController.put(messageStore, dataStore, alice.did, record4Data.message, additionalIndexes4, record4Data.dataStream);
 
       // test correctness for Bob's query
       const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({
@@ -466,14 +469,14 @@ describe('handleRecordsQuery()', () => {
         filter    : { schema }
       });
 
-      const replyToBob = await handleRecordsQuery({ tenant: alice.did, message: bobQueryMessageData.message, messageStore, didResolver });
+      const replyToBob = await dwn.processMessage(alice.did, bobQueryMessageData.message);
 
       expect(replyToBob.status.code).to.equal(200);
       expect(replyToBob.entries?.length).to.equal(3); // expect 3 records
 
-      const privateRecordsForBob = replyToBob.entries.filter(message => (message as any).encodedData === Encoder.stringToBase64Url('2'));
-      const privateRecordsFromBob = replyToBob.entries.filter(message => (message as any).encodedData === Encoder.stringToBase64Url('3'));
-      const publicRecords = replyToBob.entries.filter(message => (message as any).encodedData === Encoder.stringToBase64Url('4'));
+      const privateRecordsForBob = replyToBob.entries.filter(message => message.encodedData === Encoder.stringToBase64Url('2'));
+      const privateRecordsFromBob = replyToBob.entries.filter(message => message.encodedData === Encoder.stringToBase64Url('3'));
+      const publicRecords = replyToBob.entries.filter(message => message.encodedData === Encoder.stringToBase64Url('4'));
       expect(privateRecordsForBob.length).to.equal(1);
       expect(privateRecordsFromBob.length).to.equal(1);
       expect(publicRecords.length).to.equal(1);
@@ -484,7 +487,7 @@ describe('handleRecordsQuery()', () => {
         filter    : { schema }
       });
 
-      const replyToAliceQuery = await handleRecordsQuery({ tenant: alice.did, message: aliceQueryMessageData.message, messageStore, didResolver });
+      const replyToAliceQuery = await dwn.processMessage(alice.did, aliceQueryMessageData.message);
 
       expect(replyToAliceQuery.status.code).to.equal(200);
       expect(replyToAliceQuery.entries?.length).to.equal(4); // expect all 4 records
@@ -499,9 +502,7 @@ describe('handleRecordsQuery()', () => {
         { requester: alice, schema, data: Encoder.stringToBytes('1'), published: false } // explicitly setting `published` to `false`
       );
 
-      const result1 = await handleRecordsWrite({
-        tenant: alice.did, message: unpublishedRecordsWrite.message, messageStore, didResolver, dataStream: unpublishedRecordsWrite.dataStream
-      });
+      const result1 = await dwn.processMessage(alice.did, unpublishedRecordsWrite.message, unpublishedRecordsWrite.dataStream);
       expect(result1.status.code).to.equal(202);
 
       // alice should be able to see the unpublished record
@@ -509,7 +510,7 @@ describe('handleRecordsQuery()', () => {
         requester : alice,
         filter    : { schema }
       });
-      const replyToAliceQuery = await handleRecordsQuery({ tenant: alice.did, message: queryByAlice.message, messageStore, didResolver });
+      const replyToAliceQuery = await dwn.processMessage(alice.did, queryByAlice.message);
       expect(replyToAliceQuery.status.code).to.equal(200);
       expect(replyToAliceQuery.entries?.length).to.equal(1);
 
@@ -518,7 +519,7 @@ describe('handleRecordsQuery()', () => {
         requester : bob,
         filter    : { schema }
       });
-      const replyToBobQuery = await handleRecordsQuery({ tenant: alice.did, message: queryByBob.message, messageStore, didResolver });
+      const replyToBobQuery = await dwn.processMessage(alice.did, queryByBob.message);
       expect(replyToBobQuery.status.code).to.equal(200);
       expect(replyToBobQuery.entries?.length).to.equal(0);
     });
@@ -533,7 +534,7 @@ describe('handleRecordsQuery()', () => {
         filter    : { recipient: carol.did } // bob querying carol's records
       });
 
-      const replyToBobQuery = await handleRecordsQuery({ tenant: alice.did, message: bobQueryMessageData.message, messageStore, didResolver });
+      const replyToBobQuery = await dwn.processMessage(alice.did, bobQueryMessageData.message);
 
       expect(replyToBobQuery.status.code).to.equal(401);
       expect(replyToBobQuery.status.detail).to.contain('not allowed to query records');
@@ -548,7 +549,7 @@ describe('handleRecordsQuery()', () => {
         filter    : { recipient: bob.did } // alice as the DWN owner querying bob's records
       });
 
-      const replyToBobQuery = await handleRecordsQuery({ tenant: alice.did, message: bobQueryMessageData.message, messageStore, didResolver });
+      const replyToBobQuery = await dwn.processMessage(alice.did, bobQueryMessageData.message);
 
       expect(replyToBobQuery.status.code).to.equal(200);
     });
@@ -567,15 +568,10 @@ describe('handleRecordsQuery()', () => {
       });
 
       // insert data into 2 different tenants
-      const didResolver = new DidResolver([new DidKeyResolver()]);
-      await handleRecordsWrite({
-        tenant: alice.did, message: recordsWriteMessage1Data.message, messageStore, didResolver, dataStream: recordsWriteMessage1Data.dataStream
-      });
-      await handleRecordsWrite({
-        tenant: bob.did, message: recordsWriteMessage2Data.message, messageStore, didResolver, dataStream: recordsWriteMessage2Data.dataStream
-      });
+      await dwn.processMessage(alice.did, recordsWriteMessage1Data.message, recordsWriteMessage1Data.dataStream);
+      await dwn.processMessage(bob.did, recordsWriteMessage2Data.message, recordsWriteMessage2Data.dataStream);
 
-      const reply = await handleRecordsQuery({ tenant: alice.did, message: aliceQueryMessageData.message, messageStore, didResolver });
+      const reply = await dwn.processMessage(alice.did, aliceQueryMessageData.message);
 
       expect(reply.status.code).to.equal(200);
       expect(reply.entries?.length).to.equal(1);
@@ -584,15 +580,17 @@ describe('handleRecordsQuery()', () => {
 
   it('should return 401 if signature check fails', async () => {
     const { requester, message } = await TestDataGenerator.generateRecordsQuery();
+    const tenant = requester.did;
 
     // setting up a stub did resolver & message store
     // intentionally not supplying the public key so a different public key is generated to simulate invalid signature
     const mismatchingPersona = await TestDataGenerator.generatePersona({ did: requester.did, keyId: requester.keyId });
     const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
+    const dataStore = sinon.createStubInstance(DataStoreLevel);
 
-    const tenant = requester.did;
-    const reply = await handleRecordsQuery({ tenant, message, messageStore, didResolver });
+    const recordsQueryHandler = new RecordsQueryHandler(didResolver, messageStore, dataStore);
+    const reply = await recordsQueryHandler.handle({ tenant, message });
 
     expect(reply.status.code).to.equal(401);
   });
@@ -604,10 +602,12 @@ describe('handleRecordsQuery()', () => {
     // setting up a stub method resolver & message store
     const didResolver = TestStubGenerator.createDidResolverStub(requester);
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
+    const dataStore = sinon.createStubInstance(DataStoreLevel);
+    const recordsQueryHandler = new RecordsQueryHandler(didResolver, messageStore, dataStore);
 
     // stub the `parse()` function to throw an error
     sinon.stub(RecordsQuery, 'parse').throws('anyError');
-    const reply = await handleRecordsQuery({ tenant, message, messageStore, didResolver });
+    const reply = await recordsQueryHandler.handle({ tenant, message });
 
     expect(reply.status.code).to.equal(400);
   });

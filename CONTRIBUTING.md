@@ -40,6 +40,14 @@ We plan on including a Docker container to support all local development soon.
 * Running the `npm run test:browser` command from the root of the project will run the tests in a browser environment
   * Please make sure there are no failing tests before switching your PR to ready for review! We hope to have this automated via a github action very soon.
 
+### Running benchmarks
+
+Benchmarks should be run direclty using `node` (e.g. `node benchmarks/store/index/search-index.js`).
+
+Note that some benchmarks require that `npm run build` has been run beforehand.
+
+Any dependencies needed by benchmarks should be in `devDependencies` (e.g. `index-store` for `node benchmarks/store/index/index-store.js`).
+
 ### Code Style
 Our preferred code style has been codified into `eslint` rules. Feel free to take a look [here](https://github.com/TBD54566975/dwn-sdk-js/blob/main/.eslintrc.cjs). Running `npm run lint` will auto-format as much as `eslint` can. Everything it wasn't able to will be printed out as errors or warnings. Please make sure to run `npm run lint` before switching your PR to ready for review! We hope to have this automated via a github action very soon.
 

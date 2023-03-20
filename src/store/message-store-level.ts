@@ -1,21 +1,15 @@
-import type { MessageStore } from './message-store.js';
-import type { BaseMessage, DataReferencingMessage } from '../core/types.js';
+import type { BaseMessage, Filter } from '../core/types.js';
+import type { MessageStore, MessageStoreOptions } from './message-store.js';
 
 import * as block from 'multiformats/block';
 import * as cbor from '@ipld/dag-cbor';
-import isPlainObject from 'lodash/isPlainObject.js';
-import searchIndex from 'search-index';
 
+import { abortOr } from '../utils/abort.js';
 import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
-import { Encoder } from '../utils/encoder.js';
-import { exporter } from 'ipfs-unixfs-exporter';
-import { importer } from 'ipfs-unixfs-importer';
-import type { RangeCriterion } from '../interfaces/records/types.js';
-import { Readable } from 'readable-stream';
+import { createLevelDatabase } from './level-wrapper.js';
+import { IndexLevel } from './index-level.js';
 import { sha256 } from 'multiformats/hashes/sha2';
-
-import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 /**
  * A simple implementation of {@link MessageStore} that works in both the browser and server-side.
@@ -23,10 +17,10 @@ import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
  */
 export class MessageStoreLevel implements MessageStore {
   config: MessageStoreLevelConfig;
-  db: BlockstoreLevel;
-  // levelDB doesn't natively provide the querying capabilities needed for DWN,
-  // to accommodate, we're leveraging a level-backed inverted index.
-  index: Awaited<ReturnType<typeof searchIndex>>; // type `SearchIndex` is not exported. So we construct it indirectly from function return type
+
+  blockstore: BlockstoreLevel;
+
+  index: IndexLevel;
 
   /**
    * @param {MessageStoreLevelConfig} config
@@ -37,265 +31,115 @@ export class MessageStoreLevel implements MessageStore {
    */
   constructor(config: MessageStoreLevelConfig = {}) {
     this.config = {
-      blockstoreLocation : 'BLOCKSTORE',
+      blockstoreLocation : 'MESSAGESTORE',
       indexLocation      : 'INDEX',
+      createLevelDatabase,
       ...config
     };
 
-    this.db = new BlockstoreLevel(this.config.blockstoreLocation);
+    this.blockstore = new BlockstoreLevel({
+      location            : this.config.blockstoreLocation,
+      createLevelDatabase : this.config.createLevelDatabase,
+    });
+
+    this.index = new IndexLevel({
+      location            : this.config.indexLocation,
+      createLevelDatabase : this.config.createLevelDatabase,
+    });
   }
 
   async open(): Promise<void> {
-    if (!this.db) {
-      this.db = new BlockstoreLevel(this.config.blockstoreLocation);
-    }
-
-    await this.db.open();
-
-    // calling `searchIndex()` twice without closing its DB causes the process to hang (ie. calling this method consecutively),
-    // so check to see if the index has already been "opened" before opening it again.
-    if (!this.index) {
-      this.index = await searchIndex({ name: this.config.indexLocation });
-    }
+    await this.blockstore.open();
+    await this.index.open();
   }
 
   async close(): Promise<void> {
-    await this.db.close();
-    await this.index.INDEX.STORE.close(); // MUST close index-search DB, else `searchIndex()` triggered in a different instance will hang indefinitely
+    await this.blockstore.close();
+    await this.index.close();
   }
 
-  async get(cidString: string): Promise<BaseMessage> {
+  async get(tenant: string, cidString: string, options?: MessageStoreOptions): Promise<BaseMessage | undefined> {
+    options?.signal?.throwIfAborted();
+
+    const partition = await abortOr(options?.signal, this.blockstore.partition(tenant));
+
     const cid = CID.parse(cidString);
-    const bytes = await this.db.get(cid);
+    const bytes = await partition.get(cid, options);
 
     if (!bytes) {
-      return;
+      return undefined;
     }
 
-    const decodedBlock = await block.decode({ bytes, codec: cbor, hasher: sha256 });
+    const decodedBlock = await abortOr(options?.signal, block.decode({ bytes, codec: cbor, hasher: sha256 }));
 
     const messageJson = decodedBlock.value as BaseMessage;
-
-    if (!messageJson.descriptor['dataCid']) {
-      return messageJson;
-    }
-
-    // TODO: #219 (https://github.com/TBD54566975/dwn-sdk-js/issues/219)
-    // temporary placeholder for keeping status-quo of returning data in `encodedData`
-    // once #219 is implemented, `encodedData` will likely not exist directly as part of the returned message here
-    const dataReferencingMessage = decodedBlock.value as DataReferencingMessage;
-    dataReferencingMessage.encodedData = await this.getDataAsEncodedString(dataReferencingMessage.descriptor.dataCid);
-
     return messageJson;
   }
 
-  private async getDataAsEncodedString(dataCid: string): Promise<string> {
-    const cid = CID.parse(dataCid);
+  async query(tenant: string, filter: Filter, options?: MessageStoreOptions): Promise<BaseMessage[]> {
+    options?.signal?.throwIfAborted();
 
-    // data is chunked into dag-pb unixfs blocks. re-inflate the chunks.
-    const dataDagRoot = await exporter(cid, this.db);
-    const dataBytes = new Uint8Array(dataDagRoot.size);
-    let offset = 0;
-
-    for await (const chunk of dataDagRoot.content()) {
-      dataBytes.set(chunk, offset);
-      offset += chunk.length;
-    }
-
-    return Encoder.bytesToBase64Url(dataBytes);
-  }
-
-  async query(exactCriteria: { [key: string]: string }, rangeCriteria?: { [key: string]: RangeCriterion }): Promise<BaseMessage[]> {
     const messages: BaseMessage[] = [];
 
-    // parse criteria into a query that is compatible with the indexing DB (search-index) we're using
-    const exactTerms = MessageStoreLevel.buildExactQueryTerms(exactCriteria);
-    const rangeTerms = MessageStoreLevel.buildRangeQueryTerms(rangeCriteria);
+    const resultIds = await this.index.query({ ...filter, tenant }, options);
 
-    const { RESULT: indexResults } = await this.index.QUERY({ AND: [...exactTerms, ...rangeTerms] });
-
-    for (const result of indexResults) {
-      const message = await this.get(result._id);
+    for (const id of resultIds) {
+      const message = await this.get(tenant, id, options);
       messages.push(message);
     }
 
     return messages;
   }
 
-  async delete(cidString: string): Promise<void> {
+  async delete(tenant: string, cidString: string, options?: MessageStoreOptions): Promise<void> {
+    options?.signal?.throwIfAborted();
+
+    const partition = await abortOr(options?.signal, this.blockstore.partition(tenant));
+
     // TODO: Implement data deletion in Records - https://github.com/TBD54566975/dwn-sdk-js/issues/84
     const cid = CID.parse(cidString);
-    await this.db.delete(cid);
-    await this.index.DELETE(cidString);
+    await partition.delete(cid, options);
+    await this.index.delete(cidString, options);
 
     return;
   }
 
-  async put(message: BaseMessage, indexes: { [key: string]: string }, dataStream?: Readable): Promise<void> {
-    const encodedMessageBlock = await block.encode({ value: message, codec: cbor, hasher: sha256 });
+  async put(
+    tenant: string,
+    message: BaseMessage,
+    indexes: { [key: string]: string },
+    options?: MessageStoreOptions
+  ): Promise<void> {
+    options?.signal?.throwIfAborted();
 
-    await this.db.put(encodedMessageBlock.cid, encodedMessageBlock.bytes);
+    const partition = await abortOr(options?.signal, this.blockstore.partition(tenant));
 
-    // if `dataCid` is given, it means there is corresponding data associated with this message
-    // but NOTE: it is possible that a data stream is not given in such case, for instance,
-    // a subsequent RecordsWrite that changes the `published` property, but the data hasn't changed,
-    // in this case requiring re-uploading of the data is extremely inefficient so we take care allow omission of data stream
-    if (message.descriptor.dataCid !== undefined) {
-      if (dataStream === undefined) {
-        // the message implies that the data is already in the DB, so we check to make sure the data already exist
-        // TODO: #218 - Use tenant + record scoped IDs - https://github.com/TBD54566975/dwn-sdk-js/issues/218
-        const dataCid = CID.parse(message.descriptor.dataCid);
-        const rootBlockByte = await this.db.get(dataCid);
+    const encodedMessageBlock = await abortOr(options?.signal, block.encode({ value: message, codec: cbor, hasher: sha256 }));
 
-        if (rootBlockByte === undefined) {
-          throw new DwnError(
-            DwnErrorCode.MessageStoreDataNotFound,
-            `data with dataCid ${message.descriptor.dataCid} not found in store`
-          );
-        }
-      } else {
-        const asyncDataBlocks = importer([{ content: dataStream }], this.db, { cidVersion: 1 });
-
-        // NOTE: the last block contains the root CID
-        let block;
-        for await (block of asyncDataBlocks) { ; }
-
-        // MUST verify that the CID of the actual data matches with the given `dataCid`
-        // if data CID is wrong, delete the data we just stored
-        const actualDataCid = block.cid.toString();
-        if (message.descriptor.dataCid !== actualDataCid) {
-        // there is an opportunity to improve here: handle the edge cae of if the delete fails...
-          await this.db.delete(block.cid);
-          throw new DwnError(
-            DwnErrorCode.MessageStoreDataCidMismatch,
-            `actual data CID ${actualDataCid} does not match dataCid in descriptor: ${message.descriptor.dataCid}`
-          );
-        }
-      }
-    }
+    await partition.put(encodedMessageBlock.cid, encodedMessageBlock.bytes, options);
 
     // TODO: #218 - Use tenant + record scoped IDs - https://github.com/TBD54566975/dwn-sdk-js/issues/218
     const encodedMessageBlockCid = encodedMessageBlock.cid.toString();
     const indexDocument = {
-      _id: encodedMessageBlockCid,
-      ...indexes
+      ...indexes,
+      tenant,
+      _id: encodedMessageBlockCid
     };
 
-    // tokenSplitRegex is used to tokenize values. By default, only letters and digits are indexed,
-    // overriding to include all characters, examples why we need to include more than just letters and digits:
-    // 'did:example:alice'                    - ':'
-    // '337970c4-52e0-4bd7-b606-bfc1d6fe2350' - '-'
-    // 'application/json'                     - '/'
-    await this.index.PUT([indexDocument], { tokenSplitRegex: /.+/ });
+    await this.index.put(indexDocument, options);
   }
 
   /**
    * deletes everything in the underlying datastore and indices.
    */
   async clear(): Promise<void> {
-    await this.db.clear();
-    await this.index.FLUSH();
-  }
-
-  /**
-   * recursively parses a query object into a list of flattened terms that can be used to query the search
-   * index
-   * @example
-   * buildExactQueryTerms({
-   *    ability : {
-   *      method : 'RecordsQuery',
-   *      schema : 'https://schema.org/MusicPlaylist'
-   *    }
-   * })
-   * // returns
-   * [
-        { FIELD: ['ability.method'], VALUE: 'RecordsQuery' },
-        { FIELD: ['ability.schema'], VALUE: 'https://schema.org/MusicPlaylist' }
-      ]
-   * @param query - the query to parse
-   * @param terms - internally used to collect terms
-   * @param prefix - internally used to pass parent properties into recursive calls
-   * @returns the list of terms
-   */
-  private static buildExactQueryTerms(
-    query: any,
-    terms: SearchIndexTerm[] =[],
-    prefix: string = ''
-  ): SearchIndexTerm[] {
-    for (const property in query) {
-      const val = query[property];
-
-      if (isPlainObject(val)) {
-        MessageStoreLevel.buildExactQueryTerms(val, terms, `${prefix}${property}.`);
-      } else {
-        // NOTE: using object-based expressions because we need to support filters against non-string properties
-        const term = {
-          FIELD : [`${prefix}${property}`],
-          VALUE : val
-        };
-        terms.push(term);
-      }
-    }
-
-    return terms;
-  }
-
-  /**
-   * Builds a list of `search-index` range terms given a list of range criteria.
-   * @example
-   * // example output
-   * [
-   *   {
-   *     FIELD: ['dateCreated'],
-   *     VALUE: {
-   *       GTE: '2023-02-07T10:20:30.123456',
-   *       LTE: '2023-02-08T10:20:30.123456'
-   *     }
-   *   },
-   * ]
-   */
-  private static buildRangeQueryTerms(
-    rangeCriteria: { [key: string]: RangeCriterion} = { }
-  ): SearchIndexTerm[] {
-    const terms = [];
-
-    for (const rangeFilterName in rangeCriteria) {
-      const rangeFilter = rangeCriteria[rangeFilterName];
-
-      const term: RangeSearchIndexTerm = {
-        FIELD : [`${rangeFilterName}`],
-        VALUE : { }
-      };
-
-      if (rangeFilter.from !== undefined) {
-        term.VALUE.GTE = rangeFilter.from;
-      }
-
-      if (rangeFilter.to !== undefined) {
-        term.VALUE.LTE = rangeFilter.to;
-      }
-
-      terms.push(term);
-    }
-
-    return terms;
+    await this.blockstore.clear();
+    await this.index.clear();
   }
 }
-
-type SearchIndexTerm = {
-  FIELD: string[];
-  VALUE: any;
-};
-
-type RangeSearchIndexTerm = {
-  FIELD: string[],
-  VALUE: {
-    GTE?: string,
-    LTE?: string
-  }
-};
 
 type MessageStoreLevelConfig = {
   blockstoreLocation?: string,
   indexLocation?: string,
+  createLevelDatabase?: typeof createLevelDatabase,
 };
