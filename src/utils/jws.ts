@@ -1,11 +1,11 @@
 import isPlainObject from 'lodash/isPlainObject.js';
 
 import { Encoder } from './encoder.js';
-import { SignatureEntry } from '../jose/jws/general/types.js';
+import type { SignatureEntry } from '../jose/jws/general/types.js';
 import { signers as verifiers } from '../jose/algorithms/signing/signers.js';
 
-import { GeneralJws, SignatureInput } from '../jose/jws/general/types.js';
-import { KeyMaterial, PublicJwk } from '../jose/types.js';
+import type { GeneralJws, SignatureInput } from '../jose/jws/general/types.js';
+import type { KeyMaterial, PublicJwk } from '../jose/types.js';
 
 /**
  * Utility class for JWS related operations.

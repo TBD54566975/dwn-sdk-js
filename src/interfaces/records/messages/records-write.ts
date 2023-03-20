@@ -13,7 +13,7 @@ import { removeUndefinedProperties } from '../../../utils/object.js';
 import { authorize, validateAuthorizationIntegrity } from '../../../core/auth.js';
 import { Cid, computeCid } from '../../../utils/cid.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
-import { GeneralJws, SignatureInput } from '../../../jose/jws/general/types.js';
+import type { GeneralJws, SignatureInput } from '../../../jose/jws/general/types.js';
 
 export type RecordsWriteOptions = {
   recipient?: string;

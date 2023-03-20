@@ -2,7 +2,7 @@ import type { RecordsDeleteDescriptor, RecordsDeleteMessage } from '../types.js'
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/message.js';
-import { SignatureInput } from '../../../jose/jws/general/types.js';
+import type { SignatureInput } from '../../../jose/jws/general/types.js';
 
 import { authorize, validateAuthorizationIntegrity } from '../../../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';

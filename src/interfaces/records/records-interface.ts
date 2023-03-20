@@ -1,7 +1,7 @@
 import { MessageStore } from '../../store/message-store.js';
 import { RecordsWrite } from './messages/records-write.js';
-import { RecordsWriteMessage } from '../../interfaces/records/types.js';
-import { TimestampedMessage } from '../../core/types.js';
+import type { RecordsWriteMessage } from '../../interfaces/records/types.js';
+import type { TimestampedMessage } from '../../core/types.js';
 
 import { constructRecordsWriteIndexes } from './handlers/records-write.js';
 import { Message } from '../../core/message.js';
