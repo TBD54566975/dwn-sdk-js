@@ -97,6 +97,13 @@ An example version string:
 * [Server side aggregator](https://github.com/TBD54566975/dwn-server)
 
 
+
+
+## Architecture
+<img src="./images/dwn-architecture.png" alt="Architecture of DWN SDN" width="700">
+
+> NOTE: The diagram is a conceptual view of the architecture, the actual component abstraction and names in source file may differ.
+
 ## Project Resources
 
 | Resource                                                                                     | Description                                                                   |
