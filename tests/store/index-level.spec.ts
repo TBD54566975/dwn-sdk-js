@@ -23,9 +23,8 @@ describe('Index Level', () => {
       await index.close();
     });
 
-    it('adds 1 key per property aside from _id', async () => {
-      await index.put({
-        _id         : uuid(),
+    it('adds 1 key per property aside from id', async () => {
+      await index.put(uuid(), {
         dateCreated : new Date().toISOString(),
         'a'         : 'b',
         'c'         : 'd'
@@ -39,53 +38,53 @@ describe('Index Level', () => {
     });
 
     it('flattens nested records', async () => {
+      const id = uuid();
       const doc = {
-        _id  : uuid(),
-        some : {
+        some: {
           nested: {
             object: true
           }
         }
       };
-      await index.put(doc);
+      await index.put(id, doc);
 
-      const key = await index.db.get(index['join']('some.nested.object', true, doc._id));
-      expect(key).to.equal(doc._id);
+      const key = await index.db.get(index['join']('some.nested.object', true, id));
+      expect(key).to.equal(id);
     });
 
     it('removes empty objects', async () => {
+      const id = uuid();
       const doc = {
-        _id   : uuid(),
-        empty : { nested: { } }
+        empty: { nested: { } }
       };
-      await index.put(doc);
+      await index.put(id, doc);
 
-      await expect(index.db.get(index['join']('empty', '[object Object]', doc._id))).to.eventually.be.undefined;
-      await expect(index.db.get(index['join']('empty.nested', '[object Object]', doc._id))).to.eventually.be.undefined;
+      await expect(index.db.get(index['join']('empty', '[object Object]', id))).to.eventually.be.undefined;
+      await expect(index.db.get(index['join']('empty.nested', '[object Object]', id))).to.eventually.be.undefined;
     });
 
     it('removes empty arrays', async () => {
+      const id = uuid();
       const doc = {
-        _id   : uuid(),
-        empty : [ [ ] ]
+        empty: [ [ ] ]
       };
-      await index.put(doc);
+      await index.put(id, doc);
 
-      await expect(index.db.get(index['join']('empty', '', doc._id))).to.eventually.be.undefined;
-      await expect(index.db.get(index['join']('empty.0', '', doc._id))).to.eventually.be.undefined;
+      await expect(index.db.get(index['join']('empty', '', id))).to.eventually.be.undefined;
+      await expect(index.db.get(index['join']('empty.0', '', id))).to.eventually.be.undefined;
     });
 
     it('should not put anything if aborted beforehand', async () => {
       const controller = new AbortController();
       controller.abort('reason');
 
+      const id = uuid();
       const doc = {
-        _id : uuid(),
-        foo : 'bar'
+        foo: 'bar'
       };
 
       try {
-        await index.put(doc, { signal: controller.signal });
+        await index.put(id, doc, { signal: controller.signal });
       } catch (e) {
         expect(e).to.equal('reason');
       }
@@ -110,27 +109,27 @@ describe('Index Level', () => {
     });
 
     it('works', async () => {
+      const id1 = uuid();
       const doc1 = {
-        _id : uuid(),
         'a' : 'b',
         'c' : 'd'
       };
 
+      const id2 = uuid();
       const doc2 = {
-        _id : uuid(),
         'a' : 'c',
         'c' : 'd'
       };
 
+      const id3 = uuid();
       const doc3 = {
-        _id : uuid(),
         'a' : 'b',
         'c' : 'e'
       };
 
-      await index.put(doc1);
-      await index.put(doc2);
-      await index.put(doc3);
+      await index.put(id1, doc1);
+      await index.put(id2, doc2);
+      await index.put(id3, doc3);
 
       const result = await index.query({
         'a' : 'b',
@@ -138,16 +137,16 @@ describe('Index Level', () => {
       });
 
       expect(result.length).to.equal(1);
-      expect(result[0]).to.equal(doc3._id);
+      expect(result[0]).to.equal(id3);
     });
 
     it('should not match values prefixed with the query', async () => {
+      const id = uuid();
       const doc = {
-        _id   : uuid(),
-        value : 'foobar'
+        value: 'foobar'
       };
 
-      await index.put(doc);
+      await index.put(id, doc);
 
       const resp = await index.query({
         value: 'foo'
@@ -157,42 +156,42 @@ describe('Index Level', () => {
     });
 
     it('supports OR queries', async () => {
+      const id1 = uuid();
       const doc1 = {
-        _id : uuid(),
-        'a' : 'a'
+        'a': 'a'
       };
 
+      const id2 = uuid();
       const doc2 = {
-        _id : uuid(),
-        'a' : 'b'
+        'a': 'b'
       };
 
+      const id3 = uuid();
       const doc3 = {
-        _id : uuid(),
-        'a' : 'c'
+        'a': 'c'
       };
 
-      await index.put(doc1);
-      await index.put(doc2);
-      await index.put(doc3);
+      await index.put(id1, doc1);
+      await index.put(id2, doc2);
+      await index.put(id3, doc3);
 
       const resp = await index.query({
         a: [ 'a', 'b' ]
       });
 
       expect(resp.length).to.equal(2);
-      expect(resp).to.include(doc1._id);
-      expect(resp).to.include(doc2._id);
+      expect(resp).to.include(id1);
+      expect(resp).to.include(id2);
     });
 
     it('supports range queries', async () => {
       for (let i = -5; i < 5; ++i) {
+        const id = uuid();
         const doc = {
-          _id         : uuid(),
-          dateCreated : Temporal.PlainDateTime.from({ year: 2023, month: 1, day: 15 + i }).toString({ smallestUnit: 'microseconds' })
+          dateCreated: Temporal.PlainDateTime.from({ year: 2023, month: 1, day: 15 + i }).toString({ smallestUnit: 'microseconds' })
         };
 
-        await index.put(doc);
+        await index.put(id, doc);
       }
 
       const resp = await index.query({
@@ -205,12 +204,12 @@ describe('Index Level', () => {
     });
 
     it('supports prefixed range queries', async () => {
+      const id = uuid();
       const doc = {
-        _id   : uuid(),
-        value : 'foobar'
+        value: 'foobar'
       };
 
-      await index.put(doc);
+      await index.put(id, doc);
 
       const resp = await index.query({
         value: {
@@ -219,22 +218,22 @@ describe('Index Level', () => {
       });
 
       expect(resp.length).to.equal(1);
-      expect(resp).to.include(doc._id);
+      expect(resp).to.include(id);
     });
 
     it('supports suffixed range queries', async () => {
+      const id1 = uuid();
       const doc1 = {
-        _id : uuid(),
-        foo : 'bar'
+        foo: 'bar'
       };
 
+      const id2 = uuid();
       const doc2 = {
-        _id : uuid(),
-        foo : 'barbaz'
+        foo: 'barbaz'
       };
 
-      await index.put(doc1);
-      await index.put(doc2);
+      await index.put(id1, doc1);
+      await index.put(id2, doc2);
 
       const resp = await index.query({
         foo: {
@@ -243,29 +242,29 @@ describe('Index Level', () => {
       });
 
       expect(resp.length).to.equal(1);
-      expect(resp).to.include(doc1._id);
+      expect(resp).to.include(id1);
     });
 
     it('treats strings differently', async () => {
+      const id1 = uuid();
       const doc1 = {
-        _id : uuid(),
-        foo : true
+        foo: true
       };
 
+      const id2 = uuid();
       const doc2 = {
-        _id : uuid(),
-        foo : 'true'
+        foo: 'true'
       };
 
-      await index.put(doc1);
-      await index.put(doc2);
+      await index.put(id1, doc1);
+      await index.put(id2, doc2);
 
       const resp = await index.query({
         foo: true
       });
 
       expect(resp.length).to.equal(1);
-      expect(resp).to.include(doc1._id);
+      expect(resp).to.include(id1);
     });
   });
 
@@ -284,27 +283,27 @@ describe('Index Level', () => {
     });
 
     it('works', async () => {
+      const id1 = uuid();
       const doc1 = {
-        _id : uuid(),
         'a' : 'b',
         'c' : 'd'
       };
 
+      const id2 = uuid();
       const doc2 = {
-        _id : uuid(),
         'a' : 'b',
         'c' : 'd'
       };
 
-      await index.put(doc1);
-      await index.put(doc2);
+      await index.put(id1, doc1);
+      await index.put(id2, doc2);
 
       let result = await index.query({ 'a': 'b', 'c': 'd' });
 
       expect(result.length).to.equal(2);
-      expect(result).to.contain(doc1._id);
+      expect(result).to.contain(id1);
 
-      await index.delete(doc1._id);
+      await index.delete(id1);
 
 
       result = await index.query({ 'a': 'b', 'c': 'd' });
@@ -316,22 +315,22 @@ describe('Index Level', () => {
       const controller = new AbortController();
       controller.abort('reason');
 
+      const id = uuid();
       const doc = {
-        _id : uuid(),
-        foo : 'bar'
+        foo: 'bar'
       };
 
-      await index.put(doc);
+      await index.put(id, doc);
 
       try {
-        await index.delete(doc._id, { signal: controller.signal });
+        await index.delete(id, { signal: controller.signal });
       } catch (e) {
         expect(e).to.equal('reason');
       }
 
       const result = await index.query({ foo: 'bar' });
       expect(result.length).to.equal(1);
-      expect(result).to.contain(doc._id);
+      expect(result).to.contain(id);
     });
   });
 });
