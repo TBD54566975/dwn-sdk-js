@@ -1,5 +1,5 @@
-import type { DidDocument, DidMethodResolver, DidResolutionResult } from './did-resolver.js';
 import varint from 'varint';
+import type { DidDocument, DidMethodResolver, DidResolutionResult } from './did-resolver.js';
 
 import { base58btc } from 'multiformats/bases/base58';
 import { Did } from './did.js';
