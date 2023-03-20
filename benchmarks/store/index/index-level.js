@@ -21,8 +21,7 @@ console.log('clear - before', clearBeforeEnd - clearBeforeStart);
 // put
 
 const putStart = Date.now();
-await Promise.all(Array(10_000).fill().map(() => index.put({
-  _id    : uuid(),
+await Promise.all(Array(10_000).fill().map(() => index.put(uuid(), {
   test   : 'foo',
   number : Math.random()
 })));

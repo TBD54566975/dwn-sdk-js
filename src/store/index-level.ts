@@ -5,7 +5,6 @@ import { flatten } from '../utils/object.js';
 import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 
 export type Entry = {
-  _id: string,
   [property: string]: unknown
 };
 
@@ -38,24 +37,19 @@ export class IndexLevel {
     return this.db.close();
   }
 
-  async put(entry: Entry, options?: IndexLevelOptions): Promise<void> {
+  async put(id: string, entry: Entry, options?: IndexLevelOptions): Promise<void> {
     entry = flatten(entry) as Entry;
-    const { _id } = entry;
 
     const ops: LevelWrapperBatchOperation<string>[] = [ ];
     const prefixes: string[] = [ ];
     for (const property in entry) {
-      if (property === '_id') {
-        continue;
-      }
-
       const value = entry[property];
 
       const prefix = this.join(property, this.encodeValue(value));
-      ops.push({ type: 'put', key: this.join(prefix, _id), value: _id });
+      ops.push({ type: 'put', key: this.join(prefix, id), value: id });
       prefixes.push(prefix);
     }
-    ops.push({ type: 'put', key: `__${_id}__prefixes`, value: JSON.stringify(prefixes) });
+    ops.push({ type: 'put', key: `__${id}__prefixes`, value: JSON.stringify(prefixes) });
 
     return this.db.batch(ops, options);
   }

@@ -123,10 +123,8 @@ export class MessageStoreLevel implements MessageStore {
     const indexDocument = {
       ...indexes,
       tenant,
-      _id: encodedMessageBlockCid
     };
-
-    await this.index.put(indexDocument, options);
+    await this.index.put(encodedMessageBlockCid, indexDocument, options);
   }
 
   /**
