@@ -1,5 +1,5 @@
 import crossFetch from 'cross-fetch';
-import { DidMethodResolver } from './did-resolver.js';
+import type { DidMethodResolver } from './did-resolver.js';
 import type { DidResolutionResult } from './did-resolver.js';
 
 // supports fetch in: node, browsers, and browser extensions.

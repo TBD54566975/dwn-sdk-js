@@ -1,3 +1,5 @@
+import type { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
+
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
@@ -5,7 +7,6 @@ import chai, { expect } from 'chai';
 import { Jws } from '../../../../src/index.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsWrite } from '../../../../src/interfaces/records/messages/records-write.js';
-import { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { getCurrentTimeInHighPrecision, sleep } from '../../../../src/utils/time.js';
 

@@ -1,5 +1,5 @@
 import type { BaseMessage } from '../../core/types.js';
-import { DwnInterfaceName, DwnMethodName } from '../../index.js';
+import type { DwnInterfaceName, DwnMethodName } from '../../index.js';
 
 export type PermissionScope = {
   method: string

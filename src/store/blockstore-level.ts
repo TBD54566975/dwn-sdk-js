@@ -1,7 +1,7 @@
+import type { CID } from 'multiformats';
 import type { AwaitIterable, Batch, KeyQuery, Pair, Query } from 'interface-store';
 import type { Blockstore, Options } from 'interface-blockstore';
 
-import { CID } from 'multiformats';
 import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 
 // `level` works in Node.js 12+ and Electron 5+ on Linux, Mac OS, Windows and

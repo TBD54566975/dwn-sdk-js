@@ -1,6 +1,7 @@
+import type { ProtocolRuleSet } from '../../src/index.js';
+
 import { expect } from 'chai';
 import { ProtocolAuthorization } from '../../src/core/protocol-authorization.js';
-import { ProtocolRuleSet } from '../../src/index.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 
 describe('Protocol-Based Authorization', async () => {

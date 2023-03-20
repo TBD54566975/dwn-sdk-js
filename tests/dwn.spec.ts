@@ -1,3 +1,5 @@
+import type { TenantGate } from '../src/index.js';
+
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
@@ -7,7 +9,6 @@ import { DidKeyResolver } from '../src/did/did-key-resolver.js';
 import { Dwn } from '../src/dwn.js';
 import { Message } from '../src/core/message.js';
 import { MessageStoreLevel } from '../src/store/message-store-level.js';
-import { TenantGate } from '../src/index.js';
 import { TestDataGenerator } from './utils/test-data-generator.js';
 
 chai.use(chaiAsPromised);

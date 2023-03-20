@@ -1,3 +1,5 @@
+import type { GenerateProtocolsConfigureOutput } from '../../../utils/test-data-generator.js';
+
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
@@ -8,8 +10,8 @@ import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { lexicographicalCompare } from '../../../../src/utils/string.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
+import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
-import { GenerateProtocolsConfigureOutput, TestDataGenerator } from '../../../utils/test-data-generator.js';
 
 import { DidResolver, Dwn, Encoder, Jws } from '../../../../src/index.js';
 
