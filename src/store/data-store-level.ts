@@ -1,5 +1,5 @@
 import type { ImportResult } from 'ipfs-unixfs-importer';
-import type { DataStore, PutResult } from './data-store.js';
+import type { AssociateResult, DataStore, GetResult, PutResult } from './data-store.js';
 
 import { BlockstoreLevel } from './blockstore-level.js';
 import { createLevelDatabase } from './level-wrapper.js';
@@ -50,31 +50,29 @@ export class DataStoreLevel implements DataStore {
     await this.blockstore.close();
   }
 
-  async put(tenant: string, messageCid: string, dataStream: Readable): Promise<PutResult> {
-    const dataPartition = await this.blockstore.partition(DATA_PARTITION);
-
-    const asyncDataBlocks = importer([{ content: dataStream }], dataPartition, { cidVersion: 1 });
-
-    // NOTE: the last block contains the root CID as well as info to derive the data size
-    let block: ImportResult;
-    for await (block of asyncDataBlocks) { ; }
-
-    const dataCid = block.cid.toString();
-    const dataSize = block.unixfs ? Number(block.unixfs!.fileSize()) : Number(block.size);
-
+  async put(tenant: string, messageCid: string, dataCid: string, dataStream: Readable): Promise<PutResult> {
     const tenantsForData = await this.blockstore.partition(HOST_PARTITION);
     const messagesForTenant = await tenantsForData.partition(dataCid);
     const messages = await messagesForTenant.partition(tenant);
 
     await messages.put(messageCid, PLACEHOLDER_VALUE);
 
+    const blocksForData = await this.blockstore.partition(DATA_PARTITION);
+    const blocks = await blocksForData.partition(dataCid);
+
+    const asyncDataBlocks = importer([{ content: dataStream }], blocks, { cidVersion: 1 });
+
+    // NOTE: the last block contains the root CID as well as info to derive the data size
+    let dataDagRoot: ImportResult;
+    for await (dataDagRoot of asyncDataBlocks) { ; }
+
     return {
-      dataCid,
-      dataSize
+      dataCid  : String(dataDagRoot.cid),
+      dataSize : Number(dataDagRoot.unixfs?.fileSize() ?? dataDagRoot.size)
     };
   }
 
-  public async get(tenant: string, messageCid: string, dataCid: string): Promise<Readable | undefined> {
+  public async get(tenant: string, messageCid: string, dataCid: string): Promise<GetResult | undefined> {
     const tenantsForData = await this.blockstore.partition(HOST_PARTITION);
     const messagesForTenant = await tenantsForData.partition(dataCid);
     const messages = await messagesForTenant.partition(tenant);
@@ -84,19 +82,19 @@ export class DataStoreLevel implements DataStore {
       return undefined;
     }
 
-    const dataPartition = await this.blockstore.partition(DATA_PARTITION);
+    const blocksForData = await this.blockstore.partition(DATA_PARTITION);
+    const blocks = await blocksForData.partition(dataCid);
 
-    const bytes = await dataPartition.get(dataCid);
-
-    if (!bytes) {
+    const exists = await blocks.has(dataCid);
+    if (!exists) {
       return undefined;
     }
 
     // data is chunked into dag-pb unixfs blocks. re-inflate the chunks.
-    const dataDagRoot = await exporter(dataCid, dataPartition);
+    const dataDagRoot = await exporter(dataCid, blocks);
     const contentIterator = dataDagRoot.content()[Symbol.asyncIterator]();
 
-    const readableStream = new Readable({
+    const dataStream = new Readable({
       async read(): Promise<void> {
         const result = await contentIterator.next();
         if (result.done) {
@@ -107,29 +105,39 @@ export class DataStoreLevel implements DataStore {
       }
     });
 
-    return readableStream;
+    return {
+      dataCid  : String(dataDagRoot.cid),
+      dataSize : Number(dataDagRoot.unixfs?.fileSize() ?? dataDagRoot.size),
+      dataStream,
+    };
   }
 
-  public async associate(tenant: string, messageCid: string, dataCid: string): Promise<boolean> {
-    const dataPartition = await this.blockstore.partition(DATA_PARTITION);
-
-    const exists = await dataPartition.has(dataCid);
-    if (!exists) {
-      return false;
-    }
-
+  public async associate(tenant: string, messageCid: string, dataCid: string): Promise<AssociateResult | undefined> {
     const tenantsForData = await this.blockstore.partition(HOST_PARTITION);
     const messagesForTenant = await tenantsForData.partition(dataCid);
     const messages = await messagesForTenant.partition(tenant);
 
     const isFirstMessage = await messages.isEmpty();
     if (isFirstMessage) {
-      return false;
+      return undefined;
+    }
+
+    const blocksForData = await this.blockstore.partition(DATA_PARTITION);
+    const blocks = await blocksForData.partition(dataCid);
+
+    const exists = await blocks.has(dataCid);
+    if (!exists) {
+      return undefined;
     }
 
     await messages.put(messageCid, PLACEHOLDER_VALUE);
 
-    return true;
+    const dataDagRoot = await exporter(dataCid, blocks);
+
+    return {
+      dataCid  : String(dataDagRoot.cid),
+      dataSize : Number(dataDagRoot.unixfs?.fileSize() ?? dataDagRoot.size)
+    };
   }
 
   public async delete(tenant: string, messageCid: string, dataCid: string): Promise<void> {
@@ -144,18 +152,15 @@ export class DataStoreLevel implements DataStore {
       return;
     }
 
-    await messagesForTenant.delete(tenant);
-
     const wasLastTenant = await messagesForTenant.isEmpty();
     if (!wasLastTenant) {
       return;
     }
 
-    await tenantsForData.delete(dataCid);
+    const blocksForData = await this.blockstore.partition(DATA_PARTITION);
+    const blocks = await blocksForData.partition(dataCid);
 
-    const dataPartition = await this.blockstore.partition(DATA_PARTITION);
-
-    await dataPartition.delete(dataCid);
+    await blocks.clear();
   }
 
   /**

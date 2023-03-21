@@ -72,9 +72,9 @@ export class RecordsReadHandler implements MethodHandler {
     }
 
     const messageCid = await Message.getCid(newestRecordsWrite);
-    const readableStream = await this.dataStore.get(tenant, messageCid, newestRecordsWrite.descriptor.dataCid);
+    const result = await this.dataStore.get(tenant, messageCid, newestRecordsWrite.descriptor.dataCid);
 
-    if (readableStream === undefined) {
+    if (result?.dataStream === undefined) {
       return new MessageReply({
         status: { code: 404, detail: 'Not Found' }
       });
@@ -82,7 +82,7 @@ export class RecordsReadHandler implements MethodHandler {
 
     const messageReply = new MessageReply({
       status : { code: 200, detail: 'OK' },
-      data   : readableStream
+      data   : result.dataStream
     });
     return messageReply;
   };
