@@ -1,9 +1,9 @@
-import { MessageStore } from '../store/message-store.js';
-import { RecordsWrite } from '../interfaces/records/messages/records-write.js';
+import type { MessageStore } from '../store/message-store.js';
+import type { RecordsWrite } from '../interfaces/records/messages/records-write.js';
 import type { RecordsWriteMessage } from '../interfaces/records/types.js';
+import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
 
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
-import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
 
 const methodToAllowedActionMap = {
   [DwnMethodName.Write]: 'write',

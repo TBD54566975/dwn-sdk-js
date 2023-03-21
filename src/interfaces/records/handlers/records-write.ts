@@ -1,5 +1,7 @@
 import type { MethodHandler } from '../../types.js';
 import type { RecordsWriteMessage } from '../types.js';
+import type { TimestampedMessage } from '../../../core/types.js';
+import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
@@ -7,10 +9,7 @@ import { DwnErrorCode } from '../../../core/dwn-error.js';
 import { DwnInterfaceName } from '../../../core/message.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsWrite } from '../messages/records-write.js';
-import type { TimestampedMessage } from '../../../core/types.js';
-
 import { StorageController } from '../../../store/storage-controller.js';
-import { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 export class RecordsWriteHandler implements MethodHandler {
 

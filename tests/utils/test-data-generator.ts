@@ -1,41 +1,45 @@
-import * as cbor from '@ipld/dag-cbor';
-import { BaseMessage } from '../../src/core/types.js';
-import { CID } from 'multiformats/cid';
-import { CreateFromOptions } from '../../src/interfaces/records/messages/records-write.js';
-import { DataStream } from '../../src/utils/data-stream.js';
-import { DidResolutionResult } from '../../src/did/did-resolver.js';
-import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
-import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
-import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request.js';
-import { Readable } from 'readable-stream';
-import { RecordsQueryFilter } from '../../src/interfaces/records/types.js';
-import { removeUndefinedProperties } from '../../src/utils/object.js';
-import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1.js';
-import { sha256 } from 'multiformats/hashes/sha2';
-import {
+import type { BaseMessage } from '../../src/core/types.js';
+import type { CreateFromOptions } from '../../src/interfaces/records/messages/records-write.js';
+import type { DidResolutionResult } from '../../src/did/did-resolver.js';
+import type { Readable } from 'readable-stream';
+import type { RecordsQueryFilter } from '../../src/interfaces/records/types.js';
+import type {
   DateSort,
-  DidKeyResolver,
-  HooksWrite,
   HooksWriteMessage,
   HooksWriteOptions,
-  Jws,
   ProtocolDefinition,
-  ProtocolsConfigure,
   ProtocolsConfigureMessage,
   ProtocolsConfigureOptions,
-  ProtocolsQuery,
   ProtocolsQueryMessage,
   ProtocolsQueryOptions,
-  RecordsDelete,
   RecordsDeleteMessage,
-  RecordsQuery,
   RecordsQueryMessage,
   RecordsQueryOptions,
-  RecordsWrite,
   RecordsWriteMessage,
   RecordsWriteOptions
 } from '../../src/index.js';
-import { PrivateJwk, PublicJwk } from '../../src/jose/types.js';
+import type { PrivateJwk, PublicJwk } from '../../src/jose/types.js';
+
+import * as cbor from '@ipld/dag-cbor';
+import { CID } from 'multiformats/cid';
+import { DataStream } from '../../src/utils/data-stream.js';
+import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
+import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
+import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request.js';
+import { removeUndefinedProperties } from '../../src/utils/object.js';
+import { secp256k1 } from '../../src/jose/algorithms/signing/secp256k1.js';
+import { sha256 } from 'multiformats/hashes/sha2';
+
+import {
+  DidKeyResolver,
+  HooksWrite,
+  Jws,
+  ProtocolsConfigure,
+  ProtocolsQuery,
+  RecordsDelete,
+  RecordsQuery,
+  RecordsWrite
+} from '../../src/index.js';
 
 /**
  * A logical grouping of user data used to generate test messages.

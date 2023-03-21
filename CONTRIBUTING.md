@@ -42,7 +42,7 @@ We plan on including a Docker container to support all local development soon.
 
 ### Running benchmarks
 
-Benchmarks should be run direclty using `node` (e.g. `node benchmarks/store/index/search-index.js`).
+Benchmarks should be run directly using `node` (e.g. `node benchmarks/store/index/search-index.js`).
 
 Note that some benchmarks require that `npm run build` has been run beforehand.
 

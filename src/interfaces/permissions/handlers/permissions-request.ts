@@ -1,10 +1,10 @@
 import type { MethodHandler } from '../../types.js';
 import type { PermissionsRequestMessage } from '../types.js';
+import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { canonicalAuth } from '../../../core/auth.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { PermissionsRequest } from '../messages/permissions-request.js';
-import { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 export class PermissionsRequestHandler implements MethodHandler {
 

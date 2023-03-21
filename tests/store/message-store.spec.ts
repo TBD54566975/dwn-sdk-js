@@ -1,11 +1,13 @@
+import type { RecordsWriteMessage } from '../../src/interfaces/records/types.js';
+import type { CreateLevelDatabaseOptions, LevelDatabase } from '../../src/store/level-wrapper.js';
+
 import { computeCid } from '../../src/utils/cid.js';
+import { createLevelDatabase } from '../../src/store/level-wrapper.js';
 import { DidKeyResolver } from '../../src/index.js';
 import { expect } from 'chai';
 import { Message } from '../../src/core/message.js';
 import { MessageStoreLevel } from '../../src/store/message-store-level.js';
-import { RecordsWriteMessage } from '../../src/interfaces/records/types.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { createLevelDatabase, CreateLevelDatabaseOptions, LevelDatabase } from '../../src/store/level-wrapper.js';
 
 let messageStore: MessageStoreLevel;
 

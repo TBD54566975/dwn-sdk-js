@@ -4,6 +4,11 @@ import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.jso
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
+import type { GenerateFromRecordsWriteOut } from '../../../utils/test-data-generator.js';
+import type { ProtocolDefinition } from '../../../../src/index.js';
+import type { QueryResultEntry } from '../../../../src/core/types.js';
+import type { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
+
 import { base64url } from 'multiformats/bases/base64';
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DataStream } from '../../../../src/utils/data-stream.js';
@@ -16,14 +21,13 @@ import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
-import { QueryResultEntry } from '../../../../src/core/types.js';
 import { RecordsWriteHandler } from '../../../../src/interfaces/records/handlers/records-write.js';
-import { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
 import { StorageController } from '../../../../src/store/storage-controller.js';
+import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
+
 import { Cid, computeCid } from '../../../../src/utils/cid.js';
-import { Dwn, Jws, ProtocolDefinition, RecordsWrite } from '../../../../src/index.js';
-import { GenerateFromRecordsWriteOut, TestDataGenerator } from '../../../utils/test-data-generator.js';
+import { Dwn, Jws, RecordsWrite } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
 

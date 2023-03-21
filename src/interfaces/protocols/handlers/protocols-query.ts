@@ -1,13 +1,13 @@
 import type { MethodHandler } from '../../types.js';
 import type { ProtocolsQueryMessage } from '../types.js';
 import type { QueryResultEntry } from '../../../core/types.js';
+import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { canonicalAuth } from '../../../core/auth.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { ProtocolsQuery } from '../messages/protocols-query.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 
-import { DataStore, DidResolver, MessageStore } from '../../../index.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 
 export class ProtocolsQueryHandler implements MethodHandler {

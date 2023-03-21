@@ -1,7 +1,6 @@
-import crossFetch from 'cross-fetch';
-import { DidMethodResolver } from './did-resolver.js';
-import type { DidResolutionResult } from './did-resolver.js';
+import type { DidMethodResolver, DidResolutionResult } from './did-resolver.js';
 
+import crossFetch from 'cross-fetch';
 // supports fetch in: node, browsers, and browser extensions.
 // uses native fetch if available in environment or falls back to a ponyfill.
 // 'cross-fetch' is a ponyfill that uses `XMLHTTPRequest` under the hood.

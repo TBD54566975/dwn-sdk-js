@@ -1,3 +1,5 @@
+import type { RecordsWriteMessage } from '../../../../src/index.js';
+
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
@@ -16,7 +18,7 @@ import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
 import { constructRecordsWriteIndexes } from '../../../../src/interfaces/records/handlers/records-write.js';
 import { DateSort, RecordsQuery } from '../../../../src/interfaces/records/messages/records-query.js';
-import { DidResolver, Dwn, RecordsWriteMessage } from '../../../../src/index.js';
+import { DidResolver, Dwn } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
 

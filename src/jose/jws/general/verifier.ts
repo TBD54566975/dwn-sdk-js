@@ -1,9 +1,8 @@
 import type { Cache } from '../../../utils/types.js';
 import type { GeneralJws } from './types.js';
 import type { PublicJwk } from '../../types.js';
-import type { VerificationMethod } from '../../../did/did-resolver.js';
+import type { DidResolver, VerificationMethod } from '../../../did/did-resolver.js';
 
-import { DidResolver } from '../../../did/did-resolver.js';
 import { Jws } from '../../../utils/jws.js';
 import { MemoryCache } from '../../../utils/memory-cache.js';
 import { validateJsonSchema } from '../../../schema-validator.js';

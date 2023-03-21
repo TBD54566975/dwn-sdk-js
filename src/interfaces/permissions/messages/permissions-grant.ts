@@ -1,3 +1,4 @@
+import type { PermissionsRequest } from './permissions-request';
 import type { SignatureInput } from '../../../jose/jws/general/types';
 import type { PermissionConditions, PermissionScope } from '../types';
 import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types';
@@ -6,7 +7,7 @@ import { computeCid } from '../../../utils/cid';
 import { getCurrentTimeInHighPrecision } from '../../../utils/time';
 import { v4 as uuidv4 } from 'uuid';
 
-import { DEFAULT_CONDITIONS, PermissionsRequest } from './permissions-request';
+import { DEFAULT_CONDITIONS } from './permissions-request';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message';
 
 type PermissionsGrantOptions = {

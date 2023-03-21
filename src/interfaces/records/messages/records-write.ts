@@ -1,4 +1,6 @@
 import type { BaseMessage } from '../../../core/types.js';
+import type { MessageStore } from '../../../store/message-store.js';
+import type { GeneralJws, SignatureInput } from '../../../jose/jws/general/types.js';
 import type { RecordsWriteAttestationPayload, RecordsWriteAuthorizationPayload, RecordsWriteDescriptor, RecordsWriteMessage, UnsignedRecordsWriteMessage } from '../types.js';
 
 import { Encoder } from '../../../utils/encoder.js';
@@ -6,14 +8,12 @@ import { GeneralJwsSigner } from '../../../jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { Jws } from '../../../utils/jws.js';
 import { Message } from '../../../core/message.js';
-import { MessageStore } from '../../../store/message-store.js';
 import { ProtocolAuthorization } from '../../../core/protocol-authorization.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 
 import { authorize, validateAuthorizationIntegrity } from '../../../core/auth.js';
 import { Cid, computeCid } from '../../../utils/cid.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
-import type { GeneralJws, SignatureInput } from '../../../jose/jws/general/types.js';
 
 export type RecordsWriteOptions = {
   recipient?: string;

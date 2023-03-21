@@ -1,12 +1,12 @@
 import type { MethodHandler } from '../../types.js';
 import type { ProtocolsConfigureMessage } from '../types.js';
+import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { canonicalAuth } from '../../../core/auth.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { ProtocolsConfigure } from '../messages/protocols-configure.js';
 import { StorageController } from '../../../store/storage-controller.js';
 
-import { DataStore, DidResolver, MessageStore } from '../../../index.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
 
 export class ProtocolsConfigureHandler implements MethodHandler {

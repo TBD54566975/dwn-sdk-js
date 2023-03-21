@@ -1,10 +1,11 @@
 import type { BaseMessage } from './types.js';
-import { CID } from 'multiformats';
-import { DidResolver } from '../did/did-resolver.js';
+import type { CID } from 'multiformats';
+import type { DidResolver } from '../did/did-resolver.js';
 import type { GeneralJws } from '../jose/jws/general/types.js';
+import type { Message } from './message.js';
+
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
 import { Jws } from '../utils/jws.js';
-import { Message } from './message.js';
 import { computeCid, parseCid } from '../utils/cid.js';
 
 type AuthorizationPayloadConstraints = {

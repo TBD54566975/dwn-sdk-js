@@ -1,6 +1,10 @@
+import type { DidResolutionResult } from '../../src/did/did-resolver.js';
+import type { Persona } from './test-data-generator.js';
+
 import sinon from 'sinon';
-import { DidResolutionResult, DidResolver } from '../../src/did/did-resolver.js';
-import { Persona, TestDataGenerator } from './test-data-generator.js';
+
+import { DidResolver } from '../../src/did/did-resolver.js';
+import { TestDataGenerator } from './test-data-generator.js';
 
 /**
  * Utility class for generating stub for testing.
