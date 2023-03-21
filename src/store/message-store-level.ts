@@ -115,7 +115,6 @@ export class MessageStoreLevel implements MessageStore {
 
     await partition.put(encodedMessageBlock.cid, encodedMessageBlock.bytes, options);
 
-    // TODO: #218 - Use tenant + record scoped IDs - https://github.com/TBD54566975/dwn-sdk-js/issues/218
     const encodedMessageBlockCid = encodedMessageBlock.cid.toString();
     const indexDocument = {
       ...indexes,
@@ -125,7 +124,7 @@ export class MessageStoreLevel implements MessageStore {
   }
 
   /**
-   * deletes everything in the underlying datastore and indices.
+   * deletes everything in the underlying blockstore and indices.
    */
   async clear(): Promise<void> {
     await this.blockstore.clear();
