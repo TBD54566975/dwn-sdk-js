@@ -130,6 +130,16 @@ export class MessageStoreLevel implements MessageStore {
     await this.blockstore.clear();
     await this.index.clear();
   }
+
+  async dump(): Promise<void> {
+    console.group('blockstore');
+    await this.blockstore['dump']?.();
+    console.groupEnd();
+
+    console.group('index');
+    await this.index['dump']?.();
+    console.groupEnd();
+  }
 }
 
 type MessageStoreLevelConfig = {

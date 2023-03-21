@@ -106,6 +106,20 @@ export class Dwn {
     });
     return methodHandlerReply;
   }
+
+  async dump(): Promise<void> {
+    console.group('didResolver');
+    await this.didResolver['dump']?.();
+    console.groupEnd();
+
+    console.group('messageStore');
+    await this.messageStore['dump']?.();
+    console.groupEnd();
+
+    console.group('dataStore');
+    await this.dataStore['dump']?.();
+    console.groupEnd();
+  }
 };
 
 export type DwnConfig = {
