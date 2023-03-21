@@ -1,9 +1,10 @@
 import chaiAsPromised from 'chai-as-promised';
-import { fromAsync } from '../../src/utils/array.js';
+import chai, { expect } from 'chai';
+
+import { asyncGeneratorToArray } from '../../src/utils/array.js';
 import { IndexLevel } from '../../src/store/index-level.js';
 import { Temporal } from '@js-temporal/polyfill';
 import { v4 as uuid } from 'uuid';
-import chai, { expect } from 'chai';
 
 chai.use(chaiAsPromised);
 
@@ -31,7 +32,7 @@ describe('Index Level', () => {
         'c'         : 'd'
       });
 
-      const keys = await fromAsync(index.db.keys());
+      const keys = await asyncGeneratorToArray(index.db.keys());
       expect(keys.length).to.equal(4);
     });
 

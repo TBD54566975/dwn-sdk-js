@@ -9,6 +9,7 @@ import type { ProtocolDefinition } from '../../../../src/index.js';
 import type { QueryResultEntry } from '../../../../src/core/types.js';
 import type { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
 
+import { asyncGeneratorToArray } from '../../../../src/utils/array.js';
 import { base64url } from 'multiformats/bases/base64';
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DataStream } from '../../../../src/utils/data-stream.js';
@@ -16,7 +17,6 @@ import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DidResolver } from '../../../../src/did/did-resolver.js';
 import { DwnErrorCode } from '../../../../src/core/dwn-error.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
-import { fromAsync } from '../../../../src/utils/array.js';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
 import { Message } from '../../../../src/core/message.js';
@@ -326,7 +326,7 @@ describe('RecordsWriteHandler.handle()', () => {
           const reply = await dwn.processMessage(tenant, message, dataStream);
           expect(reply.status.code).to.equal(202);
 
-          expect(fromAsync(dataForCid.db.keys())).to.eventually.eql([ dataCid ]);
+          expect(asyncGeneratorToArray(dataForCid.db.keys())).to.eventually.eql([ dataCid ]);
 
           const newWrite = await RecordsWrite.createFrom({
             unsignedRecordsWriteMessage : recordsWrite.message,
@@ -337,7 +337,7 @@ describe('RecordsWriteHandler.handle()', () => {
           const newWriteReply = await dwn.processMessage(tenant, newWrite.message);
           expect(newWriteReply.status.code).to.equal(202);
 
-          expect(fromAsync(dataForCid.db.keys())).to.eventually.eql([ dataCid ]);
+          expect(asyncGeneratorToArray(dataForCid.db.keys())).to.eventually.eql([ dataCid ]);
 
           // verify the new record state can be queried
           const recordsQueryMessageData = await TestDataGenerator.generateRecordsQuery({
@@ -353,7 +353,7 @@ describe('RecordsWriteHandler.handle()', () => {
           // very importantly verify the original data is still returned
           expect(recordsQueryReply.entries![0].encodedData).to.equal(encodedData);
 
-          expect(fromAsync(dataForCid.db.keys())).to.eventually.eql([ dataCid ]);
+          expect(asyncGeneratorToArray(dataForCid.db.keys())).to.eventually.eql([ dataCid ]);
         });
 
         it('should inherit parent published state when using createFrom() to create RecordsWrite', async () => {
