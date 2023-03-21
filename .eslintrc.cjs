@@ -47,6 +47,8 @@ module.exports = {
     'keyword-spacing'                                  : ['error', { 'before': true, 'after': true }],
     '@typescript-eslint/explicit-function-return-type' : ['error'],
     'no-unused-vars'                                   : 'off',
+    // enforce `import type` when an import is not used at runtime, allowing transpilers/bundlers to drop imports as an optimization
+    '@typescript-eslint/consistent-type-imports'       : 'error',
     '@typescript-eslint/no-unused-vars'                : [
       'error',
       {
@@ -57,6 +59,7 @@ module.exports = {
         'varsIgnorePattern'  : '^_'
       }
     ],
+
     'prefer-const' : ['error', { 'destructuring': 'all' }],
     'sort-imports' : ['error', {
       'ignoreCase'            : true,
@@ -65,6 +68,7 @@ module.exports = {
       'memberSyntaxSortOrder' : ['none', 'all', 'single', 'multiple'],
       'allowSeparatedGroups'  : true
     }],
-    'todo-plz/ticket-ref': ['error', { 'commentPattern': '.*github\.com\/TBD54566975\/dwn-sdk-js\/issues\/.*' }]
+    // enforce github issue reference for every TO-DO comment
+    'todo-plz/ticket-ref': ['error', { 'commentPattern': '.*github\.com\/TBD54566975\/dwn-sdk-js\/issues\/.*' }],
   }
 };

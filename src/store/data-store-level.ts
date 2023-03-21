@@ -1,6 +1,5 @@
-import type { DataStore } from './data-store.js';
 import type { ImportResult } from 'ipfs-unixfs-importer';
-import type { PutResult } from './data-store.js';
+import type { DataStore, PutResult } from './data-store.js';
 
 import { BlockstoreLevel } from './blockstore-level.js';
 import { createLevelDatabase } from './level-wrapper.js';
