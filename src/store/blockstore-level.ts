@@ -102,6 +102,12 @@ export class BlockstoreLevel implements Blockstore {
   queryKeys(_query: KeyQuery<CID>, _options?: Options): AsyncIterable<CID> {
     throw new Error('not implemented');
   }
+
+  async dump(): Promise<void> {
+    console.group('db');
+    await this.db['dump']?.();
+    console.groupEnd();
+  }
 }
 
 type BlockstoreLevelConfig = {

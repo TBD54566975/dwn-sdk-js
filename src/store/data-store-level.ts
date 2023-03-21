@@ -164,6 +164,12 @@ export class DataStoreLevel implements DataStore {
   public async clear(): Promise<void> {
     await this.blockstore.clear();
   }
+
+  async dump() : Promise<void> {
+    console.group('blockstore');
+    await this.blockstore['dump']?.();
+    console.groupEnd();
+  }
 }
 
 type DataStoreLevelConfig = {

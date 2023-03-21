@@ -176,6 +176,16 @@ export class LevelWrapper<V> {
       valueEncoding : this.config.valueEncoding
     });
   }
+
+  async dump(): Promise<void> {
+    if (!this.db) {
+      return;
+    }
+
+    for await (const [ key, value ] of this.db.iterator()) {
+      console.debug(key, value);
+    }
+  }
 }
 
 type LevelWrapperConfig<V> = CreateLevelDatabaseOptions<V> & {

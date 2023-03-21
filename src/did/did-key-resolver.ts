@@ -133,4 +133,7 @@ export class DidKeyResolver implements DidMethodResolver {
     const keyId = `${did}#${methodSpecificId}`;
     return keyId;
   };
+
+  async dump(): Promise<void> {
+  }
 }
