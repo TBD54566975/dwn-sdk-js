@@ -93,9 +93,7 @@ export class Dwn {
       // consider to push this down to individual handlers
       Message.validateJsonSchema(rawMessage);
     } catch (error) {
-      return new MessageReply({
-        status: { code: 400, detail: error.message }
-      });
+      return MessageReply.fromError(error, 400);
     }
 
     const handlerKey = dwnInterface + dwnMethod;

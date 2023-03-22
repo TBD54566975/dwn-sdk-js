@@ -13,28 +13,24 @@ import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 
 export class RecordsQueryHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore) { }
+  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore) { }
 
   public async handle({
     tenant,
     message
-  }): Promise<MessageReply> {
+  }: {tenant: string, message: RecordsQueryMessage}): Promise<MessageReply> {
     let recordsQuery: RecordsQuery;
     try {
-      recordsQuery = await RecordsQuery.parse(message as RecordsQueryMessage);
+      recordsQuery = await RecordsQuery.parse(message);
     } catch (e) {
-      return new MessageReply({
-        status: { code: 400, detail: e.message }
-      });
+      return MessageReply.fromError(e, 400);
     }
 
     try {
       await authenticate(message.authorization, this.didResolver);
       await recordsQuery.authorize(tenant);
     } catch (e) {
-      return new MessageReply({
-        status: { code: 401, detail: e.message }
-      });
+      return MessageReply.fromError(e, 401);
     }
 
     let records: BaseMessage[];

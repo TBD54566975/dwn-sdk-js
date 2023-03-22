@@ -24,17 +24,13 @@ export class ProtocolsQueryHandler implements MethodHandler {
     try {
       protocolsQuery = await ProtocolsQuery.parse(incomingMessage);
     } catch (e) {
-      return new MessageReply({
-        status: { code: 400, detail: e.message }
-      });
+      return MessageReply.fromError(e, 400);
     }
 
     try {
       await canonicalAuth(tenant, protocolsQuery, this.didResolver);
     } catch (e) {
-      return new MessageReply({
-        status: { code: 401, detail: e.message }
-      });
+      return MessageReply.fromError(e, 401);
     }
 
     const query = {

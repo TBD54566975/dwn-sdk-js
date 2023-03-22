@@ -24,9 +24,7 @@ export class RecordsReadHandler implements MethodHandler {
     try {
       recordsRead = await RecordsRead.parse(incomingMessage);
     } catch (e) {
-      return new MessageReply({
-        status: { code: 400, detail: e.message }
-      });
+      return MessageReply.fromError(e, 400);
     }
 
     // authentication
@@ -35,9 +33,7 @@ export class RecordsReadHandler implements MethodHandler {
         await authenticate(message.authorization, this.didResolver);
       }
     } catch (e) {
-      return new MessageReply({
-        status: { code: 401, detail: e.message }
-      });
+      return MessageReply.fromError(e, 401);
     }
 
     // get existing messages matching `recordId` so we can perform authorization
@@ -65,9 +61,7 @@ export class RecordsReadHandler implements MethodHandler {
       try {
         await recordsRead.authorize(tenant);
       } catch (error) {
-        return new MessageReply({
-          status: { code: 401, detail: error.message }
-        });
+        return MessageReply.fromError(error, 401);
       }
     }
 

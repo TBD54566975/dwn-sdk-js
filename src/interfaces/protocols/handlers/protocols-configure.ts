@@ -17,25 +17,21 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     tenant,
     message,
     dataStream
-  }): Promise<MessageReply> {
-    const incomingMessage = message as ProtocolsConfigureMessage;
+  }: {tenant: string, message: ProtocolsConfigureMessage, dataStream: _Readable.Readable}): Promise<MessageReply> {
+    const incomingMessage = message;
 
     let protocolsConfigure: ProtocolsConfigure;
     try {
       protocolsConfigure = await ProtocolsConfigure.parse(incomingMessage);
     } catch (e) {
-      return new MessageReply({
-        status: { code: 400, detail: e.message }
-      });
+      return MessageReply.fromError(e, 400);
     }
 
     // authentication & authorization
     try {
       await canonicalAuth(tenant, protocolsConfigure, this.didResolver);
     } catch (e) {
-      return new MessageReply({
-        status: { code: 401, detail: e.message }
-      });
+      return MessageReply.fromError(e, 401);
     }
 
     // attempt to get existing protocol

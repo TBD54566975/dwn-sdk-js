@@ -24,9 +24,7 @@ export class RecordsDeleteHandler implements MethodHandler {
     try {
       recordsDelete = await RecordsDelete.parse(incomingMessage);
     } catch (e) {
-      return new MessageReply({
-        status: { code: 400, detail: e.message }
-      });
+      return MessageReply.fromError(e, 400);
     }
 
     // authentication & authorization
@@ -34,9 +32,7 @@ export class RecordsDeleteHandler implements MethodHandler {
       await authenticate(message.authorization, this.didResolver);
       await recordsDelete.authorize(tenant);
     } catch (e) {
-      return new MessageReply({
-        status: { code: 401, detail: e.message }
-      });
+      return MessageReply.fromError(e, 401);
     }
 
     // get existing records matching the `recordId`

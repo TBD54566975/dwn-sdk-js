@@ -26,9 +26,7 @@ export class RecordsWriteHandler implements MethodHandler {
     try {
       recordsWrite = await RecordsWrite.parse(incomingMessage);
     } catch (e) {
-      return new MessageReply({
-        status: { code: 400, detail: e.message }
-      });
+      return MessageReply.fromError(e, 400);
     }
 
     // authentication & authorization
@@ -36,9 +34,7 @@ export class RecordsWriteHandler implements MethodHandler {
       await authenticate(message.authorization, this.didResolver);
       await recordsWrite.authorize(tenant, this.messageStore);
     } catch (e) {
-      return new MessageReply({
-        status: { code: 401, detail: e.message }
-      });
+      return MessageReply.fromError(e, 401);
     }
 
     // get existing messages matching the `recordId`
@@ -55,9 +51,7 @@ export class RecordsWriteHandler implements MethodHandler {
         const initialWrite = await RecordsWrite.getInitialWrite(existingMessages);
         RecordsWrite.verifyEqualityOfImmutableProperties(initialWrite, incomingMessage);
       } catch (e) {
-        return new MessageReply({
-          status: { code: 400, detail: e.message }
-        });
+        return MessageReply.fromError(e, 400);
       }
     }
 
@@ -83,12 +77,11 @@ export class RecordsWriteHandler implements MethodHandler {
       try {
         await StorageController.put(this.messageStore, this.dataStore, tenant, incomingMessage, indexes, dataStream);
       } catch (error) {
-        if (error.code === DwnErrorCode.MessageStoreDataCidMismatch ||
-            error.code === DwnErrorCode.MessageStoreDataNotFound ||
-            error.code === DwnErrorCode.MessageStoreDataSizeMismatch) {
-          return new MessageReply({
-            status: { code: 400, detail: error.message }
-          });
+        const e = error as any; // FIXME, support code filters in MessageReply.fromError?
+        if (e.code === DwnErrorCode.MessageStoreDataCidMismatch ||
+            e.code === DwnErrorCode.MessageStoreDataNotFound ||
+            e.code === DwnErrorCode.MessageStoreDataSizeMismatch) {
+          return MessageReply.fromError(error, 400);
         }
 
         // else throw
