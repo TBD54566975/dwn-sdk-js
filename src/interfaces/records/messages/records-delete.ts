@@ -17,7 +17,7 @@ export class RecordsDelete extends Message {
   /**
    * RecordsDelete message adhering to the DWN specification.
    */
-  readonly message: RecordsDeleteMessage;
+  declare message: RecordsDeleteMessage;
 
   private constructor(message: RecordsDeleteMessage) {
     super(message);

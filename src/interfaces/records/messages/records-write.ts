@@ -48,7 +48,7 @@ export class RecordsWrite extends Message {
   /**
    * RecordsWrite message adhering to the DWN specification.
    */
-  readonly message: RecordsWriteMessage;
+  declare message: RecordsWriteMessage;
   readonly attesters: string[];
 
   private constructor(message: RecordsWriteMessage) {

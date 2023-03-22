@@ -14,7 +14,7 @@ export type ProtocolsConfigureOptions = {
 };
 
 export class ProtocolsConfigure extends Message {
-  readonly message: ProtocolsConfigureMessage; // a more specific type than the base type defined in parent class
+  declare message: ProtocolsConfigureMessage; // a more specific type than the base type defined in parent class
 
   private constructor(message: ProtocolsConfigureMessage) {
     super(message);

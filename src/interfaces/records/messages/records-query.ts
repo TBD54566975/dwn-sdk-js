@@ -23,7 +23,7 @@ export type RecordsQueryOptions = {
 };
 
 export class RecordsQuery extends Message {
-  readonly message: RecordsQueryMessage; // a more specific type than the base type defined in parent class
+  declare message: RecordsQueryMessage; // a more specific type than the base type defined in parent class
 
   private constructor(message: RecordsQueryMessage) {
     super(message);

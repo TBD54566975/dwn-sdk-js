@@ -19,7 +19,7 @@ type PermissionsRequestOptions = {
 };
 
 export class PermissionsRequest extends Message {
-  readonly message: PermissionsRequestMessage; // a more specific type than the base type defined in parent class
+  declare message: PermissionsRequestMessage; // a more specific type than the base type defined in parent class
 
   private constructor(message: PermissionsRequestMessage) {
     super(message);
