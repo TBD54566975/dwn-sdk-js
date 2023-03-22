@@ -83,6 +83,7 @@
     "@types/mocha": "9.1.0",
     "@types/randombytes": "2.0.0",
     "@types/sinon": "10.0.11",
+    "@types/uuid": "^9.0.1",
     "@types/varint": "6.0.0",
     "@typescript-eslint/eslint-plugin": "5.37.0",
     "@typescript-eslint/parser": "5.37.0",
