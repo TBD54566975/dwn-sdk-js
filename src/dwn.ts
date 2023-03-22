@@ -111,11 +111,11 @@ export class Dwn {
     console.groupEnd();
 
     console.group('messageStore');
-    await this.messageStore['dump']?.();
+    await this.messageStore['dump']?.(); // FIXME: messageStore.get requires cid and other bits
     console.groupEnd();
 
     console.group('dataStore');
-    await this.dataStore['dump']?.();
+    await this.dataStore['dump']?.(); // FIXME: dateStore.get requires cid and other bits
     console.groupEnd();
   }
 };

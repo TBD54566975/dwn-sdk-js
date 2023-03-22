@@ -76,13 +76,13 @@ export class DidResolver {
     console.group('didResolvers');
     for (const [ key, value ] of this.didResolvers) {
       console.group(key);
-      await value['dump']?.();
+      await value.resolve('dump');
       console.groupEnd();
     }
     console.groupEnd();
 
     console.group('didCache');
-    await this.cache['dump']?.();
+    (await this.cache.get('dump'))?.();
     console.groupEnd();
   }
 }
