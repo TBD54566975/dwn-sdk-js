@@ -165,10 +165,10 @@ async function sortRecords(
   case DateSort.PublishedAscending:
     return messages
       .filter(m => m.descriptor.published)
-      .sort((a, b) => lexicographicalCompare(a.descriptor.datePublished, b.descriptor.datePublished));
+      .sort((a, b) => lexicographicalCompare(a.descriptor.datePublished!, b.descriptor.datePublished!));
   case DateSort.PublishedDescending:
     return messages
       .filter(m => m.descriptor.published)
-      .sort((a, b) => lexicographicalCompare(b.descriptor.datePublished, a.descriptor.datePublished));
+      .sort((a, b) => lexicographicalCompare(b.descriptor.datePublished!, a.descriptor.datePublished!));
   }
 }

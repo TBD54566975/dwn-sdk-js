@@ -14,6 +14,7 @@ export class RecordsReadHandler implements MethodHandler {
 
   constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore) { }
 
+  // FIXME: Type 'Descriptor' is missing the following properties from type 'RecordsReadDescriptor': recordId, date
   public async handle({
     tenant,
     message
@@ -30,7 +31,7 @@ export class RecordsReadHandler implements MethodHandler {
     // authentication
     try {
       if (recordsRead.author !== undefined) {
-        await authenticate(message.authorization, this.didResolver);
+        await authenticate(message.authorization!, this.didResolver);
       }
     } catch (e) {
       return MessageReply.fromError(e, 401);

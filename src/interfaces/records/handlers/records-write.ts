@@ -19,8 +19,8 @@ export class RecordsWriteHandler implements MethodHandler {
     tenant,
     message,
     dataStream
-  }): Promise<MessageReply> {
-    const incomingMessage = message as RecordsWriteMessage;
+  }: { tenant: string, message: RecordsWriteMessage, dataStream: _Readable.Readable}): Promise<MessageReply> {
+    const incomingMessage = message;
 
     let recordsWrite: RecordsWrite;
     try {

@@ -41,7 +41,7 @@ export class LevelWrapper<V> {
       ...config
     };
 
-    this.db = db;
+    this.db = db!; // FIXME: Maybe define an empty LevelDatabase?
   }
 
   async open(): Promise<void> {
@@ -87,17 +87,18 @@ export class LevelWrapper<V> {
     }));
   }
 
-  async get(key: string, options?: LevelWrapperOptions): Promise<V> {
+  async get(key: string, options?: LevelWrapperOptions): Promise<V|undefined>{
     options?.signal?.throwIfAborted();
 
-    await abortOr(options?.signal, this.createLevelDatabase());
+    await abortOr(options?.signal!, this.createLevelDatabase());
 
     try {
-      const value = await abortOr(options?.signal, this.db.get(String(key)));
+      const value = await abortOr(options?.signal!, this.db.get(String(key)));
       return value;
     } catch (error) {
+      const e = error as any; // FIXME
       // `Level`` throws an error if the key is not present.  Return `undefined` in this case.
-      if (error.code === 'LEVEL_NOT_FOUND') {
+      if (e.code === 'LEVEL_NOT_FOUND') {
         return undefined;
       } else {
         throw error;
@@ -112,7 +113,7 @@ export class LevelWrapper<V> {
   async * keys(options?: LevelWrapperOptions): AsyncGenerator<string> {
     options?.signal?.throwIfAborted();
 
-    await abortOr(options?.signal, this.createLevelDatabase());
+    await abortOr(options?.signal!, this.createLevelDatabase());
 
     for await (const key of this.db.keys()) {
       options?.signal?.throwIfAborted();
@@ -124,7 +125,7 @@ export class LevelWrapper<V> {
   async * iterator(iteratorOptions: LevelWrapperIteratorOptions<V>, options?: LevelWrapperOptions): AsyncGenerator<[string, V]> {
     options?.signal?.throwIfAborted();
 
-    await abortOr(options?.signal, this.createLevelDatabase());
+    await abortOr(options?.signal!, this.createLevelDatabase());
 
     for await (const entry of this.db.iterator(iteratorOptions)) {
       options?.signal?.throwIfAborted();
@@ -136,17 +137,17 @@ export class LevelWrapper<V> {
   async put(key: string, value: V, options?: LevelWrapperOptions): Promise<void> {
     options?.signal?.throwIfAborted();
 
-    await abortOr(options?.signal, this.createLevelDatabase());
+    await abortOr(options?.signal!, this.createLevelDatabase());
 
-    return abortOr(options?.signal, this.db.put(String(key), value));
+    return abortOr(options?.signal!, this.db.put(String(key), value));
   }
 
   async delete(key: string, options?: LevelWrapperOptions): Promise<void> {
     options?.signal?.throwIfAborted();
 
-    await abortOr(options?.signal, this.createLevelDatabase());
+    await abortOr(options?.signal!, this.createLevelDatabase());
 
-    return abortOr(options?.signal, this.db.del(String(key)));
+    return abortOr(options?.signal!, this.db.del(String(key)));
   }
 
   async isEmpty(options?: LevelWrapperOptions): Promise<boolean> {
@@ -167,9 +168,9 @@ export class LevelWrapper<V> {
   async batch(operations: Array<LevelWrapperBatchOperation<V>>, options?: LevelWrapperOptions): Promise<void> {
     options?.signal?.throwIfAborted();
 
-    await abortOr(options?.signal, this.createLevelDatabase());
+    await abortOr(options?.signal!, this.createLevelDatabase());
 
-    return abortOr(options?.signal, this.db.batch(operations));
+    return abortOr(options?.signal!, this.db.batch(operations));
   }
 
   private async compactUnderlyingStorage(options?: LevelWrapperOptions): Promise<void> {
@@ -209,10 +210,12 @@ export class LevelWrapper<V> {
   }
 
   private async createLevelDatabase(): Promise<void> {
-    this.db ??= await this.config.createLevelDatabase<V>(this.config.location, {
-      keyEncoding   : 'utf8',
-      valueEncoding : this.config.valueEncoding
-    });
+    if (this.config.createLevelDatabase) {
+      this.db ??= await this.config.createLevelDatabase<V>(this.config.location, {
+        keyEncoding   : 'utf8',
+        valueEncoding : this.config.valueEncoding
+      });
+    }
   }
 
   async dump(): Promise<void> {

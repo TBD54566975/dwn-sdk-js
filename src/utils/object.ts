@@ -5,7 +5,7 @@ import flat from 'flat';
  * e.g. `{ a: { b: { c: 42 } } }` becomes `{ 'a.b.c': 42 }`
  */
 export function flatten(obj: object): { [key: string]: unknown } {
-  const flattened = flat.flatten(obj);
+  const flattened = flat.flatten<object, object>(obj);
   removeEmptyObjects(flattened);
   return flattened;
 }

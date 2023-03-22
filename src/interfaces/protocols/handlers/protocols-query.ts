@@ -17,8 +17,8 @@ export class ProtocolsQueryHandler implements MethodHandler {
   public async handle({
     tenant,
     message
-  }): Promise<MessageReply> {
-    const incomingMessage = message as ProtocolsQueryMessage;
+  }: { tenant: string, message: ProtocolsQueryMessage}): Promise<MessageReply> {
+    const incomingMessage = message;
 
     let protocolsQuery: ProtocolsQuery;
     try {

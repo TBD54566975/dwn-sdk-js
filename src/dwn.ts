@@ -27,10 +27,10 @@ export class Dwn {
   private tenantGate: TenantGate;
 
   private constructor(config: DwnConfig) {
-    this.didResolver = config.didResolver;
-    this.messageStore = config.messageStore;
-    this.dataStore = config.dataStore;
-    this.tenantGate = config.tenantGate;
+    this.didResolver = config.didResolver!;
+    this.messageStore = config.messageStore!;
+    this.dataStore = config.dataStore!;
+    this.tenantGate = config.tenantGate!;
 
     this.methodHandlers = {
       [DwnInterfaceName.Permissions + DwnMethodName.Request] : new PermissionsRequestHandler(this.didResolver, this.messageStore, this.dataStore),

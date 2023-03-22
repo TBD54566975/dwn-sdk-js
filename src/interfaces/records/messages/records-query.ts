@@ -77,8 +77,8 @@ export class RecordsQuery extends Message {
       switch (key) {
       case 'dateCreated':
         var rangeFilter: RangeFilter = {
-          gte : filter.dateCreated.from,
-          lt  : filter.dateCreated.to
+          gte : filter.dateCreated?.from!,
+          lt  : filter.dateCreated?.to!
         };
         if (rangeFilter.gte === undefined) {
           delete rangeFilter.gte;

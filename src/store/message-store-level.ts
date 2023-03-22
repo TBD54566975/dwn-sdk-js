@@ -38,12 +38,12 @@ export class MessageStoreLevel implements MessageStore {
     };
 
     this.blockstore = new BlockstoreLevel({
-      location            : this.config.blockstoreLocation,
+      location            : this.config.blockstoreLocation!,
       createLevelDatabase : this.config.createLevelDatabase,
     });
 
     this.index = new IndexLevel({
-      location            : this.config.indexLocation,
+      location            : this.config.indexLocation!,
       createLevelDatabase : this.config.createLevelDatabase,
     });
   }
@@ -61,7 +61,7 @@ export class MessageStoreLevel implements MessageStore {
   async get(tenant: string, cidString: string, options?: MessageStoreOptions): Promise<BaseMessage | undefined> {
     options?.signal?.throwIfAborted();
 
-    const partition = await abortOr(options?.signal, this.blockstore.partition(tenant));
+    const partition = await abortOr(options?.signal!, this.blockstore.partition(tenant));
 
     const cid = CID.parse(cidString);
     const bytes = await partition.get(cid, options);
@@ -70,7 +70,7 @@ export class MessageStoreLevel implements MessageStore {
       return undefined;
     }
 
-    const decodedBlock = await abortOr(options?.signal, block.decode({ bytes, codec: cbor, hasher: sha256 }));
+    const decodedBlock = await abortOr(options?.signal!, block.decode({ bytes, codec: cbor, hasher: sha256 }));
 
     const messageJson = decodedBlock.value as BaseMessage;
     return messageJson;
@@ -85,7 +85,7 @@ export class MessageStoreLevel implements MessageStore {
 
     for (const id of resultIds) {
       const message = await this.get(tenant, id, options);
-      messages.push(message);
+      if (message) { messages.push(message); }
     }
 
     return messages;
@@ -94,7 +94,7 @@ export class MessageStoreLevel implements MessageStore {
   async delete(tenant: string, cidString: string, options?: MessageStoreOptions): Promise<void> {
     options?.signal?.throwIfAborted();
 
-    const partition = await abortOr(options?.signal, this.blockstore.partition(tenant));
+    const partition = await abortOr(options?.signal!, this.blockstore.partition(tenant));
 
     const cid = CID.parse(cidString);
     await partition.delete(cid, options);
@@ -109,9 +109,9 @@ export class MessageStoreLevel implements MessageStore {
   ): Promise<void> {
     options?.signal?.throwIfAborted();
 
-    const partition = await abortOr(options?.signal, this.blockstore.partition(tenant));
+    const partition = await abortOr(options?.signal!, this.blockstore.partition(tenant));
 
-    const encodedMessageBlock = await abortOr(options?.signal, block.encode({ value: message, codec: cbor, hasher: sha256 }));
+    const encodedMessageBlock = await abortOr(options?.signal!, block.encode({ value: message, codec: cbor, hasher: sha256 }));
 
     await partition.put(encodedMessageBlock.cid, encodedMessageBlock.bytes, options);
 

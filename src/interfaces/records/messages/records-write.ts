@@ -100,7 +100,7 @@ export class RecordsWrite extends Message {
       interface     : DwnInterfaceName.Records,
       method        : DwnMethodName.Write,
       protocol      : options.protocol,
-      recipient     : options.recipient,
+      recipient     : options.recipient!,
       schema        : options.schema,
       parentId      : options.parentId,
       dataCid,

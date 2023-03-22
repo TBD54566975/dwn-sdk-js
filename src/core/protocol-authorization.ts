@@ -65,7 +65,7 @@ export class ProtocolAuthorization {
     const query: Filter = {
       interface : DwnInterfaceName.Protocols,
       method    : DwnMethodName.Configure,
-      protocol  : protocolUri
+      protocol  : protocolUri!
     };
     const protocols = await messageStore.query(tenant, query) as ProtocolsConfigureMessage[];
 
@@ -149,7 +149,7 @@ export class ProtocolAuthorization {
       }
 
       // else we keep going down the message chain
-      allowedRecordsAtCurrentLevel = allowedRecordsAtCurrentLevel[currentRecordType].records;
+      allowedRecordsAtCurrentLevel = allowedRecordsAtCurrentLevel[currentRecordType].records!;
       currentMessageIndex++;
     }
   }

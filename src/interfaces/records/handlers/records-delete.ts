@@ -17,8 +17,8 @@ export class RecordsDeleteHandler implements MethodHandler {
   public async handle({
     tenant,
     message
-  }): Promise<MessageReply> {
-    const incomingMessage = message as RecordsDeleteMessage;
+  }: { tenant: string, message: RecordsDeleteMessage}): Promise<MessageReply> {
+    const incomingMessage = message;
 
     let recordsDelete: RecordsDelete;
     try {

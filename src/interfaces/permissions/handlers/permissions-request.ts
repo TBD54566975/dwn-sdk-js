@@ -13,8 +13,8 @@ export class PermissionsRequestHandler implements MethodHandler {
   public async handle({
     tenant,
     message
-  }): Promise<MessageReply> {
-    const permissionRequest = await PermissionsRequest.parse(message as PermissionsRequestMessage);
+  }: {tenant: string, message: PermissionsRequestMessage}): Promise<MessageReply> {
+    const permissionRequest = await PermissionsRequest.parse(message);
     const { author } = permissionRequest;
 
     if (tenant !== permissionRequest.grantedBy && tenant !== permissionRequest.grantedTo) {
@@ -33,7 +33,7 @@ export class PermissionsRequestHandler implements MethodHandler {
       author,
       ... message.descriptor
     };
-    await this.messageStore.put(tenant, message, index);
+    await this.messageStore.put(tenant, message, index as any); // FIXME
 
     return new MessageReply({
       status: { code: 202, detail: 'Accepted' }

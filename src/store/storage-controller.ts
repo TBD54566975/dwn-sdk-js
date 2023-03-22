@@ -95,10 +95,12 @@ export class StorageController {
       const dataSize = message.descriptor.dataSize;
       if (dataCid !== undefined && dataSize! <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
         const messageCid = await Message.getCid(message);
-        const { dataStream } = await dataStore.get(tenant, messageCid, dataCid);
-        const dataBytes = await DataStream.toBytes(dataStream);
+        const result = await dataStore.get(tenant, messageCid, dataCid);
 
-        message['encodedData'] = Encoder.bytesToBase64Url(dataBytes);
+        if (result) {
+          const dataBytes = await DataStream.toBytes(result.dataStream);
+          message['encodedData'] = Encoder.bytesToBase64Url(dataBytes);
+        }
       }
     }
 
