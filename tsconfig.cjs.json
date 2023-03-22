@@ -19,6 +19,12 @@
         // required otherwise `ms` lib doesn't import
         "esModuleInterop": true,
         "downlevelIteration": true,
+        "plugins": [
+            { // TODO: #261 - Gradually add strict typescript to this repo
+                "name": "typescript-strict-plugin",
+                "paths": ["./src/core/protocol-authorization"]
+            }
+        ]
     },
     "include": [
         "./src/index.ts"

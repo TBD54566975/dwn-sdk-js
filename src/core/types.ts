@@ -1,4 +1,5 @@
 import type { GeneralJws } from '../jose/jws/general/types.js';
+import { DwnInterfaceName, DwnMethodName } from './message.js';
 
 /**
  * Intersection type for all concrete message types.
@@ -45,6 +46,10 @@ export type QueryResultEntry = {
   encodedData?: string;
 };
 
+export type DwnInterfaceFilter = keyof DwnInterfaceName;
+
+export type DwnMethodFilter = keyof DwnMethodName;
+
 export type EqualFilter = string | number | boolean;
 
 export type OneOfFilter = EqualFilter[];
@@ -65,5 +70,5 @@ export type LT = ({ lt: string } & { lte?: never }) | ({ lt?: never } & { lte: s
 export type RangeFilter = (GT | LT) & Partial<GT> & Partial<LT>;
 
 export type Filter = {
-  [property: string]: EqualFilter | OneOfFilter | RangeFilter
+  [property: string]: DwnInterfaceFilter | DwnMethodFilter | EqualFilter | OneOfFilter | RangeFilter
 };
