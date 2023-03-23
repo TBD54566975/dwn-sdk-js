@@ -81,7 +81,7 @@ export class LevelWrapper<V> {
   async partition(name: string): Promise<LevelWrapper<V>> {
     await this.createLevelDatabase();
 
-    return new LevelWrapper({ ...this.config, location: '' }, this.db.sublevel(name, {
+    return new LevelWrapper(this.config, this.db.sublevel(name, {
       keyEncoding   : 'utf8',
       valueEncoding : this.config.valueEncoding
     }));
@@ -159,7 +159,9 @@ export class LevelWrapper<V> {
   async clear(): Promise<void> {
     await this.createLevelDatabase();
 
-    return this.db.clear();
+    await this.db.clear();
+
+    await this.compactUnderlyingStorage();
   }
 
   async batch(operations: Array<LevelWrapperBatchOperation<V>>, options?: LevelWrapperOptions): Promise<void> {
@@ -168,6 +170,42 @@ export class LevelWrapper<V> {
     await abortOr(options?.signal, this.createLevelDatabase());
 
     return abortOr(options?.signal, this.db.batch(operations));
+  }
+
+  private async compactUnderlyingStorage(options?: LevelWrapperOptions): Promise<void> {
+    options?.signal?.throwIfAborted();
+
+    await abortOr(options?.signal, this.createLevelDatabase());
+
+    const range = this.sublevelRange;
+    if (!range) {
+      return;
+    }
+
+    // additional methods are only available on the root API instance
+    const root = this.root;
+
+    if (root.db.supports.additionalMethods.compactRange) {
+      return abortOr(options?.signal, root.db['compactRange']?.(...range));
+    }
+  }
+
+  private get sublevelRange(): [ string, string ] | undefined {
+    const prefix = this.db['prefix'];
+    if (!prefix) {
+      return undefined;
+    }
+
+    // use the separator to derive an exclusive `end` that will never match to a key (which matches how `abstract-level` creates a `boundary`)
+    return [ prefix, prefix.slice(0, -1) + String.fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1) ];
+  }
+
+  private get root(): LevelWrapper<V> {
+    let db = this.db;
+    for (const parent = db['db']; parent && parent !== db; ) {
+      db = parent;
+    }
+    return new LevelWrapper(this.config, db);
   }
 
   private async createLevelDatabase(): Promise<void> {
