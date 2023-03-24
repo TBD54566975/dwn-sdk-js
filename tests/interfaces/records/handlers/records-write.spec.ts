@@ -943,6 +943,58 @@ describe('RecordsWriteHandler.handle()', () => {
         expect(reply.status.detail).to.contain('not allowed in structure level');
       });
 
+
+      it('should fail authorization if record schema is not allowed at the hierarchical level attempted for the RecordsWrite', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        const protocol = 'chatProtocol';
+        const protocolDefinition = {
+          labels: {
+            email: {
+              schema: 'emailSchema'
+            },
+            sms: {
+              schema: 'smsSchema'
+            }
+          },
+          records: {
+            email: {},
+            sms: {}
+          }
+        };
+        const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
+          requester: alice,
+          protocol,
+          protocolDefinition
+        });
+
+        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+
+        const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+          requester    : alice,
+          recipientDid : alice.did,
+          protocol,
+          schema       : protocolDefinition.labels.email.schema,
+          data: Encoder.stringToBytes('any data'),
+        });
+        await dwn.processMessage(alice.did, emailRecordsWrite.message, emailRecordsWrite.dataStream);
+
+        const smsSchemaResponse = await TestDataGenerator.generateRecordsWrite({
+          requester    : alice,
+          recipientDid : alice.did,
+          protocol,
+          schema       : protocolDefinition.labels.sms.schema, // SMS are allowed, but not as a child record of emails
+          data: Encoder.stringToBytes('any other data'),
+          parentId: emailRecordsWrite.message.recordId,
+          contextId: await emailRecordsWrite.recordsWrite.getEntryId()
+        });
+        const reply = await dwn.processMessage(alice.did, smsSchemaResponse.message, smsSchemaResponse.dataStream);
+        
+        expect(reply.status.code).to.equal(401);
+        expect(reply.status.detail).to.contain('record with schema: \'smsSchema\' not allowed in structure level 1');
+      });
+
       it('should only allow DWN owner to write if record does not have an allow rule defined', async () => {
         const alice = await DidKeyResolver.generate();
 

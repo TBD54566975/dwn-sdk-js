@@ -128,7 +128,7 @@ export class ProtocolAuthorization {
 
     // walk down the ancestor message chain from the root ancestor record and match against the corresponding rule set at each level
     // to make sure the chain structure is allowed
-    let allowedRecordsAtCurrentLevel = protocolDefinition.records;
+    let allowedRecordsAtCurrentLevel: { [key: string]: ProtocolRuleSet} | undefined = protocolDefinition.records;
     let currentMessageIndex = 0;
     while (true) {
       const currentRecordSchema = messageChain[currentMessageIndex].descriptor.schema;
@@ -138,7 +138,7 @@ export class ProtocolAuthorization {
         throw new Error(`record with schema '${currentRecordSchema}' not allowed in protocol`);
       }
 
-      if (!(currentRecordType in allowedRecordsAtCurrentLevel)) {
+      if (allowedRecordsAtCurrentLevel === undefined || !(currentRecordType in allowedRecordsAtCurrentLevel)) {
         throw new Error(`record with schema: '${currentRecordSchema}' not allowed in structure level ${currentMessageIndex}`);
       }
 
@@ -149,11 +149,7 @@ export class ProtocolAuthorization {
       }
 
       // else we keep going down the message chain
-      const nextAllowedRecords = allowedRecordsAtCurrentLevel[currentRecordType].records;
-      if (nextAllowedRecords === undefined) {
-        throw new Error(`No record types found in schema '${currentRecordSchema}' in structure level ${currentMessageIndex}`);
-      }
-      allowedRecordsAtCurrentLevel = nextAllowedRecords;
+      allowedRecordsAtCurrentLevel = allowedRecordsAtCurrentLevel[currentRecordType].records;
       currentMessageIndex++;
     }
   }
