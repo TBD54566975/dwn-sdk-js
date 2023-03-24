@@ -14,12 +14,11 @@ export class RecordsReadHandler implements MethodHandler {
 
   constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore) { }
 
-  // FIXME: Type 'Descriptor' is missing the following properties from type 'RecordsReadDescriptor': recordId, date
   public async handle({
     tenant,
     message
-  }): Promise<MessageReply> {
-    const incomingMessage = message as RecordsReadMessage;
+  }: { tenant: string, message: RecordsReadMessage}): Promise<MessageReply> {
+    const incomingMessage = message;
 
     let recordsRead: RecordsRead;
     try {

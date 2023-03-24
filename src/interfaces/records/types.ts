@@ -83,7 +83,7 @@ export type RecordsQueryMessage = BaseMessage & {
   descriptor: RecordsQueryDescriptor;
 };
 
-export type RecordsReadMessage = {
+export type RecordsReadMessage = BaseMessage & {
   authorization?: GeneralJws;
   descriptor: RecordsReadDescriptor;
 };
