@@ -13,15 +13,7 @@ export type RecordsDeleteOptions = {
   authorizationSignatureInput: SignatureInput;
 };
 
-export class RecordsDelete extends Message {
-  /**
-   * RecordsDelete message adhering to the DWN specification.
-   */
-  declare message: RecordsDeleteMessage;
-
-  private constructor(message: RecordsDeleteMessage) {
-    super(message);
-  }
+export class RecordsDelete extends Message<RecordsDeleteMessage> {
 
   public static async parse(message: RecordsDeleteMessage): Promise<RecordsDelete> {
     await validateAuthorizationIntegrity(message);

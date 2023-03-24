@@ -22,12 +22,7 @@ export type RecordsQueryOptions = {
   authorizationSignatureInput: SignatureInput;
 };
 
-export class RecordsQuery extends Message {
-  declare message: RecordsQueryMessage; // a more specific type than the base type defined in parent class
-
-  private constructor(message: RecordsQueryMessage) {
-    super(message);
-  }
+export class RecordsQuery extends Message<RecordsQueryMessage> {
 
   public static async parse(message: RecordsQueryMessage): Promise<RecordsQuery> {
     await validateAuthorizationIntegrity(message);

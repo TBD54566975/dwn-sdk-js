@@ -18,12 +18,7 @@ type PermissionsRequestOptions = {
   authorizationSignatureInput: SignatureInput;
 };
 
-export class PermissionsRequest extends Message {
-  declare message: PermissionsRequestMessage; // a more specific type than the base type defined in parent class
-
-  private constructor(message: PermissionsRequestMessage) {
-    super(message);
-  }
+export class PermissionsRequest extends Message<PermissionsRequestMessage> {
 
   public static async parse(message: PermissionsRequestMessage): Promise<PermissionsRequest> {
     await validateAuthorizationIntegrity(message);
