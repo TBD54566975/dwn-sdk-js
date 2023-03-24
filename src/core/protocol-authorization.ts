@@ -59,10 +59,7 @@ export class ProtocolAuthorization {
    */
   private static async fetchProtocolDefinition(tenant: string, recordsWrite: RecordsWrite, messageStore: MessageStore): Promise<ProtocolDefinition> {
     // get the protocol URI
-    const protocolUri = recordsWrite.message.descriptor.protocol;
-    if (protocolUri === undefined) {
-      throw new Error('unable to find protocol: no protocol specified');
-    }
+    const protocolUri = recordsWrite.message.descriptor.protocol!;
 
     // fetch the corresponding protocol definition
     const query: Filter = {
@@ -88,11 +85,8 @@ export class ProtocolAuthorization {
     : Promise<RecordsWriteMessage[]> {
     const ancestorMessageChain: RecordsWriteMessage[] = [];
 
-    const protocolUri = recordsWrite.message.descriptor.protocol!;
-    const contextId = recordsWrite.message.contextId;
-    if (contextId === undefined) {
-      throw new Error('Message objects attached to a protocol must contain contextId');
-    }
+    const protocol = recordsWrite.message.descriptor.protocol!;
+    const contextId = recordsWrite.message.contextId!;
 
     // keep walking up the chain from the inbound message's parent, until there is no more parent
     let currentParentId = recordsWrite.message.descriptor.parentId;
@@ -101,8 +95,8 @@ export class ProtocolAuthorization {
       const query: Filter = {
         interface : DwnInterfaceName.Records,
         method    : DwnMethodName.Write,
-        protocol: protocolUri,
-        contextId: contextId!,
+        protocol,
+        contextId,
         recordId  : currentParentId
       };
       const parentMessages = await messageStore.query(tenant, query) as RecordsWriteMessage[];
@@ -214,15 +208,12 @@ export class ProtocolAuthorization {
       }
     }
 
-    let allowedActions: string[];
+    let allowedActions: string[] = [];
     if (allowRule.anyone !== undefined) {
       allowedActions = allowRule.anyone.to;
     } else if (allowRule.recipient !== undefined) {
       allowedActions = allowRule.recipient.to;
-    } else {
-      // not possible to have `else` because of same check already done by verifyAllowedRequester()
-      allowedActions = [];
-    }
+    } // not possible to have `else` because of same check already done by verifyAllowedRequester()
 
     const inboundMessageAction = methodToAllowedActionMap[incomingMessageMethod];
     if (!allowedActions.includes(inboundMessageAction)) {

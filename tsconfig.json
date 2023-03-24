@@ -17,13 +17,7 @@
     // allows us to import json files
     "resolveJsonModule": true,
     // required otherwise `ms` lib doesn't import
-    "esModuleInterop": true,
-    "plugins": [
-      { // TODO: #261 - Gradually add strict typescript to this repo
-       "name": "typescript-strict-plugin",
-       "paths": ["./src/core/protocol-authorization"]
-      }
-    ]
+    "esModuleInterop": true
   },
   "typedocOptions": {
     "entryPoints": [
