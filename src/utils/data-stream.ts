@@ -73,4 +73,31 @@ export class DataStream {
     const bytes = Encoder.objectToBytes(object);
     return DataStream.fromBytes(bytes);
   }
+
+  /**
+   * Creates a readable stream from the async iterator given.
+   */
+  public static fromAsyncIterator(iterator: Iterator<Uint8Array> | Iterator<Promise<Uint8Array>> | AsyncIterator<Uint8Array>): Readable {
+    return new Readable({
+      async read(): Promise<void> {
+        const result = await iterator.next();
+        if (result.done) {
+          this.push(null); // end the stream
+        } else {
+          this.push(result.value);
+        }
+      }
+    });
+  }
+
+  /**
+   * Creates a readable stream from the iterable given.
+   */
+  public static fromIterable(iterable: Iterable<Uint8Array> | Iterable<Promise<Uint8Array>>): Readable {
+    return DataStream.fromAsyncIterator((async function*(): AsyncGenerator<Uint8Array> {
+      for (const promise of iterable) {
+        yield await promise;
+      }
+    })());
+  }
 }

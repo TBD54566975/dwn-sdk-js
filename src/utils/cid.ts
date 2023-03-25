@@ -2,9 +2,9 @@ import * as cbor from '@ipld/dag-cbor';
 
 import type { Readable } from 'readable-stream';
 
+import { BaseBlockstore } from 'blockstore-core';
 import { CID } from 'multiformats/cid';
 import { importer } from 'ipfs-unixfs-importer';
-import { MemoryBlockstore } from 'blockstore-core';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 // a map of all supported CID hashing algorithms. This map is used to select the appropriate hasher
@@ -65,6 +65,9 @@ export function parseCid(str: string): CID {
   return cid;
 }
 
+class FakeBlockstore extends BaseBlockstore {
+  async put(): Promise<void> { }
+}
 
 /**
  * Utility class for creating CIDs. Exported for the convenience of developers.
@@ -74,7 +77,7 @@ export class Cid {
    * @returns V1 CID of the DAG comprised by chunking data into unixfs DAG-PB encoded blocks
    */
   public static async computeDagPbCidFromBytes(content: Uint8Array): Promise<string> {
-    const asyncDataBlocks = importer([{ content }], new MemoryBlockstore(), { cidVersion: 1 });
+    const asyncDataBlocks = importer([{ content }], new FakeBlockstore(), { cidVersion: 1 });
 
     // NOTE: the last block contains the root CID
     let block;
@@ -87,7 +90,7 @@ export class Cid {
    * @returns V1 CID of the DAG comprised by chunking data into unixfs DAG-PB encoded blocks
    */
   public static async computeDagPbCidFromStream(dataStream: Readable): Promise<string> {
-    const asyncDataBlocks = importer([{ content: dataStream }], new MemoryBlockstore(), { cidVersion: 1 });
+    const asyncDataBlocks = importer([{ content: dataStream }], new FakeBlockstore(), { cidVersion: 1 });
 
     // NOTE: the last block contains the root CID
     let block;

@@ -1,7 +1,7 @@
 import type { BaseMessage } from '../../../core/types.js';
 import type { MessageStore } from '../../../store/message-store.js';
 import type { GeneralJws, SignatureInput } from '../../../jose/jws/general/types.js';
-import type { RecordsWriteAttestationPayload, RecordsWriteAuthorizationPayload, RecordsWriteDescriptor, RecordsWriteMessage, UnsignedRecordsWriteMessage } from '../types.js';
+import type { RecordsAttestationPayload, RecordsAuthorizationPayload, RecordsWriteDescriptor, RecordsWriteMessage, UnsignedRecordsWriteMessage } from '../types.js';
 
 import { Encoder } from '../../../utils/encoder.js';
 import { GeneralJwsSigner } from '../../../jose/jws/general/signer.js';
@@ -371,7 +371,7 @@ export class RecordsWrite extends Message {
       return undefined;
     }
 
-    const attestationPayload: RecordsWriteAttestationPayload = { descriptorCid };
+    const attestationPayload: RecordsAttestationPayload = { descriptorCid };
     const attestationPayloadBytes = Encoder.objectToBytes(attestationPayload);
 
     const signer = await GeneralJwsSigner.create(attestationPayloadBytes, signatureInputs);
@@ -388,7 +388,7 @@ export class RecordsWrite extends Message {
     attestation: GeneralJws | undefined,
     signatureInput: SignatureInput
   ): Promise<GeneralJws> {
-    const authorizationPayload: RecordsWriteAuthorizationPayload = {
+    const authorizationPayload: RecordsAuthorizationPayload = {
       recordId,
       descriptorCid
     };

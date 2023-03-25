@@ -12,7 +12,7 @@ import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
-
+import { UploadStoreLevel } from '../../../../src/store/upload-store-level.js';
 import { DidResolver, Dwn, Encoder, Jws } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
@@ -21,6 +21,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
   let didResolver: DidResolver;
   let messageStore: MessageStoreLevel;
   let dataStore: DataStoreLevel;
+  let uploadStore: UploadStoreLevel;
   let dwn: Dwn;
 
   describe('functional tests', () => {
@@ -38,7 +39,11 @@ describe('ProtocolsConfigureHandler.handle()', () => {
         blockstoreLocation: 'TEST-DATASTORE'
       });
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore });
+      uploadStore = new UploadStoreLevel({
+        blockstoreLocation: 'TEST-UPLOADSTORE'
+      });
+
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, uploadStore });
     });
 
     beforeEach(async () => {
@@ -47,6 +52,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
       await messageStore.clear();
       await dataStore.clear();
+      await uploadStore.clear();
     });
 
     after(async () => {

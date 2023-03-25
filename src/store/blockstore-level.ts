@@ -4,6 +4,8 @@ import type { Blockstore, Options } from 'interface-blockstore';
 
 import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 
+type Key = CID | string | number;
+
 // `level` works in Node.js 12+ and Electron 5+ on Linux, Mac OS, Windows and
 // FreeBSD, including any future Node.js and Electron release thanks to Node-API, including ARM
 // platforms like Raspberry Pi and Android, as well as in Chrome, Firefox, Edge, Safari, iOS Safari
@@ -35,24 +37,30 @@ export class BlockstoreLevel implements Blockstore {
     return this.db.close();
   }
 
-  async partition(name: string): Promise<BlockstoreLevel> {
-    const db = await this.db.partition(name);
+  async partition(name: Key): Promise<BlockstoreLevel> {
+    const db = await this.db.partition(String(name));
     return new BlockstoreLevel({ ...this.config, location: '' }, db);
   }
 
-  async put(key: CID | string, val: Uint8Array, options?: Options): Promise<void> {
+  async put(key: Key, val: Uint8Array, options?: Options): Promise<void> {
     return this.db.put(String(key), val, options);
   }
 
-  async get(key: CID | string, options?: Options): Promise<Uint8Array> {
+  async get(key: Key, options?: Options): Promise<Uint8Array> {
     return this.db.get(String(key), options);
   }
 
-  async has(key: CID | string, options?: Options): Promise<boolean> {
+  async has(key: Key, options?: Options): Promise<boolean> {
     return this.db.has(String(key), options);
   }
 
-  async delete(key: CID | string, options?: Options): Promise<void> {
+  async * iterator(options?: Options): AsyncGenerator<[string, Uint8Array]> {
+    for await (const entry of this.db.iterator({ }, options)) {
+      yield entry;
+    }
+  }
+
+  async delete(key: Key, options?: Options): Promise<void> {
     return this.db.delete(String(key), options);
   }
 

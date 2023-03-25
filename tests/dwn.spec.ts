@@ -10,12 +10,14 @@ import { Dwn } from '../src/dwn.js';
 import { Message } from '../src/core/message.js';
 import { MessageStoreLevel } from '../src/store/message-store-level.js';
 import { TestDataGenerator } from './utils/test-data-generator.js';
+import { UploadStoreLevel } from '../src/store/upload-store-level.js';
 
 chai.use(chaiAsPromised);
 
 describe('DWN', () => {
   let messageStore: MessageStoreLevel;
   let dataStore: DataStoreLevel;
+  let uploadStore: UploadStoreLevel;
   let dwn: Dwn;
 
   before(async () => {
@@ -30,7 +32,11 @@ describe('DWN', () => {
       blockstoreLocation: 'TEST-DATASTORE'
     });
 
-    dwn = await Dwn.create({ messageStore, dataStore });
+    uploadStore = new UploadStoreLevel({
+      blockstoreLocation: 'TEST-UPLOADSTORE'
+    });
+
+    dwn = await Dwn.create({ messageStore, dataStore, uploadStore });
   });
 
   beforeEach(async () => {
@@ -125,8 +131,14 @@ describe('DWN', () => {
 
       const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
       const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
+      const uploadStoreStub = sinon.createStubInstance(UploadStoreLevel);
 
-      const dwnWithConfig = await Dwn.create({ tenantGate: blockAllTenantGate, messageStore: messageStoreStub, dataStore: dataStoreStub });
+      const dwnWithConfig = await Dwn.create({
+        tenantGate   : blockAllTenantGate,
+        messageStore : messageStoreStub,
+        dataStore    : dataStoreStub,
+        uploadStore  : uploadStoreStub
+      });
       const alice = await DidKeyResolver.generate();
       const { requester, message } = await TestDataGenerator.generateRecordsQuery({ requester: alice });
 

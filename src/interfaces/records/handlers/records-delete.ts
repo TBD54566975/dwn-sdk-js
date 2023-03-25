@@ -1,7 +1,7 @@
 import type { MethodHandler } from '../../types.js';
 import type { RecordsDeleteMessage } from '../types.js';
 import type { TimestampedMessage } from '../../../core/types.js';
-import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
+import type { DataStore, DidResolver, MessageStore, UploadStore } from '../../../index.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
@@ -12,7 +12,12 @@ import { RecordsWrite } from '../messages/records-write.js';
 
 export class RecordsDeleteHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore) { }
+  constructor(
+    private didResolver: DidResolver,
+    private messageStore: MessageStore,
+    private dataStore: DataStore,
+    private uploadStore: UploadStore
+  ) { }
 
   public async handle({
     tenant,
@@ -64,6 +69,8 @@ export class RecordsDeleteHandler implements MethodHandler {
       const indexes = await constructIndexes(tenant, recordsDelete);
 
       await this.messageStore.put(tenant, incomingMessage, indexes);
+
+      await this.uploadStore.delete(tenant, incomingMessage.descriptor.recordId);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }

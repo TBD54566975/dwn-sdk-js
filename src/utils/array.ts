@@ -9,3 +9,11 @@ export async function asyncGeneratorToArray<T>(iterator: AsyncGenerator<T>): Pro
   }
   return array;
 }
+
+export function sum(iterable: Iterable<number>): number {
+  let result = 0;
+  for (const value of iterable) {
+    result += value;
+  }
+  return result;
+}

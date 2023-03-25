@@ -1,11 +1,12 @@
 import type { ImportResult } from 'ipfs-unixfs-importer';
+import type { Readable } from 'readable-stream';
 import type { AssociateResult, DataStore, GetResult, PutResult } from './data-store.js';
 
 import { BlockstoreLevel } from './blockstore-level.js';
 import { createLevelDatabase } from './level-wrapper.js';
+import { DataStream } from '../utils/data-stream.js';
 import { exporter } from 'ipfs-unixfs-exporter';
 import { importer } from 'ipfs-unixfs-importer';
-import { Readable } from 'readable-stream';
 
 const DATA_PARTITION = 'data';
 const HOST_PARTITION = 'host';
@@ -92,23 +93,11 @@ export class DataStoreLevel implements DataStore {
 
     // data is chunked into dag-pb unixfs blocks. re-inflate the chunks.
     const dataDagRoot = await exporter(dataCid, blocks);
-    const contentIterator = dataDagRoot.content()[Symbol.asyncIterator]();
-
-    const dataStream = new Readable({
-      async read(): Promise<void> {
-        const result = await contentIterator.next();
-        if (result.done) {
-          this.push(null); // end the stream
-        } else {
-          this.push(result.value);
-        }
-      }
-    });
 
     return {
-      dataCid  : String(dataDagRoot.cid),
-      dataSize : Number(dataDagRoot.unixfs?.fileSize() ?? dataDagRoot.size),
-      dataStream,
+      dataCid    : String(dataDagRoot.cid),
+      dataSize   : Number(dataDagRoot.unixfs?.fileSize() ?? dataDagRoot.size),
+      dataStream : DataStream.fromAsyncIterator(dataDagRoot.content()),
     };
   }
 

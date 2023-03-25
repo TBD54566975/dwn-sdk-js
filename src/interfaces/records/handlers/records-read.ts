@@ -1,6 +1,6 @@
 import type { MethodHandler } from '../../types.js';
 import type { TimestampedMessage } from '../../../core/types.js';
-import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
+import type { DataStore, DidResolver, MessageStore, UploadStore } from '../../../index.js';
 import type { RecordsReadMessage, RecordsWriteMessage } from '../types.js';
 
 import { authenticate } from '../../../core/auth.js';
@@ -12,7 +12,12 @@ import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 
 export class RecordsReadHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore) { }
+  constructor(
+    private didResolver: DidResolver,
+    private messageStore: MessageStore,
+    private dataStore: DataStore,
+    private uploadStore: UploadStore
+  ) { }
 
   public async handle({
     tenant,
@@ -74,7 +79,12 @@ export class RecordsReadHandler implements MethodHandler {
     const messageCid = await Message.getCid(newestRecordsWrite);
     const result = await this.dataStore.get(tenant, messageCid, newestRecordsWrite.descriptor.dataCid);
 
-    if (result?.dataStream === undefined) {
+    let dataStream = result?.dataStream;
+    if (dataStream === undefined) {
+      dataStream = await this.uploadStore.get(tenant, incomingMessage.descriptor.recordId);
+    }
+
+    if (dataStream === undefined) {
       return new MessageReply({
         status: { code: 404, detail: 'Not Found' }
       });
@@ -82,7 +92,7 @@ export class RecordsReadHandler implements MethodHandler {
 
     const messageReply = new MessageReply({
       status : { code: 200, detail: 'OK' },
-      data   : result.dataStream
+      data   : dataStream
     });
     return messageReply;
   };

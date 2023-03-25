@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://identity.foundation/dwn/json-schemas/records-upload-start.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "authorization",
+    "descriptor",
+    "recordId"
+  ],
+  "properties": {
+    "recordId": {
+      "type": "string"
+    },
+    "attestation": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
+    },
+    "authorization": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
+    },
+    "descriptor": {
+      "type": "object",
+      "properties": {
+        "interface": {
+          "enum": [
+            "Records"
+          ],
+          "type": "string"
+        },
+        "method": {
+          "enum": [
+            "Upload"
+          ],
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "Start",
+          ],
+          "type": "string"
+        },
+        "protocol": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "recipient": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+        },
+        "dataFormat": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "interface",
+        "method",
+        "state",
+        "dataFormat"
+      ]
+    }
+  }
+}

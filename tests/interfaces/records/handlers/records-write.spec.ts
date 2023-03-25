@@ -25,7 +25,7 @@ import { RecordsWriteHandler } from '../../../../src/interfaces/records/handlers
 import { StorageController } from '../../../../src/store/storage-controller.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
-
+import { UploadStoreLevel } from '../../../../src/store/upload-store-level.js';
 import { Cid, computeCid } from '../../../../src/utils/cid.js';
 import { Dwn, Jws, RecordsWrite } from '../../../../src/index.js';
 
@@ -35,6 +35,7 @@ describe('RecordsWriteHandler.handle()', () => {
   let didResolver: DidResolver;
   let messageStore: MessageStoreLevel;
   let dataStore: DataStoreLevel;
+  let uploadStore: UploadStoreLevel;
   let dwn: Dwn;
 
   describe('functional tests', () => {
@@ -52,7 +53,11 @@ describe('RecordsWriteHandler.handle()', () => {
         blockstoreLocation: 'TEST-DATASTORE'
       });
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore });
+      uploadStore = new UploadStoreLevel({
+        blockstoreLocation: 'TEST-UPLOADSTORE'
+      });
+
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, uploadStore });
     });
 
     beforeEach(async () => {
@@ -61,6 +66,7 @@ describe('RecordsWriteHandler.handle()', () => {
       // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
       await messageStore.clear();
       await dataStore.clear();
+      await uploadStore.clear();
     });
 
     after(async () => {
@@ -1292,8 +1298,9 @@ describe('RecordsWriteHandler.handle()', () => {
       const didResolver = TestStubGenerator.createDidResolverStub(requester);
       const messageStore = sinon.createStubInstance(MessageStoreLevel);
       const dataStore = sinon.createStubInstance(DataStoreLevel);
+      const uploadStore = sinon.createStubInstance(UploadStoreLevel);
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, uploadStore);
       const reply = await recordsWriteHandler.handle({ tenant, message, dataStream });
 
       expect(reply.status.code).to.equal(400);
@@ -1316,8 +1323,9 @@ describe('RecordsWriteHandler.handle()', () => {
       const didResolver = sinon.createStubInstance(DidResolver);
       const messageStore = sinon.createStubInstance(MessageStoreLevel);
       const dataStore = sinon.createStubInstance(DataStoreLevel);
+      const uploadStore = sinon.createStubInstance(UploadStoreLevel);
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, uploadStore);
       const reply = await recordsWriteHandler.handle({ tenant, message, dataStream });
 
       expect(reply.status.code).to.equal(400);
@@ -1334,8 +1342,9 @@ describe('RecordsWriteHandler.handle()', () => {
       const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
       const messageStore = sinon.createStubInstance(MessageStoreLevel);
       const dataStore = sinon.createStubInstance(DataStoreLevel);
+      const uploadStore = sinon.createStubInstance(UploadStoreLevel);
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, uploadStore);
       const reply = await recordsWriteHandler.handle({ tenant, message, dataStream });
 
       expect(reply.status.code).to.equal(401);
@@ -1349,8 +1358,9 @@ describe('RecordsWriteHandler.handle()', () => {
       const didResolver = TestStubGenerator.createDidResolverStub(requester);
       const messageStore = sinon.createStubInstance(MessageStoreLevel);
       const dataStore = sinon.createStubInstance(DataStoreLevel);
+      const uploadStore = sinon.createStubInstance(UploadStoreLevel);
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, uploadStore);
 
       const tenant = await (await TestDataGenerator.generatePersona()).did; // unauthorized tenant
       const reply = await recordsWriteHandler.handle({ tenant, message, dataStream });
@@ -1383,8 +1393,9 @@ describe('RecordsWriteHandler.handle()', () => {
       const didResolver = TestStubGenerator.createDidResolverStub(requester);
       const messageStore = sinon.createStubInstance(MessageStoreLevel);
       const dataStore = sinon.createStubInstance(DataStoreLevel);
+      const uploadStore = sinon.createStubInstance(UploadStoreLevel);
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, uploadStore);
       const reply = await recordsWriteHandler.handle({ tenant, message, dataStream });
 
       expect(reply.status.code).to.equal(400);
@@ -1396,7 +1407,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const bob = await DidKeyResolver.generate();
       const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [alice, bob] });
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, uploadStore);
       const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream });
 
       expect(writeReply.status.code).to.equal(400);
@@ -1411,7 +1422,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const anotherWrite = await TestDataGenerator.generateRecordsWrite({ attesters: [alice] });
       message.attestation = anotherWrite.message.attestation;
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, uploadStore);
       const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream });
 
       expect(writeReply.status.code).to.equal(400);
@@ -1428,7 +1439,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const attestationNotReferencedByAuthorization = await RecordsWrite['createAttestation'](descriptorCid, Jws.createSignatureInputs([bob]));
       message.attestation = attestationNotReferencedByAuthorization;
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, uploadStore);
       const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream });
 
       expect(writeReply.status.code).to.equal(400);
@@ -1450,7 +1461,9 @@ describe('RecordsWriteHandler.handle()', () => {
 
     const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
 
-    const recordsWriteHandler = new RecordsWriteHandler(didResolverStub, messageStoreStub, dataStoreStub);
+    const uploadStoreStub = sinon.createStubInstance(UploadStoreLevel);
+
+    const recordsWriteHandler = new RecordsWriteHandler(didResolverStub, messageStoreStub, dataStoreStub, uploadStoreStub);
 
     const handlerPromise = recordsWriteHandler.handle({ tenant, message, dataStream });
     await expect(handlerPromise).to.be.rejectedWith('an unknown error in messageStore.put()');

@@ -93,7 +93,7 @@ export class LevelWrapper<V> {
     await abortOr(options?.signal, this.createLevelDatabase());
 
     try {
-      const value = await abortOr(options?.signal, this.db.get(String(key)));
+      const value = await abortOr(options?.signal, this.db.get(key));
       return value;
     } catch (error) {
       // `Level`` throws an error if the key is not present.  Return `undefined` in this case.
@@ -138,7 +138,7 @@ export class LevelWrapper<V> {
 
     await abortOr(options?.signal, this.createLevelDatabase());
 
-    return abortOr(options?.signal, this.db.put(String(key), value));
+    return abortOr(options?.signal, this.db.put(key, value));
   }
 
   async delete(key: string, options?: LevelWrapperOptions): Promise<void> {
@@ -146,7 +146,7 @@ export class LevelWrapper<V> {
 
     await abortOr(options?.signal, this.createLevelDatabase());
 
-    return abortOr(options?.signal, this.db.del(String(key)));
+    return abortOr(options?.signal, this.db.del(key));
   }
 
   async isEmpty(options?: LevelWrapperOptions): Promise<boolean> {

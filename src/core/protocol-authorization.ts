@@ -1,14 +1,20 @@
 import type { Filter } from './types.js';
 import type { MessageStore } from '../store/message-store.js';
-import type { RecordsWrite } from '../interfaces/records/messages/records-write.js';
-import type { RecordsWriteMessage } from '../interfaces/records/types.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
+import type { RecordsUploadMessage, RecordsWriteMessage } from '../interfaces/records/types.js';
 
+import { RecordsUpload } from '../interfaces/records/messages/records-upload.js';
+import { RecordsWrite } from '../interfaces/records/messages/records-write.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
 
 const methodToAllowedActionMap: Record<string, string> = {
-  [DwnMethodName.Write]: 'write',
+  [DwnMethodName.Upload] : 'write',
+  [DwnMethodName.Write]  : 'write'
 };
+
+type Authorizable = RecordsUpload | RecordsWrite;
+
+type AuthorizableMessage = RecordsUploadMessage | RecordsWriteMessage;
 
 export class ProtocolAuthorization {
 
@@ -18,15 +24,15 @@ export class ProtocolAuthorization {
    */
   public static async authorize(
     tenant: string,
-    recordsWrite: RecordsWrite,
+    authorizable: Authorizable,
     requesterDid: string,
     messageStore: MessageStore
   ): Promise<void> {
     // fetch the protocol definition
-    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(tenant, recordsWrite, messageStore);
+    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(tenant, authorizable, messageStore);
 
     // fetch ancestor message chain
-    const ancestorMessageChain: RecordsWriteMessage[] = await ProtocolAuthorization.constructAncestorMessageChain(tenant, recordsWrite, messageStore);
+    const ancestorMessageChain = await ProtocolAuthorization.constructAncestorMessageChain(tenant, authorizable, messageStore);
 
     // record schema -> schema label map
     const recordSchemaToLabelMap: Map<string, string> = new Map();
@@ -36,30 +42,30 @@ export class ProtocolAuthorization {
     }
 
     // get the rule set for the inbound message
-    const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
-      recordsWrite.message,
+    const ruleSet = ProtocolAuthorization.getRuleSet(
+      authorizable.message,
       protocolDefinition,
       ancestorMessageChain,
       recordSchemaToLabelMap
     );
 
     // verify the requester of the inbound message against allowed requester rule
-    ProtocolAuthorization.verifyAllowedRequester(tenant, requesterDid, inboundMessageRuleSet, ancestorMessageChain, recordSchemaToLabelMap
+    ProtocolAuthorization.verifyAllowedRequester(tenant, requesterDid, ruleSet, ancestorMessageChain, recordSchemaToLabelMap
     );
 
     // verify method invoked against the allowed actions
-    ProtocolAuthorization.verifyAllowedActions(tenant, requesterDid, recordsWrite, inboundMessageRuleSet);
+    ProtocolAuthorization.verifyAllowedActions(tenant, requesterDid, authorizable, ruleSet);
 
     // verify allowed condition of the write
-    await ProtocolAuthorization.verifyActionCondition(tenant, recordsWrite, messageStore);
+    await ProtocolAuthorization.verifyActionCondition(tenant, authorizable, messageStore);
   }
 
   /**
    * Fetches the protocol definition based on the protocol specified in the given message.
    */
-  private static async fetchProtocolDefinition(tenant: string, recordsWrite: RecordsWrite, messageStore: MessageStore): Promise<ProtocolDefinition> {
+  private static async fetchProtocolDefinition(tenant: string, authorizable: Authorizable, messageStore: MessageStore): Promise<ProtocolDefinition> {
     // get the protocol URI
-    const protocolUri = recordsWrite.message.descriptor.protocol!;
+    const protocolUri = authorizable.message.descriptor.protocol!;
 
     // fetch the corresponding protocol definition
     const query: Filter = {
@@ -81,9 +87,16 @@ export class ProtocolAuthorization {
    * Constructs a chain of ancestor messages
    * @returns the ancestor chain of messages where the first element is the root of the chain; returns empty array if no parent is specified.
    */
-  private static async constructAncestorMessageChain(tenant: string, recordsWrite: RecordsWrite, messageStore: MessageStore)
-    : Promise<RecordsWriteMessage[]> {
-    const ancestorMessageChain: RecordsWriteMessage[] = [];
+  private static async constructAncestorMessageChain(tenant: string, authorizable: Authorizable, messageStore: MessageStore)
+    : Promise<AuthorizableMessage[]> {
+    // RecordsUpload do not have a "context" or "parent"
+    if (authorizable.message.descriptor.method !== DwnMethodName.Write) {
+      return [ ];
+    }
+
+    const ancestorMessageChain: AuthorizableMessage[] = [ ];
+
+    const recordsWrite = authorizable as RecordsWrite;
 
     const protocol = recordsWrite.message.descriptor.protocol!;
     const contextId = recordsWrite.message.contextId!;
@@ -118,9 +131,9 @@ export class ProtocolAuthorization {
    * Gets the rule set corresponding to the inbound message.
    */
   private static getRuleSet(
-    inboundMessage: RecordsWriteMessage,
+    inboundMessage: AuthorizableMessage,
     protocolDefinition: ProtocolDefinition,
-    ancestorMessageChain: RecordsWriteMessage[],
+    ancestorMessageChain: AuthorizableMessage[],
     recordSchemaToLabelMap: Map<string, string>
   ): ProtocolRuleSet {
     // make a copy of the ancestor messages and include the inbound message in the chain
@@ -161,11 +174,11 @@ export class ProtocolAuthorization {
   private static verifyAllowedRequester(
     tenant: string,
     requesterDid: string,
-    inboundMessageRuleSet: ProtocolRuleSet,
-    ancestorMessageChain: RecordsWriteMessage[],
+    ruleSet: ProtocolRuleSet,
+    ancestorMessageChain: AuthorizableMessage[],
     recordSchemaToLabelMap: Map<string, string>
   ): void {
-    const allowRule = inboundMessageRuleSet.allow;
+    const allowRule = ruleSet.allow;
     if (allowRule === undefined) {
       // if no allow rule is defined, still allow if requester is the same as target tenant, but throw otherwise
       if (requesterDid !== tenant) {
@@ -191,16 +204,16 @@ export class ProtocolAuthorization {
    * Verifies the actions specified in the given message matches the allowed actions in the rule set.
    * @throws {Error} if action not allowed.
    */
-  private static verifyAllowedActions(tenant: string, requesterDid: string, incomingMessage: Message, inboundMessageRuleSet: ProtocolRuleSet): void {
-    const allowRule = inboundMessageRuleSet.allow;
-    const incomingMessageMethod = incomingMessage.message.descriptor.method;
+  private static verifyAllowedActions(tenant: string, requesterDid: string, authorizable: Authorizable, ruleSet: ProtocolRuleSet): void {
+    const allowRule = ruleSet.allow;
+    const method = authorizable.message.descriptor.method;
 
     if (allowRule === undefined) {
       // if no allow rule is defined, owner of DWN can do everything
       if (requesterDid === tenant) {
         return;
       } else {
-        throw new Error(`no allow rule defined for ${incomingMessageMethod}, ${requesterDid} is unauthorized`);
+        throw new Error(`no allow rule defined for ${method}, ${requesterDid} is unauthorized`);
       }
     }
 
@@ -211,9 +224,9 @@ export class ProtocolAuthorization {
       allowedActions = allowRule.recipient.to;
     } // not possible to have `else` because of same check already done by verifyAllowedRequester()
 
-    const inboundMessageAction = methodToAllowedActionMap[incomingMessageMethod];
-    if (!allowedActions.includes(inboundMessageAction)) {
-      throw new Error(`inbound message action '${inboundMessageAction}' not in list of allowed actions ${allowedActions}`);
+    const action = methodToAllowedActionMap[method];
+    if (!allowedActions.includes(action)) {
+      throw new Error(`inbound message action '${action}' not in list of allowed actions ${allowedActions}`);
     }
   }
 
@@ -222,21 +235,49 @@ export class ProtocolAuthorization {
    * Currently the only check is: if the write is not the initial write, the author must be the same as the initial write
    * @throws {Error} if fails verification
    */
-  private static async verifyActionCondition(tenant: string, recordsWrite: RecordsWrite, messageStore: MessageStore): Promise<void> {
-    const isInitialWrite = await recordsWrite.isInitialWrite();
-    if (!isInitialWrite) {
-      // fetch the initialWrite
-      const query = {
-        entryId: recordsWrite.message.recordId
-      };
-      const result = await messageStore.query(tenant, query) as RecordsWriteMessage[];
+  private static async verifyActionCondition(tenant: string, authorizable: Authorizable, messageStore: MessageStore): Promise<void> {
+    if (authorizable instanceof RecordsUpload) {
+      const recordsUpload = authorizable as RecordsUpload;
 
-      // check the author of the initial write matches the author of the incoming message
-      const initialWrite = result[0];
-      const authorOfInitialWrite = Message.getAuthor(initialWrite);
-      if (recordsWrite.author !== authorOfInitialWrite) {
-        throw new Error(`author of incoming message '${recordsWrite.author}' must match to author of initial write '${authorOfInitialWrite}'`);
+      const isUploadStart = await recordsUpload.isUploadStart();
+      if (!isUploadStart) {
+        // fetch the initialWrite
+        const query = {
+          entryId: recordsUpload.message.recordId
+        };
+        const result = await messageStore.query(tenant, query);
+
+        // check the author of the initial write matches the author of the incoming message
+        const uploadStart = result[0];
+        const authorOfUploadStart = Message.getAuthor(uploadStart);
+        if (recordsUpload.author !== authorOfUploadStart) {
+          throw new Error(`author of incoming message '${recordsUpload.author}' must match to author of upload start '${authorOfUploadStart}'`);
+        }
       }
+
+      return;
+    }
+
+    if (authorizable instanceof RecordsWrite) {
+      const recordsWrite = authorizable as RecordsWrite;
+
+      const isInitialWrite = await recordsWrite.isInitialWrite();
+      if (!isInitialWrite) {
+        // fetch the initialWrite
+        const query = {
+          entryId: recordsWrite.message.recordId
+        };
+        const result = await messageStore.query(tenant, query);
+
+        // check the author of the initial write matches the author of the incoming message
+        const initialWrite = result[0];
+        const authorOfInitialWrite = Message.getAuthor(initialWrite);
+        if (recordsWrite.author !== authorOfInitialWrite) {
+          throw new Error(`author of incoming message '${recordsWrite.author}' must match to author of initial write '${authorOfInitialWrite}'`);
+        }
+      }
+
+      return;
     }
   }
 
@@ -248,10 +289,10 @@ export class ProtocolAuthorization {
    *                    NOTE: the path scheme use here may be temporary dependent on final protocol spec.
    */
   private static getMessage(
-    ancestorMessageChain: RecordsWriteMessage[],
+    ancestorMessageChain: AuthorizableMessage[],
     messagePath: string,
     recordSchemaToLabelMap: Map<string, string>
-  ): RecordsWriteMessage {
+  ): AuthorizableMessage {
     const expectedAncestors = messagePath.split('/');
 
     // consider moving this check to ProtocolsConfigure message ingestion

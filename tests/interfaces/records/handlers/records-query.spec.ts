@@ -4,6 +4,7 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
+import { constructRecordsWriteIndexes } from '../../../../src/interfaces/records/handlers/records-write.js';
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DwnConstant } from '../../../../src/core/dwn-constant.js';
@@ -15,8 +16,7 @@ import { StorageController } from '../../../../src/store/storage-controller.js';
 import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
-
-import { constructRecordsWriteIndexes } from '../../../../src/interfaces/records/handlers/records-write.js';
+import { UploadStoreLevel } from '../../../../src/store/upload-store-level.js';
 import { DateSort, RecordsQuery } from '../../../../src/interfaces/records/messages/records-query.js';
 import { DidResolver, Dwn } from '../../../../src/index.js';
 
@@ -27,6 +27,7 @@ describe('RecordsQueryHandler.handle()', () => {
     let didResolver: DidResolver;
     let messageStore: MessageStoreLevel;
     let dataStore: DataStoreLevel;
+    let uploadStore: UploadStoreLevel;
     let dwn: Dwn;
 
     before(async () => {
@@ -43,7 +44,11 @@ describe('RecordsQueryHandler.handle()', () => {
         blockstoreLocation: 'TEST-DATASTORE'
       });
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore });
+      uploadStore = new UploadStoreLevel({
+        blockstoreLocation: 'TEST-UPLOADSTORE'
+      });
+
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, uploadStore });
     });
 
     beforeEach(async () => {
@@ -52,6 +57,7 @@ describe('RecordsQueryHandler.handle()', () => {
       // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
       await messageStore.clear();
       await dataStore.clear();
+      await uploadStore.clear();
     });
 
     after(async () => {

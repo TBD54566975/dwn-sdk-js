@@ -21,6 +21,7 @@ export type BaseDecodedAuthorizationPayload = {
 export type Descriptor = {
   interface: string;
   method: string;
+  state?: string;
   dataCid?: string;
   dataSize?: number;
 };

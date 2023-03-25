@@ -9,7 +9,7 @@ import { MessageStoreLevel } from '../../../../src/store/message-store-level.js'
 import { RecordsReadHandler } from '../../../../src/interfaces/records/handlers/records-read.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
-
+import { UploadStoreLevel } from '../../../../src/store/upload-store-level.js';
 import { DataStream, DidResolver, Dwn, Jws, RecordsDelete, RecordsRead } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
@@ -18,6 +18,7 @@ describe('RecordsReadHandler.handle()', () => {
   let didResolver: DidResolver;
   let messageStore: MessageStoreLevel;
   let dataStore: DataStoreLevel;
+  let uploadStore: UploadStoreLevel;
   let dwn: Dwn;
 
   describe('functional tests', () => {
@@ -35,7 +36,11 @@ describe('RecordsReadHandler.handle()', () => {
         blockstoreLocation: 'TEST-DATASTORE'
       });
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore });
+      uploadStore = new UploadStoreLevel({
+        blockstoreLocation: 'TEST-UPLOADSTORE'
+      });
+
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, uploadStore });
     });
 
     beforeEach(async () => {
@@ -44,6 +49,7 @@ describe('RecordsReadHandler.handle()', () => {
       // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
       await messageStore.clear();
       await dataStore.clear();
+      await uploadStore.clear();
     });
 
     after(async () => {
@@ -217,8 +223,9 @@ describe('RecordsReadHandler.handle()', () => {
     const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
+    const uploadStore = sinon.createStubInstance(UploadStoreLevel);
 
-    const recordsReadHandler = new RecordsReadHandler(didResolver, messageStore, dataStore);
+    const recordsReadHandler = new RecordsReadHandler(didResolver, messageStore, dataStore, uploadStore);
     const reply = await recordsReadHandler.handle({ tenant: alice, message: recordsRead.message });
     expect(reply.status.code).to.equal(401);
   });
@@ -233,8 +240,9 @@ describe('RecordsReadHandler.handle()', () => {
     // setting up a stub method resolver & message store
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
+    const uploadStore = sinon.createStubInstance(UploadStoreLevel);
 
-    const recordsReadHandler = new RecordsReadHandler(didResolver, messageStore, dataStore);
+    const recordsReadHandler = new RecordsReadHandler(didResolver, messageStore, dataStore, uploadStore);
 
     // stub the `parse()` function to throw an error
     sinon.stub(RecordsRead, 'parse').throws('anyError');

@@ -1,7 +1,7 @@
 import type { BaseMessage } from '../../core/types.js';
 import type { DateSort } from './messages/records-query.js';
 import type { GeneralJws } from '../../jose/jws/general/types.js';
-import type { DwnInterfaceName, DwnMethodName } from '../../core/message.js';
+import type { DwnInterfaceName, DwnMethodName, DwnStateName } from '../../core/message.js';
 
 export type RecordsWriteDescriptor = {
   interface: DwnInterfaceName.Records;
@@ -36,6 +36,52 @@ export type UnsignedRecordsWriteMessage = {
   encodedData?: string;
 };
 
+export type RecordsUploadDescriptor = {
+  interface: DwnInterfaceName.Records;
+  method: DwnMethodName.Upload;
+  state: string;
+  protocol?: string;
+  schema?: string;
+  recipient?: string;
+};
+
+export type RecordsUploadStartDescriptor = RecordsUploadDescriptor & {
+  state: DwnStateName.Start;
+  dataFormat: string;
+};
+
+export type RecordsUploadPartDescriptor = RecordsUploadDescriptor & {
+  state: DwnStateName.Part;
+  index: number;
+  dataCid: string;
+  dataSize: number;
+};
+
+export type RecordsUploadCompleteDescriptor = RecordsUploadDescriptor & {
+  state: DwnStateName.Complete;
+  count: number;
+  dataCid: string;
+  dataSize: number;
+};
+
+export type RecordsUploadMessage = BaseMessage & {
+  recordId: string;
+  descriptor: RecordsUploadDescriptor;
+  attestation?: GeneralJws;
+};
+
+export type RecordsUploadStartMessage = RecordsUploadMessage & {
+  descriptor: RecordsUploadStartDescriptor;
+};
+
+export type RecordsUploadPartMessage = RecordsUploadMessage & {
+  descriptor: RecordsUploadPartDescriptor;
+};
+
+export type RecordsUploadCompleteMessage = RecordsUploadMessage & {
+  descriptor: RecordsUploadCompleteDescriptor;
+};
+
 export type RecordsQueryDescriptor = {
   interface: DwnInterfaceName.Records;
   method: DwnMethodName.Query;
@@ -45,6 +91,7 @@ export type RecordsQueryDescriptor = {
 };
 
 export type RecordsQueryFilter = {
+  state?: string;
   attester?: string;
   recipient?: string;
   protocol?: string;
@@ -68,11 +115,11 @@ export type RangeCriterion = {
   to?: string;
 };
 
-export type RecordsWriteAttestationPayload = {
+export type RecordsAttestationPayload = {
   descriptorCid: string;
 };
 
-export type RecordsWriteAuthorizationPayload = {
+export type RecordsAuthorizationPayload = {
   recordId: string;
   contextId?: string;
   descriptorCid: string;

@@ -1,7 +1,7 @@
 import type { MethodHandler } from '../../types.js';
 import type { RecordsWriteMessage } from '../types.js';
 import type { TimestampedMessage } from '../../../core/types.js';
-import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
+import type { DataStore, DidResolver, MessageStore, UploadStore } from '../../../index.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
@@ -13,7 +13,12 @@ import { StorageController } from '../../../store/storage-controller.js';
 
 export class RecordsWriteHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore) { }
+  constructor(
+    private didResolver: DidResolver,
+    private messageStore: MessageStore,
+    private dataStore: DataStore,
+    private uploadStore: UploadStore
+  ) { }
 
   public async handle({
     tenant,
@@ -38,6 +43,13 @@ export class RecordsWriteHandler implements MethodHandler {
     } catch (e) {
       return new MessageReply({
         status: { code: 401, detail: e.message }
+      });
+    }
+
+    const isUpload = await this.uploadStore.has(tenant, incomingMessage.recordId);
+    if (isUpload) {
+      return new MessageReply({
+        status: { code: 400, detail: 'upload already exists' }
       });
     }
 

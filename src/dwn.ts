@@ -4,6 +4,7 @@ import type { MessageStore } from './store/message-store.js';
 import type { MethodHandler } from './interfaces/types.js';
 import type { Readable } from 'readable-stream';
 import type { TenantGate } from './core/tenant-gate.js';
+import type { UploadStore } from './store/upload-store.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DataStoreLevel } from './store/data-store-level.js';
@@ -16,7 +17,9 @@ import { ProtocolsQueryHandler } from './interfaces/protocols/handlers/protocols
 import { RecordsDeleteHandler } from './interfaces/records/handlers/records-delete.js';
 import { RecordsQueryHandler } from './interfaces/records/handlers/records-query.js';
 import { RecordsReadHandler } from './interfaces/records/handlers/records-read.js';
+import { RecordsUploadHandler } from './interfaces/records/handlers/records-upload.js';
 import { RecordsWriteHandler } from './interfaces/records/handlers/records-write.js';
+import { UploadStoreLevel } from './store/upload-store-level.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './core/message.js';
 
 export class Dwn {
@@ -24,22 +27,25 @@ export class Dwn {
   private didResolver: DidResolver;
   private messageStore: MessageStore;
   private dataStore: DataStore;
+  private uploadStore: UploadStore;
   private tenantGate: TenantGate;
 
   private constructor(config: DwnConfig) {
-    this.didResolver = config.didResolver;
-    this.messageStore = config.messageStore;
-    this.dataStore = config.dataStore;
+    const didResolver = this.didResolver = config.didResolver;
+    const messageStore = this.messageStore = config.messageStore;
+    const dataStore = this.dataStore = config.dataStore;
+    const uploadStore = this.uploadStore = config.uploadStore;
     this.tenantGate = config.tenantGate;
 
     this.methodHandlers = {
-      [DwnInterfaceName.Permissions + DwnMethodName.Request] : new PermissionsRequestHandler(this.didResolver, this.messageStore, this.dataStore),
-      [DwnInterfaceName.Protocols + DwnMethodName.Configure] : new ProtocolsConfigureHandler(this.didResolver, this.messageStore, this.dataStore),
-      [DwnInterfaceName.Protocols + DwnMethodName.Query]     : new ProtocolsQueryHandler(this.didResolver, this.messageStore, this.dataStore),
-      [DwnInterfaceName.Records + DwnMethodName.Delete]      : new RecordsDeleteHandler(this.didResolver, this.messageStore, this.dataStore),
-      [DwnInterfaceName.Records + DwnMethodName.Query]       : new RecordsQueryHandler(this.didResolver, this.messageStore, this.dataStore),
-      [DwnInterfaceName.Records + DwnMethodName.Read]        : new RecordsReadHandler(this.didResolver, this.messageStore, this.dataStore),
-      [DwnInterfaceName.Records + DwnMethodName.Write]       : new RecordsWriteHandler(this.didResolver, this.messageStore, this.dataStore),
+      [DwnInterfaceName.Permissions + DwnMethodName.Request] : new PermissionsRequestHandler(didResolver, messageStore, dataStore),
+      [DwnInterfaceName.Protocols + DwnMethodName.Configure] : new ProtocolsConfigureHandler(didResolver, messageStore, dataStore),
+      [DwnInterfaceName.Protocols + DwnMethodName.Query]     : new ProtocolsQueryHandler(didResolver, messageStore, dataStore),
+      [DwnInterfaceName.Records + DwnMethodName.Delete]      : new RecordsDeleteHandler(didResolver, messageStore, dataStore, uploadStore),
+      [DwnInterfaceName.Records + DwnMethodName.Query]       : new RecordsQueryHandler(didResolver, messageStore, dataStore),
+      [DwnInterfaceName.Records + DwnMethodName.Read]        : new RecordsReadHandler(didResolver, messageStore, dataStore, uploadStore),
+      [DwnInterfaceName.Records + DwnMethodName.Upload]      : new RecordsUploadHandler(didResolver, messageStore, uploadStore),
+      [DwnInterfaceName.Records + DwnMethodName.Write]       : new RecordsWriteHandler(didResolver, messageStore, dataStore, uploadStore),
     };
   }
 
@@ -52,6 +58,7 @@ export class Dwn {
     config.tenantGate ??= new AllowAllTenantGate();
     config.messageStore ??= new MessageStoreLevel();
     config.dataStore ??= new DataStoreLevel();
+    config.uploadStore ??= new UploadStoreLevel();
 
     const dwn = new Dwn(config);
     await dwn.open();
@@ -62,11 +69,13 @@ export class Dwn {
   private async open(): Promise<void> {
     await this.messageStore.open();
     await this.dataStore.open();
+    await this.uploadStore.open();
   }
 
   public async close(): Promise<void> {
     this.messageStore.close();
     this.dataStore.close();
+    this.uploadStore.close();
   }
 
   /**
@@ -119,6 +128,10 @@ export class Dwn {
     console.group('dataStore');
     await this.dataStore['dump']?.();
     console.groupEnd();
+
+    console.group('uploadStore');
+    await this.uploadStore['dump']?.();
+    console.groupEnd();
   }
 };
 
@@ -126,5 +139,6 @@ export type DwnConfig = {
   didResolver?: DidResolver,
   messageStore?: MessageStore;
   dataStore?: DataStore;
+  uploadStore?: UploadStore;
   tenantGate?: TenantGate;
 };

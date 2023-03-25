@@ -41,3 +41,5 @@ export { RecordsQuery, RecordsQueryOptions } from './interfaces/records/messages
 export { RecordsRead, RecordsReadOptions } from './interfaces/records/messages/records-read.js';
 export { RecordsWrite, RecordsWriteOptions, CreateFromOptions } from './interfaces/records/messages/records-write.js';
 export { SignatureInput } from './jose/jws/general/types.js';
+export { UploadStore } from './store/upload-store.js';
+export { UploadStoreLevel } from './store/upload-store-level.js';
