@@ -35,4 +35,7 @@ export class DidIonResolver implements DidMethodResolver {
     const didResolutionResult = await response.json();
     return didResolutionResult;
   }
+
+  async dump(): Promise<void> {
+  }
 }

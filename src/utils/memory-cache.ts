@@ -28,4 +28,10 @@ export class MemoryCache implements Cache {
   async get(key: string): Promise<any | undefined> {
     return this.cache.get(key);
   }
+
+  async dump(): Promise<void> {
+    for (const [ key, value ] of this.cache) {
+      console.debug(key, value);
+    }
+  }
 }

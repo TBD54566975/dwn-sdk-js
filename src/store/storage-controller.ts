@@ -36,42 +36,44 @@ export class StorageController {
     if (message.descriptor.dataCid !== undefined) {
       const messageCid = await Message.getCid(message);
 
+      let result;
+
       if (dataStream === undefined) {
-        // the message implies that the data is already in the DB, so we check to make sure the data already exist
-        const hasData = await dataStore.associate(tenant, messageCid, message.descriptor.dataCid);
-
-        if (!hasData) {
-          throw new DwnError(
-            DwnErrorCode.MessageStoreDataNotFound,
-            `data with dataCid ${message.descriptor.dataCid} not found in store`
-          );
-        }
+        result = await dataStore.associate(tenant, messageCid, message.descriptor.dataCid);
       } else {
-        const { dataCid, dataSize } = await dataStore.put(tenant, messageCid, dataStream);
+        result = await dataStore.put(tenant, messageCid, message.descriptor.dataCid, dataStream);
+      }
 
-        // MUST verify that the size of the actual data matches with the given `dataSize`
-        // if data size is wrong, delete the data we just stored
-        if (message.descriptor.dataSize !== dataSize) {
-          // there is an opportunity to improve here: handle the edge cae of if the delete fails...
-          await dataStore.delete(tenant, messageCid, dataCid);
+      // the message implies that the data is already in the DB, so we check to make sure the data already exist
+      if (!result) {
+        throw new DwnError(
+          DwnErrorCode.MessageStoreDataNotFound,
+          `data with dataCid ${message.descriptor.dataCid} not found in store`
+        );
+      }
 
-          throw new DwnError(
-            DwnErrorCode.MessageStoreDataSizeMismatch,
-            `actual data size ${dataSize} bytes does not match dataSize in descriptor: ${message.descriptor.dataSize}`
-          );
-        }
+      // MUST verify that the size of the actual data matches with the given `dataSize`
+      // if data size is wrong, delete the data we just stored
+      if (message.descriptor.dataSize !== result.dataSize) {
+        // there is an opportunity to improve here: handle the edge cae of if the delete fails...
+        await dataStore.delete(tenant, messageCid, message.descriptor.dataCid);
 
-        // MUST verify that the CID of the actual data matches with the given `dataCid`
-        // if data CID is wrong, delete the data we just stored
-        if (message.descriptor.dataCid !== dataCid) {
-          // there is an opportunity to improve here: handle the edge cae of if the delete fails...
-          await dataStore.delete(tenant, messageCid, dataCid);
+        throw new DwnError(
+          DwnErrorCode.MessageStoreDataSizeMismatch,
+          `actual data size ${result.dataSize} bytes does not match dataSize in descriptor: ${message.descriptor.dataSize}`
+        );
+      }
 
-          throw new DwnError(
-            DwnErrorCode.MessageStoreDataCidMismatch,
-            `actual data CID ${dataCid} does not match dataCid in descriptor: ${message.descriptor.dataCid}`
-          );
-        }
+      // MUST verify that the CID of the actual data matches with the given `dataCid`
+      // if data CID is wrong, delete the data we just stored
+      if (message.descriptor.dataCid !== result.dataCid) {
+        // there is an opportunity to improve here: handle the edge cae of if the delete fails...
+        await dataStore.delete(tenant, messageCid, message.descriptor.dataCid);
+
+        throw new DwnError(
+          DwnErrorCode.MessageStoreDataCidMismatch,
+          `actual data CID ${result.dataCid} does not match dataCid in descriptor: ${message.descriptor.dataCid}`
+        );
       }
     }
 
@@ -93,8 +95,8 @@ export class StorageController {
       const dataSize = message.descriptor.dataSize;
       if (dataCid !== undefined && dataSize! <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
         const messageCid = await Message.getCid(message);
-        const readableStream = await dataStore.get(tenant, messageCid, dataCid);
-        const dataBytes = await DataStream.toBytes(readableStream);
+        const { dataStream } = await dataStore.get(tenant, messageCid, dataCid);
+        const dataBytes = await DataStream.toBytes(dataStream);
 
         message['encodedData'] = Encoder.bytesToBase64Url(dataBytes);
       }
