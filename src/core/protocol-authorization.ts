@@ -1,10 +1,10 @@
+import type { Filter } from './types.js';
 import type { MessageStore } from '../store/message-store.js';
 import type { RecordsWrite } from '../interfaces/records/messages/records-write.js';
 import type { RecordsWriteMessage } from '../interfaces/records/types.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
 
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
-import { Filter } from './types.js';
 
 const methodToAllowedActionMap: Record<string, string> = {
   [DwnMethodName.Write]: 'write',

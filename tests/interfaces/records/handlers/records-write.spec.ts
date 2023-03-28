@@ -958,8 +958,8 @@ describe('RecordsWriteHandler.handle()', () => {
             }
           },
           records: {
-            email: {},
-            sms: {}
+            email : {},
+            sms   : {}
           }
         };
         const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
@@ -976,7 +976,7 @@ describe('RecordsWriteHandler.handle()', () => {
           recipientDid : alice.did,
           protocol,
           schema       : protocolDefinition.labels.email.schema,
-          data: Encoder.stringToBytes('any data'),
+          data         : Encoder.stringToBytes('any data'),
         });
         await dwn.processMessage(alice.did, emailRecordsWrite.message, emailRecordsWrite.dataStream);
 
@@ -985,12 +985,12 @@ describe('RecordsWriteHandler.handle()', () => {
           recipientDid : alice.did,
           protocol,
           schema       : protocolDefinition.labels.sms.schema, // SMS are allowed, but not as a child record of emails
-          data: Encoder.stringToBytes('any other data'),
-          parentId: emailRecordsWrite.message.recordId,
-          contextId: await emailRecordsWrite.recordsWrite.getEntryId()
+          data         : Encoder.stringToBytes('any other data'),
+          parentId     : emailRecordsWrite.message.recordId,
+          contextId    : await emailRecordsWrite.recordsWrite.getEntryId()
         });
         const reply = await dwn.processMessage(alice.did, smsSchemaResponse.message, smsSchemaResponse.dataStream);
-        
+
         expect(reply.status.code).to.equal(401);
         expect(reply.status.detail).to.contain('record with schema: \'smsSchema\' not allowed in structure level 1');
       });
