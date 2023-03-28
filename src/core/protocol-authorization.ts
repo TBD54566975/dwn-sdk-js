@@ -4,8 +4,9 @@ import type { RecordsWriteMessage } from '../interfaces/records/types.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
 
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
+import { Filter } from './types.js';
 
-const methodToAllowedActionMap = {
+const methodToAllowedActionMap: Record<string, string> = {
   [DwnMethodName.Write]: 'write',
 };
 
@@ -31,13 +32,14 @@ export class ProtocolAuthorization {
     const recordSchemaToLabelMap: Map<string, string> = new Map();
     for (const schemaLabel in protocolDefinition.labels) {
       const schema = protocolDefinition.labels[schemaLabel].schema;
-      recordSchemaToLabelMap[schema] = schemaLabel;
+      recordSchemaToLabelMap.set(schema, schemaLabel);
     }
 
     // get the rule set for the inbound message
     const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
       recordsWrite.message,
-      protocolDefinition, ancestorMessageChain,
+      protocolDefinition,
+      ancestorMessageChain,
       recordSchemaToLabelMap
     );
 
@@ -57,10 +59,10 @@ export class ProtocolAuthorization {
    */
   private static async fetchProtocolDefinition(tenant: string, recordsWrite: RecordsWrite, messageStore: MessageStore): Promise<ProtocolDefinition> {
     // get the protocol URI
-    const protocolUri = recordsWrite.message.descriptor.protocol;
+    const protocolUri = recordsWrite.message.descriptor.protocol!;
 
     // fetch the corresponding protocol definition
-    const query = {
+    const query: Filter = {
       interface : DwnInterfaceName.Protocols,
       method    : DwnMethodName.Configure,
       protocol  : protocolUri
@@ -83,14 +85,14 @@ export class ProtocolAuthorization {
     : Promise<RecordsWriteMessage[]> {
     const ancestorMessageChain: RecordsWriteMessage[] = [];
 
-    const protocol = recordsWrite.message.descriptor.protocol;
-    const contextId = recordsWrite.message.contextId;
+    const protocol = recordsWrite.message.descriptor.protocol!;
+    const contextId = recordsWrite.message.contextId!;
 
     // keep walking up the chain from the inbound message's parent, until there is no more parent
     let currentParentId = recordsWrite.message.descriptor.parentId;
     while (currentParentId !== undefined) {
       // fetch parent
-      const query = {
+      const query: Filter = {
         interface : DwnInterfaceName.Records,
         method    : DwnMethodName.Write,
         protocol,
@@ -126,17 +128,17 @@ export class ProtocolAuthorization {
 
     // walk down the ancestor message chain from the root ancestor record and match against the corresponding rule set at each level
     // to make sure the chain structure is allowed
-    let allowedRecordsAtCurrentLevel = protocolDefinition.records;
+    let allowedRecordsAtCurrentLevel: { [key: string]: ProtocolRuleSet} | undefined = protocolDefinition.records;
     let currentMessageIndex = 0;
     while (true) {
       const currentRecordSchema = messageChain[currentMessageIndex].descriptor.schema;
-      const currentRecordType = recordSchemaToLabelMap[currentRecordSchema];
+      const currentRecordType = recordSchemaToLabelMap.get(currentRecordSchema!);
 
       if (currentRecordType === undefined) {
         throw new Error(`record with schema '${currentRecordSchema}' not allowed in protocol`);
       }
 
-      if (!(currentRecordType in allowedRecordsAtCurrentLevel)) {
+      if (allowedRecordsAtCurrentLevel === undefined || !(currentRecordType in allowedRecordsAtCurrentLevel)) {
         throw new Error(`record with schema: '${currentRecordSchema}' not allowed in structure level ${currentMessageIndex}`);
       }
 
@@ -202,7 +204,7 @@ export class ProtocolAuthorization {
       }
     }
 
-    let allowedActions: string[];
+    let allowedActions: string[] = [];
     if (allowRule.anyone !== undefined) {
       allowedActions = allowRule.anyone.to;
     } else if (allowRule.recipient !== undefined) {
@@ -262,7 +264,7 @@ export class ProtocolAuthorization {
       const expectedAncestorType = expectedAncestors[i];
       const ancestorMessage = ancestorMessageChain[i];
 
-      const actualAncestorType = recordSchemaToLabelMap[ancestorMessage.descriptor.schema];
+      const actualAncestorType = recordSchemaToLabelMap.get(ancestorMessage.descriptor.schema!);
       if (actualAncestorType !== expectedAncestorType) {
         throw new Error(`mismatching record schema: expecting ${expectedAncestorType} but actual ${actualAncestorType}`);
       }
