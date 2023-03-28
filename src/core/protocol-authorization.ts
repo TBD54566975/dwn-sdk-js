@@ -1,10 +1,10 @@
+import type { Filter } from './types.js';
 import type { MessageStore } from '../store/message-store.js';
 import type { RecordsWrite } from '../interfaces/records/messages/records-write.js';
 import type { RecordsWriteMessage } from '../interfaces/records/types.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
 
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
-import { Filter } from './types.js';
 
 const methodToAllowedActionMap: Record<string, string> = {
   [DwnMethodName.Write]: 'write',
@@ -43,12 +43,15 @@ export class ProtocolAuthorization {
       recordSchemaToLabelMap
     );
 
-    // verify the requester of the inbound message against allowed requester rule
-    ProtocolAuthorization.verifyAllowedRequester(tenant, requesterDid, inboundMessageRuleSet, ancestorMessageChain, recordSchemaToLabelMap
-    );
-
     // verify method invoked against the allowed actions
-    ProtocolAuthorization.verifyAllowedActions(tenant, requesterDid, recordsWrite, inboundMessageRuleSet);
+    ProtocolAuthorization.verifyAllowedActions(
+      tenant,
+      requesterDid,
+      recordsWrite,
+      inboundMessageRuleSet,
+      ancestorMessageChain,
+      recordSchemaToLabelMap
+    );
 
     // verify allowed condition of the write
     await ProtocolAuthorization.verifyActionCondition(tenant, recordsWrite, messageStore);
@@ -155,43 +158,17 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Verifies the requester of the given message is allowed actions based on the rule set.
-   * @throws {Error} if requester not allowed.
+   * Verifies the actions specified in the given message matches the allowed actions in the rule set.
+   * @throws {Error} if action not allowed.
    */
-  private static verifyAllowedRequester(
+  private static verifyAllowedActions(
     tenant: string,
     requesterDid: string,
+    incomingMessage: Message,
     inboundMessageRuleSet: ProtocolRuleSet,
     ancestorMessageChain: RecordsWriteMessage[],
     recordSchemaToLabelMap: Map<string, string>
   ): void {
-    const allowRule = inboundMessageRuleSet.allow;
-    if (allowRule === undefined) {
-      // if no allow rule is defined, still allow if requester is the same as target tenant, but throw otherwise
-      if (requesterDid !== tenant) {
-        throw new Error(`no allow rule defined for requester, ${requesterDid} is unauthorized`);
-      }
-    } else if (allowRule.anyone !== undefined) {
-      // good to go to next check
-    } else if (allowRule.recipient !== undefined) {
-      // get the message to check for recipient based on the path given
-      const messageForRecipientCheck = ProtocolAuthorization.getMessage(ancestorMessageChain, allowRule.recipient.of, recordSchemaToLabelMap);
-      const expectedRequesterDid = messageForRecipientCheck.descriptor.recipient;
-
-      // the requester of the inbound message must be the recipient of the message obtained from the allow rule
-      if (requesterDid !== expectedRequesterDid) {
-        throw new Error(`unexpected inbound message author: ${requesterDid}, expected ${expectedRequesterDid}`);
-      }
-    } else {
-      throw new Error(`no matching allow requester condition`);
-    }
-  }
-
-  /**
-   * Verifies the actions specified in the given message matches the allowed actions in the rule set.
-   * @throws {Error} if action not allowed.
-   */
-  private static verifyAllowedActions(tenant: string, requesterDid: string, incomingMessage: Message, inboundMessageRuleSet: ProtocolRuleSet): void {
     const allowRule = inboundMessageRuleSet.allow;
     const incomingMessageMethod = incomingMessage.message.descriptor.method;
 
@@ -204,16 +181,40 @@ export class ProtocolAuthorization {
       }
     }
 
-    let allowedActions: string[] = [];
+    const allowedActions = new Set<string>();
     if (allowRule.anyone !== undefined) {
-      allowedActions = allowRule.anyone.to;
-    } else if (allowRule.recipient !== undefined) {
-      allowedActions = allowRule.recipient.to;
-    } // not possible to have `else` because of same check already done by verifyAllowedRequester()
+      allowRule.anyone.to.forEach(action => allowedActions.add(action));
+    }
+
+    if (allowRule.author !== undefined) {
+      const messageForAuthorCheck = ProtocolAuthorization.getMessage(
+        ancestorMessageChain,
+        allowRule.author.of,
+        recordSchemaToLabelMap
+      );
+      const expectedRequesterDid = Message.getAuthor(messageForAuthorCheck);
+
+      if (requesterDid === expectedRequesterDid) {
+        allowRule.author.to.forEach(action => allowedActions.add(action));
+      }
+    }
+
+    if (allowRule.recipient !== undefined) {
+      const messageForRecipientCheck = ProtocolAuthorization.getMessage(
+        ancestorMessageChain,
+        allowRule.recipient.of,
+        recordSchemaToLabelMap
+      );
+      const expectedRequesterDid = messageForRecipientCheck.descriptor.recipient;
+
+      if (requesterDid === expectedRequesterDid) {
+        allowRule.recipient.to.forEach(action => allowedActions.add(action));
+      }
+    }
 
     const inboundMessageAction = methodToAllowedActionMap[incomingMessageMethod];
-    if (!allowedActions.includes(inboundMessageAction)) {
-      throw new Error(`inbound message action '${inboundMessageAction}' not in list of allowed actions ${allowedActions}`);
+    if (!allowedActions.has(inboundMessageAction)) {
+      throw new Error(`inbound message action '${inboundMessageAction}' not in list of allowed actions (${new Array(...allowedActions).join(',')})`);
     }
   }
 
