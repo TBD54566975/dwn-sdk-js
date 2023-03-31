@@ -20,11 +20,10 @@ export class RecordsWriteHandler implements MethodHandler {
     message,
     dataStream
   }: { tenant: string, message: RecordsWriteMessage, dataStream: _Readable.Readable}): Promise<MessageReply> {
-    const incomingMessage = message;
 
     let recordsWrite: RecordsWrite;
     try {
-      recordsWrite = await RecordsWrite.parse(incomingMessage);
+      recordsWrite = await RecordsWrite.parse(message);
     } catch (e) {
       return MessageReply.fromError(e, 400);
     }
@@ -40,7 +39,7 @@ export class RecordsWriteHandler implements MethodHandler {
     // get existing messages matching the `recordId`
     const query = {
       interface : DwnInterfaceName.Records,
-      recordId  : incomingMessage.recordId
+      recordId  : message.recordId
     };
     const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
 
@@ -49,7 +48,7 @@ export class RecordsWriteHandler implements MethodHandler {
     if (!newMessageIsInitialWrite) {
       try {
         const initialWrite = await RecordsWrite.getInitialWrite(existingMessages);
-        RecordsWrite.verifyEqualityOfImmutableProperties(initialWrite, incomingMessage);
+        RecordsWrite.verifyEqualityOfImmutableProperties(initialWrite, message);
       } catch (e) {
         return MessageReply.fromError(e, 400);
       }
@@ -61,9 +60,9 @@ export class RecordsWriteHandler implements MethodHandler {
     let incomingMessageIsNewest = false;
     let newestMessage;
     // if incoming message is newest
-    if (newestExistingMessage === undefined || await RecordsWrite.isNewer(incomingMessage, newestExistingMessage)) {
+    if (newestExistingMessage === undefined || await RecordsWrite.isNewer(message, newestExistingMessage)) {
       incomingMessageIsNewest = true;
-      newestMessage = incomingMessage;
+      newestMessage = message;
     } else { // existing message is the same age or newer than the incoming message
       newestMessage = newestExistingMessage;
     }
@@ -75,7 +74,7 @@ export class RecordsWriteHandler implements MethodHandler {
       const indexes = await constructRecordsWriteIndexes(recordsWrite, isLatestBaseState);
 
       try {
-        await StorageController.put(this.messageStore, this.dataStore, tenant, incomingMessage, indexes, dataStream);
+        await StorageController.put(this.messageStore, this.dataStore, tenant, message, indexes, dataStream);
       } catch (error) {
         const e = error as any; // FIXME, support code filters in MessageReply.fromError?
         if (e.code === DwnErrorCode.MessageStoreDataCidMismatch ||

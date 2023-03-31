@@ -18,11 +18,10 @@ export class RecordsDeleteHandler implements MethodHandler {
     tenant,
     message
   }: { tenant: string, message: RecordsDeleteMessage}): Promise<MessageReply> {
-    const incomingMessage = message;
 
     let recordsDelete: RecordsDelete;
     try {
-      recordsDelete = await RecordsDelete.parse(incomingMessage);
+      recordsDelete = await RecordsDelete.parse(message);
     } catch (e) {
       return MessageReply.fromError(e, 400);
     }
@@ -38,7 +37,7 @@ export class RecordsDeleteHandler implements MethodHandler {
     // get existing records matching the `recordId`
     const query = {
       interface : DwnInterfaceName.Records,
-      recordId  : incomingMessage.descriptor.recordId
+      recordId  : message.descriptor.recordId
     };
     const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
 
@@ -47,9 +46,9 @@ export class RecordsDeleteHandler implements MethodHandler {
     let incomingMessageIsNewest = false;
     let newestMessage;
     // if incoming message is newest
-    if (newestExistingMessage === undefined || await RecordsWrite.isNewer(incomingMessage, newestExistingMessage)) {
+    if (newestExistingMessage === undefined || await RecordsWrite.isNewer(message, newestExistingMessage)) {
       incomingMessageIsNewest = true;
-      newestMessage = incomingMessage;
+      newestMessage = message;
     } else { // existing message is the same age or newer than the incoming message
       newestMessage = newestExistingMessage;
     }
@@ -59,7 +58,7 @@ export class RecordsDeleteHandler implements MethodHandler {
     if (incomingMessageIsNewest) {
       const indexes = await constructIndexes(tenant, recordsDelete);
 
-      await this.messageStore.put(tenant, incomingMessage, indexes);
+      await this.messageStore.put(tenant, message, indexes);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }

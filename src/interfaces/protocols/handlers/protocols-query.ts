@@ -18,11 +18,10 @@ export class ProtocolsQueryHandler implements MethodHandler {
     tenant,
     message
   }: { tenant: string, message: ProtocolsQueryMessage}): Promise<MessageReply> {
-    const incomingMessage = message;
 
     let protocolsQuery: ProtocolsQuery;
     try {
-      protocolsQuery = await ProtocolsQuery.parse(incomingMessage);
+      protocolsQuery = await ProtocolsQuery.parse(message);
     } catch (e) {
       return MessageReply.fromError(e, 400);
     }
@@ -36,7 +35,7 @@ export class ProtocolsQueryHandler implements MethodHandler {
     const query = {
       interface : DwnInterfaceName.Protocols,
       method    : DwnMethodName.Configure,
-      ...incomingMessage.descriptor.filter
+      ...message.descriptor.filter
     };
     removeUndefinedProperties(query);
 

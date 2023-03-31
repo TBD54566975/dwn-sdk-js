@@ -18,11 +18,10 @@ export class RecordsReadHandler implements MethodHandler {
     tenant,
     message
   }: { tenant: string, message: RecordsReadMessage}): Promise<MessageReply> {
-    const incomingMessage = message;
 
     let recordsRead: RecordsRead;
     try {
-      recordsRead = await RecordsRead.parse(incomingMessage);
+      recordsRead = await RecordsRead.parse(message);
     } catch (e) {
       return MessageReply.fromError(e, 400);
     }
@@ -39,7 +38,7 @@ export class RecordsReadHandler implements MethodHandler {
     // get existing messages matching `recordId` so we can perform authorization
     const query = {
       interface : DwnInterfaceName.Records,
-      recordId  : incomingMessage.descriptor.recordId
+      recordId  : message.descriptor.recordId
     };
     const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
 

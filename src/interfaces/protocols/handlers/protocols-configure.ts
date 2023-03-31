@@ -18,11 +18,10 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     message,
     dataStream
   }: {tenant: string, message: ProtocolsConfigureMessage, dataStream: _Readable.Readable}): Promise<MessageReply> {
-    const incomingMessage = message;
 
     let protocolsConfigure: ProtocolsConfigure;
     try {
-      protocolsConfigure = await ProtocolsConfigure.parse(incomingMessage);
+      protocolsConfigure = await ProtocolsConfigure.parse(message);
     } catch (e) {
       return MessageReply.fromError(e, 400);
     }
@@ -38,16 +37,16 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     const query = {
       interface : DwnInterfaceName.Protocols,
       method    : DwnMethodName.Configure,
-      protocol  : incomingMessage.descriptor.protocol
+      protocol  : message.descriptor.protocol
     };
     const existingMessages = await this.messageStore.query(tenant, query) as ProtocolsConfigureMessage[];
 
     // find lexicographically the largest message, and if the incoming message is the largest
     let newestMessage = await Message.getMessageWithLargestCid(existingMessages);
     let incomingMessageIsNewest = false;
-    if (newestMessage === undefined || await Message.isCidLarger(incomingMessage, newestMessage)) {
+    if (newestMessage === undefined || await Message.isCidLarger(message, newestMessage)) {
       incomingMessageIsNewest = true;
-      newestMessage = incomingMessage;
+      newestMessage = message;
     }
 
     // write the incoming message to DB if incoming message is newest
@@ -60,7 +59,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
       };
       // FIXME: indexes, Property 'dataSize' is incompatible with index signature.
       // Type 'number' is not assignable to type 'string'.
-      await StorageController.put(this.messageStore, this.dataStore, tenant, incomingMessage, indexes as any, dataStream);
+      await StorageController.put(this.messageStore, this.dataStore, tenant, message, indexes as any, dataStream);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }
