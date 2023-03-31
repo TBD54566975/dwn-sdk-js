@@ -27,6 +27,7 @@ export { Dwn } from './dwn.js';
 export { DwnConstant } from './core/dwn-constant.js';
 export { DwnInterfaceName, DwnMethodName } from './core/message.js';
 export { Encoder } from './utils/encoder.js';
+export { Encryption } from './utils/encryption.js';
 export { HooksWrite, HooksWriteOptions } from './interfaces/hooks/messages/hooks-write.js';
 export { Jws } from './utils/jws.js';
 export { KeyMaterial, PrivateJwk, PublicJwk } from './jose/types.js';
