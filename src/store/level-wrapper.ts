@@ -210,12 +210,10 @@ export class LevelWrapper<V> {
   }
 
   private async createLevelDatabase(): Promise<void> {
-    if (this.config.createLevelDatabase) {
-      this.db ??= await this.config.createLevelDatabase<V>(this.config.location, {
-        keyEncoding   : 'utf8',
-        valueEncoding : this.config.valueEncoding
-      });
-    }
+    this.db ??= await this.config.createLevelDatabase!<V>(this.config.location, {
+      keyEncoding   : 'utf8',
+      valueEncoding : this.config.valueEncoding
+    });
   }
 
   async dump(): Promise<void> {
