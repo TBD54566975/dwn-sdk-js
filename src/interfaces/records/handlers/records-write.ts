@@ -76,7 +76,7 @@ export class RecordsWriteHandler implements MethodHandler {
       try {
         await StorageController.put(this.messageStore, this.dataStore, tenant, message, indexes, dataStream);
       } catch (error) {
-        const e = error as any; // FIXME, support code filters in MessageReply.fromError?
+        const e = error as any;
         if (e.code === DwnErrorCode.MessageStoreDataCidMismatch ||
             e.code === DwnErrorCode.MessageStoreDataNotFound ||
             e.code === DwnErrorCode.MessageStoreDataSizeMismatch) {
