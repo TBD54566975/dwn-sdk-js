@@ -10,7 +10,7 @@ import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 export type RecordsReadOptions = {
   recordId: string;
   date?: string;
-  authorizationSignatureInput?: SignatureInput;
+  authorizationSignatureInput: SignatureInput;
 };
 
 export class RecordsRead {
@@ -55,8 +55,7 @@ export class RecordsRead {
       date      : options.date ?? currentTime
     };
 
-    // FIXME: what if authorizationSignatureInput is undefined?
-    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput!);
+    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
     const message: RecordsReadMessage = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
