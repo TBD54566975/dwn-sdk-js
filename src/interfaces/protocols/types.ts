@@ -23,6 +23,10 @@ export type ProtocolRuleSet = {
     anyone?: {
       to: string[];
     };
+    author?: {
+      of: string,
+      to: string[],
+    };
     recipient?: {
       of: string,
       to: string[];
