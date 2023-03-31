@@ -572,25 +572,29 @@ describe('RecordsWriteHandler.handle()', () => {
           .to.equal(base64url.baseEncode(encodedCredentialResponse));
       });
 
-      it('should allow write with author rule', async () => {
-        // scenario: alice posts an image on the social mebia protocol, then she adds a caption
+      it('should allow author to write with author rule and block non-authors', async () => {
+        // scenario: Alice posts an image on the social mebia protocol to Bob's, then she adds a caption
+        //           AliceImposter attempts to post add a caption to Alice's image, but is blocked
         const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-mebia';
         const protocolDefinition: ProtocolDefinition = socialMebiaProtocolDefinition;
 
         const alice = await TestDataGenerator.generatePersona();
+        const aliceImposter = await TestDataGenerator.generatePersona();
+        const bob = await TestDataGenerator.generatePersona();
 
+        // setting up a stub DID resolver
+        TestStubGenerator.stubDidResolver(didResolver, [alice, aliceImposter, bob]);
+
+        // Install social-mebia protocol
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-          requester: alice,
+          requester: bob,
           protocol,
           protocolDefinition
         });
-
-        // setting up a stub DID resolver
-        TestStubGenerator.stubDidResolver(didResolver, [alice]);
-
-        const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolWriteReply = await dwn.processMessage(bob.did, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolWriteReply.status.code).to.equal(202);
 
+        // Alice writes image to bob's DWN
         const encodedImage = new TextEncoder().encode('cafe-aesthetic.jpg');
         const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester : alice,
@@ -598,11 +602,27 @@ describe('RecordsWriteHandler.handle()', () => {
           schema    : socialMebiaProtocolDefinition.labels.image.schema,
           data      : encodedImage
         });
-        const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
+        const imageReply = await dwn.processMessage(bob.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
         expect(imageReply.status.code).to.equal(202);
 
-        const encodedCaption = new TextEncoder().encode('coffee and work vibes!');
         const imageContextId = await imageRecordsWrite.recordsWrite.getEntryId();
+
+        // AliceImposter attempts and fails to caption Alice's image
+        const encodedCaptionImposter = new TextEncoder().encode('bad vibes! >:(');
+        const captionImposter = await TestDataGenerator.generateRecordsWrite({
+          requester : aliceImposter,
+          protocol,
+          schema    : socialMebiaProtocolDefinition.labels.caption.schema,
+          contextId : imageContextId,
+          parentId  : imageContextId,
+          data      : encodedCaptionImposter
+        });
+        const captionReply = await dwn.processMessage(bob.did, captionImposter.message, captionImposter.dataStream);
+        expect(captionReply.status.code).to.equal(401);
+        expect(captionReply.status.detail).to.contain('inbound message action \'write\' not in list of allowed actions ');
+
+        // Alice is able to add a caption to her image
+        const encodedCaption = new TextEncoder().encode('coffee and work vibes!');
         const captionRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester : alice,
           protocol,
@@ -611,15 +631,15 @@ describe('RecordsWriteHandler.handle()', () => {
           parentId  : imageContextId,
           data      : encodedCaption
         });
-        const captionResponse = await dwn.processMessage(alice.did, captionRecordsWrite.message, captionRecordsWrite.dataStream);
+        const captionResponse = await dwn.processMessage(bob.did, captionRecordsWrite.message, captionRecordsWrite.dataStream);
         expect(captionResponse.status.code).to.equal(202);
 
-        // verify alice's caption got written to the DB
+        // Verify Alice's caption got written to the DB
         const messageDataForQueryingCaptionResponse = await TestDataGenerator.generateRecordsQuery({
           requester : alice,
           filter    : { recordId: captionRecordsWrite.message.recordId }
         });
-        const applicationResponseQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingCaptionResponse.message);
+        const applicationResponseQueryReply = await dwn.processMessage(bob.did, messageDataForQueryingCaptionResponse.message);
         expect(applicationResponseQueryReply.status.code).to.equal(200);
         expect(applicationResponseQueryReply.entries?.length).to.equal(1);
         expect(applicationResponseQueryReply.entries![0].encodedData)
@@ -867,53 +887,6 @@ describe('RecordsWriteHandler.handle()', () => {
         const newWriteReply = await dwn.processMessage(alice.did, newNotesFromBob.message, newNotesFromBob.dataStream);
         expect(newWriteReply.status.code).to.equal(400);
         expect(newWriteReply.status.detail).to.contain('recipient is an immutable property');
-      });
-
-      it('should block unauthorized write with author rule', async () => {
-        // scenario: aliceImposter attempts write into Alice's DWN a caption
-        // upon learning the ID of Alice's image
-        // scenario: alice posts an image on the social mebia protocol, then she adds a caption
-        const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-mebia';
-        const protocolDefinition: ProtocolDefinition = socialMebiaProtocolDefinition;
-
-        const alice = await TestDataGenerator.generatePersona();
-        const aliceImposter = await TestDataGenerator.generatePersona();
-
-        const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-          requester: alice,
-          protocol,
-          protocolDefinition
-        });
-
-        // setting up a stub DID resolver
-        TestStubGenerator.stubDidResolver(didResolver, [alice, aliceImposter]);
-
-        const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
-        expect(protocolWriteReply.status.code).to.equal(202);
-
-        const encodedImage = new TextEncoder().encode('cafe-aesthetic.jpg');
-        const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-          requester : alice,
-          protocol,
-          schema    : socialMebiaProtocolDefinition.labels.image.schema,
-          data      : encodedImage
-        });
-        const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
-        expect(imageReply.status.code).to.equal(202);
-
-        const encodedCaption = new TextEncoder().encode('bad vibes! >:(');
-        const imageContextId = await imageRecordsWrite.recordsWrite.getEntryId();
-        const captionRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-          requester : aliceImposter,
-          protocol,
-          schema    : socialMebiaProtocolDefinition.labels.caption.schema,
-          contextId : imageContextId,
-          parentId  : imageContextId,
-          data      : encodedCaption
-        });
-        const captionReply = await dwn.processMessage(alice.did, captionRecordsWrite.message, captionRecordsWrite.dataStream);
-        expect(captionReply.status.code).to.equal(401);
-        expect(captionReply.status.detail).to.contain('inbound message action \'write\' not in list of allowed actions ');
       });
 
       it('should block unauthorized write with recipient rule', async () => {
