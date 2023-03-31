@@ -29,7 +29,7 @@ describe('EventLogLevel Tests', () => {
 
       const watermark = await eventLog.append(requester.did, messageCid.toString());
 
-      for await (const [key, value] of eventLog.level.iterator({})) {
+      for await (const [key, value] of eventLog.level.iterator()) {
         expect(key).to.include(watermark);
         expect(value).to.equal(messageCid.toString());
       }
@@ -47,7 +47,7 @@ describe('EventLogLevel Tests', () => {
       await eventLog.append(requester.did, messageCid2.toString());
 
       const storedValues = [];
-      for await (const [_, cid] of eventLog.level.iterator({})) {
+      for await (const [_, cid] of eventLog.level.iterator()) {
         storedValues.push(cid);
       }
 
