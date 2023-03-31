@@ -573,7 +573,7 @@ describe('RecordsWriteHandler.handle()', () => {
       });
 
       it('should allow author to write with author rule and block non-authors', async () => {
-        // scenario: Alice posts an image on the social mebia protocol to Bob's, then she adds a caption
+        // scenario: Alice posts an image on the social media protocol to Bob's, then she adds a caption
         //           AliceImposter attempts to post add a caption to Alice's image, but is blocked
         const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-media';
         const protocolDefinition: ProtocolDefinition = socialMediaProtocolDefinition;
