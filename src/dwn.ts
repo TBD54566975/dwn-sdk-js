@@ -1,5 +1,6 @@
 import type { BaseMessage } from './core/types.js';
 import type { DataStore } from './store/data-store.js';
+import type { EventLog } from './event-log/event-log.js';
 import type { MessageStore } from './store/message-store.js';
 import type { MethodHandler } from './interfaces/types.js';
 import type { Readable } from 'readable-stream';
@@ -8,6 +9,7 @@ import type { TenantGate } from './core/tenant-gate.js';
 import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DataStoreLevel } from './store/data-store-level.js';
 import { DidResolver } from './did/did-resolver.js';
+import { EventLogLevel } from './event-log/event-log-level.js';
 import { MessageReply } from './core/message-reply.js';
 import { MessageStoreLevel } from './store/message-store-level.js';
 import { PermissionsRequestHandler } from './interfaces/permissions/handlers/permissions-request.js';
@@ -24,22 +26,26 @@ export class Dwn {
   private didResolver: DidResolver;
   private messageStore: MessageStore;
   private dataStore: DataStore;
+  private eventLog: EventLog;
   private tenantGate: TenantGate;
 
   private constructor(config: DwnConfig) {
     this.didResolver = config.didResolver;
     this.messageStore = config.messageStore;
     this.dataStore = config.dataStore;
+    this.eventLog = config.eventLog;
     this.tenantGate = config.tenantGate;
 
     this.methodHandlers = {
       [DwnInterfaceName.Permissions + DwnMethodName.Request] : new PermissionsRequestHandler(this.didResolver, this.messageStore, this.dataStore),
-      [DwnInterfaceName.Protocols + DwnMethodName.Configure] : new ProtocolsConfigureHandler(this.didResolver, this.messageStore, this.dataStore),
-      [DwnInterfaceName.Protocols + DwnMethodName.Query]     : new ProtocolsQueryHandler(this.didResolver, this.messageStore, this.dataStore),
-      [DwnInterfaceName.Records + DwnMethodName.Delete]      : new RecordsDeleteHandler(this.didResolver, this.messageStore, this.dataStore),
-      [DwnInterfaceName.Records + DwnMethodName.Query]       : new RecordsQueryHandler(this.didResolver, this.messageStore, this.dataStore),
-      [DwnInterfaceName.Records + DwnMethodName.Read]        : new RecordsReadHandler(this.didResolver, this.messageStore, this.dataStore),
-      [DwnInterfaceName.Records + DwnMethodName.Write]       : new RecordsWriteHandler(this.didResolver, this.messageStore, this.dataStore),
+      [DwnInterfaceName.Protocols + DwnMethodName.Configure] : new ProtocolsConfigureHandler(
+        this.didResolver, this.messageStore, this.dataStore, this.eventLog),
+      [DwnInterfaceName.Protocols + DwnMethodName.Query] : new ProtocolsQueryHandler(this.didResolver, this.messageStore, this.dataStore),
+      [DwnInterfaceName.Records + DwnMethodName.Delete]  : new RecordsDeleteHandler(
+        this.didResolver, this.messageStore, this.dataStore, this.eventLog),
+      [DwnInterfaceName.Records + DwnMethodName.Query] : new RecordsQueryHandler(this.didResolver, this.messageStore, this.dataStore),
+      [DwnInterfaceName.Records + DwnMethodName.Read]  : new RecordsReadHandler(this.didResolver, this.messageStore, this.dataStore),
+      [DwnInterfaceName.Records + DwnMethodName.Write] : new RecordsWriteHandler(this.didResolver, this.messageStore, this.dataStore, this.eventLog),
     };
   }
 
@@ -52,6 +58,7 @@ export class Dwn {
     config.tenantGate ??= new AllowAllTenantGate();
     config.messageStore ??= new MessageStoreLevel();
     config.dataStore ??= new DataStoreLevel();
+    config.eventLog ??= new EventLogLevel();
 
     const dwn = new Dwn(config);
     await dwn.open();
@@ -62,11 +69,13 @@ export class Dwn {
   private async open(): Promise<void> {
     await this.messageStore.open();
     await this.dataStore.open();
+    await this.eventLog.open();
   }
 
   public async close(): Promise<void> {
     this.messageStore.close();
     this.dataStore.close();
+    this.eventLog.close();
   }
 
   /**
@@ -127,4 +136,5 @@ export type DwnConfig = {
   messageStore?: MessageStore;
   dataStore?: DataStore;
   tenantGate?: TenantGate;
+  eventLog?: EventLog
 };

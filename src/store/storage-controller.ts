@@ -1,4 +1,5 @@
 import type { DataStore } from './data-store.js';
+import type { EventLog } from '../event-log/event-log.js';
 import type { MessageStore } from './message-store.js';
 import type { Readable } from 'readable-stream';
 import type { BaseMessage, Filter } from '../core/types.js';
@@ -24,6 +25,7 @@ export class StorageController {
   public static async put(
     messageStore: MessageStore,
     dataStore: DataStore,
+    eventLog: EventLog,
     tenant: string,
     message: BaseMessage,
     indexes: { [key: string]: string },
@@ -78,6 +80,9 @@ export class StorageController {
     }
 
     await messageStore.put(tenant, message, indexes);
+
+    const messageCid = await Message.getCid(message);
+    await eventLog.append(tenant, messageCid.toString());
   }
 
   public static async query(

@@ -1,3 +1,4 @@
+import type { EventLog } from '../../../event-log/event-log.js';
 import type { MethodHandler } from '../../types.js';
 import type { RecordsWriteMessage } from '../types.js';
 import type { TimestampedMessage } from '../../../core/types.js';
@@ -13,7 +14,7 @@ import { StorageController } from '../../../store/storage-controller.js';
 
 export class RecordsWriteHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore) { }
+  constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore, private eventLog: EventLog) { }
 
   public async handle({
     tenant,
@@ -81,7 +82,7 @@ export class RecordsWriteHandler implements MethodHandler {
       const indexes = await constructRecordsWriteIndexes(recordsWrite, isLatestBaseState);
 
       try {
-        await StorageController.put(this.messageStore, this.dataStore, tenant, incomingMessage, indexes, dataStream);
+        await StorageController.put(this.messageStore, this.dataStore, this.eventLog, tenant, incomingMessage, indexes, dataStream);
       } catch (error) {
         if (error.code === DwnErrorCode.MessageStoreDataCidMismatch ||
             error.code === DwnErrorCode.MessageStoreDataNotFound ||

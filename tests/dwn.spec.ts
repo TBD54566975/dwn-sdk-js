@@ -7,6 +7,7 @@ import chai, { expect } from 'chai';
 import { DataStoreLevel } from '../src/store/data-store-level.js';
 import { DidKeyResolver } from '../src/did/did-key-resolver.js';
 import { Dwn } from '../src/dwn.js';
+import { EventLogLevel } from '../src/event-log/event-log-level.js';
 import { Message } from '../src/core/message.js';
 import { MessageStoreLevel } from '../src/store/message-store-level.js';
 import { TestDataGenerator } from './utils/test-data-generator.js';
@@ -16,6 +17,7 @@ chai.use(chaiAsPromised);
 describe('DWN', () => {
   let messageStore: MessageStoreLevel;
   let dataStore: DataStoreLevel;
+  let eventLog: EventLogLevel;
   let dwn: Dwn;
 
   before(async () => {
@@ -30,7 +32,11 @@ describe('DWN', () => {
       blockstoreLocation: 'TEST-DATASTORE'
     });
 
-    dwn = await Dwn.create({ messageStore, dataStore });
+    eventLog = new EventLogLevel({
+      location: 'TEST-EVENTLOG'
+    });
+
+    dwn = await Dwn.create({ messageStore, dataStore, eventLog });
   });
 
   beforeEach(async () => {
@@ -125,8 +131,15 @@ describe('DWN', () => {
 
       const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
       const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
+      const eventLogStub = sinon.createStubInstance(EventLogLevel);
 
-      const dwnWithConfig = await Dwn.create({ tenantGate: blockAllTenantGate, messageStore: messageStoreStub, dataStore: dataStoreStub });
+      const dwnWithConfig = await Dwn.create({
+        tenantGate   : blockAllTenantGate,
+        messageStore : messageStoreStub,
+        dataStore    : dataStoreStub,
+        eventLog     : eventLogStub
+      });
+
       const alice = await DidKeyResolver.generate();
       const { requester, message } = await TestDataGenerator.generateRecordsQuery({ requester: alice });
 

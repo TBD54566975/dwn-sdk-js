@@ -7,6 +7,7 @@ import { Cid } from '../../../../src/utils/cid.js';
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DwnErrorCode } from '../../../../src/core/dwn-error.js';
+import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsDeleteHandler } from '../../../../src/interfaces/records/handlers/records-delete.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
@@ -19,6 +20,7 @@ describe('RecordsDeleteHandler.handle()', () => {
   let didResolver: DidResolver;
   let messageStore: MessageStoreLevel;
   let dataStore: DataStoreLevel;
+  let eventLog: EventLogLevel;
   let dwn: Dwn;
 
   describe('functional tests', () => {
@@ -36,7 +38,11 @@ describe('RecordsDeleteHandler.handle()', () => {
         blockstoreLocation: 'TEST-DATASTORE'
       });
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore });
+      eventLog = new EventLogLevel({
+        location: 'TEST-EVENTLOG'
+      });
+
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
     });
 
     beforeEach(async () => {
@@ -45,6 +51,7 @@ describe('RecordsDeleteHandler.handle()', () => {
       // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
       await messageStore.clear();
       await dataStore.clear();
+      await eventLog.clear();
     });
 
     after(async () => {
@@ -512,7 +519,7 @@ describe('RecordsDeleteHandler.handle()', () => {
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
 
-    const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore);
+    const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore, eventLog);
     const reply = await recordsDeleteHandler.handle({ tenant, message });
     expect(reply.status.code).to.equal(401);
   });
@@ -525,7 +532,7 @@ describe('RecordsDeleteHandler.handle()', () => {
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
 
-    const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore);
+    const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore, eventLog);
 
     // stub the `parse()` function to throw an error
     sinon.stub(RecordsDelete, 'parse').throws('anyError');

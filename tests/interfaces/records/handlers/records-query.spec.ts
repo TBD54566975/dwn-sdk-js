@@ -8,6 +8,7 @@ import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DwnConstant } from '../../../../src/core/dwn-constant.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
+import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { Jws } from '../../../../src/utils/jws.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsQueryHandler } from '../../../../src/interfaces/records/handlers/records-query.js';
@@ -27,6 +28,7 @@ describe('RecordsQueryHandler.handle()', () => {
     let didResolver: DidResolver;
     let messageStore: MessageStoreLevel;
     let dataStore: DataStoreLevel;
+    let eventLog: EventLogLevel;
     let dwn: Dwn;
 
     before(async () => {
@@ -43,7 +45,11 @@ describe('RecordsQueryHandler.handle()', () => {
         blockstoreLocation: 'TEST-DATASTORE'
       });
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore });
+      eventLog = new EventLogLevel({
+        location: 'TEST-EVENTLOG'
+      });
+
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
     });
 
     beforeEach(async () => {
@@ -52,6 +58,7 @@ describe('RecordsQueryHandler.handle()', () => {
       // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
       await messageStore.clear();
       await dataStore.clear();
+      await eventLog.clear();
     });
 
     after(async () => {
@@ -460,10 +467,10 @@ describe('RecordsQueryHandler.handle()', () => {
       const additionalIndexes2 = await constructRecordsWriteIndexes(record2Data.recordsWrite, true);
       const additionalIndexes3 = await constructRecordsWriteIndexes(record3Data.recordsWrite, true);
       const additionalIndexes4 = await constructRecordsWriteIndexes(record4Data.recordsWrite, true);
-      await StorageController.put(messageStore, dataStore, alice.did, record1Data.message, additionalIndexes1, record1Data.dataStream);
-      await StorageController.put(messageStore, dataStore, alice.did, record2Data.message, additionalIndexes2, record2Data.dataStream);
-      await StorageController.put(messageStore, dataStore, alice.did, record3Data.message, additionalIndexes3, record3Data.dataStream);
-      await StorageController.put(messageStore, dataStore, alice.did, record4Data.message, additionalIndexes4, record4Data.dataStream);
+      await StorageController.put(messageStore, dataStore, eventLog, alice.did, record1Data.message, additionalIndexes1, record1Data.dataStream);
+      await StorageController.put(messageStore, dataStore, eventLog, alice.did, record2Data.message, additionalIndexes2, record2Data.dataStream);
+      await StorageController.put(messageStore, dataStore, eventLog, alice.did, record3Data.message, additionalIndexes3, record3Data.dataStream);
+      await StorageController.put(messageStore, dataStore, eventLog, alice.did, record4Data.message, additionalIndexes4, record4Data.dataStream);
 
       // test correctness for Bob's query
       const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({

@@ -1,3 +1,4 @@
+import type { EventLog } from '../../../event-log/event-log.js';
 import type { MethodHandler } from '../../types.js';
 import type { ProtocolsConfigureMessage } from '../types.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
@@ -11,7 +12,7 @@ import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.
 
 export class ProtocolsConfigureHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore) { }
+  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore, private eventLog: EventLog) { }
 
   public async handle({
     tenant,
@@ -62,7 +63,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
         author,
         ... message.descriptor
       };
-      await StorageController.put(this.messageStore, this.dataStore, tenant, incomingMessage, indexes, dataStream);
+      await StorageController.put(this.messageStore, this.dataStore, this.eventLog, tenant, incomingMessage, indexes, dataStream);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }

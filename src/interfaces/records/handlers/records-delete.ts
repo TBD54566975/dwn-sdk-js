@@ -1,3 +1,4 @@
+import type { EventLog } from '../../../event-log/event-log.js';
 import type { MethodHandler } from '../../types.js';
 import type { RecordsDeleteMessage } from '../types.js';
 import type { TimestampedMessage } from '../../../core/types.js';
@@ -12,7 +13,7 @@ import { RecordsWrite } from '../messages/records-write.js';
 
 export class RecordsDeleteHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore) { }
+  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore, private eventLog: EventLog) { }
 
   public async handle({
     tenant,

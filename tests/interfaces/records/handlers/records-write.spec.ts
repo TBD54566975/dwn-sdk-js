@@ -17,6 +17,7 @@ import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DidResolver } from '../../../../src/did/did-resolver.js';
 import { DwnErrorCode } from '../../../../src/core/dwn-error.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
+import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
 import { Message } from '../../../../src/core/message.js';
@@ -35,6 +36,7 @@ describe('RecordsWriteHandler.handle()', () => {
   let didResolver: DidResolver;
   let messageStore: MessageStoreLevel;
   let dataStore: DataStoreLevel;
+  let eventLog: EventLogLevel;
   let dwn: Dwn;
 
   describe('functional tests', () => {
@@ -52,7 +54,11 @@ describe('RecordsWriteHandler.handle()', () => {
         blockstoreLocation: 'TEST-DATASTORE'
       });
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore });
+      eventLog = new EventLogLevel({
+        location: 'TEST-EVENTLOG'
+      });
+
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
     });
 
     beforeEach(async () => {
@@ -61,6 +67,7 @@ describe('RecordsWriteHandler.handle()', () => {
       // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
       await messageStore.clear();
       await dataStore.clear();
+      await eventLog.clear();
     });
 
     after(async () => {
@@ -1293,7 +1300,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const messageStore = sinon.createStubInstance(MessageStoreLevel);
       const dataStore = sinon.createStubInstance(DataStoreLevel);
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
       const reply = await recordsWriteHandler.handle({ tenant, message, dataStream });
 
       expect(reply.status.code).to.equal(400);
@@ -1317,7 +1324,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const messageStore = sinon.createStubInstance(MessageStoreLevel);
       const dataStore = sinon.createStubInstance(DataStoreLevel);
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
       const reply = await recordsWriteHandler.handle({ tenant, message, dataStream });
 
       expect(reply.status.code).to.equal(400);
@@ -1335,7 +1342,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const messageStore = sinon.createStubInstance(MessageStoreLevel);
       const dataStore = sinon.createStubInstance(DataStoreLevel);
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
       const reply = await recordsWriteHandler.handle({ tenant, message, dataStream });
 
       expect(reply.status.code).to.equal(401);
@@ -1350,7 +1357,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const messageStore = sinon.createStubInstance(MessageStoreLevel);
       const dataStore = sinon.createStubInstance(DataStoreLevel);
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
 
       const tenant = await (await TestDataGenerator.generatePersona()).did; // unauthorized tenant
       const reply = await recordsWriteHandler.handle({ tenant, message, dataStream });
@@ -1384,7 +1391,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const messageStore = sinon.createStubInstance(MessageStoreLevel);
       const dataStore = sinon.createStubInstance(DataStoreLevel);
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
       const reply = await recordsWriteHandler.handle({ tenant, message, dataStream });
 
       expect(reply.status.code).to.equal(400);
@@ -1396,7 +1403,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const bob = await DidKeyResolver.generate();
       const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [alice, bob] });
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
       const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream });
 
       expect(writeReply.status.code).to.equal(400);
@@ -1411,7 +1418,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const anotherWrite = await TestDataGenerator.generateRecordsWrite({ attesters: [alice] });
       message.attestation = anotherWrite.message.attestation;
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
       const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream });
 
       expect(writeReply.status.code).to.equal(400);
@@ -1428,7 +1435,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const attestationNotReferencedByAuthorization = await RecordsWrite['createAttestation'](descriptorCid, Jws.createSignatureInputs([bob]));
       message.attestation = attestationNotReferencedByAuthorization;
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
       const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream });
 
       expect(writeReply.status.code).to.equal(400);
@@ -1450,7 +1457,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
     const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
 
-    const recordsWriteHandler = new RecordsWriteHandler(didResolverStub, messageStoreStub, dataStoreStub);
+    const recordsWriteHandler = new RecordsWriteHandler(didResolverStub, messageStoreStub, dataStoreStub, eventLog);
 
     const handlerPromise = recordsWriteHandler.handle({ tenant, message, dataStream });
     await expect(handlerPromise).to.be.rejectedWith('an unknown error in messageStore.put()');
