@@ -1,7 +1,7 @@
 import chaiAsPromised from 'chai-as-promised';
 import credentialIssuanceProtocolDefinition from '../../../vectors/protocol-definitions/credential-issuance.json' assert { type: 'json' };
 import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
-import socialMebiaProtocolDefinition from '../../../vectors/protocol-definitions/social-mebia.json' assert { type: 'json' };
+import socialMediaProtocolDefinition from '../../../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
 
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
@@ -575,8 +575,8 @@ describe('RecordsWriteHandler.handle()', () => {
       it('should allow author to write with author rule and block non-authors', async () => {
         // scenario: Alice posts an image on the social mebia protocol to Bob's, then she adds a caption
         //           AliceImposter attempts to post add a caption to Alice's image, but is blocked
-        const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-mebia';
-        const protocolDefinition: ProtocolDefinition = socialMebiaProtocolDefinition;
+        const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-media';
+        const protocolDefinition: ProtocolDefinition = socialMediaProtocolDefinition;
 
         const alice = await TestDataGenerator.generatePersona();
         const aliceImposter = await TestDataGenerator.generatePersona();
@@ -585,7 +585,7 @@ describe('RecordsWriteHandler.handle()', () => {
         // setting up a stub DID resolver
         TestStubGenerator.stubDidResolver(didResolver, [alice, aliceImposter, bob]);
 
-        // Install social-mebia protocol
+        // Install social-media protocol
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
           requester: bob,
           protocol,
@@ -599,7 +599,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester : alice,
           protocol,
-          schema    : socialMebiaProtocolDefinition.labels.image.schema,
+          schema    : socialMediaProtocolDefinition.labels.image.schema,
           data      : encodedImage
         });
         const imageReply = await dwn.processMessage(bob.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
@@ -612,7 +612,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const captionImposter = await TestDataGenerator.generateRecordsWrite({
           requester : aliceImposter,
           protocol,
-          schema    : socialMebiaProtocolDefinition.labels.caption.schema,
+          schema    : socialMediaProtocolDefinition.labels.caption.schema,
           contextId : imageContextId,
           parentId  : imageContextId,
           data      : encodedCaptionImposter
@@ -626,7 +626,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const captionRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester : alice,
           protocol,
-          schema    : socialMebiaProtocolDefinition.labels.caption.schema,
+          schema    : socialMediaProtocolDefinition.labels.caption.schema,
           contextId : imageContextId,
           parentId  : imageContextId,
           data      : encodedCaption
