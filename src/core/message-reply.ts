@@ -38,10 +38,7 @@ export class MessageReply {
 
   static fromError(e: unknown, code: number): MessageReply {
 
-    const isError = (e: unknown): e is { message: string } =>
-      typeof e === 'object' && e !== null && 'message' in e;
-
-    const detail = isError(e) ? e.message : 'Error';
+    const detail = e instanceof Error ? e.message : 'Error';
 
     return new MessageReply({ status: { code, detail } });
   }
