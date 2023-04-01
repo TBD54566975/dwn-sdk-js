@@ -1,6 +1,7 @@
 import type { BaseMessage } from '../../core/types.js';
 import type { DateSort } from './messages/records-query.js';
 import type { GeneralJws } from '../../jose/jws/general/types.js';
+import type { PublicJwk } from '../../jose/types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../../core/message.js';
 
 export type RecordsWriteDescriptor = {
@@ -24,6 +25,22 @@ export type RecordsWriteMessage = BaseMessage & {
   contextId?: string;
   descriptor: RecordsWriteDescriptor;
   attestation?: GeneralJws;
+  encryption?: EncryptionMetadata;
+};
+
+export type EncryptionMetadata = {
+  algorithm: 'A256CTR';
+  initializationVector: string;
+  keyEncryption: EncryptedKey[]
+};
+
+export type EncryptedKey = {
+  derivationScheme: 'protocol';
+  algorithm: 'ECIES-ES256K';
+  encryptedKey: string;
+  initializationVector: string;
+  ephemeralPublicKey: PublicJwk;
+  messageAuthenticationCode: string;
 };
 
 /**
