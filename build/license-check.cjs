@@ -1,7 +1,7 @@
 /*
  * use an allowlist
  */
-allowedLicences = ['ISC','MIT', 'BSD', 'Apache-2.0'];
+allowedLicences = ['ISC','MIT', 'BSD', 'Apache-2.0', 'CC0-1.0'];
 
 
 function main() {
