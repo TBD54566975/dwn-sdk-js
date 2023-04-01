@@ -1,10 +1,10 @@
 import * as secp256k1 from '@noble/secp256k1';
 import { Comparer } from '../utils/comparer.js';
+import { DataStream } from '../../src/index.js';
 import { Encryption } from '../../src/utils/encryption.js';
 import { expect } from 'chai';
 import { Readable } from 'readable-stream';
 import { TestDataGenerator } from './test-data-generator.js';
-import { DataStream, Encoder } from '../../src/index.js';
 
 describe('Encryption', () => {
   describe('AES-256-CTR', () => {
