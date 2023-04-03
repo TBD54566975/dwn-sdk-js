@@ -1,8 +1,6 @@
 import type { ULID } from 'ulid';
 import type { Event, EventLog } from './event-log.js';
 
-import { base32crockford } from '@scure/base';
-import { Encoder } from '../utils/encoder.js';
 import { monotonicFactory } from 'ulid';
 import { createLevelDatabase, LevelWrapper } from '../store/level-wrapper.js';
 
@@ -46,8 +44,7 @@ export class EventLogLevel implements EventLog {
   }
 
   async append(tenant: string, messageCid: string): Promise<string> {
-    const hashedTenant = this.hashTenant(tenant);
-    const tenantEventLog = await this.db.partition(hashedTenant);
+    const tenantEventLog = await this.db.partition(tenant);
 
     const watermark = this.ulid();
     await tenantEventLog.put(watermark, messageCid);
@@ -55,8 +52,7 @@ export class EventLogLevel implements EventLog {
     return watermark;
   }
   async getEventsAfter(tenant: string, watermark?: string): Promise<Event[]> {
-    const hashedTenant = this.hashTenant(tenant);
-    const tenantEventLog = await this.db.partition(hashedTenant);
+    const tenantEventLog = await this.db.partition(tenant);
 
     const opts = watermark ? { gt: watermark } : {};
     const events: Array<Event> = [];
@@ -67,11 +63,5 @@ export class EventLogLevel implements EventLog {
     }
 
     return events;
-  }
-
-  hashTenant(tenant: string): string {
-    const tenantBytes = Encoder.stringToBytes(tenant);
-
-    return base32crockford.encode(tenantBytes);
   }
 }
