@@ -1,7 +1,7 @@
 import chaiAsPromised from 'chai-as-promised';
 import { computeCid } from '../../src/utils/cid.js';
 import { EventLogLevel } from '../../src/event-log/event-log-level.js';
-import { TestDataGenerator as TDG } from '../utils/test-data-generator.js';
+import { TestDataGenerator } from '../utils/test-data-generator.js';
 import chai, { expect } from 'chai';
 
 chai.use(chaiAsPromised);
@@ -24,30 +24,30 @@ describe('EventLogLevel Tests', () => {
     });
 
     it('appends a tenant namespaced entry into leveldb', async () => {
-      const { requester, message } = await TDG.generateRecordsWrite();
+      const { requester, message } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await computeCid(message);
 
       const watermark = await eventLog.append(requester.did, messageCid.toString());
 
-      for await (const [key, value] of eventLog.level.iterator()) {
+      for await (const [key, value] of eventLog.db.iterator()) {
         expect(key).to.include(watermark);
         expect(value).to.equal(messageCid.toString());
       }
     });
 
     it('maintains order in which events were appended', async () => {
-      const { requester, message } = await TDG.generateRecordsWrite();
+      const { requester, message } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await computeCid(message);
 
       await eventLog.append(requester.did, messageCid.toString());
 
-      const { message: message2 } = await TDG.generateRecordsWrite({ requester });
+      const { message: message2 } = await TestDataGenerator.generateRecordsWrite({ requester });
       const messageCid2 = await computeCid(message2);
 
       await eventLog.append(requester.did, messageCid2.toString());
 
       const storedValues = [];
-      for await (const [_, cid] of eventLog.level.iterator()) {
+      for await (const [_, cid] of eventLog.db.iterator()) {
         storedValues.push(cid);
       }
 
@@ -73,14 +73,14 @@ describe('EventLogLevel Tests', () => {
     it('gets all events for a tenant if watermark is not provided', async () => {
       const messageCids = [];
 
-      const { requester, message } = await TDG.generateRecordsWrite();
+      const { requester, message } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await computeCid(message);
       messageCids.push(messageCid);
 
       await eventLog.append(requester.did, messageCid.toString());
 
       for (let i = 0; i < 9; i += 1) {
-        const { message } = await TDG.generateRecordsWrite({ requester });
+        const { message } = await TestDataGenerator.generateRecordsWrite({ requester });
         const messageCid = await computeCid(message);
         messageCids.push(messageCid);
 
@@ -96,7 +96,7 @@ describe('EventLogLevel Tests', () => {
     });
 
     it('gets all events that occured after the watermark provided', async () => {
-      const { requester, message } = await TDG.generateRecordsWrite();
+      const { requester, message } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await computeCid(message);
 
       await eventLog.append(requester.did, messageCid.toString());
@@ -105,7 +105,7 @@ describe('EventLogLevel Tests', () => {
       let testWatermark;
 
       for (let i = 0; i < 9; i += 1) {
-        const { message } = await TDG.generateRecordsWrite({ requester });
+        const { message } = await TestDataGenerator.generateRecordsWrite({ requester });
         const messageCid = await computeCid(message);
 
         const watermark = await eventLog.append(requester.did, messageCid.toString());

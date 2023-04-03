@@ -19,47 +19,44 @@ type EventLogLevelConfig = {
 
 export class EventLogLevel implements EventLog {
   config: EventLogLevelConfig;
-  level: LevelWrapper<string>;
+  db: LevelWrapper<string>;
   ulid: ULID;
 
-  constructor(config: EventLogLevelConfig = { location: 'EVENTLOG' }) {
+  constructor(config?: EventLogLevelConfig) {
     this.config = {
+      location: 'EVENTLOG',
       createLevelDatabase,
       ...config,
     };
 
-    this.level = new LevelWrapper<string>({ ...this.config, valueEncoding: 'utf8' });
+    this.db = new LevelWrapper<string>({ ...this.config, valueEncoding: 'utf8' });
     this.ulid = monotonicFactory();
   }
 
   async open(): Promise<void> {
-    // `db.open()` is automatically called by the database constructor.  We're calling it explicitly
-    // in order to explicitly catch an error that would otherwise not surface until another method
-    // like `db.get()` is called.  Once `db.open()` has then been called, any read & write
-    // operations will again be queued internally until opening has finished.
-    return this.level.open();
+    return this.db.open();
   }
 
-  close(): Promise<void> {
-    return this.level.close();
+  async close(): Promise<void> {
+    return this.db.close();
   }
 
-  clear(): Promise<void> {
-    return this.level.clear();
+  async clear(): Promise<void> {
+    return this.db.clear();
   }
 
   async append(tenant: string, messageCid: string): Promise<string> {
     const hashedTenant = this.hashTenant(tenant);
-    const tenantEventLog = await this.level.partition(hashedTenant);
+    const tenantEventLog = await this.db.partition(hashedTenant);
 
     const watermark = this.ulid();
     await tenantEventLog.put(watermark, messageCid);
 
     return watermark;
   }
-  async getEventsAfter(tenant: string, watermark?: string | undefined): Promise<Event[]> {
+  async getEventsAfter(tenant: string, watermark?: string): Promise<Event[]> {
     const hashedTenant = this.hashTenant(tenant);
-    const tenantEventLog = await this.level.partition(hashedTenant);
+    const tenantEventLog = await this.db.partition(hashedTenant);
 
     const opts = watermark ? { gt: watermark } : {};
     const events: Array<Event> = [];
