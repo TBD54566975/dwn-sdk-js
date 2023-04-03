@@ -101,7 +101,7 @@ describe('RecordsReadHandler.handle()', () => {
 
       // testing public RecordsRead
       const recordsRead = await RecordsRead.create({
-        recordId: message.recordId,
+        recordId                    : message.recordId,
         authorizationSignatureInput : Jws.createSignatureInput(alice)
       });
 
