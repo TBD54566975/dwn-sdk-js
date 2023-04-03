@@ -41,7 +41,7 @@ export class LevelWrapper<V> {
       ...config
     };
 
-    this.db = db!; // FIXME: Maybe define an empty LevelDatabase?
+    this.db = db!;
   }
 
   async open(): Promise<void> {
