@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+import * as eccrypto from 'eccrypto';
 import { Readable } from 'readable-stream';
 
 /**
@@ -60,4 +61,50 @@ export class Encryption {
 
     return plaintextStream;
   }
+
+  /**
+   * Encrypts the given plaintext using ECIES (Elliptic Curve Integrated Encryption Scheme) with SECP256K1.
+   */
+  public static async eciesSecp256k1Encrypt(uncompressedPublicKey: Uint8Array, plaintext: Uint8Array): Promise<EciesEncryptionOutput> {
+    // TODO: #291 - Swap out `eccrypto` in favor of a more up-to-date ECIES library - https://github.com/TBD54566975/dwn-sdk-js/issues/291
+    const publicKey = Buffer.from(uncompressedPublicKey);
+
+    const { ciphertext, ephemPublicKey, iv, mac } = await eccrypto.encrypt(publicKey, plaintext as Buffer);
+
+    return {
+      ciphertext,
+      ephemeralPublicKey        : ephemPublicKey,
+      initializationVector      : iv,
+      messageAuthenticationCode : mac
+    };
+  }
+
+  /**
+   * Decrypt the given plaintext using ECIES (Elliptic Curve Integrated Encryption Scheme) with SECP256K1.
+   */
+  public static async eciesSecp256k1Decrypt(input: EciesEncryptionInput): Promise<Uint8Array> {
+    // TODO: #291 - Swap out `eccrypto` in favor of a more up-to-date ECIES library - https://github.com/TBD54566975/dwn-sdk-js/issues/291
+    const privateKeyBuffer = Buffer.from(input.privateKey);
+    const eciesEncryptionOutput = {
+      ciphertext     : input.ciphertext as Buffer,
+      ephemPublicKey : input.ephemeralPublicKey as Buffer,
+      iv             : input.initializationVector as Buffer,
+      mac            : input.messageAuthenticationCode as Buffer
+    };
+
+    const plaintext = await eccrypto.decrypt(privateKeyBuffer, eciesEncryptionOutput);
+
+    return plaintext;
+  }
 }
+
+export type EciesEncryptionOutput = {
+  initializationVector: Uint8Array;
+  ephemeralPublicKey: Uint8Array;
+  ciphertext: Uint8Array;
+  messageAuthenticationCode: Uint8Array;
+};
+
+export type EciesEncryptionInput = EciesEncryptionOutput & {
+  privateKey: Uint8Array;
+};

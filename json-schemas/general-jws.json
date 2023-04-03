@@ -5,7 +5,7 @@
   "additionalProperties": false,
   "properties": {
     "payload": {
-      "type": "string"
+      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/base64url"
     },
     "signatures": {
       "type": "array",
@@ -14,10 +14,10 @@
         "type": "object",
         "properties": {
           "protected": {
-            "type": "string"
+            "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/base64url"
           },
           "signature": {
-            "type": "string"
+            "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/base64url"
           }
         }
       }
