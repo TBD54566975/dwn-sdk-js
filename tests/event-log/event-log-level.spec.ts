@@ -9,32 +9,41 @@ chai.use(chaiAsPromised);
 let eventLog: EventLogLevel;
 
 describe('EventLogLevel Tests', () => {
+  before(async () => {
+    eventLog = new EventLogLevel({ location: 'TEST-EVENTLOG' });
+    await eventLog.open();
+  });
+
+  beforeEach(async () => {
+    await eventLog.clear();
+  });
+
+  after(async () => {
+    await eventLog.close();
+  });
+
+  it('separates events by tenant', async () => {
+    const { requester, message } = await TestDataGenerator.generateRecordsWrite();
+    const messageCid = await computeCid(message);
+    const watermark = await eventLog.append(requester.did, messageCid);
+
+    const { requester: requester2, message: message2 } = await TestDataGenerator.generateRecordsWrite();
+    const messageCid2 = await computeCid(message2);
+    const watermark2 = await eventLog.append(requester2.did, messageCid2);
+
+    let events = await eventLog.getEventsAfter(requester.did);
+    expect(events.length).to.equal(1);
+    expect(events[0].watermark).to.equal(watermark);
+    expect(events[0].messageCid).to.equal(messageCid);
+
+    events = await eventLog.getEventsAfter(requester2.did);
+    expect(events.length).to.equal(1);
+    expect(events[0].watermark).to.equal(watermark2);
+    expect(events[0].messageCid).to.equal(messageCid2);
+
+
+  });
   describe('append tests', () => {
-    before(async () => {
-      eventLog = new EventLogLevel({ location: 'TEST-EVENTLOG' });
-      await eventLog.open();
-    });
-
-    beforeEach(async () => {
-      await eventLog.clear();
-    });
-
-    after(async () => {
-      await eventLog.close();
-    });
-
-    it('appends a tenant namespaced entry into leveldb', async () => {
-      const { requester, message } = await TestDataGenerator.generateRecordsWrite();
-      const messageCid = await computeCid(message);
-
-      const watermark = await eventLog.append(requester.did, messageCid);
-
-      for await (const [key, value] of eventLog.db.iterator()) {
-        expect(key).to.include(watermark);
-        expect(value).to.equal(messageCid);
-      }
-    });
-
     it('maintains order in which events were appended', async () => {
       const { requester, message } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await computeCid(message);
@@ -57,19 +66,6 @@ describe('EventLogLevel Tests', () => {
   });
 
   describe('getEventsAfter', () => {
-    before(async () => {
-      eventLog = new EventLogLevel({ location: 'TEST-EVENTLOG' });
-      await eventLog.open();
-    });
-
-    beforeEach(async () => {
-      await eventLog.clear();
-    });
-
-    after(async () => {
-      await eventLog.close();
-    });
-
     it('gets all events for a tenant if watermark is not provided', async () => {
       const messageCids = [];
 
