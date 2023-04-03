@@ -35,9 +35,9 @@ export class StorageController {
     // but NOTE: it is possible that a data stream is not given in such case, for instance,
     // a subsequent RecordsWrite that changes the `published` property, but the data hasn't changed,
     // in this case requiring re-uploading of the data is extremely inefficient so we take care allow omission of data stream
-    if (message.descriptor.dataCid !== undefined) {
-      const messageCid = await Message.getCid(message);
+    const messageCid = await Message.getCid(message);
 
+    if (message.descriptor.dataCid !== undefined) {
       let result;
 
       if (dataStream === undefined) {
@@ -80,8 +80,6 @@ export class StorageController {
     }
 
     await messageStore.put(tenant, message, indexes);
-
-    const messageCid = await Message.getCid(message);
     await eventLog.append(tenant, messageCid);
   }
 
