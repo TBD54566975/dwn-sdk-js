@@ -36,6 +36,35 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "author": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "of": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "write"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "of",
+                "to"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
             "recipient": {
               "type": "object",
               "additionalProperties": false,

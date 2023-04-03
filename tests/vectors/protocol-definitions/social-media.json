@@ -1,0 +1,50 @@
+{
+  "labels": {
+    "message": { "schema": "messageSchema" },
+    "reply": { "schema": "replySchema" },
+    "image": { "schema": "imageSchema" },
+    "caption": { "schema": "captionSchema" }
+  },
+  "records": {
+    "message": {
+      "allow": {
+        "anyone": { "to": ["write"] }
+      },
+      "records": {
+        "reply": {
+          "allow": {
+            "recipient": {
+              "of": "message",
+              "to": ["write"]
+            }
+          }
+        }
+      }
+    },
+    "image": {
+      "allow": {
+        "anyone": {
+          "to": ["write"]
+        }
+      },
+      "records": {
+        "caption": {
+          "allow": {
+            "author": {
+                "of": "image",
+                "to": ["write"]
+            }
+          }
+        },
+        "reply": {
+          "allow": {
+            "recipient": {
+              "of": "image",
+              "to": ["write"]
+            }
+          }
+        }
+      }
+    }
+  }
+}
