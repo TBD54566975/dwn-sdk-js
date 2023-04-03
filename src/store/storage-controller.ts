@@ -82,7 +82,7 @@ export class StorageController {
     await messageStore.put(tenant, message, indexes);
 
     const messageCid = await Message.getCid(message);
-    await eventLog.append(tenant, messageCid.toString());
+    await eventLog.append(tenant, messageCid);
   }
 
   public static async query(

@@ -53,6 +53,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
       await messageStore.clear();
       await dataStore.clear();
+      await eventLog.clear();
     });
 
     after(async () => {

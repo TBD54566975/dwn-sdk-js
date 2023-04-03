@@ -27,11 +27,11 @@ describe('EventLogLevel Tests', () => {
       const { requester, message } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await computeCid(message);
 
-      const watermark = await eventLog.append(requester.did, messageCid.toString());
+      const watermark = await eventLog.append(requester.did, messageCid);
 
       for await (const [key, value] of eventLog.db.iterator()) {
         expect(key).to.include(watermark);
-        expect(value).to.equal(messageCid.toString());
+        expect(value).to.equal(messageCid);
       }
     });
 
@@ -39,20 +39,20 @@ describe('EventLogLevel Tests', () => {
       const { requester, message } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await computeCid(message);
 
-      await eventLog.append(requester.did, messageCid.toString());
+      await eventLog.append(requester.did, messageCid);
 
       const { message: message2 } = await TestDataGenerator.generateRecordsWrite({ requester });
       const messageCid2 = await computeCid(message2);
 
-      await eventLog.append(requester.did, messageCid2.toString());
+      await eventLog.append(requester.did, messageCid2);
 
       const storedValues = [];
       for await (const [_, cid] of eventLog.db.iterator()) {
         storedValues.push(cid);
       }
 
-      expect(storedValues[0]).to.equal(messageCid.toString());
-      expect(storedValues[1]).to.equal(messageCid2.toString());
+      expect(storedValues[0]).to.equal(messageCid);
+      expect(storedValues[1]).to.equal(messageCid2);
     });
   });
 
@@ -77,14 +77,14 @@ describe('EventLogLevel Tests', () => {
       const messageCid = await computeCid(message);
       messageCids.push(messageCid);
 
-      await eventLog.append(requester.did, messageCid.toString());
+      await eventLog.append(requester.did, messageCid);
 
       for (let i = 0; i < 9; i += 1) {
         const { message } = await TestDataGenerator.generateRecordsWrite({ requester });
         const messageCid = await computeCid(message);
         messageCids.push(messageCid);
 
-        await eventLog.append(requester.did, messageCid.toString());
+        await eventLog.append(requester.did, messageCid);
       }
 
       const events = await eventLog.getEventsAfter(requester.did);
@@ -99,7 +99,7 @@ describe('EventLogLevel Tests', () => {
       const { requester, message } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await computeCid(message);
 
-      await eventLog.append(requester.did, messageCid.toString());
+      await eventLog.append(requester.did, messageCid);
 
       const messageCids = [];
       let testWatermark;
@@ -108,14 +108,14 @@ describe('EventLogLevel Tests', () => {
         const { message } = await TestDataGenerator.generateRecordsWrite({ requester });
         const messageCid = await computeCid(message);
 
-        const watermark = await eventLog.append(requester.did, messageCid.toString());
+        const watermark = await eventLog.append(requester.did, messageCid);
 
         if (i === 4) {
           testWatermark = watermark;
         }
 
         if (i > 4) {
-          messageCids.push(messageCid.toString());
+          messageCids.push(messageCid);
         }
       }
 

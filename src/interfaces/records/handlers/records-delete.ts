@@ -5,6 +5,7 @@ import type { TimestampedMessage } from '../../../core/types.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { authenticate } from '../../../core/auth.js';
+import { computeCid } from '../../../utils/cid.js';
 import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
 import { DwnInterfaceName } from '../../../core/message.js';
 import { MessageReply } from '../../../core/message-reply.js';
@@ -65,6 +66,9 @@ export class RecordsDeleteHandler implements MethodHandler {
       const indexes = await constructIndexes(tenant, recordsDelete);
 
       await this.messageStore.put(tenant, incomingMessage, indexes);
+
+      const messageCid = await computeCid(incomingMessage);
+      await this.eventLog.append(tenant, messageCid);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }
