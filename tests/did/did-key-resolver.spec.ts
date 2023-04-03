@@ -49,10 +49,10 @@ describe('DidKeyResolver', () => {
     const id = base58btc.encode(idBytes);
 
     const did = `did:key:${id}`;
-    const didIonResolver = new DidKeyResolver();
+    const didKeyResolver = new DidKeyResolver();
 
-    const resolutionDocument = await didIonResolver.resolve(did);
-    expect(resolutionDocument.didDocument).to.equal(null);
+    const resolutionDocument = await didKeyResolver.resolve(did);
+    expect(resolutionDocument.didDocument).to.equal(undefined);
     expect(resolutionDocument.didResolutionMetadata.error).to.equal('invalidDid');
   });
 
@@ -61,7 +61,7 @@ describe('DidKeyResolver', () => {
     const didIonResolver = new DidKeyResolver();
 
     const resolutionDocument = await didIonResolver.resolve(did);
-    expect(resolutionDocument.didDocument).to.equal(null);
+    expect(resolutionDocument.didDocument).to.equal(undefined);
     expect(resolutionDocument.didResolutionMetadata.error).to.equal('invalidDid');
   });
 });
