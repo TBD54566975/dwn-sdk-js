@@ -1,7 +1,7 @@
-import type { Filter } from './types.js';
 import type { MessageStore } from '../store/message-store.js';
 import type { RecordsWrite } from '../interfaces/records/messages/records-write.js';
 import type { RecordsWriteMessage } from '../interfaces/records/types.js';
+import type { BaseMessage, Filter } from './types.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
 
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
@@ -164,7 +164,7 @@ export class ProtocolAuthorization {
   private static verifyAllowedActions(
     tenant: string,
     requesterDid: string,
-    incomingMessage: Message,
+    incomingMessage: Message<BaseMessage>,
     inboundMessageRuleSet: ProtocolRuleSet,
     ancestorMessageChain: RecordsWriteMessage[],
     recordSchemaToLabelMap: Map<string, string>

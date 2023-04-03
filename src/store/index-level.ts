@@ -20,7 +20,7 @@ export class IndexLevel {
 
   db: LevelWrapper<string>;
 
-  constructor(config?: IndexLevelConfig) {
+  constructor(config: IndexLevelConfig) {
     this.config = {
       createLevelDatabase,
       ...config

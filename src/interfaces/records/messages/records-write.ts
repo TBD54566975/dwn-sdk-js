@@ -44,11 +44,8 @@ export type CreateFromOptions = {
   attestationSignatureInputs?: SignatureInput[];
 };
 
-export class RecordsWrite extends Message {
-  /**
-   * RecordsWrite message adhering to the DWN specification.
-   */
-  readonly message: RecordsWriteMessage;
+export class RecordsWrite extends Message<RecordsWriteMessage> {
+
   readonly attesters: string[];
 
   private constructor(message: RecordsWriteMessage) {
@@ -100,7 +97,7 @@ export class RecordsWrite extends Message {
       interface     : DwnInterfaceName.Records,
       method        : DwnMethodName.Write,
       protocol      : options.protocol,
-      recipient     : options.recipient,
+      recipient     : options.recipient!,
       schema        : options.schema,
       parentId      : options.parentId,
       dataCid,

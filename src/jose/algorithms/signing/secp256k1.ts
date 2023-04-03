@@ -57,7 +57,7 @@ export const secp256k1: Signer = {
     validateKey(publicJwk);
 
     const xBytes = Encoder.base64UrlToBytes(publicJwk.x);
-    const yBytes = Encoder.base64UrlToBytes(publicJwk.y);
+    const yBytes = publicJwk.y ? Encoder.base64UrlToBytes(publicJwk.y) : new Uint8Array([]);
 
     const publicKeyBytes = new Uint8Array(xBytes.length + yBytes.length + 1);
 

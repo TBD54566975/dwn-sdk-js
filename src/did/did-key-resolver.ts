@@ -43,7 +43,7 @@ export class DidKeyResolver implements DidMethodResolver {
     return multicodecHeaderSize;
   }
 
-  async resolve(did): Promise<DidResolutionResult> {
+  async resolve(did: string): Promise<DidResolutionResult> {
     const [_scheme, _method, id] = did.split(':', 3);
 
     try {
@@ -95,7 +95,7 @@ export class DidKeyResolver implements DidMethodResolver {
       };
     } catch {
       return {
-        didDocument           : null,
+        didDocument           : undefined,
         didDocumentMetadata   : {},
         didResolutionMetadata : {
           error: 'invalidDid'

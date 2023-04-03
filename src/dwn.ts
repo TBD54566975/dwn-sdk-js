@@ -27,10 +27,10 @@ export class Dwn {
   private tenantGate: TenantGate;
 
   private constructor(config: DwnConfig) {
-    this.didResolver = config.didResolver;
-    this.messageStore = config.messageStore;
-    this.dataStore = config.dataStore;
-    this.tenantGate = config.tenantGate;
+    this.didResolver = config.didResolver!;
+    this.messageStore = config.messageStore!;
+    this.dataStore = config.dataStore!;
+    this.tenantGate = config.tenantGate!;
 
     this.methodHandlers = {
       [DwnInterfaceName.Permissions + DwnMethodName.Request] : new PermissionsRequestHandler(this.didResolver, this.messageStore, this.dataStore),
@@ -93,9 +93,7 @@ export class Dwn {
       // consider to push this down to individual handlers
       Message.validateJsonSchema(rawMessage);
     } catch (error) {
-      return new MessageReply({
-        status: { code: 400, detail: error.message }
-      });
+      return MessageReply.fromError(error, 400);
     }
 
     const handlerKey = dwnInterface + dwnMethod;
@@ -113,10 +111,12 @@ export class Dwn {
     console.groupEnd();
 
     console.group('messageStore');
+    // @ts-ignore
     await this.messageStore['dump']?.();
     console.groupEnd();
 
     console.group('dataStore');
+    // @ts-ignore
     await this.dataStore['dump']?.();
     console.groupEnd();
   }

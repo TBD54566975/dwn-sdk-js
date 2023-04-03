@@ -35,4 +35,11 @@ export class MessageReply {
     this.entries = entries;
     this.data = data;
   }
+
+  static fromError(e: unknown, code: number): MessageReply {
+
+    const detail = e instanceof Error ? e.message : 'Error';
+
+    return new MessageReply({ status: { code, detail } });
+  }
 }

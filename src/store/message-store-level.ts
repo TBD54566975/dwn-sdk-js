@@ -38,12 +38,12 @@ export class MessageStoreLevel implements MessageStore {
     };
 
     this.blockstore = new BlockstoreLevel({
-      location            : this.config.blockstoreLocation,
+      location            : this.config.blockstoreLocation!,
       createLevelDatabase : this.config.createLevelDatabase,
     });
 
     this.index = new IndexLevel({
-      location            : this.config.indexLocation,
+      location            : this.config.indexLocation!,
       createLevelDatabase : this.config.createLevelDatabase,
     });
   }
@@ -85,7 +85,7 @@ export class MessageStoreLevel implements MessageStore {
 
     for (const id of resultIds) {
       const message = await this.get(tenant, id, options);
-      messages.push(message);
+      if (message) { messages.push(message); }
     }
 
     return messages;

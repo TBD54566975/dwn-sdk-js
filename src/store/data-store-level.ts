@@ -37,7 +37,7 @@ export class DataStoreLevel implements DataStore {
     };
 
     this.blockstore = new BlockstoreLevel({
-      location            : this.config.blockstoreLocation,
+      location            : this.config.blockstoreLocation!,
       createLevelDatabase : this.config.createLevelDatabase,
     });
   }
@@ -63,8 +63,10 @@ export class DataStoreLevel implements DataStore {
     const asyncDataBlocks = importer([{ content: dataStream }], blocks, { cidVersion: 1 });
 
     // NOTE: the last block contains the root CID as well as info to derive the data size
-    let dataDagRoot: ImportResult;
+    let dataDagRoot: ImportResult | undefined = undefined;
     for await (dataDagRoot of asyncDataBlocks) { ; }
+
+    if (dataDagRoot == undefined) { return { dataCid, dataSize: 0 }; } // FIXME: Is this a valid empty PutResult?
 
     return {
       dataCid  : String(dataDagRoot.cid),

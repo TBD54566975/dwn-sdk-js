@@ -21,7 +21,7 @@ type AuthorizationPayloadConstraints = {
  */
 export async function canonicalAuth(
   tenant: string,
-  incomingMessage: Message,
+  incomingMessage: Message<BaseMessage>,
   didResolver: DidResolver
 ): Promise<void> {
   await authenticate(incomingMessage.message.authorization, didResolver);
@@ -84,7 +84,7 @@ export async function authenticate(jws: GeneralJws, didResolver: DidResolver): P
  * Authorizes the incoming message.
  * @throws {Error} if fails authentication
  */
-export async function authorize(tenant: string, incomingMessage: Message): Promise<void> {
+export async function authorize(tenant: string, incomingMessage: Message<BaseMessage>): Promise<void> {
   // if author/requester is the same as the target tenant, we can directly grant access
   if (incomingMessage.author === tenant) {
     return;

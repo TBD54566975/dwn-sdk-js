@@ -18,12 +18,7 @@ type PermissionsRequestOptions = {
   authorizationSignatureInput: SignatureInput;
 };
 
-export class PermissionsRequest extends Message {
-  readonly message: PermissionsRequestMessage; // a more specific type than the base type defined in parent class
-
-  private constructor(message: PermissionsRequestMessage) {
-    super(message);
-  }
+export class PermissionsRequest extends Message<PermissionsRequestMessage> {
 
   public static async parse(message: PermissionsRequestMessage): Promise<PermissionsRequest> {
     await validateAuthorizationIntegrity(message);
@@ -57,7 +52,7 @@ export class PermissionsRequest extends Message {
   }
 
   get id(): string {
-    return this.message.descriptor.objectId;
+    return this.message.descriptor.objectId!;
   }
 
   get conditions(): PermissionConditions {

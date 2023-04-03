@@ -10,13 +10,13 @@ import { sha256 } from 'multiformats/hashes/sha2';
 // a map of all supported CID hashing algorithms. This map is used to select the appropriate hasher
 // when generating a CID to compare against a provided CID
 const hashers = {
-  [sha256.code]: sha256,
+  [sha256.code as number]: sha256,
 };
 
 // a map of all support codecs.This map is used to select the appropriate codec
 // when generating a CID to compare against a provided CID
 const codecs = {
-  [cbor.code]: cbor
+  [cbor.code as number]: cbor
 };
 
 /**
@@ -80,7 +80,7 @@ export class Cid {
     let block;
     for await (block of asyncDataBlocks) { ; }
 
-    return block.cid.toString();
+    return block ? block.cid.toString() : '';
   }
 
   /**
@@ -93,6 +93,6 @@ export class Cid {
     let block;
     for await (block of asyncDataBlocks) { ; }
 
-    return block.cid.toString();
+    return block ? block.cid.toString() : '';
   }
 }

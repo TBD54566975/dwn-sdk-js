@@ -17,7 +17,7 @@ function promisifySignal<Type>(signal: AbortSignal): Promise<Type> {
 /**
  * Wraps the given `Promise` such that it will reject if the `AbortSignal` is triggered.
  */
-export async function abortOr<Type>(signal: AbortSignal, promise: Promise<Type>): Promise<Type> {
+export async function abortOr<Type>(signal: AbortSignal | undefined, promise: Promise<Type>): Promise<Type> {
   if (!signal) {
     return promise;
   }

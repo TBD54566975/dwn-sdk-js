@@ -10,7 +10,7 @@ export class DataStream {
    */
   public static async toBytes(readableStream: Readable): Promise<Uint8Array> {
     return new Promise((resolve, reject) => {
-      const chunks = [];
+      const chunks: any[] = [];
       readableStream.on('data', chunk => {
         chunks.push(chunk);
       });
