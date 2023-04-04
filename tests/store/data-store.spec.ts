@@ -42,7 +42,7 @@ describe('DataStore Test Suite', () => {
 
         expect(dataSize).to.equal(dataSizeInBytes);
 
-        const result = await store.get(tenant, messageCid, dataCid);
+        const result = (await store.get(tenant, messageCid, dataCid))!;
         const storedDataBytes = await DataStream.toBytes(result.dataStream);
 
         expect(storedDataBytes).to.eql(dataBytes);
@@ -132,7 +132,7 @@ describe('DataStore Test Suite', () => {
       const keysBeforeDelete = await asyncGeneratorToArray(store.blockstore.db.keys());
       expect(keysBeforeDelete.length).to.equal(41);
 
-      const result = await store.associate(tenant, messageCid, dataCid);
+      const result = (await store.associate(tenant, messageCid, dataCid))!;
       expect(result.dataCid).to.equal(dataCid);
       expect(result.dataSize).to.equal(10_000_000);
 
