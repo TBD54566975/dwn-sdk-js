@@ -64,4 +64,8 @@ export class EventLogLevel implements EventLog {
 
     return events;
   }
+
+  async dump(): Promise<void> {
+    await this.db['dump']?.();
+  }
 }

@@ -128,6 +128,10 @@ export class Dwn {
     console.group('dataStore');
     await this.dataStore['dump']?.();
     console.groupEnd();
+
+    console.group('eventLog');
+    await this.eventLog['dump']?.();
+    console.groupEnd();
   }
 };
 
