@@ -1,8 +1,11 @@
+import type { PrivateJwk, PublicJwk, Signer } from '../../types.js';
+
 import * as secp256k1 from '@noble/secp256k1';
+import secp256k1Derivation from 'secp256k1';
+
 import { Encoder } from '../../../utils/encoder.js';
 import { sha256 } from 'multiformats/hashes/sha2';
-
-import type { PrivateJwk, PublicJwk, Signer } from '../../types.js';
+import { DwnError, DwnErrorCode } from '../../../core/dwn-error.js';
 
 export class Secp256k1 {
   public static validateKey(jwk: PrivateJwk | PublicJwk): void {
@@ -102,6 +105,85 @@ export class Secp256k1 {
     const compressedPublicKey = false;
     const publicKey = await secp256k1.getPublicKey(privateKey, compressedPublicKey);
     return publicKey;
+  }
+
+  /**
+   * Derives a hierarchical deterministic public key.
+   * @param key Either a private or an uncompressed public key used to derive the descendant public key.
+   * @param relativePath `/` delimited path relative to the key given. e.g. 'a/b/c'
+   * @returns uncompressed public key
+   */
+  public static async derivePublicKey(key: Uint8Array, relativePath: string): Promise<Uint8Array> {
+    const pathSegments = Secp256k1.parseAndValidateKeyDerivationPath(relativePath);
+
+    let currentPublicKey: Uint8Array;
+    if (key.length === 32) {
+      // private key is always 32 bytes
+      currentPublicKey = secp256k1.getPublicKey(key);
+    } else {
+      currentPublicKey = key;
+    }
+
+    for (const segment of pathSegments) {
+      const hash = await sha256.encode(Encoder.stringToBytes(segment));
+      currentPublicKey = Secp256k1.deriveChildPublicKey(currentPublicKey, hash);
+    }
+
+    return currentPublicKey;
+  }
+
+  /**
+     * Derives a hierarchical deterministic private key.
+     * @param relativePath `/` delimited path relative to the key given. e.g. 'a/b/c'
+     */
+  public static async derivePrivateKey(privateKey: Uint8Array, relativePath: string): Promise<Uint8Array> {
+    const pathSegments = Secp256k1.parseAndValidateKeyDerivationPath(relativePath);
+
+    let currentPrivateKey = privateKey;
+    for (const segment of pathSegments) {
+      const hash = await sha256.encode(Encoder.stringToBytes(segment));
+      currentPrivateKey = Secp256k1.deriveChildPrivateKey(currentPrivateKey, hash);
+    }
+
+    return currentPrivateKey;
+  }
+
+  /**
+     * Derives a child public key using the given tweak input.
+     */
+  public static deriveChildPublicKey(uncompressedPublicKey: Uint8Array, tweakInput: Uint8Array): Uint8Array {
+    const compressedPublicKey = false;
+    const derivedPublicKey = secp256k1Derivation.publicKeyTweakAdd(uncompressedPublicKey, tweakInput, compressedPublicKey);
+    return derivedPublicKey;
+  }
+
+  /**
+     * Derives a child private key using the given tweak input.
+     */
+  public static deriveChildPrivateKey(privateKey: Uint8Array, tweakInput: Uint8Array): Uint8Array {
+    // NOTE: passing in private key to v5.0.0 of `secp256k1.privateKeyTweakAdd()` has the side effect of morphing the input private key bytes
+    // before there is a fix for it (we can also investigate and submit a PR), we clone the private key to workaround
+    // `secp256k1.publicKeyTweakAdd()` does not have this side effect
+    const privateKeyClone = new Uint8Array(privateKey.length);
+    privateKeyClone.set(privateKey);
+
+    const derivedPrivateKey = secp256k1Derivation.privateKeyTweakAdd(privateKeyClone, tweakInput);
+    return derivedPrivateKey;
+  }
+
+  /**
+     * Parses the given key derivation path.
+     * @returns Path segments if successfully validate the derivation path.
+     * @throws {DwnError} with `DwnErrorCode.HdKeyDerivationPathInvalid` if derivation path fails validation.
+     */
+  private static parseAndValidateKeyDerivationPath(derivationPath: string): string[] {
+    const pathSegments = derivationPath.split('/');
+
+    if (pathSegments.length === 0 || pathSegments.includes('')) {
+      throw new DwnError(DwnErrorCode.HdKeyDerivationPathInvalid, `Invalid key derivation path: ${derivationPath}`);
+    }
+
+    return pathSegments;
   }
 }
 
