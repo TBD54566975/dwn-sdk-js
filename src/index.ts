@@ -41,4 +41,5 @@ export { RecordsDelete, RecordsDeleteOptions } from './interfaces/records/messag
 export { RecordsQuery, RecordsQueryOptions } from './interfaces/records/messages/records-query.js';
 export { RecordsRead, RecordsReadOptions } from './interfaces/records/messages/records-read.js';
 export { RecordsWrite, RecordsWriteOptions, CreateFromOptions } from './interfaces/records/messages/records-write.js';
+export { Secp256k1 } from './jose/algorithms/signing/secp256k1.js';
 export { SignatureInput } from './jose/jws/general/types.js';
