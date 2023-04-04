@@ -67,27 +67,28 @@ describe('EventLogLevel Tests', () => {
 
   describe('getEventsAfter', () => {
     it('gets all events for a tenant if watermark is not provided', async () => {
-      const messageCids = [];
+      const expectedEvents = [];
 
       const { requester, message } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await computeCid(message);
-      messageCids.push(messageCid);
 
-      await eventLog.append(requester.did, messageCid);
+      const watermark = await eventLog.append(requester.did, messageCid);
+      expectedEvents.push({ messageCid, watermark });
 
       for (let i = 0; i < 9; i += 1) {
         const { message } = await TestDataGenerator.generateRecordsWrite({ requester });
         const messageCid = await computeCid(message);
-        messageCids.push(messageCid);
 
-        await eventLog.append(requester.did, messageCid);
+        const watermark = await eventLog.append(requester.did, messageCid);
+        expectedEvents.push({ messageCid, watermark });
       }
 
       const events = await eventLog.getEventsAfter(requester.did);
       expect(events.length).to.equal(10);
 
       for (let i = 0; i < events.length; i += 1) {
-        expect(events[i].messageCid).to.equal(messageCids[i]);
+        expect(events[i].messageCid).to.equal(expectedEvents[i].messageCid);
+        expect(events[i].watermark).to.equal(expectedEvents[i].watermark);
       }
     });
 
