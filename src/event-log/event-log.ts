@@ -3,6 +3,11 @@ export type Event = {
   messageCid: string
 };
 
+
+export type GetEventsOptions = {
+  gt: string
+};
+
 export interface EventLog {
  /**
   * opens a connection to the underlying store
@@ -29,5 +34,5 @@ export interface EventLog {
    * @param tenant
    * @param watermark
    */
-  getEventsAfter(tenant: string, watermark?: string): Promise<Array<Event>>
+  getEvents(tenant: string, options?: GetEventsOptions): Promise<Array<Event>>
 }

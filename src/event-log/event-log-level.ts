@@ -1,5 +1,5 @@
 import type { ULID } from 'ulid';
-import type { Event, EventLog } from './event-log.js';
+import type { Event, EventLog, GetEventsOptions } from './event-log.js';
 
 import { monotonicFactory } from 'ulid';
 import { createLevelDatabase, LevelWrapper } from '../store/level-wrapper.js';
@@ -51,13 +51,12 @@ export class EventLogLevel implements EventLog {
 
     return watermark;
   }
-  async getEventsAfter(tenant: string, watermark?: string): Promise<Event[]> {
-    const tenantEventLog = await this.db.partition(tenant);
 
-    const opts = watermark ? { gt: watermark } : {};
+  async getEvents(tenant: string, options?: GetEventsOptions): Promise<Event[]> {
+    const tenantEventLog = await this.db.partition(tenant);
     const events: Array<Event> = [];
 
-    for await (const [key, value] of tenantEventLog.iterator(opts)) {
+    for await (const [key, value] of tenantEventLog.iterator(options)) {
       const event = { watermark: key, messageCid: value };
       events.push(event);
     }
@@ -65,7 +64,32 @@ export class EventLogLevel implements EventLog {
     return events;
   }
 
+  async deleteEventsByCid(tenant, cids): Promise<number> {
+    if (cids.length === 0) {
+      return 0;
+    }
+
+    const cidSet = new Set(cids);
+    const tenantEventLog = await this.db.partition(tenant);
+    const ops = [];
+
+    let numEventsDeleted = 0;
+
+    for await (const [key, value] of tenantEventLog.iterator()) {
+      if (cidSet.has(value)) {
+        ops.push({ type: 'del', key });
+        numEventsDeleted += 1;
+      }
+    }
+
+    await tenantEventLog.batch(ops);
+
+    return numEventsDeleted;
+  }
+
   async dump(): Promise<void> {
+    console.group('db');
     await this.db['dump']?.();
+    console.groupEnd();
   }
 }

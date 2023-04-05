@@ -31,18 +31,19 @@ describe('EventLogLevel Tests', () => {
     const messageCid2 = await computeCid(message2);
     const watermark2 = await eventLog.append(requester2.did, messageCid2);
 
-    let events = await eventLog.getEventsAfter(requester.did);
+    let events = await eventLog.getEvents(requester.did);
     expect(events.length).to.equal(1);
     expect(events[0].watermark).to.equal(watermark);
     expect(events[0].messageCid).to.equal(messageCid);
 
-    events = await eventLog.getEventsAfter(requester2.did);
+    events = await eventLog.getEvents(requester2.did);
     expect(events.length).to.equal(1);
     expect(events[0].watermark).to.equal(watermark2);
     expect(events[0].messageCid).to.equal(messageCid2);
 
 
   });
+
   describe('append tests', () => {
     it('maintains order in which events were appended', async () => {
       const { requester, message } = await TestDataGenerator.generateRecordsWrite();
@@ -83,7 +84,7 @@ describe('EventLogLevel Tests', () => {
         expectedEvents.push({ messageCid, watermark });
       }
 
-      const events = await eventLog.getEventsAfter(requester.did);
+      const events = await eventLog.getEvents(requester.did);
       expect(events.length).to.equal(10);
 
       for (let i = 0; i < events.length; i += 1) {
@@ -116,11 +117,44 @@ describe('EventLogLevel Tests', () => {
         }
       }
 
-      const events = await eventLog.getEventsAfter(requester.did, testWatermark);
+      const events = await eventLog.getEvents(requester.did, { gt: testWatermark });
       expect(events.length).to.equal(4);
 
       for (let i = 0; i < events.length; i += 1) {
         expect(events[i].messageCid).to.equal(messageCids[i], `${i}`);
+      }
+    });
+  });
+
+  describe('deleteEventsByCid', () => {
+    it('finds and deletes events that whose values match the cids provided', async () => {
+      const cids = [];
+      const { requester, message } = await TestDataGenerator.generateRecordsWrite();
+      const messageCid = await computeCid(message);
+
+      await eventLog.append(requester.did, messageCid);
+
+      for (let i = 0; i < 9; i += 1) {
+        const { message } = await TestDataGenerator.generateRecordsWrite({ requester });
+        const messageCid = await computeCid(message);
+
+        await eventLog.append(requester.did, messageCid);
+        if (i % 2 === 0) {
+          cids.push(messageCid);
+        }
+      }
+
+      const numEventsDeleted = await eventLog.deleteEventsByCid(requester.did, cids);
+      expect(numEventsDeleted).to.equal(cids.length);
+
+      const remainingEvents = await eventLog.getEvents(requester.did);
+      expect(remainingEvents.length).to.equal(10 - cids.length);
+
+      const cidSet = new Set(cids);
+      for (const event of remainingEvents) {
+        if (cidSet.has(event.messageCid)) {
+          expect.fail(`${event.messageCid} should not exist`);
+        }
       }
     });
   });
