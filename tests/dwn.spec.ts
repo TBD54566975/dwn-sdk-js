@@ -45,12 +45,13 @@ describe('DWN', () => {
     it('#224 - should be able to initialize a DWN with undefined config', async () => {
       const dwnWithoutConfig = await Dwn.create(); // without passing in a config
       const alice = await DidKeyResolver.generate();
-      const { requester, message } = await TestDataGenerator.generateRecordsQuery({ requester: alice });
+      const { requester, recordsQuery } = await TestDataGenerator.generateRecordsQuery({ requester: alice });
 
       const tenant = requester.did;
-      const reply = await dwnWithoutConfig.processMessage(tenant, message);
+      const reply = await dwnWithoutConfig.processMessage(tenant, recordsQuery.message);
 
       expect(reply.status.code).to.equal(200);
+      expect(reply.message).to.be.eql(recordsQuery);
       expect(reply.entries).to.be.empty;
     });
   });
@@ -60,24 +61,26 @@ describe('DWN', () => {
       // generate a `did:key` DID
       const alice = await DidKeyResolver.generate();
 
-      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
+      const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
         requester: alice,
       });
 
-      const reply = await dwn.processMessage(alice.did, message, dataStream);
+      const reply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
 
       expect(reply.status.code).to.equal(202);
+      expect(reply.message).to.be.eql(recordsWrite);
     });
 
     it('should process RecordsQuery message', async () => {
       const alice = await DidKeyResolver.generate();
-      const { requester, message } = await TestDataGenerator.generateRecordsQuery({ requester: alice });
+      const { requester, recordsQuery } = await TestDataGenerator.generateRecordsQuery({ requester: alice });
 
       const tenant = requester.did;
-      const reply = await dwn.processMessage(tenant, message);
+      const reply = await dwn.processMessage(tenant, recordsQuery.message);
 
       expect(reply.status.code).to.equal(200);
       expect(reply.entries).to.be.empty;
+      expect(reply.message).to.eql(recordsQuery);
     });
 
     it('#191 - regression - should run JSON schema validation', async () => {
@@ -98,6 +101,7 @@ describe('DWN', () => {
 
       expect(reply.status.code).to.equal(400);
       expect(reply.status.detail).to.contain(`must have required property 'recordId'`);
+      expect(reply.message).to.be.undefined;
     });
 
     it('should throw 400 if given no interface or method found in message', async () => {
@@ -105,14 +109,17 @@ describe('DWN', () => {
       const reply1 = await dwn.processMessage(alice.did, undefined ); // missing message entirely, thus missing both `interface` and `method`
       expect(reply1.status.code).to.equal(400);
       expect(reply1.status.detail).to.contain('Both interface and method must be present');
+      expect(reply1.message).to.be.undefined;
 
       const reply2 = await dwn.processMessage(alice.did, { descriptor: { method: 'anyValue' } }); // missing `interface`
       expect(reply2.status.code).to.equal(400);
       expect(reply2.status.detail).to.contain('Both interface and method must be present');
+      expect(reply2.message).to.be.undefined;
 
       const reply3 = await dwn.processMessage(alice.did, { descriptor: { interface: 'anyValue' } }); // missing `method`
       expect(reply3.status.code).to.equal(400);
       expect(reply3.status.detail).to.contain('Both interface and method must be present');
+      expect(reply3.message).to.be.undefined;
     });
 
     it('should throw 401 if message is targeted at a non-tenant', async () => {
@@ -135,6 +142,7 @@ describe('DWN', () => {
 
       expect(reply.status.code).to.equal(401);
       expect(reply.status.detail).to.contain('not a tenant');
+      expect(reply.message).to.be.undefined;
     });
   });
 });

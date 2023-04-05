@@ -36,7 +36,8 @@ export class PermissionsRequestHandler implements MethodHandler {
     await this.messageStore.put(tenant, message, index as any); // FIXME
 
     return new MessageReply({
-      status: { code: 202, detail: 'Accepted' }
+      status  : { code: 202, detail: 'Accepted' },
+      message : permissionRequest
     });
   };
 }

@@ -61,7 +61,8 @@ export class RecordsDeleteHandler implements MethodHandler {
       await this.messageStore.put(tenant, message, indexes);
 
       messageReply = new MessageReply({
-        status: { code: 202, detail: 'Accepted' }
+        status  : { code: 202, detail: 'Accepted' },
+        message : recordsDelete
       });
     } else {
       messageReply = new MessageReply({

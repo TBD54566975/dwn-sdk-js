@@ -74,8 +74,9 @@ export class RecordsReadHandler implements MethodHandler {
     }
 
     const messageReply = new MessageReply({
-      status : { code: 200, detail: 'OK' },
-      data   : result.dataStream
+      status  : { code: 200, detail: 'OK' },
+      message : recordsRead,
+      data    : result.dataStream
     });
     return messageReply;
   };

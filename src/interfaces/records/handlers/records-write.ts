@@ -88,7 +88,8 @@ export class RecordsWriteHandler implements MethodHandler {
       }
 
       messageReply = new MessageReply({
-        status: { code: 202, detail: 'Accepted' }
+        status  : { code: 202, detail: 'Accepted' },
+        message : recordsWrite
       });
     } else {
       messageReply = new MessageReply({

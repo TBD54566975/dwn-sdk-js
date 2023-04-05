@@ -62,7 +62,8 @@ export class ProtocolsConfigureHandler implements MethodHandler {
       await StorageController.put(this.messageStore, this.dataStore, tenant, message, indexes as any, dataStream);
 
       messageReply = new MessageReply({
-        status: { code: 202, detail: 'Accepted' }
+        status  : { code: 202, detail: 'Accepted' },
+        message : protocolsConfigure
       });
     } else {
       messageReply = new MessageReply({

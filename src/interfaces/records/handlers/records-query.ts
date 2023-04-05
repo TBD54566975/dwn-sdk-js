@@ -53,7 +53,8 @@ export class RecordsQueryHandler implements MethodHandler {
     }
 
     return new MessageReply({
-      status: { code: 200, detail: 'OK' },
+      status  : { code: 200, detail: 'OK' },
+      message : recordsQuery,
       entries
     });
   }

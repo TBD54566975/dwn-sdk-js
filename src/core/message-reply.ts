@@ -1,5 +1,6 @@
-import type { QueryResultEntry } from './types.js';
+import type { Message } from './message.js';
 import type { Readable } from 'readable-stream';
+import type { BaseMessage, QueryResultEntry } from './types.js';
 
 type Status = {
   code: number
@@ -8,12 +9,15 @@ type Status = {
 
 type MessageReplyOptions = {
   status: Status,
+  message?: Message<BaseMessage>,
   entries?: QueryResultEntry[];
   data? : Readable;
 };
 
 export class MessageReply {
   status: Status;
+
+  message?: Message<BaseMessage>;
 
   /**
    * Resulting message entries returned from the invocation of the corresponding message.
@@ -29,9 +33,10 @@ export class MessageReply {
   data?: Readable;
 
   constructor(opts: MessageReplyOptions) {
-    const { status, entries, data } = opts;
+    const { status, message, entries, data } = opts;
 
     this.status = status;
+    this.message = message;
     this.entries = entries;
     this.data = data;
   }

@@ -132,6 +132,7 @@ export type GenerateRecordsQueryInput = {
 
 export type GenerateRecordsQueryOutput = {
   requester: Persona;
+  recordsQuery: RecordsQuery;
   message: RecordsQueryMessage;
 };
 
@@ -370,11 +371,11 @@ export class TestDataGenerator {
     removeUndefinedProperties(options);
 
     const recordsQuery = await RecordsQuery.create(options);
-    const message = recordsQuery.message as RecordsQueryMessage;
 
     return {
       requester,
-      message
+      recordsQuery,
+      message: recordsQuery.message
     };
   };
 
