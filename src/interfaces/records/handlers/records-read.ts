@@ -17,33 +17,28 @@ export class RecordsReadHandler implements MethodHandler {
   public async handle({
     tenant,
     message
-  }): Promise<MessageReply> {
-    const incomingMessage = message as RecordsReadMessage;
+  }: { tenant: string, message: RecordsReadMessage}): Promise<MessageReply> {
 
     let recordsRead: RecordsRead;
     try {
-      recordsRead = await RecordsRead.parse(incomingMessage);
+      recordsRead = await RecordsRead.parse(message);
     } catch (e) {
-      return new MessageReply({
-        status: { code: 400, detail: e.message }
-      });
+      return MessageReply.fromError(e, 400);
     }
 
     // authentication
     try {
       if (recordsRead.author !== undefined) {
-        await authenticate(message.authorization, this.didResolver);
+        await authenticate(message.authorization!, this.didResolver);
       }
     } catch (e) {
-      return new MessageReply({
-        status: { code: 401, detail: e.message }
-      });
+      return MessageReply.fromError(e, 401);
     }
 
     // get existing messages matching `recordId` so we can perform authorization
     const query = {
       interface : DwnInterfaceName.Records,
-      recordId  : incomingMessage.descriptor.recordId
+      recordId  : message.descriptor.recordId
     };
     const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
 
@@ -65,9 +60,7 @@ export class RecordsReadHandler implements MethodHandler {
       try {
         await recordsRead.authorize(tenant);
       } catch (error) {
-        return new MessageReply({
-          status: { code: 401, detail: error.message }
-        });
+        return MessageReply.fromError(error, 401);
       }
     }
 

@@ -20,16 +20,13 @@ export class RecordsWriteHandler implements MethodHandler {
     tenant,
     message,
     dataStream
-  }): Promise<MessageReply> {
-    const incomingMessage = message as RecordsWriteMessage;
+  }: { tenant: string, message: RecordsWriteMessage, dataStream: _Readable.Readable}): Promise<MessageReply> {
 
     let recordsWrite: RecordsWrite;
     try {
-      recordsWrite = await RecordsWrite.parse(incomingMessage);
+      recordsWrite = await RecordsWrite.parse(message);
     } catch (e) {
-      return new MessageReply({
-        status: { code: 400, detail: e.message }
-      });
+      return MessageReply.fromError(e, 400);
     }
 
     // authentication & authorization
@@ -37,15 +34,13 @@ export class RecordsWriteHandler implements MethodHandler {
       await authenticate(message.authorization, this.didResolver);
       await recordsWrite.authorize(tenant, this.messageStore);
     } catch (e) {
-      return new MessageReply({
-        status: { code: 401, detail: e.message }
-      });
+      return MessageReply.fromError(e, 401);
     }
 
     // get existing messages matching the `recordId`
     const query = {
       interface : DwnInterfaceName.Records,
-      recordId  : incomingMessage.recordId
+      recordId  : message.recordId
     };
     const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
 
@@ -54,11 +49,9 @@ export class RecordsWriteHandler implements MethodHandler {
     if (!newMessageIsInitialWrite) {
       try {
         const initialWrite = await RecordsWrite.getInitialWrite(existingMessages);
-        RecordsWrite.verifyEqualityOfImmutableProperties(initialWrite, incomingMessage);
+        RecordsWrite.verifyEqualityOfImmutableProperties(initialWrite, message);
       } catch (e) {
-        return new MessageReply({
-          status: { code: 400, detail: e.message }
-        });
+        return MessageReply.fromError(e, 400);
       }
     }
 
@@ -68,9 +61,9 @@ export class RecordsWriteHandler implements MethodHandler {
     let incomingMessageIsNewest = false;
     let newestMessage;
     // if incoming message is newest
-    if (newestExistingMessage === undefined || await RecordsWrite.isNewer(incomingMessage, newestExistingMessage)) {
+    if (newestExistingMessage === undefined || await RecordsWrite.isNewer(message, newestExistingMessage)) {
       incomingMessageIsNewest = true;
-      newestMessage = incomingMessage;
+      newestMessage = message;
     } else { // existing message is the same age or newer than the incoming message
       newestMessage = newestExistingMessage;
     }
@@ -82,14 +75,13 @@ export class RecordsWriteHandler implements MethodHandler {
       const indexes = await constructRecordsWriteIndexes(recordsWrite, isLatestBaseState);
 
       try {
-        await StorageController.put(this.messageStore, this.dataStore, this.eventLog, tenant, incomingMessage, indexes, dataStream);
+        await StorageController.put(this.messageStore, this.dataStore, this.eventLog, tenant, message, indexes, dataStream);
       } catch (error) {
-        if (error.code === DwnErrorCode.MessageStoreDataCidMismatch ||
-            error.code === DwnErrorCode.MessageStoreDataNotFound ||
-            error.code === DwnErrorCode.MessageStoreDataSizeMismatch) {
-          return new MessageReply({
-            status: { code: 400, detail: error.message }
-          });
+        const e = error as any;
+        if (e.code === DwnErrorCode.MessageStoreDataCidMismatch ||
+            e.code === DwnErrorCode.MessageStoreDataNotFound ||
+            e.code === DwnErrorCode.MessageStoreDataSizeMismatch) {
+          return MessageReply.fromError(error, 400);
         }
 
         // else throw

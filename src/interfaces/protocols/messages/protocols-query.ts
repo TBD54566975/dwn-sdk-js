@@ -15,12 +15,7 @@ export type ProtocolsQueryOptions = {
   authorizationSignatureInput: SignatureInput;
 };
 
-export class ProtocolsQuery extends Message {
-  readonly message: ProtocolsQueryMessage; // a more specific type than the base type defined in parent class
-
-  private constructor(message: ProtocolsQueryMessage) {
-    super(message);
-  }
+export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
 
   public static async parse(message: ProtocolsQueryMessage): Promise<ProtocolsQuery> {
     await validateAuthorizationIntegrity(message);

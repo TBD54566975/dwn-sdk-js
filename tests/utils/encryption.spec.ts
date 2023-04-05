@@ -1,3 +1,4 @@
+import * as secp256k1 from '@noble/secp256k1';
 import { Comparer } from '../utils/comparer.js';
 import { DataStream } from '../../src/index.js';
 import { Encryption } from '../../src/utils/encryption.js';
@@ -62,47 +63,62 @@ describe('Encryption', () => {
 
       expect(errorOccurred).to.be.true;
     });
+
+    it('should emit error on decrypt if the plaintext data stream emits an error', async () => {
+      const key = TestDataGenerator.randomBytes(32);
+      const initializationVector = TestDataGenerator.randomBytes(16);
+
+      let errorOccurred = false;
+
+      // a mock cipher stream
+      const randomByteGenerator = asyncRandomByteGenerator({ totalIterations: 10, bytesPerIteration: 1 });
+      const mockCipherStream = new Readable({
+        async read(): Promise<void> {
+          if (errorOccurred) {
+            return;
+          }
+
+          // MUST use async generator/iterator, else caller will repeatedly call `read()` in a blocking manner until `null` is returned
+          const { value } = await randomByteGenerator.next();
+          this.push(value);
+        }
+      });
+
+      const plaintextStream = await Encryption.aes256CtrDecrypt(key, initializationVector, mockCipherStream);
+
+      const simulatedErrorMessage = 'Simulated error';
+
+      // test that the `error` event from cipher stream will propagate to the plaintext stream
+      const eventPromise = new Promise<void>((resolve, _reject) => {
+        plaintextStream.on('error', (error) => {
+          expect(error).to.equal(simulatedErrorMessage);
+          errorOccurred = true;
+          resolve();
+        });
+      });
+
+      // trigger the `error` in the cipher stream
+      mockCipherStream.emit('error', simulatedErrorMessage);
+
+      await eventPromise;
+
+      expect(errorOccurred).to.be.true;
+    });
   });
 
-  it('should emit error on decrypt if the plaintext data stream emits an error', async () => {
-    const key = TestDataGenerator.randomBytes(32);
-    const initializationVector = TestDataGenerator.randomBytes(16);
+  describe('ECIES-SECP256K1', () => {
+    it('should be able to encrypt and decrypt given bytes correctly', async () => {
+      const compressedPublicKey = false;
+      const privateKey = secp256k1.utils.randomPrivateKey();
+      const publicKey = await secp256k1.getPublicKey(privateKey, compressedPublicKey);
 
-    let errorOccurred = false;
+      const originalPlaintext = TestDataGenerator.randomBytes(32);
+      const encryptionOutput = await Encryption.eciesSecp256k1Encrypt(publicKey, originalPlaintext);
+      const decryptionInput = { privateKey, ...encryptionOutput };
+      const decryptedPlaintext = await Encryption.eciesSecp256k1Decrypt(decryptionInput);
 
-    // a mock cipher stream
-    const randomByteGenerator = asyncRandomByteGenerator({ totalIterations: 10, bytesPerIteration: 1 });
-    const mockCipherStream = new Readable({
-      async read(): Promise<void> {
-        if (errorOccurred) {
-          return;
-        }
-
-        // MUST use async generator/iterator, else caller will repeatedly call `read()` in a blocking manner until `null` is returned
-        const { value } = await randomByteGenerator.next();
-        this.push(value);
-      }
+      expect(Comparer.byteArraysEqual(originalPlaintext, decryptedPlaintext)).to.be.true;
     });
-
-    const plaintextStream = await Encryption.aes256CtrDecrypt(key, initializationVector, mockCipherStream);
-
-    const simulatedErrorMessage = 'Simulated error';
-
-    // test that the `error` event from cipher stream will propagate to the plaintext stream
-    const eventPromise = new Promise<void>((resolve, _reject) => {
-      plaintextStream.on('error', (error) => {
-        expect(error).to.equal(simulatedErrorMessage);
-        errorOccurred = true;
-        resolve();
-      });
-    });
-
-    // trigger the `error` in the cipher stream
-    mockCipherStream.emit('error', simulatedErrorMessage);
-
-    await eventPromise;
-
-    expect(errorOccurred).to.be.true;
   });
 });
 

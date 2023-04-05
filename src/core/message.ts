@@ -25,14 +25,14 @@ export enum DwnMethodName {
   Delete = 'Delete'
 }
 
-export abstract class Message {
-  readonly message: BaseMessage;
+export abstract class Message<M extends BaseMessage> {
+  readonly message: M;
   readonly authorizationPayload: any;
 
   // commonly used properties for extra convenience;
   readonly author: string;
 
-  constructor(message: BaseMessage) {
+  constructor(message: M) {
     this.message = message;
     this.authorizationPayload = Jws.decodePlainObjectPayload(message.authorization);
 

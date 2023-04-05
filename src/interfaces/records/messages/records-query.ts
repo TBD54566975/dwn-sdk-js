@@ -22,12 +22,7 @@ export type RecordsQueryOptions = {
   authorizationSignatureInput: SignatureInput;
 };
 
-export class RecordsQuery extends Message {
-  readonly message: RecordsQueryMessage; // a more specific type than the base type defined in parent class
-
-  private constructor(message: RecordsQueryMessage) {
-    super(message);
-  }
+export class RecordsQuery extends Message<RecordsQueryMessage> {
 
   public static async parse(message: RecordsQueryMessage): Promise<RecordsQuery> {
     await validateAuthorizationIntegrity(message);
@@ -72,27 +67,31 @@ export class RecordsQuery extends Message {
   }
 
   public static convertFilter(filter: RecordsQueryFilter): Filter {
-    const result: Filter = { };
-    for (const key in filter) {
-      switch (key) {
-      case 'dateCreated':
-        var rangeFilter: RangeFilter = {
-          gte : filter.dateCreated.from,
-          lt  : filter.dateCreated.to
+    const filterCopy = { ...filter };
+    const { dateCreated } = filterCopy;
+
+    let rangeFilter: RangeFilter | undefined = undefined;
+    if (dateCreated !== undefined) {
+      if (dateCreated.to !== undefined && dateCreated.from !== undefined) {
+        rangeFilter = {
+          gte : dateCreated.from,
+          lt  : dateCreated.to,
         };
-        if (rangeFilter.gte === undefined) {
-          delete rangeFilter.gte;
-        }
-        if (rangeFilter.lt === undefined) {
-          delete rangeFilter.lt;
-        }
-        result.dateCreated = rangeFilter;
-        break;
-      default:
-        result[key] = filter[key];
-        break;
+      } else if (dateCreated.to !== undefined) {
+        rangeFilter = {
+          lt: dateCreated.to,
+        };
+      } else if (dateCreated.from !== undefined) {
+        rangeFilter = {
+          gte: dateCreated.from,
+        };
       }
     }
-    return result;
+
+    if (rangeFilter) {
+      (filterCopy as Filter).dateCreated = rangeFilter;
+    }
+
+    return filterCopy as Filter;
   }
 }

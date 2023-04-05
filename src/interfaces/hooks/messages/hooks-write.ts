@@ -25,12 +25,7 @@ export type HooksWriteOptions = {
 /**
  * Class that provides `HooksWrite` related operations.
  */
-export class HooksWrite extends Message {
-  readonly message: HooksWriteMessage; // a more specific type than the base type defined in parent class
-
-  constructor(message: HooksWriteMessage) {
-    super(message);
-  }
+export class HooksWrite extends Message<HooksWriteMessage> {
 
   /**
    * Creates a HooksWrite message

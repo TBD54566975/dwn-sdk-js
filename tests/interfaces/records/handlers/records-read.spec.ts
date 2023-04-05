@@ -108,7 +108,8 @@ describe('RecordsReadHandler.handle()', () => {
 
       // testing public RecordsRead
       const recordsRead = await RecordsRead.create({
-        recordId: message.recordId
+        recordId                    : message.recordId,
+        authorizationSignatureInput : Jws.createSignatureInput(alice)
       });
 
       const readReply = await dwn.processMessage(alice.did, recordsRead.message);
@@ -226,7 +227,7 @@ describe('RecordsReadHandler.handle()', () => {
     const dataStore = sinon.createStubInstance(DataStoreLevel);
 
     const recordsReadHandler = new RecordsReadHandler(didResolver, messageStore, dataStore);
-    const reply = await recordsReadHandler.handle({ tenant: alice, message: recordsRead.message });
+    const reply = await recordsReadHandler.handle({ tenant: alice.did, message: recordsRead.message });
     expect(reply.status.code).to.equal(401);
   });
 
@@ -245,7 +246,7 @@ describe('RecordsReadHandler.handle()', () => {
 
     // stub the `parse()` function to throw an error
     sinon.stub(RecordsRead, 'parse').throws('anyError');
-    const reply = await recordsReadHandler.handle({ tenant: alice, message: recordsRead.message });
+    const reply = await recordsReadHandler.handle({ tenant: alice.did, message: recordsRead.message });
 
     expect(reply.status.code).to.equal(400);
   });

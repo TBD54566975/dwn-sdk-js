@@ -1,6 +1,8 @@
 import chaiAsPromised from 'chai-as-promised';
 import credentialIssuanceProtocolDefinition from '../../../vectors/protocol-definitions/credential-issuance.json' assert { type: 'json' };
 import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
+import socialMediaProtocolDefinition from '../../../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
+
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
@@ -515,7 +517,7 @@ describe('RecordsWriteHandler.handle()', () => {
         // scenario: VC issuer writes into Alice's DWN an asynchronous credential response upon receiving Alice's credential application
 
         const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-        const protocolDefinition = credentialIssuanceProtocolDefinition;
+        const protocolDefinition: ProtocolDefinition = credentialIssuanceProtocolDefinition;
         const credentialApplicationSchema = protocolDefinition.labels.credentialApplication.schema;
         const credentialResponseSchema = protocolDefinition.labels.credentialResponse.schema;
 
@@ -575,6 +577,80 @@ describe('RecordsWriteHandler.handle()', () => {
         expect(applicationResponseQueryReply.entries?.length).to.equal(1);
         expect(applicationResponseQueryReply.entries![0].encodedData)
           .to.equal(base64url.baseEncode(encodedCredentialResponse));
+      });
+
+      it('should allow author to write with author rule and block non-authors', async () => {
+        // scenario: Alice posts an image on the social media protocol to Bob's, then she adds a caption
+        //           AliceImposter attempts to post add a caption to Alice's image, but is blocked
+        const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-media';
+        const protocolDefinition: ProtocolDefinition = socialMediaProtocolDefinition;
+
+        const alice = await TestDataGenerator.generatePersona();
+        const aliceImposter = await TestDataGenerator.generatePersona();
+        const bob = await TestDataGenerator.generatePersona();
+
+        // setting up a stub DID resolver
+        TestStubGenerator.stubDidResolver(didResolver, [alice, aliceImposter, bob]);
+
+        // Install social-media protocol
+        const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+          requester: bob,
+          protocol,
+          protocolDefinition
+        });
+        const protocolWriteReply = await dwn.processMessage(bob.did, protocolsConfig.message, protocolsConfig.dataStream);
+        expect(protocolWriteReply.status.code).to.equal(202);
+
+        // Alice writes image to bob's DWN
+        const encodedImage = new TextEncoder().encode('cafe-aesthetic.jpg');
+        const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+          requester : alice,
+          protocol,
+          schema    : socialMediaProtocolDefinition.labels.image.schema,
+          data      : encodedImage
+        });
+        const imageReply = await dwn.processMessage(bob.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
+        expect(imageReply.status.code).to.equal(202);
+
+        const imageContextId = await imageRecordsWrite.recordsWrite.getEntryId();
+
+        // AliceImposter attempts and fails to caption Alice's image
+        const encodedCaptionImposter = new TextEncoder().encode('bad vibes! >:(');
+        const captionImposter = await TestDataGenerator.generateRecordsWrite({
+          requester : aliceImposter,
+          protocol,
+          schema    : socialMediaProtocolDefinition.labels.caption.schema,
+          contextId : imageContextId,
+          parentId  : imageContextId,
+          data      : encodedCaptionImposter
+        });
+        const captionReply = await dwn.processMessage(bob.did, captionImposter.message, captionImposter.dataStream);
+        expect(captionReply.status.code).to.equal(401);
+        expect(captionReply.status.detail).to.contain('inbound message action \'write\' not in list of allowed actions ');
+
+        // Alice is able to add a caption to her image
+        const encodedCaption = new TextEncoder().encode('coffee and work vibes!');
+        const captionRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+          requester : alice,
+          protocol,
+          schema    : socialMediaProtocolDefinition.labels.caption.schema,
+          contextId : imageContextId,
+          parentId  : imageContextId,
+          data      : encodedCaption
+        });
+        const captionResponse = await dwn.processMessage(bob.did, captionRecordsWrite.message, captionRecordsWrite.dataStream);
+        expect(captionResponse.status.code).to.equal(202);
+
+        // Verify Alice's caption got written to the DB
+        const messageDataForQueryingCaptionResponse = await TestDataGenerator.generateRecordsQuery({
+          requester : alice,
+          filter    : { recordId: captionRecordsWrite.message.recordId }
+        });
+        const applicationResponseQueryReply = await dwn.processMessage(bob.did, messageDataForQueryingCaptionResponse.message);
+        expect(applicationResponseQueryReply.status.code).to.equal(200);
+        expect(applicationResponseQueryReply.entries?.length).to.equal(1);
+        expect(applicationResponseQueryReply.entries![0].encodedData)
+          .to.equal(base64url.baseEncode(encodedCaption));
       });
 
       it('should allow overwriting records by the same author', async () => {
@@ -875,7 +951,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
         const credentialResponseReply = await dwn.processMessage(alice.did, credentialResponse.message, credentialResponse.dataStream);
         expect(credentialResponseReply.status.code).to.equal(401);
-        expect(credentialResponseReply.status.detail).to.contain('unexpected inbound message author');
+        expect(credentialResponseReply.status.detail).to.contain('inbound message action \'write\' not in list of allowed actions ');
       });
 
       it('should fail authorization if protocol cannot be found for a protocol-based RecordsWrite', async () => {
@@ -949,7 +1025,6 @@ describe('RecordsWriteHandler.handle()', () => {
         expect(reply.status.code).to.equal(401);
         expect(reply.status.detail).to.contain('not allowed in structure level');
       });
-
 
       it('should fail authorization if record schema is not allowed at the hierarchical level attempted for the RecordsWrite', async () => {
         const alice = await DidKeyResolver.generate();
@@ -1051,7 +1126,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
         reply = await dwn.processMessage(alice.did, bobWriteMessageData.message, bobWriteMessageData.dataStream);
         expect(reply.status.code).to.equal(401);
-        expect(reply.status.detail).to.contain('no allow rule defined for requester');
+        expect(reply.status.detail).to.contain(`no allow rule defined for Write`);
       });
 
       it('should fail authorization if path to expected recipient in definition is longer than actual length of ancestor message chain', async () => {

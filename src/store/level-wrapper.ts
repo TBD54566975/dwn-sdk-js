@@ -41,7 +41,7 @@ export class LevelWrapper<V> {
       ...config
     };
 
-    this.db = db;
+    this.db = db!;
   }
 
   async open(): Promise<void> {
@@ -87,7 +87,7 @@ export class LevelWrapper<V> {
     }));
   }
 
-  async get(key: string, options?: LevelWrapperOptions): Promise<V> {
+  async get(key: string, options?: LevelWrapperOptions): Promise<V|undefined>{
     options?.signal?.throwIfAborted();
 
     await abortOr(options?.signal, this.createLevelDatabase());
@@ -96,8 +96,9 @@ export class LevelWrapper<V> {
       const value = await abortOr(options?.signal, this.db.get(String(key)));
       return value;
     } catch (error) {
+      const e = error as any; // FIXME
       // `Level`` throws an error if the key is not present.  Return `undefined` in this case.
-      if (error.code === 'LEVEL_NOT_FOUND') {
+      if (e.code === 'LEVEL_NOT_FOUND') {
         return undefined;
       } else {
         throw error;
@@ -209,7 +210,7 @@ export class LevelWrapper<V> {
   }
 
   private async createLevelDatabase(): Promise<void> {
-    this.db ??= await this.config.createLevelDatabase<V>(this.config.location, {
+    this.db ??= await this.config.createLevelDatabase!<V>(this.config.location, {
       keyEncoding   : 'utf8',
       valueEncoding : this.config.valueEncoding
     });

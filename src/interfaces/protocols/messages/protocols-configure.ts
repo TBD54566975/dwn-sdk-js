@@ -13,12 +13,7 @@ export type ProtocolsConfigureOptions = {
   authorizationSignatureInput: SignatureInput;
 };
 
-export class ProtocolsConfigure extends Message {
-  readonly message: ProtocolsConfigureMessage; // a more specific type than the base type defined in parent class
-
-  private constructor(message: ProtocolsConfigureMessage) {
-    super(message);
-  }
+export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
 
   public static async parse(message: ProtocolsConfigureMessage): Promise<ProtocolsConfigure> {
     await validateAuthorizationIntegrity(message);

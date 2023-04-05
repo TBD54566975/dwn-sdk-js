@@ -19,16 +19,13 @@ export class RecordsDeleteHandler implements MethodHandler {
   public async handle({
     tenant,
     message
-  }): Promise<MessageReply> {
-    const incomingMessage = message as RecordsDeleteMessage;
+  }: { tenant: string, message: RecordsDeleteMessage}): Promise<MessageReply> {
 
     let recordsDelete: RecordsDelete;
     try {
-      recordsDelete = await RecordsDelete.parse(incomingMessage);
+      recordsDelete = await RecordsDelete.parse(message);
     } catch (e) {
-      return new MessageReply({
-        status: { code: 400, detail: e.message }
-      });
+      return MessageReply.fromError(e, 400);
     }
 
     // authentication & authorization
@@ -36,15 +33,13 @@ export class RecordsDeleteHandler implements MethodHandler {
       await authenticate(message.authorization, this.didResolver);
       await recordsDelete.authorize(tenant);
     } catch (e) {
-      return new MessageReply({
-        status: { code: 401, detail: e.message }
-      });
+      return MessageReply.fromError(e, 401);
     }
 
     // get existing records matching the `recordId`
     const query = {
       interface : DwnInterfaceName.Records,
-      recordId  : incomingMessage.descriptor.recordId
+      recordId  : message.descriptor.recordId
     };
     const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
 
@@ -53,9 +48,9 @@ export class RecordsDeleteHandler implements MethodHandler {
     let incomingMessageIsNewest = false;
     let newestMessage;
     // if incoming message is newest
-    if (newestExistingMessage === undefined || await RecordsWrite.isNewer(incomingMessage, newestExistingMessage)) {
+    if (newestExistingMessage === undefined || await RecordsWrite.isNewer(message, newestExistingMessage)) {
       incomingMessageIsNewest = true;
-      newestMessage = incomingMessage;
+      newestMessage = message;
     } else { // existing message is the same age or newer than the incoming message
       newestMessage = newestExistingMessage;
     }
@@ -65,7 +60,7 @@ export class RecordsDeleteHandler implements MethodHandler {
     if (incomingMessageIsNewest) {
       const indexes = await constructIndexes(tenant, recordsDelete);
 
-      await this.messageStore.put(tenant, incomingMessage, indexes);
+      await this.messageStore.put(tenant, message, indexes);
 
       const messageCid = await computeCid(incomingMessage);
       await this.eventLog.append(tenant, messageCid);

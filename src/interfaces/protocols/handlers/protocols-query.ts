@@ -17,30 +17,25 @@ export class ProtocolsQueryHandler implements MethodHandler {
   public async handle({
     tenant,
     message
-  }): Promise<MessageReply> {
-    const incomingMessage = message as ProtocolsQueryMessage;
+  }: { tenant: string, message: ProtocolsQueryMessage}): Promise<MessageReply> {
 
     let protocolsQuery: ProtocolsQuery;
     try {
-      protocolsQuery = await ProtocolsQuery.parse(incomingMessage);
+      protocolsQuery = await ProtocolsQuery.parse(message);
     } catch (e) {
-      return new MessageReply({
-        status: { code: 400, detail: e.message }
-      });
+      return MessageReply.fromError(e, 400);
     }
 
     try {
       await canonicalAuth(tenant, protocolsQuery, this.didResolver);
     } catch (e) {
-      return new MessageReply({
-        status: { code: 401, detail: e.message }
-      });
+      return MessageReply.fromError(e, 401);
     }
 
     const query = {
       interface : DwnInterfaceName.Protocols,
       method    : DwnMethodName.Configure,
-      ...incomingMessage.descriptor.filter
+      ...message.descriptor.filter
     };
     removeUndefinedProperties(query);
 

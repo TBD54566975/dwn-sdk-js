@@ -21,6 +21,68 @@
     "authorization": {
       "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
     },
+    "encryption": {
+      "type": "object",
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "enum": [
+            "A256CTR"
+          ]
+        },
+        "initializationVector": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/base64url"
+        },
+        "keyEncryption": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "properties": {
+              "derivationScheme": {
+                "type": "string",
+                "enum": [
+                  "protocol"
+                ]
+              },
+              "algorithm": {
+                "type": "string",
+                "enum": [
+                  "ECIES-ES256K"
+                ]
+              },
+              "encryptedKey": {
+                "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/base64url"
+              },
+              "initializationVector": {
+                "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/base64url"
+              },
+              "ephemeralPublicKey": {
+                "$ref": "https://identity.foundation/dwn/json-schemas/public-jwk.json"
+              },
+              "messageAuthenticationCode": {
+                "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/base64url"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "derivationScheme",
+              "algorithm",
+              "encryptedKey",
+              "initializationVector",
+              "ephemeralPublicKey",
+              "messageAuthenticationCode"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "algorithm",
+        "initializationVector",
+        "keyEncryption"
+      ]
+    },
     "descriptor": {
       "type": "object",
       "properties": {
