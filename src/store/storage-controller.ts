@@ -85,9 +85,9 @@ export class StorageController {
     dataStore: DataStore,
     tenant: string,
     filter: Filter
-  ): Promise<BaseMessage[]> {
+  ): Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
 
-    const messages = await messageStore.query(tenant, filter);
+    const messages: RecordsWriteMessageWithOptionalEncodedData[] = await messageStore.query(tenant, filter);
 
     // for every message, only include the data as `encodedData` if the data size is equal or smaller than the size threshold
     for (const message of messages) {
@@ -99,7 +99,7 @@ export class StorageController {
 
         if (result) {
           const dataBytes = await DataStream.toBytes(result.dataStream);
-          message['encodedData'] = Encoder.bytesToBase64Url(dataBytes);
+          message.encodedData = Encoder.bytesToBase64Url(dataBytes);
         }
       }
     }
@@ -122,3 +122,6 @@ export class StorageController {
     await messageStore.delete(tenant, messageCid);
   }
 }
+
+
+type RecordsWriteMessageWithOptionalEncodedData = BaseMessage & { encodedData?: string };

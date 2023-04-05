@@ -431,8 +431,8 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     for (const descriptorPropertyName of descriptorPropertyNames) {
       // if property is supposed to be immutable
       if (mutableDescriptorProperties.indexOf(descriptorPropertyName) === -1) {
-        const valueInExistingWrite = existingWriteMessage.descriptor[descriptorPropertyName];
-        const valueInNewMessage = newMessage.descriptor[descriptorPropertyName];
+        const valueInExistingWrite = (existingWriteMessage.descriptor as any)[descriptorPropertyName];
+        const valueInNewMessage = (newMessage.descriptor as any)[descriptorPropertyName];
         if (valueInNewMessage !== valueInExistingWrite) {
           throw new Error(`${descriptorPropertyName} is an immutable property: cannot change '${valueInExistingWrite}' to '${valueInNewMessage}'`);
         }
