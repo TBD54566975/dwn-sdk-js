@@ -2,6 +2,7 @@ import type { DataStore } from '../../store/data-store.js';
 import type { MessageStore } from '../../store/message-store.js';
 import type { RecordsWriteMessage } from '../../interfaces/records/types.js';
 import type { TimestampedMessage } from '../../core/types.js';
+import type { EventLog } from '../../event-log/event-log.js';
 
 import { constructRecordsWriteIndexes } from './handlers/records-write.js';
 import { Message } from '../../core/message.js';
@@ -17,8 +18,11 @@ export async function deleteAllOlderMessagesButKeepInitialWrite(
   existingMessages: TimestampedMessage[],
   comparedToMessage: TimestampedMessage,
   messageStore: MessageStore,
-  dataStore: DataStore
+  dataStore: DataStore,
+  eventLog: EventLog
 ): Promise<void> {
+  const deletedMessageCids = [];
+
   // NOTE: under normal operation, there should only be at most two existing records per `recordId` (initial + a potential subsequent write/delete),
   // but the DWN may crash before `delete()` is called below, so we use a loop as a tactic to clean up lingering data as needed
   for (const message of existingMessages) {
@@ -37,7 +41,12 @@ export async function deleteAllOlderMessagesButKeepInitialWrite(
         const isLatestBaseState = false;
         const indexes = await constructRecordsWriteIndexes(existingRecordsWrite, isLatestBaseState);
         await messageStore.put(tenant, message, indexes);
+      } else {
+        const messageCid = await Message.getCid(message);
+        deletedMessageCids.push(messageCid);
       }
     }
+
+    await eventLog.deleteEventsByCid(tenant, deletedMessageCids);
   }
 }
