@@ -31,12 +31,12 @@ export class StorageController {
     indexes: { [key: string]: string },
     dataStream?: Readable
   ): Promise<void> {
+    const messageCid = await Message.getCid(message);
+
     // if `dataCid` is given, it means there is corresponding data associated with this message
     // but NOTE: it is possible that a data stream is not given in such case, for instance,
     // a subsequent RecordsWrite that changes the `published` property, but the data hasn't changed,
     // in this case requiring re-uploading of the data is extremely inefficient so we take care allow omission of data stream
-    const messageCid = await Message.getCid(message);
-
     if (message.descriptor.dataCid !== undefined) {
       let result;
 
