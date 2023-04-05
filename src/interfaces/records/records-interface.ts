@@ -1,8 +1,8 @@
 import type { DataStore } from '../../store/data-store.js';
+import type { EventLog } from '../../event-log/event-log.js';
 import type { MessageStore } from '../../store/message-store.js';
 import type { RecordsWriteMessage } from '../../interfaces/records/types.js';
 import type { TimestampedMessage } from '../../core/types.js';
-import type { EventLog } from '../../event-log/event-log.js';
 
 import { constructRecordsWriteIndexes } from './handlers/records-write.js';
 import { Message } from '../../core/message.js';
