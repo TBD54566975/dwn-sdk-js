@@ -62,7 +62,7 @@ export class RecordsDeleteHandler implements MethodHandler {
 
       await this.messageStore.put(tenant, message, indexes);
 
-      const messageCid = await computeCid(incomingMessage);
+      const messageCid = await computeCid(message);
       await this.eventLog.append(tenant, messageCid);
 
       messageReply = new MessageReply({
