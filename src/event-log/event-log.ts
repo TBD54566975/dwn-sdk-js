@@ -35,4 +35,11 @@ export interface EventLog {
    * @param watermark
    */
   getEvents(tenant: string, options?: GetEventsOptions): Promise<Array<Event>>
+
+  /**
+   * deletes any events that have any of the cids provided
+   * @param tenant
+   * @param cids
+   */
+  deleteEventsByCid(tenant: string, cids: Array<string>): Promise<number>
 }

@@ -64,7 +64,7 @@ export class EventLogLevel implements EventLog {
     return events;
   }
 
-  async deleteEventsByCid(tenant, cids): Promise<number> {
+  async deleteEventsByCid(tenant: string, cids: Array<string>): Promise<number> {
     if (cids.length === 0) {
       return 0;
     }
