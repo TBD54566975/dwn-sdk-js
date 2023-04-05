@@ -5,7 +5,7 @@ import type { GeneralJws } from '../jose/jws/general/types.js';
  */
 export type BaseMessage = {
   descriptor: Descriptor
-  authorization: GeneralJws;
+  authorization?: GeneralJws;
 };
 
 /**

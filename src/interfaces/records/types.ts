@@ -1,7 +1,9 @@
 import type { BaseMessage } from '../../core/types.js';
+import type { BaseMessageReply } from '../../core/message-reply.js';
 import type { DateSort } from './messages/records-query.js';
 import type { GeneralJws } from '../../jose/jws/general/types.js';
 import type { PublicJwk } from '../../jose/types.js';
+import type { Readable } from 'readable-stream';
 import type { DwnInterfaceName, DwnMethodName } from '../../core/message.js';
 
 export type RecordsWriteDescriptor = {
@@ -100,9 +102,21 @@ export type RecordsQueryMessage = BaseMessage & {
   descriptor: RecordsQueryDescriptor;
 };
 
-export type RecordsReadMessage = BaseMessage & {
+export type RecordsReadMessage = {
   authorization?: GeneralJws;
   descriptor: RecordsReadDescriptor;
+};
+
+export type RecordsReadReply = BaseMessageReply & {
+  record?: {
+    recordId: string,
+    contextId?: string;
+    descriptor: RecordsWriteDescriptor;
+    // authorization: GeneralJws; // intentionally omitted
+    attestation?: GeneralJws;
+    encryption?: EncryptionMetadata;
+    data: Readable;
+  }
 };
 
 export type RecordsReadDescriptor = {

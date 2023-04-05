@@ -3,7 +3,13 @@
 # Decentralized Web Node (DWN) SDK
 
 Code Coverage
-![Statements](https://img.shields.io/badge/statements-93.68%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-92.29%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-90.8%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-93.68%25-brightgreen.svg?style=flat)
+<<<<<<< Updated upstream
+![Statements](https://img.shields.io/badge/statements-93.71%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-92.36%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-90.83%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-93.71%25-brightgreen.svg?style=flat)
+||||||| Stash base
+![Statements](https://img.shields.io/badge/statements-93.84%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-92.39%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-91.01%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-93.84%25-brightgreen.svg?style=flat)
+=======
+![Statements](https://img.shields.io/badge/statements-93.87%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-92.45%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-91.05%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-93.87%25-brightgreen.svg?style=flat)
+>>>>>>> Stashed changes
 
 ## Introduction
 

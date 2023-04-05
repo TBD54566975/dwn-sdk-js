@@ -64,11 +64,13 @@ describe('RecordsReadHandler.handle()', () => {
         authorizationSignatureInput : Jws.createSignatureInput(alice)
       });
 
-      const readReply = await dwn.processMessage(alice.did, recordsRead.message);
+      const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
       expect(readReply.status.code).to.equal(200);
+      expect(readReply.record).to.exist;
+      expect(readReply.record?.descriptor).to.exist;
 
-      const dataFetched = await DataStream.toBytes(readReply.data);
-      expect(Comparer.byteArraysEqual(dataFetched, dataBytes)).to.be.true;
+      const dataFetched = await DataStream.toBytes(readReply.record!.data);
+      expect(Comparer.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
     });
 
     it('should not allow non-tenant to RecordsRead their a record data', async () => {
@@ -101,15 +103,15 @@ describe('RecordsReadHandler.handle()', () => {
 
       // testing public RecordsRead
       const recordsRead = await RecordsRead.create({
-        recordId                    : message.recordId,
-        authorizationSignatureInput : Jws.createSignatureInput(alice)
+        recordId: message.recordId
       });
+      expect(recordsRead.author).to.be.undefined; // making sure no author/authorization is created
 
-      const readReply = await dwn.processMessage(alice.did, recordsRead.message);
+      const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
       expect(readReply.status.code).to.equal(200);
 
-      const dataFetched = await DataStream.toBytes(readReply.data);
-      expect(Comparer.byteArraysEqual(dataFetched, dataBytes)).to.be.true;
+      const dataFetched = await DataStream.toBytes(readReply.record!.data);
+      expect(Comparer.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
     });
 
     it('should allow an authenticated user to RecordRead data that is published', async () => {
@@ -128,11 +130,11 @@ describe('RecordsReadHandler.handle()', () => {
         authorizationSignatureInput : Jws.createSignatureInput(bob)
       });
 
-      const readReply = await dwn.processMessage(alice.did, recordsRead.message);
+      const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
       expect(readReply.status.code).to.equal(200);
 
-      const dataFetched = await DataStream.toBytes(readReply.data);
-      expect(Comparer.byteArraysEqual(dataFetched, dataBytes)).to.be.true;
+      const dataFetched = await DataStream.toBytes(readReply.record!.data);
+      expect(Comparer.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
     });
 
     it('should return 404 RecordRead if data does not exist', async () => {

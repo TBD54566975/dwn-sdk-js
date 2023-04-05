@@ -10,7 +10,7 @@ import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 export type RecordsReadOptions = {
   recordId: string;
   date?: string;
-  authorizationSignatureInput: SignatureInput;
+  authorizationSignatureInput?: SignatureInput;
 };
 
 export class RecordsRead {
@@ -45,7 +45,7 @@ export class RecordsRead {
    * @param options.date If `undefined`, it will be auto-filled with current time.
    */
   public static async create(options: RecordsReadOptions): Promise<RecordsRead> {
-    const recordId = options.recordId;
+    const { recordId, authorizationSignatureInput } = options;
     const currentTime = getCurrentTimeInHighPrecision();
 
     const descriptor: RecordsReadDescriptor = {
@@ -55,7 +55,8 @@ export class RecordsRead {
       date      : options.date ?? currentTime
     };
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
+    // only generate the `authorization` property if signature input is given
+    const authorization = authorizationSignatureInput ? await Message.signAsAuthorization(descriptor, authorizationSignatureInput) : undefined;
     const message: RecordsReadMessage = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
