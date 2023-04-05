@@ -27,7 +27,7 @@ import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions/messages/permissions-request.js';
 import { removeUndefinedProperties } from '../../src/utils/object.js';
-import { Secp256k1 } from '../../src/jose/algorithms/signing/secp256k1.js';
+import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 
 import {

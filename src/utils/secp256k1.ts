@@ -1,19 +1,29 @@
-import type { PrivateJwk, PublicJwk, Signer } from '../../types.js';
+import type { PrivateJwk, PublicJwk } from '../jose/types.js';
 
 import * as secp256k1 from '@noble/secp256k1';
 import secp256k1Derivation from 'secp256k1';
 
-import { Encoder } from '../../../utils/encoder.js';
+import { Encoder } from '../utils/encoder.js';
 import { sha256 } from 'multiformats/hashes/sha2';
-import { DwnError, DwnErrorCode } from '../../../core/dwn-error.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
+/**
+ * Class containing SECP256K1 related utility methods.
+ */
 export class Secp256k1 {
+  /**
+   * Validates the given JWK is a SECP256K1 key.
+   * @throws {Error} if fails validation.
+   */
   public static validateKey(jwk: PrivateJwk | PublicJwk): void {
     if (jwk.kty !== 'EC' || jwk.crv !== 'secp256k1') {
       throw new Error('invalid jwk. kty MUST be EC. crv MUST be secp256k1');
     }
   }
 
+  /**
+   * Converts a public key in bytes into a JWK.
+   */
   public static async publicKeyToJwk(publicKeyBytes: Uint8Array): Promise<PublicJwk> {
   // ensure public key is in uncompressed format so we can convert it into both x and y value
     let uncompressedPublicKeyBytes;
@@ -45,6 +55,9 @@ export class Secp256k1 {
     return publicJwk;
   }
 
+  /**
+   * Signs the provided content using the provided JWK.
+   */
   public static async sign(content: Uint8Array, privateJwk: PrivateJwk): Promise<Uint8Array> {
     Secp256k1.validateKey(privateJwk);
 
@@ -56,7 +69,10 @@ export class Secp256k1 {
     return await secp256k1.sign(hashedContent, privateKeyBytes, { der: false });
   }
 
-
+  /**
+   * Verifies a signature against the provided payload hash and public key.
+   * @returns a boolean indicating whether the signature is valid.
+   */
   public static async verify(content: Uint8Array, signature: Uint8Array, publicJwk: PublicJwk): Promise<boolean> {
     Secp256k1.validateKey(publicJwk);
 
@@ -77,6 +93,9 @@ export class Secp256k1 {
     return secp256k1.verify(signature, hashedContent, publicKeyBytes);
   }
 
+  /**
+   * Generates a random key pair in JWK format.
+   */
   public static async generateKeyPair(): Promise<{publicJwk: PublicJwk, privateJwk: PrivateJwk}> {
     const privateKeyBytes = secp256k1.utils.randomPrivateKey();
     const publicKeyBytes = await secp256k1.getPublicKey(privateKeyBytes);
@@ -133,9 +152,9 @@ export class Secp256k1 {
   }
 
   /**
-     * Derives a hierarchical deterministic private key.
-     * @param relativePath `/` delimited path relative to the key given. e.g. 'a/b/c'
-     */
+   * Derives a hierarchical deterministic private key.
+   * @param relativePath `/` delimited path relative to the key given. e.g. 'a/b/c'
+   */
   public static async derivePrivateKey(privateKey: Uint8Array, relativePath: string): Promise<Uint8Array> {
     const pathSegments = Secp256k1.parseAndValidateKeyDerivationPath(relativePath);
 
@@ -149,8 +168,8 @@ export class Secp256k1 {
   }
 
   /**
-     * Derives a child public key using the given tweak input.
-     */
+   * Derives a child public key using the given tweak input.
+   */
   public static deriveChildPublicKey(uncompressedPublicKey: Uint8Array, tweakInput: Uint8Array): Uint8Array {
     const compressedPublicKey = false;
     const derivedPublicKey = secp256k1Derivation.publicKeyTweakAdd(uncompressedPublicKey, tweakInput, compressedPublicKey);
@@ -158,8 +177,8 @@ export class Secp256k1 {
   }
 
   /**
-     * Derives a child private key using the given tweak input.
-     */
+   * Derives a child private key using the given tweak input.
+   */
   public static deriveChildPrivateKey(privateKey: Uint8Array, tweakInput: Uint8Array): Uint8Array {
     // NOTE: passing in private key to v5.0.0 of `secp256k1.privateKeyTweakAdd()` has the side effect of morphing the input private key bytes
     // before there is a fix for it (we can also investigate and submit a PR), we clone the private key to workaround
@@ -172,10 +191,10 @@ export class Secp256k1 {
   }
 
   /**
-     * Parses the given key derivation path.
-     * @returns Path segments if successfully validate the derivation path.
-     * @throws {DwnError} with `DwnErrorCode.HdKeyDerivationPathInvalid` if derivation path fails validation.
-     */
+   * Parses the given key derivation path.
+   * @returns Path segments if successfully validate the derivation path.
+   * @throws {DwnError} with `DwnErrorCode.HdKeyDerivationPathInvalid` if derivation path fails validation.
+   */
   private static parseAndValidateKeyDerivationPath(derivationPath: string): string[] {
     const pathSegments = derivationPath.split('/');
 
@@ -186,10 +205,3 @@ export class Secp256k1 {
     return pathSegments;
   }
 }
-
-export const secp256k1Signer: Signer = {
-  sign            : Secp256k1.sign,
-  verify          : Secp256k1.verify,
-  generateKeyPair : Secp256k1.generateKeyPair,
-  publicKeyToJwk  : Secp256k1.publicKeyToJwk
-};

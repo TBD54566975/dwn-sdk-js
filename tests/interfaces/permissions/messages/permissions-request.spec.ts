@@ -6,7 +6,7 @@ import sinon from 'sinon';
 
 import { expect } from 'chai';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
-import { Secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1.js';
+import { Secp256k1 } from '../../../../src/utils/secp256k1.js';
 import { DEFAULT_CONDITIONS, PermissionsRequest } from '../../../../src/interfaces/permissions/messages/permissions-request.js';
 
 chai.use(chaiAsPromised);

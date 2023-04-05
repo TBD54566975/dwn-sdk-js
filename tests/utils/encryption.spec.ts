@@ -3,7 +3,7 @@ import { DataStream } from '../../src/index.js';
 import { Encryption } from '../../src/utils/encryption.js';
 import { expect } from 'chai';
 import { Readable } from 'readable-stream';
-import { Secp256k1 } from '../../src/jose/algorithms/signing/secp256k1.js';
+import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { TestDataGenerator } from './test-data-generator.js';
 
 describe('Encryption', () => {

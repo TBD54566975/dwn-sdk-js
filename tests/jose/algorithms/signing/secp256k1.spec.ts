@@ -2,7 +2,7 @@ import { base64url } from 'multiformats/bases/base64';
 import { Comparer } from '../../../utils/comparer.js';
 import { DwnErrorCode } from '../../../../src/core/dwn-error.js';
 import { expect } from 'chai';
-import { Secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1.js';
+import { Secp256k1 } from '../../../../src/utils/secp256k1.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 
 describe('Secp256k1', () => {
