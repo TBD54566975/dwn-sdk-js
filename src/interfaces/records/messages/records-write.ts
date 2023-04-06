@@ -422,7 +422,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     const mutableDescriptorProperties = ['dataCid', 'dataSize', 'datePublished', 'published', 'dateModified'];
 
     // get distinct property names that exist in either the existing message given or new message
-    let descriptorPropertyNames = [];
+    let descriptorPropertyNames: string[] = [];
     descriptorPropertyNames.push(...Object.keys(existingWriteMessage.descriptor));
     descriptorPropertyNames.push(...Object.keys(newMessage.descriptor));
     descriptorPropertyNames = [...new Set(descriptorPropertyNames)]; // step to remove duplicates

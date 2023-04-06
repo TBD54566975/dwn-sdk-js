@@ -93,7 +93,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       const messageData2 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol });
       const messageData3 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol });
 
-      const messageDataWithCid = [];
+      const messageDataWithCid: (GenerateProtocolsConfigureOutput & { cid: string })[] = [];
       for (const messageData of [messageData1, messageData2, messageData3]) {
         const cid = await Message.getCid(messageData.message);
         messageDataWithCid.push({ cid, ...messageData });

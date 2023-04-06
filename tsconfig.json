@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "strict": true,
+    "noImplicitAny": false,
     "lib": [
       "DOM",
       "ES6"

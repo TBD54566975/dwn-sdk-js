@@ -349,7 +349,7 @@ describe('RecordsQueryHandler.handle()', () => {
       const publishedAscendingQueryReply = await dwn.processMessage(alice.did, publishedAscendingQueryData.message);
 
       expect(publishedAscendingQueryReply.entries?.length).to.equal(1);
-      expect(publishedAscendingQueryReply.entries[0].descriptor['datePublished']).to.equal(publishedWriteData.message.descriptor.datePublished);
+      expect(publishedAscendingQueryReply.entries![0].descriptor['datePublished']).to.equal(publishedWriteData.message.descriptor.datePublished);
 
       // test published date scending sort does not include any records that is not published
       const publishedDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
@@ -360,7 +360,7 @@ describe('RecordsQueryHandler.handle()', () => {
       const publishedDescendingQueryReply = await dwn.processMessage(alice.did, publishedDescendingQueryData.message);
 
       expect(publishedDescendingQueryReply.entries?.length).to.equal(1);
-      expect(publishedDescendingQueryReply.entries[0].descriptor['datePublished']).to.equal(publishedWriteData.message.descriptor.datePublished);
+      expect(publishedDescendingQueryReply.entries![0].descriptor['datePublished']).to.equal(publishedWriteData.message.descriptor.datePublished);
     });
 
     it('should sort records if `dateSort` is specified', async () => {
@@ -392,9 +392,9 @@ describe('RecordsQueryHandler.handle()', () => {
       });
       const createdAscendingQueryReply = await dwn.processMessage(alice.did, createdAscendingQueryData.message);
 
-      expect(createdAscendingQueryReply.entries[0].descriptor['dateCreated']).to.equal(write1Data.message.descriptor.dateCreated);
-      expect(createdAscendingQueryReply.entries[1].descriptor['dateCreated']).to.equal(write2Data.message.descriptor.dateCreated);
-      expect(createdAscendingQueryReply.entries[2].descriptor['dateCreated']).to.equal(write3Data.message.descriptor.dateCreated);
+      expect(createdAscendingQueryReply.entries?.[0].descriptor['dateCreated']).to.equal(write1Data.message.descriptor.dateCreated);
+      expect(createdAscendingQueryReply.entries?.[1].descriptor['dateCreated']).to.equal(write2Data.message.descriptor.dateCreated);
+      expect(createdAscendingQueryReply.entries?.[2].descriptor['dateCreated']).to.equal(write3Data.message.descriptor.dateCreated);
 
       // createdDescending test
       const createdDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
@@ -404,9 +404,9 @@ describe('RecordsQueryHandler.handle()', () => {
       });
       const createdDescendingQueryReply = await dwn.processMessage(alice.did, createdDescendingQueryData.message);
 
-      expect(createdDescendingQueryReply.entries[0].descriptor['dateCreated']).to.equal(write3Data.message.descriptor.dateCreated);
-      expect(createdDescendingQueryReply.entries[1].descriptor['dateCreated']).to.equal(write2Data.message.descriptor.dateCreated);
-      expect(createdDescendingQueryReply.entries[2].descriptor['dateCreated']).to.equal(write1Data.message.descriptor.dateCreated);
+      expect(createdDescendingQueryReply.entries?.[0].descriptor['dateCreated']).to.equal(write3Data.message.descriptor.dateCreated);
+      expect(createdDescendingQueryReply.entries?.[1].descriptor['dateCreated']).to.equal(write2Data.message.descriptor.dateCreated);
+      expect(createdDescendingQueryReply.entries?.[2].descriptor['dateCreated']).to.equal(write1Data.message.descriptor.dateCreated);
 
       // publishedAscending test
       const publishedAscendingQueryData = await TestDataGenerator.generateRecordsQuery({
@@ -416,9 +416,9 @@ describe('RecordsQueryHandler.handle()', () => {
       });
       const publishedAscendingQueryReply = await dwn.processMessage(alice.did, publishedAscendingQueryData.message);
 
-      expect(publishedAscendingQueryReply.entries[0].descriptor['datePublished']).to.equal(write1Data.message.descriptor.datePublished);
-      expect(publishedAscendingQueryReply.entries[1].descriptor['datePublished']).to.equal(write2Data.message.descriptor.datePublished);
-      expect(publishedAscendingQueryReply.entries[2].descriptor['datePublished']).to.equal(write3Data.message.descriptor.datePublished);
+      expect(publishedAscendingQueryReply.entries?.[0].descriptor['datePublished']).to.equal(write1Data.message.descriptor.datePublished);
+      expect(publishedAscendingQueryReply.entries?.[1].descriptor['datePublished']).to.equal(write2Data.message.descriptor.datePublished);
+      expect(publishedAscendingQueryReply.entries?.[2].descriptor['datePublished']).to.equal(write3Data.message.descriptor.datePublished);
 
       // publishedDescending test
       const publishedDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
@@ -428,9 +428,9 @@ describe('RecordsQueryHandler.handle()', () => {
       });
       const publishedDescendingQueryReply = await dwn.processMessage(alice.did, publishedDescendingQueryData.message);
 
-      expect(publishedDescendingQueryReply.entries[0].descriptor['datePublished']).to.equal(write3Data.message.descriptor.datePublished);
-      expect(publishedDescendingQueryReply.entries[1].descriptor['datePublished']).to.equal(write2Data.message.descriptor.datePublished);
-      expect(publishedDescendingQueryReply.entries[2].descriptor['datePublished']).to.equal(write1Data.message.descriptor.datePublished);
+      expect(publishedDescendingQueryReply.entries?.[0].descriptor['datePublished']).to.equal(write3Data.message.descriptor.datePublished);
+      expect(publishedDescendingQueryReply.entries?.[1].descriptor['datePublished']).to.equal(write2Data.message.descriptor.datePublished);
+      expect(publishedDescendingQueryReply.entries?.[2].descriptor['datePublished']).to.equal(write1Data.message.descriptor.datePublished);
     });
 
     it('should only return published records and unpublished records that is meant for requester', async () => {
