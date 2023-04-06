@@ -13,6 +13,7 @@ import { removeUndefinedProperties } from '../../../utils/object.js';
 
 import { authorize, validateAuthorizationIntegrity } from '../../../core/auth.js';
 import { Cid, computeCid } from '../../../utils/cid.js';
+import { DwnError, DwnErrorCode } from '../../../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 
 export type RecordsWriteOptions = {
@@ -229,7 +230,8 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
 
   public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
     if (this.message.descriptor.protocol !== undefined) {
-      await ProtocolAuthorization.authorize(tenant, this, this.author, messageStore);
+      // NOTE: `author` definitely exists because of the earlier `authenticate()` call
+      await ProtocolAuthorization.authorize(tenant, this, this.author!, messageStore);
     } else {
       await authorize(tenant, this);
     }
@@ -328,7 +330,12 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
   /**
    * Computes the deterministic Entry ID of this message.
    */
-  public static async getEntryId(author: string, descriptor: RecordsWriteDescriptor): Promise<string> {
+  public static async getEntryId(author: string | undefined, descriptor: RecordsWriteDescriptor): Promise<string> {
+    // TODO: this paves the way to allow unsigned RecordsWrite as suggested in #206 (https://github.com/TBD54566975/dwn-sdk-js/issues/206)
+    if (author === undefined) {
+      throw new DwnError(DwnErrorCode.RecordsWriteGetEntryIdUndefinedAuthor, 'Property `author` is needed to compute entry ID.');
+    }
+
     const entryIdInput = { ...descriptor };
     (entryIdInput as any).author = author;
 

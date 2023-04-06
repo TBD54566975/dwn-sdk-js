@@ -13,6 +13,10 @@ export class DwnError extends Error {
  * DWN SDK error codes.
  */
 export enum DwnErrorCode {
+  AuthenticateJwsMissing = 'AuthenticateJwsMissing',
+  AuthorizationMissing = 'AuthorizationMissing',
+  AuthorizationUnknownAuthor = 'AuthorizationUnknownAuthor',
+  RecordsWriteGetEntryIdUndefinedAuthor = 'RecordsWriteGetEntryIdUndefinedAuthor',
   MessageStoreDataCidMismatch = 'MessageStoreDataCidMismatch',
   MessageStoreDataNotFound = 'MessageStoreDataNotFound',
   MessageStoreDataSizeMismatch = 'MessageStoreDataSizeMismatch'

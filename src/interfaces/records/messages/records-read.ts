@@ -13,22 +13,7 @@ export type RecordsReadOptions = {
   authorizationSignatureInput?: SignatureInput;
 };
 
-export class RecordsRead {
-  /**
-   * RecordsRead message adhering to the DWN specification.
-   */
-  readonly message: RecordsReadMessage;
-
-  readonly author: string | undefined;
-
-  private constructor(message: RecordsReadMessage) {
-    this.message = message;
-
-    // introduce AuthorizationEnforcedOperation and
-    if (message.authorization !== undefined) {
-      this.author = Message.getAuthor(message as BaseMessage);
-    }
-  }
+export class RecordsRead extends Message<RecordsReadMessage> {
 
   public static async parse(message: RecordsReadMessage): Promise<RecordsRead> {
     if (message.authorization !== undefined) {
