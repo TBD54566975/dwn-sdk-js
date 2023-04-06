@@ -1,3 +1,5 @@
+import type { Event } from '../../src/event-log/event-log.js';
+
 import chaiAsPromised from 'chai-as-promised';
 import { computeCid } from '../../src/utils/cid.js';
 import { EventLogLevel } from '../../src/event-log/event-log-level.js';
@@ -56,7 +58,7 @@ describe('EventLogLevel Tests', () => {
 
       await eventLog.append(requester.did, messageCid2);
 
-      const storedValues = [];
+      const storedValues: string[] = [];
       for await (const [_, cid] of eventLog.db.iterator()) {
         storedValues.push(cid);
       }
@@ -68,7 +70,7 @@ describe('EventLogLevel Tests', () => {
 
   describe('getEventsAfter', () => {
     it('gets all events for a tenant if watermark is not provided', async () => {
-      const expectedEvents = [];
+      const expectedEvents: Event[] = [];
 
       const { requester, message } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await computeCid(message);
@@ -99,7 +101,7 @@ describe('EventLogLevel Tests', () => {
 
       await eventLog.append(requester.did, messageCid);
 
-      const messageCids = [];
+      const messageCids: string[] = [];
       let testWatermark;
 
       for (let i = 0; i < 9; i += 1) {
@@ -128,7 +130,7 @@ describe('EventLogLevel Tests', () => {
 
   describe('deleteEventsByCid', () => {
     it('finds and deletes events that whose values match the cids provided', async () => {
-      const cids = [];
+      const cids: string[] = [];
       const { requester, message } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await computeCid(message);
 

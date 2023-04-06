@@ -1,3 +1,4 @@
+import type { LevelWrapperBatchOperation } from '../store/level-wrapper.js';
 import type { ULID } from 'ulid';
 import type { Event, EventLog, GetEventsOptions } from './event-log.js';
 
@@ -71,7 +72,7 @@ export class EventLogLevel implements EventLog {
 
     const cidSet = new Set(cids);
     const tenantEventLog = await this.db.partition(tenant);
-    const ops = [];
+    const ops: LevelWrapperBatchOperation<string>[] = [];
 
     let numEventsDeleted = 0;
 

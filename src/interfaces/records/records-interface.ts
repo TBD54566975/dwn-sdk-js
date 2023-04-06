@@ -21,7 +21,7 @@ export async function deleteAllOlderMessagesButKeepInitialWrite(
   dataStore: DataStore,
   eventLog: EventLog
 ): Promise<void> {
-  const deletedMessageCids = [];
+  const deletedMessageCids: string[] = [];
 
   // NOTE: under normal operation, there should only be at most two existing records per `recordId` (initial + a potential subsequent write/delete),
   // but the DWN may crash before `delete()` is called below, so we use a loop as a tactic to clean up lingering data as needed

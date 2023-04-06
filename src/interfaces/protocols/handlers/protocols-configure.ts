@@ -73,7 +73,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     }
 
     // delete all existing records that are smaller
-    const deletedMessageCids = [];
+    const deletedMessageCids: string[] = [];
     for (const message of existingMessages) {
       if (await Message.isCidLarger(newestMessage, message)) {
         const messageCid = await Message.getCid(message);

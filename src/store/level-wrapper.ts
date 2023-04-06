@@ -127,7 +127,7 @@ export class LevelWrapper<V> {
 
     await abortOr(options?.signal, this.createLevelDatabase());
 
-    for await (const entry of this.db.iterator(iteratorOptions)) {
+    for await (const entry of this.db.iterator(iteratorOptions!)) {
       options?.signal?.throwIfAborted();
 
       yield entry;

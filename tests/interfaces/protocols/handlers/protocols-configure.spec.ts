@@ -162,7 +162,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
         const messageData1 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol });
         const messageData2 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol });
 
-        const messageDataWithCid = [];
+        const messageDataWithCid: (GenerateProtocolsConfigureOutput & { cid: string })[] = [];
         for (const messageData of [messageData1, messageData2]) {
           const cid = await Message.getCid(messageData.message);
           messageDataWithCid.push({ cid, ...messageData });
