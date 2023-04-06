@@ -40,6 +40,7 @@ export interface EventLog {
    * deletes any events that have any of the cids provided
    * @param tenant
    * @param cids
+   * @returns {Promise<number>} the number of events deleted
    */
   deleteEventsByCid(tenant: string, cids: Array<string>): Promise<number>
 }
