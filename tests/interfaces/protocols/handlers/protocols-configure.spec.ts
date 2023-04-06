@@ -155,6 +155,37 @@ describe('ProtocolsConfigureHandler.handle()', () => {
         const messageCid = await Message.getCid(message);
         expect(events[0].messageCid).to.equal(messageCid);
       });
+
+      it('should delete older ProtocolsConfigure event when one overwritten', async () => {
+        const alice = await DidKeyResolver.generate();
+        const protocol = 'exampleProtocol';
+        const messageData1 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol });
+        const messageData2 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol });
+
+        const messageDataWithCid = [];
+        for (const messageData of [messageData1, messageData2]) {
+          const cid = await Message.getCid(messageData.message);
+          messageDataWithCid.push({ cid, ...messageData });
+        }
+
+        // sort the message in lexicographic order
+        const [oldestWrite, newestWrite]: GenerateProtocolsConfigureOutput[]
+          = messageDataWithCid.sort((messageDataA, messageDataB) => { return lexicographicalCompare(messageDataA.cid, messageDataB.cid); });
+
+        // write the protocol with the middle lexicographic value
+        let reply = await dwn.processMessage(alice.did, oldestWrite.message, oldestWrite.dataStream);
+        expect(reply.status.code).to.equal(202);
+
+        // test that the protocol with the largest lexicographic value can be written
+        reply = await dwn.processMessage(alice.did, newestWrite.message, newestWrite.dataStream);
+        expect(reply.status.code).to.equal(202);
+
+        const events = await eventLog.getEvents(alice.did);
+        expect(events.length).to.equal(1);
+
+        const newestMessageCid = await Message.getCid(newestWrite.message);
+        expect(events[0].messageCid).to.equal(newestMessageCid);
+      });
     });
   });
 });
