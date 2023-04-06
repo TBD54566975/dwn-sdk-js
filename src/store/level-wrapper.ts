@@ -187,12 +187,12 @@ export class LevelWrapper<V> {
     const root = this.root;
 
     if (root.db.supports.additionalMethods.compactRange) {
-      return abortOr(options?.signal, root.db['compactRange']?.(...range));
+      return abortOr(options?.signal, (root.db as any).compactRange?.(...range));
     }
   }
 
   private get sublevelRange(): [ string, string ] | undefined {
-    const prefix = this.db['prefix'];
+    const prefix = (this.db as any).prefix;
     if (!prefix) {
       return undefined;
     }
@@ -203,7 +203,7 @@ export class LevelWrapper<V> {
 
   private get root(): LevelWrapper<V> {
     let db = this.db;
-    for (const parent = db['db']; parent && parent !== db; ) {
+    for (const parent = (db as any).db; parent && parent !== db; ) {
       db = parent;
     }
     return new LevelWrapper(this.config, db);

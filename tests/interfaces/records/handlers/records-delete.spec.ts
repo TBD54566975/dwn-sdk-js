@@ -120,7 +120,7 @@ describe('RecordsDeleteHandler.handle()', () => {
       const reply = await dwn.processMessage(alice.did, queryData.message);
       expect(reply.status.code).to.equal(200);
       expect(reply.entries?.length).to.equal(1);
-      expect(reply.entries[0].encodedData).to.equal(expectedEncodedData);
+      expect(reply.entries![0].encodedData).to.equal(expectedEncodedData);
     });
 
     it('should only write the data once even if written by multiple messages', async () => {
@@ -146,8 +146,8 @@ describe('RecordsDeleteHandler.handle()', () => {
       });
       const aliceQueryWrite1AfterAliceWrite1Reply = await dwn.processMessage(alice.did, aliceQueryWrite1AfterAliceWrite1Data.message);
       expect(aliceQueryWrite1AfterAliceWrite1Reply.status.code).to.equal(200);
-      expect(aliceQueryWrite1AfterAliceWrite1Reply.entries.length).to.equal(1);
-      expect(aliceQueryWrite1AfterAliceWrite1Reply.entries[0].encodedData).to.equal(encodedData);
+      expect(aliceQueryWrite1AfterAliceWrite1Reply.entries?.length).to.equal(1);
+      expect(aliceQueryWrite1AfterAliceWrite1Reply.entries![0].encodedData).to.equal(encodedData);
 
       await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
 
@@ -164,8 +164,8 @@ describe('RecordsDeleteHandler.handle()', () => {
       });
       const aliceQueryWrite1AfterAliceWrite2Reply = await dwn.processMessage(alice.did, aliceQueryWrite1AfterAliceWrite2Data.message);
       expect(aliceQueryWrite1AfterAliceWrite2Reply.status.code).to.equal(200);
-      expect(aliceQueryWrite1AfterAliceWrite2Reply.entries.length).to.equal(1);
-      expect(aliceQueryWrite1AfterAliceWrite2Reply.entries[0].encodedData).to.equal(encodedData);
+      expect(aliceQueryWrite1AfterAliceWrite2Reply.entries?.length).to.equal(1);
+      expect(aliceQueryWrite1AfterAliceWrite2Reply.entries![0].encodedData).to.equal(encodedData);
 
       const aliceQueryWrite2AfterAliceWrite2Data = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
@@ -173,8 +173,8 @@ describe('RecordsDeleteHandler.handle()', () => {
       });
       const aliceQueryWrite2AfterAliceWrite2Reply = await dwn.processMessage(alice.did, aliceQueryWrite2AfterAliceWrite2Data.message);
       expect(aliceQueryWrite2AfterAliceWrite2Reply.status.code).to.equal(200);
-      expect(aliceQueryWrite2AfterAliceWrite2Reply.entries.length).to.equal(1);
-      expect(aliceQueryWrite2AfterAliceWrite2Reply.entries[0].encodedData).to.equal(encodedData);
+      expect(aliceQueryWrite2AfterAliceWrite2Reply.entries?.length).to.equal(1);
+      expect(aliceQueryWrite2AfterAliceWrite2Reply.entries![0].encodedData).to.equal(encodedData);
 
       await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
     });
@@ -202,8 +202,8 @@ describe('RecordsDeleteHandler.handle()', () => {
       });
       const aliceQueryWriteAfterAliceWriteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterAliceWriteData.message);
       expect(aliceQueryWriteAfterAliceWriteReply.status.code).to.equal(200);
-      expect(aliceQueryWriteAfterAliceWriteReply.entries.length).to.equal(1);
-      expect(aliceQueryWriteAfterAliceWriteReply.entries[0].encodedData).to.equal(encodedData);
+      expect(aliceQueryWriteAfterAliceWriteReply.entries?.length).to.equal(1);
+      expect(aliceQueryWriteAfterAliceWriteReply.entries![0].encodedData).to.equal(encodedData);
 
       await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
 
@@ -221,8 +221,8 @@ describe('RecordsDeleteHandler.handle()', () => {
       });
       const aliceQueryWriteAfterAliceAssociateReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterAliceAssociateData.message);
       expect(aliceQueryWriteAfterAliceAssociateReply.status.code).to.equal(200);
-      expect(aliceQueryWriteAfterAliceAssociateReply.entries.length).to.equal(1);
-      expect(aliceQueryWriteAfterAliceAssociateReply.entries[0].encodedData).to.equal(encodedData);
+      expect(aliceQueryWriteAfterAliceAssociateReply.entries?.length).to.equal(1);
+      expect(aliceQueryWriteAfterAliceAssociateReply.entries![0].encodedData).to.equal(encodedData);
 
       const aliceQueryAssociateAfterAliceAssociateData = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
@@ -230,8 +230,8 @@ describe('RecordsDeleteHandler.handle()', () => {
       });
       const aliceQueryAssociateAfterAliceAssociateReply = await dwn.processMessage(alice.did, aliceQueryAssociateAfterAliceAssociateData.message);
       expect(aliceQueryAssociateAfterAliceAssociateReply.status.code).to.equal(200);
-      expect(aliceQueryAssociateAfterAliceAssociateReply.entries.length).to.equal(1);
-      expect(aliceQueryAssociateAfterAliceAssociateReply.entries[0].encodedData).to.equal(encodedData);
+      expect(aliceQueryAssociateAfterAliceAssociateReply.entries?.length).to.equal(1);
+      expect(aliceQueryAssociateAfterAliceAssociateReply.entries![0].encodedData).to.equal(encodedData);
 
       await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
     });
@@ -260,8 +260,8 @@ describe('RecordsDeleteHandler.handle()', () => {
       });
       const aliceQueryWriteAfterAliceWriteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterAliceWriteData.message);
       expect(aliceQueryWriteAfterAliceWriteReply.status.code).to.equal(200);
-      expect(aliceQueryWriteAfterAliceWriteReply.entries.length).to.equal(1);
-      expect(aliceQueryWriteAfterAliceWriteReply.entries[0].encodedData).to.equal(encodedData);
+      expect(aliceQueryWriteAfterAliceWriteReply.entries?.length).to.equal(1);
+      expect(aliceQueryWriteAfterAliceWriteReply.entries![0].encodedData).to.equal(encodedData);
 
       await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
 
@@ -278,8 +278,8 @@ describe('RecordsDeleteHandler.handle()', () => {
       });
       const aliceQueryWriteAfterBobWriteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterBobWriteData.message);
       expect(aliceQueryWriteAfterBobWriteReply.status.code).to.equal(200);
-      expect(aliceQueryWriteAfterBobWriteReply.entries.length).to.equal(1);
-      expect(aliceQueryWriteAfterBobWriteReply.entries[0].encodedData).to.equal(encodedData);
+      expect(aliceQueryWriteAfterBobWriteReply.entries?.length).to.equal(1);
+      expect(aliceQueryWriteAfterBobWriteReply.entries![0].encodedData).to.equal(encodedData);
 
       const bobQueryWriteAfterBobWriteData = await TestDataGenerator.generateRecordsQuery({
         requester : bob,
@@ -287,8 +287,8 @@ describe('RecordsDeleteHandler.handle()', () => {
       });
       const bobQueryWriteAfterBobWriteReply = await dwn.processMessage(bob.did, bobQueryWriteAfterBobWriteData.message);
       expect(bobQueryWriteAfterBobWriteReply.status.code).to.equal(200);
-      expect(bobQueryWriteAfterBobWriteReply.entries.length).to.equal(1);
-      expect(bobQueryWriteAfterBobWriteReply.entries[0].encodedData).to.equal(encodedData);
+      expect(bobQueryWriteAfterBobWriteReply.entries?.length).to.equal(1);
+      expect(bobQueryWriteAfterBobWriteReply.entries![0].encodedData).to.equal(encodedData);
 
       await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
     });
@@ -317,8 +317,8 @@ describe('RecordsDeleteHandler.handle()', () => {
       });
       const aliceQueryWriteAfterAliceWriteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterAliceWriteData.message);
       expect(aliceQueryWriteAfterAliceWriteReply.status.code).to.equal(200);
-      expect(aliceQueryWriteAfterAliceWriteReply.entries.length).to.equal(1);
-      expect(aliceQueryWriteAfterAliceWriteReply.entries[0].encodedData).to.equal(encodedData);
+      expect(aliceQueryWriteAfterAliceWriteReply.entries?.length).to.equal(1);
+      expect(aliceQueryWriteAfterAliceWriteReply.entries![0].encodedData).to.equal(encodedData);
 
       await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
 
@@ -337,8 +337,8 @@ describe('RecordsDeleteHandler.handle()', () => {
       });
       const aliceQueryWriteAfterBobAssociateReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterBobAssociateData.message);
       expect(aliceQueryWriteAfterBobAssociateReply.status.code).to.equal(200);
-      expect(aliceQueryWriteAfterBobAssociateReply.entries.length).to.equal(1);
-      expect(aliceQueryWriteAfterBobAssociateReply.entries[0].encodedData).to.equal(encodedData);
+      expect(aliceQueryWriteAfterBobAssociateReply.entries?.length).to.equal(1);
+      expect(aliceQueryWriteAfterBobAssociateReply.entries![0].encodedData).to.equal(encodedData);
 
       const bobQueryAssociateAfterBobAssociateData = await TestDataGenerator.generateRecordsQuery({
         requester : bob,
@@ -346,7 +346,7 @@ describe('RecordsDeleteHandler.handle()', () => {
       });
       const bobQueryAssociateAfterBobAssociateReply = await dwn.processMessage(bob.did, bobQueryAssociateAfterBobAssociateData.message);
       expect(bobQueryAssociateAfterBobAssociateReply.status.code).to.equal(200);
-      expect(bobQueryAssociateAfterBobAssociateReply.entries.length).to.equal(0);
+      expect(bobQueryAssociateAfterBobAssociateReply.entries?.length).to.equal(0);
 
       await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
     });
@@ -374,8 +374,8 @@ describe('RecordsDeleteHandler.handle()', () => {
       });
       const aliceQueryWriteAfterAliceWriteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterAliceWriteData.message);
       expect(aliceQueryWriteAfterAliceWriteReply.status.code).to.equal(200);
-      expect(aliceQueryWriteAfterAliceWriteReply.entries.length).to.equal(1);
-      expect(aliceQueryWriteAfterAliceWriteReply.entries[0].encodedData).to.equal(encodedData);
+      expect(aliceQueryWriteAfterAliceWriteReply.entries?.length).to.equal(1);
+      expect(aliceQueryWriteAfterAliceWriteReply.entries![0].encodedData).to.equal(encodedData);
 
       await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
 
@@ -392,7 +392,7 @@ describe('RecordsDeleteHandler.handle()', () => {
       });
       const aliceQueryWriteAfterAliceDeleteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterAliceDeleteData.message);
       expect(aliceQueryWriteAfterAliceDeleteReply.status.code).to.equal(200);
-      expect(aliceQueryWriteAfterAliceDeleteReply.entries.length).to.equal(0);
+      expect(aliceQueryWriteAfterAliceDeleteReply.entries?.length).to.equal(0);
 
       await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ ]);
 
@@ -409,8 +409,8 @@ describe('RecordsDeleteHandler.handle()', () => {
       });
       const aliceQueryWriteAfterAliceRewriteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterAliceRewriteData.message);
       expect(aliceQueryWriteAfterAliceRewriteReply.status.code).to.equal(200);
-      expect(aliceQueryWriteAfterAliceRewriteReply.entries.length).to.equal(1);
-      expect(aliceQueryWriteAfterAliceRewriteReply.entries[0].encodedData).to.equal(encodedData);
+      expect(aliceQueryWriteAfterAliceRewriteReply.entries?.length).to.equal(1);
+      expect(aliceQueryWriteAfterAliceRewriteReply.entries![0].encodedData).to.equal(encodedData);
 
       await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
     });

@@ -53,7 +53,7 @@ export class DidKeyResolver implements DidMethodResolver {
       const publicKeyBytes = idBytes.slice(multicodecSize);
 
       // key specific values
-      const keySpecificContext = [];
+      const keySpecificContext: string[] = [];
       let publicJwk: PublicJwk;
       if (multicodec === 0xed) {
         // ed25519-pub multicodec
