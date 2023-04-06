@@ -69,7 +69,7 @@ describe('RecordsReadHandler.handle()', () => {
       expect(readReply.record).to.exist;
       expect(readReply.record?.descriptor).to.exist;
 
-      const dataFetched = await DataStream.toBytes(readReply.record!.data);
+      const dataFetched = await DataStream.toBytes(readReply.record!.data!);
       expect(Comparer.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
     });
 
@@ -110,7 +110,7 @@ describe('RecordsReadHandler.handle()', () => {
       const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
       expect(readReply.status.code).to.equal(200);
 
-      const dataFetched = await DataStream.toBytes(readReply.record!.data);
+      const dataFetched = await DataStream.toBytes(readReply.record!.data!);
       expect(Comparer.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
     });
 
@@ -133,7 +133,7 @@ describe('RecordsReadHandler.handle()', () => {
       const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
       expect(readReply.status.code).to.equal(200);
 
-      const dataFetched = await DataStream.toBytes(readReply.record!.data);
+      const dataFetched = await DataStream.toBytes(readReply.record!.data!);
       expect(Comparer.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
     });
 

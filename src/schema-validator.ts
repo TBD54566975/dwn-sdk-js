@@ -8,7 +8,7 @@ import * as precompiledValidators from '../generated/precompiled-validators.js';
  */
 export function validateJsonSchema(schemaName: string, payload: any): void {
   // const validateFn = validator.getSchema(schemaName);
-  const validateFn = precompiledValidators[schemaName];
+  const validateFn = (precompiledValidators as any)[schemaName];
 
   if (!validateFn) {
     throw new Error(`schema for ${schemaName} not found.`);

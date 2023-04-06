@@ -60,7 +60,7 @@ export type GenerateProtocolsConfigureInput = {
 export type GenerateProtocolsConfigureOutput = {
   requester: Persona;
   message: ProtocolsConfigureMessage;
-  dataStream: Readable;
+  dataStream?: Readable;
   protocolsConfigure: ProtocolsConfigure;
 };
 
@@ -119,7 +119,7 @@ export type GenerateRecordsWriteOutput = {
   dataCid?: string;
   dataSize?: number;
   dataBytes?: Uint8Array;
-  dataStream: Readable;
+  dataStream?: Readable;
   recordsWrite: RecordsWrite;
 };
 
@@ -325,7 +325,7 @@ export class TestDataGenerator {
    * Any mutable property is not specified will be automatically mutated.
    * e.g. if `published` is not specified, it will be toggled from the state of the given existing write.
    */
-  public static async generateFromRecordsWrite(input?: GenerateFromRecordsWriteInput): Promise<GenerateFromRecordsWriteOut> {
+  public static async generateFromRecordsWrite(input: GenerateFromRecordsWriteInput): Promise<GenerateFromRecordsWriteOut> {
     const existingMessage = input.existingWrite.message;
     const currentTime = getCurrentTimeInHighPrecision();
 
