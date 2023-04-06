@@ -447,6 +447,59 @@ describe('RecordsWriteHandler.handle()', () => {
         expect(reply.status.code).to.equal(400);
         expect(reply.status.detail).to.contain('does not match deterministic contextId');
       });
+
+      describe('event log', () => {
+        it('should add an event to the eventlog on initial write', async () => {
+          const { message, requester, dataStream } = await TestDataGenerator.generateRecordsWrite();
+          TestStubGenerator.stubDidResolver(didResolver, [requester]);
+
+          const reply = await dwn.processMessage(requester.did, message, dataStream);
+          expect(reply.status.code).to.equal(202);
+
+          const events = await eventLog.getEvents(requester.did);
+          expect(events.length).to.equal(1);
+
+          const messageCid = await Message.getCid(message);
+          expect(events[0].messageCid).to.equal(messageCid);
+        });
+
+        it('should only keep first write and latest write when subsequent writes happen', async () => {
+          const { message, requester, dataStream, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
+          TestStubGenerator.stubDidResolver(didResolver, [requester]);
+
+          const reply = await dwn.processMessage(requester.did, message, dataStream);
+          expect(reply.status.code).to.equal(202);
+
+          const newWrite = await RecordsWrite.createFrom({
+            unsignedRecordsWriteMessage : recordsWrite.message,
+            published                   : true,
+            authorizationSignatureInput : Jws.createSignatureInput(requester)
+          });
+
+          const newWriteReply = await dwn.processMessage(requester.did, newWrite.message);
+          expect(newWriteReply.status.code).to.equal(202);
+
+          const newestWrite = await RecordsWrite.createFrom({
+            unsignedRecordsWriteMessage : recordsWrite.message,
+            published                   : true,
+            authorizationSignatureInput : Jws.createSignatureInput(requester)
+          });
+
+          const newestWriteReply = await dwn.processMessage(requester.did, newestWrite.message);
+          expect(newestWriteReply.status.code).to.equal(202);
+
+          const events = await eventLog.getEvents(requester.did);
+          expect(events.length).to.equal(2);
+
+          const deletedMessageCid = await Message.getCid(newWrite.message);
+
+          for (const { messageCid } of events) {
+            if (messageCid === deletedMessageCid ) {
+              expect.fail(`${messageCid} should not exist`);
+            }
+          }
+        });
+      });
     });
 
     describe('protocol based writes', () => {

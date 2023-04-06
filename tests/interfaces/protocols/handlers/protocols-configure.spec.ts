@@ -139,5 +139,22 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       expect(actualDefinition).to.not.equal(initialDefinition);
       expect(actualDefinition).to.equal(expectedDefinition);
     });
+
+    describe('event log', () => {
+      it('should add event for ProtocolsConfigure', async () => {
+        const alice = await DidKeyResolver.generate();
+        const protocol = 'exampleProtocol';
+        const { message, dataStream } = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol });
+
+        const reply = await dwn.processMessage(alice.did, message, dataStream);
+        expect(reply.status.code).to.equal(202);
+
+        const events = await eventLog.getEvents(alice.did);
+        expect(events.length).to.equal(1);
+
+        const messageCid = await Message.getCid(message);
+        expect(events[0].messageCid).to.equal(messageCid);
+      });
+    });
   });
 });
