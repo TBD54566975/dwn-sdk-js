@@ -35,10 +35,6 @@ export class Dwn {
     this.dataStore = config.dataStore!;
     this.eventLog = config.eventLog!;
     this.tenantGate = config.tenantGate!;
-    this.didResolver = config.didResolver!;
-    this.messageStore = config.messageStore!;
-    this.dataStore = config.dataStore!;
-    this.tenantGate = config.tenantGate!;
 
     this.methodHandlers = {
       [DwnInterfaceName.Permissions + DwnMethodName.Request] : new PermissionsRequestHandler(this.didResolver, this.messageStore, this.dataStore),
