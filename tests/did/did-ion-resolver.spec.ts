@@ -48,7 +48,7 @@ describe('DidIonResolver', () => {
     }
 
     const resolutionDocument = await didIonResolver.resolve(did);
-    expect(resolutionDocument.didDocument.id).to.equal(did);
+    expect(resolutionDocument.didDocument?.id).to.equal(did);
     expect(resolutionDocument.didDocumentMetadata.canonicalId).to.equal(did);
   });
 

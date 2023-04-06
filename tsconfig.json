@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": false, // TODO: #298 - evaluate to see if it's worth it to turn on - https://github.com/TBD54566975/dwn-sdk-js/issues/298
     "lib": [
       "DOM",
       "ES6"

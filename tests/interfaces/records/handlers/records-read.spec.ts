@@ -74,8 +74,8 @@ describe('RecordsReadHandler.handle()', () => {
       const readReply = await dwn.processMessage(alice.did, recordsRead.message);
       expect(readReply.status.code).to.equal(200);
 
-      const dataFetched = await DataStream.toBytes(readReply.data);
-      expect(Comparer.byteArraysEqual(dataFetched, dataBytes)).to.be.true;
+      const dataFetched = await DataStream.toBytes(readReply.data!);
+      expect(Comparer.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
     });
 
     it('should not allow non-tenant to RecordsRead their a record data', async () => {
@@ -115,8 +115,8 @@ describe('RecordsReadHandler.handle()', () => {
       const readReply = await dwn.processMessage(alice.did, recordsRead.message);
       expect(readReply.status.code).to.equal(200);
 
-      const dataFetched = await DataStream.toBytes(readReply.data);
-      expect(Comparer.byteArraysEqual(dataFetched, dataBytes)).to.be.true;
+      const dataFetched = await DataStream.toBytes(readReply.data!);
+      expect(Comparer.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
     });
 
     it('should allow an authenticated user to RecordRead data that is published', async () => {
@@ -138,8 +138,8 @@ describe('RecordsReadHandler.handle()', () => {
       const readReply = await dwn.processMessage(alice.did, recordsRead.message);
       expect(readReply.status.code).to.equal(200);
 
-      const dataFetched = await DataStream.toBytes(readReply.data);
-      expect(Comparer.byteArraysEqual(dataFetched, dataBytes)).to.be.true;
+      const dataFetched = await DataStream.toBytes(readReply.data!);
+      expect(Comparer.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
     });
 
     it('should return 404 RecordRead if data does not exist', async () => {

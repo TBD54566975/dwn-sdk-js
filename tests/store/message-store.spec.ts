@@ -133,7 +133,7 @@ describe('MessageStoreLevel Tests', () => {
       const messageStore = new MessageStoreLevel({
         blockstoreLocation : 'TEST-MESSAGESTORE',
         indexLocation      : 'TEST-INDEX',
-        createLevelDatabase<V>(location, options?: CreateLevelDatabaseOptions<V>): Promise<LevelDatabase<V>> {
+        createLevelDatabase<V>(location: string, options?: CreateLevelDatabaseOptions<V>): Promise<LevelDatabase<V>> {
           locations.add(location);
           return createLevelDatabase(location, options);
         }

@@ -422,7 +422,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     const mutableDescriptorProperties = ['dataCid', 'dataSize', 'datePublished', 'published', 'dateModified'];
 
     // get distinct property names that exist in either the existing message given or new message
-    let descriptorPropertyNames = [];
+    let descriptorPropertyNames: string[] = [];
     descriptorPropertyNames.push(...Object.keys(existingWriteMessage.descriptor));
     descriptorPropertyNames.push(...Object.keys(newMessage.descriptor));
     descriptorPropertyNames = [...new Set(descriptorPropertyNames)]; // step to remove duplicates
@@ -431,8 +431,8 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     for (const descriptorPropertyName of descriptorPropertyNames) {
       // if property is supposed to be immutable
       if (mutableDescriptorProperties.indexOf(descriptorPropertyName) === -1) {
-        const valueInExistingWrite = existingWriteMessage.descriptor[descriptorPropertyName];
-        const valueInNewMessage = newMessage.descriptor[descriptorPropertyName];
+        const valueInExistingWrite = (existingWriteMessage.descriptor as any)[descriptorPropertyName];
+        const valueInNewMessage = (newMessage.descriptor as any)[descriptorPropertyName];
         if (valueInNewMessage !== valueInExistingWrite) {
           throw new Error(`${descriptorPropertyName} is an immutable property: cannot change '${valueInExistingWrite}' to '${valueInNewMessage}'`);
         }

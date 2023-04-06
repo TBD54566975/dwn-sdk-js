@@ -109,7 +109,7 @@ describe('RecordsWriteHandler.handle()', () => {
       });
 
       // sanity check that old data and new data are different
-      expect(newDataEncoded).to.not.equal(Encoder.bytesToBase64Url(recordsWriteMessageData.dataBytes));
+      expect(newDataEncoded).to.not.equal(Encoder.bytesToBase64Url(recordsWriteMessageData.dataBytes!));
 
       const newRecordsWriteReply = await dwn.processMessage(tenant, newRecordsWrite.message, newRecordsWrite.dataStream);
       expect(newRecordsWriteReply.status.code).to.equal(202);
@@ -1429,7 +1429,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const dataStore = sinon.createStubInstance(DataStoreLevel);
 
       const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
-      const reply = await recordsWriteHandler.handle({ tenant, message, dataStream });
+      const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
 
       expect(reply.status.code).to.equal(400);
       expect(reply.status.detail).to.contain('does not match recordId in authorization');
@@ -1453,7 +1453,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const dataStore = sinon.createStubInstance(DataStoreLevel);
 
       const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
-      const reply = await recordsWriteHandler.handle({ tenant, message, dataStream });
+      const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
 
       expect(reply.status.code).to.equal(400);
       expect(reply.status.detail).to.contain('does not match contextId in authorization');
@@ -1471,7 +1471,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const dataStore = sinon.createStubInstance(DataStoreLevel);
 
       const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
-      const reply = await recordsWriteHandler.handle({ tenant, message, dataStream });
+      const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
 
       expect(reply.status.code).to.equal(401);
     });
@@ -1488,7 +1488,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
 
       const tenant = await (await TestDataGenerator.generatePersona()).did; // unauthorized tenant
-      const reply = await recordsWriteHandler.handle({ tenant, message, dataStream });
+      const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
 
       expect(reply.status.code).to.equal(401);
     });
@@ -1520,7 +1520,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const dataStore = sinon.createStubInstance(DataStoreLevel);
 
       const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
-      const reply = await recordsWriteHandler.handle({ tenant, message, dataStream });
+      const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
 
       expect(reply.status.code).to.equal(400);
       expect(reply.status.detail).to.contain(`Only 'descriptorCid' is allowed in attestation payload`);
@@ -1532,7 +1532,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [alice, bob] });
 
       const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
-      const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream });
+      const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream: dataStream! });
 
       expect(writeReply.status.code).to.equal(400);
       expect(writeReply.status.detail).to.contain('implementation only supports 1 attester');
@@ -1547,7 +1547,7 @@ describe('RecordsWriteHandler.handle()', () => {
       message.attestation = anotherWrite.message.attestation;
 
       const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
-      const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream });
+      const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream: dataStream! });
 
       expect(writeReply.status.code).to.equal(400);
       expect(writeReply.status.detail).to.contain('does not match expected descriptorCid');
@@ -1564,7 +1564,7 @@ describe('RecordsWriteHandler.handle()', () => {
       message.attestation = attestationNotReferencedByAuthorization;
 
       const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
-      const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream });
+      const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream: dataStream! });
 
       expect(writeReply.status.code).to.equal(400);
       expect(writeReply.status.detail).to.contain('does not match attestationCid');
@@ -1587,7 +1587,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
     const recordsWriteHandler = new RecordsWriteHandler(didResolverStub, messageStoreStub, dataStoreStub, eventLog);
 
-    const handlerPromise = recordsWriteHandler.handle({ tenant, message, dataStream });
+    const handlerPromise = recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
     await expect(handlerPromise).to.be.rejectedWith('an unknown error in messageStore.put()');
   });
 });
