@@ -1,9 +1,9 @@
 import { base64url } from 'multiformats/bases/base64';
-import { Comparer } from '../../../utils/comparer.js';
-import { DwnErrorCode } from '../../../../src/core/dwn-error.js';
+import { Comparer } from './comparer.js';
+import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { expect } from 'chai';
-import { Secp256k1 } from '../../../../src/utils/secp256k1.js';
-import { TestDataGenerator } from '../../../utils/test-data-generator.js';
+import { Secp256k1 } from '../../src/utils/secp256k1.js';
+import { TestDataGenerator } from './test-data-generator.js';
 
 describe('Secp256k1', () => {
   describe('publicKeyToJwk()', () => {
@@ -50,9 +50,9 @@ describe('Secp256k1', () => {
     it('should be able to derive same key using different ancestor along the chain path', async () => {
       const { publicKey, privateKey } = await Secp256k1.generateKeyPairRaw();
 
-      const fullPathToG = 'a/b/c/d/e/f/g';
-      const fullPathToD = 'a/b/c/d';
-      const relativePathFromDToG = 'e/f/g';
+      const fullPathToG = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+      const fullPathToD = ['a', 'b', 'c', 'd'];
+      const relativePathFromDToG = ['e', 'f', 'g'];
 
       // testing public key derivation from different ancestor in the same chain
       const publicKeyG = await Secp256k1.derivePublicKey(publicKey, fullPathToG);
@@ -74,7 +74,7 @@ describe('Secp256k1', () => {
     it('should derive the same public key using either the private or public counterpart of the same key pair', async () => {
       const { publicKey, privateKey } = await Secp256k1.generateKeyPairRaw();
 
-      const path = '1/2/3/4/5/6/7/8/9/10';
+      const path = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
 
       const derivedKeyFromPublicKey = await Secp256k1.derivePublicKey(publicKey, path);
       const derivedKeyFromPrivateKey = await Secp256k1.derivePublicKey(privateKey, path);
@@ -84,7 +84,7 @@ describe('Secp256k1', () => {
     it('should derive the same public key using either the private or public counterpart of the same key pair', async () => {
       const { publicKey, privateKey } = await Secp256k1.generateKeyPairRaw();
 
-      const invalidPath = '/pathCannotStartWithADelimiter';
+      const invalidPath = ['should not have segment with empty string', ''];
 
       await expect(Secp256k1.derivePublicKey(publicKey, invalidPath)).to.be.rejectedWith(DwnErrorCode.HdKeyDerivationPathInvalid);
       await expect(Secp256k1.derivePrivateKey(privateKey, invalidPath)).to.be.rejectedWith(DwnErrorCode.HdKeyDerivationPathInvalid);
