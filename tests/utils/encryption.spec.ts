@@ -1,9 +1,9 @@
-import * as secp256k1 from '@noble/secp256k1';
 import { Comparer } from '../utils/comparer.js';
 import { DataStream } from '../../src/index.js';
 import { Encryption } from '../../src/utils/encryption.js';
 import { expect } from 'chai';
 import { Readable } from 'readable-stream';
+import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { TestDataGenerator } from './test-data-generator.js';
 
 describe('Encryption', () => {
@@ -108,9 +108,7 @@ describe('Encryption', () => {
 
   describe('ECIES-SECP256K1', () => {
     it('should be able to encrypt and decrypt given bytes correctly', async () => {
-      const compressedPublicKey = false;
-      const privateKey = secp256k1.utils.randomPrivateKey();
-      const publicKey = await secp256k1.getPublicKey(privateKey, compressedPublicKey);
+      const { publicKey, privateKey } = await Secp256k1.generateKeyPairRaw();
 
       const originalPlaintext = TestDataGenerator.randomBytes(32);
       const encryptionOutput = await Encryption.eciesSecp256k1Encrypt(publicKey, originalPlaintext);

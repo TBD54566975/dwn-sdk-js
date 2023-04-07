@@ -5,7 +5,7 @@ import { base58btc } from 'multiformats/bases/base58';
 import { Did } from './did.js';
 import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
 import { Encoder } from '../utils/encoder.js';
-import { secp256k1 } from '../jose/algorithms/signing/secp256k1.js';
+import { Secp256k1 } from '../utils/secp256k1.js';
 import type { KeyMaterial, PublicJwk } from '../jose/types.js';
 
 /**
@@ -61,7 +61,7 @@ export class DidKeyResolver implements DidMethodResolver {
         publicJwk = await ed25519.publicKeyToJwk(publicKeyBytes);
       } else if (multicodec === 0xe7) {
         // secp256k1-pub multicodec
-        publicJwk = await secp256k1.publicKeyToJwk(publicKeyBytes);
+        publicJwk = await Secp256k1.publicKeyToJwk(publicKeyBytes);
       } else {
         throw Error(`key type of multicodec ${multicodec} is not supported`);
       }
