@@ -16,6 +16,7 @@ export enum DwnErrorCode {
   AuthenticateJwsMissing = 'AuthenticateJwsMissing',
   AuthorizationMissing = 'AuthorizationMissing',
   AuthorizationUnknownAuthor = 'AuthorizationUnknownAuthor',
+  HdKeyDerivationPathInvalid = 'HdKeyDerivationPathInvalid',
   RecordsWriteGetEntryIdUndefinedAuthor = 'RecordsWriteGetEntryIdUndefinedAuthor',
   MessageStoreDataCidMismatch = 'MessageStoreDataCidMismatch',
   MessageStoreDataNotFound = 'MessageStoreDataNotFound',

@@ -6,7 +6,7 @@ import sinon from 'sinon';
 
 import { expect } from 'chai';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
-import { secp256k1 } from '../../../../src/jose/algorithms/signing/secp256k1.js';
+import { Secp256k1 } from '../../../../src/utils/secp256k1.js';
 import { DEFAULT_CONDITIONS, PermissionsRequest } from '../../../../src/interfaces/permissions/messages/permissions-request.js';
 
 chai.use(chaiAsPromised);
@@ -36,7 +36,7 @@ describe('PermissionsRequest', () => {
         { input: 'dookie', expectedError: 'payload is not a JSON object' },
         { input: JSON.stringify([]), expectedError: 'signed payload must be a plain object' }
       ];
-      const { privateJwk } = await secp256k1.generateKeyPair();
+      const { privateJwk } = await Secp256k1.generateKeyPair();
 
       for (const vector of testVectors) {
         const payloadBytes = new TextEncoder().encode(vector.input);
@@ -55,7 +55,7 @@ describe('PermissionsRequest', () => {
 
   describe('create', () => {
     it('creates a PermissionsRequest message', async () => {
-      const { privateJwk } = await secp256k1.generateKeyPair();
+      const { privateJwk } = await Secp256k1.generateKeyPair();
       const authorizationSignatureInput = {
         privateJwk,
         protectedHeader: {
@@ -80,7 +80,7 @@ describe('PermissionsRequest', () => {
     });
 
     it('uses default conditions if none are provided', async () => {
-      const { privateJwk } = await secp256k1.generateKeyPair();
+      const { privateJwk } = await Secp256k1.generateKeyPair();
       const authorizationSignatureInput = {
         privateJwk,
         protectedHeader: {

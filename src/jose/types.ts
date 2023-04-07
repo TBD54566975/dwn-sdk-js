@@ -44,12 +44,13 @@ export type PrivateJwk = PublicJwk & {
 
 export interface Signer {
   /**
- * signs the provided payload using the provided JWK
- * @param content - the content to sign
- * @param privateJwk - the key to sign with
- * @returns the signed content (aka signature)
- */
+   * signs the provided payload using the provided JWK
+   * @param content - the content to sign
+   * @param privateJwk - the key to sign with
+   * @returns the signed content (aka signature)
+   */
   sign(content: Uint8Array, privateJwk: PrivateJwk): Promise<Uint8Array>;
+
   /**
    * Verifies a signature against the provided payload hash and public key.
    * @param content - the content to verify with
