@@ -56,7 +56,7 @@ export class Secp256k1 {
   }
 
   /**
-   * Creates a uncompressed key from the given SECP256K1 JWK.
+   * Creates a uncompressed key in raw bytes from the given SECP256K1 JWK.
    */
   public static publicJwkToBytes(publicJwk: PublicJwk): Uint8Array {
     const x = Encoder.base64UrlToBytes(publicJwk.x);
@@ -65,6 +65,14 @@ export class Secp256k1 {
     // leading byte of 0x04 indicates that the public key is uncompressed
     const publicKey = new Uint8Array([0x04, ...x, ...y]);
     return publicKey;
+  }
+
+  /**
+   * Creates a private key in raw bytes from the given SECP256K1 JWK.
+   */
+  public static privateJwkToBytes(privateJwk: PrivateJwk): Uint8Array {
+    const privateKey = Encoder.base64UrlToBytes(privateJwk.d);
+    return privateKey;
   }
 
   /**
