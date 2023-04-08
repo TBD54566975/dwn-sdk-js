@@ -31,7 +31,7 @@
   "react-native": "./dist/esm/src/index.js",
   "scripts": {
     "build:esm": "tsc",
-    "build:cjs": "tsc --project tsconfig.cjs.json && echo {\"type\": \"commonjs\"} > ./dist/cjs/package.json",
+    "build:cjs": "tsc --project tsconfig.cjs.json && echo '{\"type\": \"commonjs\"}' > ./dist/cjs/package.json",
     "build": "npm-run-all -l clean compile-validators -p build:esm build:cjs bundle",
     "bundle": "node ./build/create-browser-bundle.cjs",
     "clean": "rimraf dist && rimraf generated/*",
@@ -58,6 +58,7 @@
     "@types/ms": "0.7.31",
     "@types/node": "^18.13.0",
     "@types/readable-stream": "2.3.15",
+    "@types/secp256k1": "4.0.3",
     "abstract-level": "1.0.3",
     "ajv": "8.11.0",
     "blockstore-core": "3.0.0",
@@ -77,6 +78,7 @@
     "randombytes": "2.1.0",
     "readable-stream": "4.3.0",
     "ulid": "2.3.0",
+    "secp256k1": "5.0.0",
     "uuid": "8.3.2",
     "varint": "6.0.0"
   },
