@@ -46,26 +46,30 @@ describe('EventLogLevel Tests', () => {
 
   });
 
-  describe('append tests', () => {
-    it('maintains order in which events were appended', async () => {
-      const { requester, message } = await TestDataGenerator.generateRecordsWrite();
+  it('returns events in the order that they were appended', async () => {
+    const expectedEvents: Array<Event> = [];
+
+    const { requester, message } = await TestDataGenerator.generateRecordsWrite();
+    const messageCid = await computeCid(message);
+    const watermark = await eventLog.append(requester.did, messageCid);
+
+    expectedEvents.push({ watermark, messageCid });
+
+    for (let i = 0; i < 9; i += 1) {
+      const { message } = await TestDataGenerator.generateRecordsWrite({ requester });
       const messageCid = await computeCid(message);
+      const watermark = await eventLog.append(requester.did, messageCid);
 
-      await eventLog.append(requester.did, messageCid);
+      expectedEvents.push({ watermark, messageCid });
+    }
 
-      const { message: message2 } = await TestDataGenerator.generateRecordsWrite({ requester });
-      const messageCid2 = await computeCid(message2);
+    const events = await eventLog.getEvents(requester.did);
+    expect(events.length).to.equal(expectedEvents.length);
 
-      await eventLog.append(requester.did, messageCid2);
-
-      const storedValues: string[] = [];
-      for await (const [_, cid] of eventLog.db.iterator()) {
-        storedValues.push(cid);
-      }
-
-      expect(storedValues[0]).to.equal(messageCid);
-      expect(storedValues[1]).to.equal(messageCid2);
-    });
+    for (let i = 0; i < 10; i += 1) {
+      expect(events[i].watermark).to.equal(expectedEvents[i].watermark);
+      expect(events[i].messageCid).to.equal(expectedEvents[i].messageCid);
+    }
   });
 
   describe('getEventsAfter', () => {

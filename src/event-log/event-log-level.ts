@@ -5,7 +5,6 @@ import type { Event, EventLog, GetEventsOptions } from './event-log.js';
 import { monotonicFactory } from 'ulid';
 import { createLevelDatabase, LevelWrapper } from '../store/level-wrapper.js';
 
-
 type EventLogLevelConfig = {
  /**
    * must be a directory path (relative or absolute) where
@@ -15,6 +14,9 @@ type EventLogLevelConfig = {
   location: string,
   createLevelDatabase?: typeof createLevelDatabase,
 };
+
+const WATERMARKS_SUBLEVEL_NAME = 'watermarks';
+const CIDS_SUBLEVEL_NAME = 'cids';
 
 export class EventLogLevel implements EventLog {
   config: EventLogLevelConfig;
@@ -46,18 +48,23 @@ export class EventLogLevel implements EventLog {
 
   async append(tenant: string, messageCid: string): Promise<string> {
     const tenantEventLog = await this.db.partition(tenant);
+    const watermarkLog = await tenantEventLog.partition(WATERMARKS_SUBLEVEL_NAME);
+    const cidLog = await tenantEventLog.partition(CIDS_SUBLEVEL_NAME);
 
     const watermark = this.ulid();
-    await tenantEventLog.put(watermark, messageCid);
+
+    await watermarkLog.put(watermark, messageCid);
+    await cidLog.put(messageCid, watermark);
 
     return watermark;
   }
 
   async getEvents(tenant: string, options?: GetEventsOptions): Promise<Event[]> {
     const tenantEventLog = await this.db.partition(tenant);
+    const watermarkLog = await tenantEventLog.partition(WATERMARKS_SUBLEVEL_NAME);
     const events: Array<Event> = [];
 
-    for await (const [key, value] of tenantEventLog.iterator(options)) {
+    for await (const [key, value] of watermarkLog.iterator(options)) {
       const event = { watermark: key, messageCid: value };
       events.push(event);
     }
@@ -70,20 +77,34 @@ export class EventLogLevel implements EventLog {
       return 0;
     }
 
-    const cidSet = new Set(cids);
     const tenantEventLog = await this.db.partition(tenant);
-    const ops: LevelWrapperBatchOperation<string>[] = [];
+    const cidLog = await tenantEventLog.partition(CIDS_SUBLEVEL_NAME);
 
+    let ops: LevelWrapperBatchOperation<string>[] = [];
+    const promises: Array<Promise<string | undefined>> = [];
+
+    for (const cid of cids) {
+      ops.push({ type: 'del', key: cid });
+
+      const promise = cidLog.get(cid).catch(e => e);
+      promises.push(promise);
+    }
+
+    await cidLog.batch(ops);
+
+    ops = [];
     let numEventsDeleted = 0;
 
-    for await (const [key, value] of tenantEventLog.iterator()) {
-      if (cidSet.has(value)) {
-        ops.push({ type: 'del', key });
+    const watermarks: Array<string | undefined> = await Promise.all(promises);
+    for (const watermark of watermarks) {
+      if (watermark) {
+        ops.push({ type: 'del', key: watermark });
         numEventsDeleted += 1;
       }
     }
 
-    await tenantEventLog.batch(ops);
+    const watermarkLog = await tenantEventLog.partition('watermarks');
+    await watermarkLog.batch(ops);
 
     return numEventsDeleted;
   }
