@@ -122,12 +122,12 @@ export class LevelWrapper<V> {
     }
   }
 
-  async * iterator(iteratorOptions: LevelWrapperIteratorOptions<V>, options?: LevelWrapperOptions): AsyncGenerator<[string, V]> {
+  async * iterator(iteratorOptions?: LevelWrapperIteratorOptions<V>, options?: LevelWrapperOptions): AsyncGenerator<[string, V]> {
     options?.signal?.throwIfAborted();
 
     await abortOr(options?.signal, this.createLevelDatabase());
 
-    for await (const entry of this.db.iterator(iteratorOptions)) {
+    for await (const entry of this.db.iterator(iteratorOptions!)) {
       options?.signal?.throwIfAborted();
 
       yield entry;

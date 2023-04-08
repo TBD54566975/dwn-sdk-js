@@ -7,11 +7,13 @@ import { Cid } from '../../../../src/utils/cid.js';
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DwnErrorCode } from '../../../../src/core/dwn-error.js';
+import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
+import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsDeleteHandler } from '../../../../src/interfaces/records/handlers/records-delete.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
-import { DidResolver, Dwn, Encoder, Jws, RecordsDelete } from '../../../../src/index.js';
+import { DidResolver, Dwn, Encoder, Jws, RecordsDelete, RecordsWrite } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -19,6 +21,7 @@ describe('RecordsDeleteHandler.handle()', () => {
   let didResolver: DidResolver;
   let messageStore: MessageStoreLevel;
   let dataStore: DataStoreLevel;
+  let eventLog: EventLogLevel;
   let dwn: Dwn;
 
   describe('functional tests', () => {
@@ -36,7 +39,11 @@ describe('RecordsDeleteHandler.handle()', () => {
         blockstoreLocation: 'TEST-DATASTORE'
       });
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore });
+      eventLog = new EventLogLevel({
+        location: 'TEST-EVENTLOG'
+      });
+
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
     });
 
     beforeEach(async () => {
@@ -45,6 +52,7 @@ describe('RecordsDeleteHandler.handle()', () => {
       // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
       await messageStore.clear();
       await dataStore.clear();
+      await eventLog.clear();
     });
 
     after(async () => {
@@ -499,6 +507,73 @@ describe('RecordsDeleteHandler.handle()', () => {
 
       await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ ]);
     });
+
+    describe('event log', () => {
+      it('should include RecordsDelete event and keep initial RecordsWrite event', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+        const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+        expect(writeReply.status.code).to.equal(202);
+
+        const recordsDelete = await RecordsDelete.create({
+          recordId                    : message.recordId,
+          authorizationSignatureInput : Jws.createSignatureInput(alice)
+        });
+
+        const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
+        expect(deleteReply.status.code).to.equal(202);
+
+        const events = await eventLog.getEvents(alice.did);
+        expect(events.length).to.equal(2);
+
+        const writeMessageCid = await Message.getCid(message);
+        const deleteMessageCid = await Message.getCid(recordsDelete.message);
+        const expectedMessageCids = new Set([writeMessageCid, deleteMessageCid]);
+
+        for (const { messageCid } of events) {
+          expectedMessageCids.delete(messageCid);
+        }
+
+        expect(expectedMessageCids.size).to.equal(0);
+      });
+
+      it('should only keep first write and delete when subsequent writes happen', async () => {
+        const { message, requester, dataStream, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
+        TestStubGenerator.stubDidResolver(didResolver, [requester]);
+
+        const reply = await dwn.processMessage(requester.did, message, dataStream);
+        expect(reply.status.code).to.equal(202);
+
+        const newWrite = await RecordsWrite.createFrom({
+          unsignedRecordsWriteMessage : recordsWrite.message,
+          published                   : true,
+          authorizationSignatureInput : Jws.createSignatureInput(requester)
+        });
+
+        const newWriteReply = await dwn.processMessage(requester.did, newWrite.message);
+        expect(newWriteReply.status.code).to.equal(202);
+
+        const recordsDelete = await RecordsDelete.create({
+          recordId                    : message.recordId,
+          authorizationSignatureInput : Jws.createSignatureInput(requester)
+        });
+
+        const deleteReply = await dwn.processMessage(requester.did, recordsDelete.message);
+        expect(deleteReply.status.code).to.equal(202);
+
+        const events = await eventLog.getEvents(requester.did);
+        expect(events.length).to.equal(2);
+
+        const deletedMessageCid = await Message.getCid(newWrite.message);
+
+        for (const { messageCid } of events) {
+          if (messageCid === deletedMessageCid ) {
+            expect.fail(`${messageCid} should not exist`);
+          }
+        }
+      });
+    });
   });
 
   it('should return 401 if signature check fails', async () => {
@@ -512,7 +587,7 @@ describe('RecordsDeleteHandler.handle()', () => {
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
 
-    const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore);
+    const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore, eventLog);
     const reply = await recordsDeleteHandler.handle({ tenant, message });
     expect(reply.status.code).to.equal(401);
   });
@@ -525,7 +600,7 @@ describe('RecordsDeleteHandler.handle()', () => {
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
 
-    const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore);
+    const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore, eventLog);
 
     // stub the `parse()` function to throw an error
     sinon.stub(RecordsDelete, 'parse').throws('anyError');

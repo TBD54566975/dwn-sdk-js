@@ -1,9 +1,11 @@
+import type { EventLog } from '../../../event-log/event-log.js';
 import type { MethodHandler } from '../../types.js';
 import type { RecordsDeleteMessage } from '../types.js';
 import type { TimestampedMessage } from '../../../core/types.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { authenticate } from '../../../core/auth.js';
+import { computeCid } from '../../../utils/cid.js';
 import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
 import { DwnInterfaceName } from '../../../core/message.js';
 import { MessageReply } from '../../../core/message-reply.js';
@@ -12,7 +14,7 @@ import { RecordsWrite } from '../messages/records-write.js';
 
 export class RecordsDeleteHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore) { }
+  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore, private eventLog: EventLog) { }
 
   public async handle({
     tenant,
@@ -60,6 +62,9 @@ export class RecordsDeleteHandler implements MethodHandler {
 
       await this.messageStore.put(tenant, message, indexes);
 
+      const messageCid = await computeCid(message);
+      await this.eventLog.append(tenant, messageCid);
+
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }
       });
@@ -70,7 +75,7 @@ export class RecordsDeleteHandler implements MethodHandler {
     }
 
     // delete all existing messages that are not newest, except for the initial write
-    await deleteAllOlderMessagesButKeepInitialWrite(tenant, existingMessages, newestMessage, this.messageStore, this.dataStore);
+    await deleteAllOlderMessagesButKeepInitialWrite(tenant, existingMessages, newestMessage, this.messageStore, this.dataStore, this.eventLog);
 
     return messageReply;
   };
