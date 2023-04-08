@@ -5,6 +5,8 @@ import type { Readable } from 'readable-stream';
 import type { RecordsQueryFilter } from '../../src/interfaces/records/types.js';
 import type {
   DateSort,
+  EventsGetMessage,
+  EventsGetOptions,
   HooksWriteMessage,
   HooksWriteOptions,
   ProtocolDefinition,
@@ -32,6 +34,7 @@ import { sha256 } from 'multiformats/hashes/sha2';
 
 import {
   DidKeyResolver,
+  EventsGet,
   HooksWrite,
   Jws,
   ProtocolsConfigure,
@@ -158,6 +161,17 @@ export type GenerateHooksWriteInput = {
 export type GenerateHooksWriteOutput = {
   requester: Persona;
   message: HooksWriteMessage;
+};
+
+export type GenerateEventsGetInput = {
+  requester?: Persona;
+  watermark?: string;
+};
+
+export type GenerateEventsGetOutput = {
+  requester: Persona;
+  eventsGet: EventsGet;
+  message: EventsGetMessage;
 };
 
 /**
@@ -434,6 +448,24 @@ export class TestDataGenerator {
     });
 
     return { message: permissionRequest.message };
+  }
+
+  public static async generateEventsGet(input?: GenerateEventsGetInput): Promise<GenerateEventsGetOutput> {
+    const requester = input?.requester ?? await TestDataGenerator.generatePersona();
+    const authorizationSignatureInput = Jws.createSignatureInput(requester);
+
+    const options: EventsGetOptions = { authorizationSignatureInput };
+    if (input?.watermark) {
+      options.watermark = input.watermark;
+    }
+
+    const eventsGet = await EventsGet.create(options);
+
+    return {
+      requester,
+      eventsGet,
+      message: eventsGet.message
+    };
   }
 
   /**
