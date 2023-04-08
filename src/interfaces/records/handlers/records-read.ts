@@ -10,14 +10,14 @@ import { RecordsRead } from '../messages/records-read.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 
-export class RecordsReadHandler implements MethodHandler {
+export class RecordsReadHandler implements MethodHandler<unknown> {
 
   constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore) { }
 
   public async handle({
     tenant,
     message
-  }: { tenant: string, message: RecordsReadMessage}): Promise<MessageReply> {
+  }: { tenant: string, message: RecordsReadMessage}): Promise<MessageReply<unknown>> {
 
     let recordsRead: RecordsRead;
     try {
@@ -77,6 +77,7 @@ export class RecordsReadHandler implements MethodHandler {
       status : { code: 200, detail: 'OK' },
       data   : result.dataStream
     });
+
     return messageReply;
   };
 }

@@ -1,4 +1,3 @@
-import type { QueryResultEntry } from './types.js';
 import type { Readable } from 'readable-stream';
 
 type Status = {
@@ -6,21 +5,21 @@ type Status = {
   detail: string
 };
 
-type MessageReplyOptions = {
+type MessageReplyOptions<EntryKind> = {
   status: Status,
-  entries?: QueryResultEntry[];
+  entries?: EntryKind[];
   data? : Readable;
 };
 
-export class MessageReply {
+export class MessageReply<EntryKind> {
   status: Status;
 
   /**
-   * Resulting message entries returned from the invocation of the corresponding message.
+   * Resulting message entries or events returned from the invocation of the corresponding message.
    * e.g. the resulting messages from a RecordsQuery
    * Mutually exclusive with `data`.
    */
-  entries?: QueryResultEntry[];
+  entries?: EntryKind[];
 
   /**
    * Data corresponding to the message received if applicable (e.g. RecordsRead).
@@ -28,7 +27,7 @@ export class MessageReply {
    */
   data?: Readable;
 
-  constructor(opts: MessageReplyOptions) {
+  constructor(opts: MessageReplyOptions<EntryKind>) {
     const { status, entries, data } = opts;
 
     this.status = status;
@@ -36,7 +35,7 @@ export class MessageReply {
     this.data = data;
   }
 
-  static fromError(e: unknown, code: number): MessageReply {
+  static fromError(e: unknown, code: number): MessageReply<never> {
 
     const detail = e instanceof Error ? e.message : 'Error';
 

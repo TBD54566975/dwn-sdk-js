@@ -9,6 +9,7 @@ import { lexicographicalCompare } from '../utils/string.js';
 import { validateJsonSchema } from '../schema-validator.js';
 
 export enum DwnInterfaceName {
+  Events = 'Events',
   Hooks = 'Hooks',
   Permissions = 'Permissions',
   Protocols = 'Protocols',
@@ -17,6 +18,7 @@ export enum DwnInterfaceName {
 
 export enum DwnMethodName {
   Configure = 'Configure',
+  Get = 'Get',
   Grant = 'Grant',
   Query = 'Query',
   Read = 'Read',

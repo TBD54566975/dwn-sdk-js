@@ -10,7 +10,7 @@ import { StorageController } from '../../../store/storage-controller.js';
 
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
 
-export class ProtocolsConfigureHandler implements MethodHandler {
+export class ProtocolsConfigureHandler implements MethodHandler<never> {
 
   constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore, private eventLog: EventLog) { }
 
@@ -18,7 +18,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     tenant,
     message,
     dataStream
-  }: {tenant: string, message: ProtocolsConfigureMessage, dataStream: _Readable.Readable}): Promise<MessageReply> {
+  }: {tenant: string, message: ProtocolsConfigureMessage, dataStream: _Readable.Readable}): Promise<MessageReply<never>> {
 
     let protocolsConfigure: ProtocolsConfigure;
     try {
@@ -51,7 +51,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     }
 
     // write the incoming message to DB if incoming message is newest
-    let messageReply: MessageReply;
+    let messageReply: MessageReply<never>;
     if (incomingMessageIsNewest) {
       const { author } = protocolsConfigure;
       const indexes = {

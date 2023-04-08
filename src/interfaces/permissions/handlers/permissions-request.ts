@@ -6,14 +6,14 @@ import { canonicalAuth } from '../../../core/auth.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { PermissionsRequest } from '../messages/permissions-request.js';
 
-export class PermissionsRequestHandler implements MethodHandler {
+export class PermissionsRequestHandler implements MethodHandler<never> {
 
   constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore) { }
 
   public async handle({
     tenant,
     message
-  }: {tenant: string, message: PermissionsRequestMessage}): Promise<MessageReply> {
+  }: {tenant: string, message: PermissionsRequestMessage}): Promise<MessageReply<never>> {
     const permissionRequest = await PermissionsRequest.parse(message);
     const { author } = permissionRequest;
 

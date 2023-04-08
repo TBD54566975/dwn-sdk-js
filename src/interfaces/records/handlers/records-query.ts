@@ -11,14 +11,14 @@ import { StorageController } from '../../../store/storage-controller.js';
 import { DateSort, RecordsQuery } from '../messages/records-query.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 
-export class RecordsQueryHandler implements MethodHandler {
+export class RecordsQueryHandler implements MethodHandler<QueryResultEntry> {
 
   constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore) { }
 
   public async handle({
     tenant,
     message
-  }: {tenant: string, message: RecordsQueryMessage}): Promise<MessageReply> {
+  }: {tenant: string, message: RecordsQueryMessage}): Promise<MessageReply<QueryResultEntry>> {
     let recordsQuery: RecordsQuery;
     try {
       recordsQuery = await RecordsQuery.parse(message);

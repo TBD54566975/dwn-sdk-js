@@ -18,6 +18,7 @@ import mkdirp from 'mkdirp';
 import standaloneCode from 'ajv/dist/standalone/index.js';
 
 import Definitions from '../json-schemas/definitions.json' assert { type: 'json' };
+import EventsGet from '../json-schemas/events/events-get.json' assert { type: 'json' };
 import GeneralJwk from '../json-schemas/jwk/general-jwk.json' assert { type: 'json' };
 import GeneralJws from '../json-schemas/general-jws.json' assert { type: 'json' };
 import HooksWrite from '../json-schemas/hooks/hooks-write.json' assert { type: 'json' };
@@ -39,6 +40,7 @@ const schemas = {
   RecordsDelete,
   RecordsQuery,
   RecordsWrite,
+  EventsGet,
   Definitions,
   GeneralJwk,
   GeneralJws,

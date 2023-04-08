@@ -10,6 +10,7 @@ import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DataStoreLevel } from './store/data-store-level.js';
 import { DidResolver } from './did/did-resolver.js';
 import { EventLogLevel } from './event-log/event-log-level.js';
+import { EventsGetHandler } from './interfaces/events/handlers/events-get.js';
 import { MessageReply } from './core/message-reply.js';
 import { MessageStoreLevel } from './store/message-store-level.js';
 import { PermissionsRequestHandler } from './interfaces/permissions/handlers/permissions-request.js';
@@ -22,7 +23,7 @@ import { RecordsWriteHandler } from './interfaces/records/handlers/records-write
 import { DwnInterfaceName, DwnMethodName, Message } from './core/message.js';
 
 export class Dwn {
-  private methodHandlers: { [key:string]: MethodHandler };
+  private methodHandlers: { [key:string]: MethodHandler<unknown> };
   private didResolver: DidResolver;
   private messageStore: MessageStore;
   private dataStore: DataStore;
@@ -37,6 +38,7 @@ export class Dwn {
     this.tenantGate = config.tenantGate!;
 
     this.methodHandlers = {
+      [DwnInterfaceName.Events + DwnMethodName.Get]          : new EventsGetHandler(this.didResolver, this.eventLog),
       [DwnInterfaceName.Permissions + DwnMethodName.Request] : new PermissionsRequestHandler(this.didResolver, this.messageStore, this.dataStore),
       [DwnInterfaceName.Protocols + DwnMethodName.Configure] : new ProtocolsConfigureHandler(
         this.didResolver, this.messageStore, this.dataStore, this.eventLog),
@@ -82,7 +84,7 @@ export class Dwn {
    * Processes the given DWN message and returns with a reply.
    * @param tenant The tenant DID to route the given message to.
    */
-  public async processMessage(tenant: string, rawMessage: any, dataStream?: Readable): Promise<MessageReply> {
+  public async processMessage(tenant: string, rawMessage: any, dataStream?: Readable): Promise<MessageReply<any>> {
     const isTenant = await this.tenantGate.isTenant(tenant);
     if (!isTenant) {
       return new MessageReply({

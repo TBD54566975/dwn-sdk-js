@@ -12,14 +12,14 @@ import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsDelete } from '../messages/records-delete.js';
 import { RecordsWrite } from '../messages/records-write.js';
 
-export class RecordsDeleteHandler implements MethodHandler {
+export class RecordsDeleteHandler implements MethodHandler<never> {
 
   constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore, private eventLog: EventLog) { }
 
   public async handle({
     tenant,
     message
-  }: { tenant: string, message: RecordsDeleteMessage}): Promise<MessageReply> {
+  }: { tenant: string, message: RecordsDeleteMessage}): Promise<MessageReply<never>> {
 
     let recordsDelete: RecordsDelete;
     try {
@@ -56,7 +56,7 @@ export class RecordsDeleteHandler implements MethodHandler {
     }
 
     // write the incoming message to DB if incoming message is newest
-    let messageReply: MessageReply;
+    let messageReply: MessageReply<never>;
     if (incomingMessageIsNewest) {
       const indexes = await constructIndexes(tenant, recordsDelete);
 

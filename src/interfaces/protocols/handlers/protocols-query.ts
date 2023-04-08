@@ -10,14 +10,14 @@ import { removeUndefinedProperties } from '../../../utils/object.js';
 
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 
-export class ProtocolsQueryHandler implements MethodHandler {
+export class ProtocolsQueryHandler implements MethodHandler<QueryResultEntry> {
 
   constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore) { }
 
   public async handle({
     tenant,
     message
-  }: { tenant: string, message: ProtocolsQueryMessage}): Promise<MessageReply> {
+  }: { tenant: string, message: ProtocolsQueryMessage}): Promise<MessageReply<QueryResultEntry>> {
 
     let protocolsQuery: ProtocolsQuery;
     try {

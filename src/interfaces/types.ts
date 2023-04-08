@@ -5,7 +5,7 @@ import type { Readable } from 'readable-stream';
 /**
  * Interface that defines a message handler of a specific method.
  */
-export interface MethodHandler {
+export interface MethodHandler<ResultEntryKind> {
   /**
    * Handles the given message and returns a `MessageReply` response.
    */
@@ -13,5 +13,5 @@ export interface MethodHandler {
     tenant: string;
     message: BaseMessage;
     dataStream?: Readable
-  }): Promise<MessageReply>;
+  }): Promise<MessageReply<ResultEntryKind>>;
 }
