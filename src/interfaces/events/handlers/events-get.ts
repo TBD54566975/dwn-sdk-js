@@ -28,7 +28,7 @@ export class EventsGetHandler implements MethodHandler<Event> {
 
       if (eventsGet.author !== tenant) {
         //! FIXME: think of better error message
-        throw new Error('author must be tenant.');
+        throw new Error('message author must be tenant.');
       }
     } catch (e) {
       return MessageReply.fromError(e, 401);
