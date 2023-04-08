@@ -1,4 +1,4 @@
-import type { EventsGetMessage } from '../../../../src/index.js';
+// import type { EventsGetMessage } from '../../../../src/index.js';
 
 import { EventsGetHandler } from '../../../../src/interfaces/events/handlers/events-get.js';
 import { expect } from 'chai';
