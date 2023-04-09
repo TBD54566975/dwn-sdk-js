@@ -11,7 +11,7 @@
 //
 export type { DwnConfig } from './dwn.js';
 export type { DwnServiceEndpoint, ServiceEndpoint, DidDocument, DidResolutionResult, DidResolutionMetadata, DidDocumentMetadata, VerificationMethod } from './did/did-resolver.js';
-export type { EventLog } from './event-log/event-log.js';
+export type { EventLog, Event } from './event-log/event-log.js';
 export type { EventsGetMessage } from './interfaces/events/types.js';
 export type { HooksWriteMessage } from './interfaces/hooks/types.js';
 export type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolsQueryMessage } from './interfaces/protocols/types.js';
