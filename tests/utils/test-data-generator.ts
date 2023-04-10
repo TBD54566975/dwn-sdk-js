@@ -267,7 +267,7 @@ export class TestDataGenerator {
    * Generates a RecordsWrite message for testing.
    * Implementation currently uses `RecordsWrite.create()`.
    * @param input.attesters Attesters of the message. Will NOT be generated if not given.
-   * @param input.data Data that belongs to the record. Generated if not given.
+   * @param input.data Data that belongs to the record. Generated when not given only if `dataCid` and `dataSize` are also not given.
    * @param input.dataFormat Format of the data. Defaults to 'application/json' if not given.
    * @param input.requester Author of the message. Generated if not given.
    * @param input.schema Schema of the message. Randomly generated if not given.

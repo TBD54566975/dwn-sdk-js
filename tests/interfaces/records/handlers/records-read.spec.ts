@@ -71,10 +71,12 @@ describe('RecordsReadHandler.handle()', () => {
         authorizationSignatureInput : Jws.createSignatureInput(alice)
       });
 
-      const readReply = await dwn.processMessage(alice.did, recordsRead.message);
+      const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
       expect(readReply.status.code).to.equal(200);
+      expect(readReply.record).to.exist;
+      expect(readReply.record?.descriptor).to.exist;
 
-      const dataFetched = await DataStream.toBytes(readReply.data!);
+      const dataFetched = await DataStream.toBytes(readReply.record!.data!);
       expect(Comparer.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
     });
 
@@ -108,14 +110,14 @@ describe('RecordsReadHandler.handle()', () => {
 
       // testing public RecordsRead
       const recordsRead = await RecordsRead.create({
-        recordId                    : message.recordId,
-        authorizationSignatureInput : Jws.createSignatureInput(alice)
+        recordId: message.recordId
       });
+      expect(recordsRead.author).to.be.undefined; // making sure no author/authorization is created
 
-      const readReply = await dwn.processMessage(alice.did, recordsRead.message);
+      const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
       expect(readReply.status.code).to.equal(200);
 
-      const dataFetched = await DataStream.toBytes(readReply.data!);
+      const dataFetched = await DataStream.toBytes(readReply.record!.data!);
       expect(Comparer.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
     });
 
@@ -135,10 +137,10 @@ describe('RecordsReadHandler.handle()', () => {
         authorizationSignatureInput : Jws.createSignatureInput(bob)
       });
 
-      const readReply = await dwn.processMessage(alice.did, recordsRead.message);
+      const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
       expect(readReply.status.code).to.equal(200);
 
-      const dataFetched = await DataStream.toBytes(readReply.data!);
+      const dataFetched = await DataStream.toBytes(readReply.record!.data!);
       expect(Comparer.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
     });
 

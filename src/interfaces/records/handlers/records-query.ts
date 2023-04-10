@@ -107,12 +107,13 @@ export class RecordsQueryHandler implements MethodHandler {
    * Fetches only unpublished records that are intended for the requester (where `recipient` is the requester).
    */
   private async fetchUnpublishedRecordsForRequester(tenant: string, recordsQuery: RecordsQuery): Promise<BaseMessage[]> {
-  // include records where recipient is requester
+    // include records where recipient is requester
     const filter = {
       ...RecordsQuery.convertFilter(recordsQuery.message.descriptor.filter),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
-      recipient         : recordsQuery.author,
+      // TODO: `recordsQuery.author` cannot be undefined until #299 is implemented (https://github.com/TBD54566975/dwn-sdk-js/issues/299)
+      recipient         : recordsQuery.author!,
       isLatestBaseState : true,
       published         : false
     };
@@ -127,7 +128,8 @@ export class RecordsQueryHandler implements MethodHandler {
     // include records where recipient is requester
     const filter = {
       ...RecordsQuery.convertFilter(recordsQuery.message.descriptor.filter),
-      author            : recordsQuery.author,
+      // TODO: `recordsQuery.author` cannot be undefined until #299 is implemented (https://github.com/TBD54566975/dwn-sdk-js/issues/299)
+      author            : recordsQuery.author!,
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       isLatestBaseState : true,

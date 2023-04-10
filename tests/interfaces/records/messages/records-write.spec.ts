@@ -4,6 +4,7 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
+import { DwnErrorCode } from '../../../../src/core/dwn-error.js';
 import { Jws } from '../../../../src/index.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsWrite } from '../../../../src/interfaces/records/messages/records-write.js';
@@ -171,5 +172,12 @@ describe('RecordsWrite', () => {
       expect(isInitialWrite).to.be.false;
     });
   });
-});
 
+  describe('getEntryId', () => {
+    it('should throw if the given author is undefined', async () => {
+      const { message }= await TestDataGenerator.generateRecordsWrite();
+      const author = undefined;
+      expect(RecordsWrite.getEntryId(author, message.descriptor)).to.be.rejectedWith(DwnErrorCode.RecordsWriteGetEntryIdUndefinedAuthor);
+    });
+  });
+});

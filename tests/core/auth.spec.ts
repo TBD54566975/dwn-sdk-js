@@ -1,16 +1,25 @@
+import { DwnErrorCode } from '../../src/core/dwn-error.js';
+import { expect } from 'chai';
+import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { authenticate, validateAuthorizationIntegrity } from '../../src/core/auth.js';
+import { DidResolver, RecordsRead } from '../../src/index.js';
+
 describe('Auth', () => {
-  describe('authenticate', () => {
-    xit('adds descriptorCid to payload', () => {});
-    xit('includes additional provided properties to payload', () => {});
+  describe('validateAuthorizationIntegrity()', () => {
+    it('should throw if given message does not have `authorization` property', async () => {
+      // create a message without `authorization`
+      const recordsRead = await RecordsRead.create({
+        recordId: await TestDataGenerator.randomCborSha256Cid()
+      });
+
+      await expect(validateAuthorizationIntegrity(recordsRead.message)).to.be.rejectedWith(DwnErrorCode.AuthorizationMissing);
+    });
   });
-  describe('verifyAuth', () => {
-    xit('throws an exception if more than 1 signature is included', () => {});
-    xit('throws an exception if payload is not a valid JSON object', () => {});
-    xit('throws an exception if descriptorCid is not present in payload', () => {});
-    xit('throws an exception if descriptorCid is not a valid CID', () => {});
-    xit('throws an exception if descriptorCid does not match CID of descriptor', () => {});
-    xit('throws an exception if payload includes unexpected property', () => {});
-    xit('throws an exception if value of payload property fails validation', () => {});
-    xit('returns parsed payload and array of signers if verification is successful', () => {});
+
+  describe('authenticate()', () => {
+    it('should throw if given JWS is `undefined`', async () => {
+      const jws = undefined;
+      await expect(authenticate(jws, new DidResolver)).to.be.rejectedWith(DwnErrorCode.AuthenticateJwsMissing);
+    });
   });
 });

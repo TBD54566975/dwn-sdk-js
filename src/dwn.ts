@@ -5,6 +5,7 @@ import type { MessageStore } from './store/message-store.js';
 import type { MethodHandler } from './interfaces/types.js';
 import type { Readable } from 'readable-stream';
 import type { TenantGate } from './core/tenant-gate.js';
+import type { RecordsReadMessage, RecordsReadReply } from './interfaces/records/types.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DataStoreLevel } from './store/data-store-level.js';
@@ -111,10 +112,19 @@ export class Dwn {
       message: rawMessage as BaseMessage,
       dataStream
     });
+
     return methodHandlerReply;
   }
 
-  async dump(): Promise<void> {
+  /**
+   * Handles a `RecordsRead` message.
+   */
+  public async handleRecordsRead(tenant: string, message: RecordsReadMessage): Promise<RecordsReadReply> {
+    const reply = await this.processMessage(tenant, message);
+    return reply as RecordsReadReply;
+  }
+
+  public async dump(): Promise<void> {
     console.group('didResolver');
     await this.didResolver['dump']?.();
     console.groupEnd();
