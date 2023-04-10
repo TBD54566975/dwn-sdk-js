@@ -1,5 +1,5 @@
 import type { BaseMessage } from '../core/types.js';
-import type { MessageReply } from '../index.js';
+import type { MessageReply } from '../core/message-reply.js';
 import type { Readable } from 'readable-stream';
 
 /**
