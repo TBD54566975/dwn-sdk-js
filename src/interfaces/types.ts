@@ -1,4 +1,5 @@
 import type { BaseMessage } from '../core/types.js';
+import type { MessageReply } from '../index.js';
 import type { Readable } from 'readable-stream';
 
 /**
@@ -12,5 +13,5 @@ export interface MethodHandler {
     tenant: string;
     message: BaseMessage;
     dataStream?: Readable
-  }): Promise<unknown>;
+  }): Promise<MessageReply>;
 }

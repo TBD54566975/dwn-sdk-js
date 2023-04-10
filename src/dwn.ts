@@ -104,8 +104,7 @@ export class Dwn {
       dataStream
     });
 
-    // TODO: #289 - temporary casting until we refactor/replace `processMessage()` (https://github.com/TBD54566975/dwn-sdk-js/issues/289)
-    return methodHandlerReply as MessageReply;
+    return methodHandlerReply;
   }
 
   /**
