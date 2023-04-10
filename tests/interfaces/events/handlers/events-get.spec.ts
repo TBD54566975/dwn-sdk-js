@@ -77,7 +77,7 @@ describe('EventsGetHandler.handle()', () => {
     expect(reply.data).to.not.exist;
   });
 
-  it('retuns all events for a tenant if watermark is not provided', async () => {
+  it('returns all events for a tenant if watermark is not provided', async () => {
     const alice = await DidKeyResolver.generate();
     const expectedCids: string[] = [];
 
