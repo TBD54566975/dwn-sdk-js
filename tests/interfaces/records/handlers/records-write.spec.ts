@@ -19,6 +19,7 @@ import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DidResolver } from '../../../../src/did/did-resolver.js';
 import { DwnErrorCode } from '../../../../src/core/dwn-error.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
+import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
 import { Message } from '../../../../src/core/message.js';
@@ -37,6 +38,7 @@ describe('RecordsWriteHandler.handle()', () => {
   let didResolver: DidResolver;
   let messageStore: MessageStoreLevel;
   let dataStore: DataStoreLevel;
+  let eventLog: EventLogLevel;
   let dwn: Dwn;
 
   describe('functional tests', () => {
@@ -54,7 +56,11 @@ describe('RecordsWriteHandler.handle()', () => {
         blockstoreLocation: 'TEST-DATASTORE'
       });
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore });
+      eventLog = new EventLogLevel({
+        location: 'TEST-EVENTLOG'
+      });
+
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
     });
 
     beforeEach(async () => {
@@ -63,6 +69,7 @@ describe('RecordsWriteHandler.handle()', () => {
       // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
       await messageStore.clear();
       await dataStore.clear();
+      await eventLog.clear();
     });
 
     after(async () => {
@@ -439,6 +446,59 @@ describe('RecordsWriteHandler.handle()', () => {
         const reply = await dwn.processMessage('unused-tenant-DID', message, dataStream);
         expect(reply.status.code).to.equal(400);
         expect(reply.status.detail).to.contain('does not match deterministic contextId');
+      });
+
+      describe('event log', () => {
+        it('should add an event to the eventlog on initial write', async () => {
+          const { message, requester, dataStream } = await TestDataGenerator.generateRecordsWrite();
+          TestStubGenerator.stubDidResolver(didResolver, [requester]);
+
+          const reply = await dwn.processMessage(requester.did, message, dataStream);
+          expect(reply.status.code).to.equal(202);
+
+          const events = await eventLog.getEvents(requester.did);
+          expect(events.length).to.equal(1);
+
+          const messageCid = await Message.getCid(message);
+          expect(events[0].messageCid).to.equal(messageCid);
+        });
+
+        it('should only keep first write and latest write when subsequent writes happen', async () => {
+          const { message, requester, dataStream, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
+          TestStubGenerator.stubDidResolver(didResolver, [requester]);
+
+          const reply = await dwn.processMessage(requester.did, message, dataStream);
+          expect(reply.status.code).to.equal(202);
+
+          const newWrite = await RecordsWrite.createFrom({
+            unsignedRecordsWriteMessage : recordsWrite.message,
+            published                   : true,
+            authorizationSignatureInput : Jws.createSignatureInput(requester)
+          });
+
+          const newWriteReply = await dwn.processMessage(requester.did, newWrite.message);
+          expect(newWriteReply.status.code).to.equal(202);
+
+          const newestWrite = await RecordsWrite.createFrom({
+            unsignedRecordsWriteMessage : recordsWrite.message,
+            published                   : true,
+            authorizationSignatureInput : Jws.createSignatureInput(requester)
+          });
+
+          const newestWriteReply = await dwn.processMessage(requester.did, newestWrite.message);
+          expect(newestWriteReply.status.code).to.equal(202);
+
+          const events = await eventLog.getEvents(requester.did);
+          expect(events.length).to.equal(2);
+
+          const deletedMessageCid = await Message.getCid(newWrite.message);
+
+          for (const { messageCid } of events) {
+            if (messageCid === deletedMessageCid ) {
+              expect.fail(`${messageCid} should not exist`);
+            }
+          }
+        });
       });
     });
 
@@ -1368,7 +1428,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const messageStore = sinon.createStubInstance(MessageStoreLevel);
       const dataStore = sinon.createStubInstance(DataStoreLevel);
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
       const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
 
       expect(reply.status.code).to.equal(400);
@@ -1392,7 +1452,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const messageStore = sinon.createStubInstance(MessageStoreLevel);
       const dataStore = sinon.createStubInstance(DataStoreLevel);
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
       const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
 
       expect(reply.status.code).to.equal(400);
@@ -1410,7 +1470,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const messageStore = sinon.createStubInstance(MessageStoreLevel);
       const dataStore = sinon.createStubInstance(DataStoreLevel);
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
       const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
 
       expect(reply.status.code).to.equal(401);
@@ -1425,7 +1485,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const messageStore = sinon.createStubInstance(MessageStoreLevel);
       const dataStore = sinon.createStubInstance(DataStoreLevel);
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
 
       const tenant = await (await TestDataGenerator.generatePersona()).did; // unauthorized tenant
       const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
@@ -1459,7 +1519,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const messageStore = sinon.createStubInstance(MessageStoreLevel);
       const dataStore = sinon.createStubInstance(DataStoreLevel);
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
       const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
 
       expect(reply.status.code).to.equal(400);
@@ -1471,7 +1531,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const bob = await DidKeyResolver.generate();
       const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [alice, bob] });
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
       const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream: dataStream! });
 
       expect(writeReply.status.code).to.equal(400);
@@ -1486,7 +1546,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const anotherWrite = await TestDataGenerator.generateRecordsWrite({ attesters: [alice] });
       message.attestation = anotherWrite.message.attestation;
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
       const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream: dataStream! });
 
       expect(writeReply.status.code).to.equal(400);
@@ -1503,7 +1563,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const attestationNotReferencedByAuthorization = await RecordsWrite['createAttestation'](descriptorCid, Jws.createSignatureInputs([bob]));
       message.attestation = attestationNotReferencedByAuthorization;
 
-      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore);
+      const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
       const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream: dataStream! });
 
       expect(writeReply.status.code).to.equal(400);
@@ -1525,7 +1585,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
     const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
 
-    const recordsWriteHandler = new RecordsWriteHandler(didResolverStub, messageStoreStub, dataStoreStub);
+    const recordsWriteHandler = new RecordsWriteHandler(didResolverStub, messageStoreStub, dataStoreStub, eventLog);
 
     const handlerPromise = recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
     await expect(handlerPromise).to.be.rejectedWith('an unknown error in messageStore.put()');

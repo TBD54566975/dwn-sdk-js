@@ -1,4 +1,5 @@
 import type { DataStore } from './data-store.js';
+import type { EventLog } from '../event-log/event-log.js';
 import type { MessageStore } from './message-store.js';
 import type { Readable } from 'readable-stream';
 import type { BaseMessage, Filter } from '../core/types.js';
@@ -24,18 +25,19 @@ export class StorageController {
   public static async put(
     messageStore: MessageStore,
     dataStore: DataStore,
+    eventLog: EventLog,
     tenant: string,
     message: BaseMessage,
     indexes: { [key: string]: string },
     dataStream?: Readable
   ): Promise<void> {
+    const messageCid = await Message.getCid(message);
+
     // if `dataCid` is given, it means there is corresponding data associated with this message
     // but NOTE: it is possible that a data stream is not given in such case, for instance,
     // a subsequent RecordsWrite that changes the `published` property, but the data hasn't changed,
     // in this case requiring re-uploading of the data is extremely inefficient so we take care allow omission of data stream
     if (message.descriptor.dataCid !== undefined) {
-      const messageCid = await Message.getCid(message);
-
       let result;
 
       if (dataStream === undefined) {
@@ -78,6 +80,7 @@ export class StorageController {
     }
 
     await messageStore.put(tenant, message, indexes);
+    await eventLog.append(tenant, messageCid);
   }
 
   public static async query(
@@ -122,6 +125,5 @@ export class StorageController {
     await messageStore.delete(tenant, messageCid);
   }
 }
-
 
 type RecordsWriteMessageWithOptionalEncodedData = BaseMessage & { encodedData?: string };

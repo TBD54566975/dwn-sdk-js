@@ -1,3 +1,4 @@
+import type { EventLog } from '../../../event-log/event-log.js';
 import type { MethodHandler } from '../../types.js';
 import type { RecordsWriteMessage } from '../types.js';
 import type { TimestampedMessage } from '../../../core/types.js';
@@ -13,7 +14,7 @@ import { StorageController } from '../../../store/storage-controller.js';
 
 export class RecordsWriteHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore) { }
+  constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore, private eventLog: EventLog) { }
 
   public async handle({
     tenant,
@@ -74,7 +75,7 @@ export class RecordsWriteHandler implements MethodHandler {
       const indexes = await constructRecordsWriteIndexes(recordsWrite, isLatestBaseState);
 
       try {
-        await StorageController.put(this.messageStore, this.dataStore, tenant, message, indexes, dataStream);
+        await StorageController.put(this.messageStore, this.dataStore, this.eventLog, tenant, message, indexes, dataStream);
       } catch (error) {
         const e = error as any;
         if (e.code === DwnErrorCode.MessageStoreDataCidMismatch ||
@@ -97,7 +98,7 @@ export class RecordsWriteHandler implements MethodHandler {
     }
 
     // delete all existing messages that are not newest, except for the initial write
-    await deleteAllOlderMessagesButKeepInitialWrite(tenant, existingMessages, newestMessage, this.messageStore, this.dataStore);
+    await deleteAllOlderMessagesButKeepInitialWrite(tenant, existingMessages, newestMessage, this.messageStore, this.dataStore, this.eventLog);
 
     return messageReply;
   };

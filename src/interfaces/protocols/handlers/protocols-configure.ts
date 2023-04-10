@@ -1,3 +1,4 @@
+import type { EventLog } from '../../../event-log/event-log.js';
 import type { MethodHandler } from '../../types.js';
 import type { ProtocolsConfigureMessage } from '../types.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
@@ -11,7 +12,7 @@ import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.
 
 export class ProtocolsConfigureHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore) { }
+  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore, private eventLog: EventLog) { }
 
   public async handle({
     tenant,
@@ -57,9 +58,10 @@ export class ProtocolsConfigureHandler implements MethodHandler {
         author,
         ... message.descriptor
       };
+
       // FIXME: indexes, Property 'dataSize' is incompatible with index signature.
       // Type 'number' is not assignable to type 'string'.
-      await StorageController.put(this.messageStore, this.dataStore, tenant, message, indexes as any, dataStream);
+      await StorageController.put(this.messageStore, this.dataStore, this.eventLog, tenant, message, indexes as any, dataStream);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }
@@ -71,11 +73,17 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     }
 
     // delete all existing records that are smaller
+    const deletedMessageCids: string[] = [];
     for (const message of existingMessages) {
       if (await Message.isCidLarger(newestMessage, message)) {
+        const messageCid = await Message.getCid(message);
+        deletedMessageCids.push(messageCid);
+
         await StorageController.delete(this.messageStore, this.dataStore, tenant, message);
       }
     }
+
+    await this.eventLog.deleteEventsByCid(tenant, deletedMessageCids);
 
     return messageReply;
   };

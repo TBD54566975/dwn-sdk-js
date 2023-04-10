@@ -13,9 +13,11 @@ try.js
 # default location for levelDB data storage in a non-browser env
 MESSAGESTORE
 DATASTORE
+EVENTLOG
 # location for levelDB data storage for non-browser tests
 TEST-DATASTORE
 TEST-MESSAGESTORE
+TEST-EVENTLOG
 
 # default location for index specific levelDB data storage in a non-browser env
 INDEX

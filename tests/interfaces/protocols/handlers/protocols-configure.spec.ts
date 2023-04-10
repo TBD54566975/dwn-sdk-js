@@ -6,6 +6,7 @@ import chai, { expect } from 'chai';
 
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
+import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { lexicographicalCompare } from '../../../../src/utils/string.js';
 import { Message } from '../../../../src/core/message.js';
@@ -21,6 +22,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
   let didResolver: DidResolver;
   let messageStore: MessageStoreLevel;
   let dataStore: DataStoreLevel;
+  let eventLog: EventLogLevel;
   let dwn: Dwn;
 
   describe('functional tests', () => {
@@ -38,7 +40,11 @@ describe('ProtocolsConfigureHandler.handle()', () => {
         blockstoreLocation: 'TEST-DATASTORE'
       });
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore });
+      eventLog = new EventLogLevel({
+        location: 'TEST-EVENTLOG'
+      });
+
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
     });
 
     beforeEach(async () => {
@@ -47,6 +53,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
       await messageStore.clear();
       await dataStore.clear();
+      await eventLog.clear();
     });
 
     after(async () => {
@@ -131,6 +138,54 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       const actualDefinition = JSON.stringify(reply.entries![0]['descriptor']['definition']);
       expect(actualDefinition).to.not.equal(initialDefinition);
       expect(actualDefinition).to.equal(expectedDefinition);
+    });
+
+    describe('event log', () => {
+      it('should add event for ProtocolsConfigure', async () => {
+        const alice = await DidKeyResolver.generate();
+        const protocol = 'exampleProtocol';
+        const { message, dataStream } = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol });
+
+        const reply = await dwn.processMessage(alice.did, message, dataStream);
+        expect(reply.status.code).to.equal(202);
+
+        const events = await eventLog.getEvents(alice.did);
+        expect(events.length).to.equal(1);
+
+        const messageCid = await Message.getCid(message);
+        expect(events[0].messageCid).to.equal(messageCid);
+      });
+
+      it('should delete older ProtocolsConfigure event when one overwritten', async () => {
+        const alice = await DidKeyResolver.generate();
+        const protocol = 'exampleProtocol';
+        const messageData1 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol });
+        const messageData2 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol });
+
+        const messageDataWithCid: (GenerateProtocolsConfigureOutput & { cid: string })[] = [];
+        for (const messageData of [messageData1, messageData2]) {
+          const cid = await Message.getCid(messageData.message);
+          messageDataWithCid.push({ cid, ...messageData });
+        }
+
+        // sort the message in lexicographic order
+        const [oldestWrite, newestWrite]: GenerateProtocolsConfigureOutput[]
+          = messageDataWithCid.sort((messageDataA, messageDataB) => { return lexicographicalCompare(messageDataA.cid, messageDataB.cid); });
+
+        // write the protocol with the middle lexicographic value
+        let reply = await dwn.processMessage(alice.did, oldestWrite.message, oldestWrite.dataStream);
+        expect(reply.status.code).to.equal(202);
+
+        // test that the protocol with the largest lexicographic value can be written
+        reply = await dwn.processMessage(alice.did, newestWrite.message, newestWrite.dataStream);
+        expect(reply.status.code).to.equal(202);
+
+        const events = await eventLog.getEvents(alice.did);
+        expect(events.length).to.equal(1);
+
+        const newestMessageCid = await Message.getCid(newestWrite.message);
+        expect(events[0].messageCid).to.equal(newestMessageCid);
+      });
     });
   });
 });
