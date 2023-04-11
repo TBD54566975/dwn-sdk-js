@@ -47,13 +47,20 @@ export type EncryptedKey = {
   messageAuthenticationCode: string;
 };
 
-/**
- * Used by the entries returned by queries.
- */
 export type UnsignedRecordsWriteMessage = {
   recordId: string,
   contextId?: string;
   descriptor: RecordsWriteDescriptor;
+  encryption?: EncryptionProperty;
+};
+
+/**
+ * Data structure returned in a `RecordsQuery` reply entry.
+ * NOTE: the message structure is a modified version of the message received, the most notable differences are:
+ * 1. does not contain `authorization`
+ * 2. may include encoded data
+ */
+export type RecordsQueryReplyEntry = UnsignedRecordsWriteMessage & {
   encodedData?: string;
 };
 

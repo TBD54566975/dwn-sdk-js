@@ -1,5 +1,5 @@
 import type { Readable } from 'readable-stream';
-import type { RecordsReadReply } from '../interfaces/records/types.js';
+import type { UnsignedRecordsWriteMessage } from '../interfaces/records/types.js';
 import type { DerivedPrivateJwk, DerivedPublicJwk } from './hd-key.js';
 
 import { Encoder } from './encoder.js';
@@ -15,8 +15,12 @@ export class Records {
   /**
    * Decrypts the encrypted data in a message reply using the given ancestor private key.
    */
-  public static async decrypt(messageReply: RecordsReadReply, ancestorPrivateKey: DerivedPrivateJwk): Promise<Readable> {
-    const { encryption, contextId, descriptor, data } = messageReply.record!;
+  public static async decrypt(
+    recordsWrite: UnsignedRecordsWriteMessage,
+    ancestorPrivateKey: DerivedPrivateJwk,
+    cipherStream: Readable
+  ): Promise<Readable> {
+    const { encryption, contextId, descriptor } = recordsWrite;
 
     // look for an encrypted symmetric key that is encrypted using the same scheme as the given derived private key
     const matchingEncryptedKey = encryption!.keyEncryption.find(key => key.derivationScheme === ancestorPrivateKey.derivationScheme);
@@ -49,7 +53,7 @@ export class Records {
     // NOTE: right now only `A256CTR` algorithm is supported for symmetric encryption,
     // so we will assume that's the algorithm without additional switch/if statements
     const dataEncryptionInitializationVector = Encoder.base64UrlToBytes(encryption!.initializationVector);
-    const plaintextStream = await Encryption.aes256CtrDecrypt(dataEncryptionKey, dataEncryptionInitializationVector, data!);
+    const plaintextStream = await Encryption.aes256CtrDecrypt(dataEncryptionKey, dataEncryptionInitializationVector, cipherStream);
 
     return plaintextStream;
   }

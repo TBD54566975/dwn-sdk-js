@@ -281,7 +281,7 @@ describe('RecordsReadHandler.handle()', () => {
           recordId                    : message.recordId, // assume alice can do a query to get the new email and its `recordId`
           authorizationSignatureInput : Jws.createSignatureInput(alice)
         });
-        const readReply = await dwn.processMessage(alice.did, recordsRead.message);
+        const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
         expect(readReply.status.code).to.equal(200);
 
         // test able to decrypt the message using a derived key
@@ -293,14 +293,17 @@ describe('RecordsReadHandler.handle()', () => {
         const relativeDescendantDerivationPath = [KeyDerivationScheme.ProtocolContext, protocol, message.contextId!];
         const descendantPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, relativeDescendantDerivationPath);
 
-        const plaintextDataStream = await Records.decrypt(readReply, descendantPrivateKey);
+        const unsignedRecordsWrite = readReply.record!;
+        const cipherStream = readReply.record!.data;
+
+        const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, descendantPrivateKey, cipherStream);
         const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
         expect(Comparer.byteArraysEqual(plaintextBytes, bobMessageBytes)).to.be.true;
 
         // test unable to decrypt the message if derived key has an unexpected path
         const invalidDerivationPath = [KeyDerivationScheme.ProtocolContext, protocol, 'invalidContextId'];
         const inValidDescendantPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, invalidDerivationPath);
-        await expect(Records.decrypt(readReply, inValidDescendantPrivateKey)).to.be.rejectedWith(
+        await expect(Records.decrypt(unsignedRecordsWrite, inValidDescendantPrivateKey, cipherStream)).to.be.rejectedWith(
           DwnErrorCode.RecordsInvalidAncestorKeyDerivationSegment
         );
 
@@ -310,7 +313,7 @@ describe('RecordsReadHandler.handle()', () => {
           derivationPath    : [],
           derivedPrivateKey : alice.keyPair.privateJwk
         };
-        await expect(Records.decrypt(readReply, privateKeyWithMismatchingDerivationScheme)).to.be.rejectedWith(
+        await expect(Records.decrypt(unsignedRecordsWrite, privateKeyWithMismatchingDerivationScheme, cipherStream)).to.be.rejectedWith(
           DwnErrorCode.RecordsDecryptNoMatchingKeyDerivationScheme
         );
       });
