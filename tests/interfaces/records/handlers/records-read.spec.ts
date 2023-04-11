@@ -1,10 +1,10 @@
 import type { DerivedPrivateJwk } from '../../../../src/utils/hd-key.js';
 import type { EncryptionInput } from '../../../../src/interfaces/records/messages/records-write.js';
 import type { ProtocolDefinition } from '../../../../src/index.js';
+import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
 import socialMediaProtocolDefinition from '../../../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
 
 import chaiAsPromised from 'chai-as-promised';
-import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
@@ -156,26 +156,24 @@ describe('RecordsReadHandler.handle()', () => {
 
     describe('protocol based reads', () => {
       it('should allow read with allow-anyone rule', async () => {
-        // scenario: Alice writes an image to Caroline's DWN with Alice herself as recipient,
-        //           then Bob reads the image because he is "anyone".
+        // scenario: Alice writes an image to her DWN, then Bob reads the image because he is "anyone".
 
         const alice = await DidKeyResolver.generate();
         const bob = await DidKeyResolver.generate();
-        const caroline = await DidKeyResolver.generate();
 
         // setting up a stub DID resolver
-        TestStubGenerator.stubDidResolver(didResolver, [alice, bob, caroline]);
+        TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
 
         const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-media';
         const protocolDefinition: ProtocolDefinition = socialMediaProtocolDefinition;
 
-        // Install social-media protocol on Caroline's DWN
+        // Install social-media protocol on Alice's DWN
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-          requester: caroline,
+          requester: alice,
           protocol,
           protocolDefinition
         });
-        const protocolWriteReply = await dwn.processMessage(caroline.did, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolWriteReply.status.code).to.equal(202);
 
         // Alice writes image to Caroline's DWN with Alice herself as recipient
@@ -183,11 +181,11 @@ describe('RecordsReadHandler.handle()', () => {
         const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           protocol,
-          schema       : socialMediaProtocolDefinition.labels.image.schema,
+          schema       : protocolDefinition.labels.image.schema,
           data         : encodedImage,
           recipientDid : alice.did
         });
-        const imageReply = await dwn.processMessage(caroline.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
+        const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
         expect(imageReply.status.code).to.equal(202);
 
         // Bob (anyone) reads the image that Alice wrote
@@ -195,145 +193,110 @@ describe('RecordsReadHandler.handle()', () => {
           recordId                    : imageRecordsWrite.message.recordId,
           authorizationSignatureInput : Jws.createSignatureInput(bob)
         });
-        const imageReadReply = await dwn.processMessage(caroline.did, imageRecordsRead.message);
+        const imageReadReply = await dwn.processMessage(alice.did, imageRecordsRead.message);
         expect(imageReadReply.status.code).to.equal(200);
       });
 
       it('should allow read with recipient rule', async () => {
-        // scenario: Alice writes an image and a caption to Caroline's DWN with Bob as recipient.
-        //           Bob reads the caption. Dave is unable to read the caption.
+        // scenario: Alice sends an email to Bob, then Bob reads the email.
+        //           ImposterBob tries and fails to read the email.
 
         const alice = await DidKeyResolver.generate();
         const bob = await DidKeyResolver.generate();
-        const caroline = await DidKeyResolver.generate();
-        const dave = await DidKeyResolver.generate();
+        const imposterBob = await DidKeyResolver.generate();
 
-        // setting up a stub DID resolver
-        TestStubGenerator.stubDidResolver(didResolver, [alice, bob, caroline, dave]);
+        const protocol = 'https://tbd.website/decentralized-web-node/protocols/email';
+        const protocolDefinition: ProtocolDefinition = emailProtocolDefinition;
 
-        const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-media';
-        const protocolDefinition: ProtocolDefinition = socialMediaProtocolDefinition;
-
-        // Install social-media protocol on Caroline's DWN
+        // Install email protocol on Alice's DWN
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-          requester: caroline,
+          requester: alice,
           protocol,
           protocolDefinition
         });
-        const protocolWriteReply = await dwn.processMessage(caroline.did, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolWriteReply.status.code).to.equal(202);
 
-        // Alice writes image to Caroline's DWN with Bob as recipient
-        const encodedImage = new TextEncoder().encode('cafe-aesthetic.jpg');
-        const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+        // Alice writes an email with Bob as recipient
+        const encodedEmail = new TextEncoder().encode('Dear Bob, hello!');
+        const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           protocol,
-          schema       : socialMediaProtocolDefinition.labels.image.schema,
-          data         : encodedImage,
+          schema       : protocolDefinition.labels.email.schema,
+          data         : encodedEmail,
           recipientDid : bob.did
         });
-        const imageReply = await dwn.processMessage(caroline.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
+        const imageReply = await dwn.processMessage(alice.did, emailRecordsWrite.message, emailRecordsWrite.dataStream);
         expect(imageReply.status.code).to.equal(202);
 
-        // Alice writes caption to her image to Caroline's DWN with Bob as recipient
-        const imageContextId = await imageRecordsWrite.recordsWrite.getEntryId();
-        const encodedCaption = new TextEncoder().encode('coffee and work vibes!');
-        const captionRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-          requester : alice,
-          protocol,
-          schema    : socialMediaProtocolDefinition.labels.caption.schema,
-          contextId : imageContextId,
-          parentId  : imageContextId,
-          data      : encodedCaption
-        });
-        const captionResponse = await dwn.processMessage(caroline.did, captionRecordsWrite.message, captionRecordsWrite.dataStream);
-        expect(captionResponse.status.code).to.equal(202);
-
-        // Bob (recipient) reads Alice's caption
-        const bobCaptionRecordsRead = await RecordsRead.create({
-          recordId                    : captionRecordsWrite.message.recordId,
+        // Bob reads Alice's email
+        const bobRecordsRead = await RecordsRead.create({
+          recordId                    : emailRecordsWrite.message.recordId,
           authorizationSignatureInput : Jws.createSignatureInput(bob)
         });
-        const bobCaptionReadReply = await dwn.processMessage(caroline.did, bobCaptionRecordsRead.message);
-        expect(bobCaptionReadReply.status.code).to.equal(200);
+        const bobReadReply = await dwn.processMessage(alice.did, bobRecordsRead.message);
+        expect(bobReadReply.status.code).to.equal(200);
 
-        // Dave (anyone) is not able to read Alice's caption
-        const daveCaptionRecordsRead = await RecordsRead.create({
-          recordId                    : captionRecordsWrite.message.recordId,
-          authorizationSignatureInput : Jws.createSignatureInput(dave)
+        // ImposterBob is not able to read Alice's email
+        const imposterRecordsRead = await RecordsRead.create({
+          recordId                    : emailRecordsWrite.message.recordId,
+          authorizationSignatureInput : Jws.createSignatureInput(imposterBob)
         });
-        const daveCaptionReadReply = await dwn.processMessage(caroline.did, daveCaptionRecordsRead.message);
-        expect(daveCaptionReadReply.status.code).to.equal(401);
-        expect(daveCaptionReadReply.status.detail).to.include('inbound message action \'read\' not in list of allowed actions');
+        const imposterReadReply = await dwn.processMessage(alice.did, imposterRecordsRead.message);
+        expect(imposterReadReply.status.code).to.equal(401);
+        expect(imposterReadReply.status.detail).to.include('inbound message action \'read\' not in list of allowed actions');
       });
 
-      // also test blocking of non-author
       it('should allow read with author rule', async () => {
-        // scenario: Alice writes an image to Caroline's DWN, then Bob writes a reply to the image.
-        //           Alice reads the reply. Dave is unable to read Bob's reply.
-
-        const alice = await DidKeyResolver.generate(); // writer
-        const bob = await DidKeyResolver.generate(); // recipient
-        const caroline = await DidKeyResolver.generate(); // DWN owner
-        const dave = await DidKeyResolver.generate(); // some guy
+        // scenario: Bob sends an email to Alice, then Bob reads the email.
+        //           ImposterBob tries and fails to read the email.
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+        const imposterBob = await DidKeyResolver.generate();
 
         // setting up a stub DID resolver
-        TestStubGenerator.stubDidResolver(didResolver, [alice, bob, caroline, dave]);
+        TestStubGenerator.stubDidResolver(didResolver, [alice, bob, imposterBob]);
 
-        const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-media';
-        const protocolDefinition: ProtocolDefinition = socialMediaProtocolDefinition;
+        const protocol = 'https://tbd.website/decentralized-web-node/protocols/email';
+        const protocolDefinition: ProtocolDefinition = emailProtocolDefinition;
 
-        // Install social-media protocol on Caroline's DWN
+        // Install email protocol on Alice's DWN
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-          requester: caroline,
+          requester: alice,
           protocol,
           protocolDefinition
         });
-        const protocolWriteReply = await dwn.processMessage(caroline.did, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolWriteReply.status.code).to.equal(202);
 
-        // Alice writes image to Caroline's DWN with Bob as recipient
-        const encodedImage = new TextEncoder().encode('cafe-aesthetic.jpg');
-        const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-          requester    : alice,
+        // Alice writes an email with Bob as recipient
+        const encodedEmail = new TextEncoder().encode('Dear Alice, hello!');
+        const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+          requester    : bob,
           protocol,
-          schema       : socialMediaProtocolDefinition.labels.image.schema,
-          data         : encodedImage,
-          recipientDid : bob.did
+          schema       : protocolDefinition.labels.email.schema,
+          data         : encodedEmail,
+          recipientDid : alice.did
         });
-        const imageReply = await dwn.processMessage(caroline.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
+        const imageReply = await dwn.processMessage(alice.did, emailRecordsWrite.message, emailRecordsWrite.dataStream);
         expect(imageReply.status.code).to.equal(202);
 
-        // Bob adds a reply to Alice's image
-        const imageContextId = await imageRecordsWrite.recordsWrite.getEntryId();
-        const encodedReply = new TextEncoder().encode('Wow Alice, cool vibes!');
-        const replyRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-          requester : bob,
-          protocol,
-          schema    : socialMediaProtocolDefinition.labels.reply.schema,
-          contextId : imageContextId,
-          parentId  : imageContextId,
-          data      : encodedReply
+        // Bob reads the email he just sent
+        const bobRecordsRead = await RecordsRead.create({
+          recordId                    : emailRecordsWrite.message.recordId,
+          authorizationSignatureInput : Jws.createSignatureInput(bob)
         });
-        const replyResponse = await dwn.processMessage(caroline.did, replyRecordsWrite.message, replyRecordsWrite.dataStream);
-        expect(replyResponse.status.code).to.equal(202);
+        const bobReadReply = await dwn.processMessage(alice.did, bobRecordsRead.message);
+        expect(bobReadReply.status.code).to.equal(200);
 
-        // Alice reads Bob's reply to her image
-        const aliceReplyRecordsRead = await RecordsRead.create({
-          recordId                    : replyRecordsWrite.message.recordId,
-          authorizationSignatureInput : Jws.createSignatureInput(alice)
+        // ImposterBob is not able to read the email
+        const imposterRecordsRead = await RecordsRead.create({
+          recordId                    : emailRecordsWrite.message.recordId,
+          authorizationSignatureInput : Jws.createSignatureInput(imposterBob)
         });
-        const aliceReplyReadReply = await dwn.processMessage(caroline.did, aliceReplyRecordsRead.message);
-        expect(aliceReplyReadReply.status.code).to.equal(200);
-
-        // Dave is unable to read Bob's caption to Alice's image
-        const daveReplyRecordsRead = await RecordsRead.create({
-          recordId                    : replyRecordsWrite.message.recordId,
-          authorizationSignatureInput : Jws.createSignatureInput(dave)
-        });
-        const daveReplyReadReply = await dwn.processMessage(caroline.did, daveReplyRecordsRead.message);
-        expect(daveReplyReadReply.status.code).to.equal(401);
-        expect(daveReplyReadReply.status.detail).to.include('inbound message action \'read\' not in list of allowed actions');
+        const imposterReadReply = await dwn.processMessage(alice.did, imposterRecordsRead.message);
+        expect(imposterReadReply.status.code).to.equal(401);
+        expect(imposterReadReply.status.detail).to.include('inbound message action \'read\' not in list of allowed actions');
       });
     });
 

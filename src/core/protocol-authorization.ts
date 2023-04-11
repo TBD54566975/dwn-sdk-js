@@ -24,23 +24,6 @@ export class ProtocolAuthorization {
     requesterDid: string | undefined,
     messageStore: MessageStore
   ): Promise<void> {
-    const isWrite = incomingMessage.message.descriptor.method === DwnMethodName.Write;
-
-    let recordsWrite: RecordsWrite;
-    if (isWrite) {
-      recordsWrite = incomingMessage as RecordsWrite;
-    } else {
-      const recordsRead = incomingMessage as RecordsRead;
-      const query = {
-        interface : DwnInterfaceName.Records,
-        method    : DwnMethodName.Write,
-        recordId  : recordsRead.message.descriptor.recordId,
-      };
-      const existingMessages = await messageStore.query(tenant, query) as TimestampedMessage[];
-      const recordsWriteMessage = await RecordsWrite.getNewestMessage(existingMessages) as RecordsWriteMessage;
-      recordsWrite = await RecordsWrite.parse(recordsWriteMessage);
-    }
-
     // fetch ancestor message chain
     let ancestorMessageChain: RecordsWriteMessage[] =
       await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, messageStore);
@@ -250,10 +233,12 @@ export class ProtocolAuthorization {
         allowRule.author.of,
         recordSchemaToLabelMap
       );
-      const expectedRequesterDid = Message.getAuthor(messageForAuthorCheck);
+      if (messageForAuthorCheck !== undefined) {
+        const expectedRequesterDid = Message.getAuthor(messageForAuthorCheck);
 
-      if (requesterDid === expectedRequesterDid) {
-        allowRule.author.to.forEach(action => allowedActions.add(action));
+        if (requesterDid === expectedRequesterDid) {
+          allowRule.author.to.forEach(action => allowedActions.add(action));
+        }
       }
     }
 
@@ -263,10 +248,12 @@ export class ProtocolAuthorization {
         allowRule.recipient.of,
         recordSchemaToLabelMap
       );
-      const expectedRequesterDid = messageForRecipientCheck.descriptor.recipient;
+      if (messageForRecipientCheck !== undefined) {
+        const expectedRequesterDid = messageForRecipientCheck.descriptor.recipient;
 
-      if (requesterDid === expectedRequesterDid) {
-        allowRule.recipient.to.forEach(action => allowedActions.add(action));
+        if (requesterDid === expectedRequesterDid) {
+          allowRule.recipient.to.forEach(action => allowedActions.add(action));
+        }
       }
     }
 
@@ -306,6 +293,7 @@ export class ProtocolAuthorization {
 
   /**
    * Gets the message from the message chain based on the path specified.
+   * Returns undefined if matching message does not existing in ancestor chain
    * @param messagePath `/` delimited path starting from the root ancestor.
    *                    Each path segment denotes the expected record type declared in protocol definition.
    *                    e.g. `A/B/C` means that the root ancestor must be of type A, its child must be of type B, followed by a child of type C.
@@ -315,12 +303,12 @@ export class ProtocolAuthorization {
     ancestorMessageChain: RecordsWriteMessage[],
     messagePath: string,
     recordSchemaToLabelMap: Map<string, string>
-  ): RecordsWriteMessage {
+  ): RecordsWriteMessage | undefined {
     const expectedAncestors = messagePath.split('/');
 
     // consider moving this check to ProtocolsConfigure message ingestion
     if (expectedAncestors.length > ancestorMessageChain.length) {
-      throw new Error('specified path to expected recipient is longer than actual length of ancestor message chain');
+      return undefined;
     }
 
     let i = 0;
