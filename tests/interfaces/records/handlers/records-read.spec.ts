@@ -161,9 +161,6 @@ describe('RecordsReadHandler.handle()', () => {
         const alice = await DidKeyResolver.generate();
         const bob = await DidKeyResolver.generate();
 
-        // setting up a stub DID resolver
-        TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
-
         const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-media';
         const protocolDefinition: ProtocolDefinition = socialMediaProtocolDefinition;
 
@@ -253,9 +250,6 @@ describe('RecordsReadHandler.handle()', () => {
         const alice = await DidKeyResolver.generate();
         const bob = await DidKeyResolver.generate();
         const imposterBob = await DidKeyResolver.generate();
-
-        // setting up a stub DID resolver
-        TestStubGenerator.stubDidResolver(didResolver, [alice, bob, imposterBob]);
 
         const protocol = 'https://tbd.website/decentralized-web-node/protocols/email';
         const protocolDefinition: ProtocolDefinition = emailProtocolDefinition;
