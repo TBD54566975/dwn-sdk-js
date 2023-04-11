@@ -1,6 +1,6 @@
 import type { MessageStore } from '../store/message-store.js';
 import type { RecordsRead } from '../interfaces/records/messages/records-read.js';
-import type { RecordsWriteMessage } from '../interfaces/records/types.js';
+import type { RecordsReadMessage, RecordsWriteMessage } from '../interfaces/records/types.js';
 import type { Filter, TimestampedMessage } from './types.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
 
@@ -41,12 +41,17 @@ export class ProtocolAuthorization {
       recordsWrite = await RecordsWrite.parse(recordsWriteMessage);
     }
 
-    // fetch the protocol definition
-    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(tenant, recordsWrite, messageStore);
-
     // fetch ancestor message chain
     let ancestorMessageChain: RecordsWriteMessage[] =
-      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, recordsWrite, messageStore);
+      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, messageStore);
+
+    // fetch the protocol definition
+    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
+      tenant,
+      incomingMessage,
+      ancestorMessageChain,
+      messageStore
+    );
 
     // record schema -> schema label map
     const recordSchemaToLabelMap: Map<string, string> = new Map();
@@ -57,15 +62,11 @@ export class ProtocolAuthorization {
 
     // get the rule set for the inbound message
     const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
+      incomingMessage.message,
       protocolDefinition,
-      [...ancestorMessageChain, recordsWrite.message],
+      ancestorMessageChain,
       recordSchemaToLabelMap
     );
-
-    // For non-writes `recordsWrite` is actually part of the existing ancestor chain
-    if (!isWrite) {
-      ancestorMessageChain = [...ancestorMessageChain, recordsWrite.message];
-    }
 
     // verify method invoked against the allowed actions
     ProtocolAuthorization.verifyAllowedActions(
@@ -84,9 +85,19 @@ export class ProtocolAuthorization {
   /**
    * Fetches the protocol definition based on the protocol specified in the given message.
    */
-  private static async fetchProtocolDefinition(tenant: string, recordsWrite: RecordsWrite, messageStore: MessageStore): Promise<ProtocolDefinition> {
+  private static async fetchProtocolDefinition(
+    tenant: string,
+    incomingMessage: RecordsRead | RecordsWrite,
+    ancestorMessageChain: RecordsWriteMessage[],
+    messageStore: MessageStore
+  ): Promise<ProtocolDefinition> {
     // get the protocol URI
-    const protocolUri = recordsWrite.message.descriptor.protocol!;
+    let protocolUri: string;
+    if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
+      protocolUri = (incomingMessage as RecordsWrite).message.descriptor.protocol!;
+    } else {
+      protocolUri = ancestorMessageChain[ancestorMessageChain.length-1].descriptor.protocol!;
+    }
 
     // fetch the corresponding protocol definition
     const query: Filter = {
@@ -111,11 +122,27 @@ export class ProtocolAuthorization {
   private static async constructAncestorMessageChain(
     tenant: string,
     incomingMessage: RecordsRead | RecordsWrite,
-    recordsWrite: RecordsWrite,
     messageStore: MessageStore
   )
     : Promise<RecordsWriteMessage[]> {
     const ancestorMessageChain: RecordsWriteMessage[] = [];
+
+    // Get first RecordsWrite in ancestor chain, or use incoming write message
+    let recordsWrite: RecordsWrite;
+    if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
+      recordsWrite = incomingMessage as RecordsWrite;
+    } else {
+      const recordsRead = incomingMessage as RecordsRead;
+      const query = {
+        interface : DwnInterfaceName.Records,
+        method    : DwnMethodName.Write,
+        recordId  : recordsRead.message.descriptor.recordId,
+      };
+      const existingMessages = await messageStore.query(tenant, query) as TimestampedMessage[];
+      const recordsWriteMessage = await RecordsWrite.getNewestMessage(existingMessages) as RecordsWriteMessage;
+      recordsWrite = await RecordsWrite.parse(recordsWriteMessage);
+      ancestorMessageChain.push(recordsWrite.message);
+    }
 
     const protocol = recordsWrite.message.descriptor.protocol!;
     const contextId = recordsWrite.message.contextId!;
@@ -147,13 +174,20 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Gets the rule set corresponding to the inbound message.
+   * Gets the rule set corresponding to the given message chain.
    */
   private static getRuleSet(
+    inboundMessage: RecordsReadMessage | RecordsWriteMessage,
     protocolDefinition: ProtocolDefinition,
-    messageChain: RecordsWriteMessage[],
+    ancestorMessageChain: RecordsWriteMessage[],
     recordSchemaToLabelMap: Map<string, string>
   ): ProtocolRuleSet {
+    // make a copy of the ancestor messages and include the inbound write in the chain
+    const messageChain = [...ancestorMessageChain];
+    if (inboundMessage.descriptor.method === DwnMethodName.Write) {
+      messageChain.push(inboundMessage as RecordsWriteMessage);
+    }
+
     // walk down the ancestor message chain from the root ancestor record and match against the corresponding rule set at each level
     // to make sure the chain structure is allowed
     let allowedRecordsAtCurrentLevel: { [key: string]: ProtocolRuleSet} | undefined = protocolDefinition.records;
@@ -189,7 +223,7 @@ export class ProtocolAuthorization {
   private static verifyAllowedActions(
     tenant: string,
     requesterDid: string | undefined,
-    incomingMessageMethod: string,
+    incomingMessageMethod: DwnMethodName,
     inboundMessageRuleSet: ProtocolRuleSet,
     ancestorMessageChain: RecordsWriteMessage[],
     recordSchemaToLabelMap: Map<string, string>
