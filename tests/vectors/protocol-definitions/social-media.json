@@ -30,13 +30,12 @@
       "records": {
         "caption": {
           "allow": {
+            "anyone": {
+              "to": ["read"]
+            },
             "author": {
               "of": "image",
               "to": ["write"]
-            },
-            "recipient": {
-              "of": "image",
-              "to": ["read"]
             }
           }
         },
