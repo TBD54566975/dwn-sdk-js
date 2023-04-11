@@ -1,7 +1,5 @@
+import type { RecordsQueryReplyEntry } from '../../../../src/interfaces/records/types.js';
 import type { DerivedPrivateJwk, EncryptionInput, ProtocolDefinition, RecordsWriteMessage } from '../../../../src/index.js';
-import { Encryption } from '../../../../src/index.js';
-import { RecordsRead } from '../../../../src/index.js';
-import { DwnErrorCode } from '../../../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
@@ -13,6 +11,7 @@ import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DwnConstant } from '../../../../src/core/dwn-constant.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
+import { Encryption } from '../../../../src/index.js';
 import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { Jws } from '../../../../src/utils/jws.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
@@ -25,7 +24,6 @@ import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 import { constructRecordsWriteIndexes } from '../../../../src/interfaces/records/handlers/records-write.js';
 import { DataStream, DidResolver, Dwn, HdKey, KeyDerivationScheme, Records } from '../../../../src/index.js';
 import { DateSort, RecordsQuery } from '../../../../src/interfaces/records/messages/records-query.js';
-import type { RecordsQueryReplyEntry } from '../../../../src/interfaces/records/types.js';
 
 chai.use(chaiAsPromised);
 
