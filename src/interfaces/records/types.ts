@@ -1,7 +1,9 @@
 import type { BaseMessage } from '../../core/types.js';
 import type { BaseMessageReply } from '../../core/message-reply.js';
 import type { DateSort } from './messages/records-query.js';
+import type { EncryptionAlgorithm } from '../../utils/encryption.js';
 import type { GeneralJws } from '../../jose/jws/general/types.js';
+import type { KeyDerivationScheme } from '../../utils/hd-key.js';
 import type { PublicJwk } from '../../jose/types.js';
 import type { Readable } from 'readable-stream';
 import type { DwnInterfaceName, DwnMethodName } from '../../core/message.js';
@@ -27,18 +29,18 @@ export type RecordsWriteMessage = BaseMessage & {
   contextId?: string;
   descriptor: RecordsWriteDescriptor;
   attestation?: GeneralJws;
-  encryption?: EncryptionMetadata;
+  encryption?: EncryptionProperty;
 };
 
-export type EncryptionMetadata = {
-  algorithm: 'A256CTR';
+export type EncryptionProperty = {
+  algorithm: EncryptionAlgorithm;
   initializationVector: string;
   keyEncryption: EncryptedKey[]
 };
 
 export type EncryptedKey = {
-  derivationScheme: 'protocol';
-  algorithm: 'ECIES-ES256K';
+  derivationScheme: KeyDerivationScheme;
+  algorithm: EncryptionAlgorithm;
   encryptedKey: string;
   initializationVector: string;
   ephemeralPublicKey: PublicJwk;
@@ -96,6 +98,7 @@ export type RecordsWriteAuthorizationPayload = {
   contextId?: string;
   descriptorCid: string;
   attestationCid?: string;
+  encryptionCid?: string;
 };
 
 export type RecordsQueryMessage = BaseMessage & {
@@ -114,7 +117,7 @@ export type RecordsReadReply = BaseMessageReply & {
     descriptor: RecordsWriteDescriptor;
     // authorization: GeneralJws; // intentionally omitted
     attestation?: GeneralJws;
-    encryption?: EncryptionMetadata;
+    encryption?: EncryptionProperty;
     data: Readable;
   }
 };

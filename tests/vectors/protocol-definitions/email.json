@@ -1,0 +1,29 @@
+{
+  "labels": {
+    "email": {
+      "schema": "email"
+    }
+  },
+  "records": {
+    "email": {
+      "allow": {
+        "anyone": {
+          "to": [
+            "write"
+          ]
+        }
+      },
+      "records": {
+        "email": {
+          "allow": {
+            "anyone": {
+              "to": [
+                "write"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

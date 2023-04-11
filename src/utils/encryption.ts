@@ -83,13 +83,15 @@ export class Encryption {
    * Decrypt the given plaintext using ECIES (Elliptic Curve Integrated Encryption Scheme) with SECP256K1.
    */
   public static async eciesSecp256k1Decrypt(input: EciesEncryptionInput): Promise<Uint8Array> {
+    // underlying library requires Buffer as input
     // TODO: #291 - Swap out `eccrypto` in favor of a more up-to-date ECIES library - https://github.com/TBD54566975/dwn-sdk-js/issues/291
     const privateKeyBuffer = Buffer.from(input.privateKey);
+    const ephemPublicKey = Buffer.from(input.ephemeralPublicKey);
     const eciesEncryptionOutput = {
-      ciphertext     : input.ciphertext as Buffer,
-      ephemPublicKey : input.ephemeralPublicKey as Buffer,
-      iv             : input.initializationVector as Buffer,
-      mac            : input.messageAuthenticationCode as Buffer
+      ciphertext : input.ciphertext as Buffer,
+      ephemPublicKey,
+      iv         : input.initializationVector as Buffer,
+      mac        : input.messageAuthenticationCode as Buffer
     };
 
     const plaintext = await eccrypto.decrypt(privateKeyBuffer, eciesEncryptionOutput);
@@ -108,3 +110,8 @@ export type EciesEncryptionOutput = {
 export type EciesEncryptionInput = EciesEncryptionOutput & {
   privateKey: Uint8Array;
 };
+
+export enum EncryptionAlgorithm {
+  Aes256Ctr = 'A256CTR',
+  EciesSecp256k1 = 'ECIES-ES256K'
+}

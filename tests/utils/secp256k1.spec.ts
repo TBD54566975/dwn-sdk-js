@@ -6,6 +6,15 @@ import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { TestDataGenerator } from './test-data-generator.js';
 
 describe('Secp256k1', () => {
+  describe('validateKey()', () => {
+    it('should throw if key is not a valid SECP256K1 key', async () => {
+      const validKey = (await Secp256k1.generateKeyPair()).publicJwk;
+
+      expect(() => Secp256k1.validateKey({ ...validKey, kty: 'invalidKty' as any })).to.throw(DwnErrorCode.Secp256k1KeyNotValid);
+      expect(() => Secp256k1.validateKey({ ...validKey, crv: 'invalidCrv' as any })).to.throw(DwnErrorCode.Secp256k1KeyNotValid);
+    });
+  });
+
   describe('publicKeyToJwk()', () => {
     it('should generate the same JWK regardless of compressed or compressed public key bytes given', async () => {
       const compressedPublicKeyBase64UrlString = 'A5roVr1J6MufaaBwweb5Q75PrZCbZpzC55kTCO68ylMs';
