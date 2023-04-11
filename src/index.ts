@@ -19,6 +19,7 @@ export { DidIonResolver } from './did/did-ion-resolver.js';
 export { DidResolver, DidMethodResolver } from './did/did-resolver.js';
 export { Dwn } from './dwn.js';
 export { DwnConstant } from './core/dwn-constant.js';
+export { DwnError, DwnErrorCode } from './core/dwn-error.js';
 export { DwnInterfaceName, DwnMethodName } from './core/message.js';
 export { Encoder } from './utils/encoder.js';
 export { Encryption, EncryptionAlgorithm } from './utils/encryption.js';
