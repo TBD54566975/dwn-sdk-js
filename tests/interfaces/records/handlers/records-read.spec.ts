@@ -173,7 +173,7 @@ describe('RecordsReadHandler.handle()', () => {
         const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolWriteReply.status.code).to.equal(202);
 
-        // Alice writes image to Caroline's DWN with Alice herself as recipient
+        // Alice writes image to her DWN
         const encodedImage = new TextEncoder().encode('cafe-aesthetic.jpg');
         const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
