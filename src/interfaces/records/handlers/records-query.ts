@@ -152,17 +152,14 @@ export class RecordsQueryHandler implements MethodHandler {
  * 4. publishedDescending - If the message is published, sort in desc based on publish date
  *
  * If sorting is based on date published, records that are not published are filtered out.
- * @param entries - Entries to be sorted if dateSort is present
+ * @param messages - Messages to be sorted if dateSort is present
  * @param dateSort - Sorting scheme
  * @returns Sorted Messages
  */
-async function sortRecords<T extends RecordsWriteMessage>(
-  entries: T[],
+async function sortRecords(
+  messages: RecordsWriteMessage[],
   dateSort: DateSort
-): Promise<T[]> {
-
-  const messages = entries;
-
+): Promise<RecordsWriteMessage[]> {
   switch (dateSort) {
   case DateSort.CreatedAscending:
     return messages.sort((a, b) => lexicographicalCompare(a.descriptor.dateCreated, b.descriptor.dateCreated));
