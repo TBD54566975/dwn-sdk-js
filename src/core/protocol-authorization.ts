@@ -1,8 +1,8 @@
 import type { MessageStore } from '../store/message-store.js';
 import type { RecordsRead } from '../interfaces/records/messages/records-read.js';
-import type { RecordsReadMessage, RecordsWriteMessage } from '../interfaces/records/types.js';
 import type { Filter, TimestampedMessage } from './types.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
+import type { RecordsReadMessage, RecordsWriteMessage } from '../interfaces/records/types.js';
 
 import { RecordsWrite } from '../interfaces/records/messages/records-write.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
@@ -25,7 +25,7 @@ export class ProtocolAuthorization {
     messageStore: MessageStore
   ): Promise<void> {
     // fetch ancestor message chain
-    let ancestorMessageChain: RecordsWriteMessage[] =
+    const ancestorMessageChain: RecordsWriteMessage[] =
       await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, messageStore);
 
     // fetch the protocol definition

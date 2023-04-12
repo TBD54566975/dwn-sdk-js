@@ -1,7 +1,7 @@
 import type { DerivedPrivateJwk } from '../../../../src/utils/hd-key.js';
+import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
 import type { EncryptionInput } from '../../../../src/interfaces/records/messages/records-write.js';
 import type { ProtocolDefinition } from '../../../../src/index.js';
-import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
 import socialMediaProtocolDefinition from '../../../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
 
 import chaiAsPromised from 'chai-as-promised';
