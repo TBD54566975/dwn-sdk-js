@@ -42,7 +42,7 @@
               "derivationScheme": {
                 "type": "string",
                 "enum": [
-                  "protocol"
+                  "protocol-context"
                 ]
               },
               "algorithm": {

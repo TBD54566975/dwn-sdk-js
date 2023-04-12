@@ -17,7 +17,7 @@ export class Secp256k1 {
    */
   public static validateKey(jwk: PrivateJwk | PublicJwk): void {
     if (jwk.kty !== 'EC' || jwk.crv !== 'secp256k1') {
-      throw new Error('invalid jwk. kty MUST be EC. crv MUST be secp256k1');
+      throw new DwnError(DwnErrorCode.Secp256k1KeyNotValid, 'Invalid SECP256K1 JWK: `kty` MUST be `EC`. `crv` MUST be `secp256k1`');
     }
   }
 
@@ -53,6 +53,18 @@ export class Secp256k1 {
     };
 
     return publicJwk;
+  }
+
+  /**
+   * Converts a private key in bytes into a JWK.
+   */
+  public static async privateKeyToJwk(privateKeyBytes: Uint8Array): Promise<PrivateJwk> {
+    const publicKeyBytes = await Secp256k1.getPublicKey(privateKeyBytes);
+
+    const jwk = await Secp256k1.publicKeyToJwk(publicKeyBytes);
+    (jwk as PrivateJwk).d = Encoder.bytesToBase64Url(privateKeyBytes);
+
+    return jwk as PrivateJwk;
   }
 
   /**
@@ -177,6 +189,7 @@ export class Secp256k1 {
    * Derives a child public key using the given tweak input.
    */
   public static deriveChildPublicKey(uncompressedPublicKey: Uint8Array, tweakInput: Uint8Array): Uint8Array {
+    // underlying library requires Buffer as input
     const compressedPublicKey = false;
     const publicKeyBuffer = Buffer.from(uncompressedPublicKey);
     const tweakBuffer = Buffer.from(tweakInput);
@@ -188,12 +201,13 @@ export class Secp256k1 {
    * Derives a child private key using the given tweak input.
    */
   public static deriveChildPrivateKey(privateKey: Uint8Array, tweakInput: Uint8Array): Uint8Array {
-    // NOTE: passing in private key to v5.0.0 of `secp256k1.privateKeyTweakAdd()` has the side effect of morphing the input private key bytes
-    // before there is a fix for it (we can also investigate and submit a PR), we clone the private key to workaround, it also needs to be a Buffer.
+    // NOTE: passing in private key to v5.0.0 of `secp256k1.privateKeyTweakAdd()` has the side effect of modifying the input private key bytes.
     // `secp256k1.publicKeyTweakAdd()` does not have this side effect.
-    const publicKeyBuffer = Buffer.from(privateKey);
+    // before there is a fix for it (we can also investigate and submit a PR), cloning the private key to workaround is a MUST
+    // also underlying library requires Buffer as input
+    const privateKeyBuffer = Buffer.from(privateKey);
     const tweakBuffer = Buffer.from(tweakInput);
-    const derivedPrivateKey = secp256k1Derivation.privateKeyTweakAdd(publicKeyBuffer, tweakBuffer);
+    const derivedPrivateKey = secp256k1Derivation.privateKeyTweakAdd(privateKeyBuffer, tweakBuffer);
     return derivedPrivateKey;
   }
 
@@ -203,7 +217,7 @@ export class Secp256k1 {
    * @throws {DwnError} with `DwnErrorCode.HdKeyDerivationPathInvalid` if derivation path fails validation.
    */
   private static validateKeyDerivationPath(pathSegments: string[]): void {
-    if (pathSegments.length === 0 || pathSegments.includes('')) {
+    if (pathSegments.includes('')) {
       throw new DwnError(DwnErrorCode.HdKeyDerivationPathInvalid, `Invalid key derivation path: ${pathSegments}`);
     }
   }

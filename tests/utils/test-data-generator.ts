@@ -1,8 +1,8 @@
 import type { BaseMessage } from '../../src/core/types.js';
-import type { CreateFromOptions } from '../../src/interfaces/records/messages/records-write.js';
 import type { DidResolutionResult } from '../../src/did/did-resolver.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsQueryFilter } from '../../src/interfaces/records/types.js';
+import type { CreateFromOptions, EncryptionInput } from '../../src/interfaces/records/messages/records-write.js';
 import type {
   DateSort,
   HooksWriteMessage,
@@ -95,6 +95,7 @@ export type GenerateRecordsWriteInput = {
   dateCreated?: string;
   dateModified?: string;
   datePublished?: string;
+  encryptionInput?: EncryptionInput;
 };
 
 export type GenerateFromRecordsWriteInput = {
@@ -288,22 +289,23 @@ export class TestDataGenerator {
     }
 
     const options: RecordsWriteOptions = {
-      recipient     : input?.recipientDid,
-      protocol      : input?.protocol,
-      contextId     : input?.contextId,
-      schema        : input?.schema ?? TestDataGenerator.randomString(20),
-      recordId      : input?.recordId,
-      parentId      : input?.parentId,
-      published     : input?.published,
-      dataFormat    : input?.dataFormat ?? 'application/json',
-      dateCreated   : input?.dateCreated,
-      dateModified  : input?.dateModified,
-      datePublished : input?.datePublished,
-      data          : dataBytes,
+      recipient       : input?.recipientDid,
+      protocol        : input?.protocol,
+      contextId       : input?.contextId,
+      schema          : input?.schema ?? TestDataGenerator.randomString(20),
+      recordId        : input?.recordId,
+      parentId        : input?.parentId,
+      published       : input?.published,
+      dataFormat      : input?.dataFormat ?? 'application/json',
+      dateCreated     : input?.dateCreated,
+      dateModified    : input?.dateModified,
+      datePublished   : input?.datePublished,
+      data            : dataBytes,
       dataCid,
       dataSize,
       authorizationSignatureInput,
-      attestationSignatureInputs
+      attestationSignatureInputs,
+      encryptionInput : input?.encryptionInput
     };
 
     const recordsWrite = await RecordsWrite.create(options);

@@ -39,12 +39,12 @@ export class ProtocolsQueryHandler implements MethodHandler {
     };
     removeUndefinedProperties(query);
 
-    const records = await this.messageStore.query(tenant, query);
+    const messages = await this.messageStore.query(tenant, query);
 
     // strip away `authorization` property for each record before responding
     const entries: QueryResultEntry[] = [];
-    for (const record of records) {
-      const { authorization: _, ...objectWithRemainingProperties } = record; // a trick to stripping away `authorization`
+    for (const message of messages) {
+      const { authorization: _, ...objectWithRemainingProperties } = message; // a trick to stripping away `authorization`
       entries.push(objectWithRemainingProperties);
     }
 
