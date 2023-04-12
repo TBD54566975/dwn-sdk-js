@@ -1,6 +1,7 @@
 import type { DerivedPrivateJwk } from '../../../../src/utils/hd-key.js';
 import type { EncryptionInput } from '../../../../src/interfaces/records/messages/records-write.js';
 import type { ProtocolDefinition } from '../../../../src/index.js';
+import socialMediaProtocolDefinition from '../../../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
 
 import chaiAsPromised from 'chai-as-promised';
 import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
@@ -151,6 +152,189 @@ describe('RecordsReadHandler.handle()', () => {
 
       const dataFetched = await DataStream.toBytes(readReply.record!.data!);
       expect(Comparer.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
+    });
+
+    describe('protocol based reads', () => {
+      it('should allow read with allow-anyone rule', async () => {
+        // scenario: Alice writes an image to Caroline's DWN with Alice herself as recipient,
+        //           then Bob reads the image because he is "anyone".
+
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+        const caroline = await DidKeyResolver.generate();
+
+        // setting up a stub DID resolver
+        TestStubGenerator.stubDidResolver(didResolver, [alice, bob, caroline]);
+
+        const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-media';
+        const protocolDefinition: ProtocolDefinition = socialMediaProtocolDefinition;
+
+        // Install social-media protocol on Caroline's DWN
+        const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+          requester: caroline,
+          protocol,
+          protocolDefinition
+        });
+        const protocolWriteReply = await dwn.processMessage(caroline.did, protocolsConfig.message, protocolsConfig.dataStream);
+        expect(protocolWriteReply.status.code).to.equal(202);
+
+        // Alice writes image to Caroline's DWN with Alice herself as recipient
+        const encodedImage = new TextEncoder().encode('cafe-aesthetic.jpg');
+        const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+          requester    : alice,
+          protocol,
+          schema       : socialMediaProtocolDefinition.labels.image.schema,
+          data         : encodedImage,
+          recipientDid : alice.did
+        });
+        const imageReply = await dwn.processMessage(caroline.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
+        expect(imageReply.status.code).to.equal(202);
+
+        // Bob (anyone) reads the image that Alice wrote
+        const imageRecordsRead = await RecordsRead.create({
+          recordId                    : imageRecordsWrite.message.recordId,
+          authorizationSignatureInput : Jws.createSignatureInput(bob)
+        });
+        const imageReadReply = await dwn.processMessage(caroline.did, imageRecordsRead.message);
+        expect(imageReadReply.status.code).to.equal(200);
+      });
+
+      it('should allow read with recipient rule', async () => {
+        // scenario: Alice writes an image and a caption to Caroline's DWN with Bob as recipient.
+        //           Bob reads the caption. Dave is unable to read the caption.
+
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+        const caroline = await DidKeyResolver.generate();
+        const dave = await DidKeyResolver.generate();
+
+        // setting up a stub DID resolver
+        TestStubGenerator.stubDidResolver(didResolver, [alice, bob, caroline, dave]);
+
+        const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-media';
+        const protocolDefinition: ProtocolDefinition = socialMediaProtocolDefinition;
+
+        // Install social-media protocol on Caroline's DWN
+        const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+          requester: caroline,
+          protocol,
+          protocolDefinition
+        });
+        const protocolWriteReply = await dwn.processMessage(caroline.did, protocolsConfig.message, protocolsConfig.dataStream);
+        expect(protocolWriteReply.status.code).to.equal(202);
+
+        // Alice writes image to Caroline's DWN with Bob as recipient
+        const encodedImage = new TextEncoder().encode('cafe-aesthetic.jpg');
+        const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+          requester    : alice,
+          protocol,
+          schema       : socialMediaProtocolDefinition.labels.image.schema,
+          data         : encodedImage,
+          recipientDid : bob.did
+        });
+        const imageReply = await dwn.processMessage(caroline.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
+        expect(imageReply.status.code).to.equal(202);
+
+        // Alice writes caption to her image to Caroline's DWN with Bob as recipient
+        const imageContextId = await imageRecordsWrite.recordsWrite.getEntryId();
+        const encodedCaption = new TextEncoder().encode('coffee and work vibes!');
+        const captionRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+          requester : alice,
+          protocol,
+          schema    : socialMediaProtocolDefinition.labels.caption.schema,
+          contextId : imageContextId,
+          parentId  : imageContextId,
+          data      : encodedCaption
+        });
+        const captionResponse = await dwn.processMessage(caroline.did, captionRecordsWrite.message, captionRecordsWrite.dataStream);
+        expect(captionResponse.status.code).to.equal(202);
+
+        // Bob (recipient) reads Alice's caption
+        const bobCaptionRecordsRead = await RecordsRead.create({
+          recordId                    : captionRecordsWrite.message.recordId,
+          authorizationSignatureInput : Jws.createSignatureInput(bob)
+        });
+        const bobCaptionReadReply = await dwn.processMessage(caroline.did, bobCaptionRecordsRead.message);
+        expect(bobCaptionReadReply.status.code).to.equal(200);
+
+        // Dave (anyone) is not able to read Alice's caption
+        const daveCaptionRecordsRead = await RecordsRead.create({
+          recordId                    : captionRecordsWrite.message.recordId,
+          authorizationSignatureInput : Jws.createSignatureInput(dave)
+        });
+        const daveCaptionReadReply = await dwn.processMessage(caroline.did, daveCaptionRecordsRead.message);
+        expect(daveCaptionReadReply.status.code).to.equal(401);
+        expect(daveCaptionReadReply.status.detail).to.include('inbound message action \'read\' not in list of allowed actions');
+      });
+
+      // also test blocking of non-author
+      it('should allow read with author rule', async () => {
+        // scenario: Alice writes an image to Caroline's DWN, then Bob writes a reply to the image.
+        //           Alice reads the reply. Dave is unable to read Bob's reply.
+
+        const alice = await DidKeyResolver.generate(); // writer
+        const bob = await DidKeyResolver.generate(); // recipient
+        const caroline = await DidKeyResolver.generate(); // DWN owner
+        const dave = await DidKeyResolver.generate(); // some guy
+
+        // setting up a stub DID resolver
+        TestStubGenerator.stubDidResolver(didResolver, [alice, bob, caroline, dave]);
+
+        const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-media';
+        const protocolDefinition: ProtocolDefinition = socialMediaProtocolDefinition;
+
+        // Install social-media protocol on Caroline's DWN
+        const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+          requester: caroline,
+          protocol,
+          protocolDefinition
+        });
+        const protocolWriteReply = await dwn.processMessage(caroline.did, protocolsConfig.message, protocolsConfig.dataStream);
+        expect(protocolWriteReply.status.code).to.equal(202);
+
+        // Alice writes image to Caroline's DWN with Bob as recipient
+        const encodedImage = new TextEncoder().encode('cafe-aesthetic.jpg');
+        const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+          requester    : alice,
+          protocol,
+          schema       : socialMediaProtocolDefinition.labels.image.schema,
+          data         : encodedImage,
+          recipientDid : bob.did
+        });
+        const imageReply = await dwn.processMessage(caroline.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
+        expect(imageReply.status.code).to.equal(202);
+
+        // Bob adds a reply to Alice's image
+        const imageContextId = await imageRecordsWrite.recordsWrite.getEntryId();
+        const encodedReply = new TextEncoder().encode('Wow Alice, cool vibes!');
+        const replyRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+          requester : bob,
+          protocol,
+          schema    : socialMediaProtocolDefinition.labels.reply.schema,
+          contextId : imageContextId,
+          parentId  : imageContextId,
+          data      : encodedReply
+        });
+        const replyResponse = await dwn.processMessage(caroline.did, replyRecordsWrite.message, replyRecordsWrite.dataStream);
+        expect(replyResponse.status.code).to.equal(202);
+
+        // Alice reads Bob's reply to her image
+        const aliceReplyRecordsRead = await RecordsRead.create({
+          recordId                    : replyRecordsWrite.message.recordId,
+          authorizationSignatureInput : Jws.createSignatureInput(alice)
+        });
+        const aliceReplyReadReply = await dwn.processMessage(caroline.did, aliceReplyRecordsRead.message);
+        expect(aliceReplyReadReply.status.code).to.equal(200);
+
+        // Dave is unable to read Bob's caption to Alice's image
+        const daveReplyRecordsRead = await RecordsRead.create({
+          recordId                    : replyRecordsWrite.message.recordId,
+          authorizationSignatureInput : Jws.createSignatureInput(dave)
+        });
+        const daveReplyReadReply = await dwn.processMessage(caroline.did, daveReplyRecordsRead.message);
+        expect(daveReplyReadReply.status.code).to.equal(401);
+        expect(daveReplyReadReply.status.detail).to.include('inbound message action \'read\' not in list of allowed actions');
+      });
     });
 
     it('should return 404 RecordRead if data does not exist', async () => {
