@@ -6,6 +6,7 @@ import type { BaseMessage, Filter } from '../core/types.js';
 
 import { DwnConstant } from '../core/dwn-constant.js';
 import { Message } from '../core/message.js';
+import type { RecordsWriteMessage } from '../index.js';
 import { DataStream, Encoder } from '../index.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
@@ -90,7 +91,7 @@ export class StorageController {
     filter: Filter
   ): Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
 
-    const messages: RecordsWriteMessageWithOptionalEncodedData[] = await messageStore.query(tenant, filter);
+    const messages: RecordsWriteMessageWithOptionalEncodedData[] = (await messageStore.query(tenant, filter)) as RecordsWriteMessage[];
 
     // for every message, only include the data as `encodedData` if the data size is equal or smaller than the size threshold
     for (const message of messages) {
@@ -126,4 +127,4 @@ export class StorageController {
   }
 }
 
-type RecordsWriteMessageWithOptionalEncodedData = BaseMessage & { encodedData?: string };
+export type RecordsWriteMessageWithOptionalEncodedData = RecordsWriteMessage & { encodedData?: string };

@@ -1,13 +1,17 @@
-import type { RecordsWriteMessage } from '../../../../src/index.js';
+import type { RecordsQueryReplyEntry } from '../../../../src/interfaces/records/types.js';
+import type { DerivedPrivateJwk, EncryptionInput, ProtocolDefinition, RecordsWriteMessage } from '../../../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
+import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
+import { Comparer } from '../../../utils/comparer.js';
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DwnConstant } from '../../../../src/core/dwn-constant.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
+import { Encryption } from '../../../../src/index.js';
 import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { Jws } from '../../../../src/utils/jws.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
@@ -18,8 +22,8 @@ import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
 import { constructRecordsWriteIndexes } from '../../../../src/interfaces/records/handlers/records-write.js';
+import { DataStream, DidResolver, Dwn, HdKey, KeyDerivationScheme, Records } from '../../../../src/index.js';
 import { DateSort, RecordsQuery } from '../../../../src/interfaces/records/messages/records-query.js';
-import { DidResolver, Dwn } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -584,6 +588,88 @@ describe('RecordsQueryHandler.handle()', () => {
 
       expect(reply.status.code).to.equal(200);
       expect(reply.entries?.length).to.equal(1);
+    });
+
+    describe('encryption scenarios', () => {
+      it('should only be able to decrypt record with a correct derived private key', async () => {
+        // scenario, Bob writes into Alice's DWN an encrypted "email", alice is able to decrypt it
+
+        // creating Alice and Bob persona and setting up a stub DID resolver
+        const alice = await TestDataGenerator.generatePersona();
+        const bob = await TestDataGenerator.generatePersona();
+        TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
+
+        // configure protocol
+        const protocol = 'email-protocol';
+        const protocolDefinition: ProtocolDefinition = emailProtocolDefinition;
+        const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+          requester: alice,
+          protocol,
+          protocolDefinition
+        });
+
+        const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        expect(protocolsConfigureReply.status.code).to.equal(202);
+
+        // encrypt bob's message
+        const bobMessageBytes = Encoder.stringToBytes('message from bob');
+        const bobMessageStream = DataStream.fromBytes(bobMessageBytes);
+        const dataEncryptionInitializationVector = TestDataGenerator.randomBytes(16);
+        const dataEncryptionKey = TestDataGenerator.randomBytes(32);
+        const bobMessageEncryptedStream = await Encryption.aes256CtrEncrypt(dataEncryptionKey, dataEncryptionInitializationVector, bobMessageStream);
+        const bobMessageEncryptedBytes = await DataStream.toBytes(bobMessageEncryptedStream);
+
+        // generate a `RecordsWrite` message from bob allowed by anyone
+        const encryptionInput: EncryptionInput = {
+          initializationVector : dataEncryptionInitializationVector,
+          key                  : dataEncryptionKey,
+          keyEncryptionInputs  : [{
+            publicKey: {
+              derivationScheme : KeyDerivationScheme.ProtocolContext,
+              derivationPath   : [],
+              derivedPublicKey : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
+            }
+          }]
+        };
+
+        const schema = 'email';
+        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite(
+          {
+            requester : bob,
+            protocol,
+            schema,
+            data      : bobMessageEncryptedBytes,
+            encryptionInput
+          }
+        );
+
+        const bobWriteReply = await dwn.processMessage(alice.did, message, dataStream);
+        expect(bobWriteReply.status.code).to.equal(202);
+
+        const recordsQuery = await RecordsQuery.create({
+          filter                      : { schema },
+          authorizationSignatureInput : Jws.createSignatureInput(alice)
+        });
+        const queryReply = await dwn.processMessage(alice.did, recordsQuery.message);
+        expect(queryReply.status.code).to.equal(200);
+
+        const unsignedRecordsWrite = queryReply.entries![0] as RecordsQueryReplyEntry;
+
+        // test able to decrypt the message using a derived key
+        const rootPrivateKey: DerivedPrivateJwk = {
+          derivationScheme  : KeyDerivationScheme.ProtocolContext,
+          derivationPath    : [],
+          derivedPrivateKey : alice.keyPair.privateJwk
+        };
+        const relativeDescendantDerivationPath = [KeyDerivationScheme.ProtocolContext, protocol, message.contextId!];
+        const descendantPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, relativeDescendantDerivationPath);
+
+        const cipherStream = DataStream.fromBytes(Encoder.base64UrlToBytes(unsignedRecordsWrite.encodedData!));
+
+        const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, descendantPrivateKey, cipherStream);
+        const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
+        expect(Comparer.byteArraysEqual(plaintextBytes, bobMessageBytes)).to.be.true;
+      });
     });
   });
 

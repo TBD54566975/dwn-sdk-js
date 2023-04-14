@@ -13,8 +13,18 @@ export class DwnError extends Error {
  * DWN SDK error codes.
  */
 export enum DwnErrorCode {
+  AuthenticateJwsMissing = 'AuthenticateJwsMissing',
+  AuthorizationMissing = 'AuthorizationMissing',
+  AuthorizationUnknownAuthor = 'AuthorizationUnknownAuthor',
   HdKeyDerivationPathInvalid = 'HdKeyDerivationPathInvalid',
   MessageStoreDataCidMismatch = 'MessageStoreDataCidMismatch',
   MessageStoreDataNotFound = 'MessageStoreDataNotFound',
-  MessageStoreDataSizeMismatch = 'MessageStoreDataSizeMismatch'
+  MessageStoreDataSizeMismatch = 'MessageStoreDataSizeMismatch',
+  RecordsDecryptNoMatchingKeyDerivationScheme = 'RecordsDecryptNoMatchingKeyDerivationScheme',
+  RecordsDeriveLeafPrivateKeyUnSupportedCurve = 'RecordsDeriveLeafPrivateKeyUnSupportedCurve',
+  RecordsDeriveLeafPublicKeyUnSupportedCurve = 'RecordsDeriveLeafPublicKeyUnSupportedCurve',
+  RecordsInvalidAncestorKeyDerivationSegment = 'RecordsInvalidAncestorKeyDerivationSegment',
+  RecordsWriteGetEntryIdUndefinedAuthor = 'RecordsWriteGetEntryIdUndefinedAuthor',
+  RecordsWriteValidateIntegrityEncryptionCidMismatch = 'RecordsWriteValidateIntegrityEncryptionCidMismatch',
+  Secp256k1KeyNotValid = 'Secp256k1KeyNotValid'
 };

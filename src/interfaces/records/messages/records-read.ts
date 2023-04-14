@@ -10,25 +10,10 @@ import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 export type RecordsReadOptions = {
   recordId: string;
   date?: string;
-  authorizationSignatureInput: SignatureInput;
+  authorizationSignatureInput?: SignatureInput;
 };
 
-export class RecordsRead {
-  /**
-   * RecordsRead message adhering to the DWN specification.
-   */
-  readonly message: RecordsReadMessage;
-
-  readonly author: string | undefined;
-
-  private constructor(message: RecordsReadMessage) {
-    this.message = message;
-
-    // introduce AuthorizationEnforcedOperation and
-    if (message.authorization !== undefined) {
-      this.author = Message.getAuthor(message as BaseMessage);
-    }
-  }
+export class RecordsRead extends Message<RecordsReadMessage> {
 
   public static async parse(message: RecordsReadMessage): Promise<RecordsRead> {
     if (message.authorization !== undefined) {
@@ -45,7 +30,7 @@ export class RecordsRead {
    * @param options.date If `undefined`, it will be auto-filled with current time.
    */
   public static async create(options: RecordsReadOptions): Promise<RecordsRead> {
-    const recordId = options.recordId;
+    const { recordId, authorizationSignatureInput } = options;
     const currentTime = getCurrentTimeInHighPrecision();
 
     const descriptor: RecordsReadDescriptor = {
@@ -55,7 +40,8 @@ export class RecordsRead {
       date      : options.date ?? currentTime
     };
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
+    // only generate the `authorization` property if signature input is given
+    const authorization = authorizationSignatureInput ? await Message.signAsAuthorization(descriptor, authorizationSignatureInput) : undefined;
     const message: RecordsReadMessage = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

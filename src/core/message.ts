@@ -32,13 +32,15 @@ export abstract class Message<M extends BaseMessage> {
   readonly authorizationPayload: any;
 
   // commonly used properties for extra convenience;
-  readonly author: string;
+  readonly author: string | undefined;
 
   constructor(message: M) {
     this.message = message;
-    this.authorizationPayload = Jws.decodePlainObjectPayload(message.authorization);
 
-    this.author = Message.getAuthor(message);
+    if (message.authorization !== undefined) {
+      this.authorizationPayload = Jws.decodePlainObjectPayload(message.authorization);
+      this.author = Message.getAuthor(message as BaseMessage);
+    }
   }
 
   /**
@@ -62,9 +64,13 @@ export abstract class Message<M extends BaseMessage> {
   };
 
   /**
-   * Gets the DID of the author of the given message.
+   * Gets the DID of the author of the given message, returned `undefined` if message is not signed.
    */
-  public static getAuthor(message: BaseMessage): string {
+  public static getAuthor(message: BaseMessage): string | undefined {
+    if (message.authorization === undefined) {
+      return undefined;
+    }
+
     const author = Jws.getSignerDid(message.authorization.signatures[0]);
     return author;
   }

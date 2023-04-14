@@ -1,15 +1,16 @@
 import chaiAsPromised from 'chai-as-promised';
 import credentialIssuanceProtocolDefinition from '../../../vectors/protocol-definitions/credential-issuance.json' assert { type: 'json' };
 import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
+import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
 import socialMediaProtocolDefinition from '../../../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
 
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import type { GenerateFromRecordsWriteOut } from '../../../utils/test-data-generator.js';
-import type { ProtocolDefinition } from '../../../../src/index.js';
 import type { QueryResultEntry } from '../../../../src/core/types.js';
 import type { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
+import type { EncryptionInput, ProtocolDefinition } from '../../../../src/index.js';
 
 import { asyncGeneratorToArray } from '../../../../src/utils/array.js';
 import { base64url } from 'multiformats/bases/base64';
@@ -22,6 +23,7 @@ import { Encoder } from '../../../../src/utils/encoder.js';
 import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
+import { KeyDerivationScheme } from '../../../../src/index.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsWriteHandler } from '../../../../src/interfaces/records/handlers/records-write.js';
@@ -31,6 +33,7 @@ import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
 import { Cid, computeCid } from '../../../../src/utils/cid.js';
 import { Dwn, Jws, RecordsWrite } from '../../../../src/index.js';
+import { Encryption, EncryptionAlgorithm } from '../../../../src/utils/encryption.js';
 
 chai.use(chaiAsPromised);
 
@@ -282,7 +285,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const descriptorCid = await computeCid(message.descriptor);
       const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
       const authorizationSignatureInput = Jws.createSignatureInput(alice);
-      const authorization = await RecordsWrite['createAuthorization'](recordId, message.contextId, descriptorCid, message.attestation, authorizationSignatureInput);
+      const authorization = await RecordsWrite['createAuthorization'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSignatureInput);
       message.recordId = recordId;
       message.authorization = authorization;
 
@@ -508,24 +511,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
         // write a protocol definition with an allow-anyone rule
         const protocol = 'email-protocol';
-        const protocolDefinition: ProtocolDefinition = {
-          labels: {
-            email: {
-              schema: 'email'
-            }
-          },
-          records: {
-            email: {
-              allow: {
-                anyone: {
-                  to: [
-                    'write'
-                  ]
-                }
-              }
-            }
-          }
-        };
+        const protocolDefinition: ProtocolDefinition = emailProtocolDefinition;
         const alice = await TestDataGenerator.generatePersona();
         const bob = await TestDataGenerator.generatePersona();
 
@@ -541,8 +527,8 @@ describe('RecordsWriteHandler.handle()', () => {
         const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolsConfigureReply.status.code).to.equal(202);
 
-        // generate a `RecordsWrite` message from bob allowed by anyone
-        const bobData = new TextEncoder().encode('data from bob');
+        // generate a `RecordsWrite` message from bob
+        const bobData = Encoder.stringToBytes('data from bob');
         const emailFromBob = await TestDataGenerator.generateRecordsWrite(
           {
             requester : bob,
@@ -563,7 +549,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const bobRecordQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingBobsWrite.message);
         expect(bobRecordQueryReply.status.code).to.equal(200);
         expect(bobRecordQueryReply.entries?.length).to.equal(1);
-        expect(bobRecordQueryReply.entries![0].encodedData).to.equal(base64url.baseEncode(bobData));
+        expect(bobRecordQueryReply.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(bobData));
       });
 
       it('should allow write with recipient rule', async () => {
@@ -1408,6 +1394,60 @@ describe('RecordsWriteHandler.handle()', () => {
         expect(reply.status.code).to.equal(401);
         expect(reply.status.detail).to.contain('no parent found');
       });
+
+      it('should 400 if expected CID of `encryption` mismatches the `encryptionCid` in `authorization`', async () => {
+        const alice = await TestDataGenerator.generatePersona();
+        TestStubGenerator.stubDidResolver(didResolver, [alice]);
+
+        // configure protocol
+        const protocol = 'email-protocol';
+        const protocolDefinition: ProtocolDefinition = emailProtocolDefinition;
+        const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+          requester: alice,
+          protocol,
+          protocolDefinition
+        });
+
+        const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        expect(protocolsConfigureReply.status.code).to.equal(202);
+
+        const bobMessageBytes = Encoder.stringToBytes('message from bob');
+        const bobMessageStream = DataStream.fromBytes(bobMessageBytes);
+        const dataEncryptionInitializationVector = TestDataGenerator.randomBytes(16);
+        const dataEncryptionKey = TestDataGenerator.randomBytes(32);
+        const bobMessageEncryptedStream = await Encryption.aes256CtrEncrypt(dataEncryptionKey, dataEncryptionInitializationVector, bobMessageStream);
+        const bobMessageEncryptedBytes = await DataStream.toBytes(bobMessageEncryptedStream);
+
+        const encryptionInput: EncryptionInput = {
+          algorithm            : EncryptionAlgorithm.Aes256Ctr,
+          initializationVector : dataEncryptionInitializationVector,
+          key                  : dataEncryptionKey,
+          keyEncryptionInputs  : [{
+            algorithm : EncryptionAlgorithm.EciesSecp256k1,
+            publicKey : {
+              derivationScheme : KeyDerivationScheme.ProtocolContext,
+              derivationPath   : [],
+              derivedPublicKey : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
+            }
+          }]
+        };
+        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
+          requester : alice,
+          protocol,
+          schema    : 'email',
+          data      : bobMessageEncryptedBytes,
+          encryptionInput
+        });
+
+        // replace valid `encryption` property with a mismatching one
+        message.encryption!.initializationVector = Encoder.stringToBase64Url('any value which will result in a different CID');
+
+        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
+        const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream: dataStream! });
+
+        expect(writeReply.status.code).to.equal(400);
+        expect(writeReply.status.detail).to.contain(DwnErrorCode.RecordsWriteValidateIntegrityEncryptionCidMismatch);
+      });
     });
   });
 
@@ -1492,7 +1532,6 @@ describe('RecordsWriteHandler.handle()', () => {
 
       expect(reply.status.code).to.equal(401);
     });
-
   });
 
   describe('attestation validation tests', () => {

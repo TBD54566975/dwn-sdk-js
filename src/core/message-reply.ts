@@ -12,6 +12,10 @@ type MessageReplyOptions = {
   data? : Readable;
 };
 
+export type BaseMessageReply = {
+  status: Status;
+};
+
 export class MessageReply {
   status: Status;
 

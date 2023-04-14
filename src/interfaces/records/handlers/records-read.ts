@@ -1,7 +1,7 @@
 import type { MethodHandler } from '../../types.js';
 import type { TimestampedMessage } from '../../../core/types.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
-import type { RecordsReadMessage, RecordsWriteMessage } from '../types.js';
+import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from '../types.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { Message } from '../../../core/message.js';
@@ -17,7 +17,7 @@ export class RecordsReadHandler implements MethodHandler {
   public async handle({
     tenant,
     message
-  }: { tenant: string, message: RecordsReadMessage}): Promise<MessageReply> {
+  }: { tenant: string, message: RecordsReadMessage }): Promise<RecordsReadReply> {
 
     let recordsRead: RecordsRead;
     try {
@@ -73,11 +73,14 @@ export class RecordsReadHandler implements MethodHandler {
       });
     }
 
-    const messageReply = new MessageReply({
+    const { authorization: _, ...recordsWriteWithoutAuthorization } = newestRecordsWrite; // a trick to stripping away `authorization`
+    const messageReply: RecordsReadReply ={
       status : { code: 200, detail: 'OK' },
-      data   : result.dataStream
-    });
-
+      record : {
+        ...recordsWriteWithoutAuthorization,
+        data: result.dataStream
+      }
+    };
     return messageReply;
   };
 }
