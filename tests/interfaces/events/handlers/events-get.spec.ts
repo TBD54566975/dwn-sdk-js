@@ -1,4 +1,4 @@
-import type { EventsGetReply, MessageReply } from '../../../../src/index.js';
+import type { EventsGetReply } from '../../../../src/index.js';
 
 import { expect } from 'chai';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
