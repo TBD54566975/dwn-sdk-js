@@ -1,9 +1,12 @@
 import type { BaseMessage } from '../../../core/types.js';
+import type { MessageStore } from '../../../store/message-store.js';
+import type { RecordsWrite } from './records-write.js';
 import type { SignatureInput } from '../../../jose/jws/general/types.js';
 import type { RecordsReadDescriptor, RecordsReadMessage } from '../types.js';
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/message.js';
+import { ProtocolAuthorization } from '../../../core/protocol-authorization.js';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 
@@ -49,10 +52,12 @@ export class RecordsRead extends Message<RecordsReadMessage> {
     return new RecordsRead(message);
   }
 
-  public async authorize(tenant: string): Promise<void> {
+  public async authorize(tenant: string, newestRecordsWrite: RecordsWrite, messageStore: MessageStore): Promise<void> {
     // if author/requester is the same as the target tenant, we can directly grant access
     if (this.author === tenant) {
       return;
+    } else if (newestRecordsWrite.message.descriptor.protocol !== undefined) {
+      await ProtocolAuthorization.authorize(tenant, this, this.author, messageStore);
     } else {
       throw new Error('message failed authorization');
     }

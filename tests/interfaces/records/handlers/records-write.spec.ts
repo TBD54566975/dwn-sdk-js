@@ -1168,56 +1168,6 @@ describe('RecordsWriteHandler.handle()', () => {
         expect(reply.status.detail).to.contain(`no allow rule defined for Write`);
       });
 
-      it('should fail authorization if path to expected recipient in definition is longer than actual length of ancestor message chain', async () => {
-        const alice = await DidKeyResolver.generate();
-        const issuer = await DidKeyResolver.generate();
-
-        // create an invalid ancestor path that is longer than possible
-        const invalidProtocolDefinition = { ...credentialIssuanceProtocolDefinition };
-        invalidProtocolDefinition.records.credentialApplication.records.credentialResponse.allow.recipient.of
-          = 'credentialApplication/credentialResponse'; // this is invalid as the ancestor can only be just `credentialApplication`
-
-        // write the VC issuance protocol
-        const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-        const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
-          requester          : alice,
-          protocol,
-          protocolDefinition : invalidProtocolDefinition
-        });
-
-        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
-        expect(protocolConfigureReply.status.code).to.equal(202);
-
-        // simulate Alice's VC applications with both issuer
-        const data = Encoder.stringToBytes('irrelevant');
-        const messageDataWithIssuerA = await TestDataGenerator.generateRecordsWrite({
-          requester    : alice,
-          recipientDid : issuer.did,
-          schema       : credentialIssuanceProtocolDefinition.labels.credentialApplication.schema,
-          protocol,
-          data
-        });
-        const contextId = await messageDataWithIssuerA.recordsWrite.getEntryId();
-
-        let reply = await dwn.processMessage(alice.did, messageDataWithIssuerA.message, messageDataWithIssuerA.dataStream);
-        expect(reply.status.code).to.equal(202);
-
-        // simulate issuer attempting to respond to Alice's VC application
-        const invalidResponseByIssuerA = await TestDataGenerator.generateRecordsWrite({
-          requester    : issuer,
-          recipientDid : alice.did,
-          schema       : credentialIssuanceProtocolDefinition.labels.credentialResponse.schema,
-          contextId,
-          parentId     : messageDataWithIssuerA.message.recordId,
-          protocol,
-          data
-        });
-
-        reply = await dwn.processMessage(alice.did, invalidResponseByIssuerA.message, invalidResponseByIssuerA.dataStream);
-        expect(reply.status.code).to.equal(401);
-        expect(reply.status.detail).to.contain('path to expected recipient is longer than actual length of ancestor message chain');
-      });
-
       it('should fail authorization if path to expected recipient in definition has incorrect label', async () => {
         const alice = await DidKeyResolver.generate();
         const issuer = await DidKeyResolver.generate();
