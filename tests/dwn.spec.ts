@@ -1,4 +1,4 @@
-import type { TenantGate } from '../src/index.js';
+import type { EventsGetReply, TenantGate } from '../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -90,11 +90,11 @@ describe('DWN', () => {
       const alice = await DidKeyResolver.generate();
       const { message } = await TestDataGenerator.generateEventsGet({ requester: alice });
 
-      const reply = await dwn.processMessage(alice.did, message);
+      const reply: EventsGetReply = await dwn.processMessage(alice.did, message);
 
       expect(reply.status.code).to.equal(200);
-      expect(reply.entries).to.be.empty;
-      expect(reply.data).to.not.exist;
+      expect(reply.events).to.be.empty;
+      expect(reply['data']).to.not.exist;
 
     });
 

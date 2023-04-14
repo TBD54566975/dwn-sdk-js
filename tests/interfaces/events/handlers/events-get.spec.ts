@@ -1,4 +1,4 @@
-import type { Event, MessageReply } from '../../../../src/index.js';
+import type { EventsGetReply, MessageReply } from '../../../../src/index.js';
 
 import { expect } from 'chai';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
@@ -92,14 +92,14 @@ describe('EventsGetHandler.handle()', () => {
     }
 
     const { message } = await TestDataGenerator.generateEventsGet({ requester: alice });
-    const reply: MessageReply = await dwn.processMessage(alice.did, message);
+    const reply: EventsGetReply = await dwn.processMessage(alice.did, message);
 
     expect(reply.status.code).to.equal(200);
-    expect(reply.data).to.not.exist;
-    expect(reply.entries?.length).to.equal(expectedCids.length);
+    expect(reply['data']).to.not.exist;
+    expect(reply.events?.length).to.equal(expectedCids.length);
 
-    for (let i = 0; i < reply.entries!.length; i += 1) {
-      expect(reply.entries![i].messageCid).to.equal(expectedCids[i]);
+    for (let i = 0; i < reply.events!.length; i += 1) {
+      expect(reply.events![i].messageCid).to.equal(expectedCids[i]);
     }
   });
 
@@ -114,11 +114,11 @@ describe('EventsGetHandler.handle()', () => {
     }
 
     const { message } = await TestDataGenerator.generateEventsGet({ requester: alice });
-    let reply: MessageReply = await dwn.processMessage(alice.did, message);
+    let reply: EventsGetReply = await dwn.processMessage(alice.did, message);
 
     expect(reply.status.code).to.equal(200);
 
-    const watermark = reply.entries![reply.entries!.length - 1].watermark;
+    const watermark = reply.events![reply.events!.length - 1].watermark;
     const expectedCids: string[] = [];
 
     for (let i = 0; i < 3; i += 1) {
@@ -134,11 +134,11 @@ describe('EventsGetHandler.handle()', () => {
     reply = await dwn.processMessage(alice.did, m);
 
     expect(reply.status.code).to.equal(200);
-    expect(reply.data).to.not.exist;
-    expect(reply.entries!.length).to.equal(expectedCids.length);
+    expect(reply['data']).to.not.exist;
+    expect(reply.events!.length).to.equal(expectedCids.length);
 
-    for (let i = 0; i < reply.entries!.length; i += 1) {
-      expect(reply.entries![i].messageCid).to.equal(expectedCids[i]);
+    for (let i = 0; i < reply.events!.length; i += 1) {
+      expect(reply.events![i].messageCid).to.equal(expectedCids[i]);
     }
   });
 });

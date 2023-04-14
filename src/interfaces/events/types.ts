@@ -1,4 +1,6 @@
 import type { BaseMessage } from '../../core/types.js';
+import type { BaseMessageReply } from '../../core/message-reply.js';
+import type { Event } from '../../event-log/event-log.js';
 import type { DwnInterfaceName, DwnMethodName } from '../../core/message.js';
 
 export type EventsGetDescriptor = {
@@ -9,4 +11,8 @@ export type EventsGetDescriptor = {
 
 export type EventsGetMessage = BaseMessage & {
   descriptor: EventsGetDescriptor;
+};
+
+export type EventsGetReply = BaseMessageReply & {
+  events?: Event[];
 };

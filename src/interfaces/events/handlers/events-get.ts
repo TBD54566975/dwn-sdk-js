@@ -1,8 +1,8 @@
 import type { DidResolver } from '../../../index.js';
-import type { EventsGetMessage } from '../types.js';
+import type { EventLog } from '../../../event-log/event-log.js';
 import type { GetEventsOptions } from '../../../event-log/event-log.js';
 import type { MethodHandler } from '../../types.js';
-import type { Event, EventLog } from '../../../event-log/event-log.js';
+import type { EventsGetMessage, EventsGetReply } from '../types.js';
 
 
 import { authenticate } from '../../../core/auth.js';
@@ -14,7 +14,7 @@ type HandleArgs = {tenant: string, message: EventsGetMessage};
 export class EventsGetHandler implements MethodHandler {
   constructor(private didResolver: DidResolver, private eventLog: EventLog) {}
 
-  public async handle({ tenant, message }: HandleArgs): Promise<MessageReply> {
+  public async handle({ tenant, message }: HandleArgs): Promise<EventsGetReply> {
     let eventsGet: EventsGet;
 
     try {
@@ -44,8 +44,8 @@ export class EventsGetHandler implements MethodHandler {
     const events = await this.eventLog.getEvents(tenant, options);
 
     return {
-      status  : { code: 200, detail: 'OK' },
-      entries : events
+      status: { code: 200, detail: 'OK' },
+      events
     };
   }
 }
