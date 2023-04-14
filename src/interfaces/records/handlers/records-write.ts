@@ -12,7 +12,7 @@ import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { StorageController } from '../../../store/storage-controller.js';
 
-export class RecordsWriteHandler implements MethodHandler<never> {
+export class RecordsWriteHandler implements MethodHandler {
 
   constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore, private eventLog: EventLog) { }
 
@@ -20,7 +20,7 @@ export class RecordsWriteHandler implements MethodHandler<never> {
     tenant,
     message,
     dataStream
-  }: { tenant: string, message: RecordsWriteMessage, dataStream: _Readable.Readable}): Promise<MessageReply<never>> {
+  }: { tenant: string, message: RecordsWriteMessage, dataStream: _Readable.Readable}): Promise<MessageReply> {
 
     let recordsWrite: RecordsWrite;
     try {
@@ -69,7 +69,7 @@ export class RecordsWriteHandler implements MethodHandler<never> {
     }
 
     // write the incoming message to DB if incoming message is newest
-    let messageReply: MessageReply<never>;
+    let messageReply: MessageReply;
     if (incomingMessageIsNewest) {
       const isLatestBaseState = true;
       const indexes = await constructRecordsWriteIndexes(recordsWrite, isLatestBaseState);

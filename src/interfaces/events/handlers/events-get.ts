@@ -11,10 +11,10 @@ import { MessageReply } from '../../../core/message-reply.js';
 
 type HandleArgs = {tenant: string, message: EventsGetMessage};
 
-export class EventsGetHandler implements MethodHandler<Event> {
+export class EventsGetHandler implements MethodHandler {
   constructor(private didResolver: DidResolver, private eventLog: EventLog) {}
 
-  public async handle({ tenant, message }: HandleArgs): Promise<MessageReply<Event>> {
+  public async handle({ tenant, message }: HandleArgs): Promise<MessageReply> {
     let eventsGet: EventsGet;
 
     try {

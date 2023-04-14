@@ -23,7 +23,7 @@ import { RecordsWriteHandler } from './interfaces/records/handlers/records-write
 import { DwnInterfaceName, DwnMethodName, Message } from './core/message.js';
 
 export class Dwn {
-  private methodHandlers: { [key:string]: MethodHandler<unknown> };
+  private methodHandlers: { [key:string]: MethodHandler };
   private didResolver: DidResolver;
   private messageStore: MessageStore;
   private dataStore: DataStore;
@@ -84,7 +84,7 @@ export class Dwn {
    * Processes the given DWN message and returns with a reply.
    * @param tenant The tenant DID to route the given message to.
    */
-  public async processMessage(tenant: string, rawMessage: any, dataStream?: Readable): Promise<MessageReply<any>> {
+  public async processMessage(tenant: string, rawMessage: any, dataStream?: Readable): Promise<MessageReply> {
     const isTenant = await this.tenantGate.isTenant(tenant);
     if (!isTenant) {
       return new MessageReply({

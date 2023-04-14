@@ -92,7 +92,7 @@ describe('EventsGetHandler.handle()', () => {
     }
 
     const { message } = await TestDataGenerator.generateEventsGet({ requester: alice });
-    const reply: MessageReply<Event> = await dwn.processMessage(alice.did, message);
+    const reply: MessageReply = await dwn.processMessage(alice.did, message);
 
     expect(reply.status.code).to.equal(200);
     expect(reply.data).to.not.exist;
@@ -114,7 +114,7 @@ describe('EventsGetHandler.handle()', () => {
     }
 
     const { message } = await TestDataGenerator.generateEventsGet({ requester: alice });
-    let reply: MessageReply<Event> = await dwn.processMessage(alice.did, message);
+    let reply: MessageReply = await dwn.processMessage(alice.did, message);
 
     expect(reply.status.code).to.equal(200);
 
