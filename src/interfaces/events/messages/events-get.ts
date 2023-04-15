@@ -28,12 +28,11 @@ export class EventsGet extends Message<EventsGetMessage> {
       descriptor.watermark = options.watermark;
     }
 
-    Message.validateJsonSchema({ descriptor, authorization: { } });
-
     const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
     const message = { descriptor, authorization };
 
-    const eventsGet = new EventsGet(message);
-    return eventsGet;
+    Message.validateJsonSchema(message);
+
+    return new EventsGet(message);
   }
 }

@@ -4,7 +4,6 @@ import type { GetEventsOptions } from '../../../event-log/event-log.js';
 import type { MethodHandler } from '../../types.js';
 import type { EventsGetMessage, EventsGetReply } from '../types.js';
 
-
 import { authenticate } from '../../../core/auth.js';
 import { EventsGet } from '../messages/events-get.js';
 import { MessageReply } from '../../../core/message-reply.js';
@@ -27,15 +26,14 @@ export class EventsGetHandler implements MethodHandler {
       await authenticate(message.authorization, this.didResolver);
 
       if (eventsGet.author !== tenant) {
-        //! FIXME: think of better error message
         throw new Error('message author must be tenant.');
       }
     } catch (e) {
       return MessageReply.fromError(e, 401);
     }
 
-    // if watermark was provided in message, get all events _after_ the watermark. otherwise,
-    // get all events.
+    // if watermark was provided in message, get all events _after_ the watermark.
+    // Otherwise, get all events.
     let options: GetEventsOptions | undefined;
     if (message.descriptor.watermark) {
       options = { gt: message.descriptor.watermark };
