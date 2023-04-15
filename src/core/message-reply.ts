@@ -20,7 +20,7 @@ export class MessageReply {
   status: Status;
 
   /**
-   * Resulting message entries returned from the invocation of the corresponding message.
+   * Resulting message entries or events returned from the invocation of the corresponding message.
    * e.g. the resulting messages from a RecordsQuery
    * Mutually exclusive with `data`.
    */

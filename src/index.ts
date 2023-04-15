@@ -4,6 +4,8 @@
 // export everything that we want to be consumable
 export type { DwnConfig } from './dwn.js';
 export type { DwnServiceEndpoint, ServiceEndpoint, DidDocument, DidResolutionResult, DidResolutionMetadata, DidDocumentMetadata, VerificationMethod } from './did/did-resolver.js';
+export type { EventLog, Event } from './event-log/event-log.js';
+export type { EventsGetMessage, EventsGetReply } from './interfaces/events/types.js';
 export type { HooksWriteMessage } from './interfaces/hooks/types.js';
 export type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolsQueryMessage } from './interfaces/protocols/types.js';
 export type { RecordsDeleteMessage, RecordsQueryMessage, RecordsWriteMessage } from './interfaces/records/types.js';
@@ -22,6 +24,8 @@ export { DwnConstant } from './core/dwn-constant.js';
 export { DwnError, DwnErrorCode } from './core/dwn-error.js';
 export { DwnInterfaceName, DwnMethodName } from './core/message.js';
 export { Encoder } from './utils/encoder.js';
+export { EventLogLevel } from './event-log/event-log-level.js';
+export { EventsGet, EventsGetOptions } from './interfaces/events/messages/events-get.js';
 export { Encryption, EncryptionAlgorithm } from './utils/encryption.js';
 export { EncryptionInput, KeyEncryptionInput, RecordsWrite, RecordsWriteOptions, CreateFromOptions } from './interfaces/records/messages/records-write.js';
 export { HooksWrite, HooksWriteOptions } from './interfaces/hooks/messages/hooks-write.js';
