@@ -11,6 +11,14 @@
           "to": [
             "write"
           ]
+        },
+        "author": {
+          "of": "email",
+          "to": ["read"]
+        },
+        "recipient": {
+          "of": "email",
+          "to": ["read"]
         }
       },
       "records": {
@@ -20,6 +28,14 @@
               "to": [
                 "write"
               ]
+            },
+            "author": {
+              "of": "email/email",
+              "to": ["read"]
+            },
+            "recipient": {
+              "of": "email/email",
+              "to": ["read"]
             }
           }
         }

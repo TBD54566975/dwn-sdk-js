@@ -24,20 +24,27 @@
     "image": {
       "allow": {
         "anyone": {
-          "to": ["write"]
+          "to": ["read", "write"]
         }
       },
       "records": {
         "caption": {
           "allow": {
+            "anyone": {
+              "to": ["read"]
+            },
             "author": {
-                "of": "image",
-                "to": ["write"]
+              "of": "image",
+              "to": ["write"]
             }
           }
         },
         "reply": {
           "allow": {
+            "author": {
+              "of": "image",
+              "to": ["read"]
+            },
             "recipient": {
               "of": "image",
               "to": ["write"]

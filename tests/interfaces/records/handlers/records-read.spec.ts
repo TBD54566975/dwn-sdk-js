@@ -1,9 +1,10 @@
 import type { DerivedPrivateJwk } from '../../../../src/utils/hd-key.js';
+import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
 import type { EncryptionInput } from '../../../../src/interfaces/records/messages/records-write.js';
 import type { ProtocolDefinition } from '../../../../src/index.js';
+import socialMediaProtocolDefinition from '../../../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
 
 import chaiAsPromised from 'chai-as-promised';
-import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
@@ -151,6 +152,146 @@ describe('RecordsReadHandler.handle()', () => {
 
       const dataFetched = await DataStream.toBytes(readReply.record!.data!);
       expect(Comparer.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
+    });
+
+    describe('protocol based reads', () => {
+      it('should allow read with allow-anyone rule', async () => {
+        // scenario: Alice writes an image to her DWN, then Bob reads the image because he is "anyone".
+
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+
+        const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-media';
+        const protocolDefinition: ProtocolDefinition = socialMediaProtocolDefinition;
+
+        // Install social-media protocol on Alice's DWN
+        const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+          requester: alice,
+          protocol,
+          protocolDefinition
+        });
+        const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        expect(protocolWriteReply.status.code).to.equal(202);
+
+        // Alice writes image to her DWN
+        const encodedImage = new TextEncoder().encode('cafe-aesthetic.jpg');
+        const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+          requester    : alice,
+          protocol,
+          schema       : protocolDefinition.labels.image.schema,
+          data         : encodedImage,
+          recipientDid : alice.did
+        });
+        const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
+        expect(imageReply.status.code).to.equal(202);
+
+        // Bob (anyone) reads the image that Alice wrote
+        const imageRecordsRead = await RecordsRead.create({
+          recordId                    : imageRecordsWrite.message.recordId,
+          authorizationSignatureInput : Jws.createSignatureInput(bob)
+        });
+        const imageReadReply = await dwn.processMessage(alice.did, imageRecordsRead.message);
+        expect(imageReadReply.status.code).to.equal(200);
+      });
+
+      it('should allow read with recipient rule', async () => {
+        // scenario: Alice sends an email to Bob, then Bob reads the email.
+        //           ImposterBob tries and fails to read the email.
+
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+        const imposterBob = await DidKeyResolver.generate();
+
+        const protocol = 'https://tbd.website/decentralized-web-node/protocols/email';
+        const protocolDefinition: ProtocolDefinition = emailProtocolDefinition;
+
+        // Install email protocol on Alice's DWN
+        const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+          requester: alice,
+          protocol,
+          protocolDefinition
+        });
+        const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        expect(protocolWriteReply.status.code).to.equal(202);
+
+        // Alice writes an email with Bob as recipient
+        const encodedEmail = new TextEncoder().encode('Dear Bob, hello!');
+        const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+          requester    : alice,
+          protocol,
+          schema       : protocolDefinition.labels.email.schema,
+          data         : encodedEmail,
+          recipientDid : bob.did
+        });
+        const imageReply = await dwn.processMessage(alice.did, emailRecordsWrite.message, emailRecordsWrite.dataStream);
+        expect(imageReply.status.code).to.equal(202);
+
+        // Bob reads Alice's email
+        const bobRecordsRead = await RecordsRead.create({
+          recordId                    : emailRecordsWrite.message.recordId,
+          authorizationSignatureInput : Jws.createSignatureInput(bob)
+        });
+        const bobReadReply = await dwn.processMessage(alice.did, bobRecordsRead.message);
+        expect(bobReadReply.status.code).to.equal(200);
+
+        // ImposterBob is not able to read Alice's email
+        const imposterRecordsRead = await RecordsRead.create({
+          recordId                    : emailRecordsWrite.message.recordId,
+          authorizationSignatureInput : Jws.createSignatureInput(imposterBob)
+        });
+        const imposterReadReply = await dwn.processMessage(alice.did, imposterRecordsRead.message);
+        expect(imposterReadReply.status.code).to.equal(401);
+        expect(imposterReadReply.status.detail).to.include('inbound message action \'read\' not in list of allowed actions');
+      });
+
+      it('should allow read with author rule', async () => {
+        // scenario: Bob sends an email to Alice, then Bob reads the email.
+        //           ImposterBob tries and fails to read the email.
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+        const imposterBob = await DidKeyResolver.generate();
+
+        const protocol = 'https://tbd.website/decentralized-web-node/protocols/email';
+        const protocolDefinition: ProtocolDefinition = emailProtocolDefinition;
+
+        // Install email protocol on Alice's DWN
+        const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+          requester: alice,
+          protocol,
+          protocolDefinition
+        });
+        const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        expect(protocolWriteReply.status.code).to.equal(202);
+
+        // Alice writes an email with Bob as recipient
+        const encodedEmail = new TextEncoder().encode('Dear Alice, hello!');
+        const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+          requester    : bob,
+          protocol,
+          schema       : protocolDefinition.labels.email.schema,
+          data         : encodedEmail,
+          recipientDid : alice.did
+        });
+        const imageReply = await dwn.processMessage(alice.did, emailRecordsWrite.message, emailRecordsWrite.dataStream);
+        expect(imageReply.status.code).to.equal(202);
+
+        // Bob reads the email he just sent
+        const bobRecordsRead = await RecordsRead.create({
+          recordId                    : emailRecordsWrite.message.recordId,
+          authorizationSignatureInput : Jws.createSignatureInput(bob)
+        });
+        const bobReadReply = await dwn.processMessage(alice.did, bobRecordsRead.message);
+        expect(bobReadReply.status.code).to.equal(200);
+
+        // ImposterBob is not able to read the email
+        const imposterRecordsRead = await RecordsRead.create({
+          recordId                    : emailRecordsWrite.message.recordId,
+          authorizationSignatureInput : Jws.createSignatureInput(imposterBob)
+        });
+        const imposterReadReply = await dwn.processMessage(alice.did, imposterRecordsRead.message);
+        expect(imposterReadReply.status.code).to.equal(401);
+        expect(imposterReadReply.status.detail).to.include('inbound message action \'read\' not in list of allowed actions');
+      });
     });
 
     it('should return 404 RecordRead if data does not exist', async () => {

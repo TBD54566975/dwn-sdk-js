@@ -58,7 +58,7 @@ export class RecordsReadHandler implements MethodHandler {
       // NOTE we check for `true` as a defensive equality comparison, so we don't mistakenly assume a record that is not published as published.
     } else {
       try {
-        await recordsRead.authorize(tenant);
+        await recordsRead.authorize(tenant, await RecordsWrite.parse(newestRecordsWrite), this.messageStore);
       } catch (error) {
         return MessageReply.fromError(error, 401);
       }
