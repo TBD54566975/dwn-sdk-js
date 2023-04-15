@@ -9,6 +9,7 @@ import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.
 import { DwnErrorCode } from '../../../core/dwn-error.js';
 import { DwnInterfaceName } from '../../../core/message.js';
 import { MessageReply } from '../../../core/message-reply.js';
+import { normalizeProtocolUrl } from '../../../utils/url.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { StorageController } from '../../../store/storage-controller.js';
 
@@ -120,6 +121,9 @@ export async function constructRecordsWriteIndexes(
     recordId  : message.recordId,
     entryId   : await RecordsWrite.getEntryId(recordsWrite.author, recordsWrite.message.descriptor)
   };
+  if (descriptor.protocol !== undefined) {
+    indexes.protocol = normalizeProtocolUrl(descriptor.protocol);
+  }
 
   // add additional indexes to optional values if given
   // TODO: index multi-attesters to be unblocked by #205 - Revisit database interfaces (https://github.com/TBD54566975/dwn-sdk-js/issues/205)

@@ -70,7 +70,7 @@ describe('RecordsQueryHandler.handle()', () => {
     });
 
     it('should return records matching the query', async () => {
-      // insert three messages into DB, two with matching protocol
+      // insert three messages into DB, two with matching schema
       const alice = await TestDataGenerator.generatePersona();
       const dataFormat = 'myAwesomeDataFormat';
       const write1 = await TestDataGenerator.generateRecordsWrite({ requester: alice });
@@ -103,6 +103,65 @@ describe('RecordsQueryHandler.handle()', () => {
         filter    : {
           dataFormat,
           schema: 'schema1'
+        }
+      });
+
+      const reply2 = await dwn.processMessage(alice.did, messageData2.message);
+
+      expect(reply2.status.code).to.equal(200);
+      expect(reply2.entries?.length).to.equal(1); // only 1 entry should match the query
+    });
+
+    it('should return records matching normalized protocol URI when querying protocol', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+
+      // setting up a stub resolver
+      const mockResolution = TestDataGenerator.createDidResolutionResult(alice);;
+      sinon.stub(didResolver, 'resolve').resolves(mockResolution);
+
+      // install 3 different protocol URIs, two of which are the same after normalization
+      const protocol1 = 'tbd.website/dex';
+      const protocol2 = 'tbd.website/dex/';
+      const protocol3 = 'squareup.com/shop';
+      const protocols = [protocol1, protocol2, protocol3];
+      const protocolDefinition = emailProtocolDefinition; // To keep it simple, reuse the same definition for all 3 protocols
+      for (const protocol of protocols) {
+        const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+          requester: alice,
+          protocol,
+          protocolDefinition
+        });
+        const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+        expect(configureReply.status.code).to.equal(202);
+      };
+
+      // insert three messages into DB, two with matching protocol
+      for (const protocol of protocols) {
+        const write = await TestDataGenerator.generateRecordsWrite({
+          requester : alice,
+          protocol  : protocol,
+          schema    : protocolDefinition.labels.email.schema
+        });
+        const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
+        expect(writeReply.status.code).to.equal(202);
+      }
+
+      // Query for matching protocol
+      const messageData = await TestDataGenerator.generateRecordsQuery({
+        requester : alice,
+        filter    : {
+          protocol: protocol1
+        }
+      });
+      const reply = await dwn.processMessage(alice.did, messageData.message);
+
+      expect(reply.status.code).to.equal(200);
+      expect(reply.entries?.length).to.equal(2); // only 2 entries should match the query on protocol
+
+      const messageData2 = await TestDataGenerator.generateRecordsQuery({
+        requester : alice,
+        filter    : {
+          protocol: protocol3
         }
       });
 

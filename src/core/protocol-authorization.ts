@@ -4,6 +4,7 @@ import type { Filter, TimestampedMessage } from './types.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
 import type { RecordsReadMessage, RecordsWriteMessage } from '../interfaces/records/types.js';
 
+import { normalizeProtocolUrl } from '../utils/url.js';
 import { RecordsWrite } from '../interfaces/records/messages/records-write.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
 
@@ -86,7 +87,7 @@ export class ProtocolAuthorization {
     const query: Filter = {
       interface : DwnInterfaceName.Protocols,
       method    : DwnMethodName.Configure,
-      protocol  : protocolUri
+      protocol  : normalizeProtocolUrl(protocolUri)
     };
     const protocols = await messageStore.query(tenant, query) as ProtocolsConfigureMessage[];
 
@@ -137,7 +138,7 @@ export class ProtocolAuthorization {
       const query: Filter = {
         interface : DwnInterfaceName.Records,
         method    : DwnMethodName.Write,
-        protocol,
+        protocol  : normalizeProtocolUrl(protocol),
         contextId,
         recordId  : currentParentId
       };

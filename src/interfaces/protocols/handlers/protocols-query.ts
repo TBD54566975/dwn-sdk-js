@@ -1,13 +1,13 @@
 import type { MethodHandler } from '../../types.js';
 import type { ProtocolsQueryMessage } from '../types.js';
-import type { QueryResultEntry } from '../../../core/types.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
+import type { Filter, QueryResultEntry } from '../../../core/types.js';
 
 import { canonicalAuth } from '../../../core/auth.js';
 import { MessageReply } from '../../../core/message-reply.js';
+import { normalizeProtocolUrl } from '../../../utils/url.js';
 import { ProtocolsQuery } from '../messages/protocols-query.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
-
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 
 export class ProtocolsQueryHandler implements MethodHandler {
@@ -32,11 +32,14 @@ export class ProtocolsQueryHandler implements MethodHandler {
       return MessageReply.fromError(e, 401);
     }
 
-    const query = {
+    const query: Filter = {
       interface : DwnInterfaceName.Protocols,
       method    : DwnMethodName.Configure,
-      ...message.descriptor.filter
     };
+    const protocol = message.descriptor.filter?.protocol;
+    if (protocol !== undefined) {
+      query.protocol = normalizeProtocolUrl(protocol);
+    }
     removeUndefinedProperties(query);
 
     const messages = await this.messageStore.query(tenant, query);

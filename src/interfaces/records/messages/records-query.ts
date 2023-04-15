@@ -4,6 +4,7 @@ import type { RecordsQueryDescriptor, RecordsQueryFilter, RecordsQueryMessage } 
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/message.js';
+import { normalizeProtocolUrl } from '../../../utils/url.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
@@ -90,6 +91,10 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
 
     if (rangeFilter) {
       (filterCopy as Filter).dateCreated = rangeFilter;
+    }
+
+    if (filter.protocol !== undefined) {
+      filterCopy.protocol = normalizeProtocolUrl(filter.protocol);
     }
 
     return filterCopy as Filter;

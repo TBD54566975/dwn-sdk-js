@@ -1,10 +1,12 @@
 import type { EventLog } from '../../../event-log/event-log.js';
+import type { Filter } from '../../../core/types.js';
 import type { MethodHandler } from '../../types.js';
 import type { ProtocolsConfigureMessage } from '../types.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { canonicalAuth } from '../../../core/auth.js';
 import { MessageReply } from '../../../core/message-reply.js';
+import { normalizeProtocolUrl } from '../../../utils/url.js';
 import { ProtocolsConfigure } from '../messages/protocols-configure.js';
 import { StorageController } from '../../../store/storage-controller.js';
 
@@ -35,10 +37,10 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     }
 
     // attempt to get existing protocol
-    const query = {
+    const query: Filter = {
       interface : DwnInterfaceName.Protocols,
       method    : DwnMethodName.Configure,
-      protocol  : message.descriptor.protocol
+      protocol  : normalizeProtocolUrl(message.descriptor.protocol)
     };
     const existingMessages = await this.messageStore.query(tenant, query) as ProtocolsConfigureMessage[];
 
@@ -56,7 +58,8 @@ export class ProtocolsConfigureHandler implements MethodHandler {
       const { author } = protocolsConfigure;
       const indexes = {
         author,
-        ... message.descriptor
+        ... message.descriptor,
+        protocol: normalizeProtocolUrl(message.descriptor.protocol),
       };
 
       // FIXME: indexes, Property 'dataSize' is incompatible with index signature.

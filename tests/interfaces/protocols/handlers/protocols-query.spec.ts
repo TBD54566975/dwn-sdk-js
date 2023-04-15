@@ -2,10 +2,17 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
+import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
+
+import type { GenerateProtocolsConfigureOutput } from '../../../utils/test-data-generator.js';
+import type { ProtocolsConfigureDescriptor } from '../../../../src/interfaces/protocols/types.js';
+
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
+import { lexicographicalCompare } from '../../../../src/utils/string.js';
+import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
@@ -62,7 +69,7 @@ describe('ProtocolsQueryHandler.handle()', () => {
       // setting up a stub method resolver
       TestStubGenerator.stubDidResolver(didResolver, [alice]);
 
-      // insert three messages into DB, two with matching protocol
+      // insert three messages into DB
       const protocol1 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice });
       const protocol2 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice });
       const protocol3 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice });
@@ -91,6 +98,88 @@ describe('ProtocolsQueryHandler.handle()', () => {
 
       expect(reply2.status.code).to.equal(200);
       expect(reply2.entries?.length).to.equal(3); // expecting all 3 entries written above match the query
+    });
+
+    it('should return protocols with normalized URIs matching the query', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+
+      // setting up a stub method resolver
+      TestStubGenerator.stubDidResolver(didResolver, [alice]);
+
+      // configure several protocols, all matching `example.com`
+      const protocolDefinition = emailProtocolDefinition;
+      const protocol1 = await TestDataGenerator.generateProtocolsConfigure({
+        requester : alice,
+        protocol  : 'example.com',
+        protocolDefinition
+      });
+      const protocolTrailingSlash = await TestDataGenerator.generateProtocolsConfigure({
+        requester : alice,
+        protocol  : 'example.com/',
+        protocolDefinition
+      });
+      const protocolParams = await TestDataGenerator.generateProtocolsConfigure({
+        requester : alice,
+        protocol  : 'example.com/?foo=bar',
+        protocolDefinition
+      });
+      const protocolCapitalized = await TestDataGenerator.generateProtocolsConfigure({
+        requester : alice,
+        protocol  : 'EXAMPLE.Com',
+        protocolDefinition
+      });
+
+      // Sort messages into lexicographic order. We only allow protocol overwrites if the new message CID
+      // has higher lexicographic value.
+      const equivalentProtocols = [protocol1, protocolTrailingSlash, protocolParams, protocolCapitalized];
+      let messageDataWithCid: (GenerateProtocolsConfigureOutput & { cid: string })[] = [];
+      for (const messageData of equivalentProtocols) {
+        const cid = await Message.getCid(messageData.message);
+        messageDataWithCid.push({ cid, ...messageData });
+      }
+
+      messageDataWithCid = messageDataWithCid.sort((messageDataA, messageDataB) => {
+        return lexicographicalCompare(messageDataA.cid, messageDataB.cid);
+      });
+
+      // Configure protocols. Each one overwrites the previous
+      for (const protocol of messageDataWithCid) {
+        const configureReply = await dwn.processMessage(alice.did, protocol.message, protocol.dataStream);
+        expect(configureReply.status.code).to.equal(202);
+      }
+
+      // configure several more protocols, none of which match `example.com`
+      const protocolSlashFoo = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol: 'example.com/foo' });
+      const protocolSubdomainFoo = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol: 'foo.example.Com' });
+
+      for (const protocol of [protocolSlashFoo, protocolSubdomainFoo]) {
+        const configureReply = await dwn.processMessage(alice.did, protocol.message, protocol.dataStream);
+        expect(configureReply.status.code).to.equal(202);
+      }
+
+      // query for protocols that match `example.com`
+      const queryMessageData = await TestDataGenerator.generateProtocolsQuery({
+        requester : alice,
+        filter    : { protocol: protocol1.message.descriptor.protocol }
+      });
+
+      const reply = await dwn.processMessage(alice.did, queryMessageData.message);
+
+      expect(reply.status.code).to.equal(200);
+      expect(reply.entries?.length).to.equal(1);
+
+      const resultProtocols = reply.entries!.map(entry =>
+        (entry.descriptor as ProtocolsConfigureDescriptor).protocol
+      );
+
+      // Expect equivalent protocol with highest lexicographic value to remain
+      expect(resultProtocols).to.contain(
+        messageDataWithCid[messageDataWithCid.length-1].message.descriptor.protocol
+      );
+
+      // Expect URIs with subdomains, different capitalization, and different path to be excluded
+      expect(resultProtocols).not.to.contain(protocolSlashFoo.message.descriptor.protocol);
+      expect(resultProtocols).not.to.contain(protocolSubdomainFoo.message.descriptor.protocol);
     });
 
     it('should fail with 400 if `authorization` is referencing a different message (`descriptorCid`)', async () => {
