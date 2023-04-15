@@ -4,9 +4,9 @@ import type { GetEventsOptions } from '../../../event-log/event-log.js';
 import type { MethodHandler } from '../../types.js';
 import type { EventsGetMessage, EventsGetReply } from '../types.js';
 
-import { authenticate } from '../../../core/auth.js';
 import { EventsGet } from '../messages/events-get.js';
 import { MessageReply } from '../../../core/message-reply.js';
+import { authenticate, authorize } from '../../../core/auth.js';
 
 type HandleArgs = {tenant: string, message: EventsGetMessage};
 
@@ -24,10 +24,7 @@ export class EventsGetHandler implements MethodHandler {
 
     try {
       await authenticate(message.authorization, this.didResolver);
-
-      if (eventsGet.author !== tenant) {
-        throw new Error('message author must be tenant.');
-      }
+      await authorize(tenant, eventsGet);
     } catch (e) {
       return MessageReply.fromError(e, 401);
     }
