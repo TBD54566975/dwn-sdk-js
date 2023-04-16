@@ -47,6 +47,7 @@ export class RecordsDeleteHandler implements MethodHandler {
     const newestExistingMessage = await RecordsWrite.getNewestMessage(existingMessages);
     let incomingMessageIsNewest = false;
     let newestMessage;
+
     // if incoming message is newest
     if (newestExistingMessage === undefined || await RecordsWrite.isNewer(message, newestExistingMessage)) {
       incomingMessageIsNewest = true;

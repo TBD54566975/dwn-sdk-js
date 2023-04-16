@@ -13,6 +13,7 @@ import { DidResolver } from './did/did-resolver.js';
 import { EventLogLevel } from './event-log/event-log-level.js';
 import { EventsGetHandler } from './interfaces/events/handlers/events-get.js';
 import { MessageReply } from './core/message-reply.js';
+import { MessagesGetHandler } from './interfaces/messages/handlers/messages-get.js';
 import { MessageStoreLevel } from './store/message-store-level.js';
 import { PermissionsRequestHandler } from './interfaces/permissions/handlers/permissions-request.js';
 import { ProtocolsConfigureHandler } from './interfaces/protocols/handlers/protocols-configure.js';
@@ -40,6 +41,7 @@ export class Dwn {
 
     this.methodHandlers = {
       [DwnInterfaceName.Events + DwnMethodName.Get]          : new EventsGetHandler(this.didResolver, this.eventLog),
+      [DwnInterfaceName.Messages + DwnMethodName.Get]        : new MessagesGetHandler(this.didResolver, this.messageStore, this.dataStore),
       [DwnInterfaceName.Permissions + DwnMethodName.Request] : new PermissionsRequestHandler(this.didResolver, this.messageStore, this.dataStore),
       [DwnInterfaceName.Protocols + DwnMethodName.Configure] : new ProtocolsConfigureHandler(
         this.didResolver, this.messageStore, this.dataStore, this.eventLog),

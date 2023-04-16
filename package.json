@@ -77,8 +77,8 @@
     "multiformats": "11.0.2",
     "randombytes": "2.1.0",
     "readable-stream": "4.3.0",
-    "ulid": "2.3.0",
     "secp256k1": "5.0.0",
+    "ulid": "2.3.0",
     "uuid": "8.3.2",
     "varint": "6.0.0"
   },
@@ -86,6 +86,7 @@
     "@types/chai": "4.3.0",
     "@types/chai-as-promised": "7.1.5",
     "@types/flat": "^5.0.2",
+    "@types/karma": "^6.3.3",
     "@types/lodash": "4.14.179",
     "@types/mocha": "9.1.0",
     "@types/randombytes": "2.0.0",
