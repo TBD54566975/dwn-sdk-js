@@ -37,7 +37,7 @@ export class MessagesGet extends Message<MessagesGetMessage> {
   }
 
   /**
-   * Q for reviewers: worth it?
+   * validates the provided cids
    * @param messageCids - the cids in question
    * @throws {Error} if an invalid cid is found.
    */
