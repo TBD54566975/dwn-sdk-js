@@ -42,8 +42,7 @@ export class MessagesGetHandler implements MethodHandler {
           return { messageCid, message };
         })
         .catch(_ => {
-          // FIXIT: log error? throw error?
-          return { messageCid, message: undefined };
+          return { messageCid, message: undefined, error: `Failed to get message ${messageCid}` };
         });
 
       promises.push(promise);

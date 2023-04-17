@@ -17,6 +17,7 @@ export type MessagesGetReplyEntry = {
   messageCid: string;
   message?: BaseMessage;
   encodedData?: string;
+  error?: string;
 };
 
 export type MessagesGetReply = BaseMessageReply & {
