@@ -57,7 +57,7 @@ describe('MessagesGet Message', () => {
   });
 
   describe('parse', () => {
-    it('parses a message into an MessagesGet instance', async () => {
+    it('parses a message into a MessagesGet instance', async () => {
       const { requester, message } = await TestDataGenerator.generateRecordsWrite();
       let messageCid = await Message.getCid(message);
 
