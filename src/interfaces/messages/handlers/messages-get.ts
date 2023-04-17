@@ -34,8 +34,9 @@ export class MessagesGetHandler implements MethodHandler {
     }
 
     const promises: Promise<MessagesGetReplyEntry>[] = [];
+    const messageCids = new Set(message.descriptor.messageCids);
 
-    for (const messageCid of message.descriptor.messageCids) {
+    for (const messageCid of messageCids) {
       const promise = this.messageStore.get(tenant, messageCid)
         .then(message => {
           return { messageCid, message };
