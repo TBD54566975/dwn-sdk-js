@@ -12,7 +12,6 @@ export type MessagesGetMessage = BaseMessage & {
   descriptor: MessagesGetDescriptor;
 };
 
-// oof horrible name
 export type MessagesGetReplyEntry = {
   messageCid: string;
   message?: BaseMessage;

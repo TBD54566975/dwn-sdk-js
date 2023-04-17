@@ -54,7 +54,6 @@ export class MessagesGetHandler implements MethodHandler {
     //  * its a RecordsWrite
     //  * the data size is equal or smaller than the size threshold
     //! NOTE: this is somewhat duplicate code that also exists in `StorageController.query`.
-    //! reviewers: consider whether we oughta abstract the common aspects.
     for (const entry of messages) {
       const { message } = entry;
 
