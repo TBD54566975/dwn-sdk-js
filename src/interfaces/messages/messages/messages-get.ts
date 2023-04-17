@@ -31,7 +31,7 @@ export class MessagesGet extends Message<MessagesGetMessage> {
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
-    this.validateMessageCids(options.messageCids);
+    MessagesGet.validateMessageCids(options.messageCids);
 
     return new MessagesGet(message);
   }
