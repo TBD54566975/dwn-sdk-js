@@ -197,7 +197,6 @@ describe('MessagesGetHandler.handle()', () => {
       messageCids : [recordsWriteMessageCid]
     });
 
-    // 1 messages expected because the RecordsWrite created above is not bob's
     const messagesGetReply: MessagesGetReply = await dwn.processMessage(alice.did, message);
     expect(messagesGetReply.status.code).to.equal(200);
     expect(messagesGetReply.messages!.length).to.equal(1);
