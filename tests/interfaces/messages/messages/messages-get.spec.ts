@@ -35,7 +35,7 @@ describe('MessagesGet Message', () => {
 
         expect.fail();
       } catch (e: any) {
-        expect(e.message).to.include('messageCids');
+        expect(e.message).to.include('/descriptor/messageCids: must NOT have fewer than 1 items');
       }
     });
 
@@ -50,7 +50,7 @@ describe('MessagesGet Message', () => {
 
         expect.fail();
       } catch (e: any) {
-        expect(e.message).to.include('valid CID');
+        expect(e.message).to.include('is not a valid CID');
       }
     });
   });
@@ -91,7 +91,7 @@ describe('MessagesGet Message', () => {
 
         expect.fail();
       } catch (e: any) {
-        expect(e.message).to.include('valid CID');
+        expect(e.message).to.include('is not a valid CID');
       }
     });
   });

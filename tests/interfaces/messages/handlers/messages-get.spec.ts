@@ -101,7 +101,7 @@ describe('MessagesGetHandler.handle()', () => {
     const reply: MessagesGetReply = await dwn.processMessage(alice.did, message);
 
     expect(reply.status.code).to.equal(400);
-    expect(reply.status.detail).to.include('valid CID');
+    expect(reply.status.detail).to.include('is not a valid CID');
     expect(reply.messages).to.be.undefined;
   });
 
