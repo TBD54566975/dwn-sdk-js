@@ -35,10 +35,10 @@ export class ProtocolsQueryHandler implements MethodHandler {
     const query: Filter = {
       interface : DwnInterfaceName.Protocols,
       method    : DwnMethodName.Configure,
+      ...message.descriptor.filter
     };
-    const protocol = message.descriptor.filter?.protocol;
-    if (protocol !== undefined) {
-      query.protocol = normalizeProtocolUrl(protocol);
+    if (query.protocol !== undefined) {
+      query.protocol = normalizeProtocolUrl(query.protocol as string);
     }
     removeUndefinedProperties(query);
 

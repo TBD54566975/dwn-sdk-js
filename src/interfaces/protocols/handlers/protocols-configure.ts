@@ -57,8 +57,8 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     if (incomingMessageIsNewest) {
       const { author } = protocolsConfigure;
       const indexes = {
-        author,
         ... message.descriptor,
+        author,
         protocol: normalizeProtocolUrl(message.descriptor.protocol),
       };
 

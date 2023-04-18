@@ -93,8 +93,8 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
       (filterCopy as Filter).dateCreated = rangeFilter;
     }
 
-    if (filter.protocol !== undefined) {
-      filterCopy.protocol = normalizeProtocolUrl(filter.protocol);
+    if (filterCopy.protocol !== undefined) {
+      filterCopy.protocol = normalizeProtocolUrl(filterCopy.protocol);
     }
 
     return filterCopy as Filter;

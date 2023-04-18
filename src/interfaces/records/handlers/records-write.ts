@@ -121,8 +121,8 @@ export async function constructRecordsWriteIndexes(
     recordId  : message.recordId,
     entryId   : await RecordsWrite.getEntryId(recordsWrite.author, recordsWrite.message.descriptor)
   };
-  if (descriptor.protocol !== undefined) {
-    indexes.protocol = normalizeProtocolUrl(descriptor.protocol);
+  if (indexes.protocol !== undefined) {
+    indexes.protocol = normalizeProtocolUrl(indexes.protocol);
   }
 
   // add additional indexes to optional values if given
