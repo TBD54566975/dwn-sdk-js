@@ -185,7 +185,7 @@ describe('RecordsQueryHandler.handle()', () => {
           protocol: protocol2
         }
       });
-      const replyEquivalent = await dwn.processMessage(alice.did, messageData.message);
+      const replyEquivalent = await dwn.processMessage(alice.did, messageDataEquivalent.message);
 
       expect(replyEquivalent.status.code).to.equal(200);
       expect(replyEquivalent.entries?.length).to.equal(2); // only 2 entries should match the query on protocol
