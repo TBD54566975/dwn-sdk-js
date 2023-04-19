@@ -3,7 +3,7 @@ const URL_PROTOCOL_REGEX = /^[^:]+:\/\/./;
 export function normalizeProtocolUrl(url: string): string {
   let fullUrl: string;
   if (URL_PROTOCOL_REGEX.test(url)) {
-    fullUrl = url
+    fullUrl = url;
   } else {
     fullUrl = `http://${url}`;
   }
@@ -11,7 +11,7 @@ export function normalizeProtocolUrl(url: string): string {
   try {
     const { hostname, pathname } = new URL(fullUrl);
     return removeTrailingSlash(hostname + pathname);
-  } catch(e) {
+  } catch (e) {
     return url;
   }
 }

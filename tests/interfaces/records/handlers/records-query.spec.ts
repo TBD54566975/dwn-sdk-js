@@ -1,3 +1,4 @@
+import type { GenerateProtocolsConfigureOutput } from '../../../utils/test-data-generator.js';
 import type { RecordsQueryReplyEntry } from '../../../../src/interfaces/records/types.js';
 import type { DerivedPrivateJwk, EncryptionInput, ProtocolDefinition, RecordsWriteMessage } from '../../../../src/index.js';
 
@@ -7,6 +8,7 @@ import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import { Comparer } from '../../../utils/comparer.js';
+import { constructRecordsWriteIndexes } from '../../../../src/interfaces/records/handlers/records-write.js';
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DwnConstant } from '../../../../src/core/dwn-constant.js';
@@ -14,18 +16,16 @@ import { Encoder } from '../../../../src/utils/encoder.js';
 import { Encryption } from '../../../../src/index.js';
 import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { Jws } from '../../../../src/utils/jws.js';
+import { lexicographicalCompare } from '../../../../src/utils/string.js';
+import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsQueryHandler } from '../../../../src/interfaces/records/handlers/records-query.js';
 import { StorageController } from '../../../../src/store/storage-controller.js';
 import { Temporal } from '@js-temporal/polyfill';
-import { GenerateProtocolsConfigureOutput, TestDataGenerator } from '../../../utils/test-data-generator.js';
+import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
-
-import { constructRecordsWriteIndexes } from '../../../../src/interfaces/records/handlers/records-write.js';
 import { DataStream, DidResolver, Dwn, HdKey, KeyDerivationScheme, Records } from '../../../../src/index.js';
 import { DateSort, RecordsQuery } from '../../../../src/interfaces/records/messages/records-query.js';
-import { Message } from '../../../../src/core/message.js';
-import { lexicographicalCompare } from '../../../../src/utils/string.js';
 
 chai.use(chaiAsPromised);
 
@@ -132,7 +132,7 @@ describe('RecordsQueryHandler.handle()', () => {
       const protocolsConfigures: GenerateProtocolsConfigureOutput[] = [];
       for (const protocol of protocols) {
         const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
-          requester : alice,
+          requester: alice,
           protocol,
           protocolDefinition
         });
@@ -141,7 +141,7 @@ describe('RecordsQueryHandler.handle()', () => {
 
       // Sort messages into lexicographic order. We only allow protocol overwrites if the new message CID
       // has higher lexicographic value.
-      let messageDataWithCid: (GenerateProtocolsConfigureOutput & { cid: string })[] = [];
+      const messageDataWithCid: (GenerateProtocolsConfigureOutput & { cid: string })[] = [];
       for (const messageData of protocolsConfigures) {
         const cid = await Message.getCid(messageData.message);
         messageDataWithCid.push({ cid, ...messageData });

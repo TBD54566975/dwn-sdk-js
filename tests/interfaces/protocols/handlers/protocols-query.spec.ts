@@ -132,7 +132,7 @@ describe('ProtocolsQueryHandler.handle()', () => {
       // Sort messages into lexicographic order. We only allow protocol overwrites if the new message CID
       // has higher lexicographic value.
       const equivalentProtocols = [protocol1, protocolTrailingSlash, protocolParams, protocolCapitalized];
-      let messageDataWithCid: (GenerateProtocolsConfigureOutput & { cid: string })[] = [];
+      const messageDataWithCid: (GenerateProtocolsConfigureOutput & { cid: string })[] = [];
       for (const messageData of equivalentProtocols) {
         const cid = await Message.getCid(messageData.message);
         messageDataWithCid.push({ cid, ...messageData });
@@ -174,7 +174,7 @@ describe('ProtocolsQueryHandler.handle()', () => {
 
       // Expect equivalent protocol with highest lexicographic value to remain
       expect(resultProtocols).to.contain(
-        messageDataWithCid[messageDataWithCid.length-1].message.descriptor.protocol
+        messageDataWithCid[messageDataWithCid.length - 1].message.descriptor.protocol
       );
 
       // Expect URIs with subdomains, different capitalization, and different path to be excluded
