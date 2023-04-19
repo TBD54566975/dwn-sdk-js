@@ -150,7 +150,7 @@ describe('ProtocolsQueryHandler.handle()', () => {
 
       // configure several more protocols, none of which match `example.com`
       const protocolSlashFoo = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol: 'example.com/foo' });
-      const protocolSubdomainFoo = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol: 'foo.example.Com' });
+      const protocolSubdomainFoo = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol: 'foo.example.com' });
 
       for (const protocol of [protocolSlashFoo, protocolSubdomainFoo]) {
         const configureReply = await dwn.processMessage(alice.did, protocol.message, protocol.dataStream);
