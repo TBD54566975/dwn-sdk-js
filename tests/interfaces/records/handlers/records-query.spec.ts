@@ -178,6 +178,19 @@ describe('RecordsQueryHandler.handle()', () => {
       expect(reply.status.code).to.equal(200);
       expect(reply.entries?.length).to.equal(2); // only 2 entries should match the query on protocol
 
+      // Query equivalent protocol to get same result
+      const messageDataEquivalent = await TestDataGenerator.generateRecordsQuery({
+        requester : alice,
+        filter    : {
+          protocol: protocol2
+        }
+      });
+      const replyEquivalent = await dwn.processMessage(alice.did, messageData.message);
+
+      expect(replyEquivalent.status.code).to.equal(200);
+      expect(replyEquivalent.entries?.length).to.equal(2); // only 2 entries should match the query on protocol
+
+      // Query a nonmatching protocol
       const messageData2 = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
         filter    : {
