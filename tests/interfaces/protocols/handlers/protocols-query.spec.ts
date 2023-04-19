@@ -138,7 +138,7 @@ describe('ProtocolsQueryHandler.handle()', () => {
         messageDataWithCid.push({ cid, ...messageData });
       }
 
-      messageDataWithCid = messageDataWithCid.sort((messageDataA, messageDataB) => {
+      messageDataWithCid.sort((messageDataA, messageDataB) => {
         return lexicographicalCompare(messageDataA.cid, messageDataB.cid);
       });
 

@@ -28,7 +28,7 @@ describe('url', () => {
       // weird edge cases. if we see these in the wild, someone is misusing DWNs
       expect(normalizeProtocolUrl('://')).to.equal('://');
       expect(normalizeProtocolUrl('http://')).to.equal('http/');
-      expect(normalizeProtocolUrl('foo://')).to.equal(''); // oof
+      expect(normalizeProtocolUrl('foo://')).to.equal('foo/');
       expect(normalizeProtocolUrl('foo://bar')).to.equal('bar');
       expect(normalizeProtocolUrl('://foo')).to.equal('://foo');
     });

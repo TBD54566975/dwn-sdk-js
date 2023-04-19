@@ -18,12 +18,14 @@ import { MessageStoreLevel } from '../../../../src/store/message-store-level.js'
 import { RecordsQueryHandler } from '../../../../src/interfaces/records/handlers/records-query.js';
 import { StorageController } from '../../../../src/store/storage-controller.js';
 import { Temporal } from '@js-temporal/polyfill';
-import { TestDataGenerator } from '../../../utils/test-data-generator.js';
+import { GenerateProtocolsConfigureOutput, TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
 import { constructRecordsWriteIndexes } from '../../../../src/interfaces/records/handlers/records-write.js';
 import { DataStream, DidResolver, Dwn, HdKey, KeyDerivationScheme, Records } from '../../../../src/index.js';
 import { DateSort, RecordsQuery } from '../../../../src/interfaces/records/messages/records-query.js';
+import { Message } from '../../../../src/core/message.js';
+import { lexicographicalCompare } from '../../../../src/utils/string.js';
 
 chai.use(chaiAsPromised);
 
@@ -125,12 +127,30 @@ describe('RecordsQueryHandler.handle()', () => {
       const protocol3 = 'squareup.com/shop';
       const protocols = [protocol1, protocol2, protocol3];
       const protocolDefinition = emailProtocolDefinition; // To keep it simple, reuse the same definition for all 3 protocols
+
+      // Create ProtocolsConfiguration messages
+      const protocolsConfigures: GenerateProtocolsConfigureOutput[] = [];
       for (const protocol of protocols) {
         const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
-          requester: alice,
+          requester : alice,
           protocol,
           protocolDefinition
         });
+        protocolsConfigures.push(protocolConfigure);
+      }
+
+      // Sort messages into lexicographic order. We only allow protocol overwrites if the new message CID
+      // has higher lexicographic value.
+      let messageDataWithCid: (GenerateProtocolsConfigureOutput & { cid: string })[] = [];
+      for (const messageData of protocolsConfigures) {
+        const cid = await Message.getCid(messageData.message);
+        messageDataWithCid.push({ cid, ...messageData });
+      }
+
+      messageDataWithCid.sort((messageDataA, messageDataB) => {
+        return lexicographicalCompare(messageDataA.cid, messageDataB.cid);
+      });
+      for (const protocolConfigure of messageDataWithCid) {
         const configureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
         expect(configureReply.status.code).to.equal(202);
       };
