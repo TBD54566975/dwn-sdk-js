@@ -1,8 +1,8 @@
+import type { BaseMessage } from '../../core/types.js';
 import type { BaseMessageReply } from '../../core/message-reply.js';
-import type { BaseMessage, Descriptor } from '../../core/types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../../core/message.js';
 
-export type MessagesGetDescriptor = Pick<Descriptor, 'interface' | 'method' > & {
+export type MessagesGetDescriptor = {
   interface : DwnInterfaceName.Messages;
   method: DwnMethodName.Get;
   messageCids: string[];
