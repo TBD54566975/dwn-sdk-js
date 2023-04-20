@@ -5,6 +5,7 @@ import type { MessageStore } from './store/message-store.js';
 import type { MethodHandler } from './interfaces/types.js';
 import type { Readable } from 'readable-stream';
 import type { TenantGate } from './core/tenant-gate.js';
+import type { MessagesGetMessage, MessagesGetReply } from './interfaces/messages/types.js';
 import type { RecordsReadMessage, RecordsReadReply } from './interfaces/records/types.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
@@ -13,6 +14,7 @@ import { DidResolver } from './did/did-resolver.js';
 import { EventLogLevel } from './event-log/event-log-level.js';
 import { EventsGetHandler } from './interfaces/events/handlers/events-get.js';
 import { MessageReply } from './core/message-reply.js';
+import { MessagesGetHandler } from './interfaces/messages/handlers/messages-get.js';
 import { MessageStoreLevel } from './store/message-store-level.js';
 import { PermissionsRequestHandler } from './interfaces/permissions/handlers/permissions-request.js';
 import { ProtocolsConfigureHandler } from './interfaces/protocols/handlers/protocols-configure.js';
@@ -40,6 +42,7 @@ export class Dwn {
 
     this.methodHandlers = {
       [DwnInterfaceName.Events + DwnMethodName.Get]          : new EventsGetHandler(this.didResolver, this.eventLog),
+      [DwnInterfaceName.Messages + DwnMethodName.Get]        : new MessagesGetHandler(this.didResolver, this.messageStore, this.dataStore),
       [DwnInterfaceName.Permissions + DwnMethodName.Request] : new PermissionsRequestHandler(this.didResolver, this.messageStore, this.dataStore),
       [DwnInterfaceName.Protocols + DwnMethodName.Configure] : new ProtocolsConfigureHandler(
         this.didResolver, this.messageStore, this.dataStore, this.eventLog),
@@ -124,6 +127,14 @@ export class Dwn {
   public async handleRecordsRead(tenant: string, message: RecordsReadMessage): Promise<RecordsReadReply> {
     const reply = await this.processMessage(tenant, message);
     return reply as RecordsReadReply;
+  }
+
+  /**
+   * Handles a `MessagesGet` message.
+   */
+  public async handleMessagesGet(tenant: string, message: MessagesGetMessage): Promise<MessagesGetReply> {
+    const reply = await this.processMessage(tenant, message);
+    return reply as MessagesGetReply;
   }
 
   public async dump(): Promise<void> {

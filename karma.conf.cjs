@@ -5,10 +5,23 @@
 const playwright = require('playwright');
 const esbuildBrowserConfig = require('./build/esbuild-browser-config.cjs');
 
-// set playwright as run-target for webkit tests
+// use playwright chrome exec path as run target for chromium tests
+process.env.CHROME_BIN = playwright.chromium.executablePath();
+
+// use playwright webkit exec path as run target for safari tests
 process.env.WEBKIT_HEADLESS_BIN = playwright.webkit.executablePath();
 
-module.exports = function(config) {
+// use playwright firefox exec path as run target for firefox tests
+process.env.FIREFOX_BIN = playwright.firefox.executablePath();
+
+/** @typedef {import('karma').Config} KarmaConfig */
+
+/**
+ *
+ * @param {KarmaConfig} config
+ */
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+module.exports = function configure(config) {
   config.set({
     plugins: [
       require('karma-chrome-launcher'),
@@ -22,7 +35,6 @@ module.exports = function(config) {
     // frameworks to use
     // available frameworks: https://www.npmjs.com/search?q=keywords:karma-adapter
     frameworks: ['mocha'],
-
 
     // list of files / patterns to load in the browser
     files: [

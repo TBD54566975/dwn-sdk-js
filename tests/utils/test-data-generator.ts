@@ -9,6 +9,8 @@ import type {
   EventsGetOptions,
   HooksWriteMessage,
   HooksWriteOptions,
+  MessagesGetMessage,
+  MessagesGetOptions,
   ProtocolDefinition,
   ProtocolsConfigureMessage,
   ProtocolsConfigureOptions,
@@ -37,6 +39,7 @@ import {
   EventsGet,
   HooksWrite,
   Jws,
+  MessagesGet,
   ProtocolsConfigure,
   ProtocolsQuery,
   RecordsDelete,
@@ -173,6 +176,17 @@ export type GenerateEventsGetOutput = {
   requester: Persona;
   eventsGet: EventsGet;
   message: EventsGetMessage;
+};
+
+export type GenerateMessagesGetInput = {
+  requester?: Persona;
+  messageCids: string[]
+};
+
+export type GenerateMessagesGetOutput = {
+  requester: Persona;
+  message: MessagesGetMessage;
+  messagesGet: MessagesGet;
 };
 
 /**
@@ -467,6 +481,24 @@ export class TestDataGenerator {
       requester,
       eventsGet,
       message: eventsGet.message
+    };
+  }
+
+  public static async generateMessagesGet(input: GenerateMessagesGetInput): Promise<GenerateMessagesGetOutput> {
+    const requester = input?.requester ?? await TestDataGenerator.generatePersona();
+    const authorizationSignatureInput = Jws.createSignatureInput(requester);
+
+    const options: MessagesGetOptions = {
+      authorizationSignatureInput,
+      messageCids: input.messageCids
+    };
+
+    const messagesGet = await MessagesGet.create(options);
+
+    return {
+      requester,
+      messagesGet,
+      message: messagesGet.message,
     };
   }
 
