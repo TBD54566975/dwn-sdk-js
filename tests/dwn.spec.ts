@@ -161,4 +161,40 @@ describe('DWN', () => {
       expect(reply.status.detail).to.contain('not a tenant');
     });
   });
+
+  describe('handleMessagesGet', () => {
+    it('increases test coverage :)', async () => {
+      const did = await DidKeyResolver.generate();
+      const alice = await TestDataGenerator.generatePersona(did);
+      const messageCids: string[] = [];
+
+      const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
+        requester: alice
+      });
+
+      const messageCid = await Message.getCid(recordsWrite.message);
+      messageCids.push(messageCid);
+
+      const reply = await dwn.processMessage(alice.did, recordsWrite.toJSON(), dataStream);
+      expect(reply.status.code).to.equal(202);
+
+      const { messagesGet } = await TestDataGenerator.generateMessagesGet({
+        requester: alice,
+        messageCids
+      });
+
+      const messagesGetReply = await dwn.handleMessagesGet(alice.did, messagesGet.message);
+      expect(messagesGetReply.status.code).to.equal(200);
+      expect(messagesGetReply.messages!.length).to.equal(messageCids.length);
+
+      for (const messageReply of messagesGetReply.messages!) {
+        expect(messageReply.messageCid).to.not.be.undefined;
+        expect(messageReply.message).to.not.be.undefined;
+        expect(messageCids).to.include(messageReply.messageCid);
+
+        const cid = await Message.getCid(messageReply.message!);
+        expect(messageReply.messageCid).to.equal(cid);
+      }
+    });
+  });
 });

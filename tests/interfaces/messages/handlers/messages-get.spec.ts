@@ -114,7 +114,7 @@ describe('MessagesGetHandler.handle()', () => {
       requester: alice
     });
 
-    let messageCid = await MessagesGet.getCid(recordsWrite.message);
+    let messageCid = await Message.getCid(recordsWrite.message);
     messageCids.push(messageCid);
 
     let reply = await dwn.processMessage(alice.did, recordsWrite.toJSON(), dataStream);

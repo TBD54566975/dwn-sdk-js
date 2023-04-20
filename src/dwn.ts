@@ -5,6 +5,7 @@ import type { MessageStore } from './store/message-store.js';
 import type { MethodHandler } from './interfaces/types.js';
 import type { Readable } from 'readable-stream';
 import type { TenantGate } from './core/tenant-gate.js';
+import type { MessagesGetMessage, MessagesGetReply } from './interfaces/messages/types.js';
 import type { RecordsReadMessage, RecordsReadReply } from './interfaces/records/types.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
@@ -126,6 +127,14 @@ export class Dwn {
   public async handleRecordsRead(tenant: string, message: RecordsReadMessage): Promise<RecordsReadReply> {
     const reply = await this.processMessage(tenant, message);
     return reply as RecordsReadReply;
+  }
+
+  /**
+   * Handles a `MessagesGet` message.
+   */
+  public async handleMessagesGet(tenant: string, message: MessagesGetMessage): Promise<MessagesGetReply> {
+    const reply = await this.processMessage(tenant, message);
+    return reply as MessagesGetReply;
   }
 
   public async dump(): Promise<void> {
