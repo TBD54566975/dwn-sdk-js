@@ -2,6 +2,7 @@ import type { MessagesGetReply } from '../../../../src/index.js';
 
 import { expect } from 'chai';
 import { Message } from '../../../../src/core/message.js';
+import { MessagesGetHandler } from '../../../../src/interfaces/messages/handlers/messages-get.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import {
   DataStoreLevel,
@@ -9,9 +10,10 @@ import {
   DidResolver,
   Dwn,
   EventLogLevel,
-  MessagesGet,
   MessageStoreLevel
 } from '../../../../src/index.js';
+
+import sinon from 'sinon';
 
 describe('MessagesGetHandler.handle()', () => {
   let dwn: Dwn;
@@ -46,6 +48,8 @@ describe('MessagesGetHandler.handle()', () => {
     await messageStore.clear();
     await dataStore.clear();
     await eventLog.clear();
+
+    sinon.restore(); // wipe all previous stubs/spies/mocks/fakes
   });
 
   after(async () => {
@@ -179,6 +183,35 @@ describe('MessagesGetHandler.handle()', () => {
       expect(messageReply.messageCid).to.equal(recordsWriteMessageCid);
       expect(messageReply.message).to.be.undefined;
     }
+  });
+
+  it('returns an error message for a specific cid if getting that message from the MessageStore fails', async () => {
+    // stub the messageStore.get call to throw an error
+    const messageStore = sinon.createStubInstance(MessageStoreLevel);
+    messageStore.get.rejects('internal db error');
+
+    const dataStore = sinon.createStubInstance(DataStoreLevel);
+
+    const messagesGetHandler = new MessagesGetHandler(didResolver, messageStore, dataStore);
+
+    const alice = await DidKeyResolver.generate();
+    const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+    const recordsWriteMessageCid = await Message.getCid(recordsWrite.message);
+
+    const { message } = await TestDataGenerator.generateMessagesGet({
+      requester   : alice,
+      messageCids : [recordsWriteMessageCid]
+    });
+
+    const reply = await messagesGetHandler.handle({ tenant: alice.did, message });
+
+    expect(messageStore.get.called).to.be.true;
+
+    expect(reply.status.code).to.equal(200);
+    expect(reply.messages!.length).to.equal(1);
+    expect(reply.messages![0].error).to.exist;
+    expect(reply.messages![0].error).to.include(`Failed to get message ${recordsWriteMessageCid}`);
+    expect(reply.messages![0].message).to.be.undefined;
   });
 
   it('includes encodedData in reply entry if the data is available and dataSize < threshold', async () => {
