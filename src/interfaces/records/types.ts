@@ -12,6 +12,7 @@ export type RecordsWriteDescriptor = {
   interface: DwnInterfaceName.Records;
   method: DwnMethodName.Write;
   protocol?: string;
+  protocolPath?: string;
   recipient: string;
   schema?: string;
   parentId?: string;
@@ -76,6 +77,7 @@ export type RecordsQueryFilter = {
   attester?: string;
   recipient?: string;
   protocol?: string;
+  protocolPath?: string;
   contextId?: string;
   schema?: string;
   recordId?: string;

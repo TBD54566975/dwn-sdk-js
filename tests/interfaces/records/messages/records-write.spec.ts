@@ -123,6 +123,39 @@ describe('RecordsWrite', () => {
 
       await expect(createPromise2).to.be.rejectedWith('`dataCid` and `dataSize` must both be defined or undefined at the same time');
     });
+
+    it('should required `protocol` and `protocolPath` to be both defined or undefined at the same time', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+
+      const options1 = {
+        recipient                   : alice.did,
+        protocol                    : 'http://example.com',
+        // protocolPath                : 'foo/bar', // intentionally missing
+        dataCid                     : await TestDataGenerator.randomCborSha256Cid(),
+        dataSize                    : 123,
+        dataFormat                  : 'application/json',
+        recordId                    : await TestDataGenerator.randomCborSha256Cid(),
+        authorizationSignatureInput : Jws.createSignatureInput(alice)
+      };
+      const createPromise1 = RecordsWrite.create(options1);
+
+      await expect(createPromise1).to.be.rejectedWith('`protocol` and `protocolPath` must both be defined or undefined at the same time');
+
+      const options2 = {
+        recipient                   : alice.did,
+        // protocol                    : 'http://example.com', // intentionally missing
+        protocolPath                : 'foo/bar',
+        data                        : TestDataGenerator.randomBytes(10),
+        dataCid                     : await TestDataGenerator.randomCborSha256Cid(),
+        dataSize                    : 123,
+        dataFormat                  : 'application/json',
+        recordId                    : await TestDataGenerator.randomCborSha256Cid(),
+        authorizationSignatureInput : Jws.createSignatureInput(alice)
+      };
+      const createPromise2 = RecordsWrite.create(options2);
+
+      await expect(createPromise2).to.be.rejectedWith('`protocol` and `protocolPath` must both be defined or undefined at the same time');
+    });
   });
 
   describe('createFrom()', () => {

@@ -104,6 +104,9 @@
         "protocol": {
           "type": "string"
         },
+        "protocolPath": {
+          "type": "string"
+        },
         "schema": {
           "type": "string"
         },
