@@ -209,7 +209,9 @@
         "descriptor": {
           "type": "object",
           "required": [
-            "protocol"
+            "protocol",
+            "protocolPath",
+            "schema"
           ]
         }
       },
@@ -233,6 +235,18 @@
               "not": {
                 "required": [
                   "protocol"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "descriptor": {
+              "type": "object",
+              "not": {
+                "required": [
+                  "protocolPath"
                 ]
               }
             }
