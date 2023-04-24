@@ -1383,11 +1383,11 @@ describe('RecordsWriteHandler.handle()', () => {
 
         // write a message into DB
         const recordsWrite = await TestDataGenerator.generateRecordsWrite({
-          requester : alice,
-          data      : new TextEncoder().encode('data1'),
-          protocol  : 'example.com/',
-          protocolPath: 'email', // from email protocol
-          schema    : emailProtocolDefinition.labels.email.schema
+          requester    : alice,
+          data         : new TextEncoder().encode('data1'),
+          protocol     : 'example.com/',
+          protocolPath : 'email', // from email protocol
+          schema       : emailProtocolDefinition.labels.email.schema
         });
 
         // overwrite protocol because #create auto-normalizes protocol
