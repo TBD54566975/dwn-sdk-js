@@ -1,0 +1,18 @@
+{
+  "labels": {
+    "message": {
+      "schema": "http://message.me"
+    }
+  },
+  "records": {
+    "message": {
+      "allow": {
+        "anyone": {
+          "to": [
+            "write"
+          ]
+        }
+      }
+    }
+  }
+}
