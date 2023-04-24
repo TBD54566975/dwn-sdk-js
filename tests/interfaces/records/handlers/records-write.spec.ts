@@ -2,6 +2,7 @@ import chaiAsPromised from 'chai-as-promised';
 import credentialIssuanceProtocolDefinition from '../../../vectors/protocol-definitions/credential-issuance.json' assert { type: 'json' };
 import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
+import messageProtocolDefinition from '../../../vectors/protocol-definitions/message.json' assert { type: 'json' };
 import socialMediaProtocolDefinition from '../../../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
 
 import sinon from 'sinon';
@@ -440,7 +441,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
       it('should return 400 if `contextId` in an initial protocol-base write mismatches with the expected deterministic `contextId`', async () => {
         // generate a message with protocol so that computed contextId is also computed and included in message
-        const { message, dataStream, requester } = await TestDataGenerator.generateRecordsWrite({ protocol: 'anyValue' });
+        const { message, dataStream, requester } = await TestDataGenerator.generateRecordsWrite({ protocol: 'http://any.value', protocolPath: 'any/value' });
 
         message.contextId = await TestDataGenerator.randomCborSha256Cid(); // make contextId mismatch from computed value
 
@@ -531,10 +532,11 @@ describe('RecordsWriteHandler.handle()', () => {
         const bobData = Encoder.stringToBytes('data from bob');
         const emailFromBob = await TestDataGenerator.generateRecordsWrite(
           {
-            requester : bob,
+            requester    : bob,
             protocol,
-            schema    : 'email',
-            data      : bobData
+            protocolPath : 'email',
+            schema       : 'email',
+            data         : bobData
           }
         );
 
@@ -581,6 +583,7 @@ describe('RecordsWriteHandler.handle()', () => {
           requester    : alice,
           recipientDid : vcIssuer.did,
           protocol,
+          protocolPath : 'credentialApplication', // this comes from `labels` in protocol definition
           schema       : credentialApplicationSchema,
           data         : encodedCredentialApplication
         });
@@ -596,6 +599,7 @@ describe('RecordsWriteHandler.handle()', () => {
             requester    : vcIssuer,
             recipientDid : alice.did,
             protocol,
+            protocolPath : 'credentialApplication/credentialResponse', // this comes from `labels` in protocol definition
             contextId    : credentialApplicationContextId,
             parentId     : credentialApplicationContextId,
             schema       : credentialResponseSchema,
@@ -643,10 +647,11 @@ describe('RecordsWriteHandler.handle()', () => {
         // Alice writes image to bob's DWN
         const encodedImage = new TextEncoder().encode('cafe-aesthetic.jpg');
         const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-          requester : alice,
+          requester    : alice,
           protocol,
-          schema    : socialMediaProtocolDefinition.labels.image.schema,
-          data      : encodedImage
+          protocolPath : 'image', // this comes from `labels` in protocol definition
+          schema       : socialMediaProtocolDefinition.labels.image.schema,
+          data         : encodedImage
         });
         const imageReply = await dwn.processMessage(bob.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
         expect(imageReply.status.code).to.equal(202);
@@ -656,12 +661,13 @@ describe('RecordsWriteHandler.handle()', () => {
         // AliceImposter attempts and fails to caption Alice's image
         const encodedCaptionImposter = new TextEncoder().encode('bad vibes! >:(');
         const captionImposter = await TestDataGenerator.generateRecordsWrite({
-          requester : aliceImposter,
+          requester    : aliceImposter,
           protocol,
-          schema    : socialMediaProtocolDefinition.labels.caption.schema,
-          contextId : imageContextId,
-          parentId  : imageContextId,
-          data      : encodedCaptionImposter
+          protocolPath : 'image/caption', // this comes from `labels` in protocol definition
+          schema       : socialMediaProtocolDefinition.labels.caption.schema,
+          contextId    : imageContextId,
+          parentId     : imageContextId,
+          data         : encodedCaptionImposter
         });
         const captionReply = await dwn.processMessage(bob.did, captionImposter.message, captionImposter.dataStream);
         expect(captionReply.status.code).to.equal(401);
@@ -670,12 +676,13 @@ describe('RecordsWriteHandler.handle()', () => {
         // Alice is able to add a caption to her image
         const encodedCaption = new TextEncoder().encode('coffee and work vibes!');
         const captionRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-          requester : alice,
+          requester    : alice,
           protocol,
-          schema    : socialMediaProtocolDefinition.labels.caption.schema,
-          contextId : imageContextId,
-          parentId  : imageContextId,
-          data      : encodedCaption
+          protocolPath : 'image/caption',
+          schema       : socialMediaProtocolDefinition.labels.caption.schema,
+          contextId    : imageContextId,
+          parentId     : imageContextId,
+          data         : encodedCaption
         });
         const captionResponse = await dwn.processMessage(bob.did, captionRecordsWrite.message, captionRecordsWrite.dataStream);
         expect(captionResponse.status.code).to.equal(202);
@@ -693,28 +700,11 @@ describe('RecordsWriteHandler.handle()', () => {
       });
 
       it('should allow overwriting records by the same author', async () => {
-        // scenario: Bob writes into Alice's DWN given Alice's "notes" protocol allow-anyone rule, then modifies the note
+        // scenario: Bob writes into Alice's DWN given Alice's "message" protocol allow-anyone rule, then modifies the message
 
         // write a protocol definition with an allow-anyone rule
-        const protocol = 'notes-protocol';
-        const protocolDefinition: ProtocolDefinition = {
-          labels: {
-            notes: {
-              schema: 'notes'
-            }
-          },
-          records: {
-            notes: {
-              allow: {
-                anyone: {
-                  to: [
-                    'write'
-                  ]
-                }
-              }
-            }
-          }
-        };
+        const protocol = 'message-protocol';
+        const protocolDefinition: ProtocolDefinition = messageProtocolDefinition;
         const alice = await TestDataGenerator.generatePersona();
         const bob = await TestDataGenerator.generatePersona();
 
@@ -731,70 +721,54 @@ describe('RecordsWriteHandler.handle()', () => {
         expect(protocolWriteReply.status.code).to.equal(202);
 
         // generate a `RecordsWrite` message from bob
-        const bobData = new TextEncoder().encode('data from bob');
-        const notesFromBob = await TestDataGenerator.generateRecordsWrite(
+        const bobData = new TextEncoder().encode('message from bob');
+        const messageFromBob = await TestDataGenerator.generateRecordsWrite(
           {
-            requester : bob,
+            requester    : bob,
             protocol,
-            schema    : 'notes',
-            data      : bobData
+            protocolPath : 'message', // this comes from `labels` in protocol definition
+            schema       : messageProtocolDefinition.labels.message.schema,
+            data         : bobData
           }
         );
 
-        const bobWriteReply = await dwn.processMessage(alice.did, notesFromBob.message, notesFromBob.dataStream);
+        const bobWriteReply = await dwn.processMessage(alice.did, messageFromBob.message, messageFromBob.dataStream);
         expect(bobWriteReply.status.code).to.equal(202);
 
         // verify bob's message got written to the DB
         const messageDataForQueryingBobsWrite = await TestDataGenerator.generateRecordsQuery({
           requester : alice,
-          filter    : { recordId: notesFromBob.message.recordId }
+          filter    : { recordId: messageFromBob.message.recordId }
         });
         const bobRecordQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingBobsWrite.message);
         expect(bobRecordQueryReply.status.code).to.equal(200);
         expect(bobRecordQueryReply.entries?.length).to.equal(1);
         expect(bobRecordQueryReply.entries![0].encodedData).to.equal(base64url.baseEncode(bobData));
 
-        // generate a new message from bob updating the existing notes
-        const newNotesBytes = Encoder.stringToBytes('new data from bob');
-        const newNotesFromBob = await TestDataGenerator.generateFromRecordsWrite({
+        // generate a new message from bob updating the existing message
+        const updatedMessageBytes = Encoder.stringToBytes('updated message from bob');
+        const updatedMessageFromBob = await TestDataGenerator.generateFromRecordsWrite({
           requester     : bob,
-          existingWrite : notesFromBob.recordsWrite,
-          data          : newNotesBytes
+          existingWrite : messageFromBob.recordsWrite,
+          data          : updatedMessageBytes
         });
 
-        const newWriteReply = await dwn.processMessage(alice.did, newNotesFromBob.message, newNotesFromBob.dataStream);
+        const newWriteReply = await dwn.processMessage(alice.did, updatedMessageFromBob.message, updatedMessageFromBob.dataStream);
         expect(newWriteReply.status.code).to.equal(202);
 
         // verify bob's message got written to the DB
         const newRecordQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingBobsWrite.message);
         expect(newRecordQueryReply.status.code).to.equal(200);
         expect(newRecordQueryReply.entries?.length).to.equal(1);
-        expect(newRecordQueryReply.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(newNotesBytes));
+        expect(newRecordQueryReply.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(updatedMessageBytes));
       });
 
       it('should disallow overwriting existing records by a different author', async () => {
-        // scenario: Bob writes into Alice's DWN given Alice's "notes" protocol allow-anyone rule, Carol then attempts to  modify the existing note
+        // scenario: Bob writes into Alice's DWN given Alice's "message" protocol, Carol then attempts to modify the existing message
 
         // write a protocol definition with an allow-anyone rule
         const protocol = 'notes-protocol';
-        const protocolDefinition: ProtocolDefinition = {
-          labels: {
-            notes: {
-              schema: 'notes'
-            }
-          },
-          records: {
-            notes: {
-              allow: {
-                anyone: {
-                  to: [
-                    'write'
-                  ]
-                }
-              }
-            }
-          }
-        };
+        const protocolDefinition: ProtocolDefinition = messageProtocolDefinition;
         const alice = await TestDataGenerator.generatePersona();
         const bob = await TestDataGenerator.generatePersona();
         const carol = await TestDataGenerator.generatePersona();
@@ -813,71 +787,56 @@ describe('RecordsWriteHandler.handle()', () => {
 
         // generate a `RecordsWrite` message from bob
         const bobData = new TextEncoder().encode('data from bob');
-        const notesFromBob = await TestDataGenerator.generateRecordsWrite(
+        const messageFromBob = await TestDataGenerator.generateRecordsWrite(
           {
-            requester : bob,
+            requester    : bob,
             protocol,
-            schema    : 'notes',
-            data      : bobData
+            protocolPath : 'message', // this comes from `labels` in protocol definition
+            schema       : messageProtocolDefinition.labels.message.schema,
+            data         : bobData
           }
         );
 
-        const bobWriteReply = await dwn.processMessage(alice.did, notesFromBob.message, notesFromBob.dataStream);
+        const bobWriteReply = await dwn.processMessage(alice.did, messageFromBob.message, messageFromBob.dataStream);
         expect(bobWriteReply.status.code).to.equal(202);
 
         // verify bob's message got written to the DB
         const messageDataForQueryingBobsWrite = await TestDataGenerator.generateRecordsQuery({
           requester : alice,
-          filter    : { recordId: notesFromBob.message.recordId }
+          filter    : { recordId: messageFromBob.message.recordId }
         });
         const bobRecordQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingBobsWrite.message);
         expect(bobRecordQueryReply.status.code).to.equal(200);
         expect(bobRecordQueryReply.entries?.length).to.equal(1);
         expect(bobRecordQueryReply.entries![0].encodedData).to.equal(base64url.baseEncode(bobData));
 
-        // generate a new message from carol updating the existing notes, which should not be allowed/accepted
-        const newNotesData = new TextEncoder().encode('different data by carol');
-        const newNotesFromBob = await TestDataGenerator.generateRecordsWrite(
+        // generate a new message from carol updating the existing message, which should not be allowed/accepted
+        const modifiedMessageData = new TextEncoder().encode('modified message by carol');
+        const modifiedMessageFromCarol = await TestDataGenerator.generateRecordsWrite(
           {
-            requester : carol,
+            requester    : carol,
             protocol,
-            schema    : 'notes',
-            data      : newNotesData,
-            recordId  : notesFromBob.message.recordId,
+            protocolPath : 'message', // this comes from `labels` in protocol definition
+            schema       : messageProtocolDefinition.labels.message.schema,
+            data         : modifiedMessageData,
+            recordId     : messageFromBob.message.recordId,
           }
         );
 
-        const carolWriteReply = await dwn.processMessage(alice.did, newNotesFromBob.message, newNotesFromBob.dataStream);
+        const carolWriteReply = await dwn.processMessage(alice.did, modifiedMessageFromCarol.message, modifiedMessageFromCarol.dataStream);
         expect(carolWriteReply.status.code).to.equal(401);
         expect(carolWriteReply.status.detail).to.contain('must match to author of initial write');
       });
 
       it('should not allow to change immutable recipientDid', async () => {
-        // scenario: Bob writes into Alice's DWN given Alice's "notes" protocol allow-anyone rule, then tries to modify immutable recipientDid
+        // scenario: Bob writes into Alice's DWN given Alice's "message" protocol allow-anyone rule, then tries to modify immutable recipientDid
 
         // NOTE: no need to test the same for parent, protocol, and contextId
         // because changing them will result in other error conditions
 
         // write a protocol definition with an allow-anyone rule
-        const protocol = 'notes-protocol';
-        const protocolDefinition: ProtocolDefinition = {
-          labels: {
-            notes: {
-              schema: 'notes'
-            }
-          },
-          records: {
-            notes: {
-              allow: {
-                anyone: {
-                  to: [
-                    'write'
-                  ]
-                }
-              }
-            }
-          }
-        };
+        const protocol = 'message-protocol';
+        const protocolDefinition: ProtocolDefinition = messageProtocolDefinition;
         const alice = await TestDataGenerator.generatePersona();
         const bob = await TestDataGenerator.generatePersona();
 
@@ -894,23 +853,24 @@ describe('RecordsWriteHandler.handle()', () => {
         expect(protocolWriteReply.status.code).to.equal(202);
 
         // generate a `RecordsWrite` message from bob
-        const bobData = new TextEncoder().encode('data from bob');
-        const notesFromBob = await TestDataGenerator.generateRecordsWrite(
+        const bobData = new TextEncoder().encode('message from bob');
+        const messageFromBob = await TestDataGenerator.generateRecordsWrite(
           {
-            requester : bob,
+            requester    : bob,
             protocol,
-            schema    : 'notes',
-            data      : bobData
+            protocolPath : 'message', // this comes from `labels` in protocol definition
+            schema       : messageProtocolDefinition.labels.message.schema,
+            data         : bobData
           }
         );
 
-        const bobWriteReply = await dwn.processMessage(alice.did, notesFromBob.message, notesFromBob.dataStream);
+        const bobWriteReply = await dwn.processMessage(alice.did, messageFromBob.message, messageFromBob.dataStream);
         expect(bobWriteReply.status.code).to.equal(202);
 
         // verify bob's message got written to the DB
         const messageDataForQueryingBobsWrite = await TestDataGenerator.generateRecordsQuery({
           requester : alice,
-          filter    : { recordId: notesFromBob.message.recordId }
+          filter    : { recordId: messageFromBob.message.recordId }
         });
         const bobRecordQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingBobsWrite.message);
         expect(bobRecordQueryReply.status.code).to.equal(200);
@@ -918,19 +878,20 @@ describe('RecordsWriteHandler.handle()', () => {
         expect(bobRecordQueryReply.entries![0].encodedData).to.equal(base64url.baseEncode(bobData));
 
         // generate a new message from bob changing immutable recipientDid
-        const newNotesFromBob = await TestDataGenerator.generateRecordsWrite(
+        const updatedMessageFromBob = await TestDataGenerator.generateRecordsWrite(
           {
             requester    : bob,
-            dateCreated  : notesFromBob.message.descriptor.dateCreated,
+            dateCreated  : messageFromBob.message.descriptor.dateCreated,
             protocol,
-            schema       : 'notes',
+            protocolPath : 'message', // this comes from `labels` in protocol definition
+            schema       : messageProtocolDefinition.labels.message.schema,
             data         : bobData,
-            recordId     : notesFromBob.message.recordId,
+            recordId     : messageFromBob.message.recordId,
             recipientDid : bob.did // this immutable property was Alice's DID initially
           }
         );
 
-        const newWriteReply = await dwn.processMessage(alice.did, newNotesFromBob.message, newNotesFromBob.dataStream);
+        const newWriteReply = await dwn.processMessage(alice.did, updatedMessageFromBob.message, updatedMessageFromBob.dataStream);
         expect(newWriteReply.status.code).to.equal(400);
         expect(newWriteReply.status.detail).to.contain('recipient is an immutable property');
       });
@@ -966,6 +927,7 @@ describe('RecordsWriteHandler.handle()', () => {
           requester    : alice,
           recipientDid : vcIssuer.did,
           protocol,
+          protocolPath : 'credentialApplication', // this comes from `labels` in protocol definition
           schema       : credentialApplicationSchema,
           data         : encodedCredentialApplication
         });
@@ -981,6 +943,7 @@ describe('RecordsWriteHandler.handle()', () => {
             requester    : fakeVcIssuer,
             recipientDid : alice.did,
             protocol,
+            protocolPath : 'credentialApplication/credentialResponse', // this comes from `labels` in protocol definition
             contextId    : credentialApplicationContextId,
             parentId     : credentialApplicationContextId,
             schema       : credentialResponseSchema,
@@ -993,7 +956,7 @@ describe('RecordsWriteHandler.handle()', () => {
         expect(credentialResponseReply.status.detail).to.contain('inbound message action \'write\' not in list of allowed actions ');
       });
 
-      it('should fail authorization if protocol cannot be found for a protocol-based RecordsWrite', async () => {
+      it('should fail authorization if protocol definition cannot be found for a protocol-based RecordsWrite', async () => {
         const alice = await DidKeyResolver.generate();
         const protocol = 'nonExistentProtocol';
         const data = Encoder.stringToBytes('any data');
@@ -1001,6 +964,7 @@ describe('RecordsWriteHandler.handle()', () => {
           requester    : alice,
           recipientDid : alice.did,
           protocol,
+          protocolPath : 'credentialApplication/credentialResponse', // this comes from `labels` in protocol definition
           data
         });
 
@@ -1027,6 +991,7 @@ describe('RecordsWriteHandler.handle()', () => {
           requester    : alice,
           recipientDid : alice.did,
           protocol,
+          protocolPath : 'credentialApplication', // this comes from `labels` in protocol definition
           schema       : 'unexpectedSchema',
           data
         });
@@ -1056,6 +1021,7 @@ describe('RecordsWriteHandler.handle()', () => {
           requester    : alice,
           recipientDid : alice.did,
           protocol,
+          protocolPath : 'credentialResponse',
           schema       : credentialResponseSchema, // this is an known schema type, but not allowed for a protocol root record
           data
         });
@@ -1096,6 +1062,7 @@ describe('RecordsWriteHandler.handle()', () => {
           requester    : alice,
           recipientDid : alice.did,
           protocol,
+          protocolPath : 'email', // this comes from `labels` in protocol definition
           schema       : protocolDefinition.labels.email.schema,
           data         : Encoder.stringToBytes('any data'),
         });
@@ -1105,6 +1072,7 @@ describe('RecordsWriteHandler.handle()', () => {
           requester    : alice,
           recipientDid : alice.did,
           protocol,
+          protocolPath : 'email/sms', // this comes from `labels` in protocol definition
           schema       : protocolDefinition.labels.sms.schema, // SMS are allowed, but not as a child record of emails
           data         : Encoder.stringToBytes('any other data'),
           parentId     : emailRecordsWrite.message.recordId,
@@ -1146,6 +1114,7 @@ describe('RecordsWriteHandler.handle()', () => {
           requester    : alice,
           recipientDid : alice.did,
           protocol,
+          protocolPath : 'privateNote', // this comes from `labels`
           schema       : 'private-note',
           data
         });
@@ -1159,6 +1128,7 @@ describe('RecordsWriteHandler.handle()', () => {
           requester    : bob,
           recipientDid : alice.did,
           protocol,
+          protocolPath : 'privateNote', // this comes from `labels`
           schema       : 'private-note',
           data
         });
@@ -1195,6 +1165,7 @@ describe('RecordsWriteHandler.handle()', () => {
           recipientDid : issuer.did,
           schema       : credentialIssuanceProtocolDefinition.labels.credentialApplication.schema,
           protocol,
+          protocolPath : 'credentialApplication', // this comes from `labels` in protocol definition
           data
         });
         const contextId = await messageDataWithIssuerA.recordsWrite.getEntryId();
@@ -1210,6 +1181,7 @@ describe('RecordsWriteHandler.handle()', () => {
           contextId,
           parentId     : messageDataWithIssuerA.message.recordId,
           protocol,
+          protocolPath : 'credentialApplication/credentialResponse', // this comes from `labels` in protocol definition
           data
         });
 
@@ -1246,6 +1218,7 @@ describe('RecordsWriteHandler.handle()', () => {
           recipientDid : pfi.did,
           schema       : 'ask',
           protocol,
+          protocolPath : 'ask',
           data
         });
         const contextId = await askMessageData.recordsWrite.getEntryId();
@@ -1260,6 +1233,7 @@ describe('RecordsWriteHandler.handle()', () => {
           contextId,
           parentId     : askMessageData.message.recordId,
           protocol,
+          protocolPath : 'ask/offer',
           data
         });
 
@@ -1274,6 +1248,7 @@ describe('RecordsWriteHandler.handle()', () => {
           contextId,
           parentId     : offerMessageData.message.recordId,
           protocol,
+          protocolPath : 'ask/offer/fulfillment',
           data
         });
         reply = await dwn.processMessage(pfi.did, fulfillmentMessageData.message, fulfillmentMessageData.dataStream);
@@ -1323,6 +1298,7 @@ describe('RecordsWriteHandler.handle()', () => {
           recipientDid : pfi.did,
           schema       : 'ask',
           protocol,
+          protocolPath : 'ask',
           data
         });
         const contextId = await askMessageData.recordsWrite.getEntryId();
@@ -1337,9 +1313,11 @@ describe('RecordsWriteHandler.handle()', () => {
           schema       : 'fulfillment',
           contextId,
           parentId     : 'non-existent-id',
+          protocolPath : 'ask/offer/fulfillment',
           protocol,
           data
         });
+
         reply = await dwn.processMessage(pfi.did, fulfillmentMessageData.message, fulfillmentMessageData.dataStream);
         expect(reply.status.code).to.equal(401);
         expect(reply.status.detail).to.contain('no parent found');
@@ -1382,10 +1360,11 @@ describe('RecordsWriteHandler.handle()', () => {
           }]
         };
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
-          requester : alice,
+          requester    : alice,
           protocol,
-          schema    : 'email',
-          data      : bobMessageEncryptedBytes,
+          protocolPath : 'email',
+          schema       : 'email',
+          data         : bobMessageEncryptedBytes,
           encryptionInput
         });
 
@@ -1407,6 +1386,7 @@ describe('RecordsWriteHandler.handle()', () => {
           requester : alice,
           data      : new TextEncoder().encode('data1'),
           protocol  : 'example.com/',
+          protocolPath: 'email', // from email protocol
           schema    : emailProtocolDefinition.labels.email.schema
         });
 
@@ -1464,7 +1444,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
     it('should return 400 if `contextId` in `authorization` payload mismatches with `contextId` in the message', async () => {
     // generate a message with protocol so that computed contextId is also computed and included in message
-      const { requester, message, recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({ protocol: 'anyValue' });
+      const { requester, message, recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({ protocol: 'http://any.value', protocolPath: 'any/value' });
 
       // replace `authorization` with mismatching `contextId`, even though signature is still valid
       const authorizationPayload = { ...recordsWrite.authorizationPayload };

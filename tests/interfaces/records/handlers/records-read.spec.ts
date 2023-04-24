@@ -178,6 +178,7 @@ describe('RecordsReadHandler.handle()', () => {
         const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           protocol,
+          protocolPath : 'image', // this comes from `labels` in protocol definition
           schema       : protocolDefinition.labels.image.schema,
           data         : encodedImage,
           recipientDid : alice.did
@@ -219,6 +220,7 @@ describe('RecordsReadHandler.handle()', () => {
         const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           protocol,
+          protocolPath : 'email', // this comes from `labels` in protocol definition
           schema       : protocolDefinition.labels.email.schema,
           data         : encodedEmail,
           recipientDid : bob.did
@@ -268,6 +270,7 @@ describe('RecordsReadHandler.handle()', () => {
         const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester    : bob,
           protocol,
+          protocolPath : 'email', // this comes from `labels` in protocol definition
           schema       : protocolDefinition.labels.email.schema,
           data         : encodedEmail,
           recipientDid : alice.did
@@ -407,10 +410,11 @@ describe('RecordsReadHandler.handle()', () => {
 
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite(
           {
-            requester : bob,
+            requester    : bob,
             protocol,
-            schema    : 'email',
-            data      : bobMessageEncryptedBytes,
+            protocolPath : 'email', // this comes from `labels` in protocol definition
+            schema       : emailProtocolDefinition.labels.email.schema,
+            data         : bobMessageEncryptedBytes,
             encryptionInput
           }
         );

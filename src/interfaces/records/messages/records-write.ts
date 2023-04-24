@@ -33,6 +33,7 @@ import { normalizeProtocolUri, validateProtocolUriNormalized } from '../../../ut
 export type RecordsWriteOptions = {
   recipient?: string;
   protocol?: string;
+  protocolPath?: string;
   contextId?: string;
   schema?: string;
   recordId?: string;
@@ -137,7 +138,10 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
    * @param options.dateModified If `undefined`, it will be auto-filled with current time.
    */
   public static async create(options: RecordsWriteOptions): Promise<RecordsWrite> {
-    const currentTime = getCurrentTimeInHighPrecision();
+    if ((options.protocol === undefined && options.protocolPath !== undefined) ||
+        (options.protocol !== undefined && options.protocolPath === undefined)) {
+      throw new Error('`protocol` and `protocolPath` must both be defined or undefined at the same time');
+    }
 
     if ((options.data === undefined && options.dataCid === undefined) ||
         (options.data !== undefined && options.dataCid !== undefined)) {
@@ -152,10 +156,13 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     const dataCid = options.dataCid ?? await Cid.computeDagPbCidFromBytes(options.data!);
     const dataSize = options.dataSize ?? options.data!.length;
 
+    const currentTime = getCurrentTimeInHighPrecision();
+
     const descriptor: RecordsWriteDescriptor = {
       interface     : DwnInterfaceName.Records,
       method        : DwnMethodName.Write,
       protocol      : options.protocol !== undefined ? normalizeProtocolUri(options.protocol) : undefined,
+      protocolPath  : options.protocolPath,
       recipient     : options.recipient!,
       schema        : options.schema,
       parentId      : options.parentId,
@@ -270,6 +277,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
       dateCreated                 : unsignedMessage.descriptor.dateCreated,
       contextId                   : unsignedMessage.contextId,
       protocol                    : unsignedMessage.descriptor.protocol,
+      protocolPath                : unsignedMessage.descriptor.protocolPath,
       parentId                    : unsignedMessage.descriptor.parentId,
       schema                      : unsignedMessage.descriptor.schema,
       dataFormat                  : unsignedMessage.descriptor.dataFormat,

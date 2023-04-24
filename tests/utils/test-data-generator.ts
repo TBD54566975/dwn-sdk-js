@@ -89,6 +89,7 @@ export type GenerateRecordsWriteInput = {
   attesters?: Persona[];
   recipientDid?: string;
   protocol?: string;
+  protocolPath?: string;
   contextId?: string;
   schema?: string;
   recordId?: string;
@@ -319,6 +320,7 @@ export class TestDataGenerator {
     const options: RecordsWriteOptions = {
       recipient       : input?.recipientDid,
       protocol        : input?.protocol,
+      protocolPath    : input?.protocolPath,
       contextId       : input?.contextId,
       schema          : input?.schema ?? TestDataGenerator.randomString(20),
       recordId        : input?.recordId,
