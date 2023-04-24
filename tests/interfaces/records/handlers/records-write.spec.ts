@@ -998,7 +998,35 @@ describe('RecordsWriteHandler.handle()', () => {
 
         const reply = await dwn.processMessage(alice.did, credentialApplication.message, credentialApplication.dataStream);
         expect(reply.status.code).to.equal(401);
-        expect(reply.status.detail).to.equal('record with schema \'unexpectedSchema\' not allowed in protocol');
+        expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationInvalidSchema);
+      });
+
+      it('should fail authorization if given `protocolPath` is mismatching with actual path', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
+        const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
+          requester          : alice,
+          protocol,
+          protocolDefinition : credentialIssuanceProtocolDefinition
+        });
+
+        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+
+        const data = Encoder.stringToBytes('any data');
+        const credentialApplication = await TestDataGenerator.generateRecordsWrite({
+          requester    : alice,
+          recipientDid : alice.did,
+          protocol,
+          protocolPath : 'incorrect/protocol/path',
+          schema       : credentialIssuanceProtocolDefinition.labels.credentialApplication.schema,
+          data
+        });
+
+        const reply = await dwn.processMessage(alice.did, credentialApplication.message, credentialApplication.dataStream);
+        expect(reply.status.code).to.equal(401);
+        expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationIncorrectProtocolPath);
       });
 
       it('should fail authorization if record schema is not allowed at the hierarchical level attempted for the RecordsWrite', async () => {

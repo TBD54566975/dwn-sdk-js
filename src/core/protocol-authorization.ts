@@ -6,6 +6,7 @@ import type { RecordsReadMessage, RecordsWriteMessage } from '../interfaces/reco
 
 import { RecordsWrite } from '../interfaces/records/messages/records-write.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
+import { DwnError, DwnErrorCode } from './dwn-error.js';
 
 const methodToAllowedActionMap: Record<string, string> = {
   [DwnMethodName.Write] : 'write',
@@ -42,6 +43,9 @@ export class ProtocolAuthorization {
       const schema = protocolDefinition.labels[schemaLabel].schema;
       recordSchemaToLabelMap.set(schema, schemaLabel);
     }
+
+    // validate `protocolPath`
+    ProtocolAuthorization.verifyProtocolPath(incomingMessage, ancestorMessageChain, recordSchemaToLabelMap);
 
     // get the rule set for the inbound message
     const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
@@ -176,12 +180,8 @@ export class ProtocolAuthorization {
     let allowedRecordsAtCurrentLevel: { [key: string]: ProtocolRuleSet} | undefined = protocolDefinition.records;
     let currentMessageIndex = 0;
     while (true) {
-      const currentRecordSchema = messageChain[currentMessageIndex].descriptor.schema;
-      const currentRecordType = recordSchemaToLabelMap.get(currentRecordSchema!);
-
-      if (currentRecordType === undefined) {
-        throw new Error(`record with schema '${currentRecordSchema}' not allowed in protocol`);
-      }
+      const currentRecordSchema = messageChain[currentMessageIndex].descriptor.schema!;
+      const currentRecordType = recordSchemaToLabelMap.get(currentRecordSchema)!;
 
       if (allowedRecordsAtCurrentLevel === undefined || !(currentRecordType in allowedRecordsAtCurrentLevel)) {
         throw new Error(`record with schema: '${currentRecordSchema}' not allowed in structure level ${currentMessageIndex}`);
@@ -196,6 +196,43 @@ export class ProtocolAuthorization {
       // else we keep going down the message chain
       allowedRecordsAtCurrentLevel = allowedRecordsAtCurrentLevel[currentRecordType].records;
       currentMessageIndex++;
+    }
+  }
+
+  /**
+   * Verifies the `protocolPath` declared in the given message (if it is a RecordsWrite) matches the path of actual ancestor chain.
+   * @throws {DwnError} if fails verification.
+   */
+  private static verifyProtocolPath(
+    inboundMessage: RecordsRead | RecordsWrite,
+    ancestorMessageChain: RecordsWriteMessage[],
+    recordSchemaToLabelMap: Map<string, string>
+  ): void {
+    // skip verification if this is not a RecordsWrite
+    if (inboundMessage.message.descriptor.method !== DwnMethodName.Write) {
+      return;
+    }
+
+    const currentRecordSchema = inboundMessage.message.descriptor.schema!;
+    const currentRecordSchemaLabel = recordSchemaToLabelMap.get(currentRecordSchema);
+    if (currentRecordSchemaLabel === undefined) {
+      throw new DwnError(DwnErrorCode.ProtocolAuthorizationInvalidSchema, `record with schema '${currentRecordSchema}' not allowed in protocol`);
+    }
+
+    const declaredProtocolPath = (inboundMessage as RecordsWrite).message.descriptor.protocolPath!;
+    let ancestorProtocolPath: string = '';
+    for (const ancestor of ancestorMessageChain) {
+      const ancestorSchemaLabel = recordSchemaToLabelMap.get(ancestor.descriptor.schema!);
+      ancestorProtocolPath += `${ancestorSchemaLabel}/`; // e.g. `foo/bar/`, notice the trailing slash
+    }
+
+    const actualProtocolPath = ancestorProtocolPath + currentRecordSchemaLabel; // e.g. `foo/bar/baz`
+
+    if (declaredProtocolPath !== actualProtocolPath) {
+      throw new DwnError(
+        DwnErrorCode.ProtocolAuthorizationIncorrectProtocolPath,
+        `Declared protocol path '${declaredProtocolPath}' is not the same as actual protocol path '${actualProtocolPath}'.`
+      );
     }
   }
 

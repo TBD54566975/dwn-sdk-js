@@ -105,7 +105,8 @@
           "type": "string"
         },
         "protocolPath": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[a-zA-Z]+(\/[a-zA-Z]+)*$"
         },
         "schema": {
           "type": "string"

@@ -123,6 +123,35 @@ describe('RecordsWrite schema definition', () => {
     }).throws('must NOT have additional properties');
   });
 
+  it('should throw if `protocolPath` contains invalid characters', () => {
+    const invalidMessage = {
+      recordId   : 'anyRecordId',
+      contextId  : 'someContext',
+      descriptor : {
+        interface    : 'Records',
+        method       : 'Write',
+        protocol     : 'http://foo.bar',
+        protocolPath : 'invalid:path', // `:` is not a valid char in `protocolPath`
+        dataCid      : 'anyCid',
+        dataFormat   : 'application/json',
+        dataSize     : 123,
+        dateCreated  : '2022-12-19T10:20:30.123456',
+        dateModified : '2022-12-19T10:20:30.123456'
+      },
+      authorization: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      }
+    };
+
+    expect(() => {
+      Message.validateJsonSchema(invalidMessage);
+    }).throws('protocolPath: must match pattern "^[a-zA-Z]+(/[a-zA-Z]+)*$');
+  });
+
   it('should pass if `contextId` and `protocol` are both present', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
