@@ -1433,7 +1433,7 @@ describe('RecordsWriteHandler.handle()', () => {
         // Send records write message
         const reply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
         expect(reply.status.code).to.equal(400);
-        expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolUriNotNormalized);
+        expect(reply.status.detail).to.contain(DwnErrorCode.UrlProtocolNotNormalized);
       });
     });
   });

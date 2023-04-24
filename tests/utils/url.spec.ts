@@ -35,10 +35,8 @@ describe('url', () => {
       expect(normalizeProtocolUri('example')).to.equal('http://example');
       expect(normalizeProtocolUri('/example/')).to.equal('http://example');
 
-      // expect(() => normalizeProtocolUri('...')).to.throw(Error);
       expect(() => normalizeProtocolUri('://http')).to.throw(Error);
       expect(() => normalizeProtocolUri(':foo:')).to.throw(Error);
-
     });
   });
 });

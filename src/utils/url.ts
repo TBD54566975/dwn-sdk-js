@@ -1,6 +1,5 @@
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
-const URL_PROTOCOL_REGEX = /^[^:]+:\/\/./;
 
 export function validateProtocolUriNormalized(protocol: string): void {
   let normalized: string | undefined;
@@ -11,13 +10,13 @@ export function validateProtocolUriNormalized(protocol: string): void {
   }
 
   if (protocol !== normalized) {
-    throw new DwnError(DwnErrorCode.ProtocolUriNotNormalized, 'Protocol URI must be normalized.');
+    throw new DwnError(DwnErrorCode.UrlProtocolNotNormalized, 'Protocol URI must be normalized.');
   }
 }
 
 export function normalizeProtocolUri(url: string): string {
   let fullUrl: string;
-  if (URL_PROTOCOL_REGEX.test(url)) {
+  if (/^[^:]+:\/\/./.test(url)) {
     fullUrl = url;
   } else {
     fullUrl = `http://${url}`;
@@ -29,7 +28,7 @@ export function normalizeProtocolUri(url: string): string {
     result.hash = '';
     return removeTrailingSlash(result.href);
   } catch (e) {
-    throw new Error('Could not normalize protocol URI');
+    throw new DwnError(DwnErrorCode.UrlPrococolNotNormalizable, 'Could not normalize protocol URI');
   }
 }
 

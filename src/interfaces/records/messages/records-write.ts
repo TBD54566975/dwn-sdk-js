@@ -119,10 +119,6 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     await validateAuthorizationIntegrity(message, { allowedProperties: new Set(['recordId', 'contextId', 'attestationCid', 'encryptionCid']) });
     await RecordsWrite.validateAttestationIntegrity(message);
 
-    if (message.descriptor.protocol !== undefined) {
-      validateProtocolUriNormalized(message.descriptor.protocol);
-    }
-
     const recordsWrite = new RecordsWrite(message);
 
     await recordsWrite.validateIntegrity(); // RecordsWrite specific data integrity check
@@ -363,6 +359,10 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
           `CID ${expectedEncryptionCid} of encryption property in message does not match encryptionCid in authorization: ${actualEncryptionCid}`
         );
       }
+    }
+
+    if (this.message.descriptor.protocol !== undefined) {
+      validateProtocolUriNormalized(this.message.descriptor.protocol);
     }
   }
 
