@@ -1,6 +1,7 @@
 import type { RecordsQueryReplyEntry } from '../../../../src/interfaces/records/types.js';
 import type { DerivedPrivateJwk, EncryptionInput, ProtocolDefinition, RecordsWriteMessage } from '../../../../src/index.js';
 
+
 import chaiAsPromised from 'chai-as-promised';
 import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
 import sinon from 'sinon';
@@ -10,10 +11,12 @@ import { Comparer } from '../../../utils/comparer.js';
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DwnConstant } from '../../../../src/core/dwn-constant.js';
+import { DwnErrorCode } from '../../../../src/index.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
 import { Encryption } from '../../../../src/index.js';
 import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { Jws } from '../../../../src/utils/jws.js';
+import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsQueryHandler } from '../../../../src/interfaces/records/handlers/records-query.js';
 import { StorageController } from '../../../../src/store/storage-controller.js';
@@ -590,6 +593,30 @@ describe('RecordsQueryHandler.handle()', () => {
       expect(reply.entries?.length).to.equal(1);
     });
 
+    it('should return 400 if protocol is not normalized', async () => {
+      const alice = await DidKeyResolver.generate();
+
+      // query for non-normalized protocol
+      const recordsQuery = await TestDataGenerator.generateRecordsQuery({
+        requester : alice,
+        filter    : { protocol: 'example.com/' },
+      });
+
+      // overwrite protocol because #create auto-normalizes protocol
+      recordsQuery.message.descriptor.filter.protocol = 'example.com/';
+
+      // Re-create auth because we altered the descriptor after signing
+      recordsQuery.message.authorization = await Message.signAsAuthorization(
+        recordsQuery.message.descriptor,
+        Jws.createSignatureInput(alice)
+      );
+
+      // Send records write message
+      const reply = await dwn.processMessage(alice.did, recordsQuery.message);
+      expect(reply.status.code).to.equal(400);
+      expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolUriNotNormalized);
+    });
+
     describe('encryption scenarios', () => {
       it('should only be able to decrypt record with a correct derived private key', async () => {
         // scenario, Bob writes into Alice's DWN an encrypted "email", alice is able to decrypt it
@@ -600,7 +627,7 @@ describe('RecordsQueryHandler.handle()', () => {
         TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
 
         // configure protocol
-        const protocol = 'email-protocol';
+        const protocol = 'https://email-protocol.com';
         const protocolDefinition: ProtocolDefinition = emailProtocolDefinition;
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,

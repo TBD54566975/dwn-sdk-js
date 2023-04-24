@@ -24,11 +24,11 @@ import { ProtocolAuthorization } from '../../../core/protocol-authorization.js';
 import { Records } from '../../../utils/records.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 import { Secp256k1 } from '../../../utils/secp256k1.js';
-
 import { authorize, validateAuthorizationIntegrity } from '../../../core/auth.js';
 import { Cid, computeCid } from '../../../utils/cid.js';
 import { DwnError, DwnErrorCode } from '../../../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
+import { normalizeProtocolUri, validateProtocolUriNormalized } from '../../../utils/url.js';
 
 export type RecordsWriteOptions = {
   recipient?: string;
@@ -119,6 +119,10 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     await validateAuthorizationIntegrity(message, { allowedProperties: new Set(['recordId', 'contextId', 'attestationCid', 'encryptionCid']) });
     await RecordsWrite.validateAttestationIntegrity(message);
 
+    if (message.descriptor.protocol !== undefined) {
+      validateProtocolUriNormalized(message.descriptor.protocol);
+    }
+
     const recordsWrite = new RecordsWrite(message);
 
     await recordsWrite.validateIntegrity(); // RecordsWrite specific data integrity check
@@ -155,7 +159,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     const descriptor: RecordsWriteDescriptor = {
       interface     : DwnInterfaceName.Records,
       method        : DwnMethodName.Write,
-      protocol      : options.protocol,
+      protocol      : options.protocol !== undefined ? normalizeProtocolUri(options.protocol) : undefined,
       recipient     : options.recipient!,
       schema        : options.schema,
       parentId      : options.parentId,
@@ -492,7 +496,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
   /**
    * Creates the `attestation` property of a RecordsWrite message if given signature inputs; returns `undefined` otherwise.
    */
-  private static async createAttestation(descriptorCid: string, signatureInputs?: SignatureInput[]): Promise<GeneralJws | undefined> {
+  public static async createAttestation(descriptorCid: string, signatureInputs?: SignatureInput[]): Promise<GeneralJws | undefined> {
     if (signatureInputs === undefined || signatureInputs.length === 0) {
       return undefined;
     }
@@ -507,7 +511,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
   /**
    * Creates the `authorization` property of a RecordsWrite message.
    */
-  private static async createAuthorization(
+  public static async createAuthorization(
     recordId: string,
     contextId: string | undefined,
     descriptorCid: string,

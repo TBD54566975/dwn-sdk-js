@@ -1,6 +1,9 @@
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
+import type { ProtocolsQueryMessage } from '../../../../src/index.js';
+
+import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
 import { Jws } from '../../../../src/index.js';
 import { ProtocolsQuery } from '../../../../src/interfaces/protocols/messages/protocols-query.js';
@@ -21,6 +24,25 @@ describe('ProtocolsQuery', () => {
       });
 
       expect(protocolsQuery.message.descriptor.dateCreated).to.equal(currentTime);
+    });
+
+
+    it('should auto-normalize protocol URI', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+
+      const options = {
+        recipient                   : alice.did,
+        data                        : TestDataGenerator.randomBytes(10),
+        dataFormat                  : 'application/json',
+        authorizationSignatureInput : Jws.createSignatureInput(alice),
+        filter                      : { protocol: 'example.com/' },
+        definition                  : dexProtocolDefinition
+      };
+      const protocolsConfig = await ProtocolsQuery.create(options);
+
+      const message = protocolsConfig.message as ProtocolsQueryMessage;
+
+      expect(message.descriptor.filter!.protocol).to.eq('http://example.com');
     });
   });
 });

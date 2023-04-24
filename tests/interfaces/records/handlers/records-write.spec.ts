@@ -1398,6 +1398,43 @@ describe('RecordsWriteHandler.handle()', () => {
         expect(writeReply.status.code).to.equal(400);
         expect(writeReply.status.detail).to.contain(DwnErrorCode.RecordsWriteValidateIntegrityEncryptionCidMismatch);
       });
+
+      it('should return 400 if protocol is not normalized', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        // write a message into DB
+        const recordsWrite = await TestDataGenerator.generateRecordsWrite({
+          requester : alice,
+          data      : new TextEncoder().encode('data1'),
+          protocol  : 'example.com/',
+          schema    : emailProtocolDefinition.labels.email.schema
+        });
+
+        // overwrite protocol because #create auto-normalizes protocol
+        recordsWrite.message.descriptor.protocol = 'example.com/';
+
+        // Re-create auth because we altered the descriptor after signing
+        const descriptorCid = await computeCid(recordsWrite.message.descriptor);
+        const attestation = await RecordsWrite.createAttestation(descriptorCid);
+        const authorization = await RecordsWrite.createAuthorization(
+          recordsWrite.message.recordId,
+          recordsWrite.message.contextId,
+          descriptorCid,
+          attestation,
+          recordsWrite.message.encryption,
+          Jws.createSignatureInput(alice)
+        );
+        recordsWrite.message = {
+          ...recordsWrite.message,
+          attestation,
+          authorization
+        };
+
+        // Send records write message
+        const reply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+        expect(reply.status.code).to.equal(400);
+        expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolUriNotNormalized);
+      });
     });
   });
 

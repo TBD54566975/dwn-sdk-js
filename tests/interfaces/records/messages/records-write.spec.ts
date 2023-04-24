@@ -123,6 +123,23 @@ describe('RecordsWrite', () => {
 
       await expect(createPromise2).to.be.rejectedWith('`dataCid` and `dataSize` must both be defined or undefined at the same time');
     });
+
+    it('should auto-normalize protocol URI', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+
+      const options = {
+        recipient                   : alice.did,
+        data                        : TestDataGenerator.randomBytes(10),
+        dataFormat                  : 'application/json',
+        authorizationSignatureInput : Jws.createSignatureInput(alice),
+        protocol                    : 'example.com/'
+      };
+      const recordsWrite = await RecordsWrite.create(options);
+
+      const message = recordsWrite.message as RecordsWriteMessage;
+
+      expect(message.descriptor.protocol).to.eq('http://example.com');
+    });
   });
 
   describe('createFrom()', () => {

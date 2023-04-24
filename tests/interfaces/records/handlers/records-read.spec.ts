@@ -373,7 +373,7 @@ describe('RecordsReadHandler.handle()', () => {
         TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
 
         // configure protocol
-        const protocol = 'email-protocol';
+        const protocol = 'https://email-protocol.com';
         const protocolDefinition: ProtocolDefinition = emailProtocolDefinition;
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,

@@ -14,7 +14,7 @@ import { MessageStoreLevel } from '../../../../src/store/message-store-level.js'
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
-import { DidResolver, Dwn, Encoder, Jws } from '../../../../src/index.js';
+import { DidResolver, Dwn, DwnErrorCode, Encoder, Jws } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -138,6 +138,30 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       const actualDefinition = JSON.stringify(reply.entries![0]['descriptor']['definition']);
       expect(actualDefinition).to.not.equal(initialDefinition);
       expect(actualDefinition).to.equal(expectedDefinition);
+    });
+
+    it('should return 400 if protocol is not normalized', async () => {
+      const alice = await DidKeyResolver.generate();
+
+      // query for non-normalized protocol
+      const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+        requester : alice,
+        protocol  : 'example.com/',
+      });
+
+      // overwrite protocol because #create auto-normalizes protocol
+      protocolsConfig.message.descriptor.protocol = 'example.com/';
+
+      // Re-create auth because we altered the descriptor after signing
+      protocolsConfig.message.authorization = await Message.signAsAuthorization(
+        protocolsConfig.message.descriptor,
+        Jws.createSignatureInput(alice)
+      );
+
+      // Send records write message
+      const reply = await dwn.processMessage(alice.did, protocolsConfig.message);
+      expect(reply.status.code).to.equal(400);
+      expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolUriNotNormalized);
     });
 
     describe('event log', () => {

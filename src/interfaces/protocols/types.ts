@@ -41,13 +41,15 @@ export type ProtocolsConfigureMessage = BaseMessage & {
   descriptor: ProtocolsConfigureDescriptor;
 };
 
+export type ProtocolsQueryFilter = {
+  protocol: string,
+};
+
 export type ProtocolsQueryDescriptor = {
   interface : DwnInterfaceName.Protocols,
   method: DwnMethodName.Query;
   dateCreated: string;
-  filter?: {
-    protocol: string;
-  }
+  filter?: ProtocolsQueryFilter
 };
 
 export type ProtocolsQueryMessage = BaseMessage & {
