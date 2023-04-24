@@ -1,17 +1,15 @@
 import type { SignatureInput } from '../../../jose/jws/general/types.js';
-import type { ProtocolsQueryDescriptor, ProtocolsQueryMessage } from '../types.js';
+import type { ProtocolsQueryDescriptor, ProtocolsQueryFilter, ProtocolsQueryMessage } from '../types.js';
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
-
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
+import { normalizeProtocolUri, validateProtocolUriNormalized } from '../../../utils/url.js';
 
 export type ProtocolsQueryOptions = {
   dateCreated?: string;
-  filter?: {
-    protocol: string;
-  }
+  filter?: ProtocolsQueryFilter,
   authorizationSignatureInput: SignatureInput;
 };
 
@@ -19,6 +17,10 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
 
   public static async parse(message: ProtocolsQueryMessage): Promise<ProtocolsQuery> {
     await validateAuthorizationIntegrity(message);
+
+    if (message.descriptor.filter !== undefined) {
+      validateProtocolUriNormalized(message.descriptor.filter.protocol);
+    }
 
     return new ProtocolsQuery(message);
   }
@@ -28,7 +30,7 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
       interface   : DwnInterfaceName.Protocols,
       method      : DwnMethodName.Query,
       dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
-      filter      : options.filter,
+      filter      : ProtocolsQuery.normalizeFilter(options.filter),
     };
 
     // delete all descriptor properties that are `undefined` else the code will encounter the following IPLD issue when attempting to generate CID:
@@ -42,5 +44,16 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
 
     const protocolsQuery = new ProtocolsQuery(message);
     return protocolsQuery;
+  }
+
+  private static normalizeFilter(filter: ProtocolsQueryFilter | undefined): ProtocolsQueryFilter | undefined {
+    if (filter === undefined) {
+      return undefined;
+    }
+
+    return {
+      ...filter,
+      protocol: normalizeProtocolUri(filter.protocol),
+    };
   }
 }

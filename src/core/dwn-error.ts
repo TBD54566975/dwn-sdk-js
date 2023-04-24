@@ -26,5 +26,7 @@ export enum DwnErrorCode {
   RecordsInvalidAncestorKeyDerivationSegment = 'RecordsInvalidAncestorKeyDerivationSegment',
   RecordsWriteGetEntryIdUndefinedAuthor = 'RecordsWriteGetEntryIdUndefinedAuthor',
   RecordsWriteValidateIntegrityEncryptionCidMismatch = 'RecordsWriteValidateIntegrityEncryptionCidMismatch',
-  Secp256k1KeyNotValid = 'Secp256k1KeyNotValid'
+  Secp256k1KeyNotValid = 'Secp256k1KeyNotValid',
+  UrlProtocolNotNormalized = 'UrlProtocolNotNormalized',
+  UrlPrococolNotNormalizable = 'UriPrococolNotNormalizable'
 };

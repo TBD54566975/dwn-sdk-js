@@ -8,7 +8,7 @@ export type { EventLog, Event } from './event-log/event-log.js';
 export type { EventsGetMessage, EventsGetReply } from './interfaces/events/types.js';
 export type { HooksWriteMessage } from './interfaces/hooks/types.js';
 export type { MessagesGetMessage, MessagesGetReply } from './interfaces/messages/types.js';
-export type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolsQueryMessage } from './interfaces/protocols/types.js';
+export type { ProtocolDefinition, ProtocolRuleSet, ProtocolsQueryFilter, ProtocolsConfigureMessage, ProtocolsQueryMessage } from './interfaces/protocols/types.js';
 export type { RecordsDeleteMessage, RecordsQueryMessage, RecordsWriteMessage } from './interfaces/records/types.js';
 export { AllowAllTenantGate, TenantGate } from './core/tenant-gate.js';
 export { Cid } from './utils/cid.js';
