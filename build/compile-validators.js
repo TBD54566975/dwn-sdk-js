@@ -8,13 +8,13 @@
  * - to reduce the browser bundle size - Ajv is not included in the bundle
  * - to reduce the start-up time - the validation and compilation of schemas will happen during build time.
  */
+import addFormats from 'ajv-formats';
 
 import fs from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
 
 import Ajv from 'ajv';
-import addFormats from "ajv-formats"
 
 import mkdirp from 'mkdirp';
 import standaloneCode from 'ajv/dist/standalone/index.js';
