@@ -124,7 +124,7 @@ describe('RecordsWrite schema definition', () => {
   });
 
   it('should pass if `protocol` exists and its related properties are all present', () => {
-    const invalidMessage = {
+    const validMessage = {
       recordId   : 'anyRecordId',
       contextId  : 'someContext', // must exist because `protocol` exists
       descriptor : {
@@ -148,7 +148,7 @@ describe('RecordsWrite schema definition', () => {
       }
     };
 
-    Message.validateJsonSchema(invalidMessage);
+    Message.validateJsonSchema(validMessage);
   });
 
   it('should throw if `protocolPath` contains invalid characters', () => {
