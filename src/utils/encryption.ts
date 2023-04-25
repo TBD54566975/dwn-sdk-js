@@ -3,7 +3,7 @@ import * as eccrypto from 'eccrypto';
 import { Readable } from 'readable-stream';
 
 /**
- * Utility class for performing common encryption operations.
+ * Utility class for performing common, non-DWN specific encryption operations.
  */
 export class Encryption {
   /**

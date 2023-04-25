@@ -1,11 +1,11 @@
 import type { DerivedPrivateJwk } from '../../../../src/utils/hd-key.js';
-import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
 import type { EncryptionInput } from '../../../../src/interfaces/records/messages/records-write.js';
 import type { ProtocolDefinition } from '../../../../src/index.js';
-import socialMediaProtocolDefinition from '../../../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
 
 import chaiAsPromised from 'chai-as-promised';
+import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
 import sinon from 'sinon';
+import socialMediaProtocolDefinition from '../../../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
 import chai, { expect } from 'chai';
 
 import { Comparer } from '../../../utils/comparer.js';
@@ -401,7 +401,7 @@ describe('RecordsReadHandler.handle()', () => {
           key                  : dataEncryptionKey,
           keyEncryptionInputs  : [{
             publicKey: {
-              derivationScheme : KeyDerivationScheme.ProtocolContext,
+              derivationScheme : KeyDerivationScheme.Protocols,
               derivationPath   : [],
               derivedPublicKey : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
             }
@@ -431,11 +431,16 @@ describe('RecordsReadHandler.handle()', () => {
 
         // test able to decrypt the message using a derived key
         const rootPrivateKey: DerivedPrivateJwk = {
-          derivationScheme  : KeyDerivationScheme.ProtocolContext,
+          derivationScheme  : KeyDerivationScheme.Protocols,
           derivationPath    : [],
           derivedPrivateKey : alice.keyPair.privateJwk
         };
-        const relativeDescendantDerivationPath = [KeyDerivationScheme.ProtocolContext, protocol, message.contextId!];
+        const relativeDescendantDerivationPath = Records.constructKeyDerivationPath(
+          KeyDerivationScheme.Protocols,
+          message.recordId,
+          message.contextId,
+          message.descriptor
+        );
         const descendantPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, relativeDescendantDerivationPath);
 
         const unsignedRecordsWrite = readReply.record!;
@@ -446,7 +451,7 @@ describe('RecordsReadHandler.handle()', () => {
         expect(Comparer.byteArraysEqual(plaintextBytes, bobMessageBytes)).to.be.true;
 
         // test unable to decrypt the message if derived key has an unexpected path
-        const invalidDerivationPath = [KeyDerivationScheme.ProtocolContext, protocol, 'invalidContextId'];
+        const invalidDerivationPath = [KeyDerivationScheme.Protocols, protocol, 'invalidContextId'];
         const inValidDescendantPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, invalidDerivationPath);
         await expect(Records.decrypt(unsignedRecordsWrite, inValidDescendantPrivateKey, cipherStream)).to.be.rejectedWith(
           DwnErrorCode.RecordsInvalidAncestorKeyDerivationSegment

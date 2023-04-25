@@ -652,7 +652,7 @@ describe('RecordsQueryHandler.handle()', () => {
           key                  : dataEncryptionKey,
           keyEncryptionInputs  : [{
             publicKey: {
-              derivationScheme : KeyDerivationScheme.ProtocolContext,
+              derivationScheme : KeyDerivationScheme.Protocols,
               derivationPath   : [],
               derivedPublicKey : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
             }
@@ -685,11 +685,16 @@ describe('RecordsQueryHandler.handle()', () => {
 
         // test able to decrypt the message using a derived key
         const rootPrivateKey: DerivedPrivateJwk = {
-          derivationScheme  : KeyDerivationScheme.ProtocolContext,
+          derivationScheme  : KeyDerivationScheme.Protocols,
           derivationPath    : [],
           derivedPrivateKey : alice.keyPair.privateJwk
         };
-        const relativeDescendantDerivationPath = [KeyDerivationScheme.ProtocolContext, protocol, message.contextId!];
+        const relativeDescendantDerivationPath = Records.constructKeyDerivationPath(
+          KeyDerivationScheme.Protocols,
+          message.recordId,
+          message.contextId,
+          message.descriptor
+        );
         const descendantPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, relativeDescendantDerivationPath);
 
         const cipherStream = DataStream.fromBytes(Encoder.base64UrlToBytes(unsignedRecordsWrite.encodedData!));
