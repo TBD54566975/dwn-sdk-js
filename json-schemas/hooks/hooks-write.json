@@ -35,7 +35,8 @@
           "type": "string"
         },
         "dateCreated": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time"
         },
         "schema": {
           "type": "string"

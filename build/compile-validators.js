@@ -14,6 +14,8 @@ import path from 'node:path';
 import url from 'node:url';
 
 import Ajv from 'ajv';
+import addFormats from "ajv-formats"
+
 import mkdirp from 'mkdirp';
 import standaloneCode from 'ajv/dist/standalone/index.js';
 
@@ -59,7 +61,8 @@ const schemas = {
   PublicJwk
 };
 
-const ajv = new Ajv({ code: { source: true, esm: true } });
+const ajv = new Ajv({ code: { source: true, esm: true }, allowDate: 'string' });
+addFormats(ajv);
 
 for (const schemaName in schemas) {
   ajv.addSchema(schemas[schemaName], schemaName);

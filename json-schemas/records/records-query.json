@@ -34,7 +34,8 @@
           "type": "string"
         },
         "dateCreated": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time"
         },
         "filter": {
           "type": "object",
@@ -71,10 +72,12 @@
               "additionalProperties": false,
               "properties": {
                 "from": {
-                  "type": "string"
+                  "type": "string",
+                  "format": "date-time"
                 },
                 "to": {
-                  "type": "string"
+                  "type": "string",
+                  "format": "date-time"
                 }
               }
             }

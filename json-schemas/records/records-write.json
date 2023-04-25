@@ -121,16 +121,19 @@
           "type": "number"
         },
         "dateCreated": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time"
         },
         "dateModified": {
-          "type": "string"
+          "type": "string",
+          "format": "date-time"
         },
         "published": {
           "type": "boolean"
         },
         "datePublished": {
-          "type": "string"
+          "type": "string", 
+          "format": "date-time"
         },
         "dataFormat": {
           "type": "string"
