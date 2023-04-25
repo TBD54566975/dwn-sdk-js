@@ -1029,6 +1029,65 @@ describe('RecordsWriteHandler.handle()', () => {
         expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationIncorrectProtocolPath);
       });
 
+      it('should fail authorization if given `dataFormat` is mismatching with the dataFormats in protocol definition', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        const protocolDefinition = {
+          labels: {
+            image: {
+              schema      : 'https://example.com/schema',
+              dataFormats : ['image/jpeg', 'image/png']
+            }
+          },
+          records: {
+            image: {
+              allow: {
+                anyone: { to: ['write'] }
+              }
+            }
+          }
+        };
+
+        const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-media';
+        const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
+          requester          : alice,
+          protocol,
+          protocolDefinition : protocolDefinition,
+        });
+
+        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+
+        // write record with matching dataFormat
+        const data = Encoder.stringToBytes('any data');
+        const recordsWriteMatch = await TestDataGenerator.generateRecordsWrite({
+          requester    : alice,
+          recipientDid : alice.did,
+          protocol,
+          protocolPath : 'image',
+          schema       : protocolDefinition.labels.image.schema,
+          dataFormat   : 'image/jpeg',
+          data
+        });
+        const replyMatch = await dwn.processMessage(alice.did, recordsWriteMatch.message, recordsWriteMatch.dataStream);
+        expect(replyMatch.status.code).to.equal(202);
+
+        // write record with mismatch dataFormat
+        const recordsWriteMismatch = await TestDataGenerator.generateRecordsWrite({
+          requester    : alice,
+          recipientDid : alice.did,
+          protocol,
+          protocolPath : 'image',
+          schema       : protocolDefinition.labels.image.schema,
+          dataFormat   : 'not/allowed/dataFormat',
+          data
+        });
+
+        const replyMismatch = await dwn.processMessage(alice.did, recordsWriteMismatch.message, recordsWriteMismatch.dataStream);
+        expect(replyMismatch.status.code).to.equal(401);
+        expect(replyMismatch.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationIncorrectDataFormat);
+      });
+
       it('should fail authorization if record schema is not allowed at the hierarchical level attempted for the RecordsWrite', async () => {
         const alice = await DidKeyResolver.generate();
 

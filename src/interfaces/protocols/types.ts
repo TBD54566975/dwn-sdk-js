@@ -11,7 +11,10 @@ export type ProtocolsConfigureDescriptor = {
 
 export type ProtocolDefinition = {
   labels: {
-    [key: string]: { schema: string };
+    [key: string]: {
+      schema: string,
+      dataFormats?: string[],
+    };
   };
   records: {
     [key: string]: ProtocolRuleSet;
