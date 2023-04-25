@@ -6,11 +6,12 @@ import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
+import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
-import { DidResolver, Dwn, Encoder, Jws } from '../../../../src/index.js';
+import { DidResolver, Dwn, DwnErrorCode, Encoder, Jws } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -91,6 +92,30 @@ describe('ProtocolsQueryHandler.handle()', () => {
 
       expect(reply2.status.code).to.equal(200);
       expect(reply2.entries?.length).to.equal(3); // expecting all 3 entries written above match the query
+    });
+
+    it('should return 400 if protocol is not normalized', async () => {
+      const alice = await DidKeyResolver.generate();
+
+      // query for non-normalized protocol
+      const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
+        requester : alice,
+        filter    : { protocol: 'example.com/' },
+      });
+
+      // overwrite protocol because #create auto-normalizes protocol
+      protocolsQuery.message.descriptor.filter!.protocol = 'example.com/';
+
+      // Re-create auth because we altered the descriptor after signing
+      protocolsQuery.message.authorization = await Message.signAsAuthorization(
+        protocolsQuery.message.descriptor,
+        Jws.createSignatureInput(alice)
+      );
+
+      // Send records write message
+      const reply = await dwn.processMessage(alice.did, protocolsQuery.message);
+      expect(reply.status.code).to.equal(400);
+      expect(reply.status.detail).to.contain(DwnErrorCode.UrlProtocolNotNormalized);
     });
 
     it('should fail with 400 if `authorization` is referencing a different message (`descriptorCid`)', async () => {
