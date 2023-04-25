@@ -133,7 +133,8 @@ describe('RecordsWrite', () => {
         dataFormat                  : 'application/json',
         authorizationSignatureInput : Jws.createSignatureInput(alice),
         protocol                    : 'example.com/',
-        protocolPath                : 'example'
+        protocolPath                : 'example',
+        schema                      : 'http://foo.bar/schema'
       };
       const recordsWrite = await RecordsWrite.create(options);
 
