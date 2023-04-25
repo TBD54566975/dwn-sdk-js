@@ -59,7 +59,7 @@ export class ProtocolAuthorization {
       incomingMessage.message,
       protocolDefinition,
       recordSchemaToLabelMap,
-    )
+    );
 
     // verify method invoked against the allowed actions
     ProtocolAuthorization.verifyAllowedActions(
@@ -251,7 +251,7 @@ export class ProtocolAuthorization {
     inboundMessage: RecordsReadMessage | RecordsWriteMessage,
     protocolDefinition: ProtocolDefinition,
     recordSchemaToLabelMap: Map<string, string>
-  ) {
+  ): void {
     // skip verification if this is not a RecordsWrite
     if (inboundMessage.descriptor.method !== DwnMethodName.Write) {
       return;

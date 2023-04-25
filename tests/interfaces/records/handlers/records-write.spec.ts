@@ -1030,24 +1030,23 @@ describe('RecordsWriteHandler.handle()', () => {
       });
 
       it('should fail authorization if given `dataFormat` is mismatching with the dataFormats in protocol definition', async () => {
-        // TODO(diehuxx)
         const alice = await DidKeyResolver.generate();
 
         const protocolDefinition = {
           labels: {
             image: {
-              schema: 'https://example.com/schema',
-              dataFormats: ["image/jpeg", "image/png"]
+              schema      : 'https://example.com/schema',
+              dataFormats : ['image/jpeg', 'image/png']
             }
           },
           records: {
             image: {
               allow: {
-                anyone: { to: ["write"] }
+                anyone: { to: ['write'] }
               }
             }
           }
-        }
+        };
 
         const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-media';
         const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
