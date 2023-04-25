@@ -105,7 +105,8 @@
           "type": "string"
         },
         "protocolPath": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[a-zA-Z]+(\/[a-zA-Z]+)*$"
         },
         "schema": {
           "type": "string"
@@ -208,7 +209,9 @@
         "descriptor": {
           "type": "object",
           "required": [
-            "protocol"
+            "protocol",
+            "protocolPath",
+            "schema"
           ]
         }
       },
@@ -232,6 +235,18 @@
               "not": {
                 "required": [
                   "protocol"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "properties": {
+            "descriptor": {
+              "type": "object",
+              "not": {
+                "required": [
+                  "protocolPath"
                 ]
               }
             }
