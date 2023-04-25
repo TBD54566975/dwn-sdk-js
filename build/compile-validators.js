@@ -61,7 +61,7 @@ const schemas = {
   PublicJwk
 };
 
-const ajv = new Ajv({ code: { source: true, esm: true }, allowDate: 'string' });
+const ajv = new Ajv({ code: { source: true, esm: true } });
 addFormats(ajv);
 
 for (const schemaName in schemas) {
