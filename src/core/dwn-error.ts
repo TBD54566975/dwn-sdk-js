@@ -20,6 +20,7 @@ export enum DwnErrorCode {
   MessageStoreDataCidMismatch = 'MessageStoreDataCidMismatch',
   MessageStoreDataNotFound = 'MessageStoreDataNotFound',
   MessageStoreDataSizeMismatch = 'MessageStoreDataSizeMismatch',
+  ProtocolAuthorizationIncorrectDataFormat = 'ProtocolAuthorizationIncorrectDataFormat',
   ProtocolAuthorizationIncorrectProtocolPath = 'ProtocolAuthorizationIncorrectProtocolPath',
   ProtocolAuthorizationInvalidSchema = 'ProtocolAuthorizationInvalidSchema',
   RecordsDecryptNoMatchingKeyDerivationScheme = 'RecordsDecryptNoMatchingKeyDerivationScheme',

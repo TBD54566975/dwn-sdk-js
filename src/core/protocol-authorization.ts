@@ -55,6 +55,12 @@ export class ProtocolAuthorization {
       recordSchemaToLabelMap
     );
 
+    ProtocolAuthorization.verifyDataFormat(
+      incomingMessage.message,
+      protocolDefinition,
+      recordSchemaToLabelMap,
+    )
+
     // verify method invoked against the allowed actions
     ProtocolAuthorization.verifyAllowedActions(
       tenant,
@@ -232,6 +238,40 @@ export class ProtocolAuthorization {
       throw new DwnError(
         DwnErrorCode.ProtocolAuthorizationIncorrectProtocolPath,
         `Declared protocol path '${declaredProtocolPath}' is not the same as actual protocol path '${actualProtocolPath}'.`
+      );
+    }
+  }
+
+  /**
+   * Verifies the `dataFormat` declared in the given message (if it is a RecordsWrite) matches dataFormat of the schema label
+   * in the given protocol.
+   * @throws {DwnError} if fails verification.
+   */
+  private static verifyDataFormat(
+    inboundMessage: RecordsReadMessage | RecordsWriteMessage,
+    protocolDefinition: ProtocolDefinition,
+    recordSchemaToLabelMap: Map<string, string>
+  ) {
+    // skip verification if this is not a RecordsWrite
+    if (inboundMessage.descriptor.method !== DwnMethodName.Write) {
+      return;
+    }
+    const recordsWriteMessage = inboundMessage as RecordsWriteMessage;
+
+    const currentRecordSchema = recordsWriteMessage.descriptor.schema!;
+    const currentRecordSchemaLabel = recordSchemaToLabelMap.get(currentRecordSchema)!;
+    const expectedDataFormats = protocolDefinition.labels[currentRecordSchemaLabel].dataFormats;
+
+    // no `dataFormats` specified in protocol definition means that all dataFormats are allowed
+    if (expectedDataFormats === undefined) {
+      return;
+    }
+
+    if (!expectedDataFormats.includes(recordsWriteMessage.descriptor.dataFormat)) {
+      throw new DwnError(
+        DwnErrorCode.ProtocolAuthorizationIncorrectDataFormat,
+        `record with schema '${currentRecordSchema}' must have data format in (${expectedDataFormats}), \
+        instead has '${recordsWriteMessage.descriptor.dataFormat}'`
       );
     }
   }
