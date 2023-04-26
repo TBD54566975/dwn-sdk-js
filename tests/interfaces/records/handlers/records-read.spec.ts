@@ -400,11 +400,8 @@ describe('RecordsReadHandler.handle()', () => {
           initializationVector : dataEncryptionInitializationVector,
           key                  : dataEncryptionKey,
           keyEncryptionInputs  : [{
-            publicKey: {
-              derivationScheme : KeyDerivationScheme.Protocols,
-              derivationPath   : [],
-              derivedPublicKey : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
-            }
+            derivationScheme : KeyDerivationScheme.Protocols,
+            publicKey        : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
           }]
         };
 
@@ -432,7 +429,6 @@ describe('RecordsReadHandler.handle()', () => {
         // test able to decrypt the message using a derived key
         const rootPrivateKey: DerivedPrivateJwk = {
           derivationScheme  : KeyDerivationScheme.Protocols,
-          derivationPath    : [],
           derivedPrivateKey : alice.keyPair.privateJwk
         };
         const relativeDescendantDerivationPath = Records.constructKeyDerivationPath(
@@ -460,7 +456,6 @@ describe('RecordsReadHandler.handle()', () => {
         // test unable to decrypt the message if there no derivation scheme(s) used by the message matches the scheme used by the given private key
         const privateKeyWithMismatchingDerivationScheme: DerivedPrivateJwk = {
           derivationScheme  : 'scheme-that-is-not-protocol-context' as any,
-          derivationPath    : [],
           derivedPrivateKey : alice.keyPair.privateJwk
         };
         await expect(Records.decrypt(unsignedRecordsWrite, privateKeyWithMismatchingDerivationScheme, cipherStream)).to.be.rejectedWith(

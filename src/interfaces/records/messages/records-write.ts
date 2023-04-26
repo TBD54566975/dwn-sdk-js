@@ -1,6 +1,7 @@
 import type { BaseMessage } from '../../../core/types.js';
-import type { DerivedPublicJwk } from '../../../utils/hd-key.js';
+import type { KeyDerivationScheme } from '../../../index.js';
 import type { MessageStore } from '../../../store/message-store.js';
+import type { PublicJwk } from '../../../jose/types.js';
 import type {
   EncryptedKey,
   EncryptionProperty,
@@ -81,9 +82,14 @@ export type EncryptionInput = {
  */
 export type KeyEncryptionInput = {
   /**
-   * Public key used to encrypt the symmetric key.
+   * Key derivation scheme to derive the descendant public key to encrypt the symmetric key.
    */
-  publicKey: DerivedPublicJwk;
+  derivationScheme: KeyDerivationScheme;
+
+  /**
+   * Root public key used derive the descendant public key to encrypt the symmetric key.
+   */
+  publicKey: PublicJwk;
 
   /**
    * Algorithm used for encrypting the symmetric key. Uses {EncryptionAlgorithm.EciesSecp256k1} if not given.
@@ -468,7 +474,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     const keyEncryption: EncryptedKey[] = [];
     for (const keyEncryptionInput of encryptionInput.keyEncryptionInputs) {
 
-      const fullDerivationPath = Records.constructKeyDerivationPath(keyEncryptionInput.publicKey.derivationScheme, recordId, contextId, descriptor);
+      const fullDerivationPath = Records.constructKeyDerivationPath(keyEncryptionInput.derivationScheme, recordId, contextId, descriptor);
 
       // NOTE: right now only `ECIES-ES256K` algorithm is supported for asymmetric encryption,
       // so we will assume that's the algorithm without additional switch/if statements
@@ -481,7 +487,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
       const messageAuthenticationCode = Encoder.bytesToBase64Url(keyEncryptionOutput.messageAuthenticationCode);
       const encryptedKeyData: EncryptedKey = {
         algorithm            : keyEncryptionInput.algorithm ?? EncryptionAlgorithm.EciesSecp256k1,
-        derivationScheme     : keyEncryptionInput.publicKey.derivationScheme,
+        derivationScheme     : keyEncryptionInput.derivationScheme,
         encryptedKey,
         ephemeralPublicKey,
         initializationVector : keyEncryptionInitializationVector,

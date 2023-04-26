@@ -1,5 +1,6 @@
+import type { DerivedPrivateJwk } from './hd-key.js';
+import type { PublicJwk } from '../jose/types.js';
 import type { Readable } from 'readable-stream';
-import type { DerivedPrivateJwk, DerivedPublicJwk } from './hd-key.js';
 import type { RecordsWriteDescriptor, UnsignedRecordsWriteMessage } from '../interfaces/records/types.js';
 
 import { Encoder } from './encoder.js';
@@ -14,6 +15,7 @@ import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 export class Records {
   /**
    * Decrypts the encrypted data in a message reply using the given ancestor private key.
+   * @param ancestorPrivateKey Any ancestor private key in the key derivation path.
    */
   public static async decrypt(
     recordsWrite: UnsignedRecordsWriteMessage,
@@ -106,19 +108,16 @@ export class Records {
    * NOTE: right now only `ECIES-ES256K` algorithm is supported for asymmetric encryption,
    *       so we will assume that's the algorithm without additional switch/if statements
    */
-  public static async deriveLeafPublicKey(ancestorPublicKey: DerivedPublicJwk, fullDescendantDerivationPath: string[]): Promise<Uint8Array> {
-    if (ancestorPublicKey.derivedPublicKey.crv !== 'secp256k1') {
+  public static async deriveLeafPublicKey(rootPublicKey: PublicJwk, fullDescendantDerivationPath: string[]): Promise<Uint8Array> {
+    if (rootPublicKey.crv !== 'secp256k1') {
       throw new DwnError(
         DwnErrorCode.RecordsDeriveLeafPublicKeyUnSupportedCurve,
-        `Curve ${ancestorPublicKey.derivedPublicKey.crv} is not supported.`
+        `Curve ${rootPublicKey.crv} is not supported.`
       );
     }
 
-    Records.validateAncestorKeyAndDescentKeyDerivationPathsMatch(ancestorPublicKey.derivationPath, fullDescendantDerivationPath);
-
-    const subDerivationPath = fullDescendantDerivationPath.slice(ancestorPublicKey.derivationPath.length);
-    const ancestorPublicKeyBytes = Secp256k1.publicJwkToBytes(ancestorPublicKey.derivedPublicKey);
-    const leafPublicKey = await Secp256k1.derivePublicKey(ancestorPublicKeyBytes, subDerivationPath);
+    const ancestorPublicKeyBytes = Secp256k1.publicJwkToBytes(rootPublicKey);
+    const leafPublicKey = await Secp256k1.derivePublicKey(ancestorPublicKeyBytes, fullDescendantDerivationPath);
 
     return leafPublicKey;
   }
@@ -136,9 +135,11 @@ export class Records {
       );
     }
 
-    Records.validateAncestorKeyAndDescentKeyDerivationPathsMatch(ancestorPrivateKey.derivationPath, fullDescendantDerivationPath);
+    const ancestorPrivateKeyDerivationPath = ancestorPrivateKey.derivationPath ?? [];
 
-    const subDerivationPath = fullDescendantDerivationPath.slice(ancestorPrivateKey.derivationPath.length);
+    Records.validateAncestorKeyAndDescentKeyDerivationPathsMatch(ancestorPrivateKeyDerivationPath, fullDescendantDerivationPath);
+
+    const subDerivationPath = fullDescendantDerivationPath.slice(ancestorPrivateKeyDerivationPath.length);
     const ancestorPrivateKeyBytes = Secp256k1.privateJwkToBytes(ancestorPrivateKey.derivedPrivateKey);
     const leafPrivateKey = await Secp256k1.derivePrivateKey(ancestorPrivateKeyBytes, subDerivationPath);
 

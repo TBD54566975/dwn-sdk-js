@@ -1437,12 +1437,9 @@ describe('RecordsWriteHandler.handle()', () => {
           initializationVector : dataEncryptionInitializationVector,
           key                  : dataEncryptionKey,
           keyEncryptionInputs  : [{
-            algorithm : EncryptionAlgorithm.EciesSecp256k1,
-            publicKey : {
-              derivationScheme : KeyDerivationScheme.Protocols,
-              derivationPath   : [],
-              derivedPublicKey : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
-            }
+            algorithm        : EncryptionAlgorithm.EciesSecp256k1,
+            derivationScheme : KeyDerivationScheme.Protocols,
+            publicKey        : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
           }]
         };
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({

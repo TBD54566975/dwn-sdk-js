@@ -186,11 +186,8 @@ describe('RecordsWrite', () => {
         initializationVector : dataEncryptionInitializationVector,
         key                  : dataEncryptionKey,
         keyEncryptionInputs  : [{
-          publicKey: {
-            derivationScheme : KeyDerivationScheme.Protocols,
-            derivationPath   : [],
-            derivedPublicKey : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
-          }
+          derivationScheme : KeyDerivationScheme.Protocols,
+          publicKey        : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
         }]
       };
 
