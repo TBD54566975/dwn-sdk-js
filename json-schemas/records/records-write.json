@@ -132,7 +132,7 @@
           "type": "boolean"
         },
         "datePublished": {
-          "type": "string", 
+          "type": "string",
           "format": "date-time"
         },
         "dataFormat": {

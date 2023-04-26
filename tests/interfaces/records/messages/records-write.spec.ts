@@ -24,7 +24,7 @@ describe('RecordsWrite', () => {
         recipient                   : alice.did,
         data                        : TestDataGenerator.randomBytes(10),
         dataFormat                  : 'application/json',
-        dateCreated                 : '2022-10-14T10:20:30.405060',
+        dateCreated                 : '2022-10-14T10:20:30.405060Z',
         recordId                    : await TestDataGenerator.randomCborSha256Cid(),
         authorizationSignatureInput : Jws.createSignatureInput(alice)
       };
