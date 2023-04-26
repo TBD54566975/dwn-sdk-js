@@ -8,7 +8,6 @@
  * - to reduce the browser bundle size - Ajv is not included in the bundle
  * - to reduce the start-up time - the validation and compilation of schemas will happen during build time.
  */
-import addFormats from 'ajv-formats';
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -62,7 +61,7 @@ const schemas = {
 };
 
 const ajv = new Ajv({ code: { source: true, esm: true } });
-addFormats(ajv);
+ajv.addFormat('date-time', /^\d\d\d\d-[0-1]\d-[0-3]\dt(?:[0-2]\d:[0-5]\d:[0-5]\d|23:59:60)(?:\.\d+)?(?:z|[+-]\d\d(?::?\d\d)?)$/i);
 
 for (const schemaName in schemas) {
   ajv.addSchema(schemas[schemaName], schemaName);
