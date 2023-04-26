@@ -18,7 +18,6 @@ import { EncryptionAlgorithm } from '../../../utils/encryption.js';
 import { GeneralJwsSigner } from '../../../jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { Jws } from '../../../utils/jws.js';
-import { KeyDerivationScheme } from '../../../utils/hd-key.js';
 import { Message } from '../../../core/message.js';
 import { ProtocolAuthorization } from '../../../core/protocol-authorization.js';
 import { Records } from '../../../utils/records.js';
@@ -204,7 +203,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     // `attestation` generation
     const descriptorCid = await computeCid(descriptor);
     const attestation = await RecordsWrite.createAttestation(descriptorCid, options.attestationSignatureInputs);
-    const encryption = await RecordsWrite.createEncryptionProperty(options.encryptionInput, descriptor, contextId);
+    const encryption = await RecordsWrite.createEncryptionProperty(recordId, contextId, descriptor, options.encryptionInput);
 
     // `authorization` generation
     const authorization = await RecordsWrite.createAuthorization(
@@ -456,9 +455,10 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
    * Creates the `encryption` property if encryption input is given. Else `undefined` is returned.
    */
   private static async createEncryptionProperty(
-    encryptionInput: EncryptionInput | undefined,
+    recordId: string,
+    contextId: string | undefined,
     descriptor: RecordsWriteDescriptor,
-    contextId: string | undefined // there is opportunity here to streamline the arguments, e.g. `contextId` feels very specialized
+    encryptionInput: EncryptionInput | undefined
   ): Promise<EncryptionProperty | undefined> {
     if (encryptionInput === undefined) {
       return undefined;
@@ -467,13 +467,12 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     // encrypt the data encryption key once per key derivation scheme
     const keyEncryption: EncryptedKey[] = [];
     for (const keyEncryptionInput of encryptionInput.keyEncryptionInputs) {
-      // NOTE: right now only `protocol-context` scheme is supported so we will assume that's the scheme without additional switch/if statements
-      // derive the leaf public key
-      const leafDerivationPath = [KeyDerivationScheme.ProtocolContext, descriptor.protocol!, contextId!];
+
+      const fullDerivationPath = Records.constructKeyDerivationPath(keyEncryptionInput.publicKey.derivationScheme, recordId, contextId, descriptor);
 
       // NOTE: right now only `ECIES-ES256K` algorithm is supported for asymmetric encryption,
       // so we will assume that's the algorithm without additional switch/if statements
-      const leafPublicKey = await Records.deriveLeafPublicKey(keyEncryptionInput.publicKey, leafDerivationPath);
+      const leafPublicKey = await Records.deriveLeafPublicKey(keyEncryptionInput.publicKey, fullDerivationPath);
       const keyEncryptionOutput = await Encryption.eciesSecp256k1Encrypt(leafPublicKey, encryptionInput.key);
 
       const encryptedKey = Encoder.bytesToBase64Url(keyEncryptionOutput.ciphertext);

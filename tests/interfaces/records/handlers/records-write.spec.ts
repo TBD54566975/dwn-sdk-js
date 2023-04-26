@@ -1,17 +1,16 @@
+import type { GenerateFromRecordsWriteOut } from '../../../utils/test-data-generator.js';
+import type { QueryResultEntry } from '../../../../src/core/types.js';
+import type { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
+import type { EncryptionInput, ProtocolDefinition } from '../../../../src/index.js';
+
 import chaiAsPromised from 'chai-as-promised';
 import credentialIssuanceProtocolDefinition from '../../../vectors/protocol-definitions/credential-issuance.json' assert { type: 'json' };
 import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
 import messageProtocolDefinition from '../../../vectors/protocol-definitions/message.json' assert { type: 'json' };
-import socialMediaProtocolDefinition from '../../../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
-
 import sinon from 'sinon';
+import socialMediaProtocolDefinition from '../../../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
 import chai, { expect } from 'chai';
-
-import type { GenerateFromRecordsWriteOut } from '../../../utils/test-data-generator.js';
-import type { QueryResultEntry } from '../../../../src/core/types.js';
-import type { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
-import type { EncryptionInput, ProtocolDefinition } from '../../../../src/index.js';
 
 import { asyncGeneratorToArray } from '../../../../src/utils/array.js';
 import { base64url } from 'multiformats/bases/base64';
@@ -1440,7 +1439,7 @@ describe('RecordsWriteHandler.handle()', () => {
           keyEncryptionInputs  : [{
             algorithm : EncryptionAlgorithm.EciesSecp256k1,
             publicKey : {
-              derivationScheme : KeyDerivationScheme.ProtocolContext,
+              derivationScheme : KeyDerivationScheme.Protocols,
               derivationPath   : [],
               derivedPublicKey : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
             }
