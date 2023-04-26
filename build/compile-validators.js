@@ -14,7 +14,6 @@ import path from 'node:path';
 import url from 'node:url';
 
 import Ajv from 'ajv';
-
 import mkdirp from 'mkdirp';
 import standaloneCode from 'ajv/dist/standalone/index.js';
 
