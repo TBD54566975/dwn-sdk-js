@@ -22,10 +22,18 @@ import { RecordsQueryHandler } from '../../../../src/interfaces/records/handlers
 import { StorageController } from '../../../../src/store/storage-controller.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
+import { toTemporalInstant } from '@js-temporal/polyfill';
 
 import { constructRecordsWriteIndexes } from '../../../../src/interfaces/records/handlers/records-write.js';
 import { DataStream, DidResolver, Dwn, HdKey, KeyDerivationScheme, Records } from '../../../../src/index.js';
 import { DateSort, RecordsQuery } from '../../../../src/interfaces/records/messages/records-query.js';
+
+declare global {
+  interface Date {
+    toTemporalInstant: typeof toTemporalInstant;
+  }
+}
+Date.prototype.toTemporalInstant = toTemporalInstant;
 
 chai.use(chaiAsPromised);
 
@@ -183,11 +191,12 @@ describe('RecordsQueryHandler.handle()', () => {
       expect(reply3.entries?.length).to.equal(0);
     });
 
+
     it('should be able to range query by `dateCreated`', async () => {
       // scenario: 3 records authored by alice, created on first of 2021, 2022, and 2023 respectively, only the first 2 records share the same schema
-      const firstDayOf2021 = '2021-01-01T00:00:00.000000Z';
-      const firstDayOf2022 = '2022-01-01T00:00:00.000000Z';
-      const firstDayOf2023 = '2023-01-01T00:00:00.000000Z';
+      const firstDayOf2021 = new Date(2021, 1, 1).toTemporalInstant().toString({ smallestUnit: 'microseconds' });
+      const firstDayOf2022 = new Date(2022, 1, 1).toTemporalInstant().toString({ smallestUnit: 'microseconds' });
+      const firstDayOf2023 = new Date(2023, 1, 1).toTemporalInstant().toString({ smallestUnit: 'microseconds' });
       const alice = await DidKeyResolver.generate();
       const write1 = await TestDataGenerator.generateRecordsWrite({ requester: alice, dateCreated: firstDayOf2021, dateModified: firstDayOf2021 });
       const write2 = await TestDataGenerator.generateRecordsWrite({ requester: alice, dateCreated: firstDayOf2022, dateModified: firstDayOf2022 });
@@ -202,7 +211,7 @@ describe('RecordsQueryHandler.handle()', () => {
       expect(writeReply3.status.code).to.equal(202);
 
       // testing `from` range
-      const lastDayOf2021 = '2021-12-31T00:00:00.000000Z';
+      const lastDayOf2021 = new Date(2021, 12, 31).toTemporalInstant().toString({ smallestUnit: 'microseconds' });
       const recordsQuery1 = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
         filter    : { dateCreated: { from: lastDayOf2021 } },
@@ -214,7 +223,7 @@ describe('RecordsQueryHandler.handle()', () => {
       expect(reply1.entries![1].encodedData).to.equal(Encoder.bytesToBase64Url(write3.dataBytes!));
 
       // testing `to` range
-      const lastDayOf2022 = '2022-12-31T00:00:00.000000Z';
+      const lastDayOf2022 = new Date(2022, 12, 31).toTemporalInstant().toString({ smallestUnit: 'microseconds' });
       const recordsQuery2 = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
         filter    : { dateCreated: { to: lastDayOf2022 } },
@@ -226,7 +235,7 @@ describe('RecordsQueryHandler.handle()', () => {
       expect(reply2.entries![1].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes!));
 
       // testing `from` and `to` range
-      const lastDayOf2023 = '2023-12-31T00:00:00.000000Z';
+      const lastDayOf2023 = new Date(2023, 12, 31).toTemporalInstant().toString({ smallestUnit: 'microseconds' });
       const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
         filter    : { dateCreated: { from: lastDayOf2022, to: lastDayOf2023 } },
@@ -249,9 +258,9 @@ describe('RecordsQueryHandler.handle()', () => {
 
     it('should be able use range and exact match queries at the same time', async () => {
       // scenario: 3 records authored by alice, created on first of 2021, 2022, and 2023 respectively, only the first 2 records share the same schema
-      const firstDayOf2021 = '2021-01-01T00:00:00.000000Z';
-      const firstDayOf2022 = '2022-01-01T00:00:00.000000Z';
-      const firstDayOf2023 = '2023-01-01T00:00:00.000000Z';
+      const firstDayOf2021 = new Date(2021, 1, 1).toTemporalInstant().toString({ smallestUnit: 'microseconds' });
+      const firstDayOf2022 = new Date(2022, 1, 1).toTemporalInstant().toString({ smallestUnit: 'microseconds' });
+      const firstDayOf2023 = new Date(2023, 1, 1).toTemporalInstant().toString({ smallestUnit: 'microseconds' });
       const alice = await DidKeyResolver.generate();
       const schema = '2021And2022Schema';
       const write1 = await TestDataGenerator.generateRecordsWrite({
@@ -273,8 +282,8 @@ describe('RecordsQueryHandler.handle()', () => {
       expect(writeReply3.status.code).to.equal(202);
 
       // testing range criterion with another exact match
-      const lastDayOf2021 = '2021-12-31T00:00:00.000000Z';
-      const lastDayOf2023 = '2023-12-31T00:00:00.000000Z';
+      const lastDayOf2021 = new Date(2021, 12, 31).toTemporalInstant().toString({ smallestUnit: 'microseconds' });
+      const lastDayOf2023 = new Date(2023, 12, 31).toTemporalInstant().toString({ smallestUnit: 'microseconds' });
       const recordsQuery5 = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
         filter    : {
