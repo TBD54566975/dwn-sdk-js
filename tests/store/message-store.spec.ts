@@ -74,7 +74,7 @@ describe('MessageStoreLevel Tests', () => {
     it('should index properties with characters beyond just letters and digits', async () => {
       const alice = await DidKeyResolver.generate();
 
-      const schema = 'http://my-awesome-schema/awesomeness_schema#awesome-1?id=awesome_1';
+      const schema = 'http://my-awesome-schema/awesomeness_schema';
       const { message } = await TestDataGenerator.generateRecordsWrite({ schema });
 
       await messageStore.put(alice.did, message, { schema });

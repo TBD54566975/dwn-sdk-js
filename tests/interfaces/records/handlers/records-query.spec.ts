@@ -617,6 +617,30 @@ describe('RecordsQueryHandler.handle()', () => {
       expect(reply.status.detail).to.contain(DwnErrorCode.UrlProtocolNotNormalized);
     });
 
+    it('should return 400 if schema is not normalized', async () => {
+      const alice = await DidKeyResolver.generate();
+
+      // query for non-normalized schema
+      const recordsQuery = await TestDataGenerator.generateRecordsQuery({
+        requester : alice,
+        filter    : { schema: 'example.com/' },
+      });
+
+      // overwrite schema because #create auto-normalizes schema
+      recordsQuery.message.descriptor.filter.schema = 'example.com/';
+
+      // Re-create auth because we altered the descriptor after signing
+      recordsQuery.message.authorization = await Message.signAsAuthorization(
+        recordsQuery.message.descriptor,
+        Jws.createSignatureInput(alice)
+      );
+
+      // Send records write message
+      const reply = await dwn.processMessage(alice.did, recordsQuery.message);
+      expect(reply.status.code).to.equal(400);
+      expect(reply.status.detail).to.contain(DwnErrorCode.UrlSchemaNotNormalized);
+    });
+
     describe('encryption scenarios', () => {
       it('should only be able to decrypt record with a correct derived private key', async () => {
         // scenario, Bob writes into Alice's DWN an encrypted "email", alice is able to decrypt it

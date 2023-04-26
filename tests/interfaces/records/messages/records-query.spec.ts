@@ -37,11 +37,29 @@ describe('RecordsQuery', () => {
         filter                      : { protocol: 'example.com/' },
         definition                  : dexProtocolDefinition
       };
-      const protocolsConfig = await RecordsQuery.create(options);
+      const recordsQuery = await RecordsQuery.create(options);
 
-      const message = protocolsConfig.message as RecordsQueryMessage;
+      const message = recordsQuery.message as RecordsQueryMessage;
 
       expect(message.descriptor.filter!.protocol).to.eq('http://example.com');
+    });
+
+    it('should auto-normalize schema URI', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+
+      const options = {
+        recipient                   : alice.did,
+        data                        : TestDataGenerator.randomBytes(10),
+        dataFormat                  : 'application/json',
+        authorizationSignatureInput : Jws.createSignatureInput(alice),
+        filter                      : { schema: 'example.com/' },
+        definition                  : dexProtocolDefinition
+      };
+      const recordsQuery = await RecordsQuery.create(options);
+
+      const message = recordsQuery.message as RecordsQueryMessage;
+
+      expect(message.descriptor.filter!.schema).to.eq('http://example.com');
     });
   });
 });

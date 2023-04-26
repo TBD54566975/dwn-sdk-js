@@ -7,7 +7,7 @@ import { Message } from '../../../core/message.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
-import { normalizeProtocolUri, validateProtocolUriNormalized } from '../../../utils/url.js';
+import { normalizeProtocolUri, normalizeSchemaUri, validateProtocolUriNormalized, validateSchemaUriNormalized } from '../../../utils/url.js';
 
 export enum DateSort {
   CreatedAscending = 'createdAscending',
@@ -28,8 +28,11 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
   public static async parse(message: RecordsQueryMessage): Promise<RecordsQuery> {
     await validateAuthorizationIntegrity(message);
 
-    if (message.descriptor.filter?.protocol !== undefined) {
+    if (message.descriptor.filter.protocol !== undefined) {
       validateProtocolUriNormalized(message.descriptor.filter.protocol);
+    }
+    if (message.descriptor.filter.schema !== undefined) {
+      validateSchemaUriNormalized(message.descriptor.filter.schema);
     }
 
     return new RecordsQuery(message);
@@ -40,7 +43,7 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
       interface   : DwnInterfaceName.Records,
       method      : DwnMethodName.Query,
       dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
-      filter      : RecordsQuery.normalizerFilter(options.filter),
+      filter      : RecordsQuery.normalizeFilter(options.filter),
       dateSort    : options.dateSort
     };
 
@@ -101,7 +104,7 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
     return filterCopy as Filter;
   }
 
-  public static normalizerFilter(filter: RecordsQueryFilter): RecordsQueryFilter {
+  public static normalizeFilter(filter: RecordsQueryFilter): RecordsQueryFilter {
     let protocol;
     if (filter.protocol === undefined) {
       protocol = undefined;
@@ -109,9 +112,17 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
       protocol = normalizeProtocolUri(filter.protocol);
     }
 
+    let schema;
+    if (filter.schema === undefined) {
+      schema = undefined;
+    } else {
+      schema = normalizeSchemaUri(filter.schema);
+    }
+
     return {
       ...filter,
       protocol,
+      schema,
     };
   }
 }

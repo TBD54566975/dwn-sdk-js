@@ -1125,10 +1125,10 @@ describe('RecordsWriteHandler.handle()', () => {
         const protocolDefinition = {
           labels: {
             email: {
-              schema: 'emailSchema'
+              schema: 'http://emailschema'
             },
             sms: {
-              schema: 'smsSchema'
+              schema: 'http://smsschema'
             }
           },
           records: {
@@ -1168,7 +1168,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const reply = await dwn.processMessage(alice.did, smsSchemaResponse.message, smsSchemaResponse.dataStream);
 
         expect(reply.status.code).to.equal(401);
-        expect(reply.status.detail).to.contain('record with schema: \'smsSchema\' not allowed in structure level 1');
+        expect(reply.status.detail).to.contain('record with schema: \'http://smsschema\' not allowed in structure level 1');
       });
 
       it('should only allow DWN owner to write if record does not have an allow rule defined', async () => {
@@ -1303,7 +1303,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const askMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : pfi.did,
-          schema       : 'ask',
+          schema       : protocolDefinition.labels.ask.schema,
           protocol,
           protocolPath : 'ask',
           data
@@ -1316,7 +1316,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const offerMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : pfi,
           recipientDid : alice.did,
-          schema       : 'offer',
+          schema       : protocolDefinition.labels.offer.schema,
           contextId,
           parentId     : askMessageData.message.recordId,
           protocol,
@@ -1331,7 +1331,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const fulfillmentMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : pfi.did,
-          schema       : 'fulfillment',
+          schema       : protocolDefinition.labels.fulfillment.schema,
           contextId,
           parentId     : offerMessageData.message.recordId,
           protocol,
@@ -1383,7 +1383,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const askMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : pfi.did,
-          schema       : 'ask',
+          schema       : protocolDefinition.labels.ask.schema,
           protocol,
           protocolPath : 'ask',
           data
@@ -1397,7 +1397,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const fulfillmentMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : pfi.did,
-          schema       : 'fulfillment',
+          schema       : protocolDefinition.labels.fulfillment.schema,
           contextId,
           parentId     : 'non-existent-id',
           protocolPath : 'ask/offer/fulfillment',
