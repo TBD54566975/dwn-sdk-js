@@ -5,7 +5,7 @@ import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
-import { normalizeProtocolUri, normalizeSchemaUri, validateProtocolUriNormalized, validateSchemaUriNormalized } from '../../../utils/url.js';
+import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../../../utils/url.js';
 
 export type ProtocolsConfigureOptions = {
   dateCreated? : string;
@@ -18,7 +18,7 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
 
   public static async parse(message: ProtocolsConfigureMessage): Promise<ProtocolsConfigure> {
     await validateAuthorizationIntegrity(message);
-    validateProtocolUriNormalized(message.descriptor.protocol);
+    validateProtocolUrlNormalized(message.descriptor.protocol);
     ProtocolsConfigure.validateDefinitionNormalized(message.descriptor.definition);
 
     return new ProtocolsConfigure(message);
@@ -29,7 +29,7 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       interface   : DwnInterfaceName.Protocols,
       method      : DwnMethodName.Configure,
       dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
-      protocol    : normalizeProtocolUri(options.protocol),
+      protocol    : normalizeProtocolUrl(options.protocol),
       // TODO: #139 - move definition out of the descriptor - https://github.com/TBD54566975/dwn-sdk-js/issues/139
       definition  : ProtocolsConfigure.normalizeDefinition(options.definition)
     };
@@ -44,19 +44,19 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
   }
 
   private static validateDefinitionNormalized(definition: ProtocolDefinition): void {
-    // validate schema uri normalized
+    // validate schema url normalized
     for (const labelKey in definition.labels) {
       const schema = definition.labels[labelKey].schema;
-      validateSchemaUriNormalized(schema);
+      validateSchemaUrlNormalized(schema);
     }
   }
 
   private static normalizeDefinition(definition: ProtocolDefinition): ProtocolDefinition {
     const definitionCopy = { ...definition };
 
-    // Normalize schema uri
+    // Normalize schema url
     for (const labelKey in definition.labels) {
-      definitionCopy.labels[labelKey].schema = normalizeSchemaUri(definitionCopy.labels[labelKey].schema);
+      definitionCopy.labels[labelKey].schema = normalizeSchemaUrl(definitionCopy.labels[labelKey].schema);
     }
 
     return definitionCopy;

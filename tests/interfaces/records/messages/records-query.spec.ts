@@ -26,7 +26,7 @@ describe('RecordsQuery', () => {
       expect(recordsQuery.message.descriptor.dateCreated).to.equal(currentTime);
     });
 
-    it('should auto-normalize protocol URI', async () => {
+    it('should auto-normalize protocol URL', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {
@@ -44,7 +44,7 @@ describe('RecordsQuery', () => {
       expect(message.descriptor.filter!.protocol).to.eq('http://example.com');
     });
 
-    it('should auto-normalize schema URI', async () => {
+    it('should auto-normalize schema URL', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {

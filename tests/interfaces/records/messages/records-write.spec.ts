@@ -125,7 +125,7 @@ describe('RecordsWrite', () => {
       await expect(createPromise2).to.be.rejectedWith('`dataCid` and `dataSize` must both be defined or undefined at the same time');
     });
 
-    it('should auto-normalize protocol URI', async () => {
+    it('should auto-normalize protocol URL', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {

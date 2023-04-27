@@ -5,7 +5,7 @@ import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
-import { normalizeProtocolUri, validateProtocolUriNormalized } from '../../../utils/url.js';
+import { normalizeProtocolUrl, validateProtocolUrlNormalized } from '../../../utils/url.js';
 
 export type ProtocolsQueryOptions = {
   dateCreated?: string;
@@ -19,7 +19,7 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
     await validateAuthorizationIntegrity(message);
 
     if (message.descriptor.filter !== undefined) {
-      validateProtocolUriNormalized(message.descriptor.filter.protocol);
+      validateProtocolUrlNormalized(message.descriptor.filter.protocol);
     }
 
     return new ProtocolsQuery(message);
@@ -53,7 +53,7 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
 
     return {
       ...filter,
-      protocol: normalizeProtocolUri(filter.protocol),
+      protocol: normalizeProtocolUrl(filter.protocol),
     };
   }
 }

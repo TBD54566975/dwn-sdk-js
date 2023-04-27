@@ -7,7 +7,7 @@ import { Message } from '../../../core/message.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
-import { normalizeProtocolUri, normalizeSchemaUri, validateProtocolUriNormalized, validateSchemaUriNormalized } from '../../../utils/url.js';
+import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../../../utils/url.js';
 
 export enum DateSort {
   CreatedAscending = 'createdAscending',
@@ -29,10 +29,10 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
     await validateAuthorizationIntegrity(message);
 
     if (message.descriptor.filter.protocol !== undefined) {
-      validateProtocolUriNormalized(message.descriptor.filter.protocol);
+      validateProtocolUrlNormalized(message.descriptor.filter.protocol);
     }
     if (message.descriptor.filter.schema !== undefined) {
-      validateSchemaUriNormalized(message.descriptor.filter.schema);
+      validateSchemaUrlNormalized(message.descriptor.filter.schema);
     }
 
     return new RecordsQuery(message);
@@ -109,14 +109,14 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
     if (filter.protocol === undefined) {
       protocol = undefined;
     } else {
-      protocol = normalizeProtocolUri(filter.protocol);
+      protocol = normalizeProtocolUrl(filter.protocol);
     }
 
     let schema;
     if (filter.schema === undefined) {
       schema = undefined;
     } else {
-      schema = normalizeSchemaUri(filter.schema);
+      schema = normalizeSchemaUrl(filter.schema);
     }
 
     return {
