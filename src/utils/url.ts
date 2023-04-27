@@ -52,7 +52,7 @@ function normalizeUri(url: string): string {
     result.hash = '';
     return removeTrailingSlash(result.href);
   } catch (e) {
-    throw new DwnError(DwnErrorCode.UrlPrococolNotNormalizable, 'Could not normalize protocol URI');
+    throw new DwnError(DwnErrorCode.UrlProtocolNotNormalizable, 'Could not normalize protocol URI');
   }
 }
 

@@ -1,20 +1,14 @@
-import type { PrivateJwk, PublicJwk } from '../jose/types.js';
+import type { PrivateJwk } from '../jose/types.js';
 
 import { Secp256k1 } from './secp256k1.js';
 
 export enum KeyDerivationScheme {
-  ProtocolContext = 'protocol-context'
+  Protocols = 'protocols'
 }
-
-export type DerivedPublicJwk = {
-  derivationScheme: KeyDerivationScheme;
-  derivationPath: string[];
-  derivedPublicKey: PublicJwk,
-};
 
 export type DerivedPrivateJwk = {
   derivationScheme: KeyDerivationScheme;
-  derivationPath: string[];
+  derivationPath?: string[];
   derivedPrivateKey: PrivateJwk,
 };
 
@@ -28,10 +22,11 @@ export class HdKey {
    */
   public static async derivePrivateKey(ancestorKey: DerivedPrivateJwk, subDerivationPath: string[]): Promise<DerivedPrivateJwk> {
     const ancestorPrivateKey = Secp256k1.privateJwkToBytes(ancestorKey.derivedPrivateKey);
+    const ancestorPrivateKeyDerivationPath = ancestorKey.derivationPath ?? [];
     const derivedPrivateKeyBytes = await Secp256k1.derivePrivateKey(ancestorPrivateKey, subDerivationPath);
     const derivedPrivateJwk = await Secp256k1.privateKeyToJwk(derivedPrivateKeyBytes);
     const derivedDescendantPrivateKey: DerivedPrivateJwk = {
-      derivationPath    : [...ancestorKey.derivationPath, ...subDerivationPath],
+      derivationPath    : [...ancestorPrivateKeyDerivationPath, ...subDerivationPath],
       derivationScheme  : ancestorKey.derivationScheme,
       derivedPrivateKey : derivedPrivateJwk
     };
