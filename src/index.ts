@@ -16,7 +16,7 @@ export { DataStore } from './store/data-store.js';
 export { DataStoreLevel } from './store/data-store-level.js';
 export { DateSort } from './interfaces/records/messages/records-query.js';
 export { DataStream } from './utils/data-stream.js';
-export { DerivedPrivateJwk, DerivedPublicJwk, HdKey, KeyDerivationScheme } from './utils/hd-key.js';
+export { DerivedPrivateJwk, HdKey, KeyDerivationScheme } from './utils/hd-key.js';
 export { DidKeyResolver } from './did/did-key-resolver.js';
 export { DidIonResolver } from './did/did-ion-resolver.js';
 export { DidResolver, DidMethodResolver } from './did/did-resolver.js';
