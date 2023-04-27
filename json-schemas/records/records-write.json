@@ -121,16 +121,16 @@
           "type": "number"
         },
         "dateCreated": {
-          "type": "string"
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
         },
         "dateModified": {
-          "type": "string"
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
         },
         "published": {
           "type": "boolean"
         },
         "datePublished": {
-          "type": "string"
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
         },
         "dataFormat": {
           "type": "string"

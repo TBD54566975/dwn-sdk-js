@@ -25,7 +25,7 @@ describe('ProtocolsConfigure schema definition', () => {
       descriptor: {
         interface   : 'Protocols',
         method      : 'Configure',
-        dateCreated : '123',
+        dateCreated : '2022-10-14T10:20:30.405060Z',
         protocol    : 'anyProtocolUri',
         definition  : protocolDefinition
       },

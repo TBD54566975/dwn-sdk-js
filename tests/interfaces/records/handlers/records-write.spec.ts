@@ -425,7 +425,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
       it('should return 400 if `dateCreated` and `dateModified` are not the same in an initial write', async () => {
         const { requester, message, dataStream } = await TestDataGenerator.generateRecordsWrite({
-          dateCreated  : '2023-01-10T10:20:30.405060',
+          dateCreated  : '2023-01-10T10:20:30.405060Z',
           dateModified : getCurrentTimeInHighPrecision() // this always generate a different timestamp
         });
         const tenant = requester.did;

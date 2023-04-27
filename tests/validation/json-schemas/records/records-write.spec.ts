@@ -11,8 +11,8 @@ describe('RecordsWrite schema definition', () => {
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dataSize     : 123,
-        dateCreated  : '2022-12-19T10:20:30.123456',
-        dateModified : '2022-12-19T10:20:30.123456',
+        dateCreated  : '2022-12-19T10:20:30.123456Z',
+        dateModified : '2022-12-19T10:20:30.123456Z',
       },
       authorization: {
         payload    : 'anyPayload',
@@ -33,8 +33,8 @@ describe('RecordsWrite schema definition', () => {
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dataSize     : 123,
-        dateCreated  : '2022-12-19T10:20:30.123456',
-        dateModified : '2022-12-19T10:20:30.123456'
+        dateCreated  : '2022-12-19T10:20:30.123456Z',
+        dateModified : '2022-12-19T10:20:30.123456Z'
       },
       authorization: {
         payload    : 'anyPayload',
@@ -59,8 +59,8 @@ describe('RecordsWrite schema definition', () => {
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dataSize     : 123,
-        dateCreated  : '2022-12-19T10:20:30.123456',
-        dateModified : '2022-12-19T10:20:30.123456'
+        dateCreated  : '2022-12-19T10:20:30.123456Z',
+        dateModified : '2022-12-19T10:20:30.123456Z'
       }
     };
 
@@ -78,8 +78,8 @@ describe('RecordsWrite schema definition', () => {
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dataSize     : 123,
-        dateCreated  : '2022-12-19T10:20:30.123456',
-        dateModified : '2022-12-19T10:20:30.123456'
+        dateCreated  : '2022-12-19T10:20:30.123456Z',
+        dateModified : '2022-12-19T10:20:30.123456Z'
       },
       authorization: {
         payload    : 'anyPayload',
@@ -105,8 +105,8 @@ describe('RecordsWrite schema definition', () => {
         dataCid         : 'anyCid',
         dataFormat      : 'application/json',
         dataSize        : 123,
-        dateCreated     : '2022-12-19T10:20:30.123456',
-        dateModified    : '2022-12-19T10:20:30.123456',
+        dateCreated     : '2022-12-19T10:20:30.123456Z',
+        dateModified    : '2022-12-19T10:20:30.123456Z',
         unknownProperty : 'unknownProperty' // unknown property
       },
       authorization: {
@@ -136,8 +136,8 @@ describe('RecordsWrite schema definition', () => {
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dataSize     : 123,
-        dateCreated  : '2022-12-19T10:20:30.123456',
-        dateModified : '2022-12-19T10:20:30.123456'
+        dateCreated  : '2022-12-19T10:20:30.123456Z',
+        dateModified : '2022-12-19T10:20:30.123456Z'
       },
       authorization: {
         payload    : 'anyPayload',
@@ -164,8 +164,8 @@ describe('RecordsWrite schema definition', () => {
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dataSize     : 123,
-        dateCreated  : '2022-12-19T10:20:30.123456',
-        dateModified : '2022-12-19T10:20:30.123456'
+        dateCreated  : '2022-12-19T10:20:30.123456Z',
+        dateModified : '2022-12-19T10:20:30.123456Z'
       },
       authorization: {
         payload    : 'anyPayload',
@@ -190,8 +190,8 @@ describe('RecordsWrite schema definition', () => {
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dataSize     : 123,
-        dateCreated  : '2022-12-19T10:20:30.123456',
-        dateModified : '2022-12-19T10:20:30.123456'
+        dateCreated  : '2022-12-19T10:20:30.123456Z',
+        dateModified : '2022-12-19T10:20:30.123456Z'
       },
       authorization: {
         payload    : 'anyPayload',
@@ -215,8 +215,8 @@ describe('RecordsWrite schema definition', () => {
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dataSize     : 123,
-        dateCreated  : '2022-12-19T10:20:30.123456',
-        dateModified : '2022-12-19T10:20:30.123456'
+        dateCreated  : '2022-12-19T10:20:30.123456Z',
+        dateModified : '2022-12-19T10:20:30.123456Z'
       },
       authorization: {
         payload    : 'anyPayload',
@@ -242,8 +242,8 @@ describe('RecordsWrite schema definition', () => {
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dataSize     : 123,
-        dateCreated  : '2022-12-19T10:20:30.123456',
-        dateModified : '2022-12-19T10:20:30.123456'
+        dateCreated  : '2022-12-19T10:20:30.123456Z',
+        dateModified : '2022-12-19T10:20:30.123456Z'
       },
       authorization: {
         payload    : 'anyPayload',
@@ -271,8 +271,8 @@ describe('RecordsWrite schema definition', () => {
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dataSize     : 123,
-        dateCreated  : '2022-12-19T10:20:30.123456',
-        dateModified : '2022-12-19T10:20:30.123456'
+        dateCreated  : '2022-12-19T10:20:30.123456Z',
+        dateModified : '2022-12-19T10:20:30.123456Z'
       },
       authorization: {
         payload    : 'anyPayload',
@@ -300,8 +300,8 @@ describe('RecordsWrite schema definition', () => {
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dataSize     : 123,
-        dateCreated  : '2022-12-19T10:20:30.123456',
-        dateModified : '2022-12-19T10:20:30.123456'
+        dateCreated  : '2022-12-19T10:20:30.123456Z',
+        dateModified : '2022-12-19T10:20:30.123456Z'
       },
       authorization: {
         payload    : 'anyPayload',
@@ -330,8 +330,8 @@ describe('RecordsWrite schema definition', () => {
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dataSize     : 123,
-        dateCreated  : '2022-12-19T10:20:30.123456',
-        dateModified : '2022-12-19T10:20:30.123456'
+        dateCreated  : '2022-12-19T10:20:30.123456Z',
+        dateModified : '2022-12-19T10:20:30.123456Z'
       },
       authorization: {
         payload    : 'anyPayload',
@@ -356,10 +356,10 @@ describe('RecordsWrite schema definition', () => {
         dataCid       : 'anyCid',
         dataFormat    : 'application/json',
         dataSize      : 123,
-        dateModified  : '2022-12-19T10:20:30.123456',
+        dateModified  : '2022-12-19T10:20:30.123456Z',
         published     : false,
-        dateCreated   : '2022-12-19T10:20:30.123456',
-        datePublished : '2022-12-19T10:20:30.123456' // must not be present when not published
+        dateCreated   : '2022-12-19T10:20:30.123456Z',
+        datePublished : '2022-12-19T10:20:30.123456Z' // must not be present when not published
       },
       authorization: {
         payload    : 'anyPayload',
@@ -384,8 +384,8 @@ describe('RecordsWrite schema definition', () => {
         dataCid      : 'anyCid',
         dataFormat   : 'application/json',
         dataSize     : 123,
-        dateCreated  : '2022-12-19T10:20:30.123456',
-        dateModified : '2022-12-19T10:20:30.123456',
+        dateCreated  : '2022-12-19T10:20:30.123456Z',
+        dateModified : '2022-12-19T10:20:30.123456Z',
         published    : true //datePublished must be present
       },
       authorization: {
@@ -411,9 +411,9 @@ describe('RecordsWrite schema definition', () => {
         dataCid       : 'anyCid',
         dataFormat    : 'application/json',
         dataSize      : 123,
-        dateCreated   : '2022-12-19T10:20:30.123456',
-        dateModified  : '2022-12-19T10:20:30.123456',
-        datePublished : '2022-12-19T10:20:30.123456' //published must be present
+        dateCreated   : '2022-12-19T10:20:30.123456Z',
+        dateModified  : '2022-12-19T10:20:30.123456Z',
+        datePublished : '2022-12-19T10:20:30.123456Z' //published must be present
       },
       authorization: {
         payload    : 'anyPayload',

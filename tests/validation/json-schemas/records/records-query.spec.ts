@@ -7,7 +7,7 @@ describe('RecordsQuery schema validation', () => {
       descriptor: {
         interface   : 'Records',
         method      : 'Query',
-        dateCreated : '123',
+        dateCreated : '2022-10-14T10:20:30.405060Z',
         filter      : { schema: 'anySchema' }
       },
       authorization: {
@@ -26,7 +26,7 @@ describe('RecordsQuery schema validation', () => {
       descriptor: {
         interface   : 'Records',
         method      : 'Query',
-        dateCreated : '123',
+        dateCreated : '2022-10-14T10:20:30.405060Z',
         filter      : { schema: 'anySchema' }
       }
     };
@@ -41,7 +41,7 @@ describe('RecordsQuery schema validation', () => {
       descriptor: {
         interface   : 'Records',
         method      : 'Query',
-        dateCreated : '123',
+        dateCreated : '2022-10-14T10:20:30.405060Z',
         filter      : { schema: 'anySchema' }
       },
       authorization: {
@@ -64,7 +64,7 @@ describe('RecordsQuery schema validation', () => {
       descriptor: {
         interface       : 'Records',
         method          : 'Query',
-        dateCreated     : '123',
+        dateCreated     : '2022-10-14T10:20:30.405060Z',
         filter          : { schema: 'anySchema' },
         unknownProperty : 'unknownProperty' // unknown property
       },
@@ -90,7 +90,7 @@ describe('RecordsQuery schema validation', () => {
         descriptor: {
           interface   : 'Records',
           method      : 'Query',
-          dateCreated : '123',
+          dateCreated : '2022-10-14T10:20:30.405060Z',
           filter      : { schema: 'anySchema' },
           dateSort    : dateSortValue
         },
@@ -111,7 +111,7 @@ describe('RecordsQuery schema validation', () => {
       descriptor: {
         interface   : 'Records',
         method      : 'Query',
-        dateCreated : '123',
+        dateCreated : '2022-10-14T10:20:30.405060Z',
         filter      : { schema: 'anySchema' },
         dateSort    : 'unacceptable', // bad value
       },
@@ -135,7 +135,7 @@ describe('RecordsQuery schema validation', () => {
         descriptor: {
           interface   : 'Records',
           method      : 'Query',
-          dateCreated : '123',
+          dateCreated : '2022-10-14T10:20:30.405060Z',
           filter      : { }
         },
         authorization: {
@@ -157,7 +157,7 @@ describe('RecordsQuery schema validation', () => {
         descriptor: {
           interface   : 'Records',
           method      : 'Query',
-          dateCreated : '123',
+          dateCreated : '2022-10-14T10:20:30.405060Z',
           filter      : { dateCreated: { } } // empty `dateCreated` criteria
         },
         authorization: {
@@ -179,7 +179,7 @@ describe('RecordsQuery schema validation', () => {
         descriptor: {
           interface   : 'Records',
           method      : 'Query',
-          dateCreated : '123',
+          dateCreated : '2022-10-14T10:20:30.405060Z',
           filter      : { dateCreated: { unexpectedProperty: 'anyValue' } } // unexpected property in `dateCreated` criteria
         },
         authorization: {

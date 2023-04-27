@@ -35,7 +35,7 @@
           "type": "string"
         },
         "dateCreated": {
-          "type": "string"
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
         },
         "schema": {
           "type": "string"
