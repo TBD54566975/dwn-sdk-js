@@ -1,7 +1,7 @@
 import type { MessageStore } from '../store/message-store.js';
 import type { RecordsRead } from '../interfaces/records/messages/records-read.js';
 import type { Filter, TimestampedMessage } from './types.js';
-import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
+import { ProtocolDefinition, ProtocolAction, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolActor } from '../interfaces/protocols/types.js';
 import type { RecordsReadMessage, RecordsWriteMessage } from '../interfaces/records/types.js';
 
 import { RecordsWrite } from '../interfaces/records/messages/records-write.js';
@@ -9,8 +9,8 @@ import { DwnError, DwnErrorCode } from './dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
 
 const methodToAllowedActionMap: Record<string, string> = {
-  [DwnMethodName.Write] : 'write',
-  [DwnMethodName.Read]  : 'read',
+  [DwnMethodName.Write] : ProtocolAction.WRITE,
+  [DwnMethodName.Read]  : ProtocolAction.READ,
 };
 
 export class ProtocolAuthorization {
@@ -288,9 +288,9 @@ export class ProtocolAuthorization {
     ancestorMessageChain: RecordsWriteMessage[],
     recordSchemaToLabelMap: Map<string, string>
   ): void {
-    const allowRule = inboundMessageRuleSet.allow;
+    const allowRules = inboundMessageRuleSet.allow;
 
-    if (allowRule === undefined) {
+    if (allowRules === undefined) {
       // if no allow rule is defined, owner of DWN can do everything
       if (requesterDid === tenant) {
         return;
@@ -300,37 +300,42 @@ export class ProtocolAuthorization {
     }
 
     const allowedActions = new Set<string>();
-    if (allowRule.anyone !== undefined) {
-      allowRule.anyone.to.forEach(action => allowedActions.add(action));
-    }
+    for (const allowRule of allowRules) {
+      switch (allowRule.actor) {
+        case ProtocolActor.ANYONE:
+          allowRule.actions.forEach((operation) => allowedActions.add(operation));
+          break;
+        case ProtocolActor.AUTHOR:
+          const messageForAuthorCheck = ProtocolAuthorization.getMessage(
+            ancestorMessageChain,
+            allowRule.protocolPath!,
+            recordSchemaToLabelMap
+          );
 
-    if (allowRule.author !== undefined) {
-      const messageForAuthorCheck = ProtocolAuthorization.getMessage(
-        ancestorMessageChain,
-        allowRule.author.of,
-        recordSchemaToLabelMap
-      );
-      if (messageForAuthorCheck !== undefined) {
-        const expectedRequesterDid = Message.getAuthor(messageForAuthorCheck);
-
-        if (requesterDid === expectedRequesterDid) {
-          allowRule.author.to.forEach(action => allowedActions.add(action));
-        }
-      }
-    }
-
-    if (allowRule.recipient !== undefined) {
-      const messageForRecipientCheck = ProtocolAuthorization.getMessage(
-        ancestorMessageChain,
-        allowRule.recipient.of,
-        recordSchemaToLabelMap
-      );
-      if (messageForRecipientCheck !== undefined) {
-        const expectedRequesterDid = messageForRecipientCheck.descriptor.recipient;
-
-        if (requesterDid === expectedRequesterDid) {
-          allowRule.recipient.to.forEach(action => allowedActions.add(action));
-        }
+          if (messageForAuthorCheck !== undefined) {
+            const expectedRequesterDid = Message.getAuthor(messageForAuthorCheck);
+    
+            if (requesterDid === expectedRequesterDid) {
+              allowRule.actions.forEach(action => allowedActions.add(action));
+            }
+          }
+          break;
+        case ProtocolActor.RECIPIENT:
+          const messageForRecipientCheck = ProtocolAuthorization.getMessage(
+            ancestorMessageChain,
+            allowRule.protocolPath!,
+            recordSchemaToLabelMap
+          );
+          if (messageForRecipientCheck !== undefined) {
+            const expectedRequesterDid = messageForRecipientCheck.descriptor.recipient;
+    
+            if (requesterDid === expectedRequesterDid) {
+              allowRule.actions.forEach(action => allowedActions.add(action));
+            }
+          }
+          break;
+        // default:
+        //    This is handled by protocol-rule-set.json validator
       }
     }
 

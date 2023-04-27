@@ -7,49 +7,58 @@
   },
   "records": {
     "message": {
-      "allow": {
-        "anyone": { "to": ["write"] }
-      },
+      "allow": [
+        {
+          "actor": "anyone",
+          "actions": ["write"]
+        }
+      ],
       "records": {
         "reply": {
-          "allow": {
-            "recipient": {
-              "of": "message",
-              "to": ["write"]
+          "allow": [
+            {
+              "actor": "recipient",
+              "protocolPath": "message",
+              "actions": ["write"]
             }
-          }
+          ]
         }
       }
     },
     "image": {
-      "allow": {
-        "anyone": {
-          "to": ["read", "write"]
+      "allow": [
+        {
+          "actor": "anyone",
+          "actions": ["read", "write"]
         }
-      },
+      ],
       "records": {
         "caption": {
-          "allow": {
-            "anyone": {
-              "to": ["read"]
+          "allow": [
+            {
+              "actor": "anyone",
+              "actions": ["read"]
             },
-            "author": {
-              "of": "image",
-              "to": ["write"]
+            {
+              "actor": "author",
+              "protocolPath": "image",
+              "actions": ["write"]
             }
-          }
+          ]
         },
         "reply": {
-          "allow": {
-            "author": {
-              "of": "image",
-              "to": ["read"]
+          "allow": [
+            {
+              "actor": "author",
+              "protocolPath": "image",
+              "actions": ["read"]
             },
-            "recipient": {
-              "of": "image",
-              "to": ["write"]
+            {
+              "actor": "recipient",
+              "protocolPath": "image",
+              "actions": ["write"]
             }
-          }
+          ]
         }
       }
     }

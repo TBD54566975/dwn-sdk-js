@@ -21,20 +21,23 @@ export type ProtocolDefinition = {
   };
 };
 
+export enum ProtocolActor {
+  ANYONE = 'anyone',
+  AUTHOR = 'author',
+  RECIPIENT = 'recipient'
+}
+
+export enum ProtocolAction {
+  READ = 'read',
+  WRITE = 'write'
+}
+
 export type ProtocolRuleSet = {
   allow?: {
-    anyone?: {
-      to: string[];
-    };
-    author?: {
-      of: string,
-      to: string[],
-    };
-    recipient?: {
-      of: string,
-      to: string[];
-    }
-  };
+    actor: string,
+    protocolPath?: string,
+    actions: string[]
+  }[];
   records?: {
     [key: string]: ProtocolRuleSet;
   }

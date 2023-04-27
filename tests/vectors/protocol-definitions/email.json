@@ -6,38 +6,40 @@
   },
   "records": {
     "email": {
-      "allow": {
-        "anyone": {
-          "to": [
-            "write"
-          ]
+      "allow": [
+        {
+          "actor": "anyone",
+          "actions": ["write"]
         },
-        "author": {
-          "of": "email",
-          "to": ["read"]
+        {
+          "actor": "author",
+          "protocolPath": "email",
+          "actions": ["read"]
         },
-        "recipient": {
-          "of": "email",
-          "to": ["read"]
+        {
+          "actor": "recipient",
+          "protocolPath": "email",
+          "actions": ["read"]
         }
-      },
+      ],
       "records": {
         "email": {
-          "allow": {
-            "anyone": {
-              "to": [
-                "write"
-              ]
+          "allow": [
+            {
+              "actor": "anyone",
+              "actions": ["write"]
             },
-            "author": {
-              "of": "email/email",
-              "to": ["read"]
+            {
+              "actor": "author",
+              "protocolPath": "email/email",
+              "actions": ["read"]
             },
-            "recipient": {
-              "of": "email/email",
-              "to": ["read"]
+            {
+              "actor": "recipient",
+              "protocolpath": "email/email",
+              "actions": ["read"]
             }
-          }
+          ]
         }
       }
     }

@@ -1,9 +1,10 @@
 import { expect } from 'chai';
-import { Message } from '../../../../src/core/message.js';
+import { DwnInterfaceName, DwnMethodName, Message } from '../../../../src/core/message.js';
+import { ProtocolDefinition, ProtocolsConfigureMessage } from '../../../../src/index.js';
 import { validateJsonSchema } from '../../../../src/schema-validator.js';
 
 describe('ProtocolsConfigure schema definition', () => {
-  it('should throw if unknown allow rule is encountered', async () => {
+  it('should throw if unknown actor is encountered in allow rule', async () => {
     const protocolDefinition = {
       labels: {
         email: {
@@ -12,19 +13,20 @@ describe('ProtocolsConfigure schema definition', () => {
       },
       records: {
         email: {
-          allow: {
-            unknown: { // this will be considered an "additional property" beyond what's allowed in the `oneOf` definition
-              to: ['write']
+          allow: [
+            {
+              actor: "unknown",
+              actions: ['write']
             }
-          }
+          ]
         }
       }
     };
 
-    const message = {
+    const message: ProtocolsConfigureMessage = {
       descriptor: {
-        interface   : 'Protocols',
-        method      : 'Configure',
+        interface   : DwnInterfaceName.Protocols,
+        method      : DwnMethodName.Configure,
         dateCreated : '2022-10-14T10:20:30.405060Z',
         protocol    : 'anyProtocolUri',
         definition  : protocolDefinition
@@ -40,7 +42,7 @@ describe('ProtocolsConfigure schema definition', () => {
 
     expect(() => {
       Message.validateJsonSchema(message);
-    }).throws('must NOT have additional properties');
+    }).throws('actor: must be equal to one of the allowed values');
   });
 
   describe('rule-set tests', () => {
