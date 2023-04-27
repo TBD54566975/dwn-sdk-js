@@ -37,10 +37,10 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    Message.validateJsonSchema({ descriptor, authorization: { } });
-
     const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
     const message = { descriptor, authorization };
+
+    Message.validateJsonSchema(message);
 
     const protocolsQuery = new ProtocolsQuery(message);
     return protocolsQuery;
