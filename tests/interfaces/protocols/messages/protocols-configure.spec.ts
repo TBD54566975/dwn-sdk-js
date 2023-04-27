@@ -43,6 +43,27 @@ describe('ProtocolsConfigure', () => {
 
       expect(message.descriptor.protocol).to.eq('http://example.com');
     });
+
+    it('should auto-normalize schema URIs', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+
+      const nonnormalizedDexProtocol = { ...dexProtocolDefinition };
+      nonnormalizedDexProtocol.labels.ask.schema = 'ask';
+
+      const options = {
+        recipient                   : alice.did,
+        data                        : TestDataGenerator.randomBytes(10),
+        dataFormat                  : 'application/json',
+        authorizationSignatureInput : Jws.createSignatureInput(alice),
+        protocol                    : 'example.com/',
+        definition                  : nonnormalizedDexProtocol
+      };
+      const protocolsConfig = await ProtocolsConfigure.create(options);
+
+      const message = protocolsConfig.message as ProtocolsConfigureMessage;
+
+      expect(message.descriptor.definition.labels.ask.schema).to.eq('http://ask');
+    });
   });
 });
 

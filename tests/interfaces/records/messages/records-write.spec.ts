@@ -1,3 +1,4 @@
+import type { EncryptionInput } from '../../../../src/interfaces/records/messages/records-write.js';
 import type { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -5,11 +6,11 @@ import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import { DwnErrorCode } from '../../../../src/core/dwn-error.js';
-import { Jws } from '../../../../src/index.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsWrite } from '../../../../src/interfaces/records/messages/records-write.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { getCurrentTimeInHighPrecision, sleep } from '../../../../src/utils/time.js';
+import { Jws, KeyDerivationScheme } from '../../../../src/index.js';
 
 
 chai.use(chaiAsPromised);
@@ -124,7 +125,7 @@ describe('RecordsWrite', () => {
       await expect(createPromise2).to.be.rejectedWith('`dataCid` and `dataSize` must both be defined or undefined at the same time');
     });
 
-    it('should auto-normalize protocol URI', async () => {
+    it('should auto-normalize protocol URL', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {
@@ -174,6 +175,31 @@ describe('RecordsWrite', () => {
       const createPromise2 = RecordsWrite.create(options2);
 
       await expect(createPromise2).to.be.rejectedWith('`protocol` and `protocolPath` must both be defined or undefined at the same time');
+    });
+
+    it('should throw if attempting to use `protocol` key derivation scheme on non-protocol-based record', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+
+      const dataEncryptionInitializationVector = TestDataGenerator.randomBytes(16);
+      const dataEncryptionKey = TestDataGenerator.randomBytes(32);
+      const encryptionInput: EncryptionInput = {
+        initializationVector : dataEncryptionInitializationVector,
+        key                  : dataEncryptionKey,
+        keyEncryptionInputs  : [{
+          derivationScheme : KeyDerivationScheme.Protocols,
+          publicKey        : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
+        }]
+      };
+
+      // intentionally generating a record that is not protocol-based
+      const createPromise = RecordsWrite.create({
+        authorizationSignatureInput : Jws.createSignatureInput(alice),
+        dataFormat                  : 'application/json',
+        data                        : TestDataGenerator.randomBytes(10),
+        encryptionInput
+      });
+
+      await expect(createPromise).to.be.rejectedWith(DwnErrorCode.RecordsProtocolsDerivationSchemeMissingProtocol);
     });
   });
 

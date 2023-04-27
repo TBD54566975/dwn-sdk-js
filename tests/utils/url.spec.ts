@@ -1,42 +1,42 @@
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
-import { normalizeProtocolUri, validateProtocolUriNormalized } from '../../src/utils/url.js';
+import { normalizeProtocolUrl, validateProtocolUrlNormalized } from '../../src/utils/url.js';
 
 chai.use(chaiAsPromised);
 
 describe('url', () => {
-  describe('validateProtocolUriNormalized', () => {
+  describe('validateProtocolUrlNormalized', () => {
     it('errors when URI is not normalized', () => {
-      expect(() => validateProtocolUriNormalized('https://example.com')).to.not.throw();
-      expect(() => validateProtocolUriNormalized('example.com')).to.throw();
-      expect(() => validateProtocolUriNormalized(':foo:')).to.throw();
+      expect(() => validateProtocolUrlNormalized('https://example.com')).to.not.throw();
+      expect(() => validateProtocolUrlNormalized('example.com')).to.throw();
+      expect(() => validateProtocolUrlNormalized(':foo:')).to.throw();
     });
   });
 
-  describe('normalizeProtocolUri', () => {
+  describe('normalizeProtocolUrl', () => {
     it('returns hostname and path with trailing slash removed', () => {
-      expect(normalizeProtocolUri('example.com')).to.equal('http://example.com');
-      expect(normalizeProtocolUri('example.com/')).to.equal('http://example.com');
-      expect(normalizeProtocolUri('http://example.com')).to.equal('http://example.com');
-      expect(normalizeProtocolUri('http://example.com/')).to.equal('http://example.com');
-      expect(normalizeProtocolUri('example.com?foo=bar')).to.equal('http://example.com');
-      expect(normalizeProtocolUri('example.com/?foo=bar')).to.equal('http://example.com');
+      expect(normalizeProtocolUrl('example.com')).to.equal('http://example.com');
+      expect(normalizeProtocolUrl('example.com/')).to.equal('http://example.com');
+      expect(normalizeProtocolUrl('http://example.com')).to.equal('http://example.com');
+      expect(normalizeProtocolUrl('http://example.com/')).to.equal('http://example.com');
+      expect(normalizeProtocolUrl('example.com?foo=bar')).to.equal('http://example.com');
+      expect(normalizeProtocolUrl('example.com/?foo=bar')).to.equal('http://example.com');
 
-      expect(normalizeProtocolUri('example.com/path')).to.equal('http://example.com/path');
-      expect(normalizeProtocolUri('example.com/path/')).to.equal('http://example.com/path');
-      expect(normalizeProtocolUri('http://example.com/path')).to.equal('http://example.com/path');
-      expect(normalizeProtocolUri('http://example.com/path')).to.equal('http://example.com/path');
-      expect(normalizeProtocolUri('example.com/path?foo=bar')).to.equal('http://example.com/path');
-      expect(normalizeProtocolUri('example.com/path/?foo=bar')).to.equal('http://example.com/path');
-      expect(normalizeProtocolUri('example.com/path#baz')).to.equal('http://example.com/path');
-      expect(normalizeProtocolUri('example.com/path/#baz')).to.equal('http://example.com/path');
+      expect(normalizeProtocolUrl('example.com/path')).to.equal('http://example.com/path');
+      expect(normalizeProtocolUrl('example.com/path/')).to.equal('http://example.com/path');
+      expect(normalizeProtocolUrl('http://example.com/path')).to.equal('http://example.com/path');
+      expect(normalizeProtocolUrl('http://example.com/path')).to.equal('http://example.com/path');
+      expect(normalizeProtocolUrl('example.com/path?foo=bar')).to.equal('http://example.com/path');
+      expect(normalizeProtocolUrl('example.com/path/?foo=bar')).to.equal('http://example.com/path');
+      expect(normalizeProtocolUrl('example.com/path#baz')).to.equal('http://example.com/path');
+      expect(normalizeProtocolUrl('example.com/path/#baz')).to.equal('http://example.com/path');
 
-      expect(normalizeProtocolUri('example')).to.equal('http://example');
-      expect(normalizeProtocolUri('/example/')).to.equal('http://example');
+      expect(normalizeProtocolUrl('example')).to.equal('http://example');
+      expect(normalizeProtocolUrl('/example/')).to.equal('http://example');
 
-      expect(() => normalizeProtocolUri('://http')).to.throw(Error);
-      expect(() => normalizeProtocolUri(':foo:')).to.throw(Error);
+      expect(() => normalizeProtocolUrl('://http')).to.throw(Error);
+      expect(() => normalizeProtocolUrl(':foo:')).to.throw(Error);
     });
   });
 });

@@ -1,6 +1,7 @@
+import type { DerivedPrivateJwk } from './hd-key.js';
+import type { PublicJwk } from '../jose/types.js';
 import type { Readable } from 'readable-stream';
-import type { UnsignedRecordsWriteMessage } from '../interfaces/records/types.js';
-import type { DerivedPrivateJwk, DerivedPublicJwk } from './hd-key.js';
+import type { RecordsWriteDescriptor, UnsignedRecordsWriteMessage } from '../interfaces/records/types.js';
 
 import { Encoder } from './encoder.js';
 import { Encryption } from './encryption.js';
@@ -14,13 +15,14 @@ import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 export class Records {
   /**
    * Decrypts the encrypted data in a message reply using the given ancestor private key.
+   * @param ancestorPrivateKey Any ancestor private key in the key derivation path.
    */
   public static async decrypt(
     recordsWrite: UnsignedRecordsWriteMessage,
     ancestorPrivateKey: DerivedPrivateJwk,
     cipherStream: Readable
   ): Promise<Readable> {
-    const { encryption, contextId, descriptor } = recordsWrite;
+    const { recordId, contextId, descriptor, encryption } = recordsWrite;
 
     // look for an encrypted symmetric key that is encrypted using the same scheme as the given derived private key
     const matchingEncryptedKey = encryption!.keyEncryption.find(key => key.derivationScheme === ancestorPrivateKey.derivationScheme);
@@ -31,13 +33,11 @@ export class Records {
       );
     }
 
-    // NOTE: right now only `protocol-context` scheme is supported so we will assume that's the scheme without additional switch/if statements
-    // derive the leaf private key
-    const leafDerivationPath = [KeyDerivationScheme.ProtocolContext, descriptor.protocol!, contextId!];
+    const fullDerivationPath = Records.constructKeyDerivationPath(matchingEncryptedKey.derivationScheme, recordId, contextId, descriptor);
 
     // NOTE: right now only `ECIES-ES256K` algorithm is supported for asymmetric encryption,
     // so we will assume that's the algorithm without additional switch/if statements
-    const leafPrivateKey = await Records.deriveLeafPrivateKey(ancestorPrivateKey, leafDerivationPath);
+    const leafPrivateKey = await Records.deriveLeafPrivateKey(ancestorPrivateKey, fullDerivationPath);
     const encryptedKeyBytes = Encoder.base64UrlToBytes(matchingEncryptedKey.encryptedKey);
     const ephemeralPublicKey = Secp256k1.publicJwkToBytes(matchingEncryptedKey.ephemeralPublicKey);
     const keyEncryptionInitializationVector = Encoder.base64UrlToBytes(matchingEncryptedKey.initializationVector);
@@ -59,23 +59,65 @@ export class Records {
   }
 
   /**
+   * Constructs full key derivation path using the specified scheme.
+   */
+  public static constructKeyDerivationPath(
+    _keyDerivationScheme: KeyDerivationScheme,
+    recordId: string,
+    contextId: string | undefined,
+    descriptor: RecordsWriteDescriptor
+  ): string[] {
+
+    // NOTE: right now only `protocols` derivation scheme is supported so we will assume that's the scheme without additional switch/if statements
+    const fullDerivationPath = Records.constructKeyDerivationPathUsingProtocolsScheme(recordId, contextId, descriptor);
+    return fullDerivationPath;
+  }
+
+  /**
+   * Constructs the full key derivation path using `protocols` scheme.
+   */
+  private static constructKeyDerivationPathUsingProtocolsScheme(
+    recordId: string,
+    contextId: string | undefined,
+    descriptor: RecordsWriteDescriptor
+  ): string[] {
+    // ensure `protocol` is defined
+    // NOTE: no need to check `protocolPath` and `contextId` because earlier code ensures that if `protocol` is defined, those are defined also
+    if (descriptor.protocol === undefined) {
+      throw new DwnError(
+        DwnErrorCode.RecordsProtocolsDerivationSchemeMissingProtocol,
+        'Unable to construct key derivation path using `protocols` scheme because `protocol` is missing.'
+      );
+    }
+
+    const protocolPathSegments = descriptor.protocolPath!.split('/');
+    const fullDerivationPath = [
+      KeyDerivationScheme.Protocols,
+      descriptor.protocol,
+      contextId!,
+      ...protocolPathSegments,
+      descriptor.dataFormat,
+      recordId
+    ];
+
+    return fullDerivationPath;
+  }
+
+  /**
    * Derives a descendant public key given an ancestor public key.
    * NOTE: right now only `ECIES-ES256K` algorithm is supported for asymmetric encryption,
    *       so we will assume that's the algorithm without additional switch/if statements
    */
-  public static async deriveLeafPublicKey(ancestorPublicKey: DerivedPublicJwk, fullDescendantDerivationPath: string[]): Promise<Uint8Array> {
-    if (ancestorPublicKey.derivedPublicKey.crv !== 'secp256k1') {
+  public static async deriveLeafPublicKey(rootPublicKey: PublicJwk, fullDescendantDerivationPath: string[]): Promise<Uint8Array> {
+    if (rootPublicKey.crv !== 'secp256k1') {
       throw new DwnError(
         DwnErrorCode.RecordsDeriveLeafPublicKeyUnSupportedCurve,
-        `Curve ${ancestorPublicKey.derivedPublicKey.crv} is not supported.`
+        `Curve ${rootPublicKey.crv} is not supported.`
       );
     }
 
-    Records.validateAncestorKeyAndDescentKeyDerivationPathsMatch(ancestorPublicKey.derivationPath, fullDescendantDerivationPath);
-
-    const subDerivationPath = fullDescendantDerivationPath.slice(ancestorPublicKey.derivationPath.length);
-    const ancestorPublicKeyBytes = Secp256k1.publicJwkToBytes(ancestorPublicKey.derivedPublicKey);
-    const leafPublicKey = await Secp256k1.derivePublicKey(ancestorPublicKeyBytes, subDerivationPath);
+    const ancestorPublicKeyBytes = Secp256k1.publicJwkToBytes(rootPublicKey);
+    const leafPublicKey = await Secp256k1.derivePublicKey(ancestorPublicKeyBytes, fullDescendantDerivationPath);
 
     return leafPublicKey;
   }
@@ -93,9 +135,11 @@ export class Records {
       );
     }
 
-    Records.validateAncestorKeyAndDescentKeyDerivationPathsMatch(ancestorPrivateKey.derivationPath, fullDescendantDerivationPath);
+    const ancestorPrivateKeyDerivationPath = ancestorPrivateKey.derivationPath ?? [];
 
-    const subDerivationPath = fullDescendantDerivationPath.slice(ancestorPrivateKey.derivationPath.length);
+    Records.validateAncestorKeyAndDescentKeyDerivationPathsMatch(ancestorPrivateKeyDerivationPath, fullDescendantDerivationPath);
+
+    const subDerivationPath = fullDescendantDerivationPath.slice(ancestorPrivateKeyDerivationPath.length);
     const ancestorPrivateKeyBytes = Secp256k1.privateJwkToBytes(ancestorPrivateKey.derivedPrivateKey);
     const leafPrivateKey = await Secp256k1.derivePrivateKey(ancestorPrivateKeyBytes, subDerivationPath);
 

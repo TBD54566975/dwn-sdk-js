@@ -1,6 +1,7 @@
 import type { BaseMessage } from '../../../core/types.js';
-import type { DerivedPublicJwk } from '../../../utils/hd-key.js';
+import type { KeyDerivationScheme } from '../../../index.js';
 import type { MessageStore } from '../../../store/message-store.js';
+import type { PublicJwk } from '../../../jose/types.js';
 import type {
   EncryptedKey,
   EncryptionProperty,
@@ -18,7 +19,6 @@ import { EncryptionAlgorithm } from '../../../utils/encryption.js';
 import { GeneralJwsSigner } from '../../../jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { Jws } from '../../../utils/jws.js';
-import { KeyDerivationScheme } from '../../../utils/hd-key.js';
 import { Message } from '../../../core/message.js';
 import { ProtocolAuthorization } from '../../../core/protocol-authorization.js';
 import { Records } from '../../../utils/records.js';
@@ -28,7 +28,7 @@ import { authorize, validateAuthorizationIntegrity } from '../../../core/auth.js
 import { Cid, computeCid } from '../../../utils/cid.js';
 import { DwnError, DwnErrorCode } from '../../../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
-import { normalizeProtocolUri, validateProtocolUriNormalized } from '../../../utils/url.js';
+import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../../../utils/url.js';
 
 export type RecordsWriteOptions = {
   recipient?: string;
@@ -82,9 +82,14 @@ export type EncryptionInput = {
  */
 export type KeyEncryptionInput = {
   /**
-   * Public key used to encrypt the symmetric key.
+   * Key derivation scheme to derive the descendant public key to encrypt the symmetric key.
    */
-  publicKey: DerivedPublicJwk;
+  derivationScheme: KeyDerivationScheme;
+
+  /**
+   * Root public key used derive the descendant public key to encrypt the symmetric key.
+   */
+  publicKey: PublicJwk;
 
   /**
    * Algorithm used for encrypting the symmetric key. Uses {EncryptionAlgorithm.EciesSecp256k1} if not given.
@@ -161,10 +166,10 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     const descriptor: RecordsWriteDescriptor = {
       interface     : DwnInterfaceName.Records,
       method        : DwnMethodName.Write,
-      protocol      : options.protocol !== undefined ? normalizeProtocolUri(options.protocol) : undefined,
+      protocol      : options.protocol !== undefined ? normalizeProtocolUrl(options.protocol) : undefined,
       protocolPath  : options.protocolPath,
       recipient     : options.recipient!,
-      schema        : options.schema,
+      schema        : options.schema !== undefined ? normalizeSchemaUrl(options.schema) : undefined,
       parentId      : options.parentId,
       dataCid,
       dataSize,
@@ -204,7 +209,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     // `attestation` generation
     const descriptorCid = await computeCid(descriptor);
     const attestation = await RecordsWrite.createAttestation(descriptorCid, options.attestationSignatureInputs);
-    const encryption = await RecordsWrite.createEncryptionProperty(options.encryptionInput, descriptor, contextId);
+    const encryption = await RecordsWrite.createEncryptionProperty(recordId, contextId, descriptor, options.encryptionInput);
 
     // `authorization` generation
     const authorization = await RecordsWrite.createAuthorization(
@@ -370,7 +375,10 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     }
 
     if (this.message.descriptor.protocol !== undefined) {
-      validateProtocolUriNormalized(this.message.descriptor.protocol);
+      validateProtocolUrlNormalized(this.message.descriptor.protocol);
+    }
+    if (this.message.descriptor.schema !== undefined) {
+      validateSchemaUrlNormalized(this.message.descriptor.schema);
     }
   }
 
@@ -456,9 +464,10 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
    * Creates the `encryption` property if encryption input is given. Else `undefined` is returned.
    */
   private static async createEncryptionProperty(
-    encryptionInput: EncryptionInput | undefined,
+    recordId: string,
+    contextId: string | undefined,
     descriptor: RecordsWriteDescriptor,
-    contextId: string | undefined // there is opportunity here to streamline the arguments, e.g. `contextId` feels very specialized
+    encryptionInput: EncryptionInput | undefined
   ): Promise<EncryptionProperty | undefined> {
     if (encryptionInput === undefined) {
       return undefined;
@@ -467,13 +476,12 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     // encrypt the data encryption key once per key derivation scheme
     const keyEncryption: EncryptedKey[] = [];
     for (const keyEncryptionInput of encryptionInput.keyEncryptionInputs) {
-      // NOTE: right now only `protocol-context` scheme is supported so we will assume that's the scheme without additional switch/if statements
-      // derive the leaf public key
-      const leafDerivationPath = [KeyDerivationScheme.ProtocolContext, descriptor.protocol!, contextId!];
+
+      const fullDerivationPath = Records.constructKeyDerivationPath(keyEncryptionInput.derivationScheme, recordId, contextId, descriptor);
 
       // NOTE: right now only `ECIES-ES256K` algorithm is supported for asymmetric encryption,
       // so we will assume that's the algorithm without additional switch/if statements
-      const leafPublicKey = await Records.deriveLeafPublicKey(keyEncryptionInput.publicKey, leafDerivationPath);
+      const leafPublicKey = await Records.deriveLeafPublicKey(keyEncryptionInput.publicKey, fullDerivationPath);
       const keyEncryptionOutput = await Encryption.eciesSecp256k1Encrypt(leafPublicKey, encryptionInput.key);
 
       const encryptedKey = Encoder.bytesToBase64Url(keyEncryptionOutput.ciphertext);
@@ -482,7 +490,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
       const messageAuthenticationCode = Encoder.bytesToBase64Url(keyEncryptionOutput.messageAuthenticationCode);
       const encryptedKeyData: EncryptedKey = {
         algorithm            : keyEncryptionInput.algorithm ?? EncryptionAlgorithm.EciesSecp256k1,
-        derivationScheme     : keyEncryptionInput.publicKey.derivationScheme,
+        derivationScheme     : keyEncryptionInput.derivationScheme,
         encryptedKey,
         ephemeralPublicKey,
         initializationVector : keyEncryptionInitializationVector,

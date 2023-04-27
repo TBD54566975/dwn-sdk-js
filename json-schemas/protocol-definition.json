@@ -17,6 +17,12 @@
           "properties": {
             "schema": {
               "type": "string"
+            },
+            "dataFormats": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         }

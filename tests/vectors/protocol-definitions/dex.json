@@ -1,13 +1,13 @@
 {
   "labels": {
     "ask": {
-      "schema": "ask"
+      "schema": "https://tbd/website/tbdex/ask"
     },
     "offer": {
-      "schema": "offer"
+      "schema": "https://tbd/website/tbdex/offer"
     },
     "fulfillment": {
-      "schema": "fulfillment"
+      "schema": "https://tbd/website/tbdex/fulfillment"
     }
   },
   "records": {

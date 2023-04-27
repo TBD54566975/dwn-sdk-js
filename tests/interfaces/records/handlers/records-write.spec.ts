@@ -1,17 +1,16 @@
+import type { GenerateFromRecordsWriteOut } from '../../../utils/test-data-generator.js';
+import type { QueryResultEntry } from '../../../../src/core/types.js';
+import type { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
+import type { EncryptionInput, ProtocolDefinition } from '../../../../src/index.js';
+
 import chaiAsPromised from 'chai-as-promised';
 import credentialIssuanceProtocolDefinition from '../../../vectors/protocol-definitions/credential-issuance.json' assert { type: 'json' };
 import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
 import messageProtocolDefinition from '../../../vectors/protocol-definitions/message.json' assert { type: 'json' };
-import socialMediaProtocolDefinition from '../../../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
-
 import sinon from 'sinon';
+import socialMediaProtocolDefinition from '../../../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
 import chai, { expect } from 'chai';
-
-import type { GenerateFromRecordsWriteOut } from '../../../utils/test-data-generator.js';
-import type { QueryResultEntry } from '../../../../src/core/types.js';
-import type { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
-import type { EncryptionInput, ProtocolDefinition } from '../../../../src/index.js';
 
 import { asyncGeneratorToArray } from '../../../../src/utils/array.js';
 import { base64url } from 'multiformats/bases/base64';
@@ -1029,6 +1028,65 @@ describe('RecordsWriteHandler.handle()', () => {
         expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationIncorrectProtocolPath);
       });
 
+      it('should fail authorization if given `dataFormat` is mismatching with the dataFormats in protocol definition', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        const protocolDefinition = {
+          labels: {
+            image: {
+              schema      : 'https://example.com/schema',
+              dataFormats : ['image/jpeg', 'image/png']
+            }
+          },
+          records: {
+            image: {
+              allow: {
+                anyone: { to: ['write'] }
+              }
+            }
+          }
+        };
+
+        const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-media';
+        const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
+          requester          : alice,
+          protocol,
+          protocolDefinition : protocolDefinition,
+        });
+
+        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+
+        // write record with matching dataFormat
+        const data = Encoder.stringToBytes('any data');
+        const recordsWriteMatch = await TestDataGenerator.generateRecordsWrite({
+          requester    : alice,
+          recipientDid : alice.did,
+          protocol,
+          protocolPath : 'image',
+          schema       : protocolDefinition.labels.image.schema,
+          dataFormat   : 'image/jpeg',
+          data
+        });
+        const replyMatch = await dwn.processMessage(alice.did, recordsWriteMatch.message, recordsWriteMatch.dataStream);
+        expect(replyMatch.status.code).to.equal(202);
+
+        // write record with mismatch dataFormat
+        const recordsWriteMismatch = await TestDataGenerator.generateRecordsWrite({
+          requester    : alice,
+          recipientDid : alice.did,
+          protocol,
+          protocolPath : 'image',
+          schema       : protocolDefinition.labels.image.schema,
+          dataFormat   : 'not/allowed/dataFormat',
+          data
+        });
+
+        const replyMismatch = await dwn.processMessage(alice.did, recordsWriteMismatch.message, recordsWriteMismatch.dataStream);
+        expect(replyMismatch.status.code).to.equal(401);
+        expect(replyMismatch.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationIncorrectDataFormat);
+      });
+
       it('should fail authorization if record schema is not allowed at the hierarchical level attempted for the RecordsWrite', async () => {
         const alice = await DidKeyResolver.generate();
 
@@ -1066,10 +1124,10 @@ describe('RecordsWriteHandler.handle()', () => {
         const protocolDefinition = {
           labels: {
             email: {
-              schema: 'emailSchema'
+              schema: 'http://emailschema'
             },
             sms: {
-              schema: 'smsSchema'
+              schema: 'http://smsschema'
             }
           },
           records: {
@@ -1109,7 +1167,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const reply = await dwn.processMessage(alice.did, smsSchemaResponse.message, smsSchemaResponse.dataStream);
 
         expect(reply.status.code).to.equal(401);
-        expect(reply.status.detail).to.contain('record with schema: \'smsSchema\' not allowed in structure level 1');
+        expect(reply.status.detail).to.contain('record with schema: \'http://smsschema\' not allowed in structure level 1');
       });
 
       it('should only allow DWN owner to write if record does not have an allow rule defined', async () => {
@@ -1244,7 +1302,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const askMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : pfi.did,
-          schema       : 'ask',
+          schema       : protocolDefinition.labels.ask.schema,
           protocol,
           protocolPath : 'ask',
           data
@@ -1257,7 +1315,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const offerMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : pfi,
           recipientDid : alice.did,
-          schema       : 'offer',
+          schema       : protocolDefinition.labels.offer.schema,
           contextId,
           parentId     : askMessageData.message.recordId,
           protocol,
@@ -1272,7 +1330,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const fulfillmentMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : pfi.did,
-          schema       : 'fulfillment',
+          schema       : protocolDefinition.labels.fulfillment.schema,
           contextId,
           parentId     : offerMessageData.message.recordId,
           protocol,
@@ -1324,7 +1382,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const askMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : pfi.did,
-          schema       : 'ask',
+          schema       : protocolDefinition.labels.ask.schema,
           protocol,
           protocolPath : 'ask',
           data
@@ -1338,7 +1396,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const fulfillmentMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : pfi.did,
-          schema       : 'fulfillment',
+          schema       : protocolDefinition.labels.fulfillment.schema,
           contextId,
           parentId     : 'non-existent-id',
           protocolPath : 'ask/offer/fulfillment',
@@ -1379,12 +1437,9 @@ describe('RecordsWriteHandler.handle()', () => {
           initializationVector : dataEncryptionInitializationVector,
           key                  : dataEncryptionKey,
           keyEncryptionInputs  : [{
-            algorithm : EncryptionAlgorithm.EciesSecp256k1,
-            publicKey : {
-              derivationScheme : KeyDerivationScheme.ProtocolContext,
-              derivationPath   : [],
-              derivedPublicKey : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
-            }
+            algorithm        : EncryptionAlgorithm.EciesSecp256k1,
+            derivationScheme : KeyDerivationScheme.Protocols,
+            publicKey        : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
           }]
         };
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
