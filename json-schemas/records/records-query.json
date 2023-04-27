@@ -34,8 +34,7 @@
           "type": "string"
         },
         "dateCreated": {
-          "type": "string",
-          "format": "date-time"
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
         },
         "filter": {
           "type": "object",
@@ -72,12 +71,10 @@
               "additionalProperties": false,
               "properties": {
                 "from": {
-                  "type": "string",
-                  "format": "date-time"
+                  "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
                 },
                 "to": {
-                  "type": "string",
-                  "format": "date-time"
+                  "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
                 }
               }
             }
