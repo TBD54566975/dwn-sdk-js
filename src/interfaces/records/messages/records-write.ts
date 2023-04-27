@@ -28,7 +28,7 @@ import { authorize, validateAuthorizationIntegrity } from '../../../core/auth.js
 import { Cid, computeCid } from '../../../utils/cid.js';
 import { DwnError, DwnErrorCode } from '../../../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
-import { normalizeProtocolUri, validateProtocolUriNormalized } from '../../../utils/url.js';
+import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../../../utils/url.js';
 
 export type RecordsWriteOptions = {
   recipient?: string;
@@ -166,10 +166,10 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     const descriptor: RecordsWriteDescriptor = {
       interface     : DwnInterfaceName.Records,
       method        : DwnMethodName.Write,
-      protocol      : options.protocol !== undefined ? normalizeProtocolUri(options.protocol) : undefined,
+      protocol      : options.protocol !== undefined ? normalizeProtocolUrl(options.protocol) : undefined,
       protocolPath  : options.protocolPath,
       recipient     : options.recipient!,
-      schema        : options.schema,
+      schema        : options.schema !== undefined ? normalizeSchemaUrl(options.schema) : undefined,
       parentId      : options.parentId,
       dataCid,
       dataSize,
@@ -375,7 +375,10 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     }
 
     if (this.message.descriptor.protocol !== undefined) {
-      validateProtocolUriNormalized(this.message.descriptor.protocol);
+      validateProtocolUrlNormalized(this.message.descriptor.protocol);
+    }
+    if (this.message.descriptor.schema !== undefined) {
+      validateSchemaUrlNormalized(this.message.descriptor.schema);
     }
   }
 

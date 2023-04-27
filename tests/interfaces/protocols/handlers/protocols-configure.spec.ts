@@ -4,6 +4,8 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
+import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
+
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
@@ -162,6 +164,30 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       const reply = await dwn.processMessage(alice.did, protocolsConfig.message);
       expect(reply.status.code).to.equal(400);
       expect(reply.status.detail).to.contain(DwnErrorCode.UrlProtocolNotNormalized);
+    });
+
+    it('should return 400 if schema is not normalized', async () => {
+      const alice = await DidKeyResolver.generate();
+
+      const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+        requester          : alice,
+        protocol           : 'example.com/',
+        protocolDefinition : dexProtocolDefinition,
+      });
+
+      // overwrite schema because #create auto-normalizes schema
+      protocolsConfig.message.descriptor.definition.labels.ask.schema = 'ask';
+
+      // Re-create auth because we altered the descriptor after signing
+      protocolsConfig.message.authorization = await Message.signAsAuthorization(
+        protocolsConfig.message.descriptor,
+        Jws.createSignatureInput(alice)
+      );
+
+      // Send records write message
+      const reply = await dwn.processMessage(alice.did, protocolsConfig.message);
+      expect(reply.status.code).to.equal(400);
+      expect(reply.status.detail).to.contain(DwnErrorCode.UrlSchemaNotNormalized);
     });
 
     describe('event log', () => {

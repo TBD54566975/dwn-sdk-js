@@ -32,5 +32,7 @@ export enum DwnErrorCode {
   RecordsWriteValidateIntegrityEncryptionCidMismatch = 'RecordsWriteValidateIntegrityEncryptionCidMismatch',
   Secp256k1KeyNotValid = 'Secp256k1KeyNotValid',
   UrlProtocolNotNormalized = 'UrlProtocolNotNormalized',
-  UrlProtocolNotNormalizable = 'UrlProtocolNotNormalizable'
+  UrlProtocolNotNormalizable = 'UrlProtocolNotNormalizable',
+  UrlSchemaNotNormalized = 'UrlSchemaNotNormalized',
+  UrlSchemaNotNormalizable = 'UrlSchemaNotNormalizable'
 };
