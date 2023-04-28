@@ -1,11 +1,12 @@
 import { expect } from 'chai';
-import { DwnInterfaceName, DwnMethodName, Message } from '../../../../src/core/message.js';
-import { ProtocolDefinition, ProtocolsConfigureMessage } from '../../../../src/index.js';
+
 import { validateJsonSchema } from '../../../../src/schema-validator.js';
+import { DwnInterfaceName, DwnMethodName, Message } from '../../../../src/core/message.js';
+import type { ProtocolDefinition, ProtocolsConfigureMessage } from '../../../../src/interfaces/protocols/types.js';
 
 describe('ProtocolsConfigure schema definition', () => {
   it('should throw if unknown actor is encountered in allow rule', async () => {
-    const protocolDefinition = {
+    const protocolDefinition: ProtocolDefinition = {
       labels: {
         email: {
           schema: 'email'
@@ -15,8 +16,8 @@ describe('ProtocolsConfigure schema definition', () => {
         email: {
           allow: [
             {
-              actor: "unknown",
-              actions: ['write']
+              actor   : 'unknown',
+              actions : ['write']
             }
           ]
         }

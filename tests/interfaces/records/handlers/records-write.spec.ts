@@ -26,6 +26,7 @@ import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
 import { KeyDerivationScheme } from '../../../../src/index.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
+import { ProtocolActor } from '../../../../src/interfaces/protocols/types.js';
 import { RecordsWriteHandler } from '../../../../src/interfaces/records/handlers/records-write.js';
 import { StorageController } from '../../../../src/store/storage-controller.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
@@ -34,7 +35,6 @@ import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 import { Cid, computeCid } from '../../../../src/utils/cid.js';
 import { Dwn, Jws, RecordsWrite } from '../../../../src/index.js';
 import { Encryption, EncryptionAlgorithm } from '../../../../src/utils/encryption.js';
-import { ProtocolActor } from '../../../../src/interfaces/protocols/types.js';
 
 chai.use(chaiAsPromised);
 
@@ -1043,8 +1043,8 @@ describe('RecordsWriteHandler.handle()', () => {
             image: {
               allow: [
                 {
-                  actor: 'anyone',
-                  actions: ['write']
+                  actor   : 'anyone',
+                  actions : ['write']
                 }
               ]
             }
@@ -1240,7 +1240,7 @@ describe('RecordsWriteHandler.handle()', () => {
         invalidProtocolDefinition.records.credentialApplication.records.credentialResponse
           .allow[allowRuleIndex].protocolPath
             = 'credentialResponse';
-            // this is invalid as the root ancestor can only be `credentialApplication` based on record structure
+        // this is invalid as the root ancestor can only be `credentialApplication` based on record structure
 
 
         // write the VC issuance protocol
