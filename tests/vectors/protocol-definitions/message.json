@@ -6,13 +6,12 @@
   },
   "records": {
     "message": {
-      "allow": {
-        "anyone": {
-          "to": [
-            "write"
-          ]
+      "allow": [
+        {
+          "actor": "anyone",
+          "actions": ["write"]
         }
-      }
+      ]
     }
   }
 }

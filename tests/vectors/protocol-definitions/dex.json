@@ -12,33 +12,30 @@
   },
   "records": {
     "ask": {
-      "allow": {
-        "anyone": {
-          "to": [
-            "write"
-          ]
+      "allow": [
+        {
+          "actor": "anyone",
+          "actions": ["write"]
         }
-      },
+      ],
       "records": {
         "offer": {
-          "allow": {
-            "recipient": {
-              "of": "ask",
-              "to": [
-                "write"
-              ]
+          "allow": [
+            {
+              "actor": "recipient",
+              "protocolPath": "ask",
+              "actions": ["write"]
             }
-          },
+          ],
           "records": {
             "fulfillment": {
-              "allow": {
-                "recipient": {
-                  "of": "ask/offer",
-                  "to": [
-                    "write"
-                  ]
+              "allow": [
+                {
+                  "actor": "recipient",
+                  "protocolPath": "ask/offer",
+                  "actions": ["write"]
                 }
-              }
+              ]
             }
           }
         }

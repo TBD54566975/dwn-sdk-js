@@ -26,6 +26,7 @@ import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
 import { KeyDerivationScheme } from '../../../../src/index.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
+import { ProtocolActor } from '../../../../src/interfaces/protocols/types.js';
 import { RecordsWriteHandler } from '../../../../src/interfaces/records/handlers/records-write.js';
 import { StorageController } from '../../../../src/store/storage-controller.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
@@ -1040,9 +1041,12 @@ describe('RecordsWriteHandler.handle()', () => {
           },
           records: {
             image: {
-              allow: {
-                anyone: { to: ['write'] }
-              }
+              allow: [
+                {
+                  actor   : 'anyone',
+                  actions : ['write']
+                }
+              ]
             }
           }
         };
@@ -1091,7 +1095,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const alice = await DidKeyResolver.generate();
 
         const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-        const protocolDefinition = credentialIssuanceProtocolDefinition;
+        const protocolDefinition: ProtocolDefinition = credentialIssuanceProtocolDefinition;
         const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,
@@ -1230,8 +1234,14 @@ describe('RecordsWriteHandler.handle()', () => {
 
         // create an invalid ancestor path that is longer than possible
         const invalidProtocolDefinition = { ...credentialIssuanceProtocolDefinition };
-        invalidProtocolDefinition.records.credentialApplication.records.credentialResponse.allow.recipient.of
-          = 'credentialResponse'; // this is invalid as the root ancestor can only be `credentialApplication` based on record structure
+        const allowRuleIndex =
+          invalidProtocolDefinition.records.credentialApplication.records.credentialResponse.allow
+            .findIndex((allowRule) => allowRule.actor === ProtocolActor.Recipient);
+        invalidProtocolDefinition.records.credentialApplication.records.credentialResponse
+          .allow[allowRuleIndex].protocolPath
+            = 'credentialResponse';
+        // this is invalid as the root ancestor can only be `credentialApplication` based on record structure
+
 
         // write the VC issuance protocol
         const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
