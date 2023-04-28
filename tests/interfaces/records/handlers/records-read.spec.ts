@@ -367,7 +367,7 @@ describe('RecordsReadHandler.handle()', () => {
     });
 
     describe('encryption scenarios', () => {
-      it('should only be able to decrypt record with a correct derived private key', async () => {
+      it('should only be able to decrypt record with a correct derived private key - `protocols` derivation scheme', async () => {
         // scenario, Bob writes into Alice's DWN an encrypted "email", alice is able to decrypt it
 
         // creating Alice and Bob persona and setting up a stub DID resolver

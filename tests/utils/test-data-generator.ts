@@ -322,7 +322,7 @@ export class TestDataGenerator {
       protocol        : input?.protocol,
       protocolPath    : input?.protocolPath,
       contextId       : input?.contextId,
-      schema          : input?.schema ?? TestDataGenerator.randomString(20),
+      schema          : input?.schema ?? `http://${TestDataGenerator.randomString(20)}`,
       recordId        : input?.recordId,
       parentId        : input?.parentId,
       published       : input?.published,

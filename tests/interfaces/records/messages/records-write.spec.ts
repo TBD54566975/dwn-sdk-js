@@ -177,7 +177,7 @@ describe('RecordsWrite', () => {
       await expect(createPromise2).to.be.rejectedWith('`protocol` and `protocolPath` must both be defined or undefined at the same time');
     });
 
-    it('should throw if attempting to use `protocol` key derivation scheme on non-protocol-based record', async () => {
+    it('should throw if attempting to use `protocols` key derivation encryption scheme on non-protocol-based record', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const dataEncryptionInitializationVector = TestDataGenerator.randomBytes(16);
@@ -200,6 +200,31 @@ describe('RecordsWrite', () => {
       });
 
       await expect(createPromise).to.be.rejectedWith(DwnErrorCode.RecordsProtocolsDerivationSchemeMissingProtocol);
+    });
+
+    it('should throw if attempting to use `schemas` key derivation encryption scheme on a record without `schema`', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+
+      const dataEncryptionInitializationVector = TestDataGenerator.randomBytes(16);
+      const dataEncryptionKey = TestDataGenerator.randomBytes(32);
+      const encryptionInput: EncryptionInput = {
+        initializationVector : dataEncryptionInitializationVector,
+        key                  : dataEncryptionKey,
+        keyEncryptionInputs  : [{
+          derivationScheme : KeyDerivationScheme.Schemas,
+          publicKey        : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
+        }]
+      };
+
+      // intentionally generating a record that is without `schema`
+      const createPromise = RecordsWrite.create({
+        authorizationSignatureInput : Jws.createSignatureInput(alice),
+        dataFormat                  : 'application/octet-stream',
+        data                        : TestDataGenerator.randomBytes(10),
+        encryptionInput
+      });
+
+      await expect(createPromise).to.be.rejectedWith(DwnErrorCode.RecordsSchemasDerivationSchemeMissingSchema);
     });
   });
 

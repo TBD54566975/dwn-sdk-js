@@ -1,7 +1,7 @@
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
-import { normalizeProtocolUrl, validateProtocolUrlNormalized } from '../../src/utils/url.js';
+import { normalizeProtocolUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../../src/utils/url.js';
 
 chai.use(chaiAsPromised);
 
@@ -11,6 +11,13 @@ describe('url', () => {
       expect(() => validateProtocolUrlNormalized('https://example.com')).to.not.throw();
       expect(() => validateProtocolUrlNormalized('example.com')).to.throw();
       expect(() => validateProtocolUrlNormalized(':foo:')).to.throw();
+    });
+  });
+
+  describe('validateSchemaUrlNormalized', () => {
+    it('should throw when URI is not normalized', () => {
+      expect(() => validateSchemaUrlNormalized('example.com')).to.throw();
+      expect(() => validateSchemaUrlNormalized(':foo:')).to.throw();
     });
   });
 
