@@ -22,9 +22,9 @@ export type ProtocolDefinition = {
 };
 
 export enum ProtocolActor {
-  ANYONE = 'anyone',
-  AUTHOR = 'author',
-  RECIPIENT = 'recipient'
+  Anyone = 'anyone',
+  Author = 'author',
+  Recipient = 'recipient'
 }
 
 export enum ProtocolAction {

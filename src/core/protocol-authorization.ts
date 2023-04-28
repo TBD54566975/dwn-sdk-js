@@ -303,10 +303,10 @@ export class ProtocolAuthorization {
     const allowedActions = new Set<string>();
     for (const allowRule of allowRules) {
       switch (allowRule.actor) {
-      case ProtocolActor.ANYONE:
+      case ProtocolActor.Anyone:
         allowRule.actions.forEach((operation) => allowedActions.add(operation));
         break;
-      case ProtocolActor.AUTHOR:
+      case ProtocolActor.Author:
         const messageForAuthorCheck = ProtocolAuthorization.getMessage(
           ancestorMessageChain,
             allowRule.protocolPath!,
@@ -321,7 +321,7 @@ export class ProtocolAuthorization {
           }
         }
         break;
-      case ProtocolActor.RECIPIENT:
+      case ProtocolActor.Recipient:
         const messageForRecipientCheck = ProtocolAuthorization.getMessage(
           ancestorMessageChain,
             allowRule.protocolPath!,

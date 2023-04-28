@@ -1236,7 +1236,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const invalidProtocolDefinition = { ...credentialIssuanceProtocolDefinition };
         const allowRuleIndex =
           invalidProtocolDefinition.records.credentialApplication.records.credentialResponse.allow
-            .findIndex((allowRule) => allowRule.actor === ProtocolActor.RECIPIENT);
+            .findIndex((allowRule) => allowRule.actor === ProtocolActor.Recipient);
         invalidProtocolDefinition.records.credentialApplication.records.credentialResponse
           .allow[allowRuleIndex].protocolPath
             = 'credentialResponse';
