@@ -740,6 +740,14 @@ describe('RecordsQueryHandler.handle()', () => {
         const plaintextDataStream3 = await Records.decrypt(unsignedRecordsWrite, derivedPrivateKey2, cipherStream3);
         const plaintextBytes3 = await DataStream.toBytes(plaintextDataStream3);
         expect(Comparer.byteArraysEqual(plaintextBytes3, bobMessageBytes)).to.be.true;
+
+
+        // test unable to decrypt the message if derived key has an unexpected path
+        const invalidDerivationPath = [KeyDerivationScheme.Protocols, protocol, 'invalidContextId'];
+        const inValidDescendantPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, invalidDerivationPath);
+        await expect(Records.decrypt(unsignedRecordsWrite, inValidDescendantPrivateKey, cipherStream)).to.be.rejectedWith(
+          DwnErrorCode.RecordsInvalidAncestorKeyDerivationSegment
+        );
       });
 
       it('should only be able to decrypt record with a correct derived private key - `schemas` derivation scheme', async () => {
@@ -816,6 +824,14 @@ describe('RecordsQueryHandler.handle()', () => {
         const plaintextDataStream3 = await Records.decrypt(unsignedRecordsWrite, derivedPrivateKey2, cipherStream3);
         const plaintextBytes3 = await DataStream.toBytes(plaintextDataStream3);
         expect(Comparer.byteArraysEqual(plaintextBytes3, originalData)).to.be.true;
+
+
+        // test unable to decrypt the message if derived key has an unexpected path
+        const invalidDerivationPath = [KeyDerivationScheme.Schemas, 'invalidSchemaUrl'];
+        const inValidDescendantPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, invalidDerivationPath);
+        await expect(Records.decrypt(unsignedRecordsWrite, inValidDescendantPrivateKey, cipherStream)).to.be.rejectedWith(
+          DwnErrorCode.RecordsInvalidAncestorKeyDerivationSegment
+        );
       });
     });
   });
