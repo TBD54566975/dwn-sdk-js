@@ -3,7 +3,8 @@ import type { PrivateJwk } from '../jose/types.js';
 import { Secp256k1 } from './secp256k1.js';
 
 export enum KeyDerivationScheme {
-  Protocols = 'protocols'
+  Protocols = 'protocols',
+  Schemas = 'schemas'
 }
 
 export type DerivedPrivateJwk = {

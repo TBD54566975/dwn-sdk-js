@@ -187,7 +187,6 @@ describe('RecordsQueryHandler.handle()', () => {
       expect(reply3.entries?.length).to.equal(0);
     });
 
-
     it('should be able to range query by `dateCreated`', async () => {
       // scenario: 3 records authored by alice, created on first of 2021, 2022, and 2023 respectively, only the first 2 records share the same schema
       const firstDayOf2021 = createDateString(new Date(2021, 1, 1));
@@ -646,7 +645,7 @@ describe('RecordsQueryHandler.handle()', () => {
     });
 
     describe('encryption scenarios', () => {
-      it('should only be able to decrypt record with a correct derived private key - protocols derivation scheme', async () => {
+      it('should only be able to decrypt record with a correct derived private key - `protocols` derivation scheme', async () => {
         // scenario, Bob writes into Alice's DWN an encrypted "email", alice is able to decrypt it
 
         // creating Alice and Bob persona and setting up a stub DID resolver
@@ -722,7 +721,7 @@ describe('RecordsQueryHandler.handle()', () => {
 
 
         // test able to decrypt the message using a derived key
-        const derivationPath = [KeyDerivationScheme.Protocols]; // the first path segment of `protocol` derivation scheme
+        const derivationPath = [KeyDerivationScheme.Protocols]; // the first path segment of `protocols` derivation scheme
         const derivedPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, derivationPath);
 
         const cipherStream2 = DataStream.fromBytes(Encoder.base64UrlToBytes(unsignedRecordsWrite.encodedData!));
@@ -733,7 +732,7 @@ describe('RecordsQueryHandler.handle()', () => {
 
 
         // test able to decrypt the message using a key derived from a derived key
-        const protocolsUriDerivationPathSegment = [message.descriptor.protocol!]; // the 2nd path segment of `protocol` derivation scheme
+        const protocolsUriDerivationPathSegment = [message.descriptor.protocol!]; // the 2nd path segment of `protocols` derivation scheme
         const derivedPrivateKey2: DerivedPrivateJwk = await HdKey.derivePrivateKey(derivedPrivateKey, protocolsUriDerivationPathSegment);
 
         const cipherStream3 = DataStream.fromBytes(Encoder.base64UrlToBytes(unsignedRecordsWrite.encodedData!));
@@ -741,6 +740,82 @@ describe('RecordsQueryHandler.handle()', () => {
         const plaintextDataStream3 = await Records.decrypt(unsignedRecordsWrite, derivedPrivateKey2, cipherStream3);
         const plaintextBytes3 = await DataStream.toBytes(plaintextDataStream3);
         expect(Comparer.byteArraysEqual(plaintextBytes3, bobMessageBytes)).to.be.true;
+      });
+
+      it('should only be able to decrypt record with a correct derived private key - `schemas` derivation scheme', async () => {
+        // scenario: Alice writes into her own DWN an encrypted record and she is able to decrypt it
+
+        const alice = await TestDataGenerator.generatePersona();
+        TestStubGenerator.stubDidResolver(didResolver, [alice]);
+
+        // encrypt Alice's record
+        const originalData = TestDataGenerator.randomBytes(1000);
+        const originalDataStream = DataStream.fromBytes(originalData);
+        const dataEncryptionInitializationVector = TestDataGenerator.randomBytes(16);
+        const dataEncryptionKey = TestDataGenerator.randomBytes(32);
+        const encryptedDataStream = await Encryption.aes256CtrEncrypt(dataEncryptionKey, dataEncryptionInitializationVector, originalDataStream);
+        const encryptedDataBytes = await DataStream.toBytes(encryptedDataStream);
+
+        const encryptionInput: EncryptionInput = {
+          initializationVector : dataEncryptionInitializationVector,
+          key                  : dataEncryptionKey,
+          keyEncryptionInputs  : [{
+            derivationScheme : KeyDerivationScheme.Schemas,
+            publicKey        : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
+          }]
+        };
+
+        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
+          requester : alice,
+          data      : encryptedDataBytes,
+          encryptionInput
+        });
+
+        const bobWriteReply = await dwn.processMessage(alice.did, message, dataStream);
+        expect(bobWriteReply.status.code).to.equal(202);
+
+        const recordsQuery = await RecordsQuery.create({
+          filter                      : { schema: message.descriptor.schema },
+          authorizationSignatureInput : Jws.createSignatureInput(alice)
+        });
+        const queryReply = await dwn.processMessage(alice.did, recordsQuery.message);
+        expect(queryReply.status.code).to.equal(200);
+
+        const unsignedRecordsWrite = queryReply.entries![0] as RecordsQueryReplyEntry;
+
+
+        // test able to decrypt the message using the root key
+        const rootPrivateKey: DerivedPrivateJwk = {
+          derivationScheme  : KeyDerivationScheme.Schemas,
+          derivedPrivateKey : alice.keyPair.privateJwk
+        };
+        const cipherStream = DataStream.fromBytes(Encoder.base64UrlToBytes(unsignedRecordsWrite.encodedData!));
+
+        const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, rootPrivateKey, cipherStream);
+        const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
+        expect(Comparer.byteArraysEqual(plaintextBytes, originalData)).to.be.true;
+
+
+        // test able to decrypt the message using a derived key
+        const derivationPath = [KeyDerivationScheme.Schemas]; // the first path segment of `schemas` derivation scheme
+        const derivedPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, derivationPath);
+
+        const cipherStream2 = DataStream.fromBytes(Encoder.base64UrlToBytes(unsignedRecordsWrite.encodedData!));
+
+        const plaintextDataStream2 = await Records.decrypt(unsignedRecordsWrite, derivedPrivateKey, cipherStream2);
+        const plaintextBytes2 = await DataStream.toBytes(plaintextDataStream2);
+        expect(Comparer.byteArraysEqual(plaintextBytes2, originalData)).to.be.true;
+
+
+        // test able to decrypt the message using a key derived from a derived key
+        const schemaDerivationPathSegment = [message.descriptor.schema!]; // the 2nd path segment of `schemas` derivation scheme
+        const derivedPrivateKey2: DerivedPrivateJwk = await HdKey.derivePrivateKey(derivedPrivateKey, schemaDerivationPathSegment);
+
+        const cipherStream3 = DataStream.fromBytes(Encoder.base64UrlToBytes(unsignedRecordsWrite.encodedData!));
+
+        const plaintextDataStream3 = await Records.decrypt(unsignedRecordsWrite, derivedPrivateKey2, cipherStream3);
+        const plaintextBytes3 = await DataStream.toBytes(plaintextDataStream3);
+        expect(Comparer.byteArraysEqual(plaintextBytes3, originalData)).to.be.true;
       });
     });
   });

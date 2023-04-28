@@ -62,14 +62,20 @@ export class Records {
    * Constructs full key derivation path using the specified scheme.
    */
   public static constructKeyDerivationPath(
-    _keyDerivationScheme: KeyDerivationScheme,
+    keyDerivationScheme: KeyDerivationScheme,
     recordId: string,
     contextId: string | undefined,
     descriptor: RecordsWriteDescriptor
   ): string[] {
 
-    // NOTE: right now only `protocols` derivation scheme is supported so we will assume that's the scheme without additional switch/if statements
-    const fullDerivationPath = Records.constructKeyDerivationPathUsingProtocolsScheme(recordId, contextId, descriptor);
+    let fullDerivationPath;
+    if (keyDerivationScheme === KeyDerivationScheme.Protocols) {
+      fullDerivationPath = Records.constructKeyDerivationPathUsingProtocolsScheme(recordId, contextId, descriptor);
+    } else {
+      // `schemas` scheme
+      fullDerivationPath = Records.constructKeyDerivationPathUsingSchemasScheme(recordId, descriptor);
+    }
+
     return fullDerivationPath;
   }
 
@@ -96,6 +102,32 @@ export class Records {
       descriptor.protocol,
       contextId!,
       ...protocolPathSegments,
+      descriptor.dataFormat,
+      recordId
+    ];
+
+    return fullDerivationPath;
+  }
+
+  /**
+   * Constructs the full key derivation path using `schemas` scheme.
+   */
+  private static constructKeyDerivationPathUsingSchemasScheme(
+    recordId: string,
+    descriptor: RecordsWriteDescriptor
+  ): string[] {
+    // ensure `protocol` is defined
+    // NOTE: no need to check `protocolPath` and `contextId` because earlier code ensures that if `protocol` is defined, those are defined also
+    if (descriptor.schema === undefined) {
+      throw new DwnError(
+        DwnErrorCode.RecordsSchemasDerivationSchemeMissingSchema,
+        'Unable to construct key derivation path using `schemas` scheme because `schema` is missing.'
+      );
+    }
+
+    const fullDerivationPath = [
+      KeyDerivationScheme.Schemas,
+      descriptor.schema,
       descriptor.dataFormat,
       recordId
     ];

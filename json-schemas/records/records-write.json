@@ -42,7 +42,8 @@
               "derivationScheme": {
                 "type": "string",
                 "enum": [
-                  "protocols"
+                  "protocols",
+                  "schemas"
                 ]
               },
               "algorithm": {
