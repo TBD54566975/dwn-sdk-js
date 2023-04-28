@@ -1237,10 +1237,11 @@ describe('RecordsWriteHandler.handle()', () => {
         const allowRuleIndex =
           invalidProtocolDefinition.records.credentialApplication.records.credentialResponse.allow
             .findIndex((allowRule) => allowRule.actor === ProtocolActor.RECIPIENT);
-        // this is invalid as the root ancestor can only be `credentialApplication` based on record structure
         invalidProtocolDefinition.records.credentialApplication.records.credentialResponse
           .allow[allowRuleIndex].protocolPath
             = 'credentialResponse';
+            // this is invalid as the root ancestor can only be `credentialApplication` based on record structure
+
 
         // write the VC issuance protocol
         const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
