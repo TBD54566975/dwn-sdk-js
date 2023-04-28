@@ -116,8 +116,6 @@ export class Records {
     recordId: string,
     descriptor: RecordsWriteDescriptor
   ): string[] {
-    // ensure `protocol` is defined
-    // NOTE: no need to check `protocolPath` and `contextId` because earlier code ensures that if `protocol` is defined, those are defined also
     if (descriptor.schema === undefined) {
       throw new DwnError(
         DwnErrorCode.RecordsSchemasDerivationSchemeMissingSchema,

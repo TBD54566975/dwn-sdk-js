@@ -771,8 +771,8 @@ describe('RecordsQueryHandler.handle()', () => {
           encryptionInput
         });
 
-        const bobWriteReply = await dwn.processMessage(alice.did, message, dataStream);
-        expect(bobWriteReply.status.code).to.equal(202);
+        const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+        expect(writeReply.status.code).to.equal(202);
 
         const recordsQuery = await RecordsQuery.create({
           filter                      : { schema: message.descriptor.schema },
