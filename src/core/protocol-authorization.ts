@@ -5,9 +5,9 @@ import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } f
 import type { RecordsReadMessage, RecordsWriteMessage } from '../interfaces/records/types.js';
 
 import { RecordsWrite } from '../interfaces/records/messages/records-write.js';
-import { ProtocolAction, ProtocolActor } from '../interfaces/protocols/types.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
+import { ProtocolAction, ProtocolActor } from '../interfaces/protocols/types.js';
 
 const methodToAllowedActionMap: Record<string, string> = {
   [DwnMethodName.Write] : ProtocolAction.Write,
