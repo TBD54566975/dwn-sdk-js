@@ -28,8 +28,8 @@ export enum ProtocolActor {
 }
 
 export enum ProtocolAction {
-  READ = 'read',
-  WRITE = 'write'
+  Read = 'read',
+  Write = 'write'
 }
 
 export type ProtocolRuleSet = {

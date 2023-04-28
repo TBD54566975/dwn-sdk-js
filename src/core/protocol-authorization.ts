@@ -9,8 +9,8 @@ import { DwnError, DwnErrorCode } from './dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
 
 const methodToAllowedActionMap: Record<string, string> = {
-  [DwnMethodName.Write] : ProtocolAction.WRITE,
-  [DwnMethodName.Read]  : ProtocolAction.READ,
+  [DwnMethodName.Write] : ProtocolAction.Write,
+  [DwnMethodName.Read]  : ProtocolAction.Read,
 };
 
 export class ProtocolAuthorization {
