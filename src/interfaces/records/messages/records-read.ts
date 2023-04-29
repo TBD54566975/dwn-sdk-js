@@ -53,10 +53,14 @@ export class RecordsRead extends Message<RecordsReadMessage> {
   }
 
   public async authorize(tenant: string, newestRecordsWrite: RecordsWrite, messageStore: MessageStore): Promise<void> {
+    const { descriptor } = newestRecordsWrite.message;
     // if author/requester is the same as the target tenant, we can directly grant access
     if (this.author === tenant) {
       return;
-    } else if (newestRecordsWrite.message.descriptor.protocol !== undefined) {
+    } else if (descriptor.published === true) {
+      // authentication is not required for published data
+      return;
+    } else if (descriptor.protocol !== undefined) {
       await ProtocolAuthorization.authorize(tenant, this, this.author, messageStore);
     } else {
       throw new Error('message failed authorization');

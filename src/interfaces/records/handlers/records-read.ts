@@ -51,17 +51,11 @@ export class RecordsReadHandler implements MethodHandler {
       });
     }
 
-    // custom authorization logic
     const newestRecordsWrite = newestExistingMessage as RecordsWriteMessage;
-    if (newestRecordsWrite.descriptor.published === true) {
-      // access granted
-      // NOTE we check for `true` as a defensive equality comparison, so we don't mistakenly assume a record that is not published as published.
-    } else {
-      try {
-        await recordsRead.authorize(tenant, await RecordsWrite.parse(newestRecordsWrite), this.messageStore);
-      } catch (error) {
-        return MessageReply.fromError(error, 401);
-      }
+    try {
+      await recordsRead.authorize(tenant, await RecordsWrite.parse(newestRecordsWrite), this.messageStore);
+    } catch (error) {
+      return MessageReply.fromError(error, 401);
     }
 
     const messageCid = await Message.getCid(newestRecordsWrite);
