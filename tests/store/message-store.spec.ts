@@ -1,7 +1,6 @@
 import type { RecordsWriteMessage } from '../../src/interfaces/records/types.js';
 import type { CreateLevelDatabaseOptions, LevelDatabase } from '../../src/store/level-wrapper.js';
 
-import { computeCid } from '../../src/utils/cid.js';
 import { createLevelDatabase } from '../../src/store/level-wrapper.js';
 import { DidKeyResolver } from '../../src/index.js';
 import { expect } from 'chai';
@@ -36,10 +35,10 @@ describe('MessageStoreLevel Tests', () => {
 
       await messageStore.put(alice.did, message, {});
 
-      const expectedCid = await computeCid(message);
+      const expectedCid = await Message.getCid(message);
 
-      const jsonMessage = await messageStore.get(alice.did, expectedCid);
-      const resultCid = await computeCid(jsonMessage);
+      const jsonMessage = (await messageStore.get(alice.did, expectedCid))!;
+      const resultCid = await Message.getCid(jsonMessage);
 
       expect(resultCid).to.equal(expectedCid);
     });
