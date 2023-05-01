@@ -7,11 +7,10 @@ import type { ProtocolDefinition, ProtocolsConfigureMessage } from '../../../../
 describe('ProtocolsConfigure schema definition', () => {
   it('should throw if unknown actor is encountered in allow rule', async () => {
     const protocolDefinition: ProtocolDefinition = {
-      labels: {
-        email: {
-          schema: 'email'
-        }
-      },
+      recordTypes: [{
+        id     : 'email',
+        schema : 'email'
+      }],
       records: {
         email: {
           allow: [

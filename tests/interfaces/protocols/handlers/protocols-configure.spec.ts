@@ -135,11 +135,11 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       expect(reply.status.code).to.equal(200);
       expect(reply.entries?.length).to.equal(1);
 
-      const initialDefinition = JSON.stringify(middleWrite.message.descriptor.definition);
-      const expectedDefinition = JSON.stringify(newestWrite.message.descriptor.definition);
-      const actualDefinition = JSON.stringify(reply.entries![0]['descriptor']['definition']);
-      expect(actualDefinition).to.not.equal(initialDefinition);
-      expect(actualDefinition).to.equal(expectedDefinition);
+      const initialDefinition = middleWrite.message.descriptor.definition;
+      const expectedDefinition = newestWrite.message.descriptor.definition;
+      const actualDefinition = reply.entries![0]['descriptor']['definition'];
+      expect(actualDefinition).to.not.deep.equal(initialDefinition);
+      expect(actualDefinition).to.deep.equal(expectedDefinition);
     });
 
     it('should return 400 if protocol is not normalized', async () => {
@@ -176,7 +176,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       });
 
       // overwrite schema because #create auto-normalizes schema
-      protocolsConfig.message.descriptor.definition.labels.ask.schema = 'ask';
+      protocolsConfig.message.descriptor.definition.recordTypes.find(({ id }) => id === 'ask')!.schema = 'ask';
 
       // Re-create auth because we altered the descriptor after signing
       protocolsConfig.message.authorization = await Message.signAsAuthorization(

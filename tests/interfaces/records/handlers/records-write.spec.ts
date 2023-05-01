@@ -559,8 +559,8 @@ describe('RecordsWriteHandler.handle()', () => {
 
         const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
         const protocolDefinition: ProtocolDefinition = credentialIssuanceProtocolDefinition;
-        const credentialApplicationSchema = protocolDefinition.labels.credentialApplication.schema;
-        const credentialResponseSchema = protocolDefinition.labels.credentialResponse.schema;
+        const credentialApplicationSchema = protocolDefinition.recordTypes.find(({ id }) => id === 'credentialApplication')!.schema;
+        const credentialResponseSchema = protocolDefinition.recordTypes.find(({ id }) => id === 'credentialResponse')!.schema;
 
         const alice = await TestDataGenerator.generatePersona();
         const vcIssuer = await TestDataGenerator.generatePersona();
@@ -583,7 +583,7 @@ describe('RecordsWriteHandler.handle()', () => {
           requester    : alice,
           recipientDid : vcIssuer.did,
           protocol,
-          protocolPath : 'credentialApplication', // this comes from `labels` in protocol definition
+          protocolPath : 'credentialApplication', // this comes from `recordTypes` in protocol definition
           schema       : credentialApplicationSchema,
           data         : encodedCredentialApplication
         });
@@ -599,7 +599,7 @@ describe('RecordsWriteHandler.handle()', () => {
             requester    : vcIssuer,
             recipientDid : alice.did,
             protocol,
-            protocolPath : 'credentialApplication/credentialResponse', // this comes from `labels` in protocol definition
+            protocolPath : 'credentialApplication/credentialResponse', // this comes from `recordTypes` in protocol definition
             contextId    : credentialApplicationContextId,
             parentId     : credentialApplicationContextId,
             schema       : credentialResponseSchema,
@@ -649,8 +649,8 @@ describe('RecordsWriteHandler.handle()', () => {
         const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           protocol,
-          protocolPath : 'image', // this comes from `labels` in protocol definition
-          schema       : socialMediaProtocolDefinition.labels.image.schema,
+          protocolPath : 'image', // this comes from `recordTypes` in protocol definition
+          schema       : socialMediaProtocolDefinition.recordTypes.find(({ id }) => id === 'image')!.schema,
           data         : encodedImage
         });
         const imageReply = await dwn.processMessage(bob.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
@@ -663,8 +663,8 @@ describe('RecordsWriteHandler.handle()', () => {
         const captionImposter = await TestDataGenerator.generateRecordsWrite({
           requester    : aliceImposter,
           protocol,
-          protocolPath : 'image/caption', // this comes from `labels` in protocol definition
-          schema       : socialMediaProtocolDefinition.labels.caption.schema,
+          protocolPath : 'image/caption', // this comes from `recordTypes` in protocol definition
+          schema       : socialMediaProtocolDefinition.recordTypes.find(({ id }) => id === 'caption')!.schema,
           contextId    : imageContextId,
           parentId     : imageContextId,
           data         : encodedCaptionImposter
@@ -679,7 +679,7 @@ describe('RecordsWriteHandler.handle()', () => {
           requester    : alice,
           protocol,
           protocolPath : 'image/caption',
-          schema       : socialMediaProtocolDefinition.labels.caption.schema,
+          schema       : socialMediaProtocolDefinition.recordTypes.find(({ id }) => id === 'caption')!.schema,
           contextId    : imageContextId,
           parentId     : imageContextId,
           data         : encodedCaption
@@ -726,8 +726,8 @@ describe('RecordsWriteHandler.handle()', () => {
           {
             requester    : bob,
             protocol,
-            protocolPath : 'message', // this comes from `labels` in protocol definition
-            schema       : messageProtocolDefinition.labels.message.schema,
+            protocolPath : 'message', // this comes from `recordTypes` in protocol definition
+            schema       : messageProtocolDefinition.recordTypes.find(({ id }) => id === 'message')!.schema,
             data         : bobData
           }
         );
@@ -791,8 +791,8 @@ describe('RecordsWriteHandler.handle()', () => {
           {
             requester    : bob,
             protocol,
-            protocolPath : 'message', // this comes from `labels` in protocol definition
-            schema       : messageProtocolDefinition.labels.message.schema,
+            protocolPath : 'message', // this comes from `recordTypes` in protocol definition
+            schema       : messageProtocolDefinition.recordTypes.find(({ id }) => id === 'message')!.schema,
             data         : bobData
           }
         );
@@ -816,8 +816,8 @@ describe('RecordsWriteHandler.handle()', () => {
           {
             requester    : carol,
             protocol,
-            protocolPath : 'message', // this comes from `labels` in protocol definition
-            schema       : messageProtocolDefinition.labels.message.schema,
+            protocolPath : 'message', // this comes from `recordTypes` in protocol definition
+            schema       : messageProtocolDefinition.recordTypes.find(({ id }) => id === 'message')!.schema,
             data         : modifiedMessageData,
             recordId     : messageFromBob.message.recordId,
           }
@@ -858,8 +858,8 @@ describe('RecordsWriteHandler.handle()', () => {
           {
             requester    : bob,
             protocol,
-            protocolPath : 'message', // this comes from `labels` in protocol definition
-            schema       : messageProtocolDefinition.labels.message.schema,
+            protocolPath : 'message', // this comes from `recordTypes` in protocol definition
+            schema       : messageProtocolDefinition.recordTypes.find(({ id }) => id === 'message')!.schema,
             data         : bobData
           }
         );
@@ -883,8 +883,8 @@ describe('RecordsWriteHandler.handle()', () => {
             requester    : bob,
             dateCreated  : messageFromBob.message.descriptor.dateCreated,
             protocol,
-            protocolPath : 'message', // this comes from `labels` in protocol definition
-            schema       : messageProtocolDefinition.labels.message.schema,
+            protocolPath : 'message', // this comes from `recordTypes` in protocol definition
+            schema       : messageProtocolDefinition.recordTypes.find(({ id }) => id === 'message')!.schema,
             data         : bobData,
             recordId     : messageFromBob.message.recordId,
             recipientDid : bob.did // this immutable property was Alice's DID initially
@@ -902,8 +902,8 @@ describe('RecordsWriteHandler.handle()', () => {
 
         const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
         const protocolDefinition = credentialIssuanceProtocolDefinition;
-        const credentialApplicationSchema = protocolDefinition.labels.credentialApplication.schema;
-        const credentialResponseSchema = protocolDefinition.labels.credentialResponse.schema;
+        const credentialApplicationSchema = protocolDefinition.recordTypes.find(({ id }) => id === 'credentialApplication')!.schema;
+        const credentialResponseSchema = protocolDefinition.recordTypes.find(({ id }) => id === 'credentialResponse')!.schema;
 
         const alice = await TestDataGenerator.generatePersona();
         const fakeVcIssuer = await TestDataGenerator.generatePersona();
@@ -927,7 +927,7 @@ describe('RecordsWriteHandler.handle()', () => {
           requester    : alice,
           recipientDid : vcIssuer.did,
           protocol,
-          protocolPath : 'credentialApplication', // this comes from `labels` in protocol definition
+          protocolPath : 'credentialApplication', // this comes from `recordTypes` in protocol definition
           schema       : credentialApplicationSchema,
           data         : encodedCredentialApplication
         });
@@ -943,7 +943,7 @@ describe('RecordsWriteHandler.handle()', () => {
             requester    : fakeVcIssuer,
             recipientDid : alice.did,
             protocol,
-            protocolPath : 'credentialApplication/credentialResponse', // this comes from `labels` in protocol definition
+            protocolPath : 'credentialApplication/credentialResponse', // this comes from `recordTypes` in protocol definition
             contextId    : credentialApplicationContextId,
             parentId     : credentialApplicationContextId,
             schema       : credentialResponseSchema,
@@ -964,7 +964,7 @@ describe('RecordsWriteHandler.handle()', () => {
           requester    : alice,
           recipientDid : alice.did,
           protocol,
-          protocolPath : 'credentialApplication/credentialResponse', // this comes from `labels` in protocol definition
+          protocolPath : 'credentialApplication/credentialResponse', // this comes from `recordTypes` in protocol definition
           data
         });
 
@@ -991,7 +991,7 @@ describe('RecordsWriteHandler.handle()', () => {
           requester    : alice,
           recipientDid : alice.did,
           protocol,
-          protocolPath : 'credentialApplication', // this comes from `labels` in protocol definition
+          protocolPath : 'credentialApplication', // this comes from `recordTypes` in protocol definition
           schema       : 'unexpectedSchema',
           data
         });
@@ -999,6 +999,34 @@ describe('RecordsWriteHandler.handle()', () => {
         const reply = await dwn.processMessage(alice.did, credentialApplication.message, credentialApplication.dataStream);
         expect(reply.status.code).to.equal(401);
         expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationInvalidSchema);
+      });
+
+      it('should fail authorization if given `protocolPath` contains an invalid record type', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
+        const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
+          requester          : alice,
+          protocol,
+          protocolDefinition : credentialIssuanceProtocolDefinition
+        });
+
+        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+
+
+        const data = Encoder.stringToBytes('any data');
+        const credentialApplication = await TestDataGenerator.generateRecordsWrite({
+          requester    : alice,
+          recipientDid : alice.did,
+          protocol,
+          protocolPath : 'invalidRecordType',
+          data
+        });
+
+        const reply = await dwn.processMessage(alice.did, credentialApplication.message, credentialApplication.dataStream);
+        expect(reply.status.code).to.equal(401);
+        expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationInvalidRecordType);
       });
 
       it('should fail authorization if given `protocolPath` is mismatching with actual path', async () => {
@@ -1019,8 +1047,8 @@ describe('RecordsWriteHandler.handle()', () => {
           requester    : alice,
           recipientDid : alice.did,
           protocol,
-          protocolPath : 'incorrect/protocol/path',
-          schema       : credentialIssuanceProtocolDefinition.labels.credentialApplication.schema,
+          protocolPath : 'credentialApplication/credentialResponse', // incorrect path. correct path is `credentialResponse` because this record has no parent
+          schema       : credentialIssuanceProtocolDefinition.recordTypes.find(({ id }) => id === 'credentialApplication')!.schema,
           data
         });
 
@@ -1033,12 +1061,13 @@ describe('RecordsWriteHandler.handle()', () => {
         const alice = await DidKeyResolver.generate();
 
         const protocolDefinition = {
-          labels: {
-            image: {
+          recordTypes: [
+            {
+              id          : 'image',
               schema      : 'https://example.com/schema',
               dataFormats : ['image/jpeg', 'image/png']
             }
-          },
+          ],
           records: {
             image: {
               allow: [
@@ -1068,7 +1097,7 @@ describe('RecordsWriteHandler.handle()', () => {
           recipientDid : alice.did,
           protocol,
           protocolPath : 'image',
-          schema       : protocolDefinition.labels.image.schema,
+          schema       : protocolDefinition.recordTypes.find(({ id }) => id === 'image')!.schema,
           dataFormat   : 'image/jpeg',
           data
         });
@@ -1081,7 +1110,7 @@ describe('RecordsWriteHandler.handle()', () => {
           recipientDid : alice.did,
           protocol,
           protocolPath : 'image',
-          schema       : protocolDefinition.labels.image.schema,
+          schema       : protocolDefinition.recordTypes.find(({ id }) => id === 'image')!.schema,
           dataFormat   : 'not/allowed/dataFormat',
           data
         });
@@ -1092,6 +1121,7 @@ describe('RecordsWriteHandler.handle()', () => {
       });
 
       it('should fail authorization if record schema is not allowed at the hierarchical level attempted for the RecordsWrite', async () => {
+        // scenario: Attempt writing of records at 3 levels in the hierarchy to cover all possible cases of missing rule sets
         const alice = await DidKeyResolver.generate();
 
         const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
@@ -1101,77 +1131,86 @@ describe('RecordsWriteHandler.handle()', () => {
           protocol,
           protocolDefinition
         });
-        const credentialResponseSchema = protocolDefinition.labels.credentialResponse.schema;
+        const credentialApplicationSchema = protocolDefinition.recordTypes.find(({ id }) => id === 'credentialApplication')!.schema;
+        const credentialResponseSchema = protocolDefinition.recordTypes.find(({ id }) => id === 'credentialResponse')!.schema;
 
         const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
         expect(protocolConfigureReply.status.code).to.equal(202);
 
+        // Try and fail to write a 'credentialResponse', which is not allowed at the top level of the record hierarchy
         const data = Encoder.stringToBytes('any data');
-        const credentialApplication = await TestDataGenerator.generateRecordsWrite({
+        const failedCredentialResponse = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : alice.did,
           protocol,
           protocolPath : 'credentialResponse',
-          schema       : credentialResponseSchema, // this is an known schema type, but not allowed for a protocol root record
+          schema       : credentialResponseSchema, // this is a known schema type, but not allowed for a protocol root record
           data
         });
+        const failedCredentialResponseReply = await dwn.processMessage(
+          alice.did, failedCredentialResponse.message, failedCredentialResponse.dataStream);
+        expect(failedCredentialResponseReply.status.code).to.equal(401);
+        expect(failedCredentialResponseReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRuleSet);
 
-        const reply = await dwn.processMessage(alice.did, credentialApplication.message, credentialApplication.dataStream);
-        expect(reply.status.code).to.equal(401);
-        expect(reply.status.detail).to.contain('not allowed in structure level');
-      });
-
-      it('should fail authorization if record schema is not allowed at the hierarchical level attempted for the RecordsWrite', async () => {
-        const alice = await DidKeyResolver.generate();
-
-        const protocol = 'chatProtocol';
-        const protocolDefinition = {
-          labels: {
-            email: {
-              schema: 'http://emailschema'
-            },
-            sms: {
-              schema: 'http://smsschema'
-            }
-          },
-          records: {
-            email : {},
-            sms   : {}
-          }
-        };
-        const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
-          requester: alice,
-          protocol,
-          protocolDefinition
-        });
-
-        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
-        expect(protocolConfigureReply.status.code).to.equal(202);
-
-        const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+        // Successfully write a 'credentialApplication' at the top level of the of the record hierarchy
+        const credentialApplication = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : alice.did,
           protocol,
-          protocolPath : 'email', // this comes from `labels` in protocol definition
-          schema       : protocolDefinition.labels.email.schema,
-          data         : Encoder.stringToBytes('any data'),
+          protocolPath : 'credentialApplication', // allowed at root level
+          schema       : credentialApplicationSchema,
+          data
         });
-        await dwn.processMessage(alice.did, emailRecordsWrite.message, emailRecordsWrite.dataStream);
+        const credentialApplicationReply = await dwn.processMessage(
+          alice.did, credentialApplication.message, credentialApplication.dataStream);
+        expect(credentialApplicationReply.status.code).to.equal(202);
 
-        const smsSchemaResponse = await TestDataGenerator.generateRecordsWrite({
+        // Try and fail to write another 'credentialApplication' below the first 'credentialApplication'
+        const failedCredentialApplication = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : alice.did,
           protocol,
-          protocolPath : 'email/sms', // this comes from `labels` in protocol definition
-          schema       : protocolDefinition.labels.sms.schema, // SMS are allowed, but not as a child record of emails
-          data         : Encoder.stringToBytes('any other data'),
-          parentId     : emailRecordsWrite.message.recordId,
-          contextId    : await emailRecordsWrite.recordsWrite.getEntryId()
+          protocolPath : 'credentialApplication/credentialApplication', // credentialApplications may not be nested below another credentialApplication
+          schema       : credentialApplicationSchema,
+          contextId    : await credentialApplication.recordsWrite.getEntryId(),
+          parentId     : credentialApplication.message.recordId,
+          data
         });
-        const reply = await dwn.processMessage(alice.did, smsSchemaResponse.message, smsSchemaResponse.dataStream);
+        const failedCredentialApplicationReply2 = await dwn.processMessage(
+          alice.did, failedCredentialApplication.message, failedCredentialApplication.dataStream);
+        expect(failedCredentialApplicationReply2.status.code).to.equal(401);
+        expect(failedCredentialApplicationReply2.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRuleSet);
 
-        expect(reply.status.code).to.equal(401);
-        expect(reply.status.detail).to.contain('record with schema: \'http://smsschema\' not allowed in structure level 1');
+        // Successfully write a 'credentialResponse' below the 'credentialApplication'
+        const credentialResponse = await TestDataGenerator.generateRecordsWrite({
+          requester    : alice,
+          recipientDid : alice.did,
+          protocol,
+          protocolPath : 'credentialApplication/credentialResponse',
+          schema       : credentialResponseSchema,
+          contextId    : await credentialApplication.recordsWrite.getEntryId(),
+          parentId     : credentialApplication.message.recordId,
+          data
+        });
+        const credentialResponseReply = await dwn.processMessage(alice.did, credentialResponse.message, credentialResponse.dataStream);
+        expect(credentialResponseReply.status.code).to.equal(202);
+
+        // Try and fail to write a 'credentialResponse' below 'credentialApplication/credentialResponse'
+        // Testing case where there is no rule set for any record type at the given level in the hierarchy
+        const nestedCredentialApplication = await TestDataGenerator.generateRecordsWrite({
+          requester    : alice,
+          recipientDid : alice.did,
+          protocol,
+          protocolPath : 'credentialApplication/credentialResponse/credentialApplication',
+          schema       : credentialApplicationSchema,
+          contextId    : await credentialApplication.recordsWrite.getEntryId(),
+          parentId     : credentialResponse.message.recordId,
+          data
+        });
+        const nestedCredentialApplicationReply = await dwn.processMessage(
+          alice.did, nestedCredentialApplication.message, nestedCredentialApplication.dataStream);
+        expect(nestedCredentialApplicationReply.status.code).to.equal(401);
+        expect(nestedCredentialApplicationReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRuleSet);
       });
 
       it('should only allow DWN owner to write if record does not have an allow rule defined', async () => {
@@ -1180,11 +1219,12 @@ describe('RecordsWriteHandler.handle()', () => {
         // write a protocol definition without an explicit allow rule
         const protocol = 'private-protocol';
         const protocolDefinition: ProtocolDefinition = {
-          labels: {
-            privateNote: {
-              schema: 'private-note'
+          recordTypes: [
+            {
+              id     : 'privateNote',
+              schema : 'private-note'
             }
-          },
+          ],
           records: {
             privateNote: {}
           }
@@ -1204,7 +1244,7 @@ describe('RecordsWriteHandler.handle()', () => {
           requester    : alice,
           recipientDid : alice.did,
           protocol,
-          protocolPath : 'privateNote', // this comes from `labels`
+          protocolPath : 'privateNote', // this comes from `recordTypes`
           schema       : 'private-note',
           data
         });
@@ -1218,7 +1258,7 @@ describe('RecordsWriteHandler.handle()', () => {
           requester    : bob,
           recipientDid : alice.did,
           protocol,
-          protocolPath : 'privateNote', // this comes from `labels`
+          protocolPath : 'privateNote', // this comes from `recordTypes`
           schema       : 'private-note',
           data
         });
@@ -1259,9 +1299,9 @@ describe('RecordsWriteHandler.handle()', () => {
         const messageDataWithIssuerA = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : issuer.did,
-          schema       : credentialIssuanceProtocolDefinition.labels.credentialApplication.schema,
+          schema       : credentialIssuanceProtocolDefinition.recordTypes.find(({ id }) => id === 'credentialApplication')!.schema,
           protocol,
-          protocolPath : 'credentialApplication', // this comes from `labels` in protocol definition
+          protocolPath : 'credentialApplication', // this comes from `recordTypes` in protocol definition
           data
         });
         const contextId = await messageDataWithIssuerA.recordsWrite.getEntryId();
@@ -1273,11 +1313,11 @@ describe('RecordsWriteHandler.handle()', () => {
         const invalidResponseByIssuerA = await TestDataGenerator.generateRecordsWrite({
           requester    : issuer,
           recipientDid : alice.did,
-          schema       : credentialIssuanceProtocolDefinition.labels.credentialResponse.schema,
+          schema       : credentialIssuanceProtocolDefinition.recordTypes.find(({ id }) => id === 'credentialResponse')!.schema,
           contextId,
           parentId     : messageDataWithIssuerA.message.recordId,
           protocol,
-          protocolPath : 'credentialApplication/credentialResponse', // this comes from `labels` in protocol definition
+          protocolPath : 'credentialApplication/credentialResponse', // this comes from `recordTypes` in protocol definition
           data
         });
 
@@ -1312,7 +1352,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const askMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : pfi.did,
-          schema       : protocolDefinition.labels.ask.schema,
+          schema       : protocolDefinition.recordTypes.find(({ id }) => id === 'ask')!.schema,
           protocol,
           protocolPath : 'ask',
           data
@@ -1325,7 +1365,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const offerMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : pfi,
           recipientDid : alice.did,
-          schema       : protocolDefinition.labels.offer.schema,
+          schema       : protocolDefinition.recordTypes.find(({ id }) => id === 'offer')!.schema,
           contextId,
           parentId     : askMessageData.message.recordId,
           protocol,
@@ -1340,7 +1380,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const fulfillmentMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : pfi.did,
-          schema       : protocolDefinition.labels.fulfillment.schema,
+          schema       : protocolDefinition.recordTypes.find(({ id }) => id === 'fulfillment')!.schema,
           contextId,
           parentId     : offerMessageData.message.recordId,
           protocol,
@@ -1392,7 +1432,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const askMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : pfi.did,
-          schema       : protocolDefinition.labels.ask.schema,
+          schema       : protocolDefinition.recordTypes.find(({ id }) => id === 'ask')!.schema,
           protocol,
           protocolPath : 'ask',
           data
@@ -1406,7 +1446,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const fulfillmentMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           recipientDid : pfi.did,
-          schema       : protocolDefinition.labels.fulfillment.schema,
+          schema       : protocolDefinition.recordTypes.find(({ id }) => id === 'fulfillment')!.schema,
           contextId,
           parentId     : 'non-existent-id',
           protocolPath : 'ask/offer/fulfillment',
@@ -1480,7 +1520,7 @@ describe('RecordsWriteHandler.handle()', () => {
           data         : new TextEncoder().encode('data1'),
           protocol     : 'example.com/',
           protocolPath : 'email', // from email protocol
-          schema       : emailProtocolDefinition.labels.email.schema
+          schema       : emailProtocolDefinition.recordTypes.find(({ id }) => id === 'email')!.schema
         });
 
         // overwrite protocol because #create auto-normalizes protocol

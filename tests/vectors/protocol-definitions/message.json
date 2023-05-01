@@ -1,9 +1,10 @@
 {
-  "labels": {
-    "message": {
+  "recordTypes": [
+    {
+      "id": "message",
       "schema": "http://message.me"
     }
-  },
+  ],
   "records": {
     "message": {
       "allow": [
