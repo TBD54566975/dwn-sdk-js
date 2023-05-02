@@ -3,7 +3,6 @@ import type { SignatureInput } from '../../../jose/jws/general/types';
 import type { PermissionConditions, PermissionScope } from '../types';
 import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types';
 
-import { computeCid } from '../../../utils/cid';
 import { getCurrentTimeInHighPrecision } from '../../../utils/time';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -22,12 +21,7 @@ type PermissionsGrantOptions = {
   authorizationSignatureInput: SignatureInput;
 };
 
-export class PermissionsGrant extends Message {
-  readonly message: PermissionsGrantMessage; // a more specific type than the base type defined in parent class
-
-  constructor(message: PermissionsGrantMessage) {
-    super(message);
-  }
+export class PermissionsGrant extends Message<PermissionsGrantMessage> {
 
   static async create(options: PermissionsGrantOptions): Promise<PermissionsGrant> {
     const { conditions } = options;
@@ -101,7 +95,7 @@ export class PermissionsGrant extends Message {
       authorizationSignatureInput
     });
 
-    delegatedGrant.delegatedFrom = await computeCid(this.message);
+    delegatedGrant.delegatedFrom = await Message.getCid(this.message);
     delegatedGrant.delegationChain = this.message;
 
     return delegatedGrant;

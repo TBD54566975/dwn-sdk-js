@@ -1,8 +1,8 @@
 import type { Event } from '../../src/event-log/event-log.js';
 
 import chaiAsPromised from 'chai-as-promised';
-import { computeCid } from '../../src/utils/cid.js';
 import { EventLogLevel } from '../../src/event-log/event-log-level.js';
+import { Message } from '../../src/core/message.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import chai, { expect } from 'chai';
 
@@ -26,11 +26,11 @@ describe('EventLogLevel Tests', () => {
 
   it('separates events by tenant', async () => {
     const { requester, message } = await TestDataGenerator.generateRecordsWrite();
-    const messageCid = await computeCid(message);
+    const messageCid = await Message.getCid(message);
     const watermark = await eventLog.append(requester.did, messageCid);
 
     const { requester: requester2, message: message2 } = await TestDataGenerator.generateRecordsWrite();
-    const messageCid2 = await computeCid(message2);
+    const messageCid2 = await Message.getCid(message2);
     const watermark2 = await eventLog.append(requester2.did, messageCid2);
 
     let events = await eventLog.getEvents(requester.did);
@@ -50,14 +50,14 @@ describe('EventLogLevel Tests', () => {
     const expectedEvents: Array<Event> = [];
 
     const { requester, message } = await TestDataGenerator.generateRecordsWrite();
-    const messageCid = await computeCid(message);
+    const messageCid = await Message.getCid(message);
     const watermark = await eventLog.append(requester.did, messageCid);
 
     expectedEvents.push({ watermark, messageCid });
 
     for (let i = 0; i < 9; i += 1) {
       const { message } = await TestDataGenerator.generateRecordsWrite({ requester });
-      const messageCid = await computeCid(message);
+      const messageCid = await Message.getCid(message);
       const watermark = await eventLog.append(requester.did, messageCid);
 
       expectedEvents.push({ watermark, messageCid });
@@ -77,14 +77,14 @@ describe('EventLogLevel Tests', () => {
       const expectedEvents: Event[] = [];
 
       const { requester, message } = await TestDataGenerator.generateRecordsWrite();
-      const messageCid = await computeCid(message);
+      const messageCid = await Message.getCid(message);
 
       const watermark = await eventLog.append(requester.did, messageCid);
       expectedEvents.push({ messageCid, watermark });
 
       for (let i = 0; i < 9; i += 1) {
         const { message } = await TestDataGenerator.generateRecordsWrite({ requester });
-        const messageCid = await computeCid(message);
+        const messageCid = await Message.getCid(message);
 
         const watermark = await eventLog.append(requester.did, messageCid);
         expectedEvents.push({ messageCid, watermark });
@@ -101,7 +101,7 @@ describe('EventLogLevel Tests', () => {
 
     it('gets all events that occured after the watermark provided', async () => {
       const { requester, message } = await TestDataGenerator.generateRecordsWrite();
-      const messageCid = await computeCid(message);
+      const messageCid = await Message.getCid(message);
 
       await eventLog.append(requester.did, messageCid);
 
@@ -110,7 +110,7 @@ describe('EventLogLevel Tests', () => {
 
       for (let i = 0; i < 9; i += 1) {
         const { message } = await TestDataGenerator.generateRecordsWrite({ requester });
-        const messageCid = await computeCid(message);
+        const messageCid = await Message.getCid(message);
 
         const watermark = await eventLog.append(requester.did, messageCid);
 
@@ -136,13 +136,13 @@ describe('EventLogLevel Tests', () => {
     it('finds and deletes events that whose values match the cids provided', async () => {
       const cids: string[] = [];
       const { requester, message } = await TestDataGenerator.generateRecordsWrite();
-      const messageCid = await computeCid(message);
+      const messageCid = await Message.getCid(message);
 
       await eventLog.append(requester.did, messageCid);
 
       for (let i = 0; i < 9; i += 1) {
         const { message } = await TestDataGenerator.generateRecordsWrite({ requester });
-        const messageCid = await computeCid(message);
+        const messageCid = await Message.getCid(message);
 
         await eventLog.append(requester.did, messageCid);
         if (i % 2 === 0) {
