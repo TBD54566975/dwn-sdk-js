@@ -53,7 +53,7 @@ export class RecordsReadHandler implements MethodHandler {
 
     const newestRecordsWrite = newestExistingMessage as RecordsWriteMessage;
     try {
-      await recordsRead.authorize(tenant, await RecordsWrite.parse(newestRecordsWrite), this.storageController.MessageStore);
+      await this.storageController.authorizeRecordsRead(tenant, recordsRead, await RecordsWrite.parse(newestRecordsWrite));
     } catch (error) {
       return MessageReply.fromError(error, 401);
     }

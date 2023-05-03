@@ -3,10 +3,10 @@ import type { Readable } from 'readable-stream';
 import type { BaseMessage, Filter } from '../core/types.js';
 import type { DataStore, GetResult } from './data-store.js';
 import type { MessageStore, MessageStoreOptions } from './message-store.js';
+import type { RecordsRead, RecordsWrite, RecordsWriteMessage } from '../index.js';
 
 import { DwnConstant } from '../core/dwn-constant.js';
 import { Message } from '../core/message.js';
-import type { RecordsWriteMessage } from '../index.js';
 import { DataStream, Encoder } from '../index.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
@@ -122,18 +122,20 @@ export class StorageController {
     await this.messageStore.delete(tenant, messageCid);
   }
 
-  public get MessageStore(): MessageStore { return this.messageStore; }
-
-  public queryMessages(tenant: string, filter: Filter, options?: MessageStoreOptions): Promise<BaseMessage[]> {
-    return this.messageStore.query(tenant, filter, options);
+  public getMessage(tenant: string, messageCid: string): Promise<BaseMessage|undefined> {
+    return this.messageStore.get(tenant, messageCid);
   }
 
-  public putMessage(tenant: string, messageJson: BaseMessage, indexes, options?): Promise<void> {
+  public putMessage(
+    tenant: string,
+    messageJson: BaseMessage,
+    indexes: Record<string, string>,
+    options?: MessageStoreOptions): Promise<void> {
     return this.messageStore.put(tenant, messageJson, indexes, options);
   }
 
-  public getMessage(tenant: string, messageCid: string): Promise<BaseMessage|undefined> {
-    return this.messageStore.get(tenant, messageCid);
+  public queryMessages(tenant: string, filter: Filter, options?: MessageStoreOptions): Promise<BaseMessage[]> {
+    return this.messageStore.query(tenant, filter, options);
   }
 
   public getData(tenant: string, messageCid: string, dataCid: string): Promise<GetResult|undefined> {
@@ -146,6 +148,14 @@ export class StorageController {
 
   public deleteEvents(tenant: string, deletedMessageCids: any): Promise<number>|undefined {
     return this.eventLog.deleteEventsByCid(tenant, deletedMessageCids);
+  }
+
+  public authorizeRecordsRead(tenant: string, recordsRead: RecordsRead, newestRecordsWrite: RecordsWrite): Promise<void> {
+    return recordsRead.authorize(tenant, newestRecordsWrite, this.messageStore);
+  }
+
+  public authorizeRecordsWrite(tenant: string, recordsWrite: RecordsWrite): Promise<void> {
+    return recordsWrite.authorize(tenant, this.messageStore);
   }
 }
 
