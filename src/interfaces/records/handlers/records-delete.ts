@@ -60,7 +60,7 @@ export class RecordsDeleteHandler implements MethodHandler {
     if (incomingMessageIsNewest) {
       const indexes = await constructIndexes(tenant, recordsDelete);
 
-      await this.storageController.putMessage(tenant, message, indexes);
+      await this.storageController.putMessageWithoutData(tenant, message, indexes);
 
       const messageCid = await Message.getCid(message);
       await this.storageController.appendEvent(tenant, messageCid);

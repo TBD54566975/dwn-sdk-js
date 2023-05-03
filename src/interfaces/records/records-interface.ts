@@ -26,7 +26,7 @@ export async function deleteAllOlderMessagesButKeepInitialWrite(
       // the easiest implementation here is delete each old messages
       // and re-create it with the right index (isLatestBaseState = 'false') if the message is the initial write,
       // but there is room for better/more efficient implementation here
-      await storageController.delete(tenant, message);
+      await storageController.deleteMessage(tenant, message);
 
       // if the existing message is the initial write
       // we actually need to keep it BUT, need to ensure the message is no longer marked as the latest state
@@ -35,7 +35,7 @@ export async function deleteAllOlderMessagesButKeepInitialWrite(
         const existingRecordsWrite = await RecordsWrite.parse(message as RecordsWriteMessage);
         const isLatestBaseState = false;
         const indexes = await constructRecordsWriteIndexes(existingRecordsWrite, isLatestBaseState);
-        await storageController.putMessage(tenant, message, indexes);
+        await storageController.putMessageWithoutData(tenant, message, indexes);
       } else {
         const messageCid = await Message.getCid(message);
         deletedMessageCids.push(messageCid);

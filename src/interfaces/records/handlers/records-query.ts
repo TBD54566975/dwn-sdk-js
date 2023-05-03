@@ -69,7 +69,7 @@ export class RecordsQueryHandler implements MethodHandler {
       method            : DwnMethodName.Write,
       isLatestBaseState : true
     };
-    const records = await this.storageController.query(tenant, filter);
+    const records = await this.storageController.queryRecordsWrites(tenant, filter);
     return records;
   }
 
@@ -99,7 +99,7 @@ export class RecordsQueryHandler implements MethodHandler {
       published         : true,
       isLatestBaseState : true
     };
-    const publishedRecords = await this.storageController.query(tenant, filter);
+    const publishedRecords = await this.storageController.queryRecordsWrites(tenant, filter);
     return publishedRecords;
   }
 
@@ -119,7 +119,7 @@ export class RecordsQueryHandler implements MethodHandler {
       isLatestBaseState : true,
       published         : false
     };
-    const unpublishedRecordsForRequester = await this.storageController.query(tenant, filter);
+    const unpublishedRecordsForRequester = await this.storageController.queryRecordsWrites(tenant, filter);
     return unpublishedRecordsForRequester;
   }
 
@@ -139,7 +139,7 @@ export class RecordsQueryHandler implements MethodHandler {
       isLatestBaseState : true,
       published         : false
     };
-    const unpublishedRecordsForRequester = await this.storageController.query(tenant, filter);
+    const unpublishedRecordsForRequester = await this.storageController.queryRecordsWrites(tenant, filter);
     return unpublishedRecordsForRequester;
   }
 }
