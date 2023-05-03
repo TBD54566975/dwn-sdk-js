@@ -4,7 +4,6 @@ import type { RecordsDeleteMessage } from '../types.js';
 import type { StorageController } from '../../../store/storage-controller.js';
 import type { TimestampedMessage } from '../../../core/types.js';
 
-
 import { authenticate } from '../../../core/auth.js';
 import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
 import { MessageReply } from '../../../core/message-reply.js';

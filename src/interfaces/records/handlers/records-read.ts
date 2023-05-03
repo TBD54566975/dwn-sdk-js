@@ -10,6 +10,7 @@ import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsRead } from '../messages/records-read.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
+
 export class RecordsReadHandler implements MethodHandler {
 
   constructor(private didResolver: DidResolver, private storageController: StorageController) { }

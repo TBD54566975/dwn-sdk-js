@@ -1,12 +1,12 @@
 import type { DidResolver } from '../../../index.js';
 import type { MethodHandler } from '../../types.js';
+import type { RecordsWriteMessageWithOptionalEncodedData } from '../../../store/storage-controller.js';
+import type { StorageController } from '../../../store/storage-controller.js';
 import type { RecordsQueryMessage, RecordsQueryReplyEntry, RecordsWriteMessage } from '../types.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { lexicographicalCompare } from '../../../utils/string.js';
 import { MessageReply } from '../../../core/message-reply.js';
-import type { RecordsWriteMessageWithOptionalEncodedData } from '../../../store/storage-controller.js';
-import type { StorageController } from '../../../store/storage-controller.js';
 
 import { DateSort, RecordsQuery } from '../messages/records-query.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
