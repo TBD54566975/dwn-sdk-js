@@ -1,8 +1,8 @@
 import type { EventLog } from '../event-log/event-log.js';
-import type { MessageStore, MessageStoreOptions } from './message-store.js';
 import type { Readable } from 'readable-stream';
 import type { BaseMessage, Filter } from '../core/types.js';
 import type { DataStore, GetResult } from './data-store.js';
+import type { MessageStore, MessageStoreOptions } from './message-store.js';
 
 import { DwnConstant } from '../core/dwn-constant.js';
 import { Message } from '../core/message.js';
@@ -126,6 +126,10 @@ export class StorageController {
 
   public queryMessageStore(tenant: string, filter: Filter, options?: MessageStoreOptions): Promise<BaseMessage[]> {
     return this.messageStore.query(tenant, filter, options);
+  }
+
+  public putMessageStore(tenant: string, messageJson: BaseMessage, indexes, options?): Promise<void> {
+    return this.messageStore.put(tenant, messageJson, indexes, options);
   }
 
   public get(tenant: string, messageCid: string, dataCid: string): Promise<GetResult|undefined> {
