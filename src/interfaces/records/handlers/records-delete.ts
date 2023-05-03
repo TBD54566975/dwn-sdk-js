@@ -80,7 +80,7 @@ export class RecordsDeleteHandler implements MethodHandler {
   };
 }
 
-export async function constructIndexes(tenant: string, recordsDelete: RecordsDelete): Promise<{ [key: string]: string }> {
+export async function constructIndexes(tenant: string, recordsDelete: RecordsDelete): Promise<Record<string, string>> {
   const message = recordsDelete.message;
   const descriptor = { ...message.descriptor };
 
@@ -88,7 +88,7 @@ export async function constructIndexes(tenant: string, recordsDelete: RecordsDel
   // we intentionally not add index for `isLatestBaseState` at all, this means that upon a successful delete,
   // no messages with the record ID will match any query because queries by design filter by `isLatestBaseState = true`,
   // `isLatestBaseState` for the initial delete would have been toggled to `false`
-  const indexes: { [key: string]: any } = {
+  const indexes: Record<string, any> = {
     // isLatestBaseState : "true", // intentionally showing that this index is omitted
     author: recordsDelete.author,
     ...descriptor

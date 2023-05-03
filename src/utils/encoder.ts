@@ -30,7 +30,7 @@ export class Encoder {
     return bytes;
   }
 
-  public static objectToBytes(obj: { [key: string]: any }): Uint8Array {
+  public static objectToBytes(obj: Record<string, any>): Uint8Array {
     const objectString = JSON.stringify(obj);
     const objectBytes = textEncoder.encode(objectString);
     return objectBytes;

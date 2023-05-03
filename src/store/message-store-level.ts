@@ -104,7 +104,7 @@ export class MessageStoreLevel implements MessageStore {
   async put(
     tenant: string,
     message: BaseMessage,
-    indexes: { [key: string]: string },
+    indexes: Record<string, string>,
     options?: MessageStoreOptions
   ): Promise<void> {
     options?.signal?.throwIfAborted();
