@@ -81,7 +81,7 @@ export class StorageController {
     }
 
     await this.messageStore.put(tenant, message, indexes);
-    if (this.eventLog) { await this.eventLog.append(tenant, messageCid); }
+    await this.eventLog.append(tenant, messageCid);
   }
 
   public async query(
