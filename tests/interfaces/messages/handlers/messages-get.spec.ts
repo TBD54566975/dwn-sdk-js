@@ -192,7 +192,7 @@ describe('MessagesGetHandler.handle()', () => {
     messageStore.get.rejects('internal db error');
 
     const dataStore = sinon.createStubInstance(DataStoreLevel);
-    const storageController = new StorageController(messageStore, dataStore);
+    const storageController = new StorageController(messageStore, dataStore, eventLog);
     const messagesGetHandler = new MessagesGetHandler(didResolver, storageController);
 
     const alice = await DidKeyResolver.generate();

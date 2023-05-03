@@ -35,13 +35,13 @@ export async function deleteAllOlderMessagesButKeepInitialWrite(
         const existingRecordsWrite = await RecordsWrite.parse(message as RecordsWriteMessage);
         const isLatestBaseState = false;
         const indexes = await constructRecordsWriteIndexes(existingRecordsWrite, isLatestBaseState);
-        await storageController.putMessageStore(tenant, message, indexes);
+        await storageController.putMessage(tenant, message, indexes);
       } else {
         const messageCid = await Message.getCid(message);
         deletedMessageCids.push(messageCid);
       }
     }
 
-    await storageController.deleteEventsByCid(tenant, deletedMessageCids);
+    await storageController.deleteEvents(tenant, deletedMessageCids);
   }
 }

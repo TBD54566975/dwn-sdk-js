@@ -479,7 +479,7 @@ describe('RecordsReadHandler.handle()', () => {
     const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
-    const storageController = new StorageController(messageStore, dataStore);
+    const storageController = new StorageController(messageStore, dataStore, eventLog);
     const recordsReadHandler = new RecordsReadHandler(didResolver, storageController);
     const reply = await recordsReadHandler.handle({ tenant: alice.did, message: recordsRead.message });
     expect(reply.status.code).to.equal(401);
@@ -495,7 +495,7 @@ describe('RecordsReadHandler.handle()', () => {
     // setting up a stub method resolver & message store
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
-    const storageController = new StorageController(messageStore, dataStore);
+    const storageController = new StorageController(messageStore, dataStore, eventLog);
     const recordsReadHandler = new RecordsReadHandler(didResolver, storageController);
 
     // stub the `parse()` function to throw an error

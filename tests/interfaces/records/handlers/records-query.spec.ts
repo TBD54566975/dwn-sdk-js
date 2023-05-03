@@ -849,7 +849,9 @@ describe('RecordsQueryHandler.handle()', () => {
     const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
-    const storageController = new StorageController(messageStore, dataStore);
+    const storageController = new StorageController(messageStore, dataStore, new EventLogLevel({
+      location: 'TEST-EVENTLOG'
+    }));
 
     const recordsQueryHandler = new RecordsQueryHandler(didResolver, storageController);
     const reply = await recordsQueryHandler.handle({ tenant, message });
@@ -865,7 +867,9 @@ describe('RecordsQueryHandler.handle()', () => {
     const didResolver = TestStubGenerator.createDidResolverStub(requester);
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
-    const storageController = new StorageController(messageStore, dataStore);
+    const storageController = new StorageController(messageStore, dataStore, new EventLogLevel({
+      location: 'TEST-EVENTLOG'
+    }));
 
     const recordsQueryHandler = new RecordsQueryHandler(didResolver, storageController);
 

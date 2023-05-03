@@ -36,7 +36,7 @@ export class MessagesGetHandler implements MethodHandler {
     const messageCids = new Set(message.descriptor.messageCids);
 
     for (const messageCid of messageCids) {
-      const promise = this.storageController.MessageStore.get(tenant, messageCid)
+      const promise = this.storageController.getMessage(tenant, messageCid)
         .then(message => {
           return { messageCid, message };
         })
@@ -70,7 +70,7 @@ export class MessagesGetHandler implements MethodHandler {
 
       if (dataCid !== undefined && dataSize! <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
         const messageCid = await Message.getCid(message);
-        const result = await this.storageController.get(tenant, messageCid, dataCid);
+        const result = await this.storageController.getData(tenant, messageCid, dataCid);
 
         if (result) {
           const dataBytes = await DataStream.toBytes(result.dataStream);

@@ -15,7 +15,7 @@ import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
  */
 export class StorageController {
 
-  constructor(private messageStore: MessageStore, private dataStore: DataStore, private eventLog?: EventLog) {}
+  constructor(private messageStore: MessageStore, private dataStore: DataStore, private eventLog: EventLog) {}
 
   /**
    * Puts the given message and data in storage.
@@ -124,24 +124,28 @@ export class StorageController {
 
   public get MessageStore(): MessageStore { return this.messageStore; }
 
-  public queryMessageStore(tenant: string, filter: Filter, options?: MessageStoreOptions): Promise<BaseMessage[]> {
+  public queryMessages(tenant: string, filter: Filter, options?: MessageStoreOptions): Promise<BaseMessage[]> {
     return this.messageStore.query(tenant, filter, options);
   }
 
-  public putMessageStore(tenant: string, messageJson: BaseMessage, indexes, options?): Promise<void> {
+  public putMessage(tenant: string, messageJson: BaseMessage, indexes, options?): Promise<void> {
     return this.messageStore.put(tenant, messageJson, indexes, options);
   }
 
-  public get(tenant: string, messageCid: string, dataCid: string): Promise<GetResult|undefined> {
+  public getMessage(tenant: string, messageCid: string): Promise<BaseMessage|undefined> {
+    return this.messageStore.get(tenant, messageCid);
+  }
+
+  public getData(tenant: string, messageCid: string, dataCid: string): Promise<GetResult|undefined> {
     return this.dataStore.get(tenant, messageCid, dataCid);
   }
 
-  public deleteEventsByCid(tenant: string, deletedMessageCids: any): void {
-    if (this.eventLog) { this.eventLog.deleteEventsByCid(tenant, deletedMessageCids); }
+  public appendEvents(tenant: string, messageCid: string): Promise<string>|undefined {
+    return this.eventLog.append(tenant, messageCid);
   }
 
-  public appendEventLog(tenant: string, messageCid: string): Promise<string> | undefined {
-    if (this.eventLog) { return this.eventLog.append(tenant, messageCid); }
+  public deleteEvents(tenant: string, deletedMessageCids: any): Promise<number>|undefined {
+    return this.eventLog.deleteEventsByCid(tenant, deletedMessageCids);
   }
 }
 

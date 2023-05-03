@@ -41,7 +41,7 @@ export class RecordsDeleteHandler implements MethodHandler {
       interface : DwnInterfaceName.Records,
       recordId  : message.descriptor.recordId
     };
-    const existingMessages = await this.storageController.queryMessageStore(tenant, query) as TimestampedMessage[];
+    const existingMessages = await this.storageController.queryMessages(tenant, query) as TimestampedMessage[];
 
     // find which message is the newest, and if the incoming message is the newest
     const newestExistingMessage = await RecordsWrite.getNewestMessage(existingMessages);
@@ -60,10 +60,10 @@ export class RecordsDeleteHandler implements MethodHandler {
     if (incomingMessageIsNewest) {
       const indexes = await constructIndexes(tenant, recordsDelete);
 
-      await this.storageController.putMessageStore(tenant, message, indexes);
+      await this.storageController.putMessage(tenant, message, indexes);
 
       const messageCid = await Message.getCid(message);
-      await this.storageController.appendEventLog(tenant, messageCid);
+      await this.storageController.appendEvents(tenant, messageCid);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }
