@@ -63,7 +63,7 @@ export class RecordsDeleteHandler implements MethodHandler {
       await this.storageController.putMessage(tenant, message, indexes);
 
       const messageCid = await Message.getCid(message);
-      await this.storageController.appendEvents(tenant, messageCid);
+      await this.storageController.appendEvent(tenant, messageCid);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }

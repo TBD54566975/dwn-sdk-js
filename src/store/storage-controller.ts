@@ -142,7 +142,7 @@ export class StorageController {
     return this.dataStore.get(tenant, messageCid, dataCid);
   }
 
-  public appendEvents(tenant: string, messageCid: string): Promise<string>|undefined {
+  public appendEvent(tenant: string, messageCid: string): Promise<string>|undefined {
     return this.eventLog.append(tenant, messageCid);
   }
 
