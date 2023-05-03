@@ -15,7 +15,6 @@ import {
 
 import sinon from 'sinon';
 import { StorageController } from '../../../../src/store/storage-controller.js';
-import { da } from 'date-fns/locale';
 
 describe('MessagesGetHandler.handle()', () => {
   let dwn: Dwn;

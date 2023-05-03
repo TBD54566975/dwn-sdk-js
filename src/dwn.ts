@@ -48,11 +48,11 @@ export class Dwn {
       [DwnInterfaceName.Messages + DwnMethodName.Get]        : new MessagesGetHandler(this.didResolver, storageController),
       [DwnInterfaceName.Permissions + DwnMethodName.Request] : new PermissionsRequestHandler(this.didResolver, storageController),
       [DwnInterfaceName.Protocols + DwnMethodName.Configure] : new ProtocolsConfigureHandler(this.didResolver, storageController),
-      [DwnInterfaceName.Protocols + DwnMethodName.Query] : new ProtocolsQueryHandler(this.didResolver, storageController),
-      [DwnInterfaceName.Records + DwnMethodName.Delete]  : new RecordsDeleteHandler(this.didResolver, storageController),
-      [DwnInterfaceName.Records + DwnMethodName.Query] : new RecordsQueryHandler(this.didResolver, storageController),
-      [DwnInterfaceName.Records + DwnMethodName.Read]  : new RecordsReadHandler(this.didResolver, storageController),
-      [DwnInterfaceName.Records + DwnMethodName.Write] : new RecordsWriteHandler(this.didResolver, storageController),
+      [DwnInterfaceName.Protocols + DwnMethodName.Query]     : new ProtocolsQueryHandler(this.didResolver, storageController),
+      [DwnInterfaceName.Records + DwnMethodName.Delete]      : new RecordsDeleteHandler(this.didResolver, storageController),
+      [DwnInterfaceName.Records + DwnMethodName.Query]       : new RecordsQueryHandler(this.didResolver, storageController),
+      [DwnInterfaceName.Records + DwnMethodName.Read]        : new RecordsReadHandler(this.didResolver, storageController),
+      [DwnInterfaceName.Records + DwnMethodName.Write]       : new RecordsWriteHandler(this.didResolver, storageController),
     };
   }
 

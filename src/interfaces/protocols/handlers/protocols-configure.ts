@@ -39,7 +39,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
       method    : DwnMethodName.Configure,
       protocol  : message.descriptor.protocol
     };
-    const existingMessages = await this.storageController.MessageStore.query(tenant, query) as ProtocolsConfigureMessage[];
+    const existingMessages = await this.storageController.queryMessageStore(tenant, query) as ProtocolsConfigureMessage[];
 
     // find lexicographically the largest message, and if the incoming message is the largest
     let newestMessage = await Message.getMessageWithLargestCid(existingMessages);

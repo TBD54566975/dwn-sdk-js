@@ -1,5 +1,5 @@
 import type { EventLog } from '../event-log/event-log.js';
-import type { MessageStore } from './message-store.js';
+import type { MessageStore, MessageStoreOptions } from './message-store.js';
 import type { Readable } from 'readable-stream';
 import type { BaseMessage, Filter } from '../core/types.js';
 import type { DataStore, GetResult } from './data-store.js';
@@ -123,6 +123,10 @@ export class StorageController {
   }
 
   public get MessageStore(): MessageStore { return this.messageStore; }
+
+  public queryMessageStore(tenant: string, filter: Filter, options?: MessageStoreOptions): Promise<BaseMessage[]> {
+    return this.messageStore.query(tenant, filter, options);
+  }
 
   public get(tenant: string, messageCid: string, dataCid: string): Promise<GetResult|undefined> {
     return this.dataStore.get(tenant, messageCid, dataCid);

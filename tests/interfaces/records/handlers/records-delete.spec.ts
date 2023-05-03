@@ -11,10 +11,10 @@ import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsDeleteHandler } from '../../../../src/interfaces/records/handlers/records-delete.js';
+import { StorageController } from '../../../../src/store/storage-controller.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 import { DidResolver, Dwn, Encoder, Jws, RecordsDelete, RecordsWrite } from '../../../../src/index.js';
-import { StorageController } from '../../../../src/store/storage-controller.js';
 
 chai.use(chaiAsPromised);
 
