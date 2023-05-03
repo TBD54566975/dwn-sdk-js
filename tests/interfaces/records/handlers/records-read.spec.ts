@@ -17,6 +17,7 @@ import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { HdKey } from '../../../../src/utils/hd-key.js';
 import { KeyDerivationScheme } from '../../../../src/utils/hd-key.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
+import { Protocols } from '../../../../src/utils/protocols.js';
 import { RecordsReadHandler } from '../../../../src/interfaces/records/handlers/records-read.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
@@ -179,7 +180,7 @@ describe('RecordsReadHandler.handle()', () => {
           requester    : alice,
           protocol,
           protocolPath : 'image', // this comes from `recordTypes` in protocol definition
-          schema       : protocolDefinition.recordTypes.find(({ id }) => id === 'image')!.schema,
+          schema       : Protocols.getRecordType(protocolDefinition, 'image')!.schema,
           data         : encodedImage,
           recipientDid : alice.did
         });
@@ -221,7 +222,7 @@ describe('RecordsReadHandler.handle()', () => {
           requester    : alice,
           protocol,
           protocolPath : 'email', // this comes from `recordTypes` in protocol definition
-          schema       : protocolDefinition.recordTypes.find(({ id }) => id === 'email')!.schema,
+          schema       : Protocols.getRecordType(protocolDefinition, 'email')!.schema,
           data         : encodedEmail,
           recipientDid : bob.did
         });
@@ -271,7 +272,7 @@ describe('RecordsReadHandler.handle()', () => {
           requester    : bob,
           protocol,
           protocolPath : 'email', // this comes from `recordTypes` in protocol definition
-          schema       : protocolDefinition.recordTypes.find(({ id }) => id === 'email')!.schema,
+          schema       : Protocols.getRecordType(protocolDefinition, 'email')!.schema,
           data         : encodedEmail,
           recipientDid : alice.did
         });
@@ -410,7 +411,7 @@ describe('RecordsReadHandler.handle()', () => {
             requester    : bob,
             protocol,
             protocolPath : 'email', // this comes from `recordTypes` in protocol definition
-            schema       : emailProtocolDefinition.recordTypes.find(({ id }) => id === 'email')!.schema,
+            schema       : Protocols.getRecordType(emailProtocolDefinition, 'email')!.schema,
             data         : bobMessageEncryptedBytes,
             encryptionInput
           }

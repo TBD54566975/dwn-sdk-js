@@ -13,6 +13,7 @@ import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { lexicographicalCompare } from '../../../../src/utils/string.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
+import { Protocols } from '../../../../src/utils/protocols.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
@@ -176,7 +177,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       });
 
       // overwrite schema because #create auto-normalizes schema
-      protocolsConfig.message.descriptor.definition.recordTypes.find(({ id }) => id === 'ask')!.schema = 'ask';
+      Protocols.getRecordType(protocolsConfig.message.descriptor.definition, 'ask')!.schema = 'ask';
 
       // Re-create auth because we altered the descriptor after signing
       protocolsConfig.message.authorization = await Message.signAsAuthorization(
