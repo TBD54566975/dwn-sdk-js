@@ -18,6 +18,7 @@ import { HdKey } from '../../../../src/utils/hd-key.js';
 import { KeyDerivationScheme } from '../../../../src/utils/hd-key.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsReadHandler } from '../../../../src/interfaces/records/handlers/records-read.js';
+import { StorageController } from '../../../../src/store/storage-controller.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
@@ -478,8 +479,8 @@ describe('RecordsReadHandler.handle()', () => {
     const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
-
-    const recordsReadHandler = new RecordsReadHandler(didResolver, messageStore, dataStore);
+    const storageController = new StorageController(messageStore, dataStore);
+    const recordsReadHandler = new RecordsReadHandler(didResolver, storageController);
     const reply = await recordsReadHandler.handle({ tenant: alice.did, message: recordsRead.message });
     expect(reply.status.code).to.equal(401);
   });
@@ -494,8 +495,8 @@ describe('RecordsReadHandler.handle()', () => {
     // setting up a stub method resolver & message store
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
-
-    const recordsReadHandler = new RecordsReadHandler(didResolver, messageStore, dataStore);
+    const storageController = new StorageController(messageStore, dataStore);
+    const recordsReadHandler = new RecordsReadHandler(didResolver, storageController);
 
     // stub the `parse()` function to throw an error
     sinon.stub(RecordsRead, 'parse').throws('anyError');

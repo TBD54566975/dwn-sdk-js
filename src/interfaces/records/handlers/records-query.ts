@@ -1,19 +1,19 @@
+import type { DidResolver } from '../../../index.js';
 import type { MethodHandler } from '../../types.js';
-import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 import type { RecordsQueryMessage, RecordsQueryReplyEntry, RecordsWriteMessage } from '../types.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { lexicographicalCompare } from '../../../utils/string.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import type { RecordsWriteMessageWithOptionalEncodedData } from '../../../store/storage-controller.js';
-import { StorageController } from '../../../store/storage-controller.js';
+import type { StorageController } from '../../../store/storage-controller.js';
 
 import { DateSort, RecordsQuery } from '../messages/records-query.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 
 export class RecordsQueryHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore) { }
+  constructor(private didResolver: DidResolver, private storageController: StorageController) { }
 
   public async handle({
     tenant,
@@ -69,7 +69,7 @@ export class RecordsQueryHandler implements MethodHandler {
       method            : DwnMethodName.Write,
       isLatestBaseState : true
     };
-    const records = await StorageController.query(this.messageStore, this.dataStore, tenant, filter);
+    const records = await this.storageController.query(tenant, filter);
     return records;
   }
 
@@ -99,7 +99,7 @@ export class RecordsQueryHandler implements MethodHandler {
       published         : true,
       isLatestBaseState : true
     };
-    const publishedRecords = await StorageController.query(this.messageStore, this.dataStore, tenant, filter);
+    const publishedRecords = await this.storageController.query(tenant, filter);
     return publishedRecords;
   }
 
@@ -119,7 +119,7 @@ export class RecordsQueryHandler implements MethodHandler {
       isLatestBaseState : true,
       published         : false
     };
-    const unpublishedRecordsForRequester = await StorageController.query(this.messageStore, this.dataStore, tenant, filter);
+    const unpublishedRecordsForRequester = await this.storageController.query(tenant, filter);
     return unpublishedRecordsForRequester;
   }
 
@@ -139,7 +139,7 @@ export class RecordsQueryHandler implements MethodHandler {
       isLatestBaseState : true,
       published         : false
     };
-    const unpublishedRecordsForRequester = await StorageController.query(this.messageStore, this.dataStore, tenant, filter);
+    const unpublishedRecordsForRequester = await this.storageController.query(tenant, filter);
     return unpublishedRecordsForRequester;
   }
 }

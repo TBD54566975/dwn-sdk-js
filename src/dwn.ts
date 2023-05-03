@@ -23,6 +23,7 @@ import { RecordsDeleteHandler } from './interfaces/records/handlers/records-dele
 import { RecordsQueryHandler } from './interfaces/records/handlers/records-query.js';
 import { RecordsReadHandler } from './interfaces/records/handlers/records-read.js';
 import { RecordsWriteHandler } from './interfaces/records/handlers/records-write.js';
+import { StorageController } from './store/storage-controller.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './core/message.js';
 
 export class Dwn {
@@ -40,18 +41,18 @@ export class Dwn {
     this.eventLog = config.eventLog!;
     this.tenantGate = config.tenantGate!;
 
+    const storageController = new StorageController(this.messageStore, this.dataStore, this.eventLog);
+
     this.methodHandlers = {
       [DwnInterfaceName.Events + DwnMethodName.Get]          : new EventsGetHandler(this.didResolver, this.eventLog),
-      [DwnInterfaceName.Messages + DwnMethodName.Get]        : new MessagesGetHandler(this.didResolver, this.messageStore, this.dataStore),
-      [DwnInterfaceName.Permissions + DwnMethodName.Request] : new PermissionsRequestHandler(this.didResolver, this.messageStore, this.dataStore),
-      [DwnInterfaceName.Protocols + DwnMethodName.Configure] : new ProtocolsConfigureHandler(
-        this.didResolver, this.messageStore, this.dataStore, this.eventLog),
-      [DwnInterfaceName.Protocols + DwnMethodName.Query] : new ProtocolsQueryHandler(this.didResolver, this.messageStore, this.dataStore),
-      [DwnInterfaceName.Records + DwnMethodName.Delete]  : new RecordsDeleteHandler(
-        this.didResolver, this.messageStore, this.dataStore, this.eventLog),
-      [DwnInterfaceName.Records + DwnMethodName.Query] : new RecordsQueryHandler(this.didResolver, this.messageStore, this.dataStore),
-      [DwnInterfaceName.Records + DwnMethodName.Read]  : new RecordsReadHandler(this.didResolver, this.messageStore, this.dataStore),
-      [DwnInterfaceName.Records + DwnMethodName.Write] : new RecordsWriteHandler(this.didResolver, this.messageStore, this.dataStore, this.eventLog),
+      [DwnInterfaceName.Messages + DwnMethodName.Get]        : new MessagesGetHandler(this.didResolver, storageController),
+      [DwnInterfaceName.Permissions + DwnMethodName.Request] : new PermissionsRequestHandler(this.didResolver, storageController),
+      [DwnInterfaceName.Protocols + DwnMethodName.Configure] : new ProtocolsConfigureHandler(this.didResolver, storageController),
+      [DwnInterfaceName.Protocols + DwnMethodName.Query] : new ProtocolsQueryHandler(this.didResolver, storageController),
+      [DwnInterfaceName.Records + DwnMethodName.Delete]  : new RecordsDeleteHandler(this.didResolver, storageController),
+      [DwnInterfaceName.Records + DwnMethodName.Query] : new RecordsQueryHandler(this.didResolver, storageController),
+      [DwnInterfaceName.Records + DwnMethodName.Read]  : new RecordsReadHandler(this.didResolver, storageController),
+      [DwnInterfaceName.Records + DwnMethodName.Write] : new RecordsWriteHandler(this.didResolver, storageController),
     };
   }
 

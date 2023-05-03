@@ -1,8 +1,8 @@
-import type { DataStore } from './data-store.js';
 import type { EventLog } from '../event-log/event-log.js';
 import type { MessageStore } from './message-store.js';
 import type { Readable } from 'readable-stream';
 import type { BaseMessage, Filter } from '../core/types.js';
+import type { DataStore, GetResult } from './data-store.js';
 
 import { DwnConstant } from '../core/dwn-constant.js';
 import { Message } from '../core/message.js';
@@ -14,6 +14,9 @@ import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
  * A class that provides an abstraction for the usage of BlockStore and DataStore.
  */
 export class StorageController {
+
+  constructor(private messageStore: MessageStore, private dataStore: DataStore, private eventLog?: EventLog) {}
+
   /**
    * Puts the given message and data in storage.
    * @throws {DwnError} with `DwnErrorCode.MessageStoreDataCidMismatch`
@@ -23,10 +26,7 @@ export class StorageController {
    * @throws {DwnError} with `DwnErrorCode.MessageStoreDataSizeMismatch`
    *                    if `dataSize` in `descriptor` given mismatches the actual data size
    */
-  public static async put(
-    messageStore: MessageStore,
-    dataStore: DataStore,
-    eventLog: EventLog,
+  public async put(
     tenant: string,
     message: BaseMessage,
     indexes: { [key: string]: string },
@@ -42,9 +42,9 @@ export class StorageController {
       let result;
 
       if (dataStream === undefined) {
-        result = await dataStore.associate(tenant, messageCid, message.descriptor.dataCid);
+        result = await this.dataStore.associate(tenant, messageCid, message.descriptor.dataCid);
       } else {
-        result = await dataStore.put(tenant, messageCid, message.descriptor.dataCid, dataStream);
+        result = await this.dataStore.put(tenant, messageCid, message.descriptor.dataCid, dataStream);
       }
 
       // the message implies that the data is already in the DB, so we check to make sure the data already exist
@@ -59,7 +59,7 @@ export class StorageController {
       // if data size is wrong, delete the data we just stored
       if (message.descriptor.dataSize !== result.dataSize) {
         // there is an opportunity to improve here: handle the edge cae of if the delete fails...
-        await dataStore.delete(tenant, messageCid, message.descriptor.dataCid);
+        await this.dataStore.delete(tenant, messageCid, message.descriptor.dataCid);
 
         throw new DwnError(
           DwnErrorCode.MessageStoreDataSizeMismatch,
@@ -71,7 +71,7 @@ export class StorageController {
       // if data CID is wrong, delete the data we just stored
       if (message.descriptor.dataCid !== result.dataCid) {
         // there is an opportunity to improve here: handle the edge cae of if the delete fails...
-        await dataStore.delete(tenant, messageCid, message.descriptor.dataCid);
+        await this.dataStore.delete(tenant, messageCid, message.descriptor.dataCid);
 
         throw new DwnError(
           DwnErrorCode.MessageStoreDataCidMismatch,
@@ -80,18 +80,16 @@ export class StorageController {
       }
     }
 
-    await messageStore.put(tenant, message, indexes);
-    await eventLog.append(tenant, messageCid);
+    await this.messageStore.put(tenant, message, indexes);
+    if (this.eventLog) { await this.eventLog.append(tenant, messageCid); }
   }
 
-  public static async query(
-    messageStore: MessageStore,
-    dataStore: DataStore,
+  public async query(
     tenant: string,
     filter: Filter
   ): Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
 
-    const messages: RecordsWriteMessageWithOptionalEncodedData[] = (await messageStore.query(tenant, filter)) as RecordsWriteMessage[];
+    const messages: RecordsWriteMessageWithOptionalEncodedData[] = (await this.messageStore.query(tenant, filter)) as RecordsWriteMessage[];
 
     // for every message, only include the data as `encodedData` if the data size is equal or smaller than the size threshold
     for (const message of messages) {
@@ -99,7 +97,7 @@ export class StorageController {
       const dataSize = message.descriptor.dataSize;
       if (dataCid !== undefined && dataSize! <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
         const messageCid = await Message.getCid(message);
-        const result = await dataStore.get(tenant, messageCid, dataCid);
+        const result = await this.dataStore.get(tenant, messageCid, dataCid);
 
         if (result) {
           const dataBytes = await DataStream.toBytes(result.dataStream);
@@ -111,19 +109,31 @@ export class StorageController {
     return messages;
   }
 
-  public static async delete(
-    messageStore: MessageStore,
-    dataStore: DataStore,
+  public async delete(
     tenant: string,
     message: BaseMessage
   ): Promise<void> {
     const messageCid = await Message.getCid(message);
 
     if (message.descriptor.dataCid !== undefined) {
-      await dataStore.delete(tenant, messageCid, message.descriptor.dataCid);
+      await this.dataStore.delete(tenant, messageCid, message.descriptor.dataCid);
     }
 
-    await messageStore.delete(tenant, messageCid);
+    await this.messageStore.delete(tenant, messageCid);
+  }
+
+  public get MessageStore(): MessageStore { return this.messageStore; }
+
+  public get(tenant: string, messageCid: string, dataCid: string): Promise<GetResult|undefined> {
+    return this.dataStore.get(tenant, messageCid, dataCid);
+  }
+
+  public deleteEventsByCid(tenant: string, deletedMessageCids: any): void {
+    if (this.eventLog) { this.eventLog.deleteEventsByCid(tenant, deletedMessageCids); }
+  }
+
+  public appendEventLog(tenant: string, messageCid: string): Promise<string> | undefined {
+    if (this.eventLog) { return this.eventLog.append(tenant, messageCid); }
   }
 }
 

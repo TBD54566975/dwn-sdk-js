@@ -477,10 +477,13 @@ describe('RecordsQueryHandler.handle()', () => {
       const additionalIndexes2 = await constructRecordsWriteIndexes(record2Data.recordsWrite, true);
       const additionalIndexes3 = await constructRecordsWriteIndexes(record3Data.recordsWrite, true);
       const additionalIndexes4 = await constructRecordsWriteIndexes(record4Data.recordsWrite, true);
-      await StorageController.put(messageStore, dataStore, eventLog, alice.did, record1Data.message, additionalIndexes1, record1Data.dataStream);
-      await StorageController.put(messageStore, dataStore, eventLog, alice.did, record2Data.message, additionalIndexes2, record2Data.dataStream);
-      await StorageController.put(messageStore, dataStore, eventLog, alice.did, record3Data.message, additionalIndexes3, record3Data.dataStream);
-      await StorageController.put(messageStore, dataStore, eventLog, alice.did, record4Data.message, additionalIndexes4, record4Data.dataStream);
+
+      const storageController = new StorageController(messageStore, dataStore, eventLog);
+
+      await storageController.put(alice.did, record1Data.message, additionalIndexes1, record1Data.dataStream);
+      await storageController.put(alice.did, record2Data.message, additionalIndexes2, record2Data.dataStream);
+      await storageController.put(alice.did, record3Data.message, additionalIndexes3, record3Data.dataStream);
+      await storageController.put(alice.did, record4Data.message, additionalIndexes4, record4Data.dataStream);
 
       // test correctness for Bob's query
       const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({
@@ -846,8 +849,9 @@ describe('RecordsQueryHandler.handle()', () => {
     const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
+    const storageController = new StorageController(messageStore, dataStore);
 
-    const recordsQueryHandler = new RecordsQueryHandler(didResolver, messageStore, dataStore);
+    const recordsQueryHandler = new RecordsQueryHandler(didResolver, storageController);
     const reply = await recordsQueryHandler.handle({ tenant, message });
 
     expect(reply.status.code).to.equal(401);
@@ -861,7 +865,9 @@ describe('RecordsQueryHandler.handle()', () => {
     const didResolver = TestStubGenerator.createDidResolverStub(requester);
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
-    const recordsQueryHandler = new RecordsQueryHandler(didResolver, messageStore, dataStore);
+    const storageController = new StorageController(messageStore, dataStore);
+
+    const recordsQueryHandler = new RecordsQueryHandler(didResolver, storageController);
 
     // stub the `parse()` function to throw an error
     sinon.stub(RecordsQuery, 'parse').throws('anyError');

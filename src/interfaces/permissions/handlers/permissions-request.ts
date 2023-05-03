@@ -1,6 +1,8 @@
+import type { DidResolver } from '../../../index.js';
 import type { MethodHandler } from '../../types.js';
 import type { PermissionsRequestMessage } from '../types.js';
-import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
+import type { StorageController } from '../../../store/storage-controller.js';
+
 
 import { canonicalAuth } from '../../../core/auth.js';
 import { MessageReply } from '../../../core/message-reply.js';
@@ -8,7 +10,7 @@ import { PermissionsRequest } from '../messages/permissions-request.js';
 
 export class PermissionsRequestHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore) { }
+  constructor(private didResolver: DidResolver, private storageController: StorageController) { }
 
   public async handle({
     tenant,
@@ -33,7 +35,7 @@ export class PermissionsRequestHandler implements MethodHandler {
       author,
       ... message.descriptor
     };
-    await this.messageStore.put(tenant, message, index as any); // FIXME
+    await this.storageController.put(tenant, message, index as any); // FIXME
 
     return new MessageReply({
       status: { code: 202, detail: 'Accepted' }

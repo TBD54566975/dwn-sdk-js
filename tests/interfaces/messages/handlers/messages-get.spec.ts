@@ -14,6 +14,8 @@ import {
 } from '../../../../src/index.js';
 
 import sinon from 'sinon';
+import { StorageController } from '../../../../src/store/storage-controller.js';
+import { da } from 'date-fns/locale';
 
 describe('MessagesGetHandler.handle()', () => {
   let dwn: Dwn;
@@ -191,8 +193,8 @@ describe('MessagesGetHandler.handle()', () => {
     messageStore.get.rejects('internal db error');
 
     const dataStore = sinon.createStubInstance(DataStoreLevel);
-
-    const messagesGetHandler = new MessagesGetHandler(didResolver, messageStore, dataStore);
+    const storageController = new StorageController(messageStore, dataStore);
+    const messagesGetHandler = new MessagesGetHandler(didResolver, storageController);
 
     const alice = await DidKeyResolver.generate();
     const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ requester: alice });

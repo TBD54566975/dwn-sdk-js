@@ -14,6 +14,7 @@ import { RecordsDeleteHandler } from '../../../../src/interfaces/records/handler
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 import { DidResolver, Dwn, Encoder, Jws, RecordsDelete, RecordsWrite } from '../../../../src/index.js';
+import { StorageController } from '../../../../src/store/storage-controller.js';
 
 chai.use(chaiAsPromised);
 
@@ -586,8 +587,9 @@ describe('RecordsDeleteHandler.handle()', () => {
     const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
+    const storageController = new StorageController(messageStore, dataStore, eventLog);
+    const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, storageController);
 
-    const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore, eventLog);
     const reply = await recordsDeleteHandler.handle({ tenant, message });
     expect(reply.status.code).to.equal(401);
   });
@@ -599,8 +601,8 @@ describe('RecordsDeleteHandler.handle()', () => {
     // setting up a stub method resolver & message store
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
-
-    const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore, eventLog);
+    const storageController = new StorageController(messageStore, dataStore, eventLog);
+    const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, storageController);
 
     // stub the `parse()` function to throw an error
     sinon.stub(RecordsDelete, 'parse').throws('anyError');

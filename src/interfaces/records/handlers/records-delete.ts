@@ -1,8 +1,9 @@
-import type { EventLog } from '../../../event-log/event-log.js';
+import type { DidResolver } from '../../../index.js';
 import type { MethodHandler } from '../../types.js';
 import type { RecordsDeleteMessage } from '../types.js';
+import type { StorageController } from '../../../store/storage-controller.js';
 import type { TimestampedMessage } from '../../../core/types.js';
-import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
+
 
 import { authenticate } from '../../../core/auth.js';
 import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
@@ -13,7 +14,7 @@ import { DwnInterfaceName, Message } from '../../../core/message.js';
 
 export class RecordsDeleteHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore, private eventLog: EventLog) { }
+  constructor(private didResolver: DidResolver, private storageController: StorageController) { }
 
   public async handle({
     tenant,
@@ -40,7 +41,7 @@ export class RecordsDeleteHandler implements MethodHandler {
       interface : DwnInterfaceName.Records,
       recordId  : message.descriptor.recordId
     };
-    const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
+    const existingMessages = await this.storageController.query(tenant, query) as TimestampedMessage[];
 
     // find which message is the newest, and if the incoming message is the newest
     const newestExistingMessage = await RecordsWrite.getNewestMessage(existingMessages);
@@ -59,10 +60,10 @@ export class RecordsDeleteHandler implements MethodHandler {
     if (incomingMessageIsNewest) {
       const indexes = await constructIndexes(tenant, recordsDelete);
 
-      await this.messageStore.put(tenant, message, indexes);
+      await this.storageController.put(tenant, message, indexes);
 
       const messageCid = await Message.getCid(message);
-      await this.eventLog.append(tenant, messageCid);
+      await this.storageController.appendEventLog(tenant, messageCid);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }
@@ -74,7 +75,7 @@ export class RecordsDeleteHandler implements MethodHandler {
     }
 
     // delete all existing messages that are not newest, except for the initial write
-    await deleteAllOlderMessagesButKeepInitialWrite(tenant, existingMessages, newestMessage, this.messageStore, this.dataStore, this.eventLog);
+    await deleteAllOlderMessagesButKeepInitialWrite(tenant, existingMessages, newestMessage, this.storageController);
 
     return messageReply;
   };

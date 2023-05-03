@@ -1,6 +1,7 @@
+import type { DidResolver } from '../../../index.js';
 import type { MethodHandler } from '../../types.js';
+import type { StorageController } from '../../../store/storage-controller.js';
 import type { TimestampedMessage } from '../../../core/types.js';
-import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from '../types.js';
 
 import { authenticate } from '../../../core/auth.js';
@@ -9,10 +10,9 @@ import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsRead } from '../messages/records-read.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
-
 export class RecordsReadHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore) { }
+  constructor(private didResolver: DidResolver, private storageController: StorageController) { }
 
   public async handle({
     tenant,
@@ -40,7 +40,7 @@ export class RecordsReadHandler implements MethodHandler {
       interface : DwnInterfaceName.Records,
       recordId  : message.descriptor.recordId
     };
-    const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
+    const existingMessages = await this.storageController.query(tenant, query) as TimestampedMessage[];
 
     const newestExistingMessage = await RecordsWrite.getNewestMessage(existingMessages);
 
@@ -53,13 +53,13 @@ export class RecordsReadHandler implements MethodHandler {
 
     const newestRecordsWrite = newestExistingMessage as RecordsWriteMessage;
     try {
-      await recordsRead.authorize(tenant, await RecordsWrite.parse(newestRecordsWrite), this.messageStore);
+      await recordsRead.authorize(tenant, await RecordsWrite.parse(newestRecordsWrite), this.storageController.MessageStore);
     } catch (error) {
       return MessageReply.fromError(error, 401);
     }
 
     const messageCid = await Message.getCid(newestRecordsWrite);
-    const result = await this.dataStore.get(tenant, messageCid, newestRecordsWrite.descriptor.dataCid);
+    const result = await this.storageController.get(tenant, messageCid, newestRecordsWrite.descriptor.dataCid);
 
     if (result?.dataStream === undefined) {
       return new MessageReply({

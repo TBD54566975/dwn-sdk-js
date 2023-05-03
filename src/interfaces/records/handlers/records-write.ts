@@ -1,8 +1,8 @@
-import type { EventLog } from '../../../event-log/event-log.js';
+import type { DidResolver } from '../../../index.js';
 import type { MethodHandler } from '../../types.js';
 import type { RecordsWriteMessage } from '../types.js';
+import type { StorageController } from '../../../store/storage-controller.js';
 import type { TimestampedMessage } from '../../../core/types.js';
-import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
@@ -10,11 +10,10 @@ import { DwnErrorCode } from '../../../core/dwn-error.js';
 import { DwnInterfaceName } from '../../../core/message.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsWrite } from '../messages/records-write.js';
-import { StorageController } from '../../../store/storage-controller.js';
 
 export class RecordsWriteHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore, private eventLog: EventLog) { }
+  constructor(private didResolver: DidResolver, private storageController: StorageController) { }
 
   public async handle({
     tenant,
@@ -32,7 +31,7 @@ export class RecordsWriteHandler implements MethodHandler {
     // authentication & authorization
     try {
       await authenticate(message.authorization, this.didResolver);
-      await recordsWrite.authorize(tenant, this.messageStore);
+      await recordsWrite.authorize(tenant, this.storageController.MessageStore);
     } catch (e) {
       return MessageReply.fromError(e, 401);
     }
@@ -42,7 +41,7 @@ export class RecordsWriteHandler implements MethodHandler {
       interface : DwnInterfaceName.Records,
       recordId  : message.recordId
     };
-    const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
+    const existingMessages = await this.storageController.query(tenant, query) as TimestampedMessage[];
 
     // if the incoming write is not the initial write, then it must not modify any immutable properties defined by the initial write
     const newMessageIsInitialWrite = await recordsWrite.isInitialWrite();
@@ -75,7 +74,7 @@ export class RecordsWriteHandler implements MethodHandler {
       const indexes = await constructRecordsWriteIndexes(recordsWrite, isLatestBaseState);
 
       try {
-        await StorageController.put(this.messageStore, this.dataStore, this.eventLog, tenant, message, indexes, dataStream);
+        await this.storageController.put(tenant, message, indexes, dataStream);
       } catch (error) {
         const e = error as any;
         if (e.code === DwnErrorCode.MessageStoreDataCidMismatch ||
@@ -98,7 +97,7 @@ export class RecordsWriteHandler implements MethodHandler {
     }
 
     // delete all existing messages that are not newest, except for the initial write
-    await deleteAllOlderMessagesButKeepInitialWrite(tenant, existingMessages, newestMessage, this.messageStore, this.dataStore, this.eventLog);
+    await deleteAllOlderMessagesButKeepInitialWrite(tenant, existingMessages, newestMessage, this.storageController);
 
     return messageReply;
   };

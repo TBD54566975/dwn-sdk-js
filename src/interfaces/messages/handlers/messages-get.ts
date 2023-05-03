@@ -1,7 +1,6 @@
-import type { DataStore } from '../../../store/data-store.js';
 import type { DidResolver } from '../../../did/did-resolver.js';
-import type { MessageStore } from '../../../store/message-store.js';
 import type { MethodHandler } from '../../types.js';
+import type { StorageController } from '../../../store/storage-controller.js';
 import type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from '../types.js';
 
 import { DataStream } from '../../../utils/data-stream.js';
@@ -15,7 +14,7 @@ import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.
 type HandleArgs = { tenant: string, message: MessagesGetMessage };
 
 export class MessagesGetHandler implements MethodHandler {
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore) {}
+  constructor(private didResolver: DidResolver, private storageController: StorageController) {}
 
   public async handle({ tenant, message }: HandleArgs): Promise<MessagesGetReply> {
     let messagesGet: MessagesGet;
@@ -37,7 +36,7 @@ export class MessagesGetHandler implements MethodHandler {
     const messageCids = new Set(message.descriptor.messageCids);
 
     for (const messageCid of messageCids) {
-      const promise = this.messageStore.get(tenant, messageCid)
+      const promise = this.storageController.MessageStore.get(tenant, messageCid)
         .then(message => {
           return { messageCid, message };
         })
@@ -71,7 +70,7 @@ export class MessagesGetHandler implements MethodHandler {
 
       if (dataCid !== undefined && dataSize! <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
         const messageCid = await Message.getCid(message);
-        const result = await this.dataStore.get(tenant, messageCid, dataCid);
+        const result = await this.storageController.get(tenant, messageCid, dataCid);
 
         if (result) {
           const dataBytes = await DataStream.toBytes(result.dataStream);

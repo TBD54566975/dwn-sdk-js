@@ -1,18 +1,17 @@
-import type { EventLog } from '../../../event-log/event-log.js';
+import type { DidResolver } from '../../../index.js';
 import type { MethodHandler } from '../../types.js';
 import type { ProtocolsConfigureMessage } from '../types.js';
-import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
+import type { StorageController } from '../../../store/storage-controller.js';
 
 import { canonicalAuth } from '../../../core/auth.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { ProtocolsConfigure } from '../messages/protocols-configure.js';
-import { StorageController } from '../../../store/storage-controller.js';
 
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
 
 export class ProtocolsConfigureHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore, private eventLog: EventLog) { }
+  constructor(private didResolver: DidResolver, private storageController: StorageController) { }
 
   public async handle({
     tenant,
@@ -40,7 +39,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
       method    : DwnMethodName.Configure,
       protocol  : message.descriptor.protocol
     };
-    const existingMessages = await this.messageStore.query(tenant, query) as ProtocolsConfigureMessage[];
+    const existingMessages = await this.storageController.MessageStore.query(tenant, query) as ProtocolsConfigureMessage[];
 
     // find lexicographically the largest message, and if the incoming message is the largest
     let newestMessage = await Message.getMessageWithLargestCid(existingMessages);
@@ -61,7 +60,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
 
       // FIXME: indexes, Property 'dataSize' is incompatible with index signature.
       // Type 'number' is not assignable to type 'string'.
-      await StorageController.put(this.messageStore, this.dataStore, this.eventLog, tenant, message, indexes as any, dataStream);
+      await this.storageController.put(tenant, message, indexes as any, dataStream);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }
@@ -79,11 +78,11 @@ export class ProtocolsConfigureHandler implements MethodHandler {
         const messageCid = await Message.getCid(message);
         deletedMessageCids.push(messageCid);
 
-        await StorageController.delete(this.messageStore, this.dataStore, tenant, message);
+        await this.storageController.delete(tenant, message);
       }
     }
 
-    await this.eventLog.deleteEventsByCid(tenant, deletedMessageCids);
+    await this.storageController.deleteEventsByCid(tenant, deletedMessageCids);
 
     return messageReply;
   };

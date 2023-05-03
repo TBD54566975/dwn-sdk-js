@@ -1,7 +1,8 @@
+import type { DidResolver, } from '../../../index.js';
 import type { MethodHandler } from '../../types.js';
 import type { ProtocolsQueryMessage } from '../types.js';
 import type { QueryResultEntry } from '../../../core/types.js';
-import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
+import type { StorageController } from '../../../store/storage-controller.js';
 
 import { canonicalAuth } from '../../../core/auth.js';
 import { MessageReply } from '../../../core/message-reply.js';
@@ -12,7 +13,7 @@ import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 
 export class ProtocolsQueryHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore) { }
+  constructor(private didResolver: DidResolver, private storageController: StorageController) { }
 
   public async handle({
     tenant,
@@ -39,7 +40,7 @@ export class ProtocolsQueryHandler implements MethodHandler {
     };
     removeUndefinedProperties(query);
 
-    const messages = await this.messageStore.query(tenant, query);
+    const messages = await this.storageController.query(tenant, query);
 
     // strip away `authorization` property for each record before responding
     const entries: QueryResultEntry[] = [];

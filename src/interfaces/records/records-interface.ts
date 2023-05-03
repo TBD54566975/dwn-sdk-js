@@ -1,13 +1,10 @@
-import type { DataStore } from '../../store/data-store.js';
-import type { EventLog } from '../../event-log/event-log.js';
-import type { MessageStore } from '../../store/message-store.js';
 import type { RecordsWriteMessage } from '../../interfaces/records/types.js';
+import type { StorageController } from '../../store/storage-controller.js';
 import type { TimestampedMessage } from '../../core/types.js';
 
 import { constructRecordsWriteIndexes } from './handlers/records-write.js';
 import { Message } from '../../core/message.js';
 import { RecordsWrite } from './messages/records-write.js';
-import { StorageController } from '../../store/storage-controller.js';
 
 /**
  * Deletes all messages in `existingMessages` that are older than the `comparedToMessage` in the given tenant,
@@ -17,9 +14,7 @@ export async function deleteAllOlderMessagesButKeepInitialWrite(
   tenant: string,
   existingMessages: TimestampedMessage[],
   comparedToMessage: TimestampedMessage,
-  messageStore: MessageStore,
-  dataStore: DataStore,
-  eventLog: EventLog
+  storageController: StorageController,
 ): Promise<void> {
   const deletedMessageCids: string[] = [];
 
@@ -31,7 +26,7 @@ export async function deleteAllOlderMessagesButKeepInitialWrite(
       // the easiest implementation here is delete each old messages
       // and re-create it with the right index (isLatestBaseState = 'false') if the message is the initial write,
       // but there is room for better/more efficient implementation here
-      await StorageController.delete(messageStore, dataStore, tenant, message);
+      await storageController.delete(tenant, message);
 
       // if the existing message is the initial write
       // we actually need to keep it BUT, need to ensure the message is no longer marked as the latest state
@@ -40,13 +35,13 @@ export async function deleteAllOlderMessagesButKeepInitialWrite(
         const existingRecordsWrite = await RecordsWrite.parse(message as RecordsWriteMessage);
         const isLatestBaseState = false;
         const indexes = await constructRecordsWriteIndexes(existingRecordsWrite, isLatestBaseState);
-        await messageStore.put(tenant, message, indexes);
+        await storageController.put(tenant, message, indexes);
       } else {
         const messageCid = await Message.getCid(message);
         deletedMessageCids.push(messageCid);
       }
     }
 
-    await eventLog.deleteEventsByCid(tenant, deletedMessageCids);
+    await storageController.deleteEventsByCid(tenant, deletedMessageCids);
   }
 }
