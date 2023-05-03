@@ -60,7 +60,7 @@ export class StorageController {
    * @throws {DwnError} with `DwnErrorCode.MessageStoreDataSizeMismatch`
    *                    if `dataSize` in `descriptor` given mismatches the actual data size
    */
-  public async putWithData(
+  public async putMessageWithData(
     tenant: string,
     message: BaseMessage,
     indexes: Record<string, string>,

@@ -1679,7 +1679,7 @@ describe('RecordsWriteHandler.handle()', () => {
     });
   });
 
-  it('should throw if `storageController.putWithData()` throws unknown error', async () => {
+  it('should throw if `storageController.putMessageWithData()` throws unknown error', async () => {
     const { requester, message, dataStream } = await TestDataGenerator.generateRecordsWrite();
     const tenant = requester.did;
 
@@ -1692,11 +1692,11 @@ describe('RecordsWriteHandler.handle()', () => {
     const storageControllerStub = new StorageController(messageStoreStub, dataStoreStub, eventLog);
 
     // simulate throwing unexpected error
-    sinon.stub(storageControllerStub, 'putWithData').throws(new Error('an unknown error in storageController.putWithData()'));
+    sinon.stub(storageControllerStub, 'putMessageWithData').throws(new Error('an unknown error in storageController.putMessageWithData()'));
 
     const recordsWriteHandler = new RecordsWriteHandler(didResolverStub, storageControllerStub);
 
     const handlerPromise = recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
-    await expect(handlerPromise).to.be.rejectedWith('an unknown error in storageController.putWithData()');
+    await expect(handlerPromise).to.be.rejectedWith('an unknown error in storageController.putMessageWithData()');
   });
 });

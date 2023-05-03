@@ -60,7 +60,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
 
       // FIXME: indexes, Property 'dataSize' is incompatible with index signature.
       // Type 'number' is not assignable to type 'string'.
-      await this.storageController.putWithData(tenant, message, indexes as any, dataStream);
+      await this.storageController.putMessageWithData(tenant, message, indexes as any, dataStream);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }

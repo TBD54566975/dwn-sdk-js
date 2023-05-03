@@ -480,10 +480,10 @@ describe('RecordsQueryHandler.handle()', () => {
 
       const storageController = new StorageController(messageStore, dataStore, eventLog);
 
-      await storageController.putWithData(alice.did, record1Data.message, additionalIndexes1, record1Data.dataStream);
-      await storageController.putWithData(alice.did, record2Data.message, additionalIndexes2, record2Data.dataStream);
-      await storageController.putWithData(alice.did, record3Data.message, additionalIndexes3, record3Data.dataStream);
-      await storageController.putWithData(alice.did, record4Data.message, additionalIndexes4, record4Data.dataStream);
+      await storageController.putMessageWithData(alice.did, record1Data.message, additionalIndexes1, record1Data.dataStream);
+      await storageController.putMessageWithData(alice.did, record2Data.message, additionalIndexes2, record2Data.dataStream);
+      await storageController.putMessageWithData(alice.did, record3Data.message, additionalIndexes3, record3Data.dataStream);
+      await storageController.putMessageWithData(alice.did, record4Data.message, additionalIndexes4, record4Data.dataStream);
 
       // test correctness for Bob's query
       const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({

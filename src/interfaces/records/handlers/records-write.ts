@@ -74,7 +74,7 @@ export class RecordsWriteHandler implements MethodHandler {
       const indexes = await constructRecordsWriteIndexes(recordsWrite, isLatestBaseState);
 
       try {
-        await this.storageController.putWithData(tenant, message, indexes, dataStream);
+        await this.storageController.putMessageWithData(tenant, message, indexes, dataStream);
       } catch (error) {
         const e = error as any;
         if (e.code === DwnErrorCode.MessageStoreDataCidMismatch ||
