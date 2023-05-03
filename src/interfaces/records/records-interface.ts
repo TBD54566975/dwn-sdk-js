@@ -14,7 +14,7 @@ export async function deleteAllOlderMessagesButKeepInitialWrite(
   tenant: string,
   existingMessages: TimestampedMessage[],
   comparedToMessage: TimestampedMessage,
-  storageController: StorageController,
+  storageController: StorageController
 ): Promise<void> {
   const deletedMessageCids: string[] = [];
 
