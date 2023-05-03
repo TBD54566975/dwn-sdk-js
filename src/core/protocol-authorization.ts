@@ -1,5 +1,5 @@
-import type { MessageStore } from '../store/message-store.js';
 import type { RecordsRead } from '../interfaces/records/messages/records-read.js';
+import type { StorageController } from '../store/storage-controller.js';
 import type { Filter, TimestampedMessage } from './types.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
 import type { RecordsReadMessage, RecordsWriteMessage } from '../interfaces/records/types.js';
@@ -24,18 +24,18 @@ export class ProtocolAuthorization {
     tenant: string,
     incomingMessage: RecordsRead | RecordsWrite,
     requesterDid: string | undefined,
-    messageStore: MessageStore
+    storageController: StorageController
   ): Promise<void> {
     // fetch ancestor message chain
     const ancestorMessageChain: RecordsWriteMessage[] =
-      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, messageStore);
+      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, storageController);
 
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
       tenant,
       incomingMessage,
       ancestorMessageChain,
-      messageStore
+      storageController
     );
 
     // record schema -> schema label map
@@ -73,7 +73,7 @@ export class ProtocolAuthorization {
     );
 
     // verify allowed condition of incoming message
-    await ProtocolAuthorization.verifyActionCondition(tenant, incomingMessage, messageStore);
+    await ProtocolAuthorization.verifyActionCondition(tenant, incomingMessage, storageController);
   }
 
   /**
@@ -83,7 +83,7 @@ export class ProtocolAuthorization {
     tenant: string,
     incomingMessage: RecordsRead | RecordsWrite,
     ancestorMessageChain: RecordsWriteMessage[],
-    messageStore: MessageStore
+    storageController: StorageController
   ): Promise<ProtocolDefinition> {
     // get the protocol URI
     let protocolUri: string;
@@ -99,7 +99,7 @@ export class ProtocolAuthorization {
       method    : DwnMethodName.Configure,
       protocol  : protocolUri
     };
-    const protocols = await messageStore.query(tenant, query) as ProtocolsConfigureMessage[];
+    const protocols = await storageController.queryMessages(tenant, query) as ProtocolsConfigureMessage[];
 
     if (protocols.length === 0) {
       throw new Error(`unable to find protocol definition for ${protocolUri}`);
@@ -116,7 +116,7 @@ export class ProtocolAuthorization {
   private static async constructAncestorMessageChain(
     tenant: string,
     incomingMessage: RecordsRead | RecordsWrite,
-    messageStore: MessageStore
+    storageController: StorageController
   )
     : Promise<RecordsWriteMessage[]> {
     const ancestorMessageChain: RecordsWriteMessage[] = [];
@@ -132,7 +132,7 @@ export class ProtocolAuthorization {
         method    : DwnMethodName.Write,
         recordId  : recordsRead.message.descriptor.recordId,
       };
-      const existingMessages = await messageStore.query(tenant, query) as TimestampedMessage[];
+      const existingMessages = await storageController.queryMessages(tenant, query) as TimestampedMessage[];
       const recordsWriteMessage = await RecordsWrite.getNewestMessage(existingMessages) as RecordsWriteMessage;
       recordsWrite = await RecordsWrite.parse(recordsWriteMessage);
       ancestorMessageChain.push(recordsWrite.message);
@@ -152,7 +152,7 @@ export class ProtocolAuthorization {
         contextId,
         recordId  : currentParentId
       };
-      const parentMessages = await messageStore.query(tenant, query) as RecordsWriteMessage[];
+      const parentMessages = await storageController.queryMessages(tenant, query) as RecordsWriteMessage[];
 
       if (parentMessages.length === 0) {
         throw new Error(`no parent found with ID ${currentParentId}`);
@@ -351,7 +351,8 @@ export class ProtocolAuthorization {
    * Currently the only check is: if the write is not the initial write, the author must be the same as the initial write
    * @throws {Error} if fails verification
    */
-  private static async verifyActionCondition(tenant: string, incomingMessage: RecordsRead | RecordsWrite, messageStore: MessageStore): Promise<void> {
+  private static async verifyActionCondition(
+    tenant: string, incomingMessage: RecordsRead | RecordsWrite, storageController: StorageController): Promise<void> {
     if (incomingMessage.message.descriptor.method === DwnMethodName.Read) {
       // Currently no conditions for reads
     } else if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
@@ -362,7 +363,7 @@ export class ProtocolAuthorization {
         const query = {
           entryId: recordsWrite.message.recordId
         };
-        const result = await messageStore.query(tenant, query) as RecordsWriteMessage[];
+        const result = await storageController.queryMessages(tenant, query) as RecordsWriteMessage[];
 
         // check the author of the initial write matches the author of the incoming message
         const initialWrite = result[0];

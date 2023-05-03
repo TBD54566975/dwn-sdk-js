@@ -1,7 +1,7 @@
 import type { BaseMessage } from '../../../core/types.js';
 import type { KeyDerivationScheme } from '../../../index.js';
-import type { MessageStore } from '../../../store/message-store.js';
 import type { PublicJwk } from '../../../jose/types.js';
+import type { StorageController } from '../../../store/storage-controller.js';
 import type {
   EncryptedKey,
   EncryptionProperty,
@@ -302,10 +302,10 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     return recordsWrite;
   }
 
-  public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
+  public async authorize(tenant: string, storageController: StorageController): Promise<void> {
     if (this.message.descriptor.protocol !== undefined) {
       // NOTE: `author` definitely exists because of the earlier `authenticate()` call
-      await ProtocolAuthorization.authorize(tenant, this, this.author!, messageStore);
+      await ProtocolAuthorization.authorize(tenant, this, this.author!, storageController);
     } else {
       await authorize(tenant, this);
     }

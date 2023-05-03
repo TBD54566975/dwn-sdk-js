@@ -1,7 +1,7 @@
 import type { BaseMessage } from '../../../core/types.js';
-import type { MessageStore } from '../../../store/message-store.js';
 import type { RecordsWrite } from './records-write.js';
 import type { SignatureInput } from '../../../jose/jws/general/types.js';
+import type { StorageController } from '../../../store/storage-controller.js';
 import type { RecordsReadDescriptor, RecordsReadMessage } from '../types.js';
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
@@ -52,7 +52,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
     return new RecordsRead(message);
   }
 
-  public async authorize(tenant: string, newestRecordsWrite: RecordsWrite, messageStore: MessageStore): Promise<void> {
+  public async authorize(tenant: string, newestRecordsWrite: RecordsWrite, storageController: StorageController): Promise<void> {
     const { descriptor } = newestRecordsWrite.message;
     // if author/requester is the same as the target tenant, we can directly grant access
     if (this.author === tenant) {
@@ -61,7 +61,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
       // authentication is not required for published data
       return;
     } else if (descriptor.protocol !== undefined) {
-      await ProtocolAuthorization.authorize(tenant, this, this.author, messageStore);
+      await ProtocolAuthorization.authorize(tenant, this, this.author, storageController);
     } else {
       throw new Error('message failed authorization');
     }

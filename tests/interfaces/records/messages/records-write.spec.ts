@@ -8,9 +8,10 @@ import chai, { expect } from 'chai';
 import { DwnErrorCode } from '../../../../src/core/dwn-error.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsWrite } from '../../../../src/interfaces/records/messages/records-write.js';
+import { StorageController } from '../../../../src/store/storage-controller.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
+import { DataStoreLevel, EventLogLevel, Jws, KeyDerivationScheme } from '../../../../src/index.js';
 import { getCurrentTimeInHighPrecision, sleep } from '../../../../src/utils/time.js';
-import { Jws, KeyDerivationScheme } from '../../../../src/index.js';
 
 
 chai.use(chaiAsPromised);
@@ -39,8 +40,12 @@ describe('RecordsWrite', () => {
       expect(message.recordId).to.equal(options.recordId);
 
       const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+      const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
+      const eventLog = new EventLogLevel({ location: 'TEST-EVENTLOG' });
 
-      await recordsWrite.authorize(alice.did, messageStoreStub);
+      const storageControllerStub = new StorageController(messageStoreStub, dataStoreStub, eventLog);
+
+      await recordsWrite.authorize(alice.did, storageControllerStub);
     });
 
     it('should be able to auto-fill `datePublished` when `published` set to `true` but `datePublished` not given', async () => {
