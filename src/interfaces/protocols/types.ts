@@ -10,13 +10,13 @@ export type ProtocolsConfigureDescriptor = {
 };
 
 export type ProtocolDefinition = {
-  recordTypes: ProtocolRecordType[];
+  recordDefinitions: ProtocolRecordDefinition[];
   records: {
     [key: string]: ProtocolRuleSet;
   };
 };
 
-export type ProtocolRecordType = {
+export type ProtocolRecordDefinition = {
   id: string,
   schema?: string,
   dataFormats?: string[],

@@ -1,7 +1,7 @@
 import type { MessageStore } from '../store/message-store.js';
 import type { RecordsRead } from '../interfaces/records/messages/records-read.js';
 import type { Filter, TimestampedMessage } from './types.js';
-import type { ProtocolDefinition, ProtocolRecordType, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
+import type { ProtocolDefinition, ProtocolRecordDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
 import type { RecordsReadMessage, RecordsWriteMessage } from '../interfaces/records/types.js';
 
 import { RecordsWrite } from '../interfaces/records/messages/records-write.js';
@@ -42,7 +42,7 @@ export class ProtocolAuthorization {
     ProtocolAuthorization.verifyProtocolPath(
       incomingMessage,
       ancestorMessageChain,
-      protocolDefinition.recordTypes
+      protocolDefinition.recordDefinitions
     );
 
     // get the rule set for the inbound message
@@ -52,8 +52,8 @@ export class ProtocolAuthorization {
       ancestorMessageChain
     );
 
-    // Verify `dataFormat` and `schema` for the given `recordType`
-    ProtocolAuthorization.verifyRecordType(
+    // Verify `dataFormat` and `schema` for the given `recordDefinition`
+    ProtocolAuthorization.verifyRecordDefinition(
       incomingMessage.message,
       protocolDefinition,
     );
@@ -189,8 +189,8 @@ export class ProtocolAuthorization {
     // traverse subsequent rule sets using protocolPath
     let i = 1;
     while (i < protocolPathArray.length) {
-      const currentRecordTypeId = protocolPathArray[i];
-      const nextRuleSet = currentRuleSet.records?.[currentRecordTypeId];
+      const currentRecordDefinitionId = protocolPathArray[i];
+      const nextRuleSet = currentRuleSet.records?.[currentRecordDefinitionId];
 
       if (nextRuleSet === undefined) {
         const partialProtocolPath = protocolPathArray.slice(0, i + 1).join('/');
@@ -212,29 +212,29 @@ export class ProtocolAuthorization {
   private static verifyProtocolPath(
     inboundMessage: RecordsRead | RecordsWrite,
     ancestorMessageChain: RecordsWriteMessage[],
-    recordTypes: ProtocolRecordType[],
+    recordDefinitions: ProtocolRecordDefinition[],
   ): void {
     // skip verification if this is not a RecordsWrite
     if (inboundMessage.message.descriptor.method !== DwnMethodName.Write) {
       return;
     }
 
-    const recordTypeIds = recordTypes.map((recordType) => recordType.id);
+    const recordDefinitionIds = recordDefinitions.map((recordDefinition) => recordDefinition.id);
     const declaredProtocolPath = (inboundMessage as RecordsWrite).message.descriptor.protocolPath!;
-    const declaredRecordTypeId = ProtocolAuthorization.getRecordTypeFromPath(declaredProtocolPath);
-    if (!recordTypeIds.includes(declaredRecordTypeId)) {
-      throw new DwnError(DwnErrorCode.ProtocolAuthorizationInvalidRecordType,
-        `record with recordType ${declaredRecordTypeId} not allowed in protocol`);
+    const declaredRecordDefinitionId = ProtocolAuthorization.getRecordDefinitionFromPath(declaredProtocolPath);
+    if (!recordDefinitionIds.includes(declaredRecordDefinitionId)) {
+      throw new DwnError(DwnErrorCode.ProtocolAuthorizationInvalidRecordDefinition,
+        `record with recordDefinition ${declaredRecordDefinitionId} not allowed in protocol`);
     }
 
     let ancestorProtocolPath: string = '';
     for (const ancestor of ancestorMessageChain) {
       const protocolPath = ancestor.descriptor.protocolPath!;
-      const ancestorRecordTypeId = ProtocolAuthorization.getRecordTypeFromPath(protocolPath);
-      ancestorProtocolPath += `${ancestorRecordTypeId}/`; // e.g. `foo/bar/`, notice the trailing slash
+      const ancestorRecordDefinitionId = ProtocolAuthorization.getRecordDefinitionFromPath(protocolPath);
+      ancestorProtocolPath += `${ancestorRecordDefinitionId}/`; // e.g. `foo/bar/`, notice the trailing slash
     }
 
-    const actualProtocolPath = ancestorProtocolPath + declaredRecordTypeId; // e.g. `foo/bar/baz`
+    const actualProtocolPath = ancestorProtocolPath + declaredRecordDefinitionId; // e.g. `foo/bar/baz`
 
     if (declaredProtocolPath !== actualProtocolPath) {
       throw new DwnError(
@@ -246,10 +246,10 @@ export class ProtocolAuthorization {
 
   /**
    * Verifies the `dataFormat` and `schema` declared in the given message (if it is a RecordsWrite) matches dataFormat
-   * and schema of the recordType in the given protocol.
+   * and schema of the recordDefinition in the given protocol.
    * @throws {DwnError} if fails verification.
    */
-  private static verifyRecordType(
+  private static verifyRecordDefinition(
     inboundMessage: RecordsReadMessage | RecordsWriteMessage,
     protocolDefinition: ProtocolDefinition,
   ): void {
@@ -260,26 +260,26 @@ export class ProtocolAuthorization {
     const recordsWriteMessage = inboundMessage as RecordsWriteMessage;
 
     const protocolPath = recordsWriteMessage.descriptor.protocolPath!;
-    const recordTypeId = ProtocolAuthorization.getRecordTypeFromPath(protocolPath);
-    // existence of recordType has already been verified
-    const recordType: ProtocolRecordType = protocolDefinition.recordTypes.find((recordType) => recordType.id === recordTypeId)!;
+    const recordDefinitionId = ProtocolAuthorization.getRecordDefinitionFromPath(protocolPath);
+    // existence of recordDefinition has already been verified
+    const recordDefinition: ProtocolRecordDefinition = protocolDefinition.recordDefinitions.find((recordDefinition) => recordDefinition.id === recordDefinitionId)!;
 
     // no `schema` specified in protocol definition means that any schema is allowed
     const { schema } = recordsWriteMessage.descriptor;
-    if (recordType.schema !== undefined && recordType.schema !== schema) {
+    if (recordDefinition.schema !== undefined && recordDefinition.schema !== schema) {
       throw new DwnError(
         DwnErrorCode.ProtocolAuthorizationInvalidSchema,
-        `recordType '${recordTypeId}' must have schema '${recordType.schema}', \
+        `recordDefinition '${recordDefinitionId}' must have schema '${recordDefinition.schema}', \
         instead has '${schema}'`
       );
     }
 
     // no `dataFormats` specified in protocol definition means that all dataFormats are allowed
     const { dataFormat } = recordsWriteMessage.descriptor;
-    if (recordType.dataFormats !== undefined && !recordType.dataFormats.includes(dataFormat)) {
+    if (recordDefinition.dataFormats !== undefined && !recordDefinition.dataFormats.includes(dataFormat)) {
       throw new DwnError(
         DwnErrorCode.ProtocolAuthorizationIncorrectDataFormat,
-        `recordType '${recordTypeId}' must have data format in (${recordType.dataFormats}), \
+        `recordDefinition '${recordDefinitionId}' must have data format in (${recordDefinition.dataFormats}), \
         instead has '${dataFormat}'`
       );
     }
@@ -403,7 +403,7 @@ export class ProtocolAuthorization {
       const expectedAncestorType = expectedAncestors[i];
       const ancestorMessage = ancestorMessageChain[i];
 
-      const actualAncestorType = ProtocolAuthorization.getRecordTypeFromPath(ancestorMessage.descriptor.protocolPath!);
+      const actualAncestorType = ProtocolAuthorization.getRecordDefinitionFromPath(ancestorMessage.descriptor.protocolPath!);
       if (actualAncestorType !== expectedAncestorType) {
         throw new Error(`mismatching record schema: expecting ${expectedAncestorType} but actual ${actualAncestorType}`);
       }
@@ -417,7 +417,7 @@ export class ProtocolAuthorization {
     }
   }
 
-  private static getRecordTypeFromPath(protocolPath: string): string {
+  private static getRecordDefinitionFromPath(protocolPath: string): string {
     return protocolPath.split('/').slice(-1)[0];
   }
 }

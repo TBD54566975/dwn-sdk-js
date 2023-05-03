@@ -177,7 +177,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       });
 
       // overwrite schema because #create auto-normalizes schema
-      Protocols.getRecordType(protocolsConfig.message.descriptor.definition, 'ask')!.schema = 'ask';
+      Protocols.getRecordDefinition(protocolsConfig.message.descriptor.definition, 'ask')!.schema = 'ask';
 
       // Re-create auth because we altered the descriptor after signing
       protocolsConfig.message.authorization = await Message.signAsAuthorization(

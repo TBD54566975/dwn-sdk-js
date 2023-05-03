@@ -4,11 +4,11 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "recordTypes",
+    "recordDefinitions",
     "records"
   ],
   "properties": {
-    "recordTypes": {
+    "recordDefinitions": {
       "type": "array",
       "minItems": 1,
       "items": {

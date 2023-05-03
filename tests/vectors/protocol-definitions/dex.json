@@ -1,5 +1,5 @@
 {
-  "recordTypes": [
+  "recordDefinitions": [
     {
       "id": "ask",
       "schema": "https://tbd/website/tbdex/ask"

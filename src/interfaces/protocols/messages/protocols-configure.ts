@@ -45,9 +45,9 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
 
   private static validateDefinitionNormalized(definition: ProtocolDefinition): void {
     // validate schema url normalized
-    for (const recordType of definition.recordTypes) {
-      if (recordType.schema !== undefined) {
-        validateSchemaUrlNormalized(recordType.schema);
+    for (const recordDefinition of definition.recordDefinitions) {
+      if (recordDefinition.schema !== undefined) {
+        validateSchemaUrlNormalized(recordDefinition.schema);
       }
     }
   }
@@ -56,9 +56,9 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
     const definitionCopy = { ...definition };
 
     // Normalize schema url
-    for (const recordType of definition.recordTypes) {
-      if (recordType.schema !== undefined) {
-        recordType.schema = normalizeSchemaUrl(recordType.schema);
+    for (const recordDefinition of definition.recordDefinitions) {
+      if (recordDefinition.schema !== undefined) {
+        recordDefinition.schema = normalizeSchemaUrl(recordDefinition.schema);
       }
     }
 

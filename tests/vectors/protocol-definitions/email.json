@@ -1,5 +1,5 @@
 {
-  "recordTypes": [
+  "recordDefinitions": [
     {
       "id": "email",
       "schema": "email"
