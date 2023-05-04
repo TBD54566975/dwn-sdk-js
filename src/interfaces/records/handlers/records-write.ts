@@ -106,12 +106,12 @@ export class RecordsWriteHandler implements MethodHandler {
 export async function constructRecordsWriteIndexes(
   recordsWrite: RecordsWrite,
   isLatestBaseState: boolean
-): Promise<{ [key: string]: string }> {
+): Promise<Record<string, string>> {
   const message = recordsWrite.message;
   const descriptor = { ...message.descriptor };
   delete descriptor.published; // handle `published` specifically further down
 
-  const indexes: { [key: string]: any } = {
+  const indexes: Record<string, any> = {
     ...descriptor,
     isLatestBaseState,
     published : !!message.descriptor.published,

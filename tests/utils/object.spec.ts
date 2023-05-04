@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { removeUndefinedProperties } from '../../src/utils/object.js';
+import { removeEmptyObjects, removeUndefinedProperties } from '../../src/utils/object.js';
 
 describe('Object', () => {
   describe('removeUndefinedProperties', () => {
@@ -22,6 +22,19 @@ describe('Object', () => {
       removeUndefinedProperties(mockObject);
 
       expect(mockObject).to.deep.equal(expectedResult);
+    });
+  });
+
+  describe('removeEmptyObjects', () => {
+    it('should remove all empty objects', () => {
+      const obj = {
+        foo  : {},
+        bar  : { baz: {} },
+        buzz : 'hello'
+      };
+      removeEmptyObjects(obj);
+
+      expect(obj).to.deep.equal({ buzz: 'hello' });
     });
   });
 });
