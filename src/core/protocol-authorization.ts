@@ -4,11 +4,11 @@ import type { Filter, TimestampedMessage } from './types.js';
 import type { ProtocolDefinition, ProtocolRecordDefinition, ProtocolRuleSet, ProtocolsConfigureMessage } from '../interfaces/protocols/types.js';
 import type { RecordsReadMessage, RecordsWriteMessage } from '../interfaces/records/types.js';
 
+import { Protocols } from '../utils/protocols.js';
 import { RecordsWrite } from '../interfaces/records/messages/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
 import { ProtocolAction, ProtocolActor } from '../interfaces/protocols/types.js';
-import { Protocols } from '../utils/protocols.js';
 
 const methodToAllowedActionMap: Record<string, string> = {
   [DwnMethodName.Write] : ProtocolAction.Write,
@@ -215,7 +215,7 @@ export class ProtocolAuthorization {
 
     const recordDefinitionIds = recordDefinitions.map((recordDefinition) => recordDefinition.id);
     const declaredProtocolPath = (inboundMessage as RecordsWrite).message.descriptor.protocolPath!;
-    const declaredRecordDefinitionId = ProtocolAuthorization.getRecordDefinitionFromPath(declaredProtocolPath);
+    const declaredRecordDefinitionId = ProtocolAuthorization.getRecordDefinitionId(declaredProtocolPath);
     if (!recordDefinitionIds.includes(declaredRecordDefinitionId)) {
       throw new DwnError(DwnErrorCode.ProtocolAuthorizationInvalidRecordDefinition,
         `record with recordDefinition ${declaredRecordDefinitionId} not allowed in protocol`);
@@ -224,7 +224,7 @@ export class ProtocolAuthorization {
     let ancestorProtocolPath: string = '';
     for (const ancestor of ancestorMessageChain) {
       const protocolPath = ancestor.descriptor.protocolPath!;
-      const ancestorRecordDefinitionId = ProtocolAuthorization.getRecordDefinitionFromPath(protocolPath);
+      const ancestorRecordDefinitionId = ProtocolAuthorization.getRecordDefinitionId(protocolPath);
       ancestorProtocolPath += `${ancestorRecordDefinitionId}/`; // e.g. `foo/bar/`, notice the trailing slash
     }
 
@@ -254,7 +254,7 @@ export class ProtocolAuthorization {
     const recordsWriteMessage = inboundMessage as RecordsWriteMessage;
 
     const protocolPath = recordsWriteMessage.descriptor.protocolPath!;
-    const recordDefinitionId = ProtocolAuthorization.getRecordDefinitionFromPath(protocolPath);
+    const recordDefinitionId = ProtocolAuthorization.getRecordDefinitionId(protocolPath);
     // existence of recordDefinition has already been verified
     const recordDefinition: ProtocolRecordDefinition = Protocols.getRecordDefinition(protocolDefinition, recordDefinitionId)!;
 
@@ -397,9 +397,9 @@ export class ProtocolAuthorization {
       const expectedAncestorType = expectedAncestors[i];
       const ancestorMessage = ancestorMessageChain[i];
 
-      const actualAncestorType = ProtocolAuthorization.getRecordDefinitionFromPath(ancestorMessage.descriptor.protocolPath!);
-      if (actualAncestorType !== expectedAncestorType) {
-        throw new Error(`mismatching record schema: expecting ${expectedAncestorType} but actual ${actualAncestorType}`);
+      const actualAncestorDefinitionId = ProtocolAuthorization.getRecordDefinitionId(ancestorMessage.descriptor.protocolPath!);
+      if (actualAncestorDefinitionId !== expectedAncestorType) {
+        throw new Error(`mismatching record schema: expecting ${expectedAncestorType} but actual ${actualAncestorDefinitionId}`);
       }
 
       // we have found the message if we are looking at the last message specified by the path
@@ -411,7 +411,7 @@ export class ProtocolAuthorization {
     }
   }
 
-  private static getRecordDefinitionFromPath(protocolPath: string): string {
+  private static getRecordDefinitionId(protocolPath: string): string {
     return protocolPath.split('/').slice(-1)[0];
   }
 }

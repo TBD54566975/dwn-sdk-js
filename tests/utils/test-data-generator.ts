@@ -239,7 +239,7 @@ export class TestDataGenerator {
 
       definition = {
         recordDefinitions : [],
-        records     : {}
+        records           : {}
       };
       definition.recordDefinitions.push({ id: generatedLabel, schema: `test-object` });
       definition.records[generatedLabel] = {};
