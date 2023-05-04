@@ -8,6 +8,7 @@ import { RecordsWrite } from '../interfaces/records/messages/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
 import { ProtocolAction, ProtocolActor } from '../interfaces/protocols/types.js';
+import { Protocols } from '../utils/protocols.js';
 
 const methodToAllowedActionMap: Record<string, string> = {
   [DwnMethodName.Write] : ProtocolAction.Write,
@@ -178,16 +179,9 @@ export class ProtocolAuthorization {
     }
     const protocolPathArray = protocolPath.split('/');
 
-    // get top level rule set
-    const topLevelRuleSet: ProtocolRuleSet | undefined = protocolDefinition.records[protocolPathArray[0]];
-    if (topLevelRuleSet === undefined) {
-      throw new DwnError(DwnErrorCode.ProtocolAuthorizationMissingRuleSet,
-        `No rule set defined for protocolPath ${protocolPathArray[0]}`);
-    }
-    let currentRuleSet: ProtocolRuleSet = topLevelRuleSet;
-
-    // traverse subsequent rule sets using protocolPath
-    let i = 1;
+    // traverse rule sets using protocolPath
+    let currentRuleSet: { records?: { [key: string]: ProtocolRuleSet; } } = protocolDefinition;
+    let i = 0;
     while (i < protocolPathArray.length) {
       const currentRecordDefinitionId = protocolPathArray[i];
       const nextRuleSet = currentRuleSet.records?.[currentRecordDefinitionId];
@@ -262,7 +256,7 @@ export class ProtocolAuthorization {
     const protocolPath = recordsWriteMessage.descriptor.protocolPath!;
     const recordDefinitionId = ProtocolAuthorization.getRecordDefinitionFromPath(protocolPath);
     // existence of recordDefinition has already been verified
-    const recordDefinition: ProtocolRecordDefinition = protocolDefinition.recordDefinitions.find((recordDefinition) => recordDefinition.id === recordDefinitionId)!;
+    const recordDefinition: ProtocolRecordDefinition = Protocols.getRecordDefinition(protocolDefinition, recordDefinitionId)!;
 
     // no `schema` specified in protocol definition means that any schema is allowed
     const { schema } = recordsWriteMessage.descriptor;
