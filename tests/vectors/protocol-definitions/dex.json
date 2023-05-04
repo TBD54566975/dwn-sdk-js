@@ -1,15 +1,18 @@
 {
-  "labels": {
-    "ask": {
+  "recordDefinitions": [
+    {
+      "id": "ask",
       "schema": "https://tbd/website/tbdex/ask"
     },
-    "offer": {
+    {
+      "id": "offer",
       "schema": "https://tbd/website/tbdex/offer"
     },
-    "fulfillment": {
+    {
+      "id": "fulfillment",
       "schema": "https://tbd/website/tbdex/fulfillment"
     }
-  },
+  ],
   "records": {
     "ask": {
       "allow": [

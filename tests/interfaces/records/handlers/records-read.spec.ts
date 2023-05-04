@@ -17,6 +17,7 @@ import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { HdKey } from '../../../../src/utils/hd-key.js';
 import { KeyDerivationScheme } from '../../../../src/utils/hd-key.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
+import { Protocols } from '../../../../src/utils/protocols.js';
 import { RecordsReadHandler } from '../../../../src/interfaces/records/handlers/records-read.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
@@ -178,8 +179,8 @@ describe('RecordsReadHandler.handle()', () => {
         const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           protocol,
-          protocolPath : 'image', // this comes from `labels` in protocol definition
-          schema       : protocolDefinition.labels.image.schema,
+          protocolPath : 'image', // this comes from `recordDefinitions` in protocol definition
+          schema       : Protocols.getRecordDefinition(protocolDefinition, 'image')!.schema,
           data         : encodedImage,
           recipientDid : alice.did
         });
@@ -220,8 +221,8 @@ describe('RecordsReadHandler.handle()', () => {
         const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           protocol,
-          protocolPath : 'email', // this comes from `labels` in protocol definition
-          schema       : protocolDefinition.labels.email.schema,
+          protocolPath : 'email', // this comes from `recordDefinitions` in protocol definition
+          schema       : Protocols.getRecordDefinition(protocolDefinition, 'email')!.schema,
           data         : encodedEmail,
           recipientDid : bob.did
         });
@@ -270,8 +271,8 @@ describe('RecordsReadHandler.handle()', () => {
         const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester    : bob,
           protocol,
-          protocolPath : 'email', // this comes from `labels` in protocol definition
-          schema       : protocolDefinition.labels.email.schema,
+          protocolPath : 'email', // this comes from `recordDefinitions` in protocol definition
+          schema       : Protocols.getRecordDefinition(protocolDefinition, 'email')!.schema,
           data         : encodedEmail,
           recipientDid : alice.did
         });
@@ -367,7 +368,7 @@ describe('RecordsReadHandler.handle()', () => {
     });
 
     describe('encryption scenarios', () => {
-      it('should only be able to decrypt record with a correct derived private key - `protocols` derivation scheme', async () => {
+      it('should only be able to decrypt record with a correct derived private key', async () => {
         // scenario, Bob writes into Alice's DWN an encrypted "email", alice is able to decrypt it
 
         // creating Alice and Bob persona and setting up a stub DID resolver
@@ -409,8 +410,8 @@ describe('RecordsReadHandler.handle()', () => {
           {
             requester    : bob,
             protocol,
-            protocolPath : 'email', // this comes from `labels` in protocol definition
-            schema       : emailProtocolDefinition.labels.email.schema,
+            protocolPath : 'email', // this comes from `recordDefinitions` in protocol definition
+            schema       : Protocols.getRecordDefinition(emailProtocolDefinition, 'email')!.schema,
             data         : bobMessageEncryptedBytes,
             encryptionInput
           }

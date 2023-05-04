@@ -1,9 +1,10 @@
 {
-  "labels": {
-    "email": {
+  "recordDefinitions": [
+    {
+      "id": "email",
       "schema": "email"
     }
-  },
+  ],
   "records": {
     "email": {
       "allow": [

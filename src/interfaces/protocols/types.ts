@@ -10,15 +10,16 @@ export type ProtocolsConfigureDescriptor = {
 };
 
 export type ProtocolDefinition = {
-  labels: {
-    [key: string]: {
-      schema: string,
-      dataFormats?: string[],
-    };
-  };
+  recordDefinitions: ProtocolRecordDefinition[];
   records: {
     [key: string]: ProtocolRuleSet;
   };
+};
+
+export type ProtocolRecordDefinition = {
+  id: string,
+  schema?: string,
+  dataFormats?: string[],
 };
 
 export enum ProtocolActor {

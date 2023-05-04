@@ -5,6 +5,7 @@ import type { ProtocolsConfigureMessage } from '../../../../src/index.js';
 
 import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
+import { Protocols } from '../../../../src/utils/protocols.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { Jws, ProtocolsConfigure } from '../../../../src/index.js';
 
@@ -48,7 +49,7 @@ describe('ProtocolsConfigure', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const nonnormalizedDexProtocol = { ...dexProtocolDefinition };
-      nonnormalizedDexProtocol.labels.ask.schema = 'ask';
+      Protocols.getRecordDefinition(nonnormalizedDexProtocol, 'ask')!.schema = 'ask';
 
       const options = {
         recipient                   : alice.did,
@@ -61,8 +62,7 @@ describe('ProtocolsConfigure', () => {
       const protocolsConfig = await ProtocolsConfigure.create(options);
 
       const message = protocolsConfig.message as ProtocolsConfigureMessage;
-
-      expect(message.descriptor.definition.labels.ask.schema).to.eq('http://ask');
+      expect(Protocols.getRecordDefinition(message.descriptor.definition, 'ask')?.schema).to.eq('http://ask');
     });
   });
 });

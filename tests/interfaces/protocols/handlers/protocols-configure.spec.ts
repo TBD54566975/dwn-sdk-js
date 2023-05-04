@@ -13,6 +13,7 @@ import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { lexicographicalCompare } from '../../../../src/utils/string.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
+import { Protocols } from '../../../../src/utils/protocols.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
@@ -135,11 +136,11 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       expect(reply.status.code).to.equal(200);
       expect(reply.entries?.length).to.equal(1);
 
-      const initialDefinition = JSON.stringify(middleWrite.message.descriptor.definition);
-      const expectedDefinition = JSON.stringify(newestWrite.message.descriptor.definition);
-      const actualDefinition = JSON.stringify(reply.entries![0]['descriptor']['definition']);
-      expect(actualDefinition).to.not.equal(initialDefinition);
-      expect(actualDefinition).to.equal(expectedDefinition);
+      const initialDefinition = middleWrite.message.descriptor.definition;
+      const expectedDefinition = newestWrite.message.descriptor.definition;
+      const actualDefinition = reply.entries![0]['descriptor']['definition'];
+      expect(actualDefinition).to.not.deep.equal(initialDefinition);
+      expect(actualDefinition).to.deep.equal(expectedDefinition);
     });
 
     it('should return 400 if protocol is not normalized', async () => {
@@ -176,7 +177,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       });
 
       // overwrite schema because #create auto-normalizes schema
-      protocolsConfig.message.descriptor.definition.labels.ask.schema = 'ask';
+      Protocols.getRecordDefinition(protocolsConfig.message.descriptor.definition, 'ask')!.schema = 'ask';
 
       // Re-create auth because we altered the descriptor after signing
       protocolsConfig.message.authorization = await Message.signAsAuthorization(

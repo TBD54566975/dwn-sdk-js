@@ -17,6 +17,7 @@ import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { Jws } from '../../../../src/utils/jws.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
+import { Protocols } from '../../../../src/utils/protocols.js';
 import { RecordsQueryHandler } from '../../../../src/interfaces/records/handlers/records-query.js';
 import { StorageController } from '../../../../src/store/storage-controller.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
@@ -683,12 +684,12 @@ describe('RecordsQueryHandler.handle()', () => {
           }]
         };
 
-        const schema = emailProtocolDefinition.labels.email.schema;
+        const schema = Protocols.getRecordDefinition(emailProtocolDefinition, 'email')!.schema;
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite(
           {
             requester    : bob,
             protocol,
-            protocolPath : 'email', // this comes from `labels` in protocol definition
+            protocolPath : 'email', // this comes from `recordDefinitions` in protocol definition
             schema,
             data         : bobMessageEncryptedBytes,
             encryptionInput

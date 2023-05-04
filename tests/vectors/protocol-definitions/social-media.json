@@ -1,10 +1,22 @@
 {
-  "labels": {
-    "message": { "schema": "messageSchema" },
-    "reply": { "schema": "replySchema" },
-    "image": { "schema": "imageSchema" },
-    "caption": { "schema": "captionSchema" }
-  },
+  "recordDefinitions": [
+    {
+      "id": "message",
+      "schema": "messageSchema"
+    },
+    {
+      "id": "reply",
+      "schema": "replySchema"
+    },
+    {
+      "id": "image",
+      "schema": "imageSchema"
+    },
+    {
+      "id": "caption",
+      "schema": "captionSchema"
+    }
+  ],
   "records": {
     "message": {
       "allow": [
