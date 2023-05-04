@@ -29,7 +29,7 @@ export class StorageController {
     eventLog: EventLog,
     tenant: string,
     message: BaseMessage,
-    indexes: { [key: string]: string },
+    indexes: Record<string, string>,
     dataStream?: Readable
   ): Promise<void> {
     const messageCid = await Message.getCid(message);
