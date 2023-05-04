@@ -305,32 +305,32 @@ export class ProtocolAuthorization {
     for (const allowRule of allowRules) {
       switch (allowRule.actor) {
       case ProtocolActor.Anyone:
-        allowRule.actions.forEach((operation) => allowedActions.add(operation));
+        allowRule.can.forEach((operation) => allowedActions.add(operation));
         break;
       case ProtocolActor.Author:
         const messageForAuthorCheck = ProtocolAuthorization.getMessage(
           ancestorMessageChain,
-          allowRule.protocolPath!,
+          allowRule.of!,
         );
 
         if (messageForAuthorCheck !== undefined) {
           const expectedRequesterDid = Message.getAuthor(messageForAuthorCheck);
 
           if (requesterDid === expectedRequesterDid) {
-            allowRule.actions.forEach(action => allowedActions.add(action));
+            allowRule.can.forEach(action => allowedActions.add(action));
           }
         }
         break;
       case ProtocolActor.Recipient:
         const messageForRecipientCheck = ProtocolAuthorization.getMessage(
           ancestorMessageChain,
-            allowRule.protocolPath!,
+            allowRule.of!,
         );
         if (messageForRecipientCheck !== undefined) {
           const expectedRequesterDid = messageForRecipientCheck.descriptor.recipient;
 
           if (requesterDid === expectedRequesterDid) {
-            allowRule.actions.forEach(action => allowedActions.add(action));
+            allowRule.can.forEach(action => allowedActions.add(action));
           }
         }
         break;

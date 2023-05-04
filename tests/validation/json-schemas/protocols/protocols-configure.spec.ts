@@ -15,8 +15,8 @@ describe('ProtocolsConfigure schema definition', () => {
         email: {
           allow: [
             {
-              actor   : 'unknown',
-              actions : ['write']
+              actor : 'unknown',
+              can   : ['write']
             }
           ]
         }

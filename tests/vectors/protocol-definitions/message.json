@@ -10,7 +10,7 @@
       "allow": [
         {
           "actor": "anyone",
-          "actions": ["write"]
+          "can": ["write"]
         }
       ]
     }

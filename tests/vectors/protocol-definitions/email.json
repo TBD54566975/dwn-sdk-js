@@ -10,17 +10,17 @@
       "allow": [
         {
           "actor": "anyone",
-          "actions": ["write"]
+          "can": ["write"]
         },
         {
           "actor": "author",
-          "protocolPath": "email",
-          "actions": ["read"]
+          "of": "email",
+          "can": ["read"]
         },
         {
           "actor": "recipient",
-          "protocolPath": "email",
-          "actions": ["read"]
+          "of": "email",
+          "can": ["read"]
         }
       ],
       "records": {
@@ -28,17 +28,17 @@
           "allow": [
             {
               "actor": "anyone",
-              "actions": ["write"]
+              "can": ["write"]
             },
             {
               "actor": "author",
-              "protocolPath": "email/email",
-              "actions": ["read"]
+              "of": "email/email",
+              "can": ["read"]
             },
             {
               "actor": "recipient",
               "protocolpath": "email/email",
-              "actions": ["read"]
+              "can": ["read"]
             }
           ]
         }

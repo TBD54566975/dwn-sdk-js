@@ -22,7 +22,7 @@
       "allow": [
         {
           "actor": "anyone",
-          "actions": ["write"]
+          "can": ["write"]
         }
       ],
       "records": {
@@ -30,8 +30,8 @@
           "allow": [
             {
               "actor": "recipient",
-              "protocolPath": "message",
-              "actions": ["write"]
+              "of": "message",
+              "can": ["write"]
             }
           ]
         }
@@ -41,7 +41,7 @@
       "allow": [
         {
           "actor": "anyone",
-          "actions": ["read", "write"]
+          "can": ["read", "write"]
         }
       ],
       "records": {
@@ -49,12 +49,12 @@
           "allow": [
             {
               "actor": "anyone",
-              "actions": ["read"]
+              "can": ["read"]
             },
             {
               "actor": "author",
-              "protocolPath": "image",
-              "actions": ["write"]
+              "of": "image",
+              "can": ["write"]
             }
           ]
         },
@@ -62,13 +62,13 @@
           "allow": [
             {
               "actor": "author",
-              "protocolPath": "image",
-              "actions": ["read"]
+              "of": "image",
+              "can": ["read"]
             },
             {
               "actor": "recipient",
-              "protocolPath": "image",
-              "actions": ["write"]
+              "of": "image",
+              "can": ["write"]
             }
           ]
         }

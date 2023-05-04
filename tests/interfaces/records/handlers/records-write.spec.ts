@@ -1073,8 +1073,8 @@ describe('RecordsWriteHandler.handle()', () => {
             image: {
               allow: [
                 {
-                  actor   : 'anyone',
-                  actions : ['write']
+                  actor : 'anyone',
+                  can   : ['write']
                 }
               ]
             }
@@ -1279,7 +1279,7 @@ describe('RecordsWriteHandler.handle()', () => {
           invalidProtocolDefinition.records.credentialApplication.records.credentialResponse.allow
             .findIndex((allowRule) => allowRule.actor === ProtocolActor.Recipient);
         invalidProtocolDefinition.records.credentialApplication.records.credentialResponse
-          .allow[allowRuleIndex].protocolPath
+          .allow[allowRuleIndex].of
             = 'credentialResponse';
         // this is invalid as the root ancestor can only be `credentialApplication` based on record structure
 
