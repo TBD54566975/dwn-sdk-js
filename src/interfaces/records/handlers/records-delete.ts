@@ -5,12 +5,11 @@ import type { TimestampedMessage } from '../../../core/types.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { authenticate } from '../../../core/auth.js';
-import { computeCid } from '../../../utils/cid.js';
 import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
-import { DwnInterfaceName } from '../../../core/message.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsDelete } from '../messages/records-delete.js';
 import { RecordsWrite } from '../messages/records-write.js';
+import { DwnInterfaceName, Message } from '../../../core/message.js';
 
 export class RecordsDeleteHandler implements MethodHandler {
 
@@ -62,7 +61,7 @@ export class RecordsDeleteHandler implements MethodHandler {
 
       await this.messageStore.put(tenant, message, indexes);
 
-      const messageCid = await computeCid(message);
+      const messageCid = await Message.getCid(message);
       await this.eventLog.append(tenant, messageCid);
 
       messageReply = new MessageReply({
@@ -81,7 +80,7 @@ export class RecordsDeleteHandler implements MethodHandler {
   };
 }
 
-export async function constructIndexes(tenant: string, recordsDelete: RecordsDelete): Promise<{ [key: string]: string }> {
+export async function constructIndexes(tenant: string, recordsDelete: RecordsDelete): Promise<Record<string, string>> {
   const message = recordsDelete.message;
   const descriptor = { ...message.descriptor };
 
@@ -89,7 +88,7 @@ export async function constructIndexes(tenant: string, recordsDelete: RecordsDel
   // we intentionally not add index for `isLatestBaseState` at all, this means that upon a successful delete,
   // no messages with the record ID will match any query because queries by design filter by `isLatestBaseState = true`,
   // `isLatestBaseState` for the initial delete would have been toggled to `false`
-  const indexes: { [key: string]: any } = {
+  const indexes: Record<string, any> = {
     // isLatestBaseState : "true", // intentionally showing that this index is omitted
     author: recordsDelete.author,
     ...descriptor
