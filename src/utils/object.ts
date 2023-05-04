@@ -30,10 +30,13 @@ export function isEmptyObject(obj: unknown): boolean {
  */
 export function removeEmptyObjects(obj: Record<string, unknown>): void {
   Object.keys(obj).forEach(key => {
+    if (typeof(obj[key]) === 'object') {
+      // recursive remove empty object or array properties in nested objects
+      removeEmptyObjects(obj[key] as Record<string, unknown>);
+    }
+
     if (isEmptyObject(obj[key])) {
       delete obj[key];
-    } else if (typeof(obj[key]) === 'object') {
-      removeEmptyObjects(obj[key] as Record<string, unknown>); // recursive remove empty object or array properties in nested objects
     }
   });
 }
