@@ -394,12 +394,12 @@ export class ProtocolAuthorization {
 
     let i = 0;
     while (true) {
-      const expectedAncestorType = expectedAncestors[i];
+      const expectedDefinitionId = expectedAncestors[i];
       const ancestorMessage = ancestorMessageChain[i];
 
-      const actualAncestorDefinitionId = ProtocolAuthorization.getRecordDefinitionId(ancestorMessage.descriptor.protocolPath!);
-      if (actualAncestorDefinitionId !== expectedAncestorType) {
-        throw new Error(`mismatching record schema: expecting ${expectedAncestorType} but actual ${actualAncestorDefinitionId}`);
+      const actualDefinitionId = ProtocolAuthorization.getRecordDefinitionId(ancestorMessage.descriptor.protocolPath!);
+      if (actualDefinitionId !== expectedDefinitionId) {
+        throw new Error(`mismatching record schema: expecting ${expectedDefinitionId} but actual ${actualDefinitionId}`);
       }
 
       // we have found the message if we are looking at the last message specified by the path
