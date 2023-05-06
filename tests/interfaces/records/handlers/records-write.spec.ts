@@ -1062,7 +1062,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const alice = await DidKeyResolver.generate();
 
         const protocolDefinition: ProtocolDefinition = {
-          recordDefinitions : [
+          recordDefinitions: [
             {
               id          : 'image',
               schema      : 'https://example.com/schema',
