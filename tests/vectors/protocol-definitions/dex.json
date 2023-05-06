@@ -18,7 +18,7 @@
       "actions": [
         {
           "actor": "anyone",
-          "can": ["write"]
+          "can": "write"
         }
       ],
       "records": {
@@ -27,7 +27,7 @@
             {
               "actor": "recipient",
               "of": "ask",
-              "can": ["write"]
+              "can": "write"
             }
           ],
           "records": {
@@ -36,7 +36,7 @@
                 {
                   "actor": "recipient",
                   "of": "ask/offer",
-                  "can": ["write"]
+                  "can": "write"
                 }
               ]
             }

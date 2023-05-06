@@ -290,9 +290,9 @@ export class ProtocolAuthorization {
     inboundMessageRuleSet: ProtocolRuleSet,
     ancestorMessageChain: RecordsWriteMessage[],
   ): void {
-    const allowRules = inboundMessageRuleSet.actions;
+    const actionRules = inboundMessageRuleSet.actions;
 
-    if (allowRules === undefined) {
+    if (actionRules === undefined) {
       // if no allow rule is defined, owner of DWN can do everything
       if (requesterDid === tenant) {
         return;
@@ -302,10 +302,10 @@ export class ProtocolAuthorization {
     }
 
     const allowedActions = new Set<string>();
-    for (const allowRule of allowRules) {
+    for (const allowRule of actionRules) {
       switch (allowRule.actor) {
       case ProtocolActor.Anyone:
-        allowRule.can.forEach((operation) => allowedActions.add(operation));
+        allowedActions.add(allowRule.can);
         break;
       case ProtocolActor.Author:
         const messageForAuthorCheck = ProtocolAuthorization.getMessage(
@@ -317,7 +317,7 @@ export class ProtocolAuthorization {
           const expectedRequesterDid = Message.getAuthor(messageForAuthorCheck);
 
           if (requesterDid === expectedRequesterDid) {
-            allowRule.can.forEach(action => allowedActions.add(action));
+            allowedActions.add(allowRule.can);
           }
         }
         break;
@@ -330,12 +330,12 @@ export class ProtocolAuthorization {
           const expectedRequesterDid = messageForRecipientCheck.descriptor.recipient;
 
           if (requesterDid === expectedRequesterDid) {
-            allowRule.can.forEach(action => allowedActions.add(action));
+            allowedActions.add(allowRule.can);
           }
         }
         break;
         // default:
-        //    This is handled by protocol-rule-set.json validator
+        //    JSON schema validations ensure that there are no other cases
       }
     }
 

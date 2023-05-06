@@ -16,7 +16,7 @@ describe('ProtocolsConfigure schema definition', () => {
           actions: [
             {
               actor : 'unknown',
-              can   : ['write']
+              can   : 'write'
             }
           ]
         }

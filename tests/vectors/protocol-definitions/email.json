@@ -10,17 +10,17 @@
       "actions": [
         {
           "actor": "anyone",
-          "can": ["write"]
+          "can": "write"
         },
         {
           "actor": "author",
           "of": "email",
-          "can": ["read"]
+          "can": "read"
         },
         {
           "actor": "recipient",
           "of": "email",
-          "can": ["read"]
+          "can": "read"
         }
       ],
       "records": {
@@ -28,17 +28,17 @@
           "actions": [
             {
               "actor": "anyone",
-              "can": ["write"]
+              "can": "write"
             },
             {
               "actor": "author",
               "of": "email/email",
-              "can": ["read"]
+              "can": "read"
             },
             {
               "actor": "recipient",
-              "protocolpath": "email/email",
-              "can": ["read"]
+              "of": "email/email",
+              "can": "read"
             }
           ]
         }

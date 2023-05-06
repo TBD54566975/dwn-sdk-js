@@ -37,7 +37,7 @@ export type ProtocolRuleSet = {
   actions?: {
     actor: string,
     of?: string,
-    can: string[]
+    can: string
   }[];
   records?: {
     [key: string]: ProtocolRuleSet;

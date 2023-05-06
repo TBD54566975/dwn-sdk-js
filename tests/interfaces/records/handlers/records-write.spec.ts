@@ -1074,7 +1074,7 @@ describe('RecordsWriteHandler.handle()', () => {
               actions: [
                 {
                   actor : 'anyone',
-                  can   : ['write']
+                  can   : 'write'
                 }
               ]
             }

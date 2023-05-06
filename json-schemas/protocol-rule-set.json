@@ -13,6 +13,7 @@
           "actor",
           "can"
         ],
+        "additionalProperties": false,
         "properties": {
           "actor": {
             "type": "string",
@@ -26,15 +27,11 @@
             "type": "string"
           },
           "can": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
-              "type": "string",
-              "enum": [
-                "read",
-                "write"
-              ]
-            }
+            "type": "string",
+            "enum": [
+              "read",
+              "write"
+            ]
           }
         }
       }

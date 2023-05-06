@@ -22,7 +22,7 @@
       "actions": [
         {
           "actor": "anyone",
-          "can": ["write"]
+          "can": "write"
         }
       ],
       "records": {
@@ -31,7 +31,7 @@
             {
               "actor": "recipient",
               "of": "message",
-              "can": ["write"]
+              "can": "write"
             }
           ]
         }
@@ -41,7 +41,11 @@
       "actions": [
         {
           "actor": "anyone",
-          "can": ["read", "write"]
+          "can": "read"
+        },
+        {
+          "actor": "anyone",
+          "can": "write"
         }
       ],
       "records": {
@@ -49,12 +53,12 @@
           "actions": [
             {
               "actor": "anyone",
-              "can": ["read"]
+              "can": "read"
             },
             {
               "actor": "author",
               "of": "image",
-              "can": ["write"]
+              "can": "write"
             }
           ]
         },
@@ -63,12 +67,12 @@
             {
               "actor": "author",
               "of": "image",
-              "can": ["read"]
+              "can": "read"
             },
             {
               "actor": "recipient",
               "of": "image",
-              "can": ["write"]
+              "can": "write"
             }
           ]
         }
