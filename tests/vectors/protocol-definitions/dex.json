@@ -17,7 +17,7 @@
     "ask": {
       "$actions": [
         {
-          "actor": "anyone",
+          "who": "anyone",
           "can": "write"
         }
       ],
@@ -25,7 +25,7 @@
         "offer": {
           "$actions": [
             {
-              "actor": "recipient",
+              "who": "recipient",
               "of": "ask",
               "can": "write"
             }
@@ -34,7 +34,7 @@
             "fulfillment": {
               "$actions": [
                 {
-                  "actor": "recipient",
+                  "who": "recipient",
                   "of": "ask/offer",
                   "can": "write"
                 }

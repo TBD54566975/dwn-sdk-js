@@ -10,12 +10,12 @@
       "items": {
         "type": "object",
         "required": [
-          "actor",
+          "who",
           "can"
         ],
         "additionalProperties": false,
         "properties": {
-          "actor": {
+          "who": {
             "type": "string",
             "enum": [
               "anyone",

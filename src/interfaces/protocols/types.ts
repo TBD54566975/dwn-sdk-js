@@ -35,7 +35,7 @@ export enum ProtocolAction {
 
 export type ProtocolRuleSet = {
   $actions?: {
-    actor: string,
+    who: string,
     of?: string,
     can: string
   }[];

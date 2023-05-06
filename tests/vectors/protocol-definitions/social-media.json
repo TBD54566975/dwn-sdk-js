@@ -21,7 +21,7 @@
     "message": {
       "$actions": [
         {
-          "actor": "anyone",
+          "who": "anyone",
           "can": "write"
         }
       ],
@@ -29,7 +29,7 @@
         "reply": {
           "$actions": [
             {
-              "actor": "recipient",
+              "who": "recipient",
               "of": "message",
               "can": "write"
             }
@@ -40,11 +40,11 @@
     "image": {
       "$actions": [
         {
-          "actor": "anyone",
+          "who": "anyone",
           "can": "read"
         },
         {
-          "actor": "anyone",
+          "who": "anyone",
           "can": "write"
         }
       ],
@@ -52,11 +52,11 @@
         "caption": {
           "$actions": [
             {
-              "actor": "anyone",
+              "who": "anyone",
               "can": "read"
             },
             {
-              "actor": "author",
+              "who": "author",
               "of": "image",
               "can": "write"
             }
@@ -65,12 +65,12 @@
         "reply": {
           "$actions": [
             {
-              "actor": "author",
+              "who": "author",
               "of": "image",
               "can": "read"
             },
             {
-              "actor": "recipient",
+              "who": "recipient",
               "of": "image",
               "can": "write"
             }

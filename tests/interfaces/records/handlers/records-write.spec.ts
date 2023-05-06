@@ -1073,8 +1073,8 @@ describe('RecordsWriteHandler.handle()', () => {
             image: {
               $actions: [
                 {
-                  actor : 'anyone',
-                  can   : 'write'
+                  who : 'anyone',
+                  can : 'write'
                 }
               ]
             }
@@ -1277,7 +1277,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const invalidProtocolDefinition = { ...credentialIssuanceProtocolDefinition };
         const allowRuleIndex =
           invalidProtocolDefinition.records.credentialApplication.records.credentialResponse.$actions
-            .findIndex((allowRule) => allowRule.actor === ProtocolActor.Recipient);
+            .findIndex((allowRule) => allowRule.who === ProtocolActor.Recipient);
         invalidProtocolDefinition.records.credentialApplication.records.credentialResponse
           .$actions[allowRuleIndex].of
             = 'credentialResponse';

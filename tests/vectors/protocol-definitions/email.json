@@ -9,16 +9,16 @@
     "email": {
       "$actions": [
         {
-          "actor": "anyone",
+          "who": "anyone",
           "can": "write"
         },
         {
-          "actor": "author",
+          "who": "author",
           "of": "email",
           "can": "read"
         },
         {
-          "actor": "recipient",
+          "who": "recipient",
           "of": "email",
           "can": "read"
         }
@@ -27,16 +27,16 @@
         "email": {
           "$actions": [
             {
-              "actor": "anyone",
+              "who": "anyone",
               "can": "write"
             },
             {
-              "actor": "author",
+              "who": "author",
               "of": "email/email",
               "can": "read"
             },
             {
-              "actor": "recipient",
+              "who": "recipient",
               "of": "email/email",
               "can": "read"
             }

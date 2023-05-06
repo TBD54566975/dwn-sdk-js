@@ -303,7 +303,7 @@ export class ProtocolAuthorization {
 
     const allowedActions = new Set<string>();
     for (const allowRule of actionRules) {
-      switch (allowRule.actor) {
+      switch (allowRule.who) {
       case ProtocolActor.Anyone:
         allowedActions.add(allowRule.can);
         break;

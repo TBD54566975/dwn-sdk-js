@@ -9,7 +9,7 @@
     "message": {
       "$actions": [
         {
-          "actor": "anyone",
+          "who": "anyone",
           "can": "write"
         }
       ]
