@@ -7,7 +7,7 @@
   ],
   "records": {
     "email": {
-      "actions": [
+      "$actions": [
         {
           "actor": "anyone",
           "can": "write"
@@ -25,7 +25,7 @@
       ],
       "records": {
         "email": {
-          "actions": [
+          "$actions": [
             {
               "actor": "anyone",
               "can": "write"

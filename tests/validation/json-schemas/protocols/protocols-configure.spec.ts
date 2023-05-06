@@ -13,7 +13,7 @@ describe('ProtocolsConfigure schema definition', () => {
       }],
       records: {
         email: {
-          actions: [
+          $actions: [
             {
               actor : 'unknown',
               can   : 'write'

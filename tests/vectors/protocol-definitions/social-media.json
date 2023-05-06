@@ -19,7 +19,7 @@
   ],
   "records": {
     "message": {
-      "actions": [
+      "$actions": [
         {
           "actor": "anyone",
           "can": "write"
@@ -27,7 +27,7 @@
       ],
       "records": {
         "reply": {
-          "actions": [
+          "$actions": [
             {
               "actor": "recipient",
               "of": "message",
@@ -38,7 +38,7 @@
       }
     },
     "image": {
-      "actions": [
+      "$actions": [
         {
           "actor": "anyone",
           "can": "read"
@@ -50,7 +50,7 @@
       ],
       "records": {
         "caption": {
-          "actions": [
+          "$actions": [
             {
               "actor": "anyone",
               "can": "read"
@@ -63,7 +63,7 @@
           ]
         },
         "reply": {
-          "actions": [
+          "$actions": [
             {
               "actor": "author",
               "of": "image",

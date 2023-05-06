@@ -15,7 +15,7 @@
   ],
   "records": {
     "ask": {
-      "actions": [
+      "$actions": [
         {
           "actor": "anyone",
           "can": "write"
@@ -23,7 +23,7 @@
       ],
       "records": {
         "offer": {
-          "actions": [
+          "$actions": [
             {
               "actor": "recipient",
               "of": "ask",
@@ -32,7 +32,7 @@
           ],
           "records": {
             "fulfillment": {
-              "actions": [
+              "$actions": [
                 {
                   "actor": "recipient",
                   "of": "ask/offer",

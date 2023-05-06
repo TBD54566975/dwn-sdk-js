@@ -1071,7 +1071,7 @@ describe('RecordsWriteHandler.handle()', () => {
           ],
           records: {
             image: {
-              actions: [
+              $actions: [
                 {
                   actor : 'anyone',
                   can   : 'write'
@@ -1276,10 +1276,10 @@ describe('RecordsWriteHandler.handle()', () => {
         // create an invalid ancestor path that is longer than possible
         const invalidProtocolDefinition = { ...credentialIssuanceProtocolDefinition };
         const allowRuleIndex =
-          invalidProtocolDefinition.records.credentialApplication.records.credentialResponse.actions
+          invalidProtocolDefinition.records.credentialApplication.records.credentialResponse.$actions
             .findIndex((allowRule) => allowRule.actor === ProtocolActor.Recipient);
         invalidProtocolDefinition.records.credentialApplication.records.credentialResponse
-          .actions[allowRuleIndex].of
+          .$actions[allowRuleIndex].of
             = 'credentialResponse';
         // this is invalid as the root ancestor can only be `credentialApplication` based on record structure
 

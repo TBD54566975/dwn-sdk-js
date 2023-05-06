@@ -290,7 +290,7 @@ export class ProtocolAuthorization {
     inboundMessageRuleSet: ProtocolRuleSet,
     ancestorMessageChain: RecordsWriteMessage[],
   ): void {
-    const actionRules = inboundMessageRuleSet.actions;
+    const actionRules = inboundMessageRuleSet.$actions;
 
     if (actionRules === undefined) {
       // if no allow rule is defined, owner of DWN can do everything
