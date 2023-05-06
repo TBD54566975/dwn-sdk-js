@@ -4,14 +4,14 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "allow": {
+    "actions": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
         "required": [
           "actor",
-          "actions"
+          "can"
         ],
         "properties": {
           "actor": {
@@ -22,10 +22,10 @@
               "recipient"
             ]
           },
-          "protocolPath": {
+          "of": {
             "type": "string"
           },
-          "actions": {
+          "can": {
             "type": "array",
             "minItems": 1,
             "items": {

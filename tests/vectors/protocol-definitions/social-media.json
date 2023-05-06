@@ -19,56 +19,56 @@
   ],
   "records": {
     "message": {
-      "allow": [
+      "actions": [
         {
           "actor": "anyone",
-          "actions": ["write"]
+          "can": ["write"]
         }
       ],
       "records": {
         "reply": {
-          "allow": [
+          "actions": [
             {
               "actor": "recipient",
-              "protocolPath": "message",
-              "actions": ["write"]
+              "of": "message",
+              "can": ["write"]
             }
           ]
         }
       }
     },
     "image": {
-      "allow": [
+      "actions": [
         {
           "actor": "anyone",
-          "actions": ["read", "write"]
+          "can": ["read", "write"]
         }
       ],
       "records": {
         "caption": {
-          "allow": [
+          "actions": [
             {
               "actor": "anyone",
-              "actions": ["read"]
+              "can": ["read"]
             },
             {
               "actor": "author",
-              "protocolPath": "image",
-              "actions": ["write"]
+              "of": "image",
+              "can": ["write"]
             }
           ]
         },
         "reply": {
-          "allow": [
+          "actions": [
             {
               "actor": "author",
-              "protocolPath": "image",
-              "actions": ["read"]
+              "of": "image",
+              "can": ["read"]
             },
             {
               "actor": "recipient",
-              "protocolPath": "image",
-              "actions": ["write"]
+              "of": "image",
+              "can": ["write"]
             }
           ]
         }

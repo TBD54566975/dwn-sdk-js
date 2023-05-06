@@ -1061,8 +1061,8 @@ describe('RecordsWriteHandler.handle()', () => {
       it('should fail authorization if given `dataFormat` is mismatching with the dataFormats in protocol definition', async () => {
         const alice = await DidKeyResolver.generate();
 
-        const protocolDefinition = {
-          recordDefinitions: [
+        const protocolDefinition: ProtocolDefinition = {
+          recordDefinitions : [
             {
               id          : 'image',
               schema      : 'https://example.com/schema',
@@ -1071,10 +1071,10 @@ describe('RecordsWriteHandler.handle()', () => {
           ],
           records: {
             image: {
-              allow: [
+              actions: [
                 {
-                  actor   : 'anyone',
-                  actions : ['write']
+                  actor : 'anyone',
+                  can   : ['write']
                 }
               ]
             }
@@ -1276,10 +1276,10 @@ describe('RecordsWriteHandler.handle()', () => {
         // create an invalid ancestor path that is longer than possible
         const invalidProtocolDefinition = { ...credentialIssuanceProtocolDefinition };
         const allowRuleIndex =
-          invalidProtocolDefinition.records.credentialApplication.records.credentialResponse.allow
+          invalidProtocolDefinition.records.credentialApplication.records.credentialResponse.actions
             .findIndex((allowRule) => allowRule.actor === ProtocolActor.Recipient);
         invalidProtocolDefinition.records.credentialApplication.records.credentialResponse
-          .allow[allowRuleIndex].protocolPath
+          .actions[allowRuleIndex].of
             = 'credentialResponse';
         // this is invalid as the root ancestor can only be `credentialApplication` based on record structure
 

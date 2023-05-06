@@ -15,28 +15,28 @@
   ],
   "records": {
     "ask": {
-      "allow": [
+      "actions": [
         {
           "actor": "anyone",
-          "actions": ["write"]
+          "can": ["write"]
         }
       ],
       "records": {
         "offer": {
-          "allow": [
+          "actions": [
             {
               "actor": "recipient",
-              "protocolPath": "ask",
-              "actions": ["write"]
+              "of": "ask",
+              "can": ["write"]
             }
           ],
           "records": {
             "fulfillment": {
-              "allow": [
+              "actions": [
                 {
                   "actor": "recipient",
-                  "protocolPath": "ask/offer",
-                  "actions": ["write"]
+                  "of": "ask/offer",
+                  "can": ["write"]
                 }
               ]
             }
