@@ -1,4 +1,5 @@
 {
+  "protocol": "https://example.com/email",
   "recordDefinitions": [
     {
       "id": "email",

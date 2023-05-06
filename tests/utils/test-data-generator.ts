@@ -238,6 +238,7 @@ export class TestDataGenerator {
       const generatedLabel = 'record' + TestDataGenerator.randomString(10);
 
       definition = {
+        protocol          : 'test-protocol',
         recordDefinitions : [],
         records           : {}
       };

@@ -10,6 +10,7 @@ export type ProtocolsConfigureDescriptor = {
 };
 
 export type ProtocolDefinition = {
+  protocol: string,
   recordDefinitions: ProtocolRecordDefinition[];
   records: {
     [key: string]: ProtocolRuleSet;

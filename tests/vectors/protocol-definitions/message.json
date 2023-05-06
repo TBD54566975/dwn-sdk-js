@@ -1,4 +1,5 @@
 {
+  "protocol": "http://message.me/protocol",
   "recordDefinitions": [
     {
       "id": "message",

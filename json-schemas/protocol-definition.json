@@ -4,10 +4,14 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "protocol",
     "recordDefinitions",
     "records"
   ],
   "properties": {
+    "protocol": {
+      "type": "string"
+    },
     "recordDefinitions": {
       "type": "array",
       "minItems": 1,

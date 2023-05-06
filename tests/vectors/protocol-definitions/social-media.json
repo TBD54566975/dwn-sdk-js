@@ -1,4 +1,5 @@
 {
+  "protocol": "http://socialmedia.com",
   "recordDefinitions": [
     {
       "id": "message",

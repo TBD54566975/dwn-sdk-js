@@ -1,4 +1,5 @@
 {
+  "protocol": "https://tbd/website/tbdex",
   "recordDefinitions": [
     {
       "id": "ask",

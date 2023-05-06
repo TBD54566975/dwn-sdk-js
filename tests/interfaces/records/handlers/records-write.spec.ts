@@ -1062,7 +1062,8 @@ describe('RecordsWriteHandler.handle()', () => {
         const alice = await DidKeyResolver.generate();
 
         const protocolDefinition = {
-          recordDefinitions: [
+          protocol          : 'https://example.com',
+          recordDefinitions : [
             {
               id          : 'image',
               schema      : 'https://example.com/schema',
@@ -1220,7 +1221,8 @@ describe('RecordsWriteHandler.handle()', () => {
         // write a protocol definition without an explicit allow rule
         const protocol = 'private-protocol';
         const protocolDefinition: ProtocolDefinition = {
-          recordDefinitions: [
+          protocol          : 'private-note.com',
+          recordDefinitions : [
             {
               id     : 'privateNote',
               schema : 'private-note'
