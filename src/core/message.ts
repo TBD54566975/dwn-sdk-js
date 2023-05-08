@@ -123,9 +123,7 @@ export abstract class Message<M extends BaseMessage> {
   }
 
   /**
-   * Signs the provided message to be used an `authorization` property. Signed payload includes the CID of the message's descriptor by default
-   * along with any additional payload properties provided
-   * @param descriptor - the message to sign
+   * Signs over the CID of provided `descriptor`. The output is used as an `authorization` property.
    * @param signatureInput - the signature material to use (e.g. key and header data)
    * @returns General JWS signature used as an `authorization` property.
    */

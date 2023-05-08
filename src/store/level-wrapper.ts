@@ -96,7 +96,7 @@ export class LevelWrapper<V> {
       const value = await abortOr(options?.signal, this.db.get(String(key)));
       return value;
     } catch (error) {
-      const e = error as any; // FIXME
+      const e = error as { code: string };
       // `Level`` throws an error if the key is not present.  Return `undefined` in this case.
       if (e.code === 'LEVEL_NOT_FOUND') {
         return undefined;
