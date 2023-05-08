@@ -182,11 +182,11 @@ export class ProtocolAuthorization {
     const protocolPathArray = protocolPath.split('/');
 
     // traverse rule sets using protocolPath
-    let currentRuleSet: { records?: { [key: string]: ProtocolRuleSet; } } = { records: protocolDefinition };
+    let currentRuleSet: ProtocolRuleSet = protocolDefinition;
     let i = 0;
     while (i < protocolPathArray.length) {
       const currentTypeId = protocolPathArray[i];
-      const nextRuleSet = currentRuleSet.records?.[currentTypeId];
+      const nextRuleSet = currentRuleSet?.[currentTypeId] as (ProtocolRuleSet | undefined);
 
       if (nextRuleSet === undefined) {
         const partialProtocolPath = protocolPathArray.slice(0, i + 1).join('/');

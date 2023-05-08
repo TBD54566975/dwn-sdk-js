@@ -35,14 +35,16 @@ export enum ProtocolAction {
 }
 
 export type ProtocolRuleSet = {
-  $actions?: {
-    who: string,
-    of?: string,
-    can: string
-  }[];
-  records?: {
-    [key: string]: ProtocolRuleSet;
-  }
+  $actions?: ProtocolActionRule[];
+  // Need to allow (ProtocolActionRule[] | undefined) in order for typescript to allow $actions
+  // In practice, everything except $actions should be a ProtocolRuleSet
+  [key: string]: ProtocolRuleSet | (ProtocolActionRule[] | undefined);
+};
+
+export type ProtocolActionRule = {
+  who: string,
+  of?: string,
+  can: string
 };
 
 export type ProtocolsConfigureMessage = BaseMessage & {

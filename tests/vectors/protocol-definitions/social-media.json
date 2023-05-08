@@ -17,7 +17,7 @@
       "dataFormats": ["text/plain"]
     }
   },
-  "records": {
+  "definition": {
     "message": {
       "$actions": [
         {
@@ -48,34 +48,32 @@
           "can": "write"
         }
       ],
-      "records": {
-        "caption": {
-          "$actions": [
-            {
-              "who": "anyone",
-              "can": "read"
-            },
-            {
-              "who": "author",
-              "of": "image",
-              "can": "write"
-            }
-          ]
-        },
-        "reply": {
-          "$actions": [
-            {
-              "who": "author",
-              "of": "image",
-              "can": "read"
-            },
-            {
-              "who": "recipient",
-              "of": "image",
-              "can": "write"
-            }
-          ]
-        }
+      "caption": {
+        "$actions": [
+          {
+            "who": "anyone",
+            "can": "read"
+          },
+          {
+            "who": "author",
+            "of": "image",
+            "can": "write"
+          }
+        ]
+      },
+      "reply": {
+        "$actions": [
+          {
+            "who": "author",
+            "of": "image",
+            "can": "read"
+          },
+          {
+            "who": "recipient",
+            "of": "image",
+            "can": "write"
+          }
+        ]
       }
     }
   }

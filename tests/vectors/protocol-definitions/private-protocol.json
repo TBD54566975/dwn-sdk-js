@@ -1,11 +1,11 @@
 {
-    "types": {
-      "privateNote": {
-        "schema": "private-note",
-        "dataFormats": ["text/plain"]
-      }
-    },
-    "records": {
-      "privateNote": {}
+  "types": {
+    "privateNote": {
+      "schema": "private-note",
+      "dataFormats": ["text/plain"]
     }
+  },
+  "definition": {
+    "privateNote": {}
   }
+}

@@ -655,7 +655,7 @@ describe('RecordsQueryHandler.handle()', () => {
 
         // configure protocol
         const protocol = 'https://email-protocol.com';
-        const { types: protocolTypes, records: protocolDefinition } = emailProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = emailProtocolDefinition;
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,

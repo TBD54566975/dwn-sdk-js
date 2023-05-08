@@ -161,7 +161,7 @@ describe('RecordsReadHandler.handle()', () => {
         const bob = await DidKeyResolver.generate();
 
         const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-media';
-        const { types: protocolTypes, records: protocolDefinition } = socialMediaProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = socialMediaProtocolDefinition;
 
         // Install social-media protocol on Alice's DWN
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
@@ -205,7 +205,7 @@ describe('RecordsReadHandler.handle()', () => {
         const imposterBob = await DidKeyResolver.generate();
 
         const protocol = 'https://tbd.website/decentralized-web-node/protocols/email';
-        const { types: protocolTypes, records: protocolDefinition } = emailProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = emailProtocolDefinition;
 
         // Install email protocol on Alice's DWN
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
@@ -257,7 +257,7 @@ describe('RecordsReadHandler.handle()', () => {
         const imposterBob = await DidKeyResolver.generate();
 
         const protocol = 'https://tbd.website/decentralized-web-node/protocols/email';
-        const { types: protocolTypes, records: protocolDefinition } = emailProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = emailProtocolDefinition;
 
         // Install email protocol on Alice's DWN
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
@@ -382,7 +382,7 @@ describe('RecordsReadHandler.handle()', () => {
 
         // configure protocol
         const protocol = 'https://email-protocol.com';
-        const { types: protocolTypes, records: protocolDefinition } = emailProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = emailProtocolDefinition;
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,

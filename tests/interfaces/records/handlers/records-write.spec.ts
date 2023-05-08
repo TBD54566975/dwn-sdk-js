@@ -513,7 +513,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
         // write a protocol definition with an allow-anyone rule
         const protocol = 'email-protocol';
-        const { types: protocolTypes, records: protocolDefinition } = emailProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = emailProtocolDefinition;
         const alice = await TestDataGenerator.generatePersona();
         const bob = await TestDataGenerator.generatePersona();
 
@@ -561,7 +561,7 @@ describe('RecordsWriteHandler.handle()', () => {
         // scenario: VC issuer writes into Alice's DWN an asynchronous credential response upon receiving Alice's credential application
 
         const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-        const { types: protocolTypes, records: protocolDefinition } = credentialIssuanceProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = credentialIssuanceProtocolDefinition;
         const credentialApplicationSchema = protocolTypes.credentialApplication.schema;
         const credentialResponseSchema = protocolTypes.credentialResponse.schema;
 
@@ -632,7 +632,7 @@ describe('RecordsWriteHandler.handle()', () => {
         // scenario: Alice posts an image on the social media protocol to Bob's, then she adds a caption
         //           AliceImposter attempts to post add a caption to Alice's image, but is blocked
         const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-media';
-        const { types: protocolTypes, records: protocolDefinition } = socialMediaProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = socialMediaProtocolDefinition;
 
         const alice = await TestDataGenerator.generatePersona();
         const aliceImposter = await TestDataGenerator.generatePersona();
@@ -714,7 +714,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
         // write a protocol definition with an allow-anyone rule
         const protocol = 'message-protocol';
-        const { types: protocolTypes, records: protocolDefinition } = messageProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = messageProtocolDefinition;
         const alice = await TestDataGenerator.generatePersona();
         const bob = await TestDataGenerator.generatePersona();
 
@@ -780,7 +780,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
         // write a protocol definition with an allow-anyone rule
         const protocol = 'notes-protocol';
-        const { types: protocolTypes, records: protocolDefinition } = messageProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = messageProtocolDefinition;
         const alice = await TestDataGenerator.generatePersona();
         const bob = await TestDataGenerator.generatePersona();
         const carol = await TestDataGenerator.generatePersona();
@@ -851,7 +851,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
         // write a protocol definition with an allow-anyone rule
         const protocol = 'message-protocol';
-        const { types: protocolTypes, records: protocolDefinition } = messageProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = messageProtocolDefinition;
         const alice = await TestDataGenerator.generatePersona();
         const bob = await TestDataGenerator.generatePersona();
 
@@ -919,7 +919,7 @@ describe('RecordsWriteHandler.handle()', () => {
         // upon learning the ID of Alice's credential application to actual issuer
 
         const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-        const { types: protocolTypes, records: protocolDefinition } = credentialIssuanceProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = credentialIssuanceProtocolDefinition;
         const credentialApplicationSchema = protocolTypes.credentialApplication.schema;
         const credentialResponseSchema = protocolTypes.credentialResponse.schema;
 
@@ -998,7 +998,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const alice = await DidKeyResolver.generate();
 
         const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-        const { types: protocolTypes, records: protocolDefinition } = credentialIssuanceProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = credentialIssuanceProtocolDefinition;
         const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,
@@ -1028,7 +1028,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const alice = await DidKeyResolver.generate();
 
         const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-        const { types: protocolTypes, records: protocolDefinition } = credentialIssuanceProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = credentialIssuanceProtocolDefinition;
         const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,
@@ -1058,7 +1058,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const alice = await DidKeyResolver.generate();
 
         const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-        const { types: protocolTypes, records: protocolDefinition } = credentialIssuanceProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = credentialIssuanceProtocolDefinition;
         const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,
@@ -1087,7 +1087,7 @@ describe('RecordsWriteHandler.handle()', () => {
       it('should fail authorization if given `dataFormat` is mismatching with the dataFormats in protocol definition', async () => {
         const alice = await DidKeyResolver.generate();
 
-        const { types: protocolTypes, records: protocolDefinition } = socialMediaProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = socialMediaProtocolDefinition;
 
         const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-media';
         const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
@@ -1135,7 +1135,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const alice = await DidKeyResolver.generate();
 
         const protocol = 'https://identity.foundation/decentralized-web-node/protocols/credential-issuance';
-        const { types: protocolTypes, records: protocolDefinition } = credentialIssuanceProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = credentialIssuanceProtocolDefinition;
         const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,
@@ -1229,7 +1229,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
         // write a protocol definition without an explicit allow rule
         const protocol = 'private-protocol';
-        const { types: protocolTypes, records: protocolDefinition } = privateProtocol;
+        const { types: protocolTypes, definition: protocolDefinition } = privateProtocol;
         const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,
@@ -1277,11 +1277,11 @@ describe('RecordsWriteHandler.handle()', () => {
         const issuer = await DidKeyResolver.generate();
 
         // create an invalid ancestor path that is longer than possible
-        const { types: protocolTypes, records: invalidProtocolDefinition } = { ...credentialIssuanceProtocolDefinition };
+        const { types: protocolTypes, definition: invalidProtocolDefinition } = { ...credentialIssuanceProtocolDefinition };
         const allowRuleIndex =
-          invalidProtocolDefinition.credentialApplication.records.credentialResponse.$actions
+          invalidProtocolDefinition.credentialApplication.credentialResponse.$actions
             .findIndex((allowRule) => allowRule.who === ProtocolActor.Recipient);
-        invalidProtocolDefinition.credentialApplication.records.credentialResponse
+        invalidProtocolDefinition.credentialApplication.credentialResponse
           .$actions[allowRuleIndex].of
             = 'credentialResponse';
         // this is invalid as the root ancestor can only be `credentialApplication` based on record structure
@@ -1340,7 +1340,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
         // write a DEX protocol definition
         const protocol = 'dex-protocol';
-        const { types: protocolTypes, records: protocolDefinition } = dexProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = dexProtocolDefinition;
 
         // write the DEX protocol in the PFI
         const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
@@ -1421,7 +1421,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
         // write a DEX protocol definition
         const protocol = 'dex-protocol';
-        const { types: protocolTypes, records: protocolDefinition } = dexProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = dexProtocolDefinition;
 
         // write the DEX protocol in the PFI
         const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
@@ -1472,7 +1472,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
         // configure protocol
         const protocol = 'email-protocol';
-        const { types: protocolTypes, records: protocolDefinition } = emailProtocolDefinition;
+        const { types: protocolTypes, definition: protocolDefinition } = emailProtocolDefinition;
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,

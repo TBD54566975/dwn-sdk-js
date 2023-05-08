@@ -16,7 +16,7 @@ describe('ProtocolsConfigure', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const currentTime = getCurrentTimeInHighPrecision();
-      const { types, records: definition } = { ...dexProtocolDefinition };
+      const { types, definition } = { ...dexProtocolDefinition };
       const protocolsConfigure = await ProtocolsConfigure.create({
         dateCreated                 : currentTime,
         protocol                    : 'anyValue',
@@ -31,7 +31,7 @@ describe('ProtocolsConfigure', () => {
     it('should auto-normalize protocol URI', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
-      const { types, records: definition } = { ...dexProtocolDefinition };
+      const { types, definition } = { ...dexProtocolDefinition };
       const options = {
         recipient                   : alice.did,
         data                        : TestDataGenerator.randomBytes(10),
@@ -51,7 +51,7 @@ describe('ProtocolsConfigure', () => {
     it('should auto-normalize schema URIs', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
-      const { types, records: nonnormalizedDexProtocol } = { ...dexProtocolDefinition };
+      const { types, definition: nonnormalizedDexProtocol } = { ...dexProtocolDefinition };
       types.ask.schema = 'ask';
 
       const options = {

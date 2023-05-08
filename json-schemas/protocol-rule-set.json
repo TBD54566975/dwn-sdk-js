@@ -35,14 +35,11 @@
           }
         }
       }
-    },
-    "records": {
-      "type": "object",
-      "patternProperties": {
-        ".*": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/protocol-rule-set.json"
-        }
-      }
+    }
+  },
+  "patternProperties": {
+    "^[^$].*": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/protocol-rule-set.json"
     }
   }
 }

@@ -169,7 +169,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
     it('should return 400 if schema is not normalized', async () => {
       const alice = await DidKeyResolver.generate();
 
-      const { types: protocolTypes, records: protocolDefinition } = dexProtocolDefinition;
+      const { types: protocolTypes, definition: protocolDefinition } = dexProtocolDefinition;
       const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
         requester : alice,
         protocol  : 'example.com/',
