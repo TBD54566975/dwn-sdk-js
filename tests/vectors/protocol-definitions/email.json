@@ -1,10 +1,10 @@
 {
-  "types": [
-    {
-      "id": "email",
-      "schema": "email"
+  "types": {
+    "email": {
+      "schema": "email",
+      "dataFormats": ["text/plain"]
     }
-  ],
+  },
   "records": {
     "email": {
       "$actions": [

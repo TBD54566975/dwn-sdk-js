@@ -1,22 +1,22 @@
 {
-  "types": [
-    {
-      "id": "message",
-      "schema": "messageSchema"
+  "types": {
+    "message": {
+      "schema": "messageSchema",
+      "dataFormats": ["text/plain"]
     },
-    {
-      "id": "reply",
-      "schema": "replySchema"
+    "reply": {
+      "schema": "replySchema",
+      "dataFormats": ["text/plain"]
     },
-    {
-      "id": "image",
-      "schema": "imageSchema"
+    "image": {
+      "schema": "imageSchema",
+      "dataFormats": ["image/jpeg"]
     },
-    {
-      "id": "caption",
-      "schema": "captionSchema"
+    "caption": {
+      "schema": "captionSchema",
+      "dataFormats": ["text/plain"]
     }
-  ],
+  },
   "records": {
     "message": {
       "$actions": [

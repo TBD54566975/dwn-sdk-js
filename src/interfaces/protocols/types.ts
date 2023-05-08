@@ -6,20 +6,21 @@ export type ProtocolsConfigureDescriptor = {
   method: DwnMethodName.Configure;
   dateCreated: string;
   protocol: string;
+  types: ProtocolTypes;
   definition: ProtocolDefinition;
 };
 
 export type ProtocolDefinition = {
-  types: ProtocolType[];
-  records: {
-    [key: string]: ProtocolRuleSet;
-  };
+  [key: string]: ProtocolRuleSet;
 };
 
 export type ProtocolType = {
-  id: string,
   schema?: string,
-  dataFormats?: string[],
+  dataFormats: string[],
+};
+
+export type ProtocolTypes = {
+  [key: string]: ProtocolType;
 };
 
 export enum ProtocolActor {

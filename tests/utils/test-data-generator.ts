@@ -1,5 +1,6 @@
 import type { BaseMessage } from '../../src/core/types.js';
 import type { DidResolutionResult } from '../../src/did/did-resolver.js';
+import type { ProtocolTypes } from '../../src/interfaces/protocols/types.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsQueryFilter } from '../../src/interfaces/records/types.js';
 import type { CreateFromOptions, EncryptionInput } from '../../src/interfaces/records/messages/records-write.js';
@@ -60,6 +61,7 @@ export type GenerateProtocolsConfigureInput = {
   requester?: Persona;
   dateCreated?: string;
   protocol?: string;
+  protocolTypes?: ProtocolTypes;
   protocolDefinition?: ProtocolDefinition;
 };
 
@@ -232,17 +234,19 @@ export class TestDataGenerator {
 
     const requester = input?.requester ?? await TestDataGenerator.generatePersona();
 
-    // generate protocol definition if not given
+    // generate protocol types and  definition if not given
+    let types = input?.protocolTypes;
+    if (!types || Object.keys(types).length === 0) {
+      types = {};
+      const generatedTypeName = 'record' + TestDataGenerator.randomString(10);
+      types[generatedTypeName] = { schema: `test-object`, dataFormats: ['image/jpeg'] };
+    }
+
     let definition = input?.protocolDefinition;
     if (!definition) {
-      const generatedLabel = 'record' + TestDataGenerator.randomString(10);
-
-      definition = {
-        types : [],
-        records           : {}
-      };
-      definition.types.push({ id: generatedLabel, schema: `test-object` });
-      definition.records[generatedLabel] = {};
+      const typeName = Object.keys(types)[0];
+      definition = {};
+      definition[typeName] = {};
     }
 
     // TODO: #139 - move protocol definition out of the descriptor - https://github.com/TBD54566975/dwn-sdk-js/issues/139
@@ -254,6 +258,7 @@ export class TestDataGenerator {
     const options: ProtocolsConfigureOptions = {
       dateCreated : input?.dateCreated,
       protocol    : input?.protocol ?? TestDataGenerator.randomString(20),
+      types,
       definition,
       authorizationSignatureInput
     };

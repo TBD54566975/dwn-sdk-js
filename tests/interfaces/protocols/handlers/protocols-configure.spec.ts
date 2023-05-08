@@ -13,7 +13,6 @@ import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { lexicographicalCompare } from '../../../../src/utils/string.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
-import { Protocols } from '../../../../src/utils/protocols.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
@@ -170,14 +169,16 @@ describe('ProtocolsConfigureHandler.handle()', () => {
     it('should return 400 if schema is not normalized', async () => {
       const alice = await DidKeyResolver.generate();
 
+      const { types: protocolTypes, records: protocolDefinition } = dexProtocolDefinition;
       const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-        requester          : alice,
-        protocol           : 'example.com/',
-        protocolDefinition : dexProtocolDefinition,
+        requester : alice,
+        protocol  : 'example.com/',
+        protocolTypes,
+        protocolDefinition,
       });
 
       // overwrite schema because #create auto-normalizes schema
-      Protocols.getType(protocolsConfig.message.descriptor.definition, 'ask')!.schema = 'ask';
+      protocolsConfig.message.descriptor.types.ask.schema = 'ask';
 
       // Re-create auth because we altered the descriptor after signing
       protocolsConfig.message.authorization = await Message.signAsAuthorization(

@@ -1,5 +1,5 @@
 import type { SignatureInput } from '../../../jose/jws/general/types.js';
-import type { ProtocolDefinition, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types.js';
+import type { ProtocolDefinition, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage, ProtocolTypes } from '../types.js';
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
@@ -10,6 +10,7 @@ import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized
 export type ProtocolsConfigureOptions = {
   dateCreated? : string;
   protocol: string;
+  types: ProtocolTypes;
   definition : ProtocolDefinition;
   authorizationSignatureInput: SignatureInput;
 };
@@ -19,7 +20,7 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
   public static async parse(message: ProtocolsConfigureMessage): Promise<ProtocolsConfigure> {
     await validateAuthorizationIntegrity(message);
     validateProtocolUrlNormalized(message.descriptor.protocol);
-    ProtocolsConfigure.validateDefinitionNormalized(message.descriptor.definition);
+    ProtocolsConfigure.validateTypesNormalized(message.descriptor.types);
 
     return new ProtocolsConfigure(message);
   }
@@ -30,8 +31,9 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       method      : DwnMethodName.Configure,
       dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
       protocol    : normalizeProtocolUrl(options.protocol),
-      // TODO: #139 - move definition out of the descriptor - https://github.com/TBD54566975/dwn-sdk-js/issues/139
-      definition  : ProtocolsConfigure.normalizeDefinition(options.definition)
+      // TODO: #139 - move definition and types out of the descriptor - https://github.com/TBD54566975/dwn-sdk-js/issues/139
+      types       : ProtocolsConfigure.normalizeTypes(options.types),
+      definition  : options.definition
     };
 
     const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
@@ -43,25 +45,27 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
     return protocolsConfigure;
   }
 
-  private static validateDefinitionNormalized(definition: ProtocolDefinition): void {
+  private static validateTypesNormalized(types: ProtocolTypes): void {
     // validate schema url normalized
-    for (const type of definition.types) {
-      if (type.schema !== undefined) {
-        validateSchemaUrlNormalized(type.schema);
+    for (const typeName in types) {
+      const schema = types[typeName].schema;
+      if (schema !== undefined) {
+        validateSchemaUrlNormalized(schema);
       }
     }
   }
 
-  private static normalizeDefinition(definition: ProtocolDefinition): ProtocolDefinition {
-    const definitionCopy = { ...definition };
+  private static normalizeTypes(types: ProtocolTypes): ProtocolTypes {
+    const typesCopy = { ...types };
 
     // Normalize schema url
-    for (const type of definition.types) {
-      if (type.schema !== undefined) {
-        type.schema = normalizeSchemaUrl(type.schema);
+    for (const typeName in typesCopy) {
+      const schema = typesCopy[typeName].schema;
+      if (schema !== undefined) {
+        typesCopy[typeName].schema = normalizeSchemaUrl(schema);
       }
     }
 
-    return definitionCopy;
+    return typesCopy;
   }
 }

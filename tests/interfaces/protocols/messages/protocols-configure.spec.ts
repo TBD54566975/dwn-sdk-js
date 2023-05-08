@@ -5,7 +5,6 @@ import type { ProtocolsConfigureMessage } from '../../../../src/index.js';
 
 import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
-import { Protocols } from '../../../../src/utils/protocols.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { Jws, ProtocolsConfigure } from '../../../../src/index.js';
 
@@ -17,10 +16,12 @@ describe('ProtocolsConfigure', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const currentTime = getCurrentTimeInHighPrecision();
+      const { types, records: definition } = { ...dexProtocolDefinition };
       const protocolsConfigure = await ProtocolsConfigure.create({
         dateCreated                 : currentTime,
         protocol                    : 'anyValue',
-        definition                  : dexProtocolDefinition,
+        types,
+        definition,
         authorizationSignatureInput : Jws.createSignatureInput(alice),
       });
 
@@ -30,13 +31,15 @@ describe('ProtocolsConfigure', () => {
     it('should auto-normalize protocol URI', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
+      const { types, records: definition } = { ...dexProtocolDefinition };
       const options = {
         recipient                   : alice.did,
         data                        : TestDataGenerator.randomBytes(10),
         dataFormat                  : 'application/json',
         authorizationSignatureInput : Jws.createSignatureInput(alice),
         protocol                    : 'example.com/',
-        definition                  : dexProtocolDefinition
+        types,
+        definition,
       };
       const protocolsConfig = await ProtocolsConfigure.create(options);
 
@@ -48,8 +51,8 @@ describe('ProtocolsConfigure', () => {
     it('should auto-normalize schema URIs', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
-      const nonnormalizedDexProtocol = { ...dexProtocolDefinition };
-      Protocols.getType(nonnormalizedDexProtocol, 'ask')!.schema = 'ask';
+      const { types, records: nonnormalizedDexProtocol } = { ...dexProtocolDefinition };
+      types.ask.schema = 'ask';
 
       const options = {
         recipient                   : alice.did,
@@ -57,12 +60,13 @@ describe('ProtocolsConfigure', () => {
         dataFormat                  : 'application/json',
         authorizationSignatureInput : Jws.createSignatureInput(alice),
         protocol                    : 'example.com/',
+        types,
         definition                  : nonnormalizedDexProtocol
       };
       const protocolsConfig = await ProtocolsConfigure.create(options);
 
       const message = protocolsConfig.message as ProtocolsConfigureMessage;
-      expect(Protocols.getType(message.descriptor.definition, 'ask')?.schema).to.eq('http://ask');
+      expect(message.descriptor.types.ask.schema).to.eq('http://ask');
     });
   });
 });

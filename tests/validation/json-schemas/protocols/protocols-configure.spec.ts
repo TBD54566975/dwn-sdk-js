@@ -6,20 +6,20 @@ import type { ProtocolDefinition, ProtocolsConfigureMessage } from '../../../../
 
 describe('ProtocolsConfigure schema definition', () => {
   it('should throw if unknown actor is encountered in allow rule', async () => {
+    const types = {
+      email: {
+        schema      : 'email',
+        dataFormats : ['text/plain']
+      }
+    };
     const protocolDefinition: ProtocolDefinition = {
-      types: [{
-        id     : 'email',
-        schema : 'email'
-      }],
-      records: {
-        email: {
-          $actions: [
-            {
-              who : 'unknown',
-              can : 'write'
-            }
-          ]
-        }
+      email: {
+        $actions: [
+          {
+            who : 'unknown',
+            can : 'write'
+          }
+        ]
       }
     };
 
@@ -29,6 +29,7 @@ describe('ProtocolsConfigure schema definition', () => {
         method      : DwnMethodName.Configure,
         dateCreated : '2022-10-14T10:20:30.405060Z',
         protocol    : 'anyProtocolUri',
+        types,
         definition  : protocolDefinition
       },
       authorization: {

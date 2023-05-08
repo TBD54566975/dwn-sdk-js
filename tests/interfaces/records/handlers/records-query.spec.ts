@@ -1,5 +1,5 @@
 import type { RecordsQueryReplyEntry } from '../../../../src/interfaces/records/types.js';
-import type { DerivedPrivateJwk, EncryptionInput, ProtocolDefinition, RecordsWriteMessage } from '../../../../src/index.js';
+import type { DerivedPrivateJwk, EncryptionInput, RecordsWriteMessage } from '../../../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
@@ -17,7 +17,6 @@ import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { Jws } from '../../../../src/utils/jws.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
-import { Protocols } from '../../../../src/utils/protocols.js';
 import { RecordsQueryHandler } from '../../../../src/interfaces/records/handlers/records-query.js';
 import { StorageController } from '../../../../src/store/storage-controller.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
@@ -656,10 +655,11 @@ describe('RecordsQueryHandler.handle()', () => {
 
         // configure protocol
         const protocol = 'https://email-protocol.com';
-        const protocolDefinition: ProtocolDefinition = emailProtocolDefinition;
+        const { types: protocolTypes, records: protocolDefinition } = emailProtocolDefinition;
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,
+          protocolTypes,
           protocolDefinition
         });
 
@@ -684,13 +684,14 @@ describe('RecordsQueryHandler.handle()', () => {
           }]
         };
 
-        const schema = Protocols.getType(emailProtocolDefinition, 'email')!.schema;
+        const schema = protocolTypes.email.schema;
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite(
           {
             requester    : bob,
             protocol,
             protocolPath : 'email', // this comes from `types` in protocol definition
             schema,
+            dataFormat   : protocolTypes.email.dataFormats[0],
             data         : bobMessageEncryptedBytes,
             encryptionInput
           }

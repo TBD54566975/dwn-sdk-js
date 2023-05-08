@@ -1,18 +1,18 @@
 {
-  "types": [
-    {
-      "id": "ask",
-      "schema": "https://tbd/website/tbdex/ask"
+  "types": {
+    "ask": {
+      "schema": "https://tbd/website/tbdex/ask",
+      "dataFormats": ["application/json"]
     },
-    {
-      "id": "offer",
-      "schema": "https://tbd/website/tbdex/offer"
+    "offer": {
+      "schema": "https://tbd/website/tbdex/offer",
+      "dataFormats": ["application/json"]
     },
-    {
-      "id": "fulfillment",
-      "schema": "https://tbd/website/tbdex/fulfillment"
+    "fulfillment": {
+      "schema": "https://tbd/website/tbdex/fulfillment",
+      "dataFormats": ["application/json"]
     }
-  ],
+  },
   "records": {
     "ask": {
       "$actions": [
