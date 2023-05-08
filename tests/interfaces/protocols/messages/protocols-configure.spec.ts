@@ -49,7 +49,7 @@ describe('ProtocolsConfigure', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const nonnormalizedDexProtocol = { ...dexProtocolDefinition };
-      Protocols.getRecordDefinition(nonnormalizedDexProtocol, 'ask')!.schema = 'ask';
+      Protocols.getType(nonnormalizedDexProtocol, 'ask')!.schema = 'ask';
 
       const options = {
         recipient                   : alice.did,
@@ -62,7 +62,7 @@ describe('ProtocolsConfigure', () => {
       const protocolsConfig = await ProtocolsConfigure.create(options);
 
       const message = protocolsConfig.message as ProtocolsConfigureMessage;
-      expect(Protocols.getRecordDefinition(message.descriptor.definition, 'ask')?.schema).to.eq('http://ask');
+      expect(Protocols.getType(message.descriptor.definition, 'ask')?.schema).to.eq('http://ask');
     });
   });
 });

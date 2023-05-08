@@ -238,10 +238,10 @@ export class TestDataGenerator {
       const generatedLabel = 'record' + TestDataGenerator.randomString(10);
 
       definition = {
-        recordDefinitions : [],
+        types : [],
         records           : {}
       };
-      definition.recordDefinitions.push({ id: generatedLabel, schema: `test-object` });
+      definition.types.push({ id: generatedLabel, schema: `test-object` });
       definition.records[generatedLabel] = {};
     }
 

@@ -179,8 +179,8 @@ describe('RecordsReadHandler.handle()', () => {
         const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           protocol,
-          protocolPath : 'image', // this comes from `recordDefinitions` in protocol definition
-          schema       : Protocols.getRecordDefinition(protocolDefinition, 'image')!.schema,
+          protocolPath : 'image', // this comes from `types` in protocol definition
+          schema       : Protocols.getType(protocolDefinition, 'image')!.schema,
           data         : encodedImage,
           recipientDid : alice.did
         });
@@ -221,8 +221,8 @@ describe('RecordsReadHandler.handle()', () => {
         const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           protocol,
-          protocolPath : 'email', // this comes from `recordDefinitions` in protocol definition
-          schema       : Protocols.getRecordDefinition(protocolDefinition, 'email')!.schema,
+          protocolPath : 'email', // this comes from `types` in protocol definition
+          schema       : Protocols.getType(protocolDefinition, 'email')!.schema,
           data         : encodedEmail,
           recipientDid : bob.did
         });
@@ -271,8 +271,8 @@ describe('RecordsReadHandler.handle()', () => {
         const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester    : bob,
           protocol,
-          protocolPath : 'email', // this comes from `recordDefinitions` in protocol definition
-          schema       : Protocols.getRecordDefinition(protocolDefinition, 'email')!.schema,
+          protocolPath : 'email', // this comes from `types` in protocol definition
+          schema       : Protocols.getType(protocolDefinition, 'email')!.schema,
           data         : encodedEmail,
           recipientDid : alice.did
         });
@@ -410,8 +410,8 @@ describe('RecordsReadHandler.handle()', () => {
           {
             requester    : bob,
             protocol,
-            protocolPath : 'email', // this comes from `recordDefinitions` in protocol definition
-            schema       : Protocols.getRecordDefinition(emailProtocolDefinition, 'email')!.schema,
+            protocolPath : 'email', // this comes from `types` in protocol definition
+            schema       : Protocols.getType(emailProtocolDefinition, 'email')!.schema,
             data         : bobMessageEncryptedBytes,
             encryptionInput
           }

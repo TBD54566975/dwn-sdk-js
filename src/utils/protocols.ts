@@ -1,12 +1,12 @@
-import type { ProtocolDefinition, ProtocolRecordDefinition } from '../interfaces/protocols/types.js';
+import type { ProtocolDefinition, ProtocolType } from '../interfaces/protocols/types.js';
 
 export class Protocols {
-  public static getRecordDefinition(
+  public static getType(
     protocolDefinition: ProtocolDefinition,
-    recordDefinitionId: string
-  ): ProtocolRecordDefinition | undefined {
-    return protocolDefinition.recordDefinitions.find(({ id }) =>
-      id === recordDefinitionId
+    typeId: string
+  ): ProtocolType | undefined {
+    return protocolDefinition.types.find(({ id }) =>
+      id === typeId
     );
   }
 }

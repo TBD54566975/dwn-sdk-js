@@ -1,5 +1,5 @@
 {
-  "recordDefinitions": [
+  "types": [
     {
       "id": "message",
       "schema": "http://message.me"

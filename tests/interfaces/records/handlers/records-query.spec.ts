@@ -684,12 +684,12 @@ describe('RecordsQueryHandler.handle()', () => {
           }]
         };
 
-        const schema = Protocols.getRecordDefinition(emailProtocolDefinition, 'email')!.schema;
+        const schema = Protocols.getType(emailProtocolDefinition, 'email')!.schema;
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite(
           {
             requester    : bob,
             protocol,
-            protocolPath : 'email', // this comes from `recordDefinitions` in protocol definition
+            protocolPath : 'email', // this comes from `types` in protocol definition
             schema,
             data         : bobMessageEncryptedBytes,
             encryptionInput
