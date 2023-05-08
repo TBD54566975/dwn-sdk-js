@@ -53,15 +53,9 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     // write the incoming message to DB if incoming message is newest
     let messageReply: MessageReply;
     if (incomingMessageIsNewest) {
-      const { author } = protocolsConfigure;
-      const indexes = {
-        author,
-        ... message.descriptor
-      };
+      const indexes = ProtocolsConfigureHandler.constructProtocolsConfigureIndexes(protocolsConfigure);
 
-      // FIXME: indexes, Property 'dataSize' is incompatible with index signature.
-      // Type 'number' is not assignable to type 'string'.
-      await StorageController.put(this.messageStore, this.dataStore, this.eventLog, tenant, message, indexes as any, dataStream);
+      await StorageController.put(this.messageStore, this.dataStore, this.eventLog, tenant, message, indexes, dataStream);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }
@@ -87,4 +81,17 @@ export class ProtocolsConfigureHandler implements MethodHandler {
 
     return messageReply;
   };
+
+  private static constructProtocolsConfigureIndexes(protocolsConfigure: ProtocolsConfigure): Record<string, string> {
+    // strip out `dataSize` and `definition` as they are not indexable
+    const { dataSize, definition, ...propertiesToIndex } = protocolsConfigure.message.descriptor;
+    const { author } = protocolsConfigure;
+
+    const indexes = {
+      ...propertiesToIndex,
+      author: author!
+    };
+
+    return indexes;
+  }
 }
