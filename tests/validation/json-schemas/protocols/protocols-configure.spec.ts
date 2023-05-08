@@ -13,10 +13,10 @@ describe('ProtocolsConfigure schema definition', () => {
       }],
       records: {
         email: {
-          allow: [
+          $actions: [
             {
-              actor   : 'unknown',
-              actions : ['write']
+              who : 'unknown',
+              can : 'write'
             }
           ]
         }
@@ -42,7 +42,7 @@ describe('ProtocolsConfigure schema definition', () => {
 
     expect(() => {
       Message.validateJsonSchema(message);
-    }).throws('actor: must be equal to one of the allowed values');
+    }).throws('who: must be equal to one of the allowed values');
   });
 
   describe('rule-set tests', () => {

@@ -7,38 +7,38 @@
   ],
   "records": {
     "email": {
-      "allow": [
+      "$actions": [
         {
-          "actor": "anyone",
-          "actions": ["write"]
+          "who": "anyone",
+          "can": "write"
         },
         {
-          "actor": "author",
-          "protocolPath": "email",
-          "actions": ["read"]
+          "who": "author",
+          "of": "email",
+          "can": "read"
         },
         {
-          "actor": "recipient",
-          "protocolPath": "email",
-          "actions": ["read"]
+          "who": "recipient",
+          "of": "email",
+          "can": "read"
         }
       ],
       "records": {
         "email": {
-          "allow": [
+          "$actions": [
             {
-              "actor": "anyone",
-              "actions": ["write"]
+              "who": "anyone",
+              "can": "write"
             },
             {
-              "actor": "author",
-              "protocolPath": "email/email",
-              "actions": ["read"]
+              "who": "author",
+              "of": "email/email",
+              "can": "read"
             },
             {
-              "actor": "recipient",
-              "protocolpath": "email/email",
-              "actions": ["read"]
+              "who": "recipient",
+              "of": "email/email",
+              "can": "read"
             }
           ]
         }

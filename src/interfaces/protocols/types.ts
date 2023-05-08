@@ -34,10 +34,10 @@ export enum ProtocolAction {
 }
 
 export type ProtocolRuleSet = {
-  allow?: {
-    actor: string,
-    protocolPath?: string,
-    actions: string[]
+  $actions?: {
+    who: string,
+    of?: string,
+    can: string
   }[];
   records?: {
     [key: string]: ProtocolRuleSet;

@@ -7,10 +7,10 @@
   ],
   "records": {
     "message": {
-      "allow": [
+      "$actions": [
         {
-          "actor": "anyone",
-          "actions": ["write"]
+          "who": "anyone",
+          "can": "write"
         }
       ]
     }
