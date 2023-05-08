@@ -9,7 +9,7 @@ export type { EventsGetMessage, EventsGetReply } from './interfaces/events/types
 export type { HooksWriteMessage } from './interfaces/hooks/types.js';
 export type { MessagesGetMessage, MessagesGetReply } from './interfaces/messages/types.js';
 export type { ProtocolDefinition, ProtocolRuleSet, ProtocolsQueryFilter, ProtocolsConfigureMessage, ProtocolsQueryMessage } from './interfaces/protocols/types.js';
-export type { RecordsDeleteMessage, RecordsQueryMessage, RecordsReadReply, RecordsWriteMessage } from './interfaces/records/types.js';
+export type { RecordsDeleteMessage, RecordsQueryMessage, RecordsReadReply, RecordsWriteMessage, RecordsWriteDescriptor } from './interfaces/records/types.js';
 export { AllowAllTenantGate, TenantGate } from './core/tenant-gate.js';
 export { Cid } from './utils/cid.js';
 export { DataStore } from './store/data-store.js';
