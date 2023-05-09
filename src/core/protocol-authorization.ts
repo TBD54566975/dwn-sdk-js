@@ -254,7 +254,7 @@ export class ProtocolAuthorization {
 
     const protocolPath = recordsWriteMessage.descriptor.protocolPath!;
     const typeName = ProtocolAuthorization.getTypeId(protocolPath);
-    // existence of type has already been verified
+    // existence of `protocolType` has already been verified
     const protocolType: ProtocolType = protocolTypes[typeName];
 
     // no `schema` specified in protocol definition means that any schema is allowed
