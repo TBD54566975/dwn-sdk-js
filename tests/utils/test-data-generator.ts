@@ -1,6 +1,5 @@
 import type { BaseMessage } from '../../src/core/types.js';
 import type { DidResolutionResult } from '../../src/did/did-resolver.js';
-import type { ProtocolTypes } from '../../src/interfaces/protocols/types.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsQueryFilter } from '../../src/interfaces/records/types.js';
 import type { CreateFromOptions, EncryptionInput } from '../../src/interfaces/records/messages/records-write.js';
@@ -239,13 +238,13 @@ export class TestDataGenerator {
       const generatedLabel = 'record' + TestDataGenerator.randomString(10);
 
       definition = {
-        types: {},
-        records: {}
+        types   : {},
+        records : {}
       };
       definition.types[generatedLabel] = {
-        schema: `test-object`,
-        dataFormats: ['text/plain']
-      }
+        schema      : `test-object`,
+        dataFormats : ['text/plain']
+      };
       definition.records[generatedLabel] = {};
     }
 

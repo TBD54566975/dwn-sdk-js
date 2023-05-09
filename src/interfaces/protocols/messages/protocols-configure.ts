@@ -1,5 +1,5 @@
 import type { SignatureInput } from '../../../jose/jws/general/types.js';
-import type { ProtocolDefinition, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage, ProtocolTypes } from '../types.js';
+import type { ProtocolDefinition, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types.js';
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
@@ -68,6 +68,6 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
     return {
       ...definition,
       types: typesCopy,
-    }
+    };
   }
 }
