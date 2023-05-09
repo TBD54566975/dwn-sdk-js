@@ -52,7 +52,6 @@ export class ProtocolAuthorization {
       ancestorMessageChain
     );
 
-    // Verify `dataFormat` and `schema` for the given `type`
     ProtocolAuthorization.verifyType(
       incomingMessage.message,
       protocolDefinition.types
@@ -214,7 +213,7 @@ export class ProtocolAuthorization {
 
     const typeIds = Object.keys(types);
     const declaredProtocolPath = (inboundMessage as RecordsWrite).message.descriptor.protocolPath!;
-    const declaredTypeId = ProtocolAuthorization.getTypeId(declaredProtocolPath);
+    const declaredTypeId = ProtocolAuthorization.getTypeName(declaredProtocolPath);
     if (!typeIds.includes(declaredTypeId)) {
       throw new DwnError(DwnErrorCode.ProtocolAuthorizationInvalidType,
         `record with type ${declaredTypeId} not allowed in protocol`);
@@ -223,7 +222,7 @@ export class ProtocolAuthorization {
     let ancestorProtocolPath: string = '';
     for (const ancestor of ancestorMessageChain) {
       const protocolPath = ancestor.descriptor.protocolPath!;
-      const ancestorTypeId = ProtocolAuthorization.getTypeId(protocolPath);
+      const ancestorTypeId = ProtocolAuthorization.getTypeName(protocolPath);
       ancestorProtocolPath += `${ancestorTypeId}/`; // e.g. `foo/bar/`, notice the trailing slash
     }
 
@@ -253,8 +252,8 @@ export class ProtocolAuthorization {
     const recordsWriteMessage = inboundMessage as RecordsWriteMessage;
 
     const protocolPath = recordsWriteMessage.descriptor.protocolPath!;
-    const typeName = ProtocolAuthorization.getTypeId(protocolPath);
     // existence of `protocolType` has already been verified
+    const typeName = ProtocolAuthorization.getTypeName(protocolPath);
     const protocolType: ProtocolType = protocolTypes[typeName];
 
     // no `schema` specified in protocol definition means that any schema is allowed
@@ -396,7 +395,7 @@ export class ProtocolAuthorization {
       const expectedDefinitionId = expectedAncestors[i];
       const ancestorMessage = ancestorMessageChain[i];
 
-      const actualDefinitionId = ProtocolAuthorization.getTypeId(ancestorMessage.descriptor.protocolPath!);
+      const actualDefinitionId = ProtocolAuthorization.getTypeName(ancestorMessage.descriptor.protocolPath!);
       if (actualDefinitionId !== expectedDefinitionId) {
         throw new Error(`mismatching record schema: expecting ${expectedDefinitionId} but actual ${actualDefinitionId}`);
       }
@@ -410,7 +409,7 @@ export class ProtocolAuthorization {
     }
   }
 
-  private static getTypeId(protocolPath: string): string {
+  private static getTypeName(protocolPath: string): string {
     return protocolPath.split('/').slice(-1)[0];
   }
 }
