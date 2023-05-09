@@ -19,7 +19,6 @@
         "method",
         "protocol",
         "dateCreated",
-        "types",
         "definition"
       ],
       "properties": {
@@ -41,34 +40,8 @@
         "dateCreated": {
           "type": "string"
         },
-        "types": {
-          "type": "object",
-          "patternProperties": {
-            ".*": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "schema": {
-                  "type": "string"
-                },
-                "dataFormats": {
-                  "type": "array",
-                  "minItems": 1,
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              }
-            }
-          }
-        },
         "definition": {
-          "type": "object",
-          "patternProperties": {
-            ".*": {
-              "$ref": "https://identity.foundation/dwn/json-schemas/protocol-rule-set.json"
-            }
-          }
+          "$ref": "https://identity.foundation/dwn/json-schemas/protocol-definition.json"
         }
       }
     }

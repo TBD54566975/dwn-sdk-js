@@ -10,7 +10,6 @@ import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized
 export type ProtocolsConfigureOptions = {
   dateCreated? : string;
   protocol: string;
-  types: ProtocolTypes;
   definition : ProtocolDefinition;
   authorizationSignatureInput: SignatureInput;
 };
@@ -20,7 +19,7 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
   public static async parse(message: ProtocolsConfigureMessage): Promise<ProtocolsConfigure> {
     await validateAuthorizationIntegrity(message);
     validateProtocolUrlNormalized(message.descriptor.protocol);
-    ProtocolsConfigure.validateTypesNormalized(message.descriptor.types);
+    ProtocolsConfigure.validateDefinitionNormalized(message.descriptor.definition);
 
     return new ProtocolsConfigure(message);
   }
@@ -31,9 +30,8 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       method      : DwnMethodName.Configure,
       dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
       protocol    : normalizeProtocolUrl(options.protocol),
-      // TODO: #139 - move definition and types out of the descriptor - https://github.com/TBD54566975/dwn-sdk-js/issues/139
-      types       : ProtocolsConfigure.normalizeTypes(options.types),
-      definition  : options.definition
+      // TODO: #139 - move definition out of the descriptor - https://github.com/TBD54566975/dwn-sdk-js/issues/139
+      definition  : ProtocolsConfigure.normalizeDefinition(options.definition)
     };
 
     const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
@@ -45,7 +43,8 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
     return protocolsConfigure;
   }
 
-  private static validateTypesNormalized(types: ProtocolTypes): void {
+  private static validateDefinitionNormalized(definition: ProtocolDefinition): void {
+    const { types } = definition;
     // validate schema url normalized
     for (const typeName in types) {
       const schema = types[typeName].schema;
@@ -55,8 +54,8 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
     }
   }
 
-  private static normalizeTypes(types: ProtocolTypes): ProtocolTypes {
-    const typesCopy = { ...types };
+  private static normalizeDefinition(definition: ProtocolDefinition): ProtocolDefinition {
+    const typesCopy = { ...definition.types };
 
     // Normalize schema url
     for (const typeName in typesCopy) {
@@ -66,6 +65,9 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       }
     }
 
-    return typesCopy;
+    return {
+      ...definition,
+      types: typesCopy,
+    }
   }
 }

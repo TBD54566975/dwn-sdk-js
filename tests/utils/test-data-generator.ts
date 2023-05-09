@@ -61,7 +61,6 @@ export type GenerateProtocolsConfigureInput = {
   requester?: Persona;
   dateCreated?: string;
   protocol?: string;
-  protocolTypes?: ProtocolTypes;
   protocolDefinition?: ProtocolDefinition;
 };
 
@@ -235,18 +234,19 @@ export class TestDataGenerator {
     const requester = input?.requester ?? await TestDataGenerator.generatePersona();
 
     // generate protocol types and  definition if not given
-    let types = input?.protocolTypes;
-    if (!types || Object.keys(types).length === 0) {
-      types = {};
-      const generatedTypeName = 'record' + TestDataGenerator.randomString(10);
-      types[generatedTypeName] = { schema: `test-object`, dataFormats: ['image/jpeg'] };
-    }
-
     let definition = input?.protocolDefinition;
     if (!definition) {
-      const typeName = Object.keys(types)[0];
-      definition = {};
-      definition[typeName] = {};
+      const generatedLabel = 'record' + TestDataGenerator.randomString(10);
+
+      definition = {
+        types: {},
+        records: {}
+      };
+      definition.types[generatedLabel] = {
+        schema: `test-object`,
+        dataFormats: ['text/plain']
+      }
+      definition.records[generatedLabel] = {};
     }
 
     // TODO: #139 - move protocol definition out of the descriptor - https://github.com/TBD54566975/dwn-sdk-js/issues/139
@@ -258,7 +258,6 @@ export class TestDataGenerator {
     const options: ProtocolsConfigureOptions = {
       dateCreated : input?.dateCreated,
       protocol    : input?.protocol ?? TestDataGenerator.randomString(20),
-      types,
       definition,
       authorizationSignatureInput
     };

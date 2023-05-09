@@ -169,16 +169,15 @@ describe('ProtocolsConfigureHandler.handle()', () => {
     it('should return 400 if schema is not normalized', async () => {
       const alice = await DidKeyResolver.generate();
 
-      const { types: protocolTypes, records: protocolDefinition } = dexProtocolDefinition;
+      const protocolDefinition = dexProtocolDefinition;
       const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
         requester : alice,
         protocol  : 'example.com/',
-        protocolTypes,
         protocolDefinition,
       });
 
       // overwrite schema because #create auto-normalizes schema
-      protocolsConfig.message.descriptor.types.ask.schema = 'ask';
+      protocolsConfig.message.descriptor.definition.types.ask.schema = 'ask';
 
       // Re-create auth because we altered the descriptor after signing
       protocolsConfig.message.authorization = await Message.signAsAuthorization(

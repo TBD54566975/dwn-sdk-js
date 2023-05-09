@@ -655,11 +655,10 @@ describe('RecordsQueryHandler.handle()', () => {
 
         // configure protocol
         const protocol = 'https://email-protocol.com';
-        const { types: protocolTypes, records: protocolDefinition } = emailProtocolDefinition;
+        const protocolDefinition = emailProtocolDefinition;
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,
-          protocolTypes,
           protocolDefinition
         });
 
@@ -684,14 +683,14 @@ describe('RecordsQueryHandler.handle()', () => {
           }]
         };
 
-        const schema = protocolTypes.email.schema;
+        const schema = protocolDefinition.types.email.schema;
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite(
           {
             requester    : bob,
             protocol,
             protocolPath : 'email', // this comes from `types` in protocol definition
             schema,
-            dataFormat   : protocolTypes.email.dataFormats[0],
+            dataFormat   : protocolDefinition.types.email.dataFormats[0],
             data         : bobMessageEncryptedBytes,
             encryptionInput
           }

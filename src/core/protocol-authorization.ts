@@ -31,7 +31,7 @@ export class ProtocolAuthorization {
       await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, messageStore);
 
     // fetch the protocol definition
-    const { protocolTypes, protocolDefinition } = await ProtocolAuthorization.fetchProtocolDefinition(
+    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
       tenant,
       incomingMessage,
       ancestorMessageChain,
@@ -42,7 +42,7 @@ export class ProtocolAuthorization {
     ProtocolAuthorization.verifyProtocolPath(
       incomingMessage,
       ancestorMessageChain,
-      protocolTypes
+      protocolDefinition.types
     );
 
     // get the rule set for the inbound message
@@ -55,7 +55,7 @@ export class ProtocolAuthorization {
     // Verify `dataFormat` and `schema` for the given `type`
     ProtocolAuthorization.verifyType(
       incomingMessage.message,
-      protocolTypes,
+      protocolDefinition.types
     );
 
     // verify method invoked against the allowed actions
@@ -79,7 +79,7 @@ export class ProtocolAuthorization {
     incomingMessage: RecordsRead | RecordsWrite,
     ancestorMessageChain: RecordsWriteMessage[],
     messageStore: MessageStore
-  ): Promise<{ protocolTypes: ProtocolTypes, protocolDefinition: ProtocolDefinition }> {
+  ): Promise<ProtocolDefinition> {
     // get the protocol URI
     let protocolUri: string;
     if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
@@ -101,10 +101,7 @@ export class ProtocolAuthorization {
     }
 
     const protocolMessage = protocols[0];
-    return {
-      protocolTypes      : protocolMessage.descriptor.types,
-      protocolDefinition : protocolMessage.descriptor.definition
-    };
+    return protocolMessage.descriptor.definition;
   }
 
   /**
@@ -182,7 +179,7 @@ export class ProtocolAuthorization {
     const protocolPathArray = protocolPath.split('/');
 
     // traverse rule sets using protocolPath
-    let currentRuleSet: { records?: { [key: string]: ProtocolRuleSet; } } = { records: protocolDefinition };
+    let currentRuleSet: ProtocolRuleSet = protocolDefinition;
     let i = 0;
     while (i < protocolPathArray.length) {
       const currentTypeId = protocolPathArray[i];

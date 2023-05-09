@@ -6,12 +6,14 @@ export type ProtocolsConfigureDescriptor = {
   method: DwnMethodName.Configure;
   dateCreated: string;
   protocol: string;
-  types: ProtocolTypes;
   definition: ProtocolDefinition;
 };
 
 export type ProtocolDefinition = {
-  [key: string]: ProtocolRuleSet;
+  types: ProtocolTypes;
+  records: {
+    [key: string]: ProtocolRuleSet;
+  }
 };
 
 export type ProtocolType = {

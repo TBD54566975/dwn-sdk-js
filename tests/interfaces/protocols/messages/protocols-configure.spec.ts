@@ -16,11 +16,10 @@ describe('ProtocolsConfigure', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const currentTime = getCurrentTimeInHighPrecision();
-      const { types, records: definition } = { ...dexProtocolDefinition };
+      const definition = { ...dexProtocolDefinition };
       const protocolsConfigure = await ProtocolsConfigure.create({
         dateCreated                 : currentTime,
         protocol                    : 'anyValue',
-        types,
         definition,
         authorizationSignatureInput : Jws.createSignatureInput(alice),
       });
@@ -31,14 +30,13 @@ describe('ProtocolsConfigure', () => {
     it('should auto-normalize protocol URI', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
-      const { types, records: definition } = { ...dexProtocolDefinition };
+      const definition = { ...dexProtocolDefinition };
       const options = {
         recipient                   : alice.did,
         data                        : TestDataGenerator.randomBytes(10),
         dataFormat                  : 'application/json',
         authorizationSignatureInput : Jws.createSignatureInput(alice),
         protocol                    : 'example.com/',
-        types,
         definition,
       };
       const protocolsConfig = await ProtocolsConfigure.create(options);
@@ -51,8 +49,8 @@ describe('ProtocolsConfigure', () => {
     it('should auto-normalize schema URIs', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
-      const { types, records: nonnormalizedDexProtocol } = { ...dexProtocolDefinition };
-      types.ask.schema = 'ask';
+      const nonnormalizedDexProtocol = { ...dexProtocolDefinition };
+      nonnormalizedDexProtocol.types.ask.schema = 'ask';
 
       const options = {
         recipient                   : alice.did,
@@ -60,13 +58,12 @@ describe('ProtocolsConfigure', () => {
         dataFormat                  : 'application/json',
         authorizationSignatureInput : Jws.createSignatureInput(alice),
         protocol                    : 'example.com/',
-        types,
         definition                  : nonnormalizedDexProtocol
       };
       const protocolsConfig = await ProtocolsConfigure.create(options);
 
       const message = protocolsConfig.message as ProtocolsConfigureMessage;
-      expect(message.descriptor.types.ask.schema).to.eq('http://ask');
+      expect(message.descriptor.definition.types.ask.schema).to.eq('http://ask');
     });
   });
 });
