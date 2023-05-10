@@ -58,15 +58,13 @@ export class DataStoreLevel implements DataStore {
     await messages.put(messageCid, PLACEHOLDER_VALUE);
 
     const blocksForData = await this.blockstore.partition(DATA_PARTITION);
-    const blocks = await blocksForData.partition(dataCid);
+    const blockstoreOfGivenDataCid = await blocksForData.partition(dataCid);
 
-    const asyncDataBlocks = importer([{ content: dataStream }], blocks, { cidVersion: 1 });
+    const asyncDataBlocks = importer([{ content: dataStream }], blockstoreOfGivenDataCid, { cidVersion: 1 });
 
     // NOTE: the last block contains the root CID as well as info to derive the data size
-    let dataDagRoot: ImportResult | undefined = undefined;
+    let dataDagRoot!: ImportResult;
     for await (dataDagRoot of asyncDataBlocks) { ; }
-
-    if (dataDagRoot == undefined) { return { dataCid, dataSize: 0 }; } // FIXME: Is this a valid empty PutResult?
 
     return {
       dataCid  : String(dataDagRoot.cid),

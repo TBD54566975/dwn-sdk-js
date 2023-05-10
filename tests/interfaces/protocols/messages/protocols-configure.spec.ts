@@ -5,7 +5,6 @@ import type { ProtocolsConfigureMessage } from '../../../../src/index.js';
 
 import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
-import { Protocols } from '../../../../src/utils/protocols.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { Jws, ProtocolsConfigure } from '../../../../src/index.js';
 
@@ -17,10 +16,11 @@ describe('ProtocolsConfigure', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const currentTime = getCurrentTimeInHighPrecision();
+      const definition = { ...dexProtocolDefinition };
       const protocolsConfigure = await ProtocolsConfigure.create({
         dateCreated                 : currentTime,
         protocol                    : 'anyValue',
-        definition                  : dexProtocolDefinition,
+        definition,
         authorizationSignatureInput : Jws.createSignatureInput(alice),
       });
 
@@ -30,13 +30,14 @@ describe('ProtocolsConfigure', () => {
     it('should auto-normalize protocol URI', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
+      const definition = { ...dexProtocolDefinition };
       const options = {
         recipient                   : alice.did,
         data                        : TestDataGenerator.randomBytes(10),
         dataFormat                  : 'application/json',
         authorizationSignatureInput : Jws.createSignatureInput(alice),
         protocol                    : 'example.com/',
-        definition                  : dexProtocolDefinition
+        definition,
       };
       const protocolsConfig = await ProtocolsConfigure.create(options);
 
@@ -49,7 +50,7 @@ describe('ProtocolsConfigure', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const nonnormalizedDexProtocol = { ...dexProtocolDefinition };
-      Protocols.getRecordDefinition(nonnormalizedDexProtocol, 'ask')!.schema = 'ask';
+      nonnormalizedDexProtocol.types.ask.schema = 'ask';
 
       const options = {
         recipient                   : alice.did,
@@ -62,7 +63,7 @@ describe('ProtocolsConfigure', () => {
       const protocolsConfig = await ProtocolsConfigure.create(options);
 
       const message = protocolsConfig.message as ProtocolsConfigureMessage;
-      expect(Protocols.getRecordDefinition(message.descriptor.definition, 'ask')?.schema).to.eq('http://ask');
+      expect(message.descriptor.definition.types.ask.schema).to.eq('http://ask');
     });
   });
 });

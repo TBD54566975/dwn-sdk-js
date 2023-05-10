@@ -69,12 +69,30 @@ export class Records {
   ): string[] {
 
     let fullDerivationPath;
-    if (keyDerivationScheme === KeyDerivationScheme.Protocols) {
+    if (keyDerivationScheme === KeyDerivationScheme.DataFormats) {
+      fullDerivationPath = Records.constructKeyDerivationPathUsingDataFormatsScheme(recordId, descriptor);
+    } else if (keyDerivationScheme === KeyDerivationScheme.Protocols) {
       fullDerivationPath = Records.constructKeyDerivationPathUsingProtocolsScheme(recordId, contextId, descriptor);
     } else {
       // `schemas` scheme
       fullDerivationPath = Records.constructKeyDerivationPathUsingSchemasScheme(recordId, descriptor);
     }
+
+    return fullDerivationPath;
+  }
+
+  /**
+   * Constructs the full key derivation path using `dataFormats` scheme.
+   */
+  private static constructKeyDerivationPathUsingDataFormatsScheme(
+    recordId: string,
+    descriptor: RecordsWriteDescriptor
+  ): string[] {
+    const fullDerivationPath = [
+      KeyDerivationScheme.DataFormats,
+      descriptor.dataFormat,
+      recordId
+    ];
 
     return fullDerivationPath;
   }
