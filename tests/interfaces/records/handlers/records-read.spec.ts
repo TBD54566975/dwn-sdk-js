@@ -1,6 +1,5 @@
 import type { DerivedPrivateJwk } from '../../../../src/utils/hd-key.js';
 import type { EncryptionInput } from '../../../../src/interfaces/records/messages/records-write.js';
-import type { ProtocolDefinition } from '../../../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
@@ -17,7 +16,6 @@ import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { HdKey } from '../../../../src/utils/hd-key.js';
 import { KeyDerivationScheme } from '../../../../src/utils/hd-key.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
-import { Protocols } from '../../../../src/utils/protocols.js';
 import { RecordsReadHandler } from '../../../../src/interfaces/records/handlers/records-read.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
@@ -163,7 +161,7 @@ describe('RecordsReadHandler.handle()', () => {
         const bob = await DidKeyResolver.generate();
 
         const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-media';
-        const protocolDefinition: ProtocolDefinition = socialMediaProtocolDefinition;
+        const protocolDefinition = socialMediaProtocolDefinition;
 
         // Install social-media protocol on Alice's DWN
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
@@ -179,8 +177,9 @@ describe('RecordsReadHandler.handle()', () => {
         const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           protocol,
-          protocolPath : 'image', // this comes from `recordDefinitions` in protocol definition
-          schema       : Protocols.getRecordDefinition(protocolDefinition, 'image')!.schema,
+          protocolPath : 'image', // this comes from `types` in protocol definition
+          schema       : protocolDefinition.types.image.schema,
+          dataFormat   : 'image/jpeg',
           data         : encodedImage,
           recipientDid : alice.did
         });
@@ -205,7 +204,7 @@ describe('RecordsReadHandler.handle()', () => {
         const imposterBob = await DidKeyResolver.generate();
 
         const protocol = 'https://tbd.website/decentralized-web-node/protocols/email';
-        const protocolDefinition: ProtocolDefinition = emailProtocolDefinition;
+        const protocolDefinition = emailProtocolDefinition;
 
         // Install email protocol on Alice's DWN
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
@@ -221,8 +220,9 @@ describe('RecordsReadHandler.handle()', () => {
         const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
           protocol,
-          protocolPath : 'email', // this comes from `recordDefinitions` in protocol definition
-          schema       : Protocols.getRecordDefinition(protocolDefinition, 'email')!.schema,
+          protocolPath : 'email', // this comes from `types` in protocol definition
+          schema       : protocolDefinition.types.email.schema,
+          dataFormat   : protocolDefinition.types.email.dataFormats[0],
           data         : encodedEmail,
           recipientDid : bob.did
         });
@@ -255,7 +255,7 @@ describe('RecordsReadHandler.handle()', () => {
         const imposterBob = await DidKeyResolver.generate();
 
         const protocol = 'https://tbd.website/decentralized-web-node/protocols/email';
-        const protocolDefinition: ProtocolDefinition = emailProtocolDefinition;
+        const protocolDefinition = emailProtocolDefinition;
 
         // Install email protocol on Alice's DWN
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
@@ -271,8 +271,9 @@ describe('RecordsReadHandler.handle()', () => {
         const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           requester    : bob,
           protocol,
-          protocolPath : 'email', // this comes from `recordDefinitions` in protocol definition
-          schema       : Protocols.getRecordDefinition(protocolDefinition, 'email')!.schema,
+          protocolPath : 'email', // this comes from `types` in protocol definition
+          schema       : protocolDefinition.types.email.schema,
+          dataFormat   : protocolDefinition.types.email.dataFormats[0],
           data         : encodedEmail,
           recipientDid : alice.did
         });
@@ -378,7 +379,7 @@ describe('RecordsReadHandler.handle()', () => {
 
         // configure protocol
         const protocol = 'https://email-protocol.com';
-        const protocolDefinition: ProtocolDefinition = emailProtocolDefinition;
+        const protocolDefinition = emailProtocolDefinition;
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
           protocol,
@@ -410,8 +411,9 @@ describe('RecordsReadHandler.handle()', () => {
           {
             requester    : bob,
             protocol,
-            protocolPath : 'email', // this comes from `recordDefinitions` in protocol definition
-            schema       : Protocols.getRecordDefinition(emailProtocolDefinition, 'email')!.schema,
+            protocolPath : 'email', // this comes from `types` in protocol definition
+            schema       : protocolDefinition.types.email.schema,
+            dataFormat   : protocolDefinition.types.email.dataFormats[0],
             data         : bobMessageEncryptedBytes,
             encryptionInput
           }

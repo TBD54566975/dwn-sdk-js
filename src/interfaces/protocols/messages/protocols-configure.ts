@@ -44,24 +44,30 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
   }
 
   private static validateDefinitionNormalized(definition: ProtocolDefinition): void {
+    const { types } = definition;
     // validate schema url normalized
-    for (const recordDefinition of definition.recordDefinitions) {
-      if (recordDefinition.schema !== undefined) {
-        validateSchemaUrlNormalized(recordDefinition.schema);
+    for (const typeName in types) {
+      const schema = types[typeName].schema;
+      if (schema !== undefined) {
+        validateSchemaUrlNormalized(schema);
       }
     }
   }
 
   private static normalizeDefinition(definition: ProtocolDefinition): ProtocolDefinition {
-    const definitionCopy = { ...definition };
+    const typesCopy = { ...definition.types };
 
     // Normalize schema url
-    for (const recordDefinition of definition.recordDefinitions) {
-      if (recordDefinition.schema !== undefined) {
-        recordDefinition.schema = normalizeSchemaUrl(recordDefinition.schema);
+    for (const typeName in typesCopy) {
+      const schema = typesCopy[typeName].schema;
+      if (schema !== undefined) {
+        typesCopy[typeName].schema = normalizeSchemaUrl(schema);
       }
     }
 
-    return definitionCopy;
+    return {
+      ...definition,
+      types: typesCopy,
+    };
   }
 }
