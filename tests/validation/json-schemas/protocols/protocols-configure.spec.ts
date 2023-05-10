@@ -90,7 +90,7 @@ describe('ProtocolsConfigure schema definition', () => {
       const invalidRuleSet = {
         $actions: [{
           who : 'anyone',
-          of: 'thread', // intentionally present
+          of  : 'thread', // intentionally present
           can : 'read'
         }]
       };
