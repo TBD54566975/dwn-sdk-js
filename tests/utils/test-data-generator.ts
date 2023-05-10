@@ -232,16 +232,19 @@ export class TestDataGenerator {
 
     const requester = input?.requester ?? await TestDataGenerator.generatePersona();
 
-    // generate protocol definition if not given
+    // generate protocol types and  definition if not given
     let definition = input?.protocolDefinition;
     if (!definition) {
       const generatedLabel = 'record' + TestDataGenerator.randomString(10);
 
       definition = {
-        recordDefinitions : [],
-        records           : {}
+        types   : {},
+        records : {}
       };
-      definition.recordDefinitions.push({ id: generatedLabel, schema: `test-object` });
+      definition.types[generatedLabel] = {
+        schema      : `test-object`,
+        dataFormats : ['text/plain']
+      };
       definition.records[generatedLabel] = {};
     }
 

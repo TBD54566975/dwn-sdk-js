@@ -1,10 +1,10 @@
 {
-  "recordDefinitions": [
-    {
-      "id": "message",
-      "schema": "http://message.me"
+  "types": {
+    "message": {
+      "schema": "http://message.me",
+      "dataFormats": ["text/plain"]
     }
-  ],
+  },
   "records": {
     "message": {
       "$actions": [
