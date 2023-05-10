@@ -44,7 +44,7 @@ describe('ProtocolsConfigure schema definition', () => {
 
     expect(() => {
       Message.validateJsonSchema(message);
-    }).throws('/$actions/0'); //
+    }).throws('/$actions/0');
   });
 
   describe('rule-set tests', () => {
