@@ -25,16 +25,14 @@
           "can": "write"
         }
       ],
-      "records": {
-        "reply": {
-          "$actions": [
-            {
-              "who": "recipient",
-              "of": "message",
-              "can": "write"
-            }
-          ]
-        }
+      "reply": {
+        "$actions": [
+          {
+            "who": "recipient",
+            "of": "message",
+            "can": "write"
+          }
+        ]
       }
     },
     "image": {
@@ -48,34 +46,32 @@
           "can": "write"
         }
       ],
-      "records": {
-        "caption": {
-          "$actions": [
-            {
-              "who": "anyone",
-              "can": "read"
-            },
-            {
-              "who": "author",
-              "of": "image",
-              "can": "write"
-            }
-          ]
-        },
-        "reply": {
-          "$actions": [
-            {
-              "who": "author",
-              "of": "image",
-              "can": "read"
-            },
-            {
-              "who": "recipient",
-              "of": "image",
-              "can": "write"
-            }
-          ]
-        }
+      "caption": {
+        "$actions": [
+          {
+            "who": "anyone",
+            "can": "read"
+          },
+          {
+            "who": "author",
+            "of": "image",
+            "can": "write"
+          }
+        ]
+      },
+      "reply": {
+        "$actions": [
+          {
+            "who": "author",
+            "of": "image",
+            "can": "read"
+          },
+          {
+            "who": "recipient",
+            "of": "image",
+            "can": "write"
+          }
+        ]
       }
     }
   }
