@@ -85,5 +85,19 @@ describe('ProtocolsConfigure schema definition', () => {
         validateJsonSchema('ProtocolRuleSet', invalidRuleSet);
       }).throws('/$actions/0');
     });
+
+    it('#183 - should throw if `of` is present in `anyone` rule-set', async () => {
+      const invalidRuleSet = {
+        $actions: [{
+          who : 'anyone',
+          of: 'thread', // intentionally present
+          can : 'read'
+        }]
+      };
+
+      expect(() => {
+        validateJsonSchema('ProtocolRuleSet', invalidRuleSet);
+      }).throws('/$actions/0');
+    });
   });
 });
