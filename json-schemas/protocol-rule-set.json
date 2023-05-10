@@ -9,31 +9,57 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": [
-          "who",
-          "can"
-        ],
-        "additionalProperties": false,
-        "properties": {
-          "who": {
-            "type": "string",
-            "enum": [
-              "anyone",
-              "author",
-              "recipient"
-            ]
+        "anyOf": [
+          {
+            "required": [
+              "who",
+              "can"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "who": {
+                "type": "string",
+                "enum": [
+                  "anyone"
+                ]
+              },
+              "can": {
+                "type": "string",
+                "enum": [
+                  "read",
+                  "write"
+                ]
+              }
+            }
           },
-          "of": {
-            "type": "string"
-          },
-          "can": {
-            "type": "string",
-            "enum": [
-              "read",
-              "write"
-            ]
+          {
+            "required": [
+              "who",
+              "of",
+              "can"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "who": {
+                "type": "string",
+                "enum": [
+                  "author",
+                  "recipient"
+                ]
+              },
+              "of": {
+                "type": "string"
+              },
+              "can": {
+                "type": "string",
+                "enum": [
+                  "read",
+                  "write"
+                ]
+              }
+            }
           }
-        }
+        ]
       }
     },
     "records": {

@@ -5,7 +5,7 @@ import { DwnInterfaceName, DwnMethodName, Message } from '../../../../src/core/m
 import type { ProtocolDefinition, ProtocolsConfigureMessage } from '../../../../src/interfaces/protocols/types.js';
 
 describe('ProtocolsConfigure schema definition', () => {
-  it('should throw if unknown actor is encountered in allow rule', async () => {
+  it('should throw if unknown actor is encountered in action rule', async () => {
     const protocolDefinition: ProtocolDefinition = {
       types: {
         email: {
@@ -44,48 +44,46 @@ describe('ProtocolsConfigure schema definition', () => {
 
     expect(() => {
       Message.validateJsonSchema(message);
-    }).throws('who: must be equal to one of the allowed values');
+    }).throws('/$actions/0'); //
   });
 
   describe('rule-set tests', () => {
-    it('#183 - should throw if required `to` is missing in rule-set', async () => {
+    it('#183 - should throw if required `can` is missing in rule-set', async () => {
       const invalidRuleSet1 = {
-        allow: {
-          anyone: {
-          // to: ['write'] // intentionally missing
-          }
-        }
+        $actions: [{
+          who : 'author',
+          of  : 'thread',
+          // can: 'read'  // intentionally missing
+        }]
       };
 
       const invalidRuleSet2 = {
-        allow: {
-          recipient: {
-            of: 'thread'
-          // to: ['write'] // intentionally missing
-          }
-        }
+        $actions: [{
+          who : 'recipient',
+          of  : 'thread',
+          // can: 'read'  // intentionally missing
+        }]
       };
 
       for (const ruleSet of [invalidRuleSet1, invalidRuleSet2]) {
         expect(() => {
           validateJsonSchema('ProtocolRuleSet', ruleSet);
-        }).throws(); // error message is misleading thus not checking explicitly
+        }).throws('/$actions/0');
       }
     });
 
     it('#183 - should throw if required `of` is missing in rule-set', async () => {
       const invalidRuleSet = {
-        allow: {
-          recipient: {
-          // of : 'thread', // intentionally missing
-            to: ['write']
-          }
-        }
+        $actions: [{
+          who : 'author',
+          // of: 'thread', // intentionally missing
+          can : 'read'
+        }]
       };
 
       expect(() => {
         validateJsonSchema('ProtocolRuleSet', invalidRuleSet);
-      }).throws(); // error message is misleading thus not checking explicitly
+      }).throws('/$actions/0');
     });
   });
 });
