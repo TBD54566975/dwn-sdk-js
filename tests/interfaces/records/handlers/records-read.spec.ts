@@ -369,7 +369,86 @@ describe('RecordsReadHandler.handle()', () => {
     });
 
     describe('encryption scenarios', () => {
-      it('should only be able to decrypt record with a correct derived private key', async () => {
+      it('should only be able to decrypt record with a correct derived private key - `dataFormats` derivation scheme', async () => {
+        // scenario: Alice writes into her own DWN an encrypted record using a `dataFormats` derived key and she is able to decrypt it
+
+        const alice = await TestDataGenerator.generatePersona();
+        TestStubGenerator.stubDidResolver(didResolver, [alice]);
+
+        // encrypt Alice's record
+        const originalData = TestDataGenerator.randomBytes(1000);
+        const originalDataStream = DataStream.fromBytes(originalData);
+        const dataEncryptionInitializationVector = TestDataGenerator.randomBytes(16);
+        const dataEncryptionKey = TestDataGenerator.randomBytes(32);
+        const encryptedDataStream = await Encryption.aes256CtrEncrypt(dataEncryptionKey, dataEncryptionInitializationVector, originalDataStream);
+        const encryptedDataBytes = await DataStream.toBytes(encryptedDataStream);
+
+        const encryptionInput: EncryptionInput = {
+          initializationVector : dataEncryptionInitializationVector,
+          key                  : dataEncryptionKey,
+          keyEncryptionInputs  : [{
+            derivationScheme : KeyDerivationScheme.DataFormats,
+            publicKey        : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
+          }]
+        };
+
+        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
+          requester : alice,
+          data      : encryptedDataBytes,
+          encryptionInput
+        });
+
+        const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+        expect(writeReply.status.code).to.equal(202);
+
+        const recordsRead = await RecordsRead.create({
+          recordId                    : message.recordId,
+          authorizationSignatureInput : Jws.createSignatureInput(alice)
+        });
+        const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+        expect(readReply.status.code).to.equal(200);
+
+        const unsignedRecordsWrite = readReply.record!;
+        const cipherStream = readReply.record!.data;
+
+
+        // test able to decrypt the message using the root key
+        const rootPrivateKey: DerivedPrivateJwk = {
+          derivationScheme  : KeyDerivationScheme.DataFormats,
+          derivedPrivateKey : alice.keyPair.privateJwk
+        };
+
+        const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, rootPrivateKey, cipherStream);
+        const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
+        expect(Comparer.byteArraysEqual(plaintextBytes, originalData)).to.be.true;
+
+
+        // test able to decrypt the message using a derived key
+        const readReply2 = await dwn.handleRecordsRead(alice.did, recordsRead.message); // process the same read message to get a new cipher stream
+        expect(readReply.status.code).to.equal(200);
+        const cipherStream2 = readReply2.record!.data;
+
+        const derivationPath = [KeyDerivationScheme.DataFormats, message.descriptor.dataFormat];
+        const derivedPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, derivationPath);
+
+        const plaintextDataStream2 = await Records.decrypt(unsignedRecordsWrite, derivedPrivateKey, cipherStream2);
+        const plaintextBytes2 = await DataStream.toBytes(plaintextDataStream2);
+        expect(Comparer.byteArraysEqual(plaintextBytes2, originalData)).to.be.true;
+
+
+        // test unable to decrypt the message if derived key has an unexpected path
+        const readReply3 = await dwn.handleRecordsRead(alice.did, recordsRead.message); // process the same read message to get a new cipher stream
+        expect(readReply.status.code).to.equal(200);
+        const cipherStream3 = readReply3.record!.data;
+
+        const invalidDerivationPath = [KeyDerivationScheme.DataFormats, 'invalidDataFormat'];
+        const inValidDescendantPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, invalidDerivationPath);
+        await expect(Records.decrypt(unsignedRecordsWrite, inValidDescendantPrivateKey, cipherStream3)).to.be.rejectedWith(
+          DwnErrorCode.RecordsInvalidAncestorKeyDerivationSegment
+        );
+      });
+
+      it('should only be able to decrypt record with a correct derived private key  - `protocols` derivation scheme', async () => {
         // scenario, Bob writes into Alice's DWN an encrypted "email", alice is able to decrypt it
 
         // creating Alice and Bob persona and setting up a stub DID resolver

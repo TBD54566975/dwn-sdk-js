@@ -238,14 +238,14 @@ export class TestDataGenerator {
       const generatedLabel = 'record' + TestDataGenerator.randomString(10);
 
       definition = {
-        types   : {},
-        records : {}
+        types     : {},
+        structure : {}
       };
       definition.types[generatedLabel] = {
         schema      : `test-object`,
         dataFormats : ['text/plain']
       };
-      definition.records[generatedLabel] = {};
+      definition.structure[generatedLabel] = {};
     }
 
     // TODO: #139 - move protocol definition out of the descriptor - https://github.com/TBD54566975/dwn-sdk-js/issues/139

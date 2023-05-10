@@ -11,7 +11,7 @@ export type ProtocolsConfigureDescriptor = {
 
 export type ProtocolDefinition = {
   types: ProtocolTypes;
-  records: {
+  structure: {
     [key: string]: ProtocolRuleSet;
   }
 };

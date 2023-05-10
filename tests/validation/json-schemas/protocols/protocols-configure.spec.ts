@@ -13,7 +13,7 @@ describe('ProtocolsConfigure schema definition', () => {
           dataFormats : ['text/plain']
         }
       },
-      records: {
+      structure: {
         email: {
           $actions: [
             {

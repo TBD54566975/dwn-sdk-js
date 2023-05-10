@@ -2,7 +2,7 @@
   "types": {
     "foo": {}
   },
-  "records": {
+  "structure": {
     "foo": {}
   }
 }

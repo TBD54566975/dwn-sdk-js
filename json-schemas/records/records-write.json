@@ -42,6 +42,7 @@
               "derivationScheme": {
                 "type": "string",
                 "enum": [
+                  "dataFormats",
                   "protocols",
                   "schemas"
                 ]

@@ -11,6 +11,7 @@
     "module": "ESNext", // Required for enabling JavaScript import assertion support
     "declaration": true,
     "declarationMap": true,
+    "declarationDir": "dist/types",
     "outDir": "dist/esm",
     "sourceMap": true,
     // `NodeNext` will throw compilation errors if relative import paths are missing file extension
