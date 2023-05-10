@@ -5,7 +5,7 @@
       "dataFormats": ["text/plain"]
     }
   },
-  "records": {
+  "structure": {
     "message": {
       "$actions": [
         {
