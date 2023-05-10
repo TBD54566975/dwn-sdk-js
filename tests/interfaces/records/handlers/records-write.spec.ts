@@ -1212,10 +1212,10 @@ describe('RecordsWriteHandler.handle()', () => {
         expect(nestedCredentialApplicationReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRuleSet);
       });
 
-      it('should only allow DWN owner to write if record does not have an allow rule defined', async () => {
+      it('should only allow DWN owner to write if record does not have an action rule defined', async () => {
         const alice = await DidKeyResolver.generate();
 
-        // write a protocol definition without an explicit allow rule
+        // write a protocol definition without an explicit action rule
         const protocol = 'private-protocol';
         const protocolDefinition = privateProtocol;
         const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
@@ -1256,7 +1256,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
         reply = await dwn.processMessage(alice.did, bobWriteMessageData.message, bobWriteMessageData.dataStream);
         expect(reply.status.code).to.equal(401);
-        expect(reply.status.detail).to.contain(`no allow rule defined for Write`);
+        expect(reply.status.detail).to.contain(`no action rule defined for Write`);
       });
 
       it('should fail authorization if path to expected recipient in definition has incorrect label', async () => {
@@ -1265,11 +1265,11 @@ describe('RecordsWriteHandler.handle()', () => {
 
         // create an invalid ancestor path that is longer than possible
         const invalidProtocolDefinition = { ...credentialIssuanceProtocolDefinition };
-        const allowRuleIndex =
+        const actionRuleIndex =
           invalidProtocolDefinition.records.credentialApplication.records.credentialResponse.$actions
-            .findIndex((allowRule) => allowRule.who === ProtocolActor.Recipient);
+            .findIndex((actionRule) => actionRule.who === ProtocolActor.Recipient);
         invalidProtocolDefinition.records.credentialApplication.records.credentialResponse
-          .$actions[allowRuleIndex].of
+          .$actions[actionRuleIndex].of
             = 'credentialResponse';
         // this is invalid as the root ancestor can only be `credentialApplication` based on record structure
 
@@ -1317,7 +1317,7 @@ describe('RecordsWriteHandler.handle()', () => {
         expect(reply.status.detail).to.contain('mismatching record schema');
       });
 
-      it('should look up recipient path with ancestor depth of 2+ (excluding self) in allow rule correctly', async () => {
+      it('should look up recipient path with ancestor depth of 2+ (excluding self) in action rule correctly', async () => {
         // simulate a DEX protocol with at least 3 layers of message exchange: ask -> offer -> fulfillment
         // make sure recipient of offer can send fulfillment
 
