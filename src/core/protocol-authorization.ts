@@ -181,8 +181,8 @@ export class ProtocolAuthorization {
     let currentRuleSet: ProtocolRuleSet = protocolDefinition;
     let i = 0;
     while (i < protocolPathArray.length) {
-      const currentTypeId = protocolPathArray[i];
-      const nextRuleSet = currentRuleSet.records?.[currentTypeId];
+      const currentTypeName = protocolPathArray[i];
+      const nextRuleSet = currentRuleSet.records?.[currentTypeName];
 
       if (nextRuleSet === undefined) {
         const partialProtocolPath = protocolPathArray.slice(0, i + 1).join('/');
@@ -211,22 +211,22 @@ export class ProtocolAuthorization {
       return;
     }
 
-    const typeIds = Object.keys(types);
+    const typeNames = Object.keys(types);
     const declaredProtocolPath = (inboundMessage as RecordsWrite).message.descriptor.protocolPath!;
-    const declaredTypeId = ProtocolAuthorization.getTypeName(declaredProtocolPath);
-    if (!typeIds.includes(declaredTypeId)) {
+    const declaredTypeName = ProtocolAuthorization.getTypeName(declaredProtocolPath);
+    if (!typeNames.includes(declaredTypeName)) {
       throw new DwnError(DwnErrorCode.ProtocolAuthorizationInvalidType,
-        `record with type ${declaredTypeId} not allowed in protocol`);
+        `record with type ${declaredTypeName} not allowed in protocol`);
     }
 
     let ancestorProtocolPath: string = '';
     for (const ancestor of ancestorMessageChain) {
       const protocolPath = ancestor.descriptor.protocolPath!;
-      const ancestorTypeId = ProtocolAuthorization.getTypeName(protocolPath);
-      ancestorProtocolPath += `${ancestorTypeId}/`; // e.g. `foo/bar/`, notice the trailing slash
+      const ancestorTypeName = ProtocolAuthorization.getTypeName(protocolPath);
+      ancestorProtocolPath += `${ancestorTypeName}/`; // e.g. `foo/bar/`, notice the trailing slash
     }
 
-    const actualProtocolPath = ancestorProtocolPath + declaredTypeId; // e.g. `foo/bar/baz`
+    const actualProtocolPath = ancestorProtocolPath + declaredTypeName; // e.g. `foo/bar/baz`
 
     if (declaredProtocolPath !== actualProtocolPath) {
       throw new DwnError(
