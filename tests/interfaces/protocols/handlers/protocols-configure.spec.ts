@@ -5,6 +5,7 @@ import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
+import minimalProtocolDefinition from '../../../vectors/protocol-definitions/minimal.json' assert { type: 'json' };
 
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
@@ -60,6 +61,20 @@ describe('ProtocolsConfigureHandler.handle()', () => {
 
     after(async () => {
       await dwn.close();
+    });
+
+    it('should allow a protocol definition with schema or dataFormat omitted', async () => {
+      const alice = await DidKeyResolver.generate();
+
+      const protocolDefinition = minimalProtocolDefinition;
+      const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+        requester : alice,
+        protocol  : 'example.com/',
+        protocolDefinition,
+      });
+
+      const reply = await dwn.processMessage(alice.did, protocolsConfig.message);
+      expect(reply.status.code).to.equal(202);
     });
 
     it('should return 400 if more than 1 signature is provided in `authorization`', async () => {

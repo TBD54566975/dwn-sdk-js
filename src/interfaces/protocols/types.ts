@@ -18,7 +18,7 @@ export type ProtocolDefinition = {
 
 export type ProtocolType = {
   schema?: string,
-  dataFormats: string[],
+  dataFormats?: string[],
 };
 
 export type ProtocolTypes = {
