@@ -291,44 +291,44 @@ export class ProtocolAuthorization {
     const actionRules = inboundMessageRuleSet.$actions;
 
     if (actionRules === undefined) {
-      // if no allow rule is defined, owner of DWN can do everything
+      // if no action rule is defined, owner of DWN can do everything
       if (requesterDid === tenant) {
         return;
       } else {
-        throw new Error(`no allow rule defined for ${incomingMessageMethod}, ${requesterDid} is unauthorized`);
+        throw new Error(`no action rule defined for ${incomingMessageMethod}, ${requesterDid} is unauthorized`);
       }
     }
 
     const allowedActions = new Set<string>();
-    for (const allowRule of actionRules) {
-      switch (allowRule.who) {
+    for (const actionRule of actionRules) {
+      switch (actionRule.who) {
       case ProtocolActor.Anyone:
-        allowedActions.add(allowRule.can);
+        allowedActions.add(actionRule.can);
         break;
       case ProtocolActor.Author:
         const messageForAuthorCheck = ProtocolAuthorization.getMessage(
           ancestorMessageChain,
-          allowRule.of!,
+          actionRule.of!,
         );
 
         if (messageForAuthorCheck !== undefined) {
           const expectedRequesterDid = Message.getAuthor(messageForAuthorCheck);
 
           if (requesterDid === expectedRequesterDid) {
-            allowedActions.add(allowRule.can);
+            allowedActions.add(actionRule.can);
           }
         }
         break;
       case ProtocolActor.Recipient:
         const messageForRecipientCheck = ProtocolAuthorization.getMessage(
           ancestorMessageChain,
-            allowRule.of!,
+            actionRule.of!,
         );
         if (messageForRecipientCheck !== undefined) {
           const expectedRequesterDid = messageForRecipientCheck.descriptor.recipient;
 
           if (requesterDid === expectedRequesterDid) {
-            allowedActions.add(allowRule.can);
+            allowedActions.add(actionRule.can);
           }
         }
         break;
