@@ -1,4 +1,4 @@
-import type { EncryptionInput } from '../../../../src/index.js';
+import type { EncryptionInput } from '../../../../src/interfaces/records/messages/records-write.js';
 import type { GenerateFromRecordsWriteOut } from '../../../utils/test-data-generator.js';
 import type { QueryResultEntry } from '../../../../src/core/types.js';
 import type { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
@@ -19,22 +19,24 @@ import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DataStream } from '../../../../src/utils/data-stream.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DidResolver } from '../../../../src/did/did-resolver.js';
+import { Dwn } from '../../../../src/dwn.js';
 import { DwnErrorCode } from '../../../../src/core/dwn-error.js';
 import { Encoder } from '../../../../src/utils/encoder.js';
 import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
+import { Jws } from '../../../../src/utils/jws.js';
 import { KeyDerivationScheme } from '../../../../src/index.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { ProtocolActor } from '../../../../src/interfaces/protocols/types.js';
+import { RecordsWrite } from '../../../../src/interfaces/records/messages/records-write.js';
 import { RecordsWriteHandler } from '../../../../src/interfaces/records/handlers/records-write.js';
 import { StorageController } from '../../../../src/store/storage-controller.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
 import { Cid, computeCid } from '../../../../src/utils/cid.js';
-import { Dwn, Jws, RecordsWrite } from '../../../../src/index.js';
 import { Encryption, EncryptionAlgorithm } from '../../../../src/utils/encryption.js';
 
 chai.use(chaiAsPromised);
@@ -316,7 +318,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const reply = await dwn.processMessage(alice.did, message);
 
       expect(reply.status.code).to.equal(400);
-      expect(reply.status.detail).to.contain(DwnErrorCode.MessageStoreDataNotFound);
+      expect(reply.status.detail).to.contain(DwnErrorCode.StorageControllerDataNotFound);
     });
 
     describe('initial write & subsequent write tests', () => {
@@ -454,7 +456,7 @@ describe('RecordsWriteHandler.handle()', () => {
       });
 
       describe('event log', () => {
-        it('should add an event to the eventlog on initial write', async () => {
+        it('should add an event to the event log on initial write', async () => {
           const { message, requester, dataStream } = await TestDataGenerator.generateRecordsWrite();
           TestStubGenerator.stubDidResolver(didResolver, [requester]);
 

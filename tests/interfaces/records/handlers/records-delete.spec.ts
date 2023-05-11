@@ -349,7 +349,7 @@ describe('RecordsDeleteHandler.handle()', () => {
       });
       const bobAssociateReply = await dwn.processMessage(bob.did, bobAssociateData.message, bobAssociateData.dataStream);
       expect(bobAssociateReply.status.code).to.equal(400); // expecting an error
-      expect(bobAssociateReply.status.detail).to.contain(DwnErrorCode.MessageStoreDataNotFound);
+      expect(bobAssociateReply.status.detail).to.contain(DwnErrorCode.StorageControllerDataNotFound);
 
       const aliceQueryWriteAfterBobAssociateData = await TestDataGenerator.generateRecordsQuery({
         requester : alice,
