@@ -92,7 +92,7 @@ export class DataStoreLevel implements DataStore {
 
     // data is chunked into dag-pb unixfs blocks. re-inflate the chunks.
     const dataDagRoot = await exporter(dataCid, blocks);
-    const contentIterator = dataDagRoot.content()[Symbol.asyncIterator]();
+    const contentIterator = dataDagRoot.content();
 
     const dataStream = new Readable({
       async read(): Promise<void> {
@@ -105,9 +105,15 @@ export class DataStoreLevel implements DataStore {
       }
     });
 
+    let dataSize = dataDagRoot.size;
+
+    if (dataDagRoot.type === 'file' || dataDagRoot.type === 'directory') {
+      dataSize = dataDagRoot.unixfs.fileSize();
+    }
+
     return {
       dataCid  : String(dataDagRoot.cid),
-      dataSize : Number(dataDagRoot.unixfs?.fileSize() ?? dataDagRoot.size),
+      dataSize : Number(dataSize),
       dataStream,
     };
   }
@@ -134,9 +140,15 @@ export class DataStoreLevel implements DataStore {
 
     const dataDagRoot = await exporter(dataCid, blocks);
 
+    let dataSize = dataDagRoot.size;
+
+    if (dataDagRoot.type === 'file' || dataDagRoot.type === 'directory') {
+      dataSize = dataDagRoot.unixfs.fileSize();
+    }
+
     return {
       dataCid  : String(dataDagRoot.cid),
-      dataSize : Number(dataDagRoot.unixfs?.fileSize() ?? dataDagRoot.size)
+      dataSize : Number(dataSize)
     };
   }
 
