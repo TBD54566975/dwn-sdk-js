@@ -36,15 +36,16 @@ export enum ProtocolAction {
   Write = 'write'
 }
 
+export type ProtocolActionRule = {
+  who: string,
+  of?: string,
+  can: string
+};
+
 export type ProtocolRuleSet = {
-  $actions?: {
-    who: string,
-    of?: string,
-    can: string
-  }[];
-  records?: {
-    [key: string]: ProtocolRuleSet;
-  }
+  $actions?: ProtocolActionRule[];
+  // JSON Schema verifies that properties other than `$actions` will actually have type ProtocolRuleSet
+  [key: string]: any;
 };
 
 export type ProtocolsConfigureMessage = BaseMessage & {
