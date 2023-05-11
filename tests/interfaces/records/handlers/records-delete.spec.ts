@@ -132,14 +132,14 @@ describe('RecordsDeleteHandler.handle()', () => {
     });
 
     it('should only write the data once even if written by multiple messages', async () => {
+      const alice = await DidKeyResolver.generate();
       const data = Encoder.stringToBytes('test');
       const dataCid = await Cid.computeDagPbCidFromBytes(data);
       const encodedData = Encoder.bytesToBase64Url(data);
 
-      const blocksForData = await dataStore.blockstore.partition('data');
-      const blocks = await blocksForData.partition(dataCid);
-
-      const alice = await DidKeyResolver.generate();
+      const blockstoreForData = await dataStore.blockstore.partition('data');
+      const blockstoreOfGivenTenant = await blockstoreForData.partition(alice.did);
+      const blockstoreOfGivenDataCid = await blockstoreOfGivenTenant.partition(dataCid);
 
       const aliceWrite1Data = await TestDataGenerator.generateRecordsWrite({
         requester: alice,
@@ -157,7 +157,7 @@ describe('RecordsDeleteHandler.handle()', () => {
       expect(aliceQueryWrite1AfterAliceWrite1Reply.entries?.length).to.equal(1);
       expect(aliceQueryWrite1AfterAliceWrite1Reply.entries![0].encodedData).to.equal(encodedData);
 
-      await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(asyncGeneratorToArray(blockstoreOfGivenDataCid.db.keys())).to.eventually.eql([ dataCid ]);
 
       const aliceWrite2Data = await TestDataGenerator.generateRecordsWrite({
         requester: alice,
@@ -184,18 +184,18 @@ describe('RecordsDeleteHandler.handle()', () => {
       expect(aliceQueryWrite2AfterAliceWrite2Reply.entries?.length).to.equal(1);
       expect(aliceQueryWrite2AfterAliceWrite2Reply.entries![0].encodedData).to.equal(encodedData);
 
-      await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(asyncGeneratorToArray(blockstoreOfGivenDataCid.db.keys())).to.eventually.eql([ dataCid ]);
     });
 
-    it('should only write the data once even if referenced by multiple messages', async () => {
+    it('should allow writing message by referencing existing data without supplying data again', async () => {
+      const alice = await DidKeyResolver.generate();
       const data = Encoder.stringToBytes('test');
       const dataCid = await Cid.computeDagPbCidFromBytes(data);
       const encodedData = Encoder.bytesToBase64Url(data);
 
-      const blocksForData = await dataStore.blockstore.partition('data');
-      const blocks = await blocksForData.partition(dataCid);
-
-      const alice = await DidKeyResolver.generate();
+      const blockstoreForData = await dataStore.blockstore.partition('data');
+      const blockstoreOfGivenTenant = await blockstoreForData.partition(alice.did);
+      const blockstoreOfGivenDataCid = await blockstoreOfGivenTenant.partition(dataCid);
 
       const aliceWriteData = await TestDataGenerator.generateRecordsWrite({
         requester: alice,
@@ -213,8 +213,9 @@ describe('RecordsDeleteHandler.handle()', () => {
       expect(aliceQueryWriteAfterAliceWriteReply.entries?.length).to.equal(1);
       expect(aliceQueryWriteAfterAliceWriteReply.entries![0].encodedData).to.equal(encodedData);
 
-      await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(asyncGeneratorToArray(blockstoreOfGivenDataCid.db.keys())).to.eventually.eql([ dataCid ]);
 
+      // referencing existing data without supplying the data again
       const aliceAssociateData = await TestDataGenerator.generateRecordsWrite({
         requester : alice,
         dataCid,
@@ -241,20 +242,25 @@ describe('RecordsDeleteHandler.handle()', () => {
       expect(aliceQueryAssociateAfterAliceAssociateReply.entries?.length).to.equal(1);
       expect(aliceQueryAssociateAfterAliceAssociateReply.entries![0].encodedData).to.equal(encodedData);
 
-      await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(asyncGeneratorToArray(blockstoreOfGivenDataCid.db.keys())).to.eventually.eql([ dataCid ]);
     });
 
-    it('should only write the data once even if written by multiple tenants', async () => {
+    it('should duplicate same data if written to different tenants', async () => {
+      const alice = await DidKeyResolver.generate();
+      const bob = await DidKeyResolver.generate();
+
       const data = Encoder.stringToBytes('test');
       const dataCid = await Cid.computeDagPbCidFromBytes(data);
       const encodedData = Encoder.bytesToBase64Url(data);
 
-      const blocksForData = await dataStore.blockstore.partition('data');
-      const blocks = await blocksForData.partition(dataCid);
+      const blockstoreForData = await dataStore.blockstore.partition('data');
+      const blockstoreOfAlice = await blockstoreForData.partition(alice.did);
+      const blockstoreOfAliceOfDataCid = await blockstoreOfAlice.partition(dataCid);
 
-      const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
+      const blockstoreOfBob = await blockstoreForData.partition(bob.did);
+      const blockstoreOfBobOfDataCid = await blockstoreOfBob.partition(dataCid);
 
+      // write data to alice's DWN
       const aliceWriteData = await TestDataGenerator.generateRecordsWrite({
         requester: alice,
         data
@@ -271,8 +277,7 @@ describe('RecordsDeleteHandler.handle()', () => {
       expect(aliceQueryWriteAfterAliceWriteReply.entries?.length).to.equal(1);
       expect(aliceQueryWriteAfterAliceWriteReply.entries![0].encodedData).to.equal(encodedData);
 
-      await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
-
+      // write same data to bob's DWN
       const bobWriteData = await TestDataGenerator.generateRecordsWrite({
         requester: bob,
         data
@@ -298,20 +303,26 @@ describe('RecordsDeleteHandler.handle()', () => {
       expect(bobQueryWriteAfterBobWriteReply.entries?.length).to.equal(1);
       expect(bobQueryWriteAfterBobWriteReply.entries![0].encodedData).to.equal(encodedData);
 
-      await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
+      // verify that both alice and bob's blockstore have reference to the same data CID
+      await expect(asyncGeneratorToArray(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(asyncGeneratorToArray(blockstoreOfBobOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
     });
 
     it('should not allow referencing data across tenants', async () => {
+      const alice = await DidKeyResolver.generate();
+      const bob = await DidKeyResolver.generate();
       const data = Encoder.stringToBytes('test');
       const dataCid = await Cid.computeDagPbCidFromBytes(data);
       const encodedData = Encoder.bytesToBase64Url(data);
 
-      const blocksForData = await dataStore.blockstore.partition('data');
-      const blocks = await blocksForData.partition(dataCid);
+      const blockstoreForData = await dataStore.blockstore.partition('data');
+      const blockstoreOfAlice = await blockstoreForData.partition(alice.did);
+      const blockstoreOfAliceOfDataCid = await blockstoreOfAlice.partition(dataCid);
 
-      const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
+      const blockstoreOfBob = await blockstoreForData.partition(bob.did);
+      const blockstoreOfBobOfDataCid = await blockstoreOfBob.partition(dataCid);
 
+      // alice writes data to her DWN
       const aliceWriteData = await TestDataGenerator.generateRecordsWrite({
         requester: alice,
         data
@@ -328,15 +339,16 @@ describe('RecordsDeleteHandler.handle()', () => {
       expect(aliceQueryWriteAfterAliceWriteReply.entries?.length).to.equal(1);
       expect(aliceQueryWriteAfterAliceWriteReply.entries![0].encodedData).to.equal(encodedData);
 
-      await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(asyncGeneratorToArray(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
 
+      // bob learns of the CID of data of alice and tries to gain unauthorized access by referencing it in his own DWN
       const bobAssociateData = await TestDataGenerator.generateRecordsWrite({
         requester : bob,
         dataCid,
         dataSize  : 4
       });
       const bobAssociateReply = await dwn.processMessage(bob.did, bobAssociateData.message, bobAssociateData.dataStream);
-      expect(bobAssociateReply.status.code).to.equal(400);
+      expect(bobAssociateReply.status.code).to.equal(400); // expecting an error
       expect(bobAssociateReply.status.detail).to.contain(DwnErrorCode.MessageStoreDataNotFound);
 
       const aliceQueryWriteAfterBobAssociateData = await TestDataGenerator.generateRecordsQuery({
@@ -348,6 +360,7 @@ describe('RecordsDeleteHandler.handle()', () => {
       expect(aliceQueryWriteAfterBobAssociateReply.entries?.length).to.equal(1);
       expect(aliceQueryWriteAfterBobAssociateReply.entries![0].encodedData).to.equal(encodedData);
 
+      // verify that bob has not gained access to alice's data
       const bobQueryAssociateAfterBobAssociateData = await TestDataGenerator.generateRecordsQuery({
         requester : bob,
         filter    : { recordId: bobAssociateData.message.recordId }
@@ -356,19 +369,22 @@ describe('RecordsDeleteHandler.handle()', () => {
       expect(bobQueryAssociateAfterBobAssociateReply.status.code).to.equal(200);
       expect(bobQueryAssociateAfterBobAssociateReply.entries?.length).to.equal(0);
 
-      await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
+      // verify that bob's blockstore does not contain alice's data
+      await expect(asyncGeneratorToArray(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(asyncGeneratorToArray(blockstoreOfBobOfDataCid.db.keys())).to.eventually.eql([ ]);
     });
 
-    it('should be able to rewrite the data', async () => {
+    it('should be able to delete and rewrite the same data', async () => {
+      const alice = await DidKeyResolver.generate();
       const data = Encoder.stringToBytes('test');
       const dataCid = await Cid.computeDagPbCidFromBytes(data);
       const encodedData = Encoder.bytesToBase64Url(data);
 
-      const blocksForData = await dataStore.blockstore.partition('data');
-      const blocks = await blocksForData.partition(dataCid);
+      const blockstoreForData = await dataStore.blockstore.partition('data');
+      const blockstoreOfAlice = await blockstoreForData.partition(alice.did);
+      const blockstoreOfAliceOfDataCid = await blockstoreOfAlice.partition(dataCid);
 
-      const alice = await DidKeyResolver.generate();
-
+      // alice writes a record
       const aliceWriteData = await TestDataGenerator.generateRecordsWrite({
         requester: alice,
         data
@@ -385,8 +401,9 @@ describe('RecordsDeleteHandler.handle()', () => {
       expect(aliceQueryWriteAfterAliceWriteReply.entries?.length).to.equal(1);
       expect(aliceQueryWriteAfterAliceWriteReply.entries![0].encodedData).to.equal(encodedData);
 
-      await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(asyncGeneratorToArray(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
 
+      // alice deleting the record
       const aliceDeleteWriteData = await TestDataGenerator.generateRecordsDelete({
         requester : alice,
         recordId  : aliceWriteData.message.recordId
@@ -402,8 +419,9 @@ describe('RecordsDeleteHandler.handle()', () => {
       expect(aliceQueryWriteAfterAliceDeleteReply.status.code).to.equal(200);
       expect(aliceQueryWriteAfterAliceDeleteReply.entries?.length).to.equal(0);
 
-      await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ ]);
+      await expect(asyncGeneratorToArray(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ ]);
 
+      // alice writes a new record with the same data
       const aliceRewriteData = await TestDataGenerator.generateRecordsWrite({
         requester: alice,
         data
@@ -420,19 +438,23 @@ describe('RecordsDeleteHandler.handle()', () => {
       expect(aliceQueryWriteAfterAliceRewriteReply.entries?.length).to.equal(1);
       expect(aliceQueryWriteAfterAliceRewriteReply.entries![0].encodedData).to.equal(encodedData);
 
-      await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(asyncGeneratorToArray(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
     });
 
     it('should only delete data after all messages referencing it are deleted', async () => {
+      const alice = await DidKeyResolver.generate();
+      const bob = await DidKeyResolver.generate();
       const data = Encoder.stringToBytes('test');
       const dataCid = await Cid.computeDagPbCidFromBytes(data);
 
-      const blocksForData = await dataStore.blockstore.partition('data');
-      const blocks = await blocksForData.partition(dataCid);
+      const blockstoreForData = await dataStore.blockstore.partition('data');
+      const blockstoreOfAlice = await blockstoreForData.partition(alice.did);
+      const blockstoreOfAliceOfDataCid = await blockstoreOfAlice.partition(dataCid);
 
-      const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
+      const blockstoreOfBob = await blockstoreForData.partition(bob.did);
+      const blockstoreOfBobOfDataCid = await blockstoreOfBob.partition(dataCid);
 
+      // alice writes a records with data
       const aliceWriteData = await TestDataGenerator.generateRecordsWrite({
         requester: alice,
         data
@@ -440,8 +462,9 @@ describe('RecordsDeleteHandler.handle()', () => {
       const aliceWriteReply = await dwn.processMessage(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
       expect(aliceWriteReply.status.code).to.equal(202);
 
-      await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(asyncGeneratorToArray(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
 
+      // alice writes another record referencing the same data
       const aliceAssociateData = await TestDataGenerator.generateRecordsWrite({
         requester : alice,
         dataCid,
@@ -450,8 +473,9 @@ describe('RecordsDeleteHandler.handle()', () => {
       const aliceAssociateReply = await dwn.processMessage(alice.did, aliceAssociateData.message, aliceAssociateData.dataStream);
       expect(aliceAssociateReply.status.code).to.equal(202);
 
-      await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(asyncGeneratorToArray(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
 
+      // bob writes a records with same data
       const bobWriteData = await TestDataGenerator.generateRecordsWrite({
         requester: bob,
         data
@@ -459,8 +483,9 @@ describe('RecordsDeleteHandler.handle()', () => {
       const bobWriteReply = await dwn.processMessage(bob.did, bobWriteData.message, bobWriteData.dataStream);
       expect(bobWriteReply.status.code).to.equal(202);
 
-      await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(asyncGeneratorToArray(blockstoreOfBobOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
 
+      // bob writes another record referencing the same data
       const bobAssociateData = await TestDataGenerator.generateRecordsWrite({
         requester : bob,
         dataCid,
@@ -469,8 +494,9 @@ describe('RecordsDeleteHandler.handle()', () => {
       const bobAssociateReply = await dwn.processMessage(bob.did, bobAssociateData.message, bobAssociateData.dataStream);
       expect(bobAssociateReply.status.code).to.equal(202);
 
-      await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(asyncGeneratorToArray(blockstoreOfBobOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
 
+      // alice deletes one of the two records
       const aliceDeleteWriteData = await TestDataGenerator.generateRecordsDelete({
         requester : alice,
         recordId  : aliceWriteData.message.recordId
@@ -478,17 +504,9 @@ describe('RecordsDeleteHandler.handle()', () => {
       const aliceDeleteWriteReply = await dwn.processMessage(alice.did, aliceDeleteWriteData.message);
       expect(aliceDeleteWriteReply.status.code).to.equal(202);
 
-      await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
+      await expect(asyncGeneratorToArray(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
 
-      const bobDeleteWriteData = await TestDataGenerator.generateRecordsDelete({
-        requester : bob,
-        recordId  : bobWriteData.message.recordId
-      });
-      const bobDeleteWriteReply = await dwn.processMessage(bob.did, bobDeleteWriteData.message);
-      expect(bobDeleteWriteReply.status.code).to.equal(202);
-
-      await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
-
+      // alice deletes the other record
       const aliceDeleteAssociateData = await TestDataGenerator.generateRecordsDelete({
         requester : alice,
         recordId  : aliceAssociateData.message.recordId
@@ -496,16 +514,9 @@ describe('RecordsDeleteHandler.handle()', () => {
       const aliceDeleteAssociateReply = await dwn.processMessage(alice.did, aliceDeleteAssociateData.message);
       expect(aliceDeleteAssociateReply.status.code).to.equal(202);
 
-      await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ dataCid ]);
-
-      const bobDeleteAssociateData = await TestDataGenerator.generateRecordsDelete({
-        requester : bob,
-        recordId  : bobAssociateData.message.recordId
-      });
-      const bobDeleteAssociateReply = await dwn.processMessage(bob.did, bobDeleteAssociateData.message);
-      expect(bobDeleteAssociateReply.status.code).to.equal(202);
-
-      await expect(asyncGeneratorToArray(blocks.db.keys())).to.eventually.eql([ ]);
+      // verify that data is deleted in alice's blockstore, but remains in bob's blockstore
+      await expect(asyncGeneratorToArray(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ ]);
+      await expect(asyncGeneratorToArray(blockstoreOfBobOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
     });
 
     describe('event log', () => {
