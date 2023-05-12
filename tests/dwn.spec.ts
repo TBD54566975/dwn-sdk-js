@@ -1,4 +1,4 @@
-import type { EventsGetReply, TenantGate } from '../src/index.js';
+import { EventsGetReply, Jws, RecordsRead, TenantGate } from '../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -8,7 +8,7 @@ import { DataStoreLevel } from '../src/store/data-store-level.js';
 import { DidKeyResolver } from '../src/did/did-key-resolver.js';
 import { Dwn } from '../src/dwn.js';
 import { EventLogLevel } from '../src/event-log/event-log-level.js';
-import { Message } from '../src/core/message.js';
+import { DwnMethodName, Message } from '../src/core/message.js';
 import { MessageStoreLevel } from '../src/store/message-store-level.js';
 import { TestDataGenerator } from './utils/test-data-generator.js';
 
@@ -162,8 +162,24 @@ describe('DWN', () => {
     });
   });
 
+  describe('handleRecordsRead', () => {
+    it('should return error if preprocessing checks fail', async () => {
+      const alice = await DidKeyResolver.generate();
+
+      const recordsRead = await RecordsRead.create({
+        recordId                    : 'recordId-doesnt-matter',
+        authorizationSignatureInput : Jws.createSignatureInput(alice)
+      });
+      (recordsRead.message as any).descriptor.method = 'Write'; // Will cause interface and method check to fail
+      const reply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+
+      expect(reply.status.code).to.not.equal(200);
+    });
+  });
+
   describe('handleMessagesGet', () => {
-    it('increases test coverage :)', async () => {
+    // increases test coverage :)
+    it('runs successfully', async () => {
       const did = await DidKeyResolver.generate();
       const alice = await TestDataGenerator.generatePersona(did);
       const messageCids: string[] = [];
@@ -195,6 +211,24 @@ describe('DWN', () => {
         const cid = await Message.getCid(messageReply.message!);
         expect(messageReply.messageCid).to.equal(cid);
       }
+    });
+
+    it('should return error if preprocessing checks fail', async () => {
+      const alice = await DidKeyResolver.generate();
+
+      const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
+        requester: alice
+      });
+
+      const messageCids = [await Message.getCid(recordsWrite.message)];
+      const { messagesGet } = await TestDataGenerator.generateMessagesGet({
+        requester: alice,
+        messageCids
+      });
+      (messagesGet.message as any).descriptor.interface = 'Protocols'; // Will cause interface and method check to fail
+      const reply = await dwn.handleMessagesGet(alice.did, messagesGet.message);
+
+      expect(reply.status.code).to.not.equal(200);
     });
   });
 });
