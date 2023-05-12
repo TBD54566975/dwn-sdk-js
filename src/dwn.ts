@@ -134,6 +134,22 @@ export class Dwn {
     return handler.handle({ tenant, message });
   }
 
+  /**
+   * Privileged method for writing a pruned initial `RecordsWrite` to a DWN without needing to supply associated data.
+   */
+  public async synchronizePrunedInitialRecordsWrite(tenant: string, message: RecordsWriteMessage): Promise<MessagesGetReply> {
+    const errorMessageReply = await this.preprocessingChecks(tenant, message, DwnInterfaceName.Records, DwnMethodName.Write);
+    if (errorMessageReply !== undefined) {
+      return errorMessageReply;
+    }
+
+    const methodHandlerReply = await this.prunedInitialRecordsWriteHandler.handle({ tenant, message });
+    return methodHandlerReply;
+  }
+
+  /**
+   * Common checks for handlers.
+   */
   private async preprocessingChecks(
     tenant: string,
     rawMessage: any,
@@ -175,40 +191,6 @@ export class Dwn {
     }
 
     return undefined;
-  }
-
-  /**
-   * Privileged method for writing a pruned initial `RecordsWrite` to a DWN without needing to supply associated data.
-   */
-  public async synchronizePrunedInitialRecordsWrite(tenant: string, message: RecordsWriteMessage): Promise<MessagesGetReply> {
-    const isTenant = await this.tenantGate.isTenant(tenant);
-    if (!isTenant) {
-      return new MessageReply({
-        status: { code: 401, detail: `${tenant} is not a tenant` }
-      });
-    }
-
-    // DWN interface and method check mainly for pure JS
-    const dwnInterface = message?.descriptor?.interface;
-    const dwnMethod = message?.descriptor?.method;
-    if (dwnInterface !== DwnInterfaceName.Records || dwnMethod !== DwnMethodName.Write) {
-      return new MessageReply({
-        status: {
-          code   : 400,
-          detail : `Invalid DWN interface or method: expecting ${DwnInterfaceName.Records}${DwnMethodName.Write}, got ${dwnInterface}${dwnMethod}.`
-        }
-      });
-    }
-
-    try {
-      // consider to push this down to individual handlers
-      Message.validateJsonSchema(message);
-    } catch (error) {
-      return MessageReply.fromError(error, 400);
-    }
-
-    const methodHandlerReply = await this.prunedInitialRecordsWriteHandler.handle({ tenant, message });
-    return methodHandlerReply;
   }
 
   public async dump(): Promise<void> {
