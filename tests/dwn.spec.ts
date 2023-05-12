@@ -11,7 +11,8 @@ import { Encoder } from '../src/index.js';
 import { EventLogLevel } from '../src/event-log/event-log-level.js';
 import { MessageStoreLevel } from '../src/store/message-store-level.js';
 import { TestDataGenerator } from './utils/test-data-generator.js';
-import { DwnInterfaceName, Message } from '../src/core/message.js';
+import { DwnInterfaceName, DwnMethodName, Message } from '../src/core/message.js';
+import { Jws, RecordsRead } from '../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -165,8 +166,24 @@ describe('DWN', () => {
     });
   });
 
+  describe('handleRecordsRead', () => {
+    it('should return error if preprocessing checks fail', async () => {
+      const alice = await DidKeyResolver.generate();
+
+      const recordsRead = await RecordsRead.create({
+        recordId                    : 'recordId-doesnt-matter',
+        authorizationSignatureInput : Jws.createSignatureInput(alice)
+      });
+      (recordsRead.message as any).descriptor.method = 'Write'; // Will cause interface and method check to fail
+      const reply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+
+      expect(reply.status.code).to.not.equal(200);
+    });
+  });
+
   describe('handleMessagesGet', () => {
-    it('increases test coverage :)', async () => {
+    // increases test coverage :)
+    it('runs successfully', async () => {
       const did = await DidKeyResolver.generate();
       const alice = await TestDataGenerator.generatePersona(did);
       const messageCids: string[] = [];
@@ -198,6 +215,24 @@ describe('DWN', () => {
         const cid = await Message.getCid(messageReply.message!);
         expect(messageReply.messageCid).to.equal(cid);
       }
+    });
+
+    it('should return error if preprocessing checks fail', async () => {
+      const alice = await DidKeyResolver.generate();
+
+      const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({
+        requester: alice
+      });
+
+      const messageCids = [await Message.getCid(recordsWrite.message)];
+      const { messagesGet } = await TestDataGenerator.generateMessagesGet({
+        requester: alice,
+        messageCids
+      });
+      (messagesGet.message as any).descriptor.interface = 'Protocols'; // Will cause interface and method check to fail
+      const reply = await dwn.handleMessagesGet(alice.did, messagesGet.message);
+
+      expect(reply.status.code).to.not.equal(200);
     });
   });
 
@@ -294,21 +329,21 @@ describe('DWN', () => {
       const alice = await DidKeyResolver.generate();
       const reply1 = await dwn.synchronizePrunedInitialRecordsWrite(alice.did, undefined as unknown as RecordsWriteMessage ); // missing message
       expect(reply1.status.code).to.equal(400);
-      expect(reply1.status.detail).to.contain('Invalid DWN interface or method');
+      expect(reply1.status.detail).to.contain('Both interface and method must be present');
 
       const reply2 = await dwn.synchronizePrunedInitialRecordsWrite(
         alice.did,
-        { descriptor: { interface: 'IncorrectInterface' } } as RecordsWriteMessage
+        { descriptor: { interface: 'IncorrectInterface', method: DwnMethodName.Write } } as RecordsWriteMessage
       );
       expect(reply2.status.code).to.equal(400);
-      expect(reply2.status.detail).to.contain('Invalid DWN interface or method');
+      expect(reply2.status.detail).to.contain(`Expected interface ${DwnInterfaceName.Records}`);
 
       const reply3 = await dwn.synchronizePrunedInitialRecordsWrite(
         alice.did,
         { descriptor: { interface: DwnInterfaceName.Records, method: 'IncorrectMethod' } } as RecordsWriteMessage
       );
       expect(reply3.status.code).to.equal(400);
-      expect(reply3.status.detail).to.contain('Invalid DWN interface or method');
+      expect(reply3.status.detail).to.contain(`Expected method ${DwnInterfaceName.Records}${DwnMethodName.Write}`);
     });
   });
 });

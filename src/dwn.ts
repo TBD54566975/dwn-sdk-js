@@ -93,29 +93,12 @@ export class Dwn {
    * @param tenant The tenant DID to route the given message to.
    */
   public async processMessage(tenant: string, rawMessage: any, dataStream?: Readable): Promise<MessageReply> {
-    const isTenant = await this.tenantGate.isTenant(tenant);
-    if (!isTenant) {
-      return new MessageReply({
-        status: { code: 401, detail: `${tenant} is not a tenant` }
-      });
+    const errorMessageReply = await this.preprocessingChecks(tenant, rawMessage);
+    if (errorMessageReply !== undefined) {
+      return errorMessageReply;
     }
 
-    const dwnInterface = rawMessage?.descriptor?.interface;
-    const dwnMethod = rawMessage?.descriptor?.method;
-    if (dwnInterface === undefined || dwnMethod === undefined) {
-      return new MessageReply({
-        status: { code: 400, detail: `Both interface and method must be present, interface: ${dwnInterface}, method: ${dwnMethod}` }
-      });
-    }
-
-    try {
-      // consider to push this down to individual handlers
-      Message.validateJsonSchema(rawMessage);
-    } catch (error) {
-      return MessageReply.fromError(error, 400);
-    }
-
-    const handlerKey = dwnInterface + dwnMethod;
+    const handlerKey = rawMessage.descriptor.interface + rawMessage.descriptor.method;
     const methodHandlerReply = await this.methodHandlers[handlerKey].handle({
       tenant,
       message: rawMessage as BaseMessage,
@@ -129,22 +112,50 @@ export class Dwn {
    * Handles a `RecordsRead` message.
    */
   public async handleRecordsRead(tenant: string, message: RecordsReadMessage): Promise<RecordsReadReply> {
-    const reply = await this.processMessage(tenant, message);
-    return reply as RecordsReadReply;
+    const errorMessageReply = await this.preprocessingChecks(tenant, message, DwnInterfaceName.Records, DwnMethodName.Read);
+    if (errorMessageReply !== undefined) {
+      return errorMessageReply;
+    }
+
+    const handler = new RecordsReadHandler(this.didResolver, this.messageStore, this.dataStore);
+    return handler.handle({ tenant, message });
   }
 
   /**
    * Handles a `MessagesGet` message.
    */
   public async handleMessagesGet(tenant: string, message: MessagesGetMessage): Promise<MessagesGetReply> {
-    const reply = await this.processMessage(tenant, message);
-    return reply as MessagesGetReply;
+    const errorMessageReply = await this.preprocessingChecks(tenant, message, DwnInterfaceName.Messages, DwnMethodName.Get);
+    if (errorMessageReply !== undefined) {
+      return errorMessageReply;
+    }
+
+    const handler = new MessagesGetHandler(this.didResolver, this.messageStore, this.dataStore);
+    return handler.handle({ tenant, message });
   }
 
   /**
    * Privileged method for writing a pruned initial `RecordsWrite` to a DWN without needing to supply associated data.
    */
   public async synchronizePrunedInitialRecordsWrite(tenant: string, message: RecordsWriteMessage): Promise<MessagesGetReply> {
+    const errorMessageReply = await this.preprocessingChecks(tenant, message, DwnInterfaceName.Records, DwnMethodName.Write);
+    if (errorMessageReply !== undefined) {
+      return errorMessageReply;
+    }
+
+    const methodHandlerReply = await this.prunedInitialRecordsWriteHandler.handle({ tenant, message });
+    return methodHandlerReply;
+  }
+
+  /**
+   * Common checks for handlers.
+   */
+  private async preprocessingChecks(
+    tenant: string,
+    rawMessage: any,
+    expectedInterface?: DwnInterfaceName,
+    expectedMethod?: DwnMethodName
+  ): Promise<MessageReply | undefined> {
     const isTenant = await this.tenantGate.isTenant(tenant);
     if (!isTenant) {
       return new MessageReply({
@@ -152,27 +163,34 @@ export class Dwn {
       });
     }
 
-    // DWN interface and method check mainly for pure JS
-    const dwnInterface = message?.descriptor?.interface;
-    const dwnMethod = message?.descriptor?.method;
-    if (dwnInterface !== DwnInterfaceName.Records || dwnMethod !== DwnMethodName.Write) {
+    // Verify interface and method
+    const dwnInterface = rawMessage?.descriptor?.interface;
+    const dwnMethod = rawMessage?.descriptor?.method;
+    if (dwnInterface === undefined || dwnMethod === undefined) {
       return new MessageReply({
-        status: {
-          code   : 400,
-          detail : `Invalid DWN interface or method: expecting ${DwnInterfaceName.Records}${DwnMethodName.Write}, got ${dwnInterface}${dwnMethod}.`
-        }
+        status: { code: 400, detail: `Both interface and method must be present, interface: ${dwnInterface}, method: ${dwnMethod}` }
+      });
+    }
+    if (expectedInterface !== undefined && expectedInterface !== dwnInterface) {
+      return new MessageReply({
+        status: { code: 400, detail: `Expected interface ${expectedInterface}, received ${dwnInterface}` }
+      });
+    }
+    if (expectedMethod !== undefined && expectedMethod !== dwnMethod) {
+      return new MessageReply({
+        status: { code: 400, detail: `Expected method ${expectedInterface}${expectedMethod}, received ${dwnInterface}${dwnMethod}` }
       });
     }
 
+    // validate message structure
     try {
       // consider to push this down to individual handlers
-      Message.validateJsonSchema(message);
+      Message.validateJsonSchema(rawMessage);
     } catch (error) {
       return MessageReply.fromError(error, 400);
     }
 
-    const methodHandlerReply = await this.prunedInitialRecordsWriteHandler.handle({ tenant, message });
-    return methodHandlerReply;
+    return undefined;
   }
 
   public async dump(): Promise<void> {
