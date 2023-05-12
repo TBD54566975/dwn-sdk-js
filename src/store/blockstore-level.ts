@@ -1,6 +1,6 @@
-import type { CID } from 'multiformats';
-import type { AwaitIterable, Batch, KeyQuery, Pair, Query } from 'interface-store';
-import type { Blockstore, Options } from 'interface-blockstore';
+import { CID } from 'multiformats';
+import type { AbortOptions, AwaitIterable } from 'interface-store';
+import type { Blockstore, Pair } from 'interface-blockstore';
 
 import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 
@@ -40,44 +40,58 @@ export class BlockstoreLevel implements Blockstore {
     return new BlockstoreLevel({ ...this.config, location: '' }, db);
   }
 
-  async put(key: CID | string, val: Uint8Array, options?: Options): Promise<void> {
-    return this.db.put(String(key), val, options);
+  async put(key: CID | string, val: Uint8Array, options?: AbortOptions): Promise<CID> {
+    await this.db.put(String(key), val, options);
+    return CID.parse(key.toString());
   }
 
-  async get(key: CID | string, options?: Options): Promise<Uint8Array> {
+  async get(key: CID | string, options?: AbortOptions): Promise<Uint8Array> {
     const result = await this.db.get(String(key), options);
     return result!;
   }
 
-  async has(key: CID | string, options?: Options): Promise<boolean> {
+  async has(key: CID | string, options?: AbortOptions): Promise<boolean> {
     return this.db.has(String(key), options);
   }
 
-  async delete(key: CID | string, options?: Options): Promise<void> {
+  async delete(key: CID | string, options?: AbortOptions): Promise<void> {
     return this.db.delete(String(key), options);
   }
 
-  async isEmpty(options?: Options): Promise<boolean> {
+  async isEmpty(options?: AbortOptions): Promise<boolean> {
     return this.db.isEmpty(options);
   }
 
-  async * putMany(source: AwaitIterable<Pair<CID, Uint8Array>>, options?: Options):
-    AsyncIterable<Pair<CID, Uint8Array>> {
-
+  async * putMany(source: AwaitIterable<Pair>, options?: AbortOptions): AsyncIterable<CID> {
     for await (const entry of source) {
-      await this.put(entry.key, entry.value, options);
+      await this.put(entry.cid, entry.block, options);
 
-      yield entry;
+      yield entry.cid;
     }
   }
 
-  async * getMany(source: AwaitIterable<CID>, options?: Options): AsyncIterable<Uint8Array> {
+  async * getMany(source: AwaitIterable<CID>, options?: AbortOptions): AsyncIterable<Pair> {
     for await (const key of source) {
-      yield this.get(key, options);
+      yield {
+        cid   : key,
+        block : await this.get(key, options)
+      };
     }
   }
 
-  async * deleteMany(source: AwaitIterable<CID>, options?: Options): AsyncIterable<CID> {
+  async * getAll(options?: AbortOptions): AsyncIterable<Pair> {
+    // @ts-expect-error keyEncoding is 'buffer' but types for db.iterator always return the key type as 'string'
+    const li: AsyncGenerator<[Uint8Array, Uint8Array]> = this.db.iterator({
+      keys        : true,
+      keyEncoding : 'buffer'
+    }, options);
+
+    for await (const [key, value] of li) {
+      yield { cid: CID.decode(key), block: value };
+    }
+  }
+
+  async * deleteMany(source: AwaitIterable<CID>, options?: AbortOptions): AsyncIterable<CID> {
     for await (const key of source) {
       await this.delete(key, options);
 
@@ -90,18 +104,6 @@ export class BlockstoreLevel implements Blockstore {
    */
   async clear(): Promise<void> {
     return this.db.clear();
-  }
-
-  batch(): Batch<CID, Uint8Array> {
-    throw new Error('not implemented');
-  }
-
-  query(_query: Query<CID, Uint8Array>, _options?: Options): AsyncIterable<Pair<CID, Uint8Array>> {
-    throw new Error('not implemented');
-  }
-
-  queryKeys(_query: KeyQuery<CID>, _options?: Options): AsyncIterable<CID> {
-    throw new Error('not implemented');
   }
 
   async dump(): Promise<void> {
