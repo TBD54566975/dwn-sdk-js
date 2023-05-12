@@ -36,7 +36,7 @@ export interface DataStore {
    * @param tenant The tenant in which the data must exist under for the association to occur.
    * @param messageCid CID of the message that references the data.
    * @param dataCid The CID of the data stored.
-   * @returns Whether data for the given CID was found under the tenant scope in the store.
+   * @returns {AssociateResult} if association succeeds. `undefined` if data to be associated is not found.
    */
   associate(tenant: string, messageCid: string, dataCid: string): Promise<AssociateResult | undefined>;
 

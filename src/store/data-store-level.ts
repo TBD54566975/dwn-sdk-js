@@ -7,9 +7,6 @@ import { exporter } from 'ipfs-unixfs-exporter';
 import { importer } from 'ipfs-unixfs-importer';
 import { Readable } from 'readable-stream';
 
-const DATA_PARTITION = 'data';
-const HOST_PARTITION = 'host';
-
 // `BlockstoreLevel` doesn't support being a `Set` (i.e. it always requires a value), so use a placeholder instead.
 const PLACEHOLDER_VALUE = new Uint8Array();
 
@@ -18,8 +15,8 @@ const PLACEHOLDER_VALUE = new Uint8Array();
  * Leverages LevelDB under the hood.
  *
  * It has the following structure (`+` represents a sublevel and `->` represents a key->value pair):
- *   'data' + <dataCid> -> <data>
- *   'host' + <dataCid> + <tenant> + <messageCid> -> PLACEHOLDER_VALUE
+ *   'data' + <tenant> + <dataCid> -> <data>
+ *   'references' + <tenant> + <dataCid> + <messageCid> -> PLACEHOLDER_VALUE
  *
  * This allows for the <data> to be shared for everything that uses the same <dataCid> while also making
  * sure that the <data> can only be deleted if there are no <messageCid> for any <tenant> still using it.
@@ -51,16 +48,12 @@ export class DataStoreLevel implements DataStore {
   }
 
   async put(tenant: string, messageCid: string, dataCid: string, dataStream: Readable): Promise<PutResult> {
-    const tenantsForData = await this.blockstore.partition(HOST_PARTITION);
-    const messagesForTenant = await tenantsForData.partition(dataCid);
-    const messages = await messagesForTenant.partition(tenant);
+    const blockstoreForReferenceCounting = await this.getBlockstoreForReferenceCounting(tenant, dataCid);
+    await blockstoreForReferenceCounting.put(messageCid, PLACEHOLDER_VALUE);
 
-    await messages.put(messageCid, PLACEHOLDER_VALUE);
+    const blockstoreForData = await this.getBlockstoreForStoringData(tenant, dataCid);
 
-    const blocksForData = await this.blockstore.partition(DATA_PARTITION);
-    const blockstoreOfGivenDataCid = await blocksForData.partition(dataCid);
-
-    const asyncDataBlocks = importer([{ content: dataStream }], blockstoreOfGivenDataCid, { cidVersion: 1 });
+    const asyncDataBlocks = importer([{ content: dataStream }], blockstoreForData, { cidVersion: 1 });
 
     // NOTE: the last block contains the root CID as well as info to derive the data size
     let dataDagRoot!: ImportResult;
@@ -73,25 +66,22 @@ export class DataStoreLevel implements DataStore {
   }
 
   public async get(tenant: string, messageCid: string, dataCid: string): Promise<GetResult | undefined> {
-    const tenantsForData = await this.blockstore.partition(HOST_PARTITION);
-    const messagesForTenant = await tenantsForData.partition(dataCid);
-    const messages = await messagesForTenant.partition(tenant);
+    const blockstoreForReferenceCounting = await this.getBlockstoreForReferenceCounting(tenant, dataCid);
 
-    const allowed = await messages.has(messageCid);
+    const allowed = await blockstoreForReferenceCounting.has(messageCid);
     if (!allowed) {
       return undefined;
     }
 
-    const blocksForData = await this.blockstore.partition(DATA_PARTITION);
-    const blocks = await blocksForData.partition(dataCid);
+    const blockstoreForData = await this.getBlockstoreForStoringData(tenant, dataCid);
 
-    const exists = await blocks.has(dataCid);
+    const exists = await blockstoreForData.has(dataCid);
     if (!exists) {
       return undefined;
     }
 
     // data is chunked into dag-pb unixfs blocks. re-inflate the chunks.
-    const dataDagRoot = await exporter(dataCid, blocks);
+    const dataDagRoot = await exporter(dataCid, blockstoreForData);
     const contentIterator = dataDagRoot.content()[Symbol.asyncIterator]();
 
     const dataStream = new Readable({
@@ -113,26 +103,23 @@ export class DataStoreLevel implements DataStore {
   }
 
   public async associate(tenant: string, messageCid: string, dataCid: string): Promise<AssociateResult | undefined> {
-    const tenantsForData = await this.blockstore.partition(HOST_PARTITION);
-    const messagesForTenant = await tenantsForData.partition(dataCid);
-    const messages = await messagesForTenant.partition(tenant);
+    const blockstoreForReferenceCounting = await this.getBlockstoreForReferenceCounting(tenant, dataCid);
 
-    const isFirstMessage = await messages.isEmpty();
-    if (isFirstMessage) {
+    const noExistingReference = await blockstoreForReferenceCounting.isEmpty();
+    if (noExistingReference) {
       return undefined;
     }
 
-    const blocksForData = await this.blockstore.partition(DATA_PARTITION);
-    const blocks = await blocksForData.partition(dataCid);
+    const blockstoreForData = await this.getBlockstoreForStoringData(tenant, dataCid);
 
-    const exists = await blocks.has(dataCid);
-    if (!exists) {
+    const dataExists = await blockstoreForData.has(dataCid);
+    if (!dataExists) {
       return undefined;
     }
 
-    await messages.put(messageCid, PLACEHOLDER_VALUE);
+    await blockstoreForReferenceCounting.put(messageCid, PLACEHOLDER_VALUE);
 
-    const dataDagRoot = await exporter(dataCid, blocks);
+    const dataDagRoot = await exporter(dataCid, blockstoreForData);
 
     return {
       dataCid  : String(dataDagRoot.cid),
@@ -141,26 +128,16 @@ export class DataStoreLevel implements DataStore {
   }
 
   public async delete(tenant: string, messageCid: string, dataCid: string): Promise<void> {
-    const tenantsForData = await this.blockstore.partition(HOST_PARTITION);
-    const messagesForTenant = await tenantsForData.partition(dataCid);
-    const messages = await messagesForTenant.partition(tenant);
+    const blockstoreForReferenceCounting = await this.getBlockstoreForReferenceCounting(tenant, dataCid);
+    await blockstoreForReferenceCounting.delete(messageCid);
 
-    await messages.delete(messageCid);
-
-    const wasLastMessage = await messages.isEmpty();
-    if (!wasLastMessage) {
+    const wasLastReference = await blockstoreForReferenceCounting.isEmpty();
+    if (!wasLastReference) {
       return;
     }
 
-    const wasLastTenant = await messagesForTenant.isEmpty();
-    if (!wasLastTenant) {
-      return;
-    }
-
-    const blocksForData = await this.blockstore.partition(DATA_PARTITION);
-    const blocks = await blocksForData.partition(dataCid);
-
-    await blocks.clear();
+    const blockstoreForData = await this.getBlockstoreForStoringData(tenant, dataCid);
+    await blockstoreForData.clear();
   }
 
   /**
@@ -174,6 +151,28 @@ export class DataStoreLevel implements DataStore {
     console.group('blockstore');
     await this.blockstore['dump']?.();
     console.groupEnd();
+  }
+
+  /**
+   * Gets the blockstore used for reference counting purposes for the given `dataCid` in the given `tenant`.
+   */
+  private async getBlockstoreForReferenceCounting(tenant: string, dataCid: string): Promise<BlockstoreLevel> {
+    const referenceCountingPartitionName = 'references';
+    const blockstoreForReferenceCounting = await this.blockstore.partition(referenceCountingPartitionName);
+    const blockstoreForReferenceCountingByTenant = await blockstoreForReferenceCounting.partition(tenant);
+    const blockstoreForReferenceCountingDataCid = await blockstoreForReferenceCountingByTenant.partition(dataCid);
+    return blockstoreForReferenceCountingDataCid;
+  }
+
+  /**
+   * Gets the blockstore used for storing data for the given `dataCid` in the given `tenant`.
+   */
+  private async getBlockstoreForStoringData(tenant: string, dataCid: string): Promise<BlockstoreLevel> {
+    const dataPartitionName = 'data';
+    const blockstoreForData = await this.blockstore.partition(dataPartitionName);
+    const blockstoreOfGivenTenant = await blockstoreForData.partition(tenant);
+    const blockstoreOfGivenDataCid = await blockstoreOfGivenTenant.partition(dataCid);
+    return blockstoreOfGivenDataCid;
   }
 }
 

@@ -1,7 +1,8 @@
 import type { EventLog } from '../../../event-log/event-log.js';
 import type { MethodHandler } from '../../types.js';
+import type { Readable } from 'readable-stream';
 import type { RecordsWriteMessage } from '../types.js';
-import type { TimestampedMessage } from '../../../core/types.js';
+import type { BaseMessage, TimestampedMessage } from '../../../core/types.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { authenticate } from '../../../core/auth.js';
@@ -20,7 +21,7 @@ export class RecordsWriteHandler implements MethodHandler {
     tenant,
     message,
     dataStream
-  }: { tenant: string, message: RecordsWriteMessage, dataStream: _Readable.Readable}): Promise<MessageReply> {
+  }: { tenant: string, message: RecordsWriteMessage, dataStream?: _Readable.Readable}): Promise<MessageReply> {
 
     let recordsWrite: RecordsWrite;
     try {
@@ -75,12 +76,12 @@ export class RecordsWriteHandler implements MethodHandler {
       const indexes = await constructRecordsWriteIndexes(recordsWrite, isLatestBaseState);
 
       try {
-        await StorageController.put(this.messageStore, this.dataStore, this.eventLog, tenant, message, indexes, dataStream);
+        await this.storeMessage(this.messageStore, this.dataStore, this.eventLog, tenant, message, indexes, dataStream);
       } catch (error) {
         const e = error as any;
-        if (e.code === DwnErrorCode.MessageStoreDataCidMismatch ||
-            e.code === DwnErrorCode.MessageStoreDataNotFound ||
-            e.code === DwnErrorCode.MessageStoreDataSizeMismatch) {
+        if (e.code === DwnErrorCode.StorageControllerDataCidMismatch ||
+            e.code === DwnErrorCode.StorageControllerDataNotFound ||
+            e.code === DwnErrorCode.StorageControllerDataSizeMismatch) {
           return MessageReply.fromError(error, 400);
         }
 
@@ -102,6 +103,24 @@ export class RecordsWriteHandler implements MethodHandler {
 
     return messageReply;
   };
+
+  /**
+   * Stores the given message and its data in the underlying database(s).
+   * NOTE: this method was created to allow a child class to override the default behavior for sync feature to work:
+   * ie. allow `RecordsWrite` to be written even if data stream is not provided to handle the case that:
+   * a `RecordsDelete` has happened, as a result a DWN would have pruned the data associated with the original write.
+   * This approach avoids the need to duplicate the entire handler.
+   */
+  public async storeMessage(
+    messageStore: MessageStore,
+    dataStore: DataStore,
+    eventLog: EventLog,
+    tenant: string,
+    message: BaseMessage,
+    indexes: Record<string, string>,
+    dataStream?: Readable): Promise<void> {
+    await StorageController.put(messageStore, dataStore, eventLog, tenant, message, indexes, dataStream);
+  }
 }
 
 export async function constructRecordsWriteIndexes(
