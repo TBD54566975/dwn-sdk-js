@@ -1,4 +1,5 @@
-import { EventsGetReply, Jws, RecordsRead, TenantGate } from '../src/index.js';
+import type { EventsGetReply, TenantGate } from '../src/index.js';
+import { Jws, RecordsRead } from '../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -8,7 +9,7 @@ import { DataStoreLevel } from '../src/store/data-store-level.js';
 import { DidKeyResolver } from '../src/did/did-key-resolver.js';
 import { Dwn } from '../src/dwn.js';
 import { EventLogLevel } from '../src/event-log/event-log-level.js';
-import { DwnMethodName, Message } from '../src/core/message.js';
+import { Message } from '../src/core/message.js';
 import { MessageStoreLevel } from '../src/store/message-store-level.js';
 import { TestDataGenerator } from './utils/test-data-generator.js';
 
@@ -216,7 +217,7 @@ describe('DWN', () => {
     it('should return error if preprocessing checks fail', async () => {
       const alice = await DidKeyResolver.generate();
 
-      const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
+      const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({
         requester: alice
       });
 

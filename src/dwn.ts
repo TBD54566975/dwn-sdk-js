@@ -128,7 +128,12 @@ export class Dwn {
     return handler.handle({ tenant, message });
   }
 
-  private async preprocessingChecks(tenant: string, rawMessage: any, expectedInterface?: DwnInterfaceName, expectedMethod?: DwnMethodName): Promise<MessageReply | undefined> {
+  private async preprocessingChecks(
+    tenant: string,
+    rawMessage: any,
+    expectedInterface?: DwnInterfaceName,
+    expectedMethod?: DwnMethodName
+  ): Promise<MessageReply | undefined> {
     const isTenant = await this.tenantGate.isTenant(tenant);
     if (!isTenant) {
       return new MessageReply({
