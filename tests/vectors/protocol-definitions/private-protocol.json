@@ -1,0 +1,11 @@
+{
+  "types": {
+    "privateNote": {
+      "schema": "private-note",
+      "dataFormats": ["text/plain"]
+    }
+  },
+  "structure": {
+    "privateNote": {}
+  }
+}

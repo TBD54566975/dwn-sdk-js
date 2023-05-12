@@ -4,35 +4,32 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "recordDefinitions",
-    "records"
+    "types",
+    "structure"
   ],
   "properties": {
-    "recordDefinitions": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "object",
-        "required": ["id"],
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "schema": {
-            "type": "string"
-          },
-          "dataFormats": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
+    "types": {
+      "type": "object",
+      "patternProperties": {
+        ".*": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schema": {
               "type": "string"
+            },
+            "dataFormats": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              }
             }
           }
         }
       }
     },
-    "records": {
+    "structure": {
       "type": "object",
       "patternProperties": {
         ".*": {

@@ -16,11 +16,11 @@ import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 export class StorageController {
   /**
    * Puts the given message and data in storage.
-   * @throws {DwnError} with `DwnErrorCode.MessageStoreDataCidMismatch`
+   * @throws {DwnError} with `DwnErrorCode.StorageControllerDataCidMismatch`
    *                    if the data stream resulted in a data CID that mismatches with `dataCid` in the given message
-   * @throws {DwnError} with `DwnErrorCode.MessageStoreDataNotFound`
+   * @throws {DwnError} with `DwnErrorCode.StorageControllerDataNotFound`
    *                    if `dataCid` in `descriptor` is given, and `dataStream` is not given, and data for the message does not exist already
-   * @throws {DwnError} with `DwnErrorCode.MessageStoreDataSizeMismatch`
+   * @throws {DwnError} with `DwnErrorCode.StorageControllerDataSizeMismatch`
    *                    if `dataSize` in `descriptor` given mismatches the actual data size
    */
   public static async put(
@@ -50,7 +50,7 @@ export class StorageController {
       // the message implies that the data is already in the DB, so we check to make sure the data already exist
       if (!result) {
         throw new DwnError(
-          DwnErrorCode.MessageStoreDataNotFound,
+          DwnErrorCode.StorageControllerDataNotFound,
           `data with dataCid ${message.descriptor.dataCid} not found in store`
         );
       }
@@ -62,7 +62,7 @@ export class StorageController {
         await dataStore.delete(tenant, messageCid, message.descriptor.dataCid);
 
         throw new DwnError(
-          DwnErrorCode.MessageStoreDataSizeMismatch,
+          DwnErrorCode.StorageControllerDataSizeMismatch,
           `actual data size ${result.dataSize} bytes does not match dataSize in descriptor: ${message.descriptor.dataSize}`
         );
       }
@@ -74,7 +74,7 @@ export class StorageController {
         await dataStore.delete(tenant, messageCid, message.descriptor.dataCid);
 
         throw new DwnError(
-          DwnErrorCode.MessageStoreDataCidMismatch,
+          DwnErrorCode.StorageControllerDataCidMismatch,
           `actual data CID ${result.dataCid} does not match dataCid in descriptor: ${message.descriptor.dataCid}`
         );
       }

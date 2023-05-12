@@ -232,17 +232,20 @@ export class TestDataGenerator {
 
     const requester = input?.requester ?? await TestDataGenerator.generatePersona();
 
-    // generate protocol definition if not given
+    // generate protocol types and  definition if not given
     let definition = input?.protocolDefinition;
     if (!definition) {
       const generatedLabel = 'record' + TestDataGenerator.randomString(10);
 
       definition = {
-        recordDefinitions : [],
-        records           : {}
+        types     : {},
+        structure : {}
       };
-      definition.recordDefinitions.push({ id: generatedLabel, schema: `test-object` });
-      definition.records[generatedLabel] = {};
+      definition.types[generatedLabel] = {
+        schema      : `test-object`,
+        dataFormats : ['text/plain']
+      };
+      definition.structure[generatedLabel] = {};
     }
 
     // TODO: #139 - move protocol definition out of the descriptor - https://github.com/TBD54566975/dwn-sdk-js/issues/139

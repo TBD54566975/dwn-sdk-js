@@ -10,16 +10,19 @@ export type ProtocolsConfigureDescriptor = {
 };
 
 export type ProtocolDefinition = {
-  recordDefinitions: ProtocolRecordDefinition[];
-  records: {
+  types: ProtocolTypes;
+  structure: {
     [key: string]: ProtocolRuleSet;
-  };
+  }
 };
 
-export type ProtocolRecordDefinition = {
-  id: string,
+export type ProtocolType = {
   schema?: string,
   dataFormats?: string[],
+};
+
+export type ProtocolTypes = {
+  [key: string]: ProtocolType;
 };
 
 export enum ProtocolActor {
@@ -33,15 +36,16 @@ export enum ProtocolAction {
   Write = 'write'
 }
 
+export type ProtocolActionRule = {
+  who: string,
+  of?: string,
+  can: string
+};
+
 export type ProtocolRuleSet = {
-  $actions?: {
-    who: string,
-    of?: string,
-    can: string
-  }[];
-  records?: {
-    [key: string]: ProtocolRuleSet;
-  }
+  $actions?: ProtocolActionRule[];
+  // JSON Schema verifies that properties other than `$actions` will actually have type ProtocolRuleSet
+  [key: string]: any;
 };
 
 export type ProtocolsConfigureMessage = BaseMessage & {

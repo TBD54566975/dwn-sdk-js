@@ -3,7 +3,7 @@
   "version": "0.0.31",
   "description": "A reference implementation of https://identity.foundation/decentralized-web-node/spec/",
   "type": "module",
-  "types": "./dist/esm/src/index.d.ts",
+  "types": "./dist/types/src/index.d.ts",
   "engines": {
     "node": ">= 16"
   },
@@ -11,7 +11,8 @@
   "module": "./dist/esm/src/index.js",
   "exports": {
     "import": "./dist/esm/src/index.js",
-    "require": "./dist/cjs/src/index.js"
+    "require": "./dist/cjs/src/index.js",
+    "types": "./dist/types/src/index.d.ts"
   },
   "browser": {
     "./dist/esm/src/index.js": "./dist/bundles/browser.js",

@@ -5,6 +5,7 @@ import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
+import minimalProtocolDefinition from '../../../vectors/protocol-definitions/minimal.json' assert { type: 'json' };
 
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
@@ -13,7 +14,6 @@ import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { lexicographicalCompare } from '../../../../src/utils/string.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
-import { Protocols } from '../../../../src/utils/protocols.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
@@ -61,6 +61,20 @@ describe('ProtocolsConfigureHandler.handle()', () => {
 
     after(async () => {
       await dwn.close();
+    });
+
+    it('should allow a protocol definition with schema or dataFormat omitted', async () => {
+      const alice = await DidKeyResolver.generate();
+
+      const protocolDefinition = minimalProtocolDefinition;
+      const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+        requester : alice,
+        protocol  : 'example.com/',
+        protocolDefinition,
+      });
+
+      const reply = await dwn.processMessage(alice.did, protocolsConfig.message);
+      expect(reply.status.code).to.equal(202);
     });
 
     it('should return 400 if more than 1 signature is provided in `authorization`', async () => {
@@ -170,14 +184,15 @@ describe('ProtocolsConfigureHandler.handle()', () => {
     it('should return 400 if schema is not normalized', async () => {
       const alice = await DidKeyResolver.generate();
 
+      const protocolDefinition = dexProtocolDefinition;
       const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-        requester          : alice,
-        protocol           : 'example.com/',
-        protocolDefinition : dexProtocolDefinition,
+        requester : alice,
+        protocol  : 'example.com/',
+        protocolDefinition,
       });
 
       // overwrite schema because #create auto-normalizes schema
-      Protocols.getRecordDefinition(protocolsConfig.message.descriptor.definition, 'ask')!.schema = 'ask';
+      protocolsConfig.message.descriptor.definition.types.ask.schema = 'ask';
 
       // Re-create auth because we altered the descriptor after signing
       protocolsConfig.message.authorization = await Message.signAsAuthorization(
