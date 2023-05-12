@@ -152,6 +152,18 @@ export class Dwn {
       });
     }
 
+    // DWN interface and method check mainly for pure JS
+    const dwnInterface = message?.descriptor?.interface;
+    const dwnMethod = message?.descriptor?.method;
+    if (dwnInterface !== DwnInterfaceName.Records || dwnMethod !== DwnMethodName.Write) {
+      return new MessageReply({
+        status: {
+          code   : 400,
+          detail : `Invalid DWN interface or method: expecting ${DwnInterfaceName.Records}${DwnMethodName.Write}, got ${dwnInterface}${dwnMethod}.`
+        }
+      });
+    }
+
     try {
       // consider to push this down to individual handlers
       Message.validateJsonSchema(message);

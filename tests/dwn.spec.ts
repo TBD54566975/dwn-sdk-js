@@ -9,9 +9,9 @@ import { DidKeyResolver } from '../src/did/did-key-resolver.js';
 import { Dwn } from '../src/dwn.js';
 import { Encoder } from '../src/index.js';
 import { EventLogLevel } from '../src/event-log/event-log-level.js';
-import { Message } from '../src/core/message.js';
 import { MessageStoreLevel } from '../src/store/message-store-level.js';
 import { TestDataGenerator } from './utils/test-data-generator.js';
+import { DwnInterfaceName, Message } from '../src/core/message.js';
 
 chai.use(chaiAsPromised);
 
@@ -288,6 +288,27 @@ describe('DWN', () => {
 
       expect(reply.status.code).to.equal(400);
       expect(reply.status.detail).to.contain(`must have required property 'recordId'`);
+    });
+
+    it('should throw 400 if given incorrect DWN interface or method', async () => {
+      const alice = await DidKeyResolver.generate();
+      const reply1 = await dwn.synchronizePrunedInitialRecordsWrite(alice.did, undefined as unknown as RecordsWriteMessage ); // missing message
+      expect(reply1.status.code).to.equal(400);
+      expect(reply1.status.detail).to.contain('Invalid DWN interface or method');
+
+      const reply2 = await dwn.synchronizePrunedInitialRecordsWrite(
+        alice.did,
+        { descriptor: { interface: 'IncorrectInterface' } } as RecordsWriteMessage
+      );
+      expect(reply2.status.code).to.equal(400);
+      expect(reply2.status.detail).to.contain('Invalid DWN interface or method');
+
+      const reply3 = await dwn.synchronizePrunedInitialRecordsWrite(
+        alice.did,
+        { descriptor: { interface: DwnInterfaceName.Records, method: 'IncorrectMethod' } } as RecordsWriteMessage
+      );
+      expect(reply3.status.code).to.equal(400);
+      expect(reply3.status.detail).to.contain('Invalid DWN interface or method');
     });
   });
 });

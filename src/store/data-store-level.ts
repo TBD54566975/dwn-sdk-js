@@ -16,7 +16,7 @@ const PLACEHOLDER_VALUE = new Uint8Array();
  *
  * It has the following structure (`+` represents a sublevel and `->` represents a key->value pair):
  *   'data' + <tenant> + <dataCid> -> <data>
- *   'host' + <tenant> + <dataCid> + <messageCid> -> PLACEHOLDER_VALUE
+ *   'references' + <tenant> + <dataCid> + <messageCid> -> PLACEHOLDER_VALUE
  *
  * This allows for the <data> to be shared for everything that uses the same <dataCid> while also making
  * sure that the <data> can only be deleted if there are no <messageCid> for any <tenant> still using it.
