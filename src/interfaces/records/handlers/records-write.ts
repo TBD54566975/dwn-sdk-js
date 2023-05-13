@@ -7,11 +7,11 @@ import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
-import { DwnError, DwnErrorCode } from '../../../core/dwn-error.js';
-import { DwnInterfaceName, Message } from '../../../core/message.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { StorageController } from '../../../store/storage-controller.js';
+import { DwnError, DwnErrorCode } from '../../../core/dwn-error.js';
+import { DwnInterfaceName, Message } from '../../../core/message.js';
 
 export class RecordsWriteHandler implements MethodHandler {
 
