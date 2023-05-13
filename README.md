@@ -3,11 +3,11 @@
 # Decentralized Web Node (DWN) SDK
 
 Code Coverage
-![Statements](https://img.shields.io/badge/statements-94.74%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-94.13%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-92.48%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-94.74%25-brightgreen.svg?style=flat)
+![Statements](https://img.shields.io/badge/statements-94.69%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-94.15%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-93.15%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-94.69%25-brightgreen.svg?style=flat)
 
 ## Introduction
 
-This repository contains a reference implementation of Decentralized Web Node (DWN) as per the [specification](https://identity.foundation/decentralized-web-node/spec/). This specification is in a draft state and very much so a WIP. For the foreseeable future, a lot of the work on DWN will be split across this repo and the repo that houses the specification, which you can find [here](https://github.com/decentralized-identity/decentralized-web-node). The current goal is to produce a beta implementation by March 2023. This won't include all interfaces described in the DWN spec, but will be enough to begin building applications.
+This repository contains a reference implementation of Decentralized Web Node (DWN) as per the [specification](https://identity.foundation/decentralized-web-node/spec/). This specification is in a draft state and very much so a WIP. For the foreseeable future, a lot of the work on DWN will be split across this repo and the repo that houses the specification, which you can find [here](https://github.com/decentralized-identity/decentralized-web-node). The current implementation does not include all interfaces described in the DWN spec, but is enough to begin building test applications.
 
 This project is used as a dependency by several other projects.
 

@@ -7,7 +7,7 @@ import sinon from 'sinon';
 import socialMediaProtocolDefinition from '../../../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
 import chai, { expect } from 'chai';
 
-import { Comparer } from '../../../utils/comparer.js';
+import { ArrayUtility } from '../../../../src/utils/array.js';
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DwnErrorCode } from '../../../../src/core/dwn-error.js';
@@ -86,7 +86,7 @@ describe('RecordsReadHandler.handle()', () => {
       expect(readReply.record?.descriptor).to.exist;
 
       const dataFetched = await DataStream.toBytes(readReply.record!.data!);
-      expect(Comparer.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
+      expect(ArrayUtility.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
     });
 
     it('should not allow non-tenant to RecordsRead their a record data', async () => {
@@ -127,7 +127,7 @@ describe('RecordsReadHandler.handle()', () => {
       expect(readReply.status.code).to.equal(200);
 
       const dataFetched = await DataStream.toBytes(readReply.record!.data!);
-      expect(Comparer.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
+      expect(ArrayUtility.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
     });
 
     it('should allow an authenticated user to RecordRead data that is published', async () => {
@@ -150,7 +150,7 @@ describe('RecordsReadHandler.handle()', () => {
       expect(readReply.status.code).to.equal(200);
 
       const dataFetched = await DataStream.toBytes(readReply.record!.data!);
-      expect(Comparer.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
+      expect(ArrayUtility.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
     });
 
     describe('protocol based reads', () => {
@@ -420,7 +420,7 @@ describe('RecordsReadHandler.handle()', () => {
 
         const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, rootPrivateKey, cipherStream);
         const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
-        expect(Comparer.byteArraysEqual(plaintextBytes, originalData)).to.be.true;
+        expect(ArrayUtility.byteArraysEqual(plaintextBytes, originalData)).to.be.true;
 
 
         // test able to decrypt the message using a derived key
@@ -433,7 +433,7 @@ describe('RecordsReadHandler.handle()', () => {
 
         const plaintextDataStream2 = await Records.decrypt(unsignedRecordsWrite, derivedPrivateKey, cipherStream2);
         const plaintextBytes2 = await DataStream.toBytes(plaintextDataStream2);
-        expect(Comparer.byteArraysEqual(plaintextBytes2, originalData)).to.be.true;
+        expect(ArrayUtility.byteArraysEqual(plaintextBytes2, originalData)).to.be.true;
 
 
         // test unable to decrypt the message if derived key has an unexpected path
@@ -526,7 +526,7 @@ describe('RecordsReadHandler.handle()', () => {
 
         const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, descendantPrivateKey, cipherStream);
         const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
-        expect(Comparer.byteArraysEqual(plaintextBytes, bobMessageBytes)).to.be.true;
+        expect(ArrayUtility.byteArraysEqual(plaintextBytes, bobMessageBytes)).to.be.true;
 
         // test unable to decrypt the message if derived key has an unexpected path
         const invalidDerivationPath = [KeyDerivationScheme.Protocols, protocol, 'invalidContextId'];
