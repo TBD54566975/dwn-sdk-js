@@ -18,10 +18,10 @@ import { MessagesGetHandler } from './interfaces/messages/handlers/messages-get.
 import { MessageStoreLevel } from './store/message-store-level.js';
 import { ProtocolsConfigureHandler } from './interfaces/protocols/handlers/protocols-configure.js';
 import { ProtocolsQueryHandler } from './interfaces/protocols/handlers/protocols-query.js';
-import { PrunedInitialRecordsWriteHandler } from './interfaces/records/handlers/pruned-initial-records-write.js';
 import { RecordsDeleteHandler } from './interfaces/records/handlers/records-delete.js';
 import { RecordsQueryHandler } from './interfaces/records/handlers/records-query.js';
 import { RecordsReadHandler } from './interfaces/records/handlers/records-read.js';
+import type { RecordsWriteHandlerOptions } from './interfaces/records/handlers/records-write.js';
 import { RecordsWriteHandler } from './interfaces/records/handlers/records-write.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './core/message.js';
 
@@ -32,9 +32,6 @@ export class Dwn {
   private dataStore: DataStore;
   private eventLog: EventLog;
   private tenantGate: TenantGate;
-
-  // used by sync
-  private prunedInitialRecordsWriteHandler: PrunedInitialRecordsWriteHandler;
 
   private constructor(config: DwnConfig) {
     this.didResolver = config.didResolver!;
@@ -55,8 +52,6 @@ export class Dwn {
       [DwnInterfaceName.Records + DwnMethodName.Read]  : new RecordsReadHandler(this.didResolver, this.messageStore, this.dataStore),
       [DwnInterfaceName.Records + DwnMethodName.Write] : new RecordsWriteHandler(this.didResolver, this.messageStore, this.dataStore, this.eventLog),
     };
-
-    this.prunedInitialRecordsWriteHandler = new PrunedInitialRecordsWriteHandler(this.didResolver, this.messageStore, this.dataStore, this.eventLog);
   }
 
   /**
@@ -143,7 +138,12 @@ export class Dwn {
       return errorMessageReply;
     }
 
-    const methodHandlerReply = await this.prunedInitialRecordsWriteHandler.handle({ tenant, message });
+    const options: RecordsWriteHandlerOptions = {
+      skipDataStorage: true,
+    };
+
+    const handler = new RecordsWriteHandler(this.didResolver, this.messageStore, this.dataStore, this.eventLog);
+    const methodHandlerReply = await handler.handle({ tenant, message, options });
     return methodHandlerReply;
   }
 

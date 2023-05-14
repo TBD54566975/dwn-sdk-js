@@ -17,7 +17,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
   public async handle({
     tenant,
     message,
-    dataStream
+    dataStream: _dataStream
   }: {tenant: string, message: ProtocolsConfigureMessage, dataStream: _Readable.Readable}): Promise<MessageReply> {
 
     let protocolsConfigure: ProtocolsConfigure;
@@ -41,7 +41,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
       protocol  : message.descriptor.definition.protocol
     };
     const existingMessages = await this.messageStore.query(tenant, query) as ProtocolsConfigureMessage[];
-
+    ``;
     // find lexicographically the largest message, and if the incoming message is the largest
     let newestMessage = await Message.getMessageWithLargestCid(existingMessages);
     let incomingMessageIsNewest = false;
@@ -55,7 +55,9 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     if (incomingMessageIsNewest) {
       const indexes = ProtocolsConfigureHandler.constructProtocolsConfigureIndexes(protocolsConfigure);
 
-      await StorageController.put(this.messageStore, this.dataStore, this.eventLog, tenant, message, indexes, dataStream);
+      const messageCid = await Message.getCid(message);
+      await this.messageStore.put(tenant, message, indexes);
+      await this.eventLog.append(tenant, messageCid);
 
       messageReply = new MessageReply({
         status: { code: 202, detail: 'Accepted' }
