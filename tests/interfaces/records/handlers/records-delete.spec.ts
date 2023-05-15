@@ -58,7 +58,7 @@ describe('RecordsDeleteHandler.handle()', () => {
       await dwn.close();
     });
 
-    it('should handle RecordsDelete successfully', async () => {
+    it('should handle RecordsDelete successfully and return 404 if deleting a deleted record', async () => {
       const alice = await DidKeyResolver.generate();
 
       // insert data
@@ -89,6 +89,28 @@ describe('RecordsDeleteHandler.handle()', () => {
       const reply2 = await dwn.processMessage(alice.did, queryData.message);
       expect(reply2.status.code).to.equal(200);
       expect(reply2.entries?.length).to.equal(0);
+
+      // testing deleting a deleted record
+      const recordsDelete2 = await RecordsDelete.create({
+        recordId                    : message.recordId,
+        authorizationSignatureInput : Jws.createSignatureInput(alice)
+      });
+
+      const recordsDelete2Reply = await dwn.processMessage(alice.did, recordsDelete2.message);
+      expect(recordsDelete2Reply.status.code).to.equal(404);
+    });
+
+    it('should return 404 if deleting a non-existent record', async () => {
+      const alice = await DidKeyResolver.generate();
+
+      // testing deleting a non-existent record
+      const recordsDelete = await RecordsDelete.create({
+        recordId                    : 'nonExistentRecordId',
+        authorizationSignatureInput : Jws.createSignatureInput(alice)
+      });
+
+      const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
+      expect(deleteReply.status.code).to.equal(404);
     });
 
     it('should be disallowed if there is a newer RecordsWrite already in the DWN ', async () => {
@@ -130,7 +152,7 @@ describe('RecordsDeleteHandler.handle()', () => {
       expect(reply.entries![0].encodedData).to.equal(expectedEncodedData);
     });
 
-    it('should be able to delete and rewrite the same data', async () => {
+    it('should be able to delete then rewrite the same data', async () => {
       const alice = await DidKeyResolver.generate();
       const data = Encoder.stringToBytes('test');
       const dataCid = await Cid.computeDagPbCidFromBytes(data);
