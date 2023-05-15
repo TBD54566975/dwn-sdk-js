@@ -9,7 +9,7 @@ import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.
 import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsDelete } from '../messages/records-delete.js';
 import { RecordsWrite } from '../messages/records-write.js';
-import { DwnInterfaceName, Message } from '../../../core/message.js';
+import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
 
 export class RecordsDeleteHandler implements MethodHandler {
 
@@ -54,28 +54,31 @@ export class RecordsDeleteHandler implements MethodHandler {
       newestMessage = newestExistingMessage;
     }
 
-    // write the incoming message to DB if incoming message is newest
-    let messageReply: MessageReply;
-    if (incomingMessageIsNewest) {
-      const indexes = await constructIndexes(tenant, recordsDelete);
-
-      await this.messageStore.put(tenant, message, indexes);
-
-      const messageCid = await Message.getCid(message);
-      await this.eventLog.append(tenant, messageCid);
-
-      messageReply = new MessageReply({
-        status: { code: 202, detail: 'Accepted' }
-      });
-    } else {
-      messageReply = new MessageReply({
+    if (!incomingMessageIsNewest) {
+      return new MessageReply({
         status: { code: 409, detail: 'Conflict' }
       });
     }
 
+    // return Not Found if record does not exist or is already deleted
+    if (newestExistingMessage === undefined || newestExistingMessage.descriptor.method === DwnMethodName.Delete) {
+      return new MessageReply({
+        status: { code: 404, detail: 'Not Found' }
+      });
+    }
+
+    const indexes = await constructIndexes(tenant, recordsDelete);
+    await this.messageStore.put(tenant, message, indexes);
+
+    const messageCid = await Message.getCid(message);
+    await this.eventLog.append(tenant, messageCid);
+
     // delete all existing messages that are not newest, except for the initial write
     await deleteAllOlderMessagesButKeepInitialWrite(tenant, existingMessages, newestMessage, this.messageStore, this.dataStore, this.eventLog);
 
+    const messageReply = new MessageReply({
+      status: { code: 202, detail: 'Accepted' }
+    });
     return messageReply;
   };
 }
