@@ -1,4 +1,4 @@
-import { Comparer } from '../utils/comparer.js';
+import { ArrayUtility } from '../../src/utils/array.js';
 import { DataStream } from '../../src/index.js';
 import { Encryption } from '../../src/utils/encryption.js';
 import { expect } from 'chai';
@@ -20,7 +20,7 @@ describe('Encryption', () => {
       const plaintextStream = await Encryption.aes256CtrDecrypt(key, initializationVector, cipherStream);
       const plaintextBytes = await DataStream.toBytes(plaintextStream);
 
-      expect(Comparer.byteArraysEqual(inputBytes, plaintextBytes)).to.be.true;
+      expect(ArrayUtility.byteArraysEqual(inputBytes, plaintextBytes)).to.be.true;
     });
 
     it('should emit error on encrypt if the plaintext data stream emits an error', async () => {
@@ -115,7 +115,7 @@ describe('Encryption', () => {
       const decryptionInput = { privateKey, ...encryptionOutput };
       const decryptedPlaintext = await Encryption.eciesSecp256k1Decrypt(decryptionInput);
 
-      expect(Comparer.byteArraysEqual(originalPlaintext, decryptedPlaintext)).to.be.true;
+      expect(ArrayUtility.byteArraysEqual(originalPlaintext, decryptedPlaintext)).to.be.true;
     });
   });
 });

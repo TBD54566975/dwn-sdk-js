@@ -7,11 +7,11 @@ import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
-import { DwnErrorCode } from '../../../core/dwn-error.js';
-import { DwnInterfaceName } from '../../../core/message.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { StorageController } from '../../../store/storage-controller.js';
+import { DwnError, DwnErrorCode } from '../../../core/dwn-error.js';
+import { DwnInterfaceName, Message } from '../../../core/message.js';
 
 export class RecordsWriteHandler implements MethodHandler {
 
@@ -56,47 +56,45 @@ export class RecordsWriteHandler implements MethodHandler {
       }
     }
 
-    // find which message is the newest, and if the incoming message is the newest
-    const newestExistingMessage = await RecordsWrite.getNewestMessage(existingMessages);
+    const newestExistingMessage = await Message.getNewestMessage(existingMessages);
 
     let incomingMessageIsNewest = false;
-    let newestMessage;
-    // if incoming message is newest
-    if (newestExistingMessage === undefined || await RecordsWrite.isNewer(message, newestExistingMessage)) {
+    let newestMessage; // keep reference of newest message for pruning later
+    if (newestExistingMessage === undefined || await Message.isNewer(message, newestExistingMessage)) {
       incomingMessageIsNewest = true;
       newestMessage = message;
     } else { // existing message is the same age or newer than the incoming message
       newestMessage = newestExistingMessage;
     }
 
-    // write the incoming message to DB if incoming message is newest
-    let messageReply: MessageReply;
-    if (incomingMessageIsNewest) {
-      const isLatestBaseState = true;
-      const indexes = await constructRecordsWriteIndexes(recordsWrite, isLatestBaseState);
-
-      try {
-        await this.storeMessage(this.messageStore, this.dataStore, this.eventLog, tenant, message, indexes, dataStream);
-      } catch (error) {
-        const e = error as any;
-        if (e.code === DwnErrorCode.StorageControllerDataCidMismatch ||
-            e.code === DwnErrorCode.StorageControllerDataNotFound ||
-            e.code === DwnErrorCode.StorageControllerDataSizeMismatch) {
-          return MessageReply.fromError(error, 400);
-        }
-
-        // else throw
-        throw error;
-      }
-
-      messageReply = new MessageReply({
-        status: { code: 202, detail: 'Accepted' }
-      });
-    } else {
-      messageReply = new MessageReply({
+    if (!incomingMessageIsNewest) {
+      return new MessageReply({
         status: { code: 409, detail: 'Conflict' }
       });
     }
+
+    const isLatestBaseState = true;
+    const indexes = await constructRecordsWriteIndexes(recordsWrite, isLatestBaseState);
+
+    try {
+      this.validateUndefinedDataStream(dataStream, newestExistingMessage, message);
+
+      await this.storeMessage(this.messageStore, this.dataStore, this.eventLog, tenant, message, indexes, dataStream);
+    } catch (error) {
+      const e = error as any;
+      if (e.code === DwnErrorCode.StorageControllerDataCidMismatch ||
+          e.code === DwnErrorCode.StorageControllerDataSizeMismatch ||
+          e.code === DwnErrorCode.RecordsWriteMissingDataStream) {
+        return MessageReply.fromError(error, 400);
+      }
+
+      // else throw
+      throw error;
+    }
+
+    const messageReply = new MessageReply({
+      status: { code: 202, detail: 'Accepted' }
+    });
 
     // delete all existing messages that are not newest, except for the initial write
     await deleteAllOlderMessagesButKeepInitialWrite(tenant, existingMessages, newestMessage, this.messageStore, this.dataStore, this.eventLog);
@@ -105,13 +103,33 @@ export class RecordsWriteHandler implements MethodHandler {
   };
 
   /**
+   * Further validation if data stream is undefined.
+   * NOTE: if data stream is not be provided but `dataCid` is provided,
+   * then we need to make sure that the existing record state is referencing the same data as the incoming message.
+   * Without this check will lead to unauthorized access of data (https://github.com/TBD54566975/dwn-sdk-js/issues/359)
+   */
+  protected validateUndefinedDataStream(
+    dataStream: _Readable.Readable | undefined,
+    newestExistingMessage: TimestampedMessage | undefined,
+    incomingMessage: RecordsWriteMessage): void {
+    if (dataStream === undefined && incomingMessage.descriptor.dataCid !== undefined) {
+      if (newestExistingMessage?.descriptor.dataCid !== incomingMessage.descriptor.dataCid) {
+        throw new DwnError(
+          DwnErrorCode.RecordsWriteMissingDataStream,
+          'Data stream is not provided.'
+        );
+      }
+    }
+  }
+
+  /**
    * Stores the given message and its data in the underlying database(s).
    * NOTE: this method was created to allow a child class to override the default behavior for sync feature to work:
    * ie. allow `RecordsWrite` to be written even if data stream is not provided to handle the case that:
    * a `RecordsDelete` has happened, as a result a DWN would have pruned the data associated with the original write.
    * This approach avoids the need to duplicate the entire handler.
    */
-  public async storeMessage(
+  protected async storeMessage(
     messageStore: MessageStore,
     dataStore: DataStore,
     eventLog: EventLog,

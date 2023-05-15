@@ -13,7 +13,7 @@ import sinon from 'sinon';
 import socialMediaProtocolDefinition from '../../../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
 import chai, { expect } from 'chai';
 
-import { asyncGeneratorToArray } from '../../../../src/utils/array.js';
+import { ArrayUtility } from '../../../../src/utils/array.js';
 import { base64url } from 'multiformats/bases/base64';
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DataStream } from '../../../../src/utils/data-stream.js';
@@ -30,6 +30,7 @@ import { KeyDerivationScheme } from '../../../../src/index.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { ProtocolActor } from '../../../../src/interfaces/protocols/types.js';
+import { RecordsRead } from '../../../../src/interfaces/records/messages/records-read.js';
 import { RecordsWrite } from '../../../../src/interfaces/records/messages/records-write.js';
 import { RecordsWriteHandler } from '../../../../src/interfaces/records/handlers/records-write.js';
 import { StorageController } from '../../../../src/store/storage-controller.js';
@@ -308,7 +309,7 @@ describe('RecordsWriteHandler.handle()', () => {
       expect(reply.status.detail).to.contain('does not match dataCid in descriptor');
     });
 
-    it('should return 400 if attempting to write a record without data stream and the data does not already exist in DWN', async () => {
+    it('should return 400 if attempting to write a record without data stream', async () => {
       const alice = await DidKeyResolver.generate();
 
       const { message } = await TestDataGenerator.generateRecordsWrite({
@@ -318,7 +319,62 @@ describe('RecordsWriteHandler.handle()', () => {
       const reply = await dwn.processMessage(alice.did, message);
 
       expect(reply.status.code).to.equal(400);
-      expect(reply.status.detail).to.contain(DwnErrorCode.StorageControllerDataNotFound);
+      expect(reply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataStream);
+    });
+
+    it('#359 - should not allow access of data by referencing a different`dataCid` in "modify" `RecordsWrite`', async () => {
+      const alice = await DidKeyResolver.generate();
+
+      // alice writes a record
+      const dataString = 'private data';
+      const dataSize = dataString.length;
+      const data = Encoder.stringToBytes(dataString);
+      const dataCid = await Cid.computeDagPbCidFromBytes(data);
+
+      const write1 = await TestDataGenerator.generateRecordsWrite({
+        requester: alice,
+        data,
+      });
+
+      const write1Reply = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
+      expect(write1Reply.status.code).to.equal(202);
+
+      // alice writes another record (which will be modified later)
+      const write2 = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+      const write2Reply = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
+      expect(write2Reply.status.code).to.equal(202);
+
+      // modify write2 by referencing the `dataCid` in write1 (which should not be allowed)
+      const write2Change = await TestDataGenerator.generateRecordsWrite({
+        requester    : alice,
+        // immutable properties just inherit from the message given
+        recipientDid : write2.message.descriptor.recipient,
+        recordId     : write2.message.recordId,
+        dateCreated  : write2.message.descriptor.dateCreated,
+        contextId    : write2.message.contextId,
+        protocolPath : write2.message.descriptor.protocolPath,
+        parentId     : write2.message.descriptor.parentId,
+        schema       : write2.message.descriptor.schema,
+        dataFormat   : write2.message.descriptor.dataFormat,
+        // unauthorized reference to data in write1
+        dataCid,
+        dataSize
+      });
+      const write2ChangeReply = await dwn.processMessage(alice.did, write2Change.message);
+      expect(write2ChangeReply.status.code).to.equal(400); // should be disallowed
+      expect(write2ChangeReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataStream);
+
+      // further sanity test to make sure the change is not written, ie. write2 still has the original data
+      const read = await RecordsRead.create({
+        recordId                    : write2.message.recordId,
+        authorizationSignatureInput : Jws.createSignatureInput(alice)
+      });
+
+      const readReply = await dwn.handleRecordsRead(alice.did, read.message);
+      expect(readReply.status.code).to.equal(200);
+
+      const readDataBytes = await DataStream.toBytes(readReply.record!.data!);
+      expect(ArrayUtility.byteArraysEqual(readDataBytes, write2.dataBytes!)).to.be.true;
     });
 
     describe('initial write & subsequent write tests', () => {
@@ -342,7 +398,7 @@ describe('RecordsWriteHandler.handle()', () => {
           const reply = await dwn.processMessage(tenant, message, dataStream);
           expect(reply.status.code).to.equal(202);
 
-          expect(asyncGeneratorToArray(dataForCid.db.keys())).to.eventually.eql([ dataCid ]);
+          expect(ArrayUtility.fromAsyncGenerator(dataForCid.db.keys())).to.eventually.eql([ dataCid ]);
 
           const newWrite = await RecordsWrite.createFrom({
             unsignedRecordsWriteMessage : recordsWrite.message,
@@ -353,7 +409,7 @@ describe('RecordsWriteHandler.handle()', () => {
           const newWriteReply = await dwn.processMessage(tenant, newWrite.message);
           expect(newWriteReply.status.code).to.equal(202);
 
-          expect(asyncGeneratorToArray(dataForCid.db.keys())).to.eventually.eql([ dataCid ]);
+          expect(ArrayUtility.fromAsyncGenerator(dataForCid.db.keys())).to.eventually.eql([ dataCid ]);
 
           // verify the new record state can be queried
           const recordsQueryMessageData = await TestDataGenerator.generateRecordsQuery({
@@ -369,7 +425,7 @@ describe('RecordsWriteHandler.handle()', () => {
           // very importantly verify the original data is still returned
           expect(recordsQueryReply.entries![0].encodedData).to.equal(encodedData);
 
-          expect(asyncGeneratorToArray(dataForCid.db.keys())).to.eventually.eql([ dataCid ]);
+          expect(ArrayUtility.fromAsyncGenerator(dataForCid.db.keys())).to.eventually.eql([ dataCid ]);
         });
 
         it('should inherit parent published state when using createFrom() to create RecordsWrite', async () => {
@@ -1542,6 +1598,253 @@ describe('RecordsWriteHandler.handle()', () => {
         const reply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
         expect(reply.status.code).to.equal(400);
         expect(reply.status.detail).to.contain(DwnErrorCode.UrlProtocolNotNormalized);
+      });
+
+      it('#359 - should not allow access of data by referencing `dataCid` in protocol authorized `RecordsWrite`', async () => {
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+
+        const dataForCid = await dataStore.blockstore.partition('data');
+
+        // alice writes a private record
+        const dataString = 'private data';
+        const dataSize = dataString.length;
+        const data = Encoder.stringToBytes(dataString);
+        const dataCid = await Cid.computeDagPbCidFromBytes(data);
+
+        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
+          requester: alice,
+          data,
+        });
+
+        const reply = await dwn.processMessage(alice.did, message, dataStream);
+        expect(reply.status.code).to.equal(202);
+
+        expect(ArrayUtility.fromAsyncGenerator(dataForCid.db.keys())).to.eventually.eql([ dataCid ]);
+
+        const protocol = 'https://tbd.website/decentralized-web-node/protocols/social-media';
+        const protocolDefinition = socialMediaProtocolDefinition;
+
+        // alice has a social media protocol that allows anyone to write and read images
+        const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+          requester: alice,
+          protocol,
+          protocolDefinition
+        });
+        const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        expect(protocolWriteReply.status.code).to.equal(202);
+
+        // bob learns of metadata (ie. dataCid) of alice's secret data,
+        // attempts to gain unauthorized access by writing to alice's DWN through open protocol referencing the dataCid without supplying the data
+        const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+          requester    : bob,
+          protocol,
+          protocolPath : 'image',
+          schema       : protocolDefinition.types.image.schema,
+          dataFormat   : 'image/jpeg',
+          dataCid, // bob learns of, and references alice's secrete data's CID
+          dataSize,
+          recipientDid : alice.did
+        });
+        const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
+        expect(imageReply.status.code).to.equal(400); // should be disallowed
+        expect(imageReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataStream);
+
+        // further sanity test to make sure record is never written
+        const bobRecordsReadData = await RecordsRead.create({
+          recordId                    : imageRecordsWrite.message.recordId,
+          authorizationSignatureInput : Jws.createSignatureInput(bob)
+        });
+
+        const bobRecordsReadReply = await dwn.handleRecordsRead(alice.did, bobRecordsReadData.message);
+        expect(bobRecordsReadReply.status.code).to.equal(404);
+      });
+    });
+
+    describe('reference counting tests', () => {
+      it('should only write the data once even if written by multiple messages', async () => {
+        const alice = await DidKeyResolver.generate();
+        const data = Encoder.stringToBytes('test');
+        const dataCid = await Cid.computeDagPbCidFromBytes(data);
+        const encodedData = Encoder.bytesToBase64Url(data);
+
+        const blockstoreForData = await dataStore.blockstore.partition('data');
+        const blockstoreOfGivenTenant = await blockstoreForData.partition(alice.did);
+        const blockstoreOfGivenDataCid = await blockstoreOfGivenTenant.partition(dataCid);
+
+        const aliceWrite1Data = await TestDataGenerator.generateRecordsWrite({
+          requester: alice,
+          data
+        });
+        const aliceWrite1Reply = await dwn.processMessage(alice.did, aliceWrite1Data.message, aliceWrite1Data.dataStream);
+        expect(aliceWrite1Reply.status.code).to.equal(202);
+
+        const aliceQueryWrite1AfterAliceWrite1Data = await TestDataGenerator.generateRecordsQuery({
+          requester : alice,
+          filter    : { recordId: aliceWrite1Data.message.recordId }
+        });
+        const aliceQueryWrite1AfterAliceWrite1Reply = await dwn.processMessage(alice.did, aliceQueryWrite1AfterAliceWrite1Data.message);
+        expect(aliceQueryWrite1AfterAliceWrite1Reply.status.code).to.equal(200);
+        expect(aliceQueryWrite1AfterAliceWrite1Reply.entries?.length).to.equal(1);
+        expect(aliceQueryWrite1AfterAliceWrite1Reply.entries![0].encodedData).to.equal(encodedData);
+
+        await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfGivenDataCid.db.keys())).to.eventually.eql([ dataCid ]);
+
+        const aliceWrite2Data = await TestDataGenerator.generateRecordsWrite({
+          requester: alice,
+          data
+        });
+        const aliceWrite2Reply = await dwn.processMessage(alice.did, aliceWrite2Data.message, aliceWrite2Data.dataStream);
+        expect(aliceWrite2Reply.status.code).to.equal(202);
+
+        const aliceQueryWrite1AfterAliceWrite2Data = await TestDataGenerator.generateRecordsQuery({
+          requester : alice,
+          filter    : { recordId: aliceWrite1Data.message.recordId }
+        });
+        const aliceQueryWrite1AfterAliceWrite2Reply = await dwn.processMessage(alice.did, aliceQueryWrite1AfterAliceWrite2Data.message);
+        expect(aliceQueryWrite1AfterAliceWrite2Reply.status.code).to.equal(200);
+        expect(aliceQueryWrite1AfterAliceWrite2Reply.entries?.length).to.equal(1);
+        expect(aliceQueryWrite1AfterAliceWrite2Reply.entries![0].encodedData).to.equal(encodedData);
+
+        const aliceQueryWrite2AfterAliceWrite2Data = await TestDataGenerator.generateRecordsQuery({
+          requester : alice,
+          filter    : { recordId: aliceWrite2Data.message.recordId }
+        });
+        const aliceQueryWrite2AfterAliceWrite2Reply = await dwn.processMessage(alice.did, aliceQueryWrite2AfterAliceWrite2Data.message);
+        expect(aliceQueryWrite2AfterAliceWrite2Reply.status.code).to.equal(200);
+        expect(aliceQueryWrite2AfterAliceWrite2Reply.entries?.length).to.equal(1);
+        expect(aliceQueryWrite2AfterAliceWrite2Reply.entries![0].encodedData).to.equal(encodedData);
+
+        await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfGivenDataCid.db.keys())).to.eventually.eql([ dataCid ]);
+      });
+
+      it('should duplicate same data if written to different tenants', async () => {
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+
+        const data = Encoder.stringToBytes('test');
+        const dataCid = await Cid.computeDagPbCidFromBytes(data);
+        const encodedData = Encoder.bytesToBase64Url(data);
+
+        const blockstoreForData = await dataStore.blockstore.partition('data');
+        const blockstoreOfAlice = await blockstoreForData.partition(alice.did);
+        const blockstoreOfAliceOfDataCid = await blockstoreOfAlice.partition(dataCid);
+
+        const blockstoreOfBob = await blockstoreForData.partition(bob.did);
+        const blockstoreOfBobOfDataCid = await blockstoreOfBob.partition(dataCid);
+
+        // write data to alice's DWN
+        const aliceWriteData = await TestDataGenerator.generateRecordsWrite({
+          requester: alice,
+          data
+        });
+        const aliceWriteReply = await dwn.processMessage(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
+        expect(aliceWriteReply.status.code).to.equal(202);
+
+        const aliceQueryWriteAfterAliceWriteData = await TestDataGenerator.generateRecordsQuery({
+          requester : alice,
+          filter    : { recordId: aliceWriteData.message.recordId }
+        });
+        const aliceQueryWriteAfterAliceWriteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterAliceWriteData.message);
+        expect(aliceQueryWriteAfterAliceWriteReply.status.code).to.equal(200);
+        expect(aliceQueryWriteAfterAliceWriteReply.entries?.length).to.equal(1);
+        expect(aliceQueryWriteAfterAliceWriteReply.entries![0].encodedData).to.equal(encodedData);
+
+        // write same data to bob's DWN
+        const bobWriteData = await TestDataGenerator.generateRecordsWrite({
+          requester: bob,
+          data
+        });
+        const bobWriteReply = await dwn.processMessage(bob.did, bobWriteData.message, bobWriteData.dataStream);
+        expect(bobWriteReply.status.code).to.equal(202);
+
+        const aliceQueryWriteAfterBobWriteData = await TestDataGenerator.generateRecordsQuery({
+          requester : alice,
+          filter    : { recordId: aliceWriteData.message.recordId }
+        });
+        const aliceQueryWriteAfterBobWriteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterBobWriteData.message);
+        expect(aliceQueryWriteAfterBobWriteReply.status.code).to.equal(200);
+        expect(aliceQueryWriteAfterBobWriteReply.entries?.length).to.equal(1);
+        expect(aliceQueryWriteAfterBobWriteReply.entries![0].encodedData).to.equal(encodedData);
+
+        const bobQueryWriteAfterBobWriteData = await TestDataGenerator.generateRecordsQuery({
+          requester : bob,
+          filter    : { recordId: bobWriteData.message.recordId }
+        });
+        const bobQueryWriteAfterBobWriteReply = await dwn.processMessage(bob.did, bobQueryWriteAfterBobWriteData.message);
+        expect(bobQueryWriteAfterBobWriteReply.status.code).to.equal(200);
+        expect(bobQueryWriteAfterBobWriteReply.entries?.length).to.equal(1);
+        expect(bobQueryWriteAfterBobWriteReply.entries![0].encodedData).to.equal(encodedData);
+
+        // verify that both alice and bob's blockstore have reference to the same data CID
+        await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
+        await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfBobOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
+      });
+
+      it('should not allow referencing data across tenants', async () => {
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+        const data = Encoder.stringToBytes('test');
+        const dataCid = await Cid.computeDagPbCidFromBytes(data);
+        const encodedData = Encoder.bytesToBase64Url(data);
+
+        const blockstoreForData = await dataStore.blockstore.partition('data');
+        const blockstoreOfAlice = await blockstoreForData.partition(alice.did);
+        const blockstoreOfAliceOfDataCid = await blockstoreOfAlice.partition(dataCid);
+
+        const blockstoreOfBob = await blockstoreForData.partition(bob.did);
+        const blockstoreOfBobOfDataCid = await blockstoreOfBob.partition(dataCid);
+
+        // alice writes data to her DWN
+        const aliceWriteData = await TestDataGenerator.generateRecordsWrite({
+          requester: alice,
+          data
+        });
+        const aliceWriteReply = await dwn.processMessage(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
+        expect(aliceWriteReply.status.code).to.equal(202);
+
+        const aliceQueryWriteAfterAliceWriteData = await TestDataGenerator.generateRecordsQuery({
+          requester : alice,
+          filter    : { recordId: aliceWriteData.message.recordId }
+        });
+        const aliceQueryWriteAfterAliceWriteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterAliceWriteData.message);
+        expect(aliceQueryWriteAfterAliceWriteReply.status.code).to.equal(200);
+        expect(aliceQueryWriteAfterAliceWriteReply.entries?.length).to.equal(1);
+        expect(aliceQueryWriteAfterAliceWriteReply.entries![0].encodedData).to.equal(encodedData);
+
+        await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
+
+        // bob learns of the CID of data of alice and tries to gain unauthorized access by referencing it in his own DWN
+        const bobAssociateData = await TestDataGenerator.generateRecordsWrite({
+          requester : bob,
+          dataCid,
+          dataSize  : 4
+        });
+        const bobAssociateReply = await dwn.processMessage(bob.did, bobAssociateData.message, bobAssociateData.dataStream);
+        expect(bobAssociateReply.status.code).to.equal(400); // expecting an error
+        expect(bobAssociateReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataStream);
+
+        const aliceQueryWriteAfterBobAssociateData = await TestDataGenerator.generateRecordsQuery({
+          requester : alice,
+          filter    : { recordId: aliceWriteData.message.recordId }
+        });
+        const aliceQueryWriteAfterBobAssociateReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterBobAssociateData.message);
+        expect(aliceQueryWriteAfterBobAssociateReply.status.code).to.equal(200);
+        expect(aliceQueryWriteAfterBobAssociateReply.entries?.length).to.equal(1);
+        expect(aliceQueryWriteAfterBobAssociateReply.entries![0].encodedData).to.equal(encodedData);
+
+        // verify that bob has not gained access to alice's data
+        const bobQueryAssociateAfterBobAssociateData = await TestDataGenerator.generateRecordsQuery({
+          requester : bob,
+          filter    : { recordId: bobAssociateData.message.recordId }
+        });
+        const bobQueryAssociateAfterBobAssociateReply = await dwn.processMessage(bob.did, bobQueryAssociateAfterBobAssociateData.message);
+        expect(bobQueryAssociateAfterBobAssociateReply.status.code).to.equal(200);
+        expect(bobQueryAssociateAfterBobAssociateReply.entries?.length).to.equal(0);
+
+        // verify that bob's blockstore does not contain alice's data
+        await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
+        await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfBobOfDataCid.db.keys())).to.eventually.eql([ ]);
       });
     });
   });

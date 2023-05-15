@@ -1,5 +1,5 @@
+import { ArrayUtility } from '../../src/utils/array.js';
 import { base64url } from 'multiformats/bases/base64';
-import { Comparer } from './comparer.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { expect } from 'chai';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
@@ -51,7 +51,7 @@ describe('Secp256k1', () => {
       const derivedPublicKey = Secp256k1.deriveChildPublicKey(publicKey, tweakInput);
 
       const publicKeyFromDerivedPrivateKey = await Secp256k1.getPublicKey(derivedPrivateKey);
-      expect(Comparer.byteArraysEqual(derivedPublicKey, publicKeyFromDerivedPrivateKey)).to.be.true;
+      expect(ArrayUtility.byteArraysEqual(derivedPublicKey, publicKeyFromDerivedPrivateKey)).to.be.true;
     });
   });
 
@@ -67,17 +67,17 @@ describe('Secp256k1', () => {
       const publicKeyG = await Secp256k1.derivePublicKey(publicKey, fullPathToG);
       const publicKeyD = await Secp256k1.derivePublicKey(publicKey, fullPathToD);
       const publicKeyGFromD = await Secp256k1.derivePublicKey(publicKeyD, relativePathFromDToG);
-      expect(Comparer.byteArraysEqual(publicKeyG, publicKeyGFromD)).to.be.true;
+      expect(ArrayUtility.byteArraysEqual(publicKeyG, publicKeyGFromD)).to.be.true;
 
       // testing private key derivation from different ancestor in the same chain
       const privateKeyG = await Secp256k1.derivePrivateKey(privateKey, fullPathToG);
       const privateKeyD = await Secp256k1.derivePrivateKey(privateKey, fullPathToD);
       const privateKeyGFromD = await Secp256k1.derivePrivateKey(privateKeyD, relativePathFromDToG);
-      expect(Comparer.byteArraysEqual(privateKeyG, privateKeyGFromD)).to.be.true;
+      expect(ArrayUtility.byteArraysEqual(privateKeyG, privateKeyGFromD)).to.be.true;
 
       // testing that the derived private key matches up with the derived public key
       const publicKeyGFromPrivateKeyG = await Secp256k1.getPublicKey(privateKeyG);
-      expect(Comparer.byteArraysEqual(publicKeyGFromPrivateKeyG, publicKeyG)).to.be.true;
+      expect(ArrayUtility.byteArraysEqual(publicKeyGFromPrivateKeyG, publicKeyG)).to.be.true;
     });
 
     it('should derive the same public key using either the private or public counterpart of the same key pair', async () => {
@@ -87,7 +87,7 @@ describe('Secp256k1', () => {
 
       const derivedKeyFromPublicKey = await Secp256k1.derivePublicKey(publicKey, path);
       const derivedKeyFromPrivateKey = await Secp256k1.derivePublicKey(privateKey, path);
-      expect(Comparer.byteArraysEqual(derivedKeyFromPublicKey, derivedKeyFromPrivateKey)).to.be.true;
+      expect(ArrayUtility.byteArraysEqual(derivedKeyFromPublicKey, derivedKeyFromPrivateKey)).to.be.true;
     });
 
     it('should derive the same public key using either the private or public counterpart of the same key pair', async () => {

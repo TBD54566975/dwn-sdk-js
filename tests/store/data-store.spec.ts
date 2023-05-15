@@ -1,7 +1,7 @@
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
-import { asyncGeneratorToArray } from '../../src/utils/array.js';
+import { ArrayUtility } from '../../src/utils/array.js';
 import { Cid } from '../../src/utils/cid.js';
 import { DataStoreLevel } from '../../src/store/data-store-level.js';
 import { DataStream } from '../../src/index.js';
@@ -88,13 +88,13 @@ describe('DataStore Test Suite', () => {
       const messageCid = await TestDataGenerator.randomCborSha256Cid();
       const randomCid = await TestDataGenerator.randomCborSha256Cid();
 
-      const keysBeforeAssociate = await asyncGeneratorToArray(store.blockstore.db.keys());
+      const keysBeforeAssociate = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
       expect(keysBeforeAssociate.length).to.equal(0);
 
       const result = await store.associate(tenant, messageCid, randomCid);
       expect(result).to.be.undefined;
 
-      const keysAfterAssociate = await asyncGeneratorToArray(store.blockstore.db.keys());
+      const keysAfterAssociate = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
       expect(keysAfterAssociate.length).to.equal(0);
     });
 
@@ -109,13 +109,13 @@ describe('DataStore Test Suite', () => {
       const { dataCid } = await store.put(tenant, messageCid, randomCid, dataStream);
       expect(dataCid).to.not.equal(randomCid);
 
-      const keysBeforeAssociate = await asyncGeneratorToArray(store.blockstore.db.keys());
+      const keysBeforeAssociate = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
       expect(keysBeforeAssociate.length).to.equal(2);
 
       const result = await store.associate(tenant, messageCid, randomCid);
       expect(result).to.be.undefined;
 
-      const keysAfterAssociate = await asyncGeneratorToArray(store.blockstore.db.keys());
+      const keysAfterAssociate = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
       expect(keysAfterAssociate.length).to.equal(2);
     });
 
@@ -129,14 +129,14 @@ describe('DataStore Test Suite', () => {
 
       await store.put(tenant, messageCid, dataCid, dataStream);
 
-      const keysBeforeDelete = await asyncGeneratorToArray(store.blockstore.db.keys());
+      const keysBeforeDelete = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
       expect(keysBeforeDelete.length).to.equal(41);
 
       const result = (await store.associate(tenant, messageCid, dataCid))!;
       expect(result.dataCid).to.equal(dataCid);
       expect(result.dataSize).to.equal(10_000_000);
 
-      const keysAfterDelete = await asyncGeneratorToArray(store.blockstore.db.keys());
+      const keysAfterDelete = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
       expect(keysAfterDelete.length).to.equal(41);
     });
   });
@@ -152,12 +152,12 @@ describe('DataStore Test Suite', () => {
 
       await store.put(tenant, messageCid, dataCid, dataStream);
 
-      const keysBeforeDelete = await asyncGeneratorToArray(store.blockstore.db.keys());
+      const keysBeforeDelete = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
       expect(keysBeforeDelete.length).to.equal(41);
 
       await store.delete(tenant, messageCid, dataCid);
 
-      const keysAfterDelete = await asyncGeneratorToArray(store.blockstore.db.keys());
+      const keysAfterDelete = await ArrayUtility.fromAsyncGenerator(store.blockstore.db.keys());
       expect(keysAfterDelete.length).to.equal(0);
     });
   });

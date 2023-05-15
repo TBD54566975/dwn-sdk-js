@@ -6,7 +6,7 @@ import emailProtocolDefinition from '../../../vectors/protocol-definitions/email
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
-import { Comparer } from '../../../utils/comparer.js';
+import { ArrayUtility } from '../../../../src/utils/array.js';
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DwnConstant } from '../../../../src/core/dwn-constant.js';
@@ -718,7 +718,7 @@ describe('RecordsQueryHandler.handle()', () => {
 
         const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, rootPrivateKey, cipherStream);
         const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
-        expect(Comparer.byteArraysEqual(plaintextBytes, bobMessageBytes)).to.be.true;
+        expect(ArrayUtility.byteArraysEqual(plaintextBytes, bobMessageBytes)).to.be.true;
 
 
         // test able to decrypt the message using a derived key
@@ -729,7 +729,7 @@ describe('RecordsQueryHandler.handle()', () => {
 
         const plaintextDataStream2 = await Records.decrypt(unsignedRecordsWrite, derivedPrivateKey, cipherStream2);
         const plaintextBytes2 = await DataStream.toBytes(plaintextDataStream2);
-        expect(Comparer.byteArraysEqual(plaintextBytes2, bobMessageBytes)).to.be.true;
+        expect(ArrayUtility.byteArraysEqual(plaintextBytes2, bobMessageBytes)).to.be.true;
 
 
         // test able to decrypt the message using a key derived from a derived key
@@ -740,7 +740,7 @@ describe('RecordsQueryHandler.handle()', () => {
 
         const plaintextDataStream3 = await Records.decrypt(unsignedRecordsWrite, derivedPrivateKey2, cipherStream3);
         const plaintextBytes3 = await DataStream.toBytes(plaintextDataStream3);
-        expect(Comparer.byteArraysEqual(plaintextBytes3, bobMessageBytes)).to.be.true;
+        expect(ArrayUtility.byteArraysEqual(plaintextBytes3, bobMessageBytes)).to.be.true;
 
 
         // test unable to decrypt the message if derived key has an unexpected path
@@ -802,7 +802,7 @@ describe('RecordsQueryHandler.handle()', () => {
 
         const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, rootPrivateKey, cipherStream);
         const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
-        expect(Comparer.byteArraysEqual(plaintextBytes, originalData)).to.be.true;
+        expect(ArrayUtility.byteArraysEqual(plaintextBytes, originalData)).to.be.true;
 
 
         // test able to decrypt the message using a derived key
@@ -813,7 +813,7 @@ describe('RecordsQueryHandler.handle()', () => {
 
         const plaintextDataStream2 = await Records.decrypt(unsignedRecordsWrite, derivedPrivateKey, cipherStream2);
         const plaintextBytes2 = await DataStream.toBytes(plaintextDataStream2);
-        expect(Comparer.byteArraysEqual(plaintextBytes2, originalData)).to.be.true;
+        expect(ArrayUtility.byteArraysEqual(plaintextBytes2, originalData)).to.be.true;
 
 
         // test able to decrypt the message using a key derived from a derived key
@@ -824,7 +824,7 @@ describe('RecordsQueryHandler.handle()', () => {
 
         const plaintextDataStream3 = await Records.decrypt(unsignedRecordsWrite, derivedPrivateKey2, cipherStream3);
         const plaintextBytes3 = await DataStream.toBytes(plaintextDataStream3);
-        expect(Comparer.byteArraysEqual(plaintextBytes3, originalData)).to.be.true;
+        expect(ArrayUtility.byteArraysEqual(plaintextBytes3, originalData)).to.be.true;
 
 
         // test unable to decrypt the message if derived key has an unexpected path
