@@ -32,6 +32,7 @@ export { EncryptionInput, KeyEncryptionInput, RecordsWrite, RecordsWriteOptions,
 export { HooksWrite, HooksWriteOptions } from './interfaces/hooks/messages/hooks-write.js';
 export { Jws } from './utils/jws.js';
 export { KeyMaterial, PrivateJwk, PublicJwk } from './jose/types.js';
+export { Message } from './core/message.js';
 export { MessagesGet, MessagesGetOptions } from './interfaces/messages/messages/messages-get.js';
 export { MessageReply } from './core/message-reply.js';
 export { MessageStore } from './store/message-store.js';
