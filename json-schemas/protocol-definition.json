@@ -8,6 +8,9 @@
     "structure"
   ],
   "properties": {
+    "protocol": {
+      "type": "string"
+    },
     "types": {
       "type": "object",
       "patternProperties": {

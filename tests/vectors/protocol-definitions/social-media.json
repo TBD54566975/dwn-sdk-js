@@ -1,4 +1,5 @@
 {
+  "protocol": "http://social-media.xyz",
   "types": {
     "message": {
       "schema": "messageSchema",

@@ -9,7 +9,6 @@ import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized
 
 export type ProtocolsConfigureOptions = {
   dateCreated? : string;
-  protocol: string;
   definition : ProtocolDefinition;
   authorizationSignatureInput: SignatureInput;
 };
@@ -18,7 +17,6 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
 
   public static async parse(message: ProtocolsConfigureMessage): Promise<ProtocolsConfigure> {
     await validateAuthorizationIntegrity(message);
-    validateProtocolUrlNormalized(message.descriptor.protocol);
     ProtocolsConfigure.validateDefinitionNormalized(message.descriptor.definition);
 
     return new ProtocolsConfigure(message);
@@ -29,7 +27,6 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       interface   : DwnInterfaceName.Protocols,
       method      : DwnMethodName.Configure,
       dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
-      protocol    : normalizeProtocolUrl(options.protocol),
       // TODO: #139 - move definition out of the descriptor - https://github.com/TBD54566975/dwn-sdk-js/issues/139
       definition  : ProtocolsConfigure.normalizeDefinition(options.definition)
     };
@@ -44,7 +41,11 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
   }
 
   private static validateDefinitionNormalized(definition: ProtocolDefinition): void {
-    const { types } = definition;
+    const { protocol, types } = definition;
+
+    // validate protocol url
+    validateProtocolUrlNormalized(protocol);
+
     // validate schema url normalized
     for (const typeName in types) {
       const schema = types[typeName].schema;
@@ -67,7 +68,8 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
 
     return {
       ...definition,
-      types: typesCopy,
+      protocol : normalizeProtocolUrl(definition.protocol),
+      types    : typesCopy,
     };
   }
 }

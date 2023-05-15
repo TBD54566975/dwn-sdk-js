@@ -38,7 +38,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     const query = {
       interface : DwnInterfaceName.Protocols,
       method    : DwnMethodName.Configure,
-      protocol  : message.descriptor.protocol
+      protocol  : message.descriptor.definition.protocol
     };
     const existingMessages = await this.messageStore.query(tenant, query) as ProtocolsConfigureMessage[];
 
@@ -84,12 +84,14 @@ export class ProtocolsConfigureHandler implements MethodHandler {
 
   private static constructProtocolsConfigureIndexes(protocolsConfigure: ProtocolsConfigure): Record<string, string> {
     // strip out `dataSize` and `definition` as they are not indexable
+    // retain protocol url from `definition`
     const { dataSize, definition, ...propertiesToIndex } = protocolsConfigure.message.descriptor;
     const { author } = protocolsConfigure;
 
     const indexes = {
       ...propertiesToIndex,
-      author: author!
+      protocol : definition.protocol,
+      author   : author!
     };
 
     return indexes;

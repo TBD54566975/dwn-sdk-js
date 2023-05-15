@@ -1,4 +1,5 @@
 {
+  "protocol": "http://private-protocol.xyz",
   "types": {
     "privateNote": {
       "schema": "private-note",

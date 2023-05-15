@@ -19,7 +19,6 @@ describe('ProtocolsConfigure', () => {
       const definition = { ...dexProtocolDefinition };
       const protocolsConfigure = await ProtocolsConfigure.create({
         dateCreated                 : currentTime,
-        protocol                    : 'anyValue',
         definition,
         authorizationSignatureInput : Jws.createSignatureInput(alice),
       });
@@ -30,20 +29,19 @@ describe('ProtocolsConfigure', () => {
     it('should auto-normalize protocol URI', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
-      const definition = { ...dexProtocolDefinition };
+      const definition = { ...dexProtocolDefinition, protocol: 'example.com/' };
       const options = {
         recipient                   : alice.did,
         data                        : TestDataGenerator.randomBytes(10),
         dataFormat                  : 'application/json',
         authorizationSignatureInput : Jws.createSignatureInput(alice),
-        protocol                    : 'example.com/',
         definition,
       };
       const protocolsConfig = await ProtocolsConfigure.create(options);
 
       const message = protocolsConfig.message as ProtocolsConfigureMessage;
 
-      expect(message.descriptor.protocol).to.eq('http://example.com');
+      expect(message.descriptor.definition.protocol).to.eq('http://example.com');
     });
 
     it('should auto-normalize schema URIs', async () => {

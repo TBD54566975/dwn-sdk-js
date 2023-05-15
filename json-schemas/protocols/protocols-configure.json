@@ -17,7 +17,6 @@
       "required": [
         "interface",
         "method",
-        "protocol",
         "dateCreated",
         "definition"
       ],
@@ -32,9 +31,6 @@
           "enum": [
             "Configure"
           ],
-          "type": "string"
-        },
-        "protocol": {
           "type": "string"
         },
         "dateCreated": {

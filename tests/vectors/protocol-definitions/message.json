@@ -1,4 +1,5 @@
 {
+  "protocol": "http://message-protocol.xyz",
   "types": {
     "message": {
       "schema": "http://message.me",

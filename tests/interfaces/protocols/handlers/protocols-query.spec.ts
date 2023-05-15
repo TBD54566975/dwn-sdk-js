@@ -75,7 +75,7 @@ describe('ProtocolsQueryHandler.handle()', () => {
       // testing singular conditional query
       const queryMessageData = await TestDataGenerator.generateProtocolsQuery({
         requester : alice,
-        filter    : { protocol: protocol1.message.descriptor.protocol }
+        filter    : { protocol: protocol1.message.descriptor.definition.protocol }
       });
 
       const reply = await dwn.processMessage(alice.did, queryMessageData.message);
