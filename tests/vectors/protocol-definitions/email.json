@@ -1,4 +1,5 @@
 {
+  "protocol": "http://email-protocol.xyz",
   "types": {
     "email": {
       "schema": "email",

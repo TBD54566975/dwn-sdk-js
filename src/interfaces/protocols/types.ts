@@ -5,11 +5,11 @@ export type ProtocolsConfigureDescriptor = {
   interface : DwnInterfaceName.Protocols;
   method: DwnMethodName.Configure;
   dateCreated: string;
-  protocol: string;
   definition: ProtocolDefinition;
 };
 
 export type ProtocolDefinition = {
+  protocol: string;
   types: ProtocolTypes;
   structure: {
     [key: string]: ProtocolRuleSet;

@@ -654,11 +654,10 @@ describe('RecordsQueryHandler.handle()', () => {
         TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
 
         // configure protocol
-        const protocol = 'https://email-protocol.com';
         const protocolDefinition = emailProtocolDefinition;
+        const protocol = protocolDefinition.protocol;
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
           requester: alice,
-          protocol,
           protocolDefinition
         });
 

@@ -1,4 +1,5 @@
 {
+  "protocol": "http://dex.xyz",
   "types": {
     "ask": {
       "schema": "https://tbd/website/tbdex/ask",

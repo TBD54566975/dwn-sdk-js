@@ -7,7 +7,8 @@ import type { ProtocolDefinition, ProtocolsConfigureMessage } from '../../../../
 describe('ProtocolsConfigure schema definition', () => {
   it('should throw if unknown actor is encountered in action rule', async () => {
     const protocolDefinition: ProtocolDefinition = {
-      types: {
+      protocol : 'email',
+      types    : {
         email: {
           schema      : 'email',
           dataFormats : ['text/plain']
@@ -30,7 +31,6 @@ describe('ProtocolsConfigure schema definition', () => {
         interface   : DwnInterfaceName.Protocols,
         method      : DwnMethodName.Configure,
         dateCreated : '2022-10-14T10:20:30.405060Z',
-        protocol    : 'anyProtocolUri',
         definition  : protocolDefinition
       },
       authorization: {

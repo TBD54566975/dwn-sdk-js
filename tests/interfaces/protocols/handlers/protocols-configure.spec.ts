@@ -68,8 +68,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
 
       const protocolDefinition = minimalProtocolDefinition;
       const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-        requester : alice,
-        protocol  : 'example.com/',
+        requester: alice,
         protocolDefinition,
       });
 
@@ -112,10 +111,24 @@ describe('ProtocolsConfigureHandler.handle()', () => {
     it('should only be able to overwrite existing protocol if new protocol is lexicographically larger', async () => {
       // generate three versions of the same protocol message
       const alice = await DidKeyResolver.generate();
-      const protocol = 'exampleProtocol';
-      const messageData1 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol });
-      const messageData2 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol });
-      const messageData3 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol });
+      const protocol = minimalProtocolDefinition.protocol;
+      // Alter each protocol slightly to create lexicographic difference between them
+      const protocolDefinition1 = {
+        ...minimalProtocolDefinition,
+        types: { ...minimalProtocolDefinition.types, foo1: { dataFormats: ['bar1'] } }
+      };
+      const protocolDefinition2 = {
+        ...minimalProtocolDefinition,
+        types: { ...minimalProtocolDefinition.types, foo2: { dataFormats: ['bar2'] } }
+      };
+      const protocolDefinition3 = {
+        ...minimalProtocolDefinition,
+        types: { ...minimalProtocolDefinition.types, foo3: { dataFormats: ['bar3'] } }
+      };
+
+      const messageData1 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocolDefinition: protocolDefinition1 });
+      const messageData2 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocolDefinition: protocolDefinition2 });
+      const messageData3 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocolDefinition: protocolDefinition3 });
 
       const messageDataWithCid: (GenerateProtocolsConfigureOutput & { cid: string })[] = [];
       for (const messageData of [messageData1, messageData2, messageData3]) {
@@ -162,12 +175,12 @@ describe('ProtocolsConfigureHandler.handle()', () => {
 
       // query for non-normalized protocol
       const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-        requester : alice,
-        protocol  : 'example.com/',
+        requester          : alice,
+        protocolDefinition : minimalProtocolDefinition
       });
 
       // overwrite protocol because #create auto-normalizes protocol
-      protocolsConfig.message.descriptor.protocol = 'example.com/';
+      protocolsConfig.message.descriptor.definition.protocol = 'example.com/';
 
       // Re-create auth because we altered the descriptor after signing
       protocolsConfig.message.authorization = await Message.signAsAuthorization(
@@ -186,8 +199,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
 
       const protocolDefinition = dexProtocolDefinition;
       const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-        requester : alice,
-        protocol  : 'example.com/',
+        requester: alice,
         protocolDefinition,
       });
 
@@ -209,8 +221,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
     describe('event log', () => {
       it('should add event for ProtocolsConfigure', async () => {
         const alice = await DidKeyResolver.generate();
-        const protocol = 'exampleProtocol';
-        const { message, dataStream } = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol });
+        const { message, dataStream } = await TestDataGenerator.generateProtocolsConfigure({ requester: alice });
 
         const reply = await dwn.processMessage(alice.did, message, dataStream);
         expect(reply.status.code).to.equal(202);
@@ -224,9 +235,8 @@ describe('ProtocolsConfigureHandler.handle()', () => {
 
       it('should delete older ProtocolsConfigure event when one overwritten', async () => {
         const alice = await DidKeyResolver.generate();
-        const protocol = 'exampleProtocol';
-        const messageData1 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol });
-        const messageData2 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocol });
+        const messageData1 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocolDefinition: minimalProtocolDefinition });
+        const messageData2 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocolDefinition: minimalProtocolDefinition });
 
         const messageDataWithCid: (GenerateProtocolsConfigureOutput & { cid: string })[] = [];
         for (const messageData of [messageData1, messageData2]) {
