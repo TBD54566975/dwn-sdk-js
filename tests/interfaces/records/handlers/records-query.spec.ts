@@ -18,7 +18,6 @@ import { Jws } from '../../../../src/utils/jws.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsQueryHandler } from '../../../../src/interfaces/records/handlers/records-query.js';
-import { StorageController } from '../../../../src/store/storage-controller.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 import { toTemporalInstant } from '@js-temporal/polyfill';

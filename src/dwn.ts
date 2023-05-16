@@ -4,6 +4,7 @@ import type { EventLog } from './event-log/event-log.js';
 import type { MessageStore } from './store/message-store.js';
 import type { MethodHandler } from './interfaces/types.js';
 import type { Readable } from 'readable-stream';
+import type { RecordsWriteHandlerOptions } from './interfaces/records/handlers/records-write.js';
 import type { TenantGate } from './core/tenant-gate.js';
 import type { MessagesGetMessage, MessagesGetReply } from './interfaces/messages/types.js';
 import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from './interfaces/records/types.js';
@@ -21,7 +22,6 @@ import { ProtocolsQueryHandler } from './interfaces/protocols/handlers/protocols
 import { RecordsDeleteHandler } from './interfaces/records/handlers/records-delete.js';
 import { RecordsQueryHandler } from './interfaces/records/handlers/records-query.js';
 import { RecordsReadHandler } from './interfaces/records/handlers/records-read.js';
-import type { RecordsWriteHandlerOptions } from './interfaces/records/handlers/records-write.js';
 import { RecordsWriteHandler } from './interfaces/records/handlers/records-write.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './core/message.js';
 

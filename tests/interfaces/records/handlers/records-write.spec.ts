@@ -33,7 +33,6 @@ import { ProtocolActor } from '../../../../src/interfaces/protocols/types.js';
 import { RecordsRead } from '../../../../src/interfaces/records/messages/records-read.js';
 import { RecordsWrite } from '../../../../src/interfaces/records/messages/records-write.js';
 import { RecordsWriteHandler } from '../../../../src/interfaces/records/handlers/records-write.js';
-import { StorageController } from '../../../../src/store/storage-controller.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 

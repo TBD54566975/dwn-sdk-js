@@ -41,7 +41,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
       protocol  : message.descriptor.definition.protocol
     };
     const existingMessages = await this.messageStore.query(tenant, query) as ProtocolsConfigureMessage[];
-    ``;
+
     // find lexicographically the largest message, and if the incoming message is the largest
     let newestMessage = await Message.getMessageWithLargestCid(existingMessages);
     let incomingMessageIsNewest = false;
