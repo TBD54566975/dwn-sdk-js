@@ -8,7 +8,7 @@ The general process we hope to follow is:
 - Implement said proposal in this repo and submit a PR
 - Iterate on PR until its ready for `main`
 
-Given that we're still in early stages of development, this contribution guide will certainly change as we near a [beta release](https://github.com/TBD54566975/dwn-sdk-js/milestone/1). Until then, things will be a bit ragtag but there's still plently of opportunities for contribution.
+Given that we're still in early stages of development, this contribution guide will certainly change as we near a beta release. Until then, things will be a bit ragtag but there's still plenty of opportunities for contribution.
 
 As we work our way towards a beta release, we'll be creating more focused issues with the following labels:
 - `bug`
@@ -16,7 +16,7 @@ As we work our way towards a beta release, we'll be creating more focused issues
 - `good first issue`
 - `help wanted`
 
-These issues are excellent canditates for contribution and we'd be thrilled to get all the help we can get! You can take a look at all of the Issues that match the labels above [here](https://github.com/TBD54566975/dwn-sdk-js/issues?q=is%3Aopen+label%3A%22help+wanted%22%2C%22good+first+issue%22%2C%22documentation%22%2C%22bug%22+)
+These issues are excellent candidates for contribution and we'd be thrilled to get all the help we can get! You can take a look at all of the Issues that match the labels above [here](https://github.com/TBD54566975/dwn-sdk-js/issues?q=is%3Aopen+label%3A%22help+wanted%22%2C%22good+first+issue%22%2C%22documentation%22%2C%22bug%22+)
 
 We suggest the following process when picking up one of these issues:
 - Check to see if anyone is already working on the issue by looking to see if the issue has a `WIP` tag. 
@@ -31,14 +31,13 @@ We suggest the following process when picking up one of these issues:
 
 | Requirement | Tested Version | Installation Instructions |
 | ----------- | -------------- | ------------------------- |
-| `Node.js`        | `v16.17.0`            | There are many ways to install `Node.js`. Feel free to choose whichever approach you feel the most comfortable with. If you don't have a preferred installation method, you can visit the official [downloads](https://nodejs.org/en/download/) page and choose the the appropriate installer respective to your operating system |
+| `Node.js`   | `v18.16.0`     | There are many ways to install `Node.js`. Feel free to choose whichever approach you feel the most comfortable with. If you don't have a preferred installation method, you can visit the official [downloads](https://nodejs.org/en/download/) page and choose the the appropriate installer respective to your operating system |
 
-We plan on including a Docker container to support all local development soon.
 ### Running tests
 * Running the `npm run test:node` command from the root of the project will run all tests using node. 
-  * This is run via CI whenever a pull request is opened, or a commit is pushed to a branch that has an open PR
-* Running the `npm run test:browser` command from the root of the project will run the tests in a browser environment
-  * Please make sure there are no failing tests before switching your PR to ready for review! We hope to have this automated via a github action very soon.
+  * This is run via CI whenever a pull request is opened, or a commit is pushed to a branch that has an open PR.
+* Running the `npm run test:browser` command from the root of the project will run the tests in browser environments.
+  * Please make sure there are no failing tests before switching your PR to ready for review! This validation is automated when you open a new pull request.
 
 ### Running benchmarks
 
