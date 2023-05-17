@@ -463,10 +463,10 @@ describe('RecordsQueryHandler.handle()', () => {
         { requester: alice, schema, data: Encoder.stringToBytes('1') }
       );
       const record2Data = await TestDataGenerator.generateRecordsWrite(
-        { requester: alice, schema, protocol: 'protocol', protocolPath: 'path', recipientDid: bob.did, data: Encoder.stringToBytes('2') }
+        { requester: alice, schema, protocol: 'protocol', protocolPath: 'path', recipient: bob.did, data: Encoder.stringToBytes('2') }
       );
       const record3Data = await TestDataGenerator.generateRecordsWrite(
-        { requester: bob, schema, protocol: 'protocol', protocolPath: 'path', recipientDid: alice.did, data: Encoder.stringToBytes('3') }
+        { requester: bob, schema, protocol: 'protocol', protocolPath: 'path', recipient: alice.did, data: Encoder.stringToBytes('3') }
       );
       const record4Data = await TestDataGenerator.generateRecordsWrite(
         { requester: alice, schema, data: Encoder.stringToBytes('4'), published: true }

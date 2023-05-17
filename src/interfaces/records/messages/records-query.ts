@@ -66,11 +66,11 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
     }
 
     // extra checks if a recipient filter is specified
-    const recipientDid = this.message.descriptor.filter.recipient;
-    if (recipientDid !== undefined) {
+    const recipient = this.message.descriptor.filter.recipient;
+    if (recipient !== undefined) {
       // make sure the recipient is the author
-      if (recipientDid !== this.author) {
-        throw new Error(`${this.author} is not allowed to query records intended for another recipient: ${recipientDid}`);
+      if (recipient !== this.author) {
+        throw new Error(`${this.author} is not allowed to query records intended for another recipient: ${recipient}`);
       }
     }
   }

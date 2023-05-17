@@ -86,7 +86,7 @@ export type GenerateProtocolsQueryOutput = {
 export type GenerateRecordsWriteInput = {
   requester?: Persona;
   attesters?: Persona[];
-  recipientDid?: string;
+  recipient?: string;
   protocol?: string;
   protocolPath?: string;
   contextId?: string;
@@ -320,7 +320,7 @@ export class TestDataGenerator {
     }
 
     const options: RecordsWriteOptions = {
-      recipient       : input?.recipientDid,
+      recipient       : input?.recipient,
       protocol        : input?.protocol,
       protocolPath    : input?.protocolPath,
       contextId       : input?.contextId,

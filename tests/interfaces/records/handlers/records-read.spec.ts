@@ -179,7 +179,7 @@ describe('RecordsReadHandler.handle()', () => {
           schema       : protocolDefinition.types.image.schema,
           dataFormat   : 'image/jpeg',
           data         : encodedImage,
-          recipientDid : alice.did
+          recipient    : alice.did
         });
         const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
         expect(imageReply.status.code).to.equal(202);
@@ -220,7 +220,7 @@ describe('RecordsReadHandler.handle()', () => {
           schema       : protocolDefinition.types.email.schema,
           dataFormat   : protocolDefinition.types.email.dataFormats[0],
           data         : encodedEmail,
-          recipientDid : bob.did
+          recipient    : bob.did
         });
         const imageReply = await dwn.processMessage(alice.did, emailRecordsWrite.message, emailRecordsWrite.dataStream);
         expect(imageReply.status.code).to.equal(202);
@@ -269,7 +269,7 @@ describe('RecordsReadHandler.handle()', () => {
           schema       : protocolDefinition.types.email.schema,
           dataFormat   : protocolDefinition.types.email.dataFormats[0],
           data         : encodedEmail,
-          recipientDid : alice.did
+          recipient    : alice.did
         });
         const imageReply = await dwn.processMessage(alice.did, emailRecordsWrite.message, emailRecordsWrite.dataStream);
         expect(imageReply.status.code).to.equal(202);
