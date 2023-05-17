@@ -148,6 +148,11 @@
         "dateModified",
         "dataFormat"
       ],
+      "dependencies": {
+        "recipient": [
+          "protocol"
+        ]
+      },
       "allOf": [
         {
           "$comment": "rule defining `published` and `datePublished` relationship",
@@ -197,36 +202,6 @@
                     ]
                   }
                 }
-              ]
-            }
-          ]
-        },
-        {
-          "$comment": "rule: `recipient` can only exist if `protocol` exists`",
-          "anyOf": [
-            {
-              "$comment": "both `protocol` and `recipient` are not allowed",
-              "allOf": [
-                {
-                  "not": {
-                    "required": [
-                      "protocol"
-                    ]
-                  }
-                },
-                {
-                  "not": {
-                    "required": [
-                      "recipient"
-                    ]
-                  }
-                }
-              ]
-            },
-            {
-              "$comment": "only `protocol` is required",
-              "required": [
-                "protocol"
               ]
             }
           ]
