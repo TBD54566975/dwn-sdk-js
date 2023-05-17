@@ -205,7 +205,7 @@ describe('RecordsWrite schema definition', () => {
     Message.validateJsonSchema(invalidMessage);
   });
 
-  it('should throw if `contextId` is set but `protocol` is missing', () => {
+  it('should throw if `contextId` is defined but `protocol` is missing', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       contextId  : 'invalid', // must have `protocol` to exist
@@ -232,7 +232,7 @@ describe('RecordsWrite schema definition', () => {
     }).throws('must have required property \'protocol\'');
   });
 
-  it('should throw if `protocol` is set but `contextId` is missing', () => {
+  it('should throw if `protocol` is defined but `contextId` is missing', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       descriptor : {
@@ -259,7 +259,7 @@ describe('RecordsWrite schema definition', () => {
     }).throws('must have required property \'contextId\'');
   });
 
-  it('should throw if `protocol` is set but `protocolPath` is missing', () => {
+  it('should throw if `protocol` is defined but `protocolPath` is missing', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       contextId  : 'anyContextId', // required by protocol-based message
@@ -288,7 +288,7 @@ describe('RecordsWrite schema definition', () => {
     }).throws('descriptor: must have required property \'protocolPath\'');
   });
 
-  it('should throw if `protocolPath` is set but `protocol` is missing', () => {
+  it('should throw if `protocolPath` is defined but `protocol` is missing', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       contextId  : 'anyContextId',
@@ -317,7 +317,7 @@ describe('RecordsWrite schema definition', () => {
     }).throws('descriptor: must have required property \'protocol\'');
   });
 
-  it('should throw if `protocol` is set but `schema` is missing', () => {
+  it('should throw if `protocol` is defined but `schema` is missing', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
       contextId  : 'anyContextId', // required by protocol-based message
@@ -345,6 +345,95 @@ describe('RecordsWrite schema definition', () => {
     expect(() => {
       Message.validateJsonSchema(invalidMessage);
     }).throws('descriptor: must have required property \'schema\'');
+  });
+
+  it('should throw if `protocol` is undefined but `recipient` is defined', () => {
+    const invalidMessage = {
+      recordId   : 'anyRecordId',
+      contextId  : 'anyContextId',
+      descriptor : {
+        interface    : 'Records',
+        method       : 'Write',
+        // protocol     : 'http://foo.bar', // intentionally missing
+        recipient    : 'did:example:anyone',
+        // protocolPath : 'foo/bar', // intentionally missing
+        schema       : 'http://foo.bar/schema',
+        dataCid      : 'anyCid',
+        dataFormat   : 'application/json',
+        dataSize     : 123,
+        dateCreated  : '2022-12-19T10:20:30.123456Z',
+        dateModified : '2022-12-19T10:20:30.123456Z'
+      },
+      authorization: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      }
+    };
+
+    expect(() => {
+      Message.validateJsonSchema(invalidMessage);
+    }).throws('descriptor: must have required property \'protocol\'');
+  });
+
+  it('should pass if `protocol` is defined but `recipient` undefined', () => {
+    const invalidMessage = {
+      recordId   : 'anyRecordId',
+      contextId  : 'anyContextId',
+      descriptor : {
+        interface    : 'Records',
+        method       : 'Write',
+        protocol     : 'http://foo.bar',
+        // recipient    : 'did:example:anyone', // intentionally missing
+        protocolPath : 'foo/bar',
+        schema       : 'http://foo.bar/schema',
+        dataCid      : 'anyCid',
+        dataFormat   : 'application/json',
+        dataSize     : 123,
+        dateCreated  : '2022-12-19T10:20:30.123456Z',
+        dateModified : '2022-12-19T10:20:30.123456Z'
+      },
+      authorization: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      }
+    };
+
+    Message.validateJsonSchema(invalidMessage);
+  });
+
+  it('should pass if `protocol` and `recipient` are both defined', () => {
+    const invalidMessage = {
+      recordId   : 'anyRecordId',
+      contextId  : 'anyContextId',
+      descriptor : {
+        interface    : 'Records',
+        method       : 'Write',
+        protocol     : 'http://foo.bar',
+        recipient    : 'did:example:anyone',
+        protocolPath : 'foo/bar',
+        schema       : 'http://foo.bar/schema',
+        dataCid      : 'anyCid',
+        dataFormat   : 'application/json',
+        dataSize     : 123,
+        dateCreated  : '2022-12-19T10:20:30.123456Z',
+        dateModified : '2022-12-19T10:20:30.123456Z'
+      },
+      authorization: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      }
+    };
+
+    Message.validateJsonSchema(invalidMessage);
   });
 
   it('should throw if published is false but datePublished is present', () => {
