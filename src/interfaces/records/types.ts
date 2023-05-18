@@ -13,7 +13,7 @@ export type RecordsWriteDescriptor = {
   method: DwnMethodName.Write;
   protocol?: string;
   protocolPath?: string;
-  recipient: string;
+  recipient?: string;
   schema?: string;
   parentId?: string;
   dataCid: string;

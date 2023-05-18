@@ -348,7 +348,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const write2Change = await TestDataGenerator.generateRecordsWrite({
         requester    : alice,
         // immutable properties just inherit from the message given
-        recipientDid : write2.message.descriptor.recipient,
+        recipient    : write2.message.descriptor.recipient,
         recordId     : write2.message.recordId,
         dateCreated  : write2.message.descriptor.dateCreated,
         contextId    : write2.message.contextId,
@@ -637,7 +637,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const encodedCredentialApplication = new TextEncoder().encode('credential application data');
         const credentialApplication = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
-          recipientDid : vcIssuer.did,
+          recipient    : vcIssuer.did,
           protocol     : protocolDefinition.protocol,
           protocolPath : 'credentialApplication', // this comes from `types` in protocol definition
           schema       : credentialApplicationSchema,
@@ -654,7 +654,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const credentialResponse = await TestDataGenerator.generateRecordsWrite(
           {
             requester    : vcIssuer,
-            recipientDid : alice.did,
+            recipient    : alice.did,
             protocol     : protocolDefinition.protocol,
             protocolPath : 'credentialApplication/credentialResponse', // this comes from `types` in protocol definition
             contextId    : credentialApplicationContextId,
@@ -888,8 +888,8 @@ describe('RecordsWriteHandler.handle()', () => {
         expect(carolWriteReply.status.detail).to.contain('must match to author of initial write');
       });
 
-      it('should not allow to change immutable recipientDid', async () => {
-        // scenario: Bob writes into Alice's DWN given Alice's "message" protocol allow-anyone rule, then tries to modify immutable recipientDid
+      it('should not allow to change immutable recipient', async () => {
+        // scenario: Bob writes into Alice's DWN given Alice's "message" protocol allow-anyone rule, then tries to modify immutable recipient
 
         // NOTE: no need to test the same for parent, protocol, and contextId
         // because changing them will result in other error conditions
@@ -937,7 +937,7 @@ describe('RecordsWriteHandler.handle()', () => {
         expect(bobRecordQueryReply.entries?.length).to.equal(1);
         expect(bobRecordQueryReply.entries![0].encodedData).to.equal(base64url.baseEncode(bobData));
 
-        // generate a new message from bob changing immutable recipientDid
+        // generate a new message from bob changing immutable recipient
         const updatedMessageFromBob = await TestDataGenerator.generateRecordsWrite(
           {
             requester    : bob,
@@ -948,7 +948,7 @@ describe('RecordsWriteHandler.handle()', () => {
             dataFormat   : protocolDefinition.types.message.dataFormats[0],
             data         : bobData,
             recordId     : messageFromBob.message.recordId,
-            recipientDid : bob.did // this immutable property was Alice's DID initially
+            recipient    : bob.did // this immutable property was Alice's DID initially
           }
         );
 
@@ -985,7 +985,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const encodedCredentialApplication = new TextEncoder().encode('credential application data');
         const credentialApplication = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
-          recipientDid : vcIssuer.did,
+          recipient    : vcIssuer.did,
           protocol,
           protocolPath : 'credentialApplication', // this comes from `types` in protocol definition
           schema       : credentialApplicationSchema,
@@ -1002,7 +1002,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const credentialResponse = await TestDataGenerator.generateRecordsWrite(
           {
             requester    : fakeVcIssuer,
-            recipientDid : alice.did,
+            recipient    : alice.did,
             protocol,
             protocolPath : 'credentialApplication/credentialResponse', // this comes from `types` in protocol definition
             contextId    : credentialApplicationContextId,
@@ -1024,7 +1024,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const data = Encoder.stringToBytes('any data');
         const credentialApplication = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
-          recipientDid : alice.did,
+          recipient    : alice.did,
           protocol,
           protocolPath : 'credentialApplication/credentialResponse', // this comes from `types` in protocol definition
           data
@@ -1051,7 +1051,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const data = Encoder.stringToBytes('any data');
         const credentialApplication = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
-          recipientDid : alice.did,
+          recipient    : alice.did,
           protocol,
           protocolPath : 'credentialApplication', // this comes from `types` in protocol definition
           schema       : 'unexpectedSchema',
@@ -1080,7 +1080,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const data = Encoder.stringToBytes('any data');
         const credentialApplication = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
-          recipientDid : alice.did,
+          recipient    : alice.did,
           protocol,
           protocolPath : 'invalidType',
           data
@@ -1107,7 +1107,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const data = Encoder.stringToBytes('any data');
         const credentialApplication = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
-          recipientDid : alice.did,
+          recipient    : alice.did,
           protocol,
           protocolPath : 'credentialApplication/credentialResponse', // incorrect path. correct path is `credentialResponse` because this record has no parent
           schema       : protocolDefinition.types.credentialApplication.schema,
@@ -1137,7 +1137,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const data = Encoder.stringToBytes('any data');
         const recordsWriteMatch = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
-          recipientDid : alice.did,
+          recipient    : alice.did,
           protocol,
           protocolPath : 'image',
           schema       : protocolDefinition.types.image.schema,
@@ -1150,7 +1150,7 @@ describe('RecordsWriteHandler.handle()', () => {
         // write record with mismatch dataFormat
         const recordsWriteMismatch = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
-          recipientDid : alice.did,
+          recipient    : alice.did,
           protocol,
           protocolPath : 'image',
           schema       : protocolDefinition.types.image.schema,
@@ -1183,7 +1183,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const data = Encoder.stringToBytes('any data');
         const failedCredentialResponse = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
-          recipientDid : alice.did,
+          recipient    : alice.did,
           protocol,
           protocolPath : 'credentialResponse',
           schema       : credentialResponseSchema, // this is a known schema type, but not allowed for a protocol root record
@@ -1197,7 +1197,7 @@ describe('RecordsWriteHandler.handle()', () => {
         // Successfully write a 'credentialApplication' at the top level of the of the record hierarchy
         const credentialApplication = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
-          recipientDid : alice.did,
+          recipient    : alice.did,
           protocol,
           protocolPath : 'credentialApplication', // allowed at root level
           schema       : credentialApplicationSchema,
@@ -1210,7 +1210,7 @@ describe('RecordsWriteHandler.handle()', () => {
         // Try and fail to write another 'credentialApplication' below the first 'credentialApplication'
         const failedCredentialApplication = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
-          recipientDid : alice.did,
+          recipient    : alice.did,
           protocol,
           protocolPath : 'credentialApplication/credentialApplication', // credentialApplications may not be nested below another credentialApplication
           schema       : credentialApplicationSchema,
@@ -1226,7 +1226,7 @@ describe('RecordsWriteHandler.handle()', () => {
         // Successfully write a 'credentialResponse' below the 'credentialApplication'
         const credentialResponse = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
-          recipientDid : alice.did,
+          recipient    : alice.did,
           protocol,
           protocolPath : 'credentialApplication/credentialResponse',
           schema       : credentialResponseSchema,
@@ -1241,7 +1241,7 @@ describe('RecordsWriteHandler.handle()', () => {
         // Testing case where there is no rule set for any record type at the given level in the hierarchy
         const nestedCredentialApplication = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
-          recipientDid : alice.did,
+          recipient    : alice.did,
           protocol,
           protocolPath : 'credentialApplication/credentialResponse/credentialApplication',
           schema       : credentialApplicationSchema,
@@ -1273,7 +1273,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const data = Encoder.stringToBytes('any data');
         const aliceWriteMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
-          recipientDid : alice.did,
+          recipient    : alice.did,
           protocol,
           protocolPath : 'privateNote', // this comes from `types`
           schema       : protocolDefinition.types.privateNote.schema,
@@ -1288,7 +1288,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const bob = await DidKeyResolver.generate();
         const bobWriteMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : bob,
-          recipientDid : alice.did,
+          recipient    : alice.did,
           protocol,
           protocolPath : 'privateNote', // this comes from `types`
           schema       : 'private-note',
@@ -1330,7 +1330,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const data = Encoder.stringToBytes('irrelevant');
         const messageDataWithIssuerA = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
-          recipientDid : issuer.did,
+          recipient    : issuer.did,
           schema       : invalidProtocolDefinition.types.credentialApplication.schema,
           protocol,
           protocolPath : 'credentialApplication', // this comes from `types` in protocol definition
@@ -1344,7 +1344,7 @@ describe('RecordsWriteHandler.handle()', () => {
         // simulate issuer attempting to respond to Alice's VC application
         const invalidResponseByIssuerA = await TestDataGenerator.generateRecordsWrite({
           requester    : issuer,
-          recipientDid : alice.did,
+          recipient    : alice.did,
           schema       : invalidProtocolDefinition.types.credentialResponse.schema,
           contextId,
           parentId     : messageDataWithIssuerA.message.recordId,
@@ -1382,7 +1382,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const data = Encoder.stringToBytes('irrelevant');
         const askMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
-          recipientDid : pfi.did,
+          recipient    : pfi.did,
           schema       : protocolDefinition.types.ask.schema,
           protocol,
           protocolPath : 'ask',
@@ -1395,7 +1395,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
         const offerMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : pfi,
-          recipientDid : alice.did,
+          recipient    : alice.did,
           schema       : protocolDefinition.types.offer.schema,
           contextId,
           parentId     : askMessageData.message.recordId,
@@ -1410,7 +1410,7 @@ describe('RecordsWriteHandler.handle()', () => {
         // the actual test: making sure fulfillment message is accepted
         const fulfillmentMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
-          recipientDid : pfi.did,
+          recipient    : pfi.did,
           schema       : protocolDefinition.types.fulfillment.schema,
           contextId,
           parentId     : offerMessageData.message.recordId,
@@ -1461,7 +1461,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const data = Encoder.stringToBytes('irrelevant');
         const askMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
-          recipientDid : pfi.did,
+          recipient    : pfi.did,
           schema       : protocolDefinition.types.ask.schema,
           protocol,
           protocolPath : 'ask',
@@ -1475,7 +1475,7 @@ describe('RecordsWriteHandler.handle()', () => {
         // the actual test: making sure fulfillment message fails
         const fulfillmentMessageData = await TestDataGenerator.generateRecordsWrite({
           requester    : alice,
-          recipientDid : pfi.did,
+          recipient    : pfi.did,
           schema       : protocolDefinition.types.fulfillment.schema,
           contextId,
           parentId     : 'non-existent-id',
@@ -1623,7 +1623,7 @@ describe('RecordsWriteHandler.handle()', () => {
           dataFormat   : 'image/jpeg',
           dataCid, // bob learns of, and references alice's secrete data's CID
           dataSize,
-          recipientDid : alice.did
+          recipient    : alice.did
         });
         const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
         expect(imageReply.status.code).to.equal(400); // should be disallowed

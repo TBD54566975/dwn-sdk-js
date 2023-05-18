@@ -168,7 +168,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
       method        : DwnMethodName.Write,
       protocol      : options.protocol !== undefined ? normalizeProtocolUrl(options.protocol) : undefined,
       protocolPath  : options.protocolPath,
-      recipient     : options.recipient!,
+      recipient     : options.recipient,
       schema        : options.schema !== undefined ? normalizeSchemaUrl(options.schema) : undefined,
       parentId      : options.parentId,
       dataCid,

@@ -22,7 +22,6 @@ describe('RecordsWrite', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {
-        recipient                   : alice.did,
         data                        : TestDataGenerator.randomBytes(10),
         dataFormat                  : 'application/json',
         dateCreated                 : '2022-10-14T10:20:30.405060Z',
@@ -47,7 +46,6 @@ describe('RecordsWrite', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {
-        recipient                   : alice.did,
         data                        : TestDataGenerator.randomBytes(10),
         dataFormat                  : 'application/json',
         recordId                    : await TestDataGenerator.randomCborSha256Cid(),
