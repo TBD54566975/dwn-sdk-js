@@ -16,6 +16,7 @@ describe('Records', () => {
   describe('deriveLeafPrivateKey()', () => {
     it('should throw if given private key is not supported', async () => {
       const derivedKey: DerivedPrivateJwk = {
+        rootKeyId         : 'unused',
         derivationScheme  : KeyDerivationScheme.Protocols,
         derivedPrivateKey : (await ed25519.generateKeyPair()).privateJwk
       };

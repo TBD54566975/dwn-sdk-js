@@ -87,6 +87,12 @@ export type KeyEncryptionInput = {
   derivationScheme: KeyDerivationScheme;
 
   /**
+   * Fully qualified ID of root public key used derive the descendant public key to encrypt the symmetric key.
+   * (e.g. did:example:abc#encryption-key-id)
+   */
+  publicKeyId: string;
+
+  /**
    * Root public key used derive the descendant public key to encrypt the symmetric key.
    */
   publicKey: PublicJwk;
@@ -489,12 +495,13 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
       const keyEncryptionInitializationVector = Encoder.bytesToBase64Url(keyEncryptionOutput.initializationVector);
       const messageAuthenticationCode = Encoder.bytesToBase64Url(keyEncryptionOutput.messageAuthenticationCode);
       const encryptedKeyData: EncryptedKey = {
+        rootKeyId            : keyEncryptionInput.publicKeyId,
         algorithm            : keyEncryptionInput.algorithm ?? EncryptionAlgorithm.EciesSecp256k1,
         derivationScheme     : keyEncryptionInput.derivationScheme,
-        encryptedKey,
         ephemeralPublicKey,
         initializationVector : keyEncryptionInitializationVector,
-        messageAuthenticationCode
+        messageAuthenticationCode,
+        encryptedKey
       };
 
       keyEncryption.push(encryptedKeyData);

@@ -40,12 +40,16 @@ export type EncryptionProperty = {
 };
 
 export type EncryptedKey = {
+  /**
+   * The fully qualified key ID (e.g. did:example:abc#encryption-key-id) of the root public key used to encrypt the symmetric encryption key.
+   */
+  rootKeyId: string;
   derivationScheme: KeyDerivationScheme;
   algorithm: EncryptionAlgorithm;
-  encryptedKey: string;
   initializationVector: string;
   ephemeralPublicKey: PublicJwk;
   messageAuthenticationCode: string;
+  encryptedKey: string;
 };
 
 export type UnsignedRecordsWriteMessage = {

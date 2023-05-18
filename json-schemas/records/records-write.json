@@ -39,6 +39,9 @@
           "items": {
             "type": "object",
             "properties": {
+              "rootKeyId": {
+                "type": "string"
+              },
               "derivationScheme": {
                 "type": "string",
                 "enum": [
@@ -68,6 +71,7 @@
             },
             "additionalProperties": false,
             "required": [
+              "rootKeyId",
               "derivationScheme",
               "algorithm",
               "encryptedKey",

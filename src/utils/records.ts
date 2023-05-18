@@ -24,12 +24,16 @@ export class Records {
   ): Promise<Readable> {
     const { recordId, contextId, descriptor, encryption } = recordsWrite;
 
-    // look for an encrypted symmetric key that is encrypted using the same scheme as the given derived private key
-    const matchingEncryptedKey = encryption!.keyEncryption.find(key => key.derivationScheme === ancestorPrivateKey.derivationScheme);
+    // look for an encrypted symmetric key that is encrypted by the public key corresponding to the given private key
+    const matchingEncryptedKey = encryption!.keyEncryption.find(key =>
+      key.rootKeyId === ancestorPrivateKey.rootKeyId &&
+      key.derivationScheme === ancestorPrivateKey.derivationScheme
+    );
     if (matchingEncryptedKey === undefined) {
       throw new DwnError(
-        DwnErrorCode.RecordsDecryptNoMatchingKeyDerivationScheme,
-        `Unable to find symmetric key encrypted using '${ancestorPrivateKey.derivationScheme}' derivation scheme.`
+        DwnErrorCode.RecordsDecryptNoMatchingKeyEncryptedFound,
+        `Unable to find a symmetric key encrypted using key \
+        with ID '${ancestorPrivateKey.rootKeyId}' and '${ancestorPrivateKey.derivationScheme}' derivation scheme.`
       );
     }
 

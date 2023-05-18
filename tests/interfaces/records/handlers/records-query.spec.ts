@@ -677,8 +677,9 @@ describe('RecordsQueryHandler.handle()', () => {
           initializationVector : dataEncryptionInitializationVector,
           key                  : dataEncryptionKey,
           keyEncryptionInputs  : [{
-            derivationScheme : KeyDerivationScheme.Protocols,
-            publicKey        : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
+            publicKeyId      : alice.keyId, // reusing signing key for encryption purely as a convenience
+            publicKey        : alice.keyPair.publicJwk,
+            derivationScheme : KeyDerivationScheme.Protocols
           }]
         };
 
@@ -710,6 +711,7 @@ describe('RecordsQueryHandler.handle()', () => {
 
         // test able to decrypt the message using the root key
         const rootPrivateKey: DerivedPrivateJwk = {
+          rootKeyId         : alice.keyId,
           derivationScheme  : KeyDerivationScheme.Protocols,
           derivedPrivateKey : alice.keyPair.privateJwk
         };
@@ -768,8 +770,9 @@ describe('RecordsQueryHandler.handle()', () => {
           initializationVector : dataEncryptionInitializationVector,
           key                  : dataEncryptionKey,
           keyEncryptionInputs  : [{
-            derivationScheme : KeyDerivationScheme.Schemas,
-            publicKey        : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
+            publicKeyId      : alice.keyId, // reusing signing key for encryption purely as a convenience
+            publicKey        : alice.keyPair.publicJwk,
+            derivationScheme : KeyDerivationScheme.Schemas
           }]
         };
 
@@ -794,6 +797,7 @@ describe('RecordsQueryHandler.handle()', () => {
 
         // test able to decrypt the message using the root key
         const rootPrivateKey: DerivedPrivateJwk = {
+          rootKeyId         : alice.keyId,
           derivationScheme  : KeyDerivationScheme.Schemas,
           derivedPrivateKey : alice.keyPair.privateJwk
         };
