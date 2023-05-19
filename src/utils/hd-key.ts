@@ -9,6 +9,7 @@ export enum KeyDerivationScheme {
 }
 
 export type DerivedPrivateJwk = {
+  rootKeyId: string,
   derivationScheme: KeyDerivationScheme;
   derivationPath?: string[];
   derivedPrivateKey: PrivateJwk,
@@ -28,8 +29,9 @@ export class HdKey {
     const derivedPrivateKeyBytes = await Secp256k1.derivePrivateKey(ancestorPrivateKey, subDerivationPath);
     const derivedPrivateJwk = await Secp256k1.privateKeyToJwk(derivedPrivateKeyBytes);
     const derivedDescendantPrivateKey: DerivedPrivateJwk = {
-      derivationPath    : [...ancestorPrivateKeyDerivationPath, ...subDerivationPath],
+      rootKeyId         : ancestorKey.rootKeyId,
       derivationScheme  : ancestorKey.derivationScheme,
+      derivationPath    : [...ancestorPrivateKeyDerivationPath, ...subDerivationPath],
       derivedPrivateKey : derivedPrivateJwk
     };
 

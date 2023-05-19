@@ -184,8 +184,9 @@ describe('RecordsWrite', () => {
         initializationVector : dataEncryptionInitializationVector,
         key                  : dataEncryptionKey,
         keyEncryptionInputs  : [{
-          derivationScheme : KeyDerivationScheme.Protocols,
-          publicKey        : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
+          publicKeyId      : alice.keyId, // reusing signing key for encryption purely as a convenience
+          publicKey        : alice.keyPair.publicJwk,
+          derivationScheme : KeyDerivationScheme.Protocols
         }]
       };
 
@@ -209,8 +210,9 @@ describe('RecordsWrite', () => {
         initializationVector : dataEncryptionInitializationVector,
         key                  : dataEncryptionKey,
         keyEncryptionInputs  : [{
-          derivationScheme : KeyDerivationScheme.Schemas,
-          publicKey        : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
+          publicKeyId      : alice.keyId, // reusing signing key for encryption purely as a convenience
+          publicKey        : alice.keyPair.publicJwk,
+          derivationScheme : KeyDerivationScheme.Schemas
         }]
       };
 

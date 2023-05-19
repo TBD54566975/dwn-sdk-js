@@ -381,8 +381,9 @@ describe('RecordsReadHandler.handle()', () => {
           initializationVector : dataEncryptionInitializationVector,
           key                  : dataEncryptionKey,
           keyEncryptionInputs  : [{
-            derivationScheme : KeyDerivationScheme.DataFormats,
-            publicKey        : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
+            publicKeyId      : alice.keyId, // reusing signing key for encryption purely as a convenience
+            publicKey        : alice.keyPair.publicJwk,
+            derivationScheme : KeyDerivationScheme.DataFormats
           }]
         };
 
@@ -408,6 +409,7 @@ describe('RecordsReadHandler.handle()', () => {
 
         // test able to decrypt the message using the root key
         const rootPrivateKey: DerivedPrivateJwk = {
+          rootKeyId         : alice.keyId,
           derivationScheme  : KeyDerivationScheme.DataFormats,
           derivedPrivateKey : alice.keyPair.privateJwk
         };
@@ -473,8 +475,9 @@ describe('RecordsReadHandler.handle()', () => {
           initializationVector : dataEncryptionInitializationVector,
           key                  : dataEncryptionKey,
           keyEncryptionInputs  : [{
-            derivationScheme : KeyDerivationScheme.Protocols,
-            publicKey        : alice.keyPair.publicJwk // reusing signing key for encryption purely as a convenience
+            publicKeyId      : alice.keyId, // reusing signing key for encryption purely as a convenience
+            publicKey        : alice.keyPair.publicJwk,
+            derivationScheme : KeyDerivationScheme.Protocols
           }]
         };
 
@@ -502,6 +505,7 @@ describe('RecordsReadHandler.handle()', () => {
 
         // test able to decrypt the message using a derived key
         const rootPrivateKey: DerivedPrivateJwk = {
+          rootKeyId         : alice.keyId,
           derivationScheme  : KeyDerivationScheme.Protocols,
           derivedPrivateKey : alice.keyPair.privateJwk
         };
@@ -527,13 +531,24 @@ describe('RecordsReadHandler.handle()', () => {
           DwnErrorCode.RecordsInvalidAncestorKeyDerivationSegment
         );
 
-        // test unable to decrypt the message if there no derivation scheme(s) used by the message matches the scheme used by the given private key
+        // test unable to decrypt the message if no derivation scheme used by the message matches the scheme used by the given private key
         const privateKeyWithMismatchingDerivationScheme: DerivedPrivateJwk = {
+          rootKeyId         : alice.keyId,
           derivationScheme  : 'scheme-that-is-not-protocol-context' as any,
           derivedPrivateKey : alice.keyPair.privateJwk
         };
         await expect(Records.decrypt(unsignedRecordsWrite, privateKeyWithMismatchingDerivationScheme, cipherStream)).to.be.rejectedWith(
-          DwnErrorCode.RecordsDecryptNoMatchingKeyDerivationScheme
+          DwnErrorCode.RecordsDecryptNoMatchingKeyEncryptedFound
+        );
+
+        // test unable to decrypt the message if public key ID does not match the derived private key
+        const privateKeyWithMismatchingKeyId: DerivedPrivateJwk = {
+          rootKeyId         : 'mismatchingKeyId',
+          derivationScheme  : KeyDerivationScheme.Protocols,
+          derivedPrivateKey : alice.keyPair.privateJwk
+        };
+        await expect(Records.decrypt(unsignedRecordsWrite, privateKeyWithMismatchingKeyId, cipherStream)).to.be.rejectedWith(
+          DwnErrorCode.RecordsDecryptNoMatchingKeyEncryptedFound
         );
       });
     });

@@ -22,7 +22,7 @@ export enum DwnErrorCode {
   ProtocolAuthorizationInvalidSchema = 'ProtocolAuthorizationInvalidSchema',
   ProtocolAuthorizationInvalidType = 'ProtocolAuthorizationInvalidType',
   ProtocolAuthorizationMissingRuleSet = 'ProtocolAuthorizationMissingRuleSet',
-  RecordsDecryptNoMatchingKeyDerivationScheme = 'RecordsDecryptNoMatchingKeyDerivationScheme',
+  RecordsDecryptNoMatchingKeyEncryptedFound = 'RecordsDecryptNoMatchingKeyEncryptedFound',
   RecordsDeriveLeafPrivateKeyUnSupportedCurve = 'RecordsDeriveLeafPrivateKeyUnSupportedCurve',
   RecordsDeriveLeafPublicKeyUnSupportedCurve = 'RecordsDeriveLeafPublicKeyUnSupportedCurve',
   RecordsInvalidAncestorKeyDerivationSegment = 'RecordsInvalidAncestorKeyDerivationSegment',
