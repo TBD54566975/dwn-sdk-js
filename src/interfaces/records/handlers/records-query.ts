@@ -76,13 +76,13 @@ export class RecordsQueryHandler implements MethodHandler {
   /**
    * Fetches the records as a non-owner, return only:
    * 1. published records; and
-   * 2. unpublished records intended for the requester (where `recipient` is the requester)
+   * 2. unpublished records intended for the query author (where `recipient` is the query author)
    */
   private async fetchRecordsAsNonOwner(tenant: string, recordsQuery: RecordsQuery)
     : Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
     const publishedRecords = await this.fetchPublishedRecords(tenant, recordsQuery);
-    const unpublishedRecordsForRequester = await this.fetchUnpublishedRecordsForRequester(tenant, recordsQuery);
-    const unpublishedRecordsByRequester = await this.fetchUnpublishedRecordsByRequester(tenant, recordsQuery);
+    const unpublishedRecordsForRequester = await this.fetchUnpublishedRecordsForQueryAuthor(tenant, recordsQuery);
+    const unpublishedRecordsByRequester = await this.fetchUnpublishedRecordsByAuthor(tenant, recordsQuery);
     const records = [...publishedRecords, ...unpublishedRecordsForRequester, ...unpublishedRecordsByRequester];
     return records;
   }
@@ -104,12 +104,12 @@ export class RecordsQueryHandler implements MethodHandler {
   }
 
   /**
-   * Fetches only unpublished records that are intended for the requester (where `recipient` is the requester).
+   * Fetches only unpublished records that are intended for the query author (where `recipient` is the author).
    */
-  private async fetchUnpublishedRecordsForRequester(tenant: string, recordsQuery: RecordsQuery)
+  private async fetchUnpublishedRecordsForQueryAuthor(tenant: string, recordsQuery: RecordsQuery)
     : Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
 
-    // include records where recipient is requester
+    // include records where recipient is query author
     const filter = {
       ...RecordsQuery.convertFilter(recordsQuery.message.descriptor.filter),
       interface         : DwnInterfaceName.Records,
@@ -124,12 +124,12 @@ export class RecordsQueryHandler implements MethodHandler {
   }
 
   /**
-   * Fetches only unpublished records that are authored by the requester.
+   * Fetches only unpublished records where the author is the same as the query author.
    */
-  private async fetchUnpublishedRecordsByRequester(tenant: string, recordsQuery: RecordsQuery)
+  private async fetchUnpublishedRecordsByAuthor(tenant: string, recordsQuery: RecordsQuery)
     : Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
 
-    // include records where recipient is requester
+    // include records where author is the same as the query author
     const filter = {
       ...RecordsQuery.convertFilter(recordsQuery.message.descriptor.filter),
       // TODO: `recordsQuery.author` cannot be undefined until #299 is implemented (https://github.com/TBD54566975/dwn-sdk-js/issues/299)

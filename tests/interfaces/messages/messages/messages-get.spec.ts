@@ -9,11 +9,11 @@ import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 describe('MessagesGet Message', () => {
   describe('create', () => {
     it('creates a MessagesGet message', async () => {
-      const { requester, message } = await TestDataGenerator.generateRecordsWrite();
+      const { author, message } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await Message.getCid(message);
 
       const messagesGet = await MessagesGet.create({
-        authorizationSignatureInput : await Jws.createSignatureInput(requester),
+        authorizationSignatureInput : await Jws.createSignatureInput(author),
         messageCids                 : [messageCid]
       });
 
@@ -58,11 +58,11 @@ describe('MessagesGet Message', () => {
 
   describe('parse', () => {
     it('parses a message into a MessagesGet instance', async () => {
-      const { requester, message } = await TestDataGenerator.generateRecordsWrite();
+      const { author, message } = await TestDataGenerator.generateRecordsWrite();
       let messageCid = await Message.getCid(message);
 
       const messagesGet = await MessagesGet.create({
-        authorizationSignatureInput : await Jws.createSignatureInput(requester),
+        authorizationSignatureInput : await Jws.createSignatureInput(author),
         messageCids                 : [messageCid]
       });
 
@@ -76,11 +76,11 @@ describe('MessagesGet Message', () => {
     });
 
     it('throws an exception if messageCids contains an invalid cid', async () => {
-      const { requester, message: recordsWriteMessage } = await TestDataGenerator.generateRecordsWrite();
+      const { author, message: recordsWriteMessage } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await Message.getCid(recordsWriteMessage);
 
       const messagesGet = await MessagesGet.create({
-        authorizationSignatureInput : await Jws.createSignatureInput(requester),
+        authorizationSignatureInput : await Jws.createSignatureInput(author),
         messageCids                 : [messageCid]
       });
 

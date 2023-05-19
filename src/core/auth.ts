@@ -94,7 +94,7 @@ export async function authenticate(jws: GeneralJws | undefined, didResolver: Did
  * @throws {Error} if fails authentication
  */
 export async function authorize(tenant: string, incomingMessage: Message<BaseMessage>): Promise<void> {
-  // if author/requester is the same as the target tenant, we can directly grant access
+  // if author is the same as the target tenant, we can directly grant access
   if (incomingMessage.author === tenant) {
     return;
   } else {

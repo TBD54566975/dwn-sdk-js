@@ -25,8 +25,8 @@ export type PermissionConditions = {
   // defaults to false.
   publication?: boolean
 
-  // sharedAccess indicates whether the requester has access to records authored
-  // by others. False indicates that the requester only has access to records
+  // sharedAccess indicates whether the author has access to records authored
+  // by others. False indicates that the author only has access to records
   // they authored.
   // defaults to `false`
   sharedAccess?: boolean

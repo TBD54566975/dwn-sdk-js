@@ -70,7 +70,7 @@ describe('RecordsReadHandler.handle()', () => {
       const alice = await DidKeyResolver.generate();
 
       // insert data
-      const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+      const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: alice });
       const writeReply = await dwn.processMessage(alice.did, message, dataStream);
       expect(writeReply.status.code).to.equal(202);
 
@@ -93,7 +93,7 @@ describe('RecordsReadHandler.handle()', () => {
       const alice = await DidKeyResolver.generate();
 
       // insert data
-      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
       const writeReply = await dwn.processMessage(alice.did, message, dataStream);
       expect(writeReply.status.code).to.equal(202);
 
@@ -113,7 +113,7 @@ describe('RecordsReadHandler.handle()', () => {
       const alice = await DidKeyResolver.generate();
 
       // insert public data
-      const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ requester: alice, published: true });
+      const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true });
       const writeReply = await dwn.processMessage(alice.did, message, dataStream);
       expect(writeReply.status.code).to.equal(202);
 
@@ -134,7 +134,7 @@ describe('RecordsReadHandler.handle()', () => {
       const alice = await DidKeyResolver.generate();
 
       // insert public data
-      const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ requester: alice, published: true });
+      const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true });
       const writeReply = await dwn.processMessage(alice.did, message, dataStream);
       expect(writeReply.status.code).to.equal(202);
 
@@ -164,7 +164,7 @@ describe('RecordsReadHandler.handle()', () => {
 
         // Install social-media protocol on Alice's DWN
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-          requester: alice,
+          author: alice,
           protocolDefinition
         });
         const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
@@ -173,7 +173,7 @@ describe('RecordsReadHandler.handle()', () => {
         // Alice writes image to her DWN
         const encodedImage = new TextEncoder().encode('cafe-aesthetic.jpg');
         const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-          requester    : alice,
+          author       : alice,
           protocol     : protocolDefinition.protocol,
           protocolPath : 'image', // this comes from `types` in protocol definition
           schema       : protocolDefinition.types.image.schema,
@@ -205,7 +205,7 @@ describe('RecordsReadHandler.handle()', () => {
 
         // Install email protocol on Alice's DWN
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-          requester: alice,
+          author: alice,
           protocolDefinition
         });
         const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
@@ -214,7 +214,7 @@ describe('RecordsReadHandler.handle()', () => {
         // Alice writes an email with Bob as recipient
         const encodedEmail = new TextEncoder().encode('Dear Bob, hello!');
         const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-          requester    : alice,
+          author       : alice,
           protocol     : protocolDefinition.protocol,
           protocolPath : 'email', // this comes from `types` in protocol definition
           schema       : protocolDefinition.types.email.schema,
@@ -254,7 +254,7 @@ describe('RecordsReadHandler.handle()', () => {
 
         // Install email protocol on Alice's DWN
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-          requester: alice,
+          author: alice,
           protocolDefinition
         });
         const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
@@ -263,7 +263,7 @@ describe('RecordsReadHandler.handle()', () => {
         // Alice writes an email with Bob as recipient
         const encodedEmail = new TextEncoder().encode('Dear Alice, hello!');
         const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-          requester    : bob,
+          author       : bob,
           protocol     : protocolDefinition.protocol,
           protocolPath : 'email', // this comes from `types` in protocol definition
           schema       : protocolDefinition.types.email.schema,
@@ -309,14 +309,14 @@ describe('RecordsReadHandler.handle()', () => {
       const alice = await DidKeyResolver.generate();
 
       // insert public data
-      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ requester: alice, published: true });
+      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true });
       const writeReply = await dwn.processMessage(alice.did, message, dataStream);
       expect(writeReply.status.code).to.equal(202);
 
       // ensure data is inserted
       const queryData = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        filter    : { recordId: message.recordId }
+        author : alice,
+        filter : { recordId: message.recordId }
       });
 
       const reply = await dwn.processMessage(alice.did, queryData.message);
@@ -348,7 +348,7 @@ describe('RecordsReadHandler.handle()', () => {
       sinon.stub(dataStore, 'get').resolves(undefined);
 
       // insert data
-      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
       const writeReply = await dwn.processMessage(alice.did, message, dataStream);
       expect(writeReply.status.code).to.equal(202);
 
@@ -388,8 +388,8 @@ describe('RecordsReadHandler.handle()', () => {
         };
 
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
-          requester : alice,
-          data      : encryptedDataBytes,
+          author : alice,
+          data   : encryptedDataBytes,
           encryptionInput
         });
 
@@ -455,7 +455,7 @@ describe('RecordsReadHandler.handle()', () => {
         // configure protocol
         const protocolDefinition = emailProtocolDefinition;
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-          requester: alice,
+          author: alice,
           protocolDefinition
         });
 
@@ -483,7 +483,7 @@ describe('RecordsReadHandler.handle()', () => {
 
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite(
           {
-            requester    : bob,
+            author       : bob,
             protocol     : protocolDefinition.protocol,
             protocolPath : 'email', // this comes from `types` in protocol definition
             schema       : protocolDefinition.types.email.schema,
