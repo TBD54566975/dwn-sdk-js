@@ -531,7 +531,7 @@ describe('RecordsReadHandler.handle()', () => {
           DwnErrorCode.RecordsInvalidAncestorKeyDerivationSegment
         );
 
-        // test unable to decrypt the message if there no derivation scheme(s) used by the message matches the scheme used by the given private key
+        // test unable to decrypt the message if no derivation scheme used by the message matches the scheme used by the given private key
         const privateKeyWithMismatchingDerivationScheme: DerivedPrivateJwk = {
           rootKeyId         : alice.keyId,
           derivationScheme  : 'scheme-that-is-not-protocol-context' as any,
@@ -541,7 +541,7 @@ describe('RecordsReadHandler.handle()', () => {
           DwnErrorCode.RecordsDecryptNoMatchingKeyEncryptedFound
         );
 
-        // test unable to decrypt the message if there no derivation scheme(s) used by the message matches the scheme used by the given private key
+        // test unable to decrypt the message if public key ID does not match the derived private key
         const privateKeyWithMismatchingKeyId: DerivedPrivateJwk = {
           rootKeyId         : 'mismatchingKeyId',
           derivationScheme  : KeyDerivationScheme.Protocols,
