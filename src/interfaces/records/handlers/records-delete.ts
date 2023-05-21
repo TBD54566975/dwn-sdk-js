@@ -60,7 +60,7 @@ export class RecordsDeleteHandler implements MethodHandler {
       });
     }
 
-    // return Not Found if record does not exist or is already deleted
+    // return Not Founnd if record does not exist or is already deleted
     if (newestExistingMessage === undefined || newestExistingMessage.descriptor.method === DwnMethodName.Delete) {
       return new MessageReply({
         status: { code: 404, detail: 'Not Found' }

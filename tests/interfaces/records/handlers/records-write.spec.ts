@@ -1640,6 +1640,33 @@ describe('RecordsWriteHandler.handle()', () => {
       });
     });
 
+    it('should 400 if dataStream is not provided and dataStore does not contain dataCid', async () => {
+      // scenario: A sync writes a pruned initial RecordsWrite, without a `dataStream`. Alice does another regular
+      // RecordsWrite for the same record, referencing the same `dataCid` but omitting the `dataStream`.
+
+      // Pruned RecordsWrite
+      const alice = await DidKeyResolver.generate();
+      const data = Encoder.stringToBytes('data from bob');
+      const prunedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+        requester : alice,
+        published : false,
+        data,
+      });
+      const prunedRecordsWriteReply = await dwn.synchronizePrunedInitialRecordsWrite(alice.did, prunedRecordsWrite.message);
+      expect(prunedRecordsWriteReply.status.code).to.equal(202);
+
+      // Update record to published, omitting dataStream
+      const recordsWrite = await TestDataGenerator.generateFromRecordsWrite({
+        requester     : alice,
+        existingWrite : prunedRecordsWrite.recordsWrite,
+        published     : true,
+        data,
+      });
+      const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message);
+      expect(recordsWriteReply.status.code).to.equal(400);
+      expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingData);
+    });
+
     describe('reference counting tests', () => {
       it('should only write the data once even if written by multiple messages', async () => {
         const alice = await DidKeyResolver.generate();
@@ -1987,25 +2014,24 @@ describe('RecordsWriteHandler.handle()', () => {
     });
   });
 
-  // Question for reviewers (mainly thehenrytai): Why are were doing this?
 
-  // it('should throw if `storageController.put()` throws unknown error', async () => {
-  //   const { requester, message, dataStream } = await TestDataGenerator.generateRecordsWrite();
-  //   const tenant = requester.did;
+  it('should throw if `recordsWritehandler.putData()` throws unknown error', async () => {
+    const { requester, message, dataStream } = await TestDataGenerator.generateRecordsWrite();
+    const tenant = requester.did;
 
-  //   const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
+    const didResolverStub = TestStubGenerator.createDidResolverStub(requester);
 
-  //   const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-  //   messageStoreStub.query.resolves([]);
+    const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+    messageStoreStub.query.resolves([]);
 
-  //   // simulate throwing unexpected error
-  //   sinon.stub(StorageController, 'put').throws(new Error('an unknown error in messageStore.put()'));
+    const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
 
-  //   const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
+    const recordsWriteHandler = new RecordsWriteHandler(didResolverStub, messageStoreStub, dataStoreStub, eventLog);
 
-  //   const recordsWriteHandler = new RecordsWriteHandler(didResolverStub, messageStoreStub, dataStoreStub, eventLog);
+    // simulate throwing unexpected error
+    sinon.stub(recordsWriteHandler, 'putData').throws(new Error('an unknown error in messageStore.put()'));
 
-  //   const handlerPromise = recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
-  //   await expect(handlerPromise).to.be.rejectedWith('an unknown error in messageStore.put()');
-  // });
+    const handlerPromise = recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
+    await expect(handlerPromise).to.be.rejectedWith('an unknown error in messageStore.put()');
+  });
 });

@@ -132,7 +132,7 @@ export class Dwn {
   /**
    * Privileged method for writing a pruned initial `RecordsWrite` to a DWN without needing to supply associated data.
    */
-  public async synchronizePrunedInitialRecordsWrite(tenant: string, message: RecordsWriteMessage): Promise<MessagesGetReply> {
+  public async synchronizePrunedInitialRecordsWrite(tenant: string, message: RecordsWriteMessage): Promise<MessageReply> {
     const errorMessageReply = await this.preprocessingChecks(tenant, message, DwnInterfaceName.Records, DwnMethodName.Write);
     if (errorMessageReply !== undefined) {
       return errorMessageReply;

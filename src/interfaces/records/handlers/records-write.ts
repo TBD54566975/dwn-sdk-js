@@ -141,8 +141,6 @@ export class RecordsWriteHandler implements MethodHandler {
 
       const associateResult = await this.dataStore.associate(tenant, messageCid, message.descriptor.dataCid);
       if (associateResult === undefined) {
-        // Question for reviewers: I think if this throws, it is indicative of an underlying bug in the data store.
-        //   If previous RecordsWrites have gone correctly, this shouldn't happen, right?
         throw new DwnError(DwnErrorCode.RecordsWriteMissingData, `Unable to associate dataCid ${message.descriptor.dataCid} ` +
           `to messageCid ${messageCid} because dataStream was not provided and data was not found in dataStore`);
       }
