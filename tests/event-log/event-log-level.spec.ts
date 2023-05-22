@@ -29,16 +29,16 @@ describe('EventLogLevel Tests', () => {
     const messageCid = await Message.getCid(message);
     const watermark = await eventLog.append(author.did, messageCid);
 
-    const { author: requester2, message: message2 } = await TestDataGenerator.generateRecordsWrite();
+    const { author: author2, message: message2 } = await TestDataGenerator.generateRecordsWrite();
     const messageCid2 = await Message.getCid(message2);
-    const watermark2 = await eventLog.append(requester2.did, messageCid2);
+    const watermark2 = await eventLog.append(author2.did, messageCid2);
 
     let events = await eventLog.getEvents(author.did);
     expect(events.length).to.equal(1);
     expect(events[0].watermark).to.equal(watermark);
     expect(events[0].messageCid).to.equal(messageCid);
 
-    events = await eventLog.getEvents(requester2.did);
+    events = await eventLog.getEvents(author2.did);
     expect(events.length).to.equal(1);
     expect(events[0].watermark).to.equal(watermark2);
     expect(events[0].messageCid).to.equal(messageCid2);

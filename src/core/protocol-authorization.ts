@@ -23,7 +23,7 @@ export class ProtocolAuthorization {
   public static async authorize(
     tenant: string,
     incomingMessage: RecordsRead | RecordsWrite,
-    requesterDid: string | undefined,
+    author: string | undefined,
     messageStore: MessageStore
   ): Promise<void> {
     // fetch ancestor message chain
@@ -60,7 +60,7 @@ export class ProtocolAuthorization {
     // verify method invoked against the allowed actions
     ProtocolAuthorization.verifyAllowedActions(
       tenant,
-      requesterDid,
+      author,
       incomingMessage.message.descriptor.method,
       inboundMessageRuleSet,
       ancestorMessageChain,
@@ -283,7 +283,7 @@ export class ProtocolAuthorization {
    */
   private static verifyAllowedActions(
     tenant: string,
-    requesterDid: string | undefined,
+    author: string | undefined,
     incomingMessageMethod: DwnMethodName,
     inboundMessageRuleSet: ProtocolRuleSet,
     ancestorMessageChain: RecordsWriteMessage[],
@@ -292,10 +292,10 @@ export class ProtocolAuthorization {
 
     if (actionRules === undefined) {
       // if no action rule is defined, owner of DWN can do everything
-      if (requesterDid === tenant) {
+      if (author === tenant) {
         return;
       } else {
-        throw new Error(`no action rule defined for ${incomingMessageMethod}, ${requesterDid} is unauthorized`);
+        throw new Error(`no action rule defined for ${incomingMessageMethod}, ${author} is unauthorized`);
       }
     }
 
@@ -312,9 +312,9 @@ export class ProtocolAuthorization {
         );
 
         if (messageForAuthorCheck !== undefined) {
-          const expectedRequesterDid = Message.getAuthor(messageForAuthorCheck);
+          const expectedAuthor = Message.getAuthor(messageForAuthorCheck);
 
-          if (requesterDid === expectedRequesterDid) {
+          if (author === expectedAuthor) {
             allowedActions.add(actionRule.can);
           }
         }
@@ -325,9 +325,9 @@ export class ProtocolAuthorization {
             actionRule.of!,
         );
         if (messageForRecipientCheck !== undefined) {
-          const expectedRequesterDid = messageForRecipientCheck.descriptor.recipient;
+          const expectedAuthor = messageForRecipientCheck.descriptor.recipient;
 
-          if (requesterDid === expectedRequesterDid) {
+          if (author === expectedAuthor) {
             allowedActions.add(actionRule.can);
           }
         }

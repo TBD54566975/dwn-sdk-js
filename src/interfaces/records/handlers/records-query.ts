@@ -81,9 +81,9 @@ export class RecordsQueryHandler implements MethodHandler {
   private async fetchRecordsAsNonOwner(tenant: string, recordsQuery: RecordsQuery)
     : Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
     const publishedRecords = await this.fetchPublishedRecords(tenant, recordsQuery);
-    const unpublishedRecordsForRequester = await this.fetchUnpublishedRecordsForQueryAuthor(tenant, recordsQuery);
-    const unpublishedRecordsByRequester = await this.fetchUnpublishedRecordsByAuthor(tenant, recordsQuery);
-    const records = [...publishedRecords, ...unpublishedRecordsForRequester, ...unpublishedRecordsByRequester];
+    const unpublishedRecordsForQueryAuthor = await this.fetchUnpublishedRecordsForQueryAuthor(tenant, recordsQuery);
+    const unpublishedRecordsByAuthor = await this.fetchUnpublishedRecordsByAuthor(tenant, recordsQuery);
+    const records = [...publishedRecords, ...unpublishedRecordsForQueryAuthor, ...unpublishedRecordsByAuthor];
     return records;
   }
 
@@ -119,8 +119,8 @@ export class RecordsQueryHandler implements MethodHandler {
       isLatestBaseState : true,
       published         : false
     };
-    const unpublishedRecordsForRequester = await StorageController.query(this.messageStore, this.dataStore, tenant, filter);
-    return unpublishedRecordsForRequester;
+    const unpublishedRecordsForQueryAuthor = await StorageController.query(this.messageStore, this.dataStore, tenant, filter);
+    return unpublishedRecordsForQueryAuthor;
   }
 
   /**
@@ -139,8 +139,8 @@ export class RecordsQueryHandler implements MethodHandler {
       isLatestBaseState : true,
       published         : false
     };
-    const unpublishedRecordsForRequester = await StorageController.query(this.messageStore, this.dataStore, tenant, filter);
-    return unpublishedRecordsForRequester;
+    const unpublishedRecordsForQueryAuthor = await StorageController.query(this.messageStore, this.dataStore, tenant, filter);
+    return unpublishedRecordsForQueryAuthor;
   }
 }
 
