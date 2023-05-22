@@ -1648,7 +1648,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const alice = await DidKeyResolver.generate();
       const data = Encoder.stringToBytes('data from bob');
       const prunedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-        requester : alice,
+        author    : alice,
         published : false,
         data,
       });
@@ -1657,7 +1657,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
       // Update record to published, omitting dataStream
       const recordsWrite = await TestDataGenerator.generateFromRecordsWrite({
-        requester     : alice,
+        author        : alice,
         existingWrite : prunedRecordsWrite.recordsWrite,
         published     : true,
         data,
@@ -2016,7 +2016,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
   it('should throw if `recordsWritehandler.putData()` throws unknown error', async () => {
     const { author, message, dataStream } = await TestDataGenerator.generateRecordsWrite();
-    const tenant = requester.did;
+    const tenant = author.did;
 
     const didResolverStub = TestStubGenerator.createDidResolverStub(author);
 
