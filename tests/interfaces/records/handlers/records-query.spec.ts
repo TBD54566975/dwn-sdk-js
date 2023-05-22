@@ -78,9 +78,9 @@ describe('RecordsQueryHandler.handle()', () => {
       // insert three messages into DB, two with matching protocol
       const alice = await TestDataGenerator.generatePersona();
       const dataFormat = 'myAwesomeDataFormat';
-      const write1 = await TestDataGenerator.generateRecordsWrite({ requester: alice });
-      const write2 = await TestDataGenerator.generateRecordsWrite({ requester: alice, dataFormat, schema: 'schema1' });
-      const write3 = await TestDataGenerator.generateRecordsWrite({ requester: alice, dataFormat, schema: 'schema2' });
+      const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice });
+      const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice, dataFormat, schema: 'schema1' });
+      const write3 = await TestDataGenerator.generateRecordsWrite({ author: alice, dataFormat, schema: 'schema2' });
 
       // setting up a stub resolver
       const mockResolution = TestDataGenerator.createDidResolutionResult(alice);;
@@ -95,7 +95,7 @@ describe('RecordsQueryHandler.handle()', () => {
       expect(writeReply3.status.code).to.equal(202);
 
       // testing singular conditional query
-      const messageData = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { dataFormat } });
+      const messageData = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { dataFormat } });
 
       const reply = await dwn.processMessage(alice.did, messageData.message);
 
@@ -104,8 +104,8 @@ describe('RecordsQueryHandler.handle()', () => {
 
       // testing multi-conditional query, reuse data generated above for bob
       const messageData2 = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        filter    : {
+        author : alice,
+        filter : {
           dataFormat,
           schema: 'schema1'
         }
@@ -120,12 +120,12 @@ describe('RecordsQueryHandler.handle()', () => {
     it('should return `encodedData` if data size is within the spec threshold', async () => {
       const data = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded); // within/on threshold
       const alice = await DidKeyResolver.generate();
-      const write= await TestDataGenerator.generateRecordsWrite({ requester: alice, data });
+      const write= await TestDataGenerator.generateRecordsWrite({ author: alice, data });
 
       const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
       expect(writeReply.status.code).to.equal(202);
 
-      const messageData = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { recordId: write.message.recordId } });
+      const messageData = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { recordId: write.message.recordId } });
       const reply = await dwn.processMessage(alice.did, messageData.message);
 
       expect(reply.status.code).to.equal(200);
@@ -136,12 +136,12 @@ describe('RecordsQueryHandler.handle()', () => {
     it('should not return `encodedData` if data size is greater then spec threshold', async () => {
       const data = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1); // exceeding threshold
       const alice = await DidKeyResolver.generate();
-      const write= await TestDataGenerator.generateRecordsWrite({ requester: alice, data });
+      const write= await TestDataGenerator.generateRecordsWrite({ author: alice, data });
 
       const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
       expect(writeReply.status.code).to.equal(202);
 
-      const messageData = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { recordId: write.message.recordId } });
+      const messageData = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { recordId: write.message.recordId } });
       const reply = await dwn.processMessage(alice.did, messageData.message);
 
       expect(reply.status.code).to.equal(200);
@@ -153,8 +153,8 @@ describe('RecordsQueryHandler.handle()', () => {
       // scenario: 2 records authored by alice, 1st attested by alice, 2nd attested by bob
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
-      const recordsWrite1 = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [alice] });
-      const recordsWrite2 = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [bob] });
+      const recordsWrite1 = await TestDataGenerator.generateRecordsWrite({ author: alice, attesters: [alice] });
+      const recordsWrite2 = await TestDataGenerator.generateRecordsWrite({ author: alice, attesters: [bob] });
 
       // insert data
       const writeReply1 = await dwn.processMessage(alice.did, recordsWrite1.message, recordsWrite1.dataStream);
@@ -163,7 +163,7 @@ describe('RecordsQueryHandler.handle()', () => {
       expect(writeReply2.status.code).to.equal(202);
 
       // testing attester filter
-      const recordsQuery1 = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { attester: alice.did } });
+      const recordsQuery1 = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { attester: alice.did } });
       const reply1 = await dwn.processMessage(alice.did, recordsQuery1.message);
       expect(reply1.entries?.length).to.equal(1);
       const reply1Attester = Jws.getSignerDid((reply1.entries![0] as RecordsWriteMessage).attestation!.signatures[0]);
@@ -171,8 +171,8 @@ describe('RecordsQueryHandler.handle()', () => {
 
       // testing attester + another filter
       const recordsQuery2 = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        filter    : { attester: bob.did, schema: recordsWrite2.message.descriptor.schema }
+        author : alice,
+        filter : { attester: bob.did, schema: recordsWrite2.message.descriptor.schema }
       });
       const reply2 = await dwn.processMessage(alice.did, recordsQuery2.message);
       expect(reply2.entries?.length).to.equal(1);
@@ -181,7 +181,7 @@ describe('RecordsQueryHandler.handle()', () => {
 
       // testing attester filter that yields no results
       const carol = await DidKeyResolver.generate();
-      const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({ requester: alice, filter: { attester: carol.did } });
+      const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { attester: carol.did } });
       const reply3 = await dwn.processMessage(alice.did, recordsQuery3.message);
       expect(reply3.entries?.length).to.equal(0);
     });
@@ -192,9 +192,9 @@ describe('RecordsQueryHandler.handle()', () => {
       const firstDayOf2022 = createDateString(new Date(2022, 1, 1));
       const firstDayOf2023 = createDateString(new Date(2023, 1, 1));
       const alice = await DidKeyResolver.generate();
-      const write1 = await TestDataGenerator.generateRecordsWrite({ requester: alice, dateCreated: firstDayOf2021, dateModified: firstDayOf2021 });
-      const write2 = await TestDataGenerator.generateRecordsWrite({ requester: alice, dateCreated: firstDayOf2022, dateModified: firstDayOf2022 });
-      const write3 = await TestDataGenerator.generateRecordsWrite({ requester: alice, dateCreated: firstDayOf2023, dateModified: firstDayOf2023 });
+      const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2021, dateModified: firstDayOf2021 });
+      const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2022, dateModified: firstDayOf2022 });
+      const write3 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2023, dateModified: firstDayOf2023 });
 
       // insert data
       const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
@@ -207,9 +207,9 @@ describe('RecordsQueryHandler.handle()', () => {
       // testing `from` range
       const lastDayOf2021 = createDateString(new Date(2021, 12, 31));
       const recordsQuery1 = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        filter    : { dateCreated: { from: lastDayOf2021 } },
-        dateSort  : DateSort.CreatedAscending
+        author   : alice,
+        filter   : { dateCreated: { from: lastDayOf2021 } },
+        dateSort : DateSort.CreatedAscending
       });
       const reply1 = await dwn.processMessage(alice.did, recordsQuery1.message);
       expect(reply1.entries?.length).to.equal(2);
@@ -219,9 +219,9 @@ describe('RecordsQueryHandler.handle()', () => {
       // testing `to` range
       const lastDayOf2022 = createDateString(new Date(2022, 12, 31));
       const recordsQuery2 = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        filter    : { dateCreated: { to: lastDayOf2022 } },
-        dateSort  : DateSort.CreatedAscending
+        author   : alice,
+        filter   : { dateCreated: { to: lastDayOf2022 } },
+        dateSort : DateSort.CreatedAscending
       });
       const reply2 = await dwn.processMessage(alice.did, recordsQuery2.message);
       expect(reply2.entries?.length).to.equal(2);
@@ -231,9 +231,9 @@ describe('RecordsQueryHandler.handle()', () => {
       // testing `from` and `to` range
       const lastDayOf2023 = createDateString(new Date(2023, 12, 31));
       const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        filter    : { dateCreated: { from: lastDayOf2022, to: lastDayOf2023 } },
-        dateSort  : DateSort.CreatedAscending
+        author   : alice,
+        filter   : { dateCreated: { from: lastDayOf2022, to: lastDayOf2023 } },
+        dateSort : DateSort.CreatedAscending
       });
       const reply3 = await dwn.processMessage(alice.did, recordsQuery3.message);
       expect(reply3.entries?.length).to.equal(1);
@@ -241,9 +241,9 @@ describe('RecordsQueryHandler.handle()', () => {
 
       // testing edge case where value equals `from` and `to`
       const recordsQuery4 = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        filter    : { dateCreated: { from: firstDayOf2022, to: firstDayOf2023 } },
-        dateSort  : DateSort.CreatedAscending
+        author   : alice,
+        filter   : { dateCreated: { from: firstDayOf2022, to: firstDayOf2023 } },
+        dateSort : DateSort.CreatedAscending
       });
       const reply4 = await dwn.processMessage(alice.did, recordsQuery4.message);
       expect(reply4.entries?.length).to.equal(1);
@@ -258,13 +258,13 @@ describe('RecordsQueryHandler.handle()', () => {
       const alice = await DidKeyResolver.generate();
       const schema = '2021And2022Schema';
       const write1 = await TestDataGenerator.generateRecordsWrite({
-        requester: alice, dateCreated: firstDayOf2021, dateModified: firstDayOf2021, schema
+        author: alice, dateCreated: firstDayOf2021, dateModified: firstDayOf2021, schema
       });
       const write2 = await TestDataGenerator.generateRecordsWrite({
-        requester: alice, dateCreated: firstDayOf2022, dateModified: firstDayOf2022, schema
+        author: alice, dateCreated: firstDayOf2022, dateModified: firstDayOf2022, schema
       });
       const write3 = await TestDataGenerator.generateRecordsWrite({
-        requester: alice, dateCreated: firstDayOf2023, dateModified: firstDayOf2023
+        author: alice, dateCreated: firstDayOf2023, dateModified: firstDayOf2023
       });
 
       // insert data
@@ -279,8 +279,8 @@ describe('RecordsQueryHandler.handle()', () => {
       const lastDayOf2021 = createDateString(new Date(2021, 12, 31));
       const lastDayOf2023 = createDateString(new Date(2023, 12, 31));
       const recordsQuery5 = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        filter    : {
+        author : alice,
+        filter : {
           schema, // by itself selects the first 2 records
           dateCreated: { from: lastDayOf2021, to: lastDayOf2023 } // by itself selects the last 2 records
         },
@@ -293,7 +293,7 @@ describe('RecordsQueryHandler.handle()', () => {
 
     it('should not include `authorization` in returned records', async () => {
       const alice = await TestDataGenerator.generatePersona();
-      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
 
       // setting up a stub method resolver
       const mockResolution = TestDataGenerator.createDidResolutionResult(alice);;
@@ -303,8 +303,8 @@ describe('RecordsQueryHandler.handle()', () => {
       expect(writeReply.status.code).to.equal(202);
 
       const queryData = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        filter    : { schema: message.descriptor.schema }
+        author : alice,
+        filter : { schema: message.descriptor.schema }
       });
 
       const queryReply = await dwn.processMessage(alice.did, queryData.message);
@@ -317,14 +317,14 @@ describe('RecordsQueryHandler.handle()', () => {
       // scenario: alice and bob attest to a message alice authored
 
       const alice = await DidKeyResolver.generate();
-      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ requester: alice, attesters: [alice] });
+      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, attesters: [alice] });
 
       const writeReply = await dwn.processMessage(alice.did, message, dataStream);
       expect(writeReply.status.code).to.equal(202);
 
       const queryData = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        filter    : { schema: message.descriptor.schema }
+        author : alice,
+        filter : { schema: message.descriptor.schema }
       });
 
       const queryReply = await dwn.processMessage(alice.did, queryData.message);
@@ -340,10 +340,10 @@ describe('RecordsQueryHandler.handle()', () => {
       const alice = await TestDataGenerator.generatePersona();
       const schema = 'aSchema';
       const publishedWriteData = await TestDataGenerator.generateRecordsWrite({
-        requester: alice, schema, published: true
+        author: alice, schema, published: true
       });
       const unpublishedWriteData = await TestDataGenerator.generateRecordsWrite({
-        requester: alice, schema
+        author: alice, schema
       });
 
       // setting up a stub method resolver
@@ -358,9 +358,9 @@ describe('RecordsQueryHandler.handle()', () => {
 
       // test published date ascending sort does not include any records that is not published
       const publishedAscendingQueryData = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        dateSort  : DateSort.PublishedAscending,
-        filter    : { schema }
+        author   : alice,
+        dateSort : DateSort.PublishedAscending,
+        filter   : { schema }
       });
       const publishedAscendingQueryReply = await dwn.processMessage(alice.did, publishedAscendingQueryData.message);
 
@@ -369,9 +369,9 @@ describe('RecordsQueryHandler.handle()', () => {
 
       // test published date scending sort does not include any records that is not published
       const publishedDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        dateSort  : DateSort.PublishedDescending,
-        filter    : { schema }
+        author   : alice,
+        dateSort : DateSort.PublishedDescending,
+        filter   : { schema }
       });
       const publishedDescendingQueryReply = await dwn.processMessage(alice.did, publishedDescendingQueryData.message);
 
@@ -384,9 +384,9 @@ describe('RecordsQueryHandler.handle()', () => {
       const alice = await TestDataGenerator.generatePersona();
       const schema = 'aSchema';
       const published = true;
-      const write1Data = await TestDataGenerator.generateRecordsWrite({ requester: alice, schema, published });
-      const write2Data = await TestDataGenerator.generateRecordsWrite({ requester: alice, schema, published });
-      const write3Data = await TestDataGenerator.generateRecordsWrite({ requester: alice, schema, published });
+      const write1Data = await TestDataGenerator.generateRecordsWrite({ author: alice, schema, published });
+      const write2Data = await TestDataGenerator.generateRecordsWrite({ author: alice, schema, published });
+      const write3Data = await TestDataGenerator.generateRecordsWrite({ author: alice, schema, published });
 
       // setting up a stub method resolver
       const mockResolution = TestDataGenerator.createDidResolutionResult(alice);;
@@ -402,9 +402,9 @@ describe('RecordsQueryHandler.handle()', () => {
 
       // createdAscending test
       const createdAscendingQueryData = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        dateSort  : DateSort.CreatedAscending,
-        filter    : { schema }
+        author   : alice,
+        dateSort : DateSort.CreatedAscending,
+        filter   : { schema }
       });
       const createdAscendingQueryReply = await dwn.processMessage(alice.did, createdAscendingQueryData.message);
 
@@ -414,9 +414,9 @@ describe('RecordsQueryHandler.handle()', () => {
 
       // createdDescending test
       const createdDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        dateSort  : DateSort.CreatedDescending,
-        filter    : { schema }
+        author   : alice,
+        dateSort : DateSort.CreatedDescending,
+        filter   : { schema }
       });
       const createdDescendingQueryReply = await dwn.processMessage(alice.did, createdDescendingQueryData.message);
 
@@ -426,9 +426,9 @@ describe('RecordsQueryHandler.handle()', () => {
 
       // publishedAscending test
       const publishedAscendingQueryData = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        dateSort  : DateSort.PublishedAscending,
-        filter    : { schema }
+        author   : alice,
+        dateSort : DateSort.PublishedAscending,
+        filter   : { schema }
       });
       const publishedAscendingQueryReply = await dwn.processMessage(alice.did, publishedAscendingQueryData.message);
 
@@ -438,9 +438,9 @@ describe('RecordsQueryHandler.handle()', () => {
 
       // publishedDescending test
       const publishedDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        dateSort  : DateSort.PublishedDescending,
-        filter    : { schema }
+        author   : alice,
+        dateSort : DateSort.PublishedDescending,
+        filter   : { schema }
       });
       const publishedDescendingQueryReply = await dwn.processMessage(alice.did, publishedDescendingQueryData.message);
 
@@ -449,7 +449,7 @@ describe('RecordsQueryHandler.handle()', () => {
       expect(publishedDescendingQueryReply.entries?.[2].descriptor['datePublished']).to.equal(write1Data.message.descriptor.datePublished);
     });
 
-    it('should only return published records and unpublished records that is meant for requester', async () => {
+    it('should only return published records and unpublished records that is meant for author', async () => {
       // write three records into Alice's DB:
       // 1st is unpublished
       // 2nd is also unpublished but is meant for (has recipient as) Bob
@@ -459,16 +459,16 @@ describe('RecordsQueryHandler.handle()', () => {
       const bob = await DidKeyResolver.generate();
       const schema = 'schema1';
       const record1Data = await TestDataGenerator.generateRecordsWrite(
-        { requester: alice, schema, data: Encoder.stringToBytes('1') }
+        { author: alice, schema, data: Encoder.stringToBytes('1') }
       );
       const record2Data = await TestDataGenerator.generateRecordsWrite(
-        { requester: alice, schema, protocol: 'protocol', protocolPath: 'path', recipient: bob.did, data: Encoder.stringToBytes('2') }
+        { author: alice, schema, protocol: 'protocol', protocolPath: 'path', recipient: bob.did, data: Encoder.stringToBytes('2') }
       );
       const record3Data = await TestDataGenerator.generateRecordsWrite(
-        { requester: bob, schema, protocol: 'protocol', protocolPath: 'path', recipient: alice.did, data: Encoder.stringToBytes('3') }
+        { author: bob, schema, protocol: 'protocol', protocolPath: 'path', recipient: alice.did, data: Encoder.stringToBytes('3') }
       );
       const record4Data = await TestDataGenerator.generateRecordsWrite(
-        { requester: alice, schema, data: Encoder.stringToBytes('4'), published: true }
+        { author: alice, schema, data: Encoder.stringToBytes('4'), published: true }
       );
 
       // directly inserting data to datastore so that we don't have to setup to grant Bob permission to write to Alice's DWN
@@ -496,8 +496,8 @@ describe('RecordsQueryHandler.handle()', () => {
 
       // test correctness for Bob's query
       const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({
-        requester : bob,
-        filter    : { schema }
+        author : bob,
+        filter : { schema }
       });
 
       const replyToBob = await dwn.processMessage(alice.did, bobQueryMessageData.message);
@@ -514,8 +514,8 @@ describe('RecordsQueryHandler.handle()', () => {
 
       // test correctness for Alice's query
       const aliceQueryMessageData = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        filter    : { schema }
+        author : alice,
+        filter : { schema }
       });
 
       const replyToAliceQuery = await dwn.processMessage(alice.did, aliceQueryMessageData.message);
@@ -530,7 +530,7 @@ describe('RecordsQueryHandler.handle()', () => {
       const bob = await DidKeyResolver.generate();
       const schema = 'schema1';
       const unpublishedRecordsWrite = await TestDataGenerator.generateRecordsWrite(
-        { requester: alice, schema, data: Encoder.stringToBytes('1'), published: false } // explicitly setting `published` to `false`
+        { author: alice, schema, data: Encoder.stringToBytes('1'), published: false } // explicitly setting `published` to `false`
       );
 
       const result1 = await dwn.processMessage(alice.did, unpublishedRecordsWrite.message, unpublishedRecordsWrite.dataStream);
@@ -538,8 +538,8 @@ describe('RecordsQueryHandler.handle()', () => {
 
       // alice should be able to see the unpublished record
       const queryByAlice = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        filter    : { schema }
+        author : alice,
+        filter : { schema }
       });
       const replyToAliceQuery = await dwn.processMessage(alice.did, queryByAlice.message);
       expect(replyToAliceQuery.status.code).to.equal(200);
@@ -547,22 +547,22 @@ describe('RecordsQueryHandler.handle()', () => {
 
       // actual test: bob should not be able to see unpublished record
       const queryByBob = await TestDataGenerator.generateRecordsQuery({
-        requester : bob,
-        filter    : { schema }
+        author : bob,
+        filter : { schema }
       });
       const replyToBobQuery = await dwn.processMessage(alice.did, queryByBob.message);
       expect(replyToBobQuery.status.code).to.equal(200);
       expect(replyToBobQuery.entries?.length).to.equal(0);
     });
 
-    it('should throw if a non-owner requester querying for records not intended for the requester (as recipient)', async () => {
+    it('should throw if a non-owner author querying for records not intended for the author (as recipient)', async () => {
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
       const carol = await DidKeyResolver.generate();
 
       const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({
-        requester : bob,
-        filter    : { recipient: carol.did } // bob querying carol's records
+        author : bob,
+        filter : { recipient: carol.did } // bob querying carol's records
       });
 
       const replyToBobQuery = await dwn.processMessage(alice.did, bobQueryMessageData.message);
@@ -576,8 +576,8 @@ describe('RecordsQueryHandler.handle()', () => {
       const bob = await DidKeyResolver.generate();
 
       const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        filter    : { recipient: bob.did } // alice as the DWN owner querying bob's records
+        author : alice,
+        filter : { recipient: bob.did } // alice as the DWN owner querying bob's records
       });
 
       const replyToBobQuery = await dwn.processMessage(alice.did, bobQueryMessageData.message);
@@ -590,12 +590,12 @@ describe('RecordsQueryHandler.handle()', () => {
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
       const schema = 'myAwesomeSchema';
-      const recordsWriteMessage1Data = await TestDataGenerator.generateRecordsWrite({ requester: alice, schema });
-      const recordsWriteMessage2Data = await TestDataGenerator.generateRecordsWrite({ requester: bob, schema });
+      const recordsWriteMessage1Data = await TestDataGenerator.generateRecordsWrite({ author: alice, schema });
+      const recordsWriteMessage2Data = await TestDataGenerator.generateRecordsWrite({ author: bob, schema });
 
       const aliceQueryMessageData = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        filter    : { schema }
+        author : alice,
+        filter : { schema }
       });
 
       // insert data into 2 different tenants
@@ -613,8 +613,8 @@ describe('RecordsQueryHandler.handle()', () => {
 
       // query for non-normalized protocol
       const recordsQuery = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        filter    : { protocol: 'example.com/' },
+        author : alice,
+        filter : { protocol: 'example.com/' },
       });
 
       // overwrite protocol because #create auto-normalizes protocol
@@ -637,8 +637,8 @@ describe('RecordsQueryHandler.handle()', () => {
 
       // query for non-normalized schema
       const recordsQuery = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        filter    : { schema: 'example.com/' },
+        author : alice,
+        filter : { schema: 'example.com/' },
       });
 
       // overwrite schema because #create auto-normalizes schema
@@ -669,7 +669,7 @@ describe('RecordsQueryHandler.handle()', () => {
         const protocolDefinition = emailProtocolDefinition;
         const protocol = protocolDefinition.protocol;
         const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-          requester: alice,
+          author: alice,
           protocolDefinition
         });
 
@@ -698,7 +698,7 @@ describe('RecordsQueryHandler.handle()', () => {
         const schema = protocolDefinition.types.email.schema;
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite(
           {
-            requester    : bob,
+            author       : bob,
             protocol,
             protocolPath : 'email', // this comes from `types` in protocol definition
             schema,
@@ -789,8 +789,8 @@ describe('RecordsQueryHandler.handle()', () => {
         };
 
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
-          requester : alice,
-          data      : encryptedDataBytes,
+          author : alice,
+          data   : encryptedDataBytes,
           encryptionInput
         });
 
@@ -853,12 +853,12 @@ describe('RecordsQueryHandler.handle()', () => {
   });
 
   it('should return 401 if signature check fails', async () => {
-    const { requester, message } = await TestDataGenerator.generateRecordsQuery();
-    const tenant = requester.did;
+    const { author, message } = await TestDataGenerator.generateRecordsQuery();
+    const tenant = author.did;
 
     // setting up a stub did resolver & message store
     // intentionally not supplying the public key so a different public key is generated to simulate invalid signature
-    const mismatchingPersona = await TestDataGenerator.generatePersona({ did: requester.did, keyId: requester.keyId });
+    const mismatchingPersona = await TestDataGenerator.generatePersona({ did: author.did, keyId: author.keyId });
     const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
@@ -870,11 +870,11 @@ describe('RecordsQueryHandler.handle()', () => {
   });
 
   it('should return 400 if fail parsing the message', async () => {
-    const { requester, message } = await TestDataGenerator.generateRecordsQuery();
-    const tenant = requester.did;
+    const { author, message } = await TestDataGenerator.generateRecordsQuery();
+    const tenant = author.did;
 
     // setting up a stub method resolver & message store
-    const didResolver = TestStubGenerator.createDidResolverStub(requester);
+    const didResolver = TestStubGenerator.createDidResolverStub(author);
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
     const recordsQueryHandler = new RecordsQueryHandler(didResolver, messageStore, dataStore);

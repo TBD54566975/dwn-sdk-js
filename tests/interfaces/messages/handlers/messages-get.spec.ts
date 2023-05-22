@@ -59,10 +59,10 @@ describe('MessagesGetHandler.handle()', () => {
   it('returns a 401 if tenant is not author', async () => {
     const alice = await DidKeyResolver.generate();
     const bob = await DidKeyResolver.generate();
-    const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+    const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author: alice });
 
     const { message } = await TestDataGenerator.generateMessagesGet({
-      requester   : alice,
+      author      : alice,
       messageCids : [await Message.getCid(recordsWrite.message)]
     });
 
@@ -75,10 +75,10 @@ describe('MessagesGetHandler.handle()', () => {
 
   it('returns a 400 if message is invalid', async () => {
     const alice = await DidKeyResolver.generate();
-    const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+    const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author: alice });
 
     const { message } = await TestDataGenerator.generateMessagesGet({
-      requester   : alice,
+      author      : alice,
       messageCids : [await Message.getCid(recordsWrite.message)]
     });
 
@@ -93,10 +93,10 @@ describe('MessagesGetHandler.handle()', () => {
 
   it('returns a 400 if message contains an invalid message cid', async () => {
     const alice = await DidKeyResolver.generate();
-    const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+    const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author: alice });
 
     const { message } = await TestDataGenerator.generateMessagesGet({
-      requester   : alice,
+      author      : alice,
       messageCids : [await Message.getCid(recordsWrite.message)]
     });
 
@@ -115,7 +115,7 @@ describe('MessagesGetHandler.handle()', () => {
     const messageCids: string[] = [];
 
     const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-      requester: alice
+      author: alice
     });
 
     let messageCid = await Message.getCid(recordsWrite.message);
@@ -125,8 +125,8 @@ describe('MessagesGetHandler.handle()', () => {
     expect(reply.status.code).to.equal(202);
 
     const { recordsDelete } = await TestDataGenerator.generateRecordsDelete({
-      requester : alice,
-      recordId  : recordsWrite.message.recordId
+      author   : alice,
+      recordId : recordsWrite.message.recordId
     });
 
     messageCid = await Message.getCid(recordsDelete.message);
@@ -136,7 +136,7 @@ describe('MessagesGetHandler.handle()', () => {
     expect(reply.status.code).to.equal(202);
 
     const { protocolsConfigure } = await TestDataGenerator.generateProtocolsConfigure({
-      requester: alice
+      author: alice
     });
 
     messageCid = await Message.getCid(protocolsConfigure.message);
@@ -146,7 +146,7 @@ describe('MessagesGetHandler.handle()', () => {
     expect(reply.status.code).to.equal(202);
 
     const { messagesGet } = await TestDataGenerator.generateMessagesGet({
-      requester: alice,
+      author: alice,
       messageCids
     });
 
@@ -166,11 +166,11 @@ describe('MessagesGetHandler.handle()', () => {
 
   it('returns message as undefined in reply entry when a messageCid is not found', async () => {
     const alice = await DidKeyResolver.generate();
-    const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+    const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author: alice });
     const recordsWriteMessageCid = await Message.getCid(recordsWrite.message);
 
     const { message } = await TestDataGenerator.generateMessagesGet({
-      requester   : alice,
+      author      : alice,
       messageCids : [recordsWriteMessageCid]
     });
 
@@ -195,11 +195,11 @@ describe('MessagesGetHandler.handle()', () => {
     const messagesGetHandler = new MessagesGetHandler(didResolver, messageStore, dataStore);
 
     const alice = await DidKeyResolver.generate();
-    const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+    const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author: alice });
     const recordsWriteMessageCid = await Message.getCid(recordsWrite.message);
 
     const { message } = await TestDataGenerator.generateMessagesGet({
-      requester   : alice,
+      author      : alice,
       messageCids : [recordsWriteMessageCid]
     });
 
@@ -218,7 +218,7 @@ describe('MessagesGetHandler.handle()', () => {
     const alice = await DidKeyResolver.generate();
 
     const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-      requester: alice
+      author: alice
     });
 
     const reply = await dwn.processMessage(alice.did, recordsWrite.toJSON(), dataStream);
@@ -226,7 +226,7 @@ describe('MessagesGetHandler.handle()', () => {
 
     const recordsWriteMessageCid = await Message.getCid(recordsWrite.message);
     const { message } = await TestDataGenerator.generateMessagesGet({
-      requester   : alice,
+      author      : alice,
       messageCids : [recordsWriteMessageCid]
     });
 
@@ -248,7 +248,7 @@ describe('MessagesGetHandler.handle()', () => {
     const bob = await DidKeyResolver.generate();
 
     const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-      requester: alice
+      author: alice
     });
 
     const reply = await dwn.processMessage(alice.did, recordsWrite.toJSON(), dataStream);
@@ -256,7 +256,7 @@ describe('MessagesGetHandler.handle()', () => {
 
     const recordsWriteMessageCid = await Message.getCid(recordsWrite.message);
     const { message } = await TestDataGenerator.generateMessagesGet({
-      requester   : bob,
+      author      : bob,
       messageCids : [await Message.getCid(recordsWrite.message)]
     });
 

@@ -54,7 +54,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
 
   public async authorize(tenant: string, newestRecordsWrite: RecordsWrite, messageStore: MessageStore): Promise<void> {
     const { descriptor } = newestRecordsWrite.message;
-    // if author/requester is the same as the target tenant, we can directly grant access
+    // if author is the same as the target tenant, we can directly grant access
     if (this.author === tenant) {
       return;
     } else if (descriptor.published === true) {

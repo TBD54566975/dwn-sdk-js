@@ -68,7 +68,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
 
       const protocolDefinition = minimalProtocolDefinition;
       const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-        requester: alice,
+        author: alice,
         protocolDefinition,
       });
 
@@ -77,12 +77,12 @@ describe('ProtocolsConfigureHandler.handle()', () => {
     });
 
     it('should return 400 if more than 1 signature is provided in `authorization`', async () => {
-      const { requester, message, protocolsConfigure } = await TestDataGenerator.generateProtocolsConfigure();
-      const tenant = requester.did;
+      const { author, message, protocolsConfigure } = await TestDataGenerator.generateProtocolsConfigure();
+      const tenant = author.did;
 
       // intentionally create more than one signature, which is not allowed
       const extraRandomPersona = await TestDataGenerator.generatePersona();
-      const signatureInput1 = Jws.createSignatureInput(requester);
+      const signatureInput1 = Jws.createSignatureInput(author);
       const signatureInput2 = Jws.createSignatureInput(extraRandomPersona);
 
       const authorizationPayloadBytes = Encoder.objectToBytes(protocolsConfigure.authorizationPayload);
@@ -90,7 +90,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput1, signatureInput2]);
       message.authorization = signer.getJws();
 
-      TestStubGenerator.stubDidResolver(didResolver, [requester]);
+      TestStubGenerator.stubDidResolver(didResolver, [author]);
 
       const reply = await dwn.processMessage(tenant, message);
 
@@ -101,7 +101,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
     it('should return 401 if auth fails', async () => {
       const alice = await DidKeyResolver.generate();
       alice.keyId = 'wrongValue'; // to fail authentication
-      const { message } = await TestDataGenerator.generateProtocolsConfigure({ requester: alice });
+      const { message } = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
 
       const reply = await dwn.processMessage(alice.did, message);
       expect(reply.status.code).to.equal(401);
@@ -126,9 +126,9 @@ describe('ProtocolsConfigureHandler.handle()', () => {
         types: { ...minimalProtocolDefinition.types, foo3: { dataFormats: ['bar3'] } }
       };
 
-      const messageData1 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocolDefinition: protocolDefinition1 });
-      const messageData2 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocolDefinition: protocolDefinition2 });
-      const messageData3 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocolDefinition: protocolDefinition3 });
+      const messageData1 = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: protocolDefinition1 });
+      const messageData2 = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: protocolDefinition2 });
+      const messageData3 = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: protocolDefinition3 });
 
       const messageDataWithCid: (GenerateProtocolsConfigureOutput & { cid: string })[] = [];
       for (const messageData of [messageData1, messageData2, messageData3]) {
@@ -157,7 +157,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       expect(reply.status.code).to.equal(202);
 
       // test that old protocol message is removed from DB and only the newer protocol message remains
-      const queryMessageData = await TestDataGenerator.generateProtocolsQuery({ requester: alice, filter: { protocol } });
+      const queryMessageData = await TestDataGenerator.generateProtocolsQuery({ author: alice, filter: { protocol } });
       reply = await dwn.processMessage(alice.did, queryMessageData.message);
 
       expect(reply.status.code).to.equal(200);
@@ -175,7 +175,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
 
       // query for non-normalized protocol
       const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-        requester          : alice,
+        author             : alice,
         protocolDefinition : minimalProtocolDefinition
       });
 
@@ -199,7 +199,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
 
       const protocolDefinition = dexProtocolDefinition;
       const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-        requester: alice,
+        author: alice,
         protocolDefinition,
       });
 
@@ -221,7 +221,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
     describe('event log', () => {
       it('should add event for ProtocolsConfigure', async () => {
         const alice = await DidKeyResolver.generate();
-        const { message, dataStream } = await TestDataGenerator.generateProtocolsConfigure({ requester: alice });
+        const { message, dataStream } = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
 
         const reply = await dwn.processMessage(alice.did, message, dataStream);
         expect(reply.status.code).to.equal(202);
@@ -235,8 +235,8 @@ describe('ProtocolsConfigureHandler.handle()', () => {
 
       it('should delete older ProtocolsConfigure event when one overwritten', async () => {
         const alice = await DidKeyResolver.generate();
-        const messageData1 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocolDefinition: minimalProtocolDefinition });
-        const messageData2 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice, protocolDefinition: minimalProtocolDefinition });
+        const messageData1 = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: minimalProtocolDefinition });
+        const messageData2 = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: minimalProtocolDefinition });
 
         const messageDataWithCid: (GenerateProtocolsConfigureOutput & { cid: string })[] = [];
         for (const messageData of [messageData1, messageData2]) {

@@ -16,7 +16,10 @@ This project is used as a dependency by several other projects.
 
 Proposals and issues for the specification itself should be submitted as pull requests to the [spec repo](https://github.com/decentralized-identity/decentralized-web-node).
 
+
 ## Installation
+
+If you are interested in using DWNs and web5 in your web app, you probably want to look at web5-js, instead of this repository. Head on over here: https://github.com/TBD54566975/web5-js
 
 ```bash
 npm install @tbd54566975/dwn-sdk-js
