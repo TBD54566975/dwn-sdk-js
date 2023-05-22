@@ -57,20 +57,20 @@ export type Persona = {
 };
 
 export type GenerateProtocolsConfigureInput = {
-  requester?: Persona;
+  author?: Persona;
   dateCreated?: string;
   protocolDefinition?: ProtocolDefinition;
 };
 
 export type GenerateProtocolsConfigureOutput = {
-  requester: Persona;
+  author: Persona;
   message: ProtocolsConfigureMessage;
   dataStream?: Readable;
   protocolsConfigure: ProtocolsConfigure;
 };
 
 export type GenerateProtocolsQueryInput = {
-  requester?: Persona;
+  author?: Persona;
   dateCreated?: string;
   filter?: {
     protocol: string;
@@ -78,13 +78,13 @@ export type GenerateProtocolsQueryInput = {
 };
 
 export type GenerateProtocolsQueryOutput = {
-  requester: Persona;
+  author: Persona;
   message: ProtocolsQueryMessage;
   protocolsQuery: ProtocolsQuery;
 };
 
 export type GenerateRecordsWriteInput = {
-  requester?: Persona;
+  author?: Persona;
   attesters?: Persona[];
   recipient?: string;
   protocol?: string;
@@ -105,7 +105,7 @@ export type GenerateRecordsWriteInput = {
 };
 
 export type GenerateFromRecordsWriteInput = {
-  requester: Persona,
+  author: Persona,
   existingWrite: RecordsWrite,
   data?: Uint8Array;
   published?: boolean;
@@ -121,7 +121,7 @@ export type GenerateFromRecordsWriteOut = {
 };
 
 export type GenerateRecordsWriteOutput = {
-  requester: Persona;
+  author: Persona;
   message: RecordsWriteMessage;
   dataCid?: string;
   dataSize?: number;
@@ -131,30 +131,30 @@ export type GenerateRecordsWriteOutput = {
 };
 
 export type GenerateRecordsQueryInput = {
-  requester?: Persona;
+  author?: Persona;
   dateCreated?: string;
   filter?: RecordsQueryFilter;
   dateSort?: DateSort;
 };
 
 export type GenerateRecordsQueryOutput = {
-  requester: Persona;
+  author: Persona;
   message: RecordsQueryMessage;
 };
 
 export type GenerateRecordsDeleteInput = {
-  requester?: Persona;
+  author?: Persona;
   recordId?: string;
 };
 
 export type GenerateRecordsDeleteOutput = {
-  requester: Persona;
+  author: Persona;
   recordsDelete: RecordsDelete;
   message: RecordsDeleteMessage;
 };
 
 export type GenerateHooksWriteInput = {
-  requester?: Persona;
+  author?: Persona;
   dateCreated?: string;
   filter?: {
     method: string;
@@ -163,28 +163,28 @@ export type GenerateHooksWriteInput = {
 };
 
 export type GenerateHooksWriteOutput = {
-  requester: Persona;
+  author: Persona;
   message: HooksWriteMessage;
 };
 
 export type GenerateEventsGetInput = {
-  requester?: Persona;
+  author?: Persona;
   watermark?: string;
 };
 
 export type GenerateEventsGetOutput = {
-  requester: Persona;
+  author: Persona;
   eventsGet: EventsGet;
   message: EventsGetMessage;
 };
 
 export type GenerateMessagesGetInput = {
-  requester?: Persona;
+  author?: Persona;
   messageCids: string[]
 };
 
 export type GenerateMessagesGetOutput = {
-  requester: Persona;
+  author: Persona;
   message: MessagesGetMessage;
   messagesGet: MessagesGet;
 };
@@ -204,11 +204,11 @@ export class TestDataGenerator {
       did = `did:example:${didSuffix}`;
     }
 
-    // generate requester key ID if not given
+    // generate persona key ID if not given
     const keyIdSuffix = TestDataGenerator.randomString(10);
     const keyId = input?.keyId ?? `${did}#${keyIdSuffix}`;
 
-    // generate requester key pair if not given
+    // generate persona key pair if not given
     const keyPair = input?.keyPair ?? await Secp256k1.generateKeyPair();
 
     const persona: Persona = {
@@ -229,7 +229,7 @@ export class TestDataGenerator {
     input?: GenerateProtocolsConfigureInput
   ): Promise<GenerateProtocolsConfigureOutput> {
 
-    const requester = input?.requester ?? await TestDataGenerator.generatePersona();
+    const author = input?.author ?? await TestDataGenerator.generatePersona();
 
     // generate protocol types and  definition if not given
     let definition = input?.protocolDefinition;
@@ -252,7 +252,7 @@ export class TestDataGenerator {
     // const dataStream = DataStream.fromObject(definition); // intentionally left here to demonstrate the pattern to use when #139 is implemented
     const dataStream = undefined;
 
-    const authorizationSignatureInput = Jws.createSignatureInput(requester);
+    const authorizationSignatureInput = Jws.createSignatureInput(author);
 
     const options: ProtocolsConfigureOptions = {
       dateCreated: input?.dateCreated,
@@ -263,7 +263,7 @@ export class TestDataGenerator {
     const protocolsConfigure = await ProtocolsConfigure.create(options);
 
     return {
-      requester,
+      author,
       message: protocolsConfigure.message,
       dataStream,
       protocolsConfigure
@@ -274,10 +274,10 @@ export class TestDataGenerator {
    * Generates a ProtocolsQuery message for testing.
    */
   public static async generateProtocolsQuery(input?: GenerateProtocolsQueryInput): Promise<GenerateProtocolsQueryOutput> {
-    // generate requester persona if not given
-    const requester = input?.requester ?? await TestDataGenerator.generatePersona();
+    // generate author persona if not given
+    const author = input?.author ?? await TestDataGenerator.generatePersona();
 
-    const authorizationSignatureInput = Jws.createSignatureInput(requester);
+    const authorizationSignatureInput = Jws.createSignatureInput(author);
 
     const options: ProtocolsQueryOptions = {
       dateCreated : input?.dateCreated,
@@ -289,7 +289,7 @@ export class TestDataGenerator {
     const protocolsQuery = await ProtocolsQuery.create(options);
 
     return {
-      requester,
+      author,
       message: protocolsQuery.message,
       protocolsQuery
     };
@@ -301,13 +301,13 @@ export class TestDataGenerator {
    * @param input.attesters Attesters of the message. Will NOT be generated if not given.
    * @param input.data Data that belongs to the record. Generated when not given only if `dataCid` and `dataSize` are also not given.
    * @param input.dataFormat Format of the data. Defaults to 'application/json' if not given.
-   * @param input.requester Author of the message. Generated if not given.
+   * @param input.author Author of the message. Generated if not given.
    * @param input.schema Schema of the message. Randomly generated if not given.
    */
   public static async generateRecordsWrite(input?: GenerateRecordsWriteInput): Promise<GenerateRecordsWriteOutput> {
-    const requester = input?.requester ?? await TestDataGenerator.generatePersona();
+    const author = input?.author ?? await TestDataGenerator.generatePersona();
 
-    const authorizationSignatureInput = Jws.createSignatureInput(requester);
+    const authorizationSignatureInput = Jws.createSignatureInput(author);
     const attestationSignatureInputs = Jws.createSignatureInputs(input?.attesters ?? []);
 
     const dataCid = input?.dataCid;
@@ -344,7 +344,7 @@ export class TestDataGenerator {
     const message = recordsWrite.message as RecordsWriteMessage;
 
     return {
-      requester,
+      author,
       message,
       dataCid,
       dataSize,
@@ -375,7 +375,7 @@ export class TestDataGenerator {
       published,
       datePublished,
       dateModified                : input.dateModified,
-      authorizationSignatureInput : Jws.createSignatureInput(input.requester)
+      authorizationSignatureInput : Jws.createSignatureInput(input.author)
     };
 
     const recordsWrite = await RecordsWrite.createFrom(options);
@@ -391,9 +391,9 @@ export class TestDataGenerator {
    * Generates a RecordsQuery message for testing.
    */
   public static async generateRecordsQuery(input?: GenerateRecordsQueryInput): Promise<GenerateRecordsQueryOutput> {
-    const requester = input?.requester ?? await TestDataGenerator.generatePersona();
+    const author = input?.author ?? await TestDataGenerator.generatePersona();
 
-    const authorizationSignatureInput = Jws.createSignatureInput(requester);
+    const authorizationSignatureInput = Jws.createSignatureInput(author);
 
     const options: RecordsQueryOptions = {
       dateCreated : input?.dateCreated,
@@ -407,7 +407,7 @@ export class TestDataGenerator {
     const message = recordsQuery.message as RecordsQueryMessage;
 
     return {
-      requester,
+      author,
       message
     };
   };
@@ -416,15 +416,15 @@ export class TestDataGenerator {
    * Generates a RecordsDelete for testing.
    */
   public static async generateRecordsDelete(input?: GenerateRecordsDeleteInput): Promise<GenerateRecordsDeleteOutput> {
-    const requester = input?.requester ?? await DidKeyResolver.generate();
+    const author = input?.author ?? await DidKeyResolver.generate();
 
     const recordsDelete = await RecordsDelete.create({
       recordId                    : input?.recordId ?? await TestDataGenerator.randomCborSha256Cid(),
-      authorizationSignatureInput : Jws.createSignatureInput(requester)
+      authorizationSignatureInput : Jws.createSignatureInput(author)
     });
 
     return {
-      requester,
+      author,
       recordsDelete,
       message: recordsDelete.message
     };
@@ -434,9 +434,9 @@ export class TestDataGenerator {
    * Generates a HooksWrite message for testing.
    */
   public static async generateHooksWrite(input?: GenerateHooksWriteInput): Promise<GenerateHooksWriteOutput> {
-    const requester = input?.requester ?? await TestDataGenerator.generatePersona();
+    const author = input?.author ?? await TestDataGenerator.generatePersona();
 
-    const authorizationSignatureInput = Jws.createSignatureInput(requester);
+    const authorizationSignatureInput = Jws.createSignatureInput(author);
 
     const options: HooksWriteOptions = {
       dateCreated : input?.dateCreated,
@@ -448,7 +448,7 @@ export class TestDataGenerator {
     const hooksWrite = await HooksWrite.create(options);
 
     return {
-      requester,
+      author,
       message: hooksWrite.message
     };
   };
@@ -471,8 +471,8 @@ export class TestDataGenerator {
   }
 
   public static async generateEventsGet(input?: GenerateEventsGetInput): Promise<GenerateEventsGetOutput> {
-    const requester = input?.requester ?? await TestDataGenerator.generatePersona();
-    const authorizationSignatureInput = Jws.createSignatureInput(requester);
+    const author = input?.author ?? await TestDataGenerator.generatePersona();
+    const authorizationSignatureInput = Jws.createSignatureInput(author);
 
     const options: EventsGetOptions = { authorizationSignatureInput };
     if (input?.watermark) {
@@ -482,15 +482,15 @@ export class TestDataGenerator {
     const eventsGet = await EventsGet.create(options);
 
     return {
-      requester,
+      author,
       eventsGet,
       message: eventsGet.message
     };
   }
 
   public static async generateMessagesGet(input: GenerateMessagesGetInput): Promise<GenerateMessagesGetOutput> {
-    const requester = input?.requester ?? await TestDataGenerator.generatePersona();
-    const authorizationSignatureInput = Jws.createSignatureInput(requester);
+    const author = input?.author ?? await TestDataGenerator.generatePersona();
+    const authorizationSignatureInput = Jws.createSignatureInput(author);
 
     const options: MessagesGetOptions = {
       authorizationSignatureInput,
@@ -500,7 +500,7 @@ export class TestDataGenerator {
     const messagesGet = await MessagesGet.create(options);
 
     return {
-      requester,
+      author,
       messagesGet,
       message: messagesGet.message,
     };

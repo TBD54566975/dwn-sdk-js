@@ -56,7 +56,7 @@ describe('EventsGetHandler.handle()', () => {
     const alice = await DidKeyResolver.generate();
     const bob = await DidKeyResolver.generate();
 
-    const { message } = await TestDataGenerator.generateEventsGet({ requester: alice });
+    const { message } = await TestDataGenerator.generateEventsGet({ author: alice });
     const reply = await dwn.processMessage(bob.did, message);
 
     expect(reply.status.code).to.equal(401);
@@ -67,7 +67,7 @@ describe('EventsGetHandler.handle()', () => {
   it('returns a 400 if message is invalid', async () => {
     const alice = await DidKeyResolver.generate();
 
-    const { message } = await TestDataGenerator.generateEventsGet({ requester: alice });
+    const { message } = await TestDataGenerator.generateEventsGet({ author: alice });
     message['descriptor']['troll'] = 'hehe';
 
     const reply = await dwn.processMessage(alice.did, message);
@@ -82,7 +82,7 @@ describe('EventsGetHandler.handle()', () => {
     const expectedCids: string[] = [];
 
     for (let i = 0; i < 5; i += 1) {
-      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
       const reply = await dwn.processMessage(alice.did, message, dataStream);
 
       expect(reply.status.code).to.equal(202);
@@ -91,7 +91,7 @@ describe('EventsGetHandler.handle()', () => {
 
     }
 
-    const { message } = await TestDataGenerator.generateEventsGet({ requester: alice });
+    const { message } = await TestDataGenerator.generateEventsGet({ author: alice });
     const reply: EventsGetReply = await dwn.processMessage(alice.did, message);
 
     expect(reply.status.code).to.equal(200);
@@ -107,13 +107,13 @@ describe('EventsGetHandler.handle()', () => {
     const alice = await DidKeyResolver.generate();
 
     for (let i = 0; i < 5; i += 1) {
-      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
       const reply = await dwn.processMessage(alice.did, message, dataStream);
 
       expect(reply.status.code).to.equal(202);
     }
 
-    const { message } = await TestDataGenerator.generateEventsGet({ requester: alice });
+    const { message } = await TestDataGenerator.generateEventsGet({ author: alice });
     let reply: EventsGetReply = await dwn.processMessage(alice.did, message);
 
     expect(reply.status.code).to.equal(200);
@@ -122,7 +122,7 @@ describe('EventsGetHandler.handle()', () => {
     const expectedCids: string[] = [];
 
     for (let i = 0; i < 3; i += 1) {
-      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+      const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
       const reply = await dwn.processMessage(alice.did, message, dataStream);
 
       expect(reply.status.code).to.equal(202);
@@ -130,7 +130,7 @@ describe('EventsGetHandler.handle()', () => {
       expectedCids.push(messageCid);
     }
 
-    const { message: m } = await TestDataGenerator.generateEventsGet({ requester: alice, watermark });
+    const { message: m } = await TestDataGenerator.generateEventsGet({ author: alice, watermark });
     reply = await dwn.processMessage(alice.did, m);
 
     expect(reply.status.code).to.equal(200);

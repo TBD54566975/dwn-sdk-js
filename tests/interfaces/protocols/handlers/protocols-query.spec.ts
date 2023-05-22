@@ -64,9 +64,9 @@ describe('ProtocolsQueryHandler.handle()', () => {
       TestStubGenerator.stubDidResolver(didResolver, [alice]);
 
       // insert three messages into DB, two with matching protocol
-      const protocol1 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice });
-      const protocol2 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice });
-      const protocol3 = await TestDataGenerator.generateProtocolsConfigure({ requester: alice });
+      const protocol1 = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
+      const protocol2 = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
+      const protocol3 = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
 
       await dwn.processMessage(alice.did, protocol1.message, protocol1.dataStream);
       await dwn.processMessage(alice.did, protocol2.message, protocol2.dataStream);
@@ -74,8 +74,8 @@ describe('ProtocolsQueryHandler.handle()', () => {
 
       // testing singular conditional query
       const queryMessageData = await TestDataGenerator.generateProtocolsQuery({
-        requester : alice,
-        filter    : { protocol: protocol1.message.descriptor.definition.protocol }
+        author : alice,
+        filter : { protocol: protocol1.message.descriptor.definition.protocol }
       });
 
       const reply = await dwn.processMessage(alice.did, queryMessageData.message);
@@ -85,7 +85,7 @@ describe('ProtocolsQueryHandler.handle()', () => {
 
       // testing fetch-all query without filter
       const queryMessageData2 = await TestDataGenerator.generateProtocolsQuery({
-        requester: alice
+        author: alice
       });
 
       const reply2 = await dwn.processMessage(alice.did, queryMessageData2.message);
@@ -99,8 +99,8 @@ describe('ProtocolsQueryHandler.handle()', () => {
 
       // query for non-normalized protocol
       const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
-        requester : alice,
-        filter    : { protocol: 'example.com/' },
+        author : alice,
+        filter : { protocol: 'example.com/' },
       });
 
       // overwrite protocol because #create auto-normalizes protocol
@@ -119,15 +119,15 @@ describe('ProtocolsQueryHandler.handle()', () => {
     });
 
     it('should fail with 400 if `authorization` is referencing a different message (`descriptorCid`)', async () => {
-      const { requester, message, protocolsQuery } = await TestDataGenerator.generateProtocolsQuery();
-      const tenant = requester.did;
+      const { author, message, protocolsQuery } = await TestDataGenerator.generateProtocolsQuery();
+      const tenant = author.did;
 
       // replace `authorization` with incorrect `descriptorCid`, even though signature is still valid
       const incorrectDescriptorCid = await TestDataGenerator.randomCborSha256Cid();
       const authorizationPayload = { ...protocolsQuery.authorizationPayload };
       authorizationPayload.descriptorCid = incorrectDescriptorCid;
       const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
-      const signatureInput = Jws.createSignatureInput(requester);
+      const signatureInput = Jws.createSignatureInput(author);
       const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
       message.authorization = signer.getJws();
 
@@ -140,7 +140,7 @@ describe('ProtocolsQueryHandler.handle()', () => {
     it('should return 401 if auth fails', async () => {
       const alice = await DidKeyResolver.generate();
       alice.keyId = 'wrongValue'; // to fail authentication
-      const { message } = await TestDataGenerator.generateProtocolsQuery({ requester: alice });
+      const { message } = await TestDataGenerator.generateProtocolsQuery({ author: alice });
 
       const reply = await dwn.processMessage(alice.did, message);
 

@@ -41,7 +41,7 @@ export class DidResolver {
    * @returns {DidResolutionResult}
    */
   public async resolve(did: string): Promise<DidResolutionResult> {
-    // naively validate requester DID
+    // naively validate the given DID
     Did.validate(did);
     const splitDID = did.split(':', 3);
 

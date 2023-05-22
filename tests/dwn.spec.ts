@@ -55,9 +55,9 @@ describe('DWN', () => {
     it('#224 - should be able to initialize a DWN with undefined config', async () => {
       const dwnWithoutConfig = await Dwn.create(); // without passing in a config
       const alice = await DidKeyResolver.generate();
-      const { requester, message } = await TestDataGenerator.generateRecordsQuery({ requester: alice });
+      const { author, message } = await TestDataGenerator.generateRecordsQuery({ author: alice });
 
-      const tenant = requester.did;
+      const tenant = author.did;
       const reply = await dwnWithoutConfig.processMessage(tenant, message);
 
       expect(reply.status.code).to.equal(200);
@@ -71,7 +71,7 @@ describe('DWN', () => {
       const alice = await DidKeyResolver.generate();
 
       const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
-        requester: alice,
+        author: alice,
       });
 
       const reply = await dwn.processMessage(alice.did, message, dataStream);
@@ -81,9 +81,9 @@ describe('DWN', () => {
 
     it('should process RecordsQuery message', async () => {
       const alice = await DidKeyResolver.generate();
-      const { requester, message } = await TestDataGenerator.generateRecordsQuery({ requester: alice });
+      const { author, message } = await TestDataGenerator.generateRecordsQuery({ author: alice });
 
-      const tenant = requester.did;
+      const tenant = author.did;
       const reply = await dwn.processMessage(tenant, message);
 
       expect(reply.status.code).to.equal(200);
@@ -92,7 +92,7 @@ describe('DWN', () => {
 
     it('should process an EventsGet message', async () => {
       const alice = await DidKeyResolver.generate();
-      const { message } = await TestDataGenerator.generateEventsGet({ requester: alice });
+      const { message } = await TestDataGenerator.generateEventsGet({ author: alice });
 
       const reply: EventsGetReply = await dwn.processMessage(alice.did, message);
 
@@ -156,9 +156,9 @@ describe('DWN', () => {
       });
 
       const alice = await DidKeyResolver.generate();
-      const { requester, message } = await TestDataGenerator.generateRecordsQuery({ requester: alice });
+      const { author, message } = await TestDataGenerator.generateRecordsQuery({ author: alice });
 
-      const tenant = requester.did;
+      const tenant = author.did;
       const reply = await dwnWithConfig.processMessage(tenant, message);
 
       expect(reply.status.code).to.equal(401);
@@ -189,7 +189,7 @@ describe('DWN', () => {
       const messageCids: string[] = [];
 
       const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-        requester: alice
+        author: alice
       });
 
       const messageCid = await Message.getCid(recordsWrite.message);
@@ -199,7 +199,7 @@ describe('DWN', () => {
       expect(reply.status.code).to.equal(202);
 
       const { messagesGet } = await TestDataGenerator.generateMessagesGet({
-        requester: alice,
+        author: alice,
         messageCids
       });
 
@@ -221,12 +221,12 @@ describe('DWN', () => {
       const alice = await DidKeyResolver.generate();
 
       const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({
-        requester: alice
+        author: alice
       });
 
       const messageCids = [await Message.getCid(recordsWrite.message)];
       const { messagesGet } = await TestDataGenerator.generateMessagesGet({
-        requester: alice,
+        author: alice,
         messageCids
       });
       (messagesGet.message as any).descriptor.interface = 'Protocols'; // Will cause interface and method check to fail
@@ -240,7 +240,7 @@ describe('DWN', () => {
     it('should allow an initial `RecordsWrite` to be written without supplying data', async () => {
       const alice = await DidKeyResolver.generate();
 
-      const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+      const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author: alice });
 
       // simulate synchronize of pruned initial `RecordsWrite`
       const reply = await dwn.synchronizePrunedInitialRecordsWrite(alice.did, recordsWrite.message);
@@ -248,8 +248,8 @@ describe('DWN', () => {
 
       // verify `RecordsWrite` inserted can be queried but without the data returned
       const recordsQueryMessageData = await TestDataGenerator.generateRecordsQuery({
-        requester : alice,
-        filter    : { recordId: recordsWrite.message.recordId }
+        author : alice,
+        filter : { recordId: recordsWrite.message.recordId }
       });
       const recordsQueryReply = await dwn.processMessage(alice.did, recordsQueryMessageData.message);
 
@@ -261,7 +261,7 @@ describe('DWN', () => {
       const newDataBytes = Encoder.stringToBytes('new data');
       const newDataEncoded = Encoder.bytesToBase64Url(newDataBytes);
       const newRecordsWrite = await TestDataGenerator.generateFromRecordsWrite({
-        requester     : alice,
+        author        : alice,
         existingWrite : recordsWrite,
         data          : newDataBytes
       });
@@ -297,7 +297,7 @@ describe('DWN', () => {
       });
 
       const alice = await DidKeyResolver.generate();
-      const { message } = await TestDataGenerator.generateRecordsWrite({ requester: alice });
+      const { message } = await TestDataGenerator.generateRecordsWrite({ author: alice });
 
       const reply = await dwnWithConfig.synchronizePrunedInitialRecordsWrite(alice.did, message);
 

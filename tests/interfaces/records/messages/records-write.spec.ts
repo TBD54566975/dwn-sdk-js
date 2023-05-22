@@ -230,14 +230,14 @@ describe('RecordsWrite', () => {
 
   describe('createFrom()', () => {
     it('should create a RecordsWrite with `published` set to `true` with just `publishedDate` given', async () => {
-      const { requester, recordsWrite } = await TestDataGenerator.generateRecordsWrite({
+      const { author, recordsWrite } = await TestDataGenerator.generateRecordsWrite({
         published: false
       });
 
       const write = await RecordsWrite.createFrom({
         unsignedRecordsWriteMessage : recordsWrite.message,
         datePublished               : getCurrentTimeInHighPrecision(),
-        authorizationSignatureInput : Jws.createSignatureInput(requester)
+        authorizationSignatureInput : Jws.createSignatureInput(author)
       });
 
       expect(write.message.descriptor.published).to.be.true;
