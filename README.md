@@ -8,9 +8,6 @@ Code Coverage
 ## Introduction
 
 This repository contains a reference implementation of Decentralized Web Node (DWN) as per the [specification](https://identity.foundation/decentralized-web-node/spec/). This specification is in a draft state and very much so a WIP. For the foreseeable future, a lot of the work on DWN will be split across this repo and the repo that houses the specification, which you can find [here](https://github.com/decentralized-identity/decentralized-web-node). The current implementation does not include all interfaces described in the DWN spec, but is enough to begin building test applications.
-=======
-![Statements](https://img.shields.io/badge/statements-94.5%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-93.95%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-93.06%25-brightgreen.svg?style=flat) as per the [specification](https://identity.foundation/decentralized-web-node/spec/). This specification is in a draft state and very much so a WIP. For the foreseeable future, a lot of the work on DWN will be split across this repo and the repo that houses the specification, which you can find [here](https://github.com/decentralized-identity/decentralized-web-node). The current implementation does not include all interfaces described in the DWN spec, but is enough to begin building test applications.
->>>>>>> 848844d (Lint)
 
 This project is used as a dependency by several other projects.
 
