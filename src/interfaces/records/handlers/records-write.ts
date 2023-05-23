@@ -80,7 +80,7 @@ export class RecordsWriteHandler implements MethodHandler {
 
     try {
       // try to store data, unless options explicitly say to skip storage
-      if (!options?.skipDataStorage) {
+      if (options === undefined || !options.skipDataStorage) {
         await this.putData(tenant, message, dataStream, newestExistingMessage);
       }
     } catch (error) {
