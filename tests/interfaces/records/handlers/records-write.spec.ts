@@ -33,7 +33,6 @@ import { ProtocolActor } from '../../../../src/interfaces/protocols/types.js';
 import { RecordsRead } from '../../../../src/interfaces/records/messages/records-read.js';
 import { RecordsWrite } from '../../../../src/interfaces/records/messages/records-write.js';
 import { RecordsWriteHandler } from '../../../../src/interfaces/records/handlers/records-write.js';
-import { StorageController } from '../../../../src/store/storage-controller.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
@@ -1641,6 +1640,33 @@ describe('RecordsWriteHandler.handle()', () => {
       });
     });
 
+    it('should 400 if dataStream is not provided and dataStore does not contain dataCid', async () => {
+      // scenario: A sync writes a pruned initial RecordsWrite, without a `dataStream`. Alice does another regular
+      // RecordsWrite for the same record, referencing the same `dataCid` but omitting the `dataStream`.
+
+      // Pruned RecordsWrite
+      const alice = await DidKeyResolver.generate();
+      const data = Encoder.stringToBytes('data from bob');
+      const prunedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+        author    : alice,
+        published : false,
+        data,
+      });
+      const prunedRecordsWriteReply = await dwn.synchronizePrunedInitialRecordsWrite(alice.did, prunedRecordsWrite.message);
+      expect(prunedRecordsWriteReply.status.code).to.equal(202);
+
+      // Update record to published, omitting dataStream
+      const recordsWrite = await TestDataGenerator.generateFromRecordsWrite({
+        author        : alice,
+        existingWrite : prunedRecordsWrite.recordsWrite,
+        published     : true,
+        data,
+      });
+      const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message);
+      expect(recordsWriteReply.status.code).to.equal(400);
+      expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingData);
+    });
+
     describe('reference counting tests', () => {
       it('should only write the data once even if written by multiple messages', async () => {
         const alice = await DidKeyResolver.generate();
@@ -1988,7 +2014,7 @@ describe('RecordsWriteHandler.handle()', () => {
     });
   });
 
-  it('should throw if `storageController.put()` throws unknown error', async () => {
+  it('should throw if `recordsWritehandler.putData()` throws unknown error', async () => {
     const { author, message, dataStream } = await TestDataGenerator.generateRecordsWrite();
     const tenant = author.did;
 
@@ -1997,12 +2023,12 @@ describe('RecordsWriteHandler.handle()', () => {
     const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
     messageStoreStub.query.resolves([]);
 
-    // simulate throwing unexpected error
-    sinon.stub(StorageController, 'put').throws(new Error('an unknown error in messageStore.put()'));
-
     const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
 
     const recordsWriteHandler = new RecordsWriteHandler(didResolverStub, messageStoreStub, dataStoreStub, eventLog);
+
+    // simulate throwing unexpected error
+    sinon.stub(recordsWriteHandler, 'putData').throws(new Error('an unknown error in messageStore.put()'));
 
     const handlerPromise = recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
     await expect(handlerPromise).to.be.rejectedWith('an unknown error in messageStore.put()');

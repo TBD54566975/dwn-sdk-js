@@ -1,28 +1,30 @@
 import type { EventLog } from '../../../event-log/event-log.js';
 import type { MethodHandler } from '../../types.js';
-import type { Readable } from 'readable-stream';
 import type { RecordsWriteMessage } from '../types.js';
-import type { BaseMessage, TimestampedMessage } from '../../../core/types.js';
+import type { TimestampedMessage } from '../../../core/types.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { RecordsWrite } from '../messages/records-write.js';
-import { StorageController } from '../../../store/storage-controller.js';
 import { DwnError, DwnErrorCode } from '../../../core/dwn-error.js';
 import { DwnInterfaceName, Message } from '../../../core/message.js';
 
+export type RecordsWriteHandlerOptions = {
+  skipDataStorage?: boolean; // used for DWN sync
+};
+
 export class RecordsWriteHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore, private eventLog: EventLog) { }
+  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore, private eventLog: EventLog) { }
 
   public async handle({
     tenant,
     message,
+    options,
     dataStream
-  }: { tenant: string, message: RecordsWriteMessage, dataStream?: _Readable.Readable}): Promise<MessageReply> {
-
+  }: { tenant: string, message: RecordsWriteMessage, options?: RecordsWriteHandlerOptions, dataStream?: _Readable.Readable}): Promise<MessageReply> {
     let recordsWrite: RecordsWrite;
     try {
       recordsWrite = await RecordsWrite.parse(message);
@@ -77,20 +79,25 @@ export class RecordsWriteHandler implements MethodHandler {
     const indexes = await constructRecordsWriteIndexes(recordsWrite, isLatestBaseState);
 
     try {
-      this.validateUndefinedDataStream(dataStream, newestExistingMessage, message);
-
-      await this.storeMessage(this.messageStore, this.dataStore, this.eventLog, tenant, message, indexes, dataStream);
+      // try to store data, unless options explicitly say to skip storage
+      if (options === undefined || !options.skipDataStorage) {
+        await this.putData(tenant, message, dataStream, newestExistingMessage);
+      }
     } catch (error) {
       const e = error as any;
-      if (e.code === DwnErrorCode.StorageControllerDataCidMismatch ||
-          e.code === DwnErrorCode.StorageControllerDataSizeMismatch ||
-          e.code === DwnErrorCode.RecordsWriteMissingDataStream) {
+      if (e.code === DwnErrorCode.RecordsWriteMissingDataStream ||
+          e.code === DwnErrorCode.RecordsWriteMissingData ||
+          e.code === DwnErrorCode.RecordsWriteDataCidMismatch ||
+          e.code === DwnErrorCode.RecordsWriteDataSizeMismatch) {
         return MessageReply.fromError(error, 400);
       }
 
       // else throw
       throw error;
     }
+
+    await this.messageStore.put(tenant, message, indexes);
+    await this.eventLog.append(tenant, await Message.getCid(message));
 
     const messageReply = new MessageReply({
       status: { code: 202, detail: 'Accepted' }
@@ -103,41 +110,67 @@ export class RecordsWriteHandler implements MethodHandler {
   };
 
   /**
-   * Further validation if data stream is undefined.
-   * NOTE: if data stream is not be provided but `dataCid` is provided,
-   * then we need to make sure that the existing record state is referencing the same data as the incoming message.
-   * Without this check will lead to unauthorized access of data (https://github.com/TBD54566975/dwn-sdk-js/issues/359)
+   * Puts the given data in storage unless tenant already has that data for the given recordId
+   *
+   * @throws {DwnError} with `DwnErrorCode.RecordsWriteMissingDataStream`
+   *                    if `dataStream` is absent AND the `dataCid` does not match the current data for the given recordId
+   * @throws {DwnError} with `DwnErrorCode.RecordsWriteMissingData`
+   *                    if `dataStream` is absent AND dataStore does not contain the given `dataCid`
+   * @throws {DwnError} with `DwnErrorCode.RecordsWriteDataCidMismatch`
+   *                    if the data stream resulted in a data CID that mismatches with `dataCid` in the given message
+   * @throws {DwnError} with `DwnErrorCode.RecordsWriteDataSizeMismatch`
+   *                    if `dataSize` in `descriptor` given mismatches the actual data size
    */
-  protected validateUndefinedDataStream(
-    dataStream: _Readable.Readable | undefined,
-    newestExistingMessage: TimestampedMessage | undefined,
-    incomingMessage: RecordsWriteMessage): void {
-    if (dataStream === undefined && incomingMessage.descriptor.dataCid !== undefined) {
-      if (newestExistingMessage?.descriptor.dataCid !== incomingMessage.descriptor.dataCid) {
+  public async putData(
+    tenant: string,
+    message: RecordsWriteMessage,
+    dataStream?: _Readable.Readable,
+    newestExistingMessage?: TimestampedMessage
+  ): Promise<void> {
+    let result: { dataCid: string, dataSize: number };
+    const messageCid = await Message.getCid(message);
+
+    if (dataStream === undefined) {
+      // dataStream must be included if message contains a new dataCid
+      if (newestExistingMessage?.descriptor.dataCid !== message.descriptor.dataCid) {
         throw new DwnError(
           DwnErrorCode.RecordsWriteMissingDataStream,
           'Data stream is not provided.'
         );
       }
-    }
-  }
 
-  /**
-   * Stores the given message and its data in the underlying database(s).
-   * NOTE: this method was created to allow a child class to override the default behavior for sync feature to work:
-   * ie. allow `RecordsWrite` to be written even if data stream is not provided to handle the case that:
-   * a `RecordsDelete` has happened, as a result a DWN would have pruned the data associated with the original write.
-   * This approach avoids the need to duplicate the entire handler.
-   */
-  protected async storeMessage(
-    messageStore: MessageStore,
-    dataStore: DataStore,
-    eventLog: EventLog,
-    tenant: string,
-    message: BaseMessage,
-    indexes: Record<string, string>,
-    dataStream?: Readable): Promise<void> {
-    await StorageController.put(messageStore, dataStore, eventLog, tenant, message, indexes, dataStream);
+      const associateResult = await this.dataStore.associate(tenant, messageCid, message.descriptor.dataCid);
+      if (associateResult === undefined) {
+        throw new DwnError(DwnErrorCode.RecordsWriteMissingData, `Unable to associate dataCid ${message.descriptor.dataCid} ` +
+          `to messageCid ${messageCid} because dataStream was not provided and data was not found in dataStore`);
+      }
+
+      result = associateResult;
+    } else {
+      result = await this.dataStore.put(tenant, messageCid, message.descriptor.dataCid, dataStream);
+    }
+
+    // verify that given dataSize matches size of actual data
+    if (message.descriptor.dataSize !== result.dataSize) {
+      // there is an opportunity to improve here: handle the edge case of if the delete fails...
+      await this.dataStore.delete(tenant, messageCid, message.descriptor.dataCid);
+
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteDataSizeMismatch,
+        `actual data size ${result.dataSize} bytes does not match dataSize in descriptor: ${message.descriptor.dataSize}`
+      );
+    }
+
+    // verify that given dataCid matches CID of actual data
+    if (message.descriptor.dataCid !== result.dataCid) {
+      // there is an opportunity to improve here: handle the edge cae of if the delete fails...
+      await this.dataStore.delete(tenant, messageCid, message.descriptor.dataCid);
+
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteDataCidMismatch,
+        `actual data CID ${result.dataCid} does not match dataCid in descriptor: ${message.descriptor.dataCid}`
+      );
+    }
   }
 }
 
