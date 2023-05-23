@@ -7,6 +7,7 @@ import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 import { authenticate } from '../../../core/auth.js';
 import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
 import { MessageReply } from '../../../core/message-reply.js';
+import { Records } from '../../../utils/records.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { DwnError, DwnErrorCode } from '../../../core/dwn-error.js';
 import { DwnInterfaceName, Message } from '../../../core/message.js';
@@ -58,11 +59,11 @@ export class RecordsWriteHandler implements MethodHandler {
       }
     }
 
-    const newestExistingMessage = await Message.getNewestMessage(existingMessages);
+    const newestExistingMessage = await Records.getNewestMessage(existingMessages);
 
     let incomingMessageIsNewest = false;
     let newestMessage; // keep reference of newest message for pruning later
-    if (newestExistingMessage === undefined || await Message.isNewer(message, newestExistingMessage)) {
+    if (newestExistingMessage === undefined || await Records.isNewer(message, newestExistingMessage)) {
       incomingMessageIsNewest = true;
       newestMessage = message;
     } else { // existing message is the same age or newer than the incoming message

@@ -6,6 +6,7 @@ import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from '
 import { authenticate } from '../../../core/auth.js';
 import { Message } from '../../../core/message.js';
 import { MessageReply } from '../../../core/message-reply.js';
+import { Records } from '../../../utils/records.js';
 import { RecordsRead } from '../messages/records-read.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
@@ -42,7 +43,7 @@ export class RecordsReadHandler implements MethodHandler {
     };
     const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
 
-    const newestExistingMessage = await RecordsWrite.getNewestMessage(existingMessages);
+    const newestExistingMessage = await Records.getNewestMessage(existingMessages);
 
     // if no record found or it has been deleted
     if (newestExistingMessage === undefined || newestExistingMessage.descriptor.method === DwnMethodName.Delete) {

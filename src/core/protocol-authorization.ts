@@ -4,6 +4,7 @@ import type { Filter, TimestampedMessage } from './types.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../interfaces/protocols/types.js';
 import type { RecordsReadMessage, RecordsWriteMessage } from '../interfaces/records/types.js';
 
+import { Records } from '../utils/records.js';
 import { RecordsWrite } from '../interfaces/records/messages/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
@@ -127,7 +128,7 @@ export class ProtocolAuthorization {
         recordId  : recordsRead.message.descriptor.recordId,
       };
       const existingMessages = await messageStore.query(tenant, query) as TimestampedMessage[];
-      const recordsWriteMessage = await RecordsWrite.getNewestMessage(existingMessages) as RecordsWriteMessage;
+      const recordsWriteMessage = await Records.getNewestMessage(existingMessages) as RecordsWriteMessage;
       recordsWrite = await RecordsWrite.parse(recordsWriteMessage);
       ancestorMessageChain.push(recordsWrite.message);
     }
