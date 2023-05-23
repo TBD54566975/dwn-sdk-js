@@ -728,7 +728,7 @@ describe('RecordsWriteHandler.handle()', () => {
         });
         const captionReply = await dwn.processMessage(bob.did, captionImposter.message, captionImposter.dataStream);
         expect(captionReply.status.code).to.equal(401);
-        expect(captionReply.status.detail).to.contain('inbound message action \'write\' not in list of allowed actions ');
+        expect(captionReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
 
         // Alice is able to add a caption to her image
         const encodedCaption = new TextEncoder().encode('coffee and work vibes!');
@@ -1014,7 +1014,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
         const credentialResponseReply = await dwn.processMessage(alice.did, credentialResponse.message, credentialResponse.dataStream);
         expect(credentialResponseReply.status.code).to.equal(401);
-        expect(credentialResponseReply.status.detail).to.contain('inbound message action \'write\' not in list of allowed actions ');
+        expect(credentialResponseReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
       });
 
       it('should fail authorization if protocol definition cannot be found for a protocol-based RecordsWrite', async () => {
