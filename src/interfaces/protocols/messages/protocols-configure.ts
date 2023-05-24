@@ -72,4 +72,40 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       types    : typesCopy,
     };
   }
+
+  public static async getNewestMessage(messages: ProtocolsConfigureMessage[]): Promise<ProtocolsConfigureMessage | undefined> {
+    let currentNewestMessage: ProtocolsConfigureMessage | undefined = undefined;
+    for (const message of messages) {
+      if (currentNewestMessage === undefined || await ProtocolsConfigure.isNewer(message, currentNewestMessage)) {
+        currentNewestMessage = message;
+      }
+    }
+
+    return currentNewestMessage;
+  }
+
+  /**
+   * Checks if first message has older `dateCreated` newer than second message, using message CID comparison as tie-breaker
+   * @returns `true` if `a` is newer than `b`; `false` otherwise
+   */
+  public static async isNewer(a: ProtocolsConfigureMessage, b: ProtocolsConfigureMessage): Promise<boolean> {
+    const aIsNewer = (await ProtocolsConfigure.compareCreatedTime(a, b) > 0);
+    return aIsNewer;
+  }
+
+  /**
+   * Compares the `dateCreated` of the given messages with a fallback to message CID according to the spec.
+   * @returns 1 if `a` is larger/newer than `b`; -1 if `a` is smaller/older than `b`; 0 otherwise (same age)
+   */
+  public static async compareCreatedTime(a: ProtocolsConfigureMessage, b: ProtocolsConfigureMessage): Promise<number> {
+    if (a.descriptor.dateCreated > b.descriptor.dateCreated) {
+      return 1;
+    } else if (a.descriptor.dateCreated < b.descriptor.dateCreated) {
+      return -1;
+    }
+
+    // else `dateCreated` is the same between a and b
+    // compare the message CID instead, the < and > operators compare strings in lexicographical order
+    return Message.compareCid(a, b);
+  }
 }
