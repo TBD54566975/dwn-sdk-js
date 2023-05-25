@@ -1,4 +1,4 @@
-import type { RecordsWriteMessage } from '../../src/interfaces/records/types.js';
+import type { RecordsWriteMessage } from '../../src/types/records-types.js';
 import type { CreateLevelDatabaseOptions, LevelDatabase } from '../../src/store/level-wrapper.js';
 
 import { createLevelDatabase } from '../../src/store/level-wrapper.js';

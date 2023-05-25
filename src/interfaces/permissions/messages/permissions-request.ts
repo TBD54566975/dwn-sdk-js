@@ -1,6 +1,6 @@
-import type { SignatureInput } from '../../../jose/jws/general/types.js';
-import type { PermissionConditions, PermissionScope } from '../types.js';
-import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types.js';
+import type { SignatureInput } from '../../../types/jws-types.js';
+import type { PermissionConditions, PermissionScope } from '../../../types/permissions-types.js';
+import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../../../types/permissions-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { v4 as uuidv4 } from 'uuid';

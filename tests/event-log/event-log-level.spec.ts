@@ -1,4 +1,4 @@
-import type { Event } from '../../src/event-log/event-log.js';
+import type { Event } from '../../src/types/event-log.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import { EventLogLevel } from '../../src/event-log/event-log-level.js';

@@ -1,4 +1,4 @@
-import type { PrivateJwk, PublicJwk } from '../jose/types.js';
+import type { PrivateJwk, PublicJwk } from '../types/jose-types.js';
 
 import * as secp256k1 from '@noble/secp256k1';
 import secp256k1Derivation from 'secp256k1';

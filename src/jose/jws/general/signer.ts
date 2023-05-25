@@ -1,4 +1,4 @@
-import type { GeneralJws, SignatureInput } from './types.js';
+import type { GeneralJws, SignatureInput } from '../../../types/jws-types.js';
 
 import { Encoder } from '../../../utils/encoder.js';
 import { signers } from '../../algorithms/signing/signers.js';

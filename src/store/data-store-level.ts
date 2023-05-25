@@ -1,5 +1,5 @@
 import type { ImportResult } from 'ipfs-unixfs-importer';
-import type { AssociateResult, DataStore, GetResult, PutResult } from './data-store.js';
+import type { AssociateResult, DataStore, GetResult, PutResult } from '../types/data-store.js';
 
 import { BlockstoreLevel } from './blockstore-level.js';
 import { createLevelDatabase } from './level-wrapper.js';

@@ -1,6 +1,6 @@
-import type { Cache } from '../../../utils/types.js';
-import type { GeneralJws } from './types.js';
-import type { PublicJwk } from '../../types.js';
+import type { Cache } from '../../../types/cache.js';
+import type { GeneralJws } from '../../../types/jws-types.js';
+import type { PublicJwk } from '../../../types/jose-types.js';
 import type { DidResolver, VerificationMethod } from '../../../did/did-resolver.js';
 
 import { Jws } from '../../../utils/jws.js';
