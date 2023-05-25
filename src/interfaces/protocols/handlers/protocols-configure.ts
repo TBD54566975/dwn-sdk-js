@@ -42,7 +42,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     };
     const existingMessages = await this.messageStore.query(tenant, query) as ProtocolsConfigureMessage[];
 
-    // find lexicographically the largest message, and if the incoming message is the largest
+    // find newest message, and if the incoming message is the newest
     let newestMessage = await Message.getNewestMessage(existingMessages);
     let incomingMessageIsNewest = false;
     if (newestMessage === undefined || await Message.isNewer(message, newestMessage)) {
