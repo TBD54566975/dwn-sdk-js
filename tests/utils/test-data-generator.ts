@@ -58,7 +58,7 @@ export type Persona = {
 
 export type GenerateProtocolsConfigureInput = {
   author?: Persona;
-  dateCreated?: string;
+  dateModified?: string;
   protocolDefinition?: ProtocolDefinition;
 };
 
@@ -255,7 +255,7 @@ export class TestDataGenerator {
     const authorizationSignatureInput = Jws.createSignatureInput(author);
 
     const options: ProtocolsConfigureOptions = {
-      dateCreated: input?.dateCreated,
+      dateCreated: input?.dateModified,
       definition,
       authorizationSignatureInput
     };

@@ -4,7 +4,7 @@ import type { DwnInterfaceName, DwnMethodName } from '../../core/message.js';
 export type ProtocolsConfigureDescriptor = {
   interface : DwnInterfaceName.Protocols;
   method: DwnMethodName.Configure;
-  dateCreated: string;
+  dateModified: string;
   definition: ProtocolDefinition;
 };
 
