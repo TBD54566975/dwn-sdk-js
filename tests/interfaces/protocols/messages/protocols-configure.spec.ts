@@ -4,8 +4,8 @@ import chai, { expect } from 'chai';
 import type { ProtocolsConfigureMessage } from '../../../../src/index.js';
 
 import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
+import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
-import { getCurrentTimeInHighPrecision, sleep } from '../../../../src/utils/time.js';
 import { Jws, ProtocolsConfigure } from '../../../../src/index.js';
 
 chai.use(chaiAsPromised);
@@ -62,19 +62,6 @@ describe('ProtocolsConfigure', () => {
 
       const message = protocolsConfig.message as ProtocolsConfigureMessage;
       expect(message.descriptor.definition.types.ask.schema).to.eq('http://ask');
-    });
-  });
-
-  describe('getNewestMessage()', () => {
-    it('returns the newest message in the list', async () => {
-      const { message: oldest } = await TestDataGenerator.generateProtocolsConfigure();
-      await sleep(1);
-      const { message: middle } = await TestDataGenerator.generateProtocolsConfigure();
-      await sleep(1);
-      const { message: newest } = await TestDataGenerator.generateProtocolsConfigure();
-
-      const result = await ProtocolsConfigure.getNewestMessage([middle, newest, oldest]);
-      expect(result).to.equal(newest);
     });
   });
 });

@@ -43,9 +43,9 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     const existingMessages = await this.messageStore.query(tenant, query) as ProtocolsConfigureMessage[];
 
     // find lexicographically the largest message, and if the incoming message is the largest
-    let newestMessage = await ProtocolsConfigure.getNewestMessage(existingMessages);
+    let newestMessage = await Message.getMessageWithLargestCid(existingMessages);
     let incomingMessageIsNewest = false;
-    if (newestMessage === undefined || await ProtocolsConfigure.isNewer(message, newestMessage)) {
+    if (newestMessage === undefined || await Message.isCidLarger(message, newestMessage)) {
       incomingMessageIsNewest = true;
       newestMessage = message;
     }
@@ -68,10 +68,10 @@ export class ProtocolsConfigureHandler implements MethodHandler {
       });
     }
 
-    // delete all existing records that are older
+    // delete all existing records that are smaller
     const deletedMessageCids: string[] = [];
     for (const message of existingMessages) {
-      if (await ProtocolsConfigure.isNewer(newestMessage, message)) {
+      if (await Message.isCidLarger(newestMessage, message)) {
         const messageCid = await Message.getCid(message);
         deletedMessageCids.push(messageCid);
 

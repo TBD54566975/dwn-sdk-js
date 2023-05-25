@@ -14,7 +14,6 @@ import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { lexicographicalCompare } from '../../../../src/utils/string.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
-import { sleep } from '../../../../src/utils/time.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
@@ -109,51 +108,10 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       expect(reply.status.detail).to.contain('not a valid DID');
     });
 
-    it('should be able to overwrite existing protocol if timestamp is newer', async () => {
+    it('should only be able to overwrite existing protocol if new protocol is lexicographically larger', async () => {
+      // generate three versions of the same protocol message
       const alice = await DidKeyResolver.generate();
-
-      const protocolDefinition = minimalProtocolDefinition;
-
-      const oldProtocolsConfigure = await TestDataGenerator.generateProtocolsConfigure({
-        author: alice,
-        protocolDefinition,
-      });
-      await sleep(1);
-      const middleProtocolsConfigure = await TestDataGenerator.generateProtocolsConfigure({
-        author: alice,
-        protocolDefinition,
-      });
-
-      // first ProtocolsConfigure
-      const reply1 = await dwn.processMessage(alice.did, middleProtocolsConfigure.message, middleProtocolsConfigure.dataStream);
-      expect(reply1.status.code).to.equal(202);
-
-      // older messages will not overwrite the existing
-      const reply2 = await dwn.processMessage(alice.did, oldProtocolsConfigure.message, oldProtocolsConfigure.dataStream);
-      expect(reply2.status.code).to.equal(409);
-
-      // newer message can overwrite the existing message
-      const newProtocolsConfigure = await TestDataGenerator.generateProtocolsConfigure({
-        author: alice,
-        protocolDefinition,
-      });
-      const reply3 = await dwn.processMessage(alice.did, newProtocolsConfigure.message, newProtocolsConfigure.dataStream);
-      expect(reply3.status.code).to.equal(202);
-
-      // only the newest protocol should remain
-      const queryMessageData = await TestDataGenerator.generateProtocolsQuery({
-        author : alice,
-        filter : { protocol: protocolDefinition.protocol }
-      });
-      const queryReply = await dwn.processMessage(alice.did, queryMessageData.message);
-
-      expect(queryReply.status.code).to.equal(200);
-      expect(queryReply.entries?.length).to.equal(1);
-    });
-
-    it('should only be able to overwrite existing protocol if new protocol is lexicographically larger and timestamps are identical', async () => {
-      const alice = await DidKeyResolver.generate();
-
+      const protocol = minimalProtocolDefinition.protocol;
       // Alter each protocol slightly to create lexicographic difference between them
       const protocolDefinition1 = {
         ...minimalProtocolDefinition,
@@ -168,21 +126,9 @@ describe('ProtocolsConfigureHandler.handle()', () => {
         types: { ...minimalProtocolDefinition.types, foo3: { dataFormats: ['bar3'] } }
       };
 
-      // Create three `ProtocolsConfigure` with identical timestamp
-      const messageData1 = await TestDataGenerator.generateProtocolsConfigure({
-        author             : alice,
-        protocolDefinition : protocolDefinition1
-      });
-      const messageData2 = await TestDataGenerator.generateProtocolsConfigure({
-        author             : alice,
-        protocolDefinition : protocolDefinition2,
-        dateCreated        : messageData1.message.descriptor.dateCreated
-      });
-      const messageData3 = await TestDataGenerator.generateProtocolsConfigure({
-        author             : alice,
-        protocolDefinition : protocolDefinition3,
-        dateCreated        : messageData1.message.descriptor.dateCreated
-      });
+      const messageData1 = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: protocolDefinition1 });
+      const messageData2 = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: protocolDefinition2 });
+      const messageData3 = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: protocolDefinition3 });
 
       const messageDataWithCid: (GenerateProtocolsConfigureOutput & { cid: string })[] = [];
       for (const messageData of [messageData1, messageData2, messageData3]) {
@@ -192,33 +138,36 @@ describe('ProtocolsConfigureHandler.handle()', () => {
 
       // sort the message in lexicographic order
       const [
-        lowestProtocolsConfigure,
-        middleProtocolsConfigure,
-        highestProtocolsConfigure
+        oldestWrite,
+        middleWrite,
+        newestWrite
       ]: GenerateProtocolsConfigureOutput[]
         = messageDataWithCid.sort((messageDataA, messageDataB) => { return lexicographicalCompare(messageDataA.cid, messageDataB.cid); });
 
       // write the protocol with the middle lexicographic value
-      const reply1 = await dwn.processMessage(alice.did, middleProtocolsConfigure.message, middleProtocolsConfigure.dataStream);
-      expect(reply1.status.code).to.equal(202);
+      let reply = await dwn.processMessage(alice.did, middleWrite.message, middleWrite.dataStream);
+      expect(reply.status.code).to.equal(202);
 
       // test that the protocol with the smallest lexicographic value cannot be written
-      const reply2 = await dwn.processMessage(alice.did, lowestProtocolsConfigure.message, lowestProtocolsConfigure.dataStream);
-      expect(reply2.status.code).to.equal(409);
+      reply = await dwn.processMessage(alice.did, oldestWrite.message, oldestWrite.dataStream);
+      expect(reply.status.code).to.equal(409);
 
       // test that the protocol with the largest lexicographic value can be written
-      const reply3 = await dwn.processMessage(alice.did, highestProtocolsConfigure.message, highestProtocolsConfigure.dataStream);
-      expect(reply3.status.code).to.equal(202);
+      reply = await dwn.processMessage(alice.did, newestWrite.message, newestWrite.dataStream);
+      expect(reply.status.code).to.equal(202);
 
-      // test that lower lexicographic protocol message is removed from DB and only the newer protocol message remains
-      const queryMessageData = await TestDataGenerator.generateProtocolsQuery({
-        author : alice,
-        filter : { protocol: protocolDefinition1.protocol }
-      });
-      const queryReply = await dwn.processMessage(alice.did, queryMessageData.message);
+      // test that old protocol message is removed from DB and only the newer protocol message remains
+      const queryMessageData = await TestDataGenerator.generateProtocolsQuery({ author: alice, filter: { protocol } });
+      reply = await dwn.processMessage(alice.did, queryMessageData.message);
 
-      expect(queryReply.status.code).to.equal(200);
-      expect(queryReply.entries?.length).to.equal(1);
+      expect(reply.status.code).to.equal(200);
+      expect(reply.entries?.length).to.equal(1);
+
+      const initialDefinition = middleWrite.message.descriptor.definition;
+      const expectedDefinition = newestWrite.message.descriptor.definition;
+      const actualDefinition = reply.entries![0]['descriptor']['definition'];
+      expect(actualDefinition).to.not.deep.equal(initialDefinition);
+      expect(actualDefinition).to.deep.equal(expectedDefinition);
     });
 
     it('should return 400 if protocol is not normalized', async () => {
@@ -284,15 +233,26 @@ describe('ProtocolsConfigureHandler.handle()', () => {
         expect(events[0].messageCid).to.equal(messageCid);
       });
 
-      it('should delete older ProtocolsConfigure events when one is overwritten', async () => {
+      it('should delete older ProtocolsConfigure event when one overwritten', async () => {
         const alice = await DidKeyResolver.generate();
-        const oldestWrite = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: minimalProtocolDefinition });
-        await sleep(1);
-        const newestWrite = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: minimalProtocolDefinition });
+        const messageData1 = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: minimalProtocolDefinition });
+        const messageData2 = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: minimalProtocolDefinition });
 
+        const messageDataWithCid: (GenerateProtocolsConfigureOutput & { cid: string })[] = [];
+        for (const messageData of [messageData1, messageData2]) {
+          const cid = await Message.getCid(messageData.message);
+          messageDataWithCid.push({ cid, ...messageData });
+        }
+
+        // sort the message in lexicographic order
+        const [oldestWrite, newestWrite]: GenerateProtocolsConfigureOutput[]
+          = messageDataWithCid.sort((messageDataA, messageDataB) => { return lexicographicalCompare(messageDataA.cid, messageDataB.cid); });
+
+        // write the protocol with the middle lexicographic value
         let reply = await dwn.processMessage(alice.did, oldestWrite.message, oldestWrite.dataStream);
         expect(reply.status.code).to.equal(202);
 
+        // test that the protocol with the largest lexicographic value can be written
         reply = await dwn.processMessage(alice.did, newestWrite.message, newestWrite.dataStream);
         expect(reply.status.code).to.equal(202);
 
