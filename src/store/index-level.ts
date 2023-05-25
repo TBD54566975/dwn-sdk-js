@@ -72,42 +72,57 @@ export class IndexLevel {
   }
 
   async query(filter: Filter, options?: IndexLevelOptions): Promise<Array<string>> {
-    const requiredProperties = new Set<string>();
     const missingPropertiesForID: { [id: string]: Set<string> } = { };
-    const promises: Promise<Matches>[] = [ ];
-    const matchedIDs: string[] = [ ];
 
-    async function checkMatches(property: string, promise: Promise<Matches>): Promise<void> {
-      promises.push(promise);
+    // Note: We need to have an array of Promise<Matches> in order to support OR queries
+    const propertyNameToPromise: { [key: string]: Promise<Matches>[] } = {};
 
-      for (const [ _, id ] of await promise) {
-        missingPropertiesForID[id] ??= new Set<string>([ ...requiredProperties ]);
-        missingPropertiesForID[id].delete(property);
-        if (missingPropertiesForID[id].size === 0) {
-          matchedIDs.push(id);
-        }
-      }
-    }
-
+    // Do a separate DB query for each property in `filter`
+    // We will find the union of these many individual queries later.
     for (const propertyName in filter) {
       const propertyFilter = filter[propertyName];
 
-      if (typeof propertyFilter === 'object' && propertyFilter !== null) {
-        if (Array.isArray(propertyFilter)) {
-          for (const propertyValue of new Set(propertyFilter)) {
-            checkMatches(propertyName, this.findExactMatches(propertyName, propertyValue, options));
-          }
-        } else {
-          checkMatches(propertyName, this.findRangeMatches(propertyName, propertyFilter, options));
-        }
-      } else {
-        checkMatches(propertyName, this.findExactMatches(propertyName, propertyFilter, options));
+      if (propertyFilter === null) {
+        continue;
       }
 
-      requiredProperties.add(propertyName);
+      if (typeof propertyFilter === 'object') {
+        if (Array.isArray(propertyFilter)) {
+          // `propertyFilter` is a OneOfFilter
+
+          // Support OR queries by querying for multiple options separately,
+          // then appending them to the promise associated with `propertyName`
+          propertyNameToPromise[propertyName] = [];
+          for (const propertyValue of new Set(propertyFilter)) {
+            const exactMatchesPromise = this.findExactMatches(propertyName, propertyValue, options);
+            propertyNameToPromise[propertyName].push(exactMatchesPromise);
+          }
+        } else {
+          // `propertyFilter` is a `RangeFilter`
+          const rangeMatchesPromise = this.findRangeMatches(propertyName, propertyFilter, options);
+          propertyNameToPromise[propertyName] = [rangeMatchesPromise];
+        }
+      } else {
+        // propertyFilter is an EqualFilter, meaning it is a non-object primitive type
+        const exactMatchesPromise = this.findExactMatches(propertyName, propertyFilter, options);
+        propertyNameToPromise[propertyName] = [exactMatchesPromise];
+      }
     }
 
-    await Promise.all(promises);
+    // Resolve promises and find the union of results for each individual propertyName DB query
+    const matchedIDs: string[] = [ ];
+    for await (const [propertyName, promises] of Object.entries(propertyNameToPromise)) {
+      for (const promise of promises) {
+        for (const [ _, id ] of await promise) {
+          missingPropertiesForID[id] ??= new Set<string>([ ...Object.keys(filter) ]);
+
+          missingPropertiesForID[id].delete(propertyName);
+          if (missingPropertiesForID[id].size === 0) {
+            matchedIDs.push(id);
+          }
+        }
+      }
+    }
 
     return matchedIDs;
   }
