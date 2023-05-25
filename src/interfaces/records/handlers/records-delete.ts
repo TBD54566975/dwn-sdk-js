@@ -7,8 +7,8 @@ import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 import { authenticate } from '../../../core/auth.js';
 import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
 import { MessageReply } from '../../../core/message-reply.js';
-import { Records } from '../../../utils/records.js';
 import { RecordsDelete } from '../messages/records-delete.js';
+import { RecordsWrite } from '../messages/records-write.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
 
 export class RecordsDeleteHandler implements MethodHandler {
@@ -43,11 +43,11 @@ export class RecordsDeleteHandler implements MethodHandler {
     const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
 
     // find which message is the newest, and if the incoming message is the newest
-    const newestExistingMessage = await Records.getNewestMessage(existingMessages);
+    const newestExistingMessage = await RecordsWrite.getNewestMessage(existingMessages);
     let incomingMessageIsNewest = false;
     let newestMessage;
     // if incoming message is newest
-    if (newestExistingMessage === undefined || await Records.isNewer(message, newestExistingMessage)) {
+    if (newestExistingMessage === undefined || await RecordsWrite.isNewer(message, newestExistingMessage)) {
       incomingMessageIsNewest = true;
       newestMessage = message;
     } else { // existing message is the same age or newer than the incoming message

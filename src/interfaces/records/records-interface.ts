@@ -6,7 +6,6 @@ import type { TimestampedMessage } from '../../core/types.js';
 
 import { constructRecordsWriteIndexes } from './handlers/records-write.js';
 import { Message } from '../../core/message.js';
-import { Records } from '../../utils/records.js';
 import { RecordsWrite } from './messages/records-write.js';
 import { StorageController } from '../../store/storage-controller.js';
 
@@ -27,7 +26,7 @@ export async function deleteAllOlderMessagesButKeepInitialWrite(
   // NOTE: under normal operation, there should only be at most two existing records per `recordId` (initial + a potential subsequent write/delete),
   // but the DWN may crash before `delete()` is called below, so we use a loop as a tactic to clean up lingering data as needed
   for (const message of existingMessages) {
-    const messageIsOld = await Records.isOlder(message, comparedToMessage);
+    const messageIsOld = await Message.isOlder(message, comparedToMessage);
     if (messageIsOld) {
       // the easiest implementation here is delete each old messages
       // and re-create it with the right index (isLatestBaseState = 'false') if the message is the initial write,

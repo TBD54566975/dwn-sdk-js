@@ -1,13 +1,11 @@
 import type { DerivedPrivateJwk } from './hd-key.js';
 import type { PublicJwk } from '../jose/types.js';
 import type { Readable } from 'readable-stream';
-import type { TimestampedMessage } from '../core/types.js';
 import type { RecordsWriteDescriptor, UnsignedRecordsWriteMessage } from '../interfaces/records/types.js';
 
 import { Encoder } from './encoder.js';
 import { Encryption } from './encryption.js';
 import { KeyDerivationScheme } from './hd-key.js';
-import { Message } from '../core/message.js';
 import { Secp256k1 } from './secp256k1.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
@@ -217,53 +215,5 @@ export class Records {
           `Ancestor key derivation segment '${ancestorSegment}' mismatches against the descendant key derivation segment '${descendantSegment}'.`);
       }
     }
-  }
-
-  /**
-   * @returns message with most recent `dateModified` in the array, using message CID as tiebreaker. `undefined` if given array is empty.
-   */
-  public static async getNewestMessage(messages: TimestampedMessage[]): Promise<TimestampedMessage | undefined> {
-    let currentNewestMessage: TimestampedMessage | undefined = undefined;
-    for (const message of messages) {
-      if (currentNewestMessage === undefined || await Records.isNewer(message, currentNewestMessage)) {
-        currentNewestMessage = message;
-      }
-    }
-
-    return currentNewestMessage;
-  }
-
-  /**
-   * Checks if first message is newer than second message.
-   * @returns `true` if `a` is newer than `b`; `false` otherwise
-   */
-  public static async isNewer(a: TimestampedMessage, b: TimestampedMessage): Promise<boolean> {
-    const aIsNewer = (await Records.compareModifiedTime(a, b) > 0);
-    return aIsNewer;
-  }
-
-  /**
-   * Checks if first message is older than second message.
-   * @returns `true` if `a` is older than `b`; `false` otherwise
-   */
-  public static async isOlder(a: TimestampedMessage, b: TimestampedMessage): Promise<boolean> {
-    const aIsNewer = (await Records.compareModifiedTime(a, b) < 0);
-    return aIsNewer;
-  }
-
-  /**
-   * Compares the `dateModified` of the given messages with a fallback to message CID according to the spec.
-   * @returns 1 if `a` is larger/newer than `b`; -1 if `a` is smaller/older than `b`; 0 otherwise (same age)
-   */
-  public static async compareModifiedTime(a: TimestampedMessage, b: TimestampedMessage): Promise<number> {
-    if (a.descriptor.dateModified > b.descriptor.dateModified) {
-      return 1;
-    } else if (a.descriptor.dateModified < b.descriptor.dateModified) {
-      return -1;
-    }
-
-    // else `dateModified` is the same between a and b
-    // compare the `dataCid` instead, the < and > operators compare strings in lexicographical order
-    return Message.compareCid(a, b);
   }
 }
