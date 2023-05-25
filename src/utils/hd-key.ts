@@ -1,4 +1,4 @@
-import type { PrivateJwk } from '../jose/types.js';
+import type { PrivateJwk } from '../types/jose-types.js';
 
 import { Secp256k1 } from './secp256k1.js';
 

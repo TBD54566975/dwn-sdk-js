@@ -1,6 +1,6 @@
-import type { DataStore } from './data-store.js';
-import type { MessageStore } from './message-store.js';
-import type { BaseMessage, Filter } from '../core/types.js';
+import type { DataStore } from '../types/data-store.js';
+import type { MessageStore } from '../types/message-store.js';
+import type { BaseMessage, Filter } from '../types/message-types.js';
 
 import { DwnConstant } from '../core/dwn-constant.js';
 import { Message } from '../core/message.js';

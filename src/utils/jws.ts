@@ -1,6 +1,6 @@
-import type { SignatureEntry } from '../jose/jws/general/types.js';
-import type { GeneralJws, SignatureInput } from '../jose/jws/general/types.js';
-import type { KeyMaterial, PublicJwk } from '../jose/types.js';
+import type { SignatureEntry } from '../types/jws-types.js';
+import type { GeneralJws, SignatureInput } from '../types/jws-types.js';
+import type { KeyMaterial, PublicJwk } from '../types/jose-types.js';
 
 import isPlainObject from 'lodash/isPlainObject.js';
 

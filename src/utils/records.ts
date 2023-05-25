@@ -1,7 +1,7 @@
 import type { DerivedPrivateJwk } from './hd-key.js';
-import type { PublicJwk } from '../jose/types.js';
+import type { PublicJwk } from '../types/jose-types.js';
 import type { Readable } from 'readable-stream';
-import type { RecordsWriteDescriptor, UnsignedRecordsWriteMessage } from '../interfaces/records/types.js';
+import type { RecordsWriteDescriptor, UnsignedRecordsWriteMessage } from '../types/records-types.js';
 
 import { Encoder } from './encoder.js';
 import { Encryption } from './encryption.js';

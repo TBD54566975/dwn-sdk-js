@@ -1,4 +1,4 @@
-import type { BaseMessage, Filter } from '../core/types.js';
+import type { BaseMessage, Filter } from './message-types.js';
 
 export interface MessageStoreOptions {
   signal?: AbortSignal;

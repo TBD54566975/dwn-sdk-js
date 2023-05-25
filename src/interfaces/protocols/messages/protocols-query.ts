@@ -1,5 +1,5 @@
-import type { SignatureInput } from '../../../jose/jws/general/types.js';
-import type { ProtocolsQueryDescriptor, ProtocolsQueryFilter, ProtocolsQueryMessage } from '../types.js';
+import type { SignatureInput } from '../../../types/jws-types.js';
+import type { ProtocolsQueryDescriptor, ProtocolsQueryFilter, ProtocolsQueryMessage } from '../../../types/protocols-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';

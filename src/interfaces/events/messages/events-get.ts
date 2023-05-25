@@ -1,5 +1,5 @@
-import type { SignatureInput } from '../../../jose/jws/general/types.js';
-import type { EventsGetDescriptor, EventsGetMessage } from '../types.js';
+import type { SignatureInput } from '../../../types/jws-types.js';
+import type { EventsGetDescriptor, EventsGetMessage } from '../../../types/event-types.js';
 
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';

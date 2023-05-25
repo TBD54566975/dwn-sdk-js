@@ -2,7 +2,7 @@ import { expect } from 'chai';
 
 import { validateJsonSchema } from '../../../../src/schema-validator.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../../src/core/message.js';
-import type { ProtocolDefinition, ProtocolsConfigureMessage } from '../../../../src/interfaces/protocols/types.js';
+import type { ProtocolDefinition, ProtocolsConfigureMessage } from '../../../../src/types/protocols-types.js';
 
 describe('ProtocolsConfigure schema definition', () => {
   it('should throw if unknown actor is encountered in action rule', async () => {

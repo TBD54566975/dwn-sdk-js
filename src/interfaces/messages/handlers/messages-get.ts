@@ -1,8 +1,8 @@
-import type { DataStore } from '../../../store/data-store.js';
+import type { DataStore } from '../../../types/data-store.js';
 import type { DidResolver } from '../../../did/did-resolver.js';
-import type { MessageStore } from '../../../store/message-store.js';
-import type { MethodHandler } from '../../types.js';
-import type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from '../types.js';
+import type { MessageStore } from '../../../types/message-store.js';
+import type { MethodHandler } from '../../../types/method-handler.js';
+import type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from '../../../types/messages-types.js';
 
 import { DataStream } from '../../../utils/data-stream.js';
 import { DwnConstant } from '../../../core/dwn-constant.js';

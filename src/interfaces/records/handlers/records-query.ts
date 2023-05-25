@@ -1,6 +1,6 @@
-import type { MethodHandler } from '../../types.js';
+import type { MethodHandler } from '../../../types/method-handler.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
-import type { RecordsQueryMessage, RecordsQueryReplyEntry, RecordsWriteMessage } from '../types.js';
+import type { RecordsQueryMessage, RecordsQueryReplyEntry, RecordsWriteMessage } from '../../../types/records-types.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { lexicographicalCompare } from '../../../utils/string.js';

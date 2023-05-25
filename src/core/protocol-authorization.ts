@@ -1,13 +1,13 @@
-import type { MessageStore } from '../store/message-store.js';
+import type { MessageStore } from '../types/message-store.js';
 import type { RecordsRead } from '../interfaces/records/messages/records-read.js';
-import type { Filter, TimestampedMessage } from './types.js';
-import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../interfaces/protocols/types.js';
-import type { RecordsReadMessage, RecordsWriteMessage } from '../interfaces/records/types.js';
+import type { Filter, TimestampedMessage } from '../types/message-types.js';
+import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../types/protocols-types.js';
+import type { RecordsReadMessage, RecordsWriteMessage } from '../types/records-types.js';
 
 import { RecordsWrite } from '../interfaces/records/messages/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
-import { ProtocolAction, ProtocolActor } from '../interfaces/protocols/types.js';
+import { ProtocolAction, ProtocolActor } from '../types/protocols-types.js';
 
 const methodToAllowedActionMap: Record<string, ProtocolAction> = {
   [DwnMethodName.Write] : ProtocolAction.Write,

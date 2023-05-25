@@ -1,7 +1,7 @@
 import type { EncryptionInput } from '../../../../src/interfaces/records/messages/records-write.js';
 import type { GenerateFromRecordsWriteOut } from '../../../utils/test-data-generator.js';
-import type { QueryResultEntry } from '../../../../src/core/types.js';
-import type { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
+import type { QueryResultEntry } from '../../../../src/types/message-types.js';
+import type { RecordsWriteMessage } from '../../../../src/types/records-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import credentialIssuanceProtocolDefinition from '../../../vectors/protocol-definitions/credential-issuance.json' assert { type: 'json' };
@@ -29,7 +29,7 @@ import { Jws } from '../../../../src/utils/jws.js';
 import { KeyDerivationScheme } from '../../../../src/index.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
-import { ProtocolActor } from '../../../../src/interfaces/protocols/types.js';
+import { ProtocolActor } from '../../../../src/types/protocols-types.js';
 import { RecordsRead } from '../../../../src/interfaces/records/messages/records-read.js';
 import { RecordsWrite } from '../../../../src/interfaces/records/messages/records-write.js';
 import { RecordsWriteHandler } from '../../../../src/interfaces/records/handlers/records-write.js';

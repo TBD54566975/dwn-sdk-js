@@ -1,4 +1,4 @@
-import type { QueryResultEntry } from './types.js';
+import type { QueryResultEntry } from '../types/message-types.js';
 import type { Readable } from 'readable-stream';
 
 type Status = {

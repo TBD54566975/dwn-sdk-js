@@ -1,6 +1,6 @@
-import type { SignatureInput } from '../../../jose/jws/general/types.js';
-import type { Filter, RangeFilter } from '../../../core/types.js';
-import type { RecordsQueryDescriptor, RecordsQueryFilter, RecordsQueryMessage } from '../types.js';
+import type { SignatureInput } from '../../../types/jws-types.js';
+import type { Filter, RangeFilter } from '../../../types/message-types.js';
+import type { RecordsQueryDescriptor, RecordsQueryFilter, RecordsQueryMessage } from '../../../types/records-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/message.js';

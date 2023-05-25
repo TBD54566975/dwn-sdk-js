@@ -1,4 +1,4 @@
-import type { Filter, RangeFilter } from '../core/types.js';
+import type { Filter, RangeFilter } from '../types/message-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions } from './level-wrapper.js';
 
 import { flatten } from '../utils/object.js';

@@ -1,8 +1,8 @@
-import type { BaseMessage } from '../../../core/types.js';
-import type { MessageStore } from '../../../store/message-store.js';
+import type { BaseMessage } from '../../../types/message-types.js';
+import type { MessageStore } from '../../../types/message-store.js';
 import type { RecordsWrite } from './records-write.js';
-import type { SignatureInput } from '../../../jose/jws/general/types.js';
-import type { RecordsReadDescriptor, RecordsReadMessage } from '../types.js';
+import type { SignatureInput } from '../../../types/jws-types.js';
+import type { RecordsReadDescriptor, RecordsReadMessage } from '../../../types/records-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { Message } from '../../../core/message.js';

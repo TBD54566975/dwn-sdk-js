@@ -1,4 +1,4 @@
-import type { PermissionsRequestMessage } from '../../../../src/interfaces/permissions/types.js';
+import type { PermissionsRequestMessage } from '../../../../src/types/permissions-types.js';
 
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';

@@ -1,5 +1,5 @@
 import type { EncryptionInput } from '../../../../src/interfaces/records/messages/records-write.js';
-import type { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
+import type { RecordsWriteMessage } from '../../../../src/types/records-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';

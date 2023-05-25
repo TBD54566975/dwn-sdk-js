@@ -1,5 +1,5 @@
-import type { BaseMessage, Filter } from '../core/types.js';
-import type { MessageStore, MessageStoreOptions } from './message-store.js';
+import type { BaseMessage, Filter } from '../types/message-types.js';
+import type { MessageStore, MessageStoreOptions } from '../types/message-store.js';
 
 import * as block from 'multiformats/block';
 import * as cbor from '@ipld/dag-cbor';

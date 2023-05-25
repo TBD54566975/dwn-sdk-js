@@ -1,8 +1,8 @@
 import type { DidResolver } from '../../../index.js';
-import type { EventLog } from '../../../event-log/event-log.js';
-import type { GetEventsOptions } from '../../../event-log/event-log.js';
-import type { MethodHandler } from '../../types.js';
-import type { EventsGetMessage, EventsGetReply } from '../types.js';
+import type { EventLog } from '../../../types/event-log.js';
+import type { GetEventsOptions } from '../../../types/event-log.js';
+import type { MethodHandler } from '../../../types/method-handler.js';
+import type { EventsGetMessage, EventsGetReply } from '../../../types/event-types.js';
 
 import { EventsGet } from '../messages/events-get.js';
 import { MessageReply } from '../../../core/message-reply.js';

@@ -1,7 +1,7 @@
-import type { BaseMessage } from '../../../core/types.js';
+import type { BaseMessage } from '../../../types/message-types.js';
 import type { KeyDerivationScheme } from '../../../index.js';
-import type { MessageStore } from '../../../store/message-store.js';
-import type { PublicJwk } from '../../../jose/types.js';
+import type { MessageStore } from '../../../types/message-store.js';
+import type { PublicJwk } from '../../../types/jose-types.js';
 import type {
   EncryptedKey,
   EncryptionProperty,
@@ -10,8 +10,8 @@ import type {
   RecordsWriteDescriptor,
   RecordsWriteMessage,
   UnsignedRecordsWriteMessage
-} from '../types.js';
-import type { GeneralJws, SignatureInput } from '../../../jose/jws/general/types.js';
+} from '../../../types/records-types.js';
+import type { GeneralJws, SignatureInput } from '../../../types/jws-types.js';
 
 import { Encoder } from '../../../utils/encoder.js';
 import { Encryption } from '../../../utils/encryption.js';

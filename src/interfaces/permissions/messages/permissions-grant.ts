@@ -1,7 +1,7 @@
 import type { PermissionsRequest } from './permissions-request';
 import type { SignatureInput } from '../../../jose/jws/general/types';
-import type { PermissionConditions, PermissionScope } from '../types';
-import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types';
+import type { PermissionConditions, PermissionScope } from '../../../types/permissions-types';
+import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../../../types/permissions-types';
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time';
 import { v4 as uuidv4 } from 'uuid';
