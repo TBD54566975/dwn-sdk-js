@@ -17,7 +17,7 @@
       "required": [
         "interface",
         "method",
-        "dateCreated",
+        "dateModified",
         "definition"
       ],
       "properties": {
@@ -33,7 +33,7 @@
           ],
           "type": "string"
         },
-        "dateCreated": {
+        "dateModified": {
           "type": "string"
         },
         "definition": {

@@ -23,7 +23,7 @@ describe('ProtocolsConfigure', () => {
         authorizationSignatureInput : Jws.createSignatureInput(alice),
       });
 
-      expect(protocolsConfigure.message.descriptor.dateCreated).to.equal(currentTime);
+      expect(protocolsConfigure.message.descriptor.dateModified).to.equal(currentTime);
     });
 
     it('should auto-normalize protocol URI', async () => {
