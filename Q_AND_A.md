@@ -48,3 +48,11 @@
   This is because:
   1. `kid` is an optional property of a JWK, there is no guarantee that the public JWK will contain it.
   2. In the future public key may not always be given in JWK format. A key in raw bytes does not contain metadata such as key ID.
+
+
+## Protocol
+- Can a record that is not protocol-authorized have `protocol` property in its `descriptor`?
+
+  (Last updated: 2023/05/23)
+
+  No.

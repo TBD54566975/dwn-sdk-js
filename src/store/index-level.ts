@@ -4,10 +4,6 @@ import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions } from './
 import { flatten } from '../utils/object.js';
 import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 
-export type Entry = {
-  [property: string]: unknown
-};
-
 export interface IndexLevelOptions {
   signal?: AbortSignal;
 }
@@ -37,18 +33,39 @@ export class IndexLevel {
     return this.db.close();
   }
 
-  async put(id: string, entry: Entry, options?: IndexLevelOptions): Promise<void> {
-    entry = flatten(entry) as Entry;
+  /**
+   * Adds indexes for a specific data/object/content.
+   * @param id ID of the data/object/content being indexed.
+   */
+  async put(
+    id: string,
+    indexes: { [property: string]: unknown },
+    options?: IndexLevelOptions
+  ): Promise<void> {
+
+    indexes = flatten(indexes);
 
     const ops: LevelWrapperBatchOperation<string>[] = [ ];
     const prefixes: string[] = [ ];
-    for (const property in entry) {
-      const value = entry[property];
 
+    // create an index entry for each property in the `indexes`
+    for (const property in indexes) {
+      const value = indexes[property];
+
+      // example keys (\u0000 is just shown for illustration purpose because it is the delimiter used to join the string segments below):
+      // 'interface\u0000"Records"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+      // 'method\u0000"Write"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+      // 'schema\u0000"http://ud4kyzon6ugxn64boz7v"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+      // 'dataCid\u0000"bafkreic3ie3cxsblp46vn3ofumdnwiqqk4d5ah7uqgpcn6xps4skfvagze"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+      // 'dateCreated\u0000"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
       const prefix = this.join(property, this.encodeValue(value));
-      ops.push({ type: 'put', key: this.join(prefix, id), value: id });
+      const key = this.join(prefix, id);
+      ops.push({ type: 'put', key, value: id });
       prefixes.push(prefix);
     }
+
+    // create a reverse lookup entry for data ID -> all its indexes
+    // this is for indexes deletion (`delete`): so that given the data ID, we are able to delete all its indexes
     ops.push({ type: 'put', key: `__${id}__prefixes`, value: JSON.stringify(prefixes) });
 
     return this.db.batch(ops, options);
@@ -115,24 +132,22 @@ export class IndexLevel {
   }
 
   private async findExactMatches(propertyName: string, propertyValue: unknown, options?: IndexLevelOptions): Promise<Matches> {
-    const propertyKey = this.join(propertyName, this.encodeValue(propertyValue));
+    const indexKeyPrefix = this.join(propertyName, this.encodeValue(propertyValue));
 
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {
-      gt: propertyKey
+      gt: indexKeyPrefix
     };
 
-    return this.findMatches(propertyKey, iteratorOptions, options);
+    return this.findMatches(indexKeyPrefix, iteratorOptions, options);
   }
 
   private async findRangeMatches(propertyName: string, range: RangeFilter, options?: IndexLevelOptions): Promise<Matches> {
-    const propertyKey = this.join(propertyName);
-
     const iteratorOptions: LevelWrapperIteratorOptions<string> = { };
     for (const comparator in range) {
       iteratorOptions[comparator] = this.join(propertyName, this.encodeValue(range[comparator]));
     }
 
-    const matches = await this.findMatches(propertyKey, iteratorOptions, options);
+    const matches = await this.findMatches(propertyName, iteratorOptions, options);
 
     if ('lte' in range) {
       // When using `lte` we must also query for an exact match due to how we're encoding values.
@@ -146,11 +161,11 @@ export class IndexLevel {
   }
 
   private async findMatches(
-    propertyName: string,
+    indexKeyPrefix: string,
     iteratorOptions: LevelWrapperIteratorOptions<string>,
     options?: IndexLevelOptions
   ): Promise<Matches> {
-    // Since we will stop iterating if we encounter entries that do not start with the `propertyName`, we need to always start from the upper bound.
+    // Since we will stop iterating if we encounter entries that do not start with the `indexKeyPrefix`, we need to always start from the upper bound.
     // For example, `{ lte: 'b' }` would immediately stop if the data was `[ 'a', 'ab', 'b' ]` since `'a'` does not start with `'b'`.
     if (('lt' in iteratorOptions || 'lte' in iteratorOptions) && !('gt' in iteratorOptions || 'gte' in iteratorOptions)) {
       iteratorOptions.reverse = true;
@@ -158,7 +173,7 @@ export class IndexLevel {
 
     const matches = new Map<string, string>;
     for await (const [ key, value ] of this.db.iterator(iteratorOptions, options)) {
-      if (!key.startsWith(propertyName)) {
+      if (!key.startsWith(indexKeyPrefix)) {
         break;
       }
 
@@ -177,6 +192,9 @@ export class IndexLevel {
     return String(value);
   }
 
+  /**
+   * Joins the given values using the `\x00` (\u0000) character.
+   */
   private join(...values: unknown[]): string {
     return values.join(`\x00`);
   }

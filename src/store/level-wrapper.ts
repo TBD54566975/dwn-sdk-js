@@ -191,14 +191,21 @@ export class LevelWrapper<V> {
     }
   }
 
+  /**
+   * Gets the min and max key value of this partition.
+   */
   private get sublevelRange(): [ string, string ] | undefined {
-    const prefix = (this.db as any).prefix;
+    const prefix = (this.db as any).prefix as string;
     if (!prefix) {
       return undefined;
     }
 
-    // use the separator to derive an exclusive `end` that will never match to a key (which matches how `abstract-level` creates a `boundary`)
-    return [ prefix, prefix.slice(0, -1) + String.fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1) ];
+    // derive an exclusive `maxKey` by changing the last prefix character to the immediate succeeding character in unicode
+    // (which matches how `abstract-level` creates a `boundary`)
+    const maxKey = prefix.slice(0, -1) + String.fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1);
+    const minKey = prefix;
+
+    return [minKey, maxKey];
   }
 
   private get root(): LevelWrapper<V> {
