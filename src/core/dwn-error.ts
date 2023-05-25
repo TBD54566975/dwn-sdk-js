@@ -17,6 +17,7 @@ export enum DwnErrorCode {
   AuthorizationMissing = 'AuthorizationMissing',
   AuthorizationUnknownAuthor = 'AuthorizationUnknownAuthor',
   HdKeyDerivationPathInvalid = 'HdKeyDerivationPathInvalid',
+  ProtocolAuthorizationActionNotAllowed = 'ProtocolAuthorizationActionNotAllowed',
   ProtocolAuthorizationIncorrectDataFormat = 'ProtocolAuthorizationIncorrectDataFormat',
   ProtocolAuthorizationIncorrectProtocolPath = 'ProtocolAuthorizationIncorrectProtocolPath',
   ProtocolAuthorizationInvalidSchema = 'ProtocolAuthorizationInvalidSchema',

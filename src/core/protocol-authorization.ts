@@ -1,15 +1,15 @@
-import type { MessageStore } from '../store/message-store.js';
+import type { MessageStore } from '../types/message-store.js';
 import type { RecordsRead } from '../interfaces/records/messages/records-read.js';
-import type { Filter, TimestampedMessage } from './types.js';
-import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../interfaces/protocols/types.js';
-import type { RecordsReadMessage, RecordsWriteMessage } from '../interfaces/records/types.js';
+import type { Filter, TimestampedMessage } from '../types/message-types.js';
+import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../types/protocols-types.js';
+import type { RecordsReadMessage, RecordsWriteMessage } from '../types/records-types.js';
 
 import { RecordsWrite } from '../interfaces/records/messages/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
-import { ProtocolAction, ProtocolActor } from '../interfaces/protocols/types.js';
+import { ProtocolAction, ProtocolActor } from '../types/protocols-types.js';
 
-const methodToAllowedActionMap: Record<string, string> = {
+const methodToAllowedActionMap: Record<string, ProtocolAction> = {
   [DwnMethodName.Write] : ProtocolAction.Write,
   [DwnMethodName.Read]  : ProtocolAction.Read,
 };
@@ -288,8 +288,9 @@ export class ProtocolAuthorization {
     inboundMessageRuleSet: ProtocolRuleSet,
     ancestorMessageChain: RecordsWriteMessage[],
   ): void {
-    const actionRules = inboundMessageRuleSet.$actions;
+    const inboundMessageAction = methodToAllowedActionMap[incomingMessageMethod];
 
+    const actionRules = inboundMessageRuleSet.$actions;
     if (actionRules === undefined) {
       // if no action rule is defined, owner of DWN can do everything
       if (author === tenant) {
@@ -299,12 +300,14 @@ export class ProtocolAuthorization {
       }
     }
 
-    const allowedActions = new Set<string>();
     for (const actionRule of actionRules) {
+      if (actionRule.can !== inboundMessageAction) {
+        continue;
+      }
+
       switch (actionRule.who) {
       case ProtocolActor.Anyone:
-        allowedActions.add(actionRule.can);
-        break;
+        return;
       case ProtocolActor.Author:
         const messageForAuthorCheck = ProtocolAuthorization.getMessage(
           ancestorMessageChain,
@@ -315,7 +318,7 @@ export class ProtocolAuthorization {
           const expectedAuthor = Message.getAuthor(messageForAuthorCheck);
 
           if (author === expectedAuthor) {
-            allowedActions.add(actionRule.can);
+            return;
           }
         }
         break;
@@ -328,7 +331,7 @@ export class ProtocolAuthorization {
           const expectedAuthor = messageForRecipientCheck.descriptor.recipient;
 
           if (author === expectedAuthor) {
-            allowedActions.add(actionRule.can);
+            return;
           }
         }
         break;
@@ -337,10 +340,8 @@ export class ProtocolAuthorization {
       }
     }
 
-    const inboundMessageAction = methodToAllowedActionMap[incomingMessageMethod];
-    if (!allowedActions.has(inboundMessageAction)) {
-      throw new Error(`inbound message action '${inboundMessageAction}' not in list of allowed actions (${new Array(...allowedActions).join(',')})`);
-    }
+    // No action rules were satisfied, author is not authorized
+    throw new DwnError(DwnErrorCode.ProtocolAuthorizationActionNotAllowed, `inbound message action ${inboundMessageAction} not allowed for author`);
   }
 
   /**

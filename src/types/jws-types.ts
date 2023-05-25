@@ -1,4 +1,4 @@
-import type { PrivateJwk } from '../../types.js';
+import type { PrivateJwk } from './jose-types.js';
 /**
  * General JWS definition. Payload is returned as an empty
  * string when JWS Unencoded Payload Option
@@ -35,6 +35,9 @@ export type JwsHeaderParameters = {
   kid: string
 };
 
+/**
+ * Input required to sign a DWN message.
+ */
 export type SignatureInput = {
   protectedHeader: JwsHeaderParameters
   privateJwk: PrivateJwk

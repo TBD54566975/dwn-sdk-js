@@ -1,7 +1,7 @@
-import type { EventLog } from '../../../event-log/event-log.js';
-import type { MethodHandler } from '../../types.js';
-import type { RecordsDeleteMessage } from '../types.js';
-import type { TimestampedMessage } from '../../../core/types.js';
+import type { EventLog } from '../../../types/event-log.js';
+import type { MethodHandler } from '../../../types/method-handler.js';
+import type { RecordsDeleteMessage } from '../../../types/records-types.js';
+import type { TimestampedMessage } from '../../../types/message-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { authenticate } from '../../../core/auth.js';

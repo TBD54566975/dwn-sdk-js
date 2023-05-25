@@ -1,5 +1,5 @@
-import type { Cache } from '../utils/types.js';
-import type { PublicJwk } from '../jose/types.js';
+import type { Cache } from '../types/cache.js';
+import type { PublicJwk } from '../types/jose-types.js';
 
 import { Did } from './did.js';
 import { DidIonResolver } from './did-ion-resolver.js';

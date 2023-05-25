@@ -1,4 +1,4 @@
-import type { GeneralJws } from '../jose/jws/general/types.js';
+import type { GeneralJws } from './jws-types.js';
 
 /**
  * Intersection type for all concrete message types.

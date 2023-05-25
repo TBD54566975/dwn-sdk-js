@@ -1,6 +1,6 @@
 import type { LevelWrapperBatchOperation } from '../store/level-wrapper.js';
 import type { ULID } from 'ulid';
-import type { Event, EventLog, GetEventsOptions } from './event-log.js';
+import type { Event, EventLog, GetEventsOptions } from '../types/event-log.js';
 
 import { monotonicFactory } from 'ulid';
 import { createLevelDatabase, LevelWrapper } from '../store/level-wrapper.js';

@@ -1,4 +1,4 @@
-import type { RecordsQueryReplyEntry } from '../../../../src/interfaces/records/types.js';
+import type { RecordsQueryReplyEntry } from '../../../../src/types/records-types.js';
 import type { DerivedPrivateJwk, EncryptionInput, RecordsWriteMessage } from '../../../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';

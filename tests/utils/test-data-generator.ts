@@ -1,7 +1,7 @@
-import type { BaseMessage } from '../../src/core/types.js';
+import type { BaseMessage } from '../../src/types/message-types.js';
 import type { DidResolutionResult } from '../../src/did/did-resolver.js';
 import type { Readable } from 'readable-stream';
-import type { RecordsQueryFilter } from '../../src/interfaces/records/types.js';
+import type { RecordsQueryFilter } from '../../src/types/records-types.js';
 import type { CreateFromOptions, EncryptionInput } from '../../src/interfaces/records/messages/records-write.js';
 import type {
   DateSort,
@@ -22,7 +22,7 @@ import type {
   RecordsWriteMessage,
   RecordsWriteOptions
 } from '../../src/index.js';
-import type { PrivateJwk, PublicJwk } from '../../src/jose/types.js';
+import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 
 import * as cbor from '@ipld/dag-cbor';
 import { CID } from 'multiformats/cid';

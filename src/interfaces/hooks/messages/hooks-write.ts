@@ -1,5 +1,5 @@
-import type { SignatureInput } from '../../../jose/jws/general/types.js';
-import type { HooksWriteDescriptor, HooksWriteMessage } from '../../hooks/types.js';
+import type { SignatureInput } from '../../../types/jws-types.js';
+import type { HooksWriteDescriptor, HooksWriteMessage } from '../../../types/hooks-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../../../utils/time.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';

@@ -1,6 +1,6 @@
-import type { EventLog } from '../../../event-log/event-log.js';
-import type { MethodHandler } from '../../types.js';
-import type { ProtocolsConfigureMessage } from '../types.js';
+import type { EventLog } from '../../../types/event-log.js';
+import type { MethodHandler } from '../../../types/method-handler.js';
+import type { ProtocolsConfigureMessage } from '../../../types/protocols-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { canonicalAuth } from '../../../core/auth.js';

@@ -240,7 +240,7 @@ describe('RecordsReadHandler.handle()', () => {
         });
         const imposterReadReply = await dwn.processMessage(alice.did, imposterRecordsRead.message);
         expect(imposterReadReply.status.code).to.equal(401);
-        expect(imposterReadReply.status.detail).to.include('inbound message action \'read\' not in list of allowed actions');
+        expect(imposterReadReply.status.detail).to.include(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
       });
 
       it('should allow read with author rule', async () => {
@@ -289,7 +289,7 @@ describe('RecordsReadHandler.handle()', () => {
         });
         const imposterReadReply = await dwn.processMessage(alice.did, imposterRecordsRead.message);
         expect(imposterReadReply.status.code).to.equal(401);
-        expect(imposterReadReply.status.detail).to.include('inbound message action \'read\' not in list of allowed actions');
+        expect(imposterReadReply.status.detail).to.include(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
       });
     });
 

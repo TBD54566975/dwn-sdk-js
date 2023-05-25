@@ -1,7 +1,7 @@
-import type { BaseMessage } from './types.js';
+import type { BaseMessage } from '../types/message-types.js';
 import type { CID } from 'multiformats';
 import type { DidResolver } from '../did/did-resolver.js';
-import type { GeneralJws } from '../jose/jws/general/types.js';
+import type { GeneralJws } from '../types/jws-types.js';
 import type { Message } from './message.js';
 
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';

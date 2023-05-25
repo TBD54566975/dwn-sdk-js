@@ -8,7 +8,7 @@
     "dist/esm/src/**"
   ],
   "exclude": [
-    "**/types.js"
+    "dist/esm/src/types/**"
   ],
   "reporter": [
     "text",

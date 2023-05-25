@@ -1,7 +1,7 @@
-import type { MethodHandler } from '../../types.js';
-import type { TimestampedMessage } from '../../../core/types.js';
+import type { MethodHandler } from '../../../types/method-handler.js';
+import type { TimestampedMessage } from '../../../types/message-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
-import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from '../types.js';
+import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from '../../../types/records-types.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { Message } from '../../../core/message.js';

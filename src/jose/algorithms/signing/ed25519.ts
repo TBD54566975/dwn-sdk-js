@@ -1,5 +1,5 @@
 import * as Ed25519 from '@noble/ed25519';
-import type { PrivateJwk, PublicJwk, Signer } from '../../types.js';
+import type { PrivateJwk, PublicJwk, Signer } from '../../../types/jose-types.js';
 
 import { Encoder } from '../../../utils/encoder.js';
 

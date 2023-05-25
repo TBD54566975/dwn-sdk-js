@@ -1,7 +1,7 @@
 import type { EncryptionInput } from '../../../../src/interfaces/records/messages/records-write.js';
 import type { GenerateFromRecordsWriteOut } from '../../../utils/test-data-generator.js';
-import type { QueryResultEntry } from '../../../../src/core/types.js';
-import type { RecordsWriteMessage } from '../../../../src/interfaces/records/types.js';
+import type { QueryResultEntry } from '../../../../src/types/message-types.js';
+import type { RecordsWriteMessage } from '../../../../src/types/records-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import credentialIssuanceProtocolDefinition from '../../../vectors/protocol-definitions/credential-issuance.json' assert { type: 'json' };
@@ -29,7 +29,7 @@ import { Jws } from '../../../../src/utils/jws.js';
 import { KeyDerivationScheme } from '../../../../src/index.js';
 import { Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
-import { ProtocolActor } from '../../../../src/interfaces/protocols/types.js';
+import { ProtocolActor } from '../../../../src/types/protocols-types.js';
 import { RecordsRead } from '../../../../src/interfaces/records/messages/records-read.js';
 import { RecordsWrite } from '../../../../src/interfaces/records/messages/records-write.js';
 import { RecordsWriteHandler } from '../../../../src/interfaces/records/handlers/records-write.js';
@@ -728,7 +728,7 @@ describe('RecordsWriteHandler.handle()', () => {
         });
         const captionReply = await dwn.processMessage(bob.did, captionImposter.message, captionImposter.dataStream);
         expect(captionReply.status.code).to.equal(401);
-        expect(captionReply.status.detail).to.contain('inbound message action \'write\' not in list of allowed actions ');
+        expect(captionReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
 
         // Alice is able to add a caption to her image
         const encodedCaption = new TextEncoder().encode('coffee and work vibes!');
@@ -1014,7 +1014,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
         const credentialResponseReply = await dwn.processMessage(alice.did, credentialResponse.message, credentialResponse.dataStream);
         expect(credentialResponseReply.status.code).to.equal(401);
-        expect(credentialResponseReply.status.detail).to.contain('inbound message action \'write\' not in list of allowed actions ');
+        expect(credentialResponseReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
       });
 
       it('should fail authorization if protocol definition cannot be found for a protocol-based RecordsWrite', async () => {

@@ -1,5 +1,5 @@
-import type { SignatureInput } from '../../../jose/jws/general/types.js';
-import type { MessagesGetDescriptor, MessagesGetMessage } from '../types.js';
+import type { SignatureInput } from '../../../types/jws-types.js';
+import type { MessagesGetDescriptor, MessagesGetMessage } from '../../../types/messages-types.js';
 
 import { parseCid } from '../../../utils/cid.js';
 import { validateAuthorizationIntegrity } from '../../../core/auth.js';

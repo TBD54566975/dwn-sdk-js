@@ -1,13 +1,13 @@
-import type { BaseMessage } from './core/types.js';
-import type { DataStore } from './store/data-store.js';
-import type { EventLog } from './event-log/event-log.js';
-import type { MessageStore } from './store/message-store.js';
-import type { MethodHandler } from './interfaces/types.js';
+import type { BaseMessage } from './types/message-types.js';
+import type { DataStore } from './types/data-store.js';
+import type { EventLog } from './types/event-log.js';
+import type { MessageStore } from './types/message-store.js';
+import type { MethodHandler } from './types/method-handler.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsWriteHandlerOptions } from './interfaces/records/handlers/records-write.js';
 import type { TenantGate } from './core/tenant-gate.js';
-import type { MessagesGetMessage, MessagesGetReply } from './interfaces/messages/types.js';
-import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from './interfaces/records/types.js';
+import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
+import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from './types/records-types.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DataStoreLevel } from './store/data-store-level.js';
