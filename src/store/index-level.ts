@@ -72,8 +72,6 @@ export class IndexLevel {
   }
 
   async query(filter: Filter, options?: IndexLevelOptions): Promise<Array<string>> {
-    const missingPropertiesForID: { [id: string]: Set<string> } = { };
-
     // Note: We need to have an array of Promise<Matches> in order to support OR queries
     const propertyNameToPromise: { [key: string]: Promise<Matches>[] } = {};
 
@@ -109,15 +107,23 @@ export class IndexLevel {
       }
     }
 
+    // map of ID of all data/object -> list of missing property matches
+    // if list of missing property matches is 0, then it data/object is fully matches the filter
+    const missingPropertyMatchesForId: { [id: string]: Set<string> } = { };
+
     // Resolve promises and find the union of results for each individual propertyName DB query
     const matchedIDs: string[] = [ ];
     for await (const [propertyName, promises] of Object.entries(propertyNameToPromise)) {
       for (const promise of promises) {
         for (const [ _, id ] of await promise) {
-          missingPropertiesForID[id] ??= new Set<string>([ ...Object.keys(filter) ]);
+          // if first time seeing a property match for object, add all the properties in the filter to missingPropertyMatchesForId to track
+          missingPropertyMatchesForId[id] ??= new Set<string>([ ...Object.keys(filter) ]);
 
-          missingPropertiesForID[id].delete(propertyName);
-          if (missingPropertiesForID[id].size === 0) {
+          missingPropertyMatchesForId[id].delete(propertyName);
+          if (missingPropertyMatchesForId[id].size === 0) {
+            // full filter match, add it to return list
+            // NOTE: there appears to be an edge case where if the last filter match is an array with multiple matching values,
+            // the same data/object ID would be added multiple times
             matchedIDs.push(id);
           }
         }
