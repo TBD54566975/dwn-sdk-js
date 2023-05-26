@@ -12,11 +12,22 @@ type MessageReplyOptions = {
   data? : Readable;
 };
 
-export type BaseMessageReply = {
+export class BaseMessageReply {
   status: Status;
+
+  constructor(opts: MessageReplyOptions) {
+    this.status = opts.status;
+  }
+
+  static fromError(e: unknown, code: number): CommonMessageReply {
+
+    const detail = e instanceof Error ? e.message : 'Error';
+
+    return new CommonMessageReply({ status: { code, detail } });
+  }
 };
 
-export class MessageReply {
+export class CommonMessageReply {
   status: Status;
 
   /**
@@ -40,10 +51,5 @@ export class MessageReply {
     this.data = data;
   }
 
-  static fromError(e: unknown, code: number): MessageReply {
 
-    const detail = e instanceof Error ? e.message : 'Error';
-
-    return new MessageReply({ status: { code, detail } });
-  }
 }

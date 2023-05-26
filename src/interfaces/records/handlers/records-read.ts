@@ -5,7 +5,7 @@ import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from '
 
 import { authenticate } from '../../../core/auth.js';
 import { Message } from '../../../core/message.js';
-import { MessageReply } from '../../../core/message-reply.js';
+import { BaseMessageReply, CommonMessageReply } from '../../../core/message-reply.js';
 import { RecordsRead } from '../messages/records-read.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
@@ -23,7 +23,7 @@ export class RecordsReadHandler implements MethodHandler {
     try {
       recordsRead = await RecordsRead.parse(message);
     } catch (e) {
-      return MessageReply.fromError(e, 400);
+      return BaseMessageReply.fromError(e, 400);
     }
 
     // authentication
@@ -32,7 +32,7 @@ export class RecordsReadHandler implements MethodHandler {
         await authenticate(message.authorization!, this.didResolver);
       }
     } catch (e) {
-      return MessageReply.fromError(e, 401);
+      return BaseMessageReply.fromError(e, 401);
     }
 
     // get existing messages matching `recordId` so we can perform authorization
@@ -46,7 +46,7 @@ export class RecordsReadHandler implements MethodHandler {
 
     // if no record found or it has been deleted
     if (newestExistingMessage === undefined || newestExistingMessage.descriptor.method === DwnMethodName.Delete) {
-      return new MessageReply({
+      return new CommonMessageReply({
         status: { code: 404, detail: 'Not Found' }
       });
     }
@@ -55,14 +55,14 @@ export class RecordsReadHandler implements MethodHandler {
     try {
       await recordsRead.authorize(tenant, await RecordsWrite.parse(newestRecordsWrite), this.messageStore);
     } catch (error) {
-      return MessageReply.fromError(error, 401);
+      return BaseMessageReply.fromError(error, 401);
     }
 
     const messageCid = await Message.getCid(newestRecordsWrite);
     const result = await this.dataStore.get(tenant, messageCid, newestRecordsWrite.descriptor.dataCid);
 
     if (result?.dataStream === undefined) {
-      return new MessageReply({
+      return new CommonMessageReply({
         status: { code: 404, detail: 'Not Found' }
       });
     }

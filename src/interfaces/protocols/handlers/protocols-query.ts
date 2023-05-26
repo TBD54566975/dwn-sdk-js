@@ -4,7 +4,7 @@ import type { QueryResultEntry } from '../../../types/message-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { canonicalAuth } from '../../../core/auth.js';
-import { MessageReply } from '../../../core/message-reply.js';
+import { BaseMessageReply, CommonMessageReply } from '../../../core/message-reply.js';
 import { ProtocolsQuery } from '../messages/protocols-query.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 
@@ -17,19 +17,19 @@ export class ProtocolsQueryHandler implements MethodHandler {
   public async handle({
     tenant,
     message
-  }: { tenant: string, message: ProtocolsQueryMessage}): Promise<MessageReply> {
+  }: { tenant: string, message: ProtocolsQueryMessage}): Promise<CommonMessageReply> {
 
     let protocolsQuery: ProtocolsQuery;
     try {
       protocolsQuery = await ProtocolsQuery.parse(message);
     } catch (e) {
-      return MessageReply.fromError(e, 400);
+      return BaseMessageReply.fromError(e, 400);
     }
 
     try {
       await canonicalAuth(tenant, protocolsQuery, this.didResolver);
     } catch (e) {
-      return MessageReply.fromError(e, 401);
+      return BaseMessageReply.fromError(e, 401);
     }
 
     const query = {
@@ -48,7 +48,7 @@ export class ProtocolsQueryHandler implements MethodHandler {
       entries.push(objectWithRemainingProperties);
     }
 
-    return new MessageReply({
+    return new CommonMessageReply({
       status: { code: 200, detail: 'OK' },
       entries
     });

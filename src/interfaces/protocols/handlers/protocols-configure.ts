@@ -4,7 +4,7 @@ import type { ProtocolsConfigureMessage } from '../../../types/protocols-types.j
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { canonicalAuth } from '../../../core/auth.js';
-import { MessageReply } from '../../../core/message-reply.js';
+import { BaseMessageReply, CommonMessageReply } from '../../../core/message-reply.js';
 import { ProtocolsConfigure } from '../messages/protocols-configure.js';
 import { StorageController } from '../../../store/storage-controller.js';
 
@@ -18,20 +18,20 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     tenant,
     message,
     dataStream: _dataStream
-  }: {tenant: string, message: ProtocolsConfigureMessage, dataStream: _Readable.Readable}): Promise<MessageReply> {
+  }: {tenant: string, message: ProtocolsConfigureMessage, dataStream: _Readable.Readable}): Promise<CommonMessageReply> {
 
     let protocolsConfigure: ProtocolsConfigure;
     try {
       protocolsConfigure = await ProtocolsConfigure.parse(message);
     } catch (e) {
-      return MessageReply.fromError(e, 400);
+      return BaseMessageReply.fromError(e, 400);
     }
 
     // authentication & authorization
     try {
       await canonicalAuth(tenant, protocolsConfigure, this.didResolver);
     } catch (e) {
-      return MessageReply.fromError(e, 401);
+      return BaseMessageReply.fromError(e, 401);
     }
 
     // attempt to get existing protocol
@@ -51,7 +51,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     }
 
     // write the incoming message to DB if incoming message is newest
-    let messageReply: MessageReply;
+    let messageReply: CommonMessageReply;
     if (incomingMessageIsNewest) {
       const indexes = ProtocolsConfigureHandler.constructProtocolsConfigureIndexes(protocolsConfigure);
 
@@ -59,11 +59,11 @@ export class ProtocolsConfigureHandler implements MethodHandler {
       await this.messageStore.put(tenant, message, indexes);
       await this.eventLog.append(tenant, messageCid);
 
-      messageReply = new MessageReply({
+      messageReply = new CommonMessageReply({
         status: { code: 202, detail: 'Accepted' }
       });
     } else {
-      messageReply = new MessageReply({
+      messageReply = new CommonMessageReply({
         status: { code: 409, detail: 'Conflict' }
       });
     }
