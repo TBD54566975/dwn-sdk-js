@@ -74,8 +74,8 @@ export class IndexLevel {
   }
 
   async query(filter: Filter, options?: IndexLevelOptions): Promise<Array<string>> {
-    // Note: We need to have an array of Promise<Matches> in order to support OR (anyOf) matches when given an array of accepted values for a property
-    const propertyNameToPromises: { [key: string]: Promise<Matches>[] } = {};
+    // Note: We have an array of Promises in order to support OR (anyOf) matches when given a list of accepted values for a property
+    const propertyNameToPromises: { [key: string]: Promise<string[]>[] } = {};
 
     // Do a separate DB query for each property in `filter`
     // We will find the union of these many individual queries later.
@@ -115,10 +115,10 @@ export class IndexLevel {
 
     // Resolve promises and find the union of results for each individual propertyName DB query
     const matchedIDs: string[] = [ ];
-    for await (const [propertyName, promises] of Object.entries(propertyNameToPromises)) {
+    for (const [propertyName, promises] of Object.entries(propertyNameToPromises)) {
       // acting as an OR match for the property, any of the promises returning a match will be treated as a property match
       for (const promise of promises) {
-        for (const [ _, id ] of await promise) {
+        for (const id of await promise) {
           // if first time seeing a property matching for the data/object, record all properties needing a match to track progress
           missingPropertyMatchesForId[id] ??= new Set<string>([ ...Object.keys(filter) ]);
 
@@ -159,25 +159,31 @@ export class IndexLevel {
     return this.db.clear();
   }
 
-  private async findExactMatches(propertyName: string, propertyValue: unknown, options?: IndexLevelOptions): Promise<Matches> {
+  /**
+   * @returns IDs that matches the exact property and value.
+   */
+  private async findExactMatches(propertyName: string, propertyValue: unknown, options?: IndexLevelOptions): Promise<string[]> {
     const propertyValuePrefix = this.join(propertyName, this.encodeValue(propertyValue));
 
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {
       gt: propertyValuePrefix
     };
 
-    const matches = new Map<string, string>;
-    for await (const [ key, value ] of this.db.iterator(iteratorOptions, options)) {
+    const matches: string[] = [];
+    for await (const [ key, id ] of this.db.iterator(iteratorOptions, options)) {
       if (!key.startsWith(propertyValuePrefix)) {
         break;
       }
 
-      matches.set(key, value);
+      matches.push(id);
     }
     return matches;
   }
 
-  private async findRangeMatches(propertyName: string, range: RangeFilter, options?: IndexLevelOptions): Promise<Matches> {
+  /**
+   * @returns IDs that matches the range filter.
+   */
+  private async findRangeMatches(propertyName: string, range: RangeFilter, options?: IndexLevelOptions): Promise<string[]> {
     const iteratorOptions: LevelWrapperIteratorOptions<string> = { };
     for (const comparator in range) {
       iteratorOptions[comparator] = this.join(propertyName, this.encodeValue(range[comparator]));
@@ -189,14 +195,14 @@ export class IndexLevel {
       iteratorOptions.reverse = true;
     }
 
-    const matches = new Map<string, string>;
-    for await (const [ key, value ] of this.db.iterator(iteratorOptions, options)) {
+    const matches: string[] = [];
+    for await (const [ key, id ] of this.db.iterator(iteratorOptions, options)) {
       // immediately stop if we arrive at an index entry for a different property
       if (!key.startsWith(propertyName)) {
         break;
       }
 
-      matches.set(key, value);
+      matches.push(id);
     }
 
     if ('lte' in range) {
@@ -205,8 +211,8 @@ export class IndexLevel {
       // key = 'dateCreated\u0000"2023-05-25T11:22:33.000000Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
       // the value would be considered greater than { lte: `dateCreated\u0000"2023-05-25T11:22:33.000000Z"` } in the iterator options,
       // thus would not included in such iterator even though we'd like it to be.
-      for (const [ key, value ] of await this.findExactMatches(propertyName, range.lte, options)) {
-        matches.set(key, value);
+      for (const id of await this.findExactMatches(propertyName, range.lte, options)) {
+        matches.push(id);
       }
     }
 
@@ -241,5 +247,3 @@ type IndexLevelConfig = {
   location: string,
   createLevelDatabase?: typeof createLevelDatabase,
 };
-
-type Matches = Map<string, string>;
