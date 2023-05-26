@@ -1,8 +1,10 @@
 /**
- * Wraps the given `AbortSignal` in a `Promise` that rejects if it is triggered (and will therefore never resolve).
+ * Wraps the given `AbortSignal` in a `Promise` that rejects if it is programmatically triggered,
+ * otherwise the promise will remain in await state (will never resolve).
  */
-function promisifySignal<Type>(signal: AbortSignal): Promise<Type> {
+function promisifySignal<T>(signal: AbortSignal): Promise<T> {
   return new Promise((resolve, reject) => {
+    // immediately reject if the given is signal is already aborted
     if (signal.aborted) {
       reject(signal.reason);
       return;
@@ -17,13 +19,13 @@ function promisifySignal<Type>(signal: AbortSignal): Promise<Type> {
 /**
  * Wraps the given `Promise` such that it will reject if the `AbortSignal` is triggered.
  */
-export async function abortOr<Type>(signal: AbortSignal | undefined, promise: Promise<Type>): Promise<Type> {
+export async function executeUnlessAborted<T>(promise: Promise<T>, signal: AbortSignal | undefined): Promise<T> {
   if (!signal) {
     return promise;
   }
 
   return Promise.race([
     promise,
-    promisifySignal<Type>(signal),
+    promisifySignal<T>(signal),
   ]);
 }

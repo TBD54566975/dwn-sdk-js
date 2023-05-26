@@ -4,10 +4,10 @@ import type { MessageStore, MessageStoreOptions } from '../types/message-store.j
 import * as block from 'multiformats/block';
 import * as cbor from '@ipld/dag-cbor';
 
-import { abortOr } from '../utils/abort.js';
 import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
 import { createLevelDatabase } from './level-wrapper.js';
+import { executeUnlessAborted } from '../utils/abort.js';
 import { IndexLevel } from './index-level.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 
@@ -61,7 +61,7 @@ export class MessageStoreLevel implements MessageStore {
   async get(tenant: string, cidString: string, options?: MessageStoreOptions): Promise<BaseMessage | undefined> {
     options?.signal?.throwIfAborted();
 
-    const partition = await abortOr(options?.signal, this.blockstore.partition(tenant));
+    const partition = await executeUnlessAborted(this.blockstore.partition(tenant), options?.signal);
 
     const cid = CID.parse(cidString);
     const bytes = await partition.get(cid, options);
@@ -70,7 +70,7 @@ export class MessageStoreLevel implements MessageStore {
       return undefined;
     }
 
-    const decodedBlock = await abortOr(options?.signal, block.decode({ bytes, codec: cbor, hasher: sha256 }));
+    const decodedBlock = await executeUnlessAborted(block.decode({ bytes, codec: cbor, hasher: sha256 }), options?.signal);
 
     const messageJson = decodedBlock.value as BaseMessage;
     return messageJson;
@@ -94,7 +94,7 @@ export class MessageStoreLevel implements MessageStore {
   async delete(tenant: string, cidString: string, options?: MessageStoreOptions): Promise<void> {
     options?.signal?.throwIfAborted();
 
-    const partition = await abortOr(options?.signal, this.blockstore.partition(tenant));
+    const partition = await executeUnlessAborted(this.blockstore.partition(tenant), options?.signal);
 
     const cid = CID.parse(cidString);
     await partition.delete(cid, options);
@@ -109,9 +109,9 @@ export class MessageStoreLevel implements MessageStore {
   ): Promise<void> {
     options?.signal?.throwIfAborted();
 
-    const partition = await abortOr(options?.signal, this.blockstore.partition(tenant));
+    const partition = await executeUnlessAborted(this.blockstore.partition(tenant), options?.signal);
 
-    const encodedMessageBlock = await abortOr(options?.signal, block.encode({ value: message, codec: cbor, hasher: sha256 }));
+    const encodedMessageBlock = await executeUnlessAborted(block.encode({ value: message, codec: cbor, hasher: sha256 }), options?.signal);
 
     await partition.put(encodedMessageBlock.cid, encodedMessageBlock.bytes, options);
 
