@@ -24,11 +24,11 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
 
   public static async create(options: ProtocolsConfigureOptions): Promise<ProtocolsConfigure> {
     const descriptor: ProtocolsConfigureDescriptor = {
-      interface   : DwnInterfaceName.Protocols,
-      method      : DwnMethodName.Configure,
-      dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
+      interface    : DwnInterfaceName.Protocols,
+      method       : DwnMethodName.Configure,
+      dateModified : options.dateCreated ?? getCurrentTimeInHighPrecision(),
       // TODO: #139 - move definition out of the descriptor - https://github.com/TBD54566975/dwn-sdk-js/issues/139
-      definition  : ProtocolsConfigure.normalizeDefinition(options.definition)
+      definition   : ProtocolsConfigure.normalizeDefinition(options.definition)
     };
 
     const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
