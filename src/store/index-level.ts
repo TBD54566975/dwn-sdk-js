@@ -45,34 +45,32 @@ export class IndexLevel {
 
     indexes = flatten(indexes);
 
-    const ops: LevelWrapperBatchOperation<string>[] = [ ];
-    const propertyValuePairs: string[] = [ ];
+    const operations: LevelWrapperBatchOperation<string>[] = [ ];
 
     // create an index entry for each property in the `indexes`
-    for (const property in indexes) {
-      const value = indexes[property];
+    for (const propertyName in indexes) {
+      const value = indexes[propertyName];
 
+      // NOTE: appending data ID after (property + value) serves two purposes:
+      // 1. creates a unique entry of the property-value pair per data/object
+      // 2. when we need to delete all indexes of a given data ID (`delete()`), we can reconstruct the index keys and remove the indexes efficiently
+      //
       // example keys (\u0000 is just shown for illustration purpose because it is the delimiter used to join the string segments below):
       // 'interface\u0000"Records"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
       // 'method\u0000"Write"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
       // 'schema\u0000"http://ud4kyzon6ugxn64boz7v"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
       // 'dataCid\u0000"bafkreic3ie3cxsblp46vn3ofumdnwiqqk4d5ah7uqgpcn6xps4skfvagze"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
       // 'dateCreated\u0000"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
-      const propertyValuePair = this.join(property, this.encodeValue(value));
-
-      // NOTE: appending data ID serves two purposes:
-      // 1. creates a unique entry of the property-value pair per data/object
-      // 2. when we need to delete all indexes of a given data ID (`delete()`), we can reconstruct the index keys and remove the indexes efficiently
-      const key = this.join(propertyValuePair, id);
-      ops.push({ type: 'put', key, value: id });
-      propertyValuePairs.push(propertyValuePair);
+      const key = this.join(propertyName, this.encodeValue(value), id);
+      operations.push({ type: 'put', key, value: id });
     }
 
-    // create a reverse lookup entry for data ID -> all its indexes
-    // this is for indexes deletion (`delete`): so that given the data ID, we are able to delete all its indexes
-    ops.push({ type: 'put', key: `__${id}__prefixes`, value: JSON.stringify(propertyValuePairs) });
+    // create a reverse lookup entry for data ID -> its indexes
+    // this is for indexes deletion (`delete()`): so that given the data ID, we are able to delete all its indexes
+    // we can consider putting this info in a different data partition if this ever becomes more complex/confusing
+    operations.push({ type: 'put', key: `__${id}__indexes`, value: JSON.stringify(indexes) });
 
-    return this.db.batch(ops, options);
+    return this.db.batch(operations, options);
   }
 
   async query(filter: Filter, options?: IndexLevelOptions): Promise<Array<string>> {
@@ -118,9 +116,10 @@ export class IndexLevel {
     // Resolve promises and find the union of results for each individual propertyName DB query
     const matchedIDs: string[] = [ ];
     for await (const [propertyName, promises] of Object.entries(propertyNameToPromises)) {
+      // acting as an OR match for the property, any of the promises returning a match will be treated as a property match
       for (const promise of promises) {
         for (const [ _, id ] of await promise) {
-          // if first time seeing a property match for object, add all the properties in the filter to missingPropertyMatchesForId to track
+          // if first time seeing a property matching for the data/object, record all properties needing a match to track progress
           missingPropertyMatchesForId[id] ??= new Set<string>([ ...Object.keys(filter) ]);
 
           missingPropertyMatchesForId[id].delete(propertyName);
@@ -136,16 +135,22 @@ export class IndexLevel {
   }
 
   async delete(id: string, options?: IndexLevelOptions): Promise<void> {
-    const prefixes = await this.db.get(`__${id}__prefixes`, options);
-    if (!prefixes) {
+    const serializedIndexes = await this.db.get(`__${id}__indexes`, options);
+    if (!serializedIndexes) {
       return;
     }
 
+    const indexes = JSON.parse(serializedIndexes);
+
+    // delete all indexes associated with the data of the given ID
     const ops: LevelWrapperBatchOperation<string>[] = [ ];
-    for (const prefix of JSON.parse(prefixes)) {
-      ops.push({ type: 'del', key: this.join(prefix, id) });
+    for (const propertyName in indexes) {
+      const value = indexes[propertyName];
+      const key = this.join(propertyName, this.encodeValue(value), id);
+      ops.push({ type: 'del', key });
     }
-    ops.push({ type: 'del', key: `__${id}__prefixes` });
+
+    ops.push({ type: 'del', key: `__${id}__indexes` });
 
     return this.db.batch(ops, options);
   }
