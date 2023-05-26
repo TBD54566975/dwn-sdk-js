@@ -271,7 +271,7 @@ describe('DWN', () => {
       expect(newRecordsWriteReply.status.code).to.equal(202);
 
       // verify new `RecordsWrite` has overwritten the existing record with new data
-      const newRecordsQueryReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, recordsQueryMessageData.message);
+      const newRecordsQueryReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsQuery, recordsQueryMessageData.message);
 
       expect(newRecordsQueryReply.status.code).to.equal(200);
       expect(newRecordsQueryReply.entries?.length).to.equal(1);
@@ -328,23 +328,13 @@ describe('DWN', () => {
 
     it('should throw 400 if given incorrect DWN interface or method', async () => {
       const alice = await DidKeyResolver.generate();
-      const reply1 = await dwn.synchronizePrunedInitialRecordsWrite(alice.did, undefined as unknown as RecordsWriteMessage ); // missing message
-      expect(reply1.status.code).to.equal(400);
-      expect(reply1.status.detail).to.contain('Both interface and method must be present');
 
-      const reply2 = await dwn.synchronizePrunedInitialRecordsWrite(
+      const reply = await dwn.synchronizePrunedInitialRecordsWrite(
         alice.did,
         { descriptor: { interface: 'IncorrectInterface', method: DwnMethodName.Write } } as RecordsWriteMessage
       );
-      expect(reply2.status.code).to.equal(400);
-      expect(reply2.status.detail).to.contain(`Expected interface ${DwnInterfaceName.Records}`);
-
-      const reply3 = await dwn.synchronizePrunedInitialRecordsWrite(
-        alice.did,
-        { descriptor: { interface: DwnInterfaceName.Records, method: 'IncorrectMethod' } } as RecordsWriteMessage
-      );
-      expect(reply3.status.code).to.equal(400);
-      expect(reply3.status.detail).to.contain(`Expected method ${DwnInterfaceName.Records}${DwnMethodName.Write}`);
+      expect(reply.status.code).to.equal(400);
+      expect(reply.status.detail).to.contain(`Expected DWN message type ${DwnMessageName.RecordsWrite}`);
     });
   });
 });

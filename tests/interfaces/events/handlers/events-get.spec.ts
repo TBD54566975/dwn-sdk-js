@@ -11,7 +11,7 @@ import {
   MessageStoreLevel,
 } from '../../../../src/index.js';
 
-import { Message } from '../../../../src/core/message.js';
+import { DwnMessageName, Message } from '../../../../src/core/message.js';
 
 describe('EventsGetHandler.handle()', () => {
   let didResolver: DidResolver;
@@ -57,11 +57,9 @@ describe('EventsGetHandler.handle()', () => {
     const bob = await DidKeyResolver.generate();
 
     const { message } = await TestDataGenerator.generateEventsGet({ author: alice });
-    const reply = await dwn.processMessage(bob.did, message);
+    const reply = await dwn.processMessage(bob.did, DwnMessageName.EventsGet, message);
 
     expect(reply.status.code).to.equal(401);
-    expect(reply.entries).to.not.exist;
-    expect(reply.data).to.not.exist;
   });
 
   it('returns a 400 if message is invalid', async () => {
@@ -70,11 +68,9 @@ describe('EventsGetHandler.handle()', () => {
     const { message } = await TestDataGenerator.generateEventsGet({ author: alice });
     message['descriptor']['troll'] = 'hehe';
 
-    const reply = await dwn.processMessage(alice.did, message);
+    const reply = await dwn.processMessage(alice.did, DwnMessageName.EventsGet, message);
 
     expect(reply.status.code).to.equal(400);
-    expect(reply.entries).to.not.exist;
-    expect(reply.data).to.not.exist;
   });
 
   it('returns all events for a tenant if watermark is not provided', async () => {
@@ -83,7 +79,7 @@ describe('EventsGetHandler.handle()', () => {
 
     for (let i = 0; i < 5; i += 1) {
       const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
-      const reply = await dwn.processMessage(alice.did, message, dataStream);
+      const reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, message, dataStream);
 
       expect(reply.status.code).to.equal(202);
       const messageCid = await Message.getCid(message);
@@ -92,7 +88,7 @@ describe('EventsGetHandler.handle()', () => {
     }
 
     const { message } = await TestDataGenerator.generateEventsGet({ author: alice });
-    const reply: EventsGetReply = await dwn.processMessage(alice.did, message);
+    const reply: EventsGetReply = await dwn.processMessage(alice.did, DwnMessageName.EventsGet, message);
 
     expect(reply.status.code).to.equal(200);
     expect(reply['data']).to.not.exist;
@@ -108,13 +104,13 @@ describe('EventsGetHandler.handle()', () => {
 
     for (let i = 0; i < 5; i += 1) {
       const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
-      const reply = await dwn.processMessage(alice.did, message, dataStream);
+      const reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, message, dataStream);
 
       expect(reply.status.code).to.equal(202);
     }
 
     const { message } = await TestDataGenerator.generateEventsGet({ author: alice });
-    let reply: EventsGetReply = await dwn.processMessage(alice.did, message);
+    let reply: EventsGetReply = await dwn.processMessage(alice.did, DwnMessageName.EventsGet, message);
 
     expect(reply.status.code).to.equal(200);
 
@@ -123,7 +119,7 @@ describe('EventsGetHandler.handle()', () => {
 
     for (let i = 0; i < 3; i += 1) {
       const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
-      const reply = await dwn.processMessage(alice.did, message, dataStream);
+      const reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, message, dataStream);
 
       expect(reply.status.code).to.equal(202);
       const messageCid = await Message.getCid(message);
@@ -131,7 +127,7 @@ describe('EventsGetHandler.handle()', () => {
     }
 
     const { message: m } = await TestDataGenerator.generateEventsGet({ author: alice, watermark });
-    reply = await dwn.processMessage(alice.did, m);
+    reply = await dwn.processMessage(alice.did, DwnMessageName.EventsGet, m);
 
     expect(reply.status.code).to.equal(200);
     expect(reply['data']).to.not.exist;

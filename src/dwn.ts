@@ -175,13 +175,12 @@ export class Dwn {
     const actualMessageType = dwnInterface + dwnMethod;
     if (expectedMessageType !== actualMessageType) {
       return new BaseMessageReply({
-        status: { code: 400, detail: `Expected DWN message type ${expectedMessageType}, receieve ${actualMessageType}` }
+        status: { code: 400, detail: `Expected DWN message type ${expectedMessageType}, received ${actualMessageType}` }
       });
     }
 
     // validate message structure
     try {
-      // consider to push this down to individual handlers
       Message.validateJsonSchema(rawMessage);
     } catch (error) {
       return BaseMessageReply.fromError(error, 400);

@@ -6,7 +6,7 @@ import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
-import { Message } from '../../../../src/core/message.js';
+import { DwnMessageName, Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
@@ -68,9 +68,9 @@ describe('ProtocolsQueryHandler.handle()', () => {
       const protocol2 = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
       const protocol3 = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
 
-      await dwn.processMessage(alice.did, protocol1.message, protocol1.dataStream);
-      await dwn.processMessage(alice.did, protocol2.message, protocol2.dataStream);
-      await dwn.processMessage(alice.did, protocol3.message, protocol3.dataStream);
+      await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocol1.message, protocol1.dataStream);
+      await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocol2.message, protocol2.dataStream);
+      await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocol3.message, protocol3.dataStream);
 
       // testing singular conditional query
       const queryMessageData = await TestDataGenerator.generateProtocolsQuery({
@@ -78,7 +78,7 @@ describe('ProtocolsQueryHandler.handle()', () => {
         filter : { protocol: protocol1.message.descriptor.definition.protocol }
       });
 
-      const reply = await dwn.processMessage(alice.did, queryMessageData.message);
+      const reply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsQuery, queryMessageData.message);
 
       expect(reply.status.code).to.equal(200);
       expect(reply.entries?.length).to.equal(1); // only 1 entry should match the query on protocol
@@ -88,7 +88,7 @@ describe('ProtocolsQueryHandler.handle()', () => {
         author: alice
       });
 
-      const reply2 = await dwn.processMessage(alice.did, queryMessageData2.message);
+      const reply2 = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsQuery, queryMessageData2.message);
 
       expect(reply2.status.code).to.equal(200);
       expect(reply2.entries?.length).to.equal(3); // expecting all 3 entries written above match the query
@@ -113,7 +113,7 @@ describe('ProtocolsQueryHandler.handle()', () => {
       );
 
       // Send records write message
-      const reply = await dwn.processMessage(alice.did, protocolsQuery.message);
+      const reply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsQuery, protocolsQuery.message);
       expect(reply.status.code).to.equal(400);
       expect(reply.status.detail).to.contain(DwnErrorCode.UrlProtocolNotNormalized);
     });
@@ -131,7 +131,7 @@ describe('ProtocolsQueryHandler.handle()', () => {
       const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
       message.authorization = signer.getJws();
 
-      const reply = await dwn.processMessage(tenant, message);
+      const reply = await dwn.processMessage(tenant, DwnMessageName.ProtocolsQuery, message);
 
       expect(reply.status.code).to.equal(400);
       expect(reply.status.detail).to.contain(`${incorrectDescriptorCid} does not match expected CID`);
@@ -142,7 +142,7 @@ describe('ProtocolsQueryHandler.handle()', () => {
       alice.keyId = 'wrongValue'; // to fail authentication
       const { message } = await TestDataGenerator.generateProtocolsQuery({ author: alice });
 
-      const reply = await dwn.processMessage(alice.did, message);
+      const reply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsQuery, message);
 
       expect(reply.status.code).to.equal(401);
       expect(reply.status.detail).to.contain('not a valid DID');

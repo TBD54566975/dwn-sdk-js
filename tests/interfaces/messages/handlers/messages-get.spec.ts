@@ -1,7 +1,7 @@
 import type { MessagesGetReply } from '../../../../src/index.js';
 
 import { expect } from 'chai';
-import { Message } from '../../../../src/core/message.js';
+import { DwnMessageName, Message } from '../../../../src/core/message.js';
 import { MessagesGetHandler } from '../../../../src/interfaces/messages/handlers/messages-get.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import {
@@ -66,11 +66,9 @@ describe('MessagesGetHandler.handle()', () => {
       messageCids : [await Message.getCid(recordsWrite.message)]
     });
 
-    const reply = await dwn.processMessage(bob.did, message);
+    const reply = await dwn.processMessage(bob.did, DwnMessageName.MessagesGet, message);
 
     expect(reply.status.code).to.equal(401);
-    expect(reply.entries).to.not.exist;
-    expect(reply.data).to.not.exist;
   });
 
   it('returns a 400 if message is invalid', async () => {
@@ -84,11 +82,9 @@ describe('MessagesGetHandler.handle()', () => {
 
     message['descriptor']['troll'] = 'hehe';
 
-    const reply = await dwn.processMessage(alice.did, message);
+    const reply = await dwn.processMessage(alice.did, DwnMessageName.MessagesGet, message);
 
     expect(reply.status.code).to.equal(400);
-    expect(reply.entries).to.not.exist;
-    expect(reply.data).to.not.exist;
   });
 
   it('returns a 400 if message contains an invalid message cid', async () => {
@@ -102,7 +98,7 @@ describe('MessagesGetHandler.handle()', () => {
 
     message.descriptor.messageCids = ['hehetroll'];
 
-    const reply: MessagesGetReply = await dwn.processMessage(alice.did, message);
+    const reply: MessagesGetReply = await dwn.processMessage(alice.did, DwnMessageName.MessagesGet, message);
 
     expect(reply.status.code).to.equal(400);
     expect(reply.status.detail).to.include('is not a valid CID');
@@ -121,7 +117,7 @@ describe('MessagesGetHandler.handle()', () => {
     let messageCid = await Message.getCid(recordsWrite.message);
     messageCids.push(messageCid);
 
-    let reply = await dwn.processMessage(alice.did, recordsWrite.toJSON(), dataStream);
+    let reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, recordsWrite.message, dataStream);
     expect(reply.status.code).to.equal(202);
 
     const { recordsDelete } = await TestDataGenerator.generateRecordsDelete({
@@ -132,7 +128,7 @@ describe('MessagesGetHandler.handle()', () => {
     messageCid = await Message.getCid(recordsDelete.message);
     messageCids.push(messageCid);
 
-    reply = await dwn.processMessage(alice.did, recordsDelete.toJSON());
+    reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsDelete, recordsDelete.message);
     expect(reply.status.code).to.equal(202);
 
     const { protocolsConfigure } = await TestDataGenerator.generateProtocolsConfigure({
@@ -142,7 +138,7 @@ describe('MessagesGetHandler.handle()', () => {
     messageCid = await Message.getCid(protocolsConfigure.message);
     messageCids.push(messageCid);
 
-    reply = await dwn.processMessage(alice.did, protocolsConfigure.toJSON());
+    reply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfigure.message);
     expect(reply.status.code).to.equal(202);
 
     const { messagesGet } = await TestDataGenerator.generateMessagesGet({
@@ -150,7 +146,7 @@ describe('MessagesGetHandler.handle()', () => {
       messageCids
     });
 
-    const messagesGetReply: MessagesGetReply = await dwn.processMessage(alice.did, messagesGet.toJSON());
+    const messagesGetReply: MessagesGetReply = await dwn.processMessage(alice.did, DwnMessageName.MessagesGet, messagesGet.message);
     expect(messagesGetReply.status.code).to.equal(200);
     expect(messagesGetReply.messages!.length).to.equal(messageCids.length);
 
@@ -175,7 +171,7 @@ describe('MessagesGetHandler.handle()', () => {
     });
 
     // 0 messages expected because the RecordsWrite created above was never stored
-    const reply: MessagesGetReply = await dwn.processMessage(alice.did, message);
+    const reply: MessagesGetReply = await dwn.processMessage(alice.did, DwnMessageName.MessagesGet, message);
     expect(reply.status.code).to.equal(200);
     expect(reply.messages!.length).to.equal(1);
 
@@ -221,7 +217,7 @@ describe('MessagesGetHandler.handle()', () => {
       author: alice
     });
 
-    const reply = await dwn.processMessage(alice.did, recordsWrite.toJSON(), dataStream);
+    const reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, recordsWrite.message, dataStream);
     expect(reply.status.code).to.equal(202);
 
     const recordsWriteMessageCid = await Message.getCid(recordsWrite.message);
@@ -230,7 +226,7 @@ describe('MessagesGetHandler.handle()', () => {
       messageCids : [recordsWriteMessageCid]
     });
 
-    const messagesGetReply: MessagesGetReply = await dwn.processMessage(alice.did, message);
+    const messagesGetReply: MessagesGetReply = await dwn.processMessage(alice.did, DwnMessageName.MessagesGet, message);
     expect(messagesGetReply.status.code).to.equal(200);
     expect(messagesGetReply.messages!.length).to.equal(1);
 
@@ -251,7 +247,7 @@ describe('MessagesGetHandler.handle()', () => {
       author: alice
     });
 
-    const reply = await dwn.processMessage(alice.did, recordsWrite.toJSON(), dataStream);
+    const reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, recordsWrite.message, dataStream);
     expect(reply.status.code).to.equal(202);
 
     const recordsWriteMessageCid = await Message.getCid(recordsWrite.message);
@@ -261,7 +257,7 @@ describe('MessagesGetHandler.handle()', () => {
     });
 
     // 0 messages expected because the RecordsWrite created above is not bob's
-    const messagesGetReply: MessagesGetReply = await dwn.processMessage(bob.did, message);
+    const messagesGetReply: MessagesGetReply = await dwn.processMessage(bob.did, DwnMessageName.MessagesGet, message);
     expect(messagesGetReply.status.code).to.equal(200);
     expect(messagesGetReply.messages!.length).to.equal(1);
 

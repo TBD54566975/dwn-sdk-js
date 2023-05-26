@@ -27,7 +27,7 @@ import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
 import { Jws } from '../../../../src/utils/jws.js';
 import { KeyDerivationScheme } from '../../../../src/index.js';
-import { Message } from '../../../../src/core/message.js';
+import { DwnMessageName, Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { ProtocolActor } from '../../../../src/types/protocols-types.js';
 import { RecordsRead } from '../../../../src/interfaces/records/messages/records-read.js';
@@ -90,7 +90,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const recordsWriteMessageData = await TestDataGenerator.generateRecordsWrite({ author, data: data1 });
 
       const tenant = author.did;
-      const recordsWriteReply = await dwn.processMessage(tenant, recordsWriteMessageData.message, recordsWriteMessageData.dataStream);
+      const recordsWriteReply = await dwn.processMessage(tenant, DwnMessageName.RecordsWrite, recordsWriteMessageData.message, recordsWriteMessageData.dataStream);
       expect(recordsWriteReply.status.code).to.equal(202);
 
       const recordId = recordsWriteMessageData.message.recordId;
@@ -100,7 +100,7 @@ describe('RecordsWriteHandler.handle()', () => {
       });
 
       // verify the message written can be queried
-      const recordsQueryReply = await dwn.processMessage(tenant, recordsQueryMessageData.message);
+      const recordsQueryReply = await dwn.processMessage(tenant, DwnMessageName.RecordsQuery, recordsQueryMessageData.message);
       expect(recordsQueryReply.status.code).to.equal(200);
       expect(recordsQueryReply.entries?.length).to.equal(1);
       expect(recordsQueryReply.entries![0].encodedData).to.equal(base64url.baseEncode(data1));
@@ -118,22 +118,22 @@ describe('RecordsWriteHandler.handle()', () => {
       // sanity check that old data and new data are different
       expect(newDataEncoded).to.not.equal(Encoder.bytesToBase64Url(recordsWriteMessageData.dataBytes!));
 
-      const newRecordsWriteReply = await dwn.processMessage(tenant, newRecordsWrite.message, newRecordsWrite.dataStream);
+      const newRecordsWriteReply = await dwn.processMessage(tenant, DwnMessageName.RecordsWrite, newRecordsWrite.message, newRecordsWrite.dataStream);
       expect(newRecordsWriteReply.status.code).to.equal(202);
 
       // verify new record has overwritten the existing record
-      const newRecordsQueryReply = await dwn.processMessage(tenant, recordsQueryMessageData.message);
+      const newRecordsQueryReply = await dwn.processMessage(tenant, DwnMessageName.RecordsQuery, recordsQueryMessageData.message);
 
       expect(newRecordsQueryReply.status.code).to.equal(200);
       expect(newRecordsQueryReply.entries?.length).to.equal(1);
       expect(newRecordsQueryReply.entries![0].encodedData).to.equal(newDataEncoded);
 
       // try to write the older message to store again and verify that it is not accepted
-      const thirdRecordsWriteReply = await dwn.processMessage(tenant, recordsWriteMessageData.message, recordsWriteMessageData.dataStream);
+      const thirdRecordsWriteReply = await dwn.processMessage(tenant, DwnMessageName.RecordsWrite, recordsWriteMessageData.message, recordsWriteMessageData.dataStream);
       expect(thirdRecordsWriteReply.status.code).to.equal(409); // expecting to fail
 
       // expecting unchanged
-      const thirdRecordsQueryReply = await dwn.processMessage(tenant, recordsQueryMessageData.message);
+      const thirdRecordsQueryReply = await dwn.processMessage(tenant, DwnMessageName.RecordsQuery, recordsQueryMessageData.message);
       expect(thirdRecordsQueryReply.status.code).to.equal(200);
       expect(thirdRecordsQueryReply.entries?.length).to.equal(1);
       expect(thirdRecordsQueryReply.entries![0].encodedData).to.equal(newDataEncoded);
@@ -151,7 +151,7 @@ describe('RecordsWriteHandler.handle()', () => {
       // setting up a stub DID resolver
       TestStubGenerator.stubDidResolver(didResolver, [author]);
 
-      const originatingMessageWriteReply = await dwn.processMessage(tenant, originatingMessageData.message, originatingMessageData.dataStream);
+      const originatingMessageWriteReply = await dwn.processMessage(tenant, DwnMessageName.RecordsWrite, originatingMessageData.message, originatingMessageData.dataStream);
       expect(originatingMessageWriteReply.status.code).to.equal(202);
 
       // generate two new RecordsWrite messages with the same `dateModified` value
@@ -181,7 +181,7 @@ describe('RecordsWriteHandler.handle()', () => {
       }
 
       // write the message with the smaller lexicographical message CID first
-      const recordsWriteReply = await dwn.processMessage(tenant, olderWrite.message, olderWrite.dataStream);
+      const recordsWriteReply = await dwn.processMessage(tenant, DwnMessageName.RecordsWrite, olderWrite.message, olderWrite.dataStream);
       expect(recordsWriteReply.status.code).to.equal(202);
 
       // query to fetch the record
@@ -191,18 +191,18 @@ describe('RecordsWriteHandler.handle()', () => {
       });
 
       // verify the data is written
-      const recordsQueryReply = await dwn.processMessage(tenant, recordsQueryMessageData.message);
+      const recordsQueryReply = await dwn.processMessage(tenant, DwnMessageName.RecordsQuery, recordsQueryMessageData.message);
       expect(recordsQueryReply.status.code).to.equal(200);
       expect(recordsQueryReply.entries?.length).to.equal(1);
       expect((recordsQueryReply.entries![0] as RecordsWriteMessage).descriptor.dataCid)
         .to.equal(olderWrite.message.descriptor.dataCid);
 
       // attempt to write the message with larger lexicographical message CID
-      const newRecordsWriteReply = await dwn.processMessage(tenant, newerWrite.message, newerWrite.dataStream);
+      const newRecordsWriteReply = await dwn.processMessage(tenant, DwnMessageName.RecordsWrite, newerWrite.message, newerWrite.dataStream);
       expect(newRecordsWriteReply.status.code).to.equal(202);
 
       // verify new record has overwritten the existing record
-      const newRecordsQueryReply = await dwn.processMessage(tenant, recordsQueryMessageData.message);
+      const newRecordsQueryReply = await dwn.processMessage(tenant, DwnMessageName.RecordsQuery, recordsQueryMessageData.message);
       expect(newRecordsQueryReply.status.code).to.equal(200);
       expect(newRecordsQueryReply.entries?.length).to.equal(1);
       expect((newRecordsQueryReply.entries![0] as RecordsWriteMessage).descriptor.dataCid)
@@ -211,13 +211,14 @@ describe('RecordsWriteHandler.handle()', () => {
       // try to write the message with smaller lexicographical message CID again
       const thirdRecordsWriteReply = await dwn.processMessage(
         tenant,
+        DwnMessageName.RecordsWrite,
         olderWrite.message,
         DataStream.fromBytes(olderWrite.dataBytes) // need to create data stream again since it's already used above
       );
       expect(thirdRecordsWriteReply.status.code).to.equal(409); // expecting to fail
 
       // verify the message in store is still the one with larger lexicographical message CID
-      const thirdRecordsQueryReply = await dwn.processMessage(tenant, recordsQueryMessageData.message);
+      const thirdRecordsQueryReply = await dwn.processMessage(tenant, DwnMessageName.RecordsQuery, recordsQueryMessageData.message);
       expect(thirdRecordsQueryReply.status.code).to.equal(200);
       expect(thirdRecordsQueryReply.entries?.length).to.equal(1);
       expect((thirdRecordsQueryReply.entries![0] as RecordsWriteMessage).descriptor.dataCid)
@@ -230,7 +231,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
       TestStubGenerator.stubDidResolver(didResolver, [initialWriteData.author]);
 
-      const initialWriteReply = await dwn.processMessage(tenant, initialWriteData.message, initialWriteData.dataStream);
+      const initialWriteReply = await dwn.processMessage(tenant, DwnMessageName.RecordsWrite, initialWriteData.message, initialWriteData.dataStream);
       expect(initialWriteReply.status.code).to.equal(202);
 
       const recordId = initialWriteData.message.recordId;
@@ -246,7 +247,7 @@ describe('RecordsWriteHandler.handle()', () => {
         dataFormat  : initialWriteData.message.descriptor.dataFormat
       });
 
-      let reply = await dwn.processMessage(tenant, childMessageData.message, childMessageData.dataStream);
+      let reply = await dwn.processMessage(tenant, DwnMessageName.RecordsWrite, childMessageData.message, childMessageData.dataStream);
 
       expect(reply.status.code).to.equal(400);
       expect(reply.status.detail).to.contain('dateCreated is an immutable property');
@@ -260,7 +261,7 @@ describe('RecordsWriteHandler.handle()', () => {
         dataFormat : initialWriteData.message.descriptor.dataFormat
       });
 
-      reply = await dwn.processMessage(tenant, childMessageData.message, childMessageData.dataStream);
+      reply = await dwn.processMessage(tenant, DwnMessageName.RecordsWrite, childMessageData.message, childMessageData.dataStream);
 
       expect(reply.status.code).to.equal(400);
       expect(reply.status.detail).to.contain('schema is an immutable property');
@@ -274,7 +275,7 @@ describe('RecordsWriteHandler.handle()', () => {
         dataFormat : 'should-not-be-allowed-to-change'
       });
 
-      reply = await dwn.processMessage(tenant, childMessageData.message, childMessageData.dataStream);
+      reply = await dwn.processMessage(tenant, DwnMessageName.RecordsWrite, childMessageData.message, childMessageData.dataStream);
 
       expect(reply.status.code).to.equal(400);
       expect(reply.status.detail).to.contain('dataFormat is an immutable property');
@@ -293,7 +294,7 @@ describe('RecordsWriteHandler.handle()', () => {
       message.recordId = recordId;
       message.authorization = authorization;
 
-      const reply = await dwn.processMessage(alice.did, message, dataStream);
+      const reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, message, dataStream);
       expect(reply.status.code).to.equal(400);
       expect(reply.status.detail).to.contain('does not match dataSize in descriptor');
     });
@@ -303,7 +304,7 @@ describe('RecordsWriteHandler.handle()', () => {
       const { message } = await TestDataGenerator.generateRecordsWrite({ author: alice });
       const dataStream = DataStream.fromBytes(TestDataGenerator.randomBytes(32)); // mismatch data stream
 
-      const reply = await dwn.processMessage(alice.did, message, dataStream);
+      const reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, message, dataStream);
       expect(reply.status.code).to.equal(400);
       expect(reply.status.detail).to.contain('does not match dataCid in descriptor');
     });
@@ -315,7 +316,7 @@ describe('RecordsWriteHandler.handle()', () => {
         author: alice,
       });
 
-      const reply = await dwn.processMessage(alice.did, message);
+      const reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, message);
 
       expect(reply.status.code).to.equal(400);
       expect(reply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataStream);
@@ -335,12 +336,12 @@ describe('RecordsWriteHandler.handle()', () => {
         data,
       });
 
-      const write1Reply = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
+      const write1Reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, write1.message, write1.dataStream);
       expect(write1Reply.status.code).to.equal(202);
 
       // alice writes another record (which will be modified later)
       const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice });
-      const write2Reply = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
+      const write2Reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, write2.message, write2.dataStream);
       expect(write2Reply.status.code).to.equal(202);
 
       // modify write2 by referencing the `dataCid` in write1 (which should not be allowed)
@@ -359,7 +360,7 @@ describe('RecordsWriteHandler.handle()', () => {
         dataCid,
         dataSize
       });
-      const write2ChangeReply = await dwn.processMessage(alice.did, write2Change.message);
+      const write2ChangeReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, write2Change.message);
       expect(write2ChangeReply.status.code).to.equal(400); // should be disallowed
       expect(write2ChangeReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataStream);
 
@@ -394,7 +395,7 @@ describe('RecordsWriteHandler.handle()', () => {
           // setting up a stub DID resolver
           TestStubGenerator.stubDidResolver(didResolver, [author]);
 
-          const reply = await dwn.processMessage(tenant, message, dataStream);
+          const reply = await dwn.processMessage(tenant, DwnMessageName.RecordsWrite, message, dataStream);
           expect(reply.status.code).to.equal(202);
 
           expect(ArrayUtility.fromAsyncGenerator(dataForCid.db.keys())).to.eventually.eql([ dataCid ]);
@@ -405,7 +406,7 @@ describe('RecordsWriteHandler.handle()', () => {
             authorizationSignatureInput : Jws.createSignatureInput(author)
           });
 
-          const newWriteReply = await dwn.processMessage(tenant, newWrite.message);
+          const newWriteReply = await dwn.processMessage(tenant, DwnMessageName.RecordsWrite, newWrite.message);
           expect(newWriteReply.status.code).to.equal(202);
 
           expect(ArrayUtility.fromAsyncGenerator(dataForCid.db.keys())).to.eventually.eql([ dataCid ]);
@@ -416,7 +417,7 @@ describe('RecordsWriteHandler.handle()', () => {
             filter: { recordId: message.recordId }
           });
 
-          const recordsQueryReply = await dwn.processMessage(tenant, recordsQueryMessageData.message);
+          const recordsQueryReply = await dwn.processMessage(tenant, DwnMessageName.RecordsQuery, recordsQueryMessageData.message);
           expect(recordsQueryReply.status.code).to.equal(200);
           expect(recordsQueryReply.entries?.length).to.equal(1);
           expect((recordsQueryReply.entries![0] as RecordsWriteMessage).descriptor.published).to.equal(true);
@@ -435,7 +436,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
           // setting up a stub DID resolver
           TestStubGenerator.stubDidResolver(didResolver, [author]);
-          const reply = await dwn.processMessage(tenant, message, dataStream);
+          const reply = await dwn.processMessage(tenant, DwnMessageName.RecordsWrite, message, dataStream);
 
           expect(reply.status.code).to.equal(202);
 
@@ -446,7 +447,7 @@ describe('RecordsWriteHandler.handle()', () => {
             authorizationSignatureInput : Jws.createSignatureInput(author)
           });
 
-          const newWriteReply = await dwn.processMessage(tenant, newWrite.message, DataStream.fromBytes(newData));
+          const newWriteReply = await dwn.processMessage(tenant, DwnMessageName.RecordsWrite, newWrite.message, DataStream.fromBytes(newData));
 
           expect(newWriteReply.status.code).to.equal(202);
 
@@ -456,7 +457,7 @@ describe('RecordsWriteHandler.handle()', () => {
             filter: { recordId: message.recordId }
           });
 
-          const recordsQueryReply = await dwn.processMessage(tenant, recordsQueryMessageData.message);
+          const recordsQueryReply = await dwn.processMessage(tenant, DwnMessageName.RecordsQuery, recordsQueryMessageData.message);
           expect(recordsQueryReply.status.code).to.equal(200);
           expect(recordsQueryReply.entries?.length).to.equal(1);
 
@@ -476,7 +477,7 @@ describe('RecordsWriteHandler.handle()', () => {
         const tenant = author.did;
 
         TestStubGenerator.stubDidResolver(didResolver, [author]);
-        const reply = await dwn.processMessage(tenant, message, dataStream);
+        const reply = await dwn.processMessage(tenant, DwnMessageName.RecordsWrite, message, dataStream);
 
         expect(reply.status.code).to.equal(400);
         expect(reply.status.detail).to.contain('initial write is not found');
@@ -491,7 +492,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
         TestStubGenerator.stubDidResolver(didResolver, [author]);
 
-        const reply = await dwn.processMessage(tenant, message, dataStream);
+        const reply = await dwn.processMessage(tenant, DwnMessageName.RecordsWrite, message, dataStream);
 
         expect(reply.status.code).to.equal(400);
         expect(reply.status.detail).to.contain('must match dateCreated');
@@ -505,7 +506,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
         TestStubGenerator.stubDidResolver(didResolver, [author]);
 
-        const reply = await dwn.processMessage('unused-tenant-DID', message, dataStream);
+        const reply = await dwn.processMessage('unused-tenant-DID', DwnMessageName.RecordsWrite, message, dataStream);
         expect(reply.status.code).to.equal(400);
         expect(reply.status.detail).to.contain('does not match deterministic contextId');
       });
@@ -515,7 +516,7 @@ describe('RecordsWriteHandler.handle()', () => {
           const { message, author, dataStream } = await TestDataGenerator.generateRecordsWrite();
           TestStubGenerator.stubDidResolver(didResolver, [author]);
 
-          const reply = await dwn.processMessage(author.did, message, dataStream);
+          const reply = await dwn.processMessage(author.did, DwnMessageName.RecordsWrite, message, dataStream);
           expect(reply.status.code).to.equal(202);
 
           const events = await eventLog.getEvents(author.did);
@@ -529,7 +530,7 @@ describe('RecordsWriteHandler.handle()', () => {
           const { message, author, dataStream, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
           TestStubGenerator.stubDidResolver(didResolver, [author]);
 
-          const reply = await dwn.processMessage(author.did, message, dataStream);
+          const reply = await dwn.processMessage(author.did, DwnMessageName.RecordsWrite, message, dataStream);
           expect(reply.status.code).to.equal(202);
 
           const newWrite = await RecordsWrite.createFrom({
@@ -538,7 +539,7 @@ describe('RecordsWriteHandler.handle()', () => {
             authorizationSignatureInput : Jws.createSignatureInput(author)
           });
 
-          const newWriteReply = await dwn.processMessage(author.did, newWrite.message);
+          const newWriteReply = await dwn.processMessage(author.did, DwnMessageName.RecordsWrite, newWrite.message);
           expect(newWriteReply.status.code).to.equal(202);
 
           const newestWrite = await RecordsWrite.createFrom({
@@ -547,7 +548,7 @@ describe('RecordsWriteHandler.handle()', () => {
             authorizationSignatureInput : Jws.createSignatureInput(author)
           });
 
-          const newestWriteReply = await dwn.processMessage(author.did, newestWrite.message);
+          const newestWriteReply = await dwn.processMessage(author.did, DwnMessageName.RecordsWrite, newestWrite.message);
           expect(newestWriteReply.status.code).to.equal(202);
 
           const events = await eventLog.getEvents(author.did);
@@ -581,7 +582,8 @@ describe('RecordsWriteHandler.handle()', () => {
         // setting up a stub DID resolver
         TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
 
-        const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolsConfigureReply =
+          await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolsConfigureReply.status.code).to.equal(202);
 
         // generate a `RecordsWrite` message from bob
@@ -597,7 +599,7 @@ describe('RecordsWriteHandler.handle()', () => {
           }
         );
 
-        const bobWriteReply = await dwn.processMessage(alice.did, emailFromBob.message, emailFromBob.dataStream);
+        const bobWriteReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, emailFromBob.message, emailFromBob.dataStream);
         expect(bobWriteReply.status.code).to.equal(202);
 
         // verify bob's message got written to the DB
@@ -605,7 +607,7 @@ describe('RecordsWriteHandler.handle()', () => {
           author : alice,
           filter : { recordId: emailFromBob.message.recordId }
         });
-        const bobRecordQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingBobsWrite.message);
+        const bobRecordQueryReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsQuery, messageDataForQueryingBobsWrite.message);
         expect(bobRecordQueryReply.status.code).to.equal(200);
         expect(bobRecordQueryReply.entries?.length).to.equal(1);
         expect(bobRecordQueryReply.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(bobData));
@@ -629,7 +631,8 @@ describe('RecordsWriteHandler.handle()', () => {
         // setting up a stub DID resolver
         TestStubGenerator.stubDidResolver(didResolver, [alice, vcIssuer]);
 
-        const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolWriteReply =
+          await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolWriteReply.status.code).to.equal(202);
 
         // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
@@ -645,7 +648,8 @@ describe('RecordsWriteHandler.handle()', () => {
         });
         const credentialApplicationContextId = await credentialApplication.recordsWrite.getEntryId();
 
-        const credentialApplicationReply = await dwn.processMessage(alice.did, credentialApplication.message, credentialApplication.dataStream);
+        const credentialApplicationReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, credentialApplication.message, credentialApplication.dataStream);
         expect(credentialApplicationReply.status.code).to.equal(202);
 
         // generate a credential application response message from VC issuer
@@ -664,7 +668,8 @@ describe('RecordsWriteHandler.handle()', () => {
           }
         );
 
-        const credentialResponseReply = await dwn.processMessage(alice.did, credentialResponse.message, credentialResponse.dataStream);
+        const credentialResponseReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, credentialResponse.message, credentialResponse.dataStream);
         expect(credentialResponseReply.status.code).to.equal(202);
 
         // verify VC issuer's message got written to the DB
@@ -672,7 +677,8 @@ describe('RecordsWriteHandler.handle()', () => {
           author : alice,
           filter : { recordId: credentialResponse.message.recordId }
         });
-        const applicationResponseQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingCredentialResponse.message);
+        const applicationResponseQueryReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsQuery, messageDataForQueryingCredentialResponse.message);
         expect(applicationResponseQueryReply.status.code).to.equal(200);
         expect(applicationResponseQueryReply.entries?.length).to.equal(1);
         expect(applicationResponseQueryReply.entries![0].encodedData)
@@ -696,7 +702,8 @@ describe('RecordsWriteHandler.handle()', () => {
           author: bob,
           protocolDefinition
         });
-        const protocolWriteReply = await dwn.processMessage(bob.did, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolWriteReply =
+          await dwn.processMessage(bob.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolWriteReply.status.code).to.equal(202);
 
         // Alice writes image to bob's DWN
@@ -709,7 +716,8 @@ describe('RecordsWriteHandler.handle()', () => {
           dataFormat   : protocolDefinition.types.image.dataFormats[0],
           data         : encodedImage
         });
-        const imageReply = await dwn.processMessage(bob.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
+        const imageReply =
+          await dwn.processMessage(bob.did, DwnMessageName.RecordsWrite, imageRecordsWrite.message, imageRecordsWrite.dataStream);
         expect(imageReply.status.code).to.equal(202);
 
         const imageContextId = await imageRecordsWrite.recordsWrite.getEntryId();
@@ -726,7 +734,8 @@ describe('RecordsWriteHandler.handle()', () => {
           parentId     : imageContextId,
           data         : encodedCaptionImposter
         });
-        const captionReply = await dwn.processMessage(bob.did, captionImposter.message, captionImposter.dataStream);
+        const captionReply =
+          await dwn.processMessage(bob.did, DwnMessageName.RecordsWrite, captionImposter.message, captionImposter.dataStream);
         expect(captionReply.status.code).to.equal(401);
         expect(captionReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
 
@@ -742,7 +751,8 @@ describe('RecordsWriteHandler.handle()', () => {
           parentId     : imageContextId,
           data         : encodedCaption
         });
-        const captionResponse = await dwn.processMessage(bob.did, captionRecordsWrite.message, captionRecordsWrite.dataStream);
+        const captionResponse =
+          await dwn.processMessage(bob.did, DwnMessageName.RecordsWrite, captionRecordsWrite.message, captionRecordsWrite.dataStream);
         expect(captionResponse.status.code).to.equal(202);
 
         // Verify Alice's caption got written to the DB
@@ -750,7 +760,8 @@ describe('RecordsWriteHandler.handle()', () => {
           author : alice,
           filter : { recordId: captionRecordsWrite.message.recordId }
         });
-        const applicationResponseQueryReply = await dwn.processMessage(bob.did, messageDataForQueryingCaptionResponse.message);
+        const applicationResponseQueryReply =
+          await dwn.processMessage(bob.did, DwnMessageName.RecordsQuery, messageDataForQueryingCaptionResponse.message);
         expect(applicationResponseQueryReply.status.code).to.equal(200);
         expect(applicationResponseQueryReply.entries?.length).to.equal(1);
         expect(applicationResponseQueryReply.entries![0].encodedData)
@@ -774,7 +785,8 @@ describe('RecordsWriteHandler.handle()', () => {
         // setting up a stub DID resolver
         TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
 
-        const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolWriteReply =
+          await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolWriteReply.status.code).to.equal(202);
 
         // generate a `RecordsWrite` message from bob
@@ -790,7 +802,8 @@ describe('RecordsWriteHandler.handle()', () => {
           }
         );
 
-        const bobWriteReply = await dwn.processMessage(alice.did, messageFromBob.message, messageFromBob.dataStream);
+        const bobWriteReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, messageFromBob.message, messageFromBob.dataStream);
         expect(bobWriteReply.status.code).to.equal(202);
 
         // verify bob's message got written to the DB
@@ -798,7 +811,8 @@ describe('RecordsWriteHandler.handle()', () => {
           author : alice,
           filter : { recordId: messageFromBob.message.recordId }
         });
-        const bobRecordQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingBobsWrite.message);
+        const bobRecordQueryReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsQuery, messageDataForQueryingBobsWrite.message);
         expect(bobRecordQueryReply.status.code).to.equal(200);
         expect(bobRecordQueryReply.entries?.length).to.equal(1);
         expect(bobRecordQueryReply.entries![0].encodedData).to.equal(base64url.baseEncode(bobData));
@@ -811,11 +825,13 @@ describe('RecordsWriteHandler.handle()', () => {
           data          : updatedMessageBytes
         });
 
-        const newWriteReply = await dwn.processMessage(alice.did, updatedMessageFromBob.message, updatedMessageFromBob.dataStream);
+        const newWriteReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, updatedMessageFromBob.message, updatedMessageFromBob.dataStream);
         expect(newWriteReply.status.code).to.equal(202);
 
         // verify bob's message got written to the DB
-        const newRecordQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingBobsWrite.message);
+        const newRecordQueryReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsQuery, messageDataForQueryingBobsWrite.message);
         expect(newRecordQueryReply.status.code).to.equal(200);
         expect(newRecordQueryReply.entries?.length).to.equal(1);
         expect(newRecordQueryReply.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(updatedMessageBytes));
@@ -839,7 +855,8 @@ describe('RecordsWriteHandler.handle()', () => {
         // setting up a stub DID resolver
         TestStubGenerator.stubDidResolver(didResolver, [alice, bob, carol]);
 
-        const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolWriteReply =
+          await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolWriteReply.status.code).to.equal(202);
 
         // generate a `RecordsWrite` message from bob
@@ -855,7 +872,8 @@ describe('RecordsWriteHandler.handle()', () => {
           }
         );
 
-        const bobWriteReply = await dwn.processMessage(alice.did, messageFromBob.message, messageFromBob.dataStream);
+        const bobWriteReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, messageFromBob.message, messageFromBob.dataStream);
         expect(bobWriteReply.status.code).to.equal(202);
 
         // verify bob's message got written to the DB
@@ -863,7 +881,8 @@ describe('RecordsWriteHandler.handle()', () => {
           author : alice,
           filter : { recordId: messageFromBob.message.recordId }
         });
-        const bobRecordQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingBobsWrite.message);
+        const bobRecordQueryReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsQuery, messageDataForQueryingBobsWrite.message);
         expect(bobRecordQueryReply.status.code).to.equal(200);
         expect(bobRecordQueryReply.entries?.length).to.equal(1);
         expect(bobRecordQueryReply.entries![0].encodedData).to.equal(base64url.baseEncode(bobData));
@@ -882,7 +901,8 @@ describe('RecordsWriteHandler.handle()', () => {
           }
         );
 
-        const carolWriteReply = await dwn.processMessage(alice.did, modifiedMessageFromCarol.message, modifiedMessageFromCarol.dataStream);
+        const carolWriteReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, modifiedMessageFromCarol.message, modifiedMessageFromCarol.dataStream);
         expect(carolWriteReply.status.code).to.equal(401);
         expect(carolWriteReply.status.detail).to.contain('must match to author of initial write');
       });
@@ -907,7 +927,8 @@ describe('RecordsWriteHandler.handle()', () => {
         // setting up a stub DID resolver
         TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
 
-        const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolWriteReply =
+          await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolWriteReply.status.code).to.equal(202);
 
         // generate a `RecordsWrite` message from bob
@@ -923,7 +944,8 @@ describe('RecordsWriteHandler.handle()', () => {
           }
         );
 
-        const bobWriteReply = await dwn.processMessage(alice.did, messageFromBob.message, messageFromBob.dataStream);
+        const bobWriteReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, messageFromBob.message, messageFromBob.dataStream);
         expect(bobWriteReply.status.code).to.equal(202);
 
         // verify bob's message got written to the DB
@@ -931,7 +953,8 @@ describe('RecordsWriteHandler.handle()', () => {
           author : alice,
           filter : { recordId: messageFromBob.message.recordId }
         });
-        const bobRecordQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingBobsWrite.message);
+        const bobRecordQueryReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsQuery, messageDataForQueryingBobsWrite.message);
         expect(bobRecordQueryReply.status.code).to.equal(200);
         expect(bobRecordQueryReply.entries?.length).to.equal(1);
         expect(bobRecordQueryReply.entries![0].encodedData).to.equal(base64url.baseEncode(bobData));
@@ -951,7 +974,8 @@ describe('RecordsWriteHandler.handle()', () => {
           }
         );
 
-        const newWriteReply = await dwn.processMessage(alice.did, updatedMessageFromBob.message, updatedMessageFromBob.dataStream);
+        const newWriteReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, updatedMessageFromBob.message, updatedMessageFromBob.dataStream);
         expect(newWriteReply.status.code).to.equal(400);
         expect(newWriteReply.status.detail).to.contain('recipient is an immutable property');
       });
@@ -976,7 +1000,8 @@ describe('RecordsWriteHandler.handle()', () => {
         // setting up a stub DID resolver
         TestStubGenerator.stubDidResolver(didResolver, [alice, fakeVcIssuer]);
 
-        const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolWriteReply =
+          await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolWriteReply.status.code).to.equal(202);
 
         // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
@@ -993,7 +1018,8 @@ describe('RecordsWriteHandler.handle()', () => {
         });
         const credentialApplicationContextId = await credentialApplication.recordsWrite.getEntryId();
 
-        const credentialApplicationReply = await dwn.processMessage(alice.did, credentialApplication.message, credentialApplication.dataStream);
+        const credentialApplicationReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, credentialApplication.message, credentialApplication.dataStream);
         expect(credentialApplicationReply.status.code).to.equal(202);
 
         // generate a credential application response message from a fake VC issuer
@@ -1012,7 +1038,8 @@ describe('RecordsWriteHandler.handle()', () => {
           }
         );
 
-        const credentialResponseReply = await dwn.processMessage(alice.did, credentialResponse.message, credentialResponse.dataStream);
+        const credentialResponseReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, credentialResponse.message, credentialResponse.dataStream);
         expect(credentialResponseReply.status.code).to.equal(401);
         expect(credentialResponseReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
       });
@@ -1029,7 +1056,8 @@ describe('RecordsWriteHandler.handle()', () => {
           data
         });
 
-        const reply = await dwn.processMessage(alice.did, credentialApplication.message, credentialApplication.dataStream);
+        const reply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, credentialApplication.message, credentialApplication.dataStream);
         expect(reply.status.code).to.equal(401);
         expect(reply.status.detail).to.contain('unable to find protocol definition');
       });
@@ -1044,7 +1072,8 @@ describe('RecordsWriteHandler.handle()', () => {
           protocolDefinition
         });
 
-        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
+        const protocolConfigureReply =
+          await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolConfig.message, protocolConfig.dataStream);
         expect(protocolConfigureReply.status.code).to.equal(202);
 
         const data = Encoder.stringToBytes('any data');
@@ -1057,7 +1086,8 @@ describe('RecordsWriteHandler.handle()', () => {
           data
         });
 
-        const reply = await dwn.processMessage(alice.did, credentialApplication.message, credentialApplication.dataStream);
+        const reply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, credentialApplication.message, credentialApplication.dataStream);
         expect(reply.status.code).to.equal(401);
         expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationInvalidSchema);
       });
@@ -1072,7 +1102,8 @@ describe('RecordsWriteHandler.handle()', () => {
           protocolDefinition
         });
 
-        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
+        const protocolConfigureReply =
+          await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolConfig.message, protocolConfig.dataStream);
         expect(protocolConfigureReply.status.code).to.equal(202);
 
 
@@ -1085,7 +1116,8 @@ describe('RecordsWriteHandler.handle()', () => {
           data
         });
 
-        const reply = await dwn.processMessage(alice.did, credentialApplication.message, credentialApplication.dataStream);
+        const reply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, credentialApplication.message, credentialApplication.dataStream);
         expect(reply.status.code).to.equal(401);
         expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationInvalidType);
       });
@@ -1100,7 +1132,8 @@ describe('RecordsWriteHandler.handle()', () => {
           protocolDefinition,
         });
 
-        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
+        const protocolConfigureReply =
+          await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolConfig.message, protocolConfig.dataStream);
         expect(protocolConfigureReply.status.code).to.equal(202);
 
         const data = Encoder.stringToBytes('any data');
@@ -1113,7 +1146,8 @@ describe('RecordsWriteHandler.handle()', () => {
           data
         });
 
-        const reply = await dwn.processMessage(alice.did, credentialApplication.message, credentialApplication.dataStream);
+        const reply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, credentialApplication.message, credentialApplication.dataStream);
         expect(reply.status.code).to.equal(401);
         expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationIncorrectProtocolPath);
       });
@@ -1129,7 +1163,8 @@ describe('RecordsWriteHandler.handle()', () => {
           protocolDefinition : protocolDefinition,
         });
 
-        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
+        const protocolConfigureReply =
+          await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolConfig.message, protocolConfig.dataStream);
         expect(protocolConfigureReply.status.code).to.equal(202);
 
         // write record with matching dataFormat
@@ -1143,7 +1178,8 @@ describe('RecordsWriteHandler.handle()', () => {
           dataFormat   : protocolDefinition.types.image.dataFormats[0],
           data
         });
-        const replyMatch = await dwn.processMessage(alice.did, recordsWriteMatch.message, recordsWriteMatch.dataStream);
+        const replyMatch =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, recordsWriteMatch.message, recordsWriteMatch.dataStream);
         expect(replyMatch.status.code).to.equal(202);
 
         // write record with mismatch dataFormat
@@ -1157,7 +1193,8 @@ describe('RecordsWriteHandler.handle()', () => {
           data
         });
 
-        const replyMismatch = await dwn.processMessage(alice.did, recordsWriteMismatch.message, recordsWriteMismatch.dataStream);
+        const replyMismatch =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, recordsWriteMismatch.message, recordsWriteMismatch.dataStream);
         expect(replyMismatch.status.code).to.equal(401);
         expect(replyMismatch.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationIncorrectDataFormat);
       });
@@ -1175,7 +1212,8 @@ describe('RecordsWriteHandler.handle()', () => {
         const credentialApplicationSchema = protocolDefinition.types.credentialApplication.schema;
         const credentialResponseSchema = protocolDefinition.types.credentialResponse.schema;
 
-        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
+        const protocolConfigureReply =
+          await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolConfig.message, protocolConfig.dataStream);
         expect(protocolConfigureReply.status.code).to.equal(202);
 
         // Try and fail to write a 'credentialResponse', which is not allowed at the top level of the record hierarchy
@@ -1189,7 +1227,7 @@ describe('RecordsWriteHandler.handle()', () => {
           data
         });
         const failedCredentialResponseReply = await dwn.processMessage(
-          alice.did, failedCredentialResponse.message, failedCredentialResponse.dataStream);
+          alice.did, DwnMessageName.RecordsWrite, failedCredentialResponse.message, failedCredentialResponse.dataStream);
         expect(failedCredentialResponseReply.status.code).to.equal(401);
         expect(failedCredentialResponseReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRuleSet);
 
@@ -1203,7 +1241,7 @@ describe('RecordsWriteHandler.handle()', () => {
           data
         });
         const credentialApplicationReply = await dwn.processMessage(
-          alice.did, credentialApplication.message, credentialApplication.dataStream);
+          alice.did, DwnMessageName.RecordsWrite, credentialApplication.message, credentialApplication.dataStream);
         expect(credentialApplicationReply.status.code).to.equal(202);
 
         // Try and fail to write another 'credentialApplication' below the first 'credentialApplication'
@@ -1218,7 +1256,7 @@ describe('RecordsWriteHandler.handle()', () => {
           data
         });
         const failedCredentialApplicationReply2 = await dwn.processMessage(
-          alice.did, failedCredentialApplication.message, failedCredentialApplication.dataStream);
+          alice.did, DwnMessageName.RecordsWrite, failedCredentialApplication.message, failedCredentialApplication.dataStream);
         expect(failedCredentialApplicationReply2.status.code).to.equal(401);
         expect(failedCredentialApplicationReply2.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRuleSet);
 
@@ -1233,7 +1271,8 @@ describe('RecordsWriteHandler.handle()', () => {
           parentId     : credentialApplication.message.recordId,
           data
         });
-        const credentialResponseReply = await dwn.processMessage(alice.did, credentialResponse.message, credentialResponse.dataStream);
+        const credentialResponseReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, credentialResponse.message, credentialResponse.dataStream);
         expect(credentialResponseReply.status.code).to.equal(202);
 
         // Try and fail to write a 'credentialResponse' below 'credentialApplication/credentialResponse'
@@ -1249,7 +1288,7 @@ describe('RecordsWriteHandler.handle()', () => {
           data
         });
         const nestedCredentialApplicationReply = await dwn.processMessage(
-          alice.did, nestedCredentialApplication.message, nestedCredentialApplication.dataStream);
+          alice.did, DwnMessageName.RecordsWrite, nestedCredentialApplication.message, nestedCredentialApplication.dataStream);
         expect(nestedCredentialApplicationReply.status.code).to.equal(401);
         expect(nestedCredentialApplicationReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRuleSet);
       });
@@ -1265,7 +1304,7 @@ describe('RecordsWriteHandler.handle()', () => {
           protocolDefinition
         });
 
-        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
+        const protocolConfigureReply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolConfig.message, protocolConfig.dataStream);
         expect(protocolConfigureReply.status.code).to.equal(202);
 
         // test that Alice is allowed to write to her own DWN
@@ -1280,7 +1319,8 @@ describe('RecordsWriteHandler.handle()', () => {
           data
         });
 
-        let reply = await dwn.processMessage(alice.did, aliceWriteMessageData.message, aliceWriteMessageData.dataStream);
+        let reply = await dwn.processMessage(
+          alice.did, DwnMessageName.RecordsWrite, aliceWriteMessageData.message, aliceWriteMessageData.dataStream);
         expect(reply.status.code).to.equal(202);
 
         // test that Bob is not allowed to write to Alice's DWN
@@ -1295,7 +1335,7 @@ describe('RecordsWriteHandler.handle()', () => {
           data
         });
 
-        reply = await dwn.processMessage(alice.did, bobWriteMessageData.message, bobWriteMessageData.dataStream);
+        reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, bobWriteMessageData.message, bobWriteMessageData.dataStream);
         expect(reply.status.code).to.equal(401);
         expect(reply.status.detail).to.contain(`no action rule defined for Write`);
       });
@@ -1322,7 +1362,8 @@ describe('RecordsWriteHandler.handle()', () => {
           protocolDefinition : invalidProtocolDefinition
         });
 
-        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
+        const protocolConfigureReply =
+          await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolConfig.message, protocolConfig.dataStream);
         expect(protocolConfigureReply.status.code).to.equal(202);
 
         // simulate Alice's VC application to an issuer
@@ -1337,7 +1378,8 @@ describe('RecordsWriteHandler.handle()', () => {
         });
         const contextId = await messageDataWithIssuerA.recordsWrite.getEntryId();
 
-        let reply = await dwn.processMessage(alice.did, messageDataWithIssuerA.message, messageDataWithIssuerA.dataStream);
+        let reply = await dwn.processMessage(
+          alice.did, DwnMessageName.RecordsWrite, messageDataWithIssuerA.message, messageDataWithIssuerA.dataStream);
         expect(reply.status.code).to.equal(202);
 
         // simulate issuer attempting to respond to Alice's VC application
@@ -1352,7 +1394,8 @@ describe('RecordsWriteHandler.handle()', () => {
           data
         });
 
-        reply = await dwn.processMessage(alice.did, invalidResponseByIssuerA.message, invalidResponseByIssuerA.dataStream);
+        reply = await dwn.processMessage(
+          alice.did, DwnMessageName.RecordsWrite, invalidResponseByIssuerA.message, invalidResponseByIssuerA.dataStream);
         expect(reply.status.code).to.equal(401);
         expect(reply.status.detail).to.contain('mismatching record schema');
       });
@@ -1374,7 +1417,8 @@ describe('RecordsWriteHandler.handle()', () => {
           protocolDefinition : protocolDefinition
         });
 
-        const protocolConfigureReply = await dwn.processMessage(pfi.did, protocolConfig.message, protocolConfig.dataStream);
+        const protocolConfigureReply =
+          await dwn.processMessage(pfi.did, DwnMessageName.ProtocolsConfigure, protocolConfig.message, protocolConfig.dataStream);
         expect(protocolConfigureReply.status.code).to.equal(202);
 
         // simulate Alice's ask and PFI's offer already occurred
@@ -1389,7 +1433,8 @@ describe('RecordsWriteHandler.handle()', () => {
         });
         const contextId = await askMessageData.recordsWrite.getEntryId();
 
-        let reply = await dwn.processMessage(pfi.did, askMessageData.message, askMessageData.dataStream);
+        let reply = await dwn.processMessage(
+          pfi.did, DwnMessageName.RecordsWrite, askMessageData.message, askMessageData.dataStream);
         expect(reply.status.code).to.equal(202);
 
         const offerMessageData = await TestDataGenerator.generateRecordsWrite({
@@ -1403,7 +1448,8 @@ describe('RecordsWriteHandler.handle()', () => {
           data
         });
 
-        reply = await dwn.processMessage(pfi.did, offerMessageData.message, offerMessageData.dataStream);
+        reply = await dwn.processMessage(
+          pfi.did, DwnMessageName.RecordsWrite, offerMessageData.message, offerMessageData.dataStream);
         expect(reply.status.code).to.equal(202);
 
         // the actual test: making sure fulfillment message is accepted
@@ -1417,7 +1463,8 @@ describe('RecordsWriteHandler.handle()', () => {
           protocolPath : 'ask/offer/fulfillment',
           data
         });
-        reply = await dwn.processMessage(pfi.did, fulfillmentMessageData.message, fulfillmentMessageData.dataStream);
+        reply = await dwn.processMessage(
+          pfi.did, DwnMessageName.RecordsWrite, fulfillmentMessageData.message, fulfillmentMessageData.dataStream);
         expect(reply.status.code).to.equal(202);
 
         // verify the fulfillment message is stored
@@ -1428,7 +1475,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
         // verify the data is written
         const recordsQueryReply = await dwn.processMessage(
-          pfi.did, recordsQueryMessageData.message);
+          pfi.did, DwnMessageName.RecordsQuery, recordsQueryMessageData.message);
         expect(recordsQueryReply.status.code).to.equal(200);
         expect(recordsQueryReply.entries?.length).to.equal(1);
         expect((recordsQueryReply.entries![0] as RecordsWriteMessage).descriptor.dataCid)
@@ -1453,7 +1500,8 @@ describe('RecordsWriteHandler.handle()', () => {
           protocolDefinition : protocolDefinition
         });
 
-        const protocolConfigureReply = await dwn.processMessage(pfi.did, protocolConfig.message, protocolConfig.dataStream);
+        const protocolConfigureReply =
+          await dwn.processMessage(pfi.did, DwnMessageName.ProtocolsConfigure, protocolConfig.message, protocolConfig.dataStream);
         expect(protocolConfigureReply.status.code).to.equal(202);
 
         // simulate Alice's ask
@@ -1468,7 +1516,8 @@ describe('RecordsWriteHandler.handle()', () => {
         });
         const contextId = await askMessageData.recordsWrite.getEntryId();
 
-        let reply = await dwn.processMessage(pfi.did, askMessageData.message, askMessageData.dataStream);
+        let reply = await dwn.processMessage(
+          pfi.did, DwnMessageName.RecordsWrite, askMessageData.message, askMessageData.dataStream);
         expect(reply.status.code).to.equal(202);
 
         // the actual test: making sure fulfillment message fails
@@ -1483,7 +1532,8 @@ describe('RecordsWriteHandler.handle()', () => {
           data
         });
 
-        reply = await dwn.processMessage(pfi.did, fulfillmentMessageData.message, fulfillmentMessageData.dataStream);
+        reply = await dwn.processMessage(
+          pfi.did, DwnMessageName.RecordsWrite, fulfillmentMessageData.message, fulfillmentMessageData.dataStream);
         expect(reply.status.code).to.equal(401);
         expect(reply.status.detail).to.contain('no parent found');
       });
@@ -1500,7 +1550,8 @@ describe('RecordsWriteHandler.handle()', () => {
           protocolDefinition
         });
 
-        const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolsConfigureReply =
+          await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolsConfigureReply.status.code).to.equal(202);
 
         const bobMessageBytes = Encoder.stringToBytes('message from bob');
@@ -1575,7 +1626,7 @@ describe('RecordsWriteHandler.handle()', () => {
         };
 
         // Send records write message
-        const reply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+        const reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, recordsWrite.message, recordsWrite.dataStream);
         expect(reply.status.code).to.equal(400);
         expect(reply.status.detail).to.contain(DwnErrorCode.UrlProtocolNotNormalized);
       });
@@ -1597,7 +1648,7 @@ describe('RecordsWriteHandler.handle()', () => {
           data,
         });
 
-        const reply = await dwn.processMessage(alice.did, message, dataStream);
+        const reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, message, dataStream);
         expect(reply.status.code).to.equal(202);
 
         expect(ArrayUtility.fromAsyncGenerator(dataForCid.db.keys())).to.eventually.eql([ dataCid ]);
@@ -1610,7 +1661,8 @@ describe('RecordsWriteHandler.handle()', () => {
           author: alice,
           protocolDefinition
         });
-        const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolWriteReply = await dwn.processMessage(
+          alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolWriteReply.status.code).to.equal(202);
 
         // bob learns of metadata (ie. dataCid) of alice's secret data,
@@ -1625,7 +1677,8 @@ describe('RecordsWriteHandler.handle()', () => {
           dataSize,
           recipient    : alice.did
         });
-        const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
+        const imageReply = await dwn.processMessage(
+          alice.did, DwnMessageName.RecordsWrite, imageRecordsWrite.message, imageRecordsWrite.dataStream);
         expect(imageReply.status.code).to.equal(400); // should be disallowed
         expect(imageReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataStream);
 
@@ -1662,7 +1715,7 @@ describe('RecordsWriteHandler.handle()', () => {
         published     : true,
         data,
       });
-      const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message);
+      const recordsWriteReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, recordsWrite.message);
       expect(recordsWriteReply.status.code).to.equal(400);
       expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingData);
     });
@@ -1682,14 +1735,16 @@ describe('RecordsWriteHandler.handle()', () => {
           author: alice,
           data
         });
-        const aliceWrite1Reply = await dwn.processMessage(alice.did, aliceWrite1Data.message, aliceWrite1Data.dataStream);
+        const aliceWrite1Reply = await dwn.processMessage(
+          alice.did, DwnMessageName.RecordsWrite, aliceWrite1Data.message, aliceWrite1Data.dataStream);
         expect(aliceWrite1Reply.status.code).to.equal(202);
 
         const aliceQueryWrite1AfterAliceWrite1Data = await TestDataGenerator.generateRecordsQuery({
           author : alice,
           filter : { recordId: aliceWrite1Data.message.recordId }
         });
-        const aliceQueryWrite1AfterAliceWrite1Reply = await dwn.processMessage(alice.did, aliceQueryWrite1AfterAliceWrite1Data.message);
+        const aliceQueryWrite1AfterAliceWrite1Reply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsQuery, aliceQueryWrite1AfterAliceWrite1Data.message);
         expect(aliceQueryWrite1AfterAliceWrite1Reply.status.code).to.equal(200);
         expect(aliceQueryWrite1AfterAliceWrite1Reply.entries?.length).to.equal(1);
         expect(aliceQueryWrite1AfterAliceWrite1Reply.entries![0].encodedData).to.equal(encodedData);
@@ -1700,14 +1755,15 @@ describe('RecordsWriteHandler.handle()', () => {
           author: alice,
           data
         });
-        const aliceWrite2Reply = await dwn.processMessage(alice.did, aliceWrite2Data.message, aliceWrite2Data.dataStream);
+        const aliceWrite2Reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, aliceWrite2Data.message, aliceWrite2Data.dataStream);
         expect(aliceWrite2Reply.status.code).to.equal(202);
 
         const aliceQueryWrite1AfterAliceWrite2Data = await TestDataGenerator.generateRecordsQuery({
           author : alice,
           filter : { recordId: aliceWrite1Data.message.recordId }
         });
-        const aliceQueryWrite1AfterAliceWrite2Reply = await dwn.processMessage(alice.did, aliceQueryWrite1AfterAliceWrite2Data.message);
+        const aliceQueryWrite1AfterAliceWrite2Reply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsQuery, aliceQueryWrite1AfterAliceWrite2Data.message);
         expect(aliceQueryWrite1AfterAliceWrite2Reply.status.code).to.equal(200);
         expect(aliceQueryWrite1AfterAliceWrite2Reply.entries?.length).to.equal(1);
         expect(aliceQueryWrite1AfterAliceWrite2Reply.entries![0].encodedData).to.equal(encodedData);
@@ -1716,7 +1772,8 @@ describe('RecordsWriteHandler.handle()', () => {
           author : alice,
           filter : { recordId: aliceWrite2Data.message.recordId }
         });
-        const aliceQueryWrite2AfterAliceWrite2Reply = await dwn.processMessage(alice.did, aliceQueryWrite2AfterAliceWrite2Data.message);
+        const aliceQueryWrite2AfterAliceWrite2Reply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsQuery, aliceQueryWrite2AfterAliceWrite2Data.message);
         expect(aliceQueryWrite2AfterAliceWrite2Reply.status.code).to.equal(200);
         expect(aliceQueryWrite2AfterAliceWrite2Reply.entries?.length).to.equal(1);
         expect(aliceQueryWrite2AfterAliceWrite2Reply.entries![0].encodedData).to.equal(encodedData);
@@ -1744,14 +1801,16 @@ describe('RecordsWriteHandler.handle()', () => {
           author: alice,
           data
         });
-        const aliceWriteReply = await dwn.processMessage(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
+        const aliceWriteReply = await dwn.processMessage(
+          alice.did, DwnMessageName.RecordsWrite, aliceWriteData.message, aliceWriteData.dataStream);
         expect(aliceWriteReply.status.code).to.equal(202);
 
         const aliceQueryWriteAfterAliceWriteData = await TestDataGenerator.generateRecordsQuery({
           author : alice,
           filter : { recordId: aliceWriteData.message.recordId }
         });
-        const aliceQueryWriteAfterAliceWriteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterAliceWriteData.message);
+        const aliceQueryWriteAfterAliceWriteReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsQuery, aliceQueryWriteAfterAliceWriteData.message);
         expect(aliceQueryWriteAfterAliceWriteReply.status.code).to.equal(200);
         expect(aliceQueryWriteAfterAliceWriteReply.entries?.length).to.equal(1);
         expect(aliceQueryWriteAfterAliceWriteReply.entries![0].encodedData).to.equal(encodedData);
@@ -1761,14 +1820,15 @@ describe('RecordsWriteHandler.handle()', () => {
           author: bob,
           data
         });
-        const bobWriteReply = await dwn.processMessage(bob.did, bobWriteData.message, bobWriteData.dataStream);
+        const bobWriteReply = await dwn.processMessage(bob.did, DwnMessageName.RecordsWrite, bobWriteData.message, bobWriteData.dataStream);
         expect(bobWriteReply.status.code).to.equal(202);
 
         const aliceQueryWriteAfterBobWriteData = await TestDataGenerator.generateRecordsQuery({
           author : alice,
           filter : { recordId: aliceWriteData.message.recordId }
         });
-        const aliceQueryWriteAfterBobWriteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterBobWriteData.message);
+        const aliceQueryWriteAfterBobWriteReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsQuery, aliceQueryWriteAfterBobWriteData.message);
         expect(aliceQueryWriteAfterBobWriteReply.status.code).to.equal(200);
         expect(aliceQueryWriteAfterBobWriteReply.entries?.length).to.equal(1);
         expect(aliceQueryWriteAfterBobWriteReply.entries![0].encodedData).to.equal(encodedData);
@@ -1777,7 +1837,8 @@ describe('RecordsWriteHandler.handle()', () => {
           author : bob,
           filter : { recordId: bobWriteData.message.recordId }
         });
-        const bobQueryWriteAfterBobWriteReply = await dwn.processMessage(bob.did, bobQueryWriteAfterBobWriteData.message);
+        const bobQueryWriteAfterBobWriteReply =
+          await dwn.processMessage(bob.did, DwnMessageName.RecordsQuery, bobQueryWriteAfterBobWriteData.message);
         expect(bobQueryWriteAfterBobWriteReply.status.code).to.equal(200);
         expect(bobQueryWriteAfterBobWriteReply.entries?.length).to.equal(1);
         expect(bobQueryWriteAfterBobWriteReply.entries![0].encodedData).to.equal(encodedData);
@@ -1806,14 +1867,16 @@ describe('RecordsWriteHandler.handle()', () => {
           author: alice,
           data
         });
-        const aliceWriteReply = await dwn.processMessage(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
+        const aliceWriteReply = await dwn.processMessage(
+          alice.did, DwnMessageName.RecordsWrite, aliceWriteData.message, aliceWriteData.dataStream);
         expect(aliceWriteReply.status.code).to.equal(202);
 
         const aliceQueryWriteAfterAliceWriteData = await TestDataGenerator.generateRecordsQuery({
           author : alice,
           filter : { recordId: aliceWriteData.message.recordId }
         });
-        const aliceQueryWriteAfterAliceWriteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterAliceWriteData.message);
+        const aliceQueryWriteAfterAliceWriteReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsQuery, aliceQueryWriteAfterAliceWriteData.message);
         expect(aliceQueryWriteAfterAliceWriteReply.status.code).to.equal(200);
         expect(aliceQueryWriteAfterAliceWriteReply.entries?.length).to.equal(1);
         expect(aliceQueryWriteAfterAliceWriteReply.entries![0].encodedData).to.equal(encodedData);
@@ -1826,7 +1889,7 @@ describe('RecordsWriteHandler.handle()', () => {
           dataCid,
           dataSize : 4
         });
-        const bobAssociateReply = await dwn.processMessage(bob.did, bobAssociateData.message, bobAssociateData.dataStream);
+        const bobAssociateReply = await dwn.processMessage(bob.did, DwnMessageName.RecordsWrite, bobAssociateData.message, bobAssociateData.dataStream);
         expect(bobAssociateReply.status.code).to.equal(400); // expecting an error
         expect(bobAssociateReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataStream);
 
@@ -1834,7 +1897,8 @@ describe('RecordsWriteHandler.handle()', () => {
           author : alice,
           filter : { recordId: aliceWriteData.message.recordId }
         });
-        const aliceQueryWriteAfterBobAssociateReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterBobAssociateData.message);
+        const aliceQueryWriteAfterBobAssociateReply =
+          await dwn.processMessage(alice.did, DwnMessageName.RecordsQuery, aliceQueryWriteAfterBobAssociateData.message);
         expect(aliceQueryWriteAfterBobAssociateReply.status.code).to.equal(200);
         expect(aliceQueryWriteAfterBobAssociateReply.entries?.length).to.equal(1);
         expect(aliceQueryWriteAfterBobAssociateReply.entries![0].encodedData).to.equal(encodedData);
@@ -1844,7 +1908,8 @@ describe('RecordsWriteHandler.handle()', () => {
           author : bob,
           filter : { recordId: bobAssociateData.message.recordId }
         });
-        const bobQueryAssociateAfterBobAssociateReply = await dwn.processMessage(bob.did, bobQueryAssociateAfterBobAssociateData.message);
+        const bobQueryAssociateAfterBobAssociateReply =
+          await dwn.processMessage(bob.did, DwnMessageName.RecordsQuery, bobQueryAssociateAfterBobAssociateData.message);
         expect(bobQueryAssociateAfterBobAssociateReply.status.code).to.equal(200);
         expect(bobQueryAssociateAfterBobAssociateReply.entries?.length).to.equal(0);
 

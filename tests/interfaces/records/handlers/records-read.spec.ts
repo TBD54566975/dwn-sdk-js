@@ -21,6 +21,7 @@ import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
 import { DataStream, DidResolver, Dwn, Encoder, Jws, Records, RecordsDelete, RecordsRead } from '../../../../src/index.js';
+import { DwnMessageName } from '../../../../src/core/message.js';
 
 chai.use(chaiAsPromised);
 
@@ -71,7 +72,7 @@ describe('RecordsReadHandler.handle()', () => {
 
       // insert data
       const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: alice });
-      const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+      const writeReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, message, dataStream);
       expect(writeReply.status.code).to.equal(202);
 
       // testing RecordsRead
@@ -94,7 +95,7 @@ describe('RecordsReadHandler.handle()', () => {
 
       // insert data
       const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
-      const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+      const writeReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, message, dataStream);
       expect(writeReply.status.code).to.equal(202);
 
       // testing RecordsRead
@@ -105,7 +106,7 @@ describe('RecordsReadHandler.handle()', () => {
         authorizationSignatureInput : Jws.createSignatureInput(bob)
       });
 
-      const readReply = await dwn.processMessage(alice.did, recordsRead.message);
+      const readReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsRead, recordsRead.message);
       expect(readReply.status.code).to.equal(401);
     });
 
@@ -114,7 +115,7 @@ describe('RecordsReadHandler.handle()', () => {
 
       // insert public data
       const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true });
-      const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+      const writeReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, message, dataStream);
       expect(writeReply.status.code).to.equal(202);
 
       // testing public RecordsRead
@@ -135,7 +136,7 @@ describe('RecordsReadHandler.handle()', () => {
 
       // insert public data
       const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true });
-      const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+      const writeReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, message, dataStream);
       expect(writeReply.status.code).to.equal(202);
 
       // testing public RecordsRead
@@ -167,7 +168,7 @@ describe('RecordsReadHandler.handle()', () => {
           author: alice,
           protocolDefinition
         });
-        const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolWriteReply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolWriteReply.status.code).to.equal(202);
 
         // Alice writes image to her DWN
@@ -181,7 +182,7 @@ describe('RecordsReadHandler.handle()', () => {
           data         : encodedImage,
           recipient    : alice.did
         });
-        const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
+        const imageReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, imageRecordsWrite.message, imageRecordsWrite.dataStream);
         expect(imageReply.status.code).to.equal(202);
 
         // Bob (anyone) reads the image that Alice wrote
@@ -189,7 +190,7 @@ describe('RecordsReadHandler.handle()', () => {
           recordId                    : imageRecordsWrite.message.recordId,
           authorizationSignatureInput : Jws.createSignatureInput(bob)
         });
-        const imageReadReply = await dwn.processMessage(alice.did, imageRecordsRead.message);
+        const imageReadReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsRead, imageRecordsRead.message);
         expect(imageReadReply.status.code).to.equal(200);
       });
 
@@ -208,7 +209,7 @@ describe('RecordsReadHandler.handle()', () => {
           author: alice,
           protocolDefinition
         });
-        const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolWriteReply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolWriteReply.status.code).to.equal(202);
 
         // Alice writes an email with Bob as recipient
@@ -222,7 +223,7 @@ describe('RecordsReadHandler.handle()', () => {
           data         : encodedEmail,
           recipient    : bob.did
         });
-        const imageReply = await dwn.processMessage(alice.did, emailRecordsWrite.message, emailRecordsWrite.dataStream);
+        const imageReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, emailRecordsWrite.message, emailRecordsWrite.dataStream);
         expect(imageReply.status.code).to.equal(202);
 
         // Bob reads Alice's email
@@ -230,7 +231,7 @@ describe('RecordsReadHandler.handle()', () => {
           recordId                    : emailRecordsWrite.message.recordId,
           authorizationSignatureInput : Jws.createSignatureInput(bob)
         });
-        const bobReadReply = await dwn.processMessage(alice.did, bobRecordsRead.message);
+        const bobReadReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsRead, bobRecordsRead.message);
         expect(bobReadReply.status.code).to.equal(200);
 
         // ImposterBob is not able to read Alice's email
@@ -238,7 +239,7 @@ describe('RecordsReadHandler.handle()', () => {
           recordId                    : emailRecordsWrite.message.recordId,
           authorizationSignatureInput : Jws.createSignatureInput(imposterBob)
         });
-        const imposterReadReply = await dwn.processMessage(alice.did, imposterRecordsRead.message);
+        const imposterReadReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsRead, imposterRecordsRead.message);
         expect(imposterReadReply.status.code).to.equal(401);
         expect(imposterReadReply.status.detail).to.include(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
       });
@@ -257,7 +258,7 @@ describe('RecordsReadHandler.handle()', () => {
           author: alice,
           protocolDefinition
         });
-        const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolWriteReply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolWriteReply.status.code).to.equal(202);
 
         // Alice writes an email with Bob as recipient
@@ -271,7 +272,7 @@ describe('RecordsReadHandler.handle()', () => {
           data         : encodedEmail,
           recipient    : alice.did
         });
-        const imageReply = await dwn.processMessage(alice.did, emailRecordsWrite.message, emailRecordsWrite.dataStream);
+        const imageReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, emailRecordsWrite.message, emailRecordsWrite.dataStream);
         expect(imageReply.status.code).to.equal(202);
 
         // Bob reads the email he just sent
@@ -279,7 +280,7 @@ describe('RecordsReadHandler.handle()', () => {
           recordId                    : emailRecordsWrite.message.recordId,
           authorizationSignatureInput : Jws.createSignatureInput(bob)
         });
-        const bobReadReply = await dwn.processMessage(alice.did, bobRecordsRead.message);
+        const bobReadReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsRead, bobRecordsRead.message);
         expect(bobReadReply.status.code).to.equal(200);
 
         // ImposterBob is not able to read the email
@@ -287,7 +288,7 @@ describe('RecordsReadHandler.handle()', () => {
           recordId                    : emailRecordsWrite.message.recordId,
           authorizationSignatureInput : Jws.createSignatureInput(imposterBob)
         });
-        const imposterReadReply = await dwn.processMessage(alice.did, imposterRecordsRead.message);
+        const imposterReadReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsRead, imposterRecordsRead.message);
         expect(imposterReadReply.status.code).to.equal(401);
         expect(imposterReadReply.status.detail).to.include(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
       });
@@ -301,7 +302,7 @@ describe('RecordsReadHandler.handle()', () => {
         authorizationSignatureInput : Jws.createSignatureInput(alice)
       });
 
-      const readReply = await dwn.processMessage(alice.did, recordsRead.message);
+      const readReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsRead, recordsRead.message);
       expect(readReply.status.code).to.equal(404);
     });
 
@@ -310,7 +311,7 @@ describe('RecordsReadHandler.handle()', () => {
 
       // insert public data
       const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true });
-      const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+      const writeReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, message, dataStream);
       expect(writeReply.status.code).to.equal(202);
 
       // ensure data is inserted
@@ -319,7 +320,7 @@ describe('RecordsReadHandler.handle()', () => {
         filter : { recordId: message.recordId }
       });
 
-      const reply = await dwn.processMessage(alice.did, queryData.message);
+      const reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsQuery, queryData.message);
       expect(reply.status.code).to.equal(200);
       expect(reply.entries?.length).to.equal(1);
 
@@ -329,7 +330,7 @@ describe('RecordsReadHandler.handle()', () => {
         authorizationSignatureInput : Jws.createSignatureInput(alice)
       });
 
-      const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
+      const deleteReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsDelete, recordsDelete.message);
       expect(deleteReply.status.code).to.equal(202);
 
       // RecordsRead
@@ -338,7 +339,7 @@ describe('RecordsReadHandler.handle()', () => {
         authorizationSignatureInput : Jws.createSignatureInput(alice)
       });
 
-      const readReply = await dwn.processMessage(alice.did, recordsRead.message);
+      const readReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsRead, recordsRead.message);
       expect(readReply.status.code).to.equal(404);
     });
 
@@ -349,7 +350,7 @@ describe('RecordsReadHandler.handle()', () => {
 
       // insert data
       const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
-      const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+      const writeReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, message, dataStream);
       expect(writeReply.status.code).to.equal(202);
 
       // testing RecordsRead
@@ -358,7 +359,7 @@ describe('RecordsReadHandler.handle()', () => {
         authorizationSignatureInput : Jws.createSignatureInput(alice)
       });
 
-      const readReply = await dwn.processMessage(alice.did, recordsRead.message);
+      const readReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsRead, recordsRead.message);
       expect(readReply.status.code).to.equal(404);
     });
 
@@ -393,7 +394,7 @@ describe('RecordsReadHandler.handle()', () => {
           encryptionInput
         });
 
-        const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+        const writeReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, message, dataStream);
         expect(writeReply.status.code).to.equal(202);
 
         const recordsRead = await RecordsRead.create({
@@ -459,7 +460,7 @@ describe('RecordsReadHandler.handle()', () => {
           protocolDefinition
         });
 
-        const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolsConfigureReply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolsConfigureReply.status.code).to.equal(202);
 
         // encrypt bob's message
@@ -493,7 +494,7 @@ describe('RecordsReadHandler.handle()', () => {
           }
         );
 
-        const bobWriteReply = await dwn.processMessage(alice.did, message, dataStream);
+        const bobWriteReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, message, dataStream);
         expect(bobWriteReply.status.code).to.equal(202);
 
         const recordsRead = await RecordsRead.create({
