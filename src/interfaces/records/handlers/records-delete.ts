@@ -1,3 +1,4 @@
+import type { BaseMessageReply } from '../../../core/message-reply.js';
 import type { EventLog } from '../../../types/event-log.js';
 import type { MethodHandler } from '../../../types/method-handler.js';
 import type { RecordsDeleteMessage } from '../../../types/records-types.js';
@@ -6,25 +7,25 @@ import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
-import { BaseMessageReply, CommonMessageReply } from '../../../core/message-reply.js';
+import { messageReplyFromError } from '../../../core/message-reply.js';
 import { RecordsDelete } from '../messages/records-delete.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
 
-export class RecordsDeleteHandler implements MethodHandler {
+export class RecordsDeleteHandler implements MethodHandler<'RecordsDelete'> {
 
   constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore, private eventLog: EventLog) { }
 
   public async handle({
     tenant,
     message
-  }: { tenant: string, message: RecordsDeleteMessage}): Promise<CommonMessageReply> {
+  }: { tenant: string, message: RecordsDeleteMessage}): Promise<BaseMessageReply> {
 
     let recordsDelete: RecordsDelete;
     try {
       recordsDelete = await RecordsDelete.parse(message);
     } catch (e) {
-      return BaseMessageReply.fromError(e, 400);
+      return messageReplyFromError(e, 400);
     }
 
     // authentication & authorization
@@ -32,7 +33,7 @@ export class RecordsDeleteHandler implements MethodHandler {
       await authenticate(message.authorization, this.didResolver);
       await recordsDelete.authorize(tenant);
     } catch (e) {
-      return BaseMessageReply.fromError(e, 401);
+      return messageReplyFromError(e, 401);
     }
 
     // get existing records matching the `recordId`
@@ -55,16 +56,16 @@ export class RecordsDeleteHandler implements MethodHandler {
     }
 
     if (!incomingMessageIsNewest) {
-      return new CommonMessageReply({
+      return {
         status: { code: 409, detail: 'Conflict' }
-      });
+      };
     }
 
     // return Not Found if record does not exist or is already deleted
     if (newestExistingMessage === undefined || newestExistingMessage.descriptor.method === DwnMethodName.Delete) {
-      return new CommonMessageReply({
+      return {
         status: { code: 404, detail: 'Not Found' }
-      });
+      };
     }
 
     const indexes = await constructIndexes(tenant, recordsDelete);
@@ -76,9 +77,9 @@ export class RecordsDeleteHandler implements MethodHandler {
     // delete all existing messages that are not newest, except for the initial write
     await deleteAllOlderMessagesButKeepInitialWrite(tenant, existingMessages, newestMessage, this.messageStore, this.dataStore, this.eventLog);
 
-    const messageReply = new CommonMessageReply({
+    const messageReply = {
       status: { code: 202, detail: 'Accepted' }
-    });
+    };
     return messageReply;
   };
 }

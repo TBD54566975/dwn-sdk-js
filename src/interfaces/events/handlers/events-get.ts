@@ -5,12 +5,12 @@ import type { MethodHandler } from '../../../types/method-handler.js';
 import type { EventsGetMessage, EventsGetReply } from '../../../types/event-types.js';
 
 import { EventsGet } from '../messages/events-get.js';
-import { BaseMessageReply } from '../../../core/message-reply.js';
 import { authenticate, authorize } from '../../../core/auth.js';
+import { messageReplyFromError } from '../../../core/message-reply.js';
 
 type HandleArgs = {tenant: string, message: EventsGetMessage};
 
-export class EventsGetHandler implements MethodHandler {
+export class EventsGetHandler implements MethodHandler<'EventsGet'> {
   constructor(private didResolver: DidResolver, private eventLog: EventLog) {}
 
   public async handle({ tenant, message }: HandleArgs): Promise<EventsGetReply> {
@@ -19,14 +19,14 @@ export class EventsGetHandler implements MethodHandler {
     try {
       eventsGet = await EventsGet.parse(message);
     } catch (e) {
-      return BaseMessageReply.fromError(e, 400);
+      return messageReplyFromError(e, 400);
     }
 
     try {
       await authenticate(message.authorization, this.didResolver);
       await authorize(tenant, eventsGet);
     } catch (e) {
-      return BaseMessageReply.fromError(e, 401);
+      return messageReplyFromError(e, 401);
     }
 
     // if watermark was provided in message, get all events _after_ the watermark.

@@ -4,13 +4,13 @@ import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from '../../../types/records-types.js';
 
 import { authenticate } from '../../../core/auth.js';
+import { messageReplyFromError } from '../../../core/message-reply.js';
 import { Message } from '../../../core/message.js';
-import { BaseMessageReply, CommonMessageReply } from '../../../core/message-reply.js';
 import { RecordsRead } from '../messages/records-read.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
 
-export class RecordsReadHandler implements MethodHandler {
+export class RecordsReadHandler implements MethodHandler<'RecordsRead'> {
 
   constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore) { }
 
@@ -23,7 +23,7 @@ export class RecordsReadHandler implements MethodHandler {
     try {
       recordsRead = await RecordsRead.parse(message);
     } catch (e) {
-      return BaseMessageReply.fromError(e, 400);
+      return messageReplyFromError(e, 400);
     }
 
     // authentication
@@ -32,7 +32,7 @@ export class RecordsReadHandler implements MethodHandler {
         await authenticate(message.authorization!, this.didResolver);
       }
     } catch (e) {
-      return BaseMessageReply.fromError(e, 401);
+      return messageReplyFromError(e, 401);
     }
 
     // get existing messages matching `recordId` so we can perform authorization
@@ -46,25 +46,25 @@ export class RecordsReadHandler implements MethodHandler {
 
     // if no record found or it has been deleted
     if (newestExistingMessage === undefined || newestExistingMessage.descriptor.method === DwnMethodName.Delete) {
-      return new CommonMessageReply({
+      return {
         status: { code: 404, detail: 'Not Found' }
-      });
+      };
     }
 
     const newestRecordsWrite = newestExistingMessage as RecordsWriteMessage;
     try {
       await recordsRead.authorize(tenant, await RecordsWrite.parse(newestRecordsWrite), this.messageStore);
     } catch (error) {
-      return BaseMessageReply.fromError(error, 401);
+      return messageReplyFromError(error, 401);
     }
 
     const messageCid = await Message.getCid(newestRecordsWrite);
     const result = await this.dataStore.get(tenant, messageCid, newestRecordsWrite.descriptor.dataCid);
 
     if (result?.dataStream === undefined) {
-      return new CommonMessageReply({
+      return {
         status: { code: 404, detail: 'Not Found' }
-      });
+      };
     }
 
     const { authorization: _, ...recordsWriteWithoutAuthorization } = newestRecordsWrite; // a trick to stripping away `authorization`

@@ -1,4 +1,4 @@
-import type { BaseMessage } from './message-types.js';
+import type { BaseMessage, QueryResultEntry } from './message-types.js';
 import type { BaseMessageReply } from '../core/message-reply.js';
 import type { DateSort } from '../interfaces/records/messages/records-query.js';
 import type { EncryptionAlgorithm } from '../utils/encryption.js';
@@ -117,6 +117,10 @@ export type RecordsWriteAuthorizationPayload = {
 export type RecordsQueryMessage = BaseMessage & {
   descriptor: RecordsQueryDescriptor;
 };
+
+export type RecordsQueryReply = BaseMessageReply & {
+  entries?: QueryResultEntry[];
+}
 
 export type RecordsReadMessage = {
   authorization?: GeneralJws;

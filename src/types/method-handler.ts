@@ -1,17 +1,16 @@
-import type { BaseMessage } from './message-types.js';
-import type { CommonMessageReply } from '../core/message-reply.js';
 import type { Readable } from 'readable-stream';
+import type { DwnMessage, DwnMessageMap, DwnMessageReply } from './dwn-types.js';
 
 /**
  * Interface that defines a message handler of a specific method.
  */
-export interface MethodHandler {
+export interface MethodHandler<M extends keyof DwnMessageMap> {
   /**
    * Handles the given message and returns a `MessageReply` response.
    */
   handle(input: {
     tenant: string;
-    message: BaseMessage;
+    message: DwnMessage<M>;
     dataStream?: Readable
-  }): Promise<CommonMessageReply>;
+  }): Promise<DwnMessageReply<M>>;
 }

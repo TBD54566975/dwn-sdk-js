@@ -146,27 +146,27 @@ describe('ProtocolsConfigureHandler.handle()', () => {
         = messageDataWithCid.sort((messageDataA, messageDataB) => { return lexicographicalCompare(messageDataA.cid, messageDataB.cid); });
 
       // write the protocol with the middle lexicographic value
-      let reply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, middleWrite.message, middleWrite.dataStream);
-      expect(reply.status.code).to.equal(202);
+      const configureReply1 = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, middleWrite.message, middleWrite.dataStream);
+      expect(configureReply1.status.code).to.equal(202);
 
       // test that the protocol with the smallest lexicographic value cannot be written
-      reply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, oldestWrite.message, oldestWrite.dataStream);
-      expect(reply.status.code).to.equal(409);
+      const configureReply2 = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, oldestWrite.message, oldestWrite.dataStream);
+      expect(configureReply2.status.code).to.equal(409);
 
       // test that the protocol with the largest lexicographic value can be written
-      reply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, newestWrite.message, newestWrite.dataStream);
-      expect(reply.status.code).to.equal(202);
+      const configureReply3 = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, newestWrite.message, newestWrite.dataStream);
+      expect(configureReply3.status.code).to.equal(202);
 
       // test that old protocol message is removed from DB and only the newer protocol message remains
       const queryMessageData = await TestDataGenerator.generateProtocolsQuery({ author: alice, filter: { protocol } });
-      reply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsQuery, queryMessageData.message);
+      const queryReply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsQuery, queryMessageData.message);
 
-      expect(reply.status.code).to.equal(200);
-      expect(reply.entries?.length).to.equal(1);
+      expect(queryReply.status.code).to.equal(200);
+      expect(queryReply.entries?.length).to.equal(1);
 
       const initialDefinition = middleWrite.message.descriptor.definition;
       const expectedDefinition = newestWrite.message.descriptor.definition;
-      const actualDefinition = reply.entries![0]['descriptor']['definition'];
+      const actualDefinition = queryReply.entries![0]['descriptor']['definition'];
       expect(actualDefinition).to.not.deep.equal(initialDefinition);
       expect(actualDefinition).to.deep.equal(expectedDefinition);
     });

@@ -1,3 +1,4 @@
+import type { BaseMessageReply } from '../../../core/message-reply.js';
 import type { DataStore } from '../../../types/data-store.js';
 import type { DidResolver } from '../../../did/did-resolver.js';
 import type { MessageStore } from '../../../types/message-store.js';
@@ -7,14 +8,14 @@ import type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from
 import { DataStream } from '../../../utils/data-stream.js';
 import { DwnConstant } from '../../../core/dwn-constant.js';
 import { Encoder } from '../../../utils/encoder.js';
-import { BaseMessageReply, CommonMessageReply } from '../../../core/message-reply.js';
+import { messageReplyFromError } from '../../../core/message-reply.js';
 import { MessagesGet } from '../messages/messages-get.js';
 import { authenticate, authorize } from '../../../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../core/message.js';
 
 type HandleArgs = { tenant: string, message: MessagesGetMessage };
 
-export class MessagesGetHandler implements MethodHandler {
+export class MessagesGetHandler implements MethodHandler<'MessagesGet'> {
   constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore) {}
 
   public async handle({ tenant, message }: HandleArgs): Promise<MessagesGetReply> {
@@ -23,14 +24,14 @@ export class MessagesGetHandler implements MethodHandler {
     try {
       messagesGet = await MessagesGet.parse(message);
     } catch (e) {
-      return BaseMessageReply.fromError(e, 400);
+      return messageReplyFromError(e, 400);
     }
 
     try {
       await authenticate(message.authorization, this.didResolver);
       await authorize(tenant, messagesGet);
     } catch (e) {
-      return BaseMessageReply.fromError(e, 401);
+      return messageReplyFromError(e, 401);
     }
 
     const promises: Promise<MessagesGetReplyEntry>[] = [];

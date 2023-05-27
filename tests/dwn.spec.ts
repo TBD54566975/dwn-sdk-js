@@ -101,40 +101,31 @@ describe('DWN', () => {
       expect(reply['data']).to.not.exist;
     });
 
-    // it('#191 - regression - should run JSON schema validation', async () => {
-    //   const invalidMessage = {
-    //     descriptor: {
-    //       interface : 'Records',
-    //       method    : 'Write',
-    //     },
-    //     authorization: {}
-    //   };
+    it('#191 - regression - should run JSON schema validation', async () => {
+      const { message } = await TestDataGenerator.generateRecordsWrite();
 
-    //   const validateJsonSchemaSpy = sinon.spy(Message, 'validateJsonSchema');
+      const validateJsonSchemaSpy = sinon.spy(Message, 'validateJsonSchema');
 
-    //   const alice = await DidKeyResolver.generate();
-    //   const reply = await dwn.processMessage(alice.did, DwnMessageName.EventsGet, invalidMessage);
+      const alice = await DidKeyResolver.generate();
+      const reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, message);
 
-    //   sinon.assert.calledOnce(validateJsonSchemaSpy);
+      sinon.assert.calledOnce(validateJsonSchemaSpy);
+    });
 
-    //   expect(reply.status.code).to.equal(400);
-    //   expect(reply.status.detail).to.contain(`must have required property 'recordId'`);
-    // });
+    it('should throw 400 if given no interface or method found in message', async () => {
+      const alice = await DidKeyResolver.generate();
+      const reply1 = await dwn.processMessage(alice.did, undefined ); // missing message entirely, thus missing both `interface` and `method`
+      expect(reply1.status.code).to.equal(400);
+      expect(reply1.status.detail).to.contain('Both interface and method must be present');
 
-    // it('should throw 400 if given no interface or method found in message', async () => {
-    //   const alice = await DidKeyResolver.generate();
-    //   const reply1 = await dwn.processMessage(alice.did, undefined ); // missing message entirely, thus missing both `interface` and `method`
-    //   expect(reply1.status.code).to.equal(400);
-    //   expect(reply1.status.detail).to.contain('Both interface and method must be present');
+      const reply2 = await dwn.processMessage(alice.did, { descriptor: { method: 'anyValue' } }); // missing `interface`
+      expect(reply2.status.code).to.equal(400);
+      expect(reply2.status.detail).to.contain('Both interface and method must be present');
 
-    //   const reply2 = await dwn.processMessage(alice.did, { descriptor: { method: 'anyValue' } }); // missing `interface`
-    //   expect(reply2.status.code).to.equal(400);
-    //   expect(reply2.status.detail).to.contain('Both interface and method must be present');
-
-    //   const reply3 = await dwn.processMessage(alice.did, { descriptor: { interface: 'anyValue' } }); // missing `method`
-    //   expect(reply3.status.code).to.equal(400);
-    //   expect(reply3.status.detail).to.contain('Both interface and method must be present');
-    // });
+      const reply3 = await dwn.processMessage(alice.did, { descriptor: { interface: 'anyValue' } }); // missing `method`
+      expect(reply3.status.code).to.equal(400);
+      expect(reply3.status.detail).to.contain('Both interface and method must be present');
+    });
 
     it('should throw 401 if message is targeted at a non-tenant', async () => {
       // tenant gate that blocks everyone

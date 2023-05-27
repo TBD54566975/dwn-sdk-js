@@ -1,4 +1,4 @@
-import type { BaseMessage } from './types/message-types.js';
+import type { BaseMessageReply } from './core/message-reply.js';
 import type { DataStore } from './types/data-store.js';
 import type { EventLog } from './types/event-log.js';
 import type { MessageStore } from './types/message-store.js';
@@ -15,8 +15,7 @@ import { DataStoreLevel } from './store/data-store-level.js';
 import { DidResolver } from './did/did-resolver.js';
 import { EventLogLevel } from './event-log/event-log-level.js';
 import { EventsGetHandler } from './interfaces/events/handlers/events-get.js';
-import type { CommonMessageReply } from './core/message-reply.js';
-import { BaseMessageReply } from './core/message-reply.js';
+import { messageReplyFromError } from './core/message-reply.js';
 import { MessagesGetHandler } from './interfaces/messages/handlers/messages-get.js';
 import { MessageStoreLevel } from './store/message-store-level.js';
 import { ProtocolsConfigureHandler } from './interfaces/protocols/handlers/protocols-configure.js';
@@ -28,7 +27,7 @@ import { RecordsWriteHandler } from './interfaces/records/handlers/records-write
 import { DwnInterfaceName, DwnMethodName, Message } from './core/message.js';
 
 export class Dwn {
-  private methodHandlers: { [key:string]: MethodHandler };
+  private methodHandlers: { [key: string]: MethodHandler<keyof DwnMessageMap> };
   private didResolver: DidResolver;
   private messageStore: MessageStore;
   private dataStore: DataStore;
@@ -103,7 +102,7 @@ export class Dwn {
     const handlerKey = rawMessage.descriptor.interface + rawMessage.descriptor.method;
     const methodHandlerReply = await this.methodHandlers[handlerKey].handle({
       tenant,
-      message: rawMessage as BaseMessage,
+      message: rawMessage,
       dataStream
     });
 
@@ -139,7 +138,7 @@ export class Dwn {
   /**
    * Privileged method for writing a pruned initial `RecordsWrite` to a DWN without needing to supply associated data.
    */
-  public async synchronizePrunedInitialRecordsWrite(tenant: string, message: RecordsWriteMessage): Promise<CommonMessageReply> {
+  public async synchronizePrunedInitialRecordsWrite(tenant: string, message: RecordsWriteMessage): Promise<BaseMessageReply> {
     const errorMessageReply = await this.preprocessingChecks(tenant, message, DwnInterfaceName.Records + DwnMethodName.Write);
     if (errorMessageReply !== undefined) {
       return errorMessageReply;
@@ -164,9 +163,9 @@ export class Dwn {
   ): Promise<BaseMessageReply | undefined> {
     const isTenant = await this.tenantGate.isTenant(tenant);
     if (!isTenant) {
-      return new BaseMessageReply({
+      return {
         status: { code: 401, detail: `${tenant} is not a tenant` }
-      });
+      };
     }
 
     // Verify interface and method
@@ -174,16 +173,16 @@ export class Dwn {
     const dwnMethod: string = rawMessage?.descriptor?.method ?? '';
     const actualMessageType = dwnInterface + dwnMethod;
     if (expectedMessageType !== actualMessageType) {
-      return new BaseMessageReply({
+      return {
         status: { code: 400, detail: `Expected DWN message type ${expectedMessageType}, received ${actualMessageType}` }
-      });
+      };
     }
 
     // validate message structure
     try {
       Message.validateJsonSchema(rawMessage);
     } catch (error) {
-      return BaseMessageReply.fromError(error, 400);
+      return messageReplyFromError(error, 400);
     }
 
     return undefined;

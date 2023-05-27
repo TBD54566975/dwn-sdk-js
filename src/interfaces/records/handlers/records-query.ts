@@ -1,36 +1,36 @@
 import type { MethodHandler } from '../../../types/method-handler.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
-import type { RecordsQueryMessage, RecordsQueryReplyEntry, RecordsWriteMessage } from '../../../types/records-types.js';
+import type { RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, RecordsWriteMessage } from '../../../types/records-types.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { lexicographicalCompare } from '../../../utils/string.js';
-import { BaseMessageReply, CommonMessageReply } from '../../../core/message-reply.js';
 import type { RecordsWriteMessageWithOptionalEncodedData } from '../../../store/storage-controller.js';
 import { StorageController } from '../../../store/storage-controller.js';
 
 import { DateSort, RecordsQuery } from '../messages/records-query.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
+import { messageReplyFromError } from '../../../core/message-reply.js';
 
-export class RecordsQueryHandler implements MethodHandler {
+export class RecordsQueryHandler implements MethodHandler<'RecordsQuery'> {
 
   constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore) { }
 
   public async handle({
     tenant,
     message
-  }: {tenant: string, message: RecordsQueryMessage}): Promise<CommonMessageReply> {
+  }: {tenant: string, message: RecordsQueryMessage}): Promise<RecordsQueryReply> {
     let recordsQuery: RecordsQuery;
     try {
       recordsQuery = await RecordsQuery.parse(message);
     } catch (e) {
-      return BaseMessageReply.fromError(e, 400);
+      return messageReplyFromError(e, 400);
     }
 
     try {
       await authenticate(message.authorization, this.didResolver);
       await recordsQuery.authorize(tenant);
     } catch (e) {
-      return BaseMessageReply.fromError(e, 401);
+      return messageReplyFromError(e, 401);
     }
 
     let records: RecordsWriteMessageWithOptionalEncodedData[];
@@ -52,10 +52,10 @@ export class RecordsQueryHandler implements MethodHandler {
       entries.push(objectWithRemainingProperties);
     }
 
-    return new CommonMessageReply({
+    return {
       status: { code: 200, detail: 'OK' },
       entries
-    });
+    };
   }
 
   /**

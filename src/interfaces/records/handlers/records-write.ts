@@ -1,3 +1,4 @@
+import type { BaseMessageReply } from '../../../core/message-reply.js';
 import type { EventLog } from '../../../types/event-log.js';
 import type { MethodHandler } from '../../../types/method-handler.js';
 import type { RecordsWriteMessage } from '../../../types/records-types.js';
@@ -6,7 +7,7 @@ import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { deleteAllOlderMessagesButKeepInitialWrite } from '../records-interface.js';
-import { BaseMessageReply, CommonMessageReply } from '../../../core/message-reply.js';
+import { messageReplyFromError } from '../../../core/message-reply.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { DwnError, DwnErrorCode } from '../../../core/dwn-error.js';
 import { DwnInterfaceName, Message } from '../../../core/message.js';
@@ -15,7 +16,7 @@ export type RecordsWriteHandlerOptions = {
   skipDataStorage?: boolean; // used for DWN sync
 };
 
-export class RecordsWriteHandler implements MethodHandler {
+export class RecordsWriteHandler implements MethodHandler<'RecordsWrite'> {
 
   constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore, private eventLog: EventLog) { }
 
@@ -24,12 +25,12 @@ export class RecordsWriteHandler implements MethodHandler {
     message,
     options,
     dataStream
-  }: { tenant: string, message: RecordsWriteMessage, options?: RecordsWriteHandlerOptions, dataStream?: _Readable.Readable}): Promise<CommonMessageReply> {
+  }: { tenant: string, message: RecordsWriteMessage, options?: RecordsWriteHandlerOptions, dataStream?: _Readable.Readable}): Promise<BaseMessageReply> {
     let recordsWrite: RecordsWrite;
     try {
       recordsWrite = await RecordsWrite.parse(message);
     } catch (e) {
-      return BaseMessageReply.fromError(e, 400);
+      return messageReplyFromError(e, 400);
     }
 
     // authentication & authorization
@@ -37,7 +38,7 @@ export class RecordsWriteHandler implements MethodHandler {
       await authenticate(message.authorization, this.didResolver);
       await recordsWrite.authorize(tenant, this.messageStore);
     } catch (e) {
-      return BaseMessageReply.fromError(e, 401);
+      return messageReplyFromError(e, 401);
     }
 
     // get existing messages matching the `recordId`
@@ -54,7 +55,7 @@ export class RecordsWriteHandler implements MethodHandler {
         const initialWrite = await RecordsWrite.getInitialWrite(existingMessages);
         RecordsWrite.verifyEqualityOfImmutableProperties(initialWrite, message);
       } catch (e) {
-        return BaseMessageReply.fromError(e, 400);
+        return messageReplyFromError(e, 400);
       }
     }
 
@@ -70,9 +71,9 @@ export class RecordsWriteHandler implements MethodHandler {
     }
 
     if (!incomingMessageIsNewest) {
-      return new CommonMessageReply({
+      return {
         status: { code: 409, detail: 'Conflict' }
-      });
+      };
     }
 
     const isLatestBaseState = true;
@@ -89,7 +90,7 @@ export class RecordsWriteHandler implements MethodHandler {
           e.code === DwnErrorCode.RecordsWriteMissingData ||
           e.code === DwnErrorCode.RecordsWriteDataCidMismatch ||
           e.code === DwnErrorCode.RecordsWriteDataSizeMismatch) {
-        return BaseMessageReply.fromError(error, 400);
+        return messageReplyFromError(error, 400);
       }
 
       // else throw
@@ -99,9 +100,9 @@ export class RecordsWriteHandler implements MethodHandler {
     await this.messageStore.put(tenant, message, indexes);
     await this.eventLog.append(tenant, await Message.getCid(message));
 
-    const messageReply = new CommonMessageReply({
+    const messageReply = {
       status: { code: 202, detail: 'Accepted' }
-    });
+    };
 
     // delete all existing messages that are not newest, except for the initial write
     await deleteAllOlderMessagesButKeepInitialWrite(tenant, existingMessages, newestMessage, this.messageStore, this.dataStore, this.eventLog);

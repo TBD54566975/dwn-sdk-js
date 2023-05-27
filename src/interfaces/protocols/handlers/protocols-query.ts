@@ -1,35 +1,36 @@
+import type { DwnMessageMap } from '../../../types/dwn-types.js';
 import type { MethodHandler } from '../../../types/method-handler.js';
-import type { ProtocolsQueryMessage } from '../../../types/protocols-types.js';
+import type { ProtocolsQueryMessage, ProtocolsQueryReply } from '../../../types/protocols-types.js';
 import type { QueryResultEntry } from '../../../types/message-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { canonicalAuth } from '../../../core/auth.js';
-import { BaseMessageReply, CommonMessageReply } from '../../../core/message-reply.js';
 import { ProtocolsQuery } from '../messages/protocols-query.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
 
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
+import { messageReplyFromError } from '../../../core/message-reply.js';
 
-export class ProtocolsQueryHandler implements MethodHandler {
+export class ProtocolsQueryHandler implements MethodHandler<'ProtocolsQuery'> {
 
   constructor(private didResolver: DidResolver, private messageStore: MessageStore,private dataStore: DataStore) { }
 
   public async handle({
     tenant,
     message
-  }: { tenant: string, message: ProtocolsQueryMessage}): Promise<CommonMessageReply> {
+  }: { tenant: string, message: ProtocolsQueryMessage}): Promise<ProtocolsQueryReply> {
 
     let protocolsQuery: ProtocolsQuery;
     try {
       protocolsQuery = await ProtocolsQuery.parse(message);
     } catch (e) {
-      return BaseMessageReply.fromError(e, 400);
+      return messageReplyFromError(e, 400);
     }
 
     try {
       await canonicalAuth(tenant, protocolsQuery, this.didResolver);
     } catch (e) {
-      return BaseMessageReply.fromError(e, 401);
+      return messageReplyFromError(e, 401);
     }
 
     const query = {
@@ -48,9 +49,9 @@ export class ProtocolsQueryHandler implements MethodHandler {
       entries.push(objectWithRemainingProperties);
     }
 
-    return new CommonMessageReply({
+    return {
       status: { code: 200, detail: 'OK' },
       entries
-    });
+    };
   };
 }
