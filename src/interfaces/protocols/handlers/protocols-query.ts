@@ -1,15 +1,13 @@
-import type { DwnMessageMap } from '../../../types/dwn-types.js';
 import type { MethodHandler } from '../../../types/method-handler.js';
-import type { ProtocolsQueryMessage, ProtocolsQueryReply } from '../../../types/protocols-types.js';
 import type { QueryResultEntry } from '../../../types/message-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
+import type { ProtocolsQueryMessage, ProtocolsQueryReply } from '../../../types/protocols-types.js';
 
 import { canonicalAuth } from '../../../core/auth.js';
+import { messageReplyFromError } from '../../../core/message-reply.js';
 import { ProtocolsQuery } from '../messages/protocols-query.js';
 import { removeUndefinedProperties } from '../../../utils/object.js';
-
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
-import { messageReplyFromError } from '../../../core/message-reply.js';
 
 export class ProtocolsQueryHandler implements MethodHandler<'ProtocolsQuery'> {
 

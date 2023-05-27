@@ -15,7 +15,6 @@ import { Encoder } from '../../../../src/utils/encoder.js';
 import { Encryption } from '../../../../src/index.js';
 import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { Jws } from '../../../../src/utils/jws.js';
-import { DwnMessageName, Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsQueryHandler } from '../../../../src/interfaces/records/handlers/records-query.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
@@ -25,6 +24,7 @@ import { toTemporalInstant } from '@js-temporal/polyfill';
 import { constructRecordsWriteIndexes, RecordsWriteHandler } from '../../../../src/interfaces/records/handlers/records-write.js';
 import { DataStream, DidResolver, Dwn, HdKey, KeyDerivationScheme, Records } from '../../../../src/index.js';
 import { DateSort, RecordsQuery } from '../../../../src/interfaces/records/messages/records-query.js';
+import { DwnMessageName, Message } from '../../../../src/core/message.js';
 
 chai.use(chaiAsPromised);
 
@@ -351,8 +351,10 @@ describe('RecordsQueryHandler.handle()', () => {
       sinon.stub(didResolver, 'resolve').resolves(mockResolution);
 
       // insert data
-      const publishedWriteReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, publishedWriteData.message, publishedWriteData.dataStream);
-      const unpublishedWriteReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, unpublishedWriteData.message, unpublishedWriteData.dataStream);
+      const publishedWriteReply = await dwn.processMessage(
+        alice.did, DwnMessageName.RecordsWrite, publishedWriteData.message, publishedWriteData.dataStream);
+      const unpublishedWriteReply = await dwn.processMessage(
+        alice.did, DwnMessageName.RecordsWrite, unpublishedWriteData.message, unpublishedWriteData.dataStream);
       expect(publishedWriteReply.status.code).to.equal(202);
       expect(unpublishedWriteReply.status.code).to.equal(202);
 
@@ -533,7 +535,8 @@ describe('RecordsQueryHandler.handle()', () => {
         { author: alice, schema, data: Encoder.stringToBytes('1'), published: false } // explicitly setting `published` to `false`
       );
 
-      const result1 = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, unpublishedRecordsWrite.message, unpublishedRecordsWrite.dataStream);
+      const result1 = await dwn.processMessage(
+        alice.did, DwnMessageName.RecordsWrite, unpublishedRecordsWrite.message, unpublishedRecordsWrite.dataStream);
       expect(result1.status.code).to.equal(202);
 
       // alice should be able to see the unpublished record
@@ -673,7 +676,8 @@ describe('RecordsQueryHandler.handle()', () => {
           protocolDefinition
         });
 
-        const protocolsConfigureReply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolsConfigureReply = await dwn.processMessage(
+          alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolsConfigureReply.status.code).to.equal(202);
 
         // encrypt bob's message

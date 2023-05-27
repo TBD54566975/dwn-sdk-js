@@ -1,5 +1,5 @@
-import type { BaseMessage, QueryResultEntry } from './message-types.js';
 import type { BaseMessageReply } from '../core/message-reply.js';
+import type { BaseMessage, QueryResultEntry } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type ProtocolsConfigureDescriptor = {
@@ -70,4 +70,4 @@ export type ProtocolsQueryMessage = BaseMessage & {
 
 export type ProtocolsQueryReply = BaseMessageReply & {
   entries?: QueryResultEntry[];
-}
+};

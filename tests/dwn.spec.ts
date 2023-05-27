@@ -11,7 +11,7 @@ import { Encoder } from '../src/index.js';
 import { EventLogLevel } from '../src/event-log/event-log-level.js';
 import { MessageStoreLevel } from '../src/store/message-store-level.js';
 import { TestDataGenerator } from './utils/test-data-generator.js';
-import { DwnInterfaceName, DwnMessageName, DwnMethodName, Message } from '../src/core/message.js';
+import { DwnMessageName, DwnMethodName, Message } from '../src/core/message.js';
 import { Jws, RecordsRead } from '../src/index.js';
 
 chai.use(chaiAsPromised);
@@ -107,10 +107,10 @@ describe('DWN', () => {
       const validateJsonSchemaSpy = sinon.spy(Message, 'validateJsonSchema');
 
       const alice = await DidKeyResolver.generate();
-      const reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, message);
+      await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, message);
 
       sinon.assert.calledOnce(validateJsonSchemaSpy);
-  });
+    });
 
     it('should throw 401 if message is targeted at a non-tenant', async () => {
       // tenant gate that blocks everyone

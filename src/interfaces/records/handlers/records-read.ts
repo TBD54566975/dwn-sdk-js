@@ -4,8 +4,8 @@ import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from '../../../types/records-types.js';
 
 import { authenticate } from '../../../core/auth.js';
-import { messageReplyFromError } from '../../../core/message-reply.js';
 import { Message } from '../../../core/message.js';
+import { messageReplyFromError } from '../../../core/message-reply.js';
 import { RecordsRead } from '../messages/records-read.js';
 import { RecordsWrite } from '../messages/records-write.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';

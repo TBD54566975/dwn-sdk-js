@@ -5,8 +5,8 @@ import type { MethodHandler } from '../../../types/method-handler.js';
 import type { EventsGetMessage, EventsGetReply } from '../../../types/event-types.js';
 
 import { EventsGet } from '../messages/events-get.js';
-import { authenticate, authorize } from '../../../core/auth.js';
 import { messageReplyFromError } from '../../../core/message-reply.js';
+import { authenticate, authorize } from '../../../core/auth.js';
 
 type HandleArgs = {tenant: string, message: EventsGetMessage};
 

@@ -16,6 +16,8 @@ export type RecordsWriteHandlerOptions = {
   skipDataStorage?: boolean; // used for DWN sync
 };
 
+type HandlerArgs = { tenant: string, message: RecordsWriteMessage, options?: RecordsWriteHandlerOptions, dataStream?: _Readable.Readable};
+
 export class RecordsWriteHandler implements MethodHandler<'RecordsWrite'> {
 
   constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore, private eventLog: EventLog) { }
@@ -25,7 +27,7 @@ export class RecordsWriteHandler implements MethodHandler<'RecordsWrite'> {
     message,
     options,
     dataStream
-  }: { tenant: string, message: RecordsWriteMessage, options?: RecordsWriteHandlerOptions, dataStream?: _Readable.Readable}): Promise<BaseMessageReply> {
+  }: HandlerArgs): Promise<BaseMessageReply> {
     let recordsWrite: RecordsWrite;
     try {
       recordsWrite = await RecordsWrite.parse(message);

@@ -6,9 +6,9 @@ import type { MethodHandler } from './types/method-handler.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsWriteHandlerOptions } from './interfaces/records/handlers/records-write.js';
 import type { TenantGate } from './core/tenant-gate.js';
+import type { DwnMessage, DwnMessageMap, DwnMessageReply } from './types/dwn-types.js';
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
 import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from './types/records-types.js';
-import type { DwnMessage, DwnMessageMap, DwnMessageReply } from './types/dwn-types.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DataStoreLevel } from './store/data-store-level.js';

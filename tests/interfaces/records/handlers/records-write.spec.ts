@@ -27,7 +27,6 @@ import { GeneralJwsSigner } from '../../../../src/jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../../../../src/utils/time.js';
 import { Jws } from '../../../../src/utils/jws.js';
 import { KeyDerivationScheme } from '../../../../src/index.js';
-import { DwnMessageName, Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { ProtocolActor } from '../../../../src/types/protocols-types.js';
 import { RecordsRead } from '../../../../src/interfaces/records/messages/records-read.js';
@@ -37,6 +36,7 @@ import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
 import { Cid, computeCid } from '../../../../src/utils/cid.js';
+import { DwnMessageName, Message } from '../../../../src/core/message.js';
 import { Encryption, EncryptionAlgorithm } from '../../../../src/utils/encryption.js';
 
 chai.use(chaiAsPromised);
@@ -90,7 +90,8 @@ describe('RecordsWriteHandler.handle()', () => {
       const recordsWriteMessageData = await TestDataGenerator.generateRecordsWrite({ author, data: data1 });
 
       const tenant = author.did;
-      const recordsWriteReply = await dwn.processMessage(tenant, DwnMessageName.RecordsWrite, recordsWriteMessageData.message, recordsWriteMessageData.dataStream);
+      const recordsWriteReply = await dwn.processMessage(
+        tenant, DwnMessageName.RecordsWrite, recordsWriteMessageData.message, recordsWriteMessageData.dataStream);
       expect(recordsWriteReply.status.code).to.equal(202);
 
       const recordId = recordsWriteMessageData.message.recordId;
@@ -129,7 +130,8 @@ describe('RecordsWriteHandler.handle()', () => {
       expect(newRecordsQueryReply.entries![0].encodedData).to.equal(newDataEncoded);
 
       // try to write the older message to store again and verify that it is not accepted
-      const thirdRecordsWriteReply = await dwn.processMessage(tenant, DwnMessageName.RecordsWrite, recordsWriteMessageData.message, recordsWriteMessageData.dataStream);
+      const thirdRecordsWriteReply = await dwn.processMessage(
+        tenant, DwnMessageName.RecordsWrite, recordsWriteMessageData.message, recordsWriteMessageData.dataStream);
       expect(thirdRecordsWriteReply.status.code).to.equal(409); // expecting to fail
 
       // expecting unchanged
@@ -151,7 +153,8 @@ describe('RecordsWriteHandler.handle()', () => {
       // setting up a stub DID resolver
       TestStubGenerator.stubDidResolver(didResolver, [author]);
 
-      const originatingMessageWriteReply = await dwn.processMessage(tenant, DwnMessageName.RecordsWrite, originatingMessageData.message, originatingMessageData.dataStream);
+      const originatingMessageWriteReply = await dwn.processMessage(
+        tenant, DwnMessageName.RecordsWrite, originatingMessageData.message, originatingMessageData.dataStream);
       expect(originatingMessageWriteReply.status.code).to.equal(202);
 
       // generate two new RecordsWrite messages with the same `dateModified` value
@@ -1304,7 +1307,8 @@ describe('RecordsWriteHandler.handle()', () => {
           protocolDefinition
         });
 
-        const protocolConfigureReply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolConfig.message, protocolConfig.dataStream);
+        const protocolConfigureReply = await dwn.processMessage(
+          alice.did, DwnMessageName.ProtocolsConfigure, protocolConfig.message, protocolConfig.dataStream);
         expect(protocolConfigureReply.status.code).to.equal(202);
 
         // test that Alice is allowed to write to her own DWN
@@ -1755,7 +1759,8 @@ describe('RecordsWriteHandler.handle()', () => {
           author: alice,
           data
         });
-        const aliceWrite2Reply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, aliceWrite2Data.message, aliceWrite2Data.dataStream);
+        const aliceWrite2Reply = await dwn.processMessage(
+          alice.did, DwnMessageName.RecordsWrite, aliceWrite2Data.message, aliceWrite2Data.dataStream);
         expect(aliceWrite2Reply.status.code).to.equal(202);
 
         const aliceQueryWrite1AfterAliceWrite2Data = await TestDataGenerator.generateRecordsQuery({
@@ -1889,7 +1894,8 @@ describe('RecordsWriteHandler.handle()', () => {
           dataCid,
           dataSize : 4
         });
-        const bobAssociateReply = await dwn.processMessage(bob.did, DwnMessageName.RecordsWrite, bobAssociateData.message, bobAssociateData.dataStream);
+        const bobAssociateReply = await dwn.processMessage(
+          bob.did, DwnMessageName.RecordsWrite, bobAssociateData.message, bobAssociateData.dataStream);
         expect(bobAssociateReply.status.code).to.equal(400); // expecting an error
         expect(bobAssociateReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataStream);
 

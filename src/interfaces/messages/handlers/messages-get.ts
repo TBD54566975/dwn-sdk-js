@@ -1,4 +1,3 @@
-import type { BaseMessageReply } from '../../../core/message-reply.js';
 import type { DataStore } from '../../../types/data-store.js';
 import type { DidResolver } from '../../../did/did-resolver.js';
 import type { MessageStore } from '../../../types/message-store.js';

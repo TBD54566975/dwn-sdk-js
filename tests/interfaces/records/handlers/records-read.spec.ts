@@ -11,6 +11,7 @@ import { ArrayUtility } from '../../../../src/utils/array.js';
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { DwnErrorCode } from '../../../../src/core/dwn-error.js';
+import { DwnMessageName } from '../../../../src/core/message.js';
 import { Encryption } from '../../../../src/utils/encryption.js';
 import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
 import { HdKey } from '../../../../src/utils/hd-key.js';
@@ -21,7 +22,6 @@ import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 
 import { DataStream, DidResolver, Dwn, Encoder, Jws, Records, RecordsDelete, RecordsRead } from '../../../../src/index.js';
-import { DwnMessageName } from '../../../../src/core/message.js';
 
 chai.use(chaiAsPromised);
 
@@ -168,7 +168,8 @@ describe('RecordsReadHandler.handle()', () => {
           author: alice,
           protocolDefinition
         });
-        const protocolWriteReply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolWriteReply = await dwn.processMessage(
+          alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolWriteReply.status.code).to.equal(202);
 
         // Alice writes image to her DWN
@@ -209,7 +210,8 @@ describe('RecordsReadHandler.handle()', () => {
           author: alice,
           protocolDefinition
         });
-        const protocolWriteReply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolWriteReply = await dwn.processMessage(
+          alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolWriteReply.status.code).to.equal(202);
 
         // Alice writes an email with Bob as recipient
@@ -258,7 +260,8 @@ describe('RecordsReadHandler.handle()', () => {
           author: alice,
           protocolDefinition
         });
-        const protocolWriteReply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolWriteReply = await dwn.processMessage(
+          alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolWriteReply.status.code).to.equal(202);
 
         // Alice writes an email with Bob as recipient
@@ -460,7 +463,8 @@ describe('RecordsReadHandler.handle()', () => {
           protocolDefinition
         });
 
-        const protocolsConfigureReply = await dwn.processMessage(alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
+        const protocolsConfigureReply = await dwn.processMessage(
+          alice.did, DwnMessageName.ProtocolsConfigure, protocolsConfig.message, protocolsConfig.dataStream);
         expect(protocolsConfigureReply.status.code).to.equal(202);
 
         // encrypt bob's message

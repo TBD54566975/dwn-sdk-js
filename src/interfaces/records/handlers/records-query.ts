@@ -1,15 +1,15 @@
 import type { MethodHandler } from '../../../types/method-handler.js';
+import type { RecordsWriteMessageWithOptionalEncodedData } from '../../../store/storage-controller.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 import type { RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, RecordsWriteMessage } from '../../../types/records-types.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { lexicographicalCompare } from '../../../utils/string.js';
-import type { RecordsWriteMessageWithOptionalEncodedData } from '../../../store/storage-controller.js';
+import { messageReplyFromError } from '../../../core/message-reply.js';
 import { StorageController } from '../../../store/storage-controller.js';
 
 import { DateSort, RecordsQuery } from '../messages/records-query.js';
 import { DwnInterfaceName, DwnMethodName } from '../../../core/message.js';
-import { messageReplyFromError } from '../../../core/message-reply.js';
 
 export class RecordsQueryHandler implements MethodHandler<'RecordsQuery'> {
 

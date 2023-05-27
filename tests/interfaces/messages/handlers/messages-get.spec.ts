@@ -1,7 +1,6 @@
 import type { MessagesGetReply } from '../../../../src/index.js';
 
 import { expect } from 'chai';
-import { DwnMessageName, Message } from '../../../../src/core/message.js';
 import { MessagesGetHandler } from '../../../../src/interfaces/messages/handlers/messages-get.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import {
@@ -12,6 +11,7 @@ import {
   EventLogLevel,
   MessageStoreLevel
 } from '../../../../src/index.js';
+import { DwnMessageName, Message } from '../../../../src/core/message.js';
 
 import sinon from 'sinon';
 

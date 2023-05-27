@@ -7,12 +7,12 @@ import { Cid } from '../../../../src/utils/cid.js';
 import { DataStoreLevel } from '../../../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../../../src/did/did-key-resolver.js';
 import { EventLogLevel } from '../../../../src/event-log/event-log-level.js';
-import { DwnMessageName, Message } from '../../../../src/core/message.js';
 import { MessageStoreLevel } from '../../../../src/store/message-store-level.js';
 import { RecordsDeleteHandler } from '../../../../src/interfaces/records/handlers/records-delete.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { TestStubGenerator } from '../../../utils/test-stub-generator.js';
 import { DidResolver, Dwn, Encoder, Jws, RecordsDelete, RecordsWrite } from '../../../../src/index.js';
+import { DwnMessageName, Message } from '../../../../src/core/message.js';
 
 chai.use(chaiAsPromised);
 
@@ -118,7 +118,8 @@ describe('RecordsDeleteHandler.handle()', () => {
 
       // initial write
       const initialWriteData = await TestDataGenerator.generateRecordsWrite({ author: alice });
-      const initialWriteReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, initialWriteData.message, initialWriteData.dataStream);
+      const initialWriteReply = await dwn.processMessage(
+        alice.did, DwnMessageName.RecordsWrite, initialWriteData.message, initialWriteData.dataStream);
       expect(initialWriteReply.status.code).to.equal(202);
 
       // generate subsequent write and delete with the delete having an earlier timestamp
@@ -133,7 +134,8 @@ describe('RecordsDeleteHandler.handle()', () => {
       });
 
       // subsequent write
-      const subsequentWriteReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, subsequentWriteData.message, subsequentWriteData.dataStream);
+      const subsequentWriteReply = await dwn.processMessage(
+        alice.did, DwnMessageName.RecordsWrite, subsequentWriteData.message, subsequentWriteData.dataStream);
       expect(subsequentWriteReply.status.code).to.equal(202);
 
       // test that a delete with an earlier `dateModified` results in a 409
@@ -206,7 +208,8 @@ describe('RecordsDeleteHandler.handle()', () => {
         author: alice,
         data
       });
-      const aliceRewriteReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, aliceRewriteData.message, aliceRewriteData.dataStream);
+      const aliceRewriteReply = await dwn.processMessage(
+        alice.did, DwnMessageName.RecordsWrite, aliceRewriteData.message, aliceRewriteData.dataStream);
       expect(aliceRewriteReply.status.code).to.equal(202);
 
       const aliceQueryWriteAfterAliceRewriteData = await TestDataGenerator.generateRecordsQuery({
@@ -244,7 +247,8 @@ describe('RecordsDeleteHandler.handle()', () => {
 
       // alice writes another record with the same data
       const aliceAssociateData = await TestDataGenerator.generateRecordsWrite({ author: alice, data });
-      const aliceAssociateReply = await dwn.processMessage(alice.did, DwnMessageName.RecordsWrite, aliceAssociateData.message, aliceAssociateData.dataStream);
+      const aliceAssociateReply = await dwn.processMessage(
+        alice.did, DwnMessageName.RecordsWrite, aliceAssociateData.message, aliceAssociateData.dataStream);
       expect(aliceAssociateReply.status.code).to.equal(202);
 
       await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);

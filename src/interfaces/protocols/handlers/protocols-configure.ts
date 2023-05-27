@@ -1,10 +1,11 @@
-import { BaseMessageReply, messageReplyFromError } from '../../../core/message-reply.js';
+import type { BaseMessageReply } from '../../../core/message-reply.js';
 import type { EventLog } from '../../../types/event-log.js';
 import type { MethodHandler } from '../../../types/method-handler.js';
 import type { ProtocolsConfigureMessage } from '../../../types/protocols-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
 
 import { canonicalAuth } from '../../../core/auth.js';
+import { messageReplyFromError } from '../../../core/message-reply.js';
 import { ProtocolsConfigure } from '../messages/protocols-configure.js';
 import { StorageController } from '../../../store/storage-controller.js';
 
