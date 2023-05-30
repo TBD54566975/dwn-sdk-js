@@ -4,10 +4,6 @@ import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions } from './
 import { flatten } from '../utils/object.js';
 import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 
-export type Entry = {
-  [property: string]: unknown
-};
-
 export interface IndexLevelOptions {
   signal?: AbortSignal;
 }
@@ -37,133 +33,185 @@ export class IndexLevel {
     return this.db.close();
   }
 
-  async put(id: string, entry: Entry, options?: IndexLevelOptions): Promise<void> {
-    entry = flatten(entry) as Entry;
+  /**
+   * Adds indexes for a specific data/object/content.
+   * @param dataId ID of the data/object/content being indexed.
+   */
+  async put(
+    dataId: string,
+    indexes: { [property: string]: unknown },
+    options?: IndexLevelOptions
+  ): Promise<void> {
 
-    const ops: LevelWrapperBatchOperation<string>[] = [ ];
-    const prefixes: string[] = [ ];
-    for (const property in entry) {
-      const value = entry[property];
+    indexes = flatten(indexes);
 
-      const prefix = this.join(property, this.encodeValue(value));
-      ops.push({ type: 'put', key: this.join(prefix, id), value: id });
-      prefixes.push(prefix);
+    const operations: LevelWrapperBatchOperation<string>[] = [ ];
+
+    // create an index entry for each property in the `indexes`
+    for (const propertyName in indexes) {
+      const propertyValue = indexes[propertyName];
+
+      // NOTE: appending data ID after (property + value) serves two purposes:
+      // 1. creates a unique entry of the property-value pair per data/object
+      // 2. when we need to delete all indexes of a given data ID (`delete()`), we can reconstruct the index keys and remove the indexes efficiently
+      //
+      // example keys (\u0000 is just shown for illustration purpose because it is the delimiter used to join the string segments below):
+      // 'interface\u0000"Records"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+      // 'method\u0000"Write"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+      // 'schema\u0000"http://ud4kyzon6ugxn64boz7v"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+      // 'dataCid\u0000"bafkreic3ie3cxsblp46vn3ofumdnwiqqk4d5ah7uqgpcn6xps4skfvagze"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+      // 'dateCreated\u0000"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+      const key = this.join(propertyName, this.encodeValue(propertyValue), dataId);
+      operations.push({ type: 'put', key, value: dataId });
     }
-    ops.push({ type: 'put', key: `__${id}__prefixes`, value: JSON.stringify(prefixes) });
 
-    return this.db.batch(ops, options);
+    // create a reverse lookup entry for data ID -> its indexes
+    // this is for indexes deletion (`delete()`): so that given the data ID, we are able to delete all its indexes
+    // we can consider putting this info in a different data partition if this ever becomes more complex/confusing
+    operations.push({ type: 'put', key: `__${dataId}__indexes`, value: JSON.stringify(indexes) });
+
+    await this.db.batch(operations, options);
   }
 
   async query(filter: Filter, options?: IndexLevelOptions): Promise<Array<string>> {
-    const requiredProperties = new Set<string>();
-    const missingPropertiesForID: { [id: string]: Set<string> } = { };
-    const promises: Promise<Matches>[] = [ ];
-    const matchedIDs: string[] = [ ];
+    // Note: We have an array of Promises in order to support OR (anyOf) matches when given a list of accepted values for a property
+    const propertyNameToPromises: { [key: string]: Promise<string[]>[] } = {};
 
-    async function checkMatches(property: string, promise: Promise<Matches>): Promise<void> {
-      promises.push(promise);
-
-      for (const [ _, id ] of await promise) {
-        missingPropertiesForID[id] ??= new Set<string>([ ...requiredProperties ]);
-        missingPropertiesForID[id].delete(property);
-        if (missingPropertiesForID[id].size === 0) {
-          matchedIDs.push(id);
-        }
-      }
-    }
-
+    // Do a separate DB query for each property in `filter`
+    // We will find the union of these many individual queries later.
     for (const propertyName in filter) {
       const propertyFilter = filter[propertyName];
 
-      if (typeof propertyFilter === 'object' && propertyFilter !== null) {
+      if (typeof propertyFilter === 'object') {
         if (Array.isArray(propertyFilter)) {
+          // `propertyFilter` is a AnyOfFilter
+
+          // Support OR matches by querying for each values separately,
+          // then adding them to the promises associated with `propertyName`
+          propertyNameToPromises[propertyName] = [];
           for (const propertyValue of new Set(propertyFilter)) {
-            checkMatches(propertyName, this.findExactMatches(propertyName, propertyValue, options));
+            const exactMatchesPromise = this.findExactMatches(propertyName, propertyValue, options);
+            propertyNameToPromises[propertyName].push(exactMatchesPromise);
           }
         } else {
-          checkMatches(propertyName, this.findRangeMatches(propertyName, propertyFilter, options));
+          // `propertyFilter` is a `RangeFilter`
+          const rangeMatchesPromise = this.findRangeMatches(propertyName, propertyFilter, options);
+          propertyNameToPromises[propertyName] = [rangeMatchesPromise];
         }
       } else {
-        checkMatches(propertyName, this.findExactMatches(propertyName, propertyFilter, options));
+        // propertyFilter is an EqualFilter, meaning it is a non-object primitive type
+        const exactMatchesPromise = this.findExactMatches(propertyName, propertyFilter, options);
+        propertyNameToPromises[propertyName] = [exactMatchesPromise];
       }
-
-      requiredProperties.add(propertyName);
     }
 
-    await Promise.all(promises);
+    // map of ID of all data/object -> list of missing property matches
+    // if list of missing property matches is 0, then it data/object is fully matches the filter
+    const missingPropertyMatchesForId: { [dataId: string]: Set<string> } = { };
+
+    // Resolve promises and find the union of results for each individual propertyName DB query
+    const matchedIDs: string[] = [ ];
+    for (const [propertyName, promises] of Object.entries(propertyNameToPromises)) {
+      // acting as an OR match for the property, any of the promises returning a match will be treated as a property match
+      for (const promise of promises) {
+        for (const dataId of await promise) {
+          // if first time seeing a property matching for the data/object, record all properties needing a match to track progress
+          missingPropertyMatchesForId[dataId] ??= new Set<string>([ ...Object.keys(filter) ]);
+
+          missingPropertyMatchesForId[dataId].delete(propertyName);
+          if (missingPropertyMatchesForId[dataId].size === 0) {
+            // full filter match, add it to return list
+            matchedIDs.push(dataId);
+          }
+        }
+      }
+    }
 
     return matchedIDs;
   }
 
-  async delete(id: string, options?: IndexLevelOptions): Promise<void> {
-    const prefixes = await this.db.get(`__${id}__prefixes`, options);
-    if (!prefixes) {
+  async delete(dataId: string, options?: IndexLevelOptions): Promise<void> {
+    const serializedIndexes = await this.db.get(`__${dataId}__indexes`, options);
+    if (!serializedIndexes) {
       return;
     }
 
-    const ops: LevelWrapperBatchOperation<string>[] = [ ];
-    for (const prefix of JSON.parse(prefixes)) {
-      ops.push({ type: 'del', key: this.join(prefix, id) });
-    }
-    ops.push({ type: 'del', key: `__${id}__prefixes` });
+    const indexes = JSON.parse(serializedIndexes);
 
-    return this.db.batch(ops, options);
+    // delete all indexes associated with the data of the given ID
+    const ops: LevelWrapperBatchOperation<string>[] = [ ];
+    for (const propertyName in indexes) {
+      const propertyValue = indexes[propertyName];
+      const key = this.join(propertyName, this.encodeValue(propertyValue), dataId);
+      ops.push({ type: 'del', key });
+    }
+
+    ops.push({ type: 'del', key: `__${dataId}__indexes` });
+
+    await this.db.batch(ops, options);
   }
 
   async clear(): Promise<void> {
     return this.db.clear();
   }
 
-  private async findExactMatches(propertyName: string, propertyValue: unknown, options?: IndexLevelOptions): Promise<Matches> {
-    const propertyKey = this.join(propertyName, this.encodeValue(propertyValue));
+  /**
+   * @returns IDs of data that matches the exact property and value.
+   */
+  private async findExactMatches(propertyName: string, propertyValue: unknown, options?: IndexLevelOptions): Promise<string[]> {
+    const propertyValuePrefix = this.join(propertyName, this.encodeValue(propertyValue));
 
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {
-      gt: propertyKey
+      gt: propertyValuePrefix
     };
 
-    return this.findMatches(propertyKey, iteratorOptions, options);
+    const matches: string[] = [];
+    for await (const [ key, dataId ] of this.db.iterator(iteratorOptions, options)) {
+      if (!key.startsWith(propertyValuePrefix)) {
+        break;
+      }
+
+      matches.push(dataId);
+    }
+    return matches;
   }
 
-  private async findRangeMatches(propertyName: string, range: RangeFilter, options?: IndexLevelOptions): Promise<Matches> {
-    const propertyKey = this.join(propertyName);
-
+  /**
+   * @returns IDs of data that matches the range filter.
+   */
+  private async findRangeMatches(propertyName: string, range: RangeFilter, options?: IndexLevelOptions): Promise<string[]> {
     const iteratorOptions: LevelWrapperIteratorOptions<string> = { };
     for (const comparator in range) {
       iteratorOptions[comparator] = this.join(propertyName, this.encodeValue(range[comparator]));
     }
 
-    const matches = await this.findMatches(propertyKey, iteratorOptions, options);
-
-    if ('lte' in range) {
-      // When using `lte` we must also query for an exact match due to how we're encoding values.
-      // For example, `{ lte: 'foo' }` would not match `'foo\x02bar'`.
-      for (const [ key, value ] of await this.findExactMatches(propertyName, range.lte, options)) {
-        matches.set(key, value);
-      }
-    }
-
-    return matches;
-  }
-
-  private async findMatches(
-    propertyName: string,
-    iteratorOptions: LevelWrapperIteratorOptions<string>,
-    options?: IndexLevelOptions
-  ): Promise<Matches> {
-    // Since we will stop iterating if we encounter entries that do not start with the `propertyName`, we need to always start from the upper bound.
-    // For example, `{ lte: 'b' }` would immediately stop if the data was `[ 'a', 'ab', 'b' ]` since `'a'` does not start with `'b'`.
-    if (('lt' in iteratorOptions || 'lte' in iteratorOptions) && !('gt' in iteratorOptions || 'gte' in iteratorOptions)) {
+    // if there is no lower bound specified (`gt` or `gte`), we need to iterate from the upper bound,
+    // so that we will iterate over all the matches before hitting mismatches.
+    if (iteratorOptions.gt === undefined && iteratorOptions.gte === undefined) {
       iteratorOptions.reverse = true;
     }
 
-    const matches = new Map<string, string>;
-    for await (const [ key, value ] of this.db.iterator(iteratorOptions, options)) {
+    const matches: string[] = [];
+    for await (const [ key, dataId ] of this.db.iterator(iteratorOptions, options)) {
+      // immediately stop if we arrive at an index entry for a different property
       if (!key.startsWith(propertyName)) {
         break;
       }
 
-      matches.set(key, value);
+      matches.push(dataId);
     }
+
+    if ('lte' in range) {
+      // When `lte` is used, we must also query the exact match explicitly because the exact match will not be included in the iterator above.
+      // This is due to the extra data (CID) appended to the (property + value) key prefix, e.g.
+      // key = 'dateCreated\u0000"2023-05-25T11:22:33.000000Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+      // the value would be considered greater than { lte: `dateCreated\u0000"2023-05-25T11:22:33.000000Z"` } used in the iterator options,
+      // thus would not be included in the iterator even though we'd like it to be.
+      for (const dataId of await this.findExactMatches(propertyName, range.lte, options)) {
+        matches.push(dataId);
+      }
+    }
+
     return matches;
   }
 
@@ -177,6 +225,9 @@ export class IndexLevel {
     return String(value);
   }
 
+  /**
+   * Joins the given values using the `\x00` (\u0000) character.
+   */
   private join(...values: unknown[]): string {
     return values.join(`\x00`);
   }
@@ -192,5 +243,3 @@ type IndexLevelConfig = {
   location: string,
   createLevelDatabase?: typeof createLevelDatabase,
 };
-
-type Matches = Map<string, string>;

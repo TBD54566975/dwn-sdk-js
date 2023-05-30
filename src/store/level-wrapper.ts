@@ -1,6 +1,6 @@
 import type { AbstractBatchOperation, AbstractDatabaseOptions, AbstractIteratorOptions, AbstractLevel } from 'abstract-level';
 
-import { abortOr } from '../utils/abort.js';
+import { executeUnlessAborted } from '../utils/abort.js';
 import { sleep } from '../utils/time.js';
 
 export type CreateLevelDatabaseOptions<V> = AbstractDatabaseOptions<string, V>;
@@ -90,10 +90,10 @@ export class LevelWrapper<V> {
   async get(key: string, options?: LevelWrapperOptions): Promise<V|undefined>{
     options?.signal?.throwIfAborted();
 
-    await abortOr(options?.signal, this.createLevelDatabase());
+    await executeUnlessAborted(this.createLevelDatabase(), options?.signal);
 
     try {
-      const value = await abortOr(options?.signal, this.db.get(String(key)));
+      const value = await executeUnlessAborted(this.db.get(String(key)), options?.signal);
       return value;
     } catch (error) {
       const e = error as { code: string };
@@ -113,7 +113,7 @@ export class LevelWrapper<V> {
   async * keys(options?: LevelWrapperOptions): AsyncGenerator<string> {
     options?.signal?.throwIfAborted();
 
-    await abortOr(options?.signal, this.createLevelDatabase());
+    await executeUnlessAborted(this.createLevelDatabase(), options?.signal);
 
     for await (const key of this.db.keys()) {
       options?.signal?.throwIfAborted();
@@ -125,7 +125,7 @@ export class LevelWrapper<V> {
   async * iterator(iteratorOptions?: LevelWrapperIteratorOptions<V>, options?: LevelWrapperOptions): AsyncGenerator<[string, V]> {
     options?.signal?.throwIfAborted();
 
-    await abortOr(options?.signal, this.createLevelDatabase());
+    await executeUnlessAborted(this.createLevelDatabase(), options?.signal);
 
     for await (const entry of this.db.iterator(iteratorOptions!)) {
       options?.signal?.throwIfAborted();
@@ -137,17 +137,17 @@ export class LevelWrapper<V> {
   async put(key: string, value: V, options?: LevelWrapperOptions): Promise<void> {
     options?.signal?.throwIfAborted();
 
-    await abortOr(options?.signal, this.createLevelDatabase());
+    await executeUnlessAborted(this.createLevelDatabase(), options?.signal);
 
-    return abortOr(options?.signal, this.db.put(String(key), value));
+    return executeUnlessAborted(this.db.put(String(key), value), options?.signal);
   }
 
   async delete(key: string, options?: LevelWrapperOptions): Promise<void> {
     options?.signal?.throwIfAborted();
 
-    await abortOr(options?.signal, this.createLevelDatabase());
+    await executeUnlessAborted(this.createLevelDatabase(), options?.signal);
 
-    return abortOr(options?.signal, this.db.del(String(key)));
+    return executeUnlessAborted(this.db.del(String(key)), options?.signal);
   }
 
   async isEmpty(options?: LevelWrapperOptions): Promise<boolean> {
@@ -168,15 +168,15 @@ export class LevelWrapper<V> {
   async batch(operations: Array<LevelWrapperBatchOperation<V>>, options?: LevelWrapperOptions): Promise<void> {
     options?.signal?.throwIfAborted();
 
-    await abortOr(options?.signal, this.createLevelDatabase());
+    await executeUnlessAborted(this.createLevelDatabase(), options?.signal);
 
-    return abortOr(options?.signal, this.db.batch(operations));
+    return executeUnlessAborted(this.db.batch(operations), options?.signal);
   }
 
   private async compactUnderlyingStorage(options?: LevelWrapperOptions): Promise<void> {
     options?.signal?.throwIfAborted();
 
-    await abortOr(options?.signal, this.createLevelDatabase());
+    await executeUnlessAborted(this.createLevelDatabase(), options?.signal);
 
     const range = this.sublevelRange;
     if (!range) {
@@ -187,18 +187,25 @@ export class LevelWrapper<V> {
     const root = this.root;
 
     if (root.db.supports.additionalMethods.compactRange) {
-      return abortOr(options?.signal, (root.db as any).compactRange?.(...range));
+      return executeUnlessAborted((root.db as any).compactRange?.(...range), options?.signal);
     }
   }
 
+  /**
+   * Gets the min and max key value of this partition.
+   */
   private get sublevelRange(): [ string, string ] | undefined {
-    const prefix = (this.db as any).prefix;
+    const prefix = (this.db as any).prefix as string;
     if (!prefix) {
       return undefined;
     }
 
-    // use the separator to derive an exclusive `end` that will never match to a key (which matches how `abstract-level` creates a `boundary`)
-    return [ prefix, prefix.slice(0, -1) + String.fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1) ];
+    // derive an exclusive `maxKey` by changing the last prefix character to the immediate succeeding character in unicode
+    // (which matches how `abstract-level` creates a `boundary`)
+    const maxKey = prefix.slice(0, -1) + String.fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1);
+    const minKey = prefix;
+
+    return [minKey, maxKey];
   }
 
   private get root(): LevelWrapper<V> {
