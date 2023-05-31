@@ -38,11 +38,16 @@ export class ProtocolAuthorization {
       messageStore
     );
 
+    // verify declared protocol type exists in protocol and that it conforms to type specification
+    ProtocolAuthorization.verifyType(
+      incomingMessage.message,
+      protocolDefinition.types
+    );
+
     // validate `protocolPath`
     ProtocolAuthorization.verifyProtocolPath(
       incomingMessage,
       ancestorMessageChain,
-      protocolDefinition.types
     );
 
     // get the rule set for the inbound message
@@ -50,11 +55,6 @@ export class ProtocolAuthorization {
       incomingMessage.message,
       protocolDefinition,
       ancestorMessageChain
-    );
-
-    ProtocolAuthorization.verifyType(
-      incomingMessage.message,
-      protocolDefinition.types
     );
 
     // verify method invoked against the allowed actions
@@ -204,20 +204,14 @@ export class ProtocolAuthorization {
   private static verifyProtocolPath(
     inboundMessage: RecordsRead | RecordsWrite,
     ancestorMessageChain: RecordsWriteMessage[],
-    types: ProtocolTypes,
   ): void {
     // skip verification if this is not a RecordsWrite
     if (inboundMessage.message.descriptor.method !== DwnMethodName.Write) {
       return;
     }
 
-    const typeNames = Object.keys(types);
     const declaredProtocolPath = (inboundMessage as RecordsWrite).message.descriptor.protocolPath!;
     const declaredTypeName = ProtocolAuthorization.getTypeName(declaredProtocolPath);
-    if (!typeNames.includes(declaredTypeName)) {
-      throw new DwnError(DwnErrorCode.ProtocolAuthorizationInvalidType,
-        `record with type ${declaredTypeName} not allowed in protocol`);
-    }
 
     let ancestorProtocolPath: string = '';
     for (const ancestor of ancestorMessageChain) {
@@ -250,6 +244,14 @@ export class ProtocolAuthorization {
       return;
     }
     const recordsWriteMessage = inboundMessage as RecordsWriteMessage;
+
+    const typeNames = Object.keys(protocolTypes);
+    const declaredProtocolPath = recordsWriteMessage.descriptor.protocolPath!;
+    const declaredTypeName = ProtocolAuthorization.getTypeName(declaredProtocolPath);
+    if (!typeNames.includes(declaredTypeName)) {
+      throw new DwnError(DwnErrorCode.ProtocolAuthorizationInvalidType,
+        `record with type ${declaredTypeName} not allowed in protocol`);
+    }
 
     const protocolPath = recordsWriteMessage.descriptor.protocolPath!;
     // existence of `protocolType` has already been verified
