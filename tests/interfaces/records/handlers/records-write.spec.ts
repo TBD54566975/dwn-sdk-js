@@ -1109,7 +1109,7 @@ describe('RecordsWriteHandler.handle()', () => {
           recipient    : alice.did,
           protocol,
           protocolPath : 'credentialApplication/credentialResponse', // incorrect path. correct path is `credentialResponse` because this record has no parent
-          schema       : protocolDefinition.types.credentialApplication.schema,
+          schema       : protocolDefinition.types.credentialResponse.schema,
           data
         });
 
