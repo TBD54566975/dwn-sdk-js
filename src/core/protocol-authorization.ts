@@ -8,6 +8,7 @@ import { RecordsWrite } from '../interfaces/records/messages/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
 import { ProtocolAction, ProtocolActor } from '../types/protocols-types.js';
+import { removeTrailingSlash } from '../utils/url.js';
 
 const methodToAllowedActionMap: Record<string, ProtocolAction> = {
   [DwnMethodName.Write] : ProtocolAction.Write,
@@ -44,17 +45,18 @@ export class ProtocolAuthorization {
       protocolDefinition.types
     );
 
-    // validate `protocolPath`
-    ProtocolAuthorization.verifyProtocolPath(
-      incomingMessage,
-      ancestorMessageChain,
-    );
-
     // get the rule set for the inbound message
     const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
       incomingMessage.message,
       protocolDefinition,
       ancestorMessageChain
+    );
+
+    // validate `protocolPath`
+    ProtocolAuthorization.verifyProtocolPath(
+      incomingMessage,
+      ancestorMessageChain,
+      inboundMessageRuleSet,
     );
 
     // verify method invoked against the allowed actions
@@ -204,6 +206,7 @@ export class ProtocolAuthorization {
   private static verifyProtocolPath(
     inboundMessage: RecordsRead | RecordsWrite,
     ancestorMessageChain: RecordsWriteMessage[],
+    inboundMessageRuleSet: ProtocolRuleSet,
   ): void {
     // skip verification if this is not a RecordsWrite
     if (inboundMessage.message.descriptor.method !== DwnMethodName.Write) {
@@ -216,8 +219,17 @@ export class ProtocolAuthorization {
     let ancestorProtocolPath: string = '';
     for (const ancestor of ancestorMessageChain) {
       const protocolPath = ancestor.descriptor.protocolPath!;
+      if (protocolPath === removeTrailingSlash(ancestorProtocolPath)) {
+        // for ancestors that use `$recursive`, do not advance the `ancestorProtocolPath`
+        continue;
+      }
       const ancestorTypeName = ProtocolAuthorization.getTypeName(protocolPath);
       ancestorProtocolPath += `${ancestorTypeName}/`; // e.g. `foo/bar/`, notice the trailing slash
+    }
+
+    if (inboundMessageRuleSet.$recursive && declaredProtocolPath === removeTrailingSlash(ancestorProtocolPath)) {
+      // Allow incoming writes with same protocolPath is `$recursive` records are allowed
+      return;
     }
 
     const actualProtocolPath = ancestorProtocolPath + declaredTypeName; // e.g. `foo/bar/baz`

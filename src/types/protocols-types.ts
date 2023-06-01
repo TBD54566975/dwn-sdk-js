@@ -44,6 +44,7 @@ export type ProtocolActionRule = {
 
 export type ProtocolRuleSet = {
   $actions?: ProtocolActionRule[];
+  $recursive?: boolean;
   // JSON Schema verifies that properties other than `$actions` will actually have type ProtocolRuleSet
   [key: string]: any;
 };

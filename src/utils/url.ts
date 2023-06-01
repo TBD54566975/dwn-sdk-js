@@ -56,7 +56,7 @@ function normalizeUrl(url: string): string {
   }
 }
 
-function removeTrailingSlash(str: string): string {
+export function removeTrailingSlash(str: string): string {
   if (str.endsWith('/')) {
     return str.slice(0, -1);
   } else {

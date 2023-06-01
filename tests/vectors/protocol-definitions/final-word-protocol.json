@@ -1,0 +1,39 @@
+{
+  "protocol": "tbd.website/final-word-protocol",
+  "types": {
+    "hello": { "dataFormats": ["text"] },
+    "chat": { "dataFormats": ["text"] }
+  },
+  "structure": {
+    "hello": {
+      "$actions": [{
+         "who": "anyone",
+         "can": "write"
+      }],
+      "chat": {
+        "$recursive": true,
+        "$actions": [
+          {
+            "who": "recipient",
+            "of": "hello",
+            "can": "write"
+          },
+          {
+            "who": "recipient",
+            "of": "hello/chat",
+            "can": "write"
+        }
+        ],
+        "chat": {
+          "$actions": [
+            {
+              "who": "author",
+              "of": "hello",
+              "can": "write"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

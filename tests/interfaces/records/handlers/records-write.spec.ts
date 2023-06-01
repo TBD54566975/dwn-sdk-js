@@ -7,6 +7,7 @@ import chaiAsPromised from 'chai-as-promised';
 import credentialIssuanceProtocolDefinition from '../../../vectors/protocol-definitions/credential-issuance.json' assert { type: 'json' };
 import dexProtocolDefinition from '../../../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
+import finalWordProtocolDefinition from '../../../vectors/protocol-definitions/final-word-protocol.json' assert { type: 'json' };
 import messageProtocolDefinition from '../../../vectors/protocol-definitions/message.json' assert { type: 'json' };
 import privateProtocol from '../../../vectors/protocol-definitions/private-protocol.json' assert { type: 'json' };
 import sinon from 'sinon';
@@ -819,6 +820,99 @@ describe('RecordsWriteHandler.handle()', () => {
         expect(newRecordQueryReply.status.code).to.equal(200);
         expect(newRecordQueryReply.entries?.length).to.equal(1);
         expect(newRecordQueryReply.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(updatedMessageBytes));
+      });
+
+      it('should allow $recursive records to be written', async () => {
+        // scenario: Alice initiates a conversation with a `hello`. Bob replies with a `hello/chat`.
+        //           Alice writes a recursive `hello/chat` then ends the conversation with a `hello/chat/chat`.
+
+        const protocolDefinition = finalWordProtocolDefinition;
+        const protocol = protocolDefinition.protocol;
+        const alice = await TestDataGenerator.generatePersona();
+        const bob = await TestDataGenerator.generatePersona();
+
+        // setting up a stub DID resolver
+        TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
+
+        // Configure the protocol
+        const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+          author: alice,
+          protocolDefinition,
+        });
+
+        const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+        expect(protocolWriteReply.status.code).to.equal(202);
+
+        // Alice sends a `hello` to Bob
+        const helloData = new TextEncoder().encode('Dear Bob, how are you? Just thought Id drop you a note.');
+        const hello = await TestDataGenerator.generateRecordsWrite(
+          {
+            author       : alice,
+            protocol,
+            protocolPath : 'hello',
+            dataFormat   : protocolDefinition.types.hello.dataFormats[0],
+            data         : helloData,
+            recipient    : bob.did
+          }
+        );
+        const helloReply = await dwn.processMessage(alice.did, hello.message, hello.dataStream);
+        expect(helloReply.status.code).to.equal(202);
+
+        // Bob replies with a `hello/chat`
+        const contextId = await hello.recordsWrite.getEntryId();
+
+        const chatData = new TextEncoder().encode('Hello, Alice. Good to hear from you.');
+        const chat = await TestDataGenerator.generateRecordsWrite(
+          {
+            author       : bob,
+            protocol,
+            protocolPath : 'hello/chat',
+            dataFormat   : protocolDefinition.types.chat.dataFormats[0],
+            data         : chatData,
+            recipient    : alice.did,
+            contextId,
+            parentId     : contextId,
+          }
+        );
+
+        const chatReply = await dwn.processMessage(alice.did, chat.message, chat.dataStream);
+        expect(chatReply.status.code).to.equal(202);
+
+        // Alice sends a recursive `hello/chat` below Bob's reply
+        const recursiveChatData = new TextEncoder().encode('Bob, hows your book coming along?');
+        const recursiveChat = await TestDataGenerator.generateRecordsWrite(
+          {
+            author       : alice,
+            protocol,
+            protocolPath : 'hello/chat', // same protocolPath as parent
+            dataFormat   : protocolDefinition.types.chat.dataFormats[0],
+            data         : recursiveChatData,
+            recipient    : bob.did,
+            contextId,
+            parentId     : await chat.recordsWrite.getEntryId(),
+          }
+        );
+
+        const recursiveChatReply = await dwn.processMessage(alice.did, recursiveChat.message, recursiveChat.dataStream);
+        expect(recursiveChatReply.status.code).to.equal(202);
+
+        // Alice closes the conversation with a `hello/chat/chat`
+        const goodbyeData = new TextEncoder().encode('Guess thats all for now. See you at The Scope.');
+        const goodbye = await TestDataGenerator.generateRecordsWrite(
+          {
+            author       : alice,
+            protocol,
+            protocolPath : 'hello/chat', // same protocolPath as parent
+            dataFormat   : protocolDefinition.types.chat.dataFormats[0],
+            data         : goodbyeData,
+            recipient    : bob.did,
+            contextId,
+            parentId     : await recursiveChat.recordsWrite.getEntryId(),
+          }
+        );
+
+        const goodbyeReply = await dwn.processMessage(alice.did, goodbye.message, goodbye.dataStream);
+        expect(goodbyeReply.status.code).to.equal(202);
       });
 
       it('should disallow overwriting existing records by a different author', async () => {
