@@ -228,7 +228,7 @@ export class ProtocolAuthorization {
     }
 
     if (inboundMessageRuleSet.$recursive && declaredProtocolPath === removeTrailingSlash(ancestorProtocolPath)) {
-      // Allow incoming writes with same protocolPath is `$recursive` records are allowed
+      // Use `$recursive` rule when incoming write has the same `protocolPath` as its parent
       return;
     }
 
