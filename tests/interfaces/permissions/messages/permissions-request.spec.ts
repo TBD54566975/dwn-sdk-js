@@ -1,4 +1,4 @@
-import type { PermissionsRequestMessage } from '../../../../src/types/permissions-types.js';
+import type { PermissionConditions, PermissionsRequestMessage } from '../../../../src/types/permissions-types.js';
 
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
@@ -29,7 +29,8 @@ describe('PermissionsRequest', () => {
           method      : 'PermissionsRequest',
           objectId    : '331806c4-ce15-4759-b1c3-0f742312aae9',
           scope       : { method: 'RecordsWrite' }
-        }
+        },
+        authorization: { } // to be assigned in loop
       };
 
       const testVectors = [
@@ -45,7 +46,7 @@ describe('PermissionsRequest', () => {
         const signer = await GeneralJwsSigner.create(payloadBytes, [{ privateJwk, protectedHeader }]);
         const jws = signer.getJws();
 
-        jsonMessage['authorization'] = jws;
+        jsonMessage.authorization = jws;
 
         await expect(PermissionsRequest.parse(jsonMessage as PermissionsRequestMessage))
           .to.be.rejectedWith(vector.expectedError);
@@ -100,7 +101,7 @@ describe('PermissionsRequest', () => {
       const { conditions } = message;
 
       for (const conditionName in DEFAULT_CONDITIONS) {
-        expect(conditions[conditionName]).to.equal(DEFAULT_CONDITIONS[conditionName]);
+        expect(conditions[conditionName as keyof PermissionConditions]).to.equal(DEFAULT_CONDITIONS[conditionName as keyof PermissionConditions]);
       }
 
       const numConditions = Object.keys(conditions).length;

@@ -58,7 +58,7 @@ describe('EventsGet Message', () => {
       });
 
       const { message } = eventsGet;
-      message['hehe'] = 'troll';
+      (message as any)['hehe'] = 'troll';
 
       try {
         await EventsGet.parse(message as any);

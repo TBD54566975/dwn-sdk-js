@@ -1,11 +1,11 @@
 import type { MethodHandler } from '../../../types/method-handler.js';
+import type { RecordsWriteMessageWithOptionalEncodedData } from '../../../store/storage-controller.js';
 import type { DataStore, DidResolver, MessageStore } from '../../../index.js';
-import type { RecordsQueryMessage, RecordsQueryReplyEntry, RecordsWriteMessage } from '../../../types/records-types.js';
+import type { RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, RecordsWriteMessage } from '../../../types/records-types.js';
 
 import { authenticate } from '../../../core/auth.js';
 import { lexicographicalCompare } from '../../../utils/string.js';
 import { MessageReply } from '../../../core/message-reply.js';
-import type { RecordsWriteMessageWithOptionalEncodedData } from '../../../store/storage-controller.js';
 import { StorageController } from '../../../store/storage-controller.js';
 
 import { DateSort, RecordsQuery } from '../messages/records-query.js';
@@ -18,7 +18,7 @@ export class RecordsQueryHandler implements MethodHandler {
   public async handle({
     tenant,
     message
-  }: {tenant: string, message: RecordsQueryMessage}): Promise<MessageReply> {
+  }: {tenant: string, message: RecordsQueryMessage}): Promise<RecordsQueryReply> {
     let recordsQuery: RecordsQuery;
     try {
       recordsQuery = await RecordsQuery.parse(message);
@@ -52,10 +52,10 @@ export class RecordsQueryHandler implements MethodHandler {
       entries.push(objectWithRemainingProperties);
     }
 
-    return new MessageReply({
+    return {
       status: { code: 200, detail: 'OK' },
       entries
-    });
+    };
   }
 
   /**

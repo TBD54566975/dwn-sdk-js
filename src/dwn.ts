@@ -1,4 +1,5 @@
 import type { BaseMessage } from './types/message-types.js';
+import type { BaseMessageReply } from './core/message-reply.js';
 import type { DataStore } from './types/data-store.js';
 import type { EventLog } from './types/event-log.js';
 import type { MessageStore } from './types/message-store.js';
@@ -7,7 +8,7 @@ import type { Readable } from 'readable-stream';
 import type { RecordsWriteHandlerOptions } from './interfaces/records/handlers/records-write.js';
 import type { TenantGate } from './core/tenant-gate.js';
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
-import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from './types/records-types.js';
+import type { RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from './types/records-types.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DataStoreLevel } from './store/data-store-level.js';
@@ -104,6 +105,19 @@ export class Dwn {
   }
 
   /**
+   * Handles a `RecordsQuery` message.
+   */
+  public async handleRecordsQuery(tenant: string, message: RecordsQueryMessage): Promise<RecordsQueryReply> {
+    const errorMessageReply = await this.preprocessingChecks(tenant, message, DwnInterfaceName.Records, DwnMethodName.Query);
+    if (errorMessageReply !== undefined) {
+      return errorMessageReply;
+    }
+
+    const handler = new RecordsQueryHandler(this.didResolver, this.messageStore, this.dataStore);
+    return handler.handle({ tenant, message });
+  }
+
+  /**
    * Handles a `RecordsRead` message.
    */
   public async handleRecordsRead(tenant: string, message: RecordsReadMessage): Promise<RecordsReadReply> {
@@ -155,7 +169,7 @@ export class Dwn {
     rawMessage: any,
     expectedInterface?: DwnInterfaceName,
     expectedMethod?: DwnMethodName
-  ): Promise<MessageReply | undefined> {
+  ): Promise<BaseMessageReply | undefined> {
     const isTenant = await this.tenantGate.isTenant(tenant);
     if (!isTenant) {
       return new MessageReply({
@@ -191,26 +205,6 @@ export class Dwn {
     }
 
     return undefined;
-  }
-
-  public async dump(): Promise<void> {
-    console.group('didResolver');
-    await this.didResolver['dump']?.();
-    console.groupEnd();
-
-    console.group('messageStore');
-    // @ts-ignore
-    await this.messageStore['dump']?.();
-    console.groupEnd();
-
-    console.group('dataStore');
-    // @ts-ignore
-    await this.dataStore['dump']?.();
-    console.groupEnd();
-
-    console.group('eventLog');
-    await this.eventLog['dump']?.();
-    console.groupEnd();
   }
 };
 

@@ -98,7 +98,7 @@ describe('DWN', () => {
 
       expect(reply.status.code).to.equal(200);
       expect(reply.events).to.be.empty;
-      expect(reply['data']).to.not.exist;
+      expect((reply as any).data).to.not.exist;
     });
 
     it('#191 - regression - should run JSON schema validation', async () => {

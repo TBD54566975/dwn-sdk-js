@@ -44,8 +44,8 @@ export class ProtocolsQueryHandler implements MethodHandler {
     // strip away `authorization` property for each record before responding
     const entries: QueryResultEntry[] = [];
     for (const message of messages) {
-      const { authorization: _, ...objectWithRemainingProperties } = message; // a trick to stripping away `authorization`
-      entries.push(objectWithRemainingProperties);
+      const { authorization: _, ...objectWithRemainingProperties } = message; // a trick to strip away `authorization`
+      entries.push(objectWithRemainingProperties as QueryResultEntry);
     }
 
     return new MessageReply({

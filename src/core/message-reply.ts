@@ -40,7 +40,7 @@ export class MessageReply {
     this.data = data;
   }
 
-  static fromError(e: unknown, code: number): MessageReply {
+  static fromError(e: unknown, code: number): BaseMessageReply {
 
     const detail = e instanceof Error ? e.message : 'Error';
 
