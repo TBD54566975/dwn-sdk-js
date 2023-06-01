@@ -82,7 +82,7 @@ describe('MessagesGetHandler.handle()', () => {
       messageCids : [await Message.getCid(recordsWrite.message)]
     });
 
-    message['descriptor']['troll'] = 'hehe';
+    (message['descriptor'] as any)['troll'] = 'hehe';
 
     const reply = await dwn.processMessage(alice.did, message);
 

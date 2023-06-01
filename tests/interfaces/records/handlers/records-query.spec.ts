@@ -310,7 +310,7 @@ describe('RecordsQueryHandler.handle()', () => {
       const queryReply = await dwn.processMessage(alice.did, queryData.message);
       expect(queryReply.status.code).to.equal(200);
       expect(queryReply.entries?.length).to.equal(1);
-      expect(queryReply.entries![0]['authorization']).to.equal(undefined);
+      expect((queryReply.entries![0] as any).authorization).to.equal(undefined);
     });
 
     it('should include `attestation` in returned records', async () => {
@@ -362,7 +362,7 @@ describe('RecordsQueryHandler.handle()', () => {
         dateSort : DateSort.PublishedAscending,
         filter   : { schema }
       });
-      const publishedAscendingQueryReply = await dwn.processMessage(alice.did, publishedAscendingQueryData.message);
+      const publishedAscendingQueryReply = await dwn.handleRecordsQuery(alice.did, publishedAscendingQueryData.message);
 
       expect(publishedAscendingQueryReply.entries?.length).to.equal(1);
       expect(publishedAscendingQueryReply.entries![0].descriptor['datePublished']).to.equal(publishedWriteData.message.descriptor.datePublished);
@@ -373,7 +373,7 @@ describe('RecordsQueryHandler.handle()', () => {
         dateSort : DateSort.PublishedDescending,
         filter   : { schema }
       });
-      const publishedDescendingQueryReply = await dwn.processMessage(alice.did, publishedDescendingQueryData.message);
+      const publishedDescendingQueryReply = await dwn.handleRecordsQuery(alice.did, publishedDescendingQueryData.message);
 
       expect(publishedDescendingQueryReply.entries?.length).to.equal(1);
       expect(publishedDescendingQueryReply.entries![0].descriptor['datePublished']).to.equal(publishedWriteData.message.descriptor.datePublished);
@@ -406,7 +406,7 @@ describe('RecordsQueryHandler.handle()', () => {
         dateSort : DateSort.CreatedAscending,
         filter   : { schema }
       });
-      const createdAscendingQueryReply = await dwn.processMessage(alice.did, createdAscendingQueryData.message);
+      const createdAscendingQueryReply = await dwn.handleRecordsQuery(alice.did, createdAscendingQueryData.message);
 
       expect(createdAscendingQueryReply.entries?.[0].descriptor['dateCreated']).to.equal(write1Data.message.descriptor.dateCreated);
       expect(createdAscendingQueryReply.entries?.[1].descriptor['dateCreated']).to.equal(write2Data.message.descriptor.dateCreated);
@@ -418,7 +418,7 @@ describe('RecordsQueryHandler.handle()', () => {
         dateSort : DateSort.CreatedDescending,
         filter   : { schema }
       });
-      const createdDescendingQueryReply = await dwn.processMessage(alice.did, createdDescendingQueryData.message);
+      const createdDescendingQueryReply = await dwn.handleRecordsQuery(alice.did, createdDescendingQueryData.message);
 
       expect(createdDescendingQueryReply.entries?.[0].descriptor['dateCreated']).to.equal(write3Data.message.descriptor.dateCreated);
       expect(createdDescendingQueryReply.entries?.[1].descriptor['dateCreated']).to.equal(write2Data.message.descriptor.dateCreated);
@@ -430,7 +430,7 @@ describe('RecordsQueryHandler.handle()', () => {
         dateSort : DateSort.PublishedAscending,
         filter   : { schema }
       });
-      const publishedAscendingQueryReply = await dwn.processMessage(alice.did, publishedAscendingQueryData.message);
+      const publishedAscendingQueryReply = await dwn.handleRecordsQuery(alice.did, publishedAscendingQueryData.message);
 
       expect(publishedAscendingQueryReply.entries?.[0].descriptor['datePublished']).to.equal(write1Data.message.descriptor.datePublished);
       expect(publishedAscendingQueryReply.entries?.[1].descriptor['datePublished']).to.equal(write2Data.message.descriptor.datePublished);
@@ -442,7 +442,7 @@ describe('RecordsQueryHandler.handle()', () => {
         dateSort : DateSort.PublishedDescending,
         filter   : { schema }
       });
-      const publishedDescendingQueryReply = await dwn.processMessage(alice.did, publishedDescendingQueryData.message);
+      const publishedDescendingQueryReply = await dwn.handleRecordsQuery(alice.did, publishedDescendingQueryData.message);
 
       expect(publishedDescendingQueryReply.entries?.[0].descriptor['datePublished']).to.equal(write3Data.message.descriptor.datePublished);
       expect(publishedDescendingQueryReply.entries?.[1].descriptor['datePublished']).to.equal(write2Data.message.descriptor.datePublished);

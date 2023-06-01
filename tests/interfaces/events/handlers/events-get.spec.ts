@@ -68,7 +68,7 @@ describe('EventsGetHandler.handle()', () => {
     const alice = await DidKeyResolver.generate();
 
     const { message } = await TestDataGenerator.generateEventsGet({ author: alice });
-    message['descriptor']['troll'] = 'hehe';
+    (message['descriptor'] as any)['troll'] = 'hehe';
 
     const reply = await dwn.processMessage(alice.did, message);
 
@@ -95,7 +95,7 @@ describe('EventsGetHandler.handle()', () => {
     const reply: EventsGetReply = await dwn.processMessage(alice.did, message);
 
     expect(reply.status.code).to.equal(200);
-    expect(reply['data']).to.not.exist;
+    expect((reply as any).data).to.not.exist;
     expect(reply.events?.length).to.equal(expectedCids.length);
 
     for (let i = 0; i < reply.events!.length; i += 1) {
@@ -134,7 +134,7 @@ describe('EventsGetHandler.handle()', () => {
     reply = await dwn.processMessage(alice.did, m);
 
     expect(reply.status.code).to.equal(200);
-    expect(reply['data']).to.not.exist;
+    expect((reply as any).data).to.not.exist;
     expect(reply.events!.length).to.equal(expectedCids.length);
 
     for (let i = 0; i < reply.events!.length; i += 1) {

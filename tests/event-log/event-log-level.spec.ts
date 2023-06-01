@@ -106,7 +106,7 @@ describe('EventLogLevel Tests', () => {
       await eventLog.append(author.did, messageCid);
 
       const messageCids: string[] = [];
-      let testWatermark;
+      let testWatermark = '';
 
       for (let i = 0; i < 9; i += 1) {
         const { message } = await TestDataGenerator.generateRecordsWrite({ author });

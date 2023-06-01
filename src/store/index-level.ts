@@ -106,7 +106,7 @@ export class IndexLevel {
     }
 
     // map of ID of all data/object -> list of missing property matches
-    // if list of missing property matches is 0, then it data/object is fully matches the filter
+    // if count of missing property matches is 0, it means the data/object fully matches the filter
     const missingPropertyMatchesForId: { [dataId: string]: Set<string> } = { };
 
     // Resolve promises and find the union of results for each individual propertyName DB query
@@ -179,10 +179,11 @@ export class IndexLevel {
   /**
    * @returns IDs of data that matches the range filter.
    */
-  private async findRangeMatches(propertyName: string, range: RangeFilter, options?: IndexLevelOptions): Promise<string[]> {
+  private async findRangeMatches(propertyName: string, rangeFilter: RangeFilter, options?: IndexLevelOptions): Promise<string[]> {
     const iteratorOptions: LevelWrapperIteratorOptions<string> = { };
-    for (const comparator in range) {
-      iteratorOptions[comparator] = this.join(propertyName, this.encodeValue(range[comparator]));
+    for (const comparator in rangeFilter) {
+      const comparatorName = comparator as keyof RangeFilter;
+      iteratorOptions[comparatorName] = this.join(propertyName, this.encodeValue(rangeFilter[comparatorName]));
     }
 
     // if there is no lower bound specified (`gt` or `gte`), we need to iterate from the upper bound,
@@ -201,13 +202,13 @@ export class IndexLevel {
       matches.push(dataId);
     }
 
-    if ('lte' in range) {
+    if ('lte' in rangeFilter) {
       // When `lte` is used, we must also query the exact match explicitly because the exact match will not be included in the iterator above.
       // This is due to the extra data (CID) appended to the (property + value) key prefix, e.g.
       // key = 'dateCreated\u0000"2023-05-25T11:22:33.000000Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
       // the value would be considered greater than { lte: `dateCreated\u0000"2023-05-25T11:22:33.000000Z"` } used in the iterator options,
       // thus would not be included in the iterator even though we'd like it to be.
-      for (const dataId of await this.findExactMatches(propertyName, range.lte, options)) {
+      for (const dataId of await this.findExactMatches(propertyName, rangeFilter.lte, options)) {
         matches.push(dataId);
       }
     }

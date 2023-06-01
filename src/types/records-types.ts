@@ -118,6 +118,10 @@ export type RecordsQueryMessage = BaseMessage & {
   descriptor: RecordsQueryDescriptor;
 };
 
+export type RecordsQueryReply = BaseMessageReply & {
+  entries?: RecordsQueryReplyEntry[];
+};
+
 export type RecordsReadMessage = {
   authorization?: GeneralJws;
   descriptor: RecordsReadDescriptor;
