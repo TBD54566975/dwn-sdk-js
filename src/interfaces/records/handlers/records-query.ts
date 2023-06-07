@@ -40,7 +40,7 @@ export class RecordsQueryHandler implements MethodHandler {
     if (recordsQuery.author === tenant) {
       records = await this.fetchRecordsAsOwner(tenant, recordsQuery);
     } else if (recordsQuery.author === undefined) {
-      // this is an anonymous query, return only published data
+      // this is an anonymous query, query only published records
       records = await this.fetchPublishedRecords(tenant, recordsQuery);
     } else {
       records = await this.fetchRecordsAsNonOwner(tenant, recordsQuery);
