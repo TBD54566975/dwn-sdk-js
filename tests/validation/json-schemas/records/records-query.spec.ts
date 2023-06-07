@@ -21,21 +21,6 @@ describe('RecordsQuery schema validation', () => {
     Message.validateJsonSchema(validMessage);
   });
 
-  it('should throw if `authorization` is missing', () => {
-    const invalidMessage = {
-      descriptor: {
-        interface   : 'Records',
-        method      : 'Query',
-        dateCreated : '2022-10-14T10:20:30.405060Z',
-        filter      : { schema: 'anySchema' }
-      }
-    };
-
-    expect(() => {
-      Message.validateJsonSchema(invalidMessage);
-    }).throws('must have required property \'authorization\'');
-  });
-
   it('should throw if unknown property is given in message', () => {
     const invalidMessage = {
       descriptor: {

@@ -1,5 +1,5 @@
-import type { RecordsQueryReplyEntry } from '../../../../src/types/records-types.js';
 import type { DerivedPrivateJwk, EncryptionInput, RecordsWriteMessage } from '../../../../src/index.js';
+import type { RecordsQueryReplyEntry, RecordsWriteDescriptor } from '../../../../src/types/records-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import emailProtocolDefinition from '../../../vectors/protocol-definitions/email.json' assert { type: 'json' };
@@ -449,11 +449,44 @@ describe('RecordsQueryHandler.handle()', () => {
       expect(publishedDescendingQueryReply.entries?.[2].descriptor['datePublished']).to.equal(write1Data.message.descriptor.datePublished);
     });
 
-    it('should only return published records and unpublished records that is meant for author', async () => {
-      // write three records into Alice's DB:
+    it('should allow an anonymous unauthenticated query to return published records', async () => {
+      // write 2 records into Alice's DB:
       // 1st is unpublished
-      // 2nd is also unpublished but is meant for (has recipient as) Bob
-      // 3rd is also unpublished but is authored (sent) by Bob
+      // 2nd is published
+      const alice = await DidKeyResolver.generate();
+      const record1Data = await TestDataGenerator.generateRecordsWrite(
+        { author: alice, schema: 'https://schema1', published: false }
+      );
+      const record2Data = await TestDataGenerator.generateRecordsWrite(
+        { author: alice, schema: 'https://schema2', published: true }
+      );
+
+      const recordsWrite1Reply = await dwn.processMessage(alice.did, record1Data.message, record1Data.dataStream);
+      expect(recordsWrite1Reply.status.code).to.equal(202);
+      const recordsWrite2Reply = await dwn.processMessage(alice.did, record2Data.message, record2Data.dataStream);
+      expect(recordsWrite2Reply.status.code).to.equal(202);
+
+      // test correctness for anonymous query
+      const anonymousQueryMessageData = await TestDataGenerator.generateRecordsQuery({
+        filter: { dateCreated: { from: '2000-01-01T10:20:30.123456Z' } }
+      });
+
+      // remove authorization to make sure the message is anonymous
+      delete anonymousQueryMessageData.message.authorization;
+      expect(anonymousQueryMessageData.message.authorization).to.not.exist;
+
+      const replyToQuery= await dwn.processMessage(alice.did, anonymousQueryMessageData.message);
+
+      expect(replyToQuery.status.code).to.equal(200);
+      expect(replyToQuery.entries?.length).to.equal(1);
+      expect((replyToQuery.entries![0].descriptor as RecordsWriteDescriptor).schema).to.equal('https://schema2');
+    });
+
+    it('should only return published records and unpublished records that is meant for author', async () => {
+      // write 4 records into Alice's DB:
+      // 1st is unpublished authored by Alice
+      // 2nd is also unpublished authored by Alice, but is meant for (has recipient as) Bob
+      // 3rd is also unpublished but is authored by Bob
       // 4th is published
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
@@ -553,22 +586,6 @@ describe('RecordsQueryHandler.handle()', () => {
       const replyToBobQuery = await dwn.processMessage(alice.did, queryByBob.message);
       expect(replyToBobQuery.status.code).to.equal(200);
       expect(replyToBobQuery.entries?.length).to.equal(0);
-    });
-
-    it('should throw if a non-owner author querying for records not intended for the author (as recipient)', async () => {
-      const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
-      const carol = await DidKeyResolver.generate();
-
-      const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({
-        author : bob,
-        filter : { recipient: carol.did } // bob querying carol's records
-      });
-
-      const replyToBobQuery = await dwn.processMessage(alice.did, bobQueryMessageData.message);
-
-      expect(replyToBobQuery.status.code).to.equal(401);
-      expect(replyToBobQuery.status.detail).to.contain('not allowed to query records');
     });
 
     it('should allow DWN owner to use `recipient` as a filter in queries', async () => {
