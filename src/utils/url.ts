@@ -40,7 +40,7 @@ export function normalizeSchemaUrl(url: string): string {
 
 function normalizeUrl(url: string): string {
   let fullUrl: string;
-  if (/^[^:]+:\/\/./.test(url)) {
+  if (/^[^:]+:[\/]*./.test(url)) {
     fullUrl = url;
   } else {
     fullUrl = `http://${url}`;

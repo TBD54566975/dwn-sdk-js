@@ -29,6 +29,7 @@ describe('url', () => {
       expect(normalizeProtocolUrl('http://example.com/')).to.equal('http://example.com');
       expect(normalizeProtocolUrl('example.com?foo=bar')).to.equal('http://example.com');
       expect(normalizeProtocolUrl('example.com/?foo=bar')).to.equal('http://example.com');
+      expect(normalizeProtocolUrl('foo:example?foo=bar')).to.equal('foo:example');
 
       expect(normalizeProtocolUrl('example.com/path')).to.equal('http://example.com/path');
       expect(normalizeProtocolUrl('example.com/path/')).to.equal('http://example.com/path');
