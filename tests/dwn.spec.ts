@@ -57,7 +57,7 @@ describe('DWN', () => {
       const alice = await DidKeyResolver.generate();
       const { author, message } = await TestDataGenerator.generateRecordsQuery({ author: alice });
 
-      const tenant = author.did;
+      const tenant = author!.did;
       const reply = await dwnWithoutConfig.processMessage(tenant, message);
 
       expect(reply.status.code).to.equal(200);
@@ -83,7 +83,7 @@ describe('DWN', () => {
       const alice = await DidKeyResolver.generate();
       const { author, message } = await TestDataGenerator.generateRecordsQuery({ author: alice });
 
-      const tenant = author.did;
+      const tenant = author!.did;
       const reply = await dwn.processMessage(tenant, message);
 
       expect(reply.status.code).to.equal(200);
@@ -158,7 +158,7 @@ describe('DWN', () => {
       const alice = await DidKeyResolver.generate();
       const { author, message } = await TestDataGenerator.generateRecordsQuery({ author: alice });
 
-      const tenant = author.did;
+      const tenant = author!.did;
       const reply = await dwnWithConfig.processMessage(tenant, message);
 
       expect(reply.status.code).to.equal(401);

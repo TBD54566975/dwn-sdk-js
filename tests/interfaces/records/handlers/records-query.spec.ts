@@ -296,7 +296,7 @@ describe('RecordsQueryHandler.handle()', () => {
       const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
 
       // setting up a stub method resolver
-      const mockResolution = TestDataGenerator.createDidResolutionResult(alice);;
+      const mockResolution = TestDataGenerator.createDidResolutionResult(alice);
       sinon.stub(didResolver, 'resolve').resolves(mockResolution);
 
       const writeReply = await dwn.processMessage(alice.did, message, dataStream);
@@ -468,11 +468,11 @@ describe('RecordsQueryHandler.handle()', () => {
 
       // test correctness for anonymous query
       const anonymousQueryMessageData = await TestDataGenerator.generateRecordsQuery({
-        filter: { dateCreated: { from: '2000-01-01T10:20:30.123456Z' } }
+        generateAuthorIfNotGiven : false,
+        filter                   : { dateCreated: { from: '2000-01-01T10:20:30.123456Z' } }
       });
 
-      // remove authorization to make sure the message is anonymous
-      delete anonymousQueryMessageData.message.authorization;
+      // sanity check
       expect(anonymousQueryMessageData.message.authorization).to.not.exist;
 
       const replyToQuery= await dwn.processMessage(alice.did, anonymousQueryMessageData.message);
@@ -871,11 +871,11 @@ describe('RecordsQueryHandler.handle()', () => {
 
   it('should return 401 if signature check fails', async () => {
     const { author, message } = await TestDataGenerator.generateRecordsQuery();
-    const tenant = author.did;
+    const tenant = author!.did;
 
     // setting up a stub did resolver & message store
     // intentionally not supplying the public key so a different public key is generated to simulate invalid signature
-    const mismatchingPersona = await TestDataGenerator.generatePersona({ did: author.did, keyId: author.keyId });
+    const mismatchingPersona = await TestDataGenerator.generatePersona({ did: author!.did, keyId: author!.keyId });
     const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
@@ -888,10 +888,10 @@ describe('RecordsQueryHandler.handle()', () => {
 
   it('should return 400 if fail parsing the message', async () => {
     const { author, message } = await TestDataGenerator.generateRecordsQuery();
-    const tenant = author.did;
+    const tenant = author!.did;
 
     // setting up a stub method resolver & message store
-    const didResolver = TestStubGenerator.createDidResolverStub(author);
+    const didResolver = TestStubGenerator.createDidResolverStub(author!);
     const messageStore = sinon.createStubInstance(MessageStoreLevel);
     const dataStore = sinon.createStubInstance(DataStoreLevel);
     const recordsQueryHandler = new RecordsQueryHandler(didResolver, messageStore, dataStore);

@@ -131,6 +131,10 @@ export type GenerateRecordsWriteOutput = {
 };
 
 export type GenerateRecordsQueryInput = {
+  /**
+   * Treated as `true` if not given.
+   */
+  generateAuthorIfNotGiven?: boolean;
   author?: Persona;
   dateCreated?: string;
   filter?: RecordsQueryFilter;
@@ -138,7 +142,7 @@ export type GenerateRecordsQueryInput = {
 };
 
 export type GenerateRecordsQueryOutput = {
-  author: Persona;
+  author: Persona | undefined;
   message: RecordsQueryMessage;
 };
 
@@ -391,9 +395,18 @@ export class TestDataGenerator {
    * Generates a RecordsQuery message for testing.
    */
   public static async generateRecordsQuery(input?: GenerateRecordsQueryInput): Promise<GenerateRecordsQueryOutput> {
-    const author = input?.author ?? await TestDataGenerator.generatePersona();
+    const generateAuthorIfNotGiven: boolean = input?.generateAuthorIfNotGiven ?? true;
 
-    const authorizationSignatureInput = Jws.createSignatureInput(author);
+    // generate author if needed
+    let author = input?.author;
+    if (author === undefined && generateAuthorIfNotGiven) {
+      author = await TestDataGenerator.generatePersona();
+    }
+
+    let authorizationSignatureInput = undefined;
+    if (author !== undefined) {
+      authorizationSignatureInput = Jws.createSignatureInput(author);
+    }
 
     const options: RecordsQueryOptions = {
       dateCreated : input?.dateCreated,
