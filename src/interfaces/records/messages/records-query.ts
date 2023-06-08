@@ -20,13 +20,15 @@ export type RecordsQueryOptions = {
   dateCreated?: string;
   filter: RecordsQueryFilter;
   dateSort?: DateSort;
-  authorizationSignatureInput: SignatureInput;
+  authorizationSignatureInput?: SignatureInput;
 };
 
 export class RecordsQuery extends Message<RecordsQueryMessage> {
 
   public static async parse(message: RecordsQueryMessage): Promise<RecordsQuery> {
-    await validateAuthorizationIntegrity(message);
+    if (message.authorization !== undefined) {
+      await validateAuthorizationIntegrity(message);
+    }
 
     if (message.descriptor.filter.protocol !== undefined) {
       validateProtocolUrlNormalized(message.descriptor.filter.protocol);
@@ -51,28 +53,14 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
+    // only generate the `authorization` property if signature input is given
+    const authorizationSignatureInput = options.authorizationSignatureInput;
+    const authorization = authorizationSignatureInput ? await Message.signAsAuthorization(descriptor, authorizationSignatureInput) : undefined;
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
 
     return new RecordsQuery(message);
-  }
-
-  public async authorize(tenant: string): Promise<void> {
-    // DWN owner can do any query
-    if (this.author === tenant) {
-      return;
-    }
-
-    // extra checks if a recipient filter is specified
-    const recipient = this.message.descriptor.filter.recipient;
-    if (recipient !== undefined) {
-      // make sure the recipient is the author
-      if (recipient !== this.author) {
-        throw new Error(`${this.author} is not allowed to query records intended for another recipient: ${recipient}`);
-      }
-    }
   }
 
   public static convertFilter(filter: RecordsQueryFilter): Filter {

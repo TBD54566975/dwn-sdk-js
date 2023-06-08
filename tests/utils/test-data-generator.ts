@@ -131,6 +131,10 @@ export type GenerateRecordsWriteOutput = {
 };
 
 export type GenerateRecordsQueryInput = {
+  /**
+   * Treated as `false` if not given.
+   */
+  anonymous?: boolean;
   author?: Persona;
   dateCreated?: string;
   filter?: RecordsQueryFilter;
@@ -138,7 +142,7 @@ export type GenerateRecordsQueryInput = {
 };
 
 export type GenerateRecordsQueryOutput = {
-  author: Persona;
+  author: Persona | undefined;
   message: RecordsQueryMessage;
 };
 
@@ -391,9 +395,22 @@ export class TestDataGenerator {
    * Generates a RecordsQuery message for testing.
    */
   public static async generateRecordsQuery(input?: GenerateRecordsQueryInput): Promise<GenerateRecordsQueryOutput> {
-    const author = input?.author ?? await TestDataGenerator.generatePersona();
+    let author = input?.author;
+    const anonymous: boolean = input?.anonymous ?? false;
 
-    const authorizationSignatureInput = Jws.createSignatureInput(author);
+    if (anonymous && author) {
+      throw new Error('Cannot have `author` and be anonymous at the same time.');
+    }
+
+    // generate author if needed
+    if (author === undefined && !anonymous) {
+      author = await TestDataGenerator.generatePersona();
+    }
+
+    let authorizationSignatureInput = undefined;
+    if (author !== undefined) {
+      authorizationSignatureInput = Jws.createSignatureInput(author);
+    }
 
     const options: RecordsQueryOptions = {
       dateCreated : input?.dateCreated,

@@ -26,9 +26,11 @@ export class RecordsQueryHandler implements MethodHandler {
       return MessageReply.fromError(e, 400);
     }
 
+    // authentication
     try {
-      await authenticate(message.authorization, this.didResolver);
-      await recordsQuery.authorize(tenant);
+      if (recordsQuery.author !== undefined) {
+        await authenticate(message.authorization!, this.didResolver);
+      }
     } catch (e) {
       return MessageReply.fromError(e, 401);
     }
@@ -36,6 +38,9 @@ export class RecordsQueryHandler implements MethodHandler {
     let records: RecordsWriteMessageWithOptionalEncodedData[];
     if (recordsQuery.author === tenant) {
       records = await this.fetchRecordsAsOwner(tenant, recordsQuery);
+    } else if (recordsQuery.author === undefined) {
+      // this is an anonymous query, query only published records
+      records = await this.fetchPublishedRecords(tenant, recordsQuery);
     } else {
       records = await this.fetchRecordsAsNonOwner(tenant, recordsQuery);
     }
@@ -81,10 +86,27 @@ export class RecordsQueryHandler implements MethodHandler {
   private async fetchRecordsAsNonOwner(tenant: string, recordsQuery: RecordsQuery)
     : Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
     const publishedRecords = await this.fetchPublishedRecords(tenant, recordsQuery);
-    const unpublishedRecordsForQueryAuthor = await this.fetchUnpublishedRecordsForQueryAuthor(tenant, recordsQuery);
     const unpublishedRecordsByAuthor = await this.fetchUnpublishedRecordsByAuthor(tenant, recordsQuery);
-    const records = [...publishedRecords, ...unpublishedRecordsForQueryAuthor, ...unpublishedRecordsByAuthor];
-    return records;
+
+    // the `RecordsQuery` author in addition is allowed to get private records that were meant for them
+    let unpublishedRecordsForQueryAuthor: RecordsWriteMessageWithOptionalEncodedData[] = [];
+    const recipientFilter = recordsQuery.message.descriptor.filter.recipient;
+    if (recipientFilter === undefined || recipientFilter === recordsQuery.author) {
+      unpublishedRecordsForQueryAuthor = await this.fetchUnpublishedRecordsForQueryAuthor(tenant, recordsQuery);
+    }
+
+    const records = [...publishedRecords, ...unpublishedRecordsByAuthor, ...unpublishedRecordsForQueryAuthor];
+
+    // go through the records and remove duplicates
+    // this can happen between `unpublishedRecordsByAuthor` and `unpublishedRecordsForQueryAuthor` when `author` = `recipient`
+    const deduplicatedRecords = new Map<string, RecordsWriteMessageWithOptionalEncodedData>();
+    for (const record of records) {
+      if (!deduplicatedRecords.has(record.recordId)) {
+        deduplicatedRecords.set(record.recordId, record);
+      }
+    }
+
+    return Array.from(deduplicatedRecords.values());
   }
 
   /**
@@ -104,7 +126,7 @@ export class RecordsQueryHandler implements MethodHandler {
   }
 
   /**
-   * Fetches only unpublished records that are intended for the query author (where `recipient` is the author).
+   * Fetches unpublished records that are intended for the query author (where `recipient` is the author).
    */
   private async fetchUnpublishedRecordsForQueryAuthor(tenant: string, recordsQuery: RecordsQuery)
     : Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
@@ -114,12 +136,12 @@ export class RecordsQueryHandler implements MethodHandler {
       ...RecordsQuery.convertFilter(recordsQuery.message.descriptor.filter),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
-      // TODO: `recordsQuery.author` cannot be undefined until #299 is implemented (https://github.com/TBD54566975/dwn-sdk-js/issues/299)
       recipient         : recordsQuery.author!,
       isLatestBaseState : true,
       published         : false
     };
     const unpublishedRecordsForQueryAuthor = await StorageController.query(this.messageStore, this.dataStore, tenant, filter);
+
     return unpublishedRecordsForQueryAuthor;
   }
 
@@ -132,7 +154,6 @@ export class RecordsQueryHandler implements MethodHandler {
     // include records where author is the same as the query author
     const filter = {
       ...RecordsQuery.convertFilter(recordsQuery.message.descriptor.filter),
-      // TODO: `recordsQuery.author` cannot be undefined until #299 is implemented (https://github.com/TBD54566975/dwn-sdk-js/issues/299)
       author            : recordsQuery.author!,
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,

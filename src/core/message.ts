@@ -1,8 +1,8 @@
+import type { GeneralJws } from '../types/jws-types.js';
 import type { SignatureInput } from '../types/jws-types.js';
 import type { BaseDecodedAuthorizationPayload, BaseMessage, Descriptor, TimestampedMessage } from '../types/message-types.js';
 
 import { computeCid } from '../utils/cid.js';
-import type { GeneralJws } from '../types/jws-types.js';
 import { GeneralJwsSigner } from '../jose/jws/general/signer.js';
 import { Jws } from '../utils/jws.js';
 import { lexicographicalCompare } from '../utils/string.js';
