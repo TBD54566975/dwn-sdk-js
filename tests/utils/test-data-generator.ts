@@ -132,9 +132,9 @@ export type GenerateRecordsWriteOutput = {
 
 export type GenerateRecordsQueryInput = {
   /**
-   * Treated as `true` if not given.
+   * Treated as `false` if not given.
    */
-  generateAuthorIfNotGiven?: boolean;
+  anonymous?: boolean;
   author?: Persona;
   dateCreated?: string;
   filter?: RecordsQueryFilter;
@@ -395,11 +395,15 @@ export class TestDataGenerator {
    * Generates a RecordsQuery message for testing.
    */
   public static async generateRecordsQuery(input?: GenerateRecordsQueryInput): Promise<GenerateRecordsQueryOutput> {
-    const generateAuthorIfNotGiven: boolean = input?.generateAuthorIfNotGiven ?? true;
+    let author = input?.author;
+    const anonymous: boolean = input?.anonymous ?? false;
+
+    if (anonymous && author) {
+      throw new Error('Cannot have `author` and be anonymous at the same time.');
+    }
 
     // generate author if needed
-    let author = input?.author;
-    if (author === undefined && generateAuthorIfNotGiven) {
+    if (author === undefined && !anonymous) {
       author = await TestDataGenerator.generatePersona();
     }
 

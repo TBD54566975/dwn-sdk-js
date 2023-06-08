@@ -468,8 +468,8 @@ describe('RecordsQueryHandler.handle()', () => {
 
       // test correctness for anonymous query
       const anonymousQueryMessageData = await TestDataGenerator.generateRecordsQuery({
-        generateAuthorIfNotGiven : false,
-        filter                   : { dateCreated: { from: '2000-01-01T10:20:30.123456Z' } }
+        anonymous : true,
+        filter    : { dateCreated: { from: '2000-01-01T10:20:30.123456Z' } }
       });
 
       // sanity check
