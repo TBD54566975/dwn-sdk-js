@@ -98,7 +98,7 @@ export class RecordsQueryHandler implements MethodHandler {
     const records = [...publishedRecords, ...unpublishedRecordsByAuthor, ...unpublishedRecordsForQueryAuthor];
 
     // go through the records and remove duplicates
-    // which can happen between `unpublishedRecordsByAuthor` and `unpublishedRecordsForQueryAuthor`(author = recipient)
+    // this can happen between `unpublishedRecordsByAuthor` and `unpublishedRecordsForQueryAuthor` when `author` = `recipient`
     const deduplicatedRecords = new Map<string, RecordsWriteMessageWithOptionalEncodedData>();
     for (const record of records) {
       if (!deduplicatedRecords.has(record.recordId)) {
