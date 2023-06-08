@@ -97,7 +97,17 @@ export class RecordsQueryHandler implements MethodHandler {
     }
 
     const records = [...publishedRecords, ...unpublishedRecordsByAuthor, ...unpublishedRecordsForQueryAuthor];
-    return records;
+
+    // go through the records and remove duplicates
+    // which can happen between `unpublishedRecordsByAuthor` and `unpublishedRecordsForQueryAuthor`(author = recipient)
+    const deduplicatedRecords = new Map<string, RecordsWriteMessageWithOptionalEncodedData>();
+    for (const record of records) {
+      if (!deduplicatedRecords.has(record.recordId)) {
+        deduplicatedRecords.set(record.recordId, record);
+      }
+    }
+
+    return Array.from(deduplicatedRecords.values());
   }
 
   /**
@@ -117,9 +127,7 @@ export class RecordsQueryHandler implements MethodHandler {
   }
 
   /**
-   * Fetches unpublished records that are:
-   * 1. intended for the query author (where `recipient` is the author); AND
-   * 2. record author is NOT the same as query author (these records are included in records returned by `fetchUnpublishedRecordsByAuthor()`)
+   * Fetches unpublished records that are intended for the query author (where `recipient` is the author).
    */
   private async fetchUnpublishedRecordsForQueryAuthor(tenant: string, recordsQuery: RecordsQuery)
     : Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
@@ -133,12 +141,7 @@ export class RecordsQueryHandler implements MethodHandler {
       isLatestBaseState : true,
       published         : false
     };
-    let unpublishedRecordsForQueryAuthor = await StorageController.query(this.messageStore, this.dataStore, tenant, filter);
-
-    // removing records that have its author being the same as the query author,
-    // because those records will be included in records returned by `fetchUnpublishedRecordsByAuthor()` already
-    // TODO: #392 - use a NOT query directly in the filter as a performance improvement (https://github.com/TBD54566975/dwn-sdk-js/issues/392)
-    unpublishedRecordsForQueryAuthor = unpublishedRecordsForQueryAuthor.filter(message => Message.getAuthor(message) !== recordsQuery.author);
+    const unpublishedRecordsForQueryAuthor = await StorageController.query(this.messageStore, this.dataStore, tenant, filter);
 
     return unpublishedRecordsForQueryAuthor;
   }
