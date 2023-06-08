@@ -5,7 +5,6 @@ import type { RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, Re
 
 import { authenticate } from '../../../core/auth.js';
 import { lexicographicalCompare } from '../../../utils/string.js';
-import { Message } from '../../../core/message.js';
 import { MessageReply } from '../../../core/message-reply.js';
 import { StorageController } from '../../../store/storage-controller.js';
 
