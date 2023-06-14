@@ -7,8 +7,8 @@ import { Encoder } from '../utils/encoder.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
-
-// node.js 18 and earlier requires globalThis.crypto polyfill.
+// NOTE: @noble/secp256k1 requires globalThis.crypto polyfill for node.js <=18: https://github.com/paulmillr/noble-secp256k1/blob/main/README.md#usage
+// Remove when we move off of node.js v18 to v20, earliest possible time would be Oct 2023: https://github.com/nodejs/release#release-schedule
 import { webcrypto } from 'node:crypto';
 // @ts-ignore
 if (!globalThis.crypto) {globalThis.crypto = webcrypto;}
@@ -127,7 +127,7 @@ export class Secp256k1 {
    */
   public static async generateKeyPair(): Promise<{publicJwk: PublicJwk, privateJwk: PrivateJwk}> {
     const privateKeyBytes = secp256k1.utils.randomPrivateKey();
-    const publicKeyBytes = secp256k1.getPublicKey(privateKeyBytes);
+    const publicKeyBytes = secp256k1.getPublicKey(privateKeyBytes, false); // `false` = uncompressed
 
     const d = Encoder.bytesToBase64Url(privateKeyBytes);
     const publicJwk: PublicJwk = await Secp256k1.publicKeyToJwk(publicKeyBytes);
@@ -141,7 +141,7 @@ export class Secp256k1 {
    */
   public static async generateKeyPairRaw(): Promise<{publicKey: Uint8Array, privateKey: Uint8Array}> {
     const privateKey = secp256k1.utils.randomPrivateKey();
-    const publicKey = secp256k1.getPublicKey(privateKey);
+    const publicKey = secp256k1.getPublicKey(privateKey, false); // `false` = uncompressed
 
     return { publicKey, privateKey };
   }
@@ -150,8 +150,7 @@ export class Secp256k1 {
    * Gets the uncompressed public key of the given private key.
    */
   public static async getPublicKey(privateKey: Uint8Array): Promise<Uint8Array> {
-    const compressedPublicKey = false;
-    const publicKey = secp256k1.getPublicKey(privateKey, compressedPublicKey);
+    const publicKey = secp256k1.getPublicKey(privateKey, false); // `false` = uncompressed
     return publicKey;
   }
 
@@ -166,7 +165,7 @@ export class Secp256k1 {
     let currentPublicKey: Uint8Array;
     if (key.length === 32) {
       // private key is always 32 bytes
-      currentPublicKey = secp256k1.getPublicKey(key);
+      currentPublicKey = secp256k1.getPublicKey(key, false); // `false` = uncompressed
     } else {
       currentPublicKey = key;
     }
