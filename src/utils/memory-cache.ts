@@ -1,17 +1,17 @@
 import type { Cache } from '../types/cache.js';
-import LruCache from 'lru-cache';
+import { LRUCache } from 'lru-cache';
 
 /**
  * A cache using local memory.
  */
 export class MemoryCache implements Cache {
-  private cache: LruCache<string, any>;
+  private cache: LRUCache<string, any>;
 
   /**
    * @param timeToLiveInSeconds time-to-live for every key-value pair set in the cache
    */
   public constructor (private timeToLiveInSeconds: number) {
-    this.cache = new LruCache({
+    this.cache = new LRUCache({
       max : 100_000,
       ttl : timeToLiveInSeconds * 1000
     });

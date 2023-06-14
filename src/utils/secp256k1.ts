@@ -29,8 +29,8 @@ export class Secp256k1 {
     let uncompressedPublicKeyBytes;
     if (publicKeyBytes.byteLength === 33) {
     // this means given key is compressed
-      const publicKeyHex = secp256k1.utils.bytesToHex(publicKeyBytes);
-      const curvePoints = secp256k1.Point.fromHex(publicKeyHex);
+      const publicKeyHex = secp256k1.etc.bytesToHex(publicKeyBytes);
+      const curvePoints = secp256k1.ProjectivePoint.fromHex(publicKeyHex);
       uncompressedPublicKeyBytes = curvePoints.toRawBytes(false); // isCompressed = false
     } else {
       uncompressedPublicKeyBytes = publicKeyBytes;
@@ -96,9 +96,11 @@ export class Secp256k1 {
     // the underlying lib expects us to hash the content ourselves:
     // https://github.com/paulmillr/noble-secp256k1/blob/97aa518b9c12563544ea87eba471b32ecf179916/index.ts#L1160
     const hashedContent = await sha256.encode(content);
+    const hashedContentHex = secp256k1.etc.bytesToHex(hashedContent);
     const privateKeyBytes = Secp256k1.privateJwkToBytes(privateJwk);
+    const privateKeyHex = secp256k1.etc.bytesToHex(privateKeyBytes);
 
-    return await secp256k1.sign(hashedContent, privateKeyBytes, { der: false });
+    return (await secp256k1.signAsync(hashedContentHex, privateKeyHex, )).toCompactRawBytes();
   }
 
   /**
