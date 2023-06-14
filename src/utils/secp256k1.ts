@@ -7,6 +7,13 @@ import { Encoder } from '../utils/encoder.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
+
+// node.js 18 and earlier requires globalThis.crypto polyfill.
+import { webcrypto } from 'node:crypto';
+// @ts-ignore
+if (!globalThis.crypto) {globalThis.crypto = webcrypto;}
+
+
 /**
  * Class containing SECP256K1 related utility methods.
  */
