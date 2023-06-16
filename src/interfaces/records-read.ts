@@ -60,6 +60,9 @@ export class RecordsRead extends Message<RecordsReadMessage> {
     } else if (descriptor.published === true) {
       // authentication is not required for published data
       return;
+    } else if (this.author !== undefined && this.author === descriptor.recipient) {
+      // The recipient of a message may always read it
+      return;
     } else if (descriptor.protocol !== undefined) {
       await ProtocolAuthorization.authorize(tenant, this, this.author, messageStore);
     } else {

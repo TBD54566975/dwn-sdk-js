@@ -153,6 +153,33 @@ describe('RecordsReadHandler.handle()', () => {
       expect(ArrayUtility.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
     });
 
+    it('should allow a non-tenant to read RecordsRead data they have received', async () => {
+      const alice = await DidKeyResolver.generate();
+      const bob = await DidKeyResolver.generate();
+
+      // Alice inserts data with Bob as recipient
+      const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({
+        author    : alice,
+        recipient : bob.did,
+      });
+      const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+      expect(writeReply.status.code).to.equal(202);
+
+      // Bob reads the data that Alice sent him
+      const recordsRead = await RecordsRead.create({
+        recordId                    : message.recordId,
+        authorizationSignatureInput : Jws.createSignatureInput(bob)
+      });
+
+      const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+      expect(readReply.status.code).to.equal(200);
+      expect(readReply.record).to.exist;
+      expect(readReply.record?.descriptor).to.exist;
+
+      const dataFetched = await DataStream.toBytes(readReply.record!.data!);
+      expect(ArrayUtility.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
+    });
+
     describe('protocol based reads', () => {
       it('should allow read with allow-anyone rule', async () => {
         // scenario: Alice writes an image to her DWN, then Bob reads the image because he is "anyone".
