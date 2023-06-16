@@ -152,11 +152,6 @@
         "dateModified",
         "dataFormat"
       ],
-      "dependencies": {
-        "recipient": [
-          "protocol"
-        ]
-      },
       "allOf": [
         {
           "$comment": "rule defining `published` and `datePublished` relationship",
