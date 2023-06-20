@@ -28,6 +28,17 @@ export enum DwnMethodName {
   Delete = 'Delete'
 }
 
+export enum DwnMessageType {
+  EventsGet = 'EventsGet',
+  MessagesGet = 'MessagesGet',
+  ProtocolsConfigure = 'ProtocolsConfigure',
+  ProtocolsQuery = 'ProtocolsQuery',
+  RecordsDelete = 'RecordsDelete',
+  RecordsQuery = 'RecordsQuery',
+  RecordsRead = 'RecordsRead',
+  RecordsWrite = 'RecordsWrite',
+};
+
 export abstract class Message<M extends BaseMessage> {
   readonly message: M;
   readonly authorizationPayload: any;

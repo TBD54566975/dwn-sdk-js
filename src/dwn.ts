@@ -24,7 +24,7 @@ import { RecordsDeleteHandler } from './handlers/records-delete.js';
 import { RecordsQueryHandler } from './handlers/records-query.js';
 import { RecordsReadHandler } from './handlers/records-read.js';
 import { RecordsWriteHandler } from './handlers/records-write.js';
-import { DwnInterfaceName, DwnMethodName, Message } from './core/message.js';
+import { DwnInterfaceName, DwnMessageType, DwnMethodName, Message } from './core/message.js';
 
 export class Dwn {
   private methodHandlers: { [key:string]: MethodHandler };
@@ -89,7 +89,7 @@ export class Dwn {
    * @param tenant The tenant DID to route the given message to.
    */
   public async processMessage(tenant: string, rawMessage: any, dataStream?: Readable): Promise<MessageReply> {
-    const errorMessageReply = await this.preprocessingChecks(tenant, rawMessage);
+    const errorMessageReply = await this.validateTenant(tenant) ?? await this.validateMessageIntegrity(rawMessage);
     if (errorMessageReply !== undefined) {
       return errorMessageReply;
     }
@@ -108,7 +108,9 @@ export class Dwn {
    * Handles a `RecordsQuery` message.
    */
   public async handleRecordsQuery(tenant: string, message: RecordsQueryMessage): Promise<RecordsQueryReply> {
-    const errorMessageReply = await this.preprocessingChecks(tenant, message, DwnInterfaceName.Records, DwnMethodName.Query);
+    const errorMessageReply =
+      await this.validateTenant(tenant) ??
+      await this.validateMessageIntegrity(message, DwnMessageType.RecordsQuery);
     if (errorMessageReply !== undefined) {
       return errorMessageReply;
     }
@@ -121,7 +123,9 @@ export class Dwn {
    * Handles a `RecordsRead` message.
    */
   public async handleRecordsRead(tenant: string, message: RecordsReadMessage): Promise<RecordsReadReply> {
-    const errorMessageReply = await this.preprocessingChecks(tenant, message, DwnInterfaceName.Records, DwnMethodName.Read);
+    const errorMessageReply =
+      await this.validateTenant(tenant) ??
+      await this.validateMessageIntegrity(message, DwnMessageType.RecordsRead);
     if (errorMessageReply !== undefined) {
       return errorMessageReply;
     }
@@ -134,7 +138,9 @@ export class Dwn {
    * Handles a `MessagesGet` message.
    */
   public async handleMessagesGet(tenant: string, message: MessagesGetMessage): Promise<MessagesGetReply> {
-    const errorMessageReply = await this.preprocessingChecks(tenant, message, DwnInterfaceName.Messages, DwnMethodName.Get);
+    const errorMessageReply =
+      await this.validateTenant(tenant) ??
+      await this.validateMessageIntegrity(message, DwnMessageType.MessagesGet);
     if (errorMessageReply !== undefined) {
       return errorMessageReply;
     }
@@ -147,7 +153,9 @@ export class Dwn {
    * Privileged method for writing a pruned initial `RecordsWrite` to a DWN without needing to supply associated data.
    */
   public async synchronizePrunedInitialRecordsWrite(tenant: string, message: RecordsWriteMessage): Promise<MessageReply> {
-    const errorMessageReply = await this.preprocessingChecks(tenant, message, DwnInterfaceName.Records, DwnMethodName.Write);
+    const errorMessageReply =
+      await this.validateTenant(tenant) ??
+      await this.validateMessageIntegrity(message, DwnMessageType.RecordsWrite);
     if (errorMessageReply !== undefined) {
       return errorMessageReply;
     }
@@ -162,21 +170,29 @@ export class Dwn {
   }
 
   /**
-   * Common checks for handlers.
+   * Checks tenant gate to see if tenant is allowed.
+   * @param tenant The tenant DID to route the given message to.
+   * @returns BaseMessageReply if the message has an integrity error, otherwise undefined.
    */
-  private async preprocessingChecks(
-    tenant: string,
-    rawMessage: any,
-    expectedInterface?: DwnInterfaceName,
-    expectedMethod?: DwnMethodName
-  ): Promise<BaseMessageReply | undefined> {
+  public async validateTenant(tenant: string): Promise<MessageReply | undefined> {
     const isTenant = await this.tenantGate.isTenant(tenant);
     if (!isTenant) {
       return new MessageReply({
         status: { code: 401, detail: `${tenant} is not a tenant` }
       });
     }
+  }
 
+  /**
+   * Validates structure of DWN message
+   * @param tenant The tenant DID to route the given message to.
+   * @param dwnMessageType The type of DWN message from enum DwnMessageType.
+   * @returns BaseMessageReply if the message has an integrity error, otherwise undefined.
+   */
+  public async validateMessageIntegrity(
+    rawMessage: any,
+    expectedMessageType?: DwnMessageType,
+  ): Promise<BaseMessageReply | undefined> {
     // Verify interface and method
     const dwnInterface = rawMessage?.descriptor?.interface;
     const dwnMethod = rawMessage?.descriptor?.method;
@@ -185,14 +201,11 @@ export class Dwn {
         status: { code: 400, detail: `Both interface and method must be present, interface: ${dwnInterface}, method: ${dwnMethod}` }
       });
     }
-    if (expectedInterface !== undefined && expectedInterface !== dwnInterface) {
+
+    const messageType = dwnInterface + dwnMethod;
+    if (expectedMessageType !== undefined && expectedMessageType.toString() !== messageType) {
       return new MessageReply({
-        status: { code: 400, detail: `Expected interface ${expectedInterface}, received ${dwnInterface}` }
-      });
-    }
-    if (expectedMethod !== undefined && expectedMethod !== dwnMethod) {
-      return new MessageReply({
-        status: { code: 400, detail: `Expected method ${expectedInterface}${expectedMethod}, received ${dwnInterface}${dwnMethod}` }
+        status: { code: 400, detail: `Expected DWN message type ${expectedMessageType} but instead received ${messageType}` }
       });
     }
 
@@ -203,8 +216,6 @@ export class Dwn {
     } catch (error) {
       return MessageReply.fromError(error, 400);
     }
-
-    return undefined;
   }
 };
 
