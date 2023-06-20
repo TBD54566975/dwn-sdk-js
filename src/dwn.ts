@@ -18,6 +18,7 @@ import { EventsGetHandler } from './handlers/events-get.js';
 import { messageReplyfromError } from './core/message-reply.js';
 import { MessagesGetHandler } from './handlers/messages-get.js';
 import { MessageStoreLevel } from './store/message-store-level.js';
+import { PermissionsRequestHandler } from './handlers/permissions-request.js';
 import { ProtocolsConfigureHandler } from './handlers/protocols-configure.js';
 import { ProtocolsQueryHandler } from './handlers/protocols-query.js';
 import { RecordsDeleteHandler } from './handlers/records-delete.js';
@@ -44,7 +45,9 @@ export class Dwn {
     this.methodHandlers = {
       [DwnInterfaceName.Events + DwnMethodName.Get]          : new EventsGetHandler(this.didResolver, this.eventLog),
       [DwnInterfaceName.Messages + DwnMethodName.Get]        : new MessagesGetHandler(this.didResolver, this.messageStore, this.dataStore),
-      [DwnInterfaceName.Protocols + DwnMethodName.Configure] : new ProtocolsConfigureHandler(
+      [DwnInterfaceName.Permissions + DwnMethodName.Request] : new PermissionsRequestHandler(
+        this.didResolver, this.messageStore, this.eventLog),
+      [DwnInterfaceName.Protocols + DwnMethodName.Configure]: new ProtocolsConfigureHandler(
         this.didResolver, this.messageStore, this.dataStore, this.eventLog),
       [DwnInterfaceName.Protocols + DwnMethodName.Query] : new ProtocolsQueryHandler(this.didResolver, this.messageStore, this.dataStore),
       [DwnInterfaceName.Records + DwnMethodName.Delete]  : new RecordsDeleteHandler(

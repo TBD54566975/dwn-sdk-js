@@ -1,4 +1,3 @@
-import type { BaseMessage } from '../../src/types/message-types.js';
 import type { DidResolutionResult } from '../../src/did/did-resolver.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsQueryFilter } from '../../src/types/records-types.js';
@@ -22,12 +21,17 @@ import type {
   RecordsWriteMessage,
   RecordsWriteOptions
 } from '../../src/index.js';
+import {
+  DwnInterfaceName,
+  DwnMethodName
+} from '../../src/index.js';
+import type { PermissionConditions, PermissionScope, PermissionsRequestMessage } from '../../src/types/permissions-types.js';
 import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
+
 
 import * as cbor from '@ipld/dag-cbor';
 import { CID } from 'multiformats/cid';
 import { DataStream } from '../../src/utils/data-stream.js';
-import { ed25519 } from '../../src/jose/algorithms/signing/ed25519.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions-request.js';
 import { removeUndefinedProperties } from '../../src/utils/object.js';
@@ -169,6 +173,23 @@ export type GenerateHooksWriteInput = {
 export type GenerateHooksWriteOutput = {
   author: Persona;
   message: HooksWriteMessage;
+};
+
+export type GeneratePermissionsRequestInput = {
+  author: Persona;
+  dateCreated?: string;
+  description?: string;
+  grantedTo?: string;
+  grantedBy?: string;
+  grantedFor?: string;
+  scope: PermissionScope;
+  conditions?: PermissionConditions;
+};
+
+export type GeneratePermissionsRequestOutput = {
+  author: Persona;
+  permissionsRequest: PermissionsRequest;
+  message: PermissionsRequestMessage;
 };
 
 export type GenerateEventsGetInput = {
@@ -473,18 +494,27 @@ export class TestDataGenerator {
   /**
    * Generates a PermissionsRequest message for testing.
    */
-  public static async generatePermissionsRequest(): Promise<{ message: BaseMessage }> {
-    const { privateJwk } = await ed25519.generateKeyPair();
-    const permissionRequest = await PermissionsRequest.create({
-      dateCreated                 : getCurrentTimeInHighPrecision(),
-      description                 : 'drugs',
-      grantedBy                   : 'did:jank:bob',
-      grantedTo                   : 'did:jank:alice',
-      scope                       : { method: 'RecordsWrite' },
-      authorizationSignatureInput : { privateJwk: privateJwk, protectedHeader: { alg: privateJwk.alg as string, kid: 'whatev' } }
+  public static async generatePermissionsRequest(input?: GeneratePermissionsRequestInput): Promise<GeneratePermissionsRequestOutput> {
+    const author = input?.author ?? await TestDataGenerator.generatePersona();
+    const permissionsRequest = await PermissionsRequest.create({
+      dateCreated : getCurrentTimeInHighPrecision(),
+      description : input?.description ?? 'drugs',
+      grantedBy   : input?.grantedBy ?? 'did:jank:bob',
+      grantedTo   : input?.grantedTo ?? 'did:jank:alice',
+      grantedFor  : input?.grantedFor ?? input?.grantedBy ?? 'did:jank:bob',
+      scope       : {
+        interface : DwnInterfaceName.Records,
+        method    : DwnMethodName.Write
+      },
+      conditions                  : input?.conditions,
+      authorizationSignatureInput : Jws.createSignatureInput(author)
     });
 
-    return { message: permissionRequest.message };
+    return {
+      author,
+      permissionsRequest,
+      message: permissionsRequest.message
+    };
   }
 
   public static async generateEventsGet(input?: GenerateEventsGetInput): Promise<GenerateEventsGetOutput> {

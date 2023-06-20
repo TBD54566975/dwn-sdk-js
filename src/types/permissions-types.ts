@@ -2,46 +2,31 @@ import type { BaseMessage } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../index.js';
 
 export type PermissionScope = {
-  method: string
-  schema?: string
-  objectId?: string
+  interface: DwnInterfaceName;
+  method: DwnMethodName;
 };
 
 export type PermissionConditions = {
-  // attestation indicates whether any inbound data should be signed.
-  // defaults to `optional`
-  attestation?: 'optional' | 'prohibited' | 'required'
-
-  // delegation indicates that a given permission can be delegated to other entities.
-  // defaults to `false`
-  delegation?: boolean,
-
-  // encryption indicates whether any inbound data should be encrypted.
-  // defaults to 'optional'
-  encryption?: 'optional' | 'required'
-
   // indicates whether a message written with the invocation of a permission can
   // be marked as public. public messages can be queried for without any authorization
   // defaults to false.
-  publication?: boolean
-
-  // sharedAccess indicates whether the author has access to records authored
-  // by others. False indicates that the author only has access to records
-  // they authored.
-  // defaults to `false`
-  sharedAccess?: boolean
+  publication?: boolean;
 };
 
 export type PermissionsRequestDescriptor = {
-  interface : DwnInterfaceName.Permissions
-  method: DwnMethodName.Request
+  interface: DwnInterfaceName.Permissions;
+  method: DwnMethodName.Request;
   dateCreated: string;
-  conditions: PermissionConditions
-  description: string
-  grantedTo: string
-  grantedBy: string
-  objectId?: string
-  scope: PermissionScope
+  // The DID of the DWN which the grantee will be given access
+  grantedFor: string;
+  // The recipient of the grant. Usually this is the author of the PermissionsRequest message
+  grantedTo: string;
+  // The granter, who will be either the DWN owner or an entity who the DWN owner has delegated permission to.
+  grantedBy: string;
+  // Optional string that communicates what the grant would be used for
+  description?: string;
+  scope: PermissionScope;
+  conditions?: PermissionConditions;
 };
 
 export type PermissionsRequestMessage = BaseMessage & {
@@ -49,17 +34,23 @@ export type PermissionsRequestMessage = BaseMessage & {
 };
 
 export type PermissionsGrantDescriptor = {
-  interface : DwnInterfaceName.Permissions
+  interface: DwnInterfaceName.Permissions;
   method: DwnMethodName.Grant;
   dateCreated: string;
-  conditions: PermissionConditions;
-  delegatedFrom?: string;
-  description: string;
-  grantedTo: string;
-  grantedBy: string;
-  objectId: string;
+  // Optional CID of a PermissionsRequest message. This is optional because grants may be given without being officially requested
   permissionsRequestId?: string;
+  // Optional timestamp at which this grant will no longer be active.
+  dateExpires?: string;
+  // The DID of the DWN which the grantee will be given access
+  grantedFor: string;
+  // The recipient of the grant. Usually this is the author of the PermissionsRequest message
+  grantedTo: string;
+  // The granter, who will be either the DWN owner or an entity who the DWN owner has delegated permission to.
+  grantedBy: string;
+  // Optional string that communicates what the grant would be used for
+  description?: string;
   scope: PermissionScope;
+  conditions?: PermissionConditions
 };
 
 export type PermissionsGrantMessage = BaseMessage & {
