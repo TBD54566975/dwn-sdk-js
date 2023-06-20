@@ -44,7 +44,6 @@ const recordsWrite = await RecordsWrite.create({
   data,
   dataFormat                  : 'application/json',
   published                   : true,
-  protocol                    : 'yeeter',
   schema                      : 'yeeter/post',
   authorizationSignatureInput : signatureMaterial
 });
