@@ -1,3 +1,4 @@
+import type { BaseMessageReply } from '../core/message-reply.js';
 import type { EventLog } from '../types/event-log.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { RecordsDeleteMessage } from '../types/records-types.js';
@@ -5,7 +6,7 @@ import type { TimestampedMessage } from '../types/message-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
 
 import { authenticate } from '../core/auth.js';
-import { MessageReply } from '../core/message-reply.js';
+import { messageReplyfromError } from '../core/message-reply.js';
 import { RecordsDelete } from '../interfaces/records-delete.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { StorageController } from '../store/storage-controller.js';
@@ -18,13 +19,13 @@ export class RecordsDeleteHandler implements MethodHandler {
   public async handle({
     tenant,
     message
-  }: { tenant: string, message: RecordsDeleteMessage}): Promise<MessageReply> {
+  }: { tenant: string, message: RecordsDeleteMessage}): Promise<BaseMessageReply> {
 
     let recordsDelete: RecordsDelete;
     try {
       recordsDelete = await RecordsDelete.parse(message);
     } catch (e) {
-      return MessageReply.fromError(e, 400);
+      return messageReplyfromError(e, 400);
     }
 
     // authentication & authorization
@@ -32,7 +33,7 @@ export class RecordsDeleteHandler implements MethodHandler {
       await authenticate(message.authorization, this.didResolver);
       await recordsDelete.authorize(tenant);
     } catch (e) {
-      return MessageReply.fromError(e, 401);
+      return messageReplyfromError(e, 401);
     }
 
     // get existing records matching the `recordId`
@@ -55,16 +56,16 @@ export class RecordsDeleteHandler implements MethodHandler {
     }
 
     if (!incomingMessageIsNewest) {
-      return new MessageReply({
+      return {
         status: { code: 409, detail: 'Conflict' }
-      });
+      };
     }
 
     // return Not Found if record does not exist or is already deleted
     if (newestExistingMessage === undefined || newestExistingMessage.descriptor.method === DwnMethodName.Delete) {
-      return new MessageReply({
+      return {
         status: { code: 404, detail: 'Not Found' }
-      });
+      };
     }
 
     const indexes = await constructIndexes(tenant, recordsDelete);
@@ -78,9 +79,9 @@ export class RecordsDeleteHandler implements MethodHandler {
       tenant, existingMessages, newestMessage, this.messageStore, this.dataStore, this.eventLog
     );
 
-    const messageReply = new MessageReply({
+    const messageReply = {
       status: { code: 202, detail: 'Accepted' }
-    });
+    };
     return messageReply;
   };
 }

@@ -1,5 +1,4 @@
 import type { BaseMessage } from './types/message-types.js';
-import type { BaseMessageReply } from './core/message-reply.js';
 import type { DataStore } from './types/data-store.js';
 import type { EventLog } from './types/event-log.js';
 import type { MessageStore } from './types/message-store.js';
@@ -7,6 +6,7 @@ import type { MethodHandler } from './types/method-handler.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsWriteHandlerOptions } from './handlers/records-write.js';
 import type { TenantGate } from './core/tenant-gate.js';
+import type { BaseMessageReply , GenericMessageReply } from './core/message-reply.js';
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
 import type { RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from './types/records-types.js';
 
@@ -15,7 +15,7 @@ import { DataStoreLevel } from './store/data-store-level.js';
 import { DidResolver } from './did/did-resolver.js';
 import { EventLogLevel } from './event-log/event-log-level.js';
 import { EventsGetHandler } from './handlers/events-get.js';
-import { MessageReply } from './core/message-reply.js';
+import { messageReplyfromError } from './core/message-reply.js';
 import { MessagesGetHandler } from './handlers/messages-get.js';
 import { MessageStoreLevel } from './store/message-store-level.js';
 import { ProtocolsConfigureHandler } from './handlers/protocols-configure.js';
@@ -88,7 +88,7 @@ export class Dwn {
    * Processes the given DWN message and returns with a reply.
    * @param tenant The tenant DID to route the given message to.
    */
-  public async processMessage(tenant: string, rawMessage: any, dataStream?: Readable): Promise<MessageReply> {
+  public async processMessage(tenant: string, rawMessage: any, dataStream?: Readable): Promise<GenericMessageReply> {
     const errorMessageReply = await this.validateTenant(tenant) ?? await this.validateMessageIntegrity(rawMessage);
     if (errorMessageReply !== undefined) {
       return errorMessageReply;
@@ -152,7 +152,7 @@ export class Dwn {
   /**
    * Privileged method for writing a pruned initial `RecordsWrite` to a DWN without needing to supply associated data.
    */
-  public async synchronizePrunedInitialRecordsWrite(tenant: string, message: RecordsWriteMessage): Promise<MessageReply> {
+  public async synchronizePrunedInitialRecordsWrite(tenant: string, message: RecordsWriteMessage): Promise<BaseMessageReply> {
     const errorMessageReply =
       await this.validateTenant(tenant) ??
       await this.validateMessageIntegrity(message, DwnInterfaceName.Records, DwnMethodName.Write);
@@ -174,12 +174,12 @@ export class Dwn {
    * @param tenant The tenant DID to route the given message to.
    * @returns BaseMessageReply if the message has an integrity error, otherwise undefined.
    */
-  public async validateTenant(tenant: string): Promise<MessageReply | undefined> {
+  public async validateTenant(tenant: string): Promise<BaseMessageReply | undefined> {
     const isTenant = await this.tenantGate.isTenant(tenant);
     if (!isTenant) {
-      return new MessageReply({
+      return {
         status: { code: 401, detail: `${tenant} is not a tenant` }
-      });
+      };
     }
   }
 
@@ -200,20 +200,20 @@ export class Dwn {
     const dwnInterface = rawMessage?.descriptor?.interface;
     const dwnMethod = rawMessage?.descriptor?.method;
     if (dwnInterface === undefined || dwnMethod === undefined) {
-      return new MessageReply({
+      return {
         status: { code: 400, detail: `Both interface and method must be present, interface: ${dwnInterface}, method: ${dwnMethod}` }
-      });
+      };
     }
 
     if (expectedInterface !== undefined && expectedInterface !== dwnInterface) {
-      return new MessageReply({
+      return {
         status: { code: 400, detail: `Expected interface ${expectedInterface}, received ${dwnInterface}` }
-      });
+      };
     }
     if (expectedMethod !== undefined && expectedMethod !== dwnMethod) {
-      return new MessageReply({
+      return {
         status: { code: 400, detail: `Expected method ${expectedInterface}${expectedMethod}, received ${dwnInterface}${dwnMethod}` }
-      });
+      };
     }
 
     // validate message structure
@@ -221,7 +221,7 @@ export class Dwn {
       // consider to push this down to individual handlers
       Message.validateJsonSchema(rawMessage);
     } catch (error) {
-      return MessageReply.fromError(error, 400);
+      return messageReplyfromError(error, 400);
     }
   }
 };
