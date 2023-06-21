@@ -24,7 +24,7 @@ import { RecordsDeleteHandler } from './handlers/records-delete.js';
 import { RecordsQueryHandler } from './handlers/records-query.js';
 import { RecordsReadHandler } from './handlers/records-read.js';
 import { RecordsWriteHandler } from './handlers/records-write.js';
-import { DwnInterfaceName, DwnMessageType, DwnMethodName, Message } from './core/message.js';
+import { DwnInterfaceName, DwnMethodName, Message } from './core/message.js';
 
 export class Dwn {
   private methodHandlers: { [key:string]: MethodHandler };
@@ -110,7 +110,7 @@ export class Dwn {
   public async handleRecordsQuery(tenant: string, message: RecordsQueryMessage): Promise<RecordsQueryReply> {
     const errorMessageReply =
       await this.validateTenant(tenant) ??
-      await this.validateMessageIntegrity(message, DwnMessageType.RecordsQuery);
+      await this.validateMessageIntegrity(message, DwnInterfaceName.Records, DwnMethodName.Query);
     if (errorMessageReply !== undefined) {
       return errorMessageReply;
     }
@@ -125,7 +125,7 @@ export class Dwn {
   public async handleRecordsRead(tenant: string, message: RecordsReadMessage): Promise<RecordsReadReply> {
     const errorMessageReply =
       await this.validateTenant(tenant) ??
-      await this.validateMessageIntegrity(message, DwnMessageType.RecordsRead);
+      await this.validateMessageIntegrity(message, DwnInterfaceName.Records, DwnMethodName.Read);
     if (errorMessageReply !== undefined) {
       return errorMessageReply;
     }
@@ -140,7 +140,7 @@ export class Dwn {
   public async handleMessagesGet(tenant: string, message: MessagesGetMessage): Promise<MessagesGetReply> {
     const errorMessageReply =
       await this.validateTenant(tenant) ??
-      await this.validateMessageIntegrity(message, DwnMessageType.MessagesGet);
+      await this.validateMessageIntegrity(message, DwnInterfaceName.Messages, DwnMethodName.Get);
     if (errorMessageReply !== undefined) {
       return errorMessageReply;
     }
@@ -155,7 +155,7 @@ export class Dwn {
   public async synchronizePrunedInitialRecordsWrite(tenant: string, message: RecordsWriteMessage): Promise<MessageReply> {
     const errorMessageReply =
       await this.validateTenant(tenant) ??
-      await this.validateMessageIntegrity(message, DwnMessageType.RecordsWrite);
+      await this.validateMessageIntegrity(message, DwnInterfaceName.Records, DwnMethodName.Write);
     if (errorMessageReply !== undefined) {
       return errorMessageReply;
     }
@@ -186,12 +186,15 @@ export class Dwn {
   /**
    * Validates structure of DWN message
    * @param tenant The tenant DID to route the given message to.
-   * @param dwnMessageType The type of DWN message from enum DwnMessageType.
+   * @param dwnMessageInterface The interface of DWN message.
+   * @param dwnMessageMethod The interface of DWN message.
+
    * @returns BaseMessageReply if the message has an integrity error, otherwise undefined.
    */
   public async validateMessageIntegrity(
     rawMessage: any,
-    expectedMessageType?: DwnMessageType,
+    expectedInterface?: DwnInterfaceName,
+    expectedMethod?: DwnMethodName,
   ): Promise<BaseMessageReply | undefined> {
     // Verify interface and method
     const dwnInterface = rawMessage?.descriptor?.interface;
@@ -202,10 +205,14 @@ export class Dwn {
       });
     }
 
-    const messageType = dwnInterface + dwnMethod;
-    if (expectedMessageType !== undefined && expectedMessageType.toString() !== messageType) {
+    if (expectedInterface !== undefined && expectedInterface !== dwnInterface) {
       return new MessageReply({
-        status: { code: 400, detail: `Expected DWN message type ${expectedMessageType} but instead received ${messageType}` }
+        status: { code: 400, detail: `Expected interface ${expectedInterface}, received ${dwnInterface}` }
+      });
+    }
+    if (expectedMethod !== undefined && expectedMethod !== dwnMethod) {
+      return new MessageReply({
+        status: { code: 400, detail: `Expected method ${expectedInterface}${expectedMethod}, received ${dwnInterface}${dwnMethod}` }
       });
     }
 
