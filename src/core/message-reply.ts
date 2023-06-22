@@ -10,7 +10,7 @@ export type BaseMessageReply = {
   status: Status;
 };
 
-export function messageReplyfromError(e: unknown, code: number): BaseMessageReply {
+export function messageReplyFromError(e: unknown, code: number): BaseMessageReply {
 
   const detail = e instanceof Error ? e.message : 'Error';
 

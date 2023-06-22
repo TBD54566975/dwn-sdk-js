@@ -15,7 +15,7 @@ import { DataStoreLevel } from './store/data-store-level.js';
 import { DidResolver } from './did/did-resolver.js';
 import { EventLogLevel } from './event-log/event-log-level.js';
 import { EventsGetHandler } from './handlers/events-get.js';
-import { messageReplyfromError } from './core/message-reply.js';
+import { messageReplyFromError } from './core/message-reply.js';
 import { MessagesGetHandler } from './handlers/messages-get.js';
 import { MessageStoreLevel } from './store/message-store-level.js';
 import { PermissionsRequestHandler } from './handlers/permissions-request.js';
@@ -224,7 +224,7 @@ export class Dwn {
       // consider to push this down to individual handlers
       Message.validateJsonSchema(rawMessage);
     } catch (error) {
-      return messageReplyfromError(error, 400);
+      return messageReplyFromError(error, 400);
     }
   }
 };

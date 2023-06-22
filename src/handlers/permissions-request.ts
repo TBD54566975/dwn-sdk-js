@@ -5,7 +5,7 @@ import type { DidResolver, EventLog, MessageStore } from '../index.js';
 
 import { authenticate } from '../core/auth.js';
 import { Message } from '../core/message.js';
-import { messageReplyfromError } from '../core/message-reply.js';
+import { messageReplyFromError } from '../core/message-reply.js';
 import { PermissionsRequest } from '../interfaces/permissions-request.js';
 
 export class PermissionsRequestHandler implements MethodHandler {
@@ -20,14 +20,14 @@ export class PermissionsRequestHandler implements MethodHandler {
     try {
       permissionsRequest = await PermissionsRequest.parse(message);
     } catch (e) {
-      return messageReplyfromError(e, 400);
+      return messageReplyFromError(e, 400);
     }
 
     // authentication
     try {
       await authenticate(message.authorization, this.didResolver);
     } catch (e) {
-      return messageReplyfromError(e, 401);
+      return messageReplyFromError(e, 401);
     }
 
     // store message

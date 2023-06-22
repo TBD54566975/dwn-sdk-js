@@ -5,7 +5,7 @@ import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from '
 
 import { authenticate } from '../core/auth.js';
 import { Message } from '../core/message.js';
-import { messageReplyfromError } from '../core/message-reply.js';
+import { messageReplyFromError } from '../core/message-reply.js';
 import { RecordsRead } from '../interfaces/records-read.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
@@ -23,7 +23,7 @@ export class RecordsReadHandler implements MethodHandler {
     try {
       recordsRead = await RecordsRead.parse(message);
     } catch (e) {
-      return messageReplyfromError(e, 400);
+      return messageReplyFromError(e, 400);
     }
 
     // authentication
@@ -32,7 +32,7 @@ export class RecordsReadHandler implements MethodHandler {
         await authenticate(message.authorization!, this.didResolver);
       }
     } catch (e) {
-      return messageReplyfromError(e, 401);
+      return messageReplyFromError(e, 401);
     }
 
     // get existing messages matching `recordId` so we can perform authorization
@@ -55,7 +55,7 @@ export class RecordsReadHandler implements MethodHandler {
     try {
       await recordsRead.authorize(tenant, await RecordsWrite.parse(newestRecordsWrite), this.messageStore);
     } catch (error) {
-      return messageReplyfromError(error, 401);
+      return messageReplyFromError(error, 401);
     }
 
     const messageCid = await Message.getCid(newestRecordsWrite);
