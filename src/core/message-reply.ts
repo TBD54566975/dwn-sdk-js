@@ -6,19 +6,21 @@ type Status = {
   detail: string
 };
 
-type MessageReplyOptions = {
-  status: Status,
-  entries?: QueryResultEntry[];
-  data? : Readable;
-};
-
 export type BaseMessageReply = {
   status: Status;
 };
 
-export class MessageReply {
-  status: Status;
+export function messageReplyfromError(e: unknown, code: number): BaseMessageReply {
 
+  const detail = e instanceof Error ? e.message : 'Error';
+
+  return { status: { code, detail } };
+}
+
+/**
+ * Catch-all message reply type. It is recommended to use BaseMessageReply or a message-specific reply type whereever possible.
+ */
+export type GenericMessageReply = BaseMessageReply & {
   /**
    * Resulting message entries or events returned from the invocation of the corresponding message.
    * e.g. the resulting messages from a RecordsQuery
@@ -31,19 +33,4 @@ export class MessageReply {
    * Mutually exclusive with `entries`.
    */
   data?: Readable;
-
-  constructor(opts: MessageReplyOptions) {
-    const { status, entries, data } = opts;
-
-    this.status = status;
-    this.entries = entries;
-    this.data = data;
-  }
-
-  static fromError(e: unknown, code: number): BaseMessageReply {
-
-    const detail = e instanceof Error ? e.message : 'Error';
-
-    return new MessageReply({ status: { code, detail } });
-  }
-}
+};

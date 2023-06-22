@@ -5,7 +5,7 @@ import type { RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, Re
 
 import { authenticate } from '../core/auth.js';
 import { lexicographicalCompare } from '../utils/string.js';
-import { MessageReply } from '../core/message-reply.js';
+import { messageReplyfromError } from '../core/message-reply.js';
 import { StorageController } from '../store/storage-controller.js';
 
 import { DateSort, RecordsQuery } from '../interfaces/records-query.js';
@@ -23,7 +23,7 @@ export class RecordsQueryHandler implements MethodHandler {
     try {
       recordsQuery = await RecordsQuery.parse(message);
     } catch (e) {
-      return MessageReply.fromError(e, 400);
+      return messageReplyfromError(e, 400);
     }
 
     // authentication
@@ -32,7 +32,7 @@ export class RecordsQueryHandler implements MethodHandler {
         await authenticate(message.authorization!, this.didResolver);
       }
     } catch (e) {
-      return MessageReply.fromError(e, 401);
+      return messageReplyfromError(e, 401);
     }
 
     let records: RecordsWriteMessageWithOptionalEncodedData[];

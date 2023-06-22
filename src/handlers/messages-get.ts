@@ -7,7 +7,7 @@ import type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from
 import { DataStream } from '../utils/data-stream.js';
 import { DwnConstant } from '../core/dwn-constant.js';
 import { Encoder } from '../utils/encoder.js';
-import { MessageReply } from '../core/message-reply.js';
+import { messageReplyfromError } from '../core/message-reply.js';
 import { MessagesGet } from '../interfaces/messages-get.js';
 import { authenticate, authorize } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
@@ -23,14 +23,14 @@ export class MessagesGetHandler implements MethodHandler {
     try {
       messagesGet = await MessagesGet.parse(message);
     } catch (e) {
-      return MessageReply.fromError(e, 400);
+      return messageReplyfromError(e, 400);
     }
 
     try {
       await authenticate(message.authorization, this.didResolver);
       await authorize(tenant, messagesGet);
     } catch (e) {
-      return MessageReply.fromError(e, 401);
+      return messageReplyfromError(e, 401);
     }
 
     const promises: Promise<MessagesGetReplyEntry>[] = [];

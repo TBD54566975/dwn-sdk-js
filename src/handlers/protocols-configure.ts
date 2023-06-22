@@ -1,10 +1,11 @@
+import type { BaseMessageReply } from '../core/message-reply.js';
 import type { EventLog } from '../types/event-log.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { ProtocolsConfigureMessage } from '../types/protocols-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
 
 import { canonicalAuth } from '../core/auth.js';
-import { MessageReply } from '../core/message-reply.js';
+import { messageReplyfromError } from '../core/message-reply.js';
 import { ProtocolsConfigure } from '../interfaces/protocols-configure.js';
 import { StorageController } from '../store/storage-controller.js';
 
@@ -18,20 +19,20 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     tenant,
     message,
     dataStream: _dataStream
-  }: {tenant: string, message: ProtocolsConfigureMessage, dataStream: _Readable.Readable}): Promise<MessageReply> {
+  }: {tenant: string, message: ProtocolsConfigureMessage, dataStream: _Readable.Readable}): Promise<BaseMessageReply> {
 
     let protocolsConfigure: ProtocolsConfigure;
     try {
       protocolsConfigure = await ProtocolsConfigure.parse(message);
     } catch (e) {
-      return MessageReply.fromError(e, 400);
+      return messageReplyfromError(e, 400);
     }
 
     // authentication & authorization
     try {
       await canonicalAuth(tenant, protocolsConfigure, this.didResolver);
     } catch (e) {
-      return MessageReply.fromError(e, 401);
+      return messageReplyfromError(e, 401);
     }
 
     // attempt to get existing protocol
@@ -51,7 +52,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     }
 
     // write the incoming message to DB if incoming message is newest
-    let messageReply: MessageReply;
+    let messageReply: BaseMessageReply;
     if (incomingMessageIsNewest) {
       const indexes = ProtocolsConfigureHandler.constructProtocolsConfigureIndexes(protocolsConfigure);
 
@@ -59,13 +60,13 @@ export class ProtocolsConfigureHandler implements MethodHandler {
       await this.messageStore.put(tenant, message, indexes);
       await this.eventLog.append(tenant, messageCid);
 
-      messageReply = new MessageReply({
+      messageReply = {
         status: { code: 202, detail: 'Accepted' }
-      });
+      };
     } else {
-      messageReply = new MessageReply({
+      messageReply = {
         status: { code: 409, detail: 'Conflict' }
-      });
+      };
     }
 
     // delete all existing records that are smaller
