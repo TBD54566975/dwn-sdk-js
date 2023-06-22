@@ -18,6 +18,7 @@ import { EventsGetHandler } from './handlers/events-get.js';
 import { messageReplyFromError } from './core/message-reply.js';
 import { MessagesGetHandler } from './handlers/messages-get.js';
 import { MessageStoreLevel } from './store/message-store-level.js';
+import { PermissionsGrantHandler } from './handlers/permissions-grant.js';
 import { PermissionsRequestHandler } from './handlers/permissions-request.js';
 import { ProtocolsConfigureHandler } from './handlers/protocols-configure.js';
 import { ProtocolsQueryHandler } from './handlers/protocols-query.js';
@@ -43,9 +44,11 @@ export class Dwn {
     this.tenantGate = config.tenantGate!;
 
     this.methodHandlers = {
-      [DwnInterfaceName.Events + DwnMethodName.Get]          : new EventsGetHandler(this.didResolver, this.eventLog),
-      [DwnInterfaceName.Messages + DwnMethodName.Get]        : new MessagesGetHandler(this.didResolver, this.messageStore, this.dataStore),
-      [DwnInterfaceName.Permissions + DwnMethodName.Request] : new PermissionsRequestHandler(
+      [DwnInterfaceName.Events + DwnMethodName.Get]        : new EventsGetHandler(this.didResolver, this.eventLog),
+      [DwnInterfaceName.Messages + DwnMethodName.Get]      : new MessagesGetHandler(this.didResolver, this.messageStore, this.dataStore),
+      [DwnInterfaceName.Permissions + DwnMethodName.Grant] : new PermissionsGrantHandler(
+        this.didResolver, this.messageStore, this.eventLog),
+      [DwnInterfaceName.Permissions + DwnMethodName.Request]: new PermissionsRequestHandler(
         this.didResolver, this.messageStore, this.eventLog),
       [DwnInterfaceName.Protocols + DwnMethodName.Configure]: new ProtocolsConfigureHandler(
         this.didResolver, this.messageStore, this.dataStore, this.eventLog),

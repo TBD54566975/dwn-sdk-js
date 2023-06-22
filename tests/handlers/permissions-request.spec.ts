@@ -93,7 +93,7 @@ describe('PermissionsRequestHandler.handle()', () => {
       expect(reply.status.detail).to.contain('not a valid DID');
     });
 
-    it('should return 400 if fail parsing the message', async () => {
+    it('should return 400 if failure parsing the message', async () => {
       const alice = await DidKeyResolver.generate();
       const { message } = await TestDataGenerator.generatePermissionsRequest();
 
