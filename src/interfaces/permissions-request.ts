@@ -9,7 +9,7 @@ import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 type PermissionsRequestOptions = {
   dateCreated?: string;
-  description: string;
+  description?: string;
   grantedTo: string;
   grantedBy: string;
   grantedFor: string;

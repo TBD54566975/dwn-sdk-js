@@ -498,7 +498,7 @@ export class TestDataGenerator {
     const author = input?.author ?? await TestDataGenerator.generatePersona();
     const permissionsRequest = await PermissionsRequest.create({
       dateCreated : getCurrentTimeInHighPrecision(),
-      description : input?.description ?? 'drugs',
+      description : input?.description,
       grantedBy   : input?.grantedBy ?? 'did:jank:bob',
       grantedTo   : input?.grantedTo ?? 'did:jank:alice',
       grantedFor  : input?.grantedFor ?? input?.grantedBy ?? 'did:jank:bob',
