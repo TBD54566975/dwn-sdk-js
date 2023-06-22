@@ -27,13 +27,6 @@
         "dateCreated": {
           "type": "string"
         },
-        "conditions": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/conditions"
-        },
-        "delegatedFrom": {
-          "description": "CID of the parent grant",
-          "type": "string"
-        },
         "description": {
           "type": "string"
         },
@@ -44,6 +37,10 @@
         "grantedBy": {
           "description": "DID of the grantor",
           "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/grantedBy"
+        },
+        "grantedFor": {
+          "description": "DID of the DWN to which the grantee is given access",
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/grantedFor"
         },
         "interface": {
           "enum": [
@@ -60,8 +57,8 @@
         "scope": {
           "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/scope"
         },
-        "objectId": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/uuid"
+        "conditions": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/conditions"
         }
       }
     }

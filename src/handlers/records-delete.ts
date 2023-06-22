@@ -6,7 +6,7 @@ import type { TimestampedMessage } from '../types/message-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
 
 import { authenticate } from '../core/auth.js';
-import { messageReplyfromError } from '../core/message-reply.js';
+import { messageReplyFromError } from '../core/message-reply.js';
 import { RecordsDelete } from '../interfaces/records-delete.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { StorageController } from '../store/storage-controller.js';
@@ -25,7 +25,7 @@ export class RecordsDeleteHandler implements MethodHandler {
     try {
       recordsDelete = await RecordsDelete.parse(message);
     } catch (e) {
-      return messageReplyfromError(e, 400);
+      return messageReplyFromError(e, 400);
     }
 
     // authentication & authorization
@@ -33,7 +33,7 @@ export class RecordsDeleteHandler implements MethodHandler {
       await authenticate(message.authorization, this.didResolver);
       await recordsDelete.authorize(tenant);
     } catch (e) {
-      return messageReplyfromError(e, 401);
+      return messageReplyFromError(e, 401);
     }
 
     // get existing records matching the `recordId`

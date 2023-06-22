@@ -4,7 +4,7 @@ import type { DataStore, DidResolver, MessageStore } from '../index.js';
 import type { ProtocolsQueryMessage, ProtocolsQueryReply } from '../types/protocols-types.js';
 
 import { canonicalAuth } from '../core/auth.js';
-import { messageReplyfromError } from '../core/message-reply.js';
+import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolsQuery } from '../interfaces/protocols-query.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 
@@ -23,13 +23,13 @@ export class ProtocolsQueryHandler implements MethodHandler {
     try {
       protocolsQuery = await ProtocolsQuery.parse(message);
     } catch (e) {
-      return messageReplyfromError(e, 400);
+      return messageReplyFromError(e, 400);
     }
 
     try {
       await canonicalAuth(tenant, protocolsQuery, this.didResolver);
     } catch (e) {
-      return messageReplyfromError(e, 401);
+      return messageReplyFromError(e, 401);
     }
 
     const query = {

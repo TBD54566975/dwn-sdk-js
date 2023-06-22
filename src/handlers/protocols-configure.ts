@@ -5,7 +5,7 @@ import type { ProtocolsConfigureMessage } from '../types/protocols-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
 
 import { canonicalAuth } from '../core/auth.js';
-import { messageReplyfromError } from '../core/message-reply.js';
+import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolsConfigure } from '../interfaces/protocols-configure.js';
 import { StorageController } from '../store/storage-controller.js';
 
@@ -25,14 +25,14 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     try {
       protocolsConfigure = await ProtocolsConfigure.parse(message);
     } catch (e) {
-      return messageReplyfromError(e, 400);
+      return messageReplyFromError(e, 400);
     }
 
     // authentication & authorization
     try {
       await canonicalAuth(tenant, protocolsConfigure, this.didResolver);
     } catch (e) {
-      return messageReplyfromError(e, 401);
+      return messageReplyFromError(e, 401);
     }
 
     // attempt to get existing protocol

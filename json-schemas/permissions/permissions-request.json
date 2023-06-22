@@ -17,24 +17,13 @@
       "required": [
         "interface",
         "method",
-        "dateCreated"
+        "dateCreated",
+        "grantedBy",
+        "grantedTo",
+        "grantedFor",
+        "scope"
       ],
       "properties": {
-        "dateCreated": {
-          "type": "string"
-        },
-        "conditions": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/conditions"
-        },
-        "description": {
-          "type": "string"
-        },
-        "grantedTo": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/grantedTo"
-        },
-        "grantedBy": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/grantedBy"
-        },
         "interface": {
           "enum": [
             "Permissions"
@@ -47,11 +36,29 @@
           ],
           "type": "string"
         },
+        "dateCreated": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "grantedTo": {
+          "description": "DID of the grantee",
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/grantedTo"
+        },
+        "grantedBy": {
+          "description": "DID of the grantor",
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/grantedBy"
+        },
+        "grantedFor": {
+          "description": "DID of the DWN to which the grantee is given access",
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/grantedFor"
+        },
         "scope": {
           "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/scope"
         },
-        "objectId": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/uuid"
+        "conditions": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/conditions"
         }
       }
     }

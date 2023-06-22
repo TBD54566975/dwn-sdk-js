@@ -6,7 +6,7 @@ import type { TimestampedMessage } from '../types/message-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
 
 import { authenticate } from '../core/auth.js';
-import { messageReplyfromError } from '../core/message-reply.js';
+import { messageReplyFromError } from '../core/message-reply.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { StorageController } from '../store/storage-controller.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
@@ -32,7 +32,7 @@ export class RecordsWriteHandler implements MethodHandler {
     try {
       recordsWrite = await RecordsWrite.parse(message);
     } catch (e) {
-      return messageReplyfromError(e, 400);
+      return messageReplyFromError(e, 400);
     }
 
     // authentication & authorization
@@ -40,7 +40,7 @@ export class RecordsWriteHandler implements MethodHandler {
       await authenticate(message.authorization, this.didResolver);
       await recordsWrite.authorize(tenant, this.messageStore);
     } catch (e) {
-      return messageReplyfromError(e, 401);
+      return messageReplyFromError(e, 401);
     }
 
     // get existing messages matching the `recordId`
@@ -57,7 +57,7 @@ export class RecordsWriteHandler implements MethodHandler {
         const initialWrite = await RecordsWrite.getInitialWrite(existingMessages);
         RecordsWrite.verifyEqualityOfImmutableProperties(initialWrite, message);
       } catch (e) {
-        return messageReplyfromError(e, 400);
+        return messageReplyFromError(e, 400);
       }
     }
 
@@ -92,7 +92,7 @@ export class RecordsWriteHandler implements MethodHandler {
           e.code === DwnErrorCode.RecordsWriteMissingData ||
           e.code === DwnErrorCode.RecordsWriteDataCidMismatch ||
           e.code === DwnErrorCode.RecordsWriteDataSizeMismatch) {
-        return messageReplyfromError(error, 400);
+        return messageReplyFromError(error, 400);
       }
 
       // else throw
