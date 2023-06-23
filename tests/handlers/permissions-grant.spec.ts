@@ -1,4 +1,3 @@
-
 import { expect } from 'chai';
 import sinon from 'sinon';
 
@@ -6,15 +5,15 @@ import { DataStoreLevel } from '../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { DidResolver } from '../../src/did/did-resolver.js';
 import { Dwn } from '../../src/dwn.js';
+import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { EventLogLevel } from '../../src/event-log/event-log-level.js';
 import { Message } from '../../src/core/message.js';
 import { MessageStoreLevel } from '../../src/store/message-store-level.js';
-import { PermissionsRequest } from '../../src/interfaces/permissions-request.js';
-import { PermissionsRequestHandler } from '../../src/handlers/permissions-request.js';
+import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
+import { PermissionsGrantHandler } from '../../src/handlers/permissions-grant.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { DwnInterfaceName, DwnMethodName } from '../../src/index.js';
 
-describe('PermissionsRequestHandler.handle()', () => {
+describe('PermissionsGrantHandler.handle()', () => {
   let didResolver: DidResolver;
   let messageStore: MessageStoreLevel;
   let dataStore: DataStoreLevel;
@@ -56,36 +55,44 @@ describe('PermissionsRequestHandler.handle()', () => {
       await dwn.close();
     });
 
-    it('should accept a PermissionsRequest with conditions omitted', async () => {
-      // scenario: Bob sends a PermissionsRequest to Alice's DWN
+    it('should accept a PermissionsGrant with permissionsRequestId omitted', async () => {
       const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
 
-      const { message } = await TestDataGenerator.generatePermissionsRequest({
-        author      : bob,
-        description : 'Please allow me to RecordsWrite',
-        grantedBy   : alice.did,
-        grantedTo   : bob.did,
-        grantedFor  : alice.did,
-        scope       : {
-          interface : DwnInterfaceName.Records,
-          method    : DwnMethodName.Write,
-        },
+      const { message } = await TestDataGenerator.generatePermissionsGrant({
+        author     : alice,
+        grantedBy  : alice.did,
+        grantedFor : alice.did,
       });
 
       const reply = await dwn.processMessage(alice.did, message);
       expect(reply.status.code).to.equal(202);
     });
 
-    it('should return 401 if auth fails', async () => {
+    it('should accept a PermissionsGrant with associated PermissionsRequest', async () => {
+      const alice = await DidKeyResolver.generate();
+
+      const { permissionsRequest } = await TestDataGenerator.generatePermissionsRequest({
+        author: alice,
+      });
+      const permissionsRequestReply = await dwn.processMessage(alice.did, permissionsRequest.message);
+      expect(permissionsRequestReply.status.code).to.equal(202);
+
+      const { permissionsGrant } = await TestDataGenerator.generatePermissionsGrant({
+        author               : alice,
+        grantedBy            : alice.did,
+        grantedFor           : alice.did,
+        permissionsRequestId : await Message.getCid(permissionsRequest.message),
+      });
+
+      const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+      expect(permissionsGrantReply.status.code).to.equal(202);
+    });
+
+    it('should return 401 if authentication fails', async () => {
       const alice = await DidKeyResolver.generate();
       alice.keyId = 'wrongValue'; // to fail authentication
-      const { message } = await TestDataGenerator.generatePermissionsRequest({
-        author : alice,
-        scope  : {
-          interface : DwnInterfaceName.Records,
-          method    : DwnMethodName.Write,
-        }
+      const { message } = await TestDataGenerator.generatePermissionsGrant({
+        author: alice,
       });
 
       const reply = await dwn.processMessage(alice.did, message);
@@ -93,28 +100,54 @@ describe('PermissionsRequestHandler.handle()', () => {
       expect(reply.status.detail).to.contain('not a valid DID');
     });
 
+    it('should reject if author does not match grantedBy', async () => {
+      const alice = await DidKeyResolver.generate();
+      const bob = await DidKeyResolver.generate();
+
+      const { message } = await TestDataGenerator.generatePermissionsGrant({
+        author    : alice,
+        grantedBy : bob.did,
+      });
+
+      const reply = await dwn.processMessage(alice.did, message);
+      expect(reply.status.code).to.equal(401);
+      expect(reply.status.detail).to.contain(DwnErrorCode.PermissionsGrantGrantedByMismatch);
+    });
+
+    it('should reject if grantedBy is not a delegate and does not match grantedFor', async () => {
+      const alice = await DidKeyResolver.generate();
+      const bob = await DidKeyResolver.generate();
+
+      const { message } = await TestDataGenerator.generatePermissionsGrant({
+        author     : alice,
+        grantedBy  : alice.did,
+        grantedFor : bob.did,
+      });
+
+      const reply = await dwn.processMessage(alice.did, message);
+      expect(reply.status.code).to.equal(401);
+      expect(reply.status.detail).to.contain(DwnErrorCode.PermissionsGrantUnauthorizedGrant);
+    });
+
     it('should return 400 if failure parsing the message', async () => {
       const alice = await DidKeyResolver.generate();
-      const { message } = await TestDataGenerator.generatePermissionsRequest();
+      const { message } = await TestDataGenerator.generatePermissionsGrant();
 
-      const permissionsRequestHandler = new PermissionsRequestHandler(didResolver, messageStore, eventLog);
+      const permissionsRequestHandler = new PermissionsGrantHandler(didResolver, messageStore, eventLog);
 
       // stub the `parse()` function to throw an error
-      sinon.stub(PermissionsRequest, 'parse').throws('anyError');
+      sinon.stub(PermissionsGrant, 'parse').throws('anyError');
       const reply = await permissionsRequestHandler.handle({ tenant: alice.did, message });
 
       expect(reply.status.code).to.equal(400);
     });
 
     describe('event log', () => {
-      it('should add event for PermissionsRequest', async () => {
+      it('should add event for PermissionsGrant', async () => {
         const alice = await DidKeyResolver.generate();
-        const { message } = await TestDataGenerator.generatePermissionsRequest({
-          author : alice,
-          scope  : {
-            interface : DwnInterfaceName.Records,
-            method    : DwnMethodName.Write,
-          },
+        const { message } = await TestDataGenerator.generatePermissionsGrant({
+          author    : alice,
+          grantedBy : alice.did,
         });
 
         const reply = await dwn.processMessage(alice.did, message);
@@ -129,12 +162,9 @@ describe('PermissionsRequestHandler.handle()', () => {
 
       it('should not add a new event if we have already stored this PermissionsRequest', async () => {
         const alice = await DidKeyResolver.generate();
-        const { message } = await TestDataGenerator.generatePermissionsRequest({
-          author : alice,
-          scope  : {
-            interface : DwnInterfaceName.Records,
-            method    : DwnMethodName.Write,
-          },
+        const { message } = await TestDataGenerator.generatePermissionsGrant({
+          author    : alice,
+          grantedBy : alice.did,
         });
 
         let reply = await dwn.processMessage(alice.did, message);

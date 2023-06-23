@@ -55,5 +55,4 @@ export type PermissionsGrantDescriptor = {
 
 export type PermissionsGrantMessage = BaseMessage & {
   descriptor: PermissionsGrantDescriptor;
-  delegationChain?: PermissionsGrantMessage;
 };

@@ -25,7 +25,7 @@ import {
   DwnInterfaceName,
   DwnMethodName
 } from '../../src/index.js';
-import type { PermissionConditions, PermissionScope, PermissionsRequestMessage } from '../../src/types/permissions-types.js';
+import type { PermissionConditions, PermissionScope, PermissionsGrantMessage, PermissionsRequestMessage } from '../../src/types/permissions-types.js';
 import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 
 
@@ -33,6 +33,7 @@ import * as cbor from '@ipld/dag-cbor';
 import { CID } from 'multiformats/cid';
 import { DataStream } from '../../src/utils/data-stream.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
+import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions-request.js';
 import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
@@ -182,7 +183,19 @@ export type GeneratePermissionsRequestInput = {
   grantedTo?: string;
   grantedBy?: string;
   grantedFor?: string;
-  scope: PermissionScope;
+  scope?: PermissionScope;
+  conditions?: PermissionConditions;
+};
+
+export type GeneratePermissionsGrantInput = {
+  author: Persona;
+  dateCreated?: string;
+  description?: string;
+  grantedTo?: string;
+  grantedBy?: string;
+  grantedFor?: string;
+  permissionsRequestId?: string;
+  scope?: PermissionScope;
   conditions?: PermissionConditions;
 };
 
@@ -190,6 +203,12 @@ export type GeneratePermissionsRequestOutput = {
   author: Persona;
   permissionsRequest: PermissionsRequest;
   message: PermissionsRequestMessage;
+};
+
+export type GeneratePermissionsGrantOutput = {
+  author: Persona;
+  permissionsGrant: PermissionsGrant;
+  message: PermissionsGrantMessage;
 };
 
 export type GenerateEventsGetInput = {
@@ -502,7 +521,7 @@ export class TestDataGenerator {
       grantedBy   : input?.grantedBy ?? 'did:jank:bob',
       grantedTo   : input?.grantedTo ?? 'did:jank:alice',
       grantedFor  : input?.grantedFor ?? input?.grantedBy ?? 'did:jank:bob',
-      scope       : {
+      scope       : input?.scope ?? {
         interface : DwnInterfaceName.Records,
         method    : DwnMethodName.Write
       },
@@ -514,6 +533,33 @@ export class TestDataGenerator {
       author,
       permissionsRequest,
       message: permissionsRequest.message
+    };
+  }
+
+  /**
+   * Generates a PermissionsGrant message for testing.
+   */
+  public static async generatePermissionsGrant(input?: GeneratePermissionsGrantInput): Promise<GeneratePermissionsGrantOutput> {
+    const author = input?.author ?? await TestDataGenerator.generatePersona();
+    const permissionsGrant = await PermissionsGrant.create({
+      dateCreated          : getCurrentTimeInHighPrecision(),
+      description          : input?.description ?? 'drugs',
+      grantedBy            : input?.grantedBy ?? 'did:jank:bob',
+      grantedTo            : input?.grantedTo ?? 'did:jank:alice',
+      grantedFor           : input?.grantedFor ?? input?.grantedBy ?? 'did:jank:bob',
+      permissionsRequestId : input?.permissionsRequestId,
+      scope                : input?.scope ?? {
+        interface : DwnInterfaceName.Records,
+        method    : DwnMethodName.Write
+      },
+      conditions                  : input?.conditions,
+      authorizationSignatureInput : Jws.createSignatureInput(author)
+    });
+
+    return {
+      author,
+      permissionsGrant,
+      message: permissionsGrant.message
     };
   }
 
