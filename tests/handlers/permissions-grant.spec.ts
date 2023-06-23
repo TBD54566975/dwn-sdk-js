@@ -88,27 +88,6 @@ describe('PermissionsGrantHandler.handle()', () => {
       expect(permissionsGrantReply.status.code).to.equal(202);
     });
 
-    it('should reject a PermissionsGrant where associated PermissionsRequest is not found', async () => {
-      const alice = await DidKeyResolver.generate();
-
-      // create but don't process a PermissionsRequest
-      const { permissionsRequest } = await TestDataGenerator.generatePermissionsRequest({
-        author: alice,
-      });
-
-      // Use CID of PermissionsRequest which hasn't been processed
-      const { permissionsGrant } = await TestDataGenerator.generatePermissionsGrant({
-        author               : alice,
-        grantedBy            : alice.did,
-        grantedFor           : alice.did,
-        permissionsRequestId : await Message.getCid(permissionsRequest.message),
-      });
-
-      const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
-      expect(permissionsGrantReply.status.code).to.equal(400);
-      expect(permissionsGrantReply.status.detail).to.contain('Could not find a PermissionsRequest with CID');
-    });
-
     it('should return 401 if authentication fails', async () => {
       const alice = await DidKeyResolver.generate();
       alice.keyId = 'wrongValue'; // to fail authentication

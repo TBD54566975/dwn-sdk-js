@@ -29,16 +29,6 @@ export class PermissionsGrantHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }
 
-    // validate PermissionsRequestId if it is included
-    if (message.descriptor.permissionsRequestId !== undefined) {
-      const permissionsRequestMessage = await this.messageStore.get(tenant, message.descriptor.permissionsRequestId);
-      if (permissionsRequestMessage === undefined) {
-        return {
-          status: { code: 400, detail: `Could not find a PermissionsRequest with CID ${message.descriptor.permissionsRequestId}` }
-        };
-      }
-    }
-
     const { dataSize, scope, conditions, ...propertiesToIndex } = message.descriptor;
     const indexes: { [key: string]: string } = {
       author: permissionsGrant.author!,
