@@ -25,7 +25,7 @@ import {
   DwnInterfaceName,
   DwnMethodName
 } from '../../src/index.js';
-import type { PermissionConditions, PermissionScope, PermissionsGrantMessage, PermissionsRequestMessage } from '../../src/types/permissions-types.js';
+import type { PermissionConditions, PermissionScope, PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from '../../src/types/permissions-types.js';
 import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 
 
@@ -35,6 +35,8 @@ import { DataStream } from '../../src/utils/data-stream.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions-request.js';
+import { PermissionsRevoke } from '../../src/interfaces/permissions-revoke.js';
+
 import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { sha256 } from 'multiformats/hashes/sha2';
@@ -199,6 +201,12 @@ export type GeneratePermissionsGrantInput = {
   conditions?: PermissionConditions;
 };
 
+export type GeneratePermissionsRevokeInput = {
+  author: Persona;
+  dateCreated?: string;
+  permissionsGrantId?: string;
+};
+
 export type GeneratePermissionsRequestOutput = {
   author: Persona;
   permissionsRequest: PermissionsRequest;
@@ -209,6 +217,12 @@ export type GeneratePermissionsGrantOutput = {
   author: Persona;
   permissionsGrant: PermissionsGrant;
   message: PermissionsGrantMessage;
+};
+
+export type GeneratePermissionsRevokeOutput = {
+  author: Persona;
+  permissionsRevoke: PermissionsRevoke;
+  message: PermissionsRevokeMessage;
 };
 
 export type GenerateEventsGetInput = {
@@ -544,9 +558,9 @@ export class TestDataGenerator {
     const permissionsGrant = await PermissionsGrant.create({
       dateCreated          : getCurrentTimeInHighPrecision(),
       description          : input?.description ?? 'drugs',
-      grantedBy            : input?.grantedBy ?? 'did:jank:bob',
-      grantedTo            : input?.grantedTo ?? 'did:jank:alice',
-      grantedFor           : input?.grantedFor ?? input?.grantedBy ?? 'did:jank:bob',
+      grantedBy            : input?.grantedBy ?? author.did,
+      grantedTo            : input?.grantedTo ?? (await TestDataGenerator.generatePersona()).did,
+      grantedFor           : input?.grantedFor ?? author.did,
       permissionsRequestId : input?.permissionsRequestId,
       scope                : input?.scope ?? {
         interface : DwnInterfaceName.Records,
@@ -560,6 +574,26 @@ export class TestDataGenerator {
       author,
       permissionsGrant,
       message: permissionsGrant.message
+    };
+  }
+
+  /**
+   * Generates a PermissionsRevoke message for testing.
+   */
+  public static async generatePermissionsRevoke(input?: GeneratePermissionsRevokeInput): Promise<GeneratePermissionsRevokeOutput> {
+    const author = input?.author ?? await TestDataGenerator.generatePersona();
+    const authorizationSignatureInput = Jws.createSignatureInput(author);
+
+    const permissionsRevoke = await PermissionsRevoke.create({
+      authorizationSignatureInput,
+      permissionsGrantId : input?.permissionsGrantId ?? await TestDataGenerator.randomCborSha256Cid(),
+      dateCreated        : input?.dateCreated
+    });
+
+    return {
+      author,
+      permissionsRevoke,
+      message: permissionsRevoke.message
     };
   }
 

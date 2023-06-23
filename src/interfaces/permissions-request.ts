@@ -7,7 +7,7 @@ import { removeUndefinedProperties } from '../utils/object.js';
 import { validateAuthorizationIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
-type PermissionsRequestOptions = {
+export type PermissionsRequestOptions = {
   dateCreated?: string;
   description?: string;
   grantedTo: string;
