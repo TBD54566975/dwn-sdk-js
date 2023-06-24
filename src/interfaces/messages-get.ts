@@ -1,7 +1,7 @@
 import type { SignatureInput } from '../types/jws-types.js';
 import type { MessagesGetDescriptor, MessagesGetMessage } from '../types/messages-types.js';
 
-import { parseCid } from '../utils/cid.js';
+import { Cid } from '../utils/cid.js';
 import { validateAuthorizationIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
@@ -44,7 +44,7 @@ export class MessagesGet extends Message<MessagesGetMessage> {
   private static validateMessageCids(messageCids: string[]): void {
     for (const cid of messageCids) {
       try {
-        parseCid(cid);
+        Cid.parseCid(cid);
       } catch (_) {
         throw new Error(`${cid} is not a valid CID`);
       }

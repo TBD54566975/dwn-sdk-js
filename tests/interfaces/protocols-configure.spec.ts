@@ -5,8 +5,9 @@ import type { ProtocolsConfigureMessage } from '../../src/index.js';
 
 import dexProtocolDefinition from '../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
+import { Jws } from '../../src/utils/jws.js';
+import { ProtocolsConfigure } from '../../src/interfaces/protocols-configure.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { Jws, ProtocolsConfigure } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 

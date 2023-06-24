@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://identity.foundation/dwn/json-schemas/protocols-configure.json",
+  "$id": "https://identity.foundation/dwn/json-schemas/snapshots-create.json",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -17,27 +17,27 @@
       "required": [
         "interface",
         "method",
-        "dateModified",
-        "definition"
+        "dateCreated",
+        "definitionCid"
       ],
       "properties": {
         "interface": {
           "enum": [
-            "Protocols"
+            "Snapshots"
           ],
           "type": "string"
         },
         "method": {
           "enum": [
-            "Configure"
+            "Create"
           ],
           "type": "string"
         },
-        "dateModified": {
-          "type": "string"
+        "dateCreated": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
         },
-        "definition": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/protocol-definition.json"
+        "definitionCid": {
+          "type": "string"
         }
       }
     }

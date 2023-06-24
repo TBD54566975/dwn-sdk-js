@@ -2,7 +2,7 @@ import type { GeneralJws } from '../types/jws-types.js';
 import type { SignatureInput } from '../types/jws-types.js';
 import type { BaseDecodedAuthorizationPayload, BaseMessage, Descriptor, TimestampedMessage } from '../types/message-types.js';
 
-import { computeCid } from '../utils/cid.js';
+import { Cid } from '../utils/cid.js';
 import { GeneralJwsSigner } from '../jose/jws/general/signer.js';
 import { Jws } from '../utils/jws.js';
 import { lexicographicalCompare } from '../utils/string.js';
@@ -14,11 +14,13 @@ export enum DwnInterfaceName {
   Messages = 'Messages',
   Permissions = 'Permissions',
   Protocols = 'Protocols',
-  Records = 'Records'
+  Records = 'Records',
+  Snapshots = 'Snapshots'
 }
 
 export enum DwnMethodName {
   Configure = 'Configure',
+  Create = 'Create',
   Get = 'Get',
   Grant = 'Grant',
   Query = 'Query',
@@ -84,7 +86,7 @@ export abstract class Message<M extends BaseMessage> {
     // the message will contain properties that should not be part of the CID computation
     // and we need to strip them out (like `encodedData` that we historically had for a long time),
     // but we can remove this method entirely if the code becomes stable and it is apparent that the wrapper is not needed
-    const cid = await computeCid(message);
+    const cid = await Cid.computeCid(message);
     return cid;
   }
 
@@ -131,7 +133,7 @@ export abstract class Message<M extends BaseMessage> {
     descriptor: Descriptor,
     signatureInput: SignatureInput
   ): Promise<GeneralJws> {
-    const descriptorCid = await computeCid(descriptor);
+    const descriptorCid = await Cid.computeCid(descriptor);
 
     const authPayload: BaseDecodedAuthorizationPayload = { descriptorCid };
     const authPayloadStr = JSON.stringify(authPayload);

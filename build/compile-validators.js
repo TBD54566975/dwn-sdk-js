@@ -23,19 +23,20 @@ import GeneralJwk from '../json-schemas/jwk/general-jwk.json' assert { type: 'js
 import GeneralJws from '../json-schemas/general-jws.json' assert { type: 'json' };
 import HooksWrite from '../json-schemas/hooks/hooks-write.json' assert { type: 'json' };
 import JwkVerificationMethod from '../json-schemas/jwk-verification-method.json' assert { type: 'json' };
-import MessagesGet from '../json-schemas/messages/messages-get.json' assert { type: 'json' };
-import PermissionsDefinitions from '../json-schemas/permissions/definitions.json' assert { type: 'json' };
-import PermissionsGrant from '../json-schemas/permissions/permissions-grant.json' assert { type: 'json' };
-import PermissionsRequest from '../json-schemas/permissions/permissions-request.json' assert { type: 'json' };
-import ProtocolDefinition from '../json-schemas/protocol-definition.json' assert { type: 'json' };
-import ProtocolRuleSet from '../json-schemas/protocol-rule-set.json' assert { type: 'json' };
-import ProtocolsConfigure from '../json-schemas/protocols/protocols-configure.json' assert { type: 'json' };
-import ProtocolsQuery from '../json-schemas/protocols/protocols-query.json' assert { type: 'json' };
+import MessagesGet from '../json-schemas/interface-methods/messages-get.json' assert { type: 'json' };
+import PermissionsDefinitions from '../json-schemas/interface-methods/permissions-definitions.json' assert { type: 'json' };
+import PermissionsGrant from '../json-schemas/interface-methods/permissions-grant.json' assert { type: 'json' };
+import PermissionsRequest from '../json-schemas/interface-methods/permissions-request.json' assert { type: 'json' };
+import ProtocolDefinition from '../json-schemas/interface-methods/protocol-definition.json' assert { type: 'json' };
+import ProtocolRuleSet from '../json-schemas/interface-methods/protocol-rule-set.json' assert { type: 'json' };
+import ProtocolsConfigure from '../json-schemas/interface-methods/protocols-configure.json' assert { type: 'json' };
+import ProtocolsQuery from '../json-schemas/interface-methods/protocols-query.json' assert { type: 'json' };
 import PublicJwk from '../json-schemas/jwk/public-jwk.json' assert { type: 'json' };
-import RecordsDelete from '../json-schemas/records/records-delete.json' assert { type: 'json' };
-import RecordsQuery from '../json-schemas/records/records-query.json' assert { type: 'json' };
-import RecordsRead from '../json-schemas/records/records-read.json' assert { type: 'json' };
-import RecordsWrite from '../json-schemas/records/records-write.json' assert { type: 'json' };
+import RecordsDelete from '../json-schemas/interface-methods/records-delete.json' assert { type: 'json' };
+import RecordsQuery from '../json-schemas/interface-methods/records-query.json' assert { type: 'json' };
+import RecordsRead from '../json-schemas/interface-methods/records-read.json' assert { type: 'json' };
+import RecordsWrite from '../json-schemas/interface-methods/records-write.json' assert { type: 'json' };
+import SnapshotsCreate from '../json-schemas/interface-methods/snapshots-create.json' assert { type: 'json' };
 
 const schemas = {
   RecordsDelete,
@@ -56,7 +57,8 @@ const schemas = {
   ProtocolsConfigure,
   ProtocolsQuery,
   RecordsRead,
-  PublicJwk
+  PublicJwk,
+  SnapshotsCreate
 };
 
 const ajv = new Ajv({ code: { source: true, esm: true } });
