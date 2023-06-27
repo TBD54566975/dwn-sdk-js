@@ -34,22 +34,6 @@ import { webcrypto } from "node:crypto";
 if (!globalThis.crypto) globalThis.crypto = webcrypto;
 ```
 
-Synchronous methods:
-
-```js
-// Enable synchronous methods.
-// Only async methods are available by default, to keep the library dependency-free.
-import { hmac } from "@noble/hashes/hmac";
-import { sha256 } from "@noble/hashes/sha256";
-import { sha512 } from "@noble/hashes/sha512";
-ed.etc.sha512Sync = (...m) => sha512(ed.etc.concatBytes(...m));
-secp.etc.hmacSha256Sync = (k, ...m) =>
-  hmac(sha256, k, secp.etc.concatBytes(...m));
-// Sync methods can be used now:
-// ed.getPublicKey(privKey); ed.sign(msg, privKey); ed.verify(signature, msg, pubKey);
-// secp.sign(msgHash, privKey);
-```
-
 React Native:
 
 ```js
