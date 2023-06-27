@@ -7,6 +7,7 @@ export type { DwnServiceEndpoint, ServiceEndpoint, DidDocument, DidResolutionRes
 export type { EventLog, Event } from './types/event-log.js';
 export type { EventsGetMessage, EventsGetReply } from './types/event-types.js';
 export type { HooksWriteMessage } from './types/hooks-types.js';
+export type { BaseMessage } from './types/message-types.js';
 export type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
 export type { ProtocolsConfigureDescriptor, ProtocolDefinition, ProtocolRuleSet, ProtocolsQueryFilter, ProtocolsConfigureMessage, ProtocolsQueryMessage } from './types/protocols-types.js';
 export type { EncryptionProperty, RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, RecordsReadReply, RecordsWriteDescriptor, RecordsWriteMessage } from './types/records-types.js';
@@ -36,7 +37,7 @@ export { KeyMaterial, PrivateJwk, PublicJwk } from './types/jose-types.js';
 export { Message } from './core/message.js';
 export { MessagesGet, MessagesGetOptions } from './interfaces/messages-get.js';
 export { GenericMessageReply as MessageReply } from './core/message-reply.js';
-export { MessageStore } from './types/message-store.js';
+export { MessageStore, MessageStoreOptions } from './types/message-store.js';
 export { MessageStoreLevel } from './store/message-store-level.js';
 export { ProtocolsConfigure, ProtocolsConfigureOptions } from './interfaces/protocols-configure.js';
 export { ProtocolsQuery, ProtocolsQueryOptions } from './interfaces/protocols-query.js';
