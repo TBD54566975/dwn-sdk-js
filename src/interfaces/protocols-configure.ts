@@ -27,7 +27,6 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       interface    : DwnInterfaceName.Protocols,
       method       : DwnMethodName.Configure,
       dateModified : options.dateCreated ?? getCurrentTimeInHighPrecision(),
-      // TODO: #139 - move definition out of the descriptor - https://github.com/TBD54566975/dwn-sdk-js/issues/139
       definition   : ProtocolsConfigure.normalizeDefinition(options.definition)
     };
 

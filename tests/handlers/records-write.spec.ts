@@ -15,6 +15,7 @@ import chai, { expect } from 'chai';
 
 import { ArrayUtility } from '../../src/utils/array.js';
 import { base64url } from 'multiformats/bases/base64';
+import { Cid } from '../../src/utils/cid.js';
 import { DataStoreLevel } from '../../src/store/data-store-level.js';
 import { DataStream } from '../../src/utils/data-stream.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
@@ -36,7 +37,6 @@ import { RecordsWriteHandler } from '../../src/handlers/records-write.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
-import { Cid, computeCid } from '../../src/utils/cid.js';
 import { Encryption, EncryptionAlgorithm } from '../../src/utils/encryption.js';
 
 chai.use(chaiAsPromised);
@@ -286,7 +286,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
       // replace the dataSize to simulate mismatch, will need to generate `recordId` and `authorization` property again
       message.descriptor.dataSize = 1;
-      const descriptorCid = await computeCid(message.descriptor);
+      const descriptorCid = await Cid.computeCid(message.descriptor);
       const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
       const authorizationSignatureInput = Jws.createSignatureInput(alice);
       const authorization = await RecordsWrite['createAuthorization'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSignatureInput);
@@ -1558,7 +1558,7 @@ describe('RecordsWriteHandler.handle()', () => {
         recordsWrite.message.descriptor.protocol = 'example.com/';
 
         // Re-create auth because we altered the descriptor after signing
-        const descriptorCid = await computeCid(recordsWrite.message.descriptor);
+        const descriptorCid = await Cid.computeCid(recordsWrite.message.descriptor);
         const attestation = await RecordsWrite.createAttestation(descriptorCid);
         const authorization = await RecordsWrite.createAuthorization(
           recordsWrite.message.recordId,
@@ -1953,7 +1953,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
       // recreate the `authorization` based on the new` attestationCid`
       const authorizationPayload = { ...recordsWrite.authorizationPayload };
-      authorizationPayload.attestationCid = await computeCid(attestationPayload);
+      authorizationPayload.attestationCid = await Cid.computeCid(attestationPayload);
       const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
       const authorizationSigner = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
       message.authorization = authorizationSigner.getJws();
@@ -2002,7 +2002,7 @@ describe('RecordsWriteHandler.handle()', () => {
 
       // replace valid attestation (the one signed by `authorization` with another attestation to the same message (descriptorCid)
       const bob = await DidKeyResolver.generate();
-      const descriptorCid = await computeCid(message.descriptor);
+      const descriptorCid = await Cid.computeCid(message.descriptor);
       const attestationNotReferencedByAuthorization = await RecordsWrite['createAttestation'](descriptorCid, Jws.createSignatureInputs([bob]));
       message.attestation = attestationNotReferencedByAuthorization;
 

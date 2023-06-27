@@ -4,9 +4,9 @@ import type { DidResolver } from '../did/did-resolver.js';
 import type { GeneralJws } from '../types/jws-types.js';
 import type { Message } from './message.js';
 
+import { Cid } from '../utils/cid.js';
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
 import { Jws } from '../utils/jws.js';
-import { computeCid, parseCid } from '../utils/cid.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 
 type AuthorizationPayloadConstraints = {
@@ -31,6 +31,7 @@ export async function canonicalAuth(
 
 /**
  * Validates the structural integrity of the `authorization` property.
+ * By default, only `descriptorCid` is expected and allowed in the `authorization` JWS payload.
  * NOTE: signature is not verified.
  * @returns the parsed JSON payload object if validation succeeds.
  */
@@ -50,7 +51,7 @@ export async function validateAuthorizationIntegrity(
   const { descriptorCid } = payloadJson;
 
   // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
-  const expectedDescriptorCid = await computeCid(message.descriptor);
+  const expectedDescriptorCid = await Cid.computeCid(message.descriptor);
   if (descriptorCid !== expectedDescriptorCid) {
     throw new Error(`provided descriptorCid ${descriptorCid} does not match expected CID ${expectedDescriptorCid}`);
   }
@@ -67,7 +68,7 @@ export async function validateAuthorizationIntegrity(
     }
 
     try {
-      parseCid(payloadJson[propertyName]);
+      Cid.parseCid(payloadJson[propertyName]);
     } catch (e) {
       throw new Error(`${propertyName} must be a valid CID`);
     }

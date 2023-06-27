@@ -13,6 +13,7 @@ import type {
 } from '../types/records-types.js';
 import type { GeneralJws, SignatureInput } from '../types/jws-types.js';
 
+import { Cid } from '../utils/cid.js';
 import { Encoder } from '../utils/encoder.js';
 import { Encryption } from '../utils/encryption.js';
 import { EncryptionAlgorithm } from '../utils/encryption.js';
@@ -25,7 +26,6 @@ import { Records } from '../utils/records.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Secp256k1 } from '../utils/secp256k1.js';
 import { authorize, validateAuthorizationIntegrity } from '../core/auth.js';
-import { Cid, computeCid } from '../utils/cid.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
@@ -213,7 +213,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     }
 
     // `attestation` generation
-    const descriptorCid = await computeCid(descriptor);
+    const descriptorCid = await Cid.computeCid(descriptor);
     const attestation = await RecordsWrite.createAttestation(descriptorCid, options.attestationSignatureInputs);
     const encryption = await RecordsWrite.createEncryptionProperty(recordId, contextId, descriptor, options.encryptionInput);
 
@@ -359,7 +359,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
 
     // if `attestation` is given in message, make sure the correct `attestationCid` is in the `authorization`
     if (this.authorizationPayload.attestationCid !== undefined) {
-      const expectedAttestationCid = await computeCid(this.message.attestation);
+      const expectedAttestationCid = await Cid.computeCid(this.message.attestation);
       const actualAttestationCid = this.authorizationPayload.attestationCid;
       if (actualAttestationCid !== expectedAttestationCid) {
         throw new Error(
@@ -370,7 +370,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
 
     // if `encryption` is given in message, make sure the correct `encryptionCid` is in the `authorization`
     if (this.authorizationPayload.encryptionCid !== undefined) {
-      const expectedEncryptionCid = await computeCid(this.message.encryption);
+      const expectedEncryptionCid = await Cid.computeCid(this.message.encryption);
       const actualEncryptionCid = this.authorizationPayload.encryptionCid;
       if (actualEncryptionCid !== expectedEncryptionCid) {
         throw new DwnError(
@@ -406,7 +406,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     const { descriptorCid } = payloadJson;
 
     // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
-    const expectedDescriptorCid = await computeCid(message.descriptor);
+    const expectedDescriptorCid = await Cid.computeCid(message.descriptor);
     if (descriptorCid !== expectedDescriptorCid) {
       throw new Error(`descriptorCid ${descriptorCid} does not match expected descriptorCid ${expectedDescriptorCid}`);
     }
@@ -438,7 +438,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     const entryIdInput = { ...descriptor };
     (entryIdInput as any).author = author;
 
-    const cid = await computeCid(entryIdInput);
+    const cid = await Cid.computeCid(entryIdInput);
     return cid;
   };
 
@@ -547,8 +547,8 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
       descriptorCid
     };
 
-    const attestationCid = attestation ? await computeCid(attestation) : undefined;
-    const encryptionCid = encryption ? await computeCid(encryption) : undefined;
+    const attestationCid = attestation ? await Cid.computeCid(attestation) : undefined;
+    const encryptionCid = encryption ? await Cid.computeCid(encryption) : undefined;
 
     if (contextId !== undefined) { authorizationPayload.contextId = contextId; } // assign `contextId` only if it is defined
     if (attestationCid !== undefined) { authorizationPayload.attestationCid = attestationCid; } // assign `attestationCid` only if it is defined
