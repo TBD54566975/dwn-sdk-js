@@ -7,13 +7,6 @@ import { Encoder } from '../utils/encoder.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
-// NOTE: @noble/secp256k1 requires globalThis.crypto polyfill for node.js <=18: https://github.com/paulmillr/noble-secp256k1/blob/main/README.md#usage
-// Remove when we move off of node.js v18 to v20, earliest possible time would be Oct 2023: https://github.com/nodejs/release#release-schedule
-import { webcrypto } from 'node:crypto';
-// @ts-ignore
-if (!globalThis.crypto) {globalThis.crypto = webcrypto;}
-
-
 /**
  * Class containing SECP256K1 related utility methods.
  */

@@ -13,13 +13,58 @@ This project is used as a dependency by several other projects.
 
 Proposals and issues for the specification itself should be submitted as pull requests to the [spec repo](https://github.com/decentralized-identity/decentralized-web-node).
 
-
 ## Installation
 
-If you are interested in using DWNs and web5 in your web app, you probably want to look at web5-js, instead of this repository. Head on over here: https://github.com/TBD54566975/web5-js
+If you are interested in using DWNs and web5 in your web app, you probably want to look at web5-js, instead of this repository. Head on over here: https://github.com/TBD54566975/web5-js.
+
+For advanced users wishing to use this repo directly:
 
 ```bash
 npm install @tbd54566975/dwn-sdk-js
+```
+
+Additional steps needed for some environments.
+
+Node.js <= 18
+
+```js
+// node.js 18 and earlier,  needs globalThis.crypto polyfill
+import { webcrypto } from "node:crypto";
+// @ts-ignore
+if (!globalThis.crypto) globalThis.crypto = webcrypto;
+```
+
+Synchronous methods:
+
+```js
+// Enable synchronous methods.
+// Only async methods are available by default, to keep the library dependency-free.
+import { hmac } from "@noble/hashes/hmac";
+import { sha256 } from "@noble/hashes/sha256";
+import { sha512 } from "@noble/hashes/sha512";
+ed.etc.sha512Sync = (...m) => sha512(ed.etc.concatBytes(...m));
+secp.etc.hmacSha256Sync = (k, ...m) =>
+  hmac(sha256, k, secp.etc.concatBytes(...m));
+// Sync methods can be used now:
+// ed.getPublicKey(privKey); ed.sign(msg, privKey); ed.verify(signature, msg, pubKey);
+// secp.sign(msgHash, privKey);
+```
+
+React Native:
+
+```js
+// If you're on react native. React Native needs crypto.getRandomValues polyfill and sha512
+import "react-native-get-random-values";
+import { hmac } from "@noble/hashes/hmac";
+import { sha256 } from "@noble/hashes/sha256";
+import { sha512 } from "@noble/hashes/sha512";
+ed.etc.sha512Sync = (...m) => sha512(ed.etc.concatBytes(...m));
+ed.etc.sha512Async = (...m) => Promise.resolve(ed.etc.sha512Sync(...m));
+
+secp.etc.hmacSha256Sync = (k, ...m) =>
+  hmac(sha256, k, secp.etc.concatBytes(...m));
+secp.etc.hmacSha256Async = (k, ...m) =>
+  Promise.resolve(secp.etc.hmacSha256Sync(k, ...m));
 ```
 
 ## Usage
@@ -54,31 +99,35 @@ const result = await dwn.processMessage(didKey.did, recordsWrite.message, dataSt
 ```
 
 With a web wallet installed:
-```javascript
 
-  const result = await window.web5.dwn.processMessage({
-    method  : 'RecordsQuery',
-    message : {
-      filter: {
-        schema: 'http://some-schema-registry.org/todo'
-      },
-      dateSort: 'createdAscending'
-    }
-  });
-```  
+```javascript
+const result = await window.web5.dwn.processMessage({
+  method: "RecordsQuery",
+  message: {
+    filter: {
+      schema: "http://some-schema-registry.org/todo",
+    },
+    dateSort: "createdAscending",
+  },
+});
+```
 
 ## Release/Build Process
+
 The DWN JS SDK releases builds to [npmjs.com](https://www.npmjs.com/package/@tbd54566975/dwn-sdk-js). There are two build types: stable build and unstable build.
 
 ### Stable Build
+
 This is triggered manually by:
- 1. Increment `version` in `package.json` in [Semantic Versioning (semver)](https://semver.org/) format.
- 2. Merge the change into `main` branch
- 3. Create a release from GitHub.
- 
- An official build with version matching the `package.json` will be published to [npmjs.com](https://www.npmjs.com/package/@tbd54566975/dwn-sdk-js).
+
+1.  Increment `version` in `package.json` in [Semantic Versioning (semver)](https://semver.org/) format.
+2.  Merge the change into `main` branch
+3.  Create a release from GitHub.
+
+An official build with version matching the `package.json` will be published to [npmjs.com](https://www.npmjs.com/package/@tbd54566975/dwn-sdk-js).
 
 ### Unstable Build
+
 Every push to the `main` branch will automatically trigger an unstable build to [npmjs.com](https://www.npmjs.com/package/@tbd54566975/dwn-sdk-js) for developers to experiment and test.
 
 The version string contains the date as well as the commit hash of the last change.
@@ -91,17 +140,15 @@ An example version string:
 - `2023-03-16` indicates the date of March 16th 2023
 - `36ec2ce` is the commit hash of the last change
 
-## Some projects that use this library: 
+## Some projects that use this library:
 
-* [Web5 JS SDK](https://github.com/TBD54566975/web5-js)
-* [Example CLI](https://github.com/TBD54566975/dwn-cli)
-* [Example with a web wallet](https://github.com/TBD54566975/incubating-web5-labs/)
-* [Server side aggregator](https://github.com/TBD54566975/dwn-server)
-
-
-
+- [Web5 JS SDK](https://github.com/TBD54566975/web5-js)
+- [Example CLI](https://github.com/TBD54566975/dwn-cli)
+- [Example with a web wallet](https://github.com/TBD54566975/incubating-web5-labs/)
+- [Server side aggregator](https://github.com/TBD54566975/dwn-server)
 
 ## Architecture
+
 <img src="./images/dwn-architecture.png" alt="Architecture of DWN SDN" width="700">
 
 > NOTE: The diagram is a conceptual view of the architecture, the actual component abstraction and names in source file may differ.
