@@ -141,8 +141,7 @@
       "istanbul-lib-report": {
         "make-dir": "^4.0.0"
       }
-    },
-    "word-wrap" : "npm:@aashutoshrathi/word-wrap@1.2.5"
+    }
   },
   "scripts": {
     "build:esm": "tsc",
