@@ -31,7 +31,7 @@ export class PermissionsRequestHandler implements MethodHandler {
     }
 
     // store message
-    const { dataSize, scope, conditions, ...propertiesToIndex } = message.descriptor;
+    const { scope, conditions, ...propertiesToIndex } = message.descriptor;
     const indexes: { [key: string]: string } = {
       ...propertiesToIndex,
       author: permissionsRequest.author!,

@@ -22,7 +22,7 @@ export interface MessageStore {
   put(
     tenant: string,
     messageJson: BaseMessage,
-    indexes: Record<string, string>,
+    indexes: { [key: string]: string },
     options?: MessageStoreOptions
   ): Promise<void>;
 

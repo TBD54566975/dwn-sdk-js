@@ -29,7 +29,7 @@ export class PermissionsGrantHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }
 
-    const { dataSize, scope, conditions, ...propertiesToIndex } = message.descriptor;
+    const { scope, conditions, ...propertiesToIndex } = message.descriptor;
     const indexes: { [key: string]: string } = {
       author: permissionsGrant.author!,
       ...propertiesToIndex,

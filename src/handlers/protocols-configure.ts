@@ -7,7 +7,6 @@ import type { DataStore, DidResolver, MessageStore } from '../index.js';
 import { canonicalAuth } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolsConfigure } from '../interfaces/protocols-configure.js';
-import { StorageController } from '../store/storage-controller.js';
 
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
@@ -76,7 +75,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
         const messageCid = await Message.getCid(message);
         deletedMessageCids.push(messageCid);
 
-        await StorageController.delete(this.messageStore, this.dataStore, tenant, message);
+        await this.messageStore.delete(tenant, messageCid);
       }
     }
 
@@ -86,14 +85,13 @@ export class ProtocolsConfigureHandler implements MethodHandler {
   };
 
   private static constructProtocolsConfigureIndexes(protocolsConfigure: ProtocolsConfigure): Record<string, string> {
-    // strip out `dataSize` and `definition` as they are not indexable
-    // retain protocol url from `definition`
-    const { dataSize, definition, ...propertiesToIndex } = protocolsConfigure.message.descriptor;
+    // strip out `definition` as it is not indexable
+    const { definition, ...propertiesToIndex } = protocolsConfigure.message.descriptor;
     const { author } = protocolsConfigure;
 
     const indexes = {
       ...propertiesToIndex,
-      protocol : definition.protocol,
+      protocol : definition.protocol, // retain protocol url from `definition`
       author   : author!
     };
 

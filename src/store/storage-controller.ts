@@ -8,8 +8,8 @@ import { constructRecordsWriteIndexes } from '../handlers/records-write.js';
 import { DataStream } from '../utils/data-stream.js';
 import { DwnConstant } from '../core/dwn-constant.js';
 import { Encoder } from '../utils/encoder.js';
-import { Message } from '../core/message.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
+import { DwnMethodName, Message } from '../core/message.js';
 
 /**
  * A class that provides an abstraction for the usage of MessageStore, DataStore, and EventLog.
@@ -42,7 +42,10 @@ export class StorageController {
     return messages;
   }
 
-  public static async delete(
+  /**
+   * Deletes a Record message.
+   */
+  public static async deleteRecordMessage(
     messageStore: MessageStore,
     dataStore: DataStore,
     tenant: string,
@@ -50,8 +53,9 @@ export class StorageController {
   ): Promise<void> {
     const messageCid = await Message.getCid(message);
 
-    if (message.descriptor.dataCid !== undefined) {
-      await dataStore.delete(tenant, messageCid, message.descriptor.dataCid);
+    if (message.descriptor.method === DwnMethodName.Write) {
+      const recordsWriteMessage = message as RecordsWriteMessage;
+      await dataStore.delete(tenant, messageCid, recordsWriteMessage.descriptor.dataCid);
     }
 
     await messageStore.delete(tenant, messageCid);
@@ -80,7 +84,7 @@ export class StorageController {
       // the easiest implementation here is delete each old messages
       // and re-create it with the right index (isLatestBaseState = 'false') if the message is the initial write,
       // but there is room for better/more efficient implementation here
-        await StorageController.delete(messageStore, dataStore, tenant, message);
+        await StorageController.deleteRecordMessage(messageStore, dataStore, tenant, message);
 
         // if the existing message is the initial write
         // we actually need to keep it BUT, need to ensure the message is no longer marked as the latest state
