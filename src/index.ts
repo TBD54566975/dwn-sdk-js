@@ -36,7 +36,7 @@ export { Jws } from './utils/jws.js';
 export { KeyMaterial, PrivateJwk, PublicJwk } from './types/jose-types.js';
 export { Message } from './core/message.js';
 export { MessagesGet, MessagesGetOptions } from './interfaces/messages-get.js';
-export { GenericMessageReply as MessageReply } from './core/message-reply.js';
+export { UnionMessageReply as MessageReply } from './core/message-reply.js';
 export { MessageStore, MessageStoreOptions } from './types/message-store.js';
 export { MessageStoreLevel } from './store/message-store-level.js';
 export { ProtocolsConfigure, ProtocolsConfigureOptions } from './interfaces/protocols-configure.js';

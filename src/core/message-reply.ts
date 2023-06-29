@@ -20,7 +20,7 @@ export function messageReplyFromError(e: unknown, code: number): BaseMessageRepl
 /**
  * Catch-all message reply type. It is recommended to use BaseMessageReply or a message-specific reply type whereever possible.
  */
-export type GenericMessageReply = BaseMessageReply & {
+export type UnionMessageReply = BaseMessageReply & {
   /**
    * Resulting message entries or events returned from the invocation of the corresponding message.
    * e.g. the resulting messages from a RecordsQuery
