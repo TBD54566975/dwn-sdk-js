@@ -217,9 +217,6 @@ describe('PermissionsRevokeHandler.handle()', () => {
         dateCreated        : revokeTimestamp,
       });
 
-      console.log('revoke1 timestamp: ', revoke1.message.descriptor.dateCreated);
-      console.log('revoke2 timestamp: ', revoke2.message.descriptor.dateCreated);
-
       // Sort revokes by message CID
       let revokeWithHigherLexicographic: PermissionsRevoke;
       let revokeWithLowerLexicographic: PermissionsRevoke;

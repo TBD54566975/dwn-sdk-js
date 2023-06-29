@@ -65,6 +65,6 @@ export type PermissionsRevokeDescriptor = {
   permissionsGrantId: string;
 };
 
-export type PermissionsRevokeMessage = BaseMessage & {
+export type PermissionsRevokeMessage = GenericMessage & {
   descriptor: PermissionsRevokeDescriptor;
 };
