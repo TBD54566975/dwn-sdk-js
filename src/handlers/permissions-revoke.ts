@@ -86,7 +86,7 @@ export class PermissionsRevokeHandler implements MethodHandler {
     await this.messageStore.put(tenant, message, indexes);
     await this.eventLog.append(tenant, await Message.getCid(message));
 
-    // Delete existing revokes which are all older than the incoming message
+    // Delete existing revokes which are all newer than the incoming message
     const removedRevokeCids: string[] = [];
     for (const existingRevoke of existingRevokesForGrant) {
       const existingRevokeCid = await Message.getCid(existingRevoke);
