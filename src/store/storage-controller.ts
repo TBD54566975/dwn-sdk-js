@@ -2,7 +2,7 @@ import type { DataStore } from '../types/data-store.js';
 import type { EventLog } from '../types/event-log.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { RecordsWriteMessage } from '../types/records-types.js';
-import type { BaseMessage, Filter, TimestampedMessage } from '../types/message-types.js';
+import type { Filter, GenericMessage, TimestampedMessage } from '../types/message-types.js';
 
 import { constructRecordsWriteIndexes } from '../handlers/records-write.js';
 import { DataStream } from '../utils/data-stream.js';
@@ -49,7 +49,7 @@ export class StorageController {
     messageStore: MessageStore,
     dataStore: DataStore,
     tenant: string,
-    message: BaseMessage
+    message: GenericMessage
   ): Promise<void> {
     const messageCid = await Message.getCid(message);
 

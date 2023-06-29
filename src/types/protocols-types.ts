@@ -1,6 +1,6 @@
-import type { BaseMessageReply } from '../core/message-reply.js';
-import type { BaseMessage, QueryResultEntry } from './message-types.js';
+import type { GenericMessageReply } from '../core/message-reply.js';
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
+import type { GenericMessage, QueryResultEntry } from './message-types.js';
 
 export type ProtocolsConfigureDescriptor = {
   interface : DwnInterfaceName.Protocols;
@@ -49,7 +49,7 @@ export type ProtocolRuleSet = {
   [key: string]: any;
 };
 
-export type ProtocolsConfigureMessage = BaseMessage & {
+export type ProtocolsConfigureMessage = GenericMessage & {
   descriptor: ProtocolsConfigureDescriptor;
 };
 
@@ -64,10 +64,10 @@ export type ProtocolsQueryDescriptor = {
   filter?: ProtocolsQueryFilter
 };
 
-export type ProtocolsQueryMessage = BaseMessage & {
+export type ProtocolsQueryMessage = GenericMessage & {
   descriptor: ProtocolsQueryDescriptor;
 };
 
-export type ProtocolsQueryReply = BaseMessageReply & {
+export type ProtocolsQueryReply = GenericMessageReply & {
   entries?: QueryResultEntry[];
 };

@@ -1,5 +1,5 @@
-import type { BaseMessageReply } from '../core/message-reply.js';
 import type { EventLog } from '../types/event-log.js';
+import type { GenericMessageReply } from '../core/message-reply.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { ProtocolsConfigureMessage } from '../types/protocols-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
@@ -18,7 +18,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     tenant,
     message,
     dataStream: _dataStream
-  }: {tenant: string, message: ProtocolsConfigureMessage, dataStream: _Readable.Readable}): Promise<BaseMessageReply> {
+  }: {tenant: string, message: ProtocolsConfigureMessage, dataStream: _Readable.Readable}): Promise<GenericMessageReply> {
 
     let protocolsConfigure: ProtocolsConfigure;
     try {
@@ -51,7 +51,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     }
 
     // write the incoming message to DB if incoming message is newest
-    let messageReply: BaseMessageReply;
+    let messageReply: GenericMessageReply;
     if (incomingMessageIsNewest) {
       const indexes = ProtocolsConfigureHandler.constructProtocolsConfigureIndexes(protocolsConfigure);
 

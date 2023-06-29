@@ -1,4 +1,4 @@
-import type { BaseMessage } from './message-types.js';
+import type { GenericMessage } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 /**
@@ -26,6 +26,6 @@ export type HooksWriteDescriptor = {
 /**
  * Structure for HooksWrite message.
  */
-export type HooksWriteMessage = BaseMessage & {
+export type HooksWriteMessage = GenericMessage & {
   descriptor: HooksWriteDescriptor;
 };

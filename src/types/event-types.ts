@@ -1,6 +1,6 @@
-import type { BaseMessage } from './message-types.js';
-import type { BaseMessageReply } from '../core/message-reply.js';
 import type { Event } from './event-log.js';
+import type { GenericMessage } from './message-types.js';
+import type { GenericMessageReply } from '../core/message-reply.js';
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type EventsGetDescriptor = {
@@ -9,10 +9,10 @@ export type EventsGetDescriptor = {
   watermark?: string;
 };
 
-export type EventsGetMessage = BaseMessage & {
+export type EventsGetMessage = GenericMessage & {
   descriptor: EventsGetDescriptor;
 };
 
-export type EventsGetReply = BaseMessageReply & {
+export type EventsGetReply = GenericMessageReply & {
   events?: Event[];
 };

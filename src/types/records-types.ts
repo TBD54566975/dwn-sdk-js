@@ -1,8 +1,8 @@
-import type { BaseMessage } from './message-types.js';
-import type { BaseMessageReply } from '../core/message-reply.js';
 import type { DateSort } from '../interfaces/records-query.js';
 import type { EncryptionAlgorithm } from '../utils/encryption.js';
 import type { GeneralJws } from './jws-types.js';
+import type { GenericMessage } from './message-types.js';
+import type { GenericMessageReply } from '../core/message-reply.js';
 import type { KeyDerivationScheme } from '../utils/hd-key.js';
 import type { PublicJwk } from './jose-types.js';
 import type { Readable } from 'readable-stream';
@@ -25,7 +25,7 @@ export type RecordsWriteDescriptor = {
   dataFormat: string;
 };
 
-export type RecordsWriteMessage = BaseMessage & {
+export type RecordsWriteMessage = GenericMessage & {
   recordId: string,
   contextId?: string;
   descriptor: RecordsWriteDescriptor;
@@ -114,11 +114,11 @@ export type RecordsWriteAuthorizationPayload = {
   encryptionCid?: string;
 };
 
-export type RecordsQueryMessage = BaseMessage & {
+export type RecordsQueryMessage = GenericMessage & {
   descriptor: RecordsQueryDescriptor;
 };
 
-export type RecordsQueryReply = BaseMessageReply & {
+export type RecordsQueryReply = GenericMessageReply & {
   entries?: RecordsQueryReplyEntry[];
 };
 
@@ -127,7 +127,7 @@ export type RecordsReadMessage = {
   descriptor: RecordsReadDescriptor;
 };
 
-export type RecordsReadReply = BaseMessageReply & {
+export type RecordsReadReply = GenericMessageReply & {
   record?: {
     recordId: string,
     contextId?: string;
@@ -146,7 +146,7 @@ export type RecordsReadDescriptor = {
   date: string;
 };
 
-export type RecordsDeleteMessage = BaseMessage & {
+export type RecordsDeleteMessage = GenericMessage & {
   descriptor: RecordsDeleteDescriptor;
 };
 

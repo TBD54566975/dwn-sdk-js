@@ -1,5 +1,5 @@
-import type { BaseMessageReply } from '../core/message-reply.js';
 import type { EventLog } from '../types/event-log.js';
+import type { GenericMessageReply } from '../core/message-reply.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
 import type { RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
@@ -26,7 +26,7 @@ export class RecordsWriteHandler implements MethodHandler {
     message,
     options,
     dataStream
-  }: HandlerArgs): Promise<BaseMessageReply> {
+  }: HandlerArgs): Promise<GenericMessageReply> {
     let recordsWrite: RecordsWrite;
     try {
       recordsWrite = await RecordsWrite.parse(message);

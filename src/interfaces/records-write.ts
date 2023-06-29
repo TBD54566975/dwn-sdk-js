@@ -1,4 +1,4 @@
-import type { BaseMessage } from '../types/message-types.js';
+import type { GenericMessage } from '../types/message-types.js';
 import type { KeyDerivationScheme } from '../index.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PublicJwk } from '../types/jose-types.js';
@@ -453,7 +453,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
   /**
    * Checks if the given message is the initial entry of a record.
    */
-  public static async isInitialWrite(message: BaseMessage): Promise<boolean> {
+  public static async isInitialWrite(message: GenericMessage): Promise<boolean> {
     // can't be the initial write if the message is not a Records Write
     if (message.descriptor.interface !== DwnInterfaceName.Records ||
         message.descriptor.method !== DwnMethodName.Write) {
@@ -563,7 +563,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
   /**
    * Gets the initial write from the given list or record write.
    */
-  public static async getInitialWrite(messages: BaseMessage[]): Promise<RecordsWriteMessage>{
+  public static async getInitialWrite(messages: GenericMessage[]): Promise<RecordsWriteMessage>{
     for (const message of messages) {
       if (await RecordsWrite.isInitialWrite(message)) {
         return message as RecordsWriteMessage;

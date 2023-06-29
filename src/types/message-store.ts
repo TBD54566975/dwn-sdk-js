@@ -1,4 +1,4 @@
-import type { BaseMessage, Filter } from './message-types.js';
+import type { Filter, GenericMessage } from './message-types.js';
 
 export interface MessageStoreOptions {
   signal?: AbortSignal;
@@ -21,7 +21,7 @@ export interface MessageStore {
    */
   put(
     tenant: string,
-    messageJson: BaseMessage,
+    message: GenericMessage,
     indexes: { [key: string]: string },
     options?: MessageStoreOptions
   ): Promise<void>;
@@ -30,12 +30,12 @@ export interface MessageStore {
    * Fetches a single message by `cid` from the underlying store.
    * Returns `undefined` no message was found.
    */
-  get(tenant: string, cid: string, options?: MessageStoreOptions): Promise<BaseMessage | undefined>;
+  get(tenant: string, cid: string, options?: MessageStoreOptions): Promise<GenericMessage | undefined>;
 
   /**
    * Queries the underlying store for messages that match the provided filter.
    */
-  query(tenant: string, filter: Filter, options?: MessageStoreOptions ): Promise<BaseMessage[]>;
+  query(tenant: string, filter: Filter, options?: MessageStoreOptions ): Promise<GenericMessage[]>;
 
   /**
    * Deletes the message associated with the id provided.

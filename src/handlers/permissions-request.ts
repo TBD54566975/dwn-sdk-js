@@ -1,4 +1,4 @@
-import type { BaseMessageReply } from '../core/message-reply.js';
+import type { GenericMessageReply } from '../core/message-reply.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { PermissionsRequestMessage } from '../types/permissions-types.js';
 import type { DidResolver, EventLog, MessageStore } from '../index.js';
@@ -15,7 +15,7 @@ export class PermissionsRequestHandler implements MethodHandler {
   public async handle({
     tenant,
     message
-  }: { tenant: string, message: PermissionsRequestMessage }): Promise<BaseMessageReply> {
+  }: { tenant: string, message: PermissionsRequestMessage }): Promise<GenericMessageReply> {
     let permissionsRequest: PermissionsRequest;
     try {
       permissionsRequest = await PermissionsRequest.parse(message);

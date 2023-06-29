@@ -1,5 +1,5 @@
-import type { BaseMessage } from './message-types.js';
-import type { BaseMessageReply } from '../core/message-reply.js';
+import type { GenericMessage } from './message-types.js';
+import type { GenericMessageReply } from '../core/message-reply.js';
 import type { Readable } from 'readable-stream';
 
 /**
@@ -11,7 +11,7 @@ export interface MethodHandler {
    */
   handle(input: {
     tenant: string;
-    message: BaseMessage;
+    message: GenericMessage;
     dataStream?: Readable
-  }): Promise<BaseMessageReply>;
+  }): Promise<GenericMessageReply>;
 }
