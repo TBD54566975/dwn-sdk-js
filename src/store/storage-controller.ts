@@ -43,9 +43,9 @@ export class StorageController {
   }
 
   /**
-   * Deletes a Record message.
+   * Deletes a message.
    */
-  public static async deleteRecordMessage(
+  public static async delete(
     messageStore: MessageStore,
     dataStore: DataStore,
     tenant: string,
@@ -84,7 +84,7 @@ export class StorageController {
       // the easiest implementation here is delete each old messages
       // and re-create it with the right index (isLatestBaseState = 'false') if the message is the initial write,
       // but there is room for better/more efficient implementation here
-        await StorageController.deleteRecordMessage(messageStore, dataStore, tenant, message);
+        await StorageController.delete(messageStore, dataStore, tenant, message);
 
         // if the existing message is the initial write
         // we actually need to keep it BUT, need to ensure the message is no longer marked as the latest state
