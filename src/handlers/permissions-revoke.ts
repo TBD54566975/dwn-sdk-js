@@ -70,8 +70,8 @@ export class PermissionsRevokeHandler implements MethodHandler {
     const existingRevokesForGrant: PermissionsRevokeMessage[] = await this.messageStore.query(tenant, query) as PermissionsRevokeMessage[];
 
     // Conflict 409 if the grant already has an older revoke
-    const oldestExistingRevoke = PermissionsRevoke.getOldestRevoke(existingRevokesForGrant);
-    if (oldestExistingRevoke !== undefined && oldestExistingRevoke.descriptor.dateCreated < message.descriptor.dateCreated) {
+    const oldestExistingRevoke = await PermissionsRevoke.getOldestRevoke(existingRevokesForGrant);
+    if (oldestExistingRevoke !== undefined && !(await PermissionsRevoke.isCreatedOlder(oldestExistingRevoke, message))) {
       return {
         status: { code: 409, detail: 'Conflict' }
       };
@@ -98,7 +98,7 @@ export class PermissionsRevokeHandler implements MethodHandler {
     // Delete grant-authorized messages with timestamp after revocation
     const grantAuthdMessagesQuery = {
       permissionsGrantId,
-      dateCreated: { gt: message.descriptor.dateCreated },
+      dateCreated: { gte: message.descriptor.dateCreated },
     };
     const grantAuthdMessagesAfterRevoke = await this.messageStore.query(tenant, grantAuthdMessagesQuery);
     const grantAuthdMessageCidsAfterRevoke: string[] = [];

@@ -192,6 +192,54 @@ describe('PermissionsRevokeHandler.handle()', () => {
       expect(permissionsRevokeReply2.status.code).to.eq(409);
     });
 
+    it('should reject with 409 if a PermissionsRevoke message exists for same grant, same revocation time, and lower lexicographic CID', async () => {
+      const alice = await DidKeyResolver.generate();
+
+      // Create a grant
+      const { permissionsGrant } = await TestDataGenerator.generatePermissionsGrant({
+        author     : alice,
+        grantedBy  : alice.did,
+        grantedFor : alice.did,
+      });
+      const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+      expect(permissionsGrantReply.status.code).to.eq(202);
+
+      // Create two revokes with same timestamp
+      const revokeTimestamp = getCurrentTimeInHighPrecision();
+      const { permissionsRevoke: revoke1 } = await TestDataGenerator.generatePermissionsRevoke({
+        author             : alice,
+        permissionsGrantId : await Message.getCid(permissionsGrant.message),
+        dateCreated        : revokeTimestamp,
+      });
+      const { permissionsRevoke: revoke2 } = await TestDataGenerator.generatePermissionsRevoke({
+        author             : alice,
+        permissionsGrantId : await Message.getCid(permissionsGrant.message),
+        dateCreated        : revokeTimestamp,
+      });
+
+      console.log('revoke1 timestamp: ', revoke1.message.descriptor.dateCreated);
+      console.log('revoke2 timestamp: ', revoke2.message.descriptor.dateCreated);
+
+      // Sort revokes by message CID
+      let revokeWithHigherLexicographic: PermissionsRevoke;
+      let revokeWithLowerLexicographic: PermissionsRevoke;
+      if (await Message.getCid(revoke1.message) > await Message.getCid(revoke2.message)) {
+        revokeWithHigherLexicographic = revoke1;
+        revokeWithLowerLexicographic = revoke2;
+      } else {
+        revokeWithHigherLexicographic = revoke2;
+        revokeWithLowerLexicographic = revoke1;
+      }
+
+      // Process revoke with lower lexicographic value
+      const permissionsRevokeReply1 = await dwn.processMessage(alice.did, revokeWithLowerLexicographic.message);
+      expect(permissionsRevokeReply1.status.code).to.eq(202);
+
+      // Process revoke with same timestamp but lower lexicographic value, receive 409
+      const permissionsRevokeReply2 = await dwn.processMessage(alice.did, revokeWithHigherLexicographic.message);
+      expect(permissionsRevokeReply2.status.code).to.eq(409);
+    });
+
     it('should accept revokes that are older than the oldest existing revoke', async () => {
       const alice = await DidKeyResolver.generate();
 
