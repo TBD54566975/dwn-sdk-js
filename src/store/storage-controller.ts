@@ -45,7 +45,7 @@ export class StorageController {
   /**
    * Deletes a message.
    */
-  public static async delete(
+  private static async delete(
     messageStore: MessageStore,
     dataStore: DataStore,
     tenant: string,
