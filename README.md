@@ -23,9 +23,11 @@ For advanced users wishing to use this repo directly:
 npm install @tbd54566975/dwn-sdk-js
 ```
 
-Additional steps needed for some environments.
+## Additional Steps
 
-Node.js <= 18
+This package has dependency on [`@noble/ed25519`](https://github.com/paulmillr/noble-ed25519#usage) and [`@noble/secp256k1`](https://github.com/paulmillr/noble-secp256k1#usage) v2, additional steps are needed for some environments:
+
+- Node.js <= 18
 
 ```js
 // node.js 18 and earlier,  needs globalThis.crypto polyfill
@@ -34,7 +36,7 @@ import { webcrypto } from "node:crypto";
 if (!globalThis.crypto) globalThis.crypto = webcrypto;
 ```
 
-React Native:
+- React Native:
 
 ```js
 // If you're on react native. React Native needs crypto.getRandomValues polyfill and sha512

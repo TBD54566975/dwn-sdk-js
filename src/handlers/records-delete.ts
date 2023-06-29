@@ -1,5 +1,5 @@
-import type { BaseMessageReply } from '../core/message-reply.js';
 import type { EventLog } from '../types/event-log.js';
+import type { GenericMessageReply } from '../core/message-reply.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { RecordsDeleteMessage } from '../types/records-types.js';
 import type { TimestampedMessage } from '../types/message-types.js';
@@ -19,7 +19,7 @@ export class RecordsDeleteHandler implements MethodHandler {
   public async handle({
     tenant,
     message
-  }: { tenant: string, message: RecordsDeleteMessage}): Promise<BaseMessageReply> {
+  }: { tenant: string, message: RecordsDeleteMessage}): Promise<GenericMessageReply> {
 
     let recordsDelete: RecordsDelete;
     try {

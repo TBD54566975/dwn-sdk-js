@@ -1,5 +1,5 @@
-import type { BaseMessage } from './message-types.js';
-import type { BaseMessageReply } from '../core/message-reply.js';
+import type { GenericMessage } from './message-types.js';
+import type { GenericMessageReply } from '../core/message-reply.js';
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type MessagesGetDescriptor = {
@@ -8,17 +8,17 @@ export type MessagesGetDescriptor = {
   messageCids: string[];
 };
 
-export type MessagesGetMessage = BaseMessage & {
+export type MessagesGetMessage = GenericMessage & {
   descriptor: MessagesGetDescriptor;
 };
 
 export type MessagesGetReplyEntry = {
   messageCid: string;
-  message?: BaseMessage;
+  message?: GenericMessage;
   encodedData?: string;
   error?: string;
 };
 
-export type MessagesGetReply = BaseMessageReply & {
+export type MessagesGetReply = GenericMessageReply & {
   messages?: MessagesGetReplyEntry[];
 };
