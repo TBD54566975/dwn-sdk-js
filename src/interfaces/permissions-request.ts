@@ -8,7 +8,7 @@ import { validateAuthorizationIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 type PermissionsRequestOptions = {
-  dateCreated?: string;
+  messageTimestamp?: string;
   description?: string;
   grantedTo: string;
   grantedBy: string;
@@ -28,15 +28,15 @@ export class PermissionsRequest extends Message<PermissionsRequestMessage> {
 
   public static async create(options: PermissionsRequestOptions): Promise<PermissionsRequest> {
     const descriptor: PermissionsRequestDescriptor = {
-      interface   : DwnInterfaceName.Permissions,
-      method      : DwnMethodName.Request,
-      dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
-      description : options.description,
-      grantedTo   : options.grantedTo,
-      grantedBy   : options.grantedBy,
-      grantedFor  : options.grantedFor,
-      scope       : options.scope,
-      conditions  : options.conditions,
+      interface        : DwnInterfaceName.Permissions,
+      method           : DwnMethodName.Request,
+      messageTimestamp : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      description      : options.description,
+      grantedTo        : options.grantedTo,
+      grantedBy        : options.grantedBy,
+      grantedFor       : options.grantedFor,
+      scope            : options.scope,
+      conditions       : options.conditions,
     };
 
     // delete all descriptor properties that are `undefined` else the code will encounter the following IPLD issue when attempting to generate CID:

@@ -4,7 +4,7 @@ import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 export type SnapshotsCreateDescriptor = {
   interface : DwnInterfaceName.Snapshots;
   method: DwnMethodName.Create;
-  dateCreated: string;
+  messageTimestamp: string;
   definitionCid: string;
 };
 

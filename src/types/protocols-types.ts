@@ -5,7 +5,7 @@ import type { GenericMessage, QueryResultEntry } from './message-types.js';
 export type ProtocolsConfigureDescriptor = {
   interface : DwnInterfaceName.Protocols;
   method: DwnMethodName.Configure;
-  dateModified: string;
+  messageTimestamp: string;
   definition: ProtocolDefinition;
 };
 
@@ -60,7 +60,7 @@ export type ProtocolsQueryFilter = {
 export type ProtocolsQueryDescriptor = {
   interface : DwnInterfaceName.Protocols,
   method: DwnMethodName.Query;
-  dateCreated: string;
+  messageTimestamp: string;
   filter?: ProtocolsQueryFilter
 };
 

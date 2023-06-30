@@ -122,7 +122,7 @@ describe('RecordsDeleteHandler.handle()', () => {
       expect(initialWriteReply.status.code).to.equal(202);
 
       // generate subsequent write and delete with the delete having an earlier timestamp
-      // NOTE: creating RecordsDelete first ensures it has an earlier `dateModified` time
+      // NOTE: creating RecordsDelete first ensures it has an earlier `messageTimestamp` time
       const recordsDelete = await RecordsDelete.create({
         recordId                    : initialWriteData.message.recordId,
         authorizationSignatureInput : Jws.createSignatureInput(alice)
@@ -136,7 +136,7 @@ describe('RecordsDeleteHandler.handle()', () => {
       const subsequentWriteReply = await dwn.processMessage(alice.did, subsequentWriteData.message, subsequentWriteData.dataStream);
       expect(subsequentWriteReply.status.code).to.equal(202);
 
-      // test that a delete with an earlier `dateModified` results in a 409
+      // test that a delete with an earlier `messageTimestamp` results in a 409
       const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
       expect(deleteReply.status.code).to.equal(409);
 

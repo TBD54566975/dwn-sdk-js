@@ -17,7 +17,7 @@
       "required": [
         "interface",
         "method",
-        "dateCreated",
+        "messageTimestamp",
         "definitionCid"
       ],
       "properties": {
@@ -33,7 +33,7 @@
           ],
           "type": "string"
         },
-        "dateCreated": {
+        "messageTimestamp": {
           "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
         },
         "definitionCid": {

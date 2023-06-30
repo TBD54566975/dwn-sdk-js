@@ -192,9 +192,9 @@ describe('RecordsQueryHandler.handle()', () => {
       const firstDayOf2022 = createDateString(new Date(2022, 1, 1));
       const firstDayOf2023 = createDateString(new Date(2023, 1, 1));
       const alice = await DidKeyResolver.generate();
-      const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2021, dateModified: firstDayOf2021 });
-      const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2022, dateModified: firstDayOf2022 });
-      const write3 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2023, dateModified: firstDayOf2023 });
+      const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2021, messageTimestamp: firstDayOf2021 });
+      const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2022, messageTimestamp: firstDayOf2022 });
+      const write3 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2023, messageTimestamp: firstDayOf2023 });
 
       // insert data
       const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
@@ -258,13 +258,13 @@ describe('RecordsQueryHandler.handle()', () => {
       const alice = await DidKeyResolver.generate();
       const schema = '2021And2022Schema';
       const write1 = await TestDataGenerator.generateRecordsWrite({
-        author: alice, dateCreated: firstDayOf2021, dateModified: firstDayOf2021, schema
+        author: alice, dateCreated: firstDayOf2021, messageTimestamp: firstDayOf2021, schema
       });
       const write2 = await TestDataGenerator.generateRecordsWrite({
-        author: alice, dateCreated: firstDayOf2022, dateModified: firstDayOf2022, schema
+        author: alice, dateCreated: firstDayOf2022, messageTimestamp: firstDayOf2022, schema
       });
       const write3 = await TestDataGenerator.generateRecordsWrite({
-        author: alice, dateCreated: firstDayOf2023, dateModified: firstDayOf2023
+        author: alice, dateCreated: firstDayOf2023, messageTimestamp: firstDayOf2023
       });
 
       // insert data

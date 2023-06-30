@@ -83,7 +83,7 @@ describe('RecordsWriteHandler.handle()', () => {
       await dwn.close();
     });
 
-    it('should only be able to overwrite existing record if new record has a later `dateModified` value', async () => {
+    it('should only be able to overwrite existing record if new record has a later `messageTimestamp` value', async () => {
       // write a message into DB
       const author = await DidKeyResolver.generate();
       const data1 = new TextEncoder().encode('data1');
@@ -106,7 +106,7 @@ describe('RecordsWriteHandler.handle()', () => {
       expect(recordsQueryReply.entries![0].encodedData).to.equal(base64url.baseEncode(data1));
 
       // generate and write a new RecordsWrite to overwrite the existing record
-      // a new RecordsWrite by default will have a later `dateModified`
+      // a new RecordsWrite by default will have a later `messageTimestamp`
       const newDataBytes = Encoder.stringToBytes('new data');
       const newDataEncoded = Encoder.bytesToBase64Url(newDataBytes);
       const newRecordsWrite = await TestDataGenerator.generateFromRecordsWrite({
@@ -139,7 +139,7 @@ describe('RecordsWriteHandler.handle()', () => {
       expect(thirdRecordsQueryReply.entries![0].encodedData).to.equal(newDataEncoded);
     });
 
-    it('should only be able to overwrite existing record if new message CID is larger when `dateModified` value is the same', async () => {
+    it('should only be able to overwrite existing record if new message CID is larger when `messageTimestamp` value is the same', async () => {
       // start by writing an originating message
       const author = await TestDataGenerator.generatePersona();
       const tenant = author.did;
@@ -154,17 +154,17 @@ describe('RecordsWriteHandler.handle()', () => {
       const originatingMessageWriteReply = await dwn.processMessage(tenant, originatingMessageData.message, originatingMessageData.dataStream);
       expect(originatingMessageWriteReply.status.code).to.equal(202);
 
-      // generate two new RecordsWrite messages with the same `dateModified` value
+      // generate two new RecordsWrite messages with the same `messageTimestamp` value
       const dateModified = getCurrentTimeInHighPrecision();
       const recordsWrite1 = await TestDataGenerator.generateFromRecordsWrite({
         author,
-        existingWrite: originatingMessageData.recordsWrite,
-        dateModified
+        existingWrite    : originatingMessageData.recordsWrite,
+        messageTimestamp : dateModified
       });
       const recordsWrite2 = await TestDataGenerator.generateFromRecordsWrite({
         author,
-        existingWrite: originatingMessageData.recordsWrite,
-        dateModified
+        existingWrite    : originatingMessageData.recordsWrite,
+        messageTimestamp : dateModified
       });
 
       // determine the lexicographical order of the two messages
@@ -482,10 +482,10 @@ describe('RecordsWriteHandler.handle()', () => {
         expect(reply.status.detail).to.contain('initial write is not found');
       });
 
-      it('should return 400 if `dateCreated` and `dateModified` are not the same in an initial write', async () => {
+      it('should return 400 if `dateCreated` and `messageTimestamp` are not the same in an initial write', async () => {
         const { author, message, dataStream } = await TestDataGenerator.generateRecordsWrite({
-          dateCreated  : '2023-01-10T10:20:30.405060Z',
-          dateModified : getCurrentTimeInHighPrecision() // this always generate a different timestamp
+          dateCreated      : '2023-01-10T10:20:30.405060Z',
+          messageTimestamp : getCurrentTimeInHighPrecision() // this always generate a different timestamp
         });
         const tenant = author.did;
 

@@ -17,7 +17,7 @@
       "required": [
         "interface",
         "method",
-        "dateCreated"
+        "messageTimestamp"
       ],
       "properties": {
         "interface": {
@@ -32,7 +32,7 @@
           ],
           "type": "string"
         },
-        "dateCreated": {
+        "messageTimestamp": {
           "type": "string"
         },
         "filter": {
