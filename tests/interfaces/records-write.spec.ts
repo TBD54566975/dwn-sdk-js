@@ -1,13 +1,13 @@
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
+import type { MessageStore } from '../../src/types/message-store.js';
 import type { RecordsWriteMessage } from '../../src/types/records-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
-import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
-import { MessageStoreLevel } from '../../src/store/message-store-level.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
+import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { getCurrentTimeInHighPrecision, sleep } from '../../src/utils/time.js';
 import { Jws, KeyDerivationScheme } from '../../src/index.js';
@@ -37,7 +37,7 @@ describe('RecordsWrite', () => {
       expect(message.descriptor.dateCreated).to.equal(options.dateCreated);
       expect(message.recordId).to.equal(options.recordId);
 
-      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
+      const messageStoreStub = stubInterface<MessageStore>();
 
       await recordsWrite.authorize(alice.did, messageStoreStub);
     });

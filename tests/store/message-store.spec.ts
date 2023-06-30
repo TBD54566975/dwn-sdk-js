@@ -1,22 +1,22 @@
+import type { MessageStore } from '../../src/index.js';
 import type { RecordsWriteMessage } from '../../src/types/records-types.js';
-import type { CreateLevelDatabaseOptions, LevelDatabase } from '../../src/store/level-wrapper.js';
 
-import { createLevelDatabase } from '../../src/store/level-wrapper.js';
 import { DidKeyResolver } from '../../src/index.js';
 import { expect } from 'chai';
 import { Message } from '../../src/core/message.js';
-import { MessageStoreLevel } from '../../src/store/message-store-level.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestStoreInitializer } from '../test-store-initializer.js';
 
-let messageStore: MessageStoreLevel;
+let messageStore: MessageStore;
 
-describe('MessageStoreLevel Tests', () => {
+describe('Generic MessageStore Test Suite', () => {
   describe('put', function () {
+
+    // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
+    // so that different test suites can reuse the same backend store for testing
     before(async () => {
-      messageStore = new MessageStoreLevel({
-        blockstoreLocation : 'TEST-MESSAGESTORE',
-        indexLocation      : 'TEST-INDEX'
-      });
+      const stores = TestStoreInitializer.initializeStores();
+      messageStore = stores.messageStore;
       await messageStore.open();
     });
 
@@ -122,24 +122,6 @@ describe('MessageStoreLevel Tests', () => {
 
       const results = await messageStore.query(alice.did, { schema });
       expect(results.length).to.equal(0);
-    });
-  });
-
-  describe('createLevelDatabase', function () {
-    it('should be called if provided', async () => {
-      const locations = new Set;
-
-      const messageStore = new MessageStoreLevel({
-        blockstoreLocation : 'TEST-MESSAGESTORE',
-        indexLocation      : 'TEST-INDEX',
-        createLevelDatabase<V>(location: string, options?: CreateLevelDatabaseOptions<V>): Promise<LevelDatabase<V>> {
-          locations.add(location);
-          return createLevelDatabase(location, options);
-        }
-      });
-      await messageStore.open();
-
-      expect(locations).to.eql(new Set([ 'TEST-MESSAGESTORE', 'TEST-INDEX' ]));
     });
   });
 });
