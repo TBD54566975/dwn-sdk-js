@@ -1,4 +1,4 @@
-import type { BaseMessage } from './message-types.js';
+import type { GenericMessage } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../index.js';
 
 export type PermissionScope = {
@@ -29,7 +29,7 @@ export type PermissionsRequestDescriptor = {
   conditions?: PermissionConditions;
 };
 
-export type PermissionsRequestMessage = BaseMessage & {
+export type PermissionsRequestMessage = GenericMessage & {
   descriptor: PermissionsRequestDescriptor;
 };
 
@@ -53,6 +53,6 @@ export type PermissionsGrantDescriptor = {
   conditions?: PermissionConditions
 };
 
-export type PermissionsGrantMessage = BaseMessage & {
+export type PermissionsGrantMessage = GenericMessage & {
   descriptor: PermissionsGrantDescriptor;
 };

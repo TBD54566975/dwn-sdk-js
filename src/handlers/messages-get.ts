@@ -2,6 +2,7 @@ import type { DataStore } from '../types/data-store.js';
 import type { DidResolver } from '../did/did-resolver.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
+import type { RecordsWriteMessage } from '../types/records-types.js';
 import type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from '../types/messages-types.js';
 
 import { DataStream } from '../utils/data-stream.js';
@@ -66,8 +67,10 @@ export class MessagesGetHandler implements MethodHandler {
         continue;
       }
 
-      const dataCid = message.descriptor.dataCid;
-      const dataSize = message.descriptor.dataSize;
+      // RecordsWrite specific handling
+      const recordsWrite = message as RecordsWriteMessage;
+      const dataCid = recordsWrite.descriptor.dataCid;
+      const dataSize = recordsWrite.descriptor.dataSize;
 
       if (dataCid !== undefined && dataSize! <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
         const messageCid = await Message.getCid(message);

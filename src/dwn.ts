@@ -1,12 +1,12 @@
-import type { BaseMessage } from './types/message-types.js';
 import type { DataStore } from './types/data-store.js';
 import type { EventLog } from './types/event-log.js';
+import type { GenericMessage } from './types/message-types.js';
 import type { MessageStore } from './types/message-store.js';
 import type { MethodHandler } from './types/method-handler.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsWriteHandlerOptions } from './handlers/records-write.js';
 import type { TenantGate } from './core/tenant-gate.js';
-import type { BaseMessageReply , GenericMessageReply } from './core/message-reply.js';
+import type { GenericMessageReply, UnionMessageReply } from './core/message-reply.js';
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
 import type { RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from './types/records-types.js';
 
@@ -94,7 +94,7 @@ export class Dwn {
    * Processes the given DWN message and returns with a reply.
    * @param tenant The tenant DID to route the given message to.
    */
-  public async processMessage(tenant: string, rawMessage: any, dataStream?: Readable): Promise<GenericMessageReply> {
+  public async processMessage(tenant: string, rawMessage: any, dataStream?: Readable): Promise<UnionMessageReply> {
     const errorMessageReply = await this.validateTenant(tenant) ?? await this.validateMessageIntegrity(rawMessage);
     if (errorMessageReply !== undefined) {
       return errorMessageReply;
@@ -103,7 +103,7 @@ export class Dwn {
     const handlerKey = rawMessage.descriptor.interface + rawMessage.descriptor.method;
     const methodHandlerReply = await this.methodHandlers[handlerKey].handle({
       tenant,
-      message: rawMessage as BaseMessage,
+      message: rawMessage as GenericMessage,
       dataStream
     });
 
@@ -158,7 +158,7 @@ export class Dwn {
   /**
    * Privileged method for writing a pruned initial `RecordsWrite` to a DWN without needing to supply associated data.
    */
-  public async synchronizePrunedInitialRecordsWrite(tenant: string, message: RecordsWriteMessage): Promise<BaseMessageReply> {
+  public async synchronizePrunedInitialRecordsWrite(tenant: string, message: RecordsWriteMessage): Promise<GenericMessageReply> {
     const errorMessageReply =
       await this.validateTenant(tenant) ??
       await this.validateMessageIntegrity(message, DwnInterfaceName.Records, DwnMethodName.Write);
@@ -178,9 +178,9 @@ export class Dwn {
   /**
    * Checks tenant gate to see if tenant is allowed.
    * @param tenant The tenant DID to route the given message to.
-   * @returns BaseMessageReply if the message has an integrity error, otherwise undefined.
+   * @returns GenericMessageReply if the message has an integrity error, otherwise undefined.
    */
-  public async validateTenant(tenant: string): Promise<BaseMessageReply | undefined> {
+  public async validateTenant(tenant: string): Promise<GenericMessageReply | undefined> {
     const isTenant = await this.tenantGate.isTenant(tenant);
     if (!isTenant) {
       return {
@@ -195,13 +195,13 @@ export class Dwn {
    * @param dwnMessageInterface The interface of DWN message.
    * @param dwnMessageMethod The interface of DWN message.
 
-   * @returns BaseMessageReply if the message has an integrity error, otherwise undefined.
+   * @returns GenericMessageReply if the message has an integrity error, otherwise undefined.
    */
   public async validateMessageIntegrity(
     rawMessage: any,
     expectedInterface?: DwnInterfaceName,
     expectedMethod?: DwnMethodName,
-  ): Promise<BaseMessageReply | undefined> {
+  ): Promise<GenericMessageReply | undefined> {
     // Verify interface and method
     const dwnInterface = rawMessage?.descriptor?.interface;
     const dwnMethod = rawMessage?.descriptor?.method;

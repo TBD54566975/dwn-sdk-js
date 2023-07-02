@@ -2,14 +2,14 @@ import type { DataStore } from '../types/data-store.js';
 import type { EventLog } from '../types/event-log.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { RecordsWriteMessage } from '../types/records-types.js';
-import type { BaseMessage, Filter, TimestampedMessage } from '../types/message-types.js';
+import type { Filter, GenericMessage, TimestampedMessage } from '../types/message-types.js';
 
 import { constructRecordsWriteIndexes } from '../handlers/records-write.js';
 import { DataStream } from '../utils/data-stream.js';
 import { DwnConstant } from '../core/dwn-constant.js';
 import { Encoder } from '../utils/encoder.js';
-import { Message } from '../core/message.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
+import { DwnMethodName, Message } from '../core/message.js';
 
 /**
  * A class that provides an abstraction for the usage of MessageStore, DataStore, and EventLog.
@@ -42,16 +42,20 @@ export class StorageController {
     return messages;
   }
 
-  public static async delete(
+  /**
+   * Deletes a message.
+   */
+  private static async delete(
     messageStore: MessageStore,
     dataStore: DataStore,
     tenant: string,
-    message: BaseMessage
+    message: GenericMessage
   ): Promise<void> {
     const messageCid = await Message.getCid(message);
 
-    if (message.descriptor.dataCid !== undefined) {
-      await dataStore.delete(tenant, messageCid, message.descriptor.dataCid);
+    if (message.descriptor.method === DwnMethodName.Write) {
+      const recordsWriteMessage = message as RecordsWriteMessage;
+      await dataStore.delete(tenant, messageCid, recordsWriteMessage.descriptor.dataCid);
     }
 
     await messageStore.delete(tenant, messageCid);

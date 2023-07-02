@@ -1,7 +1,7 @@
-import type { BaseMessage } from '../types/message-types.js';
 import type { CID } from 'multiformats';
 import type { DidResolver } from '../did/did-resolver.js';
 import type { GeneralJws } from '../types/jws-types.js';
+import type { GenericMessage } from '../types/message-types.js';
 import type { Message } from './message.js';
 
 import { Cid } from '../utils/cid.js';
@@ -22,7 +22,7 @@ type AuthorizationPayloadConstraints = {
  */
 export async function canonicalAuth(
   tenant: string,
-  incomingMessage: Message<BaseMessage>,
+  incomingMessage: Message<GenericMessage>,
   didResolver: DidResolver
 ): Promise<void> {
   await authenticate(incomingMessage.message.authorization, didResolver);
@@ -36,7 +36,7 @@ export async function canonicalAuth(
  * @returns the parsed JSON payload object if validation succeeds.
  */
 export async function validateAuthorizationIntegrity(
-  message: BaseMessage,
+  message: GenericMessage,
   authorizationPayloadConstraints?: AuthorizationPayloadConstraints
 ): Promise<{ descriptorCid: CID, [key: string]: any }> {
   if (message.authorization === undefined) {
@@ -94,7 +94,7 @@ export async function authenticate(jws: GeneralJws | undefined, didResolver: Did
  * Authorizes the incoming message.
  * @throws {Error} if fails authentication
  */
-export async function authorize(tenant: string, incomingMessage: Message<BaseMessage>): Promise<void> {
+export async function authorize(tenant: string, incomingMessage: Message<GenericMessage>): Promise<void> {
   // if author is the same as the target tenant, we can directly grant access
   if (incomingMessage.author === tenant) {
     return;

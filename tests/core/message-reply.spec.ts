@@ -1,11 +1,11 @@
-import type { BaseMessageReply } from '../../src/core/message-reply.js';
+import type { GenericMessageReply } from '../../src/core/message-reply.js';
 
 import { expect } from 'chai';
 import { messageReplyFromError } from '../../src/core/message-reply.js';
 
 describe('Message Reply', () => {
   it('handles non-Errors being thrown', () => {
-    let response: BaseMessageReply;
+    let response: GenericMessageReply;
     try {
       throw 'Some error message';
     } catch (e: unknown) {

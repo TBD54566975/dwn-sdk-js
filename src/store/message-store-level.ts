@@ -1,4 +1,4 @@
-import type { BaseMessage, Filter } from '../types/message-types.js';
+import type { Filter, GenericMessage } from '../types/message-types.js';
 import type { MessageStore, MessageStoreOptions } from '../types/message-store.js';
 
 import * as block from 'multiformats/block';
@@ -58,7 +58,7 @@ export class MessageStoreLevel implements MessageStore {
     await this.index.close();
   }
 
-  async get(tenant: string, cidString: string, options?: MessageStoreOptions): Promise<BaseMessage | undefined> {
+  async get(tenant: string, cidString: string, options?: MessageStoreOptions): Promise<GenericMessage | undefined> {
     options?.signal?.throwIfAborted();
 
     const partition = await executeUnlessAborted(this.blockstore.partition(tenant), options?.signal);
@@ -72,14 +72,14 @@ export class MessageStoreLevel implements MessageStore {
 
     const decodedBlock = await executeUnlessAborted(block.decode({ bytes, codec: cbor, hasher: sha256 }), options?.signal);
 
-    const messageJson = decodedBlock.value as BaseMessage;
-    return messageJson;
+    const message = decodedBlock.value as GenericMessage;
+    return message;
   }
 
-  async query(tenant: string, filter: Filter, options?: MessageStoreOptions): Promise<BaseMessage[]> {
+  async query(tenant: string, filter: Filter, options?: MessageStoreOptions): Promise<GenericMessage[]> {
     options?.signal?.throwIfAborted();
 
-    const messages: BaseMessage[] = [];
+    const messages: GenericMessage[] = [];
 
     const resultIds = await this.index.query({ ...filter, tenant }, options);
 
@@ -103,7 +103,7 @@ export class MessageStoreLevel implements MessageStore {
 
   async put(
     tenant: string,
-    message: BaseMessage,
+    message: GenericMessage,
     indexes: Record<string, string>,
     options?: MessageStoreOptions
   ): Promise<void> {
