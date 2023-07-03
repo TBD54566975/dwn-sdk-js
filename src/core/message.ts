@@ -33,7 +33,7 @@ export enum DwnMethodName {
 
 export abstract class Message<M extends GenericMessage> {
   readonly message: M;
-  readonly authorizationPayload: any;
+  readonly authorizationPayload: BaseDecodedAuthorizationPayload | undefined;
 
   // commonly used properties for extra convenience;
   readonly author: string | undefined;

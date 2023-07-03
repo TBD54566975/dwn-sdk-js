@@ -66,12 +66,6 @@ export async function validateAuthorizationIntegrity(
         throw new Error(`${propertyName} not allowed in auth payload.`);
       }
     }
-
-    try {
-      Cid.parseCid(payloadJson[propertyName]);
-    } catch (e) {
-      throw new Error(`${propertyName} must be a valid CID`);
-    }
   }
 
   return payloadJson;

@@ -82,7 +82,7 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       const signatureInput1 = Jws.createSignatureInput(author);
       const signatureInput2 = Jws.createSignatureInput(extraRandomPersona);
 
-      const authorizationPayloadBytes = Encoder.objectToBytes(protocolsConfigure.authorizationPayload);
+      const authorizationPayloadBytes = Encoder.objectToBytes(protocolsConfigure.authorizationPayload!);
 
       const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput1, signatureInput2]);
       message.authorization = signer.getJws();

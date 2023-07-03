@@ -116,6 +116,8 @@ export type CreateFromOptions = {
 
 export class RecordsWrite extends Message<RecordsWriteMessage> {
 
+  // JSON schema enforces the presence of authorization for RecordsWrite
+  readonly authorizationPayload!: RecordsWriteAuthorizationPayload;
   readonly attesters: string[];
 
   private constructor(message: RecordsWriteMessage) {
