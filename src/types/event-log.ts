@@ -30,17 +30,17 @@ export interface EventLog {
   /**
    * retrieves all of a tenant's events that occurred after the watermark provided.
    * If no watermark is provided, all events for a given tenant will be returned.
-   *
-   * @param tenant
-   * @param watermark
    */
   getEvents(tenant: string, options?: GetEventsOptions): Promise<Array<Event>>
 
   /**
    * deletes any events that have any of the cids provided
-   * @param tenant
-   * @param cids
    * @returns {Promise<number>} the number of events deleted
    */
   deleteEventsByCid(tenant: string, cids: Array<string>): Promise<number>
+
+  /**
+   * Clears the entire store. Mainly used for cleaning up in test environment.
+   */
+  clear(): Promise<void>;
 }

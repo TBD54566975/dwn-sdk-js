@@ -1,44 +1,40 @@
+import type {
+  DataStore,
+  EventLog,
+  MessageStore
+} from '../../src/index.js';
 
 import { expect } from 'chai';
 import sinon from 'sinon';
 
-import { DataStoreLevel } from '../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { DidResolver } from '../../src/did/did-resolver.js';
 import { Dwn } from '../../src/dwn.js';
-import { EventLogLevel } from '../../src/event-log/event-log-level.js';
 import { Message } from '../../src/core/message.js';
-import { MessageStoreLevel } from '../../src/store/message-store-level.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions-request.js';
 import { PermissionsRequestHandler } from '../../src/handlers/permissions-request.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestStoreInitializer } from '../test-store-initializer.js';
 import { DwnInterfaceName, DwnMethodName } from '../../src/index.js';
 
 describe('PermissionsRequestHandler.handle()', () => {
   let didResolver: DidResolver;
-  let messageStore: MessageStoreLevel;
-  let dataStore: DataStoreLevel;
-  let eventLog: EventLogLevel;
+  let messageStore: MessageStore;
+  let dataStore: DataStore;
+  let eventLog: EventLog;
   let dwn: Dwn;
 
   describe('functional tests', () => {
+
+    // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
+    // so that different test suites can reuse the same backend store for testing
     before(async () => {
       didResolver = new DidResolver([new DidKeyResolver()]);
 
-      // important to follow this pattern to initialize and clean the message and data store in tests
-      // so that different suites can reuse the same block store and index location for testing
-      messageStore = new MessageStoreLevel({
-        blockstoreLocation : 'TEST-MESSAGESTORE',
-        indexLocation      : 'TEST-INDEX'
-      });
-
-      dataStore = new DataStoreLevel({
-        blockstoreLocation: 'TEST-DATASTORE'
-      });
-
-      eventLog = new EventLogLevel({
-        location: 'TEST-EVENTLOG'
-      });
+      const stores = TestStoreInitializer.initializeStores();
+      messageStore = stores.messageStore;
+      dataStore = stores.dataStore;
+      eventLog = stores.eventLog;
 
       dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
     });
