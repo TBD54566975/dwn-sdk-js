@@ -17,7 +17,7 @@ export enum DateSort {
 }
 
 export type RecordsQueryOptions = {
-  dateCreated?: string;
+  messageTimestamp?: string;
   filter: RecordsQueryFilter;
   dateSort?: DateSort;
   authorizationSignatureInput?: SignatureInput;
@@ -42,11 +42,11 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
 
   public static async create(options: RecordsQueryOptions): Promise<RecordsQuery> {
     const descriptor: RecordsQueryDescriptor = {
-      interface   : DwnInterfaceName.Records,
-      method      : DwnMethodName.Query,
-      dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
-      filter      : RecordsQuery.normalizeFilter(options.filter),
-      dateSort    : options.dateSort
+      interface        : DwnInterfaceName.Records,
+      method           : DwnMethodName.Query,
+      messageTimestamp : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      filter           : RecordsQuery.normalizeFilter(options.filter),
+      dateSort         : options.dateSort
     };
 
     // delete all descriptor properties that are `undefined` else the code will encounter the following IPLD issue when attempting to generate CID:

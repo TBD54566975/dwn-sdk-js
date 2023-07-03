@@ -10,7 +10,7 @@ import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
  * Input to `HookssWrite.create()`.
  */
 export type HooksWriteOptions = {
-  dateCreated?: string,
+  messageTimestamp?: string,
   /**
    * leave as `undefined` for customer handler.
    * ie. DWN processing will use `undefined` check to attempt to invoke the registered handler.
@@ -32,11 +32,11 @@ export class HooksWrite extends Message<HooksWriteMessage> {
    */
   static async create(options: HooksWriteOptions): Promise<HooksWrite> {
     const descriptor: HooksWriteDescriptor = {
-      interface   : DwnInterfaceName.Hooks,
-      method      : DwnMethodName.Write,
-      dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
-      uri         : options.uri,
-      filter      : options.filter
+      interface        : DwnInterfaceName.Hooks,
+      method           : DwnMethodName.Write,
+      messageTimestamp : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      uri              : options.uri,
+      filter           : options.filter
     };
 
     // delete all descriptor properties that are `undefined` else the code will encounter the following IPLD issue when attempting to generate CID:

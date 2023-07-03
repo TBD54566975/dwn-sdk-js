@@ -42,7 +42,7 @@ export type RecordsWriteOptions = {
   dataCid?: string;
   dataSize?: number;
   dateCreated?: string;
-  dateModified?: string;
+  messageTimestamp?: string;
   published?: boolean;
   datePublished?: string;
   dataFormat: string;
@@ -107,7 +107,7 @@ export type CreateFromOptions = {
   unsignedRecordsWriteMessage: UnsignedRecordsWriteMessage,
   data?: Uint8Array;
   published?: boolean;
-  dateModified?: string;
+  messageTimestamp?: string;
   datePublished?: string;
   authorizationSignatureInput: SignatureInput;
   attestationSignatureInputs?: SignatureInput[];
@@ -146,7 +146,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
    * @param options.dataCid CID of the data that is already stored in the DWN. Must specify `options.data` if `undefined`.
    * @param options.dataSize Size of data in number of bytes. Must be defined if `options.dataCid` is defined; must be `undefined` otherwise.
    * @param options.dateCreated If `undefined`, it will be auto-filled with current time.
-   * @param options.dateModified If `undefined`, it will be auto-filled with current time.
+   * @param options.messageTimestamp If `undefined`, it will be auto-filled with current time.
    */
   public static async create(options: RecordsWriteOptions): Promise<RecordsWrite> {
     if ((options.protocol === undefined && options.protocolPath !== undefined) ||
@@ -170,20 +170,20 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     const currentTime = getCurrentTimeInHighPrecision();
 
     const descriptor: RecordsWriteDescriptor = {
-      interface     : DwnInterfaceName.Records,
-      method        : DwnMethodName.Write,
-      protocol      : options.protocol !== undefined ? normalizeProtocolUrl(options.protocol) : undefined,
-      protocolPath  : options.protocolPath,
-      recipient     : options.recipient,
-      schema        : options.schema !== undefined ? normalizeSchemaUrl(options.schema) : undefined,
-      parentId      : options.parentId,
+      interface        : DwnInterfaceName.Records,
+      method           : DwnMethodName.Write,
+      protocol         : options.protocol !== undefined ? normalizeProtocolUrl(options.protocol) : undefined,
+      protocolPath     : options.protocolPath,
+      recipient        : options.recipient,
+      schema           : options.schema !== undefined ? normalizeSchemaUrl(options.schema) : undefined,
+      parentId         : options.parentId,
       dataCid,
       dataSize,
-      dateCreated   : options.dateCreated ?? currentTime,
-      dateModified  : options.dateModified ?? currentTime,
-      published     : options.published,
-      datePublished : options.datePublished,
-      dataFormat    : options.dataFormat
+      dateCreated      : options.dateCreated ?? currentTime,
+      messageTimestamp : options.messageTimestamp ?? currentTime,
+      published        : options.published,
+      datePublished    : options.datePublished,
+      dataFormat       : options.dataFormat
     };
 
     // generate `datePublished` if the message is to be published but `datePublished` is not given
@@ -248,9 +248,9 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
    * 2. Copying over mutable properties that are not overwritten from the given unsigned message
    * 3. Replace the mutable properties that are given new value
    * @param options.unsignedRecordsWriteMessage Unsigned message that the new RecordsWrite will be based from.
-   * @param options.dateModified The new date the record is modified. If not given, current time will be used .
+   * @param options.messageTimestamp The new date the record is modified. If not given, current time will be used .
    * @param options.data The new data or the record. If not given, data from given message will be used.
-   * @param options.published The new published state. If not given, then will be set to `true` if {options.dateModified} is given;
+   * @param options.published The new published state. If not given, then will be set to `true` if {options.messageTimestamp} is given;
    * else the state from given message will be used.
    * @param options.publishedDate The new date the record is modified. If not given, then:
    * - will not be set if the record will be unpublished as the result of this RecordsWrite; else
@@ -293,7 +293,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
       schema                      : unsignedMessage.descriptor.schema,
       dataFormat                  : unsignedMessage.descriptor.dataFormat,
       // mutable properties below
-      dateModified                : options.dateModified ?? currentTime,
+      messageTimestamp            : options.messageTimestamp ?? currentTime,
       published,
       datePublished,
       data                        : options.data,
@@ -332,11 +332,11 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     // if the new message is the initial write
     const isInitialWrite = await this.isInitialWrite();
     if (isInitialWrite) {
-      // `dateModified` and `dateCreated` equality check
-      const dateCreated = this.message.descriptor.dateCreated;
-      const dateModified = this.message.descriptor.dateModified;
-      if (dateModified !== dateCreated) {
-        throw new Error(`dateModified ${dateModified} must match dateCreated ${dateCreated} for the initial write`);
+      // `messageTimestamp` and `dateCreated` equality check
+      const dateRecordCreated = this.message.descriptor.dateCreated;
+      const messageTimestamp = this.message.descriptor.messageTimestamp;
+      if (messageTimestamp !== dateRecordCreated) {
+        throw new Error(`messageTimestamp ${messageTimestamp} must match dateCreated ${dateRecordCreated} for the initial write`);
       }
 
       // if the message is also a protocol context root, the `contextId` must match the expected deterministic value
@@ -578,7 +578,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
    * @throws {Error} if immutable properties between two RecordsWrite message
    */
   public static verifyEqualityOfImmutableProperties(existingWriteMessage: RecordsWriteMessage, newMessage: RecordsWriteMessage): boolean {
-    const mutableDescriptorProperties = ['dataCid', 'dataSize', 'datePublished', 'published', 'dateModified'];
+    const mutableDescriptorProperties = ['dataCid', 'dataSize', 'datePublished', 'published', 'messageTimestamp'];
 
     // get distinct property names that exist in either the existing message given or new message
     let descriptorPropertyNames: string[] = [];

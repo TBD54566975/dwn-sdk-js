@@ -13,17 +13,17 @@ chai.use(chaiAsPromised);
 
 describe('ProtocolsQuery', () => {
   describe('create()', () => {
-    it('should use `dateCreated` as is if given', async () => {
+    it('should use `messageTimestamp` as is if given', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const currentTime = getCurrentTimeInHighPrecision();
       const protocolsQuery = await ProtocolsQuery.create({
         filter                      : { protocol: 'anyValue' },
-        dateCreated                 : currentTime,
+        messageTimestamp            : currentTime,
         authorizationSignatureInput : Jws.createSignatureInput(alice),
       });
 
-      expect(protocolsQuery.message.descriptor.dateCreated).to.equal(currentTime);
+      expect(protocolsQuery.message.descriptor.messageTimestamp).to.equal(currentTime);
     });
 
 

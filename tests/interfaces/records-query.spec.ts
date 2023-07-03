@@ -13,17 +13,17 @@ chai.use(chaiAsPromised);
 
 describe('RecordsQuery', () => {
   describe('create()', () => {
-    it('should use `dateCreated` as is if given', async () => {
+    it('should use `messageTimestamp` as is if given', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const currentTime = getCurrentTimeInHighPrecision();
       const recordsQuery = await RecordsQuery.create({
         filter                      : { schema: 'anything' },
-        dateCreated                 : currentTime,
+        messageTimestamp            : currentTime,
         authorizationSignatureInput : Jws.createSignatureInput(alice),
       });
 
-      expect(recordsQuery.message.descriptor.dateCreated).to.equal(currentTime);
+      expect(recordsQuery.message.descriptor.messageTimestamp).to.equal(currentTime);
     });
 
     it('should auto-normalize protocol URL', async () => {

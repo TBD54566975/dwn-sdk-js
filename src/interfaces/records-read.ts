@@ -37,10 +37,10 @@ export class RecordsRead extends Message<RecordsReadMessage> {
     const currentTime = getCurrentTimeInHighPrecision();
 
     const descriptor: RecordsReadDescriptor = {
-      interface : DwnInterfaceName.Records,
-      method    : DwnMethodName.Read,
+      interface        : DwnInterfaceName.Records,
+      method           : DwnMethodName.Read,
       recordId,
-      date      : options.date ?? currentTime
+      messageTimestamp : options.date ?? currentTime
     };
 
     // only generate the `authorization` property if signature input is given

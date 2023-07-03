@@ -8,7 +8,7 @@ import { validateAuthorizationIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 export type SnapshotsCreateOptions = {
-  dateCreated? : string;
+  messageTimestamp? : string;
   definition : SnapshotDefinition;
   authorizationSignatureInput: SignatureInput;
 };
@@ -26,9 +26,9 @@ export class SnapshotsCreate extends Message<SnapshotsCreateMessage> {
     const definitionCid = await Cid.computeCid(options.definition);
 
     const descriptor: SnapshotsCreateDescriptor = {
-      interface   : DwnInterfaceName.Snapshots,
-      method      : DwnMethodName.Create,
-      dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
+      interface        : DwnInterfaceName.Snapshots,
+      method           : DwnMethodName.Create,
+      messageTimestamp : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
       definitionCid
     };
 

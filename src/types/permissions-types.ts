@@ -16,7 +16,7 @@ export type PermissionConditions = {
 export type PermissionsRequestDescriptor = {
   interface: DwnInterfaceName.Permissions;
   method: DwnMethodName.Request;
-  dateCreated: string;
+  messageTimestamp: string;
   // The DID of the DWN which the grantee will be given access
   grantedFor: string;
   // The recipient of the grant. Usually this is the author of the PermissionsRequest message
@@ -36,7 +36,7 @@ export type PermissionsRequestMessage = GenericMessage & {
 export type PermissionsGrantDescriptor = {
   interface: DwnInterfaceName.Permissions;
   method: DwnMethodName.Grant;
-  dateCreated: string;
+  messageTimestamp: string;
   // Optional CID of a PermissionsRequest message. This is optional because grants may be given without being officially requested
   permissionsRequestId?: string;
   // Optional timestamp at which this grant will no longer be active.

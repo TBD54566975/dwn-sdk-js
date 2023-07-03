@@ -21,10 +21,10 @@
       "required": [
         "interface",
         "method",
-        "dateCreated"
+        "messageTimestamp"
       ],
       "properties": {
-        "dateCreated": {
+        "messageTimestamp": {
           "type": "string"
         },
         "description": {

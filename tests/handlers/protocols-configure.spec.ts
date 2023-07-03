@@ -172,12 +172,12 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       const messageData2 = await TestDataGenerator.generateProtocolsConfigure({
         author             : alice,
         protocolDefinition : protocolDefinition2,
-        dateModified       : messageData1.message.descriptor.dateModified
+        messageTimestamp   : messageData1.message.descriptor.messageTimestamp
       });
       const messageData3 = await TestDataGenerator.generateProtocolsConfigure({
         author             : alice,
         protocolDefinition : protocolDefinition3,
-        dateModified       : messageData1.message.descriptor.dateModified
+        messageTimestamp   : messageData1.message.descriptor.messageTimestamp
       });
 
       const messageDataWithCid: (GenerateProtocolsConfigureOutput & { cid: string })[] = [];

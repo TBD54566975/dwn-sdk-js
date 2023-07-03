@@ -10,7 +10,7 @@ import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 export type PermissionsGrantOptions = {
-  dateCreated?: string;
+  messageTimestamp?: string;
   description?: string;
   grantedTo: string;
   grantedBy: string;
@@ -42,7 +42,7 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
     const descriptor: PermissionsGrantDescriptor = {
       interface            : DwnInterfaceName.Permissions,
       method               : DwnMethodName.Grant,
-      dateCreated          : options.dateCreated ?? getCurrentTimeInHighPrecision(),
+      messageTimestamp     : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
       description          : options.description,
       grantedTo            : options.grantedTo,
       grantedBy            : options.grantedBy,

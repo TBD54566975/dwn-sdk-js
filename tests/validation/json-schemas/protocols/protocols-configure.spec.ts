@@ -28,10 +28,10 @@ describe('ProtocolsConfigure schema definition', () => {
 
     const message: ProtocolsConfigureMessage = {
       descriptor: {
-        interface    : DwnInterfaceName.Protocols,
-        method       : DwnMethodName.Configure,
-        dateModified : '2022-10-14T10:20:30.405060Z',
-        definition   : protocolDefinition
+        interface        : DwnInterfaceName.Protocols,
+        method           : DwnMethodName.Configure,
+        messageTimestamp : '2022-10-14T10:20:30.405060Z',
+        definition       : protocolDefinition
       },
       authorization: {
         payload    : 'anyPayload',

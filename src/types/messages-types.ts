@@ -6,6 +6,7 @@ export type MessagesGetDescriptor = {
   interface : DwnInterfaceName.Messages;
   method: DwnMethodName.Get;
   messageCids: string[];
+  messageTimestamp: string;
 };
 
 export type MessagesGetMessage = GenericMessage & {

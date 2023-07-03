@@ -5,10 +5,10 @@ describe('RecordsQuery schema validation', () => {
   it('should allow descriptor with only required properties', async () => {
     const validMessage = {
       descriptor: {
-        interface   : 'Records',
-        method      : 'Query',
-        dateCreated : '2022-10-14T10:20:30.405060Z',
-        filter      : { schema: 'anySchema' }
+        interface        : 'Records',
+        method           : 'Query',
+        messageTimestamp : '2022-10-14T10:20:30.405060Z',
+        filter           : { schema: 'anySchema' }
       },
       authorization: {
         payload    : 'anyPayload',
@@ -24,10 +24,10 @@ describe('RecordsQuery schema validation', () => {
   it('should throw if unknown property is given in message', () => {
     const invalidMessage = {
       descriptor: {
-        interface   : 'Records',
-        method      : 'Query',
-        dateCreated : '2022-10-14T10:20:30.405060Z',
-        filter      : { schema: 'anySchema' }
+        interface        : 'Records',
+        method           : 'Query',
+        messageTimestamp : '2022-10-14T10:20:30.405060Z',
+        filter           : { schema: 'anySchema' }
       },
       authorization: {
         payload    : 'anyPayload',
@@ -47,11 +47,11 @@ describe('RecordsQuery schema validation', () => {
   it('should throw if unknown property is given in the `descriptor`', () => {
     const invalidMessage = {
       descriptor: {
-        interface       : 'Records',
-        method          : 'Query',
-        dateCreated     : '2022-10-14T10:20:30.405060Z',
-        filter          : { schema: 'anySchema' },
-        unknownProperty : 'unknownProperty' // unknown property
+        interface        : 'Records',
+        method           : 'Query',
+        messageTimestamp : '2022-10-14T10:20:30.405060Z',
+        filter           : { schema: 'anySchema' },
+        unknownProperty  : 'unknownProperty' // unknown property
       },
       authorization: {
         payload    : 'anyPayload',
@@ -73,11 +73,11 @@ describe('RecordsQuery schema validation', () => {
     for (const dateSortValue of allowedDateSortValues) {
       const validMessage = {
         descriptor: {
-          interface   : 'Records',
-          method      : 'Query',
-          dateCreated : '2022-10-14T10:20:30.405060Z',
-          filter      : { schema: 'anySchema' },
-          dateSort    : dateSortValue
+          interface        : 'Records',
+          method           : 'Query',
+          messageTimestamp : '2022-10-14T10:20:30.405060Z',
+          filter           : { schema: 'anySchema' },
+          dateSort         : dateSortValue
         },
         authorization: {
           payload    : 'anyPayload',
@@ -94,11 +94,11 @@ describe('RecordsQuery schema validation', () => {
     // test an invalid values of `dateSort`
     const invalidMessage = {
       descriptor: {
-        interface   : 'Records',
-        method      : 'Query',
-        dateCreated : '2022-10-14T10:20:30.405060Z',
-        filter      : { schema: 'anySchema' },
-        dateSort    : 'unacceptable', // bad value
+        interface        : 'Records',
+        method           : 'Query',
+        messageTimestamp : '2022-10-14T10:20:30.405060Z',
+        filter           : { schema: 'anySchema' },
+        dateSort         : 'unacceptable', // bad value
       },
       authorization: {
         payload    : 'anyPayload',
@@ -118,10 +118,10 @@ describe('RecordsQuery schema validation', () => {
     it('should throw if empty `filter` property is given in the `descriptor`', () => {
       const invalidMessage = {
         descriptor: {
-          interface   : 'Records',
-          method      : 'Query',
-          dateCreated : '2022-10-14T10:20:30.405060Z',
-          filter      : { }
+          interface        : 'Records',
+          method           : 'Query',
+          messageTimestamp : '2022-10-14T10:20:30.405060Z',
+          filter           : { }
         },
         authorization: {
           payload    : 'anyPayload',
@@ -140,10 +140,10 @@ describe('RecordsQuery schema validation', () => {
     it('should throw if `dateCreated` criteria given is an empty object', () => {
       const invalidMessage = {
         descriptor: {
-          interface   : 'Records',
-          method      : 'Query',
-          dateCreated : '2022-10-14T10:20:30.405060Z',
-          filter      : { dateCreated: { } } // empty `dateCreated` criteria
+          interface        : 'Records',
+          method           : 'Query',
+          messageTimestamp : '2022-10-14T10:20:30.405060Z',
+          filter           : { dateCreated: { } } // empty `dateCreated` criteria
         },
         authorization: {
           payload    : 'anyPayload',
@@ -162,10 +162,10 @@ describe('RecordsQuery schema validation', () => {
     it('should throw if `dateCreated` criteria has unexpected properties', () => {
       const invalidMessage = {
         descriptor: {
-          interface   : 'Records',
-          method      : 'Query',
-          dateCreated : '2022-10-14T10:20:30.405060Z',
-          filter      : { dateCreated: { unexpectedProperty: 'anyValue' } } // unexpected property in `dateCreated` criteria
+          interface        : 'Records',
+          method           : 'Query',
+          messageTimestamp : '2022-10-14T10:20:30.405060Z',
+          filter           : { dateCreated: { unexpectedProperty: 'anyValue' } } // unexpected property in `dateCreated` criteria
         },
         authorization: {
           payload    : 'anyPayload',

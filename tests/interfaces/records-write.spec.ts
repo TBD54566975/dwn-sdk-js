@@ -247,10 +247,10 @@ describe('RecordsWrite', () => {
   describe('compareModifiedTime', () => {
     it('should return 0 if age is same', async () => {
       const dateModified = getCurrentTimeInHighPrecision();
-      const a = (await TestDataGenerator.generateRecordsWrite({ dateModified })).message;
+      const a = (await TestDataGenerator.generateRecordsWrite({ messageTimestamp: dateModified })).message;
       const b = JSON.parse(JSON.stringify(a)); // create a deep copy of `a`
 
-      const compareResult = await RecordsWrite.compareModifiedTime(a, b);
+      const compareResult = await RecordsWrite.compareMessageTimestamp(a, b);
       expect(compareResult).to.equal(0);
     });
   });

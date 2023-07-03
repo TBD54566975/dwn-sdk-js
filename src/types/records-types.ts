@@ -19,7 +19,7 @@ export type RecordsWriteDescriptor = {
   dataCid: string;
   dataSize: number;
   dateCreated: string;
-  dateModified: string;
+  messageTimestamp: string;
   published?: boolean;
   datePublished?: string;
   dataFormat: string;
@@ -72,7 +72,7 @@ export type RecordsQueryReplyEntry = UnsignedRecordsWriteMessage & {
 export type RecordsQueryDescriptor = {
   interface: DwnInterfaceName.Records;
   method: DwnMethodName.Query;
-  dateCreated: string;
+  messageTimestamp: string;
   filter: RecordsQueryFilter;
   dateSort?: DateSort;
 };
@@ -143,7 +143,7 @@ export type RecordsReadDescriptor = {
   interface: DwnInterfaceName.Records;
   method: DwnMethodName.Read;
   recordId: string;
-  date: string;
+  messageTimestamp: string;
 };
 
 export type RecordsDeleteMessage = GenericMessage & {
@@ -154,5 +154,5 @@ export type RecordsDeleteDescriptor = {
   interface: DwnInterfaceName.Records;
   method: DwnMethodName.Delete;
   recordId: string;
-  dateModified: string;
+  messageTimestamp: string;
 };
