@@ -1,16 +1,15 @@
-import type { BaseMessageReply } from '../core/message-reply.js';
 import type { EventLog } from '../types/event-log.js';
+import type { GenericMessageReply } from '../core/message-reply.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { RecordsWriteMessage } from '../types/records-types.js';
-import type { TimestampedMessage } from '../types/message-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
+import type { RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { StorageController } from '../store/storage-controller.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
-import { DwnInterfaceName, Message } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 export type RecordsWriteHandlerOptions = {
   skipDataStorage?: boolean; // used for DWN sync
@@ -27,7 +26,7 @@ export class RecordsWriteHandler implements MethodHandler {
     message,
     options,
     dataStream
-  }: HandlerArgs): Promise<BaseMessageReply> {
+  }: HandlerArgs): Promise<GenericMessageReply> {
     let recordsWrite: RecordsWrite;
     try {
       recordsWrite = await RecordsWrite.parse(message);
@@ -48,7 +47,7 @@ export class RecordsWriteHandler implements MethodHandler {
       interface : DwnInterfaceName.Records,
       recordId  : message.recordId
     };
-    const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
+    const existingMessages = await this.messageStore.query(tenant, query) as (RecordsWriteMessage|RecordsDeleteMessage)[];
 
     // if the incoming write is not the initial write, then it must not modify any immutable properties defined by the initial write
     const newMessageIsInitialWrite = await recordsWrite.isInitialWrite();
@@ -84,7 +83,7 @@ export class RecordsWriteHandler implements MethodHandler {
     try {
       // try to store data, unless options explicitly say to skip storage
       if (options === undefined || !options.skipDataStorage) {
-        await this.putData(tenant, message, dataStream, newestExistingMessage);
+        await this.putData(tenant, message, dataStream, newestExistingMessage as (RecordsWriteMessage|RecordsDeleteMessage) | undefined);
       }
     } catch (error) {
       const e = error as any;
@@ -130,14 +129,15 @@ export class RecordsWriteHandler implements MethodHandler {
     tenant: string,
     message: RecordsWriteMessage,
     dataStream?: _Readable.Readable,
-    newestExistingMessage?: TimestampedMessage
+    newestExistingMessage?: RecordsWriteMessage | RecordsDeleteMessage
   ): Promise<void> {
     let result: { dataCid: string, dataSize: number };
     const messageCid = await Message.getCid(message);
 
     if (dataStream === undefined) {
       // dataStream must be included if message contains a new dataCid
-      if (newestExistingMessage?.descriptor.dataCid !== message.descriptor.dataCid) {
+      if (newestExistingMessage?.descriptor.method === DwnMethodName.Delete ||
+          newestExistingMessage?.descriptor.dataCid !== message.descriptor.dataCid) {
         throw new DwnError(
           DwnErrorCode.RecordsWriteMissingDataStream,
           'Data stream is not provided.'

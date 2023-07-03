@@ -1,6 +1,6 @@
 import type { GeneralJws } from '../types/jws-types.js';
 import type { SignatureInput } from '../types/jws-types.js';
-import type { BaseDecodedAuthorizationPayload, BaseMessage, Descriptor, TimestampedMessage } from '../types/message-types.js';
+import type { BaseDecodedAuthorizationPayload, Descriptor, GenericMessage, TimestampedMessage } from '../types/message-types.js';
 
 import { Cid } from '../utils/cid.js';
 import { GeneralJwsSigner } from '../jose/jws/general/signer.js';
@@ -30,7 +30,7 @@ export enum DwnMethodName {
   Delete = 'Delete'
 }
 
-export abstract class Message<M extends BaseMessage> {
+export abstract class Message<M extends GenericMessage> {
   readonly message: M;
   readonly authorizationPayload: any;
 
@@ -42,14 +42,14 @@ export abstract class Message<M extends BaseMessage> {
 
     if (message.authorization !== undefined) {
       this.authorizationPayload = Jws.decodePlainObjectPayload(message.authorization);
-      this.author = Message.getAuthor(message as BaseMessage);
+      this.author = Message.getAuthor(message as GenericMessage);
     }
   }
 
   /**
    * Called by `JSON.stringify(...)` automatically.
    */
-  toJSON(): BaseMessage {
+  toJSON(): GenericMessage {
     return this.message;
   }
 
@@ -69,7 +69,7 @@ export abstract class Message<M extends BaseMessage> {
   /**
    * Gets the DID of the author of the given message, returned `undefined` if message is not signed.
    */
-  public static getAuthor(message: BaseMessage): string | undefined {
+  public static getAuthor(message: GenericMessage): string | undefined {
     if (message.authorization === undefined) {
       return undefined;
     }
@@ -81,7 +81,7 @@ export abstract class Message<M extends BaseMessage> {
   /**
    * Gets the CID of the given message.
    */
-  public static async getCid(message: BaseMessage): Promise<string> {
+  public static async getCid(message: GenericMessage): Promise<string> {
     // NOTE: we wrap the `computeCid()` here in case that
     // the message will contain properties that should not be part of the CID computation
     // and we need to strip them out (like `encodedData` that we historically had for a long time),
@@ -94,7 +94,7 @@ export abstract class Message<M extends BaseMessage> {
    * Compares message CID in lexicographical order according to the spec.
    * @returns 1 if `a` is larger than `b`; -1 if `a` is smaller/older than `b`; 0 otherwise (same message)
    */
-  public static async compareCid(a: BaseMessage, b: BaseMessage): Promise<number> {
+  public static async compareCid(a: GenericMessage, b: GenericMessage): Promise<number> {
     // the < and > operators compare strings in lexicographical order
     const cidA = await Message.getCid(a);
     const cidB = await Message.getCid(b);
@@ -105,7 +105,7 @@ export abstract class Message<M extends BaseMessage> {
    * Compares the CID of two messages.
    * @returns `true` if `a` is newer than `b`; `false` otherwise
    */
-  public static async isCidLarger(a: BaseMessage, b: BaseMessage): Promise<boolean> {
+  public static async isCidLarger(a: GenericMessage, b: GenericMessage): Promise<boolean> {
     const aIsLarger = (await Message.compareCid(a, b) > 0);
     return aIsLarger;
   }
@@ -113,8 +113,8 @@ export abstract class Message<M extends BaseMessage> {
   /**
    * @returns message with the largest CID in the array using lexicographical compare. `undefined` if given array is empty.
    */
-  public static async getMessageWithLargestCid(messages: BaseMessage[]): Promise<BaseMessage | undefined> {
-    let currentNewestMessage: BaseMessage | undefined = undefined;
+  public static async getMessageWithLargestCid(messages: GenericMessage[]): Promise<GenericMessage | undefined> {
+    let currentNewestMessage: GenericMessage | undefined = undefined;
     for (const message of messages) {
       if (currentNewestMessage === undefined || await Message.isCidLarger(message, currentNewestMessage)) {
         currentNewestMessage = message;

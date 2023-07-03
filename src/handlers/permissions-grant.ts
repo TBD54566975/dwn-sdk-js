@@ -1,4 +1,4 @@
-import type { BaseMessageReply } from '../core/message-reply.js';
+import type { GenericMessageReply } from '../core/message-reply.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { PermissionsGrantMessage } from '../types/permissions-types.js';
 import type { DidResolver, EventLog, MessageStore } from '../index.js';
@@ -14,7 +14,7 @@ export class PermissionsGrantHandler implements MethodHandler {
   public async handle({
     tenant,
     message
-  }: { tenant: string, message: PermissionsGrantMessage }): Promise<BaseMessageReply> {
+  }: { tenant: string, message: PermissionsGrantMessage }): Promise<GenericMessageReply> {
     let permissionsGrant: PermissionsGrant;
     try {
       permissionsGrant = await PermissionsGrant.parse(message);
@@ -29,7 +29,7 @@ export class PermissionsGrantHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }
 
-    const { dataSize, scope, conditions, ...propertiesToIndex } = message.descriptor;
+    const { scope, conditions, ...propertiesToIndex } = message.descriptor;
     const indexes: { [key: string]: string } = {
       author: permissionsGrant.author!,
       ...propertiesToIndex,

@@ -3,7 +3,7 @@ import type { GeneralJws } from './jws-types.js';
 /**
  * Intersection type for all concrete message types.
  */
-export type BaseMessage = {
+export type GenericMessage = {
   descriptor: Descriptor
   authorization?: GeneralJws;
 };
@@ -21,14 +21,12 @@ export type BaseDecodedAuthorizationPayload = {
 export type Descriptor = {
   interface: string;
   method: string;
-  dataCid?: string;
-  dataSize?: number;
 };
 
 /**
  * Messages that have `dateModified` in their `descriptor` property.
  */
-export type TimestampedMessage = BaseMessage & {
+export type TimestampedMessage = GenericMessage & {
   descriptor: {
     dateModified: string;
   }

@@ -1,4 +1,4 @@
-import type { BaseMessage } from './message-types.js';
+import type { GenericMessage } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type SnapshotsCreateDescriptor = {
@@ -30,6 +30,6 @@ export type SnapshotProtocolScope = {
   protocolPath: string
 };
 
-export type SnapshotsCreateMessage = BaseMessage & {
+export type SnapshotsCreateMessage = GenericMessage & {
   descriptor: SnapshotsCreateDescriptor;
 };

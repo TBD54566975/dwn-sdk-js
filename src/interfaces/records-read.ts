@@ -1,4 +1,4 @@
-import type { BaseMessage } from '../types/message-types.js';
+import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { RecordsWrite } from './records-write.js';
 import type { SignatureInput } from '../types/jws-types.js';
@@ -20,7 +20,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
 
   public static async parse(message: RecordsReadMessage): Promise<RecordsRead> {
     if (message.authorization !== undefined) {
-      await validateAuthorizationIntegrity(message as BaseMessage);
+      await validateAuthorizationIntegrity(message as GenericMessage);
     }
 
     const recordsRead = new RecordsRead(message);
