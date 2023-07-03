@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import * as eccrypto from 'eccrypto';
+import * as eciesjs from 'eciesjs';
 import { Readable } from 'readable-stream';
 
 /**
@@ -63,38 +63,47 @@ export class Encryption {
   }
 
   /**
-   * Encrypts the given plaintext using ECIES (Elliptic Curve Integrated Encryption Scheme) with SECP256K1.
+   * Encrypts the given plaintext using ECIES (Elliptic Curve Integrated Encryption Scheme)
+   * with SECP256K1 for the asymmetric calculations, HKDF as the key-derivation function,
+   * and AES-GCM for the symmetric encryption and MAC algorithms.
    */
   public static async eciesSecp256k1Encrypt(uncompressedPublicKey: Uint8Array, plaintext: Uint8Array): Promise<EciesEncryptionOutput> {
-    // TODO: #291 - Swap out `eccrypto` in favor of a more up-to-date ECIES library - https://github.com/TBD54566975/dwn-sdk-js/issues/291
+    // underlying library requires Buffer as input
     const publicKey = Buffer.from(uncompressedPublicKey);
+    const plaintextBuffer = Buffer.from(plaintext);
 
-    const { ciphertext, ephemPublicKey, iv, mac } = await eccrypto.encrypt(publicKey, plaintext as Buffer);
+    const cryptogram = eciesjs.encrypt(publicKey, plaintextBuffer);
+
+    // split cryptogram returned into constituent parts
+    const ephemeralPublicKey = cryptogram.subarray(0, 65);
+    const initializationVector = cryptogram.subarray(65, 81);
+    const messageAuthenticationCode = cryptogram.subarray(81, 97);
+    const ciphertext = cryptogram.subarray(97);
 
     return {
       ciphertext,
-      ephemeralPublicKey        : ephemPublicKey,
-      initializationVector      : iv,
-      messageAuthenticationCode : mac
+      ephemeralPublicKey,
+      initializationVector,
+      messageAuthenticationCode
     };
   }
 
   /**
-   * Decrypt the given plaintext using ECIES (Elliptic Curve Integrated Encryption Scheme) with SECP256K1.
+   * Decrypt the given plaintext using ECIES (Elliptic Curve Integrated Encryption Scheme)
+   * with SECP256K1 for the asymmetric calculations, HKDF as the key-derivation function,
+   * and AES-GCM for the symmetric encryption and MAC algorithms.
    */
   public static async eciesSecp256k1Decrypt(input: EciesEncryptionInput): Promise<Uint8Array> {
     // underlying library requires Buffer as input
-    // TODO: #291 - Swap out `eccrypto` in favor of a more up-to-date ECIES library - https://github.com/TBD54566975/dwn-sdk-js/issues/291
     const privateKeyBuffer = Buffer.from(input.privateKey);
-    const ephemPublicKey = Buffer.from(input.ephemeralPublicKey);
-    const eciesEncryptionOutput = {
-      ciphertext : input.ciphertext as Buffer,
-      ephemPublicKey,
-      iv         : input.initializationVector as Buffer,
-      mac        : input.messageAuthenticationCode as Buffer
-    };
+    const eciesEncryptionOutput = Buffer.concat([
+      input.ephemeralPublicKey,
+      input.initializationVector,
+      input.messageAuthenticationCode,
+      input.ciphertext
+    ]);
 
-    const plaintext = await eccrypto.decrypt(privateKeyBuffer, eciesEncryptionOutput);
+    const plaintext = eciesjs.decrypt(privateKeyBuffer, eciesEncryptionOutput);
 
     return plaintext;
   }
