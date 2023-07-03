@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import * as eccrypto from 'eccrypto';
+import * as eccrypto from '@tbd54566975/eccrypto';
 import { Readable } from 'readable-stream';
 
 /**
