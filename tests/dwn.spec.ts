@@ -1,42 +1,34 @@
+import type { DataStore, EventLog, MessageStore } from '../src/index.js';
 import type { EventsGetReply, RecordsWriteMessage, TenantGate } from '../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
-import { DataStoreLevel } from '../src/store/data-store-level.js';
 import { DidKeyResolver } from '../src/did/did-key-resolver.js';
 import { Dwn } from '../src/dwn.js';
 import { Encoder } from '../src/index.js';
-import { EventLogLevel } from '../src/event-log/event-log-level.js';
-import { MessageStoreLevel } from '../src/store/message-store-level.js';
+import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from './utils/test-data-generator.js';
+import { TestStoreInitializer } from './test-store-initializer.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../src/core/message.js';
 import { Jws, RecordsRead } from '../src/index.js';
 
 chai.use(chaiAsPromised);
 
 describe('DWN', () => {
-  let messageStore: MessageStoreLevel;
-  let dataStore: DataStoreLevel;
-  let eventLog: EventLogLevel;
+  let messageStore: MessageStore;
+  let dataStore: DataStore;
+  let eventLog: EventLog;
   let dwn: Dwn;
 
+  // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
+  // so that different test suites can reuse the same backend store for testing
   before(async () => {
-    // important to follow this pattern to initialize the message store in tests
-    // so that different suites can reuse the same block store and index location for testing
-    messageStore = new MessageStoreLevel({
-      blockstoreLocation : 'TEST-MESSAGESTORE',
-      indexLocation      : 'TEST-INDEX'
-    });
-
-    dataStore = new DataStoreLevel({
-      blockstoreLocation: 'TEST-DATASTORE'
-    });
-
-    eventLog = new EventLogLevel({
-      location: 'TEST-EVENTLOG'
-    });
+    const stores = TestStoreInitializer.initializeStores();
+    messageStore = stores.messageStore;
+    dataStore = stores.dataStore;
+    eventLog = stores.eventLog;
 
     dwn = await Dwn.create({ messageStore, dataStore, eventLog });
   });
@@ -144,9 +136,9 @@ describe('DWN', () => {
         }
       };
 
-      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-      const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
-      const eventLogStub = sinon.createStubInstance(EventLogLevel);
+      const messageStoreStub = stubInterface<MessageStore>();
+      const dataStoreStub = stubInterface<DataStore>();
+      const eventLogStub = stubInterface<EventLog>();
 
       const dwnWithConfig = await Dwn.create({
         tenantGate   : blockAllTenantGate,
@@ -285,9 +277,9 @@ describe('DWN', () => {
         }
       };
 
-      const messageStoreStub = sinon.createStubInstance(MessageStoreLevel);
-      const dataStoreStub = sinon.createStubInstance(DataStoreLevel);
-      const eventLogStub = sinon.createStubInstance(EventLogLevel);
+      const messageStoreStub = stubInterface<MessageStore>();
+      const dataStoreStub = stubInterface<DataStore>();
+      const eventLogStub = stubInterface<EventLog>();
 
       const dwnWithConfig = await Dwn.create({
         tenantGate   : blockAllTenantGate,

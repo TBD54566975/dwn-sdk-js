@@ -1,5 +1,6 @@
 import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
+import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import emailProtocolDefinition from '../vectors/protocol-definitions/email.json' assert { type: 'json' };
@@ -8,16 +9,15 @@ import socialMediaProtocolDefinition from '../vectors/protocol-definitions/socia
 import chai, { expect } from 'chai';
 
 import { ArrayUtility } from '../../src/utils/array.js';
-import { DataStoreLevel } from '../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { Encryption } from '../../src/utils/encryption.js';
-import { EventLogLevel } from '../../src/event-log/event-log-level.js';
 import { HdKey } from '../../src/utils/hd-key.js';
 import { KeyDerivationScheme } from '../../src/utils/hd-key.js';
-import { MessageStoreLevel } from '../../src/store/message-store-level.js';
 import { RecordsReadHandler } from '../../src/handlers/records-read.js';
+import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestStoreInitializer } from '../test-store-initializer.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
 import { DataStream, DidResolver, Dwn, Encoder, Jws, Records, RecordsDelete, RecordsRead } from '../../src/index.js';
@@ -26,29 +26,22 @@ chai.use(chaiAsPromised);
 
 describe('RecordsReadHandler.handle()', () => {
   let didResolver: DidResolver;
-  let messageStore: MessageStoreLevel;
-  let dataStore: DataStoreLevel;
-  let eventLog: EventLogLevel;
+  let messageStore: MessageStore;
+  let dataStore: DataStore;
+  let eventLog: EventLog;
   let dwn: Dwn;
 
   describe('functional tests', () => {
+
+    // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
+    // so that different test suites can reuse the same backend store for testing
     before(async () => {
       didResolver = new DidResolver([new DidKeyResolver()]);
 
-      // important to follow this pattern to initialize and clean the message and data store in tests
-      // so that different suites can reuse the same block store and index location for testing
-      messageStore = new MessageStoreLevel({
-        blockstoreLocation : 'TEST-MESSAGESTORE',
-        indexLocation      : 'TEST-INDEX'
-      });
-
-      dataStore = new DataStoreLevel({
-        blockstoreLocation: 'TEST-DATASTORE'
-      });
-
-      eventLog = new EventLogLevel({
-        location: 'TEST-EVENTLOG'
-      });
+      const stores = TestStoreInitializer.initializeStores();
+      messageStore = stores.messageStore;
+      dataStore = stores.dataStore;
+      eventLog = stores.eventLog;
 
       dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
     });
@@ -592,8 +585,8 @@ describe('RecordsReadHandler.handle()', () => {
     // intentionally not supplying the public key so a different public key is generated to simulate invalid signature
     const mismatchingPersona = await TestDataGenerator.generatePersona({ did: alice.did, keyId: alice.keyId });
     const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
-    const messageStore = sinon.createStubInstance(MessageStoreLevel);
-    const dataStore = sinon.createStubInstance(DataStoreLevel);
+    const messageStore = stubInterface<MessageStore>();
+    const dataStore = stubInterface<DataStore>();
 
     const recordsReadHandler = new RecordsReadHandler(didResolver, messageStore, dataStore);
     const reply = await recordsReadHandler.handle({ tenant: alice.did, message: recordsRead.message });
@@ -608,8 +601,8 @@ describe('RecordsReadHandler.handle()', () => {
     });
 
     // setting up a stub method resolver & message store
-    const messageStore = sinon.createStubInstance(MessageStoreLevel);
-    const dataStore = sinon.createStubInstance(DataStoreLevel);
+    const messageStore = stubInterface<MessageStore>();
+    const dataStore = stubInterface<DataStore>();
 
     const recordsReadHandler = new RecordsReadHandler(didResolver, messageStore, dataStore);
 

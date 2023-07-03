@@ -1,44 +1,37 @@
-import type { MessagesGetReply } from '../../src/index.js';
+import type {
+  DataStore,
+  EventLog,
+  MessagesGetReply,
+  MessageStore
+} from '../../src/index.js';
 
 import { expect } from 'chai';
 import { Message } from '../../src/core/message.js';
 import { MessagesGetHandler } from '../../src/handlers/messages-get.js';
+import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import {
-  DataStoreLevel,
-  DidKeyResolver,
-  DidResolver,
-  Dwn,
-  EventLogLevel,
-  MessageStoreLevel
-} from '../../src/index.js';
+import { TestStoreInitializer } from '../test-store-initializer.js';
+
+import { DidKeyResolver, DidResolver, Dwn } from '../../src/index.js';
 
 import sinon from 'sinon';
 
 describe('MessagesGetHandler.handle()', () => {
   let dwn: Dwn;
   let didResolver: DidResolver;
-  let messageStore: MessageStoreLevel;
-  let dataStore: DataStoreLevel;
-  let eventLog: EventLogLevel;
+  let messageStore: MessageStore;
+  let dataStore: DataStore;
+  let eventLog: EventLog;
 
+  // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
+  // so that different test suites can reuse the same backend store for testing
   before(async () => {
     didResolver = new DidResolver([new DidKeyResolver()]);
 
-    // important to follow this pattern to initialize and clean the message and data store in tests
-    // so that different suites can reuse the same block store and index location for testing
-    messageStore = new MessageStoreLevel({
-      blockstoreLocation : 'TEST-MESSAGESTORE',
-      indexLocation      : 'TEST-INDEX'
-    });
-
-    dataStore = new DataStoreLevel({
-      blockstoreLocation: 'TEST-DATASTORE'
-    });
-
-    eventLog = new EventLogLevel({
-      location: 'TEST-EVENTLOG'
-    });
+    const stores = TestStoreInitializer.initializeStores();
+    messageStore = stores.messageStore;
+    dataStore = stores.dataStore;
+    eventLog = stores.eventLog;
 
     dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
   });
@@ -187,10 +180,10 @@ describe('MessagesGetHandler.handle()', () => {
 
   it('returns an error message for a specific cid if getting that message from the MessageStore fails', async () => {
     // stub the messageStore.get call to throw an error
-    const messageStore = sinon.createStubInstance(MessageStoreLevel);
+    const messageStore = stubInterface<MessageStore>();
     messageStore.get.rejects('internal db error');
 
-    const dataStore = sinon.createStubInstance(DataStoreLevel);
+    const dataStore = stubInterface<DataStore>();
 
     const messagesGetHandler = new MessagesGetHandler(didResolver, messageStore, dataStore);
 
