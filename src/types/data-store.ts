@@ -45,6 +45,11 @@ export interface DataStore {
    * @param messageCid CID of the message that references the data.
    */
   delete(tenant: string, messageCid: string, dataCid: string): Promise<void>;
+
+  /**
+   * Clears the entire store. Mainly used for cleaning up in test environment.
+   */
+  clear(): Promise<void>;
 }
 
 /**

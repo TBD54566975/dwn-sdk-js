@@ -30,12 +30,12 @@ describe('SnapshotsCreate', () => {
       };
 
       const snapshotsCreate = await SnapshotsCreate.create({
-        dateCreated                 : currentTime,
+        messageTimestamp            : currentTime,
         definition,
         authorizationSignatureInput : Jws.createSignatureInput(alice),
       });
 
-      expect(snapshotsCreate.message.descriptor.dateCreated).to.equal(currentTime);
+      expect(snapshotsCreate.message.descriptor.messageTimestamp).to.equal(currentTime);
     });
   });
 });

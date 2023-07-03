@@ -1,3 +1,4 @@
+import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
 import type { DerivedPrivateJwk, EncryptionInput, RecordsWriteMessage } from '../../src/index.js';
 import type { RecordsQueryReplyEntry, RecordsWriteDescriptor } from '../../src/types/records-types.js';
 
@@ -7,18 +8,17 @@ import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import { ArrayUtility } from '../../src/utils/array.js';
-import { DataStoreLevel } from '../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { DwnConstant } from '../../src/core/dwn-constant.js';
 import { DwnErrorCode } from '../../src/index.js';
 import { Encoder } from '../../src/utils/encoder.js';
 import { Encryption } from '../../src/index.js';
-import { EventLogLevel } from '../../src/event-log/event-log-level.js';
 import { Jws } from '../../src/utils/jws.js';
 import { Message } from '../../src/core/message.js';
-import { MessageStoreLevel } from '../../src/store/message-store-level.js';
 import { RecordsQueryHandler } from '../../src/handlers/records-query.js';
+import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestStoreInitializer } from '../test-store-initializer.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { toTemporalInstant } from '@js-temporal/polyfill';
 
@@ -35,28 +35,20 @@ function createDateString(d: Date): string {
 describe('RecordsQueryHandler.handle()', () => {
   describe('functional tests', () => {
     let didResolver: DidResolver;
-    let messageStore: MessageStoreLevel;
-    let dataStore: DataStoreLevel;
-    let eventLog: EventLogLevel;
+    let messageStore: MessageStore;
+    let dataStore: DataStore;
+    let eventLog: EventLog;
     let dwn: Dwn;
 
+    // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
+    // so that different test suites can reuse the same backend store for testing
     before(async () => {
       didResolver = new DidResolver([new DidKeyResolver()]);
 
-      // important to follow this pattern to initialize and clean the message and data store in tests
-      // so that different suites can reuse the same block store and index location for testing
-      messageStore = new MessageStoreLevel({
-        blockstoreLocation : 'TEST-MESSAGESTORE',
-        indexLocation      : 'TEST-INDEX'
-      });
-
-      dataStore = new DataStoreLevel({
-        blockstoreLocation: 'TEST-DATASTORE'
-      });
-
-      eventLog = new EventLogLevel({
-        location: 'TEST-EVENTLOG'
-      });
+      const stores = TestStoreInitializer.initializeStores();
+      messageStore = stores.messageStore;
+      dataStore = stores.dataStore;
+      eventLog = stores.eventLog;
 
       dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
     });
@@ -192,9 +184,9 @@ describe('RecordsQueryHandler.handle()', () => {
       const firstDayOf2022 = createDateString(new Date(2022, 1, 1));
       const firstDayOf2023 = createDateString(new Date(2023, 1, 1));
       const alice = await DidKeyResolver.generate();
-      const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2021, dateModified: firstDayOf2021 });
-      const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2022, dateModified: firstDayOf2022 });
-      const write3 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2023, dateModified: firstDayOf2023 });
+      const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2021, messageTimestamp: firstDayOf2021 });
+      const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2022, messageTimestamp: firstDayOf2022 });
+      const write3 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2023, messageTimestamp: firstDayOf2023 });
 
       // insert data
       const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
@@ -258,13 +250,13 @@ describe('RecordsQueryHandler.handle()', () => {
       const alice = await DidKeyResolver.generate();
       const schema = '2021And2022Schema';
       const write1 = await TestDataGenerator.generateRecordsWrite({
-        author: alice, dateCreated: firstDayOf2021, dateModified: firstDayOf2021, schema
+        author: alice, dateCreated: firstDayOf2021, messageTimestamp: firstDayOf2021, schema
       });
       const write2 = await TestDataGenerator.generateRecordsWrite({
-        author: alice, dateCreated: firstDayOf2022, dateModified: firstDayOf2022, schema
+        author: alice, dateCreated: firstDayOf2022, messageTimestamp: firstDayOf2022, schema
       });
       const write3 = await TestDataGenerator.generateRecordsWrite({
-        author: alice, dateCreated: firstDayOf2023, dateModified: firstDayOf2023
+        author: alice, dateCreated: firstDayOf2023, messageTimestamp: firstDayOf2023
       });
 
       // insert data
@@ -877,8 +869,8 @@ describe('RecordsQueryHandler.handle()', () => {
     // intentionally not supplying the public key so a different public key is generated to simulate invalid signature
     const mismatchingPersona = await TestDataGenerator.generatePersona({ did: author!.did, keyId: author!.keyId });
     const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
-    const messageStore = sinon.createStubInstance(MessageStoreLevel);
-    const dataStore = sinon.createStubInstance(DataStoreLevel);
+    const messageStore = stubInterface<MessageStore>();
+    const dataStore = stubInterface<DataStore>();
 
     const recordsQueryHandler = new RecordsQueryHandler(didResolver, messageStore, dataStore);
     const reply = await recordsQueryHandler.handle({ tenant, message });
@@ -892,8 +884,8 @@ describe('RecordsQueryHandler.handle()', () => {
 
     // setting up a stub method resolver & message store
     const didResolver = TestStubGenerator.createDidResolverStub(author!);
-    const messageStore = sinon.createStubInstance(MessageStoreLevel);
-    const dataStore = sinon.createStubInstance(DataStoreLevel);
+    const messageStore = stubInterface<MessageStore>();
+    const dataStore = stubInterface<DataStore>();
     const recordsQueryHandler = new RecordsQueryHandler(didResolver, messageStore, dataStore);
 
     // stub the `parse()` function to throw an error

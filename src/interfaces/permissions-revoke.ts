@@ -7,7 +7,7 @@ import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 export type PermissionsRevokeOptions = {
-  dateCreated?: string;
+  messageTimestamp?: string;
   permissionsGrantId: string;
   authorizationSignatureInput: SignatureInput;
 };
@@ -23,7 +23,7 @@ export class PermissionsRevoke extends Message<PermissionsRevokeMessage> {
     const descriptor: PermissionsRevokeDescriptor = {
       interface          : DwnInterfaceName.Permissions,
       method             : DwnMethodName.Revoke,
-      dateCreated        : options.dateCreated ?? getCurrentTimeInHighPrecision(),
+      messageTimestamp   : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
       permissionsGrantId : options.permissionsGrantId,
     };
 
@@ -73,9 +73,9 @@ export class PermissionsRevoke extends Message<PermissionsRevokeMessage> {
    */
   public static async compareCreatedTime(a: PermissionsRevokeMessage, b: PermissionsRevokeMessage): Promise<number> {
     // TODO: #406 - Deduplicate code with Message.compareModifiedTime (https://github.com/TBD54566975/dwn-sdk-js/issues/406)
-    if (a.descriptor.dateCreated > b.descriptor.dateCreated) {
+    if (a.descriptor.messageTimestamp > b.descriptor.messageTimestamp) {
       return 1;
-    } else if (a.descriptor.dateCreated < b.descriptor.dateCreated) {
+    } else if (a.descriptor.messageTimestamp < b.descriptor.messageTimestamp) {
       return -1;
     }
 

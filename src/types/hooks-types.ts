@@ -7,7 +7,7 @@ import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 export type HooksWriteDescriptor = {
   interface: DwnInterfaceName.Hooks;
   method: DwnMethodName.Write;
-  dateCreated: string;
+  messageTimestamp: string;
 
   /**
    * Leave as `undefined` for customer handler.

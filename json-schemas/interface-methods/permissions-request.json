@@ -17,7 +17,7 @@
       "required": [
         "interface",
         "method",
-        "dateCreated",
+        "messageTimestamp",
         "grantedBy",
         "grantedTo",
         "grantedFor",
@@ -36,7 +36,7 @@
           ],
           "type": "string"
         },
-        "dateCreated": {
+        "messageTimestamp": {
           "type": "string"
         },
         "description": {

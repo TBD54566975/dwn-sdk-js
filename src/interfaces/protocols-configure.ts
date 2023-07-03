@@ -8,7 +8,7 @@ import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
 export type ProtocolsConfigureOptions = {
-  dateCreated? : string;
+  messageTimestamp? : string;
   definition : ProtocolDefinition;
   authorizationSignatureInput: SignatureInput;
 };
@@ -24,10 +24,10 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
 
   public static async create(options: ProtocolsConfigureOptions): Promise<ProtocolsConfigure> {
     const descriptor: ProtocolsConfigureDescriptor = {
-      interface    : DwnInterfaceName.Protocols,
-      method       : DwnMethodName.Configure,
-      dateModified : options.dateCreated ?? getCurrentTimeInHighPrecision(),
-      definition   : ProtocolsConfigure.normalizeDefinition(options.definition)
+      interface        : DwnInterfaceName.Protocols,
+      method           : DwnMethodName.Configure,
+      messageTimestamp : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      definition       : ProtocolsConfigure.normalizeDefinition(options.definition)
     };
 
     const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);

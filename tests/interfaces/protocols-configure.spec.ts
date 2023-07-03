@@ -13,18 +13,18 @@ chai.use(chaiAsPromised);
 
 describe('ProtocolsConfigure', () => {
   describe('create()', () => {
-    it('should use `dateCreated` as is if given', async () => {
+    it('should use `messageTimestamp` as is if given', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const currentTime = getCurrentTimeInHighPrecision();
       const definition = { ...dexProtocolDefinition };
       const protocolsConfigure = await ProtocolsConfigure.create({
-        dateCreated                 : currentTime,
+        messageTimestamp            : currentTime,
         definition,
         authorizationSignatureInput : Jws.createSignatureInput(alice),
       });
 
-      expect(protocolsConfigure.message.descriptor.dateModified).to.equal(currentTime);
+      expect(protocolsConfigure.message.descriptor.messageTimestamp).to.equal(currentTime);
     });
 
     it('should auto-normalize protocol URI', async () => {

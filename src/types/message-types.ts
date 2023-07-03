@@ -21,14 +21,16 @@ export type BaseDecodedAuthorizationPayload = {
 export type Descriptor = {
   interface: string;
   method: string;
+  messageTimestamp: string;
+
 };
 
 /**
- * Messages that have `dateModified` in their `descriptor` property.
+ * Messages that have `messageTimestamp` in their `descriptor` property.
  */
 export type TimestampedMessage = GenericMessage & {
   descriptor: {
-    dateModified: string;
+    messageTimestamp: string;
   }
 };
 

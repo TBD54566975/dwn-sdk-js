@@ -65,7 +65,7 @@ export type Persona = {
 
 export type GenerateProtocolsConfigureInput = {
   author?: Persona;
-  dateModified?: string;
+  messageTimestamp?: string;
   protocolDefinition?: ProtocolDefinition;
 };
 
@@ -78,7 +78,7 @@ export type GenerateProtocolsConfigureOutput = {
 
 export type GenerateProtocolsQueryInput = {
   author?: Persona;
-  dateCreated?: string;
+  messageTimestamp?: string;
   filter?: {
     protocol: string;
   }
@@ -106,7 +106,7 @@ export type GenerateRecordsWriteInput = {
   dataSize?: number;
   dataFormat?: string;
   dateCreated?: string;
-  dateModified?: string;
+  messageTimestamp?: string;
   datePublished?: string;
   encryptionInput?: EncryptionInput;
 };
@@ -116,7 +116,7 @@ export type GenerateFromRecordsWriteInput = {
   existingWrite: RecordsWrite,
   data?: Uint8Array;
   published?: boolean;
-  dateModified?: string;
+  messageTimestamp?: string;
   datePublished?: string;
 };
 
@@ -143,7 +143,7 @@ export type GenerateRecordsQueryInput = {
    */
   anonymous?: boolean;
   author?: Persona;
-  dateCreated?: string;
+  messageTimestamp?: string;
   filter?: RecordsQueryFilter;
   dateSort?: DateSort;
 };
@@ -166,7 +166,7 @@ export type GenerateRecordsDeleteOutput = {
 
 export type GenerateHooksWriteInput = {
   author?: Persona;
-  dateCreated?: string;
+  messageTimestamp?: string;
   filter?: {
     method: string;
   }
@@ -180,7 +180,7 @@ export type GenerateHooksWriteOutput = {
 
 export type GeneratePermissionsRequestInput = {
   author: Persona;
-  dateCreated?: string;
+  messageTimestamp?: string;
   description?: string;
   grantedTo?: string;
   grantedBy?: string;
@@ -191,7 +191,7 @@ export type GeneratePermissionsRequestInput = {
 
 export type GeneratePermissionsGrantInput = {
   author: Persona;
-  dateCreated?: string;
+  messageTimestamp?: string;
   description?: string;
   grantedTo?: string;
   grantedBy?: string;
@@ -313,7 +313,7 @@ export class TestDataGenerator {
     const authorizationSignatureInput = Jws.createSignatureInput(author);
 
     const options: ProtocolsConfigureOptions = {
-      dateCreated: input?.dateModified,
+      messageTimestamp: input?.messageTimestamp,
       definition,
       authorizationSignatureInput
     };
@@ -338,8 +338,8 @@ export class TestDataGenerator {
     const authorizationSignatureInput = Jws.createSignatureInput(author);
 
     const options: ProtocolsQueryOptions = {
-      dateCreated : input?.dateCreated,
-      filter      : input?.filter,
+      messageTimestamp : input?.messageTimestamp,
+      filter           : input?.filter,
       authorizationSignatureInput
     };
     removeUndefinedProperties(options);
@@ -378,24 +378,24 @@ export class TestDataGenerator {
     }
 
     const options: RecordsWriteOptions = {
-      recipient       : input?.recipient,
-      protocol        : input?.protocol,
-      protocolPath    : input?.protocolPath,
-      contextId       : input?.contextId,
-      schema          : input?.schema ?? `http://${TestDataGenerator.randomString(20)}`,
-      recordId        : input?.recordId,
-      parentId        : input?.parentId,
-      published       : input?.published,
-      dataFormat      : input?.dataFormat ?? 'application/json',
-      dateCreated     : input?.dateCreated,
-      dateModified    : input?.dateModified,
-      datePublished   : input?.datePublished,
-      data            : dataBytes,
+      recipient        : input?.recipient,
+      protocol         : input?.protocol,
+      protocolPath     : input?.protocolPath,
+      contextId        : input?.contextId,
+      schema           : input?.schema ?? `http://${TestDataGenerator.randomString(20)}`,
+      recordId         : input?.recordId,
+      parentId         : input?.parentId,
+      published        : input?.published,
+      dataFormat       : input?.dataFormat ?? 'application/json',
+      dateCreated      : input?.dateCreated,
+      messageTimestamp : input?.messageTimestamp,
+      datePublished    : input?.datePublished,
+      data             : dataBytes,
       dataCid,
       dataSize,
       authorizationSignatureInput,
       attestationSignatureInputs,
-      encryptionInput : input?.encryptionInput
+      encryptionInput  : input?.encryptionInput
     };
 
     const recordsWrite = await RecordsWrite.create(options);
@@ -432,7 +432,7 @@ export class TestDataGenerator {
       data                        : dataBytes,
       published,
       datePublished,
-      dateModified                : input.dateModified,
+      messageTimestamp            : input.messageTimestamp,
       authorizationSignatureInput : Jws.createSignatureInput(input.author)
     };
 
@@ -467,10 +467,10 @@ export class TestDataGenerator {
     }
 
     const options: RecordsQueryOptions = {
-      dateCreated : input?.dateCreated,
+      messageTimestamp : input?.messageTimestamp,
       authorizationSignatureInput,
-      filter      : input?.filter ?? { schema: TestDataGenerator.randomString(10) }, // must have one filter property if no filter is given
-      dateSort    : input?.dateSort
+      filter           : input?.filter ?? { schema: TestDataGenerator.randomString(10) }, // must have one filter property if no filter is given
+      dateSort         : input?.dateSort
     };
     removeUndefinedProperties(options);
 
@@ -510,9 +510,9 @@ export class TestDataGenerator {
     const authorizationSignatureInput = Jws.createSignatureInput(author);
 
     const options: HooksWriteOptions = {
-      dateCreated : input?.dateCreated,
+      messageTimestamp : input?.messageTimestamp,
       authorizationSignatureInput,
-      filter      : input?.filter ?? { method: 'RecordsWrite' }, // hardcode to filter on `RecordsWrite` if no filter is given
+      filter           : input?.filter ?? { method: 'RecordsWrite' }, // hardcode to filter on `RecordsWrite` if no filter is given
     };
     removeUndefinedProperties(options);
 
@@ -530,12 +530,12 @@ export class TestDataGenerator {
   public static async generatePermissionsRequest(input?: GeneratePermissionsRequestInput): Promise<GeneratePermissionsRequestOutput> {
     const author = input?.author ?? await TestDataGenerator.generatePersona();
     const permissionsRequest = await PermissionsRequest.create({
-      dateCreated : getCurrentTimeInHighPrecision(),
-      description : input?.description,
-      grantedBy   : input?.grantedBy ?? 'did:jank:bob',
-      grantedTo   : input?.grantedTo ?? 'did:jank:alice',
-      grantedFor  : input?.grantedFor ?? input?.grantedBy ?? 'did:jank:bob',
-      scope       : input?.scope ?? {
+      messageTimestamp : getCurrentTimeInHighPrecision(),
+      description      : input?.description,
+      grantedBy        : input?.grantedBy ?? 'did:jank:bob',
+      grantedTo        : input?.grantedTo ?? 'did:jank:alice',
+      grantedFor       : input?.grantedFor ?? input?.grantedBy ?? 'did:jank:bob',
+      scope            : input?.scope ?? {
         interface : DwnInterfaceName.Records,
         method    : DwnMethodName.Write
       },
@@ -556,7 +556,7 @@ export class TestDataGenerator {
   public static async generatePermissionsGrant(input?: GeneratePermissionsGrantInput): Promise<GeneratePermissionsGrantOutput> {
     const author = input?.author ?? await TestDataGenerator.generatePersona();
     const permissionsGrant = await PermissionsGrant.create({
-      dateCreated          : getCurrentTimeInHighPrecision(),
+      messageTimestamp     : getCurrentTimeInHighPrecision(),
       description          : input?.description ?? 'drugs',
       grantedBy            : input?.grantedBy ?? author.did,
       grantedTo            : input?.grantedTo ?? (await TestDataGenerator.generatePersona()).did,
@@ -587,7 +587,7 @@ export class TestDataGenerator {
     const permissionsRevoke = await PermissionsRevoke.create({
       authorizationSignatureInput,
       permissionsGrantId : input?.permissionsGrantId ?? await TestDataGenerator.randomCborSha256Cid(),
-      dateCreated        : input?.dateCreated
+      messageTimestamp   : input?.dateCreated
     });
 
     return {

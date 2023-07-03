@@ -1,4 +1,9 @@
 import type { GenerateProtocolsConfigureOutput } from '../utils/test-data-generator.js';
+import type {
+  DataStore,
+  EventLog,
+  MessageStore
+} from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -7,15 +12,13 @@ import chai, { expect } from 'chai';
 import dexProtocolDefinition from '../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import minimalProtocolDefinition from '../vectors/protocol-definitions/minimal.json' assert { type: 'json' };
 
-import { DataStoreLevel } from '../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
-import { EventLogLevel } from '../../src/event-log/event-log-level.js';
 import { GeneralJwsSigner } from '../../src/jose/jws/general/signer.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
-import { MessageStoreLevel } from '../../src/store/message-store-level.js';
 import { sleep } from '../../src/utils/time.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestStoreInitializer } from '../test-store-initializer.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
 import { DidResolver, Dwn, DwnErrorCode, Encoder, Jws } from '../../src/index.js';
@@ -24,29 +27,22 @@ chai.use(chaiAsPromised);
 
 describe('ProtocolsConfigureHandler.handle()', () => {
   let didResolver: DidResolver;
-  let messageStore: MessageStoreLevel;
-  let dataStore: DataStoreLevel;
-  let eventLog: EventLogLevel;
+  let messageStore: MessageStore;
+  let dataStore: DataStore;
+  let eventLog: EventLog;
   let dwn: Dwn;
 
   describe('functional tests', () => {
+
+    // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
+    // so that different test suites can reuse the same backend store for testing
     before(async () => {
       didResolver = new DidResolver([new DidKeyResolver()]);
 
-      // important to follow this pattern to initialize and clean the message and data store in tests
-      // so that different suites can reuse the same block store and index location for testing
-      messageStore = new MessageStoreLevel({
-        blockstoreLocation : 'TEST-MESSAGESTORE',
-        indexLocation      : 'TEST-INDEX'
-      });
-
-      dataStore = new DataStoreLevel({
-        blockstoreLocation: 'TEST-DATASTORE'
-      });
-
-      eventLog = new EventLogLevel({
-        location: 'TEST-EVENTLOG'
-      });
+      const stores = TestStoreInitializer.initializeStores();
+      messageStore = stores.messageStore;
+      dataStore = stores.dataStore;
+      eventLog = stores.eventLog;
 
       dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
     });
@@ -176,12 +172,12 @@ describe('ProtocolsConfigureHandler.handle()', () => {
       const messageData2 = await TestDataGenerator.generateProtocolsConfigure({
         author             : alice,
         protocolDefinition : protocolDefinition2,
-        dateModified       : messageData1.message.descriptor.dateModified
+        messageTimestamp   : messageData1.message.descriptor.messageTimestamp
       });
       const messageData3 = await TestDataGenerator.generateProtocolsConfigure({
         author             : alice,
         protocolDefinition : protocolDefinition3,
-        dateModified       : messageData1.message.descriptor.dateModified
+        messageTimestamp   : messageData1.message.descriptor.messageTimestamp
       });
 
       const messageDataWithCid: (GenerateProtocolsConfigureOutput & { cid: string })[] = [];

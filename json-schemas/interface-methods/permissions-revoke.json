@@ -17,11 +17,11 @@
       "required": [
         "interface",
         "method",
-        "dateCreated",
+        "messageTimestamp",
         "permissionsGrantId"
       ],
       "properties": {
-        "dateCreated": {
+        "messageTimestamp": {
           "type": "string"
         },
         "permissionsGrantId": {

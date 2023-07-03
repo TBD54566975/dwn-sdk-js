@@ -8,7 +8,7 @@ import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 import { normalizeProtocolUrl, validateProtocolUrlNormalized } from '../utils/url.js';
 
 export type ProtocolsQueryOptions = {
-  dateCreated?: string;
+  messageTimestamp?: string;
   filter?: ProtocolsQueryFilter,
   authorizationSignatureInput: SignatureInput;
 };
@@ -27,10 +27,10 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
 
   public static async create(options: ProtocolsQueryOptions): Promise<ProtocolsQuery> {
     const descriptor: ProtocolsQueryDescriptor = {
-      interface   : DwnInterfaceName.Protocols,
-      method      : DwnMethodName.Query,
-      dateCreated : options.dateCreated ?? getCurrentTimeInHighPrecision(),
-      filter      : ProtocolsQuery.normalizeFilter(options.filter),
+      interface        : DwnInterfaceName.Protocols,
+      method           : DwnMethodName.Query,
+      messageTimestamp : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      filter           : ProtocolsQuery.normalizeFilter(options.filter),
     };
 
     // delete all descriptor properties that are `undefined` else the code will encounter the following IPLD issue when attempting to generate CID:

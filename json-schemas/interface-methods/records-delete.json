@@ -17,7 +17,7 @@
       "required": [
         "interface",
         "method",
-        "dateModified",
+        "messageTimestamp",
         "recordId"
       ],
       "properties": {
@@ -33,7 +33,7 @@
           ],
           "type": "string"
         },
-        "dateModified": {
+        "messageTimestamp": {
           "type": "string"
         },
         "recordId": {

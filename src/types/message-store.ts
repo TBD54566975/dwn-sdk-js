@@ -41,4 +41,9 @@ export interface MessageStore {
    * Deletes the message associated with the id provided.
    */
   delete(tenant: string, cid: string, options?: MessageStoreOptions): Promise<void>;
+
+  /**
+   * Clears the entire store. Mainly used for cleaning up in test environment.
+   */
+  clear(): Promise<void>;
 }

@@ -10,7 +10,7 @@ chai.use(chaiAsPromised);
 
 describe('RecordsRead', () => {
   describe('create()', () => {
-    it('should use `dateModified` as is if given', async () => {
+    it('should use `messageTimestamp` as is if given', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const currentTime = getCurrentTimeInHighPrecision();
@@ -20,7 +20,7 @@ describe('RecordsRead', () => {
         date                        : currentTime
       });
 
-      expect(recordsRead.message.descriptor.date).to.equal(currentTime);
+      expect(recordsRead.message.descriptor.messageTimestamp).to.equal(currentTime);
     });
   });
 });

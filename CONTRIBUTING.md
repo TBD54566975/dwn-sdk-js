@@ -39,6 +39,16 @@ We suggest the following process when picking up one of these issues:
 * Running the `npm run test:browser` command from the root of the project will run the tests in browser environments.
   * Please make sure there are no failing tests before switching your PR to ready for review! This validation is automated when you open a new pull request.
 
+### Developing and testing custom store implementations
+Here is a guide on how to develop and test a custom implementation of the data store:
+
+> Please note that we aim to improve the experience over time, such as exporting the interface definitions as their own module.
+
+1. Fork the repository.
+1. Implement one or a combination of the `DataStore`, `MessageStore`, and `EventLog` interfaces.
+1. Override the store initialization logic in the `TestStoreInitializer` class.
+1. Run the tests as you would normally to ensure the functionality and correctness of your custom implementation.
+
 ### Running benchmarks
 
 Benchmarks should be run directly using `node` (e.g. `node benchmarks/store/index/search-index.js`).

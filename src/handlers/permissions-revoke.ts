@@ -55,7 +55,7 @@ export class PermissionsRevokeHandler implements MethodHandler {
     }
 
     // Revoke must have `dateCreated` after that of the grant
-    if (message.descriptor.dateCreated < permissionsGrantMessage.descriptor.dateCreated) {
+    if (message.descriptor.messageTimestamp < permissionsGrantMessage.descriptor.messageTimestamp) {
       return {
         status: { code: 400, detail: 'PermissionsRevoke has earlier date than associated PermissionsGrant' }
       };
@@ -98,7 +98,7 @@ export class PermissionsRevokeHandler implements MethodHandler {
     // Delete grant-authorized messages with timestamp after revocation
     const grantAuthdMessagesQuery = {
       permissionsGrantId,
-      dateCreated: { gte: message.descriptor.dateCreated },
+      dateCreated: { gte: message.descriptor.messageTimestamp },
     };
     const grantAuthdMessagesAfterRevoke = await this.messageStore.query(tenant, grantAuthdMessagesQuery);
     const grantAuthdMessageCidsAfterRevoke: string[] = [];

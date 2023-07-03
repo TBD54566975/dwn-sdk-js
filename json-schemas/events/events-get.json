@@ -16,7 +16,8 @@
       "additionalProperties": false,
       "required": [
         "interface",
-        "method"
+        "method",
+        "messageTimestamp"
       ],
       "properties": {
         "interface": {
@@ -29,6 +30,9 @@
           "enum": [
             "Get"
           ],
+          "type": "string"
+        },
+        "messageTimestamp": {
           "type": "string"
         },
         "watermark": {

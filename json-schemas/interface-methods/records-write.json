@@ -129,7 +129,7 @@
         "dateCreated": {
           "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
         },
-        "dateModified": {
+        "messageTimestamp": {
           "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
         },
         "published": {
@@ -149,7 +149,7 @@
         "dataCid",
         "dataSize",
         "dateCreated",
-        "dateModified",
+        "messageTimestamp",
         "dataFormat"
       ],
       "allOf": [

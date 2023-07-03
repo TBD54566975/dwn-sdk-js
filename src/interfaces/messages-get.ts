@@ -2,12 +2,14 @@ import type { SignatureInput } from '../types/jws-types.js';
 import type { MessagesGetDescriptor, MessagesGetMessage } from '../types/messages-types.js';
 
 import { Cid } from '../utils/cid.js';
+import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { validateAuthorizationIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 export type MessagesGetOptions = {
   messageCids: string[];
   authorizationSignatureInput: SignatureInput;
+  messageTimestamp?: string;
 };
 
 export class MessagesGet extends Message<MessagesGetMessage> {
@@ -22,9 +24,10 @@ export class MessagesGet extends Message<MessagesGetMessage> {
 
   public static async create(options: MessagesGetOptions): Promise<MessagesGet> {
     const descriptor: MessagesGetDescriptor = {
-      interface   : DwnInterfaceName.Messages,
-      method      : DwnMethodName.Get,
-      messageCids : options.messageCids
+      interface        : DwnInterfaceName.Messages,
+      method           : DwnMethodName.Get,
+      messageCids      : options.messageCids,
+      messageTimestamp : options?.messageTimestamp ?? getCurrentTimeInHighPrecision(),
     };
 
     const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);

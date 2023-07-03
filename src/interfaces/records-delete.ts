@@ -9,7 +9,7 @@ import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type RecordsDeleteOptions = {
   recordId: string;
-  dateModified?: string;
+  messageTimestamp?: string;
   authorizationSignatureInput: SignatureInput;
 };
 
@@ -25,17 +25,17 @@ export class RecordsDelete extends Message<RecordsDeleteMessage> {
   /**
    * Creates a RecordsDelete message.
    * @param options.recordId If `undefined`, will be auto-filled as a originating message as convenience for developer.
-   * @param options.dateModified If `undefined`, it will be auto-filled with current time.
+   * @param options.messageTimestamp If `undefined`, it will be auto-filled with current time.
    */
   public static async create(options: RecordsDeleteOptions): Promise<RecordsDelete> {
     const recordId = options.recordId;
     const currentTime = getCurrentTimeInHighPrecision();
 
     const descriptor: RecordsDeleteDescriptor = {
-      interface    : DwnInterfaceName.Records,
-      method       : DwnMethodName.Delete,
+      interface        : DwnInterfaceName.Records,
+      method           : DwnMethodName.Delete,
       recordId,
-      dateModified : options.dateModified ?? currentTime
+      messageTimestamp : options.messageTimestamp ?? currentTime
     };
 
     const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);

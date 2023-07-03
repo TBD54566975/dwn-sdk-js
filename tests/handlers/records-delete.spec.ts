@@ -1,46 +1,43 @@
+import type {
+  DataStore,
+  EventLog,
+  MessageStore
+} from '../../src/index.js';
+
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import { ArrayUtility } from '../../src/utils/array.js';
-import { Cid } from '../../src/utils/cid.js';
-import { DataStoreLevel } from '../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
-import { EventLogLevel } from '../../src/event-log/event-log-level.js';
 import { Message } from '../../src/core/message.js';
-import { MessageStoreLevel } from '../../src/store/message-store-level.js';
 import { RecordsDeleteHandler } from '../../src/handlers/records-delete.js';
+import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestStoreInitializer } from '../test-store-initializer.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
-import { DidResolver, Dwn, Encoder, Jws, RecordsDelete, RecordsWrite } from '../../src/index.js';
+import { DataStream, DidResolver, Dwn, Encoder, Jws, RecordsDelete, RecordsRead, RecordsWrite } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
 describe('RecordsDeleteHandler.handle()', () => {
   let didResolver: DidResolver;
-  let messageStore: MessageStoreLevel;
-  let dataStore: DataStoreLevel;
-  let eventLog: EventLogLevel;
+  let messageStore: MessageStore;
+  let dataStore: DataStore;
+  let eventLog: EventLog;
   let dwn: Dwn;
 
   describe('functional tests', () => {
+
+    // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
+    // so that different test suites can reuse the same backend store for testing
     before(async () => {
       didResolver = new DidResolver([new DidKeyResolver()]);
 
-      // important to follow this pattern to initialize and clean the message and data store in tests
-      // so that different suites can reuse the same block store and index location for testing
-      messageStore = new MessageStoreLevel({
-        blockstoreLocation : 'TEST-MESSAGESTORE',
-        indexLocation      : 'TEST-INDEX'
-      });
-
-      dataStore = new DataStoreLevel({
-        blockstoreLocation: 'TEST-DATASTORE'
-      });
-
-      eventLog = new EventLogLevel({
-        location: 'TEST-EVENTLOG'
-      });
+      const stores = TestStoreInitializer.initializeStores();
+      messageStore = stores.messageStore;
+      dataStore = stores.dataStore;
+      eventLog = stores.eventLog;
 
       dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
     });
@@ -100,6 +97,76 @@ describe('RecordsDeleteHandler.handle()', () => {
       expect(recordsDelete2Reply.status.code).to.equal(404);
     });
 
+    it('should not affect other records or tenants with the same data', async () => {
+      const alice = await DidKeyResolver.generate();
+      const bob = await DidKeyResolver.generate();
+      const data = Encoder.stringToBytes('test');
+
+      // alice writes a records with data
+      const aliceWriteData = await TestDataGenerator.generateRecordsWrite({ author: alice, data });
+      const aliceWriteReply = await dwn.processMessage(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
+      expect(aliceWriteReply.status.code).to.equal(202);
+
+      // alice writes another record with the same data
+      const aliceAssociateData = await TestDataGenerator.generateRecordsWrite({ author: alice, data });
+      const aliceAssociateReply = await dwn.processMessage(alice.did, aliceAssociateData.message, aliceAssociateData.dataStream);
+      expect(aliceAssociateReply.status.code).to.equal(202);
+
+      // bob writes a records with same data
+      const bobWriteData = await TestDataGenerator.generateRecordsWrite({ author: bob, data });
+      const bobWriteReply = await dwn.processMessage(bob.did, bobWriteData.message, bobWriteData.dataStream);
+      expect(bobWriteReply.status.code).to.equal(202);
+
+      // bob writes another record with the same data
+      const bobAssociateData = await TestDataGenerator.generateRecordsWrite({ author: bob, data });
+      const bobAssociateReply = await dwn.processMessage(bob.did, bobAssociateData.message, bobAssociateData.dataStream);
+      expect(bobAssociateReply.status.code).to.equal(202);
+
+      // alice deletes one of the two records
+      const aliceDeleteWriteData = await TestDataGenerator.generateRecordsDelete({
+        author   : alice,
+        recordId : aliceWriteData.message.recordId
+      });
+      const aliceDeleteWriteReply = await dwn.processMessage(alice.did, aliceDeleteWriteData.message);
+      expect(aliceDeleteWriteReply.status.code).to.equal(202);
+
+      // verify the other record with the same data is unaffected
+      const aliceRead1 = await RecordsRead.create({
+        recordId                    : aliceAssociateData.message.recordId,
+        authorizationSignatureInput : Jws.createSignatureInput(alice)
+      });
+
+      const aliceRead1Reply = await dwn.handleRecordsRead(alice.did, aliceRead1.message);
+      expect(aliceRead1Reply.status.code).to.equal(200);
+
+      const aliceDataFetched = await DataStream.toBytes(aliceRead1Reply.record!.data!);
+      expect(ArrayUtility.byteArraysEqual(aliceDataFetched, data)).to.be.true;
+
+      // alice deletes the other record
+      const aliceDeleteAssociateData = await TestDataGenerator.generateRecordsDelete({
+        author   : alice,
+        recordId : aliceAssociateData.message.recordId
+      });
+      const aliceDeleteAssociateReply = await dwn.processMessage(alice.did, aliceDeleteAssociateData.message);
+      expect(aliceDeleteAssociateReply.status.code).to.equal(202);
+
+      // verify that alice can no longer fetch the 2nd record
+      const aliceRead2Reply = await dwn.handleRecordsRead(alice.did, aliceRead1.message);
+      expect(aliceRead2Reply.status.code).to.equal(404);
+
+      // verify that bob can still fetch record with the same data
+      const bobRead1 = await RecordsRead.create({
+        recordId                    : bobAssociateData.message.recordId,
+        authorizationSignatureInput : Jws.createSignatureInput(bob)
+      });
+
+      const bobRead1Reply = await dwn.handleRecordsRead(bob.did, bobRead1.message);
+      expect(bobRead1Reply.status.code).to.equal(200);
+
+      const bobDataFetched = await DataStream.toBytes(bobRead1Reply.record!.data!);
+      expect(ArrayUtility.byteArraysEqual(bobDataFetched, data)).to.be.true;
+    });
+
     it('should return 404 if deleting a non-existent record', async () => {
       const alice = await DidKeyResolver.generate();
 
@@ -122,7 +189,7 @@ describe('RecordsDeleteHandler.handle()', () => {
       expect(initialWriteReply.status.code).to.equal(202);
 
       // generate subsequent write and delete with the delete having an earlier timestamp
-      // NOTE: creating RecordsDelete first ensures it has an earlier `dateModified` time
+      // NOTE: creating RecordsDelete first ensures it has an earlier `messageTimestamp` time
       const recordsDelete = await RecordsDelete.create({
         recordId                    : initialWriteData.message.recordId,
         authorizationSignatureInput : Jws.createSignatureInput(alice)
@@ -136,7 +203,7 @@ describe('RecordsDeleteHandler.handle()', () => {
       const subsequentWriteReply = await dwn.processMessage(alice.did, subsequentWriteData.message, subsequentWriteData.dataStream);
       expect(subsequentWriteReply.status.code).to.equal(202);
 
-      // test that a delete with an earlier `dateModified` results in a 409
+      // test that a delete with an earlier `messageTimestamp` results in a 409
       const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
       expect(deleteReply.status.code).to.equal(409);
 
@@ -155,12 +222,7 @@ describe('RecordsDeleteHandler.handle()', () => {
     it('should be able to delete then rewrite the same data', async () => {
       const alice = await DidKeyResolver.generate();
       const data = Encoder.stringToBytes('test');
-      const dataCid = await Cid.computeDagPbCidFromBytes(data);
       const encodedData = Encoder.bytesToBase64Url(data);
-
-      const blockstoreForData = await dataStore.blockstore.partition('data');
-      const blockstoreOfAlice = await blockstoreForData.partition(alice.did);
-      const blockstoreOfAliceOfDataCid = await blockstoreOfAlice.partition(dataCid);
 
       // alice writes a record
       const aliceWriteData = await TestDataGenerator.generateRecordsWrite({
@@ -179,8 +241,6 @@ describe('RecordsDeleteHandler.handle()', () => {
       expect(aliceQueryWriteAfterAliceWriteReply.entries?.length).to.equal(1);
       expect(aliceQueryWriteAfterAliceWriteReply.entries![0].encodedData).to.equal(encodedData);
 
-      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
-
       // alice deleting the record
       const aliceDeleteWriteData = await TestDataGenerator.generateRecordsDelete({
         author   : alice,
@@ -196,8 +256,6 @@ describe('RecordsDeleteHandler.handle()', () => {
       const aliceQueryWriteAfterAliceDeleteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterAliceDeleteData.message);
       expect(aliceQueryWriteAfterAliceDeleteReply.status.code).to.equal(200);
       expect(aliceQueryWriteAfterAliceDeleteReply.entries?.length).to.equal(0);
-
-      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ ]);
 
       // alice writes a new record with the same data
       const aliceRewriteData = await TestDataGenerator.generateRecordsWrite({
@@ -215,72 +273,6 @@ describe('RecordsDeleteHandler.handle()', () => {
       expect(aliceQueryWriteAfterAliceRewriteReply.status.code).to.equal(200);
       expect(aliceQueryWriteAfterAliceRewriteReply.entries?.length).to.equal(1);
       expect(aliceQueryWriteAfterAliceRewriteReply.entries![0].encodedData).to.equal(encodedData);
-
-      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
-    });
-
-    it('should only delete data after all messages referencing it are deleted', async () => {
-      const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
-      const data = Encoder.stringToBytes('test');
-      const dataCid = await Cid.computeDagPbCidFromBytes(data);
-
-      const blockstoreForData = await dataStore.blockstore.partition('data');
-      const blockstoreOfAlice = await blockstoreForData.partition(alice.did);
-      const blockstoreOfAliceOfDataCid = await blockstoreOfAlice.partition(dataCid);
-
-      const blockstoreOfBob = await blockstoreForData.partition(bob.did);
-      const blockstoreOfBobOfDataCid = await blockstoreOfBob.partition(dataCid);
-
-      // alice writes a records with data
-      const aliceWriteData = await TestDataGenerator.generateRecordsWrite({ author: alice, data });
-      const aliceWriteReply = await dwn.processMessage(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
-      expect(aliceWriteReply.status.code).to.equal(202);
-
-      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
-
-      // alice writes another record with the same data
-      const aliceAssociateData = await TestDataGenerator.generateRecordsWrite({ author: alice, data });
-      const aliceAssociateReply = await dwn.processMessage(alice.did, aliceAssociateData.message, aliceAssociateData.dataStream);
-      expect(aliceAssociateReply.status.code).to.equal(202);
-
-      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
-
-      // bob writes a records with same data
-      const bobWriteData = await TestDataGenerator.generateRecordsWrite({ author: bob, data });
-      const bobWriteReply = await dwn.processMessage(bob.did, bobWriteData.message, bobWriteData.dataStream);
-      expect(bobWriteReply.status.code).to.equal(202);
-
-      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfBobOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
-
-      // bob writes another record with the same data
-      const bobAssociateData = await TestDataGenerator.generateRecordsWrite({ author: bob, data });
-      const bobAssociateReply = await dwn.processMessage(bob.did, bobAssociateData.message, bobAssociateData.dataStream);
-      expect(bobAssociateReply.status.code).to.equal(202);
-
-      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfBobOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
-
-      // alice deletes one of the two records
-      const aliceDeleteWriteData = await TestDataGenerator.generateRecordsDelete({
-        author   : alice,
-        recordId : aliceWriteData.message.recordId
-      });
-      const aliceDeleteWriteReply = await dwn.processMessage(alice.did, aliceDeleteWriteData.message);
-      expect(aliceDeleteWriteReply.status.code).to.equal(202);
-
-      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
-
-      // alice deletes the other record
-      const aliceDeleteAssociateData = await TestDataGenerator.generateRecordsDelete({
-        author   : alice,
-        recordId : aliceAssociateData.message.recordId
-      });
-      const aliceDeleteAssociateReply = await dwn.processMessage(alice.did, aliceDeleteAssociateData.message);
-      expect(aliceDeleteAssociateReply.status.code).to.equal(202);
-
-      // verify that data is deleted in alice's blockstore, but remains in bob's blockstore
-      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfAliceOfDataCid.db.keys())).to.eventually.eql([ ]);
-      await expect(ArrayUtility.fromAsyncGenerator(blockstoreOfBobOfDataCid.db.keys())).to.eventually.eql([ dataCid ]);
     });
 
     describe('event log', () => {
@@ -359,8 +351,8 @@ describe('RecordsDeleteHandler.handle()', () => {
     // intentionally not supplying the public key so a different public key is generated to simulate invalid signature
     const mismatchingPersona = await TestDataGenerator.generatePersona({ did: author.did, keyId: author.keyId });
     const didResolver = TestStubGenerator.createDidResolverStub(mismatchingPersona);
-    const messageStore = sinon.createStubInstance(MessageStoreLevel);
-    const dataStore = sinon.createStubInstance(DataStoreLevel);
+    const messageStore = stubInterface<MessageStore>();
+    const dataStore = stubInterface<DataStore>();
 
     const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore, eventLog);
     const reply = await recordsDeleteHandler.handle({ tenant, message });
@@ -372,8 +364,8 @@ describe('RecordsDeleteHandler.handle()', () => {
     const tenant = author.did;
 
     // setting up a stub method resolver & message store
-    const messageStore = sinon.createStubInstance(MessageStoreLevel);
-    const dataStore = sinon.createStubInstance(DataStoreLevel);
+    const messageStore = stubInterface<MessageStore>();
+    const dataStore = stubInterface<DataStore>();
 
     const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore, eventLog);
 
