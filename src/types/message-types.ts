@@ -21,6 +21,8 @@ export type BaseDecodedAuthorizationPayload = {
 export type Descriptor = {
   interface: string;
   method: string;
+  messageTimestamp: string;
+
 };
 
 /**

@@ -7,6 +7,7 @@ export type EventsGetDescriptor = {
   interface : DwnInterfaceName.Events;
   method: DwnMethodName.Get;
   watermark?: string;
+  messageTimestamp: string;
 };
 
 export type EventsGetMessage = GenericMessage & {
