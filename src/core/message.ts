@@ -161,6 +161,20 @@ export abstract class Message<M extends GenericMessage> {
   }
 
   /**
+   * @returns oldest message in the array. `undefined` if given array is empty.
+   */
+  public static async getOldestMessage(messages: TimestampedMessage[]): Promise<TimestampedMessage | undefined> {
+    let currentOldestMessage: TimestampedMessage | undefined = undefined;
+    for (const message of messages) {
+      if (currentOldestMessage === undefined || await Message.isOlder(message, currentOldestMessage)) {
+        currentOldestMessage = message;
+      }
+    }
+
+    return currentOldestMessage;
+  }
+
+  /**
    * Checks if first message is newer than second message.
    * @returns `true` if `a` is newer than `b`; `false` otherwise
    */
@@ -174,8 +188,8 @@ export abstract class Message<M extends GenericMessage> {
    * @returns `true` if `a` is older than `b`; `false` otherwise
    */
   public static async isOlder(a: TimestampedMessage, b: TimestampedMessage): Promise<boolean> {
-    const aIsNewer = (await Message.compareMessageTimestamp(a, b) < 0);
-    return aIsNewer;
+    const aIsOlder = (await Message.compareMessageTimestamp(a, b) < 0);
+    return aIsOlder;
   }
 
   /**

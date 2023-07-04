@@ -70,8 +70,8 @@ export class PermissionsRevokeHandler implements MethodHandler {
     const existingRevokesForGrant: PermissionsRevokeMessage[] = await this.messageStore.query(tenant, query) as PermissionsRevokeMessage[];
 
     // Conflict 409 if the grant already has an older revoke
-    const oldestExistingRevoke = await PermissionsRevoke.getOldestRevoke(existingRevokesForGrant);
-    if (oldestExistingRevoke !== undefined && !(await PermissionsRevoke.isCreatedOlder(oldestExistingRevoke, message))) {
+    const oldestExistingRevoke = await Message.getOldestMessage(existingRevokesForGrant);
+    if (oldestExistingRevoke !== undefined && !(await Message.isNewer(oldestExistingRevoke, message))) {
       return {
         status: { code: 409, detail: 'Conflict' }
       };
