@@ -20,6 +20,7 @@ import { MessagesGetHandler } from './handlers/messages-get.js';
 import { MessageStoreLevel } from './store/message-store-level.js';
 import { PermissionsGrantHandler } from './handlers/permissions-grant.js';
 import { PermissionsRequestHandler } from './handlers/permissions-request.js';
+import { PermissionsRevokeHandler } from './handlers/permissions-revoke.js';
 import { ProtocolsConfigureHandler } from './handlers/protocols-configure.js';
 import { ProtocolsQueryHandler } from './handlers/protocols-query.js';
 import { RecordsDeleteHandler } from './handlers/records-delete.js';
@@ -49,6 +50,8 @@ export class Dwn {
       [DwnInterfaceName.Permissions + DwnMethodName.Grant] : new PermissionsGrantHandler(
         this.didResolver, this.messageStore, this.eventLog),
       [DwnInterfaceName.Permissions + DwnMethodName.Request]: new PermissionsRequestHandler(
+        this.didResolver, this.messageStore, this.eventLog),
+      [DwnInterfaceName.Permissions + DwnMethodName.Revoke]: new PermissionsRevokeHandler(
         this.didResolver, this.messageStore, this.eventLog),
       [DwnInterfaceName.Protocols + DwnMethodName.Configure]: new ProtocolsConfigureHandler(
         this.didResolver, this.messageStore, this.dataStore, this.eventLog),

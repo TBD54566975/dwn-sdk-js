@@ -56,3 +56,15 @@ export type PermissionsGrantDescriptor = {
 export type PermissionsGrantMessage = GenericMessage & {
   descriptor: PermissionsGrantDescriptor;
 };
+
+export type PermissionsRevokeDescriptor = {
+  interface: DwnInterfaceName.Permissions;
+  method: DwnMethodName.Revoke;
+  messageTimestamp: string;
+  // The CID of the `PermissionsGrant` message being revoked.
+  permissionsGrantId: string;
+};
+
+export type PermissionsRevokeMessage = GenericMessage & {
+  descriptor: PermissionsRevokeDescriptor;
+};

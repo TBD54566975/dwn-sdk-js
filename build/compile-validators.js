@@ -27,6 +27,7 @@ import MessagesGet from '../json-schemas/interface-methods/messages-get.json' as
 import PermissionsDefinitions from '../json-schemas/interface-methods/permissions-definitions.json' assert { type: 'json' };
 import PermissionsGrant from '../json-schemas/interface-methods/permissions-grant.json' assert { type: 'json' };
 import PermissionsRequest from '../json-schemas/interface-methods/permissions-request.json' assert { type: 'json' };
+import PermissionsRevoke from '../json-schemas/interface-methods/permissions-revoke.json' assert { type: 'json' };
 import ProtocolDefinition from '../json-schemas/interface-methods/protocol-definition.json' assert { type: 'json' };
 import ProtocolRuleSet from '../json-schemas/interface-methods/protocol-rule-set.json' assert { type: 'json' };
 import ProtocolsConfigure from '../json-schemas/interface-methods/protocols-configure.json' assert { type: 'json' };
@@ -52,6 +53,7 @@ const schemas = {
   PermissionsDefinitions,
   PermissionsGrant,
   PermissionsRequest,
+  PermissionsRevoke,
   ProtocolDefinition,
   ProtocolRuleSet,
   ProtocolsConfigure,
