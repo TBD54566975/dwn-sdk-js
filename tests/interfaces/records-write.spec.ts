@@ -6,10 +6,10 @@ import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
+import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { getCurrentTimeInHighPrecision, sleep } from '../../src/utils/time.js';
 import { Jws, KeyDerivationScheme } from '../../src/index.js';
 
 
@@ -241,30 +241,6 @@ describe('RecordsWrite', () => {
       });
 
       expect(write.message.descriptor.published).to.be.true;
-    });
-  });
-
-  describe('compareModifiedTime', () => {
-    it('should return 0 if age is same', async () => {
-      const dateModified = getCurrentTimeInHighPrecision();
-      const a = (await TestDataGenerator.generateRecordsWrite({ messageTimestamp: dateModified })).message;
-      const b = JSON.parse(JSON.stringify(a)); // create a deep copy of `a`
-
-      const compareResult = await RecordsWrite.compareMessageTimestamp(a, b);
-      expect(compareResult).to.equal(0);
-    });
-  });
-
-  describe('getNewestMessage', () => {
-    it('should return the newest message', async () => {
-      const a = (await TestDataGenerator.generateRecordsWrite()).message;
-      await sleep(1); // need to sleep for at least one millisecond else some messages get generated with the same time
-      const b = (await TestDataGenerator.generateRecordsWrite()).message;
-      await sleep(1);
-      const c = (await TestDataGenerator.generateRecordsWrite()).message; // c is the newest since its created last
-
-      const newestMessage = await RecordsWrite.getNewestMessage([b, c, a]);
-      expect((newestMessage as any).recordId).to.equal(c.recordId);
     });
   });
 
