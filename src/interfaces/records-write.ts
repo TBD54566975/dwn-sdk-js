@@ -116,7 +116,7 @@ export type CreateFromOptions = {
 
 export class RecordsWrite extends Message<RecordsWriteMessage> {
 
-  // JSON schema enforces the presence of authorization for RecordsWrite
+  // validateAuthorizationIntegrity() enforces the presence of authorization for RecordsWrite
   readonly authorizationPayload!: RecordsWriteAuthorizationPayload;
   readonly attesters: string[];
 
@@ -130,7 +130,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
 
   public static async parse(message: RecordsWriteMessage): Promise<RecordsWrite> {
     // asynchronous checks that are required by the constructor to initialize members properly
-    await validateAuthorizationIntegrity(message, { allowedProperties: new Set(['recordId', 'contextId', 'attestationCid', 'encryptionCid']) });
+    await validateAuthorizationIntegrity(message);
     await RecordsWrite.validateAttestationIntegrity(message);
 
     const recordsWrite = new RecordsWrite(message);

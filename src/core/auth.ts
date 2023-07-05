@@ -7,12 +7,9 @@ import type { Message } from './message.js';
 import { Cid } from '../utils/cid.js';
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
 import { Jws } from '../utils/jws.js';
+import { validateJsonSchema } from '../schema-validator.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
-
-type AuthorizationPayloadConstraints = {
-  /** permissible properties within payload. Note that `descriptorCid` is implied and does not need to be added */
-  allowedProperties: Set<string>;
-};
+import { DwnInterfaceName, DwnMethodName } from './message.js';
 
 /**
  * Authenticates then authorizes the given message using the "canonical" auth flow.
@@ -37,7 +34,6 @@ export async function canonicalAuth(
  */
 export async function validateAuthorizationIntegrity(
   message: GenericMessage,
-  authorizationPayloadConstraints?: AuthorizationPayloadConstraints
 ): Promise<{ descriptorCid: CID, [key: string]: any }> {
   if (message.authorization === undefined) {
     throw new DwnError(DwnErrorCode.AuthorizationMissing, 'Property `authorization` is missing.');
@@ -47,25 +43,26 @@ export async function validateAuthorizationIntegrity(
     throw new Error('expected no more than 1 signature for authorization');
   }
 
+  // validate payload integrity
   const payloadJson = Jws.decodePlainObjectPayload(message.authorization);
-  const { descriptorCid } = payloadJson;
+
+  const dwnInterface = message.descriptor.interface;
+  const dwnMethod = message.descriptor.method;
+
+  let schemaLookupKey: string;
+  if (dwnInterface === DwnInterfaceName.Records && dwnMethod === DwnMethodName.Write) {
+    schemaLookupKey = 'RecordsWriteDecodedAuthorizationPayload';
+  } else {
+    schemaLookupKey = 'BaseDecodedAuthorizationPayload';
+  }
+  validateJsonSchema(schemaLookupKey, payloadJson);
+
 
   // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
+  const { descriptorCid } = payloadJson;
   const expectedDescriptorCid = await Cid.computeCid(message.descriptor);
   if (descriptorCid !== expectedDescriptorCid) {
     throw new Error(`provided descriptorCid ${descriptorCid} does not match expected CID ${expectedDescriptorCid}`);
-  }
-
-  // check to ensure that no other unexpected properties exist in payload.
-  const allowedProperties = authorizationPayloadConstraints?.allowedProperties ?? new Set();
-  const customProperties = { ...payloadJson };
-  delete customProperties.descriptorCid;
-  for (const propertyName in customProperties) {
-    {
-      if (!allowedProperties.has(propertyName)) {
-        throw new Error(`${propertyName} not allowed in auth payload.`);
-      }
-    }
   }
 
   return payloadJson;
