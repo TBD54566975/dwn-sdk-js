@@ -5,7 +5,7 @@ import { DidKeyResolver } from '../../src/index.js';
 import { expect } from 'chai';
 import { Message } from '../../src/core/message.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { TestStoreInitializer } from '../test-store-initializer.js';
+import { TestStores } from '../test-stores.js';
 
 let messageStore: MessageStore;
 
@@ -16,7 +16,7 @@ export function testMessageStore(): void {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
-        const stores = TestStoreInitializer.initializeStores();
+        const stores = TestStores.get();
         messageStore = stores.messageStore;
         await messageStore.open();
       });

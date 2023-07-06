@@ -14,7 +14,7 @@ import { Message } from '../../src/core/message.js';
 import { RecordsDeleteHandler } from '../../src/handlers/records-delete.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { TestStoreInitializer } from '../test-store-initializer.js';
+import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { DataStream, DidResolver, Dwn, Encoder, Jws, RecordsDelete, RecordsRead, RecordsWrite } from '../../src/index.js';
 
@@ -35,7 +35,7 @@ export function testRecordsDeleteHandler(): void {
       before(async () => {
         didResolver = new DidResolver([new DidKeyResolver()]);
 
-        const stores = TestStoreInitializer.initializeStores();
+        const stores = TestStores.get();
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;

@@ -34,7 +34,7 @@ import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { RecordsWriteHandler } from '../../src/handlers/records-write.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { TestStoreInitializer } from '../test-store-initializer.js';
+import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
 import { Encryption, EncryptionAlgorithm } from '../../src/utils/encryption.js';
@@ -56,7 +56,7 @@ export function testRecordsWriteHandler(): void {
       before(async () => {
         didResolver = new DidResolver([new DidKeyResolver()]);
 
-        const stores = TestStoreInitializer.initializeStores();
+        const stores = TestStores.get();
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;

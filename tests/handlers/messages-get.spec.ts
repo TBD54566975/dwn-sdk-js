@@ -10,7 +10,7 @@ import { Message } from '../../src/core/message.js';
 import { MessagesGetHandler } from '../../src/handlers/messages-get.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { TestStoreInitializer } from '../test-store-initializer.js';
+import { TestStores } from '../test-stores.js';
 
 import { DidKeyResolver, DidResolver, Dwn } from '../../src/index.js';
 
@@ -29,7 +29,7 @@ export function testMessagesGetHandler(): void {
     before(async () => {
       didResolver = new DidResolver([new DidKeyResolver()]);
 
-      const stores = TestStoreInitializer.initializeStores();
+      const stores = TestStores.get();
       messageStore = stores.messageStore;
       dataStore = stores.dataStore;
       eventLog = stores.eventLog;

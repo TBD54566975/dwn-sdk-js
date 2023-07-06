@@ -17,7 +17,7 @@ import { KeyDerivationScheme } from '../../src/utils/hd-key.js';
 import { RecordsReadHandler } from '../../src/handlers/records-read.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { TestStoreInitializer } from '../test-store-initializer.js';
+import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
 import { DataStream, DidResolver, Dwn, Encoder, Jws, Records, RecordsDelete, RecordsRead } from '../../src/index.js';
@@ -40,7 +40,7 @@ export function testRecordsReadHandler(): void {
       before(async () => {
         didResolver = new DidResolver([new DidKeyResolver()]);
 
-        const stores = TestStoreInitializer.initializeStores();
+        const stores = TestStores.get();
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;

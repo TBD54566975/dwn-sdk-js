@@ -14,7 +14,7 @@ import { Message } from '../../src/core/message.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions-request.js';
 import { PermissionsRequestHandler } from '../../src/handlers/permissions-request.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { TestStoreInitializer } from '../test-store-initializer.js';
+import { TestStores } from '../test-stores.js';
 import { DwnInterfaceName, DwnMethodName } from '../../src/index.js';
 
 export function testPermissionsRequestHandler(): void {
@@ -32,7 +32,7 @@ export function testPermissionsRequestHandler(): void {
       before(async () => {
         didResolver = new DidResolver([new DidKeyResolver()]);
 
-        const stores = TestStoreInitializer.initializeStores();
+        const stores = TestStores.get();
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;

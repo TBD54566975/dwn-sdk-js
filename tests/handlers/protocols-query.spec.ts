@@ -12,7 +12,7 @@ import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { GeneralJwsSigner } from '../../src/jose/jws/general/signer.js';
 import { Message } from '../../src/core/message.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { TestStoreInitializer } from '../test-store-initializer.js';
+import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
 import { DidResolver, Dwn, DwnErrorCode, Encoder, Jws } from '../../src/index.js';
@@ -34,7 +34,7 @@ export function testProtocolsQueryHandler(): void {
       before(async () => {
         didResolver = new DidResolver([new DidKeyResolver()]);
 
-        const stores = TestStoreInitializer.initializeStores();
+        const stores = TestStores.get();
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;

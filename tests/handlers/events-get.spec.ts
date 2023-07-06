@@ -14,7 +14,7 @@ import {
 } from '../../src/index.js';
 
 import { Message } from '../../src/core/message.js';
-import { TestStoreInitializer } from '../test-store-initializer.js';
+import { TestStores } from '../test-stores.js';
 
 export function testEventsGetHandler(): void {
   describe('EventsGetHandler.handle()', () => {
@@ -29,7 +29,7 @@ export function testEventsGetHandler(): void {
     before(async () => {
       didResolver = new DidResolver([new DidKeyResolver()]);
 
-      const stores = TestStoreInitializer.initializeStores();
+      const stores = TestStores.get();
       messageStore = stores.messageStore;
       dataStore = stores.dataStore;
       eventLog = stores.eventLog;

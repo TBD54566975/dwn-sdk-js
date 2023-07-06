@@ -15,7 +15,7 @@ import { Message } from '../../src/core/message.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { PermissionsGrantHandler } from '../../src/handlers/permissions-grant.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { TestStoreInitializer } from '../test-store-initializer.js';
+import { TestStores } from '../test-stores.js';
 
 export function testPermissionsGrantHandler(): void {
   describe('PermissionsGrantHandler.handle()', () => {
@@ -32,7 +32,7 @@ export function testPermissionsGrantHandler(): void {
       before(async () => {
         didResolver = new DidResolver([new DidKeyResolver()]);
 
-        const stores = TestStoreInitializer.initializeStores();
+        const stores = TestStores.get();
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;
