@@ -17,7 +17,7 @@ import Ajv from 'ajv';
 import mkdirp from 'mkdirp';
 import standaloneCode from 'ajv/dist/standalone/index.js';
 
-import BaseDecodedAuthorizationPayload from '../json-schemas/authorization-payloads/base-decoded-authorization-payload.json' assert { type: 'json' };
+import BaseAuthorizationPayload from '../json-schemas/authorization-payloads/base-authorization-payload.json' assert { type: 'json' };
 import Definitions from '../json-schemas/definitions.json' assert { type: 'json' };
 import EventsGet from '../json-schemas/events/events-get.json' assert { type: 'json' };
 import GeneralJwk from '../json-schemas/jwk/general-jwk.json' assert { type: 'json' };
@@ -38,7 +38,7 @@ import RecordsDelete from '../json-schemas/interface-methods/records-delete.json
 import RecordsQuery from '../json-schemas/interface-methods/records-query.json' assert { type: 'json' };
 import RecordsRead from '../json-schemas/interface-methods/records-read.json' assert { type: 'json' };
 import RecordsWrite from '../json-schemas/interface-methods/records-write.json' assert { type: 'json' };
-import RecordsWriteDecodedAuthorizationPayload from '../json-schemas/authorization-payloads/records-write-decoded-authorization-payload.json' assert { type: 'json' };
+import RecordsWriteAuthorizationPayload from '../json-schemas/authorization-payloads/records-write-authorization-payload.json' assert { type: 'json' };
 import SnapshotsCreate from '../json-schemas/interface-methods/snapshots-create.json' assert { type: 'json' };
 
 const schemas = {
@@ -63,8 +63,8 @@ const schemas = {
   RecordsRead,
   PublicJwk,
   SnapshotsCreate,
-  BaseDecodedAuthorizationPayload,
-  RecordsWriteDecodedAuthorizationPayload
+  BaseAuthorizationPayload,
+  RecordsWriteAuthorizationPayload
 };
 
 const ajv = new Ajv({ code: { source: true, esm: true } });

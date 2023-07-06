@@ -51,9 +51,9 @@ export async function validateAuthorizationIntegrity(
 
   let schemaLookupKey: string;
   if (dwnInterface === DwnInterfaceName.Records && dwnMethod === DwnMethodName.Write) {
-    schemaLookupKey = 'RecordsWriteDecodedAuthorizationPayload';
+    schemaLookupKey = 'RecordsWriteAuthorizationPayload';
   } else {
-    schemaLookupKey = 'BaseDecodedAuthorizationPayload';
+    schemaLookupKey = 'BaseAuthorizationPayload';
   }
   validateJsonSchema(schemaLookupKey, payloadJson);
 
