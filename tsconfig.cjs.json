@@ -7,8 +7,8 @@
             "ES5"
         ],
         "allowJs": true,
-        "target": "ES6",
-        "module": "CommonJS", // Required for enabling JavaScript import assertion support
+        "target": "ES2022",
+        "module": "CommonJS",
         "declaration": false,
         "outDir": "dist/cjs",
         "sourceMap": true,

@@ -1,6 +1,3 @@
-/* eslint-disable max-len */
-
-
 // export everything that we want to be consumable
 export type { DwnConfig } from './dwn.js';
 export type { DwnServiceEndpoint, ServiceEndpoint, DidDocument, DidResolutionResult, DidResolutionMetadata, DidDocumentMetadata, VerificationMethod } from './did/did-resolver.js';

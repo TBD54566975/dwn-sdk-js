@@ -9,23 +9,41 @@ import { DataStoreLevel, EventLogLevel, MessageStoreLevel } from '../src/index.j
  */
 export class TestStoreInitializer {
 
+  private static messageStore?: MessageStore;
+  private static dataStore?: DataStore;
+  private static eventLog?: EventLog;
+
+  /**
+   * Overrides test stores with given implementation.
+   * If not given, default implementation will be used.
+   */
+  public static overrideStores(input?: { messageStore?: MessageStore, dataStore?: DataStore, eventLog?: EventLog }): void {
+    TestStoreInitializer.messageStore = input?.messageStore;
+    TestStoreInitializer.dataStore = input?.dataStore;
+    TestStoreInitializer.eventLog = input?.eventLog;
+  }
+
   /**
    * Initializes and return the stores used for running the test suite.
    */
   public static initializeStores(): { messageStore: MessageStore, dataStore: DataStore, eventLog: EventLog } {
-    const messageStore = new MessageStoreLevel({
+    TestStoreInitializer.messageStore ??= new MessageStoreLevel({
       blockstoreLocation : 'TEST-MESSAGESTORE',
       indexLocation      : 'TEST-INDEX'
     });
 
-    const dataStore = new DataStoreLevel({
+    TestStoreInitializer.dataStore ??= new DataStoreLevel({
       blockstoreLocation: 'TEST-DATASTORE'
     });
 
-    const eventLog = new EventLogLevel({
+    TestStoreInitializer.eventLog ??= new EventLogLevel({
       location: 'TEST-EVENTLOG'
     });
 
-    return { messageStore, dataStore, eventLog };
+    return {
+      messageStore : TestStoreInitializer.messageStore,
+      dataStore    : TestStoreInitializer.dataStore,
+      eventLog     : TestStoreInitializer.eventLog
+    };
   }
 }
