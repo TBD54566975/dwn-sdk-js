@@ -1,9 +1,11 @@
+import type { MessageStore } from '../types/message-store.js';
 import type { SignatureInput } from '../types/jws-types.js';
 import type { ProtocolDefinition, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types/protocols-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
+import { GrantAuthorization } from '../core/grant-authorization.js';
 import { validateAuthorizationIntegrity } from '../core/auth.js';
-
+import { DwnError, DwnErrorCode } from '../index.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
@@ -11,6 +13,7 @@ export type ProtocolsConfigureOptions = {
   messageTimestamp? : string;
   definition : ProtocolDefinition;
   authorizationSignatureInput: SignatureInput;
+  permissionsGrantId?: string;
 };
 
 export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
@@ -30,7 +33,7 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       definition       : ProtocolsConfigure.normalizeDefinition(options.definition)
     };
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
+    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput, options.permissionsGrantId);
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
@@ -70,5 +73,19 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       protocol : normalizeProtocolUrl(definition.protocol),
       types    : typesCopy,
     };
+  }
+
+  public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
+    // if author is the same as the target tenant, we can directly grant access
+    if (this.author === tenant) {
+      return;
+    } else if (this.author !== undefined && this.authorizationPayload?.permissionsGrantId) {
+      await GrantAuthorization.authorizeGenericMessage(tenant, this, this.author, messageStore);
+    } else {
+      throw new DwnError(
+        DwnErrorCode.ProtocolsConfigureUnauthorized,
+        'The ProtocolsConfigure failed authorization'
+      );
+    }
   }
 }

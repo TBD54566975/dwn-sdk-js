@@ -11,6 +11,7 @@ import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 export type PermissionsGrantOptions = {
   messageTimestamp?: string;
+  dateExpires?: string;
   description?: string;
   grantedTo: string;
   grantedBy: string;
@@ -43,6 +44,7 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
       interface            : DwnInterfaceName.Permissions,
       method               : DwnMethodName.Grant,
       messageTimestamp     : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      dateExpires          : options.dateExpires,
       description          : options.description,
       grantedTo            : options.grantedTo,
       grantedBy            : options.grantedBy,

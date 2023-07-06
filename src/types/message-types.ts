@@ -13,6 +13,7 @@ export type GenericMessage = {
  */
 export type BaseAuthorizationPayload = {
   descriptorCid: string;
+  permissionsGrantId?: string;
 };
 
 /**

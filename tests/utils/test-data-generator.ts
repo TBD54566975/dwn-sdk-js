@@ -67,6 +67,7 @@ export type GenerateProtocolsConfigureInput = {
   author?: Persona;
   messageTimestamp?: string;
   protocolDefinition?: ProtocolDefinition;
+  permissionsGrantId?: string;
 };
 
 export type GenerateProtocolsConfigureOutput = {
@@ -192,6 +193,7 @@ export type GeneratePermissionsRequestInput = {
 export type GeneratePermissionsGrantInput = {
   author: Persona;
   messageTimestamp?: string;
+  dateExpires?: string;
   description?: string;
   grantedTo?: string;
   grantedBy?: string;
@@ -313,9 +315,10 @@ export class TestDataGenerator {
     const authorizationSignatureInput = Jws.createSignatureInput(author);
 
     const options: ProtocolsConfigureOptions = {
-      messageTimestamp: input?.messageTimestamp,
+      messageTimestamp   : input?.messageTimestamp,
       definition,
-      authorizationSignatureInput
+      authorizationSignatureInput,
+      permissionsGrantId : input?.permissionsGrantId
     };
 
     const protocolsConfigure = await ProtocolsConfigure.create(options);
@@ -556,7 +559,8 @@ export class TestDataGenerator {
   public static async generatePermissionsGrant(input?: GeneratePermissionsGrantInput): Promise<GeneratePermissionsGrantOutput> {
     const author = input?.author ?? await TestDataGenerator.generatePersona();
     const permissionsGrant = await PermissionsGrant.create({
-      messageTimestamp     : getCurrentTimeInHighPrecision(),
+      messageTimestamp     : input?.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      dateExpires          : input?.dateExpires,
       description          : input?.description ?? 'drugs',
       grantedBy            : input?.grantedBy ?? author.did,
       grantedTo            : input?.grantedTo ?? (await TestDataGenerator.generatePersona()).did,

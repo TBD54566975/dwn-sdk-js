@@ -6,6 +6,7 @@ import { Cid } from '../utils/cid.js';
 import { GeneralJwsSigner } from '../jose/jws/general/signer.js';
 import { Jws } from '../utils/jws.js';
 import { lexicographicalCompare } from '../utils/string.js';
+import { removeUndefinedProperties } from '../utils/object.js';
 import { validateJsonSchema } from '../schema-validator.js';
 
 export enum DwnInterfaceName {
@@ -132,11 +133,13 @@ export abstract class Message<M extends GenericMessage> {
    */
   public static async signAsAuthorization(
     descriptor: Descriptor,
-    signatureInput: SignatureInput
+    signatureInput: SignatureInput,
+    permissionsGrantId?: string,
   ): Promise<GeneralJws> {
     const descriptorCid = await Cid.computeCid(descriptor);
 
-    const authPayload: BaseAuthorizationPayload = { descriptorCid };
+    const authPayload: BaseAuthorizationPayload = { descriptorCid, permissionsGrantId };
+    removeUndefinedProperties(authPayload);
     const authPayloadStr = JSON.stringify(authPayload);
     const authPayloadBytes = new TextEncoder().encode(authPayloadStr);
 

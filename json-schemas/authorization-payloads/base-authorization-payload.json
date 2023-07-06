@@ -9,6 +9,9 @@
   "properties": {
     "descriptorCid": {
       "type": "string"
+    },
+    "permissionsGrantId": {
+      "type": "string"
     }
   }
 }
