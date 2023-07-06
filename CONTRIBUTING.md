@@ -40,7 +40,7 @@ We suggest the following process when picking up one of these issues:
   * Please make sure there are no failing tests before switching your PR to ready for review! This validation is automated when you open a new pull request.
 
 ### Developing and testing custom store implementations
-Here is a guide on how to develop and test a custom implementation of the data store against the DWN:
+Here is a guide on how to develop and test a custom implementation of the backend storage for DWN:
 
 1. Implement one or a combination of the `DataStore`, `MessageStore`, and `EventLog` interfaces.
 1. Import the `TestSuite` class.
