@@ -7,7 +7,7 @@
       "ES6"
     ],
     "allowJs": true,
-    "target": "es6",
+    "target": "ES6",
     "module": "ESNext", // Required for enabling JavaScript import assertion support
     "declaration": true,
     "declarationMap": true,
@@ -24,7 +24,7 @@
   },
   "typedocOptions": {
     "entryPoints": [
-      "src/index.ts"
+      "src/index.mts"
     ],
     "out": "documentation",
     "readme": "none",
@@ -39,7 +39,7 @@
     }
   },
   "include": [
-    "./src/index.ts",
+    "./src/index.mts",
     "tests" // building tests also so we can run tests directly without the need for ts-node, ts-mocha
   ],
   "exclude": [
