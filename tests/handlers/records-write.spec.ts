@@ -49,7 +49,7 @@ export function testRecordsWriteHandler(): void {
     let eventLog: EventLog;
     let dwn: Dwn;
 
-    describe.only('functional tests', () => {
+    describe('functional tests', () => {
 
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing

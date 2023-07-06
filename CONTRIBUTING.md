@@ -55,9 +55,7 @@ Example code:
 import { TestSuite } from '@tbd54566975/dwn-sdk-js';
 
 describe('Custom data store implementation', () => {
-  it('should pass DWN-SDK store dependent test suite', async () => {
-    TestSuite.runStoreDependentTests();
-  });
+  TestSuite.runStoreDependentTests();
 });
 ```
 
