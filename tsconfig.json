@@ -7,7 +7,7 @@
       "ES6"
     ],
     "allowJs": true,
-    "target": "ES2022",
+    "target": "ES6",
     "module": "ESNext", // Required for enabling JavaScript import assertion support
     "declaration": true,
     "declarationMap": true,

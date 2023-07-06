@@ -7,7 +7,7 @@
             "ES5"
         ],
         "allowJs": true,
-        "target": "ES2022",
+        "target": "ES6",
         "module": "CommonJS",
         "declaration": false,
         "outDir": "dist/cjs",
