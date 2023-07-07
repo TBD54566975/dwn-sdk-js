@@ -130,7 +130,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
 
   public static async parse(message: RecordsWriteMessage): Promise<RecordsWrite> {
     // asynchronous checks that are required by the constructor to initialize members properly
-    await validateAuthorizationIntegrity(message);
+    await validateAuthorizationIntegrity(message, 'RecordsWriteAuthorizationPayload');
     await RecordsWrite.validateAttestationIntegrity(message);
 
     const recordsWrite = new RecordsWrite(message);

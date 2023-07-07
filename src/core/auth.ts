@@ -9,7 +9,6 @@ import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
 import { Jws } from '../utils/jws.js';
 import { validateJsonSchema } from '../schema-validator.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
-import { DwnInterfaceName, DwnMethodName } from './message.js';
 
 /**
  * Authenticates then authorizes the given message using the "canonical" auth flow.
@@ -28,12 +27,12 @@ export async function canonicalAuth(
 
 /**
  * Validates the structural integrity of the `authorization` property.
- * By default, only `descriptorCid` is expected and allowed in the `authorization` JWS payload.
  * NOTE: signature is not verified.
  * @returns the parsed JSON payload object if validation succeeds.
  */
 export async function validateAuthorizationIntegrity(
   message: GenericMessage,
+  jsonSchemaKey: string = 'BaseAuthorizationPayload',
 ): Promise<{ descriptorCid: CID, [key: string]: any }> {
   if (message.authorization === undefined) {
     throw new DwnError(DwnErrorCode.AuthorizationMissing, 'Property `authorization` is missing.');
@@ -46,16 +45,7 @@ export async function validateAuthorizationIntegrity(
   // validate payload integrity
   const payloadJson = Jws.decodePlainObjectPayload(message.authorization);
 
-  const dwnInterface = message.descriptor.interface;
-  const dwnMethod = message.descriptor.method;
-
-  let schemaLookupKey: string;
-  if (dwnInterface === DwnInterfaceName.Records && dwnMethod === DwnMethodName.Write) {
-    schemaLookupKey = 'RecordsWriteAuthorizationPayload';
-  } else {
-    schemaLookupKey = 'BaseAuthorizationPayload';
-  }
-  validateJsonSchema(schemaLookupKey, payloadJson);
+  validateJsonSchema(jsonSchemaKey, payloadJson);
 
 
   // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
