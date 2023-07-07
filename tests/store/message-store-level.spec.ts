@@ -4,7 +4,6 @@ import type { CreateLevelDatabaseOptions, LevelDatabase } from '../../src/store/
 import { createLevelDatabase } from '../../src/store/level-wrapper.js';
 import { expect } from 'chai';
 import { MessageStoreLevel } from '../../src/store/message-store-level.js';
-import { TestStoreInitializer } from '../test-store-initializer.js';
 
 let messageStore: MessageStore;
 
@@ -12,8 +11,10 @@ describe('MessageStoreLevel Test Suite', () => {
   // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
   // so that different test suites can reuse the same backend store for testing
   before(async () => {
-    const stores = TestStoreInitializer.initializeStores();
-    messageStore = stores.messageStore;
+    messageStore = new MessageStoreLevel({
+      blockstoreLocation : 'TEST-MESSAGESTORE',
+      indexLocation      : 'TEST-INDEX'
+    });
     await messageStore.open();
   });
 
