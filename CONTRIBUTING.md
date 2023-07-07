@@ -53,9 +53,14 @@ Here is a guide on how to develop and test a custom implementation of the backen
 Example code:
 ```ts
 import { TestSuite } from '@tbd54566975/dwn-sdk-js';
+import { yourMessageStore, yourDataStore, yourEventLog } from 'your-app';
 
 describe('Custom data store implementation', () => {
-  TestSuite.runStoreDependentTests();
+  TestSuite.runStoreDependentTests({
+    messageStore: yourMessageStore,
+    dataStore   : yourDataStore,
+    eventLog    : yourEventLog,
+  });
 });
 ```
 
