@@ -24,7 +24,7 @@
   },
   "typedocOptions": {
     "entryPoints": [
-      "src/index.mts"
+      "src/index.ts"
     ],
     "out": "documentation",
     "readme": "none",
@@ -39,7 +39,7 @@
     }
   },
   "include": [
-    "./src/index.mts",
+    "./src/index.ts",
     "tests" // building tests also so we can run tests directly without the need for ts-node, ts-mocha
   ],
   "exclude": [

@@ -30,7 +30,7 @@
     }
   ],
   "type": "module",
-  "types": "./dist/types/src/index.d.mts",
+  "types": "./dist/types/src/index.d.ts",
   "@comment files": [
     "the files property informs npm about which files we want to include in our published package.",
     "dist will include all transpiled js. There's no point in including .ts files"
@@ -43,22 +43,22 @@
     "node": ">= 18"
   },
   "main": "./dist/cjs/src/index.js",
-  "module": "./dist/esm/src/index.mjs",
+  "module": "./dist/esm/src/index.js",
   "exports": {
-    "import": "./dist/esm/src/index.mjs",
+    "import": "./dist/esm/src/index.js",
     "require": "./dist/cjs/src/index.js",
-    "types": "./dist/types/src/index.d.mts"
+    "types": "./dist/types/src/index.d.ts"
   },
   "browser": {
-    "./dist/esm/src/index.mjs": "./dist/bundles/browser.js",
+    "./dist/esm/src/index.js": "./dist/bundles/browser.js",
     "./dist/cjs/src/index.js": "./dist/bundles/browser.js"
   },
   "@comment react-native": [
     "directive for metro (react native build tool)."
   ],
   "react-native": {
-    "./dist/esm/src/index.mjs": "./dist/esm/src/index.mjs",
-    "./dist/cjs/src/index.js": "./dist/esm/src/index.mjs"
+    "./dist/esm/src/index.js": "./dist/esm/src/index.js",
+    "./dist/cjs/src/index.js": "./dist/esm/src/index.js"
   },
   "dependencies": {
     "@ipld/dag-cbor": "9.0.3",
