@@ -42,13 +42,12 @@ We suggest the following process when picking up one of these issues:
 ### Developing and testing custom store implementations
 Here is a guide on how to develop and test a custom implementation of the backend storage for DWN:
 
-1. Implement one or a combination of the `DataStore`, `MessageStore`, and `EventLog` interfaces.
-1. Import the `TestSuite` class.
-1. Start writing a test in using `mocha` + `chai` + `sinon`.
-1. Invoke `runStoreDependentTests()` in your test, this will trigger all store dependent tests to be run.
-1. Make sure that all store dependent tests pass.
+> Please note that we aim to improve the experience over time, such as exporting the interface definitions as their own module.
 
-> NOTE: currently the test suite is only exported in the ESM module.
+1. Fork the repository.
+1. Implement one or a combination of the `DataStore`, `MessageStore`, and `EventLog` interfaces.
+1. Import the `TestSuite` class for a new mocha test.
+1. Invoke `TestSuite.runStoreDependentTests(...)` in the test passing in your custom store(s).
 
 Example code:
 ```ts
