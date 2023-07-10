@@ -490,6 +490,89 @@ export function testProtocolsConfigureHandler(): void {
           expect(protocolsConfigureReply.status.code).to.equal(401);
           expect(protocolsConfigureReply.status.detail).to.contain(DwnErrorCode.GrantAuthorizationMethodMismatch);
         });
+
+        it('rejects with 401 if the PermissionsGrant cannot be found', async () => {
+          // scenario: Bob uses a permissionsGrantId to ProtocolsConfigure, but no PermissionsGrant can be found.
+
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+
+          // Bob tries to ProtocolsConfigure
+          const protocolDefinition = dexProtocolDefinition;
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author             : bob,
+            protocolDefinition,
+            permissionsGrantId : await TestDataGenerator.randomCborSha256Cid(),
+          });
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(401);
+          expect(protocolsConfigureReply.status.detail).to.contain(DwnErrorCode.GrantAuthorizationGrantMissing);
+        });
+
+        it('rejects with 401 if the PermissionsGrant has not been grantedTo the author', async () => {
+          // Alice gives a PermissionsGrant to Bob, then Carol tries to invoke it to ProtocolsConfigure on Alice's DWN
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+          const carol = await DidKeyResolver.generate();
+
+          // Alice gives Bob a PermissionsGrant with scope ProtocolsConfigure
+          const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
+            author     : alice,
+            grantedBy  : alice.did,
+            grantedFor : alice.did,
+            grantedTo  : bob.did,
+            scope      : {
+              interface : DwnInterfaceName.Protocols,
+              method    : DwnMethodName.Configure,
+            }
+          });
+          const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+          expect(permissionsGrantReply.status.code).to.equal(202);
+
+          // Carol tries to use Bob's PermissionsGrant to gain access to Alice's DWN
+          const protocolDefinition = dexProtocolDefinition;
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author             : carol,
+            protocolDefinition,
+            permissionsGrantId : await Message.getCid(permissionsGrant.message),
+          });
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(401);
+          expect(protocolsConfigureReply.status.detail).to.contain(DwnErrorCode.GrantAuthorizationNotGrantedToAuthor);
+        });
+
+        it('rejects with 401 if the PermissionsGrant has not been grantedFor the tenant', async () => {
+          // Alice gives a PermissionsGrant to Bob, which Bob stores on his DWN.
+          // Then Carol tries to invoke it to ProtocolsConfigure on Bob's DWN.
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+          const carol = await DidKeyResolver.generate();
+
+          // Alice gives Bob a PermissionsGrant with scope ProtocolsConfigure
+          const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
+            author     : alice,
+            grantedBy  : alice.did,
+            grantedFor : alice.did,
+            grantedTo  : bob.did,
+            scope      : {
+              interface : DwnInterfaceName.Protocols,
+              method    : DwnMethodName.Configure,
+            }
+          });
+          const permissionsGrantReply = await dwn.processMessage(bob.did, permissionsGrant.message);
+          expect(permissionsGrantReply.status.code).to.equal(202);
+
+          // Carol tries to use Bob's PermissionsGrant to gain access to Alice's DWN
+          const protocolDefinition = dexProtocolDefinition;
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author             : carol,
+            protocolDefinition,
+            permissionsGrantId : await Message.getCid(permissionsGrant.message),
+          });
+          const protocolsConfigureReply = await dwn.processMessage(bob.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(401);
+          expect(protocolsConfigureReply.status.detail).to.contain(DwnErrorCode.GrantAuthorizationNotGrantedToAuthor);
+        });
       });
 
       describe('event log', () => {
