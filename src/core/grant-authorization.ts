@@ -99,14 +99,12 @@ export class GrantAuthorization {
         DwnErrorCode.GrantAuthorizationGrantNotYetActive,
         `The message has a timestamp before the associated PermissionsGrant becomes active`,
       );
-    } else if (permissionsGrantMessage.descriptor.dateExpires !== undefined) {
-      if (incomingMessage.descriptor.messageTimestamp >= permissionsGrantMessage.descriptor.dateExpires) {
-        // grant has expired
-        throw new DwnError(
-          DwnErrorCode.GrantAuthorizationGrantExpired,
-          `The message has timestamp after the expiry of the associated PermissionsGrant`,
-        );
-      }
+    } else if (incomingMessage.descriptor.messageTimestamp >= permissionsGrantMessage.descriptor.dateExpires) {
+      // grant has expired
+      throw new DwnError(
+        DwnErrorCode.GrantAuthorizationGrantExpired,
+        `The message has timestamp after the expiry of the associated PermissionsGrant`,
+      );
     }
 
     // Check if grant has been revoked

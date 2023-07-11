@@ -10,7 +10,7 @@ import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message
 
 describe('PermissionsGrant', () => {
   describe('create()', async () => {
-    it ('creates a PermissionsGrant message', async () => {
+    it('creates a PermissionsGrant message', async () => {
       const { privateJwk } = await Secp256k1.generateKeyPair();
       const authorizationSignatureInput = {
         privateJwk,

@@ -5,6 +5,7 @@ import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../typ
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { removeUndefinedProperties } from '../utils/object.js';
+import { Temporal } from '@js-temporal/polyfill';
 import { validateAuthorizationIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
@@ -23,6 +24,7 @@ export type PermissionsGrantOptions = {
 };
 
 export type CreateFromPermissionsRequestOverrides = {
+  dateExpires?: string;
   description?: string;
   grantedTo?: string;
   grantedBy?: string;
@@ -44,7 +46,7 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
       interface            : DwnInterfaceName.Permissions,
       method               : DwnMethodName.Grant,
       messageTimestamp     : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
-      dateExpires          : options.dateExpires,
+      dateExpires          : options.dateExpires ?? PermissionsGrant.defaultDateExpires(),
       description          : options.description,
       grantedTo            : options.grantedTo,
       grantedBy            : options.grantedBy,
@@ -79,6 +81,7 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
   ): Promise<PermissionsGrant> {
     const descriptor = permissionsRequest.message.descriptor;
     return PermissionsGrant.create({
+      dateExpires          : overrides?.dateExpires,
       description          : overrides?.description ?? descriptor.description,
       grantedBy            : overrides?.grantedBy ?? descriptor.grantedBy,
       grantedTo            : overrides?.grantedTo ?? descriptor.grantedTo,
@@ -101,5 +104,11 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
         `${grantedBy} is not authorized to give access to the DWN belonging to ${grantedFor}`
       );
     }
+  }
+
+  private static defaultDateExpires(): string {
+    const now = Temporal.Now.instant();
+    const oneDayFromNow = now.add({ hours: 24 });
+    return oneDayFromNow.toString({ smallestUnit: 'microseconds' });
   }
 }
