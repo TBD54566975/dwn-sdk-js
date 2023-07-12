@@ -5,14 +5,13 @@ import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../typ
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { removeUndefinedProperties } from '../utils/object.js';
-import { Temporal } from '@js-temporal/polyfill';
 import { validateAuthorizationIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 export type PermissionsGrantOptions = {
   messageTimestamp?: string;
-  dateExpires?: string;
+  dateExpires: string;
   description?: string;
   grantedTo: string;
   grantedBy: string;
@@ -24,13 +23,13 @@ export type PermissionsGrantOptions = {
 };
 
 export type CreateFromPermissionsRequestOverrides = {
-  dateExpires?: string;
+  dateExpires: string;
   description?: string;
   grantedTo?: string;
   grantedBy?: string;
   grantedFor?: string;
   scope?: PermissionScope;
-  conditions: PermissionConditions;
+  conditions?: PermissionConditions;
 };
 
 export class PermissionsGrant extends Message<PermissionsGrantMessage> {
@@ -46,12 +45,12 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
       interface            : DwnInterfaceName.Permissions,
       method               : DwnMethodName.Grant,
       messageTimestamp     : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
-      dateExpires          : options.dateExpires ?? PermissionsGrant.defaultDateExpires(),
+      dateExpires          : options.dateExpires,
       description          : options.description,
       grantedTo            : options.grantedTo,
       grantedBy            : options.grantedBy,
       grantedFor           : options.grantedFor,
-      permissionsRequestId : options?.permissionsRequestId,
+      permissionsRequestId : options.permissionsRequestId,
       scope                : options.scope,
       conditions           : options.conditions,
     };
@@ -72,23 +71,23 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
    * generates a PermissionsGrant using the provided PermissionsRequest
    * @param permissionsRequest
    * @param authorizationSignatureInput - the private key and additional signature material of the grantor
-   * @param overrides - optional overrides that will be used instead of the properties in `permissionsRequest`
+   * @param overrides - overrides that will be used instead of the properties in `permissionsRequest`
    */
   public static async createFromPermissionsRequest(
     permissionsRequest: PermissionsRequest,
     authorizationSignatureInput: SignatureInput,
-    overrides?: CreateFromPermissionsRequestOverrides,
+    overrides: CreateFromPermissionsRequestOverrides,
   ): Promise<PermissionsGrant> {
     const descriptor = permissionsRequest.message.descriptor;
     return PermissionsGrant.create({
-      dateExpires          : overrides?.dateExpires,
-      description          : overrides?.description ?? descriptor.description,
-      grantedBy            : overrides?.grantedBy ?? descriptor.grantedBy,
-      grantedTo            : overrides?.grantedTo ?? descriptor.grantedTo,
-      grantedFor           : overrides?.grantedFor ?? descriptor.grantedFor,
+      dateExpires          : overrides.dateExpires,
+      description          : overrides.description ?? descriptor.description,
+      grantedBy            : overrides.grantedBy ?? descriptor.grantedBy,
+      grantedTo            : overrides.grantedTo ?? descriptor.grantedTo,
+      grantedFor           : overrides.grantedFor ?? descriptor.grantedFor,
       permissionsRequestId : await Message.getCid(permissionsRequest.message),
-      scope                : overrides?.scope ?? descriptor.scope,
-      conditions           : overrides?.conditions ?? descriptor.conditions,
+      scope                : overrides.scope ?? descriptor.scope,
+      conditions           : overrides.conditions ?? descriptor.conditions,
       authorizationSignatureInput,
     });
   }
@@ -104,11 +103,5 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
         `${grantedBy} is not authorized to give access to the DWN belonging to ${grantedFor}`
       );
     }
-  }
-
-  private static defaultDateExpires(): string {
-    const now = Temporal.Now.instant();
-    const oneDayFromNow = now.add({ hours: 24 });
-    return oneDayFromNow.toString({ smallestUnit: 'microseconds' });
   }
 }
