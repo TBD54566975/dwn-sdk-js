@@ -166,6 +166,10 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
       throw new Error('`dataCid` and `dataSize` must both be defined or undefined at the same time');
     }
 
+    if (options.parentId !== undefined && options.contextId === undefined) {
+      throw new Error('`contextId` must also be given when `parentId` is specified');
+    }
+
     const dataCid = options.dataCid ?? await Cid.computeDagPbCidFromBytes(options.data!);
     const dataSize = options.dataSize ?? options.data!.length;
 

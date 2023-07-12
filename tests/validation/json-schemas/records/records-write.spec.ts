@@ -259,6 +259,36 @@ describe('RecordsWrite schema definition', () => {
     }).throws('must have required property \'contextId\'');
   });
 
+  it('#434 - should throw if `parentId` is defined without other protocol related properties', () => {
+    const invalidMessage = {
+      recordId   : 'anyRecordId',
+      // contextId  : 'anyContextId', // intentionally missing
+      descriptor : {
+        interface        : 'Records',
+        method           : 'Write',
+        // protocol         : 'http://foo.bar', // intentionally missing
+        // protocolPath     : 'foo/bar', // intentionally missing
+        parentId         : 'anyParentId',
+        dataCid          : 'anyCid',
+        dataFormat       : 'application/json',
+        dataSize         : 123,
+        dateCreated      : '2022-12-19T10:20:30.123456Z',
+        messageTimestamp : '2022-12-19T10:20:30.123456Z'
+      },
+      authorization: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      }
+    };
+
+    expect(() => {
+      Message.validateJsonSchema(invalidMessage);
+    }).throws('must have property protocol when property parentId is present');
+  });
+
   it('should throw if `protocol` is defined but `protocolPath` is missing', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',

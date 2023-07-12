@@ -31,7 +31,7 @@ export interface DataStore {
   get(tenant: string, messageCid: string, dataCid: string): Promise<GetResult | undefined>;
 
   /**
-   * Associates existing data.
+   * Associates dataCid of existing data with the given messageCid.
    * The returned dataCid and returned dataSize will be verified against the given dataCid (and inferred dataSize).
    * @param tenant The tenant in which the data must exist under for the association to occur.
    * @param messageCid CID of the message that references the data.
