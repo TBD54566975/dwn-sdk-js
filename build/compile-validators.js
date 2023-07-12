@@ -25,10 +25,11 @@ import GeneralJws from '../json-schemas/general-jws.json' assert { type: 'json' 
 import HooksWrite from '../json-schemas/hooks/hooks-write.json' assert { type: 'json' };
 import JwkVerificationMethod from '../json-schemas/jwk-verification-method.json' assert { type: 'json' };
 import MessagesGet from '../json-schemas/interface-methods/messages-get.json' assert { type: 'json' };
-import PermissionsDefinitions from '../json-schemas/interface-methods/permissions-definitions.json' assert { type: 'json' };
+import PermissionsDefinitions from '../json-schemas/permissions/permissions-definitions.json' assert { type: 'json' };
 import PermissionsGrant from '../json-schemas/interface-methods/permissions-grant.json' assert { type: 'json' };
 import PermissionsRequest from '../json-schemas/interface-methods/permissions-request.json' assert { type: 'json' };
 import PermissionsRevoke from '../json-schemas/interface-methods/permissions-revoke.json' assert { type: 'json' };
+import PermissionsScopes from '../json-schemas/permissions/scopes.json' assert { type: 'json' };
 import ProtocolDefinition from '../json-schemas/interface-methods/protocol-definition.json' assert { type: 'json' };
 import ProtocolRuleSet from '../json-schemas/interface-methods/protocol-rule-set.json' assert { type: 'json' };
 import ProtocolsConfigure from '../json-schemas/interface-methods/protocols-configure.json' assert { type: 'json' };
@@ -56,6 +57,7 @@ const schemas = {
   PermissionsGrant,
   PermissionsRequest,
   PermissionsRevoke,
+  PermissionsScopes,
   ProtocolDefinition,
   ProtocolRuleSet,
   ProtocolsConfigure,

@@ -63,7 +63,20 @@
           "type": "string"
         },
         "scope": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/scope"
+          "oneOf": [
+            {
+              "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/protocols-configure-scope"
+            },
+            {
+              "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/protocols-query-scope"
+            },
+            {
+              "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/records-read-scope"
+            },
+            {
+              "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/records-write-scope"
+            }
+          ]
         },
         "conditions": {
           "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/conditions"
