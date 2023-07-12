@@ -36,10 +36,10 @@ import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions-request.js';
 import { PermissionsRevoke } from '../../src/interfaces/permissions-revoke.js';
-
 import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { sha256 } from 'multiformats/hashes/sha2';
+import { Temporal } from '@js-temporal/polyfill';
 
 import {
   DidKeyResolver,
@@ -67,6 +67,7 @@ export type GenerateProtocolsConfigureInput = {
   author?: Persona;
   messageTimestamp?: string;
   protocolDefinition?: ProtocolDefinition;
+  permissionsGrantId?: string;
 };
 
 export type GenerateProtocolsConfigureOutput = {
@@ -192,6 +193,7 @@ export type GeneratePermissionsRequestInput = {
 export type GeneratePermissionsGrantInput = {
   author: Persona;
   messageTimestamp?: string;
+  dateExpires?: string;
   description?: string;
   grantedTo?: string;
   grantedBy?: string;
@@ -313,9 +315,10 @@ export class TestDataGenerator {
     const authorizationSignatureInput = Jws.createSignatureInput(author);
 
     const options: ProtocolsConfigureOptions = {
-      messageTimestamp: input?.messageTimestamp,
+      messageTimestamp   : input?.messageTimestamp,
       definition,
-      authorizationSignatureInput
+      authorizationSignatureInput,
+      permissionsGrantId : input?.permissionsGrantId
     };
 
     const protocolsConfigure = await ProtocolsConfigure.create(options);
@@ -554,9 +557,11 @@ export class TestDataGenerator {
    * Generates a PermissionsGrant message for testing.
    */
   public static async generatePermissionsGrant(input?: GeneratePermissionsGrantInput): Promise<GeneratePermissionsGrantOutput> {
+    const dateExpires = input?.dateExpires ?? Temporal.Now.instant().add({ hours: 24 }).toString({ smallestUnit: 'microseconds' });
     const author = input?.author ?? await TestDataGenerator.generatePersona();
     const permissionsGrant = await PermissionsGrant.create({
-      messageTimestamp     : getCurrentTimeInHighPrecision(),
+      messageTimestamp     : input?.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      dateExpires,
       description          : input?.description ?? 'drugs',
       grantedBy            : input?.grantedBy ?? author.did,
       grantedTo            : input?.grantedTo ?? (await TestDataGenerator.generatePersona()).did,

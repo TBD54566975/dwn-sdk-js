@@ -3,14 +3,16 @@ import { expect } from 'chai';
 import type { CreateFromPermissionsRequestOverrides } from '../../src/interfaces/permissions-grant.js';
 
 import { DidKeyResolver } from '../../src/index.js';
+import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
+import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message.js';
 
 describe('PermissionsGrant', () => {
   describe('create()', async () => {
-    it ('creates a PermissionsGrant message', async () => {
+    it('creates a PermissionsGrant message', async () => {
       const { privateJwk } = await Secp256k1.generateKeyPair();
       const authorizationSignatureInput = {
         privateJwk,
@@ -21,6 +23,7 @@ describe('PermissionsGrant', () => {
       };
 
       const { message } = await PermissionsGrant.create({
+        dateExpires : getCurrentTimeInHighPrecision(),
         description : 'drugs',
         grantedBy   : 'did:jank:bob',
         grantedTo   : 'did:jank:alice',
@@ -59,7 +62,8 @@ describe('PermissionsGrant', () => {
         grantedTo   : bob.did,
       });
 
-      const permissionsGrant = await PermissionsGrant.createFromPermissionsRequest(permissionsRequest, authorizationSignatureInput);
+      const dateExpires = Temporal.Now.instant().add({ hours: 24 }).toString({ smallestUnit: 'microseconds' });
+      const permissionsGrant = await PermissionsGrant.createFromPermissionsRequest(permissionsRequest, authorizationSignatureInput, { dateExpires });
 
       expect(permissionsGrant.author).to.eq(alice.did);
       expect(permissionsGrant.message.descriptor.description).to.eq(permissionsRequest.message.descriptor.description);
@@ -88,7 +92,9 @@ describe('PermissionsGrant', () => {
       const { permissionsRequest } = await TestDataGenerator.generatePermissionsRequest();
 
       const description = 'friendship';
+      const dateExpires = getCurrentTimeInHighPrecision();
       const overrides: CreateFromPermissionsRequestOverrides = {
+        dateExpires,
         description,
         grantedBy  : alice.did,
         grantedTo  : bob.did,

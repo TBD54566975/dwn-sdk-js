@@ -4,7 +4,7 @@ import type { MethodHandler } from '../types/method-handler.js';
 import type { ProtocolsConfigureMessage } from '../types/protocols-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
 
-import { canonicalAuth } from '../core/auth.js';
+import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolsConfigure } from '../interfaces/protocols-configure.js';
 
@@ -29,7 +29,8 @@ export class ProtocolsConfigureHandler implements MethodHandler {
 
     // authentication & authorization
     try {
-      await canonicalAuth(tenant, protocolsConfigure, this.didResolver);
+      await authenticate(message.authorization, this.didResolver);
+      await protocolsConfigure.authorize(tenant, this.messageStore);
     } catch (e) {
       return messageReplyFromError(e, 401);
     }
