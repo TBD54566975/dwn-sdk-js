@@ -1,6 +1,6 @@
-import type { EncryptionInput } from '../../src/interfaces/records-write.js';
 import type { MessageStore } from '../../src/types/message-store.js';
 import type { RecordsWriteMessage } from '../../src/types/records-types.js';
+import type { EncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
@@ -173,6 +173,26 @@ describe('RecordsWrite', () => {
       const createPromise2 = RecordsWrite.create(options2);
 
       await expect(createPromise2).to.be.rejectedWith('`protocol` and `protocolPath` must both be defined or undefined at the same time');
+    });
+
+    it('#434 - should required `contextId` when `parent` is specified', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+
+      const options: RecordsWriteOptions = {
+        schema                      : 'http://any-schema.com',
+        protocol                    : 'http://example.com',
+        protocolPath                : 'foo/bar',
+        parentId                    : await TestDataGenerator.randomCborSha256Cid(),
+        dataCid                     : await TestDataGenerator.randomCborSha256Cid(),
+        dataSize                    : 123,
+        dataFormat                  : 'application/json',
+        recordId                    : await TestDataGenerator.randomCborSha256Cid(),
+        authorizationSignatureInput : Jws.createSignatureInput(alice)
+      };
+
+      const createPromise = RecordsWrite.create(options);
+
+      await expect(createPromise).to.be.rejectedWith('`contextId` must also be given when `parentId` is specified');
     });
 
     it('should throw if attempting to use `protocols` key derivation encryption scheme on non-protocol-based record', async () => {

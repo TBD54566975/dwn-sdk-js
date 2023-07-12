@@ -152,6 +152,11 @@
         "messageTimestamp",
         "dataFormat"
       ],
+      "dependencies": {
+        "parentId": [
+          "protocol"
+        ]
+      },
       "allOf": [
         {
           "$comment": "rule defining `published` and `datePublished` relationship",
