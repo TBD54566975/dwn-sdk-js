@@ -12,12 +12,12 @@ import { ArrayUtility } from '../../src/utils/array.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { Message } from '../../src/core/message.js';
 import { RecordsDeleteHandler } from '../../src/handlers/records-delete.js';
+import { sleep } from '../../src/utils/time.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { DataStream, DidResolver, Dwn, Encoder, Jws, RecordsDelete, RecordsRead, RecordsWrite } from '../../src/index.js';
-import { sleep } from '../../src/utils/time.js';
 
 chai.use(chaiAsPromised);
 
