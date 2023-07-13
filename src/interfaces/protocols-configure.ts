@@ -5,7 +5,7 @@ import type { ProtocolDefinition, ProtocolsConfigureDescriptor, ProtocolsConfigu
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { GrantAuthorization } from '../core/grant-authorization.js';
 import { validateAuthorizationIntegrity } from '../core/auth.js';
-import { DwnError, DwnErrorCode } from '../index.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
@@ -17,6 +17,8 @@ export type ProtocolsConfigureOptions = {
 };
 
 export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
+  // JSON Schema guarantees presence of `authorization` which contains author DID
+  readonly author!: string;
 
   public static async parse(message: ProtocolsConfigureMessage): Promise<ProtocolsConfigure> {
     await validateAuthorizationIntegrity(message);
@@ -79,7 +81,7 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
     // if author is the same as the target tenant, we can directly grant access
     if (this.author === tenant) {
       return;
-    } else if (this.author !== undefined && this.authorizationPayload?.permissionsGrantId) {
+    } else if (this.authorizationPayload?.permissionsGrantId) {
       await GrantAuthorization.authorizeGenericMessage(tenant, this, this.author, messageStore);
     } else {
       throw new DwnError(
