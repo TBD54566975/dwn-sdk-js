@@ -74,12 +74,12 @@ export class Records {
 
     let fullDerivationPath;
     if (keyDerivationScheme === KeyDerivationScheme.DataFormats) {
-      fullDerivationPath = Records.constructKeyDerivationPathUsingDataFormatsScheme(recordId, descriptor);
+      fullDerivationPath = Records.constructKeyDerivationPathUsingDataFormatsScheme(descriptor);
     } else if (keyDerivationScheme === KeyDerivationScheme.Protocols) {
       fullDerivationPath = Records.constructKeyDerivationPathUsingProtocolsScheme(recordId, contextId, descriptor);
     } else {
       // `schemas` scheme
-      fullDerivationPath = Records.constructKeyDerivationPathUsingSchemasScheme(recordId, descriptor);
+      fullDerivationPath = Records.constructKeyDerivationPathUsingSchemasScheme(descriptor);
     }
 
     return fullDerivationPath;
@@ -88,17 +88,21 @@ export class Records {
   /**
    * Constructs the full key derivation path using `dataFormats` scheme.
    */
-  private static constructKeyDerivationPathUsingDataFormatsScheme(
-    recordId: string,
+  public static constructKeyDerivationPathUsingDataFormatsScheme(
     descriptor: RecordsWriteDescriptor
   ): string[] {
-    const fullDerivationPath = [
-      KeyDerivationScheme.DataFormats,
-      descriptor.dataFormat,
-      recordId
-    ];
-
-    return fullDerivationPath;
+    if (descriptor.schema !== undefined) {
+      return [
+        KeyDerivationScheme.DataFormats,
+        descriptor.schema, // this is as spec-ed on TP27, the intent is to support sharing the key for just a specific data type under a schema
+        descriptor.dataFormat
+      ];
+    } else {
+      return [
+        KeyDerivationScheme.DataFormats,
+        descriptor.dataFormat
+      ];
+    }
   }
 
   /**
@@ -134,8 +138,7 @@ export class Records {
   /**
    * Constructs the full key derivation path using `schemas` scheme.
    */
-  private static constructKeyDerivationPathUsingSchemasScheme(
-    recordId: string,
+  public static constructKeyDerivationPathUsingSchemasScheme(
     descriptor: RecordsWriteDescriptor
   ): string[] {
     if (descriptor.schema === undefined) {
@@ -147,9 +150,7 @@ export class Records {
 
     const fullDerivationPath = [
       KeyDerivationScheme.Schemas,
-      descriptor.schema,
-      descriptor.dataFormat,
-      recordId
+      descriptor.schema
     ];
 
     return fullDerivationPath;

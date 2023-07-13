@@ -3,8 +3,14 @@ import type { PrivateJwk } from '../types/jose-types.js';
 import { Secp256k1 } from './secp256k1.js';
 
 export enum KeyDerivationScheme {
+  /**
+   * Key derivation using the `dataFormat` value for Flat-space records.
+   */
   DataFormats = 'dataFormats',
   Protocols = 'protocols',
+  /**
+   * Key derivation using the `schema` value for Flat-space records.
+   */
   Schemas = 'schemas'
 }
 
