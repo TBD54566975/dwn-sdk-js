@@ -17,6 +17,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { DataStream, DidResolver, Dwn, Encoder, Jws, RecordsDelete, RecordsRead, RecordsWrite } from '../../src/index.js';
+import { sleep } from '../../src/utils/time.js';
 
 chai.use(chaiAsPromised);
 
@@ -195,6 +196,7 @@ export function testRecordsDeleteHandler(): void {
           recordId                    : initialWriteData.message.recordId,
           authorizationSignatureInput : Jws.createSignatureInput(alice)
         });
+        await sleep(1);
         const subsequentWriteData = await TestDataGenerator.generateFromRecordsWrite({
           existingWrite : initialWriteData.recordsWrite,
           author        : alice
