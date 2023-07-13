@@ -36,6 +36,7 @@ export enum DwnErrorCode {
   ProtocolAuthorizationInvalidType = 'ProtocolAuthorizationInvalidType',
   ProtocolAuthorizationMissingRuleSet = 'ProtocolAuthorizationMissingRuleSet',
   ProtocolsConfigureUnauthorized = 'ProtocolsConfigureUnauthorized',
+  ProtocolsQueryUnauthorized = 'ProtocolsQueryUnauthorized',
   RecordsDecryptNoMatchingKeyEncryptedFound = 'RecordsDecryptNoMatchingKeyEncryptedFound',
   RecordsDeriveLeafPrivateKeyUnSupportedCurve = 'RecordsDeriveLeafPrivateKeyUnSupportedCurve',
   RecordsDeriveLeafPublicKeyUnSupportedCurve = 'RecordsDeriveLeafPublicKeyUnSupportedCurve',

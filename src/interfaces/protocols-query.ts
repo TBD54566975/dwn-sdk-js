@@ -1,19 +1,27 @@
+import type { MessageStore } from '../types/message-store.js';
 import type { SignatureInput } from '../types/jws-types.js';
 import type { ProtocolsQueryDescriptor, ProtocolsQueryFilter, ProtocolsQueryMessage } from '../types/protocols-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
+import { GrantAuthorization } from '../core/grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { validateAuthorizationIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 import { normalizeProtocolUrl, validateProtocolUrlNormalized } from '../utils/url.js';
 
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
+
 export type ProtocolsQueryOptions = {
   messageTimestamp?: string;
   filter?: ProtocolsQueryFilter,
   authorizationSignatureInput: SignatureInput;
+  permissionsGrantId?: string;
 };
 
 export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
+  // JSON Schema guarantees presence of `authorization` which contains author DID
+  readonly author!: string;
+
 
   public static async parse(message: ProtocolsQueryMessage): Promise<ProtocolsQuery> {
     await validateAuthorizationIntegrity(message);
@@ -37,7 +45,7 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
+    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput, options.permissionsGrantId);
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
@@ -55,5 +63,19 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
       ...filter,
       protocol: normalizeProtocolUrl(filter.protocol),
     };
+  }
+
+  public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
+    // if author is the same as the target tenant, we can directly grant access
+    if (this.author === tenant) {
+      return;
+    } else if (this.authorizationPayload?.permissionsGrantId) {
+      await GrantAuthorization.authorizeGenericMessage(tenant, this, this.author, messageStore);
+    } else {
+      throw new DwnError(
+        DwnErrorCode.ProtocolsQueryUnauthorized,
+        'The ProtocolsQuery failed authorization'
+      );
+    }
   }
 }

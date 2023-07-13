@@ -80,6 +80,7 @@ export type GenerateProtocolsConfigureOutput = {
 export type GenerateProtocolsQueryInput = {
   author?: Persona;
   messageTimestamp?: string;
+  permissionsGrantId?: string;
   filter?: {
     protocol: string;
   }
@@ -341,9 +342,10 @@ export class TestDataGenerator {
     const authorizationSignatureInput = Jws.createSignatureInput(author);
 
     const options: ProtocolsQueryOptions = {
-      messageTimestamp : input?.messageTimestamp,
-      filter           : input?.filter,
-      authorizationSignatureInput
+      messageTimestamp   : input?.messageTimestamp,
+      filter             : input?.filter,
+      authorizationSignatureInput,
+      permissionsGrantId : input?.permissionsGrantId,
     };
     removeUndefinedProperties(options);
 

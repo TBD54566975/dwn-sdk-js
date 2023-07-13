@@ -3,7 +3,7 @@ import type { QueryResultEntry } from '../types/message-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
 import type { ProtocolsQueryMessage, ProtocolsQueryReply } from '../types/protocols-types.js';
 
-import { canonicalAuth } from '../core/auth.js';
+import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolsQuery } from '../interfaces/protocols-query.js';
 import { removeUndefinedProperties } from '../utils/object.js';
@@ -27,7 +27,8 @@ export class ProtocolsQueryHandler implements MethodHandler {
     }
 
     try {
-      await canonicalAuth(tenant, protocolsQuery, this.didResolver);
+      await authenticate(message.authorization, this.didResolver);
+      await protocolsQuery.authorize(tenant, this.messageStore);
     } catch (e) {
       return messageReplyFromError(e, 401);
     }
