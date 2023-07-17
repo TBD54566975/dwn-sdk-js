@@ -25,7 +25,9 @@ export class TestSuite {
    */
   public static runStoreDependentTests(overrides?: { messageStore?: MessageStore, dataStore?: DataStore, eventLog?: EventLog }): void {
 
-    TestStores.override(overrides);
+    before(async () => {
+      TestStores.override(overrides);
+    });
 
     testDwnClass();
     testMessageStore();
