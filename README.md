@@ -3,7 +3,7 @@
 # Decentralized Web Node (DWN) SDK
 
 Code Coverage
-![Statements](https://img.shields.io/badge/statements-97.41%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-94.33%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-93.61%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-97.41%25-brightgreen.svg?style=flat)
+![Statements](https://img.shields.io/badge/statements-97.41%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-94.28%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-93.61%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-97.41%25-brightgreen.svg?style=flat)
 
 ## Introduction
 
@@ -57,30 +57,36 @@ secp.etc.hmacSha256Async = (k, ...m) =>
 
 [API docs](https://tbd54566975.github.io/dwn-sdk-js/)
 
-```javascript
+```ts
 
-import { Dwn, DataStream, DidKeyResolver, Jws, RecordsWrite, RecordsQuery } from '@tbd54566975/dwn-sdk-js';
+import { Dwn, DataStream, DidKeyResolver, Jws, RecordsWrite } from '@tbd54566975/dwn-sdk-js';
+import { DataStoreLevel, EventLogLevel, MessageStoreLevel } from '@tbd54566975/dwn-sdk-js/stores';
 
-export const dwn = await Dwn.create();
+const messageStore = new MessageStoreLevel();
+const dataStore = new DataStoreLevel();
+const eventLog = new EventLogLevel();
+const dwn = await Dwn.create({ messageStore, dataStore, eventLog });
 
-...
-const didKey = await DidKeyResolver.generate(); // generate a did:key DID
-const signatureMaterial = Jws.createSignatureInput(didKey);
-const data = randomBytes(32); // in node.js
-// or in web
-// const data = new Uint8Array(32);
-// window.crypto.getRandomValues(data);
+// generate a did:key DID
+const didKey = await DidKeyResolver.generate();
 
+// create some data
+const encoder = new TextEncoder();
+const data = encoder.encode('Hello, World!');
+
+// create a RecordsWrite message
 const recordsWrite = await RecordsWrite.create({
   data,
-  dataFormat                  : 'application/json',
-  published                   : true,
-  schema                      : 'yeeter/post',
-  authorizationSignatureInput : signatureMaterial
+  dataFormat: 'application/json',
+  published: true,
+  schema: 'yeeter/post',
+  authorizationSignatureInput: Jws.createSignatureInput(didKey)
 });
 
+// get the DWN to process the RecordsWrite
 const dataStream = DataStream.fromBytes(data);
 const result = await dwn.processMessage(didKey.did, recordsWrite.message, dataStream);
+console.log(result.status);
 
 ```
 
