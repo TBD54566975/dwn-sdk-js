@@ -11,13 +11,10 @@ import type { MessagesGetMessage, MessagesGetReply } from './types/messages-type
 import type { RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from './types/records-types.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
-import { DataStoreLevel } from './store/data-store-level.js';
 import { DidResolver } from './did/did-resolver.js';
-import { EventLogLevel } from './event-log/event-log-level.js';
 import { EventsGetHandler } from './handlers/events-get.js';
 import { messageReplyFromError } from './core/message-reply.js';
 import { MessagesGetHandler } from './handlers/messages-get.js';
-import { MessageStoreLevel } from './store/message-store-level.js';
 import { PermissionsGrantHandler } from './handlers/permissions-grant.js';
 import { PermissionsRequestHandler } from './handlers/permissions-request.js';
 import { PermissionsRevokeHandler } from './handlers/permissions-revoke.js';
@@ -39,10 +36,10 @@ export class Dwn {
 
   private constructor(config: DwnConfig) {
     this.didResolver = config.didResolver!;
-    this.messageStore = config.messageStore!;
-    this.dataStore = config.dataStore!;
-    this.eventLog = config.eventLog!;
     this.tenantGate = config.tenantGate!;
+    this.messageStore = config.messageStore;
+    this.dataStore = config.dataStore;
+    this.eventLog = config.eventLog;
 
     this.methodHandlers = {
       [DwnInterfaceName.Events + DwnMethodName.Get]        : new EventsGetHandler(this.didResolver, this.eventLog),
@@ -67,13 +64,9 @@ export class Dwn {
   /**
    * Creates an instance of the DWN.
    */
-  public static async create(config?: DwnConfig): Promise<Dwn> {
-    config ??= { };
+  public static async create(config: DwnConfig): Promise<Dwn> {
     config.didResolver ??= new DidResolver();
     config.tenantGate ??= new AllowAllTenantGate();
-    config.messageStore ??= new MessageStoreLevel();
-    config.dataStore ??= new DataStoreLevel();
-    config.eventLog ??= new EventLogLevel();
 
     const dwn = new Dwn(config);
     await dwn.open();
@@ -235,10 +228,14 @@ export class Dwn {
   }
 };
 
+/**
+ * DWN configuration.
+ */
 export type DwnConfig = {
   didResolver?: DidResolver,
-  messageStore?: MessageStore;
-  dataStore?: DataStore;
   tenantGate?: TenantGate;
-  eventLog?: EventLog
+
+  messageStore: MessageStore;
+  dataStore: DataStore;
+  eventLog: EventLog
 };
