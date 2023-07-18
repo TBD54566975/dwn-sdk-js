@@ -1,5 +1,6 @@
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
 import type { GenerateFromRecordsWriteOut } from '../utils/test-data-generator.js';
+import type { ProtocolActionRule } from '../../src/types/protocols-types.js';
 import type { QueryResultEntry } from '../../src/types/message-types.js';
 import type { RecordsWriteMessage } from '../../src/types/records-types.js';
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
@@ -1291,11 +1292,11 @@ export function testRecordsWriteHandler(): void {
           const alice = await DidKeyResolver.generate();
           const issuer = await DidKeyResolver.generate();
 
-          // create an invalid ancestor path that is longer than possible
-          const invalidProtocolDefinition = { ...credentialIssuanceProtocolDefinition };
+          // clone then create an invalid ancestor path that is longer than possible
+          const invalidProtocolDefinition = JSON.parse(JSON.stringify(credentialIssuanceProtocolDefinition));
           const actionRuleIndex =
           invalidProtocolDefinition.structure.credentialApplication.credentialResponse.$actions
-            .findIndex((actionRule) => actionRule.who === ProtocolActor.Recipient);
+            .findIndex((actionRule: ProtocolActionRule) => actionRule.who === ProtocolActor.Recipient);
           invalidProtocolDefinition.structure.credentialApplication.credentialResponse
             .$actions[actionRuleIndex].of
             = 'credentialResponse';
