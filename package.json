@@ -45,9 +45,20 @@
   "main": "./dist/cjs/src/index.js",
   "module": "./dist/esm/src/index.js",
   "exports": {
-    "import": "./dist/esm/src/index.js",
-    "require": "./dist/cjs/src/index.js",
-    "types": "./dist/types/src/index.d.ts"
+    ".": {
+      "import": "./dist/esm/src/index.js",
+      "require": "./dist/cjs/src/index.js",
+      "types": "./dist/types/src/index.d.ts"
+    },
+    "./stores": {
+      "import": "./dist/esm/src/index-stores.js",
+      "require": "./dist/cjs/src/index-stores.js",
+      "types": "./dist/types/src/index-stores.d.ts"
+    },
+    "./tests": {
+      "import": "./dist/esm/tests/test-suite.js",
+      "types": "./dist/types/tests/test-suite.d.ts"
+    }
   },
   "browser": {
     "./dist/esm/src/index.js": "./dist/bundles/browser.js",

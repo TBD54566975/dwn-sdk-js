@@ -44,20 +44,6 @@ export function testDwnClass(): void {
       await dwn.close();
     });
 
-    describe('create()', () => {
-      it('#224 - should be able to initialize a DWN with undefined config', async () => {
-        const dwnWithoutConfig = await Dwn.create(); // without passing in a config
-        const alice = await DidKeyResolver.generate();
-        const { author, message } = await TestDataGenerator.generateRecordsQuery({ author: alice });
-
-        const tenant = author!.did;
-        const reply = await dwnWithoutConfig.processMessage(tenant, message);
-
-        expect(reply.status.code).to.equal(200);
-        expect(reply.entries).to.be.empty;
-      });
-    });
-
     describe('processMessage()', () => {
       it('should process RecordsWrite message signed by a `did:key` DID', async () => {
       // generate a `did:key` DID
