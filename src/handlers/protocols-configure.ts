@@ -4,10 +4,9 @@ import type { MethodHandler } from '../types/method-handler.js';
 import type { ProtocolsConfigureMessage } from '../types/protocols-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
 
-import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolsConfigure } from '../interfaces/protocols-configure.js';
-
+import { authenticate, authorize } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 export class ProtocolsConfigureHandler implements MethodHandler {
@@ -30,7 +29,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     // authentication & authorization
     try {
       await authenticate(message.authorization, this.didResolver);
-      await protocolsConfigure.authorize(tenant, this.messageStore);
+      await authorize(tenant, protocolsConfigure);
     } catch (e) {
       return messageReplyFromError(e, 401);
     }
