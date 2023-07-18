@@ -15,11 +15,11 @@ import minimalProtocolDefinition from '../vectors/protocol-definitions/minimal.j
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { GeneralJwsSigner } from '../../src/jose/jws/general/signer.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
+import { Message } from '../../src/core/message.js';
+import { sleep } from '../../src/utils/time.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
-import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message.js';
-import { getCurrentTimeInHighPrecision, sleep } from '../../src/utils/time.js';
 
 import { DidResolver, Dwn, DwnErrorCode, Encoder, Jws } from '../../src/index.js';
 
