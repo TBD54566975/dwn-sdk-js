@@ -1,10 +1,10 @@
 // export everything that we want to be consumable
 export type { DwnConfig } from './dwn.js';
 export type { DwnServiceEndpoint, ServiceEndpoint, DidDocument, DidResolutionResult, DidResolutionMetadata, DidDocumentMetadata, VerificationMethod } from './did/did-resolver.js';
-export type { EventLog, Event } from './types/event-log.js';
+export type { EventLog, Event, GetEventsOptions } from './types/event-log.js';
 export type { EventsGetMessage, EventsGetReply } from './types/event-types.js';
 export type { HooksWriteMessage } from './types/hooks-types.js';
-export type { GenericMessage } from './types/message-types.js';
+export type { GenericMessage, Filter } from './types/message-types.js';
 export type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
 export type { PermissionConditions, PermissionScope, PermissionsGrantDescriptor, PermissionsGrantMessage, PermissionsRequestDescriptor, PermissionsRequestMessage, PermissionsRevokeDescriptor, PermissionsRevokeMessage } from './types/permissions-types.js';
 export type { ProtocolsConfigureDescriptor, ProtocolDefinition, ProtocolRuleSet, ProtocolsQueryFilter, ProtocolsConfigureMessage, ProtocolsQueryMessage } from './types/protocols-types.js';
@@ -12,7 +12,7 @@ export type { EncryptionProperty, RecordsDeleteMessage, RecordsQueryMessage, Rec
 export type { SnapshotsCreateDescriptor, SnapshotsCreateMessage, SnapshotDefinition, SnapshotScope, SnapshotScopeType } from './types/snapshots-types.js';
 export { AllowAllTenantGate, TenantGate } from './core/tenant-gate.js';
 export { Cid } from './utils/cid.js';
-export { DataStore } from './types/data-store.js';
+export { DataStore, PutResult, GetResult, AssociateResult } from './types/data-store.js';
 export { DateSort } from './interfaces/records-query.js';
 export { DataStream } from './utils/data-stream.js';
 export { DerivedPrivateJwk, HdKey, KeyDerivationScheme } from './utils/hd-key.js';
@@ -27,6 +27,7 @@ export { Encoder } from './utils/encoder.js';
 export { EventsGet, EventsGetOptions } from './interfaces/events-get.js';
 export { Encryption, EncryptionAlgorithm } from './utils/encryption.js';
 export { EncryptionInput, KeyEncryptionInput, RecordsWrite, RecordsWriteOptions, CreateFromOptions } from './interfaces/records-write.js';
+export { executeUnlessAborted } from './utils/abort.js';
 export { HooksWrite, HooksWriteOptions } from './interfaces/hooks-write.js';
 export { Jws } from './utils/jws.js';
 export { KeyMaterial, PrivateJwk, PublicJwk } from './types/jose-types.js';
