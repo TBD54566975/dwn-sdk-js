@@ -4,6 +4,8 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "protocol",
+    "published",
     "types",
     "structure"
   ],

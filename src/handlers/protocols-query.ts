@@ -25,19 +25,6 @@ export class ProtocolsQueryHandler implements MethodHandler {
       return messageReplyFromError(e, 400);
     }
 
-    try {
-      await authenticate(message.authorization, this.didResolver);
-    } catch (e) {
-      return messageReplyFromError(e, 401);
-    }
-
-    const query = {
-      interface : DwnInterfaceName.Protocols,
-      method    : DwnMethodName.Configure,
-      ...message.descriptor.filter
-    };
-    removeUndefinedProperties(query);
-
     if (protocolsQuery.author === undefined) {
       // this is an anonymous query, query only published ProtocolsConfigures
       const entries: ProtocolsConfigureMessage[] = await this.fetchPublishedProtocolsConfigure(tenant, protocolsQuery);
@@ -49,10 +36,18 @@ export class ProtocolsQueryHandler implements MethodHandler {
 
     // author is authenticated but still needs to be authorized
     try {
+      await authenticate(message.authorization, this.didResolver);
       await protocolsQuery.authorize(tenant, this.messageStore);
     } catch (e) {
       return messageReplyFromError(e, 401);
     }
+
+    const query = {
+      ...message.descriptor.filter,
+      interface : DwnInterfaceName.Protocols,
+      method    : DwnMethodName.Configure
+    };
+    removeUndefinedProperties(query);
 
     const entries = await this.messageStore.query(tenant, query) as ProtocolsConfigureMessage[];
 

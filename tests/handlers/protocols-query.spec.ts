@@ -1,7 +1,8 @@
 import type {
   DataStore,
   EventLog,
-  MessageStore
+  MessageStore,
+  ProtocolsConfigureMessage
 } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -13,7 +14,7 @@ import { GeneralJwsSigner } from '../../src/jose/jws/general/signer.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
-import { DidResolver, Dwn, DwnErrorCode, Encoder, Jws } from '../../src/index.js';
+import { DidResolver, Dwn, DwnErrorCode, Encoder, Jws, ProtocolsQuery } from '../../src/index.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message.js';
 import { getCurrentTimeInHighPrecision, sleep } from '../../src/utils/time.js';
 
@@ -110,26 +111,29 @@ export function testProtocolsQueryHandler(): void {
         await dwn.processMessage(alice.did, protocol2.message, protocol2.dataStream);
         await dwn.processMessage(alice.did, protocol3.message, protocol3.dataStream);
 
-        // testing singular conditional query
-        const queryMessageData = await TestDataGenerator.generateProtocolsQuery({
-          author : alice,
-          filter : { protocol: protocol1.message.descriptor.definition.protocol }
+        // testing unauthenticated conditional query
+        const conditionalQuery = await ProtocolsQuery.create({
+          filter: { protocol: protocol2.message.descriptor.definition.protocol }
         });
 
-        const reply = await dwn.processMessage(alice.did, queryMessageData.message);
+        const conditionalQueryReply = await dwn.processMessage(alice.did, conditionalQuery.message);
 
-        expect(reply.status.code).to.equal(200);
-        expect(reply.entries?.length).to.equal(1); // only 1 entry should match the query on protocol
+        expect(conditionalQueryReply.status.code).to.equal(200);
+        expect(conditionalQueryReply.entries?.length).to.equal(1); // only 1 entry should match the query on protocol
+
+        const protocolConfigured = conditionalQueryReply.entries![0] as ProtocolsConfigureMessage;
+        expect(protocolConfigured).to.deep.equal(protocol2.message);
 
         // testing fetch-all query without filter
-        const queryMessageData2 = await TestDataGenerator.generateProtocolsQuery({
-          author: alice
+        const fetchAllQuery = await ProtocolsQuery.create({
         });
 
-        const reply2 = await dwn.processMessage(alice.did, queryMessageData2.message);
+        const fetchAllQueryReply = await dwn.processMessage(alice.did, fetchAllQuery.message);
 
-        expect(reply2.status.code).to.equal(200);
-        expect(reply2.entries?.length).to.equal(3); // expecting all 3 entries written above match the query
+        expect(fetchAllQueryReply.status.code).to.equal(200);
+        expect(fetchAllQueryReply.entries?.length).to.equal(2);
+        expect(fetchAllQueryReply.entries).to.deep.include(protocol2.message);
+        expect(fetchAllQueryReply.entries).to.deep.include(protocol3.message);
       });
 
       it('should return 400 if protocol is not normalized', async () => {

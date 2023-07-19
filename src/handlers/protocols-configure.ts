@@ -89,10 +89,11 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     const { definition, ...propertiesToIndex } = protocolsConfigure.message.descriptor;
     const { author } = protocolsConfigure;
 
-    const indexes = {
+    const indexes: Record<string, any> = {
       ...propertiesToIndex,
-      protocol : definition.protocol, // retain protocol url from `definition`
-      author   : author!
+      author    : author!,
+      protocol  : definition.protocol, // retain protocol url from `definition`,
+      published : definition.published
     };
 
     return indexes;

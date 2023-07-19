@@ -1,5 +1,5 @@
 import type { MessageStore } from '../types/message-store.js';
-import type { SignatureInput } from '../types/jws-types.js';
+import type { GeneralJws, SignatureInput } from '../types/jws-types.js';
 import type { ProtocolsQueryDescriptor, ProtocolsQueryFilter, ProtocolsQueryMessage } from '../types/protocols-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
@@ -14,7 +14,7 @@ import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 export type ProtocolsQueryOptions = {
   messageTimestamp?: string;
   filter?: ProtocolsQueryFilter,
-  authorizationSignatureInput: SignatureInput;
+  authorizationSignatureInput?: SignatureInput;
   permissionsGrantId?: string;
 };
 
@@ -24,7 +24,9 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
 
 
   public static async parse(message: ProtocolsQueryMessage): Promise<ProtocolsQuery> {
-    await validateAuthorizationIntegrity(message);
+    if (message.authorization !== undefined) {
+      await validateAuthorizationIntegrity(message);
+    }
 
     if (message.descriptor.filter !== undefined) {
       validateProtocolUrlNormalized(message.descriptor.filter.protocol);
@@ -45,7 +47,12 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput, options.permissionsGrantId);
+    // only generate the `authorization` property if signature input is given
+    let authorization: GeneralJws | undefined;
+    if (options.authorizationSignatureInput !== undefined) {
+      authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput, options.permissionsGrantId);
+    }
+
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
