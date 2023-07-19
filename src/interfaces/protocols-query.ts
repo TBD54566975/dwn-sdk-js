@@ -19,9 +19,6 @@ export type ProtocolsQueryOptions = {
 };
 
 export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
-  // JSON Schema guarantees presence of `authorization` which contains author DID
-  readonly author!: string;
-
 
   public static async parse(message: ProtocolsQueryMessage): Promise<ProtocolsQuery> {
     if (message.authorization !== undefined) {
@@ -77,7 +74,7 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
     if (this.author === tenant) {
       return;
     } else if (this.authorizationPayload?.permissionsGrantId) {
-      await GrantAuthorization.authorizeGenericMessage(tenant, this, this.author, messageStore);
+      await GrantAuthorization.authorizeGenericMessage(tenant, this, this.author!, messageStore);
     } else {
       throw new DwnError(
         DwnErrorCode.ProtocolsQueryUnauthorized,

@@ -34,7 +34,7 @@ export class ProtocolsQueryHandler implements MethodHandler {
       };
     }
 
-    // author is authenticated but still needs to be authorized
+    // authentication & authorization
     try {
       await authenticate(message.authorization, this.didResolver);
       await protocolsQuery.authorize(tenant, this.messageStore);
