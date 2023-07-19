@@ -26,41 +26,53 @@ export class RecordsQueryHandler implements MethodHandler {
       return messageReplyFromError(e, 400);
     }
 
+    // if this is an anonymous query, query only published records
+    if (recordsQuery.author === undefined) {
+      let recordsWrites = await this.fetchPublishedRecords(tenant, recordsQuery);
+      recordsWrites = await sortRecords(recordsWrites, recordsQuery.message.descriptor.dateSort);
+
+      const entries = RecordsQueryHandler.removeAuthorization(recordsWrites);
+      return {
+        status: { code: 200, detail: 'OK' },
+        entries
+      };
+    }
+
     // authentication
     try {
-      if (recordsQuery.author !== undefined) {
-        await authenticate(message.authorization!, this.didResolver);
-      }
+      await authenticate(message.authorization!, this.didResolver);
     } catch (e) {
       return messageReplyFromError(e, 401);
     }
 
-    let records: RecordsWriteMessageWithOptionalEncodedData[];
+    let recordsWrites: RecordsWriteMessageWithOptionalEncodedData[];
     if (recordsQuery.author === tenant) {
-      records = await this.fetchRecordsAsOwner(tenant, recordsQuery);
-    } else if (recordsQuery.author === undefined) {
-      // this is an anonymous query, query only published records
-      records = await this.fetchPublishedRecords(tenant, recordsQuery);
+      recordsWrites = await this.fetchRecordsAsOwner(tenant, recordsQuery);
     } else {
-      records = await this.fetchRecordsAsNonOwner(tenant, recordsQuery);
+      recordsWrites = await this.fetchRecordsAsNonOwner(tenant, recordsQuery);
     }
 
-    // sort if `dataSort` is specified
-    if (recordsQuery.message.descriptor.dateSort) {
-      records = await sortRecords(records, recordsQuery.message.descriptor.dateSort);
-    }
+    recordsWrites = await sortRecords(recordsWrites, recordsQuery.message.descriptor.dateSort);
 
-    // strip away `authorization` property for each record before responding
-    const entries: RecordsQueryReplyEntry[] = [];
-    for (const record of records) {
-      const { authorization: _, ...objectWithRemainingProperties } = record; // a trick to stripping away `authorization`
-      entries.push(objectWithRemainingProperties);
-    }
+    const entries = RecordsQueryHandler.removeAuthorization(recordsWrites);
 
     return {
       status: { code: 200, detail: 'OK' },
       entries
     };
+  }
+
+  /**
+   * Removes `authorization` property from each and every `RecordsWrite` message given and returns the result as a different array.
+   */
+  private static removeAuthorization(recordsWriteMessages: RecordsWriteMessageWithOptionalEncodedData[]): RecordsQueryReplyEntry[] {
+    const recordsQueryReplyEntries: RecordsQueryReplyEntry[] = [];
+    for (const record of recordsWriteMessages) {
+      const { authorization: _, ...objectWithRemainingProperties } = record; // a trick to stripping away `authorization`
+      recordsQueryReplyEntries.push(objectWithRemainingProperties);
+    }
+
+    return recordsQueryReplyEntries;
   }
 
   /**
@@ -179,7 +191,7 @@ export class RecordsQueryHandler implements MethodHandler {
  */
 async function sortRecords(
   messages: RecordsWriteMessage[],
-  dateSort: DateSort
+  dateSort: DateSort = DateSort.CreatedAscending
 ): Promise<RecordsWriteMessage[]> {
   switch (dateSort) {
   case DateSort.CreatedAscending:

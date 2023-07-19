@@ -25,8 +25,8 @@ export class ProtocolsQueryHandler implements MethodHandler {
       return messageReplyFromError(e, 400);
     }
 
+    // if this is an anonymous query, query only published ProtocolsConfigures
     if (protocolsQuery.author === undefined) {
-      // this is an anonymous query, query only published ProtocolsConfigures
       const entries: ProtocolsConfigureMessage[] = await this.fetchPublishedProtocolsConfigure(tenant, protocolsQuery);
       return {
         status: { code: 200, detail: 'OK' },
