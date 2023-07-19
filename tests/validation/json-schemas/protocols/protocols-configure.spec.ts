@@ -7,8 +7,9 @@ import type { ProtocolDefinition, ProtocolsConfigureMessage } from '../../../../
 describe('ProtocolsConfigure schema definition', () => {
   it('should throw if unknown actor is encountered in action rule', async () => {
     const protocolDefinition: ProtocolDefinition = {
-      protocol : 'email',
-      types    : {
+      protocol  : 'email',
+      published : true,
+      types     : {
         email: {
           schema      : 'email',
           dataFormats : ['text/plain']

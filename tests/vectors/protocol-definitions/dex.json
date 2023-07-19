@@ -1,17 +1,24 @@
 {
   "protocol": "http://dex.xyz",
+  "published": true,
   "types": {
     "ask": {
       "schema": "https://tbd/website/tbdex/ask",
-      "dataFormats": ["application/json"]
+      "dataFormats": [
+        "application/json"
+      ]
     },
     "offer": {
       "schema": "https://tbd/website/tbdex/offer",
-      "dataFormats": ["application/json"]
+      "dataFormats": [
+        "application/json"
+      ]
     },
     "fulfillment": {
       "schema": "https://tbd/website/tbdex/fulfillment",
-      "dataFormats": ["application/json"]
+      "dataFormats": [
+        "application/json"
+      ]
     }
   },
   "structure": {

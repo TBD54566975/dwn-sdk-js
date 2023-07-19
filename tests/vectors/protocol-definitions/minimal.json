@@ -1,5 +1,6 @@
 {
   "protocol": "http://minimal.xyz",
+  "published": false,
   "types": {
     "foo": {}
   },
@@ -7,4 +8,3 @@
     "foo": {}
   }
 }
-  

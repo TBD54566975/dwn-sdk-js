@@ -92,6 +92,46 @@ export function testProtocolsQueryHandler(): void {
         expect(reply2.entries?.length).to.equal(3); // expecting all 3 entries written above match the query
       });
 
+
+      it('should return published protocols matching the query if query is unauthenticated', async () => {
+        // scenario: alice has 3 protocols installed: 1 private + 2 published
+
+        const alice = await TestDataGenerator.generatePersona();
+
+        // setting up a stub method resolver
+        TestStubGenerator.stubDidResolver(didResolver, [alice]);
+
+        // insert three messages into DB, two with matching protocol
+        const protocol1 = await TestDataGenerator.generateProtocolsConfigure({ author: alice, published: false });
+        const protocol2 = await TestDataGenerator.generateProtocolsConfigure({ author: alice, published: true });
+        const protocol3 = await TestDataGenerator.generateProtocolsConfigure({ author: alice, published: true });
+
+        await dwn.processMessage(alice.did, protocol1.message, protocol1.dataStream);
+        await dwn.processMessage(alice.did, protocol2.message, protocol2.dataStream);
+        await dwn.processMessage(alice.did, protocol3.message, protocol3.dataStream);
+
+        // testing singular conditional query
+        const queryMessageData = await TestDataGenerator.generateProtocolsQuery({
+          author : alice,
+          filter : { protocol: protocol1.message.descriptor.definition.protocol }
+        });
+
+        const reply = await dwn.processMessage(alice.did, queryMessageData.message);
+
+        expect(reply.status.code).to.equal(200);
+        expect(reply.entries?.length).to.equal(1); // only 1 entry should match the query on protocol
+
+        // testing fetch-all query without filter
+        const queryMessageData2 = await TestDataGenerator.generateProtocolsQuery({
+          author: alice
+        });
+
+        const reply2 = await dwn.processMessage(alice.did, queryMessageData2.message);
+
+        expect(reply2.status.code).to.equal(200);
+        expect(reply2.entries?.length).to.equal(3); // expecting all 3 entries written above match the query
+      });
+
       it('should return 400 if protocol is not normalized', async () => {
         const alice = await DidKeyResolver.generate();
 
@@ -146,7 +186,7 @@ export function testProtocolsQueryHandler(): void {
         expect(reply.status.detail).to.contain('not a valid DID');
       });
 
-      it('rejects non-tenant non-granted ProtocolsConfigures with 401', async () => {
+      it('rejects authenticated non-tenant non-granted ProtocolsConfigures with 401', async () => {
         // Bob tries to ProtocolsConfigure to Alice's DWN without a PermissionsGrant
         const alice = await DidKeyResolver.generate();
         const bob = await DidKeyResolver.generate();
@@ -297,7 +337,7 @@ export function testProtocolsQueryHandler(): void {
           expect(protocolsQueryReply.status.detail).to.contain(DwnErrorCode.GrantAuthorizationGrantRevoked);
         });
 
-        it('rejects with 401 an external partys attempt to ProtocolsConfigure if grant has different DWN interface scope', async () => {
+        it('rejects with 401 an external party attempts to ProtocolsConfigure if grant has different DWN interface scope', async () => {
           // scenario: Alice grants Bob access to RecordsRead, then Bob tries to invoke the grant with ProtocolsConfigure
 
           const alice = await DidKeyResolver.generate();
@@ -327,7 +367,7 @@ export function testProtocolsQueryHandler(): void {
           expect(protocolsQueryReply.status.detail).to.contain(DwnErrorCode.GrantAuthorizationInterfaceMismatch);
         });
 
-        it('rejects with 401 an external partys attempt to ProtocolsConfigure if grant has different DWN method scope', async () => {
+        it('rejects with 401 an external party attempts to ProtocolsConfigure if grant has different DWN method scope', async () => {
           // scenario: Alice grants Bob access to ProtocolsQuery, then Bob tries to invoke the grant with ProtocolsConfigure
 
           const alice = await DidKeyResolver.generate();

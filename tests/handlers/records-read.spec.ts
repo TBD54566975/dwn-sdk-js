@@ -1,6 +1,6 @@
 import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
-import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
+import type { DataStore, EventLog, MessageStore, ProtocolsConfigureMessage } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import emailProtocolDefinition from '../vectors/protocol-definitions/email.json' assert { type: 'json' };
@@ -547,14 +547,14 @@ export function testRecordsReadHandler(): void {
         });
 
         it('should only be able to decrypt record with a correct derived private key  - `protocols` derivation scheme', async () => {
-        // scenario, Bob writes into Alice's DWN an encrypted "email", alice is able to decrypt it
+          // scenario: Bob writes into Alice's DWN an encrypted "email", alice is able to decrypt it
 
           // creating Alice and Bob persona and setting up a stub DID resolver
           const alice = await TestDataGenerator.generatePersona();
           const bob = await TestDataGenerator.generatePersona();
           TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
 
-          // configure protocol
+          // Alice configures email protocol
           const protocolDefinition = emailProtocolDefinition;
           const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
             author: alice,
@@ -563,6 +563,16 @@ export function testRecordsReadHandler(): void {
 
           const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
           expect(protocolsConfigureReply.status.code).to.equal(202);
+
+          // // Bob queries for Alice's email protocol definition to get the public encryption key declared
+          // const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
+          //   filter: { protocol: emailProtocolDefinition.protocol }
+          // });
+          // const protocolsQueryReply = await dwn.processMessage(alice.did, protocolsQuery.message);
+          // const fetchedProtocolDefinition = (protocolsQueryReply.entries![0] as ProtocolsConfigureMessage).descriptor.definition;
+
+          // Bob verifies that the email protocol definition is authored by Alice
+          // const publicEncryptionKey = fetchedProtocolDefinition.descriptor
 
           // encrypt bob's message
           const bobMessageBytes = Encoder.stringToBytes('message from bob');

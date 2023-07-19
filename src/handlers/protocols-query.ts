@@ -1,7 +1,6 @@
 import type { MethodHandler } from '../types/method-handler.js';
-import type { QueryResultEntry } from '../types/message-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
-import type { ProtocolsQueryMessage, ProtocolsQueryReply } from '../types/protocols-types.js';
+import type { ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from '../types/protocols-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
@@ -28,7 +27,6 @@ export class ProtocolsQueryHandler implements MethodHandler {
 
     try {
       await authenticate(message.authorization, this.didResolver);
-      await protocolsQuery.authorize(tenant, this.messageStore);
     } catch (e) {
       return messageReplyFromError(e, 401);
     }
@@ -40,18 +38,42 @@ export class ProtocolsQueryHandler implements MethodHandler {
     };
     removeUndefinedProperties(query);
 
-    const messages = await this.messageStore.query(tenant, query);
-
-    // strip away `authorization` property for each record before responding
-    const entries: QueryResultEntry[] = [];
-    for (const message of messages) {
-      const { authorization: _, ...objectWithRemainingProperties } = message; // a trick to strip away `authorization`
-      entries.push(objectWithRemainingProperties as QueryResultEntry);
+    if (protocolsQuery.author === undefined) {
+      // this is an anonymous query, query only published ProtocolsConfigures
+      const entries: ProtocolsConfigureMessage[] = await this.fetchPublishedProtocolsConfigure(tenant, protocolsQuery);
+      return {
+        status: { code: 200, detail: 'OK' },
+        entries
+      };
     }
+
+    // author is authenticated but still needs to be authorized
+    try {
+      await protocolsQuery.authorize(tenant, this.messageStore);
+    } catch (e) {
+      return messageReplyFromError(e, 401);
+    }
+
+    const entries = await this.messageStore.query(tenant, query) as ProtocolsConfigureMessage[];
 
     return {
       status: { code: 200, detail: 'OK' },
       entries
     };
   };
+
+  /**
+   * Fetches only published `ProtocolsConfigure`.
+   */
+  private async fetchPublishedProtocolsConfigure(tenant: string, protocolsQuery: ProtocolsQuery): Promise<ProtocolsConfigureMessage[]> {
+    // fetch all published `ProtocolConfigure` matching the query
+    const filter = {
+      ...protocolsQuery.message.descriptor.filter,
+      interface : DwnInterfaceName.Protocols,
+      method    : DwnMethodName.Configure,
+      published : true
+    };
+    const publishedProtocolsConfigure = await this.messageStore.query(tenant, filter);
+    return publishedProtocolsConfigure as ProtocolsConfigureMessage[];
+  }
 }

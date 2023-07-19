@@ -1,21 +1,30 @@
 {
   "protocol": "http://social-media.xyz",
+  "published": true,
   "types": {
     "message": {
       "schema": "messageSchema",
-      "dataFormats": ["text/plain"]
+      "dataFormats": [
+        "text/plain"
+      ]
     },
     "reply": {
       "schema": "replySchema",
-      "dataFormats": ["text/plain"]
+      "dataFormats": [
+        "text/plain"
+      ]
     },
     "image": {
       "schema": "imageSchema",
-      "dataFormats": ["image/jpeg"]
+      "dataFormats": [
+        "image/jpeg"
+      ]
     },
     "caption": {
       "schema": "captionSchema",
-      "dataFormats": ["text/plain"]
+      "dataFormats": [
+        "text/plain"
+      ]
     }
   },
   "structure": {

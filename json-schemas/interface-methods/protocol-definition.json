@@ -11,6 +11,9 @@
     "protocol": {
       "type": "string"
     },
+    "published": {
+      "type": "boolean"
+    },
     "types": {
       "type": "object",
       "patternProperties": {
