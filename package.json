@@ -52,7 +52,7 @@
     },
     "./stores": {
       "import": "./dist/esm/src/index-stores.js",
-      "require": "./dist/cjs/src/index-stores.js",
+      "require": "./dist/cjs/index-stores.js",
       "types": "./dist/types/src/index-stores.d.ts"
     },
     "./tests": {
