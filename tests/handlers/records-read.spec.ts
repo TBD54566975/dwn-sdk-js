@@ -1,6 +1,6 @@
 import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
-import type { DataStore, EventLog, MessageStore, ProtocolsConfigureMessage } from '../../src/index.js';
+import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import emailProtocolDefinition from '../vectors/protocol-definitions/email.json' assert { type: 'json' };
@@ -563,16 +563,6 @@ export function testRecordsReadHandler(): void {
 
           const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
           expect(protocolsConfigureReply.status.code).to.equal(202);
-
-          // // Bob queries for Alice's email protocol definition to get the public encryption key declared
-          // const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
-          //   filter: { protocol: emailProtocolDefinition.protocol }
-          // });
-          // const protocolsQueryReply = await dwn.processMessage(alice.did, protocolsQuery.message);
-          // const fetchedProtocolDefinition = (protocolsQueryReply.entries![0] as ProtocolsConfigureMessage).descriptor.definition;
-
-          // Bob verifies that the email protocol definition is authored by Alice
-          // const publicEncryptionKey = fetchedProtocolDefinition.descriptor
 
           // encrypt bob's message
           const bobMessageBytes = Encoder.stringToBytes('message from bob');
