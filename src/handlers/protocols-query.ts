@@ -1,7 +1,6 @@
 import type { MethodHandler } from '../types/method-handler.js';
-import type { QueryResultEntry } from '../types/message-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
-import type { ProtocolsQueryMessage, ProtocolsQueryReply } from '../types/protocols-types.js';
+import type { ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from '../types/protocols-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
@@ -26,6 +25,16 @@ export class ProtocolsQueryHandler implements MethodHandler {
       return messageReplyFromError(e, 400);
     }
 
+    // if this is an anonymous query, query only published ProtocolsConfigures
+    if (protocolsQuery.author === undefined) {
+      const entries: ProtocolsConfigureMessage[] = await this.fetchPublishedProtocolsConfigure(tenant, protocolsQuery);
+      return {
+        status: { code: 200, detail: 'OK' },
+        entries
+      };
+    }
+
+    // authentication & authorization
     try {
       await authenticate(message.authorization, this.didResolver);
       await protocolsQuery.authorize(tenant, this.messageStore);
@@ -34,24 +43,32 @@ export class ProtocolsQueryHandler implements MethodHandler {
     }
 
     const query = {
+      ...message.descriptor.filter,
       interface : DwnInterfaceName.Protocols,
-      method    : DwnMethodName.Configure,
-      ...message.descriptor.filter
+      method    : DwnMethodName.Configure
     };
     removeUndefinedProperties(query);
 
-    const messages = await this.messageStore.query(tenant, query);
-
-    // strip away `authorization` property for each record before responding
-    const entries: QueryResultEntry[] = [];
-    for (const message of messages) {
-      const { authorization: _, ...objectWithRemainingProperties } = message; // a trick to strip away `authorization`
-      entries.push(objectWithRemainingProperties as QueryResultEntry);
-    }
+    const entries = await this.messageStore.query(tenant, query) as ProtocolsConfigureMessage[];
 
     return {
       status: { code: 200, detail: 'OK' },
       entries
     };
   };
+
+  /**
+   * Fetches only published `ProtocolsConfigure`.
+   */
+  private async fetchPublishedProtocolsConfigure(tenant: string, protocolsQuery: ProtocolsQuery): Promise<ProtocolsConfigureMessage[]> {
+    // fetch all published `ProtocolConfigure` matching the query
+    const filter = {
+      ...protocolsQuery.message.descriptor.filter,
+      interface : DwnInterfaceName.Protocols,
+      method    : DwnMethodName.Configure,
+      published : true
+    };
+    const publishedProtocolsConfigure = await this.messageStore.query(tenant, filter);
+    return publishedProtocolsConfigure as ProtocolsConfigureMessage[];
+  }
 }

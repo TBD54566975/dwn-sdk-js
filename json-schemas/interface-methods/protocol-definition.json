@@ -4,12 +4,17 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "protocol",
+    "published",
     "types",
     "structure"
   ],
   "properties": {
     "protocol": {
       "type": "string"
+    },
+    "published": {
+      "type": "boolean"
     },
     "types": {
       "type": "object",

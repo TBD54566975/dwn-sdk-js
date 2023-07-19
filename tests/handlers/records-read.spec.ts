@@ -547,14 +547,14 @@ export function testRecordsReadHandler(): void {
         });
 
         it('should only be able to decrypt record with a correct derived private key  - `protocols` derivation scheme', async () => {
-        // scenario, Bob writes into Alice's DWN an encrypted "email", alice is able to decrypt it
+          // scenario: Bob writes into Alice's DWN an encrypted "email", alice is able to decrypt it
 
           // creating Alice and Bob persona and setting up a stub DID resolver
           const alice = await TestDataGenerator.generatePersona();
           const bob = await TestDataGenerator.generatePersona();
           TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
 
-          // configure protocol
+          // Alice configures email protocol
           const protocolDefinition = emailProtocolDefinition;
           const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
             author: alice,

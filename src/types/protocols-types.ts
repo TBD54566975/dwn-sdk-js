@@ -11,6 +11,10 @@ export type ProtocolsConfigureDescriptor = {
 
 export type ProtocolDefinition = {
   protocol: string;
+  /**
+   * Denotes if this Protocol Definition can be returned by unauthenticated `ProtocolsQuery`.
+   */
+  published: boolean;
   types: ProtocolTypes;
   structure: {
     [key: string]: ProtocolRuleSet;

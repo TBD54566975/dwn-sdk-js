@@ -64,6 +64,11 @@ export type Persona = {
 };
 
 export type GenerateProtocolsConfigureInput = {
+  /**
+   * Denotes if the Protocol Definition can be returned by unauthenticated `ProtocolsQuery`.
+   * Only takes effect if `protocolDefinition` is not explicitly set. Defaults to false if not specified.
+   */
+  published?: boolean;
   author?: Persona;
   messageTimestamp?: string;
   protocolDefinition?: ProtocolDefinition;
@@ -299,6 +304,7 @@ export class TestDataGenerator {
 
       definition = {
         protocol  : TestDataGenerator.randomString(20),
+        published : input?.published ?? false,
         types     : {},
         structure : {}
       };

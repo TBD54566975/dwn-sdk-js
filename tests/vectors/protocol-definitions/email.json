@@ -1,9 +1,12 @@
 {
   "protocol": "http://email-protocol.xyz",
+  "published": true,
   "types": {
     "email": {
       "schema": "email",
-      "dataFormats": ["text/plain"]
+      "dataFormats": [
+        "text/plain"
+      ]
     }
   },
   "structure": {
