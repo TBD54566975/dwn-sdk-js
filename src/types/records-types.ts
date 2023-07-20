@@ -16,6 +16,7 @@ export type RecordsWriteDescriptor = {
   recipient?: string;
   schema?: string;
   parentId?: string;
+  commitStrategy?: CommitStrategy;
   dataCid: string;
   dataSize: number;
   dateCreated: string;
@@ -32,6 +33,11 @@ export type RecordsWriteMessage = GenericMessage & {
   attestation?: GeneralJws;
   encryption?: EncryptionProperty;
 };
+
+export enum CommitStrategy {
+  JSONPatch = "json-patch",
+  JSONMerge = "json-merge"
+}
 
 export type EncryptionProperty = {
   algorithm: EncryptionAlgorithm;

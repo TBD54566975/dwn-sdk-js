@@ -120,6 +120,13 @@
         "parentId": {
           "type": "string"
         },
+        "commitStrategy" : {
+          "enum" : [
+            "json-patch",
+            "json-merge"
+          ],
+          "type": "string"
+        },
         "dataCid": {
           "type": "string"
         },

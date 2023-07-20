@@ -1,5 +1,5 @@
 import type { MessageStore } from '../../src/types/message-store.js';
-import type { RecordsWriteMessage } from '../../src/types/records-types.js';
+import { CommitStrategy, type RecordsWriteMessage } from '../../src/types/records-types.js';
 import type { EncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -26,6 +26,7 @@ describe('RecordsWrite', () => {
         dataFormat                  : 'application/json',
         dateCreated                 : '2022-10-14T10:20:30.405060Z',
         recordId                    : await TestDataGenerator.randomCborSha256Cid(),
+        commitStrategy              : CommitStrategy.JSONMerge,
         authorizationSignatureInput : Jws.createSignatureInput(alice)
       };
       const recordsWrite = await RecordsWrite.create(options);
@@ -36,6 +37,7 @@ describe('RecordsWrite', () => {
       expect(message.descriptor.dataFormat).to.equal(options.dataFormat);
       expect(message.descriptor.dateCreated).to.equal(options.dateCreated);
       expect(message.recordId).to.equal(options.recordId);
+      expect(message.descriptor.commitStrategy).to.equal(options.commitStrategy);
 
       const messageStoreStub = stubInterface<MessageStore>();
 

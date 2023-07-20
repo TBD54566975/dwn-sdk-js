@@ -3,6 +3,7 @@ import type { KeyDerivationScheme } from '../index.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PublicJwk } from '../types/jose-types.js';
 import type {
+  CommitStrategy,
   EncryptedKey,
   EncryptionProperty,
   RecordsWriteAttestationPayload,
@@ -38,6 +39,7 @@ export type RecordsWriteOptions = {
   schema?: string;
   recordId?: string;
   parentId?: string;
+  commitStrategy?: CommitStrategy;
   data?: Uint8Array;
   dataCid?: string;
   dataSize?: number;
@@ -183,6 +185,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
       recipient        : options.recipient,
       schema           : options.schema !== undefined ? normalizeSchemaUrl(options.schema) : undefined,
       parentId         : options.parentId,
+      commitStrategy   : options.commitStrategy,
       dataCid,
       dataSize,
       dateCreated      : options.dateCreated ?? currentTime,
