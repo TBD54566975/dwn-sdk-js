@@ -1,6 +1,6 @@
 import type { DidResolutionResult } from '../../src/did/did-resolver.js';
 import type { Readable } from 'readable-stream';
-import type { RecordsQueryFilter } from '../../src/types/records-types.js';
+import type { CommitStrategy, RecordsQueryFilter } from '../../src/types/records-types.js';
 import type { CreateFromOptions, EncryptionInput } from '../../src/interfaces/records-write.js';
 import type {
   DateSort,
@@ -108,6 +108,7 @@ export type GenerateRecordsWriteInput = {
   recordId?: string;
   parentId?: string;
   published?: boolean;
+  commitStrategy?: CommitStrategy;
   data?: Uint8Array;
   dataCid?: string;
   dataSize?: number;
@@ -401,6 +402,7 @@ export class TestDataGenerator {
       dateCreated      : input?.dateCreated,
       messageTimestamp : input?.messageTimestamp,
       datePublished    : input?.datePublished,
+      commitStrategy   : input?.commitStrategy,
       data             : dataBytes,
       dataCid,
       dataSize,

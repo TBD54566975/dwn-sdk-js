@@ -301,6 +301,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
       parentId                    : unsignedMessage.descriptor.parentId,
       schema                      : unsignedMessage.descriptor.schema,
       dataFormat                  : unsignedMessage.descriptor.dataFormat,
+      commitStrategy              : unsignedMessage.descriptor.commitStrategy,
       // mutable properties below
       messageTimestamp            : options.messageTimestamp ?? currentTime,
       published,

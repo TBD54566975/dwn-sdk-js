@@ -264,6 +264,20 @@ describe('RecordsWrite', () => {
 
       expect(write.message.descriptor.published).to.be.true;
     });
+
+    it('should include the commitStrategy from the unsiged record', async () => {
+      const { author, recordsWrite } = await TestDataGenerator.generateRecordsWrite({
+        commitStrategy: CommitStrategy.JSONMerge,
+      });
+
+      const write = await RecordsWrite.createFrom({
+        unsignedRecordsWriteMessage : recordsWrite.message,
+        datePublished               : getCurrentTimeInHighPrecision(),
+        authorizationSignatureInput : Jws.createSignatureInput(author)
+      });
+
+      expect(write.message.descriptor.commitStrategy).to.equal(recordsWrite.message.descriptor.commitStrategy);
+    });
   });
 
   describe('isInitialWrite', () => {

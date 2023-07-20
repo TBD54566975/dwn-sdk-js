@@ -35,8 +35,8 @@ export type RecordsWriteMessage = GenericMessage & {
 };
 
 export enum CommitStrategy {
-  JSONPatch = "json-patch",
-  JSONMerge = "json-merge"
+  JSONPatch = 'json-patch',
+  JSONMerge = 'json-merge'
 }
 
 export type EncryptionProperty = {
