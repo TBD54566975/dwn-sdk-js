@@ -182,11 +182,11 @@ export type RangeCriterion = {
   to?: string;
 };
 
-export type RecordsWriteAttestationPayload = {
+export type RecordsAttestationPayload = {
   descriptorCid: string;
 };
 
-export type RecordsWriteAuthorizationPayload = BaseAuthorizationPayload & {
+export type RecordsAuthorizationPayload = BaseAuthorizationPayload & {
   recordId: string;
   contextId?: string;
   attestationCid?: string;

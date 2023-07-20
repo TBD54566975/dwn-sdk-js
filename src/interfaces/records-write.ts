@@ -5,8 +5,8 @@ import type {
   EncryptedKey,
   EncryptionInput,
   EncryptionProperty,
-  RecordsWriteAttestationPayload,
-  RecordsWriteAuthorizationPayload,
+  RecordsAttestationPayload,
+  RecordsAuthorizationPayload,
   RecordsWriteDescriptor,
   RecordsWriteMessage,
   UnsignedRecordsWriteMessage
@@ -66,7 +66,7 @@ export type CreateFromOptions = {
 export class RecordsWrite extends Message<RecordsWriteMessage> {
 
   // validateAuthorizationIntegrity() enforces the presence of authorization for RecordsWrite
-  readonly authorizationPayload!: RecordsWriteAuthorizationPayload;
+  readonly authorizationPayload!: RecordsAuthorizationPayload;
   readonly attesters: string[];
 
   private constructor(message: RecordsWriteMessage) {
@@ -481,7 +481,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
       return undefined;
     }
 
-    const attestationPayload: RecordsWriteAttestationPayload = { descriptorCid };
+    const attestationPayload: RecordsAttestationPayload = { descriptorCid };
     const attestationPayloadBytes = Encoder.objectToBytes(attestationPayload);
 
     const signer = await GeneralJwsSigner.create(attestationPayloadBytes, signatureInputs);
@@ -499,7 +499,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     encryption: EncryptionProperty | undefined,
     signatureInput: SignatureInput
   ): Promise<GeneralJws> {
-    const authorizationPayload: RecordsWriteAuthorizationPayload = {
+    const authorizationPayload: RecordsAuthorizationPayload = {
       recordId,
       descriptorCid
     };

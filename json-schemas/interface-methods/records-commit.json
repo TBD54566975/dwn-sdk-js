@@ -147,12 +147,7 @@
           "dateCreated",
           "messageTimestamp",
           "dataFormat"
-        ],
-        "dependencies": {
-          "parentId": [
-            "protocol"
-          ]
-        }
+        ]
       }
     }
   }
