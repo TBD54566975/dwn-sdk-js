@@ -1,5 +1,4 @@
 import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
-import type { EncryptionInput } from '../../src/interfaces/records-write.js';
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -21,6 +20,7 @@ import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
 import { DataStream, DidResolver, Dwn, Encoder, Jws, Records, RecordsDelete, RecordsRead, RecordsWrite } from '../../src/index.js';
+import { EncryptionInput } from '../../src/types/records-types.js';
 
 chai.use(chaiAsPromised);
 

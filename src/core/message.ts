@@ -29,6 +29,7 @@ export enum DwnMethodName {
   Request = 'Request',
   Revoke = 'Revoke',
   Write = 'Write',
+  Commit = 'Commit',
   Delete = 'Delete'
 }
 

@@ -1,8 +1,7 @@
-import type { EncryptionInput } from '../../src/interfaces/records-write.js';
 import type { GenerateFromRecordsWriteOut } from '../utils/test-data-generator.js';
 import type { ProtocolActionRule } from '../../src/types/protocols-types.js';
 import type { QueryResultEntry } from '../../src/types/message-types.js';
-import type { RecordsWriteMessage } from '../../src/types/records-types.js';
+import type { EncryptionInput, RecordsWriteMessage } from '../../src/types/records-types.js';
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';

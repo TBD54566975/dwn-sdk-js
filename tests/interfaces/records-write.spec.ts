@@ -1,6 +1,6 @@
 import type { MessageStore } from '../../src/types/message-store.js';
-import { CommitStrategy, type RecordsWriteMessage } from '../../src/types/records-types.js';
-import type { EncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
+import { CommitStrategy, EncryptionInput, type RecordsWriteMessage } from '../../src/types/records-types.js';
+import type { RecordsWriteOptions } from '../../src/interfaces/records-write.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';

@@ -37,7 +37,81 @@ export type RecordsWriteMessage = GenericMessage & {
 export enum CommitStrategy {
   JSONPatch = 'json-patch',
   JSONMerge = 'json-merge'
-}
+};
+
+export type RecordsCommitDescriptor = {
+  interface: DwnInterfaceName.Records;
+  method: DwnMethodName.Commit;
+  parentId: string;
+  recipient?: string;
+  schema?: string;
+  commitStrategy?: CommitStrategy;
+  dataCid: string;
+  dataSize: number;
+  dateCreated: string;
+  messageTimestamp: string;
+  dataFormat: string;
+};
+
+export type RecordsCommitMessage = GenericMessage & {
+  recordId: string
+  contextId?: string;
+  descriptor: RecordsCommitDescriptor;
+  attestation?: GeneralJws;
+  encryption?: EncryptionProperty;
+};
+
+/**
+ * Input that describes how data is encrypted as spec-ed in TP18 (https://github.com/TBD54566975/technical-proposals/pull/6).
+ */
+export type EncryptionInput = {
+  /**
+   * Algorithm used for encrypting the Data. Uses {EncryptionAlgorithm.Aes256Ctr} if not given.
+   */
+  algorithm?: EncryptionAlgorithm;
+
+  /**
+   * Initialization vector used for encrypting the data.
+   */
+  initializationVector: Uint8Array;
+
+  /**
+   * Symmetric key used to encrypt the data.
+   */
+  key: Uint8Array;
+
+  /**
+   * Array of input that specifies how the symmetric key is encrypted.
+   * Each entry in the array will result in a unique ciphertext of the symmetric key.
+   */
+  keyEncryptionInputs: KeyEncryptionInput[];
+};
+
+/**
+ * Input that specifies how a symmetric key is encrypted.
+ */
+export type KeyEncryptionInput = {
+  /**
+   * Key derivation scheme to derive the descendant public key to encrypt the symmetric key.
+   */
+  derivationScheme: KeyDerivationScheme;
+
+  /**
+   * Fully qualified ID of root public key used derive the descendant public key to encrypt the symmetric key.
+   * (e.g. did:example:abc#encryption-key-id)
+   */
+  publicKeyId: string;
+
+  /**
+   * Root public key used derive the descendant public key to encrypt the symmetric key.
+   */
+  publicKey: PublicJwk;
+
+  /**
+   * Algorithm used for encrypting the symmetric key. Uses {EncryptionAlgorithm.EciesSecp256k1} if not given.
+   */
+  algorithm?: EncryptionAlgorithm;
+};
 
 export type EncryptionProperty = {
   algorithm: EncryptionAlgorithm;
