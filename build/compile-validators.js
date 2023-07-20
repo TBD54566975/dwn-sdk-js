@@ -38,6 +38,7 @@ import RecordsDelete from '../json-schemas/interface-methods/records-delete.json
 import RecordsQuery from '../json-schemas/interface-methods/records-query.json' assert { type: 'json' };
 import RecordsRead from '../json-schemas/interface-methods/records-read.json' assert { type: 'json' };
 import RecordsWrite from '../json-schemas/interface-methods/records-write.json' assert { type: 'json' };
+import RecordsCommit from '../json-schemas/interface-methods/records-commit.json' assert { type: 'json' };
 import RecordsWriteAuthorizationPayload from '../json-schemas/authorization-payloads/records-write-authorization-payload.json' assert { type: 'json' };
 import SnapshotsCreate from '../json-schemas/interface-methods/snapshots-create.json' assert { type: 'json' };
 
@@ -45,6 +46,7 @@ const schemas = {
   RecordsDelete,
   RecordsQuery,
   RecordsWrite,
+  RecordsCommit,
   EventsGet,
   Definitions,
   GeneralJwk,

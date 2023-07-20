@@ -1,0 +1,158 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://identity.foundation/dwn/json-schemas/records-commit.json",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "authorization",
+      "descriptor",
+      "recordId"
+    ],
+    "properties": {
+      "recordId": {
+        "type": "string"
+      },
+      "contextId": {
+        "type": "string"
+      },
+      "attestation": {
+        "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
+      },
+      "authorization": {
+        "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
+      },
+      "encryption": {
+        "type": "object",
+        "properties": {
+          "algorithm": {
+            "type": "string",
+            "enum": [
+              "A256CTR"
+            ]
+          },
+          "initializationVector": {
+            "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/base64url"
+          },
+          "keyEncryption": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "properties": {
+                "rootKeyId": {
+                  "type": "string"
+                },
+                "derivationScheme": {
+                  "type": "string",
+                  "enum": [
+                    "dataFormats",
+                    "protocols",
+                    "schemas"
+                  ]
+                },
+                "algorithm": {
+                  "type": "string",
+                  "enum": [
+                    "ECIES-ES256K"
+                  ]
+                },
+                "encryptedKey": {
+                  "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/base64url"
+                },
+                "initializationVector": {
+                  "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/base64url"
+                },
+                "ephemeralPublicKey": {
+                  "$ref": "https://identity.foundation/dwn/json-schemas/public-jwk.json"
+                },
+                "messageAuthenticationCode": {
+                  "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/base64url"
+                }
+              },
+              "additionalProperties": false,
+              "required": [
+                "rootKeyId",
+                "derivationScheme",
+                "algorithm",
+                "encryptedKey",
+                "initializationVector",
+                "ephemeralPublicKey",
+                "messageAuthenticationCode"
+              ]
+            }
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "algorithm",
+          "initializationVector",
+          "keyEncryption"
+        ]
+      },
+      "descriptor": {
+        "type": "object",
+        "properties": {
+          "interface": {
+            "enum": [
+              "Records"
+            ],
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "Commit"
+            ],
+            "type": "string"
+          },
+          "recipient": {
+            "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+          },
+          "schema": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": "string"
+          },
+          "commitStrategy" : {
+            "enum" : [
+              "json-patch",
+              "json-merge"
+            ],
+            "type": "string"
+          },
+          "dataCid": {
+            "type": "string"
+          },
+          "dataSize": {
+            "type": "number"
+          },
+          "dateCreated": {
+            "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+          },
+          "messageTimestamp": {
+            "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+          },
+          "dataFormat": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "interface",
+          "parentId",
+          "method",
+          "commitStrategy",
+          "dataCid",
+          "dataSize",
+          "dateCreated",
+          "messageTimestamp",
+          "dataFormat"
+        ],
+        "dependencies": {
+          "parentId": [
+            "protocol"
+          ]
+        }
+      }
+    }
+  }
