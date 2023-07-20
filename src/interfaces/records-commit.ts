@@ -1,20 +1,22 @@
-import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
-import { Cid, Encoder } from '../index.js';
-import { GeneralJwsSigner } from '../jose/jws/general/signer.js';
-import { GeneralJws, SignatureInput } from '../types/jws-types.js';
 import type {
   CommitStrategy,
   EncryptionInput,
-  RecordsCommitMessage,
-  RecordsCommitDescriptor,
-  RecordsAttestationPayload,
   EncryptionProperty,
+  RecordsAttestationPayload,
   RecordsAuthorizationPayload,
+  RecordsCommitDescriptor,
+  RecordsCommitMessage,
 } from '../types/records-types.js';
-import { Jws } from '../utils/jws.js';
-import { removeUndefinedProperties } from '../utils/object.js';
+import type { GeneralJws, SignatureInput } from '../types/jws-types.js';
+
+import { Cid } from '../utils/cid.js';
+import { Encoder } from '../utils/encoder.js';
+import { GeneralJwsSigner } from '../jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
+import { Jws } from '../utils/jws.js';
 import { normalizeSchemaUrl } from '../utils/url.js';
+import { removeUndefinedProperties } from '../utils/object.js';
+import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 export type RecordsCommitOptions = {
   recordId: string;
@@ -34,7 +36,7 @@ export type RecordsCommitOptions = {
   authorizationSignatureInput: SignatureInput;
   attestationSignatureInputs?: SignatureInput[];
   encryptionInput?: EncryptionInput;
-}
+};
 
 export class RecordsCommit extends Message<RecordsCommitMessage> {
 
@@ -88,13 +90,13 @@ export class RecordsCommit extends Message<RecordsCommitMessage> {
 
     removeUndefinedProperties(descriptor);
 
-    //TODO: `contextId` computation
+    //PLACEHOLDER: `contextId` computation
     let contextId: string | undefined;
 
     const descriptorCid = await Cid.computeCid(descriptor);
     const attestation = await RecordsCommit.createAttestation(descriptorCid, options.attestationSignatureInputs);
 
-    //TODO: encryption
+    //PLACEHOLDER: encryption
     const encryption = undefined;
 
     // `authorization` generation
@@ -119,7 +121,7 @@ export class RecordsCommit extends Message<RecordsCommitMessage> {
 
     Message.validateJsonSchema(message);
 
-    return new RecordsCommit(message)
+    return new RecordsCommit(message);
   }
 
   /**

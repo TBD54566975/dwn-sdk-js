@@ -1,7 +1,7 @@
+import type { CreateFromOptions } from '../../src/interfaces/records-write.js';
 import type { DidResolutionResult } from '../../src/did/did-resolver.js';
 import type { Readable } from 'readable-stream';
-import type { CommitStrategy, RecordsQueryFilter, EncryptionInput } from '../../src/types/records-types.js';
-import type { CreateFromOptions } from '../../src/interfaces/records-write.js';
+import type { CommitStrategy, EncryptionInput, RecordsQueryFilter } from '../../src/types/records-types.js';
 import type {
   DateSort,
   EventsGetMessage,

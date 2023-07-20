@@ -1,10 +1,11 @@
 import type { MessageStore } from '../../src/types/message-store.js';
-import { CommitStrategy, EncryptionInput, type RecordsWriteMessage } from '../../src/types/records-types.js';
 import type { RecordsWriteOptions } from '../../src/interfaces/records-write.js';
+import type { EncryptionInput, RecordsWriteMessage } from '../../src/types/records-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
+import { CommitStrategy } from '../../src/types/records-types.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
