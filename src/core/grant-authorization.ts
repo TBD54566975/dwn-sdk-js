@@ -15,10 +15,16 @@ export class GrantAuthorization {
   public static async authorizeGenericMessage(
     tenant: string,
     incomingMessage: Message<GenericMessage>,
-    author: string,
     messageStore: MessageStore,
-  ): Promise<void> {
+  ): Promise<PermissionsGrantMessage> {
     const permissionsGrantId: string = incomingMessage.authorizationPayload!.permissionsGrantId!;
+    if (incomingMessage.author === undefined) {
+      throw new DwnError(
+        DwnErrorCode.GrantAuthorizationAuthorUndefined,
+        'Grant-authorized messages must have an author'
+      );
+    }
+    const author: string = incomingMessage.author;
 
     // Fetch grant
     const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, author, messageStore, permissionsGrantId);
@@ -34,6 +40,8 @@ export class GrantAuthorization {
 
     // Check grant scope for interface and method
     await GrantAuthorization.verifyGrantScopeInterfaceAndMethod(incomingMessage.message, permissionsGrantMessage, permissionsGrantId);
+
+    return permissionsGrantMessage;
   }
 
   /**
@@ -85,7 +93,7 @@ export class GrantAuthorization {
    * and the grant has not been revoked.
    * @throws {Error} if incomingMessage has timestamp for a time in which the grant is not active.
    */
-  public static async verifyGrantActive(
+  private static async verifyGrantActive(
     tenant: string,
     incomingMessage: GenericMessage,
     permissionsGrantMessage: PermissionsGrantMessage,

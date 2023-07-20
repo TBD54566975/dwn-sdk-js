@@ -25,58 +25,66 @@
         }
       }
     },
-    "records-read-scope": {
-      "oneOf": [
-        {
-          "$comment": "RecordsRead grant scope with no restrictions",
-          "type": "object",
-          "required": [
-            "interface",
-            "method"
-          ],
-          "properties": {
-            "interface": {
-              "const": "Records"
-            },
-            "method": {
-              "const": "Read"
-            }
-          }
+    "records-delete-scope": {
+      "type": "object",
+      "required": [
+        "interface",
+        "method"
+      ],
+      "properties": {
+        "interface": {
+          "const": "Records"
         },
-        {
-          "$comment": "RecordsRead grant scope with list of allowed recordIds",
-          "type": "object",
-          "required": [
-            "interface",
-            "method",
-            "recordIds"
-          ],
-          "properties": {
-            "interface": {
-              "const": "Records"
-            },
-            "method": {
-              "const": "Read"
-            },
-            "recordIds": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
+        "method": {
+          "const": "Delete"
+        },
+        "recordIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
           }
         }
-      ]
-
+      }
+    },
+    "records-read-scope": {
+      "type": "object",
+      "required": [
+        "interface",
+        "method"
+      ],
+      "properties": {
+        "interface": {
+          "const": "Records"
+        },
+        "method": {
+          "const": "Read"
+        },
+        "recordIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
     },
     "records-write-scope": {
       "type": "object",
+      "required": [
+        "interface",
+        "method"
+      ],
       "properties": {
         "interface": {
           "const": "Records"
         },
         "method": {
           "const": "Write"
+        },
+        "recordIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     }

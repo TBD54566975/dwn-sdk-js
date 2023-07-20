@@ -74,7 +74,7 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
     if (this.author === tenant) {
       return;
     } else if (this.authorizationPayload?.permissionsGrantId) {
-      await GrantAuthorization.authorizeGenericMessage(tenant, this, this.author!, messageStore);
+      await GrantAuthorization.authorizeGenericMessage(tenant, this, messageStore);
     } else {
       throw new DwnError(
         DwnErrorCode.ProtocolsQueryUnauthorized,

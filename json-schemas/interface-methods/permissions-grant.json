@@ -74,6 +74,9 @@
               "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/records-read-scope"
             },
             {
+              "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/records-delete-scope"
+            },
+            {
               "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/records-write-scope"
             }
           ]
