@@ -1,18 +1,15 @@
+import type { RecordsWriteDescriptor } from '../../src/types/records-types.js';
+import type { RecordsWriteMessage } from '../../src/index.js';
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
-import type { DerivedPrivateJwk, EncryptionInput, RecordsWriteMessage } from '../../src/index.js';
-import type { RecordsQueryReplyEntry, RecordsWriteDescriptor } from '../../src/types/records-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
-import emailProtocolDefinition from '../vectors/protocol-definitions/email.json' assert { type: 'json' };
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
-import { ArrayUtility } from '../../src/utils/array.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { DwnConstant } from '../../src/core/dwn-constant.js';
 import { DwnErrorCode } from '../../src/index.js';
 import { Encoder } from '../../src/utils/encoder.js';
-import { Encryption } from '../../src/index.js';
 import { Jws } from '../../src/utils/jws.js';
 import { Message } from '../../src/core/message.js';
 import { RecordsQueryHandler } from '../../src/handlers/records-query.js';
@@ -23,8 +20,8 @@ import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { toTemporalInstant } from '@js-temporal/polyfill';
 
 import { constructRecordsWriteIndexes, RecordsWriteHandler } from '../../src/handlers/records-write.js';
-import { DataStream, DidResolver, Dwn, HdKey, KeyDerivationScheme, Records } from '../../src/index.js';
 import { DateSort, RecordsQuery } from '../../src/interfaces/records-query.js';
+import { DidResolver, Dwn } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 

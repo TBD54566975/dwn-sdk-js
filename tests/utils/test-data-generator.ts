@@ -315,8 +315,7 @@ export class TestDataGenerator {
       definition.structure[generatedLabel] = {};
     }
 
-    // TODO: #139 - move protocol definition out of the descriptor - https://github.com/TBD54566975/dwn-sdk-js/issues/139
-    // const dataStream = DataStream.fromObject(definition); // intentionally left here to demonstrate the pattern to use when #139 is implemented
+    // TODO: #451 - Remove reference and use of dataStream everywhere in tests - https://github.com/TBD54566975/dwn-sdk-js/issues/451
     const dataStream = undefined;
 
     const authorizationSignatureInput = Jws.createSignatureInput(author);

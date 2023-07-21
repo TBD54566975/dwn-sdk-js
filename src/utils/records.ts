@@ -1,5 +1,4 @@
 import type { DerivedPrivateJwk } from './hd-key.js';
-import type { PublicJwk } from '../types/jose-types.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsWriteDescriptor, UnsignedRecordsWriteMessage } from '../types/records-types.js';
 
@@ -41,7 +40,7 @@ export class Records {
 
     // NOTE: right now only `ECIES-ES256K` algorithm is supported for asymmetric encryption,
     // so we will assume that's the algorithm without additional switch/if statements
-    const leafPrivateKey = await Records.deriveLeafPrivateKey(ancestorPrivateKey, fullDerivationPath);
+    const leafPrivateKey = await Records.derivePrivateKey(ancestorPrivateKey, fullDerivationPath);
     const encryptedKeyBytes = Encoder.base64UrlToBytes(matchingEncryptedKey.encryptedKey);
     const ephemeralPublicKey = Secp256k1.publicJwkToBytes(matchingEncryptedKey.ephemeralPublicKey);
     const keyEncryptionInitializationVector = Encoder.base64UrlToBytes(matchingEncryptedKey.initializationVector);
@@ -127,14 +126,6 @@ export class Records {
       descriptor.protocol,
       ...protocolPathSegments
     ];
-    // const fullDerivationPath = [
-    //   KeyDerivationScheme.Protocols,
-    //   descriptor.protocol,
-    //   contextId!,
-    //   ...protocolPathSegments,
-    //   descriptor.dataFormat,
-    //   recordId
-    // ];
 
     return fullDerivationPath;
   }
@@ -159,34 +150,14 @@ export class Records {
   }
 
   /**
-   * TODO: depricate
-   * Derives a descendant public key given an ancestor public key.
+   * Derives a descendant private key given an ancestor private key and the full absolute derivation path.
    * NOTE: right now only `ECIES-ES256K` algorithm is supported for asymmetric encryption,
-   *       so we will assume that's the algorithm without additional switch/if statements
+   *       so we will only derive SECP256K1 key without additional conditional checks
    */
-  public static async deriveLeafPublicKey(rootPublicKey: PublicJwk, fullDescendantDerivationPath: string[]): Promise<Uint8Array> {
-    if (rootPublicKey.crv !== 'secp256k1') {
-      throw new DwnError(
-        DwnErrorCode.RecordsDeriveLeafPublicKeyUnSupportedCurve,
-        `Curve ${rootPublicKey.crv} is not supported.`
-      );
-    }
-
-    const ancestorPublicKeyBytes = Secp256k1.publicJwkToBytes(rootPublicKey);
-    const leafPublicKey = await Secp256k1.derivePublicKey(ancestorPublicKeyBytes, fullDescendantDerivationPath);
-
-    return leafPublicKey;
-  }
-
-  /**
-   * Derives a descendant private key given an ancestor private key.
-   * NOTE: right now only `ECIES-ES256K` algorithm is supported for asymmetric encryption,
-   *       so we will assume that's the algorithm without additional switch/if statements
-   */
-  public static async deriveLeafPrivateKey(ancestorPrivateKey: DerivedPrivateJwk, fullDescendantDerivationPath: string[]): Promise<Uint8Array> {
+  public static async derivePrivateKey(ancestorPrivateKey: DerivedPrivateJwk, fullDescendantDerivationPath: string[]): Promise<Uint8Array> {
     if (ancestorPrivateKey.derivedPrivateKey.crv !== 'secp256k1') {
       throw new DwnError(
-        DwnErrorCode.RecordsDeriveLeafPrivateKeyUnSupportedCurve,
+        DwnErrorCode.RecordsDerivePrivateKeyUnSupportedCurve,
         `Curve ${ancestorPrivateKey.derivedPrivateKey.crv} is not supported.`
       );
     }

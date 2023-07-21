@@ -1,5 +1,4 @@
 import type { GenericMessage } from '../types/message-types.js';
-import { KeyDerivationScheme } from '../index.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PublicJwk } from '../types/jose-types.js';
 import type {
@@ -20,9 +19,9 @@ import { EncryptionAlgorithm } from '../utils/encryption.js';
 import { GeneralJwsSigner } from '../jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Jws } from '../utils/jws.js';
+import { KeyDerivationScheme } from '../index.js';
 import { Message } from '../core/message.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
-import { Records } from '../utils/records.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Secp256k1 } from '../utils/secp256k1.js';
 import { authorize, validateAuthorizationIntegrity } from '../core/auth.js';
@@ -221,7 +220,9 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     // `attestation` generation
     const descriptorCid = await Cid.computeCid(descriptor);
     const attestation = await RecordsWrite.createAttestation(descriptorCid, options.attestationSignatureInputs);
-    const encryption = await RecordsWrite.createEncryptionProperty(recordId, contextId, descriptor, options.encryptionInput);
+
+    // `encryption` generation
+    const encryption = await RecordsWrite.createEncryptionProperty(contextId, descriptor, options.encryptionInput);
 
     // `authorization` generation
     const authorization = await RecordsWrite.createAuthorization(
@@ -476,7 +477,6 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
    * Creates the `encryption` property if encryption input is given. Else `undefined` is returned.
    */
   private static async createEncryptionProperty(
-    recordId: string, // TODO: remove
     contextId: string | undefined,
     descriptor: RecordsWriteDescriptor,
     encryptionInput: EncryptionInput | undefined

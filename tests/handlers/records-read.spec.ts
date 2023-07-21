@@ -21,7 +21,7 @@ import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
 import { authenticate } from '../../src/core/auth.js';
-import { DataStream, DidResolver, Dwn, Encoder, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsDelete, RecordsRead , RecordsWrite, Secp256k1 } from '../../src/index.js';
+import { DataStream, DidResolver, Dwn, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsDelete, RecordsRead , RecordsWrite, Secp256k1 } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -401,8 +401,7 @@ export function testRecordsReadHandler(): void {
           const encryptedDataBytes = await DataStream.toBytes(encryptedDataStream);
 
 
-          // TODO: consider generalized into a utility method
-          // TODO: consider allowing encryption to be added later after creation of a RecordsWrite
+          // TODO: #450 - Should not require a root key to specify the derivation scheme (https://github.com/TBD54566975/dwn-sdk-js/issues/450)
           const rootPrivateKeyWithSchemasScheme: DerivedPrivateJwk = {
             rootKeyId         : alice.keyId,
             derivationScheme  : KeyDerivationScheme.Schemas,
@@ -422,8 +421,7 @@ export function testRecordsReadHandler(): void {
 
           const dataFormat = 'some/format';
           const dataFormatDerivationPath = Records.constructKeyDerivationPathUsingDataFormatsScheme(schema, dataFormat);
-          const dataFormatDerivedPrivateKey = await HdKey.derivePrivateKey(rootPrivateKeyWithDataFormatsScheme, dataFormatDerivationPath);
-          const dataFormatDerivedPublicKey = await Secp256k1.getPublicJwk(dataFormatDerivedPrivateKey.derivedPrivateKey);
+          const dataFormatDerivedPublicKey = await HdKey.derivePublicKey(rootPrivateKeyWithDataFormatsScheme, dataFormatDerivationPath);
 
           const encryptionInput: EncryptionInput = {
             initializationVector : dataEncryptionInitializationVector,
@@ -472,7 +470,7 @@ export function testRecordsReadHandler(): void {
           expect(readReply2.status.code).to.equal(200);
           const cipherStream2 = readReply2.record!.data;
 
-          const plaintextDataStream2 = await Records.decrypt(unsignedRecordsWrite, dataFormatDerivedPrivateKey, cipherStream2);
+          const plaintextDataStream2 = await Records.decrypt(unsignedRecordsWrite, rootPrivateKeyWithDataFormatsScheme, cipherStream2);
           const plaintextBytes2 = await DataStream.toBytes(plaintextDataStream2);
           expect(ArrayUtility.byteArraysEqual(plaintextBytes2, originalData)).to.be.true;
 
@@ -505,19 +503,16 @@ export function testRecordsReadHandler(): void {
           const encryptedDataStream = await Encryption.aes256CtrEncrypt(dataEncryptionKey, dataEncryptionInitializationVector, originalDataStream);
           const encryptedDataBytes = await DataStream.toBytes(encryptedDataStream);
 
+          // TODO: #450 - Should not require a root key to specify the derivation scheme (https://github.com/TBD54566975/dwn-sdk-js/issues/450)
           const rootPrivateKeyWithDataFormatsScheme: DerivedPrivateJwk = {
             rootKeyId         : alice.keyId,
             derivationScheme  : KeyDerivationScheme.DataFormats,
             derivedPrivateKey : alice.keyPair.privateJwk
           };
 
-          // TODO: consider generalized into a utility method
-          // TODO: consider allowing encryption to be added later after creation of a RecordsWrite
           const dataFormat = `image/jpg`;
           const dataFormatDerivationPath = Records.constructKeyDerivationPathUsingDataFormatsScheme(undefined, dataFormat);
-          const dataFormatDerivedPrivateKey: DerivedPrivateJwk
-              = await HdKey.derivePrivateKey(rootPrivateKeyWithDataFormatsScheme, dataFormatDerivationPath);
-          const dataFormatDerivedPublicKey = await Secp256k1.getPublicJwk(dataFormatDerivedPrivateKey.derivedPrivateKey);
+          const dataFormatDerivedPublicKey = await HdKey.derivePublicKey(rootPrivateKeyWithDataFormatsScheme, dataFormatDerivationPath);
 
           const encryptionInput: EncryptionInput = {
             initializationVector : dataEncryptionInitializationVector,
@@ -552,7 +547,7 @@ export function testRecordsReadHandler(): void {
           const cipherStream = readReply.record!.data;
           const unsignedRecordsWrite = readReply.record!;
 
-          const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, dataFormatDerivedPrivateKey, cipherStream);
+          const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, rootPrivateKeyWithDataFormatsScheme, cipherStream);
           const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
           expect(ArrayUtility.byteArraysEqual(plaintextBytes, originalData)).to.be.true;
         });

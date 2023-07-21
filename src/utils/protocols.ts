@@ -21,25 +21,12 @@ export class Protocols {
     // clone before modify
     const encryptionEnabledProtocolDefinition = JSON.parse(JSON.stringify(protocolDefinition)) as ProtocolDefinition;
 
-    // // a function that recursively creates and adds `$encryption` property to every rule set
-    // function addEncryptionProperty2(ruleSet): void {
-    //   ruleSet.$encryption = true;
-
-    //   for (const key in ruleSet) {
-    //     // if we encounter a nested rule set (a property name that doesn't begin with '$'), recursively inject the `$encryption` property
-    //     if (!key.startsWith('$')) {
-    //       addEncryptionProperty(ruleSet[key]);
-    //     }
-    //   }
-    // }
-
     // a function that recursively creates and adds `$encryption` property to every rule set
     async function addEncryptionProperty(ruleSet: ProtocolRuleSet, parentKey: DerivedPrivateJwk): Promise<void> {
       for (const key in ruleSet) {
         // if we encounter a nested rule set (a property name that doesn't begin with '$'), recursively inject the `$encryption` property
         if (!key.startsWith('$')) {
           const derivedPrivateKey = await HdKey.derivePrivateKey(parentKey, [key]);
-          console.log('Private key in encryption path:', derivedPrivateKey.derivedPrivateKey.d);
           const publicKeyJwk = await Secp256k1.getPublicJwk(derivedPrivateKey.derivedPrivateKey);
 
           ruleSet[key].$encryption = { publicKeyJwk };
