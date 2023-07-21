@@ -1,9 +1,28 @@
 <!-- @format -->
 
-# Decentralized Web Node (DWN) SDK
+# Decentralized Web Node (DWN) SDK <!-- omit in toc -->
 
 Code Coverage
 ![Statements](https://img.shields.io/badge/statements-97.41%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-94.28%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-93.61%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-97.41%25-brightgreen.svg?style=flat)
+
+
+- [Introduction](#introduction)
+- [Installation](#installation)
+- [Additional Steps](#additional-steps)
+  - [Node.js \<= 18](#nodejs--18)
+  - [React Native](#react-native)
+  - [Usage in Browser:](#usage-in-browser)
+    - [Webpack \>= 5](#webpack--5)
+    - [Vite](#vite)
+    - [esbuild](#esbuild)
+- [Usage](#usage)
+- [Release/Build Process](#releasebuild-process)
+  - [Stable Build](#stable-build)
+  - [Unstable Build](#unstable-build)
+- [Some projects that use this library:](#some-projects-that-use-this-library)
+- [Architecture](#architecture)
+- [Project Resources](#project-resources)
+
 
 ## Introduction
 
