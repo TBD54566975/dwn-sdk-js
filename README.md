@@ -27,7 +27,7 @@ npm install @tbd54566975/dwn-sdk-js
 
 This package has dependency on [`@noble/ed25519`](https://github.com/paulmillr/noble-ed25519#usage) and [`@noble/secp256k1`](https://github.com/paulmillr/noble-secp256k1#usage) v2, additional steps are needed for some environments:
 
-- Node.js <= 18
+### Node.js <= 18
 
 ```js
 // node.js 18 and earlier,  needs globalThis.crypto polyfill
@@ -36,7 +36,7 @@ import { webcrypto } from "node:crypto";
 if (!globalThis.crypto) globalThis.crypto = webcrypto;
 ```
 
-- React Native:
+### React Native
 
 ```js
 // If you're on react native. React Native needs crypto.getRandomValues polyfill and sha512
@@ -51,6 +51,64 @@ secp.etc.hmacSha256Sync = (k, ...m) =>
   hmac(sha256, k, secp.etc.concatBytes(...m));
 secp.etc.hmacSha256Async = (k, ...m) =>
   Promise.resolve(secp.etc.hmacSha256Sync(k, ...m));
+```
+
+### Usage in Browser:
+
+`dwn-sdk-js` requires 2 polyfills: `crypto` and `stream`. we recommend using `crypto-browserify` and `stream-browserify`. Both of these polyfills can be installed using npm. e.g. `npm install --save crypto-browserify stream-browserify`
+
+#### Webpack >= 5
+
+add the following to the top level of your webpack config (`webpack.config.js`)
+
+```js
+resolve: {
+  fallback: {
+    stream: require.resolve("stream-browserify"),
+    crypto: require.resolve("crypto-browserify")
+  }
+}
+```
+
+#### Vite
+add the following to the top level of your vite config (`vite.config.js`)
+
+```js
+define: {
+  global: 'globalThis'
+},
+resolve: {
+  alias: {
+    'crypto': 'crypto-browserify',
+    'stream': 'stream-browserify'
+  }
+}
+```
+
+#### esbuild
+we recommend using `node-stdlib-browser` instead of `crypto-browserify` and `stream-browserify` individually. Example usage:
+
+```js
+import esbuild from 'esbuild'
+import stdLibBrowser from 'node-stdlib-browser'
+import polyfillProviderPlugin from 'node-stdlib-browser/helpers/esbuild/plugin'
+
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+
+esbuild.build({
+  entryPoints: ['dwn-sdk-test.js'],
+  platform: 'browser',
+  bundle: true,
+  format: 'esm',
+  outfile: 'dist/dwn-sdk-test.js',
+  inject      : [require.resolve('node-stdlib-browser/helpers/esbuild/shim')],
+  plugins     : [polyfillProviderPlugin(stdLibBrowser)],
+  define      : {
+    'global': 'globalThis'
+  }
+})
 ```
 
 ## Usage
