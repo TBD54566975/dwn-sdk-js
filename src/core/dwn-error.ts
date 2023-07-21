@@ -48,6 +48,8 @@ export enum DwnErrorCode {
   RecordsWriteDataSizeMismatch = 'RecordsWriteDataSizeMismatch',
   RecordsWriteMissingData = 'RecordsWriterMissingData',
   RecordsWriteMissingDataStream = 'RecordsWriteMissingDataStream',
+  RecordsWriteMissingProtocol = 'RecordsWriteMissingProtocol',
+  RecordsWriteMissingSchema = 'RecordsWriteMissingSchema',
   RecordsWriteValidateIntegrityEncryptionCidMismatch = 'RecordsWriteValidateIntegrityEncryptionCidMismatch',
   Secp256k1KeyNotValid = 'Secp256k1KeyNotValid',
   UrlProtocolNotNormalized = 'UrlProtocolNotNormalized',

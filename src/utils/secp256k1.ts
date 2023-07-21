@@ -148,6 +148,15 @@ export class Secp256k1 {
   }
 
   /**
+   * Gets the public JWK of the given private JWK.
+   */
+  public static async getPublicJwk(privateKeyJwk: PrivateJwk): Promise<PublicJwk> {
+    // strip away `d`
+    const { d: _d, ...publicKey } = privateKeyJwk;
+    return publicKey;
+  }
+
+  /**
    * Derives a hierarchical deterministic public key.
    * @param key Either a private or an uncompressed public key used to derive the descendant public key.
    * @returns uncompressed public key

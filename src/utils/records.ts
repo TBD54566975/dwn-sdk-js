@@ -54,6 +54,7 @@ export class Records {
       privateKey           : leafPrivateKey
     });
 
+
     // NOTE: right now only `A256CTR` algorithm is supported for symmetric encryption,
     // so we will assume that's the algorithm without additional switch/if statements
     const dataEncryptionInitializationVector = Encoder.base64UrlToBytes(encryption!.initializationVector);
@@ -74,12 +75,12 @@ export class Records {
 
     let fullDerivationPath;
     if (keyDerivationScheme === KeyDerivationScheme.DataFormats) {
-      fullDerivationPath = Records.constructKeyDerivationPathUsingDataFormatsScheme(descriptor);
+      fullDerivationPath = Records.constructKeyDerivationPathUsingDataFormatsScheme(descriptor.schema, descriptor.dataFormat);
     } else if (keyDerivationScheme === KeyDerivationScheme.Protocols) {
       fullDerivationPath = Records.constructKeyDerivationPathUsingProtocolsScheme(recordId, contextId, descriptor);
     } else {
       // `schemas` scheme
-      fullDerivationPath = Records.constructKeyDerivationPathUsingSchemasScheme(descriptor);
+      fullDerivationPath = Records.constructKeyDerivationPathUsingSchemasScheme(descriptor.schema);
     }
 
     return fullDerivationPath;
@@ -88,19 +89,17 @@ export class Records {
   /**
    * Constructs the full key derivation path using `dataFormats` scheme.
    */
-  public static constructKeyDerivationPathUsingDataFormatsScheme(
-    descriptor: RecordsWriteDescriptor
-  ): string[] {
-    if (descriptor.schema !== undefined) {
+  public static constructKeyDerivationPathUsingDataFormatsScheme(schema: string | undefined, dataFormat: string ): string[] {
+    if (schema !== undefined) {
       return [
         KeyDerivationScheme.DataFormats,
-        descriptor.schema, // this is as spec-ed on TP27, the intent is to support sharing the key for just a specific data type under a schema
-        descriptor.dataFormat
+        schema, // this is as spec-ed on TP27, the intent is to support sharing the key for just a specific data type under a schema
+        dataFormat
       ];
     } else {
       return [
         KeyDerivationScheme.DataFormats,
-        descriptor.dataFormat
+        dataFormat
       ];
     }
   }
@@ -126,11 +125,16 @@ export class Records {
     const fullDerivationPath = [
       KeyDerivationScheme.Protocols,
       descriptor.protocol,
-      contextId!,
-      ...protocolPathSegments,
-      descriptor.dataFormat,
-      recordId
+      ...protocolPathSegments
     ];
+    // const fullDerivationPath = [
+    //   KeyDerivationScheme.Protocols,
+    //   descriptor.protocol,
+    //   contextId!,
+    //   ...protocolPathSegments,
+    //   descriptor.dataFormat,
+    //   recordId
+    // ];
 
     return fullDerivationPath;
   }
@@ -138,10 +142,8 @@ export class Records {
   /**
    * Constructs the full key derivation path using `schemas` scheme.
    */
-  public static constructKeyDerivationPathUsingSchemasScheme(
-    descriptor: RecordsWriteDescriptor
-  ): string[] {
-    if (descriptor.schema === undefined) {
+  public static constructKeyDerivationPathUsingSchemasScheme( schema: string | undefined ): string[] {
+    if (schema === undefined) {
       throw new DwnError(
         DwnErrorCode.RecordsSchemasDerivationSchemeMissingSchema,
         'Unable to construct key derivation path using `schemas` scheme because `schema` is missing.'
@@ -150,13 +152,14 @@ export class Records {
 
     const fullDerivationPath = [
       KeyDerivationScheme.Schemas,
-      descriptor.schema
+      schema
     ];
 
     return fullDerivationPath;
   }
 
   /**
+   * TODO: depricate
    * Derives a descendant public key given an ancestor public key.
    * NOTE: right now only `ECIES-ES256K` algorithm is supported for asymmetric encryption,
    *       so we will assume that's the algorithm without additional switch/if statements

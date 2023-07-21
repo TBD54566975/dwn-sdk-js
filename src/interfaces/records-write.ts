@@ -1,5 +1,5 @@
 import type { GenericMessage } from '../types/message-types.js';
-import type { KeyDerivationScheme } from '../index.js';
+import { KeyDerivationScheme } from '../index.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PublicJwk } from '../types/jose-types.js';
 import type {
@@ -82,18 +82,18 @@ export type EncryptionInput = {
  */
 export type KeyEncryptionInput = {
   /**
-   * Key derivation scheme to derive the descendant public key to encrypt the symmetric key.
+   * Key derivation scheme used to derive the public key to encrypt the symmetric key.
    */
   derivationScheme: KeyDerivationScheme;
 
   /**
-   * Fully qualified ID of root public key used derive the descendant public key to encrypt the symmetric key.
+   * Fully qualified ID of root public key used derive the public key to be used to to encrypt the symmetric key.
    * (e.g. did:example:abc#encryption-key-id)
    */
   publicKeyId: string;
 
   /**
-   * Root public key used derive the descendant public key to encrypt the symmetric key.
+   * Public key to be used to encrypt the symmetric key.
    */
   publicKey: PublicJwk;
 
@@ -476,7 +476,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
    * Creates the `encryption` property if encryption input is given. Else `undefined` is returned.
    */
   private static async createEncryptionProperty(
-    recordId: string,
+    recordId: string, // TODO: remove
     contextId: string | undefined,
     descriptor: RecordsWriteDescriptor,
     encryptionInput: EncryptionInput | undefined
@@ -485,16 +485,28 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
       return undefined;
     }
 
-    // encrypt the data encryption key once per key derivation scheme
+    // encrypt the data encryption key once per encryption input
     const keyEncryption: EncryptedKey[] = [];
     for (const keyEncryptionInput of encryptionInput.keyEncryptionInputs) {
 
-      const fullDerivationPath = Records.constructKeyDerivationPath(keyEncryptionInput.derivationScheme, recordId, contextId, descriptor);
+      if (keyEncryptionInput.derivationScheme ===  KeyDerivationScheme.Protocols && descriptor.protocol === undefined) {
+        throw new DwnError(
+          DwnErrorCode.RecordsWriteMissingProtocol,
+          '`protocols` encryption scheme cannot be applied to record without the `protocol` property.'
+        );
+      }
+
+      if (keyEncryptionInput.derivationScheme ===  KeyDerivationScheme.Schemas && descriptor.schema === undefined) {
+        throw new DwnError(
+          DwnErrorCode.RecordsWriteMissingSchema,
+          '`schemas` encryption scheme cannot be applied to record without the `schema` property.'
+        );
+      }
 
       // NOTE: right now only `ECIES-ES256K` algorithm is supported for asymmetric encryption,
       // so we will assume that's the algorithm without additional switch/if statements
-      const leafPublicKey = await Records.deriveLeafPublicKey(keyEncryptionInput.publicKey, fullDerivationPath);
-      const keyEncryptionOutput = await Encryption.eciesSecp256k1Encrypt(leafPublicKey, encryptionInput.key);
+      const publicKeyBytes = Secp256k1.publicJwkToBytes(keyEncryptionInput.publicKey);
+      const keyEncryptionOutput = await Encryption.eciesSecp256k1Encrypt(publicKeyBytes, encryptionInput.key);
 
       const encryptedKey = Encoder.bytesToBase64Url(keyEncryptionOutput.ciphertext);
       const ephemeralPublicKey = await Secp256k1.publicKeyToJwk(keyEncryptionOutput.ephemeralPublicKey);

@@ -38,6 +38,7 @@ export { MessageStore, MessageStoreOptions } from './types/message-store.js';
 export { PermissionsGrant, PermissionsGrantOptions } from './interfaces/permissions-grant.js';
 export { PermissionsRequest, PermissionsRequestOptions } from './interfaces/permissions-request.js';
 export { PermissionsRevoke, PermissionsRevokeOptions } from './interfaces/permissions-revoke.js';
+export { Protocols } from './utils/protocols.js';
 export { ProtocolsConfigure, ProtocolsConfigureOptions } from './interfaces/protocols-configure.js';
 export { ProtocolsQuery, ProtocolsQueryOptions } from './interfaces/protocols-query.js';
 export { Records } from './utils/records.js';
