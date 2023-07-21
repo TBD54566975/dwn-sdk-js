@@ -60,10 +60,6 @@
       "types": "./dist/types/tests/test-suite.d.ts"
     }
   },
-  "browser": {
-    "crypto": "crypto-browserify",
-    "stream": "stream-browserify"
-  },
   "@comment react-native": [
     "directive for metro (react native build tool)."
   ],
