@@ -10,8 +10,9 @@ import { HdKey, KeyDerivationScheme } from '../utils/hd-key.js';
  */
 export class Protocols {
   /**
-   * Derives public encryptions keys to produce the `$encryption` property for each protocol path segment for the given Protocol definition,
+   * Derives public encryptions keys and inject it in the `$encryption` property for each protocol path segment of the given Protocol definition,
    * then returns the final encryption-enabled protocol definition.
+   * NOTE: The original definition passed in is unmodified.
    */
   public static async deriveAndInjectPublicEncryptionKeys(
     protocolDefinition: ProtocolDefinition,

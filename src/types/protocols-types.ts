@@ -48,7 +48,7 @@ export type ProtocolActionRule = {
   can: string
 };
 /**
- * Encryption setting for objects of its corresponding Protocol path.
+ * Config for protocol-path encryption scheme.
  */
 export type ProtocolPathEncryption = {
   /**
