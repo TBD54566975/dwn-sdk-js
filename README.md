@@ -12,6 +12,7 @@ Code Coverage
   - [Node.js \<= 18](#nodejs--18)
   - [React Native](#react-native)
   - [Usage in Browser:](#usage-in-browser)
+    - [Vanilla HTML / JS](#vanilla-html--js)
     - [Webpack \>= 5](#webpack--5)
     - [Vite](#vite)
     - [esbuild](#esbuild)
@@ -56,25 +57,59 @@ if (!globalThis.crypto) globalThis.crypto = webcrypto;
 ```
 
 ### React Native
-
-```js
-// If you're on react native. React Native needs crypto.getRandomValues polyfill and sha512
-import "react-native-get-random-values";
-import { hmac } from "@noble/hashes/hmac";
-import { sha256 } from "@noble/hashes/sha256";
-import { sha512 } from "@noble/hashes/sha512";
-ed.etc.sha512Sync = (...m) => sha512(ed.etc.concatBytes(...m));
-ed.etc.sha512Async = (...m) => Promise.resolve(ed.etc.sha512Sync(...m));
-
-secp.etc.hmacSha256Sync = (k, ...m) =>
-  hmac(sha256, k, secp.etc.concatBytes(...m));
-secp.etc.hmacSha256Async = (k, ...m) =>
-  Promise.resolve(secp.etc.hmacSha256Sync(k, ...m));
-```
+Usage of DWN SDK in react native requires a bit of set up at the moment. To simplify, we've published an npm package that can be used to set everything up which you can find [here](https://www.npmjs.com/package/@tbd54566975/web5-react-native-polyfills). Follow the instructions there to get everything set up.
 
 ### Usage in Browser:
 
 `dwn-sdk-js` requires 2 polyfills: `crypto` and `stream`. we recommend using `crypto-browserify` and `stream-browserify`. Both of these polyfills can be installed using npm. e.g. `npm install --save crypto-browserify stream-browserify`
+
+#### Vanilla HTML / JS
+
+DWN SDK includes a polyfilled distribution that can imported in a `module` script tag. e.g.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<body>
+  <script type="module">
+    import { Dwn, DataStream, DidKeyResolver, Jws, RecordsWrite } from 'https://cdn.jsdelivr.net/npm/@tbd54566975/dwn-sdk-js@0.1.1/dist/bundles/dwn.js'
+    import { MessageStoreLevel, DataStoreLevel, EventLogLevel } from 'https://cdn.jsdelivr.net/npm/@tbd54566975/dwn-sdk-js@0.1.1/dist/bundles/level-stores.js'
+
+    const messageStore = new MessageStoreLevel();
+    const dataStore = new DataStoreLevel();
+    const eventLog = new EventLogLevel();
+    const dwn = await Dwn.create({ messageStore, dataStore, eventLog });
+
+    // generate a did:key DID
+    const didKey = await DidKeyResolver.generate();
+
+    // create some data
+    const encoder = new TextEncoder();
+    const data = encoder.encode('Hello, World!');
+
+    // create a RecordsWrite message
+    const recordsWrite = await RecordsWrite.create({
+      data,
+      dataFormat: 'application/json',
+      published: true,
+      schema: 'yeeter/post',
+      authorizationSignatureInput: Jws.createSignatureInput(didKey)
+    });
+
+    // get the DWN to process the RecordsWrite
+    const dataStream = DataStream.fromBytes(data);
+    const result = await dwn.processMessage(didKey.did, recordsWrite.message, dataStream);
+
+    console.log(result.status);
+    console.assert(result.status.code === 202)
+
+    await dwn.close()
+
+  </script>
+</body>
+
+</html>
+```
 
 #### Webpack >= 5
 
