@@ -358,9 +358,9 @@ export function testRecordsReadHandler(): void {
           expect(readReply.status.code).to.equal(200);
         });
 
-        describe('grant scope recordIds', () => {
-          it('allows access if the RecordsRead grant scope recordIds includes the recordId', async () => {
-            // scenario: Alice gives Bob a grant allowing him to read a specified set of recordIds in her DWN.
+        describe('grant scope schema', () => {
+          it('allows access if the RecordsRead grant scope schema includes the schema of the record', async () => {
+            // scenario: Alice gives Bob a grant allowing him to read records with matching schema in her DWN.
             //           Bob invokes that grant to read a record.
 
             const alice = await DidKeyResolver.generate();
@@ -368,7 +368,8 @@ export function testRecordsReadHandler(): void {
 
             // Alice writes a record to her DWN
             const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
-              author: alice,
+              author : alice,
+              schema : 'some-schema',
             });
             const writeReply = await dwn.processMessage(alice.did, message, dataStream);
             expect(writeReply.status.code).to.equal(202);
@@ -382,7 +383,7 @@ export function testRecordsReadHandler(): void {
               scope      : {
                 interface : DwnInterfaceName.Records,
                 method    : DwnMethodName.Read,
-                recordIds : [message.recordId]
+                schema    : message.descriptor.schema
               }
             });
             const grantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
@@ -398,21 +399,24 @@ export function testRecordsReadHandler(): void {
             expect(readReply.status.code).to.equal(200);
           });
 
-          it('rejects with 401 if the RecordsRead grant scope recordIds does not include the recordId', async () => {
-            // scenario: Alice gives Bob a grant allowing him to read a specified set of recordIds in her DWN.
+          it('rejects with 401 if the RecordsRead grant scope schema does not have the same schema as the record', async () => {
+            // scenario: Alice gives Bob a grant allowing him to read records with matching schema in her DWN.
             //           Bob invokes that grant to read a different record and is rejected.
 
             const alice = await DidKeyResolver.generate();
             const bob = await DidKeyResolver.generate();
 
             // Alice writes a record to her DWN
+            const recordSchema = 'record-schema';
             const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
-              author: alice,
+              author : alice,
+              schema : recordSchema,
             });
             const writeReply = await dwn.processMessage(alice.did, message, dataStream);
             expect(writeReply.status.code).to.equal(202);
 
             // Alice issues a PermissionsGrant allowing Bob to read a specific recordId
+            const scopeSchema = 'scope-schema';
             const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
               author     : alice,
               grantedBy  : alice.did,
@@ -421,7 +425,7 @@ export function testRecordsReadHandler(): void {
               scope      : {
                 interface : DwnInterfaceName.Records,
                 method    : DwnMethodName.Read,
-                recordIds : [await TestDataGenerator.randomCborSha256Cid()] // different record than what Bob will try to read
+                schema    : scopeSchema // different schema than the record Bob will try to read
               }
             });
             const grantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
@@ -435,7 +439,7 @@ export function testRecordsReadHandler(): void {
             });
             const readReply = await dwn.processMessage(alice.did, recordsRead.message);
             expect(readReply.status.code).to.equal(401);
-            expect(readReply.status.detail).to.include(DwnErrorCode.RecordsGrantAuthorizationRecordIds);
+            expect(readReply.status.detail).to.include(DwnErrorCode.RecordsGrantAuthorizationScopeSchema);
           });
         });
       });

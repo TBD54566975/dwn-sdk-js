@@ -42,7 +42,7 @@ export enum DwnErrorCode {
   RecordsDeleteGrantScopeRecordIds = 'RecordsDeleteGrantScopeRecordIds',
   RecordsDeriveLeafPrivateKeyUnSupportedCurve = 'RecordsDeriveLeafPrivateKeyUnSupportedCurve',
   RecordsDeriveLeafPublicKeyUnSupportedCurve = 'RecordsDeriveLeafPublicKeyUnSupportedCurve',
-  RecordsGrantAuthorizationRecordIds = 'RecordsGrantAuthorizationRecordIds',
+  RecordsGrantAuthorizationScopeSchema = 'RecordsGrantAuthorizationScopeSchema',
   RecordsInvalidAncestorKeyDerivationSegment = 'RecordsInvalidAncestorKeyDerivationSegment',
   RecordsProtocolsDerivationSchemeMissingProtocol = 'RecordsProtocolsDerivationSchemeMissingProtocol',
   RecordsSchemasDerivationSchemeMissingSchema = 'RecordsSchemasDerivationSchemeMissingSchema',

@@ -10,7 +10,7 @@ export type PermissionScope = {
 export type RecordsPermissionScope = {
   interface: DwnInterfaceName.Records;
   method: DwnMethodName.Read | DwnMethodName.Write | DwnMethodName.Delete;
-  recordIds?: string[];
+  schema?: string;
 };
 
 export type PermissionConditions = {

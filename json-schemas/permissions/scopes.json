@@ -38,11 +38,8 @@
         "method": {
           "const": "Delete"
         },
-        "recordIds": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+        "schema": {
+          "type": "string"
         }
       }
     },
@@ -59,11 +56,8 @@
         "method": {
           "const": "Read"
         },
-        "recordIds": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+        "schema": {
+          "type": "string"
         }
       }
     },
@@ -80,11 +74,8 @@
         "method": {
           "const": "Write"
         },
-        "recordIds": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+        "schema": {
+          "type": "string"
         }
       }
     }
