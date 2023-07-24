@@ -265,7 +265,7 @@ export function testProtocolsQueryHandler(): void {
           expect(protocolsQueryReply.status.detail).to.contain(DwnErrorCode.GrantAuthorizationGrantExpired);
         });
 
-        it('rejects with 401 an external partys attempt to ProtocolsConfigure if the grant is not yet active', async () => {
+        it('rejects with 401 an external partys attempt to ProtocolsQuery if the grant is not yet active', async () => {
           // scenario: Alice grants Bob access to ProtocolsConfigure, but Bob's message has a timestamp just before the grant is active
 
           const alice = await DidKeyResolver.generate();
@@ -302,7 +302,7 @@ export function testProtocolsQueryHandler(): void {
           expect(protocolsQueryReply.status.detail).to.contain(DwnErrorCode.GrantAuthorizationGrantNotYetActive);
         });
 
-        it('rejects with 401 an external partys attempt to ProtocolsConfigure if the grant has been revoked', async () => {
+        it('rejects with 401 an external partys attempt to ProtocolsQuery if the grant has been revoked', async () => {
           // Alice grants and revokes Bob access to ProtocolsConfigure. Bob tries to invoke the revoked grant
 
           const alice = await DidKeyResolver.generate();
@@ -341,7 +341,7 @@ export function testProtocolsQueryHandler(): void {
           expect(protocolsQueryReply.status.detail).to.contain(DwnErrorCode.GrantAuthorizationGrantRevoked);
         });
 
-        it('rejects with 401 an external party attempts to ProtocolsConfigure if grant has different DWN interface scope', async () => {
+        it('rejects with 401 an external party attempts to ProtocolsQuery if grant has different DWN interface scope', async () => {
           // scenario: Alice grants Bob access to RecordsRead, then Bob tries to invoke the grant with ProtocolsConfigure
 
           const alice = await DidKeyResolver.generate();
@@ -369,36 +369,6 @@ export function testProtocolsQueryHandler(): void {
           const protocolsQueryReply = await dwn.processMessage(alice.did, protocolsQuery.message);
           expect(protocolsQueryReply.status.code).to.equal(401);
           expect(protocolsQueryReply.status.detail).to.contain(DwnErrorCode.GrantAuthorizationInterfaceMismatch);
-        });
-
-        it('rejects with 401 an external party attempts to ProtocolsConfigure if grant has different DWN method scope', async () => {
-          // scenario: Alice grants Bob access to ProtocolsQuery, then Bob tries to invoke the grant with ProtocolsConfigure
-
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
-
-          // Alice gives Bob a PermissionsGrant with scope RecordsRead
-          const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
-            author     : alice,
-            grantedBy  : alice.did,
-            grantedFor : alice.did,
-            grantedTo  : bob.did,
-            scope      : {
-              interface : DwnInterfaceName.Protocols,
-              method    : DwnMethodName.Configure,
-            }
-          });
-          const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
-          expect(permissionsGrantReply.status.code).to.equal(202);
-
-          // Bob tries to ProtocolsConfigure
-          const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
-            author             : bob,
-            permissionsGrantId : await Message.getCid(permissionsGrant.message),
-          });
-          const protocolsQueryReply = await dwn.processMessage(alice.did, protocolsQuery.message);
-          expect(protocolsQueryReply.status.code).to.equal(401);
-          expect(protocolsQueryReply.status.detail).to.contain(DwnErrorCode.GrantAuthorizationMethodMismatch);
         });
 
         it('rejects with 401 if the PermissionsGrant cannot be found', async () => {
@@ -431,7 +401,7 @@ export function testProtocolsQueryHandler(): void {
             grantedTo  : bob.did,
             scope      : {
               interface : DwnInterfaceName.Protocols,
-              method    : DwnMethodName.Configure,
+              method    : DwnMethodName.Query,
             }
           });
           const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
@@ -462,7 +432,7 @@ export function testProtocolsQueryHandler(): void {
             grantedTo  : carol.did,
             scope      : {
               interface : DwnInterfaceName.Protocols,
-              method    : DwnMethodName.Configure,
+              method    : DwnMethodName.Query,
             }
           });
           const permissionsGrantReply = await dwn.processMessage(bob.did, permissionsGrant.message);

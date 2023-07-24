@@ -11,6 +11,7 @@ export class GrantAuthorization {
    * Performs PermissionsGrant-based authorization against the given message
    * Does not validate grant `conditions` or `scope` beyond `interface` and `method`
    * @throws {Error} if authorization fails
+   * @returns PermissionsGrantMessage
    */
   public static async authorizeGenericMessage(
     tenant: string,

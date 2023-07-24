@@ -319,6 +319,44 @@ export function testRecordsReadHandler(): void {
       });
 
       describe('grant based reads', () => {
+        it('rejects with 401 an external party attempts to RecordReads if grant has different DWN method scope', async () => {
+          // scenario: Alice grants Bob access to RecordsWrite, then Bob tries to invoke the grant with RecordsRead
+
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+
+          // Alice writes a record which Bob will later try to read
+          const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
+            author: alice,
+          });
+          const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+          expect(recordsWriteReply.status.code).to.equal(202);
+
+          // Alice gives Bob a PermissionsGrant with scope RecordsRead
+          const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
+            author     : alice,
+            grantedBy  : alice.did,
+            grantedFor : alice.did,
+            grantedTo  : bob.did,
+            scope      : {
+              interface : DwnInterfaceName.Records,
+              method    : DwnMethodName.Write,
+            }
+          });
+          const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+          expect(permissionsGrantReply.status.code).to.equal(202);
+
+          // Bob tries to RecordsRead
+          const recordsRead = await RecordsRead.create({
+            recordId                    : recordsWrite.message.recordId,
+            authorizationSignatureInput : Jws.createSignatureInput(bob),
+            permissionsGrantId          : await Message.getCid(permissionsGrant.message),
+          });
+          const recordsReadReply = await dwn.processMessage(alice.did, recordsRead.message);
+          expect(recordsReadReply.status.code).to.equal(401);
+          expect(recordsReadReply.status.detail).to.contain(DwnErrorCode.GrantAuthorizationMethodMismatch);
+        });
+
         it('allows external parties to read a record using a grant with unrestricted RecordsRead scope', async () => {
           // scenario: Alice gives Bob a grant allowing him to read any record in her DWN.
           //           Bob invokes that grant to read a record.

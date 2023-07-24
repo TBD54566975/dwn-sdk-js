@@ -65,9 +65,6 @@
         "scope": {
           "oneOf": [
             {
-              "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/protocols-configure-scope"
-            },
-            {
               "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/protocols-query-scope"
             },
             {

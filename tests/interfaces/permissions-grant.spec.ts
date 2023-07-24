@@ -101,7 +101,7 @@ describe('PermissionsGrant', () => {
         grantedFor : carol.did,
         scope      : {
           interface : DwnInterfaceName.Protocols,
-          method    : DwnMethodName.Configure,
+          method    : DwnMethodName.Query,
         },
         conditions: {
           publication: true,
