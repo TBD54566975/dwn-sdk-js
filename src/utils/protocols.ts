@@ -16,7 +16,7 @@ export class Protocols {
    */
   public static async deriveAndInjectPublicEncryptionKeys(
     protocolDefinition: ProtocolDefinition,
-    keyId: string,
+    rootKeyId: string,
     privateJwk: PrivateJwk
   ): Promise<ProtocolDefinition> {
     // clone before modify
@@ -30,7 +30,7 @@ export class Protocols {
           const derivedPrivateKey = await HdKey.derivePrivateKey(parentKey, [key]);
           const publicKeyJwk = await Secp256k1.getPublicJwk(derivedPrivateKey.derivedPrivateKey);
 
-          ruleSet[key].$encryption = { publicKeyJwk };
+          ruleSet[key].$encryption = { rootKeyId, publicKeyJwk };
           await addEncryptionProperty(ruleSet[key], derivedPrivateKey);
         }
       }
@@ -40,7 +40,7 @@ export class Protocols {
     const rootKey: DerivedPrivateJwk = {
       derivationScheme  : KeyDerivationScheme.ProtocolPath,
       derivedPrivateKey : privateJwk,
-      rootKeyId         : keyId
+      rootKeyId
     };
     const protocolLevelDerivedKey = await HdKey.derivePrivateKey(rootKey, [KeyDerivationScheme.ProtocolPath, protocolDefinition.protocol]);
     await addEncryptionProperty(encryptionEnabledProtocolDefinition.structure, protocolLevelDerivedKey);

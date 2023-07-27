@@ -715,17 +715,16 @@ export function testRecordsReadHandler(): void {
             )!;
 
           const plaintextMessageToBob = TestDataGenerator.randomBytes(100);
-          const recordsWriteToBob = await TestDataGenerator.generateProtocolEncryptedRecordsWrite(
-            plaintextMessageToBob,
-            alice,
-            bob,
-            protocolsConfigureForBob.message.descriptor.definition,
-            'thread/message',
-            contextId,
-            protocolContextDerivingRootKeyIdReturned,
-            protocolContextDerivedPublicJwkReturned!,
-            unsignedRecordsWrite.recordId
-          );
+          const recordsWriteToBob = await TestDataGenerator.generateProtocolEncryptedRecordsWrite({
+            plaintextBytes                   : plaintextMessageToBob,
+            author                           : alice,
+            targetProtocolDefinition         : protocolsConfigureForBob.message.descriptor.definition,
+            protocolPath                     : 'thread/message',
+            protocolContextId                : contextId,
+            protocolContextDerivingRootKeyId : protocolContextDerivingRootKeyIdReturned,
+            protocolContextDerivedPublicJwk  : protocolContextDerivedPublicJwkReturned!,
+            protocolParentId                 : unsignedRecordsWrite.recordId
+          });
 
           // Alice sends the message to Bob
           const aliceWriteReply = await dwn.processMessage(bob.did, recordsWriteToBob.message, recordsWriteToBob.dataStream);
