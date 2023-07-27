@@ -29,7 +29,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
-import { DataStream, DidResolver, Dwn, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsDelete, RecordsRead , RecordsWrite, Secp256k1 } from '../../src/index.js';
+import { DataStream, DidResolver, Dwn, DwnConstant, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsDelete, RecordsRead , RecordsWrite, Secp256k1 } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -847,13 +847,16 @@ export function testRecordsReadHandler(): void {
         expect(readReply.status.code).to.equal(404);
       });
 
-      it('should return 404 underlying data store cannot locate the data', async () => {
+      it('should return 404 underlying data store cannot locate the data when data is above threshold', async () => {
         const alice = await DidKeyResolver.generate();
 
         sinon.stub(dataStore, 'get').resolves(undefined);
 
-        // insert data
-        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
+        // insert data larger than the allowed amount in encodedData
+        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
+          author : alice,
+          data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded +1)
+        });
         const writeReply = await dwn.processMessage(alice.did, message, dataStream);
         expect(writeReply.status.code).to.equal(202);
 

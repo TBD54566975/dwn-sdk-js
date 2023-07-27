@@ -277,33 +277,147 @@ export function testRecordsWriteHandler(): void {
         expect(reply.status.code).to.equal(400);
         expect(reply.status.detail).to.contain('dataFormat is an immutable property');
       });
+      it('should return 400 if actual data size mismatches with `dataSize` in descriptor', () => {
+        it('with dataStream and `dataSize` larger than encodedData threshold', async () => {
+          const alice = await DidKeyResolver.generate();
+          const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
+            author : alice,
+            data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)
+          });
 
-      it('should return 400 if actual data size mismatches with `dataSize` in descriptor', async () => {
-        const alice = await DidKeyResolver.generate();
-        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
+          // replace the dataSize to simulate mismatch, will need to generate `recordId` and `authorization` property again
+          message.descriptor.dataSize = DwnConstant.maxDataSizeAllowedToBeEncoded + 100;
+          const descriptorCid = await Cid.computeCid(message.descriptor);
+          const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
+          const authorizationSignatureInput = Jws.createSignatureInput(alice);
+          const authorization = await RecordsWrite['createAuthorization'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSignatureInput);
+          message.recordId = recordId;
+          message.authorization = authorization;
 
-        // replace the dataSize to simulate mismatch, will need to generate `recordId` and `authorization` property again
-        message.descriptor.dataSize = 1;
-        const descriptorCid = await Cid.computeCid(message.descriptor);
-        const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
-        const authorizationSignatureInput = Jws.createSignatureInput(alice);
-        const authorization = await RecordsWrite['createAuthorization'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSignatureInput);
-        message.recordId = recordId;
-        message.authorization = authorization;
+          const reply = await dwn.processMessage(alice.did, message, dataStream);
+          expect(reply.status.code).to.equal(400);
+          expect(reply.status.detail).to.contain('does not match dataSize in descriptor');
+        });
 
-        const reply = await dwn.processMessage(alice.did, message, dataStream);
-        expect(reply.status.code).to.equal(400);
-        expect(reply.status.detail).to.contain('does not match dataSize in descriptor');
+        it('with only `dataSize` larger than encodedData threshold', async () => {
+          const alice = await DidKeyResolver.generate();
+          const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
+            author : alice,
+            data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)
+          });
+
+          // replace the dataSize to simulate mismatch, will need to generate `recordId` and `authorization` property again
+          message.descriptor.dataSize = DwnConstant.maxDataSizeAllowedToBeEncoded + 100;
+          const descriptorCid = await Cid.computeCid(message.descriptor);
+          const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
+          const authorizationSignatureInput = Jws.createSignatureInput(alice);
+          const authorization = await RecordsWrite['createAuthorization'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSignatureInput);
+          message.recordId = recordId;
+          message.authorization = authorization;
+
+          const reply = await dwn.processMessage(alice.did, message, dataStream);
+          expect(reply.status.code).to.equal(400);
+          expect(reply.status.detail).to.contain('does not match dataSize in descriptor');
+        });
+
+        it('with only dataStream larger than encodedData threshold', async () => {
+          const alice = await DidKeyResolver.generate();
+          const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
+            author : alice,
+            data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)
+          });
+
+          // replace the dataSize to simulate mismatch, will need to generate `recordId` and `authorization` property again
+          message.descriptor.dataSize = 1;
+          const descriptorCid = await Cid.computeCid(message.descriptor);
+          const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
+          const authorizationSignatureInput = Jws.createSignatureInput(alice);
+          const authorization = await RecordsWrite['createAuthorization'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSignatureInput);
+          message.recordId = recordId;
+          message.authorization = authorization;
+
+          const reply = await dwn.processMessage(alice.did, message, dataStream);
+          expect(reply.status.code).to.equal(400);
+          expect(reply.status.detail).to.contain('does not match dataSize in descriptor');
+        });
+
+        it('with both `dataSize` and dataStream below than encodedData threshold', async () => {
+          const alice = await DidKeyResolver.generate();
+          const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
+            author: alice
+          });
+
+          // replace the dataSize to simulate mismatch, will need to generate `recordId` and `authorization` property again
+          message.descriptor.dataSize = 1;
+          const descriptorCid = await Cid.computeCid(message.descriptor);
+          const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
+          const authorizationSignatureInput = Jws.createSignatureInput(alice);
+          const authorization = await RecordsWrite['createAuthorization'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSignatureInput);
+          message.recordId = recordId;
+          message.authorization = authorization;
+
+          const reply = await dwn.processMessage(alice.did, message, dataStream);
+          expect(reply.status.code).to.equal(400);
+          expect(reply.status.detail).to.contain('does not match dataSize in descriptor');
+        });
       });
 
-      it('should return 400 if actual data CID of mismatches with `dataCid` in descriptor', async () => {
-        const alice = await DidKeyResolver.generate();
-        const { message } = await TestDataGenerator.generateRecordsWrite({ author: alice });
-        const dataStream = DataStream.fromBytes(TestDataGenerator.randomBytes(32)); // mismatch data stream
+      it('should return 400 if actual data CID of mismatches with `dataCid` in descriptor', () => {
+        it('with both dataStream and `dataSize` larger than encodedData threshold', async () => {
+          const alice = await DidKeyResolver.generate();
+          const { message } = await TestDataGenerator.generateRecordsWrite({
+            author : alice,
+            data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)
+          });
+          const dataStream =
+            DataStream.fromBytes(TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)); // mismatch data stream
 
-        const reply = await dwn.processMessage(alice.did, message, dataStream);
-        expect(reply.status.code).to.equal(400);
-        expect(reply.status.detail).to.contain('does not match dataCid in descriptor');
+          const reply = await dwn.processMessage(alice.did, message, dataStream);
+          expect(reply.status.code).to.equal(400);
+          expect(reply.status.detail).to.contain('does not match dataCid in descriptor');
+        });
+
+        it('with `dataSize` larger than encodedData threshold', async () => {
+          const alice = await DidKeyResolver.generate();
+          const { message } = await TestDataGenerator.generateRecordsWrite({
+            author : alice,
+            data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)
+          });
+          const dataStream =
+            DataStream.fromBytes(TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)); // mismatch data stream
+
+          const reply = await dwn.processMessage(alice.did, message, dataStream);
+          expect(reply.status.code).to.equal(400);
+          expect(reply.status.detail).to.contain('does not match dataCid in descriptor');
+        });
+
+        it('with dataStream larger than encodedData threshold', async () => {
+          const alice = await DidKeyResolver.generate();
+          const { message } = await TestDataGenerator.generateRecordsWrite({
+            author : alice,
+            data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)
+          });
+          const dataStream =
+            DataStream.fromBytes(TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)); // mismatch data stream
+
+          const reply = await dwn.processMessage(alice.did, message, dataStream);
+          expect(reply.status.code).to.equal(400);
+          expect(reply.status.detail).to.contain('does not match dataCid in descriptor');
+        });
+
+        it('with both dataStream and `dataSize` below than encodedData threshold', async () => {
+          const alice = await DidKeyResolver.generate();
+          const { message } = await TestDataGenerator.generateRecordsWrite({
+            author : alice,
+            data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)
+          });
+          const dataStream =
+            DataStream.fromBytes(TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)); // mismatch data stream
+
+          const reply = await dwn.processMessage(alice.did, message, dataStream);
+          expect(reply.status.code).to.equal(400);
+          expect(reply.status.detail).to.contain('does not match dataCid in descriptor');
+        });
       });
 
       it('should return 400 if attempting to write a record without data stream', async () => {
@@ -2072,7 +2186,11 @@ export function testRecordsWriteHandler(): void {
     });
 
     it('should throw if `recordsWritehandler.putData()` throws unknown error', async () => {
-      const { author, message, dataStream } = await TestDataGenerator.generateRecordsWrite();
+
+      // must generate a large enough data payload for putData to be triggered
+      const { author, message, dataStream } = await TestDataGenerator.generateRecordsWrite({
+        data: TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)
+      });
       const tenant = author.did;
 
       const didResolverStub = TestStubGenerator.createDidResolverStub(author);

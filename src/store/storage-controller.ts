@@ -25,10 +25,11 @@ export class StorageController {
     const messages: RecordsWriteMessageWithOptionalEncodedData[] = (await messageStore.query(tenant, filter)) as RecordsWriteMessage[];
 
     // for every message, only include the data as `encodedData` if the data size is equal or smaller than the size threshold
+    // only fetch from dataStore if encodedData doesn't exist on the stored message. This is for backwards compatibility.
     for (const message of messages) {
       const dataCid = message.descriptor.dataCid;
       const dataSize = message.descriptor.dataSize;
-      if (dataCid !== undefined && dataSize! <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
+      if (dataCid !== undefined && dataSize! <= DwnConstant.maxDataSizeAllowedToBeEncoded && message.encodedData === undefined) {
         const messageCid = await Message.getCid(message);
         const result = await dataStore.get(tenant, messageCid, dataCid);
 

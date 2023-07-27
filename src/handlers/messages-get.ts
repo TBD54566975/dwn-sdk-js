@@ -2,7 +2,7 @@ import type { DataStore } from '../types/data-store.js';
 import type { DidResolver } from '../did/did-resolver.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
 import type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from '../types/messages-types.js';
 
 import { DataStream } from '../utils/data-stream.js';
@@ -68,11 +68,13 @@ export class MessagesGetHandler implements MethodHandler {
       }
 
       // RecordsWrite specific handling
-      const recordsWrite = message as RecordsWriteMessage;
+      const recordsWrite = message as RecordsWriteMessageWithOptionalEncodedData;
       const dataCid = recordsWrite.descriptor.dataCid;
       const dataSize = recordsWrite.descriptor.dataSize;
 
-      if (dataCid !== undefined && dataSize! <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
+      // Leave this for backwards compatibility?
+      // Think about how to test this.
+      if (dataCid !== undefined && dataSize! <= DwnConstant.maxDataSizeAllowedToBeEncoded && recordsWrite.encodedData === undefined) {
         const messageCid = await Message.getCid(message);
         const result = await this.dataStore.get(tenant, messageCid, dataCid);
 
@@ -80,6 +82,9 @@ export class MessagesGetHandler implements MethodHandler {
           const dataBytes = await DataStream.toBytes(result.dataStream);
           entry.encodedData = Encoder.bytesToBase64Url(dataBytes);
         }
+      } else if (recordsWrite.encodedData !== undefined) {
+        entry.encodedData = recordsWrite.encodedData;
+        delete recordsWrite.encodedData;
       }
     }
 
