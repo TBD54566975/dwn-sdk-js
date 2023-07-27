@@ -25,7 +25,10 @@ export type RecordsWriteDescriptor = {
   dataFormat: string;
 };
 
-export type TemporaryRecordsWriteMessage = GenericMessage & {
+/**
+ * Internal RecordsWrite message representation that can be in an incomplete state.
+ */
+export type InternalRecordsWriteMessage = GenericMessage & {
   recordId?: string,
   contextId?: string;
   descriptor: RecordsWriteDescriptor;

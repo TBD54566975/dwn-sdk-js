@@ -4,11 +4,11 @@ import type { PublicJwk } from '../types/jose-types.js';
 import type {
   EncryptedKey,
   EncryptionProperty,
+  InternalRecordsWriteMessage,
   RecordsWriteAttestationPayload,
   RecordsWriteAuthorizationPayload,
   RecordsWriteDescriptor,
   RecordsWriteMessage,
-  TemporaryRecordsWriteMessage,
   UnsignedRecordsWriteMessage
 } from '../types/records-types.js';
 import type { GeneralJws, SignatureInput } from '../types/jws-types.js';
@@ -116,7 +116,7 @@ export type CreateFromOptions = {
 };
 
 export class RecordsWrite {
-  private _message: TemporaryRecordsWriteMessage;
+  private _message: InternalRecordsWriteMessage;
   public get message(): RecordsWriteMessage {
     if (this._message.authorization === undefined) {
       throw new DwnError('TODO', 'This RecordsWrite is not yet signed.');
@@ -137,7 +137,7 @@ export class RecordsWrite {
 
   readonly attesters: string[];
 
-  private constructor(message: TemporaryRecordsWriteMessage) {
+  private constructor(message: InternalRecordsWriteMessage) {
     this._message = message;
 
     if (message.authorization !== undefined) {
@@ -237,7 +237,7 @@ export class RecordsWrite {
     // `encryption` generation
     const encryption = await RecordsWrite.createEncryptionProperty(descriptor, options.encryptionInput);
 
-    const message: TemporaryRecordsWriteMessage = {
+    const message: InternalRecordsWriteMessage = {
       recordId,
       descriptor
     };
@@ -693,7 +693,7 @@ export class RecordsWrite {
   /**
    * Gets the DID of the author of the given message.
    */
-  public static getAttesters(message: TemporaryRecordsWriteMessage): string[] {
+  public static getAttesters(message: InternalRecordsWriteMessage): string[] {
     const attestationSignatures = message.attestation?.signatures ?? [];
     const attesters = attestationSignatures.map((signature) => Jws.getSignerDid(signature));
     return attesters;

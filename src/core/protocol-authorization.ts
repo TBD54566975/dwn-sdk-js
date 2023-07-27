@@ -1,8 +1,8 @@
 import type { MessageStore } from '../types/message-store.js';
 import type { RecordsRead } from '../interfaces/records-read.js';
 import type { Filter, TimestampedMessage } from '../types/message-types.js';
+import type { InternalRecordsWriteMessage, RecordsReadMessage, RecordsWriteMessage } from '../types/records-types.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../types/protocols-types.js';
-import type { RecordsReadMessage, RecordsWriteMessage, TemporaryRecordsWriteMessage } from '../types/records-types.js';
 
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
@@ -165,7 +165,7 @@ export class ProtocolAuthorization {
    * Gets the rule set corresponding to the given message chain.
    */
   private static getRuleSet(
-    inboundMessage: RecordsReadMessage | TemporaryRecordsWriteMessage,
+    inboundMessage: RecordsReadMessage | RecordsWriteMessage,
     protocolDefinition: ProtocolDefinition,
     ancestorMessageChain: RecordsWriteMessage[],
   ): ProtocolRuleSet {
@@ -236,7 +236,7 @@ export class ProtocolAuthorization {
    * @throws {DwnError} if fails verification.
    */
   private static verifyType(
-    inboundMessage: RecordsReadMessage | TemporaryRecordsWriteMessage,
+    inboundMessage: RecordsReadMessage | InternalRecordsWriteMessage,
     protocolTypes: ProtocolTypes,
   ): void {
     // skip verification if this is not a RecordsWrite
