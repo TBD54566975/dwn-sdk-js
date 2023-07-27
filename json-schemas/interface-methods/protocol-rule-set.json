@@ -4,6 +4,15 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
+    "$encryption": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "publicKeyJwk": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/public-jwk.json"
+        }
+      }
+    },
     "$actions": {
       "type": "array",
       "minItems": 1,

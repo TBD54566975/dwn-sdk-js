@@ -1,6 +1,6 @@
 import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
-import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
+import type { DataStore, EventLog, MessageStore, ProtocolDefinition , ProtocolsConfigureMessage } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import emailProtocolDefinition from '../vectors/protocol-definitions/email.json' assert { type: 'json' };
@@ -20,7 +20,8 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
-import { DataStream, DidResolver, Dwn, Encoder, Jws, Records, RecordsDelete, RecordsRead, RecordsWrite } from '../../src/index.js';
+import { authenticate } from '../../src/core/auth.js';
+import { DataStream, DidResolver, Dwn, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsDelete, RecordsRead , RecordsWrite, Secp256k1 } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -399,23 +400,48 @@ export function testRecordsReadHandler(): void {
           const encryptedDataStream = await Encryption.aes256CtrEncrypt(dataEncryptionKey, dataEncryptionInitializationVector, originalDataStream);
           const encryptedDataBytes = await DataStream.toBytes(encryptedDataStream);
 
+
+          // TODO: #450 - Should not require a root key to specify the derivation scheme (https://github.com/TBD54566975/dwn-sdk-js/issues/450)
+          const rootPrivateKeyWithSchemasScheme: DerivedPrivateJwk = {
+            rootKeyId         : alice.keyId,
+            derivationScheme  : KeyDerivationScheme.Schemas,
+            derivedPrivateKey : alice.keyPair.privateJwk
+          };
+
+          const schema = 'https://some-schema.com';
+          const schemaDerivationPath = Records.constructKeyDerivationPathUsingSchemasScheme(schema);
+          const schemaDerivedPrivateKey = await HdKey.derivePrivateKey(rootPrivateKeyWithSchemasScheme, schemaDerivationPath);
+          const schemaDerivedPublicKey = await Secp256k1.getPublicJwk(schemaDerivedPrivateKey.derivedPrivateKey);
+
+          const rootPrivateKeyWithDataFormatsScheme: DerivedPrivateJwk = {
+            rootKeyId         : alice.keyId,
+            derivationScheme  : KeyDerivationScheme.DataFormats,
+            derivedPrivateKey : alice.keyPair.privateJwk
+          };
+
+          const dataFormat = 'some/format';
+          const dataFormatDerivationPath = Records.constructKeyDerivationPathUsingDataFormatsScheme(schema, dataFormat);
+          const dataFormatDerivedPublicKey = await HdKey.derivePublicKey(rootPrivateKeyWithDataFormatsScheme, dataFormatDerivationPath);
+
           const encryptionInput: EncryptionInput = {
             initializationVector : dataEncryptionInitializationVector,
             key                  : dataEncryptionKey,
             keyEncryptionInputs  : [{
               publicKeyId      : alice.keyId, // reusing signing key for encryption purely as a convenience
-              publicKey        : alice.keyPair.publicJwk,
+              publicKey        : schemaDerivedPublicKey,
               derivationScheme : KeyDerivationScheme.Schemas
             },
             {
               publicKeyId      : alice.keyId, // reusing signing key for encryption purely as a convenience
-              publicKey        : alice.keyPair.publicJwk,
+              publicKey        : dataFormatDerivedPublicKey,
               derivationScheme : KeyDerivationScheme.DataFormats
             }]
           };
 
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
             author : alice,
+            schema,
+            dataFormat,
             data   : encryptedDataBytes,
             encryptionInput
           });
@@ -427,22 +453,12 @@ export function testRecordsReadHandler(): void {
             recordId                    : message.recordId,
             authorizationSignatureInput : Jws.createSignatureInput(alice)
           });
-          const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
-          expect(readReply.status.code).to.equal(200);
-
-          const unsignedRecordsWrite = readReply.record!;
-          const cipherStream = readReply.record!.data;
-
 
           // test able to derive correct key using `schemas` scheme from root key to decrypt the message
-          const rootPrivateKeyWithSchemasScheme: DerivedPrivateJwk = {
-            rootKeyId         : alice.keyId,
-            derivationScheme  : KeyDerivationScheme.Schemas,
-            derivedPrivateKey : alice.keyPair.privateJwk
-          };
-
-          const schemaDerivationPath = Records.constructKeyDerivationPathUsingSchemasScheme(message.descriptor);
-          const schemaDerivedPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKeyWithSchemasScheme, schemaDerivationPath);
+          const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+          expect(readReply.status.code).to.equal(200);
+          const unsignedRecordsWrite = readReply.record!;
+          const cipherStream = readReply.record!.data;
 
           const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, schemaDerivedPrivateKey, cipherStream);
           const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
@@ -450,21 +466,11 @@ export function testRecordsReadHandler(): void {
 
 
           // test able to derive correct key using `dataFormat` scheme from root key to decrypt the message
-          const rootPrivateKeyWithDataFormatsScheme: DerivedPrivateJwk = {
-            rootKeyId         : alice.keyId,
-            derivationScheme  : KeyDerivationScheme.DataFormats,
-            derivedPrivateKey : alice.keyPair.privateJwk
-          };
-
           const readReply2 = await dwn.handleRecordsRead(alice.did, recordsRead.message); // send the same read message to get a new cipher stream
           expect(readReply2.status.code).to.equal(200);
           const cipherStream2 = readReply2.record!.data;
 
-          const dataFormatDerivationPath = Records.constructKeyDerivationPathUsingDataFormatsScheme(message.descriptor);
-          const dataFormatDerivedPrivateKey: DerivedPrivateJwk
-            = await HdKey.derivePrivateKey(rootPrivateKeyWithDataFormatsScheme, dataFormatDerivationPath);
-
-          const plaintextDataStream2 = await Records.decrypt(unsignedRecordsWrite, dataFormatDerivedPrivateKey, cipherStream2);
+          const plaintextDataStream2 = await Records.decrypt(unsignedRecordsWrite, rootPrivateKeyWithDataFormatsScheme, cipherStream2);
           const plaintextBytes2 = await DataStream.toBytes(plaintextDataStream2);
           expect(ArrayUtility.byteArraysEqual(plaintextBytes2, originalData)).to.be.true;
 
@@ -497,19 +503,30 @@ export function testRecordsReadHandler(): void {
           const encryptedDataStream = await Encryption.aes256CtrEncrypt(dataEncryptionKey, dataEncryptionInitializationVector, originalDataStream);
           const encryptedDataBytes = await DataStream.toBytes(encryptedDataStream);
 
+          // TODO: #450 - Should not require a root key to specify the derivation scheme (https://github.com/TBD54566975/dwn-sdk-js/issues/450)
+          const rootPrivateKeyWithDataFormatsScheme: DerivedPrivateJwk = {
+            rootKeyId         : alice.keyId,
+            derivationScheme  : KeyDerivationScheme.DataFormats,
+            derivedPrivateKey : alice.keyPair.privateJwk
+          };
+
+          const dataFormat = `image/jpg`;
+          const dataFormatDerivationPath = Records.constructKeyDerivationPathUsingDataFormatsScheme(undefined, dataFormat);
+          const dataFormatDerivedPublicKey = await HdKey.derivePublicKey(rootPrivateKeyWithDataFormatsScheme, dataFormatDerivationPath);
+
           const encryptionInput: EncryptionInput = {
             initializationVector : dataEncryptionInitializationVector,
             key                  : dataEncryptionKey,
             keyEncryptionInputs  : [{
               publicKeyId      : alice.keyId, // reusing signing key for encryption purely as a convenience
-              publicKey        : alice.keyPair.publicJwk,
+              publicKey        : dataFormatDerivedPublicKey,
               derivationScheme : KeyDerivationScheme.DataFormats
             }]
           };
 
           const recordsWrite = await RecordsWrite.create({
             authorizationSignatureInput : Jws.createSignatureInput(alice),
-            dataFormat                  : `image/jpg`,
+            dataFormat,
             data                        : encryptedDataBytes,
             encryptionInput
           });
@@ -525,23 +542,12 @@ export function testRecordsReadHandler(): void {
 
 
           // test able to derive correct key using `dataFormat` scheme from root key to decrypt the message
-          const rootPrivateKeyWithDataFormatsScheme: DerivedPrivateJwk = {
-            rootKeyId         : alice.keyId,
-            derivationScheme  : KeyDerivationScheme.DataFormats,
-            derivedPrivateKey : alice.keyPair.privateJwk
-          };
-
           const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message); // send the same read message to get a new cipher stream
           expect(readReply.status.code).to.equal(200);
           const cipherStream = readReply.record!.data;
-
           const unsignedRecordsWrite = readReply.record!;
 
-          const dataFormatDerivationPath = Records.constructKeyDerivationPathUsingDataFormatsScheme(recordsWrite.message.descriptor);
-          const dataFormatDerivedPrivateKey: DerivedPrivateJwk
-              = await HdKey.derivePrivateKey(rootPrivateKeyWithDataFormatsScheme, dataFormatDerivationPath);
-
-          const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, dataFormatDerivedPrivateKey, cipherStream);
+          const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, rootPrivateKeyWithDataFormatsScheme, cipherStream);
           const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
           expect(ArrayUtility.byteArraysEqual(plaintextBytes, originalData)).to.be.true;
         });
@@ -554,18 +560,32 @@ export function testRecordsReadHandler(): void {
           const bob = await TestDataGenerator.generatePersona();
           TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
 
-          // Alice configures email protocol
-          const protocolDefinition = emailProtocolDefinition;
+          // Alice configures email protocol with encryption
+          const protocolDefinition: ProtocolDefinition = emailProtocolDefinition;
+          const encryptedProtocolDefinition
+            = await Protocols.deriveAndInjectPublicEncryptionKeys(protocolDefinition, alice.keyId, alice.keyPair.privateJwk);
           const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-            author: alice,
-            protocolDefinition
+            author             : alice,
+            protocolDefinition : encryptedProtocolDefinition
           });
 
           const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
           expect(protocolsConfigureReply.status.code).to.equal(202);
 
-          // encrypt bob's message
-          const bobMessageBytes = Encoder.stringToBytes('message from bob');
+          // Bob queries for Alice's email protocol definition
+          const protocolsQuery = await ProtocolsQuery.create({
+            filter: { protocol: emailProtocolDefinition.protocol }
+          });
+          const protocolsQueryReply = await dwn.processMessage(alice.did, protocolsQuery.message);
+          const protocolsConfigureMessageReceived = protocolsQueryReply.entries![0] as ProtocolsConfigureMessage;
+
+          // Bob verifies that the email protocol definition is authored by Alice
+          await authenticate(protocolsConfigureMessageReceived.authorization, didResolver);
+          const protocolsConfigureFetched = await ProtocolsConfigure.parse(protocolsConfigureMessageReceived);
+          expect(protocolsConfigureFetched.author).to.equal(alice.did);
+
+          // Bob encrypts his email to Alice with a randomly generated symmetric key
+          const bobMessageBytes = TestDataGenerator.randomBytes(100);
           const bobMessageStream = DataStream.fromBytes(bobMessageBytes);
           const dataEncryptionInitializationVector = TestDataGenerator.randomBytes(16);
           const dataEncryptionKey = TestDataGenerator.randomBytes(32);
@@ -574,13 +594,16 @@ export function testRecordsReadHandler(): void {
           );
           const bobMessageEncryptedBytes = await DataStream.toBytes(bobMessageEncryptedStream);
 
-          // generate a `RecordsWrite` message from bob allowed by anyone
+          // Bob generates an encrypted RecordsWrite
+          // the public encryption key designated by Alice is used to encrypt the symmetric key Bob generated above
+          const publicJwk = protocolsConfigureFetched.message.descriptor.definition.structure.email.$encryption?.publicKeyJwk;
+          expect(publicJwk).to.not.be.undefined;
           const encryptionInput: EncryptionInput = {
             initializationVector : dataEncryptionInitializationVector,
             key                  : dataEncryptionKey,
             keyEncryptionInputs  : [{
               publicKeyId      : alice.keyId, // reusing signing key for encryption purely as a convenience
-              publicKey        : alice.keyPair.publicJwk,
+              publicKey        : publicJwk!,
               derivationScheme : KeyDerivationScheme.Protocols
             }]
           };
@@ -591,42 +614,56 @@ export function testRecordsReadHandler(): void {
               protocol     : protocolDefinition.protocol,
               protocolPath : 'email', // this comes from `types` in protocol definition
               schema       : protocolDefinition.types.email.schema,
-              dataFormat   : protocolDefinition.types.email.dataFormats[0],
+              dataFormat   : protocolDefinition.types.email.dataFormats![0],
               data         : bobMessageEncryptedBytes,
               encryptionInput
             }
           );
 
+          // Bob writes the encrypted email to Alice's DWN
           const bobWriteReply = await dwn.processMessage(alice.did, message, dataStream);
           expect(bobWriteReply.status.code).to.equal(202);
 
+          // Alice reads the encrypted email
+          // assume Alice already made query to get the `recordId` of the email
           const recordsRead = await RecordsRead.create({
-            recordId                    : message.recordId, // assume alice can do a query to get the new email and its `recordId`
+            recordId                    : message.recordId,
             authorizationSignatureInput : Jws.createSignatureInput(alice)
           });
           const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
           expect(readReply.status.code).to.equal(200);
 
-          // test able to decrypt the message using a derived key
+          // test that Alice is able decrypt the encrypted email from Bob using the root key
           const rootPrivateKey: DerivedPrivateJwk = {
             rootKeyId         : alice.keyId,
             derivationScheme  : KeyDerivationScheme.Protocols,
             derivedPrivateKey : alice.keyPair.privateJwk
           };
+
+          const unsignedRecordsWrite = readReply.record!;
+          const cipherStream = readReply.record!.data;
+
+          const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, rootPrivateKey, cipherStream);
+          const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
+          expect(ArrayUtility.byteArraysEqual(plaintextBytes, bobMessageBytes)).to.be.true;
+
+          // test that a correct derived key is able decrypt the encrypted email from Bob
+          const readReply2 = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+          expect(readReply2.status.code).to.equal(200);
+
           const relativeDescendantDerivationPath = Records.constructKeyDerivationPath(
             KeyDerivationScheme.Protocols,
             message.recordId,
             message.contextId,
             message.descriptor
           );
-          const descendantPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, relativeDescendantDerivationPath);
+          const derivedPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, relativeDescendantDerivationPath);
 
-          const unsignedRecordsWrite = readReply.record!;
-          const cipherStream = readReply.record!.data;
-
-          const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, descendantPrivateKey, cipherStream);
-          const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
-          expect(ArrayUtility.byteArraysEqual(plaintextBytes, bobMessageBytes)).to.be.true;
+          const unsignedRecordsWrite2 = readReply2.record!;
+          const cipherStream2 = readReply2.record!.data;
+          const plaintextDataStream2 = await Records.decrypt(unsignedRecordsWrite2, derivedPrivateKey, cipherStream2);
+          const plaintextBytes2 = await DataStream.toBytes(plaintextDataStream2);
+          expect(ArrayUtility.byteArraysEqual(plaintextBytes2, bobMessageBytes)).to.be.true;
 
           // test unable to decrypt the message if derived key has an unexpected path
           const invalidDerivationPath = [KeyDerivationScheme.Protocols, protocolDefinition.protocol, 'invalidContextId'];

@@ -218,7 +218,7 @@ describe('RecordsWrite', () => {
         encryptionInput
       });
 
-      await expect(createPromise).to.be.rejectedWith(DwnErrorCode.RecordsProtocolsDerivationSchemeMissingProtocol);
+      await expect(createPromise).to.be.rejectedWith(DwnErrorCode.RecordsWriteMissingProtocol);
     });
 
     it('should throw if attempting to use `schemas` key derivation encryption scheme on a record without `schema`', async () => {
@@ -244,7 +244,7 @@ describe('RecordsWrite', () => {
         encryptionInput
       });
 
-      await expect(createPromise).to.be.rejectedWith(DwnErrorCode.RecordsSchemasDerivationSchemeMissingSchema);
+      await expect(createPromise).to.be.rejectedWith(DwnErrorCode.RecordsWriteMissingSchema);
     });
   });
 
