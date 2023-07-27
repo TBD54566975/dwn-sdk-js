@@ -255,7 +255,7 @@ describe('RecordsWrite', () => {
       });
 
       const write = await RecordsWrite.createFrom({
-        unsignedRecordsWriteMessage : recordsWrite.message,
+        unsignedRecordsWriteMessage : recordsWrite.completeMessage,
         datePublished               : getCurrentTimeInHighPrecision(),
         authorizationSignatureInput : Jws.createSignatureInput(author)
       });

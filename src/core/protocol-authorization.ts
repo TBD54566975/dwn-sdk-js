@@ -2,7 +2,7 @@ import type { MessageStore } from '../types/message-store.js';
 import type { RecordsRead } from '../interfaces/records-read.js';
 import type { Filter, TimestampedMessage } from '../types/message-types.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../types/protocols-types.js';
-import type { RecordsReadMessage, RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsReadMessage, RecordsWriteMessage, TemporaryRecordsWriteMessage } from '../types/records-types.js';
 
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
@@ -129,7 +129,7 @@ export class ProtocolAuthorization {
       const existingMessages = await messageStore.query(tenant, query) as TimestampedMessage[];
       const recordsWriteMessage = await RecordsWrite.getNewestMessage(existingMessages) as RecordsWriteMessage;
       recordsWrite = await RecordsWrite.parse(recordsWriteMessage);
-      ancestorMessageChain.push(recordsWrite.message);
+      ancestorMessageChain.push(recordsWrite.completeMessage);
     }
 
     const protocol = recordsWrite.message.descriptor.protocol!;
@@ -165,7 +165,7 @@ export class ProtocolAuthorization {
    * Gets the rule set corresponding to the given message chain.
    */
   private static getRuleSet(
-    inboundMessage: RecordsReadMessage | RecordsWriteMessage,
+    inboundMessage: RecordsReadMessage | TemporaryRecordsWriteMessage,
     protocolDefinition: ProtocolDefinition,
     ancestorMessageChain: RecordsWriteMessage[],
   ): ProtocolRuleSet {
@@ -236,7 +236,7 @@ export class ProtocolAuthorization {
    * @throws {DwnError} if fails verification.
    */
   private static verifyType(
-    inboundMessage: RecordsReadMessage | RecordsWriteMessage,
+    inboundMessage: RecordsReadMessage | TemporaryRecordsWriteMessage,
     protocolTypes: ProtocolTypes,
   ): void {
     // skip verification if this is not a RecordsWrite
@@ -360,7 +360,7 @@ export class ProtocolAuthorization {
       if (!isInitialWrite) {
         // fetch the initialWrite
         const query = {
-          entryId: recordsWrite.message.recordId
+          entryId: recordsWrite.completeMessage.recordId
         };
         const result = await messageStore.query(tenant, query) as RecordsWriteMessage[];
 

@@ -33,18 +33,25 @@ export enum DwnMethodName {
 }
 
 export abstract class Message<M extends GenericMessage> {
-  readonly message: M;
-  readonly authorizationPayload: BaseAuthorizationPayload | undefined;
-
   // commonly used properties for extra convenience;
-  readonly author: string | undefined;
+  readonly message: M;
+
+  protected _authorizationPayload: BaseAuthorizationPayload | undefined;
+  public get authorizationPayload(): BaseAuthorizationPayload | undefined {
+    return this._authorizationPayload;
+  }
+
+  protected _author: string | undefined;
+  public get author(): string | undefined {
+    return this._author;
+  }
 
   constructor(message: M) {
     this.message = message;
 
     if (message.authorization !== undefined) {
-      this.authorizationPayload = Jws.decodePlainObjectPayload(message.authorization);
-      this.author = Message.getAuthor(message as GenericMessage);
+      this._authorizationPayload = Jws.decodePlainObjectPayload(message.authorization);
+      this._author = Message.getAuthor(message as GenericMessage);
     }
   }
 

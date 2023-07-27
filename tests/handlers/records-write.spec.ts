@@ -392,7 +392,7 @@ export function testRecordsWriteHandler(): void {
 
             // changing the `published` property
             const newWrite = await RecordsWrite.createFrom({
-              unsignedRecordsWriteMessage : recordsWrite.message,
+              unsignedRecordsWriteMessage : recordsWrite.completeMessage,
               published                   : true,
               authorizationSignatureInput : Jws.createSignatureInput(author)
             });
@@ -429,7 +429,7 @@ export function testRecordsWriteHandler(): void {
 
             const newData = Encoder.stringToBytes('new data');
             const newWrite = await RecordsWrite.createFrom({
-              unsignedRecordsWriteMessage : recordsWrite.message,
+              unsignedRecordsWriteMessage : recordsWrite.completeMessage,
               data                        : newData,
               authorizationSignatureInput : Jws.createSignatureInput(author)
             });
@@ -521,7 +521,7 @@ export function testRecordsWriteHandler(): void {
             expect(reply.status.code).to.equal(202);
 
             const newWrite = await RecordsWrite.createFrom({
-              unsignedRecordsWriteMessage : recordsWrite.message,
+              unsignedRecordsWriteMessage : recordsWrite.completeMessage,
               published                   : true,
               authorizationSignatureInput : Jws.createSignatureInput(author)
             });
@@ -530,7 +530,7 @@ export function testRecordsWriteHandler(): void {
             expect(newWriteReply.status.code).to.equal(202);
 
             const newestWrite = await RecordsWrite.createFrom({
-              unsignedRecordsWriteMessage : recordsWrite.message,
+              unsignedRecordsWriteMessage : recordsWrite.completeMessage,
               published                   : true,
               authorizationSignatureInput : Jws.createSignatureInput(author)
             });
@@ -1799,7 +1799,7 @@ export function testRecordsWriteHandler(): void {
         const signatureInput = Jws.createSignatureInput(author);
 
         // replace `attestation` with one that has an additional property, but go the extra mile of making sure signature is valid
-        const descriptorCid = recordsWrite.authorizationPayload.descriptorCid;
+        const descriptorCid = recordsWrite.authorizationPayload!.descriptorCid;
         const attestationPayload = { descriptorCid, someAdditionalProperty: 'anyValue' }; // additional property is not allowed
         const attestationPayloadBytes = Encoder.objectToBytes(attestationPayload);
         const attestationSigner = await GeneralJwsSigner.create(attestationPayloadBytes, [signatureInput]);

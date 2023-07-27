@@ -7,7 +7,7 @@ import chai, { expect } from 'chai';
 
 import { DidKeyResolver } from '../src/did/did-key-resolver.js';
 import { Dwn } from '../src/dwn.js';
-import { Encoder } from '../src/index.js';
+import { Cid, Encoder } from '../src/index.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from './utils/test-data-generator.js';
 import { TestStores } from './test-stores.js';
@@ -83,8 +83,9 @@ export function testDwnClass(): void {
       it('#191 - regression - should run JSON schema validation', async () => {
         const invalidMessage = {
           descriptor: {
-            interface : 'Records',
-            method    : 'Write',
+            interface        : 'Records',
+            method           : 'Read',
+            messageTimestamp : '2023-07-25T10:20:30.123456Z'
           },
           authorization: {}
         };
@@ -222,7 +223,7 @@ export function testDwnClass(): void {
         const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author: alice });
 
         // simulate synchronize of pruned initial `RecordsWrite`
-        const reply = await dwn.synchronizePrunedInitialRecordsWrite(alice.did, recordsWrite.message);
+        const reply = await dwn.synchronizePrunedInitialRecordsWrite(alice.did, recordsWrite.completeMessage);
         expect(reply.status.code).to.equal(202);
 
         // verify `RecordsWrite` inserted can be queried but without the data returned
@@ -296,12 +297,12 @@ export function testDwnClass(): void {
         const validateJsonSchemaSpy = sinon.spy(Message, 'validateJsonSchema');
 
         const alice = await DidKeyResolver.generate();
-        const reply = await dwn.synchronizePrunedInitialRecordsWrite(alice.did, invalidMessage as RecordsWriteMessage);
+        const reply = await dwn.synchronizePrunedInitialRecordsWrite(alice.did, invalidMessage as any);
 
         sinon.assert.calledOnce(validateJsonSchemaSpy);
 
         expect(reply.status.code).to.equal(400);
-        expect(reply.status.detail).to.contain(`must have required property 'recordId'`);
+        expect(reply.status.detail).to.contain(`must have required property`);
       });
 
       it('should throw 400 if given incorrect DWN interface or method', async () => {
