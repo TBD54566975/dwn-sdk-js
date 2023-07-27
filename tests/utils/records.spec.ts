@@ -10,7 +10,7 @@ describe('Records', () => {
     it('should throw if given private key is not supported', async () => {
       const derivedKey: DerivedPrivateJwk = {
         rootKeyId         : 'unused',
-        derivationScheme  : KeyDerivationScheme.Protocols,
+        derivationScheme  : KeyDerivationScheme.ProtocolPath,
         derivedPrivateKey : (await ed25519.generateKeyPair()).privateJwk
       };
       await expect(Records.derivePrivateKey(derivedKey, ['a'])).to.be.rejectedWith(DwnErrorCode.RecordsDerivePrivateKeyUnSupportedCurve);

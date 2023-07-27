@@ -7,7 +7,7 @@ import chai, { expect } from 'chai';
 
 import { DidKeyResolver } from '../src/did/did-key-resolver.js';
 import { Dwn } from '../src/dwn.js';
-import { Cid, Encoder } from '../src/index.js';
+import { Encoder } from '../src/index.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from './utils/test-data-generator.js';
 import { TestStores } from './test-stores.js';

@@ -44,8 +44,8 @@
                 "type": "string",
                 "enum": [
                   "dataFormats",
-                  "protocols",
                   "protocolContext",
+                  "protocolPath",
                   "schemas"
                 ]
               },

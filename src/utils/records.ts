@@ -21,7 +21,7 @@ export class Records {
     ancestorPrivateKey: DerivedPrivateJwk,
     cipherStream: Readable
   ): Promise<Readable> {
-    const { recordId, contextId, descriptor, encryption } = recordsWrite;
+    const { encryption } = recordsWrite;
 
     // look for an encrypted symmetric key that is encrypted by the public key corresponding to the given private key
     const matchingEncryptedKey = encryption!.keyEncryption.find(key =>
@@ -78,8 +78,8 @@ export class Records {
     let fullDerivationPath;
     if (keyDerivationScheme === KeyDerivationScheme.DataFormats) {
       fullDerivationPath = Records.constructKeyDerivationPathUsingDataFormatsScheme(descriptor.schema, descriptor.dataFormat);
-    } else if (keyDerivationScheme === KeyDerivationScheme.Protocols) {
-      fullDerivationPath = Records.constructKeyDerivationPathUsingProtocolsScheme(descriptor);
+    } else if (keyDerivationScheme === KeyDerivationScheme.ProtocolPath) {
+      fullDerivationPath = Records.constructKeyDerivationPathUsingProtocolPathScheme(descriptor);
     } else if (keyDerivationScheme === KeyDerivationScheme.ProtocolContext) {
       fullDerivationPath = Records.constructKeyDerivationPathUsingProtocolContextScheme(contextId);
     } else {
@@ -109,9 +109,9 @@ export class Records {
   }
 
   /**
-   * Constructs the full key derivation path using `protocols` scheme.
+   * Constructs the full key derivation path using `protocolPath` scheme.
    */
-  public static constructKeyDerivationPathUsingProtocolsScheme(descriptor: RecordsWriteDescriptor): string[] {
+  public static constructKeyDerivationPathUsingProtocolPathScheme(descriptor: RecordsWriteDescriptor): string[] {
     // ensure `protocol` is defined
     // NOTE: no need to check `protocolPath` and `contextId` because earlier code ensures that if `protocol` is defined, those are defined also
     if (descriptor.protocol === undefined) {
@@ -123,7 +123,7 @@ export class Records {
 
     const protocolPathSegments = descriptor.protocolPath!.split('/');
     const fullDerivationPath = [
-      KeyDerivationScheme.Protocols,
+      KeyDerivationScheme.ProtocolPath,
       descriptor.protocol,
       ...protocolPathSegments
     ];

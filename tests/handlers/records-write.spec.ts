@@ -1508,7 +1508,7 @@ export function testRecordsWriteHandler(): void {
               publicKeyId      : alice.keyId, // reusing signing key for encryption purely as a convenience
               publicKey        : alice.keyPair.publicJwk,
               algorithm        : EncryptionAlgorithm.EciesSecp256k1,
-              derivationScheme : KeyDerivationScheme.Protocols
+              derivationScheme : KeyDerivationScheme.ProtocolPath
             }]
           };
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({

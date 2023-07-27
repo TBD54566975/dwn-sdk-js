@@ -206,7 +206,7 @@ describe('RecordsWrite', () => {
         keyEncryptionInputs  : [{
           publicKeyId      : alice.keyId, // reusing signing key for encryption purely as a convenience
           publicKey        : alice.keyPair.publicJwk,
-          derivationScheme : KeyDerivationScheme.Protocols
+          derivationScheme : KeyDerivationScheme.ProtocolPath
         }]
       };
 

@@ -1,5 +1,7 @@
 import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
+import type { Persona } from '../utils/test-data-generator.js';
+import type { Readable } from 'readable-stream';
 import type { DataStore, EventLog, MessageStore, ProtocolDefinition , ProtocolsConfigureMessage, PublicJwk, RecordsWriteMessage } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -10,6 +12,7 @@ import socialMediaProtocolDefinition from '../vectors/protocol-definitions/socia
 import chai, { expect } from 'chai';
 
 import { ArrayUtility } from '../../src/utils/array.js';
+import { authenticate } from '../../src/core/auth.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { Encryption } from '../../src/utils/encryption.js';
@@ -17,14 +20,11 @@ import { HdKey } from '../../src/utils/hd-key.js';
 import { KeyDerivationScheme } from '../../src/utils/hd-key.js';
 import { RecordsReadHandler } from '../../src/handlers/records-read.js';
 import { stubInterface } from 'ts-sinon';
-import type { Persona } from '../utils/test-data-generator.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
-import { authenticate } from '../../src/core/auth.js';
-import { DataStream, DidResolver, Dwn, Encoder, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsDelete, RecordsRead , RecordsWrite, Secp256k1 } from '../../src/index.js';
-import type { Readable } from 'readable-stream';
+import { DataStream, DidResolver, Dwn, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsDelete, RecordsRead , RecordsWrite, Secp256k1 } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -632,7 +632,7 @@ export function testRecordsReadHandler(): void {
           const protocolPathDerivedKeyEncryptionInput = {
             publicKeyId      : alice.keyId, // reusing signing key for encryption purely as a convenience
             publicKey        : protocolPathDerivedPublicJwk!,
-            derivationScheme : KeyDerivationScheme.Protocols
+            derivationScheme : KeyDerivationScheme.ProtocolPath
           };
 
           // Bob prepares the symmetric key encryption input for protocol-context derived public key
@@ -671,12 +671,12 @@ export function testRecordsReadHandler(): void {
             unsignedRecordsWriteMessage : recordsWrite.completeMessage,
             messageTimestamp            : recordsWrite.message.descriptor.messageTimestamp
           });
-          const protocolPathDerivationPath = Records.constructKeyDerivationPathUsingProtocolsScheme(recordsWrite.message.descriptor);
+          const protocolPathDerivationPath = Records.constructKeyDerivationPathUsingProtocolPathScheme(recordsWrite.message.descriptor);
           const protocolPathDerivedPublicJwkForBobsDwn = await HdKey.derivePublicKey(bobRootPrivateKey, protocolPathDerivationPath);
           const protocolPathDerivedKeyEncryptionInputForBobsDwn = {
             publicKeyId      : bob.keyId, // reusing signing key for encryption purely as a convenience
             publicKey        : protocolPathDerivedPublicJwkForBobsDwn,
-            derivationScheme : KeyDerivationScheme.Protocols
+            derivationScheme : KeyDerivationScheme.ProtocolPath
           };
           const encryptionInputForBobsDwn: EncryptionInput = {
             initializationVector : dataEncryptionInitializationVector,
@@ -800,7 +800,7 @@ export function testRecordsReadHandler(): void {
           const protocolPathDerivedKeyEncryptionInput = {
             publicKeyId      : target.keyId, // TODO: should come from the $encryption property
             publicKey        : protocolPathDerivedPublicJwk!,
-            derivationScheme : KeyDerivationScheme.Protocols
+            derivationScheme : KeyDerivationScheme.ProtocolPath
           };
 
           // Bob prepares the symmetric key encryption input for protocol-context derived public key
@@ -890,7 +890,7 @@ export function testRecordsReadHandler(): void {
             keyEncryptionInputs  : [{
               publicKeyId      : alice.keyId, // reusing signing key for encryption purely as a convenience
               publicKey        : publicJwk!,
-              derivationScheme : KeyDerivationScheme.Protocols
+              derivationScheme : KeyDerivationScheme.ProtocolPath
             }]
           };
 
@@ -922,7 +922,7 @@ export function testRecordsReadHandler(): void {
           // test that Alice is able decrypt the encrypted email from Bob using the root key
           const rootPrivateKey: DerivedPrivateJwk = {
             rootKeyId         : alice.keyId,
-            derivationScheme  : KeyDerivationScheme.Protocols,
+            derivationScheme  : KeyDerivationScheme.ProtocolPath,
             derivedPrivateKey : alice.keyPair.privateJwk
           };
 
@@ -937,7 +937,7 @@ export function testRecordsReadHandler(): void {
           const readReply2 = await dwn.handleRecordsRead(alice.did, recordsRead.message);
           expect(readReply2.status.code).to.equal(200);
 
-          const relativeDescendantDerivationPath = Records.constructKeyDerivationPath(KeyDerivationScheme.Protocols, unsignedRecordsWrite);
+          const relativeDescendantDerivationPath = Records.constructKeyDerivationPath(KeyDerivationScheme.ProtocolPath, unsignedRecordsWrite);
           const derivedPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, relativeDescendantDerivationPath);
 
           const unsignedRecordsWrite2 = readReply2.record!;
@@ -947,7 +947,7 @@ export function testRecordsReadHandler(): void {
           expect(ArrayUtility.byteArraysEqual(plaintextBytes2, bobMessageBytes)).to.be.true;
 
           // test unable to decrypt the message if derived key has an unexpected path
-          const invalidDerivationPath = [KeyDerivationScheme.Protocols, protocolDefinition.protocol, 'invalidContextId'];
+          const invalidDerivationPath = [KeyDerivationScheme.ProtocolPath, protocolDefinition.protocol, 'invalidContextId'];
           const inValidDescendantPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, invalidDerivationPath);
           await expect(Records.decrypt(unsignedRecordsWrite, inValidDescendantPrivateKey, cipherStream)).to.be.rejectedWith(
             DwnErrorCode.RecordsInvalidAncestorKeyDerivationSegment
@@ -966,7 +966,7 @@ export function testRecordsReadHandler(): void {
           // test unable to decrypt the message if public key ID does not match the derived private key
           const privateKeyWithMismatchingKeyId: DerivedPrivateJwk = {
             rootKeyId         : 'mismatchingKeyId',
-            derivationScheme  : KeyDerivationScheme.Protocols,
+            derivationScheme  : KeyDerivationScheme.ProtocolPath,
             derivedPrivateKey : alice.keyPair.privateJwk
           };
           await expect(Records.decrypt(unsignedRecordsWrite, privateKeyWithMismatchingKeyId, cipherStream)).to.be.rejectedWith(

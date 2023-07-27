@@ -38,11 +38,11 @@ export class Protocols {
 
     // inject encryption property starting from each root level record type
     const rootKey: DerivedPrivateJwk = {
-      derivationScheme  : KeyDerivationScheme.Protocols,
+      derivationScheme  : KeyDerivationScheme.ProtocolPath,
       derivedPrivateKey : privateJwk,
       rootKeyId         : keyId
     };
-    const protocolLevelDerivedKey = await HdKey.derivePrivateKey(rootKey, [KeyDerivationScheme.Protocols, protocolDefinition.protocol]);
+    const protocolLevelDerivedKey = await HdKey.derivePrivateKey(rootKey, [KeyDerivationScheme.ProtocolPath, protocolDefinition.protocol]);
     await addEncryptionProperty(encryptionEnabledProtocolDefinition.structure, protocolLevelDerivedKey);
 
     return encryptionEnabledProtocolDefinition;

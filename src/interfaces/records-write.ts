@@ -25,7 +25,6 @@ import { Message } from '../core/message.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Secp256k1 } from '../utils/secp256k1.js';
-import { validateJsonSchema } from '../schema-validator.js';
 
 import { authorize, validateAuthorizationIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
@@ -536,7 +535,7 @@ export class RecordsWrite extends Message<TemporaryRecordsWriteMessage> {
     const keyEncryption: EncryptedKey[] = [];
     for (const keyEncryptionInput of encryptionInput.keyEncryptionInputs) {
 
-      if (keyEncryptionInput.derivationScheme ===  KeyDerivationScheme.Protocols && descriptor.protocol === undefined) {
+      if (keyEncryptionInput.derivationScheme ===  KeyDerivationScheme.ProtocolPath && descriptor.protocol === undefined) {
         throw new DwnError(
           DwnErrorCode.RecordsWriteMissingProtocol,
           '`protocols` encryption scheme cannot be applied to record without the `protocol` property.'
