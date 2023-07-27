@@ -8,7 +8,6 @@ import type { DataStore, DidResolver, MessageStore } from '../index.js';
 import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { RecordsDelete } from '../interfaces/records-delete.js';
-import { RecordsWrite } from '../interfaces/records-write.js';
 import { StorageController } from '../store/storage-controller.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 

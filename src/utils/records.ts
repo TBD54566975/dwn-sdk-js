@@ -71,8 +71,6 @@ export class Records {
   ): string[] {
 
     const descriptor = recordsWriteMessage.descriptor;
-    const schema = recordsWriteMessage.descriptor.schema;
-    const dataFormat = recordsWriteMessage.descriptor.dataFormat;
     const contextId = recordsWriteMessage.contextId;
 
     let fullDerivationPath;
