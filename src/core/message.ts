@@ -86,7 +86,14 @@ export abstract class Message<M extends GenericMessage> {
     // the message will contain properties that should not be part of the CID computation
     // and we need to strip them out (like `encodedData` that we historically had for a long time),
     // but we can remove this method entirely if the code becomes stable and it is apparent that the wrapper is not needed
-    const cid = await Cid.computeCid(message);
+
+    // ^--- seems like we might need to keep this around for now.
+    const rawMessage = { ...message } as any;
+    if (rawMessage.encodedData) {
+      delete rawMessage.encodedData;
+    }
+
+    const cid = await Cid.computeCid(rawMessage as GenericMessage);
     return cid;
   }
 

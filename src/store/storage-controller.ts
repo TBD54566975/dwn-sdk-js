@@ -88,12 +88,15 @@ export class StorageController {
 
         // if the existing message is the initial write
         // we actually need to keep it BUT, need to ensure the message is no longer marked as the latest state
+        // and we can delete the optional encodedData
         const existingMessageIsInitialWrite = await RecordsWrite.isInitialWrite(message);
         if (existingMessageIsInitialWrite) {
           const existingRecordsWrite = await RecordsWrite.parse(message as RecordsWriteMessage);
           const isLatestBaseState = false;
           const indexes = await constructRecordsWriteIndexes(existingRecordsWrite, isLatestBaseState);
-          await messageStore.put(tenant, message, indexes);
+          const writeMessage = message as RecordsWriteMessageWithOptionalEncodedData;
+          delete writeMessage.encodedData;
+          await messageStore.put(tenant, writeMessage, indexes);
         } else {
           const messageCid = await Message.getCid(message);
           deletedMessageCids.push(messageCid);

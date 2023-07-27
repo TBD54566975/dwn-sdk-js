@@ -1,6 +1,7 @@
 import type { EventLog } from '../types/event-log.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { MethodHandler } from '../types/method-handler.js';
+import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
 import type { RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
 
@@ -8,6 +9,7 @@ import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { StorageController } from '../store/storage-controller.js';
+import { DataStream, DwnConstant, Encoder } from '../index.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
@@ -80,25 +82,34 @@ export class RecordsWriteHandler implements MethodHandler {
     const isLatestBaseState = true;
     const indexes = await constructRecordsWriteIndexes(recordsWrite, isLatestBaseState);
 
-    try {
-      // try to store data, unless options explicitly say to skip storage
-      if (options === undefined || !options.skipDataStorage) {
-        await this.putData(tenant, message, dataStream, newestExistingMessage as (RecordsWriteMessage|RecordsDeleteMessage) | undefined);
-      }
-    } catch (error) {
-      const e = error as any;
-      if (e.code === DwnErrorCode.RecordsWriteMissingDataStream ||
-          e.code === DwnErrorCode.RecordsWriteMissingData ||
-          e.code === DwnErrorCode.RecordsWriteDataCidMismatch ||
-          e.code === DwnErrorCode.RecordsWriteDataSizeMismatch) {
-        return messageReplyFromError(error, 400);
+    const writeMessage: RecordsWriteMessageWithOptionalEncodedData = { ...message };
+    if (options === undefined || !options.skipDataStorage) {
+      if (writeMessage.descriptor.dataSize <= DwnConstant.maxDataSizeAllowedToBeEncoded && dataStream) {
+        const dataBytes = await DataStream.toBytes(dataStream);
+        writeMessage.encodedData = Encoder.bytesToBase64Url(dataBytes);
+
+        //this is temporary. will not be calling putData under this condition when the rest is implemented.
+        dataStream = DataStream.fromBytes(dataBytes);
       }
 
-      // else throw
-      throw error;
+      try {
+        // try to store data, unless options explicitly say to skip storage
+        await this.putData(tenant, message, dataStream, newestExistingMessage as (RecordsWriteMessage|RecordsDeleteMessage) | undefined);
+      } catch (error) {
+        const e = error as any;
+        if (e.code === DwnErrorCode.RecordsWriteMissingDataStream ||
+            e.code === DwnErrorCode.RecordsWriteMissingData ||
+            e.code === DwnErrorCode.RecordsWriteDataCidMismatch ||
+            e.code === DwnErrorCode.RecordsWriteDataSizeMismatch) {
+          return messageReplyFromError(error, 400);
+        }
+
+        // else throw
+        throw error;
+      }
     }
 
-    await this.messageStore.put(tenant, message, indexes);
+    await this.messageStore.put(tenant, writeMessage, indexes);
     await this.eventLog.append(tenant, await Message.getCid(message));
 
     const messageReply = {

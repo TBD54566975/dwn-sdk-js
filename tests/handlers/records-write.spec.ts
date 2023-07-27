@@ -3,6 +3,7 @@ import type { GenerateFromRecordsWriteOut } from '../utils/test-data-generator.j
 import type { ProtocolDefinition } from '../../src/types/protocols-types.js';
 import type { QueryResultEntry } from '../../src/types/message-types.js';
 import type { RecordsWriteMessage } from '../../src/types/records-types.js';
+import type { RecordsWriteMessageWithOptionalEncodedData } from '../../src/store/storage-controller.js';
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -32,7 +33,6 @@ import { Encoder } from '../../src/utils/encoder.js';
 import { GeneralJwsSigner } from '../../src/jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { Jws } from '../../src/utils/jws.js';
-import { KeyDerivationScheme } from '../../src/index.js';
 import { Message } from '../../src/core/message.js';
 import { RecordsRead } from '../../src/interfaces/records-read.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
@@ -41,7 +41,7 @@ import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
-
+import { DwnConstant, KeyDerivationScheme } from '../../src/index.js';
 import { Encryption, EncryptionAlgorithm } from '../../src/utils/encryption.js';
 
 chai.use(chaiAsPromised);
@@ -81,7 +81,6 @@ export function testRecordsWriteHandler(): void {
       after(async () => {
         await dwn.close();
       });
-
       it('should only be able to overwrite existing record if new record has a later `messageTimestamp` value', async () => {
       // write a message into DB
         const author = await DidKeyResolver.generate();
@@ -2090,6 +2089,65 @@ export function testRecordsWriteHandler(): void {
 
       const handlerPromise = recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
       await expect(handlerPromise).to.be.rejectedWith('an unknown error in messageStore.put()');
+    });
+
+    it('encodedData written to messageStore', () => {
+      it('should have encodedData field if dataSize is less than or equal to the threshold', async () => {
+        const alice = await DidKeyResolver.generate();
+        const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
+        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
+
+        const writeMessage = await dwn.processMessage(alice.did, message, dataStream);
+        expect(writeMessage.status.code).to.equal(202);
+        const messageCid = await Message.getCid(message);
+
+        const storedMessage = await messageStore.get(alice.did, messageCid);
+        expect((storedMessage as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.exist.and.not.be.undefined;
+      });
+
+      it('should not have encodedData field if dataSize greater than threshold', async () => {
+        const alice = await DidKeyResolver.generate();
+        const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1);
+        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
+
+        const writeMessage = await dwn.processMessage(alice.did, message, dataStream);
+        expect(writeMessage.status.code).to.equal(202);
+        const messageCid = await Message.getCid(message);
+
+        const storedMessage = await messageStore.get(alice.did, messageCid);
+        expect((storedMessage as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.not.exist;
+      });
+
+      it('should retain original RecordsWrite message but without the encodedData if data is under threshold', async () => {
+        const alice = await DidKeyResolver.generate();
+        const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
+        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
+
+        const writeMessage = await dwn.processMessage(alice.did, message, dataStream);
+        expect(writeMessage.status.code).to.equal(202);
+        const messageCid = await Message.getCid(message);
+
+        const storedMessage = await messageStore.get(alice.did, messageCid);
+        expect((storedMessage as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.exist.and.not.be.undefined;
+
+        const newWrite = await RecordsWrite.createFrom({
+          unsignedRecordsWriteMessage : message,
+          published                   : true,
+          authorizationSignatureInput : Jws.createSignatureInput(alice)
+        });
+
+        const updatedDataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
+        const updateDataStream = DataStream.fromBytes(updatedDataBytes);
+
+        const writeMessage2 = await dwn.processMessage(alice.did, newWrite, updateDataStream);
+        expect(writeMessage2.status.code).to.equal(202);
+
+        const originalWrite = await messageStore.get(alice.did, messageCid);
+        expect((originalWrite as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.not.exist;
+
+        const newestWrite = await messageStore.get(alice.did, await Message.getCid(newWrite.message));
+        expect((newestWrite as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.exist.and.not.be.undefined;
+      });
     });
   });
 }
