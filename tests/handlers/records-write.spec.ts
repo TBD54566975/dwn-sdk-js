@@ -392,7 +392,7 @@ export function testRecordsWriteHandler(): void {
 
             // changing the `published` property
             const newWrite = await RecordsWrite.createFrom({
-              unsignedRecordsWriteMessage : recordsWrite.completeMessage,
+              unsignedRecordsWriteMessage : recordsWrite.message,
               published                   : true,
               authorizationSignatureInput : Jws.createSignatureInput(author)
             });
@@ -429,7 +429,7 @@ export function testRecordsWriteHandler(): void {
 
             const newData = Encoder.stringToBytes('new data');
             const newWrite = await RecordsWrite.createFrom({
-              unsignedRecordsWriteMessage : recordsWrite.completeMessage,
+              unsignedRecordsWriteMessage : recordsWrite.message,
               data                        : newData,
               authorizationSignatureInput : Jws.createSignatureInput(author)
             });
@@ -521,7 +521,7 @@ export function testRecordsWriteHandler(): void {
             expect(reply.status.code).to.equal(202);
 
             const newWrite = await RecordsWrite.createFrom({
-              unsignedRecordsWriteMessage : recordsWrite.completeMessage,
+              unsignedRecordsWriteMessage : recordsWrite.message,
               published                   : true,
               authorizationSignatureInput : Jws.createSignatureInput(author)
             });
@@ -530,7 +530,7 @@ export function testRecordsWriteHandler(): void {
             expect(newWriteReply.status.code).to.equal(202);
 
             const newestWrite = await RecordsWrite.createFrom({
-              unsignedRecordsWriteMessage : recordsWrite.completeMessage,
+              unsignedRecordsWriteMessage : recordsWrite.message,
               published                   : true,
               authorizationSignatureInput : Jws.createSignatureInput(author)
             });

@@ -316,7 +316,7 @@ export function testRecordsDeleteHandler(): void {
           expect(reply.status.code).to.equal(202);
 
           const newWrite = await RecordsWrite.createFrom({
-            unsignedRecordsWriteMessage : recordsWrite.completeMessage,
+            unsignedRecordsWriteMessage : recordsWrite.message,
             published                   : true,
             authorizationSignatureInput : Jws.createSignatureInput(author)
           });

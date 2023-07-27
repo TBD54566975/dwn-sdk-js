@@ -127,9 +127,9 @@ export class ProtocolAuthorization {
         recordId  : recordsRead.message.descriptor.recordId,
       };
       const existingMessages = await messageStore.query(tenant, query) as TimestampedMessage[];
-      const recordsWriteMessage = await RecordsWrite.getNewestMessage(existingMessages) as RecordsWriteMessage;
+      const recordsWriteMessage = await Message.getNewestMessage(existingMessages) as RecordsWriteMessage;
       recordsWrite = await RecordsWrite.parse(recordsWriteMessage);
-      ancestorMessageChain.push(recordsWrite.completeMessage);
+      ancestorMessageChain.push(recordsWrite.message);
     }
 
     const protocol = recordsWrite.message.descriptor.protocol!;
@@ -360,7 +360,7 @@ export class ProtocolAuthorization {
       if (!isInitialWrite) {
         // fetch the initialWrite
         const query = {
-          entryId: recordsWrite.completeMessage.recordId
+          entryId: recordsWrite.message.recordId
         };
         const result = await messageStore.query(tenant, query) as RecordsWriteMessage[];
 

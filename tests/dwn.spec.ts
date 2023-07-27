@@ -223,7 +223,7 @@ export function testDwnClass(): void {
         const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author: alice });
 
         // simulate synchronize of pruned initial `RecordsWrite`
-        const reply = await dwn.synchronizePrunedInitialRecordsWrite(alice.did, recordsWrite.completeMessage);
+        const reply = await dwn.synchronizePrunedInitialRecordsWrite(alice.did, recordsWrite.message);
         expect(reply.status.code).to.equal(202);
 
         // verify `RecordsWrite` inserted can be queried but without the data returned

@@ -438,7 +438,7 @@ export class TestDataGenerator {
     const dataStream = DataStream.fromBytes(dataBytes);
 
     const options: CreateFromOptions = {
-      unsignedRecordsWriteMessage : input.existingWrite.completeMessage,
+      unsignedRecordsWriteMessage : input.existingWrite.message,
       data                        : dataBytes,
       published,
       datePublished,
@@ -448,7 +448,7 @@ export class TestDataGenerator {
 
     const recordsWrite = await RecordsWrite.createFrom(options);
     return {
-      message: recordsWrite.completeMessage,
+      message: recordsWrite.message,
       recordsWrite,
       dataBytes,
       dataStream

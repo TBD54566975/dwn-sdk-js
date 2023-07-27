@@ -539,7 +539,7 @@ export function testRecordsReadHandler(): void {
           expect(writeReply.status.code).to.equal(202);
 
           const recordsRead = await RecordsRead.create({
-            recordId                    : recordsWrite.completeMessage.recordId,
+            recordId                    : recordsWrite.message.recordId,
             authorizationSignatureInput : Jws.createSignatureInput(alice)
           });
 
@@ -668,7 +668,7 @@ export function testRecordsReadHandler(): void {
 
           // Bob also needs to write the same encrypted chat thread to his own DWN
           const bobToBobRecordsWrite = await RecordsWrite.createFrom({
-            unsignedRecordsWriteMessage : recordsWrite.completeMessage,
+            unsignedRecordsWriteMessage : recordsWrite.message,
             messageTimestamp            : recordsWrite.message.descriptor.messageTimestamp
           });
           const protocolPathDerivationPath = Records.constructKeyDerivationPathUsingProtocolPathScheme(recordsWrite.message.descriptor);

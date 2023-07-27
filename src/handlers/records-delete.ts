@@ -44,11 +44,11 @@ export class RecordsDeleteHandler implements MethodHandler {
     const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
 
     // find which message is the newest, and if the incoming message is the newest
-    const newestExistingMessage = await RecordsWrite.getNewestMessage(existingMessages);
+    const newestExistingMessage = await Message.getNewestMessage(existingMessages);
     let incomingMessageIsNewest = false;
     let newestMessage;
     // if incoming message is newest
-    if (newestExistingMessage === undefined || await RecordsWrite.isNewer(message, newestExistingMessage)) {
+    if (newestExistingMessage === undefined || await Message.isNewer(message, newestExistingMessage)) {
       incomingMessageIsNewest = true;
       newestMessage = message;
     } else { // existing message is the same age or newer than the incoming message
