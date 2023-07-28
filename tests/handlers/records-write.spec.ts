@@ -277,7 +277,8 @@ export function testRecordsWriteHandler(): void {
         expect(reply.status.code).to.equal(400);
         expect(reply.status.detail).to.contain('dataFormat is an immutable property');
       });
-      it('should return 400 if actual data size mismatches with `dataSize` in descriptor', () => {
+
+      describe('should return 400 if actual data size mismatches with `dataSize` in descriptor', () => {
         it('with dataStream and `dataSize` larger than encodedData threshold', async () => {
           const alice = await DidKeyResolver.generate();
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
