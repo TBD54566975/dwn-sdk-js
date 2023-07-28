@@ -264,7 +264,7 @@ describe('RecordsWrite', () => {
     });
   });
 
-  describe('isInitialWrite', () => {
+  describe('isInitialWrite()', () => {
     it('should return false if given message is not a RecordsWrite', async () => {
       const { message }= await TestDataGenerator.generateRecordsQuery();
       const isInitialWrite = await RecordsWrite.isInitialWrite(message);
@@ -272,11 +272,28 @@ describe('RecordsWrite', () => {
     });
   });
 
-  describe('getEntryId', () => {
+  describe('getEntryId()', () => {
     it('should throw if the given author is undefined', async () => {
       const { message }= await TestDataGenerator.generateRecordsWrite();
       const author = undefined;
       expect(RecordsWrite.getEntryId(author, message.descriptor)).to.be.rejectedWith(DwnErrorCode.RecordsWriteGetEntryIdUndefinedAuthor);
+    });
+  });
+
+  describe('message', () => {
+    it('should throw if attempting to access the message of a RecordsWrite that is not given authorization signature input', async () => {
+      const options = {
+        data        : TestDataGenerator.randomBytes(10),
+        dataFormat  : 'application/json',
+        dateCreated : '2023-07-27T10:20:30.405060Z',
+        recordId    : await TestDataGenerator.randomCborSha256Cid(),
+      };
+      const recordsWrite = await RecordsWrite.create(options);
+
+      expect(recordsWrite.author).to.not.exist;
+      expect(recordsWrite.authorizationPayload).to.not.exist;
+
+      expect(() => recordsWrite.message).to.throw(DwnErrorCode.RecordsWriteMissingAuthorizationSignatureInput);
     });
   });
 });

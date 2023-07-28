@@ -114,7 +114,7 @@ export class Records {
     // NOTE: no need to check `protocolPath` and `contextId` because earlier code ensures that if `protocol` is defined, those are defined also
     if (descriptor.protocol === undefined) {
       throw new DwnError(
-        DwnErrorCode.RecordsProtocolsDerivationSchemeMissingProtocol,
+        DwnErrorCode.RecordsProtocolPathDerivationSchemeMissingProtocol,
         'Unable to construct key derivation path using `protocols` scheme because `protocol` is missing.'
       );
     }

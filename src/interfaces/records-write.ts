@@ -119,7 +119,10 @@ export class RecordsWrite {
   #message: InternalRecordsWriteMessage;
   public get message(): RecordsWriteMessage {
     if (this.#message.authorization === undefined) {
-      throw new DwnError('TODO', 'This RecordsWrite is not yet signed.');
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteMissingAuthorizationSignatureInput,
+        'This RecordsWrite is not yet signed, JSON message cannot be generated from an incomplete state.'
+      );
     }
 
     return this.#message as RecordsWriteMessage;
@@ -337,7 +340,7 @@ export class RecordsWrite {
   public async encryptSymmetricEncryptionKey(encryptionInput: EncryptionInput): Promise<void> {
     this.#message.encryption = await RecordsWrite.createEncryptionProperty(this.#message.descriptor, encryptionInput);
 
-    // TODO: re-sign instead remove
+    // opportunity here to re-sign instead of remove
     delete this.#message.authorization;
     this._authorizationPayload = undefined;
     this._author = undefined;
@@ -586,7 +589,7 @@ export class RecordsWrite {
         encryptedKey
       };
 
-      // we need to attach the actual public key if protocol-context derivation scheme,
+      // we need to attach the actual public key if derivation scheme is protocol-context,
       // so that the responder to this message is able to encrypt the message/symmetric key using the same protocol-context derived public key,
       // without needing the knowledge of the corresponding private key
       if (keyEncryptionInput.derivationScheme ===  KeyDerivationScheme.ProtocolContext) {
