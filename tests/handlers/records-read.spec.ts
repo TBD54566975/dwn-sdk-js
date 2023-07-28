@@ -870,6 +870,65 @@ export function testRecordsReadHandler(): void {
         expect(readReply.status.code).to.equal(404);
       });
 
+      describe('data from encodedData', () => {
+        it('should not get data from DataStore if encodedData exists', async () => {
+          const alice = await DidKeyResolver.generate();
+
+          //since the data is at the threshold it will be returned from the messageStore in the `encodedData` field.
+          const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({
+            author : alice,
+            data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)
+          });
+
+          const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+          expect(writeReply.status.code).to.equal(202);
+
+          const recordRead = await RecordsRead.create({
+            recordId                    : message.recordId,
+            authorizationSignatureInput : Jws.createSignatureInput(alice)
+          });
+
+          const dataStoreGet = sinon.spy(dataStore, 'get');
+
+          const recordsReadResponse = await dwn.handleRecordsRead(alice.did, recordRead.message);
+          expect(recordsReadResponse.status.code).to.equal(200);
+          expect(recordsReadResponse.record).to.exist;
+          expect(recordsReadResponse.record!.data).to.exist;
+          sinon.assert.notCalled(dataStoreGet);
+
+          const readData = await DataStream.toBytes(recordsReadResponse.record!.data);
+          expect(readData).to.eql(dataBytes);
+        });
+        it('should get data from DataStore if encodedData does not exist', async () => {
+          const alice = await DidKeyResolver.generate();
+
+          //since the data is over the threshold it will not be returned from the messageStore in the `encodedData` field.
+          const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({
+            author : alice,
+            data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded +1)
+          });
+
+          const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+          expect(writeReply.status.code).to.equal(202);
+
+          const recordRead = await RecordsRead.create({
+            recordId                    : message.recordId,
+            authorizationSignatureInput : Jws.createSignatureInput(alice)
+          });
+
+          const dataStoreGet = sinon.spy(dataStore, 'get');
+
+          const recordsReadResponse = await dwn.handleRecordsRead(alice.did, recordRead.message);
+          expect(recordsReadResponse.status.code).to.equal(200);
+          expect(recordsReadResponse.record).to.exist;
+          expect(recordsReadResponse.record!.data).to.exist;
+          sinon.assert.calledOnce(dataStoreGet);
+
+          const readData = await DataStream.toBytes(recordsReadResponse.record!.data);
+          expect(readData).to.eql(dataBytes);
+        });
+      });
+
       describe('encryption scenarios', () => {
         it('should be able to decrypt flat-space schema-contained record with a correct derived key', async () => {
         // scenario: Alice writes into her own DWN an encrypted record and she is able to decrypt it
