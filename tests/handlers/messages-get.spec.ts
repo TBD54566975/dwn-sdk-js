@@ -313,7 +313,8 @@ export function testMessagesGetHandler(): void {
       const alice = await DidKeyResolver.generate();
 
       const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-        author: alice
+        author : alice,
+        data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded),
       });
 
       const reply = await dwn.processMessage(alice.did, recordsWrite.toJSON(), dataStream);
