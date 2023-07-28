@@ -117,6 +117,10 @@ export type CreateFromOptions = {
 
 export class RecordsWrite {
   #message: InternalRecordsWriteMessage;
+  /**
+   * Valid JSON message representing this RecordsWrite.
+   * @throws `DwnErrorCode.RecordsWriteMissingAuthorizationSignatureInput` if the message is not signed yet.
+   */
   public get message(): RecordsWriteMessage {
     if (this.#message.authorization === undefined) {
       throw new DwnError(
@@ -128,14 +132,20 @@ export class RecordsWrite {
     return this.#message as RecordsWriteMessage;
   }
 
-  protected _author: string | undefined;
+  #author: string | undefined;
+  /**
+   * DID of author of this message.
+   */
   public get author(): string | undefined {
-    return this._author;
+    return this.#author;
   }
 
-  protected _authorizationPayload: RecordsWriteAuthorizationPayload | undefined;
+  #authorizationPayload: RecordsWriteAuthorizationPayload | undefined;
+  /**
+   * Decoded authorization payload.
+   */
   public get authorizationPayload(): RecordsWriteAuthorizationPayload | undefined {
-    return this._authorizationPayload;
+    return this.#authorizationPayload;
   }
 
   readonly attesters: string[];
@@ -144,8 +154,8 @@ export class RecordsWrite {
     this.#message = message;
 
     if (message.authorization !== undefined) {
-      this._authorizationPayload = Jws.decodePlainObjectPayload(message.authorization);
-      this._author = Message.getAuthor(message as GenericMessage);
+      this.#authorizationPayload = Jws.decodePlainObjectPayload(message.authorization);
+      this.#author = Message.getAuthor(message as GenericMessage);
     }
 
     this.attesters = RecordsWrite.getAttesters(message);
@@ -342,8 +352,8 @@ export class RecordsWrite {
 
     // opportunity here to re-sign instead of remove
     delete this.#message.authorization;
-    this._authorizationPayload = undefined;
-    this._author = undefined;
+    this.#authorizationPayload = undefined;
+    this.#author = undefined;
   }
 
   /**
@@ -376,8 +386,8 @@ export class RecordsWrite {
     this.#message.authorization = authorization;
 
     // there is opportunity to optimize here as the payload is constructed within `createAuthorization(...)`
-    this._authorizationPayload = Jws.decodePlainObjectPayload(authorization);
-    this._author = author;
+    this.#authorizationPayload = Jws.decodePlainObjectPayload(authorization);
+    this.#author = author;
   }
 
   public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
