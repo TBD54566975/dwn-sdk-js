@@ -362,62 +362,60 @@ export function testRecordsWriteHandler(): void {
         });
       });
 
-      it('should return 400 if actual data CID of mismatches with `dataCid` in descriptor', () => {
-        it('with both dataStream and `dataSize` larger than encodedData threshold', async () => {
-          const alice = await DidKeyResolver.generate();
-          const { message } = await TestDataGenerator.generateRecordsWrite({
-            author : alice,
-            data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)
-          });
-          const dataStream =
-            DataStream.fromBytes(TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)); // mismatch data stream
-
-          const reply = await dwn.processMessage(alice.did, message, dataStream);
-          expect(reply.status.code).to.equal(400);
-          expect(reply.status.detail).to.contain('does not match dataCid in descriptor');
+      it('should return 400 for data CID mismatch with both dataStream and `dataSize` larger than encodedData threshold', async () => {
+        const alice = await DidKeyResolver.generate();
+        const { message } = await TestDataGenerator.generateRecordsWrite({
+          author : alice,
+          data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)
         });
+        const dataStream =
+          DataStream.fromBytes(TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)); // mismatch data stream
 
-        it('with `dataSize` larger than encodedData threshold', async () => {
-          const alice = await DidKeyResolver.generate();
-          const { message } = await TestDataGenerator.generateRecordsWrite({
-            author : alice,
-            data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)
-          });
-          const dataStream =
-            DataStream.fromBytes(TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)); // mismatch data stream
+        const reply = await dwn.processMessage(alice.did, message, dataStream);
+        expect(reply.status.code).to.equal(400);
+        expect(reply.status.detail).to.contain('does not match dataCid in descriptor');
+      });
 
-          const reply = await dwn.processMessage(alice.did, message, dataStream);
-          expect(reply.status.code).to.equal(400);
-          expect(reply.status.detail).to.contain('does not match dataCid in descriptor');
+      it('should return 400 for data CID mismatch with `dataSize` larger than encodedData threshold', async () => {
+        const alice = await DidKeyResolver.generate();
+        const { message } = await TestDataGenerator.generateRecordsWrite({
+          author : alice,
+          data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)
         });
+        const dataStream =
+          DataStream.fromBytes(TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)); // mismatch data stream
 
-        it('with dataStream larger than encodedData threshold', async () => {
-          const alice = await DidKeyResolver.generate();
-          const { message } = await TestDataGenerator.generateRecordsWrite({
-            author : alice,
-            data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)
-          });
-          const dataStream =
-            DataStream.fromBytes(TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)); // mismatch data stream
+        const reply = await dwn.processMessage(alice.did, message, dataStream);
+        expect(reply.status.code).to.equal(400);
+        expect(reply.status.detail).to.contain('bytes does not match dataSize in descriptor');
+      });
 
-          const reply = await dwn.processMessage(alice.did, message, dataStream);
-          expect(reply.status.code).to.equal(400);
-          expect(reply.status.detail).to.contain('does not match dataCid in descriptor');
+      it('should return 400 for data CID mismatch with dataStream larger than encodedData threshold', async () => {
+        const alice = await DidKeyResolver.generate();
+        const { message } = await TestDataGenerator.generateRecordsWrite({
+          author : alice,
+          data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)
         });
+        const dataStream =
+          DataStream.fromBytes(TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)); // mismatch data stream
 
-        it('with both dataStream and `dataSize` below than encodedData threshold', async () => {
-          const alice = await DidKeyResolver.generate();
-          const { message } = await TestDataGenerator.generateRecordsWrite({
-            author : alice,
-            data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)
-          });
-          const dataStream =
-            DataStream.fromBytes(TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)); // mismatch data stream
+        const reply = await dwn.processMessage(alice.did, message, dataStream);
+        expect(reply.status.code).to.equal(400);
+        expect(reply.status.detail).to.contain('bytes does not match dataSize in descriptor');
+      });
 
-          const reply = await dwn.processMessage(alice.did, message, dataStream);
-          expect(reply.status.code).to.equal(400);
-          expect(reply.status.detail).to.contain('does not match dataCid in descriptor');
+      it('should return 400 for data CID mismatch with both dataStream and `dataSize` below than encodedData threshold', async () => {
+        const alice = await DidKeyResolver.generate();
+        const { message } = await TestDataGenerator.generateRecordsWrite({
+          author : alice,
+          data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)
         });
+        const dataStream =
+          DataStream.fromBytes(TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)); // mismatch data stream
+
+        const reply = await dwn.processMessage(alice.did, message, dataStream);
+        expect(reply.status.code).to.equal(400);
+        expect(reply.status.detail).to.contain('does not match dataCid in descriptor');
       });
 
       it('should return 400 if attempting to write a record without data stream', async () => {
@@ -2024,6 +2022,92 @@ export function testRecordsWriteHandler(): void {
           expect(bobQueryAssociateAfterBobAssociateReply.entries?.length).to.equal(0);
         });
       });
+
+      describe('encodedData threshold', async () => {
+        it('should call processEncodedData and not putData if dataSize is less than or equal to the threshold', async () => {
+          const alice = await DidKeyResolver.generate();
+          const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
+          const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
+          const processEncoded = sinon.spy(RecordsWriteHandler, <any>'processEncodedData');
+          const putData = sinon.spy(RecordsWriteHandler.prototype, 'putData');
+
+          const writeMessage = await dwn.processMessage(alice.did, message, dataStream);
+          expect(writeMessage.status.code).to.equal(202);
+          sinon.assert.calledOnce(processEncoded);
+          sinon.assert.notCalled(putData);
+        });
+
+        it('should call putData and not processEncodedData if dataSize is greater than the threshold', async () => {
+          const alice = await DidKeyResolver.generate();
+          const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1);
+          const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
+          const processEncoded = sinon.spy(RecordsWriteHandler, <any>'processEncodedData');
+          const putData = sinon.spy(RecordsWriteHandler.prototype, 'putData');
+
+          const writeMessage = await dwn.processMessage(alice.did, message, dataStream);
+          expect(writeMessage.status.code).to.equal(202);
+          sinon.assert.notCalled(processEncoded);
+          sinon.assert.calledOnce(putData);
+        });
+
+        it('should have encodedData field if dataSize is less than or equal to the threshold', async () => {
+          const alice = await DidKeyResolver.generate();
+          const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
+          const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
+
+          const writeMessage = await dwn.processMessage(alice.did, message, dataStream);
+          expect(writeMessage.status.code).to.equal(202);
+          const messageCid = await Message.getCid(message);
+
+          const storedMessage = await messageStore.get(alice.did, messageCid);
+          expect((storedMessage as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.exist.and.not.be.undefined;
+        });
+
+        it('should not have encodedData field if dataSize greater than threshold', async () => {
+          const alice = await DidKeyResolver.generate();
+          const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1);
+          const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
+
+          const writeMessage = await dwn.processMessage(alice.did, message, dataStream);
+          expect(writeMessage.status.code).to.equal(202);
+          const messageCid = await Message.getCid(message);
+
+          const storedMessage = await messageStore.get(alice.did, messageCid);
+          expect((storedMessage as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.not.exist;
+        });
+
+        it('should retain original RecordsWrite message but without the encodedData if data is under threshold', async () => {
+          const alice = await DidKeyResolver.generate();
+          const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
+          const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
+
+          const writeMessage = await dwn.processMessage(alice.did, message, dataStream);
+          expect(writeMessage.status.code).to.equal(202);
+          const messageCid = await Message.getCid(message);
+
+          const storedMessage = await messageStore.get(alice.did, messageCid);
+          expect((storedMessage as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.exist.and.not.be.undefined;
+
+          const updatedDataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
+          const newWrite = await RecordsWrite.createFrom({
+            unsignedRecordsWriteMessage : message,
+            published                   : true,
+            authorizationSignatureInput : Jws.createSignatureInput(alice),
+            data                        : updatedDataBytes,
+          });
+
+          const updateDataStream = DataStream.fromBytes(updatedDataBytes);
+
+          const writeMessage2 = await dwn.processMessage(alice.did, newWrite.message, updateDataStream);
+          expect(writeMessage2.status.code).to.equal(202);
+
+          const originalWrite = await messageStore.get(alice.did, messageCid);
+          expect((originalWrite as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.not.exist;
+
+          const newestWrite = await messageStore.get(alice.did, await Message.getCid(newWrite.message));
+          expect((newestWrite as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.exist.and.not.be.undefined;
+        });
+      });
     });
 
     describe('authorization validation tests', () => {
@@ -2207,65 +2291,6 @@ export function testRecordsWriteHandler(): void {
 
       const handlerPromise = recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
       await expect(handlerPromise).to.be.rejectedWith('an unknown error in messageStore.put()');
-    });
-
-    it('encodedData written to messageStore', () => {
-      it('should have encodedData field if dataSize is less than or equal to the threshold', async () => {
-        const alice = await DidKeyResolver.generate();
-        const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
-        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
-
-        const writeMessage = await dwn.processMessage(alice.did, message, dataStream);
-        expect(writeMessage.status.code).to.equal(202);
-        const messageCid = await Message.getCid(message);
-
-        const storedMessage = await messageStore.get(alice.did, messageCid);
-        expect((storedMessage as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.exist.and.not.be.undefined;
-      });
-
-      it('should not have encodedData field if dataSize greater than threshold', async () => {
-        const alice = await DidKeyResolver.generate();
-        const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1);
-        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
-
-        const writeMessage = await dwn.processMessage(alice.did, message, dataStream);
-        expect(writeMessage.status.code).to.equal(202);
-        const messageCid = await Message.getCid(message);
-
-        const storedMessage = await messageStore.get(alice.did, messageCid);
-        expect((storedMessage as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.not.exist;
-      });
-
-      it('should retain original RecordsWrite message but without the encodedData if data is under threshold', async () => {
-        const alice = await DidKeyResolver.generate();
-        const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
-        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
-
-        const writeMessage = await dwn.processMessage(alice.did, message, dataStream);
-        expect(writeMessage.status.code).to.equal(202);
-        const messageCid = await Message.getCid(message);
-
-        const storedMessage = await messageStore.get(alice.did, messageCid);
-        expect((storedMessage as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.exist.and.not.be.undefined;
-
-        const newWrite = await RecordsWrite.createFrom({
-          unsignedRecordsWriteMessage : message,
-          published                   : true,
-          authorizationSignatureInput : Jws.createSignatureInput(alice)
-        });
-
-        const updatedDataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
-        const updateDataStream = DataStream.fromBytes(updatedDataBytes);
-
-        const writeMessage2 = await dwn.processMessage(alice.did, newWrite, updateDataStream);
-        expect(writeMessage2.status.code).to.equal(202);
-
-        const originalWrite = await messageStore.get(alice.did, messageCid);
-        expect((originalWrite as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.not.exist;
-
-        const newestWrite = await messageStore.get(alice.did, await Message.getCid(newWrite.message));
-        expect((newestWrite as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.exist.and.not.be.undefined;
-      });
     });
   });
 }
