@@ -72,8 +72,7 @@ export class MessagesGetHandler implements MethodHandler {
       const dataCid = recordsWrite.descriptor.dataCid;
       const dataSize = recordsWrite.descriptor.dataSize;
 
-      // Leave this for backwards compatibility?
-      // Think about how to test this.
+      // Leaving this for backwards compatibility
       if (dataCid !== undefined && dataSize! <= DwnConstant.maxDataSizeAllowedToBeEncoded && recordsWrite.encodedData === undefined) {
         const messageCid = await Message.getCid(message);
         const result = await this.dataStore.get(tenant, messageCid, dataCid);
