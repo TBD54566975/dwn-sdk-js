@@ -443,6 +443,8 @@ export class TestDataGenerator {
     message: RecordsWriteMessage;
     dataStream: Readable;
     recordsWrite: RecordsWrite;
+    encryptionInput: EncryptionInput;
+    encryptedDataBytes: Uint8Array;
   }> {
     const {
       plaintextBytes,
@@ -536,7 +538,7 @@ export class TestDataGenerator {
     await recordsWrite.encryptSymmetricEncryptionKey(encryptionInput);
     await recordsWrite.sign(Jws.createSignatureInput(author));
 
-    return { message, dataStream: dataStream!, recordsWrite };
+    return { message, dataStream: dataStream!, recordsWrite, encryptedDataBytes, encryptionInput };
   }
 
   /**
