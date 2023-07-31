@@ -184,16 +184,6 @@ export class Secp256k1 {
   }
 
   /**
-   * Derives a child public key using the parent private key and derivation path segment.
-   */
-  public static async deriveChildPublicKey(privateKey: Uint8Array, derivationPathSegment: Uint8Array): Promise<Uint8Array> {
-    // derive the private key first then compute the derived public key from the derive private key
-    const derivedPrivateKey = await Secp256k1.deriveChildPrivateKey(privateKey, derivationPathSegment);
-    const derivedPublicKey = await Secp256k1.getPublicKey(derivedPrivateKey);
-    return derivedPublicKey;
-  }
-
-  /**
    * Derives a child private key using the given derivation path segment.
    */
   public static async deriveChildPrivateKey(privateKey: Uint8Array, derivationPathSegment: Uint8Array): Promise<Uint8Array> {
