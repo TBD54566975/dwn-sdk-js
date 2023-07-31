@@ -592,7 +592,7 @@ export function testRecordsReadHandler(): void {
 
           // Bob queries for Alice's chat protocol definition
           const protocolsQuery = await ProtocolsQuery.create({
-            filter: { protocol: emailProtocolDefinition.protocol }
+            filter: { protocol: chatProtocolDefinition.protocol }
           });
           const protocolsQueryReply = await dwn.processMessage(alice.did, protocolsQuery.message);
           const protocolsConfigureMessageReceived = protocolsQueryReply.entries![0] as ProtocolsConfigureMessage;

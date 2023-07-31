@@ -1,5 +1,5 @@
 {
-  "protocol": "http://email-protocol.xyz",
+  "protocol": "http://chat-protocol.xyz",
   "published": true,
   "types": {
     "thread": {
