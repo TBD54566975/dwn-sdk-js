@@ -21,7 +21,7 @@ export class Records {
     ancestorPrivateKey: DerivedPrivateJwk,
     cipherStream: Readable
   ): Promise<Readable> {
-    const { recordId, contextId, descriptor, encryption } = recordsWrite;
+    const { encryption } = recordsWrite;
 
     // look for an encrypted symmetric key that is encrypted by the public key corresponding to the given private key
     const matchingEncryptedKey = encryption!.keyEncryption.find(key =>
@@ -36,7 +36,7 @@ export class Records {
       );
     }
 
-    const fullDerivationPath = Records.constructKeyDerivationPath(matchingEncryptedKey.derivationScheme, recordId, contextId, descriptor);
+    const fullDerivationPath = Records.constructKeyDerivationPath(matchingEncryptedKey.derivationScheme, recordsWrite);
 
     // NOTE: right now only `ECIES-ES256K` algorithm is supported for asymmetric encryption,
     // so we will assume that's the algorithm without additional switch/if statements
@@ -67,16 +67,19 @@ export class Records {
    */
   public static constructKeyDerivationPath(
     keyDerivationScheme: KeyDerivationScheme,
-    recordId: string,
-    contextId: string | undefined,
-    descriptor: RecordsWriteDescriptor
+    recordsWriteMessage: UnsignedRecordsWriteMessage
   ): string[] {
+
+    const descriptor = recordsWriteMessage.descriptor;
+    const contextId = recordsWriteMessage.contextId;
 
     let fullDerivationPath;
     if (keyDerivationScheme === KeyDerivationScheme.DataFormats) {
       fullDerivationPath = Records.constructKeyDerivationPathUsingDataFormatsScheme(descriptor.schema, descriptor.dataFormat);
-    } else if (keyDerivationScheme === KeyDerivationScheme.Protocols) {
-      fullDerivationPath = Records.constructKeyDerivationPathUsingProtocolsScheme(recordId, contextId, descriptor);
+    } else if (keyDerivationScheme === KeyDerivationScheme.ProtocolPath) {
+      fullDerivationPath = Records.constructKeyDerivationPathUsingProtocolPathScheme(descriptor);
+    } else if (keyDerivationScheme === KeyDerivationScheme.ProtocolContext) {
+      fullDerivationPath = Records.constructKeyDerivationPathUsingProtocolContextScheme(contextId);
     } else {
       // `schemas` scheme
       fullDerivationPath = Records.constructKeyDerivationPathUsingSchemasScheme(descriptor.schema);
@@ -104,27 +107,42 @@ export class Records {
   }
 
   /**
-   * Constructs the full key derivation path using `protocols` scheme.
+   * Constructs the full key derivation path using `protocolPath` scheme.
    */
-  private static constructKeyDerivationPathUsingProtocolsScheme(
-    recordId: string,
-    contextId: string | undefined,
-    descriptor: RecordsWriteDescriptor
-  ): string[] {
+  public static constructKeyDerivationPathUsingProtocolPathScheme(descriptor: RecordsWriteDescriptor): string[] {
     // ensure `protocol` is defined
     // NOTE: no need to check `protocolPath` and `contextId` because earlier code ensures that if `protocol` is defined, those are defined also
     if (descriptor.protocol === undefined) {
       throw new DwnError(
-        DwnErrorCode.RecordsProtocolsDerivationSchemeMissingProtocol,
+        DwnErrorCode.RecordsProtocolPathDerivationSchemeMissingProtocol,
         'Unable to construct key derivation path using `protocols` scheme because `protocol` is missing.'
       );
     }
 
     const protocolPathSegments = descriptor.protocolPath!.split('/');
     const fullDerivationPath = [
-      KeyDerivationScheme.Protocols,
+      KeyDerivationScheme.ProtocolPath,
       descriptor.protocol,
       ...protocolPathSegments
+    ];
+
+    return fullDerivationPath;
+  }
+
+  /**
+   * Constructs the full key derivation path using `protocolContext` scheme.
+   */
+  public static constructKeyDerivationPathUsingProtocolContextScheme(contextId: string | undefined): string[] {
+    if (contextId === undefined) {
+      throw new DwnError(
+        DwnErrorCode.RecordsProtocolContextDerivationSchemeMissingContextId,
+        'Unable to construct key derivation path using `protocolContext` scheme because `contextId` is missing.'
+      );
+    }
+
+    const fullDerivationPath = [
+      KeyDerivationScheme.ProtocolContext,
+      contextId
     ];
 
     return fullDerivationPath;

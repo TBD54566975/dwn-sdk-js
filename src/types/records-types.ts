@@ -25,6 +25,17 @@ export type RecordsWriteDescriptor = {
   dataFormat: string;
 };
 
+/**
+ * Internal RecordsWrite message representation that can be in an incomplete state.
+ */
+export type InternalRecordsWriteMessage = GenericMessage & {
+  recordId?: string,
+  contextId?: string;
+  descriptor: RecordsWriteDescriptor;
+  attestation?: GeneralJws;
+  encryption?: EncryptionProperty;
+};
+
 export type RecordsWriteMessage = GenericMessage & {
   recordId: string,
   contextId?: string;
@@ -44,6 +55,11 @@ export type EncryptedKey = {
    * The fully qualified key ID (e.g. did:example:abc#encryption-key-id) of the root public key used to encrypt the symmetric encryption key.
    */
   rootKeyId: string;
+
+  /**
+   * The actual derived public key.
+   */
+  derivedPublicKey?: PublicJwk;
   derivationScheme: KeyDerivationScheme;
   algorithm: EncryptionAlgorithm;
   initializationVector: string;
@@ -52,6 +68,9 @@ export type EncryptedKey = {
   encryptedKey: string;
 };
 
+/**
+ * The type used by the reply of a `RecordQuery`.
+ */
 export type UnsignedRecordsWriteMessage = {
   recordId: string,
   contextId?: string;

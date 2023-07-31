@@ -39,12 +39,14 @@ import RecordsQuery from '../json-schemas/interface-methods/records-query.json' 
 import RecordsRead from '../json-schemas/interface-methods/records-read.json' assert { type: 'json' };
 import RecordsWrite from '../json-schemas/interface-methods/records-write.json' assert { type: 'json' };
 import RecordsWriteAuthorizationPayload from '../json-schemas/authorization-payloads/records-write-authorization-payload.json' assert { type: 'json' };
+import RecordsWriteUnidentified from '../json-schemas/interface-methods/records-write-unidentified.json' assert { type: 'json' };
 import SnapshotsCreate from '../json-schemas/interface-methods/snapshots-create.json' assert { type: 'json' };
 
 const schemas = {
   RecordsDelete,
   RecordsQuery,
   RecordsWrite,
+  RecordsWriteUnidentified,
   EventsGet,
   Definitions,
   GeneralJwk,

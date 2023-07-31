@@ -8,6 +8,9 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "rootKeyId": {
+          "type": "string"
+        },
         "publicKeyJwk": {
           "$ref": "https://identity.foundation/dwn/json-schemas/public-jwk.json"
         }
