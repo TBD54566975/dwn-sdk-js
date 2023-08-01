@@ -41,7 +41,7 @@ import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
-import { DwnConstant, KeyDerivationScheme } from '../../src/index.js';
+import { DwnConstant, KeyDerivationScheme, RecordsDelete } from '../../src/index.js';
 import { Encryption, EncryptionAlgorithm } from '../../src/utils/encryption.js';
 
 chai.use(chaiAsPromised);
@@ -278,6 +278,100 @@ export function testRecordsWriteHandler(): void {
         expect(reply.status.detail).to.contain('dataFormat is an immutable property');
       });
 
+      it('should inherit data from previous RecordsWrite given a matching dataCid and dataSize and no dataStream', async () => {
+        const { message, author, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({
+          published: false
+        });
+        const tenant = author.did;
+
+        TestStubGenerator.stubDidResolver(didResolver, [author]);
+
+        const initialWriteReply = await dwn.processMessage(tenant, message, dataStream);
+        expect(initialWriteReply.status.code).to.equal(202);
+
+        const write2 = await RecordsWrite.createFrom({
+          unsignedRecordsWriteMessage : message,
+          published                   : true,
+          authorizationSignatureInput : Jws.createSignatureInput(author),
+        });
+
+        const writeUpdateReply = await dwn.processMessage(tenant, write2.message);
+        expect(writeUpdateReply.status.code).to.equal(202);
+        const readMessage = await RecordsRead.create({
+          recordId: message.recordId,
+        });
+
+        const readMessageReply = await dwn.handleRecordsRead(tenant, readMessage.message);
+        expect(readMessageReply.status.code).to.equal(200);
+        expect(readMessageReply.record).to.exist;
+        const data = await DataStream.toBytes(readMessageReply.record!.data);
+        expect(data).to.eql(dataBytes);
+      });
+
+      describe('should inherit data from previous RecordsWrite given a matching dataCid and dataSize and no dataStream', () => {
+        it('with data above the threshold for encodedData', async () => {
+          const { message, author, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({
+            data      : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1),
+            published : false
+          });
+          const tenant = author.did;
+
+          TestStubGenerator.stubDidResolver(didResolver, [author]);
+
+          const initialWriteReply = await dwn.processMessage(tenant, message, dataStream);
+          expect(initialWriteReply.status.code).to.equal(202);
+
+          const write2 = await RecordsWrite.createFrom({
+            unsignedRecordsWriteMessage : message,
+            published                   : true,
+            authorizationSignatureInput : Jws.createSignatureInput(author),
+          });
+
+          const writeUpdateReply = await dwn.processMessage(tenant, write2.message);
+          expect(writeUpdateReply.status.code).to.equal(202);
+          const readMessage = await RecordsRead.create({
+            recordId: message.recordId,
+          });
+
+          const readMessageReply = await dwn.handleRecordsRead(tenant, readMessage.message);
+          expect(readMessageReply.status.code).to.equal(200);
+          expect(readMessageReply.record).to.exist;
+          const data = await DataStream.toBytes(readMessageReply.record!.data);
+          expect(data).to.eql(dataBytes);
+        });
+
+        it('with data equal to or below the threshold for encodedData', async () => {
+          const { message, author, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({
+            data      : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded),
+            published : false
+          });
+          const tenant = author.did;
+
+          TestStubGenerator.stubDidResolver(didResolver, [author]);
+
+          const initialWriteReply = await dwn.processMessage(tenant, message, dataStream);
+          expect(initialWriteReply.status.code).to.equal(202);
+
+          const write2 = await RecordsWrite.createFrom({
+            unsignedRecordsWriteMessage : message,
+            published                   : true,
+            authorizationSignatureInput : Jws.createSignatureInput(author),
+          });
+
+          const writeUpdateReply = await dwn.processMessage(tenant, write2.message);
+          expect(writeUpdateReply.status.code).to.equal(202);
+          const readMessage = await RecordsRead.create({
+            recordId: message.recordId,
+          });
+
+          const readMessageReply = await dwn.handleRecordsRead(tenant, readMessage.message);
+          expect(readMessageReply.status.code).to.equal(200);
+          expect(readMessageReply.record).to.exist;
+          const data = await DataStream.toBytes(readMessageReply.record!.data);
+          expect(data).to.eql(dataBytes);
+        });
+      });
+
       describe('should return 400 if actual data size mismatches with `dataSize` in descriptor', () => {
         it('with dataStream and `dataSize` larger than encodedData threshold', async () => {
           const alice = await DidKeyResolver.generate();
@@ -297,7 +391,7 @@ export function testRecordsWriteHandler(): void {
 
           const reply = await dwn.processMessage(alice.did, message, dataStream);
           expect(reply.status.code).to.equal(400);
-          expect(reply.status.detail).to.contain('does not match dataSize in descriptor');
+          expect(reply.status.detail).to.contain(DwnErrorCode.RecordsWriteDataSizeMismatch);
         });
 
         it('with only `dataSize` larger than encodedData threshold', async () => {
@@ -318,7 +412,7 @@ export function testRecordsWriteHandler(): void {
 
           const reply = await dwn.processMessage(alice.did, message, dataStream);
           expect(reply.status.code).to.equal(400);
-          expect(reply.status.detail).to.contain('does not match dataSize in descriptor');
+          expect(reply.status.detail).to.contain(DwnErrorCode.RecordsWriteDataSizeMismatch);
         });
 
         it('with only dataStream larger than encodedData threshold', async () => {
@@ -339,7 +433,7 @@ export function testRecordsWriteHandler(): void {
 
           const reply = await dwn.processMessage(alice.did, message, dataStream);
           expect(reply.status.code).to.equal(400);
-          expect(reply.status.detail).to.contain('does not match dataSize in descriptor');
+          expect(reply.status.detail).to.contain(DwnErrorCode.RecordsWriteDataSizeMismatch);
         });
 
         it('with both `dataSize` and dataStream below than encodedData threshold', async () => {
@@ -359,8 +453,72 @@ export function testRecordsWriteHandler(): void {
 
           const reply = await dwn.processMessage(alice.did, message, dataStream);
           expect(reply.status.code).to.equal(400);
-          expect(reply.status.detail).to.contain('does not match dataSize in descriptor');
+          expect(reply.status.detail).to.contain(DwnErrorCode.RecordsWriteDataSizeMismatch);
         });
+      });
+
+      it('should return 400 for if dataStream is not present for a write after a delete', async () => {
+        const { message, author, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({
+          data      : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded),
+          published : false
+        });
+        const tenant = author.did;
+
+        TestStubGenerator.stubDidResolver(didResolver, [author]);
+
+        const initialWriteReply = await dwn.processMessage(tenant, message, dataStream);
+        expect(initialWriteReply.status.code).to.equal(202);
+
+        const recordsDelete = await RecordsDelete.create({
+          recordId                    : message.recordId,
+          authorizationSignatureInput : Jws.createSignatureInput(author),
+        });
+        const deleteReply = await dwn.processMessage(tenant, recordsDelete.message);
+        expect(deleteReply.status.code).to.equal(202);
+
+        const write = await RecordsWrite.createFrom({
+          unsignedRecordsWriteMessage : message,
+          authorizationSignatureInput : Jws.createSignatureInput(author),
+        });
+
+        const withoutDataReply = await dwn.processMessage(tenant, write.message);
+        expect(withoutDataReply.status.code).to.equal(400);
+        expect(withoutDataReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataStream);
+        const updatedWriteData = DataStream.fromBytes(dataBytes!);
+        const withoutDataReply2 = await dwn.processMessage(tenant, write.message, updatedWriteData);
+        expect(withoutDataReply2.status.code).to.equal(202);
+      });
+
+      it('should return 400 for if dataStream is not present for a write after a delete with data above the threshold', async () => {
+        const { message, author, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({
+          data      : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1),
+          published : false
+        });
+        const tenant = author.did;
+
+        TestStubGenerator.stubDidResolver(didResolver, [author]);
+
+        const initialWriteReply = await dwn.processMessage(tenant, message, dataStream);
+        expect(initialWriteReply.status.code).to.equal(202);
+
+        const recordsDelete = await RecordsDelete.create({
+          recordId                    : message.recordId,
+          authorizationSignatureInput : Jws.createSignatureInput(author),
+        });
+        const deleteReply = await dwn.processMessage(tenant, recordsDelete.message);
+        expect(deleteReply.status.code).to.equal(202);
+
+        const write = await RecordsWrite.createFrom({
+          unsignedRecordsWriteMessage : message,
+          authorizationSignatureInput : Jws.createSignatureInput(author),
+        });
+
+        const withoutDataReply = await dwn.processMessage(tenant, write.message);
+        expect(withoutDataReply.status.code).to.equal(400);
+        expect(withoutDataReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataStream);
+        const updatedWriteData = DataStream.fromBytes(dataBytes!);
+        const withoutDataReply2 = await dwn.processMessage(tenant, write.message, updatedWriteData);
+        expect(withoutDataReply2.status.code).to.equal(202);
       });
 
       it('should return 400 for data CID mismatch with both dataStream and `dataSize` larger than encodedData threshold', async () => {
@@ -374,7 +532,7 @@ export function testRecordsWriteHandler(): void {
 
         const reply = await dwn.processMessage(alice.did, message, dataStream);
         expect(reply.status.code).to.equal(400);
-        expect(reply.status.detail).to.contain('does not match dataCid in descriptor');
+        expect(reply.status.detail).to.contain(DwnErrorCode.RecordsWriteDataCidMismatch);
       });
 
       it('should return 400 for data CID mismatch with `dataSize` larger than encodedData threshold', async () => {
@@ -388,7 +546,7 @@ export function testRecordsWriteHandler(): void {
 
         const reply = await dwn.processMessage(alice.did, message, dataStream);
         expect(reply.status.code).to.equal(400);
-        expect(reply.status.detail).to.contain('bytes does not match dataSize in descriptor');
+        expect(reply.status.detail).to.contain(DwnErrorCode.RecordsWriteDataCidMismatch);
       });
 
       it('should return 400 for data CID mismatch with dataStream larger than encodedData threshold', async () => {
@@ -402,7 +560,7 @@ export function testRecordsWriteHandler(): void {
 
         const reply = await dwn.processMessage(alice.did, message, dataStream);
         expect(reply.status.code).to.equal(400);
-        expect(reply.status.detail).to.contain('bytes does not match dataSize in descriptor');
+        expect(reply.status.detail).to.contain(DwnErrorCode.RecordsWriteDataCidMismatch);
       });
 
       it('should return 400 for data CID mismatch with both dataStream and `dataSize` below than encodedData threshold', async () => {
@@ -416,10 +574,10 @@ export function testRecordsWriteHandler(): void {
 
         const reply = await dwn.processMessage(alice.did, message, dataStream);
         expect(reply.status.code).to.equal(400);
-        expect(reply.status.detail).to.contain('does not match dataCid in descriptor');
+        expect(reply.status.detail).to.contain(DwnErrorCode.RecordsWriteDataCidMismatch);
       });
 
-      it('should return 400 if attempting to write a record without data stream', async () => {
+      it('should return 400 if attempting to write a record without data stream or data in a previous write', async () => {
         const alice = await DidKeyResolver.generate();
 
         const { message } = await TestDataGenerator.generateRecordsWrite({
@@ -429,7 +587,7 @@ export function testRecordsWriteHandler(): void {
         const reply = await dwn.processMessage(alice.did, message);
 
         expect(reply.status.code).to.equal(400);
-        expect(reply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataStream);
+        expect(reply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataInPrevious);
       });
 
       it('#359 - should not allow access of data by referencing a different`dataCid` in "modify" `RecordsWrite`', async () => {
@@ -472,7 +630,7 @@ export function testRecordsWriteHandler(): void {
         });
         const write2ChangeReply = await dwn.processMessage(alice.did, write2Change.message);
         expect(write2ChangeReply.status.code).to.equal(400); // should be disallowed
-        expect(write2ChangeReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataStream);
+        expect(write2ChangeReply.status.detail).to.contain(DwnErrorCode.RecordsWriteDataCidMismatch);
 
         // further sanity test to make sure the change is not written, ie. write2 still has the original data
         const read = await RecordsRead.create({
@@ -1929,7 +2087,7 @@ export function testRecordsWriteHandler(): void {
           });
           const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
           expect(imageReply.status.code).to.equal(400); // should be disallowed
-          expect(imageReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataStream);
+          expect(imageReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataInPrevious);
 
           // further sanity test to make sure record is never written
           const bobRecordsReadData = await RecordsRead.create({
@@ -1947,8 +2105,9 @@ export function testRecordsWriteHandler(): void {
       // RecordsWrite for the same record, referencing the same `dataCid` but omitting the `dataStream`.
 
         // Pruned RecordsWrite
+        // Data large enough to use the DataStore
         const alice = await DidKeyResolver.generate();
-        const data = Encoder.stringToBytes('data from bob');
+        const data = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1);
         const prunedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
           author    : alice,
           published : false,
@@ -1966,7 +2125,7 @@ export function testRecordsWriteHandler(): void {
         });
         const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message);
         expect(recordsWriteReply.status.code).to.equal(400);
-        expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingData);
+        expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataAssociation);
       });
 
       describe('reference counting tests', () => {
@@ -2002,7 +2161,7 @@ export function testRecordsWriteHandler(): void {
           });
           const bobAssociateReply = await dwn.processMessage(bob.did, bobAssociateData.message, bobAssociateData.dataStream);
           expect(bobAssociateReply.status.code).to.equal(400); // expecting an error
-          expect(bobAssociateReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataStream);
+          expect(bobAssociateReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataInPrevious);
 
           const aliceQueryWriteAfterBobAssociateData = await TestDataGenerator.generateRecordsQuery({
             author : alice,

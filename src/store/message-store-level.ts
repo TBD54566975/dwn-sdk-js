@@ -114,16 +114,16 @@ export class MessageStoreLevel implements MessageStore {
 
     const encodedMessageBlock = await executeUnlessAborted(block.encode({ value: message, codec: cbor, hasher: sha256 }), options?.signal);
 
-    // MessageStore data may contain `encodedData` which is not taken into account when calculating the messageCID as it is optional.
+    // MessageStore data may contain `encodedData` which is not taken into account when calculating the blockCID as it is optional data.
     const messageCid = Cid.parseCid(await Message.getCid(message));
     await partition.put(messageCid, encodedMessageBlock.bytes, options);
 
-    const encodedMessageBlockCid = messageCid.toString();
+    const messageCidString = messageCid.toString();
     const indexDocument = {
       ...indexes,
       tenant,
     };
-    await this.index.put(encodedMessageBlockCid, indexDocument, options);
+    await this.index.put(messageCidString, indexDocument, options);
   }
 
   /**
