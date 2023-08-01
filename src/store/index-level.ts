@@ -180,35 +180,46 @@ export class IndexLevel {
    * @returns IDs of data that matches the range filter.
    */
   private async findRangeMatches(propertyName: string, rangeFilter: RangeFilter, options?: IndexLevelOptions): Promise<string[]> {
-    const iteratorOptions: LevelWrapperIteratorOptions<string> = { };
+    const propertyNamePrefix = this.join(propertyName, '');
+    const iteratorOptions: LevelWrapperIteratorOptions<string> = {
+      gt: propertyNamePrefix
+    };
+
+    const filterConditions: Array<(value: string) => boolean> = [];
     for (const comparator in rangeFilter) {
       const comparatorName = comparator as keyof RangeFilter;
-      iteratorOptions[comparatorName] = this.join(propertyName, this.encodeValue(rangeFilter[comparatorName]));
-    }
+      const comparatorValue = rangeFilter[comparatorName];
+      if (!comparatorValue) {
+        continue;
+      }
+      const encodedComparatorValue = this.encodeValue(comparatorValue);
 
-    // if there is no lower bound specified (`gt` or `gte`), we need to iterate from the upper bound,
-    // so that we will iterate over all the matches before hitting mismatches.
-    if (iteratorOptions.gt === undefined && iteratorOptions.gte === undefined) {
-      iteratorOptions.reverse = true;
+      switch (comparatorName) {
+      case 'lt':
+        filterConditions.push((v) => v < encodedComparatorValue);
+        break;
+      case 'lte':
+        filterConditions.push((v) => v <= encodedComparatorValue);
+        break;
+      case 'gt':
+        filterConditions.push((v) => v > encodedComparatorValue);
+        break;
+      case 'gte':
+        filterConditions.push((v) => v >= encodedComparatorValue);
+        break;
+      }
     }
 
     const matches: string[] = [];
     for await (const [ key, dataId ] of this.db.iterator(iteratorOptions, options)) {
+      const [, value] = key.split(this.delimiter);
       // immediately stop if we arrive at an index entry for a different property
-      if (!key.startsWith(propertyName)) {
+      if (!key.startsWith(propertyNamePrefix)) {
         break;
       }
 
-      matches.push(dataId);
-    }
-
-    if ('lte' in rangeFilter) {
-      // When `lte` is used, we must also query the exact match explicitly because the exact match will not be included in the iterator above.
-      // This is due to the extra data (CID) appended to the (property + value) key prefix, e.g.
-      // key = 'dateCreated\u0000"2023-05-25T11:22:33.000000Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
-      // the value would be considered greater than { lte: `dateCreated\u0000"2023-05-25T11:22:33.000000Z"` } used in the iterator options,
-      // thus would not be included in the iterator even though we'd like it to be.
-      for (const dataId of await this.findExactMatches(propertyName, rangeFilter.lte, options)) {
+      const allPass = filterConditions.every((c) => c(value));
+      if (allPass) {
         matches.push(dataId);
       }
     }
@@ -229,8 +240,9 @@ export class IndexLevel {
   /**
    * Joins the given values using the `\x00` (\u0000) character.
    */
+  private delimiter = `\x00`;
   private join(...values: unknown[]): string {
-    return values.join(`\x00`);
+    return values.join(this.delimiter);
   }
 
   async dump(): Promise<void> {
