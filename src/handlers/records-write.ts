@@ -89,7 +89,7 @@ export class RecordsWriteHandler implements MethodHandler {
 
       try {
         if (message.descriptor.dataSize <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
-          message = await RecordsWriteHandler.processEncodedData(
+          message = await this.processEncodedData(
             message,
             dataStream,
             newestExistingMessage as (RecordsWriteMessage|RecordsDeleteMessage) | undefined
@@ -136,7 +136,7 @@ export class RecordsWriteHandler implements MethodHandler {
    * @throws {DwnError} with `DwnErrorCode.RecordsWriteDataSizeMismatch`
    *                    if `dataSize` in `descriptor` given mismatches the actual data size
    */
-  private static async processEncodedData(
+  public async processEncodedData(
     message: RecordsWriteMessage,
     dataStream?: _Readable.Readable,
     newestExistingMessage?: RecordsWriteMessage | RecordsDeleteMessage
@@ -157,7 +157,7 @@ export class RecordsWriteHandler implements MethodHandler {
     }
 
     const dataCid = await Cid.computeDagPbCidFromBytes(dataBytes);
-    this.validateDataIntegrity(message.descriptor.dataCid, message.descriptor.dataSize, dataCid, dataBytes.length);
+    RecordsWriteHandler.validateDataIntegrity(message.descriptor.dataCid, message.descriptor.dataSize, dataCid, dataBytes.length);
 
     const recordsWrite: RecordsWriteMessageWithOptionalEncodedData = { ...message };
     recordsWrite.encodedData = Encoder.bytesToBase64Url(dataBytes);

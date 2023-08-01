@@ -518,22 +518,22 @@ export function testRecordsQueryHandler(): void {
         const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
 
         const additionalIndexes1 = await constructRecordsWriteIndexes(record1Data.recordsWrite, true);
-        await recordsWriteHandler.putData(alice.did, record1Data.message, record1Data.dataStream);
+        record1Data.message = await recordsWriteHandler.processEncodedData(record1Data.message, record1Data.dataStream);
         await messageStore.put(alice.did, record1Data.message, additionalIndexes1);
         await eventLog.append(alice.did, await Message.getCid(record1Data.message));
 
         const additionalIndexes2 = await constructRecordsWriteIndexes(record2Data.recordsWrite, true);
-        await recordsWriteHandler.putData(alice.did, record2Data.message, record2Data.dataStream);
+        record2Data.message = await recordsWriteHandler.processEncodedData(record2Data.message, record2Data.dataStream);
         await messageStore.put(alice.did, record2Data.message, additionalIndexes2);
         await eventLog.append(alice.did, await Message.getCid(record2Data.message));
 
         const additionalIndexes3 = await constructRecordsWriteIndexes(record3Data.recordsWrite, true);
-        await recordsWriteHandler.putData(alice.did, record3Data.message, record3Data.dataStream);
+        record3Data.message = await recordsWriteHandler.processEncodedData(record3Data.message, record3Data.dataStream);
         await messageStore.put(alice.did, record3Data.message, additionalIndexes3);
         await eventLog.append(alice.did, await Message.getCid(record3Data.message));
 
         const additionalIndexes4 = await constructRecordsWriteIndexes(record4Data.recordsWrite, true);
-        await recordsWriteHandler.putData(alice.did, record4Data.message, record4Data.dataStream);
+        record4Data.message = await recordsWriteHandler.processEncodedData(record4Data.message, record4Data.dataStream);
         await messageStore.put(alice.did, record4Data.message, additionalIndexes4);
         await eventLog.append(alice.did, await Message.getCid(record4Data.message));
 

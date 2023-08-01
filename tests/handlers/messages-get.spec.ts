@@ -11,7 +11,7 @@ import { MessagesGetHandler } from '../../src/handlers/messages-get.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
-import { DataStream, DidKeyResolver, DidResolver, Dwn, DwnConstant, Encoder } from '../../src/index.js';
+import { DidKeyResolver, DidResolver, Dwn, DwnConstant } from '../../src/index.js';
 
 import sinon from 'sinon';
 
@@ -178,107 +178,107 @@ export function testMessagesGetHandler(): void {
       }
     });
 
-    it('calls dataStore for data when encodedData is below a threshold and encodedData is not set', async () => {
-      const alice = await DidKeyResolver.generate();
-      const { recordsWrite, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({
-        author : alice,
-        data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)
-      });
-      const { message } = recordsWrite;
+    // it('calls dataStore for data when encodedData is below a threshold and encodedData is not set', async () => {
+    //   const alice = await DidKeyResolver.generate();
+    //   const { recordsWrite, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({
+    //     author : alice,
+    //     data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)
+    //   });
+    //   const { message } = recordsWrite;
 
-      const writeReply = await dwn.processMessage(alice.did, message, dataStream);
-      expect(writeReply.status.code).to.equal(202);
+    //   const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+    //   expect(writeReply.status.code).to.equal(202);
 
-      const recordsWriteMessageCid = await Message.getCid(message);
+    //   const recordsWriteMessageCid = await Message.getCid(message);
 
-      // messageStore.get resolves recordsWrite without encodedData set
-      sinon.stub(messageStore, 'get')
-        .withArgs(alice.did, recordsWriteMessageCid)
-        .resolves(message);
+    //   // messageStore.get resolves recordsWrite without encodedData set
+    //   sinon.stub(messageStore, 'get')
+    //     .withArgs(alice.did, recordsWriteMessageCid)
+    //     .resolves(message);
 
-      const responseStream = DataStream.fromBytes(dataBytes!);
-      const getStub = sinon.stub(dataStore, 'get');
-      getStub.withArgs(alice.did, recordsWriteMessageCid, message.descriptor.dataCid)
-        .resolves({
-          dataCid    : message.descriptor.dataCid,
-          dataSize   : message.descriptor.dataSize,
-          dataStream : responseStream,
-        });
+    //   const responseStream = DataStream.fromBytes(dataBytes!);
+    //   const getStub = sinon.stub(dataStore, 'get');
+    //   getStub.withArgs(alice.did, recordsWriteMessageCid, message.descriptor.dataCid)
+    //     .resolves({
+    //       dataCid    : message.descriptor.dataCid,
+    //       dataSize   : message.descriptor.dataSize,
+    //       dataStream : responseStream,
+    //     });
 
-      const { message: getMessage } = await TestDataGenerator.generateMessagesGet({
-        author      : alice,
-        messageCids : [recordsWriteMessageCid]
-      });
+    //   const { message: getMessage } = await TestDataGenerator.generateMessagesGet({
+    //     author      : alice,
+    //     messageCids : [recordsWriteMessageCid]
+    //   });
 
-      const reply: MessagesGetReply = await dwn.processMessage(alice.did, getMessage);
-      expect(reply.status.code).to.equal(200);
-      expect(reply.messages!.length).to.equal(1);
-      expect(reply.messages![0].messageCid).to.equal(recordsWriteMessageCid);
+    //   const reply: MessagesGetReply = await dwn.processMessage(alice.did, getMessage);
+    //   expect(reply.status.code).to.equal(200);
+    //   expect(reply.messages!.length).to.equal(1);
+    //   expect(reply.messages![0].messageCid).to.equal(recordsWriteMessageCid);
 
-      sinon.assert.calledOnce(getStub);
-      expect(reply.messages![0].encodedData).to.equal(Encoder.bytesToBase64Url(dataBytes!));
-    });
+    //   sinon.assert.calledOnce(getStub);
+    //   expect(reply.messages![0].encodedData).to.equal(Encoder.bytesToBase64Url(dataBytes!));
+    // });
 
-    it('calls dataStore for data when encodedData is below a threshold and encodedData is not set and there is no underlying data', async () => {
-      const alice = await DidKeyResolver.generate();
-      const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-        author : alice,
-        data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)
-      });
-      const { message } = recordsWrite;
+    // it('calls dataStore for data when encodedData is below a threshold and encodedData is not set and there is no underlying data', async () => {
+    //   const alice = await DidKeyResolver.generate();
+    //   const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
+    //     author : alice,
+    //     data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)
+    //   });
+    //   const { message } = recordsWrite;
 
-      const writeReply = await dwn.processMessage(alice.did, message, dataStream);
-      expect(writeReply.status.code).to.equal(202);
+    //   const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+    //   expect(writeReply.status.code).to.equal(202);
 
-      const recordsWriteMessageCid = await Message.getCid(message);
+    //   const recordsWriteMessageCid = await Message.getCid(message);
 
-      // messageStore.get resolves recordsWrite without encodedData set
-      sinon.stub(messageStore, 'get')
-        .withArgs(alice.did, recordsWriteMessageCid)
-        .resolves(message);
+    //   // messageStore.get resolves recordsWrite without encodedData set
+    //   sinon.stub(messageStore, 'get')
+    //     .withArgs(alice.did, recordsWriteMessageCid)
+    //     .resolves(message);
 
-      const getStub = sinon.stub(dataStore, 'get');
-      getStub.withArgs(alice.did, recordsWriteMessageCid, message.descriptor.dataCid)
-        .resolves(undefined);
+    //   const getStub = sinon.stub(dataStore, 'get');
+    //   getStub.withArgs(alice.did, recordsWriteMessageCid, message.descriptor.dataCid)
+    //     .resolves(undefined);
 
-      const { message: getMessage } = await TestDataGenerator.generateMessagesGet({
-        author      : alice,
-        messageCids : [recordsWriteMessageCid]
-      });
+    //   const { message: getMessage } = await TestDataGenerator.generateMessagesGet({
+    //     author      : alice,
+    //     messageCids : [recordsWriteMessageCid]
+    //   });
 
-      const reply: MessagesGetReply = await dwn.processMessage(alice.did, getMessage);
-      expect(reply.status.code).to.equal(200);
-      expect(reply.messages!.length).to.equal(1);
-      expect(reply.messages![0].messageCid).to.equal(recordsWriteMessageCid);
+    //   const reply: MessagesGetReply = await dwn.processMessage(alice.did, getMessage);
+    //   expect(reply.status.code).to.equal(200);
+    //   expect(reply.messages!.length).to.equal(1);
+    //   expect(reply.messages![0].messageCid).to.equal(recordsWriteMessageCid);
 
-      sinon.assert.calledOnce(getStub);
-      expect(reply.messages![0].encodedData).to.be.undefined;
-    });
+    //   sinon.assert.calledOnce(getStub);
+    //   expect(reply.messages![0].encodedData).to.be.undefined;
+    // });
 
-    it('does not call dataStore for data when encodedData is below a threshold and encodedData is set', async () => {
-      const alice = await DidKeyResolver.generate();
-      const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-        author : alice,
-        data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)
-      });
-      const writeReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
-      expect(writeReply.status.code).to.equal(202);
+    // it('does not call dataStore for data when encodedData is below a threshold and encodedData is set', async () => {
+    //   const alice = await DidKeyResolver.generate();
+    //   const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
+    //     author : alice,
+    //     data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)
+    //   });
+    //   const writeReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+    //   expect(writeReply.status.code).to.equal(202);
 
-      const dataStoreGet = sinon.spy(dataStore, 'get');
+    //   const dataStoreGet = sinon.spy(dataStore, 'get');
 
-      const recordsWriteMessageCid = await Message.getCid(recordsWrite.message);
-      const { message } = await TestDataGenerator.generateMessagesGet({
-        author      : alice,
-        messageCids : [recordsWriteMessageCid]
-      });
+    //   const recordsWriteMessageCid = await Message.getCid(recordsWrite.message);
+    //   const { message } = await TestDataGenerator.generateMessagesGet({
+    //     author      : alice,
+    //     messageCids : [recordsWriteMessageCid]
+    //   });
 
-      const reply: MessagesGetReply = await dwn.processMessage(alice.did, message);
-      expect(reply.status.code).to.equal(200);
-      expect(reply.messages!.length).to.equal(1);
-      expect(reply.messages![0].messageCid).to.equal(recordsWriteMessageCid);
+    //   const reply: MessagesGetReply = await dwn.processMessage(alice.did, message);
+    //   expect(reply.status.code).to.equal(200);
+    //   expect(reply.messages!.length).to.equal(1);
+    //   expect(reply.messages![0].messageCid).to.equal(recordsWriteMessageCid);
 
-      sinon.assert.notCalled(dataStoreGet);
-    });
+    //   sinon.assert.notCalled(dataStoreGet);
+    // });
 
     it('returns an error message for a specific cid if getting that message from the MessageStore fails', async () => {
     // stub the messageStore.get call to throw an error

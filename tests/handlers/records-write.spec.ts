@@ -2188,7 +2188,7 @@ export function testRecordsWriteHandler(): void {
           const alice = await DidKeyResolver.generate();
           const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
-          const processEncoded = sinon.spy(RecordsWriteHandler, <any>'processEncodedData');
+          const processEncoded = sinon.spy(RecordsWriteHandler.prototype, 'processEncodedData');
           const putData = sinon.spy(RecordsWriteHandler.prototype, 'putData');
 
           const writeMessage = await dwn.processMessage(alice.did, message, dataStream);
@@ -2201,7 +2201,7 @@ export function testRecordsWriteHandler(): void {
           const alice = await DidKeyResolver.generate();
           const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1);
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
-          const processEncoded = sinon.spy(RecordsWriteHandler, <any>'processEncodedData');
+          const processEncoded = sinon.spy(RecordsWriteHandler.prototype, 'processEncodedData');
           const putData = sinon.spy(RecordsWriteHandler.prototype, 'putData');
 
           const writeMessage = await dwn.processMessage(alice.did, message, dataStream);

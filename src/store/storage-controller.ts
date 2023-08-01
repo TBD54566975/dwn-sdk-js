@@ -5,9 +5,7 @@ import type { RecordsWriteMessage } from '../types/records-types.js';
 import type { Filter, GenericMessage, TimestampedMessage } from '../types/message-types.js';
 
 import { constructRecordsWriteIndexes } from '../handlers/records-write.js';
-import { DataStream } from '../utils/data-stream.js';
 import { DwnConstant } from '../core/dwn-constant.js';
-import { Encoder } from '../utils/encoder.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnMethodName, Message } from '../core/message.js';
 
@@ -21,26 +19,7 @@ export class StorageController {
     tenant: string,
     filter: Filter
   ): Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
-
-    const messages: RecordsWriteMessageWithOptionalEncodedData[] = (await messageStore.query(tenant, filter)) as RecordsWriteMessage[];
-
-    // for every message, only include the data as `encodedData` if the data size is equal or smaller than the size threshold
-    // only fetch from dataStore if encodedData doesn't exist on the stored message. This is for backwards compatibility.
-    for (const message of messages) {
-      const dataCid = message.descriptor.dataCid;
-      const dataSize = message.descriptor.dataSize;
-      if (dataCid !== undefined && dataSize! <= DwnConstant.maxDataSizeAllowedToBeEncoded && message.encodedData === undefined) {
-        const messageCid = await Message.getCid(message);
-        const result = await dataStore.get(tenant, messageCid, dataCid);
-
-        if (result) {
-          const dataBytes = await DataStream.toBytes(result.dataStream);
-          message.encodedData = Encoder.bytesToBase64Url(dataBytes);
-        }
-      }
-    }
-
-    return messages;
+    return (await messageStore.query(tenant, filter)) as RecordsWriteMessageWithOptionalEncodedData[];
   }
 
   /**
@@ -54,7 +33,8 @@ export class StorageController {
   ): Promise<void> {
     const messageCid = await Message.getCid(message);
 
-    if (message.descriptor.method === DwnMethodName.Write) {
+    if (message.descriptor.method === DwnMethodName.Write &&
+        (message as RecordsWriteMessage).descriptor.dataSize > DwnConstant.maxDataSizeAllowedToBeEncoded) {
       const recordsWriteMessage = message as RecordsWriteMessage;
       await dataStore.delete(tenant, messageCid, recordsWriteMessage.descriptor.dataCid);
     }
@@ -89,7 +69,6 @@ export class StorageController {
 
         // if the existing message is the initial write
         // we actually need to keep it BUT, need to ensure the message is no longer marked as the latest state
-        // and we can delete the optional encodedData
         const existingMessageIsInitialWrite = await RecordsWrite.isInitialWrite(message);
         if (existingMessageIsInitialWrite) {
           const existingRecordsWrite = await RecordsWrite.parse(message as RecordsWriteMessage);
