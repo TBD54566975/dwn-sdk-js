@@ -265,6 +265,31 @@ describe('Index Level', () => {
       expect(resp.length).to.equal(1);
       expect(resp).to.include(id1);
     });
+
+    it('should return records that match provided number equality filter', async () => {
+      await index.put('a', { digit: 1000 });
+      await index.put('b', { digit: 100 });
+      await index.put('c', { digit: 10 });
+
+      const resp = await index.query({
+        digit: 100
+      });
+
+      expect(resp.length).to.equal(1);
+      expect(resp.at(0)).to.equal('b');
+    });
+
+    it ('should not return records that do not match provided number equality filter', async() => {
+      await index.put('a', { digit: 1000 });
+      await index.put('b', { digit: 100 });
+      await index.put('c', { digit: 10 });
+
+      const resp = await index.query({
+        digit: 1
+      });
+
+      expect(resp.length).to.equal(0);
+    });
   });
 
   describe('delete', () => {
