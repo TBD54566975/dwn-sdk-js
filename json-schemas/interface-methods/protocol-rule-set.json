@@ -21,7 +21,7 @@
       "minItems": 1,
       "items": {
         "type": "object",
-        "anyOf": [
+        "oneOf": [
           {
             "required": [
               "who",
@@ -47,7 +47,7 @@
           {
             "required": [
               "who",
-              "of",
+              "ofRecord",
               "can"
             ],
             "additionalProperties": false,
@@ -59,8 +59,21 @@
                   "recipient"
                 ]
               },
-              "of": {
-                "type": "string"
+              "ofRecord": {
+                "type": "object",
+                "properties": {
+                  "atPath": {
+                    "type": "string"
+                  },
+                  "inGroup": {
+                    "type": "string",
+                    "enum": [
+                      "any",
+                      "context",
+                      "ancestors"
+                    ]
+                  }
+                }
               },
               "can": {
                 "type": "string",

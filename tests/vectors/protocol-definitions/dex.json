@@ -33,7 +33,10 @@
         "$actions": [
           {
             "who": "recipient",
-            "of": "ask",
+            "ofRecord": {
+              "atPath": "ask",
+              "inGroup": "ancestors"
+            },
             "can": "write"
           }
         ],
@@ -41,7 +44,10 @@
           "$actions": [
             {
               "who": "recipient",
-              "of": "ask/offer",
+              "ofRecord": {
+                "atPath": "ask/offer",
+                "inGroup": "ancestors"
+              },
               "can": "write"
             }
           ]
