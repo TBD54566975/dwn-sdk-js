@@ -59,6 +59,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
 
   public async authorize(tenant: string, newestRecordsWrite: RecordsWrite, messageStore: MessageStore): Promise<void> {
     const { descriptor } = newestRecordsWrite.message;
+
     // if author is the same as the target tenant, we can directly grant access
     if (this.author === tenant) {
       return;
@@ -68,8 +69,8 @@ export class RecordsRead extends Message<RecordsReadMessage> {
     } else if (this.author !== undefined && this.author === descriptor.recipient) {
       // The recipient of a message may always read it
       return;
-    } else if (this.authorizationPayload?.permissionsGrantId !== undefined) {
-      await RecordsGrantAuthorization.authorizeRecordsGrant(tenant, this, messageStore);
+    } else if (this.author !== undefined && this.authorizationPayload?.permissionsGrantId !== undefined) {
+      await RecordsGrantAuthorization.authorizeRecordsGrant(tenant, this, this.author, messageStore);
     } else if (descriptor.protocol !== undefined) {
       await ProtocolAuthorization.authorize(tenant, this, this.author, messageStore);
     } else {

@@ -16,11 +16,12 @@ export class RecordsGrantAuthorization {
   public static async authorizeRecordsGrant(
     tenant: string,
     incomingMessage: RecordsRead | RecordsWrite | RecordsDelete,
+    author: string,
     messageStore: MessageStore,
   ): Promise<void> {
 
     // authorize generic message
-    const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, messageStore);
+    const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, author, messageStore);
 
     const grantScope = permissionsGrantMessage.descriptor.scope as RecordsPermissionScope;
 
