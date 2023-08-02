@@ -159,7 +159,7 @@ export class IndexLevel {
    * @returns IDs of data that matches the exact property and value.
    */
   private async findExactMatches(propertyName: string, propertyValue: unknown, options?: IndexLevelOptions): Promise<string[]> {
-    const propertyValuePrefix = this.join(propertyName, this.encodeValue(propertyValue));
+    const propertyValuePrefix = this.join(propertyName, this.encodeValue(propertyValue), '');
 
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {
       gt: propertyValuePrefix
