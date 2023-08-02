@@ -24,7 +24,6 @@ Code Coverage
 - [Architecture](#architecture)
 - [Project Resources](#project-resources)
 
->>>>>>> main
 
 ## Introduction
 
