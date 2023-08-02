@@ -3,17 +3,6 @@
   "$id": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json",
   "type": "object",
   "definitions": {
-    "protocols-configure-scope": {
-      "type": "object",
-      "properties": {
-        "interface": {
-          "const": "Protocols"
-        },
-        "method": {
-          "const": "Configure"
-        }
-      }
-    },
     "protocols-query-scope": {
       "type": "object",
       "properties": {
