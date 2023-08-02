@@ -1,4 +1,4 @@
-import type { PrivateJwk } from '../types/jose-types.js';
+import type { PrivateJwk, PublicJwk } from '../types/jose-types.js';
 
 import { Secp256k1 } from './secp256k1.js';
 
@@ -7,7 +7,8 @@ export enum KeyDerivationScheme {
    * Key derivation using the `dataFormat` value for Flat-space records.
    */
   DataFormats = 'dataFormats',
-  Protocols = 'protocols',
+  ProtocolContext = 'protocolContext',
+  ProtocolPath = 'protocolPath',
   /**
    * Key derivation using the `schema` value for Flat-space records.
    */
@@ -42,5 +43,16 @@ export class HdKey {
     };
 
     return derivedDescendantPrivateKey;
+  }
+
+  /**
+   * Derives a descendant public key from an ancestor private key.
+   * NOTE: currently only supports SECP256K1 keys.
+   */
+  public static async derivePublicKey(ancestorKey: DerivedPrivateJwk, subDerivationPath: string[]): Promise<PublicJwk> {
+    const derivedDescendantPrivateKey = await HdKey.derivePrivateKey(ancestorKey, subDerivationPath);
+    const derivedDescendantPublicKey = await Secp256k1.getPublicJwk(derivedDescendantPrivateKey.derivedPrivateKey);
+
+    return derivedDescendantPublicKey;
   }
 }

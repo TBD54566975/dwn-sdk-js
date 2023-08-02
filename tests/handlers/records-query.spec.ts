@@ -1,18 +1,15 @@
+import type { RecordsWriteDescriptor } from '../../src/types/records-types.js';
+import type { RecordsWriteMessage } from '../../src/index.js';
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
-import type { DerivedPrivateJwk, EncryptionInput, RecordsWriteMessage } from '../../src/index.js';
-import type { RecordsQueryReplyEntry, RecordsWriteDescriptor } from '../../src/types/records-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
-import emailProtocolDefinition from '../vectors/protocol-definitions/email.json' assert { type: 'json' };
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
-import { ArrayUtility } from '../../src/utils/array.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { DwnConstant } from '../../src/core/dwn-constant.js';
 import { DwnErrorCode } from '../../src/index.js';
 import { Encoder } from '../../src/utils/encoder.js';
-import { Encryption } from '../../src/index.js';
 import { Jws } from '../../src/utils/jws.js';
 import { Message } from '../../src/core/message.js';
 import { RecordsQueryHandler } from '../../src/handlers/records-query.js';
@@ -23,8 +20,8 @@ import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { toTemporalInstant } from '@js-temporal/polyfill';
 
 import { constructRecordsWriteIndexes, RecordsWriteHandler } from '../../src/handlers/records-write.js';
-import { DataStream, DidResolver, Dwn, HdKey, KeyDerivationScheme, Records } from '../../src/index.js';
 import { DateSort, RecordsQuery } from '../../src/interfaces/records-query.js';
+import { DidResolver, Dwn } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -665,117 +662,6 @@ export function testRecordsQueryHandler(): void {
         const reply = await dwn.processMessage(alice.did, recordsQuery.message);
         expect(reply.status.code).to.equal(400);
         expect(reply.status.detail).to.contain(DwnErrorCode.UrlSchemaNotNormalized);
-      });
-
-      describe('encryption scenarios', () => {
-        it('should only be able to decrypt record with a correct derived private key - `protocols` derivation scheme', async () => {
-        // scenario, Bob writes into Alice's DWN an encrypted "email", alice is able to decrypt it
-
-          // creating Alice and Bob persona and setting up a stub DID resolver
-          const alice = await TestDataGenerator.generatePersona();
-          const bob = await TestDataGenerator.generatePersona();
-          TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
-
-          // configure protocol
-          const protocolDefinition = emailProtocolDefinition;
-          const protocol = protocolDefinition.protocol;
-          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-            author: alice,
-            protocolDefinition
-          });
-
-          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
-          expect(protocolsConfigureReply.status.code).to.equal(202);
-
-          // encrypt bob's message
-          const bobMessageBytes = Encoder.stringToBytes('message from bob');
-          const bobMessageStream = DataStream.fromBytes(bobMessageBytes);
-          const dataEncryptionInitializationVector = TestDataGenerator.randomBytes(16);
-          const dataEncryptionKey = TestDataGenerator.randomBytes(32);
-          const bobMessageEncryptedStream = await Encryption.aes256CtrEncrypt(
-            dataEncryptionKey, dataEncryptionInitializationVector, bobMessageStream
-          );
-          const bobMessageEncryptedBytes = await DataStream.toBytes(bobMessageEncryptedStream);
-
-          // generate a `RecordsWrite` message from bob allowed by anyone
-          const encryptionInput: EncryptionInput = {
-            initializationVector : dataEncryptionInitializationVector,
-            key                  : dataEncryptionKey,
-            keyEncryptionInputs  : [{
-              publicKeyId      : alice.keyId, // reusing signing key for encryption purely as a convenience
-              publicKey        : alice.keyPair.publicJwk,
-              derivationScheme : KeyDerivationScheme.Protocols
-            }]
-          };
-
-          const schema = protocolDefinition.types.email.schema;
-          const { message, dataStream } = await TestDataGenerator.generateRecordsWrite(
-            {
-              author       : bob,
-              protocol,
-              protocolPath : 'email', // this comes from `types` in protocol definition
-              schema,
-              dataFormat   : protocolDefinition.types.email.dataFormats[0],
-              data         : bobMessageEncryptedBytes,
-              encryptionInput
-            }
-          );
-
-          const bobWriteReply = await dwn.processMessage(alice.did, message, dataStream);
-          expect(bobWriteReply.status.code).to.equal(202);
-
-          const recordsQuery = await RecordsQuery.create({
-            filter                      : { schema },
-            authorizationSignatureInput : Jws.createSignatureInput(alice)
-          });
-          const queryReply = await dwn.processMessage(alice.did, recordsQuery.message);
-          expect(queryReply.status.code).to.equal(200);
-
-          const unsignedRecordsWrite = queryReply.entries![0] as RecordsQueryReplyEntry;
-
-
-          // test able to decrypt the message using the root key
-          const rootPrivateKey: DerivedPrivateJwk = {
-            rootKeyId         : alice.keyId,
-            derivationScheme  : KeyDerivationScheme.Protocols,
-            derivedPrivateKey : alice.keyPair.privateJwk
-          };
-          const cipherStream = DataStream.fromBytes(Encoder.base64UrlToBytes(unsignedRecordsWrite.encodedData!));
-
-          const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, rootPrivateKey, cipherStream);
-          const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
-          expect(ArrayUtility.byteArraysEqual(plaintextBytes, bobMessageBytes)).to.be.true;
-
-
-          // test able to decrypt the message using a derived key
-          const derivationPath = [KeyDerivationScheme.Protocols]; // the first path segment of `protocols` derivation scheme
-          const derivedPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, derivationPath);
-
-          const cipherStream2 = DataStream.fromBytes(Encoder.base64UrlToBytes(unsignedRecordsWrite.encodedData!));
-
-          const plaintextDataStream2 = await Records.decrypt(unsignedRecordsWrite, derivedPrivateKey, cipherStream2);
-          const plaintextBytes2 = await DataStream.toBytes(plaintextDataStream2);
-          expect(ArrayUtility.byteArraysEqual(plaintextBytes2, bobMessageBytes)).to.be.true;
-
-
-          // test able to decrypt the message using a key derived from a derived key
-          const protocolsUriDerivationPathSegment = [message.descriptor.protocol!]; // the 2nd path segment of `protocols` derivation scheme
-          const derivedPrivateKey2: DerivedPrivateJwk = await HdKey.derivePrivateKey(derivedPrivateKey, protocolsUriDerivationPathSegment);
-
-          const cipherStream3 = DataStream.fromBytes(Encoder.base64UrlToBytes(unsignedRecordsWrite.encodedData!));
-
-          const plaintextDataStream3 = await Records.decrypt(unsignedRecordsWrite, derivedPrivateKey2, cipherStream3);
-          const plaintextBytes3 = await DataStream.toBytes(plaintextDataStream3);
-          expect(ArrayUtility.byteArraysEqual(plaintextBytes3, bobMessageBytes)).to.be.true;
-
-
-          // test unable to decrypt the message if derived key has an unexpected path
-          const invalidDerivationPath = [KeyDerivationScheme.Protocols, protocol, 'invalidContextId'];
-          const inValidDescendantPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, invalidDerivationPath);
-          await expect(Records.decrypt(unsignedRecordsWrite, inValidDescendantPrivateKey, cipherStream)).to.be.rejectedWith(
-            DwnErrorCode.RecordsInvalidAncestorKeyDerivationSegment
-          );
-        });
       });
     });
 

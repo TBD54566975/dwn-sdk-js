@@ -1,4 +1,5 @@
 import type { GenericMessageReply } from '../core/message-reply.js';
+import type { PublicJwk } from './jose-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 import type { GenericMessage, QueryResultEntry } from './message-types.js';
 
@@ -46,8 +47,21 @@ export type ProtocolActionRule = {
   of?: string,
   can: string
 };
+/**
+ * Config for protocol-path encryption scheme.
+ */
+export type ProtocolPathEncryption = {
+  /**
+   * Public key for encrypting the symmetric key used for data encryption.
+   */
+  publicKeyJwk: PublicJwk;
+};
 
 export type ProtocolRuleSet = {
+  /**
+   * Encryption setting for objects that are in this protocol path.
+   */
+  $encryption?: ProtocolPathEncryption;
   $actions?: ProtocolActionRule[];
   // JSON Schema verifies that properties other than `$actions` will actually have type ProtocolRuleSet
   [key: string]: any;

@@ -1,6 +1,6 @@
 {
   "name": "@tbd54566975/dwn-sdk-js",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A reference implementation of https://identity.foundation/decentralized-web-node/spec/",
   "repository": {
     "type": "git",
@@ -30,7 +30,6 @@
     }
   ],
   "type": "module",
-  "types": "./dist/types/src/index.d.ts",
   "@comment files": [
     "the files property informs npm about which files we want to include in our published package.",
     "dist will include all transpiled js. There's no point in including .ts files"
@@ -42,17 +41,18 @@
   "engines": {
     "node": ">= 18"
   },
-  "main": "./dist/cjs/src/index.js",
+  "main": "./dist/cjs/index.js",
   "module": "./dist/esm/src/index.js",
+  "types": "./dist/types/src/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/esm/src/index.js",
-      "require": "./dist/cjs/src/index.js",
+      "require": "./dist/cjs/index.js",
       "types": "./dist/types/src/index.d.ts"
     },
     "./stores": {
       "import": "./dist/esm/src/index-stores.js",
-      "require": "./dist/cjs/src/index-stores.js",
+      "require": "./dist/cjs/index-stores.js",
       "types": "./dist/types/src/index-stores.d.ts"
     },
     "./tests": {
@@ -60,17 +60,10 @@
       "types": "./dist/types/tests/test-suite.d.ts"
     }
   },
-  "browser": {
-    "./dist/esm/src/index.js": "./dist/bundles/browser.js",
-    "./dist/cjs/src/index.js": "./dist/bundles/browser.js"
-  },
   "@comment react-native": [
     "directive for metro (react native build tool)."
   ],
-  "react-native": {
-    "./dist/esm/src/index.js": "./dist/esm/src/index.js",
-    "./dist/cjs/src/index.js": "./dist/esm/src/index.js"
-  },
+  "react-native": "./dist/cjs/index.js",
   "dependencies": {
     "@ipld/dag-cbor": "9.0.3",
     "@js-temporal/polyfill": "0.4.4",
@@ -79,7 +72,7 @@
     "abstract-level": "1.0.3",
     "ajv": "8.12.0",
     "blockstore-core": "4.2.0",
-    "cross-fetch": "3.1.6",
+    "cross-fetch": "4.0.0",
     "eciesjs": "0.4.0",
     "flat": "5.0.2",
     "interface-blockstore": "5.2.3",
@@ -93,7 +86,6 @@
     "multiformats": "11.0.2",
     "randombytes": "2.1.0",
     "readable-stream": "4.4.0",
-    "secp256k1": "5.0.0",
     "ulid": "2.3.0",
     "uuid": "8.3.2",
     "varint": "6.0.0"
@@ -155,7 +147,7 @@
   },
   "scripts": {
     "build:esm": "tsc",
-    "build:cjs": "tsc --project tsconfig.cjs.json && echo '{\"type\": \"commonjs\"}' > ./dist/cjs/package.json",
+    "build:cjs": "npm run build:esm && node build/create-cjs-bundle.cjs && echo '{\"type\": \"commonjs\"}' > ./dist/cjs/package.json",
     "build": "npm run clean && npm run compile-validators && npm run build:esm && npm run build:cjs && npm run bundle",
     "bundle": "node ./build/create-browser-bundle.cjs",
     "clean": "rimraf dist && rimraf generated/*",

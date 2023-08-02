@@ -1,10 +1,10 @@
 import type { GenericMessage } from '../types/message-types.js';
-import type { KeyDerivationScheme } from '../index.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PublicJwk } from '../types/jose-types.js';
 import type {
   EncryptedKey,
   EncryptionProperty,
+  InternalRecordsWriteMessage,
   RecordsWriteAttestationPayload,
   RecordsWriteAuthorizationPayload,
   RecordsWriteDescriptor,
@@ -20,11 +20,12 @@ import { EncryptionAlgorithm } from '../utils/encryption.js';
 import { GeneralJwsSigner } from '../jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Jws } from '../utils/jws.js';
+import { KeyDerivationScheme } from '../index.js';
 import { Message } from '../core/message.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
-import { Records } from '../utils/records.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Secp256k1 } from '../utils/secp256k1.js';
+
 import { authorize, validateAuthorizationIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
@@ -46,7 +47,7 @@ export type RecordsWriteOptions = {
   published?: boolean;
   datePublished?: string;
   dataFormat: string;
-  authorizationSignatureInput: SignatureInput;
+  authorizationSignatureInput?: SignatureInput;
   attestationSignatureInputs?: SignatureInput[];
   encryptionInput?: EncryptionInput;
 };
@@ -82,18 +83,18 @@ export type EncryptionInput = {
  */
 export type KeyEncryptionInput = {
   /**
-   * Key derivation scheme to derive the descendant public key to encrypt the symmetric key.
+   * Key derivation scheme used to derive the public key to encrypt the symmetric key.
    */
   derivationScheme: KeyDerivationScheme;
 
   /**
-   * Fully qualified ID of root public key used derive the descendant public key to encrypt the symmetric key.
+   * Fully qualified ID of root public key used derive the public key to be used to to encrypt the symmetric key.
    * (e.g. did:example:abc#encryption-key-id)
    */
   publicKeyId: string;
 
   /**
-   * Root public key used derive the descendant public key to encrypt the symmetric key.
+   * Public key to be used to encrypt the symmetric key.
    */
   publicKey: PublicJwk;
 
@@ -109,19 +110,53 @@ export type CreateFromOptions = {
   published?: boolean;
   messageTimestamp?: string;
   datePublished?: string;
-  authorizationSignatureInput: SignatureInput;
+  authorizationSignatureInput?: SignatureInput;
   attestationSignatureInputs?: SignatureInput[];
   encryptionInput?: EncryptionInput;
 };
 
-export class RecordsWrite extends Message<RecordsWriteMessage> {
+export class RecordsWrite {
+  #message: InternalRecordsWriteMessage;
+  /**
+   * Valid JSON message representing this RecordsWrite.
+   * @throws `DwnErrorCode.RecordsWriteMissingAuthorizationSignatureInput` if the message is not signed yet.
+   */
+  public get message(): RecordsWriteMessage {
+    if (this.#message.authorization === undefined) {
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteMissingAuthorizationSignatureInput,
+        'This RecordsWrite is not yet signed, JSON message cannot be generated from an incomplete state.'
+      );
+    }
 
-  // validateAuthorizationIntegrity() enforces the presence of authorization for RecordsWrite
-  readonly authorizationPayload!: RecordsWriteAuthorizationPayload;
+    return this.#message as RecordsWriteMessage;
+  }
+
+  #author: string | undefined;
+  /**
+   * DID of author of this message.
+   */
+  public get author(): string | undefined {
+    return this.#author;
+  }
+
+  #authorizationPayload: RecordsWriteAuthorizationPayload | undefined;
+  /**
+   * Decoded authorization payload.
+   */
+  public get authorizationPayload(): RecordsWriteAuthorizationPayload | undefined {
+    return this.#authorizationPayload;
+  }
+
   readonly attesters: string[];
 
-  private constructor(message: RecordsWriteMessage) {
-    super(message);
+  private constructor(message: InternalRecordsWriteMessage) {
+    this.#message = message;
+
+    if (message.authorization !== undefined) {
+      this.#authorizationPayload = Jws.decodePlainObjectPayload(message.authorization);
+      this.#author = Message.getAuthor(message as GenericMessage);
+    }
 
     this.attesters = RecordsWrite.getAttesters(message);
 
@@ -202,50 +237,38 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const author = Jws.extractDid(options.authorizationSignatureInput.protectedHeader.kid);
-
     // `recordId` computation
-    const recordId = options.recordId ?? await RecordsWrite.getEntryId(author, descriptor);
+    const recordId = options.recordId;
 
     // `contextId` computation
-    let contextId: string | undefined;
-    if (options.contextId !== undefined) {
-      contextId = options.contextId;
-    } else { // `contextId` is undefined
-      // we compute the contextId for the caller if `protocol` is specified (this is the case of the root message of a protocol context)
-      if (descriptor.protocol !== undefined) {
-        contextId = await RecordsWrite.getEntryId(author, descriptor);
-      }
-    }
+    const contextId = options.contextId;
 
     // `attestation` generation
     const descriptorCid = await Cid.computeCid(descriptor);
     const attestation = await RecordsWrite.createAttestation(descriptorCid, options.attestationSignatureInputs);
-    const encryption = await RecordsWrite.createEncryptionProperty(recordId, contextId, descriptor, options.encryptionInput);
 
-    // `authorization` generation
-    const authorization = await RecordsWrite.createAuthorization(
-      recordId,
-      contextId,
-      descriptorCid,
-      attestation,
-      encryption,
-      options.authorizationSignatureInput
-    );
+    // `encryption` generation
+    const encryption = await RecordsWrite.createEncryptionProperty(descriptor, options.encryptionInput);
 
-    const message: RecordsWriteMessage = {
+    const message: InternalRecordsWriteMessage = {
       recordId,
-      descriptor,
-      authorization
+      descriptor
     };
 
-    if (contextId !== undefined) { message.contextId = contextId; } // assign `contextId` only if it is defined
-    if (attestation !== undefined) { message.attestation = attestation; } // assign `attestation` only if it is defined
-    if (encryption !== undefined) { message.encryption = encryption; } // assign `encryption` only if it is defined
+    // assign optional properties only if they exist
+    if (contextId !== undefined) { message.contextId = contextId; }
+    if (attestation !== undefined) { message.attestation = attestation; }
+    if (encryption !== undefined) { message.encryption = encryption; }
 
-    Message.validateJsonSchema(message);
+    // validateJsonSchema('RecordsWriteUnauthorized', message);
 
-    return new RecordsWrite(message);
+    const recordsWrite = new RecordsWrite(message);
+
+    if (options.authorizationSignatureInput !== undefined) {
+      await recordsWrite.sign(options.authorizationSignatureInput);
+    }
+
+    return recordsWrite;
   }
 
   /**
@@ -314,6 +337,59 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     return recordsWrite;
   }
 
+  /**
+   * Called by `JSON.stringify(...)` automatically.
+   */
+  toJSON(): RecordsWriteMessage {
+    return this.message;
+  }
+
+  /**
+   * Encrypts the symmetric encryption key using the public keys given and attach the resulting `encryption` property to the RecordsWrite.
+   */
+  public async encryptSymmetricEncryptionKey(encryptionInput: EncryptionInput): Promise<void> {
+    this.#message.encryption = await RecordsWrite.createEncryptionProperty(this.#message.descriptor, encryptionInput);
+
+    // opportunity here to re-sign instead of remove
+    delete this.#message.authorization;
+    this.#authorizationPayload = undefined;
+    this.#author = undefined;
+  }
+
+  /**
+   * Signs the RecordsWrite.
+   */
+  public async sign(signatureInput: SignatureInput): Promise<void> {
+    const author = Jws.extractDid(signatureInput.protectedHeader.kid);
+
+    const descriptor = this.#message.descriptor;
+    const descriptorCid = await Cid.computeCid(descriptor);
+
+    // `recordId` computation if not given at construction time
+    this.#message.recordId = this.#message.recordId ?? await RecordsWrite.getEntryId(author, descriptor);
+
+    // `contextId` computation if not given at construction time and this is a protocol-space record
+    if (this.#message.contextId === undefined && this.#message.descriptor.protocol !== undefined) {
+      this.#message.contextId = await RecordsWrite.getEntryId(author, descriptor);
+    }
+
+    // `authorization` generation
+    const authorization = await RecordsWrite.createAuthorization(
+      this.#message.recordId,
+      this.#message.contextId,
+      descriptorCid,
+      this.#message.attestation,
+      this.#message.encryption,
+      signatureInput
+    );
+
+    this.#message.authorization = authorization;
+
+    // there is opportunity to optimize here as the payload is constructed within `createAuthorization(...)`
+    this.#authorizationPayload = Jws.decodePlainObjectPayload(authorization);
+    this.#author = author;
+  }
+
   public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
     if (this.message.descriptor.protocol !== undefined) {
       // NOTE: `author` definitely exists because of the earlier `authenticate()` call
@@ -328,10 +404,13 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
    * There is opportunity to integrate better with `validateSchema(...)`
    */
   private async validateIntegrity(): Promise<void> {
-    // make sure the same `recordId` in message is the same as the `recordId` in `authorization`
-    if (this.message.recordId !== this.authorizationPayload.recordId) {
+    // validateAuthorizationIntegrity() enforces the presence of authorization for RecordsWrite
+    const authorizationPayload = this.authorizationPayload!;
+
+    // make sure the `recordId` in message is the same as the `recordId` in `authorization`
+    if (this.message.recordId !== authorizationPayload.recordId) {
       throw new Error(
-        `recordId in message ${this.message.recordId} does not match recordId in authorization: ${this.authorizationPayload.recordId}`
+        `recordId in message ${this.message.recordId} does not match recordId in authorization: ${authorizationPayload.recordId}`
       );
     }
 
@@ -357,16 +436,16 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     }
 
     // if `contextId` is given in message, make sure the same `contextId` is in the `authorization`
-    if (this.message.contextId !== this.authorizationPayload.contextId) {
+    if (this.message.contextId !== authorizationPayload.contextId) {
       throw new Error(
-        `contextId in message ${this.message.contextId} does not match contextId in authorization: ${this.authorizationPayload.contextId}`
+        `contextId in message ${this.message.contextId} does not match contextId in authorization: ${authorizationPayload.contextId}`
       );
     }
 
     // if `attestation` is given in message, make sure the correct `attestationCid` is in the `authorization`
-    if (this.authorizationPayload.attestationCid !== undefined) {
+    if (authorizationPayload.attestationCid !== undefined) {
       const expectedAttestationCid = await Cid.computeCid(this.message.attestation);
-      const actualAttestationCid = this.authorizationPayload.attestationCid;
+      const actualAttestationCid = authorizationPayload.attestationCid;
       if (actualAttestationCid !== expectedAttestationCid) {
         throw new Error(
           `CID ${expectedAttestationCid} of attestation property in message does not match attestationCid in authorization: ${actualAttestationCid}`
@@ -375,9 +454,9 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
     }
 
     // if `encryption` is given in message, make sure the correct `encryptionCid` is in the `authorization`
-    if (this.authorizationPayload.encryptionCid !== undefined) {
+    if (authorizationPayload.encryptionCid !== undefined) {
       const expectedEncryptionCid = await Cid.computeCid(this.message.encryption);
-      const actualEncryptionCid = this.authorizationPayload.encryptionCid;
+      const actualEncryptionCid = authorizationPayload.encryptionCid;
       if (actualEncryptionCid !== expectedEncryptionCid) {
         throw new DwnError(
           DwnErrorCode.RecordsWriteValidateIntegrityEncryptionCidMismatch,
@@ -476,8 +555,6 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
    * Creates the `encryption` property if encryption input is given. Else `undefined` is returned.
    */
   private static async createEncryptionProperty(
-    recordId: string,
-    contextId: string | undefined,
     descriptor: RecordsWriteDescriptor,
     encryptionInput: EncryptionInput | undefined
   ): Promise<EncryptionProperty | undefined> {
@@ -485,16 +562,28 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
       return undefined;
     }
 
-    // encrypt the data encryption key once per key derivation scheme
+    // encrypt the data encryption key once per encryption input
     const keyEncryption: EncryptedKey[] = [];
     for (const keyEncryptionInput of encryptionInput.keyEncryptionInputs) {
 
-      const fullDerivationPath = Records.constructKeyDerivationPath(keyEncryptionInput.derivationScheme, recordId, contextId, descriptor);
+      if (keyEncryptionInput.derivationScheme ===  KeyDerivationScheme.ProtocolPath && descriptor.protocol === undefined) {
+        throw new DwnError(
+          DwnErrorCode.RecordsWriteMissingProtocol,
+          '`protocols` encryption scheme cannot be applied to record without the `protocol` property.'
+        );
+      }
+
+      if (keyEncryptionInput.derivationScheme ===  KeyDerivationScheme.Schemas && descriptor.schema === undefined) {
+        throw new DwnError(
+          DwnErrorCode.RecordsWriteMissingSchema,
+          '`schemas` encryption scheme cannot be applied to record without the `schema` property.'
+        );
+      }
 
       // NOTE: right now only `ECIES-ES256K` algorithm is supported for asymmetric encryption,
       // so we will assume that's the algorithm without additional switch/if statements
-      const leafPublicKey = await Records.deriveLeafPublicKey(keyEncryptionInput.publicKey, fullDerivationPath);
-      const keyEncryptionOutput = await Encryption.eciesSecp256k1Encrypt(leafPublicKey, encryptionInput.key);
+      const publicKeyBytes = Secp256k1.publicJwkToBytes(keyEncryptionInput.publicKey);
+      const keyEncryptionOutput = await Encryption.eciesSecp256k1Encrypt(publicKeyBytes, encryptionInput.key);
 
       const encryptedKey = Encoder.bytesToBase64Url(keyEncryptionOutput.ciphertext);
       const ephemeralPublicKey = await Secp256k1.publicKeyToJwk(keyEncryptionOutput.ephemeralPublicKey);
@@ -509,6 +598,13 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
         messageAuthenticationCode,
         encryptedKey
       };
+
+      // we need to attach the actual public key if derivation scheme is protocol-context,
+      // so that the responder to this message is able to encrypt the message/symmetric key using the same protocol-context derived public key,
+      // without needing the knowledge of the corresponding private key
+      if (keyEncryptionInput.derivationScheme ===  KeyDerivationScheme.ProtocolContext) {
+        encryptedKeyData.derivedPublicKey = keyEncryptionInput.publicKey;
+      }
 
       keyEncryption.push(encryptedKeyData);
     }
@@ -610,7 +706,7 @@ export class RecordsWrite extends Message<RecordsWriteMessage> {
   /**
    * Gets the DID of the author of the given message.
    */
-  public static getAttesters(message: RecordsWriteMessage): string[] {
+  public static getAttesters(message: InternalRecordsWriteMessage): string[] {
     const attestationSignatures = message.attestation?.signatures ?? [];
     const attesters = attestationSignatures.map((signature) => Jws.getSignerDid(signature));
     return attesters;

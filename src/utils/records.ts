@@ -1,5 +1,4 @@
 import type { DerivedPrivateJwk } from './hd-key.js';
-import type { PublicJwk } from '../types/jose-types.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsWriteDescriptor, UnsignedRecordsWriteMessage } from '../types/records-types.js';
 
@@ -22,7 +21,7 @@ export class Records {
     ancestorPrivateKey: DerivedPrivateJwk,
     cipherStream: Readable
   ): Promise<Readable> {
-    const { recordId, contextId, descriptor, encryption } = recordsWrite;
+    const { encryption } = recordsWrite;
 
     // look for an encrypted symmetric key that is encrypted by the public key corresponding to the given private key
     const matchingEncryptedKey = encryption!.keyEncryption.find(key =>
@@ -37,11 +36,11 @@ export class Records {
       );
     }
 
-    const fullDerivationPath = Records.constructKeyDerivationPath(matchingEncryptedKey.derivationScheme, recordId, contextId, descriptor);
+    const fullDerivationPath = Records.constructKeyDerivationPath(matchingEncryptedKey.derivationScheme, recordsWrite);
 
     // NOTE: right now only `ECIES-ES256K` algorithm is supported for asymmetric encryption,
     // so we will assume that's the algorithm without additional switch/if statements
-    const leafPrivateKey = await Records.deriveLeafPrivateKey(ancestorPrivateKey, fullDerivationPath);
+    const leafPrivateKey = await Records.derivePrivateKey(ancestorPrivateKey, fullDerivationPath);
     const encryptedKeyBytes = Encoder.base64UrlToBytes(matchingEncryptedKey.encryptedKey);
     const ephemeralPublicKey = Secp256k1.publicJwkToBytes(matchingEncryptedKey.ephemeralPublicKey);
     const keyEncryptionInitializationVector = Encoder.base64UrlToBytes(matchingEncryptedKey.initializationVector);
@@ -53,6 +52,7 @@ export class Records {
       messageAuthenticationCode,
       privateKey           : leafPrivateKey
     });
+
 
     // NOTE: right now only `A256CTR` algorithm is supported for symmetric encryption,
     // so we will assume that's the algorithm without additional switch/if statements
@@ -67,19 +67,22 @@ export class Records {
    */
   public static constructKeyDerivationPath(
     keyDerivationScheme: KeyDerivationScheme,
-    recordId: string,
-    contextId: string | undefined,
-    descriptor: RecordsWriteDescriptor
+    recordsWriteMessage: UnsignedRecordsWriteMessage
   ): string[] {
+
+    const descriptor = recordsWriteMessage.descriptor;
+    const contextId = recordsWriteMessage.contextId;
 
     let fullDerivationPath;
     if (keyDerivationScheme === KeyDerivationScheme.DataFormats) {
-      fullDerivationPath = Records.constructKeyDerivationPathUsingDataFormatsScheme(descriptor);
-    } else if (keyDerivationScheme === KeyDerivationScheme.Protocols) {
-      fullDerivationPath = Records.constructKeyDerivationPathUsingProtocolsScheme(recordId, contextId, descriptor);
+      fullDerivationPath = Records.constructKeyDerivationPathUsingDataFormatsScheme(descriptor.schema, descriptor.dataFormat);
+    } else if (keyDerivationScheme === KeyDerivationScheme.ProtocolPath) {
+      fullDerivationPath = Records.constructKeyDerivationPathUsingProtocolPathScheme(descriptor);
+    } else if (keyDerivationScheme === KeyDerivationScheme.ProtocolContext) {
+      fullDerivationPath = Records.constructKeyDerivationPathUsingProtocolContextScheme(contextId);
     } else {
       // `schemas` scheme
-      fullDerivationPath = Records.constructKeyDerivationPathUsingSchemasScheme(descriptor);
+      fullDerivationPath = Records.constructKeyDerivationPathUsingSchemasScheme(descriptor.schema);
     }
 
     return fullDerivationPath;
@@ -88,48 +91,58 @@ export class Records {
   /**
    * Constructs the full key derivation path using `dataFormats` scheme.
    */
-  public static constructKeyDerivationPathUsingDataFormatsScheme(
-    descriptor: RecordsWriteDescriptor
-  ): string[] {
-    if (descriptor.schema !== undefined) {
+  public static constructKeyDerivationPathUsingDataFormatsScheme(schema: string | undefined, dataFormat: string ): string[] {
+    if (schema !== undefined) {
       return [
         KeyDerivationScheme.DataFormats,
-        descriptor.schema, // this is as spec-ed on TP27, the intent is to support sharing the key for just a specific data type under a schema
-        descriptor.dataFormat
+        schema, // this is as spec-ed on TP27, the intent is to support sharing the key for just a specific data type under a schema
+        dataFormat
       ];
     } else {
       return [
         KeyDerivationScheme.DataFormats,
-        descriptor.dataFormat
+        dataFormat
       ];
     }
   }
 
   /**
-   * Constructs the full key derivation path using `protocols` scheme.
+   * Constructs the full key derivation path using `protocolPath` scheme.
    */
-  private static constructKeyDerivationPathUsingProtocolsScheme(
-    recordId: string,
-    contextId: string | undefined,
-    descriptor: RecordsWriteDescriptor
-  ): string[] {
+  public static constructKeyDerivationPathUsingProtocolPathScheme(descriptor: RecordsWriteDescriptor): string[] {
     // ensure `protocol` is defined
     // NOTE: no need to check `protocolPath` and `contextId` because earlier code ensures that if `protocol` is defined, those are defined also
     if (descriptor.protocol === undefined) {
       throw new DwnError(
-        DwnErrorCode.RecordsProtocolsDerivationSchemeMissingProtocol,
+        DwnErrorCode.RecordsProtocolPathDerivationSchemeMissingProtocol,
         'Unable to construct key derivation path using `protocols` scheme because `protocol` is missing.'
       );
     }
 
     const protocolPathSegments = descriptor.protocolPath!.split('/');
     const fullDerivationPath = [
-      KeyDerivationScheme.Protocols,
+      KeyDerivationScheme.ProtocolPath,
       descriptor.protocol,
-      contextId!,
-      ...protocolPathSegments,
-      descriptor.dataFormat,
-      recordId
+      ...protocolPathSegments
+    ];
+
+    return fullDerivationPath;
+  }
+
+  /**
+   * Constructs the full key derivation path using `protocolContext` scheme.
+   */
+  public static constructKeyDerivationPathUsingProtocolContextScheme(contextId: string | undefined): string[] {
+    if (contextId === undefined) {
+      throw new DwnError(
+        DwnErrorCode.RecordsProtocolContextDerivationSchemeMissingContextId,
+        'Unable to construct key derivation path using `protocolContext` scheme because `contextId` is missing.'
+      );
+    }
+
+    const fullDerivationPath = [
+      KeyDerivationScheme.ProtocolContext,
+      contextId
     ];
 
     return fullDerivationPath;
@@ -138,10 +151,8 @@ export class Records {
   /**
    * Constructs the full key derivation path using `schemas` scheme.
    */
-  public static constructKeyDerivationPathUsingSchemasScheme(
-    descriptor: RecordsWriteDescriptor
-  ): string[] {
-    if (descriptor.schema === undefined) {
+  public static constructKeyDerivationPathUsingSchemasScheme( schema: string | undefined ): string[] {
+    if (schema === undefined) {
       throw new DwnError(
         DwnErrorCode.RecordsSchemasDerivationSchemeMissingSchema,
         'Unable to construct key derivation path using `schemas` scheme because `schema` is missing.'
@@ -150,40 +161,21 @@ export class Records {
 
     const fullDerivationPath = [
       KeyDerivationScheme.Schemas,
-      descriptor.schema
+      schema
     ];
 
     return fullDerivationPath;
   }
 
   /**
-   * Derives a descendant public key given an ancestor public key.
+   * Derives a descendant private key given an ancestor private key and the full absolute derivation path.
    * NOTE: right now only `ECIES-ES256K` algorithm is supported for asymmetric encryption,
-   *       so we will assume that's the algorithm without additional switch/if statements
+   *       so we will only derive SECP256K1 key without additional conditional checks
    */
-  public static async deriveLeafPublicKey(rootPublicKey: PublicJwk, fullDescendantDerivationPath: string[]): Promise<Uint8Array> {
-    if (rootPublicKey.crv !== 'secp256k1') {
-      throw new DwnError(
-        DwnErrorCode.RecordsDeriveLeafPublicKeyUnSupportedCurve,
-        `Curve ${rootPublicKey.crv} is not supported.`
-      );
-    }
-
-    const ancestorPublicKeyBytes = Secp256k1.publicJwkToBytes(rootPublicKey);
-    const leafPublicKey = await Secp256k1.derivePublicKey(ancestorPublicKeyBytes, fullDescendantDerivationPath);
-
-    return leafPublicKey;
-  }
-
-  /**
-   * Derives a descendant private key given an ancestor private key.
-   * NOTE: right now only `ECIES-ES256K` algorithm is supported for asymmetric encryption,
-   *       so we will assume that's the algorithm without additional switch/if statements
-   */
-  public static async deriveLeafPrivateKey(ancestorPrivateKey: DerivedPrivateJwk, fullDescendantDerivationPath: string[]): Promise<Uint8Array> {
+  public static async derivePrivateKey(ancestorPrivateKey: DerivedPrivateJwk, fullDescendantDerivationPath: string[]): Promise<Uint8Array> {
     if (ancestorPrivateKey.derivedPrivateKey.crv !== 'secp256k1') {
       throw new DwnError(
-        DwnErrorCode.RecordsDeriveLeafPrivateKeyUnSupportedCurve,
+        DwnErrorCode.RecordsDerivePrivateKeyUnSupportedCurve,
         `Curve ${ancestorPrivateKey.derivedPrivateKey.crv} is not supported.`
       );
     }

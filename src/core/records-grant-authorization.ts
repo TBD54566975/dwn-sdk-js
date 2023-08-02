@@ -7,7 +7,7 @@ import type { RecordsWriteMessage } from '../types/records-types.js';
 import { GrantAuthorization } from './grant-authorization.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
-import { DwnInterfaceName, DwnMethodName } from './message.js';
+import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
 
 export class RecordsGrantAuthorization {
   /**
@@ -54,7 +54,7 @@ export class RecordsGrantAuthorization {
       recordId,
     };
     const existingMessages = await messageStore.query(tenant, query);
-    const recordsWriteMessage = await RecordsWrite.getNewestMessage(existingMessages) as RecordsWriteMessage;
+    const recordsWriteMessage = await Message.getNewestMessage(existingMessages) as RecordsWriteMessage;
     return RecordsWrite.parse(recordsWriteMessage);
   }
 }

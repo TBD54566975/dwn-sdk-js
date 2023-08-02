@@ -1,13 +1,16 @@
 import type { DidResolutionResult } from '../../src/did/did-resolver.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsQueryFilter } from '../../src/types/records-types.js';
-import type { CreateFromOptions, EncryptionInput } from '../../src/interfaces/records-write.js';
 import type {
+  CreateFromOptions,
   DateSort,
+  DerivedPrivateJwk,
+  EncryptionInput,
   EventsGetMessage,
   EventsGetOptions,
   HooksWriteMessage,
   HooksWriteOptions,
+  KeyEncryptionInput,
   MessagesGetMessage,
   MessagesGetOptions,
   ProtocolDefinition,
@@ -17,13 +20,15 @@ import type {
   ProtocolsQueryOptions,
   RecordsDeleteMessage,
   RecordsQueryMessage,
-  RecordsQueryOptions,
-  RecordsWriteMessage,
-  RecordsWriteOptions
+  RecordsQueryOptions, RecordsWriteMessage, RecordsWriteOptions
 } from '../../src/index.js';
 import {
   DwnInterfaceName,
-  DwnMethodName
+  DwnMethodName,
+  Encryption,
+  HdKey,
+  KeyDerivationScheme,
+  Records
 } from '../../src/index.js';
 import type { PermissionConditions, PermissionScope, PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from '../../src/types/permissions-types.js';
 import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
@@ -315,8 +320,7 @@ export class TestDataGenerator {
       definition.structure[generatedLabel] = {};
     }
 
-    // TODO: #139 - move protocol definition out of the descriptor - https://github.com/TBD54566975/dwn-sdk-js/issues/139
-    // const dataStream = DataStream.fromObject(definition); // intentionally left here to demonstrate the pattern to use when #139 is implemented
+    // TODO: #451 - Remove reference and use of dataStream everywhere in tests - https://github.com/TBD54566975/dwn-sdk-js/issues/451
     const dataStream = undefined;
 
     const authorizationSignatureInput = Jws.createSignatureInput(author);
@@ -422,6 +426,120 @@ export class TestDataGenerator {
       recordsWrite
     };
   };
+
+  /**
+   * Generates a RecordsWrite message for testing.
+   */
+  public static async generateProtocolEncryptedRecordsWrite(input: {
+    plaintextBytes: Uint8Array,
+    author: Persona,
+    targetProtocolDefinition: ProtocolDefinition,
+    protocolPath: string,
+    protocolContextId?: string,
+    protocolContextDerivingRootKeyId?: string,
+    protocolContextDerivedPublicJwk?: PublicJwk,
+    protocolParentId?: string
+  }): Promise<{
+    message: RecordsWriteMessage;
+    dataStream: Readable;
+    recordsWrite: RecordsWrite;
+    encryptionInput: EncryptionInput;
+    encryptedDataBytes: Uint8Array;
+  }> {
+    const {
+      plaintextBytes,
+      author,
+      targetProtocolDefinition,
+      protocolPath,
+      protocolContextId,
+      protocolContextDerivingRootKeyId,
+      protocolContextDerivedPublicJwk,
+      protocolParentId,
+    } = input;
+
+    // encrypt the plaintext data for the target with a randomly generated symmetric key
+    const plaintextStream = DataStream.fromBytes(plaintextBytes);
+    const dataEncryptionInitializationVector = TestDataGenerator.randomBytes(16);
+    const dataEncryptionKey = TestDataGenerator.randomBytes(32);
+    const encryptedDataStream = await Encryption.aes256CtrEncrypt(
+      dataEncryptionKey, dataEncryptionInitializationVector, plaintextStream
+    );
+    const encryptedDataBytes = await DataStream.toBytes(encryptedDataStream);
+
+    // author generates a RecordsWrite using the encrypted data
+    const protocolPathSegments = protocolPath.split('/');
+    const recordType = protocolPathSegments[protocolPathSegments.length - 1];
+    const { message, dataStream, recordsWrite } = await TestDataGenerator.generateRecordsWrite(
+      {
+        author,
+        protocol   : targetProtocolDefinition.protocol,
+        protocolPath,
+        contextId  : protocolContextId,
+        parentId   : protocolParentId,
+        schema     : targetProtocolDefinition.types[recordType].schema,
+        dataFormat : targetProtocolDefinition.types[recordType].dataFormats![0],
+        data       : encryptedDataBytes
+      }
+    );
+
+    // Bob prepares the symmetric key encryption input for protocol-path derived public key
+    let protocolSegment = targetProtocolDefinition.structure;
+    for (const pathSegment of protocolPathSegments) {
+      protocolSegment = protocolSegment[pathSegment];
+    }
+
+    const protocolPathDerivedPublicJwk = protocolSegment.$encryption?.publicKeyJwk;
+    const protocolPathDerivationRootKeyId = protocolSegment.$encryption?.rootKeyId;
+    const protocolPathDerivedKeyEncryptionInput: KeyEncryptionInput = {
+      publicKeyId      : protocolPathDerivationRootKeyId,
+      publicKey        : protocolPathDerivedPublicJwk!,
+      derivationScheme : KeyDerivationScheme.ProtocolPath
+    };
+
+    // generate key encryption input to that will encrypt the symmetric encryption key using protocol-context derived public key
+    let protocolContextDerivedKeyEncryptionInput: KeyEncryptionInput;
+    if (protocolContextId === undefined) {
+      // author generates protocol-context derived public key for encrypting symmetric key
+      const authorRootPrivateKey: DerivedPrivateJwk = {
+        rootKeyId         : author.keyId,
+        derivationScheme  : KeyDerivationScheme.ProtocolContext,
+        derivedPrivateKey : author.keyPair.privateJwk
+      };
+
+      const contextId = await RecordsWrite.getEntryId(author.did, message.descriptor);
+      const contextDerivationPath = Records.constructKeyDerivationPathUsingProtocolContextScheme(contextId);
+      const authorGeneratedProtocolContextDerivedPublicJwk = await HdKey.derivePublicKey(authorRootPrivateKey, contextDerivationPath);
+
+      protocolContextDerivedKeyEncryptionInput = {
+        publicKeyId      : author.keyId,
+        publicKey        : authorGeneratedProtocolContextDerivedPublicJwk,
+        derivationScheme : KeyDerivationScheme.ProtocolContext
+      };
+    } else {
+      if (protocolContextDerivingRootKeyId === undefined ||
+          protocolContextDerivedPublicJwk === undefined) {
+        throw new Error ('`protocolContextDerivingRootKeyId` and `protocolContextDerivedPublicJwk` must both be defined if `protocolContextId` is given');
+      }
+
+      protocolContextDerivedKeyEncryptionInput = {
+        publicKeyId      : protocolContextDerivingRootKeyId!,
+        publicKey        : protocolContextDerivedPublicJwk!,
+        derivationScheme : KeyDerivationScheme.ProtocolContext
+      };
+    }
+
+    // final encryption input
+    const encryptionInput: EncryptionInput = {
+      initializationVector : dataEncryptionInitializationVector,
+      key                  : dataEncryptionKey,
+      keyEncryptionInputs  : [protocolPathDerivedKeyEncryptionInput, protocolContextDerivedKeyEncryptionInput]
+    };
+
+    await recordsWrite.encryptSymmetricEncryptionKey(encryptionInput);
+    await recordsWrite.sign(Jws.createSignatureInput(author));
+
+    return { message, dataStream: dataStream!, recordsWrite, encryptedDataBytes, encryptionInput };
+  }
 
   /**
    * Generates a valid RecordsWrite that modifies the given an existing write.

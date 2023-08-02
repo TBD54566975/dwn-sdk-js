@@ -1,7 +1,6 @@
 import type { PrivateJwk, PublicJwk } from '../types/jose-types.js';
 
 import * as secp256k1 from '@noble/secp256k1';
-import secp256k1Derivation from 'secp256k1';
 
 import { Encoder } from '../utils/encoder.js';
 import { sha256 } from 'multiformats/hashes/sha2';
@@ -148,67 +147,51 @@ export class Secp256k1 {
   }
 
   /**
-   * Derives a hierarchical deterministic public key.
-   * @param key Either a private or an uncompressed public key used to derive the descendant public key.
-   * @returns uncompressed public key
+   * Gets the public JWK of the given private JWK.
    */
-  public static async derivePublicKey(key: Uint8Array, relativePath: string[]): Promise<Uint8Array> {
-    Secp256k1.validateKeyDerivationPath(relativePath);
-
-    let currentPublicKey: Uint8Array;
-    if (key.length === 32) {
-      // private key is always 32 bytes
-      currentPublicKey = secp256k1.getPublicKey(key, false); // `false` = uncompressed
-    } else {
-      currentPublicKey = key;
-    }
-
-    for (const segment of relativePath) {
-      const hash = await sha256.encode(Encoder.stringToBytes(segment));
-      currentPublicKey = Secp256k1.deriveChildPublicKey(currentPublicKey, hash);
-    }
-
-    return currentPublicKey;
+  public static async getPublicJwk(privateKeyJwk: PrivateJwk): Promise<PublicJwk> {
+    // strip away `d`
+    const { d: _d, ...publicKey } = privateKeyJwk;
+    return publicKey;
   }
 
   /**
-   * Derives a hierarchical deterministic private key.
+   * Derives a hardened hierarchical deterministic public key.
+   * @returns uncompressed public key
+   */
+  public static async derivePublicKey(privateKey: Uint8Array, relativePath: string[]): Promise<Uint8Array> {
+    Secp256k1.validateKeyDerivationPath(relativePath);
+
+    // derive the private key first then compute the derived public key from the derive private key
+    const derivedPrivateKey = await Secp256k1.derivePrivateKey(privateKey, relativePath);
+    const derivedPublicKey = await Secp256k1.getPublicKey(derivedPrivateKey);
+    return derivedPublicKey;
+  }
+
+  /**
+   * Derives a hardened hierarchical deterministic private key.
    */
   public static async derivePrivateKey(privateKey: Uint8Array, relativePath: string[]): Promise<Uint8Array> {
     Secp256k1.validateKeyDerivationPath(relativePath);
 
     let currentPrivateKey = privateKey;
     for (const segment of relativePath) {
-      const hash = await sha256.encode(Encoder.stringToBytes(segment));
-      currentPrivateKey = Secp256k1.deriveChildPrivateKey(currentPrivateKey, hash);
+      const derivationSegment = Encoder.stringToBytes(segment);
+      currentPrivateKey = await Secp256k1.deriveChildPrivateKey(currentPrivateKey, derivationSegment);
     }
 
     return currentPrivateKey;
   }
 
   /**
-   * Derives a child public key using the given tweak input.
+   * Derives a child private key using the given derivation path segment.
    */
-  public static deriveChildPublicKey(uncompressedPublicKey: Uint8Array, tweakInput: Uint8Array): Uint8Array {
-    // underlying library requires Buffer as input
-    const compressedPublicKey = false;
-    const publicKeyBuffer = Buffer.from(uncompressedPublicKey);
-    const tweakBuffer = Buffer.from(tweakInput);
-    const derivedPublicKey = secp256k1Derivation.publicKeyTweakAdd(publicKeyBuffer, tweakBuffer, compressedPublicKey);
-    return derivedPublicKey;
-  }
-
-  /**
-   * Derives a child private key using the given tweak input.
-   */
-  public static deriveChildPrivateKey(privateKey: Uint8Array, tweakInput: Uint8Array): Uint8Array {
-    // NOTE: passing in private key to v5.0.0 of `secp256k1.privateKeyTweakAdd()` has the side effect of modifying the input private key bytes.
-    // `secp256k1.publicKeyTweakAdd()` does not have this side effect.
-    // before there is a fix for it (we can also investigate and submit a PR), cloning the private key to workaround is a MUST
-    // also underlying library requires Buffer as input
-    const privateKeyBuffer = Buffer.from(privateKey);
-    const tweakBuffer = Buffer.from(tweakInput);
-    const derivedPrivateKey = secp256k1Derivation.privateKeyTweakAdd(privateKeyBuffer, tweakBuffer);
+  public static async deriveChildPrivateKey(privateKey: Uint8Array, derivationPathSegment: Uint8Array): Promise<Uint8Array> {
+    // hash the private key & derivation segment
+    const privateKeyHash = await sha256.encode(privateKey);
+    const derivationPathSegmentHash = await sha256.encode(derivationPathSegment);
+    const combinedBytes = secp256k1.etc.concatBytes(privateKeyHash, derivationPathSegmentHash);
+    const derivedPrivateKey = secp256k1.etc.hashToPrivateKey(combinedBytes);
     return derivedPrivateKey;
   }
 
