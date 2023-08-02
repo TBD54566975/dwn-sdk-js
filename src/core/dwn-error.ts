@@ -16,7 +16,6 @@ export enum DwnErrorCode {
   AuthenticateJwsMissing = 'AuthenticateJwsMissing',
   AuthorizationMissing = 'AuthorizationMissing',
   AuthorizationUnknownAuthor = 'AuthorizationUnknownAuthor',
-  GrantAuthorizationAuthorUndefined = 'GrantAuthorizationAuthorUndefined',
   GrantAuthorizationGrantExpired = 'GrantAuthorizationGrantExpired',
   GrantAuthorizationGrantMissing = 'GrantAuthorizationGrantMissing',
   GrantAuthorizationGrantRevoked = 'GrantAuthorizationGrantRevoked',
