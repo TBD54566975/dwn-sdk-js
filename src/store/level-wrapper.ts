@@ -1,6 +1,7 @@
 import type { AbstractBatchOperation, AbstractDatabaseOptions, AbstractIteratorOptions, AbstractLevel } from 'abstract-level';
 
 import { executeUnlessAborted } from '../utils/abort.js';
+import { Level } from 'level';
 import { sleep } from '../utils/time.js';
 
 export type CreateLevelDatabaseOptions<V> = AbstractDatabaseOptions<string, V>;
@@ -10,7 +11,6 @@ export type LevelDatabase<V> = AbstractLevel<string | Buffer | Uint8Array, strin
 export async function createLevelDatabase<V>(location: string, options?: CreateLevelDatabaseOptions<V>): Promise<LevelDatabase<V>> {
   // Only import `'level'` when it's actually necessary (i.e. only when the default `createLevelDatabase` is used).
   // Overriding `createLevelDatabase` will prevent this from happening.
-  const { Level } = await import('level');
   return new Level(location, { ...options, keyEncoding: 'utf8' });
 }
 

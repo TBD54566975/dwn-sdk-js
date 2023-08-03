@@ -1,8 +1,8 @@
 import type { MessageStore } from '../types/message-store.js';
 import type { RecordsRead } from '../interfaces/records-read.js';
 import type { Filter, TimestampedMessage } from '../types/message-types.js';
+import type { InternalRecordsWriteMessage, RecordsReadMessage, RecordsWriteMessage } from '../types/records-types.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../types/protocols-types.js';
-import type { RecordsReadMessage, RecordsWriteMessage } from '../types/records-types.js';
 
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
@@ -127,7 +127,7 @@ export class ProtocolAuthorization {
         recordId  : recordsRead.message.descriptor.recordId,
       };
       const existingMessages = await messageStore.query(tenant, query) as TimestampedMessage[];
-      const recordsWriteMessage = await RecordsWrite.getNewestMessage(existingMessages) as RecordsWriteMessage;
+      const recordsWriteMessage = await Message.getNewestMessage(existingMessages) as RecordsWriteMessage;
       recordsWrite = await RecordsWrite.parse(recordsWriteMessage);
       ancestorMessageChain.push(recordsWrite.message);
     }
@@ -236,7 +236,7 @@ export class ProtocolAuthorization {
    * @throws {DwnError} if fails verification.
    */
   private static verifyType(
-    inboundMessage: RecordsReadMessage | RecordsWriteMessage,
+    inboundMessage: RecordsReadMessage | InternalRecordsWriteMessage,
     protocolTypes: ProtocolTypes,
   ): void {
     // skip verification if this is not a RecordsWrite

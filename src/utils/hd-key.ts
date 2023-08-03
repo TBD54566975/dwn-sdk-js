@@ -7,7 +7,8 @@ export enum KeyDerivationScheme {
    * Key derivation using the `dataFormat` value for Flat-space records.
    */
   DataFormats = 'dataFormats',
-  Protocols = 'protocols',
+  ProtocolContext = 'protocolContext',
+  ProtocolPath = 'protocolPath',
   /**
    * Key derivation using the `schema` value for Flat-space records.
    */

@@ -1508,7 +1508,7 @@ export function testRecordsWriteHandler(): void {
               publicKeyId      : alice.keyId, // reusing signing key for encryption purely as a convenience
               publicKey        : alice.keyPair.publicJwk,
               algorithm        : EncryptionAlgorithm.EciesSecp256k1,
-              derivationScheme : KeyDerivationScheme.Protocols
+              derivationScheme : KeyDerivationScheme.ProtocolPath
             }]
           };
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
@@ -1799,7 +1799,7 @@ export function testRecordsWriteHandler(): void {
         const signatureInput = Jws.createSignatureInput(author);
 
         // replace `attestation` with one that has an additional property, but go the extra mile of making sure signature is valid
-        const descriptorCid = recordsWrite.authorizationPayload.descriptorCid;
+        const descriptorCid = recordsWrite.authorizationPayload!.descriptorCid;
         const attestationPayload = { descriptorCid, someAdditionalProperty: 'anyValue' }; // additional property is not allowed
         const attestationPayloadBytes = Encoder.objectToBytes(attestationPayload);
         const attestationSigner = await GeneralJwsSigner.create(attestationPayloadBytes, [signatureInput]);

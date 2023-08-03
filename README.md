@@ -1,9 +1,29 @@
 <!-- @format -->
 
-# Decentralized Web Node (DWN) SDK
+# Decentralized Web Node (DWN) SDK <!-- omit in toc -->
 
 Code Coverage
-![Statements](https://img.shields.io/badge/statements-97.37%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-94.28%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-93.69%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-97.37%25-brightgreen.svg?style=flat)
+![Statements](https://img.shields.io/badge/statements-97.54%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-94.51%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-93.8%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-97.54%25-brightgreen.svg?style=flat)
+
+
+- [Introduction](#introduction)
+- [Installation](#installation)
+- [Additional Steps](#additional-steps)
+  - [Node.js \<= 18](#nodejs--18)
+  - [React Native](#react-native)
+  - [Usage in Browser:](#usage-in-browser)
+    - [Vanilla HTML / JS](#vanilla-html--js)
+    - [Webpack \>= 5](#webpack--5)
+    - [Vite](#vite)
+    - [esbuild](#esbuild)
+- [Usage](#usage)
+- [Release/Build Process](#releasebuild-process)
+  - [Stable Build](#stable-build)
+  - [Unstable Build](#unstable-build)
+- [Some projects that use this library:](#some-projects-that-use-this-library)
+- [Architecture](#architecture)
+- [Project Resources](#project-resources)
+
 
 ## Introduction
 
@@ -27,7 +47,7 @@ npm install @tbd54566975/dwn-sdk-js
 
 This package has dependency on [`@noble/ed25519`](https://github.com/paulmillr/noble-ed25519#usage) and [`@noble/secp256k1`](https://github.com/paulmillr/noble-secp256k1#usage) v2, additional steps are needed for some environments:
 
-- Node.js <= 18
+### Node.js <= 18
 
 ```js
 // node.js 18 and earlier,  needs globalThis.crypto polyfill
@@ -36,21 +56,113 @@ import { webcrypto } from "node:crypto";
 if (!globalThis.crypto) globalThis.crypto = webcrypto;
 ```
 
-- React Native:
+### React Native
+Usage of DWN SDK in react native requires a bit of set up at the moment. To simplify, we've published an npm package that can be used to set everything up which you can find [here](https://www.npmjs.com/package/@tbd54566975/web5-react-native-polyfills). Follow the instructions there to get everything set up.
+
+### Usage in Browser:
+
+`dwn-sdk-js` requires 2 polyfills: `crypto` and `stream`. we recommend using `crypto-browserify` and `stream-browserify`. Both of these polyfills can be installed using npm. e.g. `npm install --save crypto-browserify stream-browserify`
+
+#### Vanilla HTML / JS
+
+DWN SDK includes a polyfilled distribution that can imported in a `module` script tag. e.g.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<body>
+  <script type="module">
+    import { Dwn, DataStream, DidKeyResolver, Jws, RecordsWrite } from 'https://cdn.jsdelivr.net/npm/@tbd54566975/dwn-sdk-js@0.1.1/dist/bundles/dwn.js'
+    import { MessageStoreLevel, DataStoreLevel, EventLogLevel } from 'https://cdn.jsdelivr.net/npm/@tbd54566975/dwn-sdk-js@0.1.1/dist/bundles/level-stores.js'
+
+    const messageStore = new MessageStoreLevel();
+    const dataStore = new DataStoreLevel();
+    const eventLog = new EventLogLevel();
+    const dwn = await Dwn.create({ messageStore, dataStore, eventLog });
+
+    // generate a did:key DID
+    const didKey = await DidKeyResolver.generate();
+
+    // create some data
+    const encoder = new TextEncoder();
+    const data = encoder.encode('Hello, World!');
+
+    // create a RecordsWrite message
+    const recordsWrite = await RecordsWrite.create({
+      data,
+      dataFormat: 'application/json',
+      published: true,
+      schema: 'yeeter/post',
+      authorizationSignatureInput: Jws.createSignatureInput(didKey)
+    });
+
+    // get the DWN to process the RecordsWrite
+    const dataStream = DataStream.fromBytes(data);
+    const result = await dwn.processMessage(didKey.did, recordsWrite.message, dataStream);
+
+    console.log(result.status);
+    console.assert(result.status.code === 202)
+
+    await dwn.close()
+
+  </script>
+</body>
+
+</html>
+```
+
+#### Webpack >= 5
+
+add the following to the top level of your webpack config (`webpack.config.js`)
 
 ```js
-// If you're on react native. React Native needs crypto.getRandomValues polyfill and sha512
-import "react-native-get-random-values";
-import { hmac } from "@noble/hashes/hmac";
-import { sha256 } from "@noble/hashes/sha256";
-import { sha512 } from "@noble/hashes/sha512";
-ed.etc.sha512Sync = (...m) => sha512(ed.etc.concatBytes(...m));
-ed.etc.sha512Async = (...m) => Promise.resolve(ed.etc.sha512Sync(...m));
+resolve: {
+  fallback: {
+    stream: require.resolve("stream-browserify"),
+    crypto: require.resolve("crypto-browserify")
+  }
+}
+```
 
-secp.etc.hmacSha256Sync = (k, ...m) =>
-  hmac(sha256, k, secp.etc.concatBytes(...m));
-secp.etc.hmacSha256Async = (k, ...m) =>
-  Promise.resolve(secp.etc.hmacSha256Sync(k, ...m));
+#### Vite
+add the following to the top level of your vite config (`vite.config.js`)
+
+```js
+define: {
+  global: 'globalThis'
+},
+resolve: {
+  alias: {
+    'crypto': 'crypto-browserify',
+    'stream': 'stream-browserify'
+  }
+}
+```
+
+#### esbuild
+we recommend using `node-stdlib-browser` instead of `crypto-browserify` and `stream-browserify` individually. Example usage:
+
+```js
+import esbuild from 'esbuild'
+import stdLibBrowser from 'node-stdlib-browser'
+import polyfillProviderPlugin from 'node-stdlib-browser/helpers/esbuild/plugin'
+
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+
+esbuild.build({
+  entryPoints: ['dwn-sdk-test.js'],
+  platform: 'browser',
+  bundle: true,
+  format: 'esm',
+  outfile: 'dist/dwn-sdk-test.js',
+  inject      : [require.resolve('node-stdlib-browser/helpers/esbuild/shim')],
+  plugins     : [polyfillProviderPlugin(stdLibBrowser)],
+  define      : {
+    'global': 'globalThis'
+  }
+})
 ```
 
 ## Usage

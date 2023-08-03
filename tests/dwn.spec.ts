@@ -83,8 +83,9 @@ export function testDwnClass(): void {
       it('#191 - regression - should run JSON schema validation', async () => {
         const invalidMessage = {
           descriptor: {
-            interface : 'Records',
-            method    : 'Write',
+            interface        : 'Records',
+            method           : 'Read',
+            messageTimestamp : '2023-07-25T10:20:30.123456Z'
           },
           authorization: {}
         };
@@ -296,12 +297,12 @@ export function testDwnClass(): void {
         const validateJsonSchemaSpy = sinon.spy(Message, 'validateJsonSchema');
 
         const alice = await DidKeyResolver.generate();
-        const reply = await dwn.synchronizePrunedInitialRecordsWrite(alice.did, invalidMessage as RecordsWriteMessage);
+        const reply = await dwn.synchronizePrunedInitialRecordsWrite(alice.did, invalidMessage as any);
 
         sinon.assert.calledOnce(validateJsonSchemaSpy);
 
         expect(reply.status.code).to.equal(400);
-        expect(reply.status.detail).to.contain(`must have required property 'recordId'`);
+        expect(reply.status.detail).to.contain(`must have required property`);
       });
 
       it('should throw 400 if given incorrect DWN interface or method', async () => {

@@ -42,7 +42,7 @@ export class RecordsReadHandler implements MethodHandler {
     };
     const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
 
-    const newestExistingMessage = await RecordsWrite.getNewestMessage(existingMessages);
+    const newestExistingMessage = await Message.getNewestMessage(existingMessages);
 
     // if no record found or it has been deleted
     if (newestExistingMessage === undefined || newestExistingMessage.descriptor.method === DwnMethodName.Delete) {

@@ -75,7 +75,7 @@ export async function authenticate(jws: GeneralJws | undefined, didResolver: Did
  * Authorizes the incoming message.
  * @throws {Error} if fails authentication
  */
-export async function authorize(tenant: string, incomingMessage: Message<GenericMessage>): Promise<void> {
+export async function authorize(tenant: string, incomingMessage: { author: string | undefined }): Promise<void> {
   // if author is the same as the target tenant, we can directly grant access
   if (incomingMessage.author === tenant) {
     return;
