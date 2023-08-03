@@ -51,7 +51,6 @@ export class MessagesGetHandler implements MethodHandler {
     // for every message, include associated data as `encodedData` IF:
     //  * its a RecordsWrite
     //  * the data size is equal or smaller than the size threshold
-    //! NOTE: this is somewhat duplicate code that also exists in `StorageController.query`.
     for (const entry of messages) {
       const { message } = entry;
 
