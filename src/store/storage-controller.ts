@@ -2,7 +2,7 @@ import type { DataStore } from '../types/data-store.js';
 import type { EventLog } from '../types/event-log.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { RecordsWriteMessage } from '../types/records-types.js';
-import type { Filter, GenericMessage, TimestampedMessage } from '../types/message-types.js';
+import type { GenericMessage, TimestampedMessage } from '../types/message-types.js';
 
 import { constructRecordsWriteIndexes } from '../handlers/records-write.js';
 import { DwnConstant } from '../core/dwn-constant.js';
@@ -13,15 +13,6 @@ import { DwnMethodName, Message } from '../core/message.js';
  * A class that provides an abstraction for the usage of MessageStore, DataStore, and EventLog.
  */
 export class StorageController {
-  public static async query(
-    messageStore: MessageStore,
-    dataStore: DataStore,
-    tenant: string,
-    filter: Filter
-  ): Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
-    return (await messageStore.query(tenant, filter)) as RecordsWriteMessageWithOptionalEncodedData[];
-  }
-
   /**
    * Deletes a message.
    */
