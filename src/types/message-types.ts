@@ -50,15 +50,17 @@ export type EqualFilter = string | number | boolean;
 
 export type OneOfFilter = EqualFilter[];
 
+export type RangeValue = string | number;
+
 /**
  * "greater than" or "greater than or equal to" range condition. `gt` and `gte` are mutually exclusive.
  */
-export type GT = ({ gt: string } & { gte?: never }) | ({ gt?: never } & { gte: string });
+export type GT = ({ gt: RangeValue } & { gte?: never }) | ({ gt?: never } & { gte: RangeValue });
 
 /**
  * "less than" or "less than or equal to" range condition. `lt`, `lte` are mutually exclusive.
  */
-export type LT = ({ lt: string } & { lte?: never }) | ({ lt?: never } & { lte: string });
+export type LT = ({ lt: RangeValue } & { lte?: never }) | ({ lt?: never } & { lte: RangeValue });
 
 /**
  * Ranger filter. 1 condition is required.
