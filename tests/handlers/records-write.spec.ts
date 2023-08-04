@@ -1,18 +1,23 @@
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
 import type { GenerateFromRecordsWriteOut } from '../utils/test-data-generator.js';
+import type { ProtocolDefinition } from '../../src/types/protocols-types.js';
 import type { QueryResultEntry } from '../../src/types/message-types.js';
 import type { RecordsWriteMessage } from '../../src/types/records-types.js';
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
-import type { ProtocolActionRule, ProtocolDefinition } from '../../src/types/protocols-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import credentialIssuanceProtocolDefinition from '../vectors/protocol-definitions/credential-issuance.json' assert { type: 'json' };
 import dexProtocolDefinition from '../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import emailProtocolDefinition from '../vectors/protocol-definitions/email.json' assert { type: 'json' };
+import friendChatProtocol from '../vectors/protocol-definitions/friend-chat.json' assert { type: 'json' };
+import groupChatProtocol from '../vectors/protocol-definitions/group-chat.json' assert { type: 'json' };
 import messageProtocolDefinition from '../vectors/protocol-definitions/message.json' assert { type: 'json' };
 import privateProtocol from '../vectors/protocol-definitions/private-protocol.json' assert { type: 'json' };
+import publicChatProtocol from '../vectors/protocol-definitions/public-chat.json' assert { type: 'json' };
 import sinon from 'sinon';
 import socialMediaProtocolDefinition from '../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
+import stackoverflowProtocol from '../vectors/protocol-definitions/stackoverflow.json' assert { type: 'json' };
+
 import chai, { expect } from 'chai';
 
 import { ArrayUtility } from '../../src/utils/array.js';
@@ -29,7 +34,6 @@ import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { Jws } from '../../src/utils/jws.js';
 import { KeyDerivationScheme } from '../../src/index.js';
 import { Message } from '../../src/core/message.js';
-import { ProtocolActor } from '../../src/types/protocols-types.js';
 import { RecordsRead } from '../../src/interfaces/records-read.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { RecordsWriteHandler } from '../../src/handlers/records-write.js';
@@ -599,150 +603,407 @@ export function testRecordsWriteHandler(): void {
           expect(bobRecordQueryReply.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(bobData));
         });
 
-        it('should allow write with recipient rule', async () => {
-        // scenario: VC issuer writes into Alice's DWN an asynchronous credential response upon receiving Alice's credential application
+        describe('recipient rules', () => {
+          it('should allow write with ancestor recipient rule', async () => {
+            // scenario: VC issuer writes into Alice's DWN an asynchronous credential response upon receiving Alice's credential application
+            //           Carol tries to write a credential response but is rejected
 
-          const protocolDefinition = credentialIssuanceProtocolDefinition;
-          const credentialApplicationSchema = protocolDefinition.types.credentialApplication.schema;
-          const credentialResponseSchema = protocolDefinition.types.credentialResponse.schema;
+            const protocolDefinition = credentialIssuanceProtocolDefinition;
+            const credentialApplicationSchema = protocolDefinition.types.credentialApplication.schema;
+            const credentialResponseSchema = protocolDefinition.types.credentialResponse.schema;
 
-          const alice = await TestDataGenerator.generatePersona();
-          const vcIssuer = await TestDataGenerator.generatePersona();
+            const alice = await TestDataGenerator.generatePersona();
+            const vcIssuer = await TestDataGenerator.generatePersona();
+            const carol = await TestDataGenerator.generatePersona();
 
-          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-            author: alice,
-            protocolDefinition
-          });
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
 
-          // setting up a stub DID resolver
-          TestStubGenerator.stubDidResolver(didResolver, [alice, vcIssuer]);
+            // setting up a stub DID resolver
+            TestStubGenerator.stubDidResolver(didResolver, [alice, vcIssuer, carol]);
 
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
-          expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
 
-          // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
-          const encodedCredentialApplication = new TextEncoder().encode('credential application data');
-          const credentialApplication = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            recipient    : vcIssuer.did,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'credentialApplication', // this comes from `types` in protocol definition
-            schema       : credentialApplicationSchema,
-            dataFormat   : protocolDefinition.types.credentialApplication.dataFormats[0],
-            data         : encodedCredentialApplication
-          });
-          const credentialApplicationContextId = await credentialApplication.recordsWrite.getEntryId();
-
-          const credentialApplicationReply = await dwn.processMessage(alice.did, credentialApplication.message, credentialApplication.dataStream);
-          expect(credentialApplicationReply.status.code).to.equal(202);
-
-          // generate a credential application response message from VC issuer
-          const encodedCredentialResponse = new TextEncoder().encode('credential response data');
-          const credentialResponse = await TestDataGenerator.generateRecordsWrite(
-            {
-              author       : vcIssuer,
-              recipient    : alice.did,
+            // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
+            const encodedCredentialApplication = new TextEncoder().encode('credential application data');
+            const credentialApplication = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : vcIssuer.did,
               protocol     : protocolDefinition.protocol,
-              protocolPath : 'credentialApplication/credentialResponse', // this comes from `types` in protocol definition
-              contextId    : credentialApplicationContextId,
-              parentId     : credentialApplicationContextId,
-              schema       : credentialResponseSchema,
-              dataFormat   : protocolDefinition.types.credentialResponse.dataFormats[0],
-              data         : encodedCredentialResponse
-            }
-          );
+              protocolPath : 'credentialApplication', // this comes from `types` in protocol definition
+              schema       : credentialApplicationSchema,
+              dataFormat   : protocolDefinition.types.credentialApplication.dataFormats[0],
+              data         : encodedCredentialApplication
+            });
+            const credentialApplicationContextId = await credentialApplication.recordsWrite.getEntryId();
 
-          const credentialResponseReply = await dwn.processMessage(alice.did, credentialResponse.message, credentialResponse.dataStream);
-          expect(credentialResponseReply.status.code).to.equal(202);
+            const credentialApplicationReply = await dwn.processMessage(alice.did, credentialApplication.message, credentialApplication.dataStream);
+            expect(credentialApplicationReply.status.code).to.equal(202);
 
-          // verify VC issuer's message got written to the DB
-          const messageDataForQueryingCredentialResponse = await TestDataGenerator.generateRecordsQuery({
-            author : alice,
-            filter : { recordId: credentialResponse.message.recordId }
+            // generate a credential application response message from VC issuer
+            const encodedCredentialResponse = new TextEncoder().encode('credential response data');
+            const credentialResponse = await TestDataGenerator.generateRecordsWrite(
+              {
+                author       : vcIssuer,
+                recipient    : alice.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'credentialApplication/credentialResponse', // this comes from `types` in protocol definition
+                contextId    : credentialApplicationContextId,
+                parentId     : credentialApplicationContextId,
+                schema       : credentialResponseSchema,
+                dataFormat   : protocolDefinition.types.credentialResponse.dataFormats[0],
+                data         : encodedCredentialResponse
+              }
+            );
+
+            const credentialResponseReply = await dwn.processMessage(alice.did, credentialResponse.message, credentialResponse.dataStream);
+            expect(credentialResponseReply.status.code).to.equal(202);
+
+            // verify VC issuer's message got written to the DB
+            const messageDataForQueryingCredentialResponse = await TestDataGenerator.generateRecordsQuery({
+              author : alice,
+              filter : { recordId: credentialResponse.message.recordId }
+            });
+            const applicationResponseQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingCredentialResponse.message);
+            expect(applicationResponseQueryReply.status.code).to.equal(200);
+            expect(applicationResponseQueryReply.entries?.length).to.equal(1);
+            expect(applicationResponseQueryReply.entries![0].encodedData)
+              .to.equal(base64url.baseEncode(encodedCredentialResponse));
           });
-          const applicationResponseQueryReply = await dwn.processMessage(alice.did, messageDataForQueryingCredentialResponse.message);
-          expect(applicationResponseQueryReply.status.code).to.equal(200);
-          expect(applicationResponseQueryReply.entries?.length).to.equal(1);
-          expect(applicationResponseQueryReply.entries![0].encodedData)
-            .to.equal(base64url.baseEncode(encodedCredentialResponse));
+
+          it('should allow write with `context` recipient rule', async () => {
+            // scenario: Alice creates a groupChat. Bob tries and fails to write a message.
+            //           Then invites with Bob to the groupChat. Now, Bob is able to send a
+            //           message to the groupChat because he recieved an invite.
+            const protocolDefinition = groupChatProtocol;
+
+            const alice = await TestDataGenerator.generatePersona();
+            const bob = await TestDataGenerator.generatePersona();
+
+            // setting up a stub DID resolver
+            TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
+
+            // Install protocol
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice starts a thread
+            const groupChatRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'groupChat',
+              schema       : protocolDefinition.types.groupChat.schema,
+              dataFormat   : protocolDefinition.types.groupChat.dataFormats[0],
+              data         : new TextEncoder().encode('Bitcoin Barbie Groupchat'),
+            });
+            const groupChatReply = await dwn.processMessage(alice.did, groupChatRecordsWrite.message, groupChatRecordsWrite.dataStream);
+            expect(groupChatReply.status.code).to.equal(202);
+
+            // Bob tries to write a message to the second groupChat,
+            // but he cannot because he has not yet received an invite
+            const messageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : bob,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'groupChat/message',
+              schema       : protocolDefinition.types.message.schema,
+              dataFormat   : protocolDefinition.types.message.dataFormats[0],
+              data         : new TextEncoder().encode('Hello Bitcoin Barbies'),
+              parentId     : groupChatRecordsWrite.recordsWrite.message.recordId,
+              contextId    : groupChatRecordsWrite.recordsWrite.message.contextId,
+            });
+            const bobsMessageReply = await dwn.processMessage(alice.did, messageRecordsWrite.message, messageRecordsWrite.dataStream);
+            expect(bobsMessageReply.status.code).to.equal(401);
+            expect(bobsMessageReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+            // Alice adds Bob as a invite of the thread, i.e. he is recipient of a `groupChat/invite` record
+            const inviteRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'groupChat/invite',
+              schema       : protocolDefinition.types.invite.schema,
+              dataFormat   : protocolDefinition.types.invite.dataFormats[0],
+              data         : new TextEncoder().encode('Adding Bob to this groupChat'),
+              parentId     : groupChatRecordsWrite.recordsWrite.message.recordId,
+              contextId    : groupChatRecordsWrite.recordsWrite.message.contextId,
+            });
+            const inviteReply = await dwn.processMessage(alice.did, inviteRecordsWrite.message, inviteRecordsWrite.dataStream);
+            expect(inviteReply.status.code).to.equal(202);
+
+            // Bob is able to write a `groupChat/message` because he is recipient of a `groupChat/invite` record
+            const messageReply = await dwn.processMessage(alice.did, messageRecordsWrite.message, messageRecordsWrite.dataStream);
+            expect(messageReply.status.code).to.equal(202);
+          });
+
+          it('should allow write with `any` recipient rule', async () => {
+            // scenario: Bob tries to write a chat message to Alice's DWN, but fails because Alice has not added him as a friend.
+            //           Alice adds Bob as a friend, then Bob is able to write a chat message.
+
+            const protocolDefinition = friendChatProtocol as ProtocolDefinition;
+
+            const alice = await TestDataGenerator.generatePersona();
+            const bob = await TestDataGenerator.generatePersona();
+
+            // setting up a stub DID resolver
+            TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
+
+            // Install protocol
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Bob tries to write a chat to Alice's DWN, but fails because Alice has not added him as a friend
+            const bobsChat = await TestDataGenerator.generateRecordsWrite({
+              author       : bob,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'chat',
+              schema       : protocolDefinition.types.chat.schema,
+              dataFormat   : protocolDefinition.types.chat.dataFormats![0],
+              data         : new TextEncoder().encode('Hello Alice'),
+            });
+            const bobsChatReply = await dwn.processMessage(alice.did, bobsChat.message, bobsChat.dataStream);
+            expect(bobsChatReply.status.code).to.equal(401);
+            expect(bobsChatReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+            // Alice writes a `friend` record with Bob as recipient
+            const addFriendRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'friend',
+              schema       : protocolDefinition.types.friend.schema,
+              dataFormat   : protocolDefinition.types.friend.dataFormats![0],
+              data         : new TextEncoder().encode('Adding Bob'),
+            });
+            const addFriendReply = await dwn.processMessage(alice.did, addFriendRecordsWrite.message, addFriendRecordsWrite.dataStream);
+            expect(addFriendReply.status.code).to.equal(202);
+
+            // Now, Bob can successfully  write a chat to Alice's DWN
+            const bobsChatReply2 = await dwn.processMessage(alice.did, bobsChat.message, bobsChat.dataStream);
+            expect(bobsChatReply2.status.code).to.equal(202);
+          });
         });
 
-        it('should allow author to write with author rule and block non-authors', async () => {
-        // scenario: Alice posts an image on the social media protocol to Bob's, then she adds a caption
-        //           AliceImposter attempts to post add a caption to Alice's image, but is blocked
-          const protocolDefinition = socialMediaProtocolDefinition;
+        describe('author action rules', () => {
+          it('allow author to write with ancestor author rule and block non-authors', async () => {
+            // scenario: Alice posts an image on the social media protocol to Bob's, then she adds a caption
+            //           AliceImposter attempts to post add a caption to Alice's image, but is blocked
+            const protocolDefinition = socialMediaProtocolDefinition;
 
-          const alice = await TestDataGenerator.generatePersona();
-          const aliceImposter = await TestDataGenerator.generatePersona();
-          const bob = await TestDataGenerator.generatePersona();
+            const alice = await TestDataGenerator.generatePersona();
+            const aliceImposter = await TestDataGenerator.generatePersona();
+            const bob = await TestDataGenerator.generatePersona();
 
-          // setting up a stub DID resolver
-          TestStubGenerator.stubDidResolver(didResolver, [alice, aliceImposter, bob]);
+            // setting up a stub DID resolver
+            TestStubGenerator.stubDidResolver(didResolver, [alice, aliceImposter, bob]);
 
-          // Install social-media protocol
-          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-            author: bob,
-            protocolDefinition
+            // Install social-media protocol
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: bob,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(bob.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice writes image to bob's DWN
+            const encodedImage = new TextEncoder().encode('cafe-aesthetic.jpg');
+            const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'image', // this comes from `types` in protocol definition
+              schema       : protocolDefinition.types.image.schema,
+              dataFormat   : protocolDefinition.types.image.dataFormats[0],
+              data         : encodedImage
+            });
+            const imageReply = await dwn.processMessage(bob.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
+            expect(imageReply.status.code).to.equal(202);
+
+            const imageContextId = await imageRecordsWrite.recordsWrite.getEntryId();
+
+            // AliceImposter attempts and fails to caption Alice's image
+            const encodedCaptionImposter = new TextEncoder().encode('bad vibes! >:(');
+            const captionImposter = await TestDataGenerator.generateRecordsWrite({
+              author       : aliceImposter,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'image/caption', // this comes from `types` in protocol definition
+              schema       : protocolDefinition.types.caption.schema,
+              dataFormat   : protocolDefinition.types.caption.dataFormats[0],
+              contextId    : imageContextId,
+              parentId     : imageContextId,
+              data         : encodedCaptionImposter
+            });
+            const captionReply = await dwn.processMessage(bob.did, captionImposter.message, captionImposter.dataStream);
+            expect(captionReply.status.code).to.equal(401);
+            expect(captionReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+            // Alice is able to add a caption to her image
+            const encodedCaption = new TextEncoder().encode('coffee and work vibes!');
+            const captionRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'image/caption',
+              schema       : protocolDefinition.types.caption.schema,
+              dataFormat   : protocolDefinition.types.caption.dataFormats[0],
+              contextId    : imageContextId,
+              parentId     : imageContextId,
+              data         : encodedCaption
+            });
+            const captionResponse = await dwn.processMessage(bob.did, captionRecordsWrite.message, captionRecordsWrite.dataStream);
+            expect(captionResponse.status.code).to.equal(202);
+
+            // Verify Alice's caption got written to the DB
+            const messageDataForQueryingCaptionResponse = await TestDataGenerator.generateRecordsQuery({
+              author : alice,
+              filter : { recordId: captionRecordsWrite.message.recordId }
+            });
+            const applicationResponseQueryReply = await dwn.processMessage(bob.did, messageDataForQueryingCaptionResponse.message);
+            expect(applicationResponseQueryReply.status.code).to.equal(200);
+            expect(applicationResponseQueryReply.entries?.length).to.equal(1);
+            expect(applicationResponseQueryReply.entries![0].encodedData)
+              .to.equal(base64url.baseEncode(encodedCaption));
           });
-          const protocolWriteReply = await dwn.processMessage(bob.did, protocolsConfig.message, protocolsConfig.dataStream);
-          expect(protocolWriteReply.status.code).to.equal(202);
 
-          // Alice writes image to bob's DWN
-          const encodedImage = new TextEncoder().encode('cafe-aesthetic.jpg');
-          const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'image', // this comes from `types` in protocol definition
-            schema       : protocolDefinition.types.image.schema,
-            dataFormat   : protocolDefinition.types.image.dataFormats[0],
-            data         : encodedImage
+          it('should allow write with `context` author rule', async () => {
+            // scenario: Alice starts a groupChat. Bob tries and fails to write a groupChat/chat.
+            //           Bob joins the groupChat, then he is able to write a groupChat/chat.
+
+            const protocolDefinition = publicChatProtocol as ProtocolDefinition;
+
+            const alice = await TestDataGenerator.generatePersona();
+            const bob = await TestDataGenerator.generatePersona();
+
+            // setting up a stub DID resolver
+            TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
+
+            // Install protocol
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice starts a groupChat
+            const groupChat = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'groupChat',
+              schema       : protocolDefinition.types.groupChat.schema,
+              dataFormat   : protocolDefinition.types.groupChat.dataFormats![0],
+              data         : new TextEncoder().encode('New groupChat'),
+            });
+            const groupChatReply = await dwn.processMessage(alice.did, groupChat.message, groupChat.dataStream);
+            expect(groupChatReply.status.code).to.equal(202);
+
+            // Bob tries to write a groupChat/chat
+            const bobsChat = await TestDataGenerator.generateRecordsWrite({
+              author       : bob,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'groupChat/chat',
+              schema       : protocolDefinition.types.chat.schema,
+              dataFormat   : protocolDefinition.types.chat.dataFormats![0],
+              data         : new TextEncoder().encode('Can I post in this groupChat?'),
+              contextId    : groupChat.message.contextId,
+              parentId     : groupChat.message.recordId,
+            });
+            const bobsChatReply = await dwn.processMessage(alice.did, bobsChat.message, bobsChat.dataStream);
+            expect(bobsChatReply.status.code).to.equal(401);
+            expect(bobsChatReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+            // Bob joins the groupChat by writing a groupChat/joinChat
+            const bobsJoinChat = await TestDataGenerator.generateRecordsWrite({
+              author       : bob,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'groupChat/joinChat',
+              schema       : protocolDefinition.types.joinChat.schema,
+              dataFormat   : protocolDefinition.types.joinChat.dataFormats![0],
+              data         : new TextEncoder().encode('I try joining the chat first'),
+              contextId    : groupChat.message.contextId,
+              parentId     : groupChat.message.recordId,
+            });
+            const bobsJoinChatReply = await dwn.processMessage(alice.did, bobsJoinChat.message, bobsJoinChat.dataStream);
+            expect(bobsJoinChatReply.status.code).to.equal(202);
+
+            // Now Bob is able to send his chat successfully
+            const bobsChatReply2 = await dwn.processMessage(alice.did, bobsChat.message, bobsChat.dataStream);
+            expect(bobsChatReply2.status.code).to.equal(202);
           });
-          const imageReply = await dwn.processMessage(bob.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
-          expect(imageReply.status.code).to.equal(202);
 
-          const imageContextId = await imageRecordsWrite.recordsWrite.getEntryId();
+          it('should allow write with `any` author rule', async () => {
+            // scenario: Alice hosts a Q&A Forum and where anyone who has previously asked a question
+            //           may provide an answer to other questions.
+            //           Alice writes a question. Bob asks tries to write an to answer her question, but cannot.
+            //           Bob writes a question to Alice's node, then he is able to answer Alice's question.
 
-          // AliceImposter attempts and fails to caption Alice's image
-          const encodedCaptionImposter = new TextEncoder().encode('bad vibes! >:(');
-          const captionImposter = await TestDataGenerator.generateRecordsWrite({
-            author       : aliceImposter,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'image/caption', // this comes from `types` in protocol definition
-            schema       : protocolDefinition.types.caption.schema,
-            dataFormat   : protocolDefinition.types.caption.dataFormats[0],
-            contextId    : imageContextId,
-            parentId     : imageContextId,
-            data         : encodedCaptionImposter
+            const protocolDefinition = stackoverflowProtocol as ProtocolDefinition;
+
+            const alice = await TestDataGenerator.generatePersona();
+            const bob = await TestDataGenerator.generatePersona();
+
+            // setting up a stub DID resolver
+            TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
+
+            // Install protocol
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice asks a question
+            const aliceQuestion = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'question', // this comes from `types` in protocol definition
+              schema       : protocolDefinition.types.question.schema,
+              dataFormat   : protocolDefinition.types.question.dataFormats![0],
+              data         : new TextEncoder().encode('How do cars work?')
+            });
+            const aliceQuestionReply = await dwn.processMessage(alice.did, aliceQuestion.message, aliceQuestion.dataStream);
+            expect(aliceQuestionReply.status.code).to.equal(202);
+
+            // Bob tries and fails to answer Alice's question
+            const bobAnswer = await TestDataGenerator.generateRecordsWrite({
+              author       : bob,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'question/answer', // this comes from `types` in protocol definition
+              schema       : protocolDefinition.types.answer.schema,
+              dataFormat   : protocolDefinition.types.answer.dataFormats![0],
+              data         : new TextEncoder().encode('You push them with your feet!'),
+              contextId    : aliceQuestion.message.contextId,
+              parentId     : aliceQuestion.message.recordId,
+            });
+            const bobAnswerReply = await dwn.processMessage(alice.did, bobAnswer.message, bobAnswer.dataStream);
+            expect(bobAnswerReply.status.code).to.equal(401);
+            expect(bobAnswerReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+            // Bob writes his own question
+            const bobQuestion = await TestDataGenerator.generateRecordsWrite({
+              author       : bob,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'question', // this comes from `types` in protocol definition
+              schema       : protocolDefinition.types.question.schema,
+              dataFormat   : protocolDefinition.types.question.dataFormats![0],
+              data         : new TextEncoder().encode('How do robots work?')
+            });
+            const bobQuestionReply = await dwn.processMessage(alice.did, bobQuestion.message, bobQuestion.dataStream);
+            expect(bobQuestionReply.status.code).to.equal(202);
+
+            // Bob is able to answer Alice's question
+            const bobAnswerReply2 = await dwn.processMessage(alice.did, bobAnswer.message, bobAnswer.dataStream);
+            expect(bobAnswerReply2.status.code).to.equal(202);
           });
-          const captionReply = await dwn.processMessage(bob.did, captionImposter.message, captionImposter.dataStream);
-          expect(captionReply.status.code).to.equal(401);
-          expect(captionReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
-
-          // Alice is able to add a caption to her image
-          const encodedCaption = new TextEncoder().encode('coffee and work vibes!');
-          const captionRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'image/caption',
-            schema       : protocolDefinition.types.caption.schema,
-            dataFormat   : protocolDefinition.types.caption.dataFormats[0],
-            contextId    : imageContextId,
-            parentId     : imageContextId,
-            data         : encodedCaption
-          });
-          const captionResponse = await dwn.processMessage(bob.did, captionRecordsWrite.message, captionRecordsWrite.dataStream);
-          expect(captionResponse.status.code).to.equal(202);
-
-          // Verify Alice's caption got written to the DB
-          const messageDataForQueryingCaptionResponse = await TestDataGenerator.generateRecordsQuery({
-            author : alice,
-            filter : { recordId: captionRecordsWrite.message.recordId }
-          });
-          const applicationResponseQueryReply = await dwn.processMessage(bob.did, messageDataForQueryingCaptionResponse.message);
-          expect(applicationResponseQueryReply.status.code).to.equal(200);
-          expect(applicationResponseQueryReply.entries?.length).to.equal(1);
-          expect(applicationResponseQueryReply.entries![0].encodedData)
-            .to.equal(base64url.baseEncode(encodedCaption));
         });
 
         it('should allow overwriting records by the same author', async () => {
@@ -1286,63 +1547,6 @@ export function testRecordsWriteHandler(): void {
           reply = await dwn.processMessage(alice.did, bobWriteMessageData.message, bobWriteMessageData.dataStream);
           expect(reply.status.code).to.equal(401);
           expect(reply.status.detail).to.contain(`no action rule defined for Write`);
-        });
-
-        it('should fail authorization if path to expected recipient in definition has incorrect label', async () => {
-          const alice = await DidKeyResolver.generate();
-          const issuer = await DidKeyResolver.generate();
-
-          // clone then create an invalid ancestor path that is longer than possible
-          const invalidProtocolDefinition = JSON.parse(JSON.stringify(credentialIssuanceProtocolDefinition));
-          const actionRuleIndex =
-          invalidProtocolDefinition.structure.credentialApplication.credentialResponse.$actions
-            .findIndex((actionRule: ProtocolActionRule) => actionRule.who === ProtocolActor.Recipient);
-          invalidProtocolDefinition.structure.credentialApplication.credentialResponse
-            .$actions[actionRuleIndex].ofRecord.atPath
-            = 'credentialResponse';
-          // this is invalid as the root ancestor can only be `credentialApplication` based on record structure
-
-
-          // write the VC issuance protocol
-          const protocol = invalidProtocolDefinition.protocol;
-          const protocolConfig = await TestDataGenerator.generateProtocolsConfigure({
-            author             : alice,
-            protocolDefinition : invalidProtocolDefinition
-          });
-
-          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
-          expect(protocolConfigureReply.status.code).to.equal(202);
-
-          // simulate Alice's VC application to an issuer
-          const data = Encoder.stringToBytes('irrelevant');
-          const messageDataWithIssuerA = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            recipient    : issuer.did,
-            schema       : invalidProtocolDefinition.types.credentialApplication.schema,
-            protocol,
-            protocolPath : 'credentialApplication', // this comes from `types` in protocol definition
-            data
-          });
-          const contextId = await messageDataWithIssuerA.recordsWrite.getEntryId();
-
-          let reply = await dwn.processMessage(alice.did, messageDataWithIssuerA.message, messageDataWithIssuerA.dataStream);
-          expect(reply.status.code).to.equal(202);
-
-          // simulate issuer attempting to respond to Alice's VC application
-          const invalidResponseByIssuerA = await TestDataGenerator.generateRecordsWrite({
-            author       : issuer,
-            recipient    : alice.did,
-            schema       : invalidProtocolDefinition.types.credentialResponse.schema,
-            contextId,
-            parentId     : messageDataWithIssuerA.message.recordId,
-            protocol,
-            protocolPath : 'credentialApplication/credentialResponse', // this comes from `types` in protocol definition
-            data
-          });
-
-          reply = await dwn.processMessage(alice.did, invalidResponseByIssuerA.message, invalidResponseByIssuerA.dataStream);
-          expect(reply.status.code).to.equal(401);
-          expect(reply.status.detail).to.contain('mismatching record schema');
         });
 
         it('should look up recipient path with ancestor depth of 2+ (excluding self) in action rule correctly', async () => {

@@ -8,6 +8,7 @@ import { DwnInterfaceName, DwnMethodName } from '../../src/index.js';
 import chaiAsPromised from 'chai-as-promised';
 import chatProtocolDefinition from '../vectors/protocol-definitions/chat.json' assert { type: 'json' };
 import emailProtocolDefinition from '../vectors/protocol-definitions/email.json' assert { type: 'json' };
+import groupChatProtocol from '../vectors/protocol-definitions/group-chat.json' assert { type: 'json' };
 import sinon from 'sinon';
 import socialMediaProtocolDefinition from '../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
 import chai, { expect } from 'chai';
@@ -220,66 +221,16 @@ export function testRecordsReadHandler(): void {
           expect(imageReadReply.status.code).to.equal(200);
         });
 
-        it('should allow read with recipient rule', async () => {
-        // scenario: Alice sends an email to Bob, then Bob reads the email.
-        //           ImposterBob tries and fails to read the email.
+        it('should not allow anonymous reads when there is no allow-anyone rule', async () => {
+          // scenario: Alice's writes a record to a protocol. An anonymous read his Alice's DWN and is rejected
+          //           because there is not an allow-anyone rule.
 
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
-          const imposterBob = await DidKeyResolver.generate();
+          const alice = await TestDataGenerator.generatePersona();
 
           const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
 
-          // Install email protocol on Alice's DWN
-          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-            author: alice,
-            protocolDefinition,
-          });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
-          expect(protocolWriteReply.status.code).to.equal(202);
+          TestStubGenerator.stubDidResolver(didResolver, [alice]);
 
-          // Alice writes an email with Bob as recipient
-          const encodedEmail = new TextEncoder().encode('Dear Bob, hello!');
-          const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'email', // this comes from `types` in protocol definition
-            schema       : protocolDefinition.types.email.schema,
-            dataFormat   : protocolDefinition.types.email.dataFormats![0],
-            data         : encodedEmail,
-            recipient    : bob.did
-          });
-          const imageReply = await dwn.processMessage(alice.did, emailRecordsWrite.message, emailRecordsWrite.dataStream);
-          expect(imageReply.status.code).to.equal(202);
-
-          // Bob reads Alice's email
-          const bobRecordsRead = await RecordsRead.create({
-            recordId                    : emailRecordsWrite.message.recordId,
-            authorizationSignatureInput : Jws.createSignatureInput(bob)
-          });
-          const bobReadReply = await dwn.processMessage(alice.did, bobRecordsRead.message);
-          expect(bobReadReply.status.code).to.equal(200);
-
-          // ImposterBob is not able to read Alice's email
-          const imposterRecordsRead = await RecordsRead.create({
-            recordId                    : emailRecordsWrite.message.recordId,
-            authorizationSignatureInput : Jws.createSignatureInput(imposterBob)
-          });
-          const imposterReadReply = await dwn.processMessage(alice.did, imposterRecordsRead.message);
-          expect(imposterReadReply.status.code).to.equal(401);
-          expect(imposterReadReply.status.detail).to.include(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
-        });
-
-        it('should allow read with author rule', async () => {
-        // scenario: Bob sends an email to Alice, then Bob reads the email.
-        //           ImposterBob tries and fails to read the email.
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
-          const imposterBob = await DidKeyResolver.generate();
-
-          const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
-
-          // Install email protocol on Alice's DWN
           const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
             author: alice,
             protocolDefinition
@@ -287,37 +238,212 @@ export function testRecordsReadHandler(): void {
           const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
           expect(protocolWriteReply.status.code).to.equal(202);
 
-          // Alice writes an email with Bob as recipient
-          const encodedEmail = new TextEncoder().encode('Dear Alice, hello!');
-          const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-            author       : bob,
+          // Alice writes a message to the minimal protocol
+          const recordsWrite = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
             protocol     : protocolDefinition.protocol,
-            protocolPath : 'email', // this comes from `types` in protocol definition
+            protocolPath : 'email',
             schema       : protocolDefinition.types.email.schema,
             dataFormat   : protocolDefinition.types.email.dataFormats![0],
-            data         : encodedEmail,
-            recipient    : alice.did
+            data         : new TextEncoder().encode('foo')
           });
-          const imageReply = await dwn.processMessage(alice.did, emailRecordsWrite.message, emailRecordsWrite.dataStream);
-          expect(imageReply.status.code).to.equal(202);
+          const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+          expect(recordsWriteReply.status.code).to.equal(202);
 
-          // Bob reads the email he just sent
-          const bobRecordsRead = await RecordsRead.create({
-            recordId                    : emailRecordsWrite.message.recordId,
-            authorizationSignatureInput : Jws.createSignatureInput(bob)
+          // Anonymous tries and fails to read Alice's message
+          const recordsRead = await RecordsRead.create({
+            recordId: recordsWrite.message.recordId,
           });
-          const bobReadReply = await dwn.processMessage(alice.did, bobRecordsRead.message);
-          expect(bobReadReply.status.code).to.equal(200);
-
-          // ImposterBob is not able to read the email
-          const imposterRecordsRead = await RecordsRead.create({
-            recordId                    : emailRecordsWrite.message.recordId,
-            authorizationSignatureInput : Jws.createSignatureInput(imposterBob)
-          });
-          const imposterReadReply = await dwn.processMessage(alice.did, imposterRecordsRead.message);
-          expect(imposterReadReply.status.code).to.equal(401);
-          expect(imposterReadReply.status.detail).to.include(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+          const recordsReadReply = await dwn.processMessage(alice.did, recordsRead.message);
+          expect(recordsReadReply.status.code).to.equal(401);
+          expect(recordsReadReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
         });
+
+        describe('recipient rules', () => {
+          it('should allow read with ancestor recipient rule', async () => {
+            // scenario: Alice sends an email to Bob, then Bob reads the email.
+            //           ImposterBob tries and fails to read the email.
+
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+            const imposterBob = await DidKeyResolver.generate();
+
+            const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
+
+            // Install email protocol on Alice's DWN
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition,
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice writes an email with Bob as recipient
+            const encodedEmail = new TextEncoder().encode('Dear Bob, hello!');
+            const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'email', // this comes from `types` in protocol definition
+              schema       : protocolDefinition.types.email.schema,
+              dataFormat   : protocolDefinition.types.email.dataFormats![0],
+              data         : encodedEmail,
+              recipient    : bob.did
+            });
+            const imageReply = await dwn.processMessage(alice.did, emailRecordsWrite.message, emailRecordsWrite.dataStream);
+            expect(imageReply.status.code).to.equal(202);
+
+            // Bob reads Alice's email
+            const bobRecordsRead = await RecordsRead.create({
+              recordId                    : emailRecordsWrite.message.recordId,
+              authorizationSignatureInput : Jws.createSignatureInput(bob)
+            });
+            const bobReadReply = await dwn.processMessage(alice.did, bobRecordsRead.message);
+            expect(bobReadReply.status.code).to.equal(200);
+
+            // ImposterBob is not able to read Alice's email
+            const imposterRecordsRead = await RecordsRead.create({
+              recordId                    : emailRecordsWrite.message.recordId,
+              authorizationSignatureInput : Jws.createSignatureInput(imposterBob)
+            });
+            const imposterReadReply = await dwn.processMessage(alice.did, imposterRecordsRead.message);
+            expect(imposterReadReply.status.code).to.equal(401);
+            expect(imposterReadReply.status.detail).to.include(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+          });
+
+          it('should allow read with `context` recipient rule', async () => {
+            // scenario: Alice creates a groupChat and sends a message to the groupChat.
+            //           Bob tries and fails to read the message. Then Alice invites with Bob to the groupChat.
+            //           Now, Bob is able to send a message to the groupChat because he recieved an invite.
+            const protocolDefinition = groupChatProtocol;
+
+            const alice = await TestDataGenerator.generatePersona();
+            const bob = await TestDataGenerator.generatePersona();
+
+            // setting up a stub DID resolver
+            TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
+
+            // Install protocol
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice starts a groupChat
+            const groupChatRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'groupChat',
+              schema       : protocolDefinition.types.groupChat.schema,
+              dataFormat   : protocolDefinition.types.groupChat.dataFormats[0],
+              data         : new TextEncoder().encode('Bitcoin Barbie Groupchat'),
+            });
+            const groupChatReply = await dwn.processMessage(alice.did, groupChatRecordsWrite.message, groupChatRecordsWrite.dataStream);
+            expect(groupChatReply.status.code).to.equal(202);
+
+            // Alices adds a chat in the groupChat
+            const chatRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'groupChat/message',
+              schema       : protocolDefinition.types.message.schema,
+              dataFormat   : protocolDefinition.types.message.dataFormats[0],
+              data         : new TextEncoder().encode('We are fans of bitcoin & barbie'),
+              parentId     : groupChatRecordsWrite.message.recordId,
+              contextId    : groupChatRecordsWrite.message.contextId,
+            });
+            const chatReply = await dwn.processMessage(alice.did, chatRecordsWrite.message, chatRecordsWrite.dataStream);
+            expect(chatReply.status.code).to.equal(202);
+
+            // Bob tries and fails to read Alice's message
+            const bobsRead = await RecordsRead.create({
+              recordId                    : chatRecordsWrite.message.recordId,
+              authorizationSignatureInput : Jws.createSignatureInput(bob)
+            });
+            const readReply = await dwn.processMessage(alice.did, bobsRead.message);
+            expect(readReply.status.code).to.equal(401);
+            expect(readReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+            // Alice invites Bob to the groupChat
+            const inviteRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'groupChat/invite',
+              schema       : protocolDefinition.types.invite.schema,
+              dataFormat   : protocolDefinition.types.invite.dataFormats[0],
+              data         : new TextEncoder().encode('Bob check out this groupchat'),
+              parentId     : groupChatRecordsWrite.message.recordId,
+              contextId    : groupChatRecordsWrite.message.contextId,
+            });
+            const inviteReply = await dwn.processMessage(alice.did, inviteRecordsWrite.message, inviteRecordsWrite.dataStream);
+            expect(inviteReply.status.code).to.equal(202);
+
+            // Bob is able to read messages from the groupChat
+            const readReply2 = await dwn.processMessage(alice.did, bobsRead.message);
+            expect(readReply2.status.code).to.equal(200);
+          });
+
+          it('should allow read with `any` recipient rule', async () => {});
+        });
+
+        describe('author action rules', () => {
+          it('should allow read with ancestor author rule', async () => {
+            // scenario: Bob sends an email to Alice, then Bob reads the email.
+            //           ImposterBob tries and fails to read the email.
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+            const imposterBob = await DidKeyResolver.generate();
+
+            const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
+
+            // Install email protocol on Alice's DWN
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice writes an email with Bob as recipient
+            const encodedEmail = new TextEncoder().encode('Dear Alice, hello!');
+            const emailRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : bob,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'email', // this comes from `types` in protocol definition
+              schema       : protocolDefinition.types.email.schema,
+              dataFormat   : protocolDefinition.types.email.dataFormats![0],
+              data         : encodedEmail,
+              recipient    : alice.did
+            });
+            const imageReply = await dwn.processMessage(alice.did, emailRecordsWrite.message, emailRecordsWrite.dataStream);
+            expect(imageReply.status.code).to.equal(202);
+
+            // Bob reads the email he just sent
+            const bobRecordsRead = await RecordsRead.create({
+              recordId                    : emailRecordsWrite.message.recordId,
+              authorizationSignatureInput : Jws.createSignatureInput(bob)
+            });
+            const bobReadReply = await dwn.processMessage(alice.did, bobRecordsRead.message);
+            expect(bobReadReply.status.code).to.equal(200);
+
+            // ImposterBob is not able to read the email
+            const imposterRecordsRead = await RecordsRead.create({
+              recordId                    : emailRecordsWrite.message.recordId,
+              authorizationSignatureInput : Jws.createSignatureInput(imposterBob)
+            });
+            const imposterReadReply = await dwn.processMessage(alice.did, imposterRecordsRead.message);
+            expect(imposterReadReply.status.code).to.equal(401);
+            expect(imposterReadReply.status.detail).to.include(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+          });
+
+          it('should allow read with `context` author rule', async () => {});
+
+          it('should allow read with `any` author rule', async () => {});
+        });
+
+
       });
 
       describe('grant based reads', () => {

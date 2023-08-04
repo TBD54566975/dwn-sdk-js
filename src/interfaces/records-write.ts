@@ -393,7 +393,7 @@ export class RecordsWrite {
   public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
     if (this.message.descriptor.protocol !== undefined) {
       // NOTE: `author` definitely exists because of the earlier `authenticate()` call
-      await ProtocolAuthorization.authorize(tenant, this, this.author!, messageStore);
+      await ProtocolAuthorization.authorize(tenant, this, this, messageStore);
     } else {
       await authorize(tenant, this);
     }

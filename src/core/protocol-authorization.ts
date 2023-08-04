@@ -1,9 +1,10 @@
+import type { Filter } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { RecordsRead } from '../interfaces/records-read.js';
-import type { Filter, TimestampedMessage } from '../types/message-types.js';
 import type { InternalRecordsWriteMessage, RecordsReadMessage, RecordsWriteMessage } from '../types/records-types.js';
-import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../types/protocols-types.js';
+import type { ProtocolActionRule, ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../types/protocols-types.js';
 
+import { ProtocolRecordGroup } from '../types/protocols-types.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
@@ -18,24 +19,25 @@ export class ProtocolAuthorization {
 
   /**
    * Performs protocol-based authorization against the given message.
+   * @param recordsWrite Either the incomingMessage itself if the incoming is a RecordsWrite,
+   *                     or the latest RecordsWrite associated with the recordId being read.
    * @throws {Error} if authorization fails.
    */
   public static async authorize(
     tenant: string,
     incomingMessage: RecordsRead | RecordsWrite,
-    author: string | undefined,
+    recordsWrite: RecordsWrite,
     messageStore: MessageStore
   ): Promise<void> {
     // fetch ancestor message chain
     const ancestorMessageChain: RecordsWriteMessage[] =
-      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, messageStore);
+      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, recordsWrite, messageStore);
 
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
       tenant,
-      incomingMessage,
-      ancestorMessageChain,
-      messageStore
+      recordsWrite,
+      messageStore,
     );
 
     // verify declared protocol type exists in protocol and that it conforms to type specification
@@ -52,18 +54,18 @@ export class ProtocolAuthorization {
 
     // get the rule set for the inbound message
     const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
-      incomingMessage.message,
+      recordsWrite,
       protocolDefinition,
-      ancestorMessageChain
     );
 
     // verify method invoked against the allowed actions
-    ProtocolAuthorization.verifyAllowedActions(
+    await ProtocolAuthorization.verifyAllowedActions(
       tenant,
-      author,
-      incomingMessage.message.descriptor.method,
+      incomingMessage,
+      recordsWrite,
       inboundMessageRuleSet,
       ancestorMessageChain,
+      messageStore,
     );
 
     // verify allowed condition of incoming message
@@ -75,17 +77,10 @@ export class ProtocolAuthorization {
    */
   private static async fetchProtocolDefinition(
     tenant: string,
-    incomingMessage: RecordsRead | RecordsWrite,
-    ancestorMessageChain: RecordsWriteMessage[],
+    recordsWrite: RecordsWrite,
     messageStore: MessageStore
   ): Promise<ProtocolDefinition> {
-    // get the protocol URI
-    let protocolUri: string;
-    if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
-      protocolUri = (incomingMessage as RecordsWrite).message.descriptor.protocol!;
-    } else {
-      protocolUri = ancestorMessageChain[ancestorMessageChain.length-1].descriptor.protocol!;
-    }
+    const protocolUri = recordsWrite.message.descriptor.protocol!;
 
     // fetch the corresponding protocol definition
     const query: Filter = {
@@ -110,25 +105,14 @@ export class ProtocolAuthorization {
   private static async constructAncestorMessageChain(
     tenant: string,
     incomingMessage: RecordsRead | RecordsWrite,
+    recordsWrite: RecordsWrite,
     messageStore: MessageStore
   )
     : Promise<RecordsWriteMessage[]> {
     const ancestorMessageChain: RecordsWriteMessage[] = [];
 
-    // Get first RecordsWrite in ancestor chain, or use incoming write message
-    let recordsWrite: RecordsWrite;
-    if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
-      recordsWrite = incomingMessage as RecordsWrite;
-    } else {
-      const recordsRead = incomingMessage as RecordsRead;
-      const query = {
-        interface : DwnInterfaceName.Records,
-        method    : DwnMethodName.Write,
-        recordId  : recordsRead.message.descriptor.recordId,
-      };
-      const existingMessages = await messageStore.query(tenant, query) as TimestampedMessage[];
-      const recordsWriteMessage = await Message.getNewestMessage(existingMessages) as RecordsWriteMessage;
-      recordsWrite = await RecordsWrite.parse(recordsWriteMessage);
+    if (incomingMessage.message.descriptor.method !== DwnMethodName.Write) {
+      // Unless inboundMessage is a Write, recordsWrite is also an ancestor message
       ancestorMessageChain.push(recordsWrite.message);
     }
 
@@ -165,16 +149,10 @@ export class ProtocolAuthorization {
    * Gets the rule set corresponding to the given message chain.
    */
   private static getRuleSet(
-    inboundMessage: RecordsReadMessage | RecordsWriteMessage,
+    recordsWrite: RecordsWrite,
     protocolDefinition: ProtocolDefinition,
-    ancestorMessageChain: RecordsWriteMessage[],
   ): ProtocolRuleSet {
-    let protocolPath: string;
-    if (inboundMessage.descriptor.method === DwnMethodName.Write) {
-      protocolPath = (inboundMessage as RecordsWriteMessage).descriptor.protocolPath!;
-    } else {
-      protocolPath = ancestorMessageChain[ancestorMessageChain.length-1].descriptor.protocolPath!;
-    }
+    const protocolPath = recordsWrite.message.descriptor.protocolPath!;
     const protocolPathArray = protocolPath.split('/');
 
     // traverse rule sets using protocolPath
@@ -283,23 +261,22 @@ export class ProtocolAuthorization {
    * Verifies the actions specified in the given message matches the allowed actions in the rule set.
    * @throws {Error} if action not allowed.
    */
-  private static verifyAllowedActions(
+  private static async verifyAllowedActions(
     tenant: string,
-    author: string | undefined,
-    incomingMessageMethod: DwnMethodName,
+    incomingMessage: RecordsRead | RecordsWrite,
+    recordsWrite: RecordsWrite,
     inboundMessageRuleSet: ProtocolRuleSet,
     ancestorMessageChain: RecordsWriteMessage[],
-  ): void {
-    const inboundMessageAction = methodToAllowedActionMap[incomingMessageMethod];
+    messageStore: MessageStore,
+  ): Promise<void> {
+    const inboundMessageAction = methodToAllowedActionMap[incomingMessage.message.descriptor.method];
+    const author = incomingMessage.author;
 
     const actionRules = inboundMessageRuleSet.$actions;
-    if (actionRules === undefined) {
-      // if no action rule is defined, owner of DWN can do everything
-      if (author === tenant) {
-        return;
-      } else {
-        throw new Error(`no action rule defined for ${incomingMessageMethod}, ${author} is unauthorized`);
-      }
+    if (author === tenant) {
+      return;
+    } else if (actionRules === undefined) {
+      throw new Error(`no action rule defined for ${incomingMessage.message.descriptor.method}, ${author} is unauthorized`);
     }
 
     for (const actionRule of actionRules) {
@@ -307,38 +284,36 @@ export class ProtocolAuthorization {
         continue;
       }
 
-      switch (actionRule.who) {
-      case ProtocolActor.Anyone:
+      if (actionRule.who === ProtocolActor.Anyone) {
         return;
-      case ProtocolActor.Author:
-        const messageForAuthorCheck = ProtocolAuthorization.getMessage(
-          ancestorMessageChain,
-          actionRule.ofRecord!.atPath,
-        );
+      } else if (author === undefined) {
+        continue;
+      }
 
-        if (messageForAuthorCheck !== undefined) {
-          const expectedAuthor = Message.getAuthor(messageForAuthorCheck);
-
-          if (author === expectedAuthor) {
-            return;
-          }
+      switch (actionRule.ofRecord!.inGroup) {
+      case ProtocolRecordGroup.Ancestors:
+        const ancestorRuleSuccess: boolean = await ProtocolAuthorization.checkAncestorGroupActionRule(author, actionRule, ancestorMessageChain);
+        if (ancestorRuleSuccess) {
+          return;
         }
         break;
-      case ProtocolActor.Recipient:
-        const messageForRecipientCheck = ProtocolAuthorization.getMessage(
-          ancestorMessageChain,
-            actionRule.ofRecord!.atPath,
-        );
-        if (messageForRecipientCheck !== undefined) {
-          const expectedAuthor = messageForRecipientCheck.descriptor.recipient;
 
-          if (author === expectedAuthor) {
-            return;
-          }
+      case ProtocolRecordGroup.Context:
+      case ProtocolRecordGroup.Any:
+        const anyOrContextRuleSuccess = await ProtocolAuthorization.checkAnyOrContextGroupActionRule(
+          tenant,
+          recordsWrite,
+          author,
+          actionRule,
+          messageStore
+        );
+        if (anyOrContextRuleSuccess) {
+          return;
         }
         break;
-        // default:
-        //    JSON schema validations ensure that there are no other cases
+
+      // default:
+        // JSON Schema ensures that no other values are possible
       }
     }
 
@@ -375,41 +350,70 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Gets the message from the message chain based on the path specified.
-   * Returns undefined if matching message does not existing in ancestor chain
-   * @param protocolPath `/` delimited path starting from the root ancestor.
-   *                    Each path segment denotes the expected record type declared in protocol definition.
-   *                    e.g. `A/B/C` means that the root ancestor must be of type A, its child must be of type B, followed by a child of type C.
-   *                    NOTE: the path scheme use here may be temporary dependent on final protocol spec.
+   * Checks if there is a RecordsWriteMessage in the ancestor chain that matches the protocolPath in given ProtocolActionRule.
+   * Assumes that the actionRule authorizes either recipient or author, but not 'anyone'.
+   * @returns true if there is an ancestorRecordsWrite that matches actionRule. false otherwise.
    */
-  private static getMessage(
+  private static async checkAncestorGroupActionRule(
+    author: string,
+    actionRule: ProtocolActionRule,
     ancestorMessageChain: RecordsWriteMessage[],
-    protocolPath: string,
-  ): RecordsWriteMessage | undefined {
-    const expectedAncestors = protocolPath.split('/');
+  ): Promise<boolean> {
+    // Iterate up the ancestor chain to find a message with matching protocolPath
+    const ancestorRecordsWrite = ancestorMessageChain.find((recordsWriteMessage) =>
+      recordsWriteMessage.descriptor.protocolPath === actionRule.ofRecord!.atPath
+    );
 
-    // consider moving this check to ProtocolsConfigure message ingestion
-    if (expectedAncestors.length > ancestorMessageChain.length) {
-      return undefined;
+    // If this is reached, there is likely an issue with the protocol definition.
+    // The protocolPath to the actionRule should start with actionRule.ofRecord.atPath
+    if (ancestorRecordsWrite === undefined) {
+      return false;
     }
 
-    let i = 0;
-    while (true) {
-      const expectedDefinitionId = expectedAncestors[i];
-      const ancestorMessage = ancestorMessageChain[i];
-
-      const actualDefinitionId = ProtocolAuthorization.getTypeName(ancestorMessage.descriptor.protocolPath!);
-      if (actualDefinitionId !== expectedDefinitionId) {
-        throw new Error(`mismatching record schema: expecting ${expectedDefinitionId} but actual ${actualDefinitionId}`);
-      }
-
-      // we have found the message if we are looking at the last message specified by the path
-      if (i + 1 === expectedAncestors.length) {
-        return ancestorMessage;
-      }
-
-      i++;
+    if (actionRule.who === ProtocolActor.Recipient) {
+      // Recipient of ancestor message must be the author of the incoming message
+      return author === ancestorRecordsWrite.descriptor.recipient;
+    } else { // actionRule.who === ProtocolActor.Author
+      // Author of ancestor message must be the author of the incoming message
+      const ancestorAuthor = (await RecordsWrite.parse(ancestorRecordsWrite)).author;
+      return author === ancestorAuthor;
     }
+  }
+
+  /**
+   * Checks if there is a RecordsWrite message that matches the protocolPath and actor in the given ProtocolActionRule.
+   * If actionRule.ofRecord.inGroup === 'context', also checks that there is a message with matching contextId as the incoming message.
+   * @returns true if there is a matching RecordsWrite that matches the actionRule. false otherwise
+   */
+  private static async checkAnyOrContextGroupActionRule(
+    tenant: string,
+    recordsWrite: RecordsWrite,
+    author: string,
+    actionRule: ProtocolActionRule,
+    messageStore: MessageStore,
+  ): Promise<boolean> {
+    const filter: { [key: string]: string } = {
+      interface    : DwnInterfaceName.Records,
+      method       : DwnMethodName.Write,
+      protocolPath : actionRule.ofRecord!.atPath,
+    };
+
+    if (actionRule.who === ProtocolActor.Recipient) {
+      // Find matching messages with recipient is the author of the inbound message
+      filter.recipient = author;
+    } else { // actionRule.who === ProtocolActor.Author
+      // Find matching messages authored by the author of the inbound message
+      filter.author = author;
+    }
+
+    if (actionRule.ofRecord!.inGroup === ProtocolRecordGroup.Context) {
+      filter.contextId = recordsWrite.message.contextId!;
+    }
+
+    const matchingRecordsWrites = await messageStore.query(tenant, filter);
+
+    // There exists at least one message satisfying the actionRule
+    return matchingRecordsWrites.length > 0;
   }
 
   private static getTypeName(protocolPath: string): string {
