@@ -313,7 +313,7 @@ export class ProtocolAuthorization {
       case ProtocolActor.Author:
         const messageForAuthorCheck = ProtocolAuthorization.getMessage(
           ancestorMessageChain,
-          actionRule.of!,
+          actionRule.ofRecord!.atPath,
         );
 
         if (messageForAuthorCheck !== undefined) {
@@ -327,7 +327,7 @@ export class ProtocolAuthorization {
       case ProtocolActor.Recipient:
         const messageForRecipientCheck = ProtocolAuthorization.getMessage(
           ancestorMessageChain,
-            actionRule.of!,
+            actionRule.ofRecord!.atPath,
         );
         if (messageForRecipientCheck !== undefined) {
           const expectedAuthor = messageForRecipientCheck.descriptor.recipient;

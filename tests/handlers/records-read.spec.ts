@@ -1,6 +1,6 @@
 import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
-import type { DataStore, EventLog, MessageStore, ProtocolDefinition , ProtocolsConfigureMessage } from '../../src/index.js';
+import type { DataStore, EventLog, MessageStore, ProtocolDefinition, ProtocolsConfigureMessage } from '../../src/index.js';
 
 import { Message } from '../../src/index.js';
 import { DwnInterfaceName, DwnMethodName } from '../../src/index.js';
@@ -228,12 +228,12 @@ export function testRecordsReadHandler(): void {
           const bob = await DidKeyResolver.generate();
           const imposterBob = await DidKeyResolver.generate();
 
-          const protocolDefinition = emailProtocolDefinition;
+          const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
 
           // Install email protocol on Alice's DWN
           const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
             author: alice,
-            protocolDefinition
+            protocolDefinition,
           });
           const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
           expect(protocolWriteReply.status.code).to.equal(202);
@@ -245,7 +245,7 @@ export function testRecordsReadHandler(): void {
             protocol     : protocolDefinition.protocol,
             protocolPath : 'email', // this comes from `types` in protocol definition
             schema       : protocolDefinition.types.email.schema,
-            dataFormat   : protocolDefinition.types.email.dataFormats[0],
+            dataFormat   : protocolDefinition.types.email.dataFormats![0],
             data         : encodedEmail,
             recipient    : bob.did
           });
@@ -277,7 +277,7 @@ export function testRecordsReadHandler(): void {
           const bob = await DidKeyResolver.generate();
           const imposterBob = await DidKeyResolver.generate();
 
-          const protocolDefinition = emailProtocolDefinition;
+          const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
 
           // Install email protocol on Alice's DWN
           const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
@@ -294,7 +294,7 @@ export function testRecordsReadHandler(): void {
             protocol     : protocolDefinition.protocol,
             protocolPath : 'email', // this comes from `types` in protocol definition
             schema       : protocolDefinition.types.email.schema,
-            dataFormat   : protocolDefinition.types.email.dataFormats[0],
+            dataFormat   : protocolDefinition.types.email.dataFormats![0],
             data         : encodedEmail,
             recipient    : alice.did
           });
@@ -730,7 +730,7 @@ export function testRecordsReadHandler(): void {
           TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
 
           // Alice configures chat protocol with encryption
-          const protocolDefinition: ProtocolDefinition = chatProtocolDefinition;
+          const protocolDefinition: ProtocolDefinition = chatProtocolDefinition as ProtocolDefinition;
 
           const encryptedProtocolDefinitionForAlice
                       = await Protocols.deriveAndInjectPublicEncryptionKeys(protocolDefinition, alice.keyId, alice.keyPair.privateJwk);
@@ -883,7 +883,7 @@ export function testRecordsReadHandler(): void {
           TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
 
           // Alice configures email protocol with encryption
-          const protocolDefinition: ProtocolDefinition = emailProtocolDefinition;
+          const protocolDefinition: ProtocolDefinition = emailProtocolDefinition as ProtocolDefinition;
           const encryptedProtocolDefinition
             = await Protocols.deriveAndInjectPublicEncryptionKeys(protocolDefinition, alice.keyId, alice.keyPair.privateJwk);
           const protocolsConfigure = await TestDataGenerator.generateProtocolsConfigure({

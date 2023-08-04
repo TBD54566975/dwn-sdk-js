@@ -24,12 +24,18 @@
         },
         {
           "who": "author",
-          "of": "thread",
+          "ofRecord": {
+            "atPath": "thread",
+            "inGroup": "ancestors"
+          },
           "can": "read"
         },
         {
           "who": "recipient",
-          "of": "thread",
+          "ofRecord": {
+            "atPath": "thread",
+            "inGroup": "ancestors"
+          },
           "can": "read"
         }
       ],
@@ -41,12 +47,18 @@
           },
           {
             "who": "author",
-            "of": "thread/message",
+            "ofRecord": {
+              "atPath": "thread/message",
+              "inGroup": "ancestors"
+            },
             "can": "read"
           },
           {
             "who": "recipient",
-            "of": "thread/message",
+            "ofRecord": {
+              "atPath": "thread/message",
+              "inGroup": "ancestors"
+            },
             "can": "read"
           }
         ]

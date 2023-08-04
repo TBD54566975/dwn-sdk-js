@@ -44,7 +44,10 @@ export enum ProtocolAction {
 
 export type ProtocolActionRule = {
   who: string,
-  of?: string,
+  ofRecord?: {
+    atPath: string;
+    inGroup: 'any' | 'context' | 'ancestors';
+  },
   can: string
 };
 /**

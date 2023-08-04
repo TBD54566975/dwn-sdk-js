@@ -1,9 +1,9 @@
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
 import type { GenerateFromRecordsWriteOut } from '../utils/test-data-generator.js';
-import type { ProtocolActionRule } from '../../src/types/protocols-types.js';
 import type { QueryResultEntry } from '../../src/types/message-types.js';
 import type { RecordsWriteMessage } from '../../src/types/records-types.js';
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
+import type { ProtocolActionRule, ProtocolDefinition } from '../../src/types/protocols-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import credentialIssuanceProtocolDefinition from '../vectors/protocol-definitions/credential-issuance.json' assert { type: 'json' };
@@ -557,7 +557,7 @@ export function testRecordsWriteHandler(): void {
         // scenario, Bob writes into Alice's DWN given Alice's "email" protocol allow-anyone rule
 
           // write a protocol definition with an allow-anyone rule
-          const protocolDefinition = emailProtocolDefinition;
+          const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
           const alice = await TestDataGenerator.generatePersona();
           const bob = await TestDataGenerator.generatePersona();
 
@@ -580,7 +580,7 @@ export function testRecordsWriteHandler(): void {
               protocol     : protocolDefinition.protocol,
               protocolPath : 'email',
               schema       : protocolDefinition.types.email.schema,
-              dataFormat   : protocolDefinition.types.email.dataFormats[0],
+              dataFormat   : protocolDefinition.types.email.dataFormats![0],
               data         : bobData
             }
           );
@@ -1298,7 +1298,7 @@ export function testRecordsWriteHandler(): void {
           invalidProtocolDefinition.structure.credentialApplication.credentialResponse.$actions
             .findIndex((actionRule: ProtocolActionRule) => actionRule.who === ProtocolActor.Recipient);
           invalidProtocolDefinition.structure.credentialApplication.credentialResponse
-            .$actions[actionRuleIndex].of
+            .$actions[actionRuleIndex].ofRecord.atPath
             = 'credentialResponse';
           // this is invalid as the root ancestor can only be `credentialApplication` based on record structure
 
@@ -1481,7 +1481,7 @@ export function testRecordsWriteHandler(): void {
           TestStubGenerator.stubDidResolver(didResolver, [alice]);
 
           // configure protocol
-          const protocolDefinition = emailProtocolDefinition;
+          const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
           const protocol = protocolDefinition.protocol;
           const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
             author: alice,
