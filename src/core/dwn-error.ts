@@ -38,7 +38,6 @@ export enum DwnErrorCode {
   ProtocolsConfigureUnauthorized = 'ProtocolsConfigureUnauthorized',
   ProtocolsQueryUnauthorized = 'ProtocolsQueryUnauthorized',
   RecordsDecryptNoMatchingKeyEncryptedFound = 'RecordsDecryptNoMatchingKeyEncryptedFound',
-  RecordsDeleteGrantScopeRecordIds = 'RecordsDeleteGrantScopeRecordIds',
   RecordsGrantAuthorizationScopeSchema = 'RecordsGrantAuthorizationScopeSchema',
   RecordsDerivePrivateKeyUnSupportedCurve = 'RecordsDerivePrivateKeyUnSupportedCurve',
   RecordsInvalidAncestorKeyDerivationSegment = 'RecordsInvalidAncestorKeyDerivationSegment',
