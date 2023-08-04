@@ -116,46 +116,46 @@ export type CreateFromOptions = {
 };
 
 export class RecordsWrite {
-  #message: InternalRecordsWriteMessage;
+  private _message: InternalRecordsWriteMessage;
   /**
    * Valid JSON message representing this RecordsWrite.
    * @throws `DwnErrorCode.RecordsWriteMissingAuthorizationSignatureInput` if the message is not signed yet.
    */
   public get message(): RecordsWriteMessage {
-    if (this.#message.authorization === undefined) {
+    if (this._message.authorization === undefined) {
       throw new DwnError(
         DwnErrorCode.RecordsWriteMissingAuthorizationSignatureInput,
         'This RecordsWrite is not yet signed, JSON message cannot be generated from an incomplete state.'
       );
     }
 
-    return this.#message as RecordsWriteMessage;
+    return this._message as RecordsWriteMessage;
   }
 
-  #author: string | undefined;
+  private _author: string | undefined;
   /**
    * DID of author of this message.
    */
   public get author(): string | undefined {
-    return this.#author;
+    return this._author;
   }
 
-  #authorizationPayload: RecordsWriteAuthorizationPayload | undefined;
+  private _authorizationPayload: RecordsWriteAuthorizationPayload | undefined;
   /**
    * Decoded authorization payload.
    */
   public get authorizationPayload(): RecordsWriteAuthorizationPayload | undefined {
-    return this.#authorizationPayload;
+    return this._authorizationPayload;
   }
 
   readonly attesters: string[];
 
   private constructor(message: InternalRecordsWriteMessage) {
-    this.#message = message;
+    this._message = message;
 
     if (message.authorization !== undefined) {
-      this.#authorizationPayload = Jws.decodePlainObjectPayload(message.authorization);
-      this.#author = Message.getAuthor(message as GenericMessage);
+      this._authorizationPayload = Jws.decodePlainObjectPayload(message.authorization);
+      this._author = Message.getAuthor(message as GenericMessage);
     }
 
     this.attesters = RecordsWrite.getAttesters(message);
@@ -348,12 +348,12 @@ export class RecordsWrite {
    * Encrypts the symmetric encryption key using the public keys given and attach the resulting `encryption` property to the RecordsWrite.
    */
   public async encryptSymmetricEncryptionKey(encryptionInput: EncryptionInput): Promise<void> {
-    this.#message.encryption = await RecordsWrite.createEncryptionProperty(this.#message.descriptor, encryptionInput);
+    this._message.encryption = await RecordsWrite.createEncryptionProperty(this._message.descriptor, encryptionInput);
 
     // opportunity here to re-sign instead of remove
-    delete this.#message.authorization;
-    this.#authorizationPayload = undefined;
-    this.#author = undefined;
+    delete this._message.authorization;
+    this._authorizationPayload = undefined;
+    this._author = undefined;
   }
 
   /**
@@ -362,32 +362,32 @@ export class RecordsWrite {
   public async sign(signatureInput: SignatureInput): Promise<void> {
     const author = Jws.extractDid(signatureInput.protectedHeader.kid);
 
-    const descriptor = this.#message.descriptor;
+    const descriptor = this._message.descriptor;
     const descriptorCid = await Cid.computeCid(descriptor);
 
     // `recordId` computation if not given at construction time
-    this.#message.recordId = this.#message.recordId ?? await RecordsWrite.getEntryId(author, descriptor);
+    this._message.recordId = this._message.recordId ?? await RecordsWrite.getEntryId(author, descriptor);
 
     // `contextId` computation if not given at construction time and this is a protocol-space record
-    if (this.#message.contextId === undefined && this.#message.descriptor.protocol !== undefined) {
-      this.#message.contextId = await RecordsWrite.getEntryId(author, descriptor);
+    if (this._message.contextId === undefined && this._message.descriptor.protocol !== undefined) {
+      this._message.contextId = await RecordsWrite.getEntryId(author, descriptor);
     }
 
     // `authorization` generation
     const authorization = await RecordsWrite.createAuthorization(
-      this.#message.recordId,
-      this.#message.contextId,
+      this._message.recordId,
+      this._message.contextId,
       descriptorCid,
-      this.#message.attestation,
-      this.#message.encryption,
+      this._message.attestation,
+      this._message.encryption,
       signatureInput
     );
 
-    this.#message.authorization = authorization;
+    this._message.authorization = authorization;
 
     // there is opportunity to optimize here as the payload is constructed within `createAuthorization(...)`
-    this.#authorizationPayload = Jws.decodePlainObjectPayload(authorization);
-    this.#author = author;
+    this._authorizationPayload = Jws.decodePlainObjectPayload(authorization);
+    this._author = author;
   }
 
   public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
