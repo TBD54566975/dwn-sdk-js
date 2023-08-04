@@ -81,6 +81,10 @@ export class RecordsWriteHandler implements MethodHandler {
 
     const isLatestBaseState = true;
     const indexes = await constructRecordsWriteIndexes(recordsWrite, isLatestBaseState);
+
+    // if data is below a certain threshold, we embed the data directly into the message for storage in MessageStore.
+    let messageWithOptionalEncodedData: RecordsWriteMessageWithOptionalEncodedData = message;
+
     // try to store data, unless options explicitly say to skip storage
     if (options === undefined || !options.skipDataStorage) {
       if (dataStream === undefined && newestExistingMessage?.descriptor.method === DwnMethodName.Delete) {
@@ -89,7 +93,8 @@ export class RecordsWriteHandler implements MethodHandler {
 
       try {
         if (message.descriptor.dataSize <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
-          message = await this.processEncodedData(
+          // processes and sets `encodedData` with appropriate data to be saved in MessageStore.
+          messageWithOptionalEncodedData = await this.processEncodedData(
             message,
             dataStream,
             newestExistingMessage as (RecordsWriteMessage|RecordsDeleteMessage) | undefined
@@ -111,7 +116,7 @@ export class RecordsWriteHandler implements MethodHandler {
       }
     }
 
-    await this.messageStore.put(tenant, message, indexes);
+    await this.messageStore.put(tenant, messageWithOptionalEncodedData, indexes);
     await this.eventLog.append(tenant, await Message.getCid(message));
 
     const messageReply = {
@@ -127,7 +132,10 @@ export class RecordsWriteHandler implements MethodHandler {
   };
 
   /**
-   * Embeds the given data into the `encodedData` property to be stored in the MessageStore instead of DataStore
+   * Embeds the record's data into the `encodedData` property.
+   * If dataStream is present, it uses the dataStream. Otherwise, uses the `encodedData` from the most recent RecordsWrite.
+   *
+   * @returns {RecordsWriteMessageWithOptionalEncodedData} `encodedData` embedded.
    *
    * @throws {DwnError} with `DwnErrorCode.RecordsWriteMissingDataInPrevious`
    *                    if `dataStream` is absent AND `encodedData` of previous message is missing
