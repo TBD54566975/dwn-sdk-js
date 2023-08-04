@@ -1,6 +1,6 @@
 {
   "name": "@tbd54566975/dwn-sdk-js",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A reference implementation of https://identity.foundation/decentralized-web-node/spec/",
   "repository": {
     "type": "git",
@@ -27,6 +27,10 @@
     {
       "name": "Moe Jangda",
       "url": "https://github.com/mistermoe"
+    },
+    {
+      "name": "Liran Cohen",
+      "url": "https://github.com/LiranCohen"
     }
   ],
   "type": "module",
