@@ -63,7 +63,8 @@ export class MessagesGetHandler implements MethodHandler {
         continue;
       }
 
-      // RecordsWrite specific handling
+      // RecordsWrite specific handling, if MessageStore has embedded `encodedData` return it with the entry.
+      // we store `encodedData` along with the message if the data is below a certain threshold.
       const recordsWrite = message as RecordsWriteMessageWithOptionalEncodedData;
       if (recordsWrite.encodedData !== undefined) {
         entry.encodedData = recordsWrite.encodedData;

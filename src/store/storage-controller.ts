@@ -79,4 +79,5 @@ export class StorageController {
   }
 }
 
+// records with a data size below a threshold are stored within MessageStore with their data embedded
 export type RecordsWriteMessageWithOptionalEncodedData = RecordsWriteMessage & { encodedData?: string };

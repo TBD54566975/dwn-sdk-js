@@ -92,8 +92,9 @@ export class RecordsWriteHandler implements MethodHandler {
       }
 
       try {
+        // if data is below the threshold, we store it within MessageStore
         if (message.descriptor.dataSize <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
-          // processes and sets `encodedData` with appropriate data to be saved in MessageStore.
+          // processes and sets `encodedData` with appropriate data.
           messageWithOptionalEncodedData = await this.processEncodedData(
             message,
             dataStream,
