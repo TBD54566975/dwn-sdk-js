@@ -11,7 +11,6 @@
     "module": "ESNext", // Required for enabling JavaScript import assertion support
     "declaration": true,
     "declarationMap": true,
-    
     "declarationDir": "dist/types",
     "outDir": "dist/esm",
     "sourceMap": true,
