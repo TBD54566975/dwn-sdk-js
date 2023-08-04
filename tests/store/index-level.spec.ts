@@ -290,6 +290,40 @@ describe('Index Level', () => {
 
       expect(resp.length).to.equal(0);
     });
+
+    it('supports range queries with numbers', async () => {
+      await index.put('a', { digit: 1000 });
+      await index.put('b', { digit: 100 });
+      await index.put('c', { digit: 10 });
+
+      let resp = await index.query({
+        digit: {
+          gte : 100,
+          lt  : 1000
+        }
+      });
+
+      expect(resp.length).to.equal(1);
+      expect(resp.at(0)).to.equal('b');
+
+      resp = await index.query({
+        digit: {
+          lte : 1000,
+          gt  : 100
+        }
+      });
+
+      expect(resp.length).to.equal(1);
+      expect(resp.at(0)).to.equal('a');
+
+      resp = await index.query({
+        digit: {
+          gt: 1000
+        }
+      });
+
+      expect(resp.length).to.equal(0);
+    });
   });
 
   describe('delete', () => {
