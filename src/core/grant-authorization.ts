@@ -11,13 +11,14 @@ export class GrantAuthorization {
    * Performs PermissionsGrant-based authorization against the given message
    * Does not validate grant `conditions` or `scope` beyond `interface` and `method`
    * @throws {Error} if authorization fails
+   * @returns PermissionsGrantMessage
    */
   public static async authorizeGenericMessage(
     tenant: string,
     incomingMessage: Message<GenericMessage>,
     author: string,
     messageStore: MessageStore,
-  ): Promise<void> {
+  ): Promise<PermissionsGrantMessage> {
     const permissionsGrantId: string = incomingMessage.authorizationPayload!.permissionsGrantId!;
 
     // Fetch grant
@@ -34,6 +35,8 @@ export class GrantAuthorization {
 
     // Check grant scope for interface and method
     await GrantAuthorization.verifyGrantScopeInterfaceAndMethod(incomingMessage.message, permissionsGrantMessage, permissionsGrantId);
+
+    return permissionsGrantMessage;
   }
 
   /**
@@ -85,7 +88,7 @@ export class GrantAuthorization {
    * and the grant has not been revoked.
    * @throws {Error} if incomingMessage has timestamp for a time in which the grant is not active.
    */
-  public static async verifyGrantActive(
+  private static async verifyGrantActive(
     tenant: string,
     incomingMessage: GenericMessage,
     permissionsGrantMessage: PermissionsGrantMessage,

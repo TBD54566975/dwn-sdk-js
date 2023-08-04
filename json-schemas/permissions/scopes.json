@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json",
+  "type": "object",
+  "definitions": {
+    "protocols-query-scope": {
+      "type": "object",
+      "properties": {
+        "interface": {
+          "const": "Protocols"
+        },
+        "method": {
+          "const": "Query"
+        }
+      }
+    },
+    "records-delete-scope": {
+      "type": "object",
+      "required": [
+        "interface",
+        "method"
+      ],
+      "properties": {
+        "interface": {
+          "const": "Records"
+        },
+        "method": {
+          "const": "Delete"
+        },
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "records-read-scope": {
+      "type": "object",
+      "required": [
+        "interface",
+        "method"
+      ],
+      "properties": {
+        "interface": {
+          "const": "Records"
+        },
+        "method": {
+          "const": "Read"
+        },
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "records-write-scope": {
+      "type": "object",
+      "required": [
+        "interface",
+        "method"
+      ],
+      "properties": {
+        "interface": {
+          "const": "Records"
+        },
+        "method": {
+          "const": "Write"
+        },
+        "schema": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -2,6 +2,9 @@ import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
 import type { DataStore, EventLog, MessageStore, ProtocolDefinition , ProtocolsConfigureMessage } from '../../src/index.js';
 
+import { Message } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName } from '../../src/index.js';
+
 import chaiAsPromised from 'chai-as-promised';
 import chatProtocolDefinition from '../vectors/protocol-definitions/chat.json' assert { type: 'json' };
 import emailProtocolDefinition from '../vectors/protocol-definitions/email.json' assert { type: 'json' };
@@ -314,6 +317,170 @@ export function testRecordsReadHandler(): void {
           const imposterReadReply = await dwn.processMessage(alice.did, imposterRecordsRead.message);
           expect(imposterReadReply.status.code).to.equal(401);
           expect(imposterReadReply.status.detail).to.include(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+        });
+      });
+
+      describe('grant based reads', () => {
+        it('rejects with 401 an external party attempts to RecordReads if grant has different DWN method scope', async () => {
+          // scenario: Alice grants Bob access to RecordsWrite, then Bob tries to invoke the grant with RecordsRead
+
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+
+          // Alice writes a record which Bob will later try to read
+          const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
+            author: alice,
+          });
+          const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+          expect(recordsWriteReply.status.code).to.equal(202);
+
+          // Alice gives Bob a PermissionsGrant with scope RecordsRead
+          const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
+            author     : alice,
+            grantedBy  : alice.did,
+            grantedFor : alice.did,
+            grantedTo  : bob.did,
+            scope      : {
+              interface : DwnInterfaceName.Records,
+              method    : DwnMethodName.Write,
+            }
+          });
+          const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+          expect(permissionsGrantReply.status.code).to.equal(202);
+
+          // Bob tries to RecordsRead
+          const recordsRead = await RecordsRead.create({
+            recordId                    : recordsWrite.message.recordId,
+            authorizationSignatureInput : Jws.createSignatureInput(bob),
+            permissionsGrantId          : await Message.getCid(permissionsGrant.message),
+          });
+          const recordsReadReply = await dwn.processMessage(alice.did, recordsRead.message);
+          expect(recordsReadReply.status.code).to.equal(401);
+          expect(recordsReadReply.status.detail).to.contain(DwnErrorCode.GrantAuthorizationMethodMismatch);
+        });
+
+        it('allows external parties to read a record using a grant with unrestricted RecordsRead scope', async () => {
+          // scenario: Alice gives Bob a grant allowing him to read any record in her DWN.
+          //           Bob invokes that grant to read a record.
+
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+
+          // Alice writes a record to her DWN
+          const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
+            author: alice,
+          });
+          const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+          expect(writeReply.status.code).to.equal(202);
+
+          // Alice issues a PermissionsGrant allowing Bob to read any record in her DWN
+          const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
+            author     : alice,
+            grantedBy  : alice.did,
+            grantedTo  : bob.did,
+            grantedFor : alice.did,
+            scope      : {
+              interface : DwnInterfaceName.Records,
+              method    : DwnMethodName.Read,
+              // No futher restrictions on grant scope
+            }
+          });
+          const grantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+          expect(grantReply.status.code).to.equal(202);
+
+          // Bob invokes that grant to read a record from Alice's DWN
+          const recordsRead = await RecordsRead.create({
+            recordId                    : message.recordId,
+            authorizationSignatureInput : Jws.createSignatureInput(bob),
+            permissionsGrantId          : await Message.getCid(permissionsGrant.message),
+          });
+          const readReply = await dwn.processMessage(alice.did, recordsRead.message);
+          expect(readReply.status.code).to.equal(200);
+        });
+
+        describe('grant scope schema', () => {
+          it('allows access if the RecordsRead grant scope schema includes the schema of the record', async () => {
+            // scenario: Alice gives Bob a grant allowing him to read records with matching schema in her DWN.
+            //           Bob invokes that grant to read a record.
+
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+
+            // Alice writes a record to her DWN
+            const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
+              author : alice,
+              schema : 'some-schema',
+            });
+            const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+            expect(writeReply.status.code).to.equal(202);
+
+            // Alice issues a PermissionsGrant allowing Bob to read a specific recordId
+            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
+              author     : alice,
+              grantedBy  : alice.did,
+              grantedTo  : bob.did,
+              grantedFor : alice.did,
+              scope      : {
+                interface : DwnInterfaceName.Records,
+                method    : DwnMethodName.Read,
+                schema    : message.descriptor.schema
+              }
+            });
+            const grantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            expect(grantReply.status.code).to.equal(202);
+
+            // Bob invokes that grant to read a record from Alice's DWN
+            const recordsRead = await RecordsRead.create({
+              recordId                    : message.recordId,
+              authorizationSignatureInput : Jws.createSignatureInput(bob),
+              permissionsGrantId          : await Message.getCid(permissionsGrant.message),
+            });
+            const readReply = await dwn.processMessage(alice.did, recordsRead.message);
+            expect(readReply.status.code).to.equal(200);
+          });
+
+          it('rejects with 401 if the RecordsRead grant scope schema does not have the same schema as the record', async () => {
+            // scenario: Alice gives Bob a grant allowing him to read records with matching schema in her DWN.
+            //           Bob invokes that grant to read a different record and is rejected.
+
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+
+            // Alice writes a record to her DWN
+            const recordSchema = 'record-schema';
+            const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
+              author : alice,
+              schema : recordSchema,
+            });
+            const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+            expect(writeReply.status.code).to.equal(202);
+
+            // Alice issues a PermissionsGrant allowing Bob to read a specific recordId
+            const scopeSchema = 'scope-schema';
+            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
+              author     : alice,
+              grantedBy  : alice.did,
+              grantedTo  : bob.did,
+              grantedFor : alice.did,
+              scope      : {
+                interface : DwnInterfaceName.Records,
+                method    : DwnMethodName.Read,
+                schema    : scopeSchema // different schema than the record Bob will try to read
+              }
+            });
+            const grantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            expect(grantReply.status.code).to.equal(202);
+
+            // Bob invokes that grant to read a record from Alice's DWN
+            const recordsRead = await RecordsRead.create({
+              recordId                    : message.recordId,
+              authorizationSignatureInput : Jws.createSignatureInput(bob),
+              permissionsGrantId          : await Message.getCid(permissionsGrant.message),
+            });
+            const readReply = await dwn.processMessage(alice.did, recordsRead.message);
+            expect(readReply.status.code).to.equal(401);
+            expect(readReply.status.detail).to.include(DwnErrorCode.RecordsGrantAuthorizationScopeSchema);
+          });
         });
       });
 
