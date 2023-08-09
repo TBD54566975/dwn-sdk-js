@@ -185,30 +185,6 @@ export function testRecordsReadHandler(): void {
         expect(ArrayUtility.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
       });
 
-      it('should not allow read without `recordId` or `protocol` and `protocolPath` to be set', async () => {
-        const alice = await DidKeyResolver.generate();
-
-        // insert public data
-        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true });
-        const writeReply = await dwn.processMessage(alice.did, message, dataStream);
-        expect(writeReply.status.code).to.equal(202);
-
-        // testing public RecordsRead
-        const bob = await DidKeyResolver.generate();
-
-        // create with recordId to avoid the failure here
-        const recordsRead = await RecordsRead.create({
-          recordId                    : 'recordId',
-          authorizationSignatureInput : Jws.createSignatureInput(bob)
-        });
-        // delete recordId to induce the failure on the handler
-        delete recordsRead.message.descriptor.recordId;
-
-        const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
-        expect(readReply.status.code).to.equal(400);
-        expect(readReply.status.detail).to.contain('must have required property \'recordId\'');
-      });
-
       it('should not allow read `protocol` set', async () => {
         const alice = await DidKeyResolver.generate();
 
@@ -1893,6 +1869,23 @@ export function testRecordsReadHandler(): void {
           );
         });
       });
+    });
+
+    it('should not allow read without `recordId` or `protocol` and `protocolPath` to be set', async () => {
+      const alice = await DidKeyResolver.generate();
+
+      // create with recordId to avoid the failure here
+      const recordsRead = await RecordsRead.create({
+        recordId: 'recordId',
+      });
+
+      // delete recordId to induce the failure on the handler
+      delete recordsRead.message.descriptor.recordId;
+
+      const recordsReadHandler = new RecordsReadHandler(didResolver, messageStore, dataStore);
+      const readReply = await recordsReadHandler.handle({ tenant: alice.did, message: recordsRead.message });
+      expect(readReply.status.code).to.equal(400);
+      expect(readReply.status.detail).to.contain(DwnErrorCode.RecordsReadMissingDescriptorProperties);
     });
 
     it('should return 401 if signature check fails', async () => {
