@@ -22,6 +22,41 @@ describe('RecordsRead', () => {
 
       expect(recordsRead.message.descriptor.messageTimestamp).to.equal(currentTime);
     });
+
+    it('should require `recordId` when `protocol` and `protocolPath` are not set', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+      const currentTime = getCurrentTimeInHighPrecision();
+      const readPromise = RecordsRead.create({
+        authorizationSignatureInput : Jws.createSignatureInput(alice),
+        date                        : currentTime
+      });
+
+      await expect(readPromise).to.be.rejectedWith('must have required property \'recordId\'');
+    });
+
+    it('should require `recordId` when `protocolPath` is set and `protocol` is not set', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+      const currentTime = getCurrentTimeInHighPrecision();
+      const readPromise = RecordsRead.create({
+        protocolPath                : 'some/path',
+        authorizationSignatureInput : Jws.createSignatureInput(alice),
+        date                        : currentTime
+      });
+
+      await expect(readPromise).to.be.rejectedWith('must have required property \'recordId\'');
+    });
+
+    it('should require `recordId` when `protocol` is set and `protocolPath` is not set', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+      const currentTime = getCurrentTimeInHighPrecision();
+      const readPromise = RecordsRead.create({
+        protocol                    : 'example.com/Proto',
+        authorizationSignatureInput : Jws.createSignatureInput(alice),
+        date                        : currentTime
+      });
+
+      await expect(readPromise).to.be.rejectedWith('must have required property \'recordId\'');
+    });
   });
 });
 

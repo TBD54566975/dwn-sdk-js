@@ -8,11 +8,14 @@ import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Message } from '../core/message.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
+import { removeUndefinedProperties } from '../utils/object.js';
 import { validateAuthorizationIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type RecordsReadOptions = {
-  recordId: string;
+  recordId?: string;
+  protocolPath?: string;
+  protocol?: string;
   date?: string;
   authorizationSignatureInput?: SignatureInput;
   permissionsGrantId?: string;
@@ -35,15 +38,19 @@ export class RecordsRead extends Message<RecordsReadMessage> {
    * @param options.date If `undefined`, it will be auto-filled with current time.
    */
   public static async create(options: RecordsReadOptions): Promise<RecordsRead> {
-    const { recordId, authorizationSignatureInput, permissionsGrantId } = options;
+    const { recordId, protocol, protocolPath, authorizationSignatureInput, permissionsGrantId } = options;
     const currentTime = getCurrentTimeInHighPrecision();
 
     const descriptor: RecordsReadDescriptor = {
       interface        : DwnInterfaceName.Records,
       method           : DwnMethodName.Read,
       recordId,
+      protocol,
+      protocolPath,
       messageTimestamp : options.date ?? currentTime
     };
+
+    removeUndefinedProperties(descriptor);
 
     // only generate the `authorization` property if signature input is given
     let authorization = undefined;

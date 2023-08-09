@@ -157,7 +157,9 @@ export type RecordsReadReply = GenericMessageReply & {
 export type RecordsReadDescriptor = {
   interface: DwnInterfaceName.Records;
   method: DwnMethodName.Read;
-  recordId: string;
+  recordId?: string;
+  protocol?: string;
+  protocolPath?: string;
   messageTimestamp: string;
 };
 
