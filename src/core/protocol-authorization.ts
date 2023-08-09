@@ -366,6 +366,7 @@ export class ProtocolAuthorization {
 
     // If this is reached, there is likely an issue with the protocol definition.
     // The protocolPath to the actionRule should start with actionRule.ofRecord.atPath
+    // consider moving this check to ProtocolsConfigure message ingestion
     if (ancestorRecordsWrite === undefined) {
       return false;
     }
@@ -399,7 +400,7 @@ export class ProtocolAuthorization {
     };
 
     if (actionRule.who === ProtocolActor.Recipient) {
-      // Find matching messages with recipient is the author of the inbound message
+      // Find matching messages where recipient is the author of the inbound message
       filter.recipient = author;
     } else { // actionRule.who === ProtocolActor.Author
       // Find matching messages authored by the author of the inbound message
