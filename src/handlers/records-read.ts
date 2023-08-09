@@ -1,7 +1,7 @@
 import type { MethodHandler } from '../types/method-handler.js';
 import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
-import type { TimestampedMessage } from '../types/message-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
+import type { Filter, TimestampedMessage } from '../types/message-types.js';
 import type { RecordsReadMessage, RecordsReadReply } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
@@ -38,10 +38,14 @@ export class RecordsReadHandler implements MethodHandler {
     }
 
     // get existing messages matching `recordId` so we can perform authorization
-    const query = {
-      interface : DwnInterfaceName.Records,
-      recordId  : message.descriptor.recordId
+    const query: Filter = {
+      interface: DwnInterfaceName.Records,
     };
+
+    if (message.descriptor.recordId !== undefined) {
+      query.recordId = message.descriptor.recordId;
+    }
+
     const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
 
     const newestExistingMessage = await Message.getNewestMessage(existingMessages);

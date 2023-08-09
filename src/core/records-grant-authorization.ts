@@ -1,3 +1,4 @@
+import type { Filter } from '../index.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { RecordsRead } from '../interfaces/records-read.js';
 import type { RecordsWrite } from '../interfaces/records-write.js';
