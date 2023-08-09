@@ -16,8 +16,7 @@
       "required": [
         "interface",
         "method",
-        "messageTimestamp",
-        "recordId"
+        "messageTimestamp"
       ],
       "properties": {
         "interface": {
@@ -37,8 +36,37 @@
         },
         "recordId": {
           "type": "string"
+        },
+        "protocol": {
+          "type": "string"
+        },
+        "protocolPath": {
+          "type": "string"
         }
-      }
+      },
+      "$comment": "describe rule requiring recordId OR protocol and protocolPath",
+      "allOf": [
+        {
+          "if": {
+            "not" : {
+              "required": [ "protocol", "protocolPath" ]
+            }
+          },
+          "then": {
+            "required": [ "recordId" ]
+          }
+        },
+        {
+          "if": {
+            "not": {
+              "required": [ "recordId" ]
+            }
+          },
+          "then": {
+            "required": [ "protocol", "protocolPath" ]
+          }
+        }
+      ]
     }
   }
 }
