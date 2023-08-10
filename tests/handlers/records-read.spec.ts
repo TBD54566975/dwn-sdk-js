@@ -7,8 +7,11 @@ import { DwnInterfaceName, DwnMethodName } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import chatProtocolDefinition from '../vectors/protocol-definitions/chat.json' assert { type: 'json' };
+import contributionRewardProtocol from '../vectors/protocol-definitions/contribution-reward.json' assert { type: 'json' };
 import emailProtocolDefinition from '../vectors/protocol-definitions/email.json' assert { type: 'json' };
+import friendChatProtocol from '../vectors/protocol-definitions/friend-chat.json' assert { type: 'json' };
 import groupChatProtocol from '../vectors/protocol-definitions/group-chat.json' assert { type: 'json' };
+import publicChatProtocol from '../vectors/protocol-definitions/public-chat.json' assert { type: 'json' };
 import sinon from 'sinon';
 import socialMediaProtocolDefinition from '../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
 import chai, { expect } from 'chai';
@@ -385,7 +388,64 @@ export function testRecordsReadHandler(): void {
             expect(readReply2.status.code).to.equal(200);
           });
 
-          it('should allow read with `any` recipient rule', async () => {});
+          it('should allow read with `any` recipient rule', async () => {
+            // scenario: Bob tries to read a chat message to Alice's DWN, but fails because Alice has not added him as a friend.
+            //           Alice adds Bob as a friend, then Bob is able to read a chat message.
+
+            const protocolDefinition = friendChatProtocol as ProtocolDefinition;
+
+            const alice = await TestDataGenerator.generatePersona();
+            const bob = await TestDataGenerator.generatePersona();
+
+            // setting up a stub DID resolver
+            TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
+
+            // Install protocol
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice writes a `chat` record
+            const chatRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'chat',
+              schema       : protocolDefinition.types.chat.schema,
+              dataFormat   : protocolDefinition.types.chat.dataFormats![0],
+              data         : new TextEncoder().encode('Blah blah blah'),
+            });
+            const chatReply = await dwn.processMessage(alice.did, chatRecordsWrite.message, chatRecordsWrite.dataStream);
+            expect(chatReply.status.code).to.equal(202);
+
+            // Bob tries and fails to read Alice's `chat`
+            const bobsRead = await RecordsRead.create({
+              recordId                    : chatRecordsWrite.message.recordId,
+              authorizationSignatureInput : Jws.createSignatureInput(bob)
+            });
+            const readReply = await dwn.processMessage(alice.did, bobsRead.message);
+            expect(readReply.status.code).to.equal(401);
+            expect(readReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+            // Alice writes a `friend` record with Bob as recipient
+            const addFriendRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'friend',
+              schema       : protocolDefinition.types.friend.schema,
+              dataFormat   : protocolDefinition.types.friend.dataFormats![0],
+              data         : new TextEncoder().encode('Adding Bob'),
+            });
+            const addFriendReply = await dwn.processMessage(alice.did, addFriendRecordsWrite.message, addFriendRecordsWrite.dataStream);
+            expect(addFriendReply.status.code).to.equal(202);
+
+            // Bob is able to read Alice's `chat`
+            const readReply2 = await dwn.processMessage(alice.did, bobsRead.message);
+            expect(readReply2.status.code).to.equal(200);
+          });
         });
 
         describe('author action rules', () => {
@@ -438,9 +498,137 @@ export function testRecordsReadHandler(): void {
             expect(imposterReadReply.status.detail).to.include(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
           });
 
-          it('should allow read with `context` author rule', async () => {});
+          it('should allow read with `context` author rule', async () => {
+            // scenario: Alice starts a groupChat. Bob tries and fails to read a groupChat/chat.
+            //           Bob joins the groupChat, then he is able to read a groupChat/chat.
 
-          it('should allow read with `any` author rule', async () => {});
+            const protocolDefinition = publicChatProtocol as ProtocolDefinition;
+
+            const alice = await TestDataGenerator.generatePersona();
+            const bob = await TestDataGenerator.generatePersona();
+
+            // setting up a stub DID resolver
+            TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
+
+            // Install protocol
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice starts a groupChat
+            const groupChat = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'groupChat',
+              schema       : protocolDefinition.types.groupChat.schema,
+              dataFormat   : protocolDefinition.types.groupChat.dataFormats![0],
+              data         : new TextEncoder().encode('New groupChat'),
+            });
+            const groupChatReply = await dwn.processMessage(alice.did, groupChat.message, groupChat.dataStream);
+            expect(groupChatReply.status.code).to.equal(202);
+
+            // Alice writes a message to the groupChat
+            const groupChatMessage = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'groupChat/chat',
+              schema       : protocolDefinition.types.chat.schema,
+              dataFormat   : protocolDefinition.types.chat.dataFormats![0],
+              data         : new TextEncoder().encode('Hello groupchat'),
+              parentId     : groupChat.message.recordId,
+              contextId    : groupChat.message.contextId,
+            });
+            const groupChatMessageReply = await dwn.processMessage(alice.did, groupChatMessage.message, groupChatMessage.dataStream);
+            expect(groupChatMessageReply.status.code).to.equal(202);
+
+            // Bob tries and fails to read Alice's message
+            const bobsRead = await RecordsRead.create({
+              recordId                    : groupChatMessage.message.recordId,
+              authorizationSignatureInput : Jws.createSignatureInput(bob)
+            });
+            const readReply = await dwn.processMessage(alice.did, bobsRead.message);
+            expect(readReply.status.code).to.equal(401);
+            expect(readReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+            // Bob joins the groupChat by writing a groupChat/joinChat
+            const bobsJoinChat = await TestDataGenerator.generateRecordsWrite({
+              author       : bob,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'groupChat/joinChat',
+              schema       : protocolDefinition.types.joinChat.schema,
+              dataFormat   : protocolDefinition.types.joinChat.dataFormats![0],
+              data         : new TextEncoder().encode('I try joining the chat first'),
+              contextId    : groupChat.message.contextId,
+              parentId     : groupChat.message.recordId,
+            });
+            const bobsJoinChatReply = await dwn.processMessage(alice.did, bobsJoinChat.message, bobsJoinChat.dataStream);
+            expect(bobsJoinChatReply.status.code).to.equal(202);
+
+            // Bob is able to read a groupChat/message
+            const readReply2 = await dwn.processMessage(alice.did, bobsRead.message);
+            expect(readReply2.status.code).to.equal(200);
+          });
+
+          it('should allow read with `any` author rule', async () => {
+            // scenario: Alice writes a `reward` to the contribution-reward protocol. Bob tries and fails to read the reward.
+            //           He makes a contribution, then he is able to read the reward
+
+            const protocolDefinition = contributionRewardProtocol as ProtocolDefinition;
+
+            const alice = await TestDataGenerator.generatePersona();
+            const bob = await TestDataGenerator.generatePersona();
+
+            // setting up a stub DID resolver
+            TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
+
+            // Install protocol
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice starts a groupChat
+            const reward = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'reward',
+              schema       : protocolDefinition.types.reward.schema,
+              dataFormat   : protocolDefinition.types.reward.dataFormats![0],
+              data         : new TextEncoder().encode('New reward'),
+            });
+            const rewardReply = await dwn.processMessage(alice.did, reward.message, reward.dataStream);
+            expect(rewardReply.status.code).to.equal(202);
+
+            // Bob tries and fails to read the reward
+            const bobsRead = await RecordsRead.create({
+              recordId                    : reward.message.recordId,
+              authorizationSignatureInput : Jws.createSignatureInput(bob)
+            });
+            const readReply = await dwn.processMessage(alice.did, bobsRead.message);
+            expect(readReply.status.code).to.equal(401);
+            expect(readReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+            // Bob makes a contribution
+            const contribution = await TestDataGenerator.generateRecordsWrite({
+              author       : bob,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'contribution',
+              schema       : protocolDefinition.types.contribution.schema,
+              dataFormat   : protocolDefinition.types.contribution.dataFormats![0],
+              data         : new TextEncoder().encode('New contribution'),
+            });
+            const contributionReply = await dwn.processMessage(alice.did, contribution.message, contribution.dataStream);
+            expect(contributionReply.status.code).to.equal(202);
+
+            // Now bob is able to read the reward
+            const readReply2 = await dwn.processMessage(alice.did, bobsRead.message);
+            expect(readReply2.status.code).to.equal(200);
+          });
         });
 
 
