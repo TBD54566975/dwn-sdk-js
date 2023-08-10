@@ -5,6 +5,7 @@ import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { Jws } from '../../src/index.js';
 import { RecordsRead } from '../../src/interfaces/records-read.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { throws } from 'assert';
 
 chai.use(chaiAsPromised);
 
@@ -56,6 +57,46 @@ describe('RecordsRead', () => {
       });
 
       await expect(readPromise).to.be.rejectedWith('must have required property \'recordId\'');
+    });
+  });
+
+  describe('recordIdOrProtocolFilter()', async () => {
+    it('should throw if `recordId`, `protocol` and `protocolPath` are left empty', async () => {
+      throws(() => RecordsRead.recordIdOrProtocolFilter({
+        //empty descriptor
+      }), /missing required properties from RecordsRead descriptor/);
+    });
+
+    it('should throw if only `protocolPath` is set', async () => {
+      throws(() => RecordsRead.recordIdOrProtocolFilter({
+        // only protocolPath
+        protocolPath: 'email/email'
+      }), /missing required properties from RecordsRead descriptor/);
+    });
+
+    it('should throw if only `protocol` is set', async () => {
+      throws(() => RecordsRead.recordIdOrProtocolFilter({
+        // only protocol
+        protocol: 'example.org/Protocol'
+      }), /missing required properties from RecordsRead descriptor/);
+    });
+
+    it('should not throw if only `recordId` is set', async () => {
+      const filter = RecordsRead.recordIdOrProtocolFilter({
+        recordId: 'some-id'
+      });
+
+      expect(filter['recordId']).to.equal('some-id');
+    });
+
+    it('should not throw if `protocol` and `protocolPath` are set', async () => {
+      const filter = RecordsRead.recordIdOrProtocolFilter({
+        protocol     : 'some-protocol',
+        protocolPath : 'protocol/path'
+      });
+
+      expect(filter['protocol']).to.equal('some-protocol');
+      expect(filter['protocolPath']).to.equal('protocol/path');
     });
   });
 });

@@ -1,7 +1,7 @@
-import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { RecordsWrite } from './records-write.js';
 import type { SignatureInput } from '../types/jws-types.js';
+import type { Filter, GenericMessage } from '../types/message-types.js';
 import type { RecordsReadDescriptor, RecordsReadMessage } from '../types/records-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
@@ -10,6 +10,7 @@ import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { DwnError, DwnErrorCode } from '../index.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type RecordsReadOptions = {
@@ -64,6 +65,28 @@ export class RecordsRead extends Message<RecordsReadMessage> {
     return new RecordsRead(message);
   }
 
+  /**
+   * Creates a Records interface Filter using either the `recordId` or `protocol` & `protocolPath` of the incoming Message
+   * @param descriptor message descriptor with optional properties `recordId`, `protocol` and `protocolPath`
+   *
+   * @returns {Filter} with a Records interface as well as the appropriate filter params
+   * @throws {DwnError} if `recordId` or `protocol` and `protocolPath` are missing
+   */
+  public static recordIdOrProtocolFilter(descriptor: Partial<Omit<RecordsReadDescriptor, 'method'>>): Filter {
+    const filter: Filter = { interface: DwnInterfaceName.Records };
+    const { recordId, protocol, protocolPath } = descriptor;
+    if (recordId !== undefined) {
+      return { ...filter, recordId };
+    } else if (protocol !== undefined && protocolPath !== undefined) {
+      return { ...filter, protocol, protocolPath };
+    } else {
+      throw new DwnError(
+        DwnErrorCode.RecordsReadMissingDescriptorProperties,
+        'missing required properties from RecordsRead descriptor, expected `recordId` or `protocol` with `protocolPath`'
+      );
+    }
+  }
+
   public async authorize(tenant: string, newestRecordsWrite: RecordsWrite, messageStore: MessageStore): Promise<void> {
     const { descriptor } = newestRecordsWrite.message;
 
@@ -85,5 +108,4 @@ export class RecordsRead extends Message<RecordsReadMessage> {
       throw new Error('message failed authorization');
     }
   }
-
 }

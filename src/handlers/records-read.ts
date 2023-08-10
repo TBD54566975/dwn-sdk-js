@@ -10,7 +10,6 @@ import { messageReplyFromError } from '../core/message-reply.js';
 import { RecordsRead } from '../interfaces/records-read.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DataStream, Encoder } from '../index.js';
-import { DwnError, DwnErrorCode } from '../index.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export class RecordsReadHandler implements MethodHandler {
@@ -23,8 +22,10 @@ export class RecordsReadHandler implements MethodHandler {
   }: { tenant: string, message: RecordsReadMessage }): Promise<RecordsReadReply> {
 
     let recordsRead: RecordsRead;
+    let filter: Filter;
     try {
       recordsRead = await RecordsRead.parse(message);
+      filter = RecordsRead.recordIdOrProtocolFilter(recordsRead.message.descriptor);
     } catch (e) {
       return messageReplyFromError(e, 400);
     }
@@ -38,26 +39,12 @@ export class RecordsReadHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }
 
+    // get existing messages matching `recordId` or `protocol` with `protocolPath` so we can perform authorization
     const query: Filter = {
       interface: DwnInterfaceName.Records,
+      ...filter,
     };
-
-    // if we have the recordId we can query directly for it
-    // otherwise if we have protocol and protocolPath we query by those.
-    if (recordsRead.message.descriptor.recordId !== undefined) {
-      query.recordId = recordsRead.message.descriptor.recordId;
-    } else if (recordsRead.message.descriptor.protocol !== undefined && recordsRead.message.descriptor.protocolPath !== undefined) {
-      query.protocol = recordsRead.message.descriptor.protocol;
-      query.protocolPath = recordsRead.message.descriptor.protocolPath;
-    } else {
-      return messageReplyFromError(new DwnError(
-        DwnErrorCode.RecordsReadMissingDescriptorProperties,
-        'missing required properties from RecordsRead descriptor, expected `recordId` or `protocol` with `protocolPath`'
-      ), 400);
-    }
-
     const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
-
     const newestExistingMessage = await Message.getNewestMessage(existingMessages);
 
     // if no record found or it has been deleted

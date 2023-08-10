@@ -185,7 +185,7 @@ export function testRecordsReadHandler(): void {
         expect(ArrayUtility.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
       });
 
-      it('should not allow read `protocol` set', async () => {
+      it('should not allow only `protocol` to be set without a `protocolPath` nor `recordId`', async () => {
         const alice = await DidKeyResolver.generate();
 
         // insert public data
@@ -193,16 +193,14 @@ export function testRecordsReadHandler(): void {
         const writeReply = await dwn.processMessage(alice.did, message, dataStream);
         expect(writeReply.status.code).to.equal(202);
 
-        // testing public RecordsRead
-        const bob = await DidKeyResolver.generate();
-
-        // create with protocol and protocolPath to avoid the failure here
+        // create with protocol and protocolPath to avoid the failure within RecordsRead.create()
         const recordsRead = await RecordsRead.create({
           protocol                    : 'example.org/TestProto',
           protocolPath                : 'proto/path',
-          authorizationSignatureInput : Jws.createSignatureInput(bob)
+          authorizationSignatureInput : Jws.createSignatureInput(alice)
         });
-        // delete protocolPath leaving only protocol
+
+        // delete protocolPath leaving only protocol to induce error below
         delete recordsRead.message.descriptor.protocolPath;
 
         const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
@@ -210,7 +208,7 @@ export function testRecordsReadHandler(): void {
         expect(readReply.status.detail).to.contain('must have required property \'recordId\'');
       });
 
-      it('should not allow read `protocolPath` set', async () => {
+      it('should not allow only `protocolPath` to be set without a `protocol` nor `recordId`', async () => {
         const alice = await DidKeyResolver.generate();
 
         // insert public data
@@ -218,16 +216,14 @@ export function testRecordsReadHandler(): void {
         const writeReply = await dwn.processMessage(alice.did, message, dataStream);
         expect(writeReply.status.code).to.equal(202);
 
-        // testing public RecordsRead
-        const bob = await DidKeyResolver.generate();
-
-        // create with protocol and protocolPath to avoid the failure here
+        // create with protocol and protocolPath to avoid the failure within RecordsRead.create()
         const recordsRead = await RecordsRead.create({
           protocol                    : 'example.org/TestProto',
           protocolPath                : 'proto/path',
-          authorizationSignatureInput : Jws.createSignatureInput(bob)
+          authorizationSignatureInput : Jws.createSignatureInput(alice)
         });
-        // delete protocolPath leaving only protocol
+
+        // delete protocolPath leaving only protocol to induce error below
         delete recordsRead.message.descriptor.protocol;
 
         const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
@@ -236,7 +232,6 @@ export function testRecordsReadHandler(): void {
       });
 
       describe('protocol based reads', () => {
-
         it('should allow read with allow-anyone rule', async () => {
         // scenario: Alice writes an image to her DWN, then Bob reads the image because he is "anyone".
 
