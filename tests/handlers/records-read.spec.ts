@@ -1190,6 +1190,96 @@ export function testRecordsReadHandler(): void {
           });
         });
 
+        it('allows access to contextId for protocol based RecordRead', async () => {
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+
+          const protocolDefinition = chatProtocolDefinition as ProtocolDefinition;;
+
+          // Install social-media protocol on Alice's DWN
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+          expect(protocolWriteReply.status.code).to.equal(202);
+
+          const encodedThread1 = new TextEncoder().encode('thread 1');
+          const thread1Write = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'thread',// this comes from `types` in protocol definition
+            schema       : protocolDefinition.types.thread.schema,
+            dataFormat   : protocolDefinition.types.thread.dataFormats![0],
+            data         : encodedThread1,
+            recipient    : alice.did
+          });
+          let threadWriteReply = await dwn.processMessage(alice.did, thread1Write.message, thread1Write.dataStream);
+          expect(threadWriteReply.status.code).to.equal(202);
+
+          const encodeMessage1 = new TextEncoder().encode('thread 1 message 1');
+          const message1Write = await TestDataGenerator.generateRecordsWrite({
+            author       : bob,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'thread/message',// this comes from `types` in protocol definition
+            contextId    : await thread1Write.recordsWrite.getEntryId(),
+            parentId     : await thread1Write.recordsWrite.getEntryId(),
+            schema       : protocolDefinition.types.message.schema,
+            dataFormat   : protocolDefinition.types.message.dataFormats![0],
+            data         : encodeMessage1,
+            recipient    : alice.did
+          });
+          threadWriteReply = await dwn.processMessage(alice.did, message1Write.message, message1Write.dataStream);
+          expect(threadWriteReply.status.code).to.equal(202);
+
+          const encodedThread2 = new TextEncoder().encode('message 2');
+          const thread2Write = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'thread',// this comes from `types` in protocol definition
+            schema       : protocolDefinition.types.thread.schema,
+            dataFormat   : protocolDefinition.types.thread.dataFormats![0],
+            data         : encodedThread2,
+            recipient    : alice.did
+          });
+          threadWriteReply = await dwn.processMessage(alice.did, thread2Write.message, thread2Write.dataStream);
+          expect(threadWriteReply.status.code).to.equal(202);
+
+          const encodedMessage2 = new TextEncoder().encode('thread 2 message 1');
+          const message2Write = await TestDataGenerator.generateRecordsWrite({
+            author       : bob,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'thread/message',// this comes from `types` in protocol definition
+            contextId    : await thread2Write.recordsWrite.getEntryId(),
+            parentId     : await thread2Write.recordsWrite.getEntryId(),
+            schema       : protocolDefinition.types.message.schema,
+            dataFormat   : protocolDefinition.types.message.dataFormats![0],
+            data         : encodedMessage2,
+            recipient    : alice.did
+          });
+          threadWriteReply = await dwn.processMessage(alice.did, message2Write.message, message2Write.dataStream);
+          expect(threadWriteReply.status.code).to.equal(202);
+
+          const recordRead = await RecordsRead.create({
+            protocol                    : protocolDefinition.protocol,
+            protocolPath                : 'thread/message',
+            authorizationSignatureInput : Jws.createSignatureInput(bob),
+          });
+          let recordsReadReply = await dwn.handleRecordsRead(alice.did, recordRead.message);
+          expect(recordsReadReply.status.code).to.equal(200);
+          expect(recordsReadReply.record!.recordId).to.equal(message2Write.message.recordId);
+
+          const recordRead2 = await RecordsRead.create({
+            protocol                    : protocolDefinition.protocol,
+            protocolPath                : 'thread/message',
+            contextId                   : message1Write.message.contextId,
+            authorizationSignatureInput : Jws.createSignatureInput(bob),
+          });
+          recordsReadReply = await dwn.handleRecordsRead(alice.did, recordRead2.message);
+          expect(recordsReadReply.status.code).to.equal(200);
+          expect(recordsReadReply.record!.recordId).to.equal(message1Write.message.recordId);
+        });
+
         describe('grant scope schema', () => {
           it('allows access if the RecordsRead grant scope schema includes the schema of the record', async () => {
             // scenario: Alice gives Bob a grant allowing him to read records with matching schema in her DWN.

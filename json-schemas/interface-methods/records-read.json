@@ -42,6 +42,9 @@
         },
         "protocolPath": {
           "type": "string"
+        },
+        "contextId": {
+          "type": "string"
         }
       },
       "$comment": "describe rule requiring recordId OR protocol and protocolPath",

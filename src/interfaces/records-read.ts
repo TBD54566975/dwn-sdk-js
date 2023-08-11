@@ -17,6 +17,7 @@ export type RecordsReadOptions = {
   recordId?: string;
   protocolPath?: string;
   protocol?: string;
+  contextId?: string;
   date?: string;
   authorizationSignatureInput?: SignatureInput;
   permissionsGrantId?: string;
@@ -39,7 +40,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
    * @param options.date If `undefined`, it will be auto-filled with current time.
    */
   public static async create(options: RecordsReadOptions): Promise<RecordsRead> {
-    const { recordId, protocol, protocolPath, authorizationSignatureInput, permissionsGrantId } = options;
+    const { recordId, protocol, protocolPath, contextId, authorizationSignatureInput, permissionsGrantId } = options;
     const currentTime = getCurrentTimeInHighPrecision();
 
     const descriptor: RecordsReadDescriptor = {
@@ -48,6 +49,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
       recordId,
       protocol,
       protocolPath,
+      contextId,
       messageTimestamp : options.date ?? currentTime
     };
 
@@ -74,10 +76,13 @@ export class RecordsRead extends Message<RecordsReadMessage> {
    */
   public static recordIdOrProtocolFilter(descriptor: Partial<Omit<RecordsReadDescriptor, 'method'>>): Filter {
     const filter: Filter = { interface: DwnInterfaceName.Records };
-    const { recordId, protocol, protocolPath } = descriptor;
+    const { recordId, protocol, protocolPath, contextId } = descriptor;
     if (recordId !== undefined) {
       return { ...filter, recordId };
     } else if (protocol !== undefined && protocolPath !== undefined) {
+      if (contextId !== undefined) {
+        filter.contextId = contextId;
+      }
       return { ...filter, protocol, protocolPath };
     } else {
       throw new DwnError(

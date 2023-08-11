@@ -159,6 +159,7 @@ export type RecordsReadDescriptor = {
   method: DwnMethodName.Read;
   recordId?: string;
   protocol?: string;
+  contextId?: string;
   protocolPath?: string;
   messageTimestamp: string;
 };
