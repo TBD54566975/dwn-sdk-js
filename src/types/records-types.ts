@@ -68,9 +68,6 @@ export type EncryptedKey = {
   encryptedKey: string;
 };
 
-/**
- * The type used by the reply of a `RecordQuery`.
- */
 export type UnsignedRecordsWriteMessage = {
   recordId: string,
   contextId?: string;
@@ -84,7 +81,7 @@ export type UnsignedRecordsWriteMessage = {
  * 1. does not contain `authorization`
  * 2. may include encoded data
  */
-export type RecordsQueryReplyEntry = UnsignedRecordsWriteMessage & {
+export type RecordsQueryReplyEntry = RecordsWriteMessage & {
   encodedData?: string;
 };
 

@@ -1,4 +1,4 @@
-import type { RecordsWriteDescriptor } from '../../src/types/records-types.js';
+import type { RecordsQueryReply, RecordsWriteDescriptor } from '../../src/types/records-types.js';
 import type { RecordsWriteMessage } from '../../src/index.js';
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
 
@@ -63,6 +63,25 @@ export function testRecordsQueryHandler(): void {
 
       after(async () => {
         await dwn.close();
+      });
+
+      it('should return recordId, descriptor, and attestation', async () => {
+        const alice = await TestDataGenerator.generatePersona();
+        TestStubGenerator.stubDidResolver(didResolver, [alice]);
+        const dataFormat = 'myAwesomeDataFormat';
+
+        const write = await TestDataGenerator.generateRecordsWrite({ author: alice, dataFormat });
+        const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
+        expect(writeReply.status.code).to.equal(202);
+
+        const query = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { dataFormat } });
+        const reply = await dwn.processMessage(alice.did, query.message) as RecordsQueryReply;
+
+        expect(reply.entries?.length).to.equal(1);
+        const entry = reply.entries![0];
+        expect(entry.attestation).to.equal(write.message.attestation);
+        expect(entry.descriptor).to.deep.equal(write.message.descriptor);
+        expect(entry.recordId).to.equal(write.message.recordId);
       });
 
       it('should return records matching the query', async () => {
