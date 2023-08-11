@@ -3,7 +3,7 @@
   "published": true,
   "types": {
     "question": {
-      "schema": "groupChat",
+      "schema": "question",
       "dataFormats": [
         "application/json"
       ]
