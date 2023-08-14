@@ -42,11 +42,17 @@ export enum ProtocolAction {
   Write = 'write'
 }
 
+export enum ProtocolRecordGroup {
+  Any = 'any',
+  Context = 'context',
+  Ancestors = 'ancestors',
+}
+
 export type ProtocolActionRule = {
   who: string,
   ofRecord?: {
     atPath: string;
-    inGroup: 'any' | 'context' | 'ancestors';
+    inGroup: ProtocolRecordGroup;
   },
   can: string
 };

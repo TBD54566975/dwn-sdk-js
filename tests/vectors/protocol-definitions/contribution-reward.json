@@ -1,0 +1,40 @@
+{
+  "protocol": "http://contribution-reward-protocol.xyz",
+  "published": true,
+  "types": {
+    "contribution": {
+      "schema": "contribution",
+      "dataFormats": [
+        "application/json"
+      ]
+    },
+    "reward": {
+      "schema": "reward",
+      "dataFormats": [
+        "application/json"
+      ]
+    }
+  },
+  "structure": {
+    "contribution": {
+      "$actions": [
+        {
+          "who": "anyone",
+          "can": "write"
+        }
+      ]
+    },
+    "reward": {
+      "$actions": [
+        {
+          "who": "author",
+          "ofRecord": {
+            "atPath": "contribution",
+            "inGroup": "any"
+          },
+          "can": "read"
+        }
+      ]
+    }
+  }
+}

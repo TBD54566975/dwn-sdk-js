@@ -75,6 +75,18 @@ export type UnsignedRecordsWriteMessage = {
   encryption?: EncryptionProperty;
 };
 
+/*
+record?: {
+    recordId: string,
+    contextId?: string;
+    descriptor: RecordsWriteDescriptor;
+    // authorization: GeneralJws; // intentionally omitted
+    attestation?: GeneralJws;
+    encryption?: EncryptionProperty;
+    data: Readable;
+  }
+*/
+
 /**
  * Data structure returned in a `RecordsQuery` reply entry.
  * NOTE: the message structure is a modified version of the message received, the most notable differences are:

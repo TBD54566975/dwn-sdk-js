@@ -72,7 +72,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
     } else if (this.author !== undefined && this.authorizationPayload?.permissionsGrantId !== undefined) {
       await RecordsGrantAuthorization.authorizeRecordsGrant(tenant, this, this.author, messageStore);
     } else if (descriptor.protocol !== undefined) {
-      await ProtocolAuthorization.authorize(tenant, this, this.author, messageStore);
+      await ProtocolAuthorization.authorize(tenant, this, newestRecordsWrite, messageStore);
     } else {
       throw new Error('message failed authorization');
     }

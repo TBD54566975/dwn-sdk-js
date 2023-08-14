@@ -1,0 +1,56 @@
+{
+  "protocol": "http://chat-protocol.xyz",
+  "published": true,
+  "types": {
+    "groupChat": {
+      "schema": "groupChat",
+      "dataFormats": [
+        "application/json"
+      ]
+    },
+    "chat": {
+      "schema": "chat",
+      "dataFormats": [
+        "application/json"
+      ]
+    },
+    "joinChat": {
+      "schema": "joinChat",
+      "dataFormats": [
+        "application/json"
+      ]
+    }
+  },
+  "structure": {
+    "groupChat": {
+      "chat": {
+        "$actions": [
+          {
+            "who": "author",
+            "ofRecord": {
+              "atPath": "groupChat/joinChat",
+              "inGroup": "context"
+            },
+            "can": "write"
+          },
+          {
+            "who": "author",
+            "ofRecord": {
+              "atPath": "groupChat/joinChat",
+              "inGroup": "context"
+            },
+            "can": "read"
+          }
+        ]
+      },
+      "joinChat": {
+        "$actions": [
+          {
+            "who": "anyone",
+            "can": "write"
+          }
+        ]
+      }
+    }
+  }
+}
