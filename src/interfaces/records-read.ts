@@ -69,10 +69,10 @@ export class RecordsRead extends Message<RecordsReadMessage> {
     } else if (this.author !== undefined && this.author === descriptor.recipient) {
       // The recipient of a message may always read it
       return;
-    } else if (this.author !== undefined && this.authorizationPayload?.permissionsGrantId !== undefined) {
-      await RecordsGrantAuthorization.authorizeRecordsGrant(tenant, this, this.author, messageStore);
     } else if (descriptor.protocol !== undefined) {
       await ProtocolAuthorization.authorize(tenant, this, newestRecordsWrite, messageStore);
+    } else if (this.author !== undefined && this.authorizationPayload?.permissionsGrantId !== undefined) {
+      await RecordsGrantAuthorization.authorizeRecordsGrant(tenant, this, newestRecordsWrite, this.author, messageStore);
     } else {
       throw new Error('message failed authorization');
     }

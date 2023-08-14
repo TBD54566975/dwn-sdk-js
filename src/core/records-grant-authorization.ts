@@ -2,12 +2,10 @@ import type { MessageStore } from '../types/message-store.js';
 import type { RecordsDelete } from '../interfaces/records-delete.js';
 import type { RecordsPermissionScope } from '../types/permissions-types.js';
 import type { RecordsRead } from '../interfaces/records-read.js';
-import type { RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsWrite } from '../interfaces/records-write.js';
 
 import { GrantAuthorization } from './grant-authorization.js';
-import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
-import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
 
 export class RecordsGrantAuthorization {
   /**
@@ -16,6 +14,7 @@ export class RecordsGrantAuthorization {
   public static async authorizeRecordsGrant(
     tenant: string,
     incomingMessage: RecordsRead | RecordsWrite | RecordsDelete,
+    recordsWrite: RecordsWrite,
     author: string,
     messageStore: MessageStore,
   ): Promise<void> {
@@ -25,36 +24,60 @@ export class RecordsGrantAuthorization {
 
     const grantScope = permissionsGrantMessage.descriptor.scope as RecordsPermissionScope;
 
+    if (RecordsGrantAuthorization.isUnrestrictedScope(grantScope)) {
+      // scope has no restrictions beyond interface and method. Message is authorized to access any record.
+      return;
+    } else if (recordsWrite.message.descriptor.protocol !== undefined) {
+      // authorization of protocol records must have grants that explicitly include the protocol
+      RecordsGrantAuthorization.authorizeProtocolRecord(recordsWrite, grantScope);
+    } else {
+      RecordsGrantAuthorization.authorizeFlatRecord(recordsWrite, grantScope);
+    }
+  }
+
+  /**
+   * Authorizes a grant scope for a protocol record
+   */
+  private static authorizeProtocolRecord(
+    recordsWrite: RecordsWrite,
+    grantScope: RecordsPermissionScope
+  ): void {
+    if (grantScope.protocol === undefined) {
+      throw new DwnError(
+        DwnErrorCode.RecordsGrantAuthorizationScopeNotProtocol,
+        'Grant for protocol record must specify protocol in its scope'
+      );
+    } else if (grantScope.protocol !== recordsWrite.message.descriptor.protocol) {
+      throw new DwnError(
+        DwnErrorCode.RecordsGrantAuthorizationScopeProtocol,
+        `Grant scope specifies different protocol than in record with recordId ${recordsWrite.message.recordId}`
+      );
+    }
+  }
+
+  /**
+   * Authorizes a grant scope for a non-protocol record
+   */
+  private static authorizeFlatRecord(
+    recordsWrite: RecordsWrite,
+    grantScope: RecordsPermissionScope
+  ): void {
     if (grantScope.schema !== undefined) {
-      const recordsWrite = await RecordsGrantAuthorization.getRecordsWrite(tenant, incomingMessage, messageStore);
       if (grantScope.schema !== recordsWrite.message.descriptor.schema) {
         throw new DwnError(
           DwnErrorCode.RecordsGrantAuthorizationScopeSchema,
           `Record does not have schema in PermissionsGrant scope with schema '${grantScope.schema}'`
         );
       }
-    } else {
-      // scope has no restrictions beyond interface and method. Message is authorized to access any record.
     }
   }
 
-  private static async getRecordsWrite(
-    tenant: string,
-    incomingMessage: RecordsRead | RecordsWrite | RecordsDelete,
-    messageStore: MessageStore,
-  ): Promise<RecordsWrite> {
-    if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
-      return incomingMessage as RecordsWrite;
-    }
-
-    const recordId = (incomingMessage as RecordsRead | RecordsDelete).message.descriptor.recordId;
-    const query = {
-      interface : DwnInterfaceName.Records,
-      method    : DwnMethodName.Write,
-      recordId,
-    };
-    const existingMessages = await messageStore.query(tenant, query);
-    const recordsWriteMessage = await Message.getNewestMessage(existingMessages) as RecordsWriteMessage;
-    return RecordsWrite.parse(recordsWriteMessage);
+  /**
+   * Checks if scope has no restrictions beyond interface and method.
+   * Grant-holder is authorized to access any record.
+   */
+  private static isUnrestrictedScope(grantScope: RecordsPermissionScope): boolean {
+    return grantScope.protocol === undefined &&
+           grantScope.schema === undefined;
   }
 }

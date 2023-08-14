@@ -22,6 +22,9 @@
     },
     "encryptionCid": {
       "type": "string"
+    },
+    "permissionsGrantId": {
+      "type": "string"
     }
   }
 }
