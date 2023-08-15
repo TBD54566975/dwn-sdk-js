@@ -1979,7 +1979,7 @@ export function testRecordsWriteHandler(): void {
             });
             const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
             expect(recordsWriteReply.status.code).to.equal(401);
-            expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationScopeProtocol);
+            expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationScopeProtocolMismatch);
           });
 
           it('rejects writes of protocol records with non-protocol grant scopes', async () => {

@@ -49,7 +49,7 @@ export class RecordsGrantAuthorization {
       );
     } else if (grantScope.protocol !== recordsWrite.message.descriptor.protocol) {
       throw new DwnError(
-        DwnErrorCode.RecordsGrantAuthorizationScopeProtocol,
+        DwnErrorCode.RecordsGrantAuthorizationScopeProtocolMismatch,
         `Grant scope specifies different protocol than in record with recordId ${recordsWrite.message.recordId}`
       );
     }
