@@ -6,7 +6,6 @@ import type { RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, Re
 import { authenticate } from '../core/auth.js';
 import { lexicographicalCompare } from '../utils/string.js';
 import { messageReplyFromError } from '../core/message-reply.js';
-import { StorageController } from '../store/storage-controller.js';
 
 import { DateSort, RecordsQuery } from '../interfaces/records-query.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
@@ -86,7 +85,8 @@ export class RecordsQueryHandler implements MethodHandler {
       method            : DwnMethodName.Write,
       isLatestBaseState : true
     };
-    const records = await StorageController.query(this.messageStore, this.dataStore, tenant, filter);
+
+    const records = (await this.messageStore.query(tenant, filter)) as RecordsWriteMessageWithOptionalEncodedData[];
     return records;
   }
 
@@ -133,7 +133,7 @@ export class RecordsQueryHandler implements MethodHandler {
       published         : true,
       isLatestBaseState : true
     };
-    const publishedRecords = await StorageController.query(this.messageStore, this.dataStore, tenant, filter);
+    const publishedRecords = (await this.messageStore.query(tenant, filter)) as RecordsWriteMessageWithOptionalEncodedData[];
     return publishedRecords;
   }
 
@@ -152,8 +152,7 @@ export class RecordsQueryHandler implements MethodHandler {
       isLatestBaseState : true,
       published         : false
     };
-    const unpublishedRecordsForQueryAuthor = await StorageController.query(this.messageStore, this.dataStore, tenant, filter);
-
+    const unpublishedRecordsForQueryAuthor = (await this.messageStore.query(tenant, filter)) as RecordsWriteMessageWithOptionalEncodedData[];
     return unpublishedRecordsForQueryAuthor;
   }
 
@@ -172,7 +171,7 @@ export class RecordsQueryHandler implements MethodHandler {
       isLatestBaseState : true,
       published         : false
     };
-    const unpublishedRecordsForQueryAuthor = await StorageController.query(this.messageStore, this.dataStore, tenant, filter);
+    const unpublishedRecordsForQueryAuthor = (await this.messageStore.query(tenant, filter)) as RecordsWriteMessageWithOptionalEncodedData[];
     return unpublishedRecordsForQueryAuthor;
   }
 }

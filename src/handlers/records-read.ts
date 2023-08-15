@@ -1,13 +1,15 @@
 import type { MethodHandler } from '../types/method-handler.js';
+import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
 import type { TimestampedMessage } from '../types/message-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
-import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsReadMessage, RecordsReadReply } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { RecordsRead } from '../interfaces/records-read.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
+import { DataStream, Encoder } from '../index.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export class RecordsReadHandler implements MethodHandler {
@@ -51,20 +53,27 @@ export class RecordsReadHandler implements MethodHandler {
       };
     }
 
-    const newestRecordsWrite = newestExistingMessage as RecordsWriteMessage;
+    const newestRecordsWrite = newestExistingMessage as RecordsWriteMessageWithOptionalEncodedData;
     try {
       await recordsRead.authorize(tenant, await RecordsWrite.parse(newestRecordsWrite), this.messageStore);
     } catch (error) {
       return messageReplyFromError(error, 401);
     }
 
-    const messageCid = await Message.getCid(newestRecordsWrite);
-    const result = await this.dataStore.get(tenant, messageCid, newestRecordsWrite.descriptor.dataCid);
-
-    if (result?.dataStream === undefined) {
-      return {
-        status: { code: 404, detail: 'Not Found' }
-      };
+    let data;
+    if (newestRecordsWrite.encodedData !== undefined) {
+      const dataBytes = Encoder.base64UrlToBytes(newestRecordsWrite.encodedData);
+      data = DataStream.fromBytes(dataBytes);
+      delete newestRecordsWrite.encodedData;
+    } else {
+      const messageCid = await Message.getCid(newestRecordsWrite);
+      const result = await this.dataStore.get(tenant, messageCid, newestRecordsWrite.descriptor.dataCid);
+      if (result?.dataStream === undefined) {
+        return {
+          status: { code: 404, detail: 'Not Found' }
+        };
+      }
+      data = result.dataStream;
     }
 
     const { authorization: _, ...recordsWriteWithoutAuthorization } = newestRecordsWrite; // a trick to stripping away `authorization`
@@ -72,7 +81,7 @@ export class RecordsReadHandler implements MethodHandler {
       status : { code: 200, detail: 'OK' },
       record : {
         ...recordsWriteWithoutAuthorization,
-        data: result.dataStream
+        data,
       }
     };
     return messageReply;

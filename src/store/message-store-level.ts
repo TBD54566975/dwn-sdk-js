@@ -10,6 +10,7 @@ import { createLevelDatabase } from './level-wrapper.js';
 import { executeUnlessAborted } from '../utils/abort.js';
 import { IndexLevel } from './index-level.js';
 import { sha256 } from 'multiformats/hashes/sha2';
+import { Cid, Message } from '../index.js';
 
 /**
  * A simple implementation of {@link MessageStore} that works in both the browser and server-side.
@@ -113,14 +114,16 @@ export class MessageStoreLevel implements MessageStore {
 
     const encodedMessageBlock = await executeUnlessAborted(block.encode({ value: message, codec: cbor, hasher: sha256 }), options?.signal);
 
-    await partition.put(encodedMessageBlock.cid, encodedMessageBlock.bytes, options);
+    // MessageStore data may contain `encodedData` which is not taken into account when calculating the blockCID as it is optional data.
+    const messageCid = Cid.parseCid(await Message.getCid(message));
+    await partition.put(messageCid, encodedMessageBlock.bytes, options);
 
-    const encodedMessageBlockCid = encodedMessageBlock.cid.toString();
+    const messageCidString = messageCid.toString();
     const indexDocument = {
       ...indexes,
       tenant,
     };
-    await this.index.put(encodedMessageBlockCid, indexDocument, options);
+    await this.index.put(messageCidString, indexDocument, options);
   }
 
   /**
