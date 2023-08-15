@@ -1,15 +1,18 @@
 import type { EventLog } from '../types/event-log.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { RecordsDeleteMessage } from '../types/records-types.js';
 import type { TimestampedMessage } from '../types/message-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
+import type { RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { RecordsDelete } from '../interfaces/records-delete.js';
+import { RecordsWrite } from '../interfaces/records-write.js';
 import { StorageController } from '../store/storage-controller.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+
+import { removeUndefinedProperties } from '../utils/object.js';
 
 export class RecordsDeleteHandler implements MethodHandler {
 
@@ -67,7 +70,8 @@ export class RecordsDeleteHandler implements MethodHandler {
       };
     }
 
-    const indexes = await constructIndexes(tenant, recordsDelete);
+    const initialWrite = await RecordsWrite.getInitialWrite(existingMessages);
+    const indexes = await constructIndexes(initialWrite, recordsDelete);
     await this.messageStore.put(tenant, message, indexes);
 
     const messageCid = await Message.getCid(message);
@@ -85,7 +89,7 @@ export class RecordsDeleteHandler implements MethodHandler {
   };
 }
 
-export async function constructIndexes(tenant: string, recordsDelete: RecordsDelete): Promise<Record<string, string>> {
+export async function constructIndexes(initialWrite: RecordsWriteMessage, recordsDelete: RecordsDelete): Promise<Record<string, string>> {
   const message = recordsDelete.message;
   const descriptor = { ...message.descriptor };
 
@@ -95,9 +99,14 @@ export async function constructIndexes(tenant: string, recordsDelete: RecordsDel
   // `isLatestBaseState` for the initial delete would have been toggled to `false`
   const indexes: Record<string, any> = {
     // isLatestBaseState : "true", // intentionally showing that this index is omitted
-    author: recordsDelete.author,
-    ...descriptor
+    author       : recordsDelete.author,
+    protocol     : initialWrite.descriptor.protocol,
+    protocolPath : initialWrite.descriptor.protocolPath,
+
+    ...descriptor,
   };
+
+  removeUndefinedProperties(indexes);
 
   return indexes;
 }
