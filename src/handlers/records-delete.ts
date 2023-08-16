@@ -11,8 +11,6 @@ import { RecordsDelete } from '../interfaces/records-delete.js';
 import { StorageController } from '../store/storage-controller.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
-import { removeUndefinedProperties } from '../utils/object.js';
-
 export class RecordsDeleteHandler implements MethodHandler {
 
   constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore, private eventLog: EventLog) { }
@@ -69,7 +67,7 @@ export class RecordsDeleteHandler implements MethodHandler {
       };
     }
 
-    const indexes = await constructIndexes(recordsDelete);
+    const indexes = await constructIndexes(tenant, recordsDelete);
     await this.messageStore.put(tenant, message, indexes);
 
     const messageCid = await Message.getCid(message);
@@ -87,7 +85,7 @@ export class RecordsDeleteHandler implements MethodHandler {
   };
 }
 
-export async function constructIndexes(recordsDelete: RecordsDelete): Promise<Record<string, string>> {
+export async function constructIndexes(tenant: string, recordsDelete: RecordsDelete): Promise<Record<string, string>> {
   const message = recordsDelete.message;
   const descriptor = { ...message.descriptor };
 
@@ -98,10 +96,8 @@ export async function constructIndexes(recordsDelete: RecordsDelete): Promise<Re
   const indexes: Record<string, any> = {
     // isLatestBaseState : "true", // intentionally showing that this index is omitted
     author: recordsDelete.author,
-    ...descriptor,
+    ...descriptor
   };
-
-  removeUndefinedProperties(indexes);
 
   return indexes;
 }
