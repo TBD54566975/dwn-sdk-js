@@ -1,5 +1,7 @@
+
+import type { RecordsWriteMessage } from '../index.js';
 import type { Filter, GenericMessage } from '../types/message-types.js';
-import type { MessageStore, MessageStoreOptions } from '../types/message-store.js';
+import type { MessageStore, MessageStoreOptions, PaginationOption } from '../types/message-store.js';
 
 import * as block from 'multiformats/block';
 import * as cbor from '@ipld/dag-cbor';
@@ -9,8 +11,10 @@ import { CID } from 'multiformats/cid';
 import { createLevelDatabase } from './level-wrapper.js';
 import { executeUnlessAborted } from '../utils/abort.js';
 import { IndexLevel } from './index-level.js';
+import { lexicographicalCompare } from '../utils/string.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { Cid, Message } from '../index.js';
+import { DateSort, DwnInterfaceName, DwnMethodName } from '../index.js';
 
 /**
  * A simple implementation of {@link MessageStore} that works in both the browser and server-side.
@@ -77,7 +81,13 @@ export class MessageStoreLevel implements MessageStore {
     return message;
   }
 
-  async query(tenant: string, filter: Filter, options?: MessageStoreOptions): Promise<GenericMessage[]> {
+  async query(
+    tenant: string,
+    filter: Filter,
+    dateSort?: DateSort,
+    pagination?: PaginationOption,
+    options?: MessageStoreOptions
+  ): Promise<GenericMessage[]> {
     options?.signal?.throwIfAborted();
 
     const messages: GenericMessage[] = [];
@@ -89,7 +99,47 @@ export class MessageStoreLevel implements MessageStore {
       if (message) { messages.push(message); }
     }
 
-    return messages;
+    return this.sortRecords(messages, dateSort);
+  }
+
+  /**
+   * This is temporarily moved from the RecordsQuery handler.
+   * It will eventually be done within the underlying data store.
+   *
+   * Sorts the given records. There are 4 options for dateSort:
+   * 1. createdAscending - Sort in ascending order based on when the message was created
+   * 2. createdDescending - Sort in descending order based on when the message was created
+   * 3. publishedAscending - If the message is published, sort in asc based on publish date
+   * 4. publishedDescending - If the message is published, sort in desc based on publish date
+   *
+   * If sorting is based on date published, records that are not published are filtered out.
+   * @param messages - Messages to be sorted if dateSort is present
+   * @param dateSort - Sorting scheme
+   * @returns Sorted Messages
+   */
+  async sortRecords(
+    messages: GenericMessage[],
+    dateSort: DateSort = DateSort.CreatedAscending
+  ): Promise<GenericMessage[]> {
+
+    if (messages.find( m => m.descriptor.interface !== DwnInterfaceName.Records && m.descriptor.method !== DwnMethodName.Write) !== undefined) {
+      return messages;
+    }
+    const records = messages as RecordsWriteMessage[];
+    switch (dateSort) {
+    case DateSort.CreatedAscending:
+      return records.sort((a, b) => lexicographicalCompare(a.descriptor.dateCreated, b.descriptor.dateCreated));
+    case DateSort.CreatedDescending:
+      return records.sort((a, b) => lexicographicalCompare(b.descriptor.dateCreated, a.descriptor.dateCreated));
+    case DateSort.PublishedAscending:
+      return records
+        .filter(m => m.descriptor.published)
+        .sort((a, b) => lexicographicalCompare(a.descriptor.datePublished!, b.descriptor.datePublished!));
+    case DateSort.PublishedDescending:
+      return records
+        .filter(m => m.descriptor.published)
+        .sort((a, b) => lexicographicalCompare(b.descriptor.datePublished!, a.descriptor.datePublished!));
+    }
   }
 
   async delete(tenant: string, cidString: string, options?: MessageStoreOptions): Promise<void> {

@@ -1,7 +1,11 @@
+import type { DateSort } from '../index.js';
 import type { Filter, GenericMessage } from './message-types.js';
 
 export interface MessageStoreOptions {
   signal?: AbortSignal;
+}
+
+export interface PaginationOption {
 }
 
 export interface MessageStore {
@@ -35,7 +39,13 @@ export interface MessageStore {
   /**
    * Queries the underlying store for messages that match the provided filter.
    */
-  query(tenant: string, filter: Filter, options?: MessageStoreOptions ): Promise<GenericMessage[]>;
+  query(
+    tenant: string,
+    filter: Filter,
+    dateSort?: DateSort,
+    pagination?: PaginationOption,
+    options?: MessageStoreOptions
+  ): Promise<GenericMessage[]>;
 
   /**
    * Deletes the message associated with the id provided.
