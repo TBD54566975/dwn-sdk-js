@@ -94,10 +94,10 @@ export class RecordsRead extends Message<RecordsReadMessage> {
   }
 
   /**
-   * Gets the newest message to return out of the messages provided based on the RecordsRead parameters.
-   * protocolPath based reads returns the most recent non-deleted record if they exist.
+   * Gets the newest message based on the RecordsRead parameters.
+   * RecordsReads which are protocolPath based filters for the most recent non-deleted records if they exist.
    *
-   * @param messages messages either matching the `recordId` or the `protocolPath` of the read
+   * @param messages messages queried by either `recordId` or the `protocolPath` of the RecordsRead
    * @returns the latest message that matches the RecordsRead.
    */
   public async getNewestMessage(messages: GenericMessage[]): Promise<GenericMessage | undefined> {

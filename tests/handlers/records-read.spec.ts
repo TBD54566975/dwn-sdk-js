@@ -769,6 +769,56 @@ export function testRecordsReadHandler(): void {
             expect(latestEmailReply2.record?.descriptor.dataCid).to.equal(testCases[testCases.length - 2].descriptor.dataCid);
           });
 
+          it('should return 404 after issuing deletes for any records in a given path', async () => {
+            const testCases = [];
+            const alice = await DidKeyResolver.generate();
+
+            const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
+
+            // Install social-media protocol on Alice's DWN
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            for ( const _ of Array(5)) {
+              const write = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'email', // this comes from `types` in protocol definition
+                schema       : protocolDefinition.types.email.schema,
+                dataFormat   : protocolDefinition.types.email.dataFormats![0],
+                data         : TestDataGenerator.randomBytes(256),
+                recipient    : alice.did
+              });
+              testCases.push(write.message);
+
+              const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
+              expect(writeReply.status.code).to.equal(202);
+            }
+
+            const latestEmail = await RecordsRead.create({
+              protocol                    : protocolDefinition.protocol,
+              protocolPath                : 'email', // this comes from `types` in protocol definition
+              authorizationSignatureInput : Jws.createSignatureInput(alice)
+            });
+            const latestEmailReply = await dwn.handleRecordsRead(alice.did, latestEmail.message);
+            expect(latestEmailReply.status.code).to.equal(200);
+            expect(latestEmailReply.record?.descriptor.dataCid).to.equal(testCases[testCases.length - 1].descriptor.dataCid);
+
+            // delete all records
+            for (const record of testCases) {
+              const deleteRecord = await TestDataGenerator.generateRecordsDelete({ recordId: record.recordId, author: alice });
+              const deleteResponse = await dwn.processMessage(alice.did, deleteRecord.message);
+              expect(deleteResponse.status.code).to.equal(202);
+            }
+
+            const latestEmailReply2 = await dwn.handleRecordsRead(alice.did, latestEmail.message);
+            expect(latestEmailReply2.status.code).to.equal(404);
+          });
+
           it('allows access to parentId for protocolPath based RecordRead', async () => {
             const alice = await DidKeyResolver.generate();
 
