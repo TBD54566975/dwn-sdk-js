@@ -60,29 +60,29 @@ describe('RecordsRead', () => {
     });
   });
 
-  describe('recordIdOrProtocolFilter()', async () => {
+  describe('createFilter()', async () => {
     it('should throw if `recordId`, `protocol` and `protocolPath` are left empty', async () => {
-      throws(() => RecordsRead.recordIdOrProtocolFilter({
+      throws(() => RecordsRead.createFilter({
         //empty descriptor
       }), /missing required properties from RecordsRead descriptor/);
     });
 
     it('should throw if only `protocolPath` is set', async () => {
-      throws(() => RecordsRead.recordIdOrProtocolFilter({
+      throws(() => RecordsRead.createFilter({
         // only protocolPath
         protocolPath: 'email/email'
       }), /missing required properties from RecordsRead descriptor/);
     });
 
     it('should throw if only `protocol` is set', async () => {
-      throws(() => RecordsRead.recordIdOrProtocolFilter({
+      throws(() => RecordsRead.createFilter({
         // only protocol
         protocol: 'example.org/Protocol'
       }), /missing required properties from RecordsRead descriptor/);
     });
 
     it('should not throw if only `recordId` is set', async () => {
-      const filter = RecordsRead.recordIdOrProtocolFilter({
+      const filter = RecordsRead.createFilter({
         recordId: 'some-id'
       });
 
@@ -90,13 +90,25 @@ describe('RecordsRead', () => {
     });
 
     it('should not throw if `protocol` and `protocolPath` are set', async () => {
-      const filter = RecordsRead.recordIdOrProtocolFilter({
+      const filter = RecordsRead.createFilter({
         protocol     : 'some-protocol',
         protocolPath : 'protocol/path'
       });
 
       expect(filter['protocol']).to.equal('some-protocol');
       expect(filter['protocolPath']).to.equal('protocol/path');
+    });
+
+    it('should not throw if `protocol` and `protocolPath` are set along with optional `parentId`', async () => {
+      const filter = RecordsRead.createFilter({
+        protocol     : 'some-protocol',
+        protocolPath : 'protocol/path',
+        parentId     : 'parent-id',
+      });
+
+      expect(filter['protocol']).to.equal('some-protocol');
+      expect(filter['protocolPath']).to.equal('protocol/path');
+      expect(filter['parentId']).to.equal('parent-id');
     });
   });
 });

@@ -12,6 +12,7 @@ import emailProtocolDefinition from '../vectors/protocol-definitions/email.json'
 import friendChatProtocol from '../vectors/protocol-definitions/friend-chat.json' assert { type: 'json' };
 import groupChatProtocol from '../vectors/protocol-definitions/group-chat.json' assert { type: 'json' };
 import minimalProtocolDefinition from '../vectors/protocol-definitions/minimal.json' assert { type: 'json' };
+import nestedProtocol from '../vectors/protocol-definitions/nested.json' assert { type: 'json' };
 import publicChatProtocol from '../vectors/protocol-definitions/public-chat.json' assert { type: 'json' };
 import sinon from 'sinon';
 import socialMediaProtocolDefinition from '../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
@@ -632,229 +633,246 @@ export function testRecordsReadHandler(): void {
           });
         });
 
-        it('should not allow only `protocol` to be set without a `protocolPath` nor `recordId`', async () => {
-          const alice = await DidKeyResolver.generate();
+        describe('protocolPath based reads', () => {
+          it('should not allow only `protocol` to be set without a `protocolPath` nor `recordId`', async () => {
+            const alice = await DidKeyResolver.generate();
 
-          // insert public data
-          const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true });
-          const writeReply = await dwn.processMessage(alice.did, message, dataStream);
-          expect(writeReply.status.code).to.equal(202);
+            // insert public data
+            const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true });
+            const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+            expect(writeReply.status.code).to.equal(202);
 
-          // create with protocol and protocolPath to avoid the failure within RecordsRead.create()
-          const recordsRead = await RecordsRead.create({
-            protocol                    : 'example.org/TestProto',
-            protocolPath                : 'proto/path',
-            authorizationSignatureInput : Jws.createSignatureInput(alice)
+            // create with protocol and protocolPath to avoid the failure within RecordsRead.create()
+            const recordsRead = await RecordsRead.create({
+              protocol                    : 'example.org/TestProto',
+              protocolPath                : 'proto/path',
+              authorizationSignatureInput : Jws.createSignatureInput(alice)
+            });
+
+            // delete protocolPath leaving only protocol to induce error below
+            delete recordsRead.message.descriptor.protocolPath;
+
+            const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+            expect(readReply.status.code).to.equal(400);
+            expect(readReply.status.detail).to.contain('must have required property \'recordId\'');
           });
 
-          // delete protocolPath leaving only protocol to induce error below
-          delete recordsRead.message.descriptor.protocolPath;
+          it('should not allow only `protocolPath` to be set without a `protocol` nor `recordId`', async () => {
+            const alice = await DidKeyResolver.generate();
 
-          const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
-          expect(readReply.status.code).to.equal(400);
-          expect(readReply.status.detail).to.contain('must have required property \'recordId\'');
-        });
+            // insert public data
+            const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true });
+            const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+            expect(writeReply.status.code).to.equal(202);
 
-        it('should not allow only `protocolPath` to be set without a `protocol` nor `recordId`', async () => {
-          const alice = await DidKeyResolver.generate();
+            // create with protocol and protocolPath to avoid the failure within RecordsRead.create()
+            const recordsRead = await RecordsRead.create({
+              protocol                    : 'example.org/TestProto',
+              protocolPath                : 'proto/path',
+              authorizationSignatureInput : Jws.createSignatureInput(alice)
+            });
 
-          // insert public data
-          const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true });
-          const writeReply = await dwn.processMessage(alice.did, message, dataStream);
-          expect(writeReply.status.code).to.equal(202);
+            // delete protocolPath leaving only protocol to induce error below
+            delete recordsRead.message.descriptor.protocol;
 
-          // create with protocol and protocolPath to avoid the failure within RecordsRead.create()
-          const recordsRead = await RecordsRead.create({
-            protocol                    : 'example.org/TestProto',
-            protocolPath                : 'proto/path',
-            authorizationSignatureInput : Jws.createSignatureInput(alice)
+            const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+            expect(readReply.status.code).to.equal(400);
+            expect(readReply.status.detail).to.contain('must have required property \'recordId\'');
           });
 
-          // delete protocolPath leaving only protocol to induce error below
-          delete recordsRead.message.descriptor.protocol;
+          it('should retrieve the latest protocol record matching the path', async () => {
+            const testCases = [];
+            const alice = await DidKeyResolver.generate();
 
-          const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
-          expect(readReply.status.code).to.equal(400);
-          expect(readReply.status.detail).to.contain('must have required property \'recordId\'');
-        });
+            const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
 
-        it('should retrieve the latest protocol record matching the path', async () => {
-          const testCases = [];
-          const alice = await DidKeyResolver.generate();
+            // Install social-media protocol on Alice's DWN
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
 
-          const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
+            for ( const _ of Array(5)) {
+              const write = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'email', // this comes from `types` in protocol definition
+                schema       : protocolDefinition.types.email.schema,
+                dataFormat   : protocolDefinition.types.email.dataFormats![0],
+                data         : TestDataGenerator.randomBytes(256),
+                recipient    : alice.did
+              });
+              testCases.push(write.message);
 
-          // Install social-media protocol on Alice's DWN
-          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-            author: alice,
-            protocolDefinition
+              const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
+              expect(writeReply.status.code).to.equal(202);
+            }
+
+            const latestEmail = await RecordsRead.create({
+              protocol                    : protocolDefinition.protocol,
+              protocolPath                : 'email', // this comes from `types` in protocol definition
+              authorizationSignatureInput : Jws.createSignatureInput(alice)
+            });
+            const latestEmailReply = await dwn.handleRecordsRead(alice.did, latestEmail.message);
+            expect(latestEmailReply.status.code).to.equal(200);
+            expect(latestEmailReply.record?.descriptor.dataCid).to.equal(testCases[testCases.length - 1].descriptor.dataCid);
           });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
-          expect(protocolWriteReply.status.code).to.equal(202);
 
-          for ( const _ of Array(5)) {
-            const write = await TestDataGenerator.generateRecordsWrite({
+          it('should retrieve the latest protocol record matching the path after a delete', async () => {
+            const testCases = [];
+            const alice = await DidKeyResolver.generate();
+
+            const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
+
+            // Install social-media protocol on Alice's DWN
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            for ( const _ of Array(5)) {
+              const write = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'email', // this comes from `types` in protocol definition
+                schema       : protocolDefinition.types.email.schema,
+                dataFormat   : protocolDefinition.types.email.dataFormats![0],
+                data         : TestDataGenerator.randomBytes(256),
+                recipient    : alice.did
+              });
+              testCases.push(write.message);
+
+              const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
+              expect(writeReply.status.code).to.equal(202);
+            }
+
+            const latestEmail = await RecordsRead.create({
+              protocol                    : protocolDefinition.protocol,
+              protocolPath                : 'email', // this comes from `types` in protocol definition
+              authorizationSignatureInput : Jws.createSignatureInput(alice)
+            });
+            const latestEmailReply = await dwn.handleRecordsRead(alice.did, latestEmail.message);
+            expect(latestEmailReply.status.code).to.equal(200);
+            expect(latestEmailReply.record?.descriptor.dataCid).to.equal(testCases[testCases.length - 1].descriptor.dataCid);
+
+            // delete record
+            const deleteRecord = await TestDataGenerator.generateRecordsDelete({ recordId: latestEmailReply.record!.recordId, author: alice });
+            const deleteResponse = await dwn.processMessage(alice.did, deleteRecord.message);
+            expect(deleteResponse.status.code).to.equal(202);
+
+            const latestEmailReply2 = await dwn.handleRecordsRead(alice.did, latestEmail.message);
+            expect(latestEmailReply2.status.code).to.equal(200);
+            expect(latestEmailReply2.record?.descriptor.dataCid).to.equal(testCases[testCases.length - 2].descriptor.dataCid);
+          });
+
+          it('allows access to parentId for protocolPath based RecordRead', async () => {
+            const alice = await DidKeyResolver.generate();
+
+            const protocolDefinition = { ...nestedProtocol };
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            const foo1Message = await TestDataGenerator.generateRecordsWrite({
               author       : alice,
               protocol     : protocolDefinition.protocol,
-              protocolPath : 'email', // this comes from `types` in protocol definition
-              schema       : protocolDefinition.types.email.schema,
-              dataFormat   : protocolDefinition.types.email.dataFormats![0],
-              data         : TestDataGenerator.randomBytes(256),
+              protocolPath : 'foo',
+              schema       : protocolDefinition.types.foo.schema,
+              dataFormat   : protocolDefinition.types.foo.dataFormats![0],
+              data         : new TextEncoder().encode('foo'),
               recipient    : alice.did
             });
-            testCases.push(write.message);
+            const foo1WriteReply = await dwn.processMessage(alice.did, foo1Message.message, foo1Message.dataStream);
+            expect(foo1WriteReply.status.code).to.equal(202);
 
-            const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
-            expect(writeReply.status.code).to.equal(202);
-          }
-
-          const latestEmail = await RecordsRead.create({
-            protocol                    : protocolDefinition.protocol,
-            protocolPath                : 'email', // this comes from `types` in protocol definition
-            authorizationSignatureInput : Jws.createSignatureInput(alice)
-          });
-          const latestEmailReply = await dwn.handleRecordsRead(alice.did, latestEmail.message);
-          expect(latestEmailReply.status.code).to.equal(200);
-          expect(latestEmailReply.record?.descriptor.dataCid).to.equal(testCases[testCases.length - 1].descriptor.dataCid);
-        });
-
-        it('should retrieve the latest protocol record matching the path after a delete', async () => {
-          const testCases = [];
-          const alice = await DidKeyResolver.generate();
-
-          const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
-
-          // Install social-media protocol on Alice's DWN
-          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-            author: alice,
-            protocolDefinition
-          });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
-          expect(protocolWriteReply.status.code).to.equal(202);
-
-          for ( const _ of Array(5)) {
-            const write = await TestDataGenerator.generateRecordsWrite({
+            const bar1Message = await TestDataGenerator.generateRecordsWrite({
               author       : alice,
               protocol     : protocolDefinition.protocol,
-              protocolPath : 'email', // this comes from `types` in protocol definition
-              schema       : protocolDefinition.types.email.schema,
-              dataFormat   : protocolDefinition.types.email.dataFormats![0],
-              data         : TestDataGenerator.randomBytes(256),
+              protocolPath : 'foo/bar',
+              contextId    : foo1Message.message.contextId,
+              parentId     : foo1Message.message.recordId,
+              schema       : protocolDefinition.types.bar.schema,
+              dataFormat   : protocolDefinition.types.bar.dataFormats![0],
+              data         : new TextEncoder().encode('bar'),
               recipient    : alice.did
             });
-            testCases.push(write.message);
+            const bar1WriteReply = await dwn.processMessage(alice.did, bar1Message.message, bar1Message.dataStream);
+            expect(bar1WriteReply.status.code).to.equal(202);
 
-            const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
-            expect(writeReply.status.code).to.equal(202);
-          }
+            const baz1Message = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo/bar/baz',
+              contextId    : bar1Message.message.contextId,
+              parentId     : bar1Message.message.recordId,
+              schema       : protocolDefinition.types.baz.schema,
+              dataFormat   : protocolDefinition.types.baz.dataFormats![0],
+              data         : new TextEncoder().encode('baz'),
+              recipient    : alice.did
+            });
+            const baz1WriteReply = await dwn.processMessage(alice.did, baz1Message.message, baz1Message.dataStream);
+            expect(baz1WriteReply.status.code).to.equal(202);
 
-          const latestEmail = await RecordsRead.create({
-            protocol                    : protocolDefinition.protocol,
-            protocolPath                : 'email', // this comes from `types` in protocol definition
-            authorizationSignatureInput : Jws.createSignatureInput(alice)
+            const bazPathRead = await RecordsRead.create({
+              protocol                    : protocolDefinition.protocol,
+              protocolPath                : 'foo/bar/baz',
+              authorizationSignatureInput : Jws.createSignatureInput(alice),
+            });
+            const bazPathReply1 = await dwn.handleRecordsRead(alice.did, bazPathRead.message);
+            expect(bazPathReply1.status.code).to.equal(200);
+            expect(bazPathReply1.record!.recordId).to.equal(baz1Message.message.recordId);
+
+            const bar2Message = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo/bar',
+              contextId    : foo1Message.message.contextId,
+              parentId     : foo1Message.message.recordId,
+              schema       : protocolDefinition.types.bar.schema,
+              dataFormat   : protocolDefinition.types.bar.dataFormats![0],
+              data         : new TextEncoder().encode('bar'),
+              recipient    : alice.did
+            });
+            const bar2WriteReply = await dwn.processMessage(alice.did, bar2Message.message, bar2Message.dataStream);
+            expect(bar2WriteReply.status.code).to.equal(202);
+
+            const baz2Message = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo/bar/baz',
+              contextId    : bar2Message.message.contextId,
+              parentId     : bar2Message.message.recordId,
+              schema       : protocolDefinition.types.baz.schema,
+              dataFormat   : protocolDefinition.types.baz.dataFormats![0],
+              data         : new TextEncoder().encode('baz'),
+              recipient    : alice.did
+            });
+            const baz2WriteReply = await dwn.processMessage(alice.did, baz2Message.message, baz2Message.dataStream);
+            expect(baz2WriteReply.status.code).to.equal(202);
+
+            // expect the latest baz message from the same query
+            const bazPathReply2 = await dwn.handleRecordsRead(alice.did, bazPathRead.message);
+            expect(bazPathReply2.status.code).to.equal(200);
+            expect(bazPathReply2.record!.recordId).to.equal(baz2Message.message.recordId);
+
+            // read latest baz from specific parent
+            const bazPathParentRead = await RecordsRead.create({
+              parentId                    : bar1Message.message.recordId,
+              protocol                    : protocolDefinition.protocol,
+              protocolPath                : 'foo/bar/baz',
+              authorizationSignatureInput : Jws.createSignatureInput(alice),
+            });
+            const bazPathParentReply = await dwn.handleRecordsRead(alice.did, bazPathParentRead.message);
+            expect(bazPathParentReply.status.code).to.equal(200);
+            expect(bazPathParentReply.record!.recordId).to.equal(baz1Message.message.recordId);
           });
-          const latestEmailReply = await dwn.handleRecordsRead(alice.did, latestEmail.message);
-          expect(latestEmailReply.status.code).to.equal(200);
-          expect(latestEmailReply.record?.descriptor.dataCid).to.equal(testCases[testCases.length - 1].descriptor.dataCid);
-
-          // delete record
-          const deleteRecord = await TestDataGenerator.generateRecordsDelete({ recordId: latestEmailReply.record!.recordId, author: alice });
-          const deleteResponse = await dwn.processMessage(alice.did, deleteRecord.message);
-          expect(deleteResponse.status.code).to.equal(202);
-
-          const latestEmailReply2 = await dwn.handleRecordsRead(alice.did, latestEmail.message);
-          expect(latestEmailReply2.status.code).to.equal(200);
-          expect(latestEmailReply2.record?.descriptor.dataCid).to.equal(testCases[testCases.length - 2].descriptor.dataCid);
-        });
-
-        it('allows access to contextId for protocol based RecordRead', async () => {
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
-
-          const protocolDefinition = chatProtocolDefinition as ProtocolDefinition;;
-
-          // Install social-media protocol on Alice's DWN
-          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-            author: alice,
-            protocolDefinition
-          });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
-          expect(protocolWriteReply.status.code).to.equal(202);
-
-          const encodedThread1 = new TextEncoder().encode('thread 1');
-          const thread1Write = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'thread',// this comes from `types` in protocol definition
-            schema       : protocolDefinition.types.thread.schema,
-            dataFormat   : protocolDefinition.types.thread.dataFormats![0],
-            data         : encodedThread1,
-            recipient    : alice.did
-          });
-          let threadWriteReply = await dwn.processMessage(alice.did, thread1Write.message, thread1Write.dataStream);
-          expect(threadWriteReply.status.code).to.equal(202);
-
-          const encodeMessage1 = new TextEncoder().encode('thread 1 message 1');
-          const message1Write = await TestDataGenerator.generateRecordsWrite({
-            author       : bob,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'thread/message',// this comes from `types` in protocol definition
-            contextId    : await thread1Write.recordsWrite.getEntryId(),
-            parentId     : await thread1Write.recordsWrite.getEntryId(),
-            schema       : protocolDefinition.types.message.schema,
-            dataFormat   : protocolDefinition.types.message.dataFormats![0],
-            data         : encodeMessage1,
-            recipient    : alice.did
-          });
-          threadWriteReply = await dwn.processMessage(alice.did, message1Write.message, message1Write.dataStream);
-          expect(threadWriteReply.status.code).to.equal(202);
-
-          const encodedThread2 = new TextEncoder().encode('message 2');
-          const thread2Write = await TestDataGenerator.generateRecordsWrite({
-            author       : alice,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'thread',// this comes from `types` in protocol definition
-            schema       : protocolDefinition.types.thread.schema,
-            dataFormat   : protocolDefinition.types.thread.dataFormats![0],
-            data         : encodedThread2,
-            recipient    : alice.did
-          });
-          threadWriteReply = await dwn.processMessage(alice.did, thread2Write.message, thread2Write.dataStream);
-          expect(threadWriteReply.status.code).to.equal(202);
-
-          const encodedMessage2 = new TextEncoder().encode('thread 2 message 1');
-          const message2Write = await TestDataGenerator.generateRecordsWrite({
-            author       : bob,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'thread/message',// this comes from `types` in protocol definition
-            contextId    : await thread2Write.recordsWrite.getEntryId(),
-            parentId     : await thread2Write.recordsWrite.getEntryId(),
-            schema       : protocolDefinition.types.message.schema,
-            dataFormat   : protocolDefinition.types.message.dataFormats![0],
-            data         : encodedMessage2,
-            recipient    : alice.did
-          });
-          threadWriteReply = await dwn.processMessage(alice.did, message2Write.message, message2Write.dataStream);
-          expect(threadWriteReply.status.code).to.equal(202);
-
-          const recordRead = await RecordsRead.create({
-            protocol                    : protocolDefinition.protocol,
-            protocolPath                : 'thread/message',
-            authorizationSignatureInput : Jws.createSignatureInput(bob),
-          });
-          let recordsReadReply = await dwn.handleRecordsRead(alice.did, recordRead.message);
-          expect(recordsReadReply.status.code).to.equal(200);
-          expect(recordsReadReply.record!.recordId).to.equal(message2Write.message.recordId);
-
-          const recordRead2 = await RecordsRead.create({
-            protocol                    : protocolDefinition.protocol,
-            protocolPath                : 'thread/message',
-            contextId                   : message1Write.message.contextId,
-            authorizationSignatureInput : Jws.createSignatureInput(bob),
-          });
-          recordsReadReply = await dwn.handleRecordsRead(alice.did, recordRead2.message);
-          expect(recordsReadReply.status.code).to.equal(200);
-          expect(recordsReadReply.record!.recordId).to.equal(message1Write.message.recordId);
         });
       });
 

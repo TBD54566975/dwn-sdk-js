@@ -1,0 +1,31 @@
+{
+  "protocol": "http://nested.xyz",
+  "published": false,
+  "types": {
+    "foo": {
+      "schema": "foo",
+      "dataFormats": [
+        "text/plain"
+      ]
+    },
+    "bar": {
+      "schema": "bar",
+      "dataFormats": [
+        "text/plain"
+      ]
+    },
+    "baz": {
+      "schema": "baz",
+      "dataFormats": [
+        "text/plain"
+      ]
+    }
+  },
+  "structure": {
+    "foo": {
+      "bar": {
+        "baz" : {}
+      }
+    }
+  }
+}

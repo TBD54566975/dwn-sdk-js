@@ -43,31 +43,21 @@
         "protocolPath": {
           "type": "string"
         },
-        "contextId": {
+        "parentId": {
           "type": "string"
         }
       },
-      "$comment": "describe rule requiring recordId OR protocol and protocolPath",
+      "$comment": "describe rule requiring either `recordId` OR `protocol` and `protocolPath`",
       "allOf": [
         {
-          "if": {
-            "not" : {
+          "anyOf": [
+            {
+              "required": [ "recordId" ]
+            },
+            {
               "required": [ "protocol", "protocolPath" ]
             }
-          },
-          "then": {
-            "required": [ "recordId" ]
-          }
-        },
-        {
-          "if": {
-            "not": {
-              "required": [ "recordId" ]
-            }
-          },
-          "then": {
-            "required": [ "protocol", "protocolPath" ]
-          }
+          ]
         }
       ]
     }
