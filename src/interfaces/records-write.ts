@@ -394,11 +394,12 @@ export class RecordsWrite {
 
   public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
     if (this.message.descriptor.protocol !== undefined) {
+      // All protocol RecordsWrites must go through protocol auth, because protocolPath, contextId, and record type must be validated
       await ProtocolAuthorization.authorize(tenant, this, this, messageStore);
     } else if (this.author === tenant) {
       // if author is the same as the target tenant, we can directly grant access
     } else if (this.author !== undefined && this.authorizationPayload?.permissionsGrantId !== undefined) {
-      await RecordsGrantAuthorization.authorizeRecordsGrant(tenant, this, this, this.author, messageStore);
+      await RecordsGrantAuthorization.authorizeWrite(tenant, this, this.author, messageStore);
     } else {
       throw new Error('message failed authorization');
     }

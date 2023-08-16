@@ -279,13 +279,17 @@ export class ProtocolAuthorization {
       return;
     } else if (incomingMessage.author !== undefined && incomingMessage.authorizationPayload?.permissionsGrantId !== undefined) {
       // PermissionsGrant gives the author explicit access to this record
-      await RecordsGrantAuthorization.authorizeRecordsGrant(
-        tenant,
-        incomingMessage,
-        recordsWrite,
-        incomingMessage.author,
-        messageStore
-      );
+      if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
+        await RecordsGrantAuthorization.authorizeWrite(tenant, incomingMessage as RecordsWrite, incomingMessage.author, messageStore);
+      } else {
+        await RecordsGrantAuthorization.authorizeRead(
+          tenant,
+          incomingMessage as RecordsRead,
+          recordsWrite,
+          incomingMessage.author,
+          messageStore
+        );
+      }
       return;
     } else if (actionRules === undefined) {
       throw new Error(`no action rule defined for ${incomingMessage.message.descriptor.method}, ${author} is unauthorized`);

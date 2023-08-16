@@ -1,5 +1,4 @@
 import type { MessageStore } from '../types/message-store.js';
-import type { RecordsDelete } from '../interfaces/records-delete.js';
 import type { RecordsPermissionScope } from '../types/permissions-types.js';
 import type { RecordsRead } from '../interfaces/records-read.js';
 import type { RecordsWrite } from '../interfaces/records-write.js';
@@ -8,13 +7,35 @@ import { GrantAuthorization } from './grant-authorization.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 
 export class RecordsGrantAuthorization {
-  /**
-   * Authorizes the scope of a PermissionsGrant for RecordsRead, RecordsWrite, and RecordsDelete messages.
-   */
-  public static async authorizeRecordsGrant(
+  public static async authorizeWrite(
     tenant: string,
-    incomingMessage: RecordsRead | RecordsWrite | RecordsDelete,
-    recordsWrite: RecordsWrite,
+    incomingMessage: RecordsWrite,
+    author: string,
+    messageStore: MessageStore,
+  ): Promise<void> {
+    // authorize generic message
+    const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, author, messageStore);
+
+    const grantScope = permissionsGrantMessage.descriptor.scope as RecordsPermissionScope;
+
+    if (RecordsGrantAuthorization.isUnrestrictedScope(grantScope)) {
+      // scope has no restrictions beyond interface and method. Message is authorized to access any record.
+      return;
+    } else if (incomingMessage.message.descriptor.protocol !== undefined) {
+      // authorization of protocol records must have grants that explicitly include the protocol
+      RecordsGrantAuthorization.authorizeProtocolRecord(incomingMessage, grantScope);
+    } else {
+      RecordsGrantAuthorization.authorizeFlatRecord(incomingMessage, grantScope);
+    }
+  }
+
+  /**
+   * Authorizes the scope of a PermissionsGrant for RecordsRead.
+   */
+  public static async authorizeRead(
+    tenant: string,
+    incomingMessage: RecordsRead,
+    newestRecordsWrite: RecordsWrite,
     author: string,
     messageStore: MessageStore,
   ): Promise<void> {
@@ -27,11 +48,11 @@ export class RecordsGrantAuthorization {
     if (RecordsGrantAuthorization.isUnrestrictedScope(grantScope)) {
       // scope has no restrictions beyond interface and method. Message is authorized to access any record.
       return;
-    } else if (recordsWrite.message.descriptor.protocol !== undefined) {
+    } else if (newestRecordsWrite.message.descriptor.protocol !== undefined) {
       // authorization of protocol records must have grants that explicitly include the protocol
-      RecordsGrantAuthorization.authorizeProtocolRecord(recordsWrite, grantScope);
+      RecordsGrantAuthorization.authorizeProtocolRecord(newestRecordsWrite, grantScope);
     } else {
-      RecordsGrantAuthorization.authorizeFlatRecord(recordsWrite, grantScope);
+      RecordsGrantAuthorization.authorizeFlatRecord(newestRecordsWrite, grantScope);
     }
   }
 
