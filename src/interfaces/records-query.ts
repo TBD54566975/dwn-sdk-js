@@ -13,7 +13,9 @@ export enum DateSort {
   CreatedAscending = 'createdAscending',
   CreatedDescending = 'createdDescending',
   PublishedAscending = 'publishedAscending',
-  PublishedDescending = 'publishedDescending'
+  PublishedDescending = 'publishedDescending',
+  TimestampAscending = 'timestampAscending',
+  TimestampDescending = 'timestampDescending'
 }
 
 export type RecordsQueryOptions = {

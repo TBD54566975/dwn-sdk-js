@@ -5,7 +5,9 @@ export interface MessageStoreOptions {
   signal?: AbortSignal;
 }
 
-export interface PaginationOption {
+export interface Pagination {
+  offset: number
+  limit: number
 }
 
 export interface MessageStore {
@@ -43,7 +45,7 @@ export interface MessageStore {
     tenant: string,
     filter: Filter,
     dateSort?: DateSort,
-    pagination?: PaginationOption,
+    pagination?: Pagination,
     options?: MessageStoreOptions
   ): Promise<GenericMessage[]>;
 

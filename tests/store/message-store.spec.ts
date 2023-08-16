@@ -1,11 +1,15 @@
 import type { MessageStore } from '../../src/index.js';
 import type { RecordsWriteMessage } from '../../src/types/records-types.js';
 
-import { DidKeyResolver } from '../../src/index.js';
 import { expect } from 'chai';
+
+import { constructRecordsWriteIndexes } from '../../src/handlers/records-write.js';
+import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
+import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
+import { DateSort, DidKeyResolver } from '../../src/index.js';
 
 let messageStore: MessageStore;
 
@@ -123,6 +127,132 @@ export function testMessageStore(): void {
 
         const results = await messageStore.query(alice.did, { schema });
         expect(results.length).to.equal(0);
+      });
+
+      describe('sorting', () => {
+
+        const rInt = (min: number, max: number): number => {
+          return Math.floor(Math.random() * ( max - min) + min);
+        };
+
+        it('should sort on TimestampDescending if no sort is specified', async () => {
+          const alice = await DidKeyResolver.generate();
+          // pregenerate random messages with random dates for various fields
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            messageTimestamp: Temporal.PlainDateTime.from({ year: 2023, month: rInt(1,12), day: rInt(1,28), hour: rInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+          const messageQuery = await messageStore.query(alice.did, {});
+          expect(messageQuery.length).to.equal(messages.length);
+
+          const sortedRecords = messages.sort((a,b) =>
+            lexicographicalCompare(b.message.descriptor.messageTimestamp, a.message.descriptor.messageTimestamp));
+          for (let i = 0; i < sortedRecords.length; i++) {
+            expect(sortedRecords[i].message.descriptor.messageTimestamp).to.equal(messageQuery[i].descriptor.messageTimestamp);
+          }
+        });
+
+        it('should sort on TimestampAscending', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            messageTimestamp: Temporal.PlainDateTime.from({ year: 2023, month: rInt(1,12), day: rInt(1,28), hour: rInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+          const messageQuery = await messageStore.query(alice.did, {}, DateSort.TimestampAscending);
+          expect(messageQuery.length).to.equal(messages.length);
+
+          const sortedRecords = messages.sort((a,b) =>
+            lexicographicalCompare(a.message.descriptor.messageTimestamp, b.message.descriptor.messageTimestamp));
+          for (let i = 0; i < messages.length; i++) {
+            expect(sortedRecords[i].message.descriptor.messageTimestamp).to.equal(messageQuery[i].descriptor.messageTimestamp);
+          }
+        });
+
+        it('should sort on CreatedAscending', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            dateCreated: Temporal.PlainDateTime.from({ year: 2023, month: rInt(1,12), day: rInt(1,28), hour: rInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const messageQuery = await messageStore.query(alice.did, {}, DateSort.CreatedAscending);
+          expect(messageQuery.length).to.equal(messages.length);
+
+          const sortedRecords = messages.sort((a,b) =>
+            lexicographicalCompare(a.message.descriptor.dateCreated, b.message.descriptor.dateCreated));
+
+          for (let i = 0; i < messages.length; i++) {
+            expect(await Message.getCid(sortedRecords[i].message)).to.equal(await Message.getCid(messageQuery[i]));
+          }
+        });
+
+        it('should sort on CreatedDescending', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            dateCreated: Temporal.PlainDateTime.from({ year: 2023, month: rInt(1,12), day: rInt(1,28), hour: rInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const messageQuery = await messageStore.query(alice.did, {}, DateSort.CreatedDescending);
+          expect(messageQuery.length).to.equal(messages.length);
+
+          const sortedRecords = messages.sort((a,b) =>
+            lexicographicalCompare(b.message.descriptor.dateCreated, a.message.descriptor.dateCreated));
+
+          for (let i = 0; i < messages.length; i++) {
+            expect(await Message.getCid(sortedRecords[i].message)).to.equal(await Message.getCid(messageQuery[i]));
+          }
+        });
+
+        it('should sort on PublishedAscending', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            published     : true,
+            datePublished : Temporal.PlainDateTime.from({ year: 2023, month: rInt(1,12), day: rInt(1,28), hour: rInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const messageQuery = await messageStore.query(alice.did, {}, DateSort.PublishedAscending);
+          expect(messageQuery.length).to.equal(messages.length);
+
+          const sortedRecords = messages.sort((a,b) =>
+            lexicographicalCompare(a.message.descriptor.datePublished!, b.message.descriptor.datePublished!));
+
+          for (let i = 0; i < messages.length; i++) {
+            expect(await Message.getCid(sortedRecords[i].message)).to.equal(await Message.getCid(messageQuery[i]));
+          }
+        });
+
+        it('should sort on PublishedDescending', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            published     : true,
+            datePublished : Temporal.PlainDateTime.from({ year: 2023, month: rInt(1,12), day: rInt(1,28), hour: rInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const messageQuery = await messageStore.query(alice.did, {}, DateSort.PublishedDescending);
+          expect(messageQuery.length).to.equal(messages.length);
+
+          const sortedRecords = messages.sort((a,b) =>
+            lexicographicalCompare(b.message.descriptor.datePublished!, a.message.descriptor.datePublished!));
+
+          for (let i = 0; i < messages.length; i++) {
+            expect(await Message.getCid(sortedRecords[i].message)).to.equal(await Message.getCid(messageQuery[i]));
+          }
+        });
       });
     });
   });
