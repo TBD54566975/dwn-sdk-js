@@ -2,7 +2,7 @@ import type { MessageStore } from '../types/message-store.js';
 import type { RecordsWrite } from './records-write.js';
 import type { SignatureInput } from '../types/jws-types.js';
 import type { Filter, GenericMessage } from '../types/message-types.js';
-import type { RecordsDeleteMessage, RecordsReadDescriptor, RecordsReadMessage, RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsReadDescriptor, RecordsReadMessage } from '../types/records-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Message } from '../core/message.js';
@@ -76,7 +76,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
    * @throws {DwnError} if `recordId` or `protocol` and `protocolPath` are missing
    */
   public static createFilter(descriptor: Partial<Omit<RecordsReadDescriptor, 'method'>>): Filter {
-    const filter: Filter = { interface: DwnInterfaceName.Records };
+    const filter: Filter = { interface: DwnInterfaceName.Records, isLatestBaseState: true };
     const { recordId, protocol, protocolPath, parentId } = descriptor;
     if (recordId !== undefined) {
       return { ...filter, recordId };
@@ -90,30 +90,6 @@ export class RecordsRead extends Message<RecordsReadMessage> {
         DwnErrorCode.RecordsReadMissingDescriptorProperties,
         'missing required properties from RecordsRead descriptor, expected `recordId` or `protocol` with `protocolPath`'
       );
-    }
-  }
-
-  /**
-   * Gets the newest message based on the RecordsRead parameters.
-   * RecordsReads which are protocolPath based filters for the most recent non-deleted records if they exist.
-   *
-   * @param messages messages queried by either `recordId` or the `protocolPath` of the RecordsRead
-   * @returns the latest message that matches the RecordsRead.
-   */
-  public async getNewestMessage(messages: GenericMessage[]): Promise<GenericMessage | undefined> {
-    if (this.message.descriptor.recordId !== undefined) {
-      return await Message.getNewestMessage(messages);
-    } else {
-      // filter out messages that are not active (have recent deletes)
-      const activeMessages = messages.reduce((acc: RecordsWriteMessage[], current: GenericMessage): RecordsWriteMessage[] => {
-        if (current.descriptor.method === DwnMethodName.Delete) {
-          return acc.filter(a => a.recordId !== (current as RecordsDeleteMessage).descriptor.recordId);
-        }
-        return acc;
-      }, messages.filter(a => a.descriptor.method === DwnMethodName.Write) as RecordsWriteMessage[]);
-
-      // returns the newest out of any existing non-deleted writes.
-      return await Message.getNewestMessage(activeMessages);
     }
   }
 
