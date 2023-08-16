@@ -16,3 +16,14 @@ export class AllowAllTenantGate implements TenantGate {
     return true;
   }
 }
+/**
+ * A tenant gate that returns the value of externalTenantCheck, which requires a custom tenant checking function.
+ * The default response is 'false'.
+ */
+export class ExternalTenantGate implements TenantGate {
+  constructor(private externalTenantCheck: Function) {}
+  public async isTenant(did: string): Promise<boolean> {
+    const tenantCheck = await this.externalTenantCheck(did);
+    return tenantCheck;
+  }
+}
