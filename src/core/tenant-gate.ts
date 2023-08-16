@@ -18,7 +18,6 @@ export class AllowAllTenantGate implements TenantGate {
 }
 /**
  * A tenant gate that returns the value of externalTenantCheck, which requires a custom tenant checking function.
- * The default response is 'false'.
  */
 export class ExternalTenantGate implements TenantGate {
   constructor(private externalTenantCheck: Function) {}
