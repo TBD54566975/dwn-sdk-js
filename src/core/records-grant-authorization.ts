@@ -1,7 +1,7 @@
 import type { MessageStore } from '../types/message-store.js';
-import type { RecordsPermissionScope } from '../types/permissions-types.js';
 import type { RecordsRead } from '../interfaces/records-read.js';
 import type { RecordsWrite } from '../interfaces/records-write.js';
+import type { PermissionsGrantMessage, RecordsPermissionScope } from '../types/permissions-types.js';
 
 import { GrantAuthorization } from './grant-authorization.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
@@ -13,20 +13,9 @@ export class RecordsGrantAuthorization {
     author: string,
     messageStore: MessageStore,
   ): Promise<void> {
-    // authorize generic message
     const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, author, messageStore);
 
-    const grantScope = permissionsGrantMessage.descriptor.scope as RecordsPermissionScope;
-
-    if (RecordsGrantAuthorization.isUnrestrictedScope(grantScope)) {
-      // scope has no restrictions beyond interface and method. Message is authorized to access any record.
-      return;
-    } else if (incomingMessage.message.descriptor.protocol !== undefined) {
-      // authorization of protocol records must have grants that explicitly include the protocol
-      RecordsGrantAuthorization.authorizeProtocolRecord(incomingMessage, grantScope);
-    } else {
-      RecordsGrantAuthorization.authorizeFlatRecord(incomingMessage, grantScope);
-    }
+    RecordsGrantAuthorization.authorizeScope(incomingMessage, permissionsGrantMessage);
   }
 
   /**
@@ -39,20 +28,29 @@ export class RecordsGrantAuthorization {
     author: string,
     messageStore: MessageStore,
   ): Promise<void> {
-
-    // authorize generic message
     const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, author, messageStore);
 
+    RecordsGrantAuthorization.authorizeScope(newestRecordsWrite, permissionsGrantMessage);
+  }
+
+  /**
+   * @param recordsWrite The source of the record being authorized. If the incoming record is a write,
+   *                     then this is the incoming. Otherwise, it is the newest existing RecordsWrite.
+   */
+  private static authorizeScope(
+    recordsWrite: RecordsWrite,
+    permissionsGrantMessage: PermissionsGrantMessage,
+  ): void {
     const grantScope = permissionsGrantMessage.descriptor.scope as RecordsPermissionScope;
 
     if (RecordsGrantAuthorization.isUnrestrictedScope(grantScope)) {
       // scope has no restrictions beyond interface and method. Message is authorized to access any record.
       return;
-    } else if (newestRecordsWrite.message.descriptor.protocol !== undefined) {
+    } else if (recordsWrite.message.descriptor.protocol !== undefined) {
       // authorization of protocol records must have grants that explicitly include the protocol
-      RecordsGrantAuthorization.authorizeProtocolRecord(newestRecordsWrite, grantScope);
+      RecordsGrantAuthorization.authorizeProtocolRecord(recordsWrite, grantScope);
     } else {
-      RecordsGrantAuthorization.authorizeFlatRecord(newestRecordsWrite, grantScope);
+      RecordsGrantAuthorization.authorizeFlatRecord(recordsWrite, grantScope);
     }
   }
 
