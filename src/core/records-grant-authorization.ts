@@ -35,7 +35,7 @@ export class RecordsGrantAuthorization {
 
   /**
    * @param recordsWrite The source of the record being authorized. If the incoming record is a write,
-   *                     then this is the incoming. Otherwise, it is the newest existing RecordsWrite.
+   *                     then this is the incoming RecordsWrite. Otherwise, it is the newest existing RecordsWrite.
    */
   private static authorizeScope(
     recordsWrite: RecordsWrite,
