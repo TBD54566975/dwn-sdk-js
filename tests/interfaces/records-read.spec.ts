@@ -2,10 +2,10 @@ import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
-import { Jws } from '../../src/index.js';
 import { RecordsRead } from '../../src/interfaces/records-read.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { throws } from 'assert';
+import { DwnErrorCode, Jws } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -30,7 +30,7 @@ describe('RecordsRead', () => {
         authorizationSignatureInput: Jws.createSignatureInput(alice),
       });
 
-      await expect(readPromise).to.be.rejectedWith('must have required property \'recordId\'');
+      await expect(readPromise).to.be.rejectedWith(DwnErrorCode.RecordsReadMissingCreateProperties);
     });
 
     it('should not reject if only `recordId` is passed', async () => {
@@ -51,14 +51,14 @@ describe('RecordsRead', () => {
         authorizationSignatureInput : Jws.createSignatureInput(alice),
       });
 
-      await expect(protocolPathOnlyP).to.be.rejectedWith('must have required property \'recordId\'');
+      await expect(protocolPathOnlyP).to.be.rejectedWith(DwnErrorCode.RecordsReadMissingCreateProperties);
       // with only protocolPath
       const protocolOnlyP = RecordsRead.create({
         protocol                    : 'protocol',
         authorizationSignatureInput : Jws.createSignatureInput(alice),
       });
 
-      await expect(protocolOnlyP).to.be.rejectedWith('must have required property \'recordId\'');
+      await expect(protocolOnlyP).to.be.rejectedWith(DwnErrorCode.RecordsReadMissingCreateProperties);
 
       const readPromiseSuccess = RecordsRead.create({
         protocol                    : 'protocol',

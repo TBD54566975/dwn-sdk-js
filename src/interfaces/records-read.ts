@@ -38,9 +38,19 @@ export class RecordsRead extends Message<RecordsReadMessage> {
    * Creates a RecordsRead message.
    * @param options.recordId If `undefined`, will be auto-filled as a originating message as convenience for developer.
    * @param options.date If `undefined`, it will be auto-filled with current time.
+   *
+   * @throws {DwnError} when a combination of required RecordsReadOptions are missing
    */
   public static async create(options: RecordsReadOptions): Promise<RecordsRead> {
     const { recordId, protocol, protocolPath, parentId, authorizationSignatureInput, permissionsGrantId } = options;
+
+    if (recordId === undefined && (protocol === undefined || protocolPath === undefined)) {
+      throw new DwnError(
+        DwnErrorCode.RecordsReadMissingCreateProperties,
+        'missing required properties from RecordsReadOptions, expected either `recordId`, or both `protocol` and `protocolPath` to be present'
+      );
+    }
+
     const currentTime = getCurrentTimeInHighPrecision();
 
     const descriptor: RecordsReadDescriptor = {
