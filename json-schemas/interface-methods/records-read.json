@@ -47,18 +47,10 @@
           "type": "string"
         }
       },
-      "$comment": "describe rule requiring either `recordId` OR `protocol` and `protocolPath`",
-      "allOf": [
-        {
-          "anyOf": [
-            {
-              "required": [ "recordId" ]
-            },
-            {
-              "required": [ "protocol", "protocolPath" ]
-            }
-          ]
-        }
+      "$comment": "describe rule requiring either `recordId` OR both `protocol` and `protocolPath`",
+      "anyOf": [
+        { "required": [ "recordId" ] },
+        { "required": [ "protocol", "protocolPath" ] }
       ]
     }
   }

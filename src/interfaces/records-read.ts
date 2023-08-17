@@ -73,22 +73,22 @@ export class RecordsRead extends Message<RecordsReadMessage> {
    * @param descriptor message descriptor with optional properties `recordId`, `protocol` and `protocolPath`
    *
    * @returns {Filter} with a Records interface as well as the appropriate filter params
-   * @throws {DwnError} if `recordId` or `protocol` and `protocolPath` are missing
+   * @throws {DwnError} when either `recordId` is missing, or both `protocol` and `protocolPath` are missing.
    */
   public static createFilter(descriptor: Partial<Omit<RecordsReadDescriptor, 'method'>>): Filter {
-    const filter: Filter = { interface: DwnInterfaceName.Records, isLatestBaseState: true };
+    const commonFilter: Filter = { interface: DwnInterfaceName.Records, isLatestBaseState: true };
     const { recordId, protocol, protocolPath, parentId } = descriptor;
     if (recordId !== undefined) {
-      return { ...filter, recordId };
+      return { ...commonFilter, recordId };
     } else if (protocol !== undefined && protocolPath !== undefined) {
       if (parentId !== undefined) {
-        filter.parentId = parentId;
+        commonFilter.parentId = parentId;
       }
-      return { ...filter, protocol, protocolPath };
+      return { ...commonFilter, protocol, protocolPath };
     } else {
       throw new DwnError(
         DwnErrorCode.RecordsReadMissingDescriptorProperties,
-        'missing required properties from RecordsRead descriptor, expected `recordId` or `protocol` with `protocolPath`'
+        'missing required properties from RecordsRead descriptor, expected either `recordId`, or both `protocol` and `protocolPath` to be present'
       );
     }
   }

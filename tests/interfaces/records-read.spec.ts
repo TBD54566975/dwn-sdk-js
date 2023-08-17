@@ -24,39 +24,49 @@ describe('RecordsRead', () => {
       expect(recordsRead.message.descriptor.messageTimestamp).to.equal(currentTime);
     });
 
-    it('should require `recordId` when `protocol` and `protocolPath` are not set', async () => {
+    it('should reject if `recordId`, `protocol` and `protocolPath` are all missing', async () => {
       const alice = await TestDataGenerator.generatePersona();
-      const currentTime = getCurrentTimeInHighPrecision();
       const readPromise = RecordsRead.create({
-        authorizationSignatureInput : Jws.createSignatureInput(alice),
-        date                        : currentTime
+        authorizationSignatureInput: Jws.createSignatureInput(alice),
       });
 
       await expect(readPromise).to.be.rejectedWith('must have required property \'recordId\'');
     });
 
-    it('should require `recordId` when `protocolPath` is set and `protocol` is not set', async () => {
+    it('should not reject if only `recordId` is passed', async () => {
       const alice = await TestDataGenerator.generatePersona();
-      const currentTime = getCurrentTimeInHighPrecision();
-      const readPromise = RecordsRead.create({
+      const readPromiseSuccess = RecordsRead.create({
+        recordId                    : 'some-id',
+        authorizationSignatureInput : Jws.createSignatureInput(alice),
+      });
+
+      await expect(readPromiseSuccess).to.not.be.rejected;
+    });
+
+    it('should reject if only one of `protocol` or `protocolPath` are set', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+      // with only protocolPath
+      const protocolPathOnlyP = RecordsRead.create({
         protocolPath                : 'some/path',
         authorizationSignatureInput : Jws.createSignatureInput(alice),
-        date                        : currentTime
       });
 
-      await expect(readPromise).to.be.rejectedWith('must have required property \'recordId\'');
-    });
-
-    it('should require `recordId` when `protocol` is set and `protocolPath` is not set', async () => {
-      const alice = await TestDataGenerator.generatePersona();
-      const currentTime = getCurrentTimeInHighPrecision();
-      const readPromise = RecordsRead.create({
-        protocol                    : 'example.com/Proto',
+      await expect(protocolPathOnlyP).to.be.rejectedWith('must have required property \'recordId\'');
+      // with only protocolPath
+      const protocolOnlyP = RecordsRead.create({
+        protocol                    : 'protocol',
         authorizationSignatureInput : Jws.createSignatureInput(alice),
-        date                        : currentTime
       });
 
-      await expect(readPromise).to.be.rejectedWith('must have required property \'recordId\'');
+      await expect(protocolOnlyP).to.be.rejectedWith('must have required property \'recordId\'');
+
+      const readPromiseSuccess = RecordsRead.create({
+        protocol                    : 'protocol',
+        protocolPath                : 'some/path',
+        authorizationSignatureInput : Jws.createSignatureInput(alice),
+      });
+
+      await expect(readPromiseSuccess).to.not.be.rejected;
     });
   });
 
