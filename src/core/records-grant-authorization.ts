@@ -15,7 +15,7 @@ export class RecordsGrantAuthorization {
   ): Promise<void> {
     const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, author, messageStore);
 
-    RecordsGrantAuthorization.authorizeScope(incomingMessage, permissionsGrantMessage);
+    RecordsGrantAuthorization.verifyScope(incomingMessage, permissionsGrantMessage);
   }
 
   /**
@@ -30,14 +30,14 @@ export class RecordsGrantAuthorization {
   ): Promise<void> {
     const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, author, messageStore);
 
-    RecordsGrantAuthorization.authorizeScope(newestRecordsWrite, permissionsGrantMessage);
+    RecordsGrantAuthorization.verifyScope(newestRecordsWrite, permissionsGrantMessage);
   }
 
   /**
    * @param recordsWrite The source of the record being authorized. If the incoming message is a write,
    *                     then this is the incoming RecordsWrite. Otherwise, it is the newest existing RecordsWrite.
    */
-  private static authorizeScope(
+  private static verifyScope(
     recordsWrite: RecordsWrite,
     permissionsGrantMessage: PermissionsGrantMessage,
   ): void {
