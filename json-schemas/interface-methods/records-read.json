@@ -42,9 +42,6 @@
         },
         "protocolPath": {
           "type": "string"
-        },
-        "parentId": {
-          "type": "string"
         }
       },
       "$comment": "describe rule requiring either `recordId` OR both `protocol` and `protocolPath`",
