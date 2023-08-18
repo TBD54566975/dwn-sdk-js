@@ -48,3 +48,6 @@ export { RecordsRead, RecordsReadOptions } from './interfaces/records-read.js';
 export { SnapshotsCreate, SnapshotsCreateOptions } from './interfaces/snapshots-create.js';
 export { Secp256k1 } from './utils/secp256k1.js';
 export { SignatureInput } from './types/jws-types.js';
+export { DataStoreLevel } from './store/data-store-level.js';
+export { EventLogLevel } from './event-log/event-log-level.js';
+export { MessageStoreLevel } from './store/message-store-level.js';

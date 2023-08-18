@@ -54,11 +54,6 @@
       "require": "./dist/cjs/index.js",
       "types": "./dist/types/src/index.d.ts"
     },
-    "./stores": {
-      "import": "./dist/esm/src/index-stores.js",
-      "require": "./dist/cjs/index-stores.js",
-      "types": "./dist/types/src/index-stores.d.ts"
-    },
     "./tests": {
       "import": "./dist/esm/tests/test-suite.js",
       "types": "./dist/types/tests/test-suite.d.ts"
