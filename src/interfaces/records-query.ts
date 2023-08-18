@@ -1,3 +1,4 @@
+import type { DateSort } from '../types/message-types.js';
 import type { SignatureInput } from '../types/jws-types.js';
 import type { RecordsFilter, RecordsQueryDescriptor, RecordsQueryMessage } from '../types/records-types.js';
 
@@ -8,15 +9,6 @@ import { removeUndefinedProperties } from '../utils/object.js';
 import { validateAuthorizationIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 import { validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
-
-export enum DateSort {
-  CreatedAscending = 'createdAscending',
-  CreatedDescending = 'createdDescending',
-  PublishedAscending = 'publishedAscending',
-  PublishedDescending = 'publishedDescending',
-  TimestampAscending = 'timestampAscending',
-  TimestampDescending = 'timestampDescending'
-}
 
 export type RecordsQueryOptions = {
   messageTimestamp?: string;

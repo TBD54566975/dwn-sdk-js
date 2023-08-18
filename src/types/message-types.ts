@@ -61,3 +61,17 @@ export type RangeFilter = (GT | LT) & Partial<GT> & Partial<LT>;
 export type Filter = {
   [property: string]: EqualFilter | OneOfFilter | RangeFilter
 };
+
+export type Pagination = {
+  offset?: number
+  limit?: number
+};
+
+export enum DateSort {
+  CreatedAscending = 'createdAscending',
+  CreatedDescending = 'createdDescending',
+  PublishedAscending = 'publishedAscending',
+  PublishedDescending = 'publishedDescending',
+  TimestampAscending = 'timestampAscending',
+  TimestampDescending = 'timestampDescending'
+};

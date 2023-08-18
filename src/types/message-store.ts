@@ -1,13 +1,8 @@
 import type { DateSort } from '../index.js';
-import type { Filter, GenericMessage } from './message-types.js';
+import type { Filter, GenericMessage, Pagination } from './message-types.js';
 
 export interface MessageStoreOptions {
   signal?: AbortSignal;
-}
-
-export interface Pagination {
-  offset: number
-  limit: number
 }
 
 export interface MessageStore {

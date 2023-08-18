@@ -128,22 +128,41 @@ export function testMessageStore(): void {
         const results = await messageStore.query(alice.did, { schema });
         expect(results.length).to.equal(0);
       });
+    });
 
-      describe('sorting', () => {
+    describe('sort and pagination', () => {
 
-        const rInt = (min: number, max: number): number => {
-          return Math.floor(Math.random() * ( max - min) + min);
-        };
+      // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
+      // so that different test suites can reuse the same backend store for testing
+      before(async () => {
+        const stores = TestStores.get();
+        messageStore = stores.messageStore;
+        await messageStore.open();
+      });
 
+      beforeEach(async () => {
+        await messageStore.clear(); // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
+      });
+
+      after(async () => {
+        await messageStore.close();
+      });
+
+      const randomInt = (min: number, max: number): number => {
+        return Math.floor(Math.random() * ( max - min) + min);
+      };
+
+      describe('sorting', async () => {
         it('should sort on TimestampDescending if no sort is specified', async () => {
           const alice = await DidKeyResolver.generate();
-          // pregenerate random messages with random dates for various fields
+
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
-            messageTimestamp: Temporal.PlainDateTime.from({ year: 2023, month: rInt(1,12), day: rInt(1,28), hour: rInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+            messageTimestamp: Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
           })));
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
           }
+
           const messageQuery = await messageStore.query(alice.did, {});
           expect(messageQuery.length).to.equal(messages.length);
 
@@ -156,8 +175,9 @@ export function testMessageStore(): void {
 
         it('should sort on TimestampAscending', async () => {
           const alice = await DidKeyResolver.generate();
+
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
-            messageTimestamp: Temporal.PlainDateTime.from({ year: 2023, month: rInt(1,12), day: rInt(1,28), hour: rInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+            messageTimestamp: Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
           })));
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
@@ -175,7 +195,7 @@ export function testMessageStore(): void {
         it('should sort on CreatedAscending', async () => {
           const alice = await DidKeyResolver.generate();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
-            dateCreated: Temporal.PlainDateTime.from({ year: 2023, month: rInt(1,12), day: rInt(1,28), hour: rInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+            dateCreated: Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
           })));
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
@@ -195,7 +215,7 @@ export function testMessageStore(): void {
         it('should sort on CreatedDescending', async () => {
           const alice = await DidKeyResolver.generate();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
-            dateCreated: Temporal.PlainDateTime.from({ year: 2023, month: rInt(1,12), day: rInt(1,28), hour: rInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+            dateCreated: Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
           })));
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
@@ -216,7 +236,7 @@ export function testMessageStore(): void {
           const alice = await DidKeyResolver.generate();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             published     : true,
-            datePublished : Temporal.PlainDateTime.from({ year: 2023, month: rInt(1,12), day: rInt(1,28), hour: rInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+            datePublished : Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
           })));
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
@@ -237,7 +257,7 @@ export function testMessageStore(): void {
           const alice = await DidKeyResolver.generate();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             published     : true,
-            datePublished : Temporal.PlainDateTime.from({ year: 2023, month: rInt(1,12), day: rInt(1,28), hour: rInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+            datePublished : Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
           })));
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
@@ -251,6 +271,116 @@ export function testMessageStore(): void {
 
           for (let i = 0; i < messages.length; i++) {
             expect(await Message.getCid(sortedRecords[i].message)).to.equal(await Message.getCid(messageQuery[i]));
+          }
+        });
+      });
+
+      describe('pagination', async () => {
+        it('should return all records if no limit is specified', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            messageTimestamp: Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const limitQuery = await messageStore.query(alice.did, {}, DateSort.TimestampDescending);
+          expect(limitQuery.length).to.equal(messages.length);
+        });
+
+        it('should limit records', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            messageTimestamp: Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const sortedRecords = messages.sort((a,b) =>
+            lexicographicalCompare(b.message.descriptor.messageTimestamp, a.message.descriptor.messageTimestamp));
+
+          const offset = 0;
+          const limit = 5;
+
+          const limitQuery = await messageStore.query(alice.did, {}, DateSort.TimestampDescending, { offset, limit });
+          expect(limitQuery.length).to.equal(limit);
+          for (let i = 0; i < limitQuery.length; i++) {
+            const offsetIndex = i + offset;
+            expect(await Message.getCid(sortedRecords[offsetIndex].message)).to.equal(await Message.getCid(limitQuery[i]));
+          }
+        });
+
+        it('should offset records without a limit', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(13).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            messageTimestamp: Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const sortedRecords = messages.sort((a,b) =>
+            lexicographicalCompare(b.message.descriptor.messageTimestamp, a.message.descriptor.messageTimestamp));
+
+          const offset = 5;
+          const limit = 0;
+
+          const limitQuery = await messageStore.query(alice.did, {}, DateSort.TimestampDescending, { offset, limit });
+          expect(limitQuery.length).to.equal(sortedRecords.length - offset);
+          for (let i = 0; i < limitQuery.length; i++) {
+            const offsetIndex = i + offset;
+            expect(await Message.getCid(sortedRecords[offsetIndex].message)).to.equal(await Message.getCid(limitQuery[i]));
+          }
+        });
+
+        it('should offset records with a limit', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            messageTimestamp: Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const sortedRecords = messages.sort((a,b) =>
+            lexicographicalCompare(b.message.descriptor.messageTimestamp, a.message.descriptor.messageTimestamp));
+
+          const offset = 5;
+          const limit = 3;
+
+          const limitQuery = await messageStore.query(alice.did, {}, DateSort.TimestampDescending, { offset, limit });
+          expect(limitQuery.length).to.equal(limit);
+          for (let i = 0; i < limitQuery.length; i++) {
+            const offsetIndex = i + offset;
+            expect(await Message.getCid(sortedRecords[offsetIndex].message)).to.equal(await Message.getCid(limitQuery[i]));
+          }
+        });
+
+        it('should paginate through all of the records', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(23).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            messageTimestamp: Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const totalRecords = messages.length;
+          const limit = 6;
+          const maxPage = Math.ceil(totalRecords / 5);
+          const results = [];
+          for (let i = 0; i < maxPage; i++) {
+            const limitQuery = await messageStore.query(alice.did, {}, DateSort.TimestampDescending, { offset: i * limit, limit });
+            expect(limitQuery.length).to.be.lessThanOrEqual(limit);
+            results.push(...limitQuery);
+          }
+          expect(results.length).to.equal(messages.length);
+          const messageMessageIds = await Promise.all(messages.map(m => Message.getCid(m.message)));
+          const resultMessageIds = await Promise.all(results.map(m => Message.getCid(m)));
+          for (const recordId of messageMessageIds) {
+            expect(resultMessageIds.includes(recordId)).to.be.true;
           }
         });
       });

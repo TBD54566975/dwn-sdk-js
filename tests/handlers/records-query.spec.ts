@@ -8,19 +8,18 @@ import chai, { expect } from 'chai';
 
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { DwnConstant } from '../../src/core/dwn-constant.js';
-import { DwnErrorCode } from '../../src/index.js';
 import { Encoder } from '../../src/utils/encoder.js';
 import { Jws } from '../../src/utils/jws.js';
 import { Message } from '../../src/core/message.js';
+import { RecordsQuery } from '../../src/interfaces/records-query.js';
 import { RecordsQueryHandler } from '../../src/handlers/records-query.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { toTemporalInstant } from '@js-temporal/polyfill';
-
 import { constructRecordsWriteIndexes, RecordsWriteHandler } from '../../src/handlers/records-write.js';
-import { DateSort, RecordsQuery } from '../../src/interfaces/records-query.js';
+import { DateSort, DwnErrorCode } from '../../src/index.js';
 import { DidResolver, Dwn } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
