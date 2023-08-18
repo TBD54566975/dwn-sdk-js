@@ -5,6 +5,7 @@ import type { InternalRecordsWriteMessage, RecordsReadMessage, RecordsWriteMessa
 import type { ProtocolActionRule, ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../types/protocols-types.js';
 
 import { ProtocolRecordGroup } from '../types/protocols-types.js';
+import { RecordsGrantAuthorization } from './records-grant-authorization.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
@@ -27,7 +28,7 @@ export class ProtocolAuthorization {
     tenant: string,
     incomingMessage: RecordsRead | RecordsWrite,
     recordsWrite: RecordsWrite,
-    messageStore: MessageStore
+    messageStore: MessageStore,
   ): Promise<void> {
     // fetch ancestor message chain
     const ancestorMessageChain: RecordsWriteMessage[] =
@@ -274,6 +275,21 @@ export class ProtocolAuthorization {
 
     const actionRules = inboundMessageRuleSet.$actions;
     if (author === tenant) {
+      // tenant is always authorized
+      return;
+    } else if (incomingMessage.author !== undefined && incomingMessage.authorizationPayload?.permissionsGrantId !== undefined) {
+      // PermissionsGrant gives the author explicit access to this record
+      if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
+        await RecordsGrantAuthorization.authorizeWrite(tenant, incomingMessage as RecordsWrite, incomingMessage.author, messageStore);
+      } else {
+        await RecordsGrantAuthorization.authorizeRead(
+          tenant,
+          incomingMessage as RecordsRead,
+          recordsWrite,
+          incomingMessage.author,
+          messageStore
+        );
+      }
       return;
     } else if (actionRules === undefined) {
       throw new Error(`no action rule defined for ${incomingMessage.message.descriptor.method}, ${author} is unauthorized`);

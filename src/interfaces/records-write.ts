@@ -23,10 +23,10 @@ import { Jws } from '../utils/jws.js';
 import { KeyDerivationScheme } from '../index.js';
 import { Message } from '../core/message.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
+import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Secp256k1 } from '../utils/secp256k1.js';
-
-import { authorize, validateAuthorizationIntegrity } from '../core/auth.js';
+import { validateAuthorizationIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
@@ -50,6 +50,7 @@ export type RecordsWriteOptions = {
   authorizationSignatureInput?: SignatureInput;
   attestationSignatureInputs?: SignatureInput[];
   encryptionInput?: EncryptionInput;
+  permissionsGrantId?: string;
 };
 
 /**
@@ -265,7 +266,7 @@ export class RecordsWrite {
     const recordsWrite = new RecordsWrite(message);
 
     if (options.authorizationSignatureInput !== undefined) {
-      await recordsWrite.sign(options.authorizationSignatureInput);
+      await recordsWrite.sign(options.authorizationSignatureInput, options.permissionsGrantId);
     }
 
     return recordsWrite;
@@ -359,7 +360,7 @@ export class RecordsWrite {
   /**
    * Signs the RecordsWrite.
    */
-  public async sign(signatureInput: SignatureInput): Promise<void> {
+  public async sign(signatureInput: SignatureInput, permissionsGrantId?: string): Promise<void> {
     const author = Jws.extractDid(signatureInput.protectedHeader.kid);
 
     const descriptor = this._message.descriptor;
@@ -380,7 +381,8 @@ export class RecordsWrite {
       descriptorCid,
       this._message.attestation,
       this._message.encryption,
-      signatureInput
+      signatureInput,
+      permissionsGrantId
     );
 
     this._message.authorization = authorization;
@@ -392,10 +394,14 @@ export class RecordsWrite {
 
   public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
     if (this.message.descriptor.protocol !== undefined) {
-      // NOTE: `author` definitely exists because of the earlier `authenticate()` call
+      // All protocol RecordsWrites must go through protocol auth, because protocolPath, contextId, and record type must be validated
       await ProtocolAuthorization.authorize(tenant, this, this, messageStore);
+    } else if (this.author === tenant) {
+      // if author is the same as the target tenant, we can directly grant access
+    } else if (this.author !== undefined && this.authorizationPayload?.permissionsGrantId !== undefined) {
+      await RecordsGrantAuthorization.authorizeWrite(tenant, this, this.author, messageStore);
     } else {
-      await authorize(tenant, this);
+      throw new Error('message failed authorization');
     }
   }
 
@@ -642,7 +648,8 @@ export class RecordsWrite {
     descriptorCid: string,
     attestation: GeneralJws | undefined,
     encryption: EncryptionProperty | undefined,
-    signatureInput: SignatureInput
+    signatureInput: SignatureInput,
+    permissionsGrantId: string | undefined,
   ): Promise<GeneralJws> {
     const authorizationPayload: RecordsWriteAuthorizationPayload = {
       recordId,
@@ -655,6 +662,7 @@ export class RecordsWrite {
     if (contextId !== undefined) { authorizationPayload.contextId = contextId; } // assign `contextId` only if it is defined
     if (attestationCid !== undefined) { authorizationPayload.attestationCid = attestationCid; } // assign `attestationCid` only if it is defined
     if (encryptionCid !== undefined) { authorizationPayload.encryptionCid = encryptionCid; } // assign `encryptionCid` only if it is defined
+    if (permissionsGrantId !== undefined) { authorizationPayload.permissionsGrantId = permissionsGrantId; }
 
     const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
 
