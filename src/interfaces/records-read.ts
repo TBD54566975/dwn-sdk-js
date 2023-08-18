@@ -17,7 +17,6 @@ export type RecordsReadOptions = {
   recordId?: string;
   protocolPath?: string;
   protocol?: string;
-  parentId?: string;
   date?: string;
   authorizationSignatureInput?: SignatureInput;
   permissionsGrantId?: string;
@@ -42,7 +41,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
    * @throws {DwnError} when a combination of required RecordsReadOptions are missing
    */
   public static async create(options: RecordsReadOptions): Promise<RecordsRead> {
-    const { recordId, protocol, protocolPath, parentId, authorizationSignatureInput, permissionsGrantId } = options;
+    const { recordId, protocol, protocolPath, authorizationSignatureInput, permissionsGrantId } = options;
 
     if (recordId === undefined && (protocol === undefined || protocolPath === undefined)) {
       throw new DwnError(
@@ -59,7 +58,6 @@ export class RecordsRead extends Message<RecordsReadMessage> {
       recordId,
       protocol,
       protocolPath,
-      parentId,
       messageTimestamp : options.date ?? currentTime
     };
 
@@ -79,21 +77,17 @@ export class RecordsRead extends Message<RecordsReadMessage> {
 
   /**
    * Creates a Records interface Filter using either the `recordId` or `protocol` & `protocolPath` of the incoming Message.
-   * Also filters on an optional `parentId` for `protocolPath` based reads
    * @param descriptor message descriptor with optional properties `recordId`, `protocol` and `protocolPath`
    *
    * @returns {Filter} with a Records interface as well as the appropriate filter params
    * @throws {DwnError} when either `recordId` is missing, or both `protocol` and `protocolPath` are missing.
    */
-  public static createFilter(descriptor: Partial<Omit<RecordsReadDescriptor, 'method'>>): Filter {
+  public static createFilter(descriptor: RecordsReadDescriptor): Filter {
     const commonFilter: Filter = { interface: DwnInterfaceName.Records, isLatestBaseState: true };
-    const { recordId, protocol, protocolPath, parentId } = descriptor;
+    const { recordId, protocol, protocolPath } = descriptor;
     if (recordId !== undefined) {
       return { ...commonFilter, recordId };
     } else if (protocol !== undefined && protocolPath !== undefined) {
-      if (parentId !== undefined) {
-        commonFilter.parentId = parentId;
-      }
       return { ...commonFilter, protocol, protocolPath };
     } else {
       throw new DwnError(

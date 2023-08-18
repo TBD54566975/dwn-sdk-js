@@ -819,7 +819,7 @@ export function testRecordsReadHandler(): void {
             expect(latestEmailReply2.status.code).to.equal(404);
           });
 
-          it('allows access to parentId for protocolPath based RecordRead', async () => {
+          it('returns the latest RecordsWrite to the specified protocolPath when multiple parents exist in path', async () => {
             const alice = await DidKeyResolver.generate();
 
             const protocolDefinition = { ...nestedProtocol };
@@ -850,12 +850,13 @@ export function testRecordsReadHandler(): void {
               parentId     : foo1Message.message.recordId,
               schema       : protocolDefinition.types.bar.schema,
               dataFormat   : protocolDefinition.types.bar.dataFormats![0],
-              data         : new TextEncoder().encode('bar'),
+              data         : new TextEncoder().encode('bar1'),
               recipient    : alice.did
             });
             const bar1WriteReply = await dwn.processMessage(alice.did, bar1Message.message, bar1Message.dataStream);
             expect(bar1WriteReply.status.code).to.equal(202);
 
+            // baz message under bar1
             const baz1Message = await TestDataGenerator.generateRecordsWrite({
               author       : alice,
               protocol     : protocolDefinition.protocol,
@@ -864,12 +865,13 @@ export function testRecordsReadHandler(): void {
               parentId     : bar1Message.message.recordId,
               schema       : protocolDefinition.types.baz.schema,
               dataFormat   : protocolDefinition.types.baz.dataFormats![0],
-              data         : new TextEncoder().encode('baz'),
+              data         : new TextEncoder().encode('baz1'),
               recipient    : alice.did
             });
             const baz1WriteReply = await dwn.processMessage(alice.did, baz1Message.message, baz1Message.dataStream);
             expect(baz1WriteReply.status.code).to.equal(202);
 
+            // read latest /foo/bar/baz -> return baz1 with bar1 as the parent
             const bazPathRead = await RecordsRead.create({
               protocol                    : protocolDefinition.protocol,
               protocolPath                : 'foo/bar/baz',
@@ -878,7 +880,9 @@ export function testRecordsReadHandler(): void {
             const bazPathReply1 = await dwn.handleRecordsRead(alice.did, bazPathRead.message);
             expect(bazPathReply1.status.code).to.equal(200);
             expect(bazPathReply1.record!.recordId).to.equal(baz1Message.message.recordId);
+            expect(bazPathReply1.record!.descriptor.parentId).to.equal(bar1Message.message.recordId);
 
+            // create a new parent /foo/bar message
             const bar2Message = await TestDataGenerator.generateRecordsWrite({
               author       : alice,
               protocol     : protocolDefinition.protocol,
@@ -887,12 +891,13 @@ export function testRecordsReadHandler(): void {
               parentId     : foo1Message.message.recordId,
               schema       : protocolDefinition.types.bar.schema,
               dataFormat   : protocolDefinition.types.bar.dataFormats![0],
-              data         : new TextEncoder().encode('bar'),
+              data         : new TextEncoder().encode('bar2'),
               recipient    : alice.did
             });
             const bar2WriteReply = await dwn.processMessage(alice.did, bar2Message.message, bar2Message.dataStream);
             expect(bar2WriteReply.status.code).to.equal(202);
 
+            // baz message under bar2
             const baz2Message = await TestDataGenerator.generateRecordsWrite({
               author       : alice,
               protocol     : protocolDefinition.protocol,
@@ -901,27 +906,17 @@ export function testRecordsReadHandler(): void {
               parentId     : bar2Message.message.recordId,
               schema       : protocolDefinition.types.baz.schema,
               dataFormat   : protocolDefinition.types.baz.dataFormats![0],
-              data         : new TextEncoder().encode('baz'),
+              data         : new TextEncoder().encode('baz2'),
               recipient    : alice.did
             });
             const baz2WriteReply = await dwn.processMessage(alice.did, baz2Message.message, baz2Message.dataStream);
             expect(baz2WriteReply.status.code).to.equal(202);
 
-            // expect the latest baz message from the same query
+            // read latest /foo/bar/baz -> return baz2 with bar2 as the parent
             const bazPathReply2 = await dwn.handleRecordsRead(alice.did, bazPathRead.message);
             expect(bazPathReply2.status.code).to.equal(200);
             expect(bazPathReply2.record!.recordId).to.equal(baz2Message.message.recordId);
-
-            // read latest baz from specific parent
-            const bazPathParentRead = await RecordsRead.create({
-              parentId                    : bar1Message.message.recordId,
-              protocol                    : protocolDefinition.protocol,
-              protocolPath                : 'foo/bar/baz',
-              authorizationSignatureInput : Jws.createSignatureInput(alice),
-            });
-            const bazPathParentReply = await dwn.handleRecordsRead(alice.did, bazPathParentRead.message);
-            expect(bazPathParentReply.status.code).to.equal(200);
-            expect(bazPathParentReply.record!.recordId).to.equal(baz1Message.message.recordId);
+            expect(bazPathReply2.record!.descriptor.parentId).to.equal(bar2Message.message.recordId);
           });
         });
       });
