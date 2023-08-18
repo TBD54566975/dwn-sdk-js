@@ -1,6 +1,6 @@
 
 import type { RecordsWriteMessage } from '../index.js';
-import type { Filter, GenericMessage, Pagination } from '../types/message-types.js';
+import type { DateSort, Filter, GenericMessage, Pagination } from '../types/message-types.js';
 import type { MessageStore, MessageStoreOptions } from '../types/message-store.js';
 
 import * as block from 'multiformats/block';
@@ -9,12 +9,12 @@ import * as cbor from '@ipld/dag-cbor';
 import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
 import { createLevelDatabase } from './level-wrapper.js';
-import { DateSort } from '../index.js';
 import { executeUnlessAborted } from '../utils/abort.js';
 import { IndexLevel } from './index-level.js';
 import { lexicographicalCompare } from '../utils/string.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { Cid, Message } from '../index.js';
+import { RecordsDateSort, TimestampDateSort } from '../types/message-types.js';
 
 /**
  * A simple implementation of {@link MessageStore} that works in both the browser and server-side.
@@ -84,7 +84,7 @@ export class MessageStoreLevel implements MessageStore {
   async query(
     tenant: string,
     filter: Filter,
-    dateSort: DateSort = DateSort.TimestampDescending,
+    dateSort: DateSort = TimestampDateSort.TimestampDescending,
     pagination?: Pagination,
     options?: MessageStoreOptions
   ): Promise<GenericMessage[]> {
@@ -137,23 +137,22 @@ export class MessageStoreLevel implements MessageStore {
     // todo: check somewhere upstream that the incoming message interfaces match the sort.
     // ie. Created/Published only apply to RecordsWrite
     switch (dateSort) {
-    case DateSort.TimestampAscending:
+    case TimestampDateSort.TimestampDescending:
+      return messages.sort((a, b) => lexicographicalCompare(b.descriptor.messageTimestamp, a.descriptor.messageTimestamp));
+    case TimestampDateSort.TimestampAscending:
       return messages.sort((a, b) => lexicographicalCompare(a.descriptor.messageTimestamp, b.descriptor.messageTimestamp));
-    case DateSort.CreatedAscending:
+    case RecordsDateSort.CreatedAscending:
       return (messages as RecordsWriteMessage[]).sort((a, b) => lexicographicalCompare(a.descriptor.dateCreated, b.descriptor.dateCreated));
-    case DateSort.CreatedDescending:
+    case RecordsDateSort.CreatedDescending:
       return (messages as RecordsWriteMessage[]).sort((a, b) => lexicographicalCompare(b.descriptor.dateCreated, a.descriptor.dateCreated));
-    case DateSort.PublishedAscending:
+    case RecordsDateSort.PublishedAscending:
       return (messages as RecordsWriteMessage[])
         .filter(m => m.descriptor.published)
         .sort((a, b) => lexicographicalCompare(a.descriptor.datePublished!, b.descriptor.datePublished!));
-    case DateSort.PublishedDescending:
+    case RecordsDateSort.PublishedDescending:
       return (messages as RecordsWriteMessage[])
         .filter(m => m.descriptor.published)
         .sort((a, b) => lexicographicalCompare(b.descriptor.datePublished!, a.descriptor.datePublished!));
-    default:
-      // default is TimestampDescending
-      return messages.sort((a, b) => lexicographicalCompare(b.descriptor.messageTimestamp, a.descriptor.messageTimestamp));
     }
   }
 

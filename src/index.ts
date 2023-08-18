@@ -12,7 +12,6 @@ export type { EncryptionProperty, RecordsDeleteMessage, RecordsQueryMessage, Rec
 export type { SnapshotsCreateDescriptor, SnapshotsCreateMessage, SnapshotDefinition, SnapshotScope, SnapshotScopeType } from './types/snapshots-types.js';
 export { AllowAllTenantGate, TenantGate } from './core/tenant-gate.js';
 export { Cid } from './utils/cid.js';
-export { DateSort } from './types/message-types.js';
 export { DataStore, PutResult, GetResult, AssociateResult } from './types/data-store.js';
 export { DataStream } from './utils/data-stream.js';
 export { DerivedPrivateJwk, HdKey, KeyDerivationScheme } from './utils/hd-key.js';
@@ -42,6 +41,7 @@ export { Protocols } from './utils/protocols.js';
 export { ProtocolsConfigure, ProtocolsConfigureOptions } from './interfaces/protocols-configure.js';
 export { ProtocolsQuery, ProtocolsQueryOptions } from './interfaces/protocols-query.js';
 export { Records } from './utils/records.js';
+export { RecordsDateSort, TimestampDateSort } from './types/message-types.js';
 export { RecordsDelete, RecordsDeleteOptions } from './interfaces/records-delete.js';
 export { RecordsQuery, RecordsQueryOptions } from './interfaces/records-query.js';
 export { RecordsRead, RecordsReadOptions } from './interfaces/records-read.js';

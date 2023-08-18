@@ -1,4 +1,4 @@
-import type { DateSort } from '../types/message-types.js';
+import type { RecordsDateSort } from '../index.js';
 import type { SignatureInput } from '../types/jws-types.js';
 import type { RecordsFilter, RecordsQueryDescriptor, RecordsQueryMessage } from '../types/records-types.js';
 
@@ -13,7 +13,7 @@ import { validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../u
 export type RecordsQueryOptions = {
   messageTimestamp?: string;
   filter: RecordsFilter;
-  dateSort?: DateSort;
+  dateSort?: RecordsDateSort;
   authorizationSignatureInput?: SignatureInput;
 };
 

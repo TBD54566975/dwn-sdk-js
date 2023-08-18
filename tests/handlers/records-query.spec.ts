@@ -8,9 +8,11 @@ import chai, { expect } from 'chai';
 
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { DwnConstant } from '../../src/core/dwn-constant.js';
+import { DwnErrorCode } from '../../src/index.js';
 import { Encoder } from '../../src/utils/encoder.js';
 import { Jws } from '../../src/utils/jws.js';
 import { Message } from '../../src/core/message.js';
+import { RecordsDateSort } from '../../src/types/message-types.js';
 import { RecordsQuery } from '../../src/interfaces/records-query.js';
 import { RecordsQueryHandler } from '../../src/handlers/records-query.js';
 import { stubInterface } from 'ts-sinon';
@@ -19,7 +21,6 @@ import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { toTemporalInstant } from '@js-temporal/polyfill';
 import { constructRecordsWriteIndexes, RecordsWriteHandler } from '../../src/handlers/records-write.js';
-import { DateSort, DwnErrorCode } from '../../src/index.js';
 import { DidResolver, Dwn } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
@@ -218,7 +219,7 @@ export function testRecordsQueryHandler(): void {
         const recordsQuery1 = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           filter   : { dateCreated: { from: lastDayOf2021 } },
-          dateSort : DateSort.CreatedAscending
+          dateSort : RecordsDateSort.CreatedAscending
         });
         const reply1 = await dwn.processMessage(alice.did, recordsQuery1.message);
         expect(reply1.entries?.length).to.equal(2);
@@ -230,7 +231,7 @@ export function testRecordsQueryHandler(): void {
         const recordsQuery2 = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           filter   : { dateCreated: { to: lastDayOf2022 } },
-          dateSort : DateSort.CreatedAscending
+          dateSort : RecordsDateSort.CreatedAscending
         });
         const reply2 = await dwn.processMessage(alice.did, recordsQuery2.message);
         expect(reply2.entries?.length).to.equal(2);
@@ -242,7 +243,7 @@ export function testRecordsQueryHandler(): void {
         const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           filter   : { dateCreated: { from: lastDayOf2022, to: lastDayOf2023 } },
-          dateSort : DateSort.CreatedAscending
+          dateSort : RecordsDateSort.CreatedAscending
         });
         const reply3 = await dwn.processMessage(alice.did, recordsQuery3.message);
         expect(reply3.entries?.length).to.equal(1);
@@ -252,7 +253,7 @@ export function testRecordsQueryHandler(): void {
         const recordsQuery4 = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           filter   : { dateCreated: { from: firstDayOf2022, to: firstDayOf2023 } },
-          dateSort : DateSort.CreatedAscending
+          dateSort : RecordsDateSort.CreatedAscending
         });
         const reply4 = await dwn.processMessage(alice.did, recordsQuery4.message);
         expect(reply4.entries?.length).to.equal(1);
@@ -293,7 +294,7 @@ export function testRecordsQueryHandler(): void {
             schema, // by itself selects the first 2 records
             dateCreated: { from: lastDayOf2021, to: lastDayOf2023 } // by itself selects the last 2 records
           },
-          dateSort: DateSort.CreatedAscending
+          dateSort: RecordsDateSort.CreatedAscending
         });
         const reply = await dwn.processMessage(alice.did, recordsQuery5.message);
         expect(reply.entries?.length).to.equal(1);
@@ -368,7 +369,7 @@ export function testRecordsQueryHandler(): void {
         // test published date ascending sort does not include any records that is not published
         const publishedAscendingQueryData = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
-          dateSort : DateSort.PublishedAscending,
+          dateSort : RecordsDateSort.PublishedAscending,
           filter   : { schema }
         });
         const publishedAscendingQueryReply = await dwn.handleRecordsQuery(alice.did, publishedAscendingQueryData.message);
@@ -379,7 +380,7 @@ export function testRecordsQueryHandler(): void {
         // test published date scending sort does not include any records that is not published
         const publishedDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
-          dateSort : DateSort.PublishedDescending,
+          dateSort : RecordsDateSort.PublishedDescending,
           filter   : { schema }
         });
         const publishedDescendingQueryReply = await dwn.handleRecordsQuery(alice.did, publishedDescendingQueryData.message);
@@ -412,7 +413,7 @@ export function testRecordsQueryHandler(): void {
         // createdAscending test
         const createdAscendingQueryData = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
-          dateSort : DateSort.CreatedAscending,
+          dateSort : RecordsDateSort.CreatedAscending,
           filter   : { schema }
         });
         const createdAscendingQueryReply = await dwn.handleRecordsQuery(alice.did, createdAscendingQueryData.message);
@@ -424,7 +425,7 @@ export function testRecordsQueryHandler(): void {
         // createdDescending test
         const createdDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
-          dateSort : DateSort.CreatedDescending,
+          dateSort : RecordsDateSort.CreatedDescending,
           filter   : { schema }
         });
         const createdDescendingQueryReply = await dwn.handleRecordsQuery(alice.did, createdDescendingQueryData.message);
@@ -436,7 +437,7 @@ export function testRecordsQueryHandler(): void {
         // publishedAscending test
         const publishedAscendingQueryData = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
-          dateSort : DateSort.PublishedAscending,
+          dateSort : RecordsDateSort.PublishedAscending,
           filter   : { schema }
         });
         const publishedAscendingQueryReply = await dwn.handleRecordsQuery(alice.did, publishedAscendingQueryData.message);
@@ -448,7 +449,7 @@ export function testRecordsQueryHandler(): void {
         // publishedDescending test
         const publishedDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
-          dateSort : DateSort.PublishedDescending,
+          dateSort : RecordsDateSort.PublishedDescending,
           filter   : { schema }
         });
         const publishedDescendingQueryReply = await dwn.handleRecordsQuery(alice.did, publishedDescendingQueryData.message);

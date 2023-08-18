@@ -67,11 +67,16 @@ export type Pagination = {
   limit?: number
 };
 
-export enum DateSort {
+export enum RecordsDateSort {
   CreatedAscending = 'createdAscending',
   CreatedDescending = 'createdDescending',
   PublishedAscending = 'publishedAscending',
   PublishedDescending = 'publishedDescending',
+}
+
+export enum TimestampDateSort {
   TimestampAscending = 'timestampAscending',
   TimestampDescending = 'timestampDescending'
-};
+}
+
+export type DateSort = RecordsDateSort | TimestampDateSort;
