@@ -180,46 +180,39 @@ export class IndexLevel {
    * @returns IDs of data that matches the range filter.
    */
   private async findRangeMatches(propertyName: string, rangeFilter: RangeFilter, options?: IndexLevelOptions): Promise<string[]> {
-    const propertyNamePrefix = this.join(propertyName, '');
-    const iteratorOptions: LevelWrapperIteratorOptions<string> = {
-      gt: propertyNamePrefix
-    };
+    const iteratorOptions: LevelWrapperIteratorOptions<string> = {};
 
-    const filterConditions: Array<(value: string) => boolean> = [];
     for (const comparator in rangeFilter) {
       const comparatorName = comparator as keyof RangeFilter;
-      const comparatorValue = rangeFilter[comparatorName];
-      if (!comparatorValue) {
-        continue;
-      }
-      const encodedComparatorValue = this.encodeValue(comparatorValue);
+      iteratorOptions[comparatorName] = this.join(propertyName, this.encodeValue(rangeFilter[comparatorName]));
+    }
 
-      switch (comparatorName) {
-      case 'lt':
-        filterConditions.push((v) => v < encodedComparatorValue);
-        break;
-      case 'lte':
-        filterConditions.push((v) => v <= encodedComparatorValue);
-        break;
-      case 'gt':
-        filterConditions.push((v) => v > encodedComparatorValue);
-        break;
-      case 'gte':
-        filterConditions.push((v) => v >= encodedComparatorValue);
-        break;
-      }
+    // if there is no lower bound specified (`gt` or `gte`), we need to iterate from the upper bound,
+    // so that we will iterate over all the matches before hitting mismatches.
+    if (iteratorOptions.gt === undefined && iteratorOptions.gte === undefined) {
+      iteratorOptions.reverse = true;
     }
 
     const matches: string[] = [];
     for await (const [ key, dataId ] of this.db.iterator(iteratorOptions, options)) {
-      const [, value] = key.split(this.delimiter);
+      if ('gt' in rangeFilter && this.extractValueFromKey(key) === this.encodeValue(rangeFilter.gt)) {
+        continue;
+      }
       // immediately stop if we arrive at an index entry for a different property
-      if (!key.startsWith(propertyNamePrefix)) {
+      if (!key.startsWith(propertyName)) {
         break;
       }
 
-      const allPass = filterConditions.every((c) => c(value));
-      if (allPass) {
+      matches.push(dataId);
+    }
+
+    if ('lte' in rangeFilter) {
+      // When `lte` is used, we must also query the exact match explicitly because the exact match will not be included in the iterator above.
+      // This is due to the extra data (CID) appended to the (property + value) key prefix, e.g.
+      // key = 'dateCreated\u0000"2023-05-25T11:22:33.000000Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+      // the value would be considered greater than { lte: `dateCreated\u0000"2023-05-25T11:22:33.000000Z"` } used in the iterator options,
+      // thus would not be included in the iterator even though we'd like it to be.
+      for (const dataId of await this.findExactMatches(propertyName, rangeFilter.lte, options)) {
         matches.push(dataId);
       }
     }
@@ -227,14 +220,32 @@ export class IndexLevel {
     return matches;
   }
 
+  private NEGATIVE_OFFSET = Math.abs(Number.MIN_SAFE_INTEGER);
+  private NEGATIVE_PREFIX = '!'; // this will be sorted below positive numbers lexicographically
+  private PADDING_LENGTH = String(Number.MAX_SAFE_INTEGER).length;
+
   private encodeValue(value: unknown): string {
-    if (typeof value === 'string') {
+    switch (typeof value) {
+    case 'string':
       // We can't just `JSON.stringify` as that'll affect the sort order of strings.
       // For example, `'\x00'` becomes `'\\u0000'`.
       return `"${value}"`;
+    case 'number':
+      return this.encodeNumberValue(value);
+    default:
+      return String(value);
     }
+  }
 
-    return String(value);
+  private encodeNumberValue(n: number): string {
+    const prefix: string = n < 0 ? this.NEGATIVE_PREFIX : '';
+    const offset: number = n < 0 ? this.NEGATIVE_OFFSET : 0;
+    return prefix + String(n + offset).padStart(this.PADDING_LENGTH, '0');
+  }
+
+  private extractValueFromKey(key: string): string {
+    const [, value] = key.split(this.delimiter);
+    return value;
   }
 
   /**

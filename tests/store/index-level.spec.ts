@@ -266,63 +266,146 @@ describe('Index Level', () => {
       expect(resp).to.include(id1);
     });
 
-    it('should return records that match provided number equality filter', async () => {
-      await index.put('a', { digit: 1000 });
-      await index.put('b', { digit: 100 });
-      await index.put('c', { digit: 10 });
+    describe('numbers', () => {
+      const randomInt = (min: number, max: number): number => {
+        return Math.floor(Math.random() * ( max - min) + min);
+      };
 
-      const resp = await index.query({
-        digit: 100
-      });
+      const positiveDigits = Array(10).fill({}).map( _ => randomInt(0, Number.MAX_SAFE_INTEGER)).sort();
+      const negativeDigits = Array(10).fill({}).map( _ => randomInt(0, Number.MAX_SAFE_INTEGER) * -1).sort().reverse();
+      const testNumbers = Array.from(new Set([...positiveDigits, ...negativeDigits])); // unique numbers
 
-      expect(resp.length).to.equal(1);
-      expect(resp.at(0)).to.equal('b');
-    });
+      it('should return records that match provided number equality filter', async () => {
+        const testIndex = Math.floor(Math.random() * testNumbers.length);
 
-    it ('should not return records that do not match provided number equality filter', async() => {
-      await index.put('a', { digit: 1000 });
-      await index.put('b', { digit: 100 });
-      await index.put('c', { digit: 10 });
-
-      const resp = await index.query({
-        digit: 1
-      });
-
-      expect(resp.length).to.equal(0);
-    });
-
-    it('supports range queries with numbers', async () => {
-      await index.put('a', { digit: 1000 });
-      await index.put('b', { digit: 100 });
-      await index.put('c', { digit: 10 });
-
-      let resp = await index.query({
-        digit: {
-          gte : 100,
-          lt  : 1000
+        for (const digit of testNumbers) {
+          await index.put(digit.toString(), { digit });
         }
+        const resp = await index.query({
+          digit: testNumbers.at(testIndex)!
+        });
+
+        expect(resp.length).to.equal(1);
+        expect(resp.at(0)).to.equal(testNumbers.at(testIndex)!.toString());
       });
 
-      expect(resp.length).to.equal(1);
-      expect(resp.at(0)).to.equal('b');
-
-      resp = await index.query({
-        digit: {
-          lte : 1000,
-          gt  : 100
+      it ('should not return records that do not match provided number equality filter', async() => {
+        // remove the potential (but unlikely) negative test result
+        for (const digit of testNumbers.filter(n => n !== 1)) {
+          await index.put(digit.toString(), { digit });
         }
+        const resp = await index.query({
+          digit: 1
+        });
+
+        expect(resp.length).to.equal(0);
       });
 
-      expect(resp.length).to.equal(1);
-      expect(resp.at(0)).to.equal('a');
-
-      resp = await index.query({
-        digit: {
-          gt: 1000
+      it('supports range queries with positive numbers inclusive', async () => {
+        for (const digit of testNumbers) {
+          await index.put(digit.toString(), { digit });
         }
+
+        const upperBound = positiveDigits.at(positiveDigits.length - 3)!;
+        const lowerBound = positiveDigits.at(2)!;
+
+        const resp = await index.query({
+          digit: {
+            gte : lowerBound,
+            lte : upperBound
+          }
+        });
+
+        const tesResults = testNumbers.filter( n => n >= lowerBound && n <= upperBound).map(n => n.toString());
+        expect(resp.sort()).to.eql(tesResults.sort());
       });
 
-      expect(resp.length).to.equal(0);
+      it('supports range queries with negative numbers inclusive', async () => {
+        for (const digit of testNumbers) {
+          await index.put(digit.toString(), { digit });
+        }
+
+        const upperBound = negativeDigits.at(negativeDigits.length - 2)!;
+        const lowerBound = negativeDigits.at(2)!;
+
+        const resp = await index.query({
+          digit: {
+            gte : lowerBound,
+            lte : upperBound
+          }
+        });
+
+        const tesResults = testNumbers.filter( n => n >= lowerBound && n <= upperBound).map(n => n.toString());
+        expect(resp.sort()).to.eql(tesResults.sort());
+      });
+
+      it('should return numbers gt a negative digit', async () => {
+        for (const digit of testNumbers) {
+          await index.put(digit.toString(), { digit });
+        }
+
+        const lowerBound = negativeDigits.at(4)!;
+
+        const resp = await index.query({
+          digit: {
+            gt: lowerBound,
+          }
+        });
+
+        const tesResults = testNumbers.filter( n => n > lowerBound).map(n => n.toString());
+        expect(resp.sort()).to.eql(tesResults.sort());
+      });
+
+      it('should return numbers gt a digit', async () => {
+        for (const digit of testNumbers) {
+          await index.put(digit.toString(), { digit });
+        }
+
+        const lowerBound = positiveDigits.at(4)!;
+
+        const resp = await index.query({
+          digit: {
+            gt: lowerBound,
+          }
+        });
+
+        const tesResults = testNumbers.filter( n => n > lowerBound).map(n => n.toString());
+        expect(resp.sort()).to.eql(tesResults.sort());
+      });
+
+      it('should return numbers lt a negative digit', async () => {
+        for (const digit of testNumbers) {
+          await index.put(digit.toString(), { digit });
+        }
+
+        const upperBound = negativeDigits.at(4)!;
+
+        const resp = await index.query({
+          digit: {
+            lt: upperBound,
+          }
+        });
+
+        const tesResults = testNumbers.filter( n => n < upperBound).map(n => n.toString());
+        expect(resp.sort()).to.eql(tesResults.sort());
+      });
+
+      it('should return numbers lt a digit', async () => {
+        for (const digit of testNumbers) {
+          await index.put(digit.toString(), { digit });
+        }
+
+        const upperBound = positiveDigits.at(4)!;
+
+        const resp = await index.query({
+          digit: {
+            lt: upperBound,
+          }
+        });
+
+        const tesResults = testNumbers.filter( n => n < upperBound).map(n => n.toString());
+        expect(resp.sort()).to.eql(tesResults.sort());
+      });
     });
   });
 
