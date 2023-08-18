@@ -2,12 +2,10 @@ import type { DataStore } from '../types/data-store.js';
 import type { EventLog } from '../types/event-log.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { RecordsWriteMessage } from '../types/records-types.js';
-import type { Filter, GenericMessage, TimestampedMessage } from '../types/message-types.js';
+import type { GenericMessage, TimestampedMessage } from '../types/message-types.js';
 
 import { constructRecordsWriteIndexes } from '../handlers/records-write.js';
-import { DataStream } from '../utils/data-stream.js';
 import { DwnConstant } from '../core/dwn-constant.js';
-import { Encoder } from '../utils/encoder.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnMethodName, Message } from '../core/message.js';
 
@@ -15,33 +13,6 @@ import { DwnMethodName, Message } from '../core/message.js';
  * A class that provides an abstraction for the usage of MessageStore, DataStore, and EventLog.
  */
 export class StorageController {
-  public static async query(
-    messageStore: MessageStore,
-    dataStore: DataStore,
-    tenant: string,
-    filter: Filter
-  ): Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
-
-    const messages: RecordsWriteMessageWithOptionalEncodedData[] = (await messageStore.query(tenant, filter)) as RecordsWriteMessage[];
-
-    // for every message, only include the data as `encodedData` if the data size is equal or smaller than the size threshold
-    for (const message of messages) {
-      const dataCid = message.descriptor.dataCid;
-      const dataSize = message.descriptor.dataSize;
-      if (dataCid !== undefined && dataSize! <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
-        const messageCid = await Message.getCid(message);
-        const result = await dataStore.get(tenant, messageCid, dataCid);
-
-        if (result) {
-          const dataBytes = await DataStream.toBytes(result.dataStream);
-          message.encodedData = Encoder.bytesToBase64Url(dataBytes);
-        }
-      }
-    }
-
-    return messages;
-  }
-
   /**
    * Deletes a message.
    */
@@ -53,7 +24,8 @@ export class StorageController {
   ): Promise<void> {
     const messageCid = await Message.getCid(message);
 
-    if (message.descriptor.method === DwnMethodName.Write) {
+    if (message.descriptor.method === DwnMethodName.Write &&
+        (message as RecordsWriteMessage).descriptor.dataSize > DwnConstant.maxDataSizeAllowedToBeEncoded) {
       const recordsWriteMessage = message as RecordsWriteMessage;
       await dataStore.delete(tenant, messageCid, recordsWriteMessage.descriptor.dataCid);
     }
@@ -93,7 +65,9 @@ export class StorageController {
           const existingRecordsWrite = await RecordsWrite.parse(message as RecordsWriteMessage);
           const isLatestBaseState = false;
           const indexes = await constructRecordsWriteIndexes(existingRecordsWrite, isLatestBaseState);
-          await messageStore.put(tenant, message, indexes);
+          const writeMessage = message as RecordsWriteMessageWithOptionalEncodedData;
+          delete writeMessage.encodedData;
+          await messageStore.put(tenant, writeMessage, indexes);
         } else {
           const messageCid = await Message.getCid(message);
           deletedMessageCids.push(messageCid);
@@ -105,4 +79,5 @@ export class StorageController {
   }
 }
 
+// records with a data size below a threshold are stored within MessageStore with their data embedded
 export type RecordsWriteMessageWithOptionalEncodedData = RecordsWriteMessage & { encodedData?: string };

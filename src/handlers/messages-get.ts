@@ -2,16 +2,13 @@ import type { DataStore } from '../types/data-store.js';
 import type { DidResolver } from '../did/did-resolver.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
 import type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from '../types/messages-types.js';
 
-import { DataStream } from '../utils/data-stream.js';
-import { DwnConstant } from '../core/dwn-constant.js';
-import { Encoder } from '../utils/encoder.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { MessagesGet } from '../interfaces/messages-get.js';
 import { authenticate, authorize } from '../core/auth.js';
-import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 type HandleArgs = { tenant: string, message: MessagesGetMessage };
 
@@ -54,7 +51,6 @@ export class MessagesGetHandler implements MethodHandler {
     // for every message, include associated data as `encodedData` IF:
     //  * its a RecordsWrite
     //  * the data size is equal or smaller than the size threshold
-    //! NOTE: this is somewhat duplicate code that also exists in `StorageController.query`.
     for (const entry of messages) {
       const { message } = entry;
 
@@ -67,19 +63,12 @@ export class MessagesGetHandler implements MethodHandler {
         continue;
       }
 
-      // RecordsWrite specific handling
-      const recordsWrite = message as RecordsWriteMessage;
-      const dataCid = recordsWrite.descriptor.dataCid;
-      const dataSize = recordsWrite.descriptor.dataSize;
-
-      if (dataCid !== undefined && dataSize! <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
-        const messageCid = await Message.getCid(message);
-        const result = await this.dataStore.get(tenant, messageCid, dataCid);
-
-        if (result) {
-          const dataBytes = await DataStream.toBytes(result.dataStream);
-          entry.encodedData = Encoder.bytesToBase64Url(dataBytes);
-        }
+      // RecordsWrite specific handling, if MessageStore has embedded `encodedData` return it with the entry.
+      // we store `encodedData` along with the message if the data is below a certain threshold.
+      const recordsWrite = message as RecordsWriteMessageWithOptionalEncodedData;
+      if (recordsWrite.encodedData !== undefined) {
+        entry.encodedData = recordsWrite.encodedData;
+        delete recordsWrite.encodedData;
       }
     }
 

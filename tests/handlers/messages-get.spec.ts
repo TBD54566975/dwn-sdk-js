@@ -11,8 +11,7 @@ import { MessagesGetHandler } from '../../src/handlers/messages-get.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
-
-import { DidKeyResolver, DidResolver, Dwn } from '../../src/index.js';
+import { DidKeyResolver, DidResolver, Dwn, DwnConstant } from '../../src/index.js';
 
 import sinon from 'sinon';
 
@@ -212,7 +211,8 @@ export function testMessagesGetHandler(): void {
       const alice = await DidKeyResolver.generate();
 
       const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-        author: alice
+        author : alice,
+        data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded),
       });
 
       const reply = await dwn.processMessage(alice.did, recordsWrite.toJSON(), dataStream);

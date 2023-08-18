@@ -3,7 +3,7 @@
 # Decentralized Web Node (DWN) SDK <!-- omit in toc -->
 
 Code Coverage
-![Statements](https://img.shields.io/badge/statements-97.56%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-94.39%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-93.93%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-97.56%25-brightgreen.svg?style=flat)
+![Statements](https://img.shields.io/badge/statements-97.58%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-94.44%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-93.95%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-97.58%25-brightgreen.svg?style=flat)
 
 
 - [Introduction](#introduction)
@@ -214,6 +214,26 @@ const result = await window.web5.dwn.processMessage({
     dateSort: "createdAscending",
   },
 });
+```
+
+### Custom Tenant Gating
+By default, all DIDs are allowed as tenants. A custom tenant gate implementation can be provided when initializing the DWN.
+```ts
+import { Dwn, TenantGate } from '@tbd54566975/dwn-sdk-js';
+import { DataStoreLevel, EventLogLevel, MessageStoreLevel } from '@tbd54566975/dwn-sdk-js/stores';
+
+class CustomTenantGate implements TenantGate {
+  public async isTenant(did): Promise<void> {
+    // Custom implementation
+    // returns `true` if the given DID is a tenant of the DWN; `false` otherwise
+  }
+}
+
+const messageStore = new MessageStoreLevel();
+const dataStore = new DataStoreLevel();
+const eventLog = new EventLogLevel();
+const tenantGate = new CustomTenantGate();
+const dwn = await Dwn.create({ messageStore, dataStore, eventLog, tenantGate });
 ```
 
 ## Release/Build Process

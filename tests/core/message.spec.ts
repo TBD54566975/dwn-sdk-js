@@ -1,3 +1,5 @@
+import type { RecordsWriteMessageWithOptionalEncodedData } from '../../src/store/storage-controller.js';
+
 import { expect } from 'chai';
 import { Message } from '../../src/core/message.js';
 import { RecordsRead } from '../../src/index.js';
@@ -63,6 +65,20 @@ describe('Message', () => {
 
       const newestMessage = await Message.getOldestMessage([b, c, a]);
       expect((newestMessage as any).recordId).to.equal(a.recordId);
+    });
+  });
+
+  describe('getCid()', () => {
+    it('encodedData does not have an effect on getCid()', async () => {
+      const { message } = await TestDataGenerator.generateRecordsWrite();
+      const cid1 = await Message.getCid(message);
+
+      const messageWithData: RecordsWriteMessageWithOptionalEncodedData = message;
+      messageWithData.encodedData = TestDataGenerator.randomString(25);
+
+      const cid2 = await Message.getCid(messageWithData);
+
+      expect(cid1).to.equal(cid2);
     });
   });
 });

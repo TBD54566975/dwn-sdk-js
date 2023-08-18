@@ -1,6 +1,7 @@
 import type { EventLog } from '../types/event-log.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { MethodHandler } from '../types/method-handler.js';
+import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
 import type { RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
 
@@ -8,6 +9,7 @@ import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { StorageController } from '../store/storage-controller.js';
+import { Cid, DataStream, DwnConstant, Encoder } from '../index.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
@@ -80,25 +82,42 @@ export class RecordsWriteHandler implements MethodHandler {
     const isLatestBaseState = true;
     const indexes = await constructRecordsWriteIndexes(recordsWrite, isLatestBaseState);
 
-    try {
-      // try to store data, unless options explicitly say to skip storage
-      if (options === undefined || !options.skipDataStorage) {
-        await this.putData(tenant, message, dataStream, newestExistingMessage as (RecordsWriteMessage|RecordsDeleteMessage) | undefined);
-      }
-    } catch (error) {
-      const e = error as any;
-      if (e.code === DwnErrorCode.RecordsWriteMissingDataStream ||
-          e.code === DwnErrorCode.RecordsWriteMissingData ||
-          e.code === DwnErrorCode.RecordsWriteDataCidMismatch ||
-          e.code === DwnErrorCode.RecordsWriteDataSizeMismatch) {
-        return messageReplyFromError(error, 400);
+    // if data is below a certain threshold, we embed the data directly into the message for storage in MessageStore.
+    let messageWithOptionalEncodedData: RecordsWriteMessageWithOptionalEncodedData = message;
+
+    // try to store data, unless options explicitly say to skip storage
+    if (options === undefined || !options.skipDataStorage) {
+      if (dataStream === undefined && newestExistingMessage?.descriptor.method === DwnMethodName.Delete) {
+        return messageReplyFromError(new DwnError(DwnErrorCode.RecordsWriteMissingDataStream, 'No data stream was provided with the previous message being a delete'), 400);
       }
 
-      // else throw
-      throw error;
+      try {
+        // if data is below the threshold, we store it within MessageStore
+        if (message.descriptor.dataSize <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
+          // processes and sets `encodedData` with appropriate data.
+          messageWithOptionalEncodedData = await this.processEncodedData(
+            message,
+            dataStream,
+            newestExistingMessage as (RecordsWriteMessage|RecordsDeleteMessage) | undefined
+          );
+        } else {
+          await this.putData(tenant, message, dataStream);
+        }
+      } catch (error) {
+        const e = error as any;
+        if (e.code === DwnErrorCode.RecordsWriteMissingDataInPrevious ||
+            e.code === DwnErrorCode.RecordsWriteMissingDataAssociation ||
+            e.code === DwnErrorCode.RecordsWriteDataCidMismatch ||
+            e.code === DwnErrorCode.RecordsWriteDataSizeMismatch) {
+          return messageReplyFromError(error, 400);
+        }
+
+        // else throw
+        throw error;
+      }
     }
 
-    await this.messageStore.put(tenant, message, indexes);
+    await this.messageStore.put(tenant, messageWithOptionalEncodedData, indexes);
     await this.eventLog.append(tenant, await Message.getCid(message));
 
     const messageReply = {
@@ -114,12 +133,51 @@ export class RecordsWriteHandler implements MethodHandler {
   };
 
   /**
+   * Embeds the record's data into the `encodedData` property.
+   * If dataStream is present, it uses the dataStream. Otherwise, uses the `encodedData` from the most recent RecordsWrite.
+   *
+   * @returns {RecordsWriteMessageWithOptionalEncodedData} `encodedData` embedded.
+   *
+   * @throws {DwnError} with `DwnErrorCode.RecordsWriteMissingDataInPrevious`
+   *                    if `dataStream` is absent AND `encodedData` of previous message is missing
+   * @throws {DwnError} with `DwnErrorCode.RecordsWriteDataCidMismatch`
+   *                    if the data stream resulted in a data CID that mismatches with `dataCid` in the given message
+   * @throws {DwnError} with `DwnErrorCode.RecordsWriteDataSizeMismatch`
+   *                    if `dataSize` in `descriptor` given mismatches the actual data size
+   */
+  public async processEncodedData(
+    message: RecordsWriteMessage,
+    dataStream?: _Readable.Readable,
+    newestExistingMessage?: RecordsWriteMessage | RecordsDeleteMessage
+  ): Promise<RecordsWriteMessageWithOptionalEncodedData> {
+    let dataBytes;
+    if (dataStream === undefined) {
+      const newestWithData = newestExistingMessage as RecordsWriteMessageWithOptionalEncodedData | undefined;
+      if (newestWithData?.encodedData === undefined) {
+        throw new DwnError(
+          DwnErrorCode.RecordsWriteMissingDataInPrevious,
+          `No dataStream was provided and unable to get data from previous message`
+        );
+      } else {
+        dataBytes = Encoder.base64UrlToBytes(newestWithData.encodedData);
+      }
+    } else {
+      dataBytes = await DataStream.toBytes(dataStream);
+    }
+
+    const dataCid = await Cid.computeDagPbCidFromBytes(dataBytes);
+    RecordsWriteHandler.validateDataIntegrity(message.descriptor.dataCid, message.descriptor.dataSize, dataCid, dataBytes.length);
+
+    const recordsWrite: RecordsWriteMessageWithOptionalEncodedData = { ...message };
+    recordsWrite.encodedData = Encoder.bytesToBase64Url(dataBytes);
+    return recordsWrite;
+  }
+
+  /**
    * Puts the given data in storage unless tenant already has that data for the given recordId
    *
-   * @throws {DwnError} with `DwnErrorCode.RecordsWriteMissingDataStream`
-   *                    if `dataStream` is absent AND the `dataCid` does not match the current data for the given recordId
-   * @throws {DwnError} with `DwnErrorCode.RecordsWriteMissingData`
-   *                    if `dataStream` is absent AND dataStore does not contain the given `dataCid`
+   * @throws {DwnError} with `DwnErrorCode.RecordsWriteMissingDataAssociation`
+   *                    if `dataStream` is absent AND unable to associate data given `dataCid`
    * @throws {DwnError} with `DwnErrorCode.RecordsWriteDataCidMismatch`
    *                    if the data stream resulted in a data CID that mismatches with `dataCid` in the given message
    * @throws {DwnError} with `DwnErrorCode.RecordsWriteDataSizeMismatch`
@@ -129,54 +187,58 @@ export class RecordsWriteHandler implements MethodHandler {
     tenant: string,
     message: RecordsWriteMessage,
     dataStream?: _Readable.Readable,
-    newestExistingMessage?: RecordsWriteMessage | RecordsDeleteMessage
   ): Promise<void> {
     let result: { dataCid: string, dataSize: number };
     const messageCid = await Message.getCid(message);
 
     if (dataStream === undefined) {
-      // dataStream must be included if message contains a new dataCid
-      if (newestExistingMessage?.descriptor.method === DwnMethodName.Delete ||
-          newestExistingMessage?.descriptor.dataCid !== message.descriptor.dataCid) {
-        throw new DwnError(
-          DwnErrorCode.RecordsWriteMissingDataStream,
-          'Data stream is not provided.'
-        );
-      }
-
       const associateResult = await this.dataStore.associate(tenant, messageCid, message.descriptor.dataCid);
       if (associateResult === undefined) {
-        throw new DwnError(DwnErrorCode.RecordsWriteMissingData, `Unable to associate dataCid ${message.descriptor.dataCid} ` +
+        throw new DwnError(DwnErrorCode.RecordsWriteMissingDataAssociation, `Unable to associate dataCid ${message.descriptor.dataCid} ` +
           `to messageCid ${messageCid} because dataStream was not provided and data was not found in dataStore`);
       }
-
       result = associateResult;
     } else {
       result = await this.dataStore.put(tenant, messageCid, message.descriptor.dataCid, dataStream);
     }
 
-    // verify that given dataSize matches size of actual data
-    if (message.descriptor.dataSize !== result.dataSize) {
-      // there is an opportunity to improve here: handle the edge case of if the delete fails...
+    try {
+      RecordsWriteHandler.validateDataIntegrity(message.descriptor.dataCid, message.descriptor.dataSize, result.dataCid, result.dataSize);
+    } catch (error) {
+      // delete data and throw error to caller
       await this.dataStore.delete(tenant, messageCid, message.descriptor.dataCid);
-
-      throw new DwnError(
-        DwnErrorCode.RecordsWriteDataSizeMismatch,
-        `actual data size ${result.dataSize} bytes does not match dataSize in descriptor: ${message.descriptor.dataSize}`
-      );
+      throw error;
     }
+  }
 
-    // verify that given dataCid matches CID of actual data
-    if (message.descriptor.dataCid !== result.dataCid) {
-      // there is an opportunity to improve here: handle the edge cae of if the delete fails...
-      await this.dataStore.delete(tenant, messageCid, message.descriptor.dataCid);
-
+  /**
+   * Validates the expected `dataCid` and `dataSize` in the descriptor vs the received data.
+   *
+   * @throws {DwnError} with `DwnErrorCode.RecordsWriteDataCidMismatch`
+   *                    if the data stream resulted in a data CID that mismatches with `dataCid` in the given message
+   * @throws {DwnError} with `DwnErrorCode.RecordsWriteDataSizeMismatch`
+   *                    if `dataSize` in `descriptor` given mismatches the actual data size
+   */
+  static validateDataIntegrity(
+    expectedDataCid: string,
+    expectedDataSize: number,
+    actualDataCid: string,
+    actualDataSize: number
+  ): void {
+    if (expectedDataCid !== actualDataCid) {
       throw new DwnError(
         DwnErrorCode.RecordsWriteDataCidMismatch,
-        `actual data CID ${result.dataCid} does not match dataCid in descriptor: ${message.descriptor.dataCid}`
+        `actual data CID ${actualDataCid} does not match dataCid in descriptor: ${expectedDataCid}`
+      );
+    }
+    if (expectedDataSize !== actualDataSize) {
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteDataSizeMismatch,
+        `actual data size ${actualDataSize} bytes does not match dataSize in descriptor: ${expectedDataSize}`
       );
     }
   }
+
 }
 
 export async function constructRecordsWriteIndexes(

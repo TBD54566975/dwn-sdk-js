@@ -30,7 +30,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
-import { DataStream, DidResolver, Dwn, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsDelete, RecordsRead , RecordsWrite, Secp256k1 } from '../../src/index.js';
+import { DataStream, DidResolver, Dwn, DwnConstant, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsDelete, RecordsRead , RecordsWrite, Secp256k1 } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -1073,13 +1073,16 @@ export function testRecordsReadHandler(): void {
         expect(readReply.status.code).to.equal(404);
       });
 
-      it('should return 404 underlying data store cannot locate the data', async () => {
+      it('should return 404 underlying data store cannot locate the data when data is above threshold', async () => {
         const alice = await DidKeyResolver.generate();
 
         sinon.stub(dataStore, 'get').resolves(undefined);
 
-        // insert data
-        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
+        // insert data larger than the allowed amount in encodedData
+        const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
+          author : alice,
+          data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded +1)
+        });
         const writeReply = await dwn.processMessage(alice.did, message, dataStream);
         expect(writeReply.status.code).to.equal(202);
 
@@ -1091,6 +1094,65 @@ export function testRecordsReadHandler(): void {
 
         const readReply = await dwn.processMessage(alice.did, recordsRead.message);
         expect(readReply.status.code).to.equal(404);
+      });
+
+      describe('data from encodedData', () => {
+        it('should not get data from DataStore if encodedData exists', async () => {
+          const alice = await DidKeyResolver.generate();
+
+          //since the data is at the threshold it will be returned from the messageStore in the `encodedData` field.
+          const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({
+            author : alice,
+            data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)
+          });
+
+          const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+          expect(writeReply.status.code).to.equal(202);
+
+          const recordRead = await RecordsRead.create({
+            recordId                    : message.recordId,
+            authorizationSignatureInput : Jws.createSignatureInput(alice)
+          });
+
+          const dataStoreGet = sinon.spy(dataStore, 'get');
+
+          const recordsReadResponse = await dwn.handleRecordsRead(alice.did, recordRead.message);
+          expect(recordsReadResponse.status.code).to.equal(200);
+          expect(recordsReadResponse.record).to.exist;
+          expect(recordsReadResponse.record!.data).to.exist;
+          sinon.assert.notCalled(dataStoreGet);
+
+          const readData = await DataStream.toBytes(recordsReadResponse.record!.data);
+          expect(readData).to.eql(dataBytes);
+        });
+        it('should get data from DataStore if encodedData does not exist', async () => {
+          const alice = await DidKeyResolver.generate();
+
+          //since the data is over the threshold it will not be returned from the messageStore in the `encodedData` field.
+          const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({
+            author : alice,
+            data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded +1)
+          });
+
+          const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+          expect(writeReply.status.code).to.equal(202);
+
+          const recordRead = await RecordsRead.create({
+            recordId                    : message.recordId,
+            authorizationSignatureInput : Jws.createSignatureInput(alice)
+          });
+
+          const dataStoreGet = sinon.spy(dataStore, 'get');
+
+          const recordsReadResponse = await dwn.handleRecordsRead(alice.did, recordRead.message);
+          expect(recordsReadResponse.status.code).to.equal(200);
+          expect(recordsReadResponse.record).to.exist;
+          expect(recordsReadResponse.record!.data).to.exist;
+          sinon.assert.calledOnce(dataStoreGet);
+
+          const readData = await DataStream.toBytes(recordsReadResponse.record!.data);
+          expect(readData).to.eql(dataBytes);
+        });
       });
 
       describe('encryption scenarios', () => {
