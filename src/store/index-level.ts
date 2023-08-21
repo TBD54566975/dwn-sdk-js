@@ -196,7 +196,7 @@ export class IndexLevel {
     const matches: string[] = [];
     for await (const [ key, dataId ] of this.db.iterator(iteratorOptions, options)) {
       // if "greater-than" is specified, skip all keys that contains the exact value given in the "greater-than" condition
-      if ('gt' in rangeFilter && this.extractValueFromKey(key) === this.encodeValue(rangeFilter.gt)) {
+      if ('gt' in rangeFilter && IndexLevel.extractValueFromKey(key) === this.encodeValue(rangeFilter.gt)) {
         continue;
       }
 
@@ -222,10 +222,6 @@ export class IndexLevel {
     return matches;
   }
 
-  private NEGATIVE_OFFSET = Math.abs(Number.MIN_SAFE_INTEGER);
-  private NEGATIVE_PREFIX = '!'; // this will be sorted below positive numbers lexicographically
-  private PADDING_LENGTH = String(Number.MAX_SAFE_INTEGER).length;
-
   private encodeValue(value: unknown): string {
     switch (typeof value) {
     case 'string':
@@ -233,19 +229,41 @@ export class IndexLevel {
       // For example, `'\x00'` becomes `'\\u0000'`.
       return `"${value}"`;
     case 'number':
-      return this.encodeNumberValue(value);
+      return IndexLevel.encodeNumberValue(value);
     default:
       return String(value);
     }
   }
 
-  private encodeNumberValue(n: number): string {
-    const prefix: string = n < 0 ? this.NEGATIVE_PREFIX : '';
-    const offset: number = n < 0 ? this.NEGATIVE_OFFSET : 0;
-    return prefix + String(n + offset).padStart(this.PADDING_LENGTH, '0');
+  /**
+   *  Encodes a numerical value as a string for lexicographical comparison.
+   *  If the number is positive it simply pads it with leading zeros.
+   *  ex.: input:  1024 => "0000000000001024"
+   *       input: -1024 => "!9007199254739967"
+   *
+   * @param value the number to encode.
+   * @returns a string representation of the number.
+   */
+  static encodeNumberValue(value: number): string {
+    const NEGATIVE_OFFSET = Number.MAX_SAFE_INTEGER;
+    const NEGATIVE_PREFIX = '!'; // this will be sorted below positive numbers lexicographically
+    const PADDING_LENGTH = String(Number.MAX_SAFE_INTEGER).length;
+
+    const prefix: string = value < 0 ? NEGATIVE_PREFIX : '';
+    const offset: number = value < 0 ? NEGATIVE_OFFSET : 0;
+    return prefix + String(value + offset).padStart(PADDING_LENGTH, '0');
   }
 
-  private extractValueFromKey(key: string): string {
+  /**
+   * Extracts the value encoded within the indexed key when a record is inserted.
+   *
+   * ex. key: 'dateCreated\u0000"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+   *     extracted value: "2023-05-25T18:23:29.425008Z"
+   *
+   * @param key an IndexLevel db key.
+   * @returns the extracted encodedValue from the key.
+   */
+  static extractValueFromKey(key: string): string {
     const [, value] = key.split(this.delimiter);
     return value;
   }
@@ -253,9 +271,9 @@ export class IndexLevel {
   /**
    * Joins the given values using the `\x00` (\u0000) character.
    */
-  private delimiter = `\x00`;
+  private static delimiter = `\x00`;
   private join(...values: unknown[]): string {
-    return values.join(this.delimiter);
+    return values.join(IndexLevel.delimiter);
   }
 
   async dump(): Promise<void> {
