@@ -1,7 +1,7 @@
+import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { RecordsWrite } from './records-write.js';
 import type { SignatureInput } from '../types/jws-types.js';
-import type { Filter, GenericMessage } from '../types/message-types.js';
 import type { RecordsReadDescriptor, RecordsReadMessage } from '../types/records-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
@@ -73,28 +73,6 @@ export class RecordsRead extends Message<RecordsReadMessage> {
     Message.validateJsonSchema(message);
 
     return new RecordsRead(message);
-  }
-
-  /**
-   * Creates a Records interface Filter using either the `recordId` or `protocol` & `protocolPath` of the incoming Message.
-   * @param descriptor message descriptor with optional properties `recordId`, `protocol` and `protocolPath`
-   *
-   * @returns {Filter} with a Records interface as well as the appropriate filter params
-   * @throws {DwnError} when either `recordId` is missing, or both `protocol` and `protocolPath` are missing.
-   */
-  public static createFilter(descriptor: RecordsReadDescriptor): Filter {
-    const commonFilter: Filter = { interface: DwnInterfaceName.Records, isLatestBaseState: true };
-    const { recordId, protocol, protocolPath } = descriptor;
-    if (recordId !== undefined) {
-      return { ...commonFilter, recordId };
-    } else if (protocol !== undefined && protocolPath !== undefined) {
-      return { ...commonFilter, protocol, protocolPath };
-    } else {
-      throw new DwnError(
-        DwnErrorCode.RecordsReadMissingDescriptorProperties,
-        'missing required properties from RecordsRead descriptor, expected either `recordId`, or both `protocol` and `protocolPath` to be present'
-      );
-    }
   }
 
   public async authorize(tenant: string, newestRecordsWrite: RecordsWrite, messageStore: MessageStore): Promise<void> {

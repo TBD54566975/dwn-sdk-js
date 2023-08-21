@@ -45,9 +45,18 @@
         }
       },
       "$comment": "describe rule requiring either `recordId` OR both `protocol` and `protocolPath`",
-      "anyOf": [
-        { "required": [ "recordId" ] },
-        { "required": [ "protocol", "protocolPath" ] }
+      "oneOf": [
+        {
+          "required": [
+            "recordId"
+          ]
+        },
+        {
+          "required": [
+            "protocol",
+            "protocolPath"
+          ]
+        }
       ]
     }
   }

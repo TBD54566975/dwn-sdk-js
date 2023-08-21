@@ -2,7 +2,7 @@ import type { MethodHandler } from '../types/method-handler.js';
 import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
 import type { Filter, TimestampedMessage } from '../types/message-types.js';
-import type { RecordsReadMessage, RecordsReadReply } from '../types/records-types.js';
+import type { RecordsReadDescriptor, RecordsReadMessage, RecordsReadReply } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { Message } from '../core/message.js';
@@ -22,10 +22,8 @@ export class RecordsReadHandler implements MethodHandler {
   }: { tenant: string, message: RecordsReadMessage }): Promise<RecordsReadReply> {
 
     let recordsRead: RecordsRead;
-    let filter: Filter;
     try {
       recordsRead = await RecordsRead.parse(message);
-      filter = RecordsRead.createFilter(recordsRead.message.descriptor);
     } catch (e) {
       return messageReplyFromError(e, 400);
     }
@@ -40,10 +38,7 @@ export class RecordsReadHandler implements MethodHandler {
     }
 
     // get existing messages matching `recordId` or `protocol` with `protocolPath` so we can perform authorization
-    const query: Filter = {
-      interface: DwnInterfaceName.Records,
-      ...filter,
-    };
+    const query: Filter = RecordsReadHandler.createFilter(recordsRead.message.descriptor);
     const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
     const newestExistingMessage = await Message.getNewestMessage(existingMessages);
 
@@ -87,4 +82,21 @@ export class RecordsReadHandler implements MethodHandler {
     };
     return messageReply;
   };
+
+  /**
+   * Creates a filter using `recordId` in given descriptor, if not given, `protocol` & `protocolPath` are used to create the filter instead.
+   * @param descriptor message descriptor with optional properties `recordId`, `protocol` and `protocolPath`
+   *
+   * @returns {Filter} with a Records interface as well as the appropriate filter params
+   */
+  public static createFilter(descriptor: RecordsReadDescriptor): Filter {
+    const commonFilter: Filter = { interface: DwnInterfaceName.Records, isLatestBaseState: true };
+    const { recordId, protocol, protocolPath } = descriptor;
+    if (recordId !== undefined) {
+      return { ...commonFilter, recordId };
+    } else {
+      // else protocol & protocolPath are definitely defined
+      return { ...commonFilter, protocol: protocol!, protocolPath: protocolPath! };
+    }
+  }
 }

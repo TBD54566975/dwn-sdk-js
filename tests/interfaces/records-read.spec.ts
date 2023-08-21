@@ -4,8 +4,7 @@ import chai, { expect } from 'chai';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { RecordsRead } from '../../src/interfaces/records-read.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { throws } from 'assert';
-import { DwnErrorCode, DwnInterfaceName, DwnMethodName, Jws } from '../../src/index.js';
+import { DwnErrorCode, Jws } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -67,78 +66,6 @@ describe('RecordsRead', () => {
       });
 
       await expect(readPromiseSuccess).to.not.be.rejected;
-    });
-  });
-
-  describe('createFilter()', async () => {
-    it('should throw if `recordId`, `protocol` and `protocolPath` are left empty', async () => {
-      throws(() => RecordsRead.createFilter({
-        interface        : DwnInterfaceName.Records,
-        method           : DwnMethodName.Read,
-        messageTimestamp : '2023-08-19T00:00:00.000000Z'
-      }), /missing required properties from RecordsRead descriptor/);
-    });
-
-    it('should throw if only `protocolPath` is set', async () => {
-      throws(() => RecordsRead.createFilter({
-        interface        : DwnInterfaceName.Records,
-        method           : DwnMethodName.Read,
-        messageTimestamp : '2023-08-19T00:00:00.000000Z',
-
-        protocolPath: 'email/email'
-      }), /missing required properties from RecordsRead descriptor/);
-    });
-
-    it('should throw if only `protocol` is set', async () => {
-      throws(() => RecordsRead.createFilter({
-        interface        : DwnInterfaceName.Records,
-        method           : DwnMethodName.Read,
-        messageTimestamp : '2023-08-19T00:00:00.000000Z',
-
-        protocol: 'example.org/Protocol'
-      }), /missing required properties from RecordsRead descriptor/);
-    });
-
-    it('should not throw if only `recordId` is set', async () => {
-      const filter = RecordsRead.createFilter({
-        interface        : DwnInterfaceName.Records,
-        method           : DwnMethodName.Read,
-        messageTimestamp : '2023-08-19T00:00:00.000000Z',
-
-        recordId: 'some-id'
-      });
-
-      expect(filter['recordId']).to.equal('some-id');
-    });
-
-    it('should not throw if `protocol` and `protocolPath` are set', async () => {
-      const filter = RecordsRead.createFilter({
-        interface        : DwnInterfaceName.Records,
-        method           : DwnMethodName.Read,
-        messageTimestamp : '2023-08-19T00:00:00.000000Z',
-
-        protocol     : 'some-protocol',
-        protocolPath : 'protocol/path'
-      });
-
-      expect(filter['protocol']).to.equal('some-protocol');
-      expect(filter['protocolPath']).to.equal('protocol/path');
-    });
-
-    it('should not set protocol filters if `recordId` is provided', async () => {
-      const filter = RecordsRead.createFilter({
-        interface        : DwnInterfaceName.Records,
-        method           : DwnMethodName.Read,
-        messageTimestamp : '2023-08-19T00:00:00.000000Z',
-
-        protocol     : 'some-protocol',
-        protocolPath : 'protocol/path',
-        recordId     : 'some-id'
-      });
-
-      expect(filter['recordId']).to.equal('some-id');
-      expect(filter['protocol']).to.be.undefined;
-      expect(filter['protocolPath']).to.be.undefined;
     });
   });
 });

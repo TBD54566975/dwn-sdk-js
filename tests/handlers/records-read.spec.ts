@@ -819,7 +819,7 @@ export function testRecordsReadHandler(): void {
             expect(latestEmailReply2.status.code).to.equal(404);
           });
 
-          it('returns the latest RecordsWrite to the specified protocolPath when multiple parents exist in path', async () => {
+          it('returns the latest RecordsWrite to the specified protocolPath when multiple children exist in path', async () => {
             const alice = await DidKeyResolver.generate();
 
             const protocolDefinition = { ...nestedProtocol };
@@ -1588,6 +1588,22 @@ export function testRecordsReadHandler(): void {
         expect(readReply.status.code).to.equal(404);
       });
 
+      it('should return 404 on read without `recordId` or `protocol` and `protocolPath` to be set', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        // create with recordId to avoid the failure here
+        const recordsRead = await RecordsRead.create({
+          recordId: 'recordId',
+        });
+
+        // delete recordId to induce the failure on the handler
+        delete recordsRead.message.descriptor.recordId;
+
+        const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+        expect(readReply.status.code).to.equal(400);
+        expect(readReply.status.detail).to.contain(`/descriptor: must have required property 'recordId'`);
+      });
+
       describe('data from encodedData', () => {
         it('should not get data from DataStore if encodedData exists', async () => {
           const alice = await DidKeyResolver.generate();
@@ -1617,6 +1633,7 @@ export function testRecordsReadHandler(): void {
           const readData = await DataStream.toBytes(recordsReadResponse.record!.data);
           expect(readData).to.eql(dataBytes);
         });
+
         it('should get data from DataStore if encodedData does not exist', async () => {
           const alice = await DidKeyResolver.generate();
 
@@ -2106,23 +2123,49 @@ export function testRecordsReadHandler(): void {
       });
     });
 
-    it('should not allow read without `recordId` or `protocol` and `protocolPath` to be set', async () => {
-      const alice = await DidKeyResolver.generate();
+    describe('createFilter()', async () => {
+      it('should not throw if only `recordId` is set', async () => {
+        const filter = RecordsReadHandler.createFilter({
+          interface        : DwnInterfaceName.Records,
+          method           : DwnMethodName.Read,
+          messageTimestamp : '2023-08-19T00:00:00.000000Z',
 
-      // create with recordId to avoid the failure here
-      const recordsRead = await RecordsRead.create({
-        recordId: 'recordId',
+          recordId: 'some-id'
+        });
+
+        expect(filter['recordId']).to.equal('some-id');
       });
 
-      // delete recordId to induce the failure on the handler
-      delete recordsRead.message.descriptor.recordId;
+      it('should not throw if `protocol` and `protocolPath` are set', async () => {
+        const filter = RecordsReadHandler.createFilter({
+          interface        : DwnInterfaceName.Records,
+          method           : DwnMethodName.Read,
+          messageTimestamp : '2023-08-19T00:00:00.000000Z',
 
-      const recordsReadHandler = new RecordsReadHandler(didResolver, messageStore, dataStore);
-      const readReply = await recordsReadHandler.handle({ tenant: alice.did, message: recordsRead.message });
-      expect(readReply.status.code).to.equal(400);
-      expect(readReply.status.detail).to.contain(DwnErrorCode.RecordsReadMissingDescriptorProperties);
+          protocol     : 'some-protocol',
+          protocolPath : 'protocol/path'
+        });
+
+        expect(filter['protocol']).to.equal('some-protocol');
+        expect(filter['protocolPath']).to.equal('protocol/path');
+      });
+
+      it('should not set protocol filters if `recordId` is provided', async () => {
+        const filter = RecordsReadHandler.createFilter({
+          interface        : DwnInterfaceName.Records,
+          method           : DwnMethodName.Read,
+          messageTimestamp : '2023-08-19T00:00:00.000000Z',
+
+          protocol     : 'some-protocol',
+          protocolPath : 'protocol/path',
+          recordId     : 'some-id'
+        });
+
+        expect(filter['recordId']).to.equal('some-id');
+        expect(filter['protocol']).to.be.undefined;
+        expect(filter['protocolPath']).to.be.undefined;
+      });
     });
-
     it('should return 401 if signature check fails', async () => {
       const alice = await DidKeyResolver.generate();
       const recordsRead = await RecordsRead.create({
