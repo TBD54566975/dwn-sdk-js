@@ -32,14 +32,26 @@ describe('RecordsRead', () => {
       await expect(readPromise).to.be.rejectedWith(DwnErrorCode.RecordsReadMissingCreateProperties);
     });
 
+    it('should reject if all three `recordId`, `protocol` and `protocolPath` are passed', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+      const readPromise = RecordsRead.create({
+        recordId                    : 'some-id',
+        protocol                    : 'protocol',
+        protocolPath                : 'some/path',
+        authorizationSignatureInput : Jws.createSignatureInput(alice),
+      });
+
+      await expect(readPromise).to.be.rejectedWith('/descriptor: must match exactly one schema in oneOf');
+    });
+
     it('should not reject if only `recordId` is passed', async () => {
       const alice = await TestDataGenerator.generatePersona();
-      const readPromiseSuccess = RecordsRead.create({
+      const readSuccess = await RecordsRead.create({
         recordId                    : 'some-id',
         authorizationSignatureInput : Jws.createSignatureInput(alice),
       });
 
-      await expect(readPromiseSuccess).to.not.be.rejected;
+      expect(readSuccess.message.descriptor.recordId).to.equal('some-id');
     });
 
     it('should reject if only one of `protocol` or `protocolPath` are set', async () => {
@@ -59,13 +71,14 @@ describe('RecordsRead', () => {
 
       await expect(protocolOnlyP).to.be.rejectedWith(DwnErrorCode.RecordsReadMissingCreateProperties);
 
-      const readPromiseSuccess = RecordsRead.create({
+      const readSuccess = await RecordsRead.create({
         protocol                    : 'protocol',
         protocolPath                : 'some/path',
         authorizationSignatureInput : Jws.createSignatureInput(alice),
       });
 
-      await expect(readPromiseSuccess).to.not.be.rejected;
+      expect(readSuccess.message.descriptor.protocol).to.equal('protocol');
+      expect(readSuccess.message.descriptor.protocolPath).to.equal('some/path');
     });
   });
 });
