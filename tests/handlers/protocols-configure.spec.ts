@@ -115,7 +115,7 @@ export function testProtocolsConfigureHandler(): void {
           author: alice,
           protocolDefinition,
         });
-        await sleep(1);
+        await sleep(2);
         const middleProtocolsConfigure = await TestDataGenerator.generateProtocolsConfigure({
           author: alice,
           protocolDefinition,
@@ -299,7 +299,7 @@ export function testProtocolsConfigureHandler(): void {
         it('should delete older ProtocolsConfigure events when one is overwritten', async () => {
           const alice = await DidKeyResolver.generate();
           const oldestWrite = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: minimalProtocolDefinition });
-          await sleep(1);
+          await sleep(2);
           const newestWrite = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: minimalProtocolDefinition });
 
           let reply = await dwn.processMessage(alice.did, oldestWrite.message, oldestWrite.dataStream);

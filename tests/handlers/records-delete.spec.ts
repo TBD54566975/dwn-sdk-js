@@ -196,7 +196,7 @@ export function testRecordsDeleteHandler(): void {
           recordId                    : initialWriteData.message.recordId,
           authorizationSignatureInput : Jws.createSignatureInput(alice)
         });
-        await sleep(1);
+        await sleep(2);
         const subsequentWriteData = await TestDataGenerator.generateFromRecordsWrite({
           existingWrite : initialWriteData.recordsWrite,
           author        : alice

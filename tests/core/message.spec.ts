@@ -45,9 +45,9 @@ describe('Message', () => {
   describe('getNewestMessage', () => {
     it('should return the newest message', async () => {
       const a = (await TestDataGenerator.generateRecordsWrite()).message;
-      await sleep(1); // need to sleep for at least one millisecond else some messages get generated with the same time
+      await sleep(2); // need to sleep for at least two millisecond else some messages get generated with the same time
       const b = (await TestDataGenerator.generateRecordsWrite()).message;
-      await sleep(1);
+      await sleep(2);
       const c = (await TestDataGenerator.generateRecordsWrite()).message; // c is the newest since its created last
 
       const newestMessage = await Message.getNewestMessage([b, c, a]);
@@ -58,9 +58,9 @@ describe('Message', () => {
   describe('getOldestMessage', () => {
     it('should return the newest message', async () => {
       const a = (await TestDataGenerator.generateRecordsWrite()).message;
-      await sleep(1); // need to sleep for at least one millisecond else some messages get generated with the same time
+      await sleep(2); // need to sleep for at least two millisecond else some messages get generated with the same time
       const b = (await TestDataGenerator.generateRecordsWrite()).message;
-      await sleep(1);
+      await sleep(2);
       const c = (await TestDataGenerator.generateRecordsWrite()).message; // c is the newest since its created last
 
       const newestMessage = await Message.getOldestMessage([b, c, a]);
