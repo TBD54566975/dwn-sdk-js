@@ -301,7 +301,6 @@ export class TestDataGenerator {
   public static async generateProtocolsConfigure(
     input?: GenerateProtocolsConfigureInput
   ): Promise<GenerateProtocolsConfigureOutput> {
-
     const author = input?.author ?? await TestDataGenerator.generatePersona();
 
     // generate protocol types and  definition if not given
@@ -811,6 +810,22 @@ export class TestDataGenerator {
    */
   public static randomInt(min: number, max: number): number {
     return Math.floor(Math.random() * (max - min) + min);
+  }
+
+  /**
+   * Generates a random timestamp.
+   *
+   * @returns random UTC ISO-8601 timestamp
+   */
+  public static randomTimestamp(): string {
+    return Temporal.PlainDateTime.from({
+      year   : this.randomInt(2000, 2022),
+      month  : this.randomInt(1, 12),
+      day    : this.randomInt(1, 28),
+      hour   : this.randomInt(0, 23),
+      minute : this.randomInt(0, 59),
+      second : this.randomInt(0, 59),
+    }).toString({ smallestUnit: 'microseconds' }) + 'Z';
   }
 
   /**

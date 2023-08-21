@@ -6,7 +6,6 @@ import { expect } from 'chai';
 import { constructRecordsWriteIndexes } from '../../src/handlers/records-write.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
-import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { DidKeyResolver, RecordsDateSort, TimestampDateSort } from '../../src/index.js';
@@ -147,17 +146,12 @@ export function testMessageStore(): void {
       after(async () => {
         await messageStore.close();
       });
-
-      const randomInt = (min: number, max: number): number => {
-        return Math.floor(Math.random() * ( max - min) + min);
-      };
-
       describe('sorting', async () => {
         it('should sort on TimestampDescending if no sort is specified', async () => {
           const alice = await DidKeyResolver.generate();
 
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
-            messageTimestamp: Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+            messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
@@ -177,7 +171,7 @@ export function testMessageStore(): void {
           const alice = await DidKeyResolver.generate();
 
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
-            messageTimestamp: Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+            messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
@@ -195,7 +189,7 @@ export function testMessageStore(): void {
         it('should sort on CreatedAscending', async () => {
           const alice = await DidKeyResolver.generate();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
-            dateCreated: Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+            dateCreated: TestDataGenerator.randomTimestamp(),
           })));
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
@@ -215,7 +209,7 @@ export function testMessageStore(): void {
         it('should sort on CreatedDescending', async () => {
           const alice = await DidKeyResolver.generate();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
-            dateCreated: Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+            dateCreated: TestDataGenerator.randomTimestamp(),
           })));
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
@@ -236,7 +230,7 @@ export function testMessageStore(): void {
           const alice = await DidKeyResolver.generate();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             published     : true,
-            datePublished : Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+            datePublished : TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
@@ -257,7 +251,7 @@ export function testMessageStore(): void {
           const alice = await DidKeyResolver.generate();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             published     : true,
-            datePublished : Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+            datePublished : TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
@@ -279,7 +273,7 @@ export function testMessageStore(): void {
         it('should return all records if no limit is specified', async () => {
           const alice = await DidKeyResolver.generate();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
-            messageTimestamp: Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+            messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
@@ -292,7 +286,7 @@ export function testMessageStore(): void {
         it('should limit records', async () => {
           const alice = await DidKeyResolver.generate();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
-            messageTimestamp: Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+            messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
@@ -315,7 +309,7 @@ export function testMessageStore(): void {
         it('should offset records without a limit', async () => {
           const alice = await DidKeyResolver.generate();
           const messages = await Promise.all(Array(13).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
-            messageTimestamp: Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+            messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
@@ -338,7 +332,7 @@ export function testMessageStore(): void {
         it('should offset records with a limit', async () => {
           const alice = await DidKeyResolver.generate();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
-            messageTimestamp: Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+            messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
@@ -361,7 +355,7 @@ export function testMessageStore(): void {
         it('should paginate through all of the records', async () => {
           const alice = await DidKeyResolver.generate();
           const messages = await Promise.all(Array(23).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
-            messageTimestamp: Temporal.PlainDateTime.from({ year: 2023, month: randomInt(1,12), day: randomInt(1,28), hour: randomInt(1,23) }).toString({ smallestUnit: 'microseconds' }),
+            messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));

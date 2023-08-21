@@ -134,8 +134,9 @@ export class MessageStoreLevel implements MessageStore {
     messages: GenericMessage[],
     dateSort: DateSort
   ): GenericMessage[] {
-    // todo: check somewhere upstream that the incoming message interfaces match the sort.
-    // ie. Created/Published only apply to RecordsWrite
+    // The entry points that allow users to specify a sort are types according to their message type.
+    // ie. RecordsDateSort and TimestampDateSort which DateSort is a union type of.
+
     switch (dateSort) {
     case TimestampDateSort.TimestampDescending:
       return messages.sort((a, b) => lexicographicalCompare(b.descriptor.messageTimestamp, a.descriptor.messageTimestamp));
