@@ -195,9 +195,11 @@ export class IndexLevel {
 
     const matches: string[] = [];
     for await (const [ key, dataId ] of this.db.iterator(iteratorOptions, options)) {
+      // if "greater-than" is specified, skip all keys that contains the exact value given in the "greater-than" condition
       if ('gt' in rangeFilter && this.extractValueFromKey(key) === this.encodeValue(rangeFilter.gt)) {
         continue;
       }
+
       // immediately stop if we arrive at an index entry for a different property
       if (!key.startsWith(propertyName)) {
         break;
