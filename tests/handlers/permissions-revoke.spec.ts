@@ -255,7 +255,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
         permissionsGrantId : await Message.getCid(permissionsGrant.message),
       });
 
-      await sleep(2);
+      await TestDataGenerator.minimalSleep();
 
       // Revoke the grant using a later timestamp than the pre-created revoke
       const { permissionsRevoke: permissionsRevoke2 } = await TestDataGenerator.generatePermissionsRevoke({
