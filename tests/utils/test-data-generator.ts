@@ -1,6 +1,5 @@
 import type { DidResolutionResult } from '../../src/did/did-resolver.js';
 import type { Readable } from 'readable-stream';
-import type { RecordsDateSort } from '../../src/types/message-types.js';
 import type { RecordsFilter } from '../../src/types/records-types.js';
 
 import type {
@@ -31,6 +30,7 @@ import {
   KeyDerivationScheme,
   Records
 } from '../../src/index.js';
+import type { Pagination, RecordsDateSort } from '../../src/types/message-types.js';
 import type { PermissionConditions, PermissionScope, PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from '../../src/types/permissions-types.js';
 import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 
@@ -160,6 +160,7 @@ export type GenerateRecordsQueryInput = {
   messageTimestamp?: string;
   filter?: RecordsFilter;
   dateSort?: RecordsDateSort;
+  pagination?: Pagination;
 };
 
 export type GenerateRecordsQueryOutput = {
@@ -601,7 +602,8 @@ export class TestDataGenerator {
       messageTimestamp : input?.messageTimestamp,
       authorizationSignatureInput,
       filter           : input?.filter ?? { schema: TestDataGenerator.randomString(10) }, // must have one filter property if no filter is given
-      dateSort         : input?.dateSort
+      dateSort         : input?.dateSort,
+      pagination       : input?.pagination
     };
     removeUndefinedProperties(options);
 

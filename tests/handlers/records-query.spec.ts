@@ -458,6 +458,41 @@ export function testRecordsQueryHandler(): void {
         expect(publishedDescendingQueryReply.entries?.[1].descriptor['datePublished']).to.equal(write2Data.message.descriptor.datePublished);
         expect(publishedDescendingQueryReply.entries?.[2].descriptor['datePublished']).to.equal(write1Data.message.descriptor.datePublished);
       });
+      it('should paginate records if pagination is provided', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        const messages = await Promise.all(Array(12).fill({}).map(_ => TestDataGenerator.generateRecordsWrite({
+          author : alice,
+          schema : 'https://schema'
+        })));
+        for (const message of messages) {
+          const result = await dwn.processMessage(alice.did, message.message, message.dataStream);
+          expect(result.status.code).to.equal(202);
+        }
+
+        const limit = 5;
+        const pages = Math.ceil(messages.length / limit);
+        const resultIds: string[] = [];
+
+        for (let i = 0; i < pages; i++) {
+          const pageQuery = await TestDataGenerator.generateRecordsQuery({
+            author : alice,
+            filter : {
+              schema: 'https://schema'
+            },
+            pagination: {
+              limit  : limit,
+              offset : i * limit
+            },
+          });
+          const pageReply = await dwn.handleRecordsQuery(alice.did, pageQuery.message);
+          expect(pageReply.status.code).to.equal(200);
+          expect(pageReply.entries?.length).to.be.lte(limit);
+          pageReply.entries?.forEach(e => resultIds.push(e.recordId));
+        }
+        expect(resultIds.length).to.equal(messages.length);
+        expect(messages.every(({ message }) => resultIds.includes(message.recordId)));
+      });
 
       it('should allow an anonymous unauthenticated query to return published records', async () => {
       // write 2 records into Alice's DB:
