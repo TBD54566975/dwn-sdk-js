@@ -16,3 +16,11 @@ export function sleep(durationInMillisecond: number): Promise<void> {
 export function getCurrentTimeInHighPrecision(): string {
   return Temporal.Now.instant().toString({ smallestUnit: 'microseconds' });
 }
+
+/**
+ * We must sleep for at least 2ms to avoid timestamp collisions during testing.
+ * https://github.com/TBD54566975/dwn-sdk-js/issues/481
+ */
+export async function minimalSleep(): Promise<void> {
+  await sleep(2);
+}

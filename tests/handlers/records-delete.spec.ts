@@ -11,6 +11,7 @@ import chai, { expect } from 'chai';
 import { ArrayUtility } from '../../src/utils/array.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { Message } from '../../src/core/message.js';
+import { minimalSleep } from '../../src/utils/time.js';
 import { RecordsDeleteHandler } from '../../src/handlers/records-delete.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
@@ -195,7 +196,7 @@ export function testRecordsDeleteHandler(): void {
           recordId                    : initialWriteData.message.recordId,
           authorizationSignatureInput : Jws.createSignatureInput(alice)
         });
-        await TestDataGenerator.minimalSleep();
+        await minimalSleep();
         const subsequentWriteData = await TestDataGenerator.generateFromRecordsWrite({
           existingWrite : initialWriteData.recordsWrite,
           author        : alice

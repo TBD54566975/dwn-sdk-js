@@ -37,6 +37,7 @@ import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 import * as cbor from '@ipld/dag-cbor';
 import { CID } from 'multiformats/cid';
 import { DataStream } from '../../src/utils/data-stream.js';
+import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions-request.js';
 import { PermissionsRevoke } from '../../src/interfaces/permissions-revoke.js';
@@ -44,7 +45,6 @@ import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { Temporal } from '@js-temporal/polyfill';
-import { getCurrentTimeInHighPrecision, sleep } from '../../src/utils/time.js';
 
 import {
   DidKeyResolver,
@@ -820,13 +820,5 @@ export class TestDataGenerator {
       },
       didDocumentMetadata: {}
     };
-  }
-
-  /**
-   * We must sleep for at least 2ms to avoid timestamp collisions during testing.
-   * https://github.com/TBD54566975/dwn-sdk-js/issues/481
-   */
-  public static async minimalSleep(): Promise<void> {
-    await sleep(2);
   }
 }
