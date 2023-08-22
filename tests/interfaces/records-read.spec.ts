@@ -57,19 +57,19 @@ describe('RecordsRead', () => {
     it('should reject if only one of `protocol` or `protocolPath` are set', async () => {
       const alice = await TestDataGenerator.generatePersona();
       // with only protocolPath
-      const protocolPathOnlyP = RecordsRead.create({
+      const protocolPathOnlyPromise = RecordsRead.create({
         protocolPath                : 'some/path',
         authorizationSignatureInput : Jws.createSignatureInput(alice),
       });
 
-      await expect(protocolPathOnlyP).to.be.rejectedWith(DwnErrorCode.RecordsReadMissingCreateProperties);
+      await expect(protocolPathOnlyPromise).to.be.rejectedWith(DwnErrorCode.RecordsReadMissingCreateProperties);
       // with only protocolPath
-      const protocolOnlyP = RecordsRead.create({
+      const protocolOnlyPromise = RecordsRead.create({
         protocol                    : 'protocol',
         authorizationSignatureInput : Jws.createSignatureInput(alice),
       });
 
-      await expect(protocolOnlyP).to.be.rejectedWith(DwnErrorCode.RecordsReadMissingCreateProperties);
+      await expect(protocolOnlyPromise).to.be.rejectedWith(DwnErrorCode.RecordsReadMissingCreateProperties);
 
       const readSuccess = await RecordsRead.create({
         protocol                    : 'protocol',

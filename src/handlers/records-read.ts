@@ -89,7 +89,7 @@ export class RecordsReadHandler implements MethodHandler {
    *
    * @returns {Filter} with a Records interface as well as the appropriate filter params
    */
-  public static createFilter(descriptor: RecordsReadDescriptor): Filter {
+  private static createFilter(descriptor: RecordsReadDescriptor): Filter {
     const commonFilter: Filter = { interface: DwnInterfaceName.Records, isLatestBaseState: true };
     const { recordId, protocol, protocolPath } = descriptor;
     if (recordId !== undefined) {

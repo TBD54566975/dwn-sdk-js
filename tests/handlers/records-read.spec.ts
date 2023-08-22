@@ -686,7 +686,7 @@ export function testRecordsReadHandler(): void {
 
             const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
 
-            // Install social-media protocol on Alice's DWN
+            // Install protocol on Alice's DWN
             const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
               author: alice,
               protocolDefinition
@@ -726,7 +726,7 @@ export function testRecordsReadHandler(): void {
 
             const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
 
-            // Install social-media protocol on Alice's DWN
+            // Install protocol on Alice's DWN
             const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
               author: alice,
               protocolDefinition
@@ -775,7 +775,7 @@ export function testRecordsReadHandler(): void {
 
             const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
 
-            // Install social-media protocol on Alice's DWN
+            // Install protocol on Alice's DWN
             const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
               author: alice,
               protocolDefinition
@@ -2120,47 +2120,6 @@ export function testRecordsReadHandler(): void {
             DwnErrorCode.RecordsDecryptNoMatchingKeyEncryptedFound
           );
         });
-      });
-    });
-
-    describe('createFilter()', async () => {
-      it('should set `recordId` filter when provided', async () => {
-        const filter = RecordsReadHandler.createFilter({
-          interface        : DwnInterfaceName.Records,
-          method           : DwnMethodName.Read,
-          messageTimestamp : '2023-08-19T00:00:00.000000Z',
-          recordId         : 'some-id'
-        });
-
-        expect(filter['recordId']).to.equal('some-id');
-      });
-
-      it('should set `protocol` and `protocolPath` filters when provided', async () => {
-        const filter = RecordsReadHandler.createFilter({
-          interface        : DwnInterfaceName.Records,
-          method           : DwnMethodName.Read,
-          messageTimestamp : '2023-08-19T00:00:00.000000Z',
-          protocol         : 'some-protocol',
-          protocolPath     : 'protocol/path'
-        });
-
-        expect(filter['protocol']).to.equal('some-protocol');
-        expect(filter['protocolPath']).to.equal('protocol/path');
-      });
-
-      it('should not set protocol filters if `recordId` is provided', async () => {
-        const filter = RecordsReadHandler.createFilter({
-          interface        : DwnInterfaceName.Records,
-          method           : DwnMethodName.Read,
-          messageTimestamp : '2023-08-19T00:00:00.000000Z',
-          protocol         : 'some-protocol',
-          protocolPath     : 'protocol/path',
-          recordId         : 'some-id'
-        });
-
-        expect(filter['recordId']).to.equal('some-id');
-        expect(filter['protocol']).to.be.undefined;
-        expect(filter['protocolPath']).to.be.undefined;
       });
     });
 
