@@ -219,8 +219,7 @@ const result = await window.web5.dwn.processMessage({
 ### Custom Tenant Gating
 By default, all DIDs are allowed as tenants. A custom tenant gate implementation can be provided when initializing the DWN.
 ```ts
-import { Dwn, TenantGate } from '@tbd54566975/dwn-sdk-js';
-import { DataStoreLevel, EventLogLevel, MessageStoreLevel } from '@tbd54566975/dwn-sdk-js/stores';
+import { Dwn, TenantGate, DataStoreLevel, EventLogLevel, MessageStoreLevel } from '@tbd54566975/dwn-sdk-js';
 
 class CustomTenantGate implements TenantGate {
   public async isTenant(did): Promise<void> {
