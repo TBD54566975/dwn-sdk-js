@@ -1,3 +1,4 @@
+import type { MessageSort } from '../types/message-types.js';
 import type { MethodHandler } from '..//types/method-handler.js';
 import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
@@ -7,7 +8,8 @@ import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { Records } from '../utils/records.js';
 
-import { RecordsQuery } from '../interfaces/records-query.js';
+import { SortOrder } from '../types/message-types.js';
+import { DateSort, RecordsQuery } from '../interfaces/records-query.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export class RecordsQueryHandler implements MethodHandler {
@@ -67,10 +69,33 @@ export class RecordsQueryHandler implements MethodHandler {
   }
 
   /**
+   * Convert an incoming DateSort to a sort type accepted by MessageStore
+   * Defaults to 'dateCreated' in Descending order if no sort is supplied.
+   *
+   * @param dateSort the optional DateSort from the RecordsQuery message descriptor.
+   * @returns {MessageSort} for MessageStore sorting.
+   */
+  private convertDateSort(dateSort?: DateSort): MessageSort {
+    switch (dateSort) {
+    case DateSort.CreatedAscending:
+      return { dateCreated: SortOrder.Ascending };
+    case DateSort.CreatedDescending:
+      return { dateCreated: SortOrder.Descending };
+    case DateSort.PublishedAscending:
+      return { datePublished: SortOrder.Ascending };
+    case DateSort.PublishedDescending:
+      return { datePublished: SortOrder.Descending };
+    default:
+      return { dateCreated: SortOrder.Ascending };
+    }
+  }
+
+  /**
    * Fetches the records as the owner of the DWN with no additional filtering.
    */
   private async fetchRecordsAsOwner(tenant: string, recordsQuery: RecordsQuery): Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
     const { dateSort, filter: queryFilter, pagination } = recordsQuery.message.descriptor;
+    const sortOrder = this.convertDateSort(dateSort);
     // fetch all published records matching the query
     const filter = {
       ...Records.convertFilter(queryFilter),
@@ -79,7 +104,7 @@ export class RecordsQueryHandler implements MethodHandler {
       isLatestBaseState : true
     };
 
-    const records = (await this.messageStore.query(tenant, filter, dateSort, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
+    const records = (await this.messageStore.query(tenant, filter, sortOrder, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
     return records;
   }
 
@@ -119,6 +144,7 @@ export class RecordsQueryHandler implements MethodHandler {
    */
   private async fetchPublishedRecords(tenant: string, recordsQuery: RecordsQuery): Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
     const { dateSort, filter: queryFilter, pagination } = recordsQuery.message.descriptor;
+    const sortOrder = this.convertDateSort(dateSort);
     // fetch all published records matching the query
     const filter = {
       ...Records.convertFilter(queryFilter),
@@ -128,7 +154,7 @@ export class RecordsQueryHandler implements MethodHandler {
       isLatestBaseState : true
     };
 
-    const publishedRecords = (await this.messageStore.query(tenant, filter, dateSort, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
+    const publishedRecords = (await this.messageStore.query(tenant, filter, sortOrder, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
     return publishedRecords;
   }
 
@@ -139,6 +165,7 @@ export class RecordsQueryHandler implements MethodHandler {
     : Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
 
     const { dateSort, filter: queryFilter, pagination } = recordsQuery.message.descriptor;
+    const sortOrder = this.convertDateSort(dateSort);
     // include records where recipient is query author
     const filter = {
       ...Records.convertFilter(queryFilter),
@@ -150,7 +177,7 @@ export class RecordsQueryHandler implements MethodHandler {
     };
 
     const unpublishedRecordsForQueryAuthor =
-      (await this.messageStore.query(tenant, filter, dateSort, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
+      (await this.messageStore.query(tenant, filter, sortOrder, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
     return unpublishedRecordsForQueryAuthor;
   }
 
@@ -161,6 +188,7 @@ export class RecordsQueryHandler implements MethodHandler {
     : Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
 
     const { dateSort, filter: queryFilter, pagination } = recordsQuery.message.descriptor;
+    const sortOrder = this.convertDateSort(dateSort);
     // include records where author is the same as the query author
     const filter = {
       ...Records.convertFilter(queryFilter),
@@ -172,7 +200,7 @@ export class RecordsQueryHandler implements MethodHandler {
     };
 
     const unpublishedRecordsForQueryAuthor =
-      (await this.messageStore.query(tenant, filter, dateSort, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
+      (await this.messageStore.query(tenant, filter, sortOrder, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
     return unpublishedRecordsForQueryAuthor;
   }
 }

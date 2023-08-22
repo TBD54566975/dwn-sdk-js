@@ -1,4 +1,4 @@
-import type { DateSort, Filter, GenericMessage, Pagination } from './message-types.js';
+import type { Filter, GenericMessage, MessageSort, Pagination } from './message-types.js';
 
 export interface MessageStoreOptions {
   signal?: AbortSignal;
@@ -38,7 +38,7 @@ export interface MessageStore {
   query(
     tenant: string,
     filter: Filter,
-    dateSort?: DateSort,
+    dateSort: MessageSort,
     pagination?: Pagination,
     options?: MessageStoreOptions
   ): Promise<GenericMessage[]>;

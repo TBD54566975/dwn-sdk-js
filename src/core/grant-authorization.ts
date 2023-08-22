@@ -116,7 +116,7 @@ export class GrantAuthorization {
       method    : DwnMethodName.Revoke,
       permissionsGrantId,
     };
-    const revokes = await messageStore.query(tenant, query);
+    const revokes = await messageStore.query(tenant, query, {});
     const oldestExistingRevoke = await Message.getOldestMessage(revokes);
 
     if (oldestExistingRevoke !== undefined && oldestExistingRevoke.descriptor.messageTimestamp <= incomingMessage.descriptor.messageTimestamp) {

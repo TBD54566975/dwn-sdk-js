@@ -40,7 +40,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
       method    : DwnMethodName.Configure,
       protocol  : message.descriptor.definition.protocol
     };
-    const existingMessages = await this.messageStore.query(tenant, query) as ProtocolsConfigureMessage[];
+    const existingMessages = await this.messageStore.query(tenant, query, {}) as ProtocolsConfigureMessage[];
 
     // find newest message, and if the incoming message is the newest
     let newestMessage = await Message.getNewestMessage(existingMessages);

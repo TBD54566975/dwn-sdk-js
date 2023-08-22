@@ -4,11 +4,12 @@ import type { RecordsWriteMessage } from '../../src/types/records-types.js';
 import { expect } from 'chai';
 
 import { constructRecordsWriteIndexes } from '../../src/handlers/records-write.js';
+import { DidKeyResolver } from '../../src/index.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
+import { SortOrder } from '../../src/types/message-types.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
-import { DidKeyResolver, RecordsDateSort, TimestampDateSort } from '../../src/index.js';
 
 let messageStore: MessageStore;
 
@@ -56,10 +57,10 @@ export function testMessageStore(): void {
         // inserting the message indicating it is the 'latest' in the index
         await messageStore.put(alice.did, message, { latest: 'true' });
 
-        const results1 = await messageStore.query(alice.did, { latest: 'true' });
+        const results1 = await messageStore.query(alice.did, { latest: 'true' }, {});
         expect(results1.length).to.equal(1);
 
-        const results2 = await messageStore.query(alice.did, { latest: 'false' });
+        const results2 = await messageStore.query(alice.did, { latest: 'false' }, {});
         expect(results2.length).to.equal(0);
 
         // deleting the existing indexes and replacing it indicating it is no longer the 'latest'
@@ -67,10 +68,10 @@ export function testMessageStore(): void {
         await messageStore.delete(alice.did, cid);
         await messageStore.put(alice.did, message, { latest: 'false' });
 
-        const results3 = await messageStore.query(alice.did, { latest: 'true' });
+        const results3 = await messageStore.query(alice.did, { latest: 'true' }, {});
         expect(results3.length).to.equal(0);
 
-        const results4 = await messageStore.query(alice.did, { latest: 'false' });
+        const results4 = await messageStore.query(alice.did, { latest: 'false' }, {});
         expect(results4.length).to.equal(1);
       });
 
@@ -82,7 +83,7 @@ export function testMessageStore(): void {
 
         await messageStore.put(alice.did, message, { schema });
 
-        const results = await messageStore.query(alice.did, { schema });
+        const results = await messageStore.query(alice.did, { schema }, {});
         expect((results[0] as RecordsWriteMessage).descriptor.schema).to.equal(schema);
       });
 
@@ -124,7 +125,7 @@ export function testMessageStore(): void {
           expect(e).to.equal('reason');
         }
 
-        const results = await messageStore.query(alice.did, { schema });
+        const results = await messageStore.query(alice.did, { schema }, {});
         expect(results.length).to.equal(0);
       });
     });
@@ -147,7 +148,7 @@ export function testMessageStore(): void {
         await messageStore.close();
       });
       describe('sorting', async () => {
-        it('should sort on TimestampDescending if no sort is specified', async () => {
+        it('should sort on messageTimestamp Ascending if no sort is specified', async () => {
           const alice = await DidKeyResolver.generate();
 
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
@@ -157,17 +158,17 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
           }
 
-          const messageQuery = await messageStore.query(alice.did, {});
+          const messageQuery = await messageStore.query(alice.did, {}, {});
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
-            lexicographicalCompare(b.message.descriptor.messageTimestamp, a.message.descriptor.messageTimestamp));
+            lexicographicalCompare(a.message.descriptor.messageTimestamp, b.message.descriptor.messageTimestamp));
           for (let i = 0; i < sortedRecords.length; i++) {
             expect(sortedRecords[i].message.descriptor.messageTimestamp).to.equal(messageQuery[i].descriptor.messageTimestamp);
           }
         });
 
-        it('should sort on TimestampAscending', async () => {
+        it('should sort on messageTimestamp Ascending', async () => {
           const alice = await DidKeyResolver.generate();
 
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
@@ -176,7 +177,7 @@ export function testMessageStore(): void {
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
           }
-          const messageQuery = await messageStore.query(alice.did, {}, TimestampDateSort.TimestampAscending);
+          const messageQuery = await messageStore.query(alice.did, {}, { messageTimestamp: SortOrder.Ascending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
@@ -186,7 +187,7 @@ export function testMessageStore(): void {
           }
         });
 
-        it('should sort on CreatedAscending', async () => {
+        it('should sort on dateCreated Ascending', async () => {
           const alice = await DidKeyResolver.generate();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             dateCreated: TestDataGenerator.randomTimestamp(),
@@ -195,7 +196,7 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
           }
 
-          const messageQuery = await messageStore.query(alice.did, {}, RecordsDateSort.CreatedAscending);
+          const messageQuery = await messageStore.query(alice.did, {}, { dateCreated: SortOrder.Ascending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
@@ -206,7 +207,7 @@ export function testMessageStore(): void {
           }
         });
 
-        it('should sort on CreatedDescending', async () => {
+        it('should sort on dateCreated Descending', async () => {
           const alice = await DidKeyResolver.generate();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             dateCreated: TestDataGenerator.randomTimestamp(),
@@ -215,7 +216,7 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
           }
 
-          const messageQuery = await messageStore.query(alice.did, {}, RecordsDateSort.CreatedDescending);
+          const messageQuery = await messageStore.query(alice.did, {}, { dateCreated: SortOrder.Descending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
@@ -226,7 +227,7 @@ export function testMessageStore(): void {
           }
         });
 
-        it('should sort on PublishedAscending', async () => {
+        it('should sort on datePublished Ascending', async () => {
           const alice = await DidKeyResolver.generate();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             published     : true,
@@ -236,7 +237,7 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
           }
 
-          const messageQuery = await messageStore.query(alice.did, {}, RecordsDateSort.PublishedAscending);
+          const messageQuery = await messageStore.query(alice.did, {}, { datePublished: SortOrder.Ascending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
@@ -247,7 +248,7 @@ export function testMessageStore(): void {
           }
         });
 
-        it('should sort on PublishedDescending', async () => {
+        it('should sort on datePublished Descending', async () => {
           const alice = await DidKeyResolver.generate();
           const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
             published     : true,
@@ -257,7 +258,7 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
           }
 
-          const messageQuery = await messageStore.query(alice.did, {}, RecordsDateSort.PublishedDescending);
+          const messageQuery = await messageStore.query(alice.did, {}, { datePublished: SortOrder.Descending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
@@ -279,7 +280,7 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
           }
 
-          const limitQuery = await messageStore.query(alice.did, {}, TimestampDateSort.TimestampDescending);
+          const limitQuery = await messageStore.query(alice.did, {}, {});
           expect(limitQuery.length).to.equal(messages.length);
         });
 
@@ -293,12 +294,12 @@ export function testMessageStore(): void {
           }
 
           const sortedRecords = messages.sort((a,b) =>
-            lexicographicalCompare(b.message.descriptor.messageTimestamp, a.message.descriptor.messageTimestamp));
+            lexicographicalCompare(a.message.descriptor.messageTimestamp, b.message.descriptor.messageTimestamp));
 
           const offset = 0;
           const limit = 5;
 
-          const limitQuery = await messageStore.query(alice.did, {}, TimestampDateSort.TimestampDescending, { offset, limit });
+          const limitQuery = await messageStore.query(alice.did, {}, {}, { offset, limit });
           expect(limitQuery.length).to.equal(limit);
           for (let i = 0; i < limitQuery.length; i++) {
             const offsetIndex = i + offset;
@@ -316,12 +317,12 @@ export function testMessageStore(): void {
           }
 
           const sortedRecords = messages.sort((a,b) =>
-            lexicographicalCompare(b.message.descriptor.messageTimestamp, a.message.descriptor.messageTimestamp));
+            lexicographicalCompare(a.message.descriptor.messageTimestamp, b.message.descriptor.messageTimestamp));
 
           const offset = 5;
           const limit = 0;
 
-          const limitQuery = await messageStore.query(alice.did, {}, TimestampDateSort.TimestampDescending, { offset, limit });
+          const limitQuery = await messageStore.query(alice.did, {}, {}, { offset, limit });
           expect(limitQuery.length).to.equal(sortedRecords.length - offset);
           for (let i = 0; i < limitQuery.length; i++) {
             const offsetIndex = i + offset;
@@ -339,12 +340,12 @@ export function testMessageStore(): void {
           }
 
           const sortedRecords = messages.sort((a,b) =>
-            lexicographicalCompare(b.message.descriptor.messageTimestamp, a.message.descriptor.messageTimestamp));
+            lexicographicalCompare(a.message.descriptor.messageTimestamp, b.message.descriptor.messageTimestamp));
 
           const offset = 5;
           const limit = 3;
 
-          const limitQuery = await messageStore.query(alice.did, {}, TimestampDateSort.TimestampDescending, { offset, limit });
+          const limitQuery = await messageStore.query(alice.did, {}, {}, { offset, limit });
           expect(limitQuery.length).to.equal(limit);
           for (let i = 0; i < limitQuery.length; i++) {
             const offsetIndex = i + offset;
@@ -366,7 +367,7 @@ export function testMessageStore(): void {
           const maxPage = Math.ceil(totalRecords / 5);
           const results = [];
           for (let i = 0; i < maxPage; i++) {
-            const limitQuery = await messageStore.query(alice.did, {}, TimestampDateSort.TimestampDescending, { offset: i * limit, limit });
+            const limitQuery = await messageStore.query(alice.did, {}, {}, { offset: i * limit, limit });
             expect(limitQuery.length).to.be.lessThanOrEqual(limit);
             results.push(...limitQuery);
           }

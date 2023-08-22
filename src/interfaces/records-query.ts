@@ -1,5 +1,5 @@
+import type { Pagination } from '../types/message-types.js';
 import type { SignatureInput } from '../types/jws-types.js';
-import type { Pagination, RecordsDateSort } from '../types/message-types.js';
 import type { RecordsFilter, RecordsQueryDescriptor, RecordsQueryMessage } from '../types/records-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
@@ -10,10 +10,17 @@ import { validateAuthorizationIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 import { validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
+export enum DateSort {
+  CreatedAscending = 'createdAscending',
+  CreatedDescending = 'createdDescending',
+  PublishedAscending = 'publishedAscending',
+  PublishedDescending = 'publishedDescending',
+}
+
 export type RecordsQueryOptions = {
   messageTimestamp?: string;
   filter: RecordsFilter;
-  dateSort?: RecordsDateSort;
+  dateSort?: DateSort;
   pagination?: Pagination;
   authorizationSignatureInput?: SignatureInput;
 };

@@ -1,6 +1,6 @@
 
 import type { RecordsWriteMessage } from '../index.js';
-import type { DateSort, Filter, GenericMessage, Pagination } from '../types/message-types.js';
+import type { Filter, GenericMessage, MessageSort, Pagination } from '../types/message-types.js';
 import type { MessageStore, MessageStoreOptions } from '../types/message-store.js';
 
 import * as block from 'multiformats/block';
@@ -13,8 +13,9 @@ import { executeUnlessAborted } from '../utils/abort.js';
 import { IndexLevel } from './index-level.js';
 import { lexicographicalCompare } from '../utils/string.js';
 import { sha256 } from 'multiformats/hashes/sha2';
+import { SortOrder } from '../types/message-types.js';
 import { Cid, Message } from '../index.js';
-import { RecordsDateSort, TimestampDateSort } from '../types/message-types.js';
+
 
 /**
  * A simple implementation of {@link MessageStore} that works in both the browser and server-side.
@@ -84,7 +85,7 @@ export class MessageStoreLevel implements MessageStore {
   async query(
     tenant: string,
     filter: Filter,
-    dateSort: DateSort = TimestampDateSort.TimestampDescending,
+    dateSort: MessageSort,
     pagination?: Pagination,
     options?: MessageStoreOptions
   ): Promise<GenericMessage[]> {
@@ -116,14 +117,11 @@ export class MessageStoreLevel implements MessageStore {
   }
 
   /**
-   * This is temporarily moved from the RecordsQuery handler.
-   * It will eventually be done within the underlying data store.
+   * This is a temporary naive sort, it will eventually be done within the underlying data store.
    *
-   * Sorts the given records. There are 4 options for dateSort:
-   * 1. createdAscending - Sort in ascending order based on when the message was created
-   * 2. createdDescending - Sort in descending order based on when the message was created
-   * 3. publishedAscending - If the message is published, sort in asc based on publish date
-   * 4. publishedDescending - If the message is published, sort in desc based on publish date
+   * This sort accepts a generalized MessageSort type which.
+   * currently only 3 type of search properties are explicitly used.
+   * `dateCreated`, `datePublished`, `messageTimestamp`
    *
    * If sorting is based on date published, records that are not published are filtered out.
    * @param messages - Messages to be sorted if dateSort is present
@@ -132,29 +130,29 @@ export class MessageStoreLevel implements MessageStore {
    */
   private sortRecords(
     messages: GenericMessage[],
-    dateSort: DateSort
+    dateSort: MessageSort
   ): GenericMessage[] {
-    // The entry points that allow users to specify a sort are types according to their message type.
-    // ie. RecordsDateSort and TimestampDateSort which DateSort is a union type of.
-
-    switch (dateSort) {
-    case TimestampDateSort.TimestampDescending:
-      return messages.sort((a, b) => lexicographicalCompare(b.descriptor.messageTimestamp, a.descriptor.messageTimestamp));
-    case TimestampDateSort.TimestampAscending:
-      return messages.sort((a, b) => lexicographicalCompare(a.descriptor.messageTimestamp, b.descriptor.messageTimestamp));
-    case RecordsDateSort.CreatedAscending:
-      return (messages as RecordsWriteMessage[]).sort((a, b) => lexicographicalCompare(a.descriptor.dateCreated, b.descriptor.dateCreated));
-    case RecordsDateSort.CreatedDescending:
-      return (messages as RecordsWriteMessage[]).sort((a, b) => lexicographicalCompare(b.descriptor.dateCreated, a.descriptor.dateCreated));
-    case RecordsDateSort.PublishedAscending:
-      return (messages as RecordsWriteMessage[])
-        .filter(m => m.descriptor.published)
-        .sort((a, b) => lexicographicalCompare(a.descriptor.datePublished!, b.descriptor.datePublished!));
-    case RecordsDateSort.PublishedDescending:
-      return (messages as RecordsWriteMessage[])
-        .filter(m => m.descriptor.published)
-        .sort((a, b) => lexicographicalCompare(b.descriptor.datePublished!, a.descriptor.datePublished!));
+    const { dateCreated, datePublished, messageTimestamp } = dateSort;
+    if (dateCreated !== undefined) {
+      return (messages as RecordsWriteMessage[]).sort((a,b) => dateCreated === SortOrder.Ascending ?
+        lexicographicalCompare(a.descriptor.dateCreated, b.descriptor.dateCreated) :
+        lexicographicalCompare(b.descriptor.dateCreated, a.descriptor.dateCreated)
+      );
+    } else if (datePublished !== undefined) {
+      return (messages as RecordsWriteMessage[]).filter(message => message.descriptor.published)
+        .sort((a,b) => datePublished === SortOrder.Ascending ?
+          lexicographicalCompare(a.descriptor.datePublished!, b.descriptor.datePublished!) :
+          lexicographicalCompare(b.descriptor.datePublished!, a.descriptor.datePublished!)
+        );
+    } else if (messageTimestamp !== undefined) {
+      return messages.sort((a,b) => messageTimestamp === SortOrder.Ascending ?
+        lexicographicalCompare(a.descriptor.messageTimestamp, b.descriptor.messageTimestamp) :
+        lexicographicalCompare(b.descriptor.messageTimestamp, a.descriptor.messageTimestamp)
+      );
     }
+
+    // default is messageTimestamp in Ascending order
+    return messages.sort((a,b) => lexicographicalCompare(a.descriptor.messageTimestamp, b.descriptor.messageTimestamp));
   }
 
   async delete(tenant: string, cidString: string, options?: MessageStoreOptions): Promise<void> {

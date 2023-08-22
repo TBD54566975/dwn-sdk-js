@@ -1,10 +1,11 @@
+import type { DateSort } from '../interfaces/records-query.js';
 import type { EncryptionAlgorithm } from '../utils/encryption.js';
 import type { GeneralJws } from './jws-types.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { KeyDerivationScheme } from '../utils/hd-key.js';
 import type { PublicJwk } from './jose-types.js';
 import type { Readable } from 'readable-stream';
-import type { BaseAuthorizationPayload, GenericMessage, Pagination, RecordsDateSort } from './message-types.js';
+import type { BaseAuthorizationPayload, GenericMessage, Pagination } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type RecordsWriteDescriptor = {
@@ -89,7 +90,7 @@ export type RecordsQueryDescriptor = {
   method: DwnMethodName.Query;
   messageTimestamp: string;
   filter: RecordsFilter;
-  dateSort?: RecordsDateSort;
+  dateSort?: DateSort;
   pagination?: Pagination;
 };
 

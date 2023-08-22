@@ -49,7 +49,7 @@ export class RecordsWriteHandler implements MethodHandler {
       interface : DwnInterfaceName.Records,
       recordId  : message.recordId
     };
-    const existingMessages = await this.messageStore.query(tenant, query) as (RecordsWriteMessage|RecordsDeleteMessage)[];
+    const existingMessages = await this.messageStore.query(tenant, query, {}) as (RecordsWriteMessage|RecordsDeleteMessage)[];
 
     // if the incoming write is not the initial write, then it must not modify any immutable properties defined by the initial write
     const newMessageIsInitialWrite = await recordsWrite.isInitialWrite();

@@ -67,7 +67,7 @@ export class PermissionsRevokeHandler implements MethodHandler {
       method    : DwnMethodName.Revoke,
       permissionsGrantId,
     };
-    const existingRevokesForGrant: PermissionsRevokeMessage[] = await this.messageStore.query(tenant, query) as PermissionsRevokeMessage[];
+    const existingRevokesForGrant: PermissionsRevokeMessage[] = await this.messageStore.query(tenant, query, {}) as PermissionsRevokeMessage[];
 
     // Conflict 409 if the grant already has an older revoke
     const oldestExistingRevoke = await Message.getOldestMessage(existingRevokesForGrant);
@@ -105,7 +105,7 @@ export class PermissionsRevokeHandler implements MethodHandler {
       permissionsGrantId,
       dateCreated: { gte: message.descriptor.messageTimestamp },
     };
-    const grantAuthdMessagesAfterRevoke = await this.messageStore.query(tenant, grantAuthdMessagesQuery);
+    const grantAuthdMessagesAfterRevoke = await this.messageStore.query(tenant, grantAuthdMessagesQuery, {});
     const grantAuthdMessageCidsAfterRevoke: string[] = [];
     for (const grantAuthdMessage of grantAuthdMessagesAfterRevoke) {
       const messageCid = await Message.getCid(grantAuthdMessage);
