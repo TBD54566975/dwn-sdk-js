@@ -804,6 +804,15 @@ export class TestDataGenerator {
   }
 
   /**
+   * Generates a random within a range (inclusive).
+   * @param min lowest potential value.
+   * @param max greatest potential value.
+   */
+  public static randomInt(min: number, max: number): number {
+    return Math.floor(Math.random() * (max - min) + min);
+  }
+
+  /**
    * Creates a mock DID resolution result for testing purposes.
    */
   public static createDidResolutionResult(persona: Persona): DidResolutionResult {

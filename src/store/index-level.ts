@@ -180,46 +180,41 @@ export class IndexLevel {
    * @returns IDs of data that matches the range filter.
    */
   private async findRangeMatches(propertyName: string, rangeFilter: RangeFilter, options?: IndexLevelOptions): Promise<string[]> {
-    const propertyNamePrefix = this.join(propertyName, '');
-    const iteratorOptions: LevelWrapperIteratorOptions<string> = {
-      gt: propertyNamePrefix
-    };
+    const iteratorOptions: LevelWrapperIteratorOptions<string> = {};
 
-    const filterConditions: Array<(value: string) => boolean> = [];
     for (const comparator in rangeFilter) {
       const comparatorName = comparator as keyof RangeFilter;
-      const comparatorValue = rangeFilter[comparatorName];
-      if (!comparatorValue) {
-        continue;
-      }
-      const encodedComparatorValue = this.encodeValue(comparatorValue);
+      iteratorOptions[comparatorName] = this.join(propertyName, this.encodeValue(rangeFilter[comparatorName]));
+    }
 
-      switch (comparatorName) {
-      case 'lt':
-        filterConditions.push((v) => v < encodedComparatorValue);
-        break;
-      case 'lte':
-        filterConditions.push((v) => v <= encodedComparatorValue);
-        break;
-      case 'gt':
-        filterConditions.push((v) => v > encodedComparatorValue);
-        break;
-      case 'gte':
-        filterConditions.push((v) => v >= encodedComparatorValue);
-        break;
-      }
+    // if there is no lower bound specified (`gt` or `gte`), we need to iterate from the upper bound,
+    // so that we will iterate over all the matches before hitting mismatches.
+    if (iteratorOptions.gt === undefined && iteratorOptions.gte === undefined) {
+      iteratorOptions.reverse = true;
     }
 
     const matches: string[] = [];
     for await (const [ key, dataId ] of this.db.iterator(iteratorOptions, options)) {
-      const [, value] = key.split(this.delimiter);
+      // if "greater-than" is specified, skip all keys that contains the exact value given in the "greater-than" condition
+      if ('gt' in rangeFilter && IndexLevel.extractValueFromKey(key) === this.encodeValue(rangeFilter.gt)) {
+        continue;
+      }
+
       // immediately stop if we arrive at an index entry for a different property
-      if (!key.startsWith(propertyNamePrefix)) {
+      if (!key.startsWith(propertyName)) {
         break;
       }
 
-      const allPass = filterConditions.every((c) => c(value));
-      if (allPass) {
+      matches.push(dataId);
+    }
+
+    if ('lte' in rangeFilter) {
+      // When `lte` is used, we must also query the exact match explicitly because the exact match will not be included in the iterator above.
+      // This is due to the extra data (CID) appended to the (property + value) key prefix, e.g.
+      // key = 'dateCreated\u0000"2023-05-25T11:22:33.000000Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+      // the value would be considered greater than { lte: `dateCreated\u0000"2023-05-25T11:22:33.000000Z"` } used in the iterator options,
+      // thus would not be included in the iterator even though we'd like it to be.
+      for (const dataId of await this.findExactMatches(propertyName, rangeFilter.lte, options)) {
         matches.push(dataId);
       }
     }
@@ -228,21 +223,57 @@ export class IndexLevel {
   }
 
   private encodeValue(value: unknown): string {
-    if (typeof value === 'string') {
+    switch (typeof value) {
+    case 'string':
       // We can't just `JSON.stringify` as that'll affect the sort order of strings.
       // For example, `'\x00'` becomes `'\\u0000'`.
       return `"${value}"`;
+    case 'number':
+      return IndexLevel.encodeNumberValue(value);
+    default:
+      return String(value);
     }
+  }
 
-    return String(value);
+  /**
+   *  Encodes a numerical value as a string for lexicographical comparison.
+   *  If the number is positive it simply pads it with leading zeros.
+   *  ex.: input:  1024 => "0000000000001024"
+   *       input: -1024 => "!9007199254739967"
+   *
+   * @param value the number to encode.
+   * @returns a string representation of the number.
+   */
+  static encodeNumberValue(value: number): string {
+    const NEGATIVE_OFFSET = Number.MAX_SAFE_INTEGER;
+    const NEGATIVE_PREFIX = '!'; // this will be sorted below positive numbers lexicographically
+    const PADDING_LENGTH = String(Number.MAX_SAFE_INTEGER).length;
+
+    const prefix: string = value < 0 ? NEGATIVE_PREFIX : '';
+    const offset: number = value < 0 ? NEGATIVE_OFFSET : 0;
+    return prefix + String(value + offset).padStart(PADDING_LENGTH, '0');
+  }
+
+  /**
+   * Extracts the value encoded within the indexed key when a record is inserted.
+   *
+   * ex. key: 'dateCreated\u0000"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+   *     extracted value: "2023-05-25T18:23:29.425008Z"
+   *
+   * @param key an IndexLevel db key.
+   * @returns the extracted encodedValue from the key.
+   */
+  static extractValueFromKey(key: string): string {
+    const [, value] = key.split(this.delimiter);
+    return value;
   }
 
   /**
    * Joins the given values using the `\x00` (\u0000) character.
    */
-  private delimiter = `\x00`;
+  private static delimiter = `\x00`;
   private join(...values: unknown[]): string {
-    return values.join(this.delimiter);
+    return values.join(IndexLevel.delimiter);
   }
 
   async dump(): Promise<void> {
