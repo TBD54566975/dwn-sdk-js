@@ -16,7 +16,7 @@ import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { GeneralJwsSigner } from '../../src/jose/jws/general/signer.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
-import { sleep } from '../../src/utils/time.js';
+import { minimalSleep } from '../../src/utils/time.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
@@ -115,7 +115,7 @@ export function testProtocolsConfigureHandler(): void {
           author: alice,
           protocolDefinition,
         });
-        await sleep(1);
+        await minimalSleep();
         const middleProtocolsConfigure = await TestDataGenerator.generateProtocolsConfigure({
           author: alice,
           protocolDefinition,
@@ -299,7 +299,7 @@ export function testProtocolsConfigureHandler(): void {
         it('should delete older ProtocolsConfigure events when one is overwritten', async () => {
           const alice = await DidKeyResolver.generate();
           const oldestWrite = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: minimalProtocolDefinition });
-          await sleep(1);
+          await minimalSleep();
           const newestWrite = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: minimalProtocolDefinition });
 
           let reply = await dwn.processMessage(alice.did, oldestWrite.message, oldestWrite.dataStream);

@@ -273,7 +273,7 @@ export function testProtocolsQueryHandler(): void {
 
           // Set up timestamps
           const protocolsQueryTimestamp = getCurrentTimeInHighPrecision();
-          await sleep(1);
+          await sleep(2);
           const dateGranted = getCurrentTimeInHighPrecision();
 
           // Alice gives Bob a PermissionsGrant with scope ProtocolsConfigure

@@ -11,7 +11,7 @@ import { Message } from '../../src/core/message.js';
 import { MessageStoreLevel } from '../../src/store/message-store-level.js';
 import { PermissionsRevoke } from '../../src/interfaces/permissions-revoke.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { getCurrentTimeInHighPrecision, sleep } from '../../src/utils/time.js';
+import { getCurrentTimeInHighPrecision, minimalSleep, sleep } from '../../src/utils/time.js';
 
 describe('PermissionsRevokeHandler.handle()', () => {
   let didResolver: DidResolver;
@@ -255,7 +255,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
         permissionsGrantId : await Message.getCid(permissionsGrant.message),
       });
 
-      await sleep(1);
+      await minimalSleep();
 
       // Revoke the grant using a later timestamp than the pre-created revoke
       const { permissionsRevoke: permissionsRevoke2 } = await TestDataGenerator.generatePermissionsRevoke({
