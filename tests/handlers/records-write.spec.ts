@@ -2288,6 +2288,216 @@ export function testRecordsWriteHandler(): void {
             expect(recordsWriteReply.status.code).to.equal(401);
             expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationScopeNotProtocol);
           });
+
+          it('allows writes of protocol records with matching contextId grant scopes', async () => {
+            // scenario: Alice gives Bob a grant to write to a specific contextId.
+            //           Bob invokes that grant to write a record in the allowed contextId.
+
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+
+            const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
+
+            // Alice installs the protocol
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice creates the context that she will give Bob access to
+            const alicesRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              data         : new TextEncoder().encode('data1'),
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'email',
+              schema       : protocolDefinition.types.email.schema,
+              dataFormat   : protocolDefinition.types.email.dataFormats![0],
+            });
+            const alicesRecordsWriteReply = await dwn.processMessage(alice.did, alicesRecordsWrite.message, alicesRecordsWrite.dataStream);
+            expect(alicesRecordsWriteReply.status.code).to.equal(202);
+
+            // Alice gives Bob a PermissionsGrant
+            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
+              author     : alice,
+              grantedBy  : alice.did,
+              grantedFor : alice.did,
+              grantedTo  : bob.did,
+              scope      : {
+                interface : DwnInterfaceName.Records,
+                method    : DwnMethodName.Write,
+                protocol  : protocolDefinition.protocol,
+                contextId : alicesRecordsWrite.message.contextId,
+              }
+            });
+            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            expect(permissionsGrantReply.status.code).to.equal(202);
+
+            // Bob invokes the grant in order to write a record to the protocol
+            const bobsRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author             : bob,
+              protocol           : protocolDefinition.protocol,
+              protocolPath       : 'email/email',
+              schema             : protocolDefinition.types.email.schema,
+              dataFormat         : protocolDefinition.types.email.dataFormats![0],
+              parentId           : alicesRecordsWrite.message.recordId,
+              contextId          : alicesRecordsWrite.message.contextId,
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
+            });
+            const bobsRecordsWriteReply = await dwn.processMessage(alice.did, bobsRecordsWrite.message, bobsRecordsWrite.dataStream);
+            expect(bobsRecordsWriteReply.status.code).to.equal(202);
+          });
+
+          it('rejects writes of protocol records with mismatching contextId grant scopes', async () => {
+            // scenario: Alice gives Bob a grant to write to a specific contextId. Bob tries and fails to
+            //           invoke the grant to write to another contextId.
+
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+
+            const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
+
+            // Alice installs the protocol
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice creates the context that she will give Bob access to
+            const alicesRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              data         : new TextEncoder().encode('data1'),
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'email',
+              schema       : protocolDefinition.types.email.schema,
+              dataFormat   : protocolDefinition.types.email.dataFormats![0],
+            });
+            const alicesRecordsWriteReply = await dwn.processMessage(alice.did, alicesRecordsWrite.message, alicesRecordsWrite.dataStream);
+            expect(alicesRecordsWriteReply.status.code).to.equal(202);
+
+            // Alice gives Bob a PermissionsGrant
+            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
+              author     : alice,
+              grantedBy  : alice.did,
+              grantedFor : alice.did,
+              grantedTo  : bob.did,
+              scope      : {
+                interface : DwnInterfaceName.Records,
+                method    : DwnMethodName.Write,
+                protocol  : protocolDefinition.protocol,
+                contextId : await TestDataGenerator.randomCborSha256Cid(), // different contextId than what Bob will try to write to
+              }
+            });
+            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            expect(permissionsGrantReply.status.code).to.equal(202);
+
+            // Bob invokes the grant in order to write a record to the protocol
+            const bobsRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author             : bob,
+              protocol           : protocolDefinition.protocol,
+              protocolPath       : 'email/email',
+              schema             : protocolDefinition.types.email.schema,
+              dataFormat         : protocolDefinition.types.email.dataFormats![0],
+              parentId           : alicesRecordsWrite.message.recordId,
+              contextId          : alicesRecordsWrite.message.contextId,
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
+            });
+            const bobsRecordsWriteReply = await dwn.processMessage(alice.did, bobsRecordsWrite.message, bobsRecordsWrite.dataStream);
+            expect(bobsRecordsWriteReply.status.code).to.equal(401);
+            expect(bobsRecordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationScopeContextIdMismatch);
+          });
+
+          it('allows writes of protocol records with matching protocolPath grant scopes', async () => {
+            // scenario: Alice gives Bob a grant to write to a specific protocolPath.
+            //           Bob invokes that grant to write a record in the allowed protocolPath.
+
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+
+            const protocolDefinition = minimalProtocolDefinition;
+
+            // Alice installs the protocol
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice gives Bob a PermissionsGrant
+            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
+              author     : alice,
+              grantedBy  : alice.did,
+              grantedFor : alice.did,
+              grantedTo  : bob.did,
+              scope      : {
+                interface    : DwnInterfaceName.Records,
+                method       : DwnMethodName.Write,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'foo',
+              }
+            });
+            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            expect(permissionsGrantReply.status.code).to.equal(202);
+
+            // Bob invokes the grant in order to write a record to the protocol
+            const bobsRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author             : bob,
+              protocol           : protocolDefinition.protocol,
+              protocolPath       : 'foo',
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
+            });
+            const bobsRecordsWriteReply = await dwn.processMessage(alice.did, bobsRecordsWrite.message, bobsRecordsWrite.dataStream);
+            expect(bobsRecordsWriteReply.status.code).to.equal(202);
+          });
+
+          it('rejects writes of protocol records with mismatching protocolPath grant scopes', async () => {
+            // scenario: Alice gives Bob a grant to write to a specific protocolPath. Bob tries and fails to
+            //           invoke the grant to write to another protocolPath.
+
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+
+            const protocolDefinition = minimalProtocolDefinition;
+
+            // Alice installs the protocol
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice gives Bob a PermissionsGrant
+            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
+              author     : alice,
+              grantedBy  : alice.did,
+              grantedFor : alice.did,
+              grantedTo  : bob.did,
+              scope      : {
+                interface    : DwnInterfaceName.Records,
+                method       : DwnMethodName.Write,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'some-other-protocol-path',
+              }
+            });
+            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            expect(permissionsGrantReply.status.code).to.equal(202);
+
+            // Bob invokes the grant in order to write a record to the protocol
+            const bobsRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author             : bob,
+              protocol           : protocolDefinition.protocol,
+              protocolPath       : 'foo',
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
+            });
+            const bobsRecordsWriteReply = await dwn.processMessage(alice.did, bobsRecordsWrite.message, bobsRecordsWrite.dataStream);
+            expect(bobsRecordsWriteReply.status.code).to.equal(401);
+            expect(bobsRecordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationScopeProtocolPathMismatch);
+          });
         });
 
         describe('grant scope schema', () => {

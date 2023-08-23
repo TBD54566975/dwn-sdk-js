@@ -936,6 +936,212 @@ export function testRecordsReadHandler(): void {
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
             expect(recordsReadWithoutGrantReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationScopeNotProtocol);
           });
+
+          it('allows reads of records in the contextId specified in the grant', async () => {
+            // scenario: Alice grants Bob access to RecordsRead records with a specific contextId.
+            //           Bob uses it to read a record in that context.
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+
+            const protocolDefinition = minimalProtocolDefinition;
+
+            // Alice installs the protocol
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice writes a record which Bob will later try to read
+            const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+            });
+            const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+            expect(recordsWriteReply.status.code).to.equal(202);
+
+            // Alice gives Bob a PermissionsGrant with scope RecordsRead
+            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
+              author     : alice,
+              grantedBy  : alice.did,
+              grantedFor : alice.did,
+              grantedTo  : bob.did,
+              scope      : {
+                interface : DwnInterfaceName.Records,
+                method    : DwnMethodName.Read,
+                protocol  : protocolDefinition.protocol,
+                contextId : recordsWrite.message.contextId,
+              }
+            });
+            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            expect(permissionsGrantReply.status.code).to.equal(202);
+
+            // Bob is unable to read the record using the mismatched PermissionsGrant
+            const recordsReadWithoutGrant = await RecordsRead.create({
+              recordId                    : recordsWrite.message.recordId,
+              authorizationSignatureInput : Jws.createSignatureInput(bob),
+              permissionsGrantId          : await Message.getCid(permissionsGrant.message),
+            });
+            const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
+            expect(recordsReadWithoutGrantReply.status.code).to.equal(200);
+          });
+
+          it('rejects reads of records in a different contextId than is specified in the grant', async () => {
+            // scenario: Alice grants Bob access to RecordsRead records with a specific contextId.
+            //           Bob tries and fails to invoke the grant in order to read a record outside of the context.
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+
+            const protocolDefinition = minimalProtocolDefinition;
+
+            // Alice installs the protocol
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice writes a record which Bob will later try to read
+            const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+            });
+            const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+            expect(recordsWriteReply.status.code).to.equal(202);
+
+            // Alice gives Bob a PermissionsGrant with scope RecordsRead
+            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
+              author     : alice,
+              grantedBy  : alice.did,
+              grantedFor : alice.did,
+              grantedTo  : bob.did,
+              scope      : {
+                interface : DwnInterfaceName.Records,
+                method    : DwnMethodName.Read,
+                protocol  : protocolDefinition.protocol,
+                contextId : await TestDataGenerator.randomCborSha256Cid(), // different contextId than what Bob will try to read
+              }
+            });
+            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            expect(permissionsGrantReply.status.code).to.equal(202);
+
+            // Bob is unable to read the record using the mismatched PermissionsGrant
+            const recordsReadWithoutGrant = await RecordsRead.create({
+              recordId                    : recordsWrite.message.recordId,
+              authorizationSignatureInput : Jws.createSignatureInput(bob),
+              permissionsGrantId          : await Message.getCid(permissionsGrant.message),
+            });
+            const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
+            expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
+            expect(recordsReadWithoutGrantReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationScopeContextIdMismatch);
+          });
+
+          it('allows reads of records in the protocolPath specified in the grant', async () => {
+            // scenario: Alice grants Bob access to RecordsRead records with a specific protocolPath.
+            //           Bob uses it to read a record in that protocolPath.
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+
+            const protocolDefinition = minimalProtocolDefinition;
+
+            // Alice installs the protocol
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice writes a record which Bob will later try to read
+            const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+            });
+            const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+            expect(recordsWriteReply.status.code).to.equal(202);
+
+            // Alice gives Bob a PermissionsGrant with scope RecordsRead
+            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
+              author     : alice,
+              grantedBy  : alice.did,
+              grantedFor : alice.did,
+              grantedTo  : bob.did,
+              scope      : {
+                interface    : DwnInterfaceName.Records,
+                method       : DwnMethodName.Read,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : recordsWrite.message.descriptor.protocolPath,
+              }
+            });
+            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            expect(permissionsGrantReply.status.code).to.equal(202);
+
+            // Bob is unable to read the record using the mismatched PermissionsGrant
+            const recordsReadWithoutGrant = await RecordsRead.create({
+              recordId                    : recordsWrite.message.recordId,
+              authorizationSignatureInput : Jws.createSignatureInput(bob),
+              permissionsGrantId          : await Message.getCid(permissionsGrant.message),
+            });
+            const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
+            expect(recordsReadWithoutGrantReply.status.code).to.equal(200);
+          });
+
+          it('rejects reads of records in a different protocolPath than is specified in the grant', async () => {
+            // scenario: Alice grants Bob access to RecordsRead records with a specific protocolPath.
+            //           Bob tries and fails to invoke the grant in order to read a record outside of the protocolPath.
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+
+            const protocolDefinition = minimalProtocolDefinition;
+
+            // Alice installs the protocol
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice writes a record which Bob will later try to read
+            const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+            });
+            const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+            expect(recordsWriteReply.status.code).to.equal(202);
+
+            // Alice gives Bob a PermissionsGrant with scope RecordsRead
+            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
+              author     : alice,
+              grantedBy  : alice.did,
+              grantedFor : alice.did,
+              grantedTo  : bob.did,
+              scope      : {
+                interface    : DwnInterfaceName.Records,
+                method       : DwnMethodName.Read,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'different-protocol-path', // different protocol path than what Bob will try to read
+              }
+            });
+            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            expect(permissionsGrantReply.status.code).to.equal(202);
+
+            // Bob is unable to read the record using the mismatched PermissionsGrant
+            const recordsReadWithoutGrant = await RecordsRead.create({
+              recordId                    : recordsWrite.message.recordId,
+              authorizationSignatureInput : Jws.createSignatureInput(bob),
+              permissionsGrantId          : await Message.getCid(permissionsGrant.message),
+            });
+            const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
+            expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
+            expect(recordsReadWithoutGrantReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationScopeProtocolPathMismatch);
+          });
         });
 
         describe('grant scope schema', () => {
