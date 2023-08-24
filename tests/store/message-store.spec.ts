@@ -296,14 +296,12 @@ export function testMessageStore(): void {
           const sortedRecords = messages.sort((a,b) =>
             lexicographicalCompare(a.message.descriptor.messageTimestamp, b.message.descriptor.messageTimestamp));
 
-          const offset = 0;
           const limit = 5;
 
-          const limitQuery = await messageStore.query(alice.did, {}, {}, { offset, limit });
+          const limitQuery = await messageStore.query(alice.did, {}, {}, { limit });
           expect(limitQuery.length).to.equal(limit);
           for (let i = 0; i < limitQuery.length; i++) {
-            const offsetIndex = i + offset;
-            expect(await Message.getCid(sortedRecords[offsetIndex].message)).to.equal(await Message.getCid(limitQuery[i]));
+            expect(await Message.getCid(sortedRecords[i].message)).to.equal(await Message.getCid(limitQuery[i]));
           }
         });
 
@@ -320,10 +318,11 @@ export function testMessageStore(): void {
             lexicographicalCompare(a.message.descriptor.messageTimestamp, b.message.descriptor.messageTimestamp));
 
           const offset = 5;
+          const cursor = await Message.getCid(sortedRecords[offset - 1].message);
           const limit = 0;
 
-          const limitQuery = await messageStore.query(alice.did, {}, {}, { offset, limit });
-          expect(limitQuery.length).to.equal(sortedRecords.length - offset);
+          const limitQuery = await messageStore.query(alice.did, {}, {}, { messageCid: cursor, limit });
+          expect(limitQuery.length).to.equal(sortedRecords.slice(offset).length);
           for (let i = 0; i < limitQuery.length; i++) {
             const offsetIndex = i + offset;
             expect(await Message.getCid(sortedRecords[offsetIndex].message)).to.equal(await Message.getCid(limitQuery[i]));
@@ -343,9 +342,10 @@ export function testMessageStore(): void {
             lexicographicalCompare(a.message.descriptor.messageTimestamp, b.message.descriptor.messageTimestamp));
 
           const offset = 5;
+          const cursor = await Message.getCid(sortedRecords[offset - 1].message);
           const limit = 3;
 
-          const limitQuery = await messageStore.query(alice.did, {}, {}, { offset, limit });
+          const limitQuery = await messageStore.query(alice.did, {}, {}, { messageCid: cursor, limit });
           expect(limitQuery.length).to.equal(limit);
           for (let i = 0; i < limitQuery.length; i++) {
             const offsetIndex = i + offset;
@@ -362,12 +362,14 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
           }
 
-          const totalRecords = messages.length;
           const limit = 6;
-          const maxPage = Math.ceil(totalRecords / 5);
           const results = [];
-          for (let i = 0; i < maxPage; i++) {
-            const limitQuery = await messageStore.query(alice.did, {}, {}, { offset: i * limit, limit });
+          while (true) {
+            const cursor = results.length > 0 ? await Message.getCid(results[results.length - 1]) : undefined;
+            const limitQuery = await messageStore.query(alice.did, {}, {}, { messageCid: cursor, limit });
+            if (limitQuery.length === 0) {
+              break;
+            }
             expect(limitQuery.length).to.be.lessThanOrEqual(limit);
             results.push(...limitQuery);
           }

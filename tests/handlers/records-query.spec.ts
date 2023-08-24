@@ -1,6 +1,6 @@
 import type { RecordsWriteMessage } from '../../src/index.js';
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
-import type { RecordsQueryReply, RecordsWriteDescriptor } from '../../src/types/records-types.js';
+import type { RecordsQueryReply, RecordsQueryReplyEntry, RecordsWriteDescriptor } from '../../src/types/records-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
@@ -470,27 +470,29 @@ export function testRecordsQueryHandler(): void {
         }
 
         const limit = 5;
-        const pages = Math.ceil(messages.length / limit);
-        const resultIds: string[] = [];
-
-        for (let i = 0; i < pages; i++) {
+        const results: RecordsQueryReplyEntry[] = [];
+        while (true) {
+          const cursor = results.length > 0 ? results[results.length - 1].messageCid : undefined;
           const pageQuery = await TestDataGenerator.generateRecordsQuery({
             author : alice,
             filter : {
               schema: 'https://schema'
             },
             pagination: {
-              limit  : limit,
-              offset : i * limit
+              limit      : limit,
+              messageCid : cursor,
             },
           });
           const pageReply = await dwn.handleRecordsQuery(alice.did, pageQuery.message);
           expect(pageReply.status.code).to.equal(200);
+          if (pageReply.entries?.length === 0) {
+            break;
+          }
           expect(pageReply.entries?.length).to.be.lte(limit);
-          pageReply.entries?.forEach(e => resultIds.push(e.recordId));
+          results.push(...pageReply.entries!);
         }
-        expect(resultIds.length).to.equal(messages.length);
-        expect(messages.every(({ message }) => resultIds.includes(message.recordId)));
+        expect(results.length).to.equal(messages.length);
+        expect(messages.every(({ message }) => results.map(e => (e as RecordsWriteMessage).recordId).includes(message.recordId)));
       });
 
       it('should allow an anonymous unauthenticated query to return published records', async () => {

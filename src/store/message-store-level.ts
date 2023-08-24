@@ -104,16 +104,26 @@ export class MessageStoreLevel implements MessageStore {
     return this.paginateRecords(sortedRecords, pagination);
   }
 
-  private paginateRecords(
+  private async paginateRecords(
     messages: GenericMessage[],
     pagination: Pagination = {},
-  ): GenericMessage[] {
-    const { offset = 0, limit = 0 } = pagination;
-    if (offset === 0 && limit === 0) {
-      return messages;
+  ): Promise<GenericMessage[]> {
+    const { messageCid: messageId, limit = 0 } = pagination;
+    if (messageId === undefined && limit > 0) {
+      return messages.slice(0, limit);
+    } else if (messageId === undefined) {
+      return messages; // return all
     }
-    const end = limit === 0 ? undefined : limit + offset;
-    return messages.slice(offset, end);
+
+    for (let i = 0; i < messages.length; i++) {
+      const testId = await Message.getCid(messages[i]);
+      if (testId === messageId && i + 1 < messages.length) {
+        const start = i + 1;
+        const end = limit === 0 ? undefined : limit + start;
+        return messages.slice(start, end);
+      }
+    }
+    return [];
   }
 
   /**

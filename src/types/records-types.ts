@@ -83,6 +83,7 @@ export type UnsignedRecordsWriteMessage = {
  */
 export type RecordsQueryReplyEntry = RecordsWriteMessage & {
   encodedData?: string;
+  messageCid: string;
 };
 
 export type RecordsQueryDescriptor = {

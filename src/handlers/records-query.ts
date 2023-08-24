@@ -10,7 +10,7 @@ import { Records } from '../utils/records.js';
 
 import { SortOrder } from '../types/message-types.js';
 import { DateSort, RecordsQuery } from '../interfaces/records-query.js';
-import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 export class RecordsQueryHandler implements MethodHandler {
 
@@ -47,22 +47,26 @@ export class RecordsQueryHandler implements MethodHandler {
       }
     }
 
-    const entries = RecordsQueryHandler.removeAuthorization(recordsWrites);
+    const entries = await RecordsQueryHandler.removeAuthorization(recordsWrites);
 
     return {
       status: { code: 200, detail: 'OK' },
-      entries
+      entries,
     };
   }
 
   /**
    * Removes `authorization` property from each and every `RecordsWrite` message given and returns the result as a different array.
+   * Adds `messageCid` as a cursor pointer for pagination as it can no longer be computed without the `authorization` property.
    */
-  private static removeAuthorization(recordsWriteMessages: RecordsWriteMessageWithOptionalEncodedData[]): RecordsQueryReplyEntry[] {
+  private static async removeAuthorization(recordsWriteMessages: RecordsWriteMessageWithOptionalEncodedData[]): Promise<RecordsQueryReplyEntry[]> {
     const recordsQueryReplyEntries: RecordsQueryReplyEntry[] = [];
     for (const record of recordsWriteMessages) {
       const { authorization: _, ...objectWithRemainingProperties } = record; // a trick to stripping away `authorization`
-      recordsQueryReplyEntries.push(objectWithRemainingProperties);
+      recordsQueryReplyEntries.push({
+        ...objectWithRemainingProperties,
+        messageCid: await Message.getCid(record)
+      });
     }
 
     return recordsQueryReplyEntries;

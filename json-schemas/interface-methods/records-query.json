@@ -46,9 +46,8 @@
               "type": "number",
               "minimum": 0
             },
-            "offset": {
-              "type": "number",
-              "minimum": 0
+            "messageCid": {
+              "type": "string"
             }
           }
         },

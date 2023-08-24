@@ -63,7 +63,7 @@ export type Filter = {
 };
 
 export type Pagination = {
-  offset?: number
+  messageCid?: string
   limit?: number
 };
 
