@@ -37,12 +37,3 @@ const indexConfig = {
 };
 
 esbuild.buildSync(indexConfig);
-
-
-const storesConfig = {
-  ...baseConfig,
-  entryPoints : ['./dist/esm/src/index-stores.js'],
-  outfile     : './dist/cjs/index-stores.js',
-};
-
-esbuild.buildSync(storesConfig);

@@ -1,5 +1,5 @@
 import type { DataStore, EventLog, MessageStore } from '../src/index.js';
-import { DataStoreLevel, EventLogLevel, MessageStoreLevel } from '../src/index-stores.js';
+import { DataStoreLevel, EventLogLevel, MessageStoreLevel } from '../src/index.js';
 
 /**
  * Class that manages store implementations for testing.
