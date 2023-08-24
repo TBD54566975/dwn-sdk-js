@@ -26,6 +26,8 @@ export enum DwnErrorCode {
   GrantAuthorizationGrantNotYetActive = 'GrantAuthorizationGrantNotYetActive',
   HdKeyDerivationPathInvalid = 'HdKeyDerivationPathInvalid',
   PermissionsGrantGrantedByMismatch = 'PermissionsGrantGrantedByMismatch',
+  PermissionsGrantScopeContextIdAndProtocolPath = 'PermissionsGrantScopeContextIdAndProtocolPath',
+  PermissionsGrantScopeSchemaProhibitedFields = 'PermissionsGrantScopeSchemaProhibitedFields',
   PermissionsGrantUnauthorizedGrant = 'PermissionsGrantUnauthorizedGrant',
   PermissionsRevokeMissingPermissionsGrant = 'PermissionsRevokeMissingPermissionsGrant',
   PermissionsRevokeUnauthorizedRevoke = 'PermissionsRevokeUnauthorizedRevoke',
