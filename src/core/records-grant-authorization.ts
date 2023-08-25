@@ -69,19 +69,19 @@ export class RecordsGrantAuthorization {
     } else if (grantScope.protocol !== recordsWrite.message.descriptor.protocol) {
       throw new DwnError(
         DwnErrorCode.RecordsGrantAuthorizationScopeProtocolMismatch,
-        `Grant scope specifies different protocol than what appears in record`
+        `Grant scope specifies different protocol than what appears in the record`
       );
     } else {
       // If grant specifies either contextId or protocolPath, check that record matches
       if (grantScope.contextId !== undefined && grantScope.contextId !== recordsWrite.message.contextId) {
         throw new DwnError(
           DwnErrorCode.RecordsGrantAuthorizationScopeContextIdMismatch,
-          `Grant scope specifies different contextId than what appears in record`
+          `Grant scope specifies different contextId than what appears in the record`
         );
       } else if (grantScope.protocolPath !== undefined && grantScope.protocolPath !== recordsWrite.message.descriptor.protocolPath) {
         throw new DwnError(
           DwnErrorCode.RecordsGrantAuthorizationScopeProtocolPathMismatch,
-          `Grant scope specifies different protocolPath than what appears in record`
+          `Grant scope specifies different protocolPath than what appears in the record`
         );
       }
     }
