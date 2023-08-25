@@ -2,14 +2,14 @@ import type { MethodHandler } from '../types/method-handler.js';
 import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
 import type { Filter, TimestampedMessage } from '../types/message-types.js';
-import type { RecordsReadDescriptor, RecordsReadMessage, RecordsReadReply } from '../types/records-types.js';
+import type { RecordsReadDescriptor, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { RecordsRead } from '../interfaces/records-read.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
-import { DataStream, Encoder } from '../index.js';
+import { DataStream, DwnError, DwnErrorCode, Encoder } from '../index.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export class RecordsReadHandler implements MethodHandler {
@@ -40,8 +40,15 @@ export class RecordsReadHandler implements MethodHandler {
     // get existing messages matching `recordId` or `protocol` with `protocolPath` so we can perform authorization
     const query: Filter = RecordsReadHandler.createFilter(recordsRead.message.descriptor);
     const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
-    const newestExistingMessage = await Message.getNewestMessage(existingMessages);
 
+    // ensure that the returned query only contains a unique record
+    try {
+      RecordsReadHandler.enforceSingleRecordRule(existingMessages);
+    } catch (e) {
+      return messageReplyFromError(e, 400);
+    }
+
+    const newestExistingMessage = await Message.getNewestMessage(existingMessages);
     // if no record found or it has been deleted
     if (newestExistingMessage === undefined || newestExistingMessage.descriptor.method === DwnMethodName.Delete) {
       return {
@@ -82,6 +89,33 @@ export class RecordsReadHandler implements MethodHandler {
     };
     return messageReply;
   };
+
+  /**
+   * Enforces that the supplied messages only contain a single unique logical record.
+   *
+   * When users read a record based on anything other than an explicit `recordId` they may get multiple results.
+   * We want to make sure that the intent of which record they want to read is clear.
+   * If the supplied parameters may return more than one result it will fail and signal to the user.
+   *
+   * @param messages a list of messages returned from the MessageStore query.
+   * @throws {DwnError} when the provided messages contain more than one unique record.
+   */
+  private static enforceSingleRecordRule(messages: TimestampedMessage[]): void {
+    const uniqueRecordIds: string[] = [];
+    for (const message of messages) {
+      const recordId = message.descriptor.method === DwnMethodName.Write ? (message as RecordsWriteMessage).recordId : undefined;
+      if (recordId && !uniqueRecordIds.includes(recordId)) {
+        uniqueRecordIds.push(recordId);
+      }
+
+      if (uniqueRecordIds.length > 1) {
+        throw new DwnError(
+          DwnErrorCode.RecordsReadReturnedMultiple,
+          'multiple records exist for requested RecordRead parameters'
+        );
+      }
+    }
+  }
 
   /**
    * Creates a filter using `recordId` in given descriptor, if not given, `protocol` & `protocolPath` are used to create the filter instead.
