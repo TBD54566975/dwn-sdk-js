@@ -10,10 +10,14 @@ export type PermissionScope = {
 export type RecordsPermissionScope = {
   interface: DwnInterfaceName.Records;
   method: DwnMethodName.Read | DwnMethodName.Write;
-  protocol?: string; // May only be present when `schema` is undefined
-  contextId?: string; // May only be present when `protocol` is defined and `protocolPath` is undefined
-  protocolPath?: string; // May only be present when `protocol` is defined and `contextId` is undefined
-  schema?: string; // May only be present when `protocol` is undefined
+  /** May only be present when `schema` is undefined */
+  protocol?: string;
+  /** May only be present when `protocol` is defined and `protocolPath` is undefined */
+  contextId?: string;
+  /** May only be present when `protocol` is defined and `contextId` is undefined */
+  protocolPath?: string;
+  /** May only be present when `protocol` is undefined */
+  schema?: string;
 };
 
 export type PermissionConditions = {

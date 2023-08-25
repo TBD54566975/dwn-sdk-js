@@ -1,8 +1,8 @@
 import type {
   DataStore,
   EventLog,
-  MessageStore
-} from '../../src/index.js';
+  MessageStore } from '../../src/index.js';
+
 
 import sinon from 'sinon';
 
@@ -11,11 +11,13 @@ import { DidResolver } from '../../src/did/did-resolver.js';
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { expect } from 'chai';
-import { Message } from '../../src/core/message.js';
+import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
+import { Jws } from '../../src/index.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { PermissionsGrantHandler } from '../../src/handlers/permissions-grant.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
+import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message.js';
 
 export function testPermissionsGrantHandler(): void {
   describe('PermissionsGrantHandler.handle()', () => {
@@ -138,6 +140,111 @@ export function testPermissionsGrantHandler(): void {
         const reply = await permissionsRequestHandler.handle({ tenant: alice.did, message });
 
         expect(reply.status.code).to.equal(400);
+      });
+
+      describe('scope validation', () => {
+        it('ensures that `schema` and protocol related fields `protocol`, `contextId` or `protocolPath` are not both present', async () => {
+          const alice = await DidKeyResolver.generate();
+
+          // Options to create a grant with `schema` in its `scope`
+          const permissionsGrantBaseOptions = {
+            author      : alice,
+            dateExpires : getCurrentTimeInHighPrecision(),
+            grantedBy   : 'did:jank:bob',
+            grantedTo   : 'did:jank:alice',
+            grantedFor  : 'did:jank:bob',
+            scope       : {
+              interface : DwnInterfaceName.Records,
+              method    : DwnMethodName.Write,
+            }
+          };
+
+          // `schema` and `protocol` may not both be present in grant `scope`
+          const schemaAndProtocolGrant = await TestDataGenerator.generatePermissionsGrant(permissionsGrantBaseOptions);
+
+          // Add `protocol` to `scope` and re-sign because validations upon message creation will reject it.
+          schemaAndProtocolGrant.message.descriptor.scope = {
+            interface : DwnInterfaceName.Records,
+            method    : DwnMethodName.Write,
+            schema    : 'some-schema',
+            protocol  : 'some-protocol'
+          };
+          schemaAndProtocolGrant.message.authorization = await Message.signAsAuthorization(
+            schemaAndProtocolGrant.message.descriptor,
+            Jws.createSignatureInput(alice)
+          );
+          const schemaAndProtocolGrantReply = await dwn.processMessage(alice.did, schemaAndProtocolGrant.message);
+          expect(schemaAndProtocolGrantReply.status.code).to.eq(400);
+          expect(schemaAndProtocolGrantReply.status.detail).to.contain(DwnErrorCode.PermissionsGrantScopeSchemaProhibitedFields);
+
+          // `schema` and `contextId` may not both be present in grant `scope`
+          const schemaAndContextIdGrant = await TestDataGenerator.generatePermissionsGrant(permissionsGrantBaseOptions);
+
+          // Add `contextId` to `scope` and re-sign because validations upon message creation will reject it.
+          schemaAndContextIdGrant.message.descriptor.scope = {
+            interface : DwnInterfaceName.Records,
+            method    : DwnMethodName.Write,
+            schema    : 'some-schema',
+            contextId : 'some-context-id'
+          };
+          schemaAndContextIdGrant.message.authorization = await Message.signAsAuthorization(
+            schemaAndContextIdGrant.message.descriptor,
+            Jws.createSignatureInput(alice)
+          );
+          const schemaAndContextIdGrantReply = await dwn.processMessage(alice.did, schemaAndProtocolGrant.message);
+          expect(schemaAndContextIdGrantReply.status.code).to.eq(400);
+          expect(schemaAndContextIdGrantReply.status.detail).to.contain(DwnErrorCode.PermissionsGrantScopeSchemaProhibitedFields);
+
+          // `schema` and `protocolPath` may not both be present in grant `scope`
+          const schemaAndProtocolPathGrant = await TestDataGenerator.generatePermissionsGrant(permissionsGrantBaseOptions);
+
+          // Add `protocolPath` to `scope` and re-sign because validations upon message creation will reject it.
+          schemaAndProtocolPathGrant.message.descriptor.scope = {
+            interface    : DwnInterfaceName.Records,
+            method       : DwnMethodName.Write,
+            schema       : 'some-schema',
+            protocolPath : 'some-protocol-path'
+          };
+          schemaAndProtocolPathGrant.message.authorization = await Message.signAsAuthorization(
+            schemaAndProtocolPathGrant.message.descriptor,
+            Jws.createSignatureInput(alice)
+          );
+          const schemaAndProtocolPathGrantReply = await dwn.processMessage(alice.did, schemaAndProtocolGrant.message);
+          expect(schemaAndProtocolPathGrantReply.status.code).to.eq(400);
+          expect(schemaAndProtocolPathGrantReply.status.detail).to.contain(DwnErrorCode.PermissionsGrantScopeSchemaProhibitedFields);
+        });
+
+        it('ensures that `contextId` and `protocolPath` are not both present in grant scope', async () => {
+          const alice = await DidKeyResolver.generate();
+
+          const contextIdAndProtocolPathGrant = await TestDataGenerator.generatePermissionsGrant({
+            author      : alice,
+            dateExpires : getCurrentTimeInHighPrecision(),
+            grantedBy   : 'did:jank:bob',
+            grantedTo   : 'did:jank:alice',
+            grantedFor  : 'did:jank:bob',
+            scope       : {
+              interface : DwnInterfaceName.Records,
+              method    : DwnMethodName.Write,
+            }
+          });
+
+          // Add `protocolPath` and `contextId` to `scope` and re-sign because validations upon message creation will reject it.
+          contextIdAndProtocolPathGrant.message.descriptor.scope = {
+            interface    : DwnInterfaceName.Records,
+            method       : DwnMethodName.Write,
+            protocol     : 'some-protocol',
+            contextId    : 'some-context-id',
+            protocolPath : 'some-protocol-path',
+          };
+          contextIdAndProtocolPathGrant.message.authorization = await Message.signAsAuthorization(
+            contextIdAndProtocolPathGrant.message.descriptor,
+            Jws.createSignatureInput(alice)
+          );
+          const contextIdAndProtocolPathGrantReply = await dwn.processMessage(alice.did, contextIdAndProtocolPathGrant.message);
+          expect(contextIdAndProtocolPathGrantReply.status.code).to.eq(400);
+          expect(contextIdAndProtocolPathGrantReply.status.detail).to.contain(DwnErrorCode.PermissionsGrantScopeContextIdAndProtocolPath);
+        });
       });
 
       describe('event log', () => {

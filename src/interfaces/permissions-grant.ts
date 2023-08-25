@@ -107,32 +107,30 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
     }
   }
 
+  /**
+   * Validates scope structure for properties beyond `interface` and `method`.
+   * Currently only grants for RecordsRead and RecordsWrite have such properties and need validation beyond JSON Schema.
+   */
   public static validateScope(permissionsGrantMessage: PermissionsGrantMessage): void {
-    const scope = permissionsGrantMessage.descriptor.scope;
-    if (scope.interface === DwnInterfaceName.Records) {
-      // RecordsRead and RecordsWrite
-      if (scope.method === DwnMethodName.Read || scope.method === DwnMethodName.Write) {
-        const recordsScope = scope as RecordsPermissionScope;
+    const recordsScope = permissionsGrantMessage.descriptor.scope as RecordsPermissionScope;
 
-        // `schema` scopes may not have protocol-related fields
-        if (recordsScope.schema !== undefined) {
-          if (recordsScope.protocol !== undefined || recordsScope.contextId !== undefined || recordsScope.protocolPath) {
-            throw new DwnError(
-              DwnErrorCode.PermissionsGrantScopeSchemaProhibitedFields,
-              'PermissionsGrants for RecordsRead and RecordsWrite that have `schema` present may not also have protocol-related properties present'
-            );
-          }
-        }
+    // `schema` scopes may not have protocol-related fields
+    if (recordsScope.schema !== undefined) {
+      if (recordsScope.protocol !== undefined || recordsScope.contextId !== undefined || recordsScope.protocolPath) {
+        throw new DwnError(
+          DwnErrorCode.PermissionsGrantScopeSchemaProhibitedFields,
+          'PermissionsGrants for RecordsRead and RecordsWrite that have `schema` present may not also have protocol-related properties present'
+        );
+      }
+    }
 
-        if (recordsScope.protocol !== undefined) {
-          // `contextId` and `protocolPath` are mutually exclusive
-          if (recordsScope.contextId !== undefined && recordsScope.protocolPath !== undefined) {
-            throw new DwnError(
-              DwnErrorCode.PermissionsGrantScopeContextIdAndProtocolPath,
-              'PermissionsGrants for RecordsRead and RecordsWrite may not have both `contextId` and `protocolPath` present'
-            );
-          }
-        }
+    if (recordsScope.protocol !== undefined) {
+      // `contextId` and `protocolPath` are mutually exclusive
+      if (recordsScope.contextId !== undefined && recordsScope.protocolPath !== undefined) {
+        throw new DwnError(
+          DwnErrorCode.PermissionsGrantScopeContextIdAndProtocolPath,
+          'PermissionsGrants for RecordsRead and RecordsWrite may not have both `contextId` and `protocolPath` present'
+        );
       }
     }
   }
