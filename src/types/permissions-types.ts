@@ -20,11 +20,18 @@ export type RecordsPermissionScope = {
   schema?: string;
 };
 
+export enum PermissionsConditionPublication {
+  Required = 'Required',
+  Prohibited = 'Prohibited',
+}
+
 export type PermissionConditions = {
-  // indicates whether a message written with the invocation of a permission can
-  // be marked as public. public messages can be queried for without any authorization
-  // defaults to false.
-  publication?: boolean;
+  /**
+   * indicates whether a message written with the invocation of a permission must, may, or must not
+   * be marked as public.
+   * If `undefined`, it is optional to make the message public.
+   */
+  publication?: PermissionsConditionPublication;
 };
 
 export type PermissionsRequestDescriptor = {

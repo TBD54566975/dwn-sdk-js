@@ -4,6 +4,7 @@ import type { CreateFromPermissionsRequestOverrides } from '../../src/interfaces
 import type { PermissionScope } from '../../src/index.js';
 
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
+import { PermissionsConditionPublication } from '../../src/types/permissions-types.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { Temporal } from '@js-temporal/polyfill';
@@ -186,7 +187,7 @@ describe('PermissionsGrant', () => {
           method    : DwnMethodName.Query,
         },
         conditions: {
-          publication: true,
+          publication: PermissionsConditionPublication.Required,
         }
       };
 
