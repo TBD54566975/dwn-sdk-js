@@ -634,52 +634,6 @@ export function testRecordsReadHandler(): void {
         });
 
         describe('protocolPath based reads', () => {
-          it('should not allow only `protocol` to be set without a `protocolPath` nor `recordId`', async () => {
-            const alice = await DidKeyResolver.generate();
-
-            // insert public data
-            const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true });
-            const writeReply = await dwn.processMessage(alice.did, message, dataStream);
-            expect(writeReply.status.code).to.equal(202);
-
-            // create with protocol and protocolPath to avoid the failure within RecordsRead.create()
-            const recordsRead = await RecordsRead.create({
-              protocol                    : 'example.org/TestProto',
-              protocolPath                : 'proto/path',
-              authorizationSignatureInput : Jws.createSignatureInput(alice)
-            });
-
-            // delete protocolPath leaving only protocol to induce error below
-            delete recordsRead.message.descriptor.protocolPath;
-
-            const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
-            expect(readReply.status.code).to.equal(400);
-            expect(readReply.status.detail).to.contain('must have required property \'recordId\'');
-          });
-
-          it('should not allow only `protocolPath` to be set without a `protocol` nor `recordId`', async () => {
-            const alice = await DidKeyResolver.generate();
-
-            // insert public data
-            const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true });
-            const writeReply = await dwn.processMessage(alice.did, message, dataStream);
-            expect(writeReply.status.code).to.equal(202);
-
-            // create with protocol and protocolPath to avoid the failure within RecordsRead.create()
-            const recordsRead = await RecordsRead.create({
-              protocol                    : 'example.org/TestProto',
-              protocolPath                : 'proto/path',
-              authorizationSignatureInput : Jws.createSignatureInput(alice)
-            });
-
-            // delete protocolPath leaving only protocol to induce error below
-            delete recordsRead.message.descriptor.protocol;
-
-            const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
-            expect(readReply.status.code).to.equal(400);
-            expect(readReply.status.detail).to.contain('must have required property \'recordId\'');
-          });
-
           it('should retrieve the latest protocol record matching the path', async () => {
             const alice = await DidKeyResolver.generate();
 
@@ -705,9 +659,11 @@ export function testRecordsReadHandler(): void {
             expect(writeReply.status.code).to.equal(202);
 
             const latestFoo = await RecordsRead.create({
-              protocol                    : protocolDefinition.protocol,
-              protocolPath                : 'foo',
-              authorizationSignatureInput : Jws.createSignatureInput(alice)
+              filter: {
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'foo',
+              },
+              authorizationSignatureInput: Jws.createSignatureInput(alice)
             });
 
             const latestFooReply = await dwn.handleRecordsRead(alice.did, latestFoo.message);
@@ -754,9 +710,12 @@ export function testRecordsReadHandler(): void {
             expect(writeReply2.status.code).to.equal(202);
 
             const readFoo = await RecordsRead.create({
-              protocol                    : protocolDefinition.protocol,
-              protocolPath                : 'foo',
-              authorizationSignatureInput : Jws.createSignatureInput(alice)
+              filter: {
+
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'foo',
+              },
+              authorizationSignatureInput: Jws.createSignatureInput(alice)
             });
             const fooReply1 = await dwn.handleRecordsRead(alice.did, readFoo.message);
             expect(fooReply1.status.code).to.equal(400);
@@ -797,9 +756,11 @@ export function testRecordsReadHandler(): void {
             expect(writeReply.status.code).to.equal(202);
 
             const readFoo = await RecordsRead.create({
-              protocol                    : protocolDefinition.protocol,
-              protocolPath                : 'foo',
-              authorizationSignatureInput : Jws.createSignatureInput(alice)
+              filter: {
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'foo',
+              },
+              authorizationSignatureInput: Jws.createSignatureInput(alice)
             });
             const fooReply1 = await dwn.handleRecordsRead(alice.did, readFoo.message);
             expect(fooReply1.status.code).to.equal(200);
@@ -852,9 +813,11 @@ export function testRecordsReadHandler(): void {
             expect(foo2WriteReply.status.code).to.equal(202);
 
             const fooPathRead = await RecordsRead.create({
-              protocol                    : protocolDefinition.protocol,
-              protocolPath                : 'foo',
-              authorizationSignatureInput : Jws.createSignatureInput(alice),
+              filter: {
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'foo',
+              },
+              authorizationSignatureInput: Jws.createSignatureInput(alice),
             });
             const fooPathReply = await dwn.handleRecordsRead(alice.did, fooPathRead.message);
             expect(fooPathReply.status.code).to.equal(400);

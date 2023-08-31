@@ -37,11 +37,8 @@
         "recordId": {
           "type": "string"
         },
-        "protocol": {
-          "type": "string"
-        },
-        "protocolPath": {
-          "type": "string"
+        "filter": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/records-filter.json"
         }
       },
       "$comment": "describe rule requiring either `recordId` OR both `protocol` and `protocolPath`",
@@ -53,8 +50,7 @@
         },
         {
           "required": [
-            "protocol",
-            "protocolPath"
+            "filter"
           ]
         }
       ]

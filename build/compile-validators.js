@@ -36,6 +36,7 @@ import ProtocolsConfigure from '../json-schemas/interface-methods/protocols-conf
 import ProtocolsQuery from '../json-schemas/interface-methods/protocols-query.json' assert { type: 'json' };
 import PublicJwk from '../json-schemas/jwk/public-jwk.json' assert { type: 'json' };
 import RecordsDelete from '../json-schemas/interface-methods/records-delete.json' assert { type: 'json' };
+import RecordsFilter from '../json-schemas/interface-methods/records-filter.json' assert { type: 'json' };
 import RecordsQuery from '../json-schemas/interface-methods/records-query.json' assert { type: 'json' };
 import RecordsRead from '../json-schemas/interface-methods/records-read.json' assert { type: 'json' };
 import RecordsWrite from '../json-schemas/interface-methods/records-write.json' assert { type: 'json' };
@@ -65,6 +66,7 @@ const schemas = {
   ProtocolsConfigure,
   ProtocolsQuery,
   RecordsRead,
+  RecordsFilter,
   PublicJwk,
   SnapshotsCreate,
   BaseAuthorizationPayload,

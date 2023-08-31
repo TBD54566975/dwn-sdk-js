@@ -52,7 +52,6 @@ export enum DwnErrorCode {
   RecordsProtocolContextDerivationSchemeMissingContextId = 'RecordsProtocolContextDerivationSchemeMissingContextId',
   RecordsProtocolPathDerivationSchemeMissingProtocol = 'RecordsProtocolPathDerivationSchemeMissingProtocol',
   RecordsSchemasDerivationSchemeMissingSchema = 'RecordsSchemasDerivationSchemeMissingSchema',
-  RecordsReadMissingCreateProperties = 'RecordsReadMissingCreateProperties',
   RecordsReadReturnedMultiple = 'RecordsReadReturnedMultiple',
   RecordsWriteGetEntryIdUndefinedAuthor = 'RecordsWriteGetEntryIdUndefinedAuthor',
   RecordsWriteDataCidMismatch = 'RecordsWriteDataCidMismatch',

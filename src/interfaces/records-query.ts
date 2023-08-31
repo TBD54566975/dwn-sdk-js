@@ -1,6 +1,6 @@
 import type { SignatureInput } from '../types/jws-types.js';
 import type { Filter, RangeFilter } from '../types/message-types.js';
-import type { RecordsQueryDescriptor, RecordsQueryFilter, RecordsQueryMessage } from '../types/records-types.js';
+import type { RecordsFilter, RecordsQueryDescriptor, RecordsQueryFilter, RecordsQueryMessage } from '../types/records-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Message } from '../core/message.js';
@@ -63,7 +63,7 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
     return new RecordsQuery(message);
   }
 
-  public static convertFilter(filter: RecordsQueryFilter): Filter {
+  public static convertFilter(filter: RecordsFilter): Filter {
     const filterCopy = { ...filter };
     const { dateCreated } = filterCopy;
 
@@ -92,7 +92,7 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
     return filterCopy as Filter;
   }
 
-  public static normalizeFilter(filter: RecordsQueryFilter): RecordsQueryFilter {
+  public static normalizeFilter(filter: RecordsFilter): RecordsFilter {
     let protocol;
     if (filter.protocol === undefined) {
       protocol = undefined;

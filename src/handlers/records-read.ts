@@ -9,7 +9,7 @@ import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { RecordsRead } from '../interfaces/records-read.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
-import { DataStream, DwnError, DwnErrorCode, Encoder } from '../index.js';
+import { DataStream, DwnError, DwnErrorCode, Encoder, RecordsQuery } from '../index.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export class RecordsReadHandler implements MethodHandler {
@@ -125,12 +125,12 @@ export class RecordsReadHandler implements MethodHandler {
    */
   private static createFilter(descriptor: RecordsReadDescriptor): Filter {
     const commonFilter: Filter = { interface: DwnInterfaceName.Records, isLatestBaseState: true };
-    const { recordId, protocol, protocolPath } = descriptor;
+    const { recordId, filter } = descriptor;
     if (recordId !== undefined) {
       return { ...commonFilter, recordId };
     } else {
-      // else protocol & protocolPath are definitely defined
-      return { ...commonFilter, protocol: protocol!, protocolPath: protocolPath! };
-    }
+      // filter must exist if recordId doesn't exist, validated prior by JSON Schema validation.
+      return { ...commonFilter, ...RecordsQuery.convertFilter(filter!) };
+    };
   }
 }

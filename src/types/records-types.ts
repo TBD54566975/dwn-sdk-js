@@ -93,14 +93,17 @@ export type RecordsQueryDescriptor = {
   dateSort?: DateSort;
 };
 
-export type RecordsQueryFilter = {
+export type RecordsQueryFilter = RecordsFilter & {
+  recordId?: string;
+};
+
+export type RecordsFilter = {
   attester?: string;
   recipient?: string;
   protocol?: string;
   protocolPath?: string;
   contextId?: string;
   schema?: string;
-  recordId?: string;
   parentId?: string;
   dataFormat?: string;
   dateCreated?: RangeCriterion;
@@ -158,8 +161,7 @@ export type RecordsReadDescriptor = {
   interface: DwnInterfaceName.Records;
   method: DwnMethodName.Read;
   recordId?: string;
-  protocol?: string;
-  protocolPath?: string;
+  filter?: RecordsFilter;
   messageTimestamp: string;
 };
 
