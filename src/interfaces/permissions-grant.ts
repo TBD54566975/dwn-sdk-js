@@ -1,6 +1,6 @@
 import type { PermissionsRequest } from './permissions-request.js';
 import type { SignatureInput } from '../types/jws-types.js';
-import type { PermissionConditions, PermissionScope } from '../types/permissions-types.js';
+import type { PermissionConditions, PermissionScope, RecordsPermissionScope } from '../types/permissions-types.js';
 import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types/permissions-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
@@ -36,6 +36,7 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
 
   public static async parse(message: PermissionsGrantMessage): Promise<PermissionsGrant> {
     await validateAuthorizationIntegrity(message);
+    PermissionsGrant.validateScope(message);
 
     return new PermissionsGrant(message);
   }
@@ -63,6 +64,7 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
     const message: PermissionsGrantMessage = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
+    PermissionsGrant.validateScope(message);
 
     return new PermissionsGrant(message);
   }
@@ -102,6 +104,34 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
         DwnErrorCode.PermissionsGrantUnauthorizedGrant,
         `${grantedBy} is not authorized to give access to the DWN belonging to ${grantedFor}`
       );
+    }
+  }
+
+  /**
+   * Validates scope structure for properties beyond `interface` and `method`.
+   * Currently only grants for RecordsRead and RecordsWrite have such properties and need validation beyond JSON Schema.
+   */
+  public static validateScope(permissionsGrantMessage: PermissionsGrantMessage): void {
+    const recordsScope = permissionsGrantMessage.descriptor.scope as RecordsPermissionScope;
+
+    // `schema` scopes may not have protocol-related fields
+    if (recordsScope.schema !== undefined) {
+      if (recordsScope.protocol !== undefined || recordsScope.contextId !== undefined || recordsScope.protocolPath) {
+        throw new DwnError(
+          DwnErrorCode.PermissionsGrantScopeSchemaProhibitedFields,
+          'PermissionsGrants for RecordsRead and RecordsWrite that have `schema` present may not also have protocol-related properties present'
+        );
+      }
+    }
+
+    if (recordsScope.protocol !== undefined) {
+      // `contextId` and `protocolPath` are mutually exclusive
+      if (recordsScope.contextId !== undefined && recordsScope.protocolPath !== undefined) {
+        throw new DwnError(
+          DwnErrorCode.PermissionsGrantScopeContextIdAndProtocolPath,
+          'PermissionsGrants for RecordsRead and RecordsWrite may not have both `contextId` and `protocolPath` present'
+        );
+      }
     }
   }
 }

@@ -61,15 +61,35 @@ export class RecordsGrantAuthorization {
     recordsWrite: RecordsWrite,
     grantScope: RecordsPermissionScope
   ): void {
+    // Protocol records must have grants specifying the protocol
     if (grantScope.protocol === undefined) {
       throw new DwnError(
         DwnErrorCode.RecordsGrantAuthorizationScopeNotProtocol,
         'Grant for protocol record must specify protocol in its scope'
       );
-    } else if (grantScope.protocol !== recordsWrite.message.descriptor.protocol) {
+    }
+
+    // The record's protocol must match the protocol specified in the record
+    if (grantScope.protocol !== recordsWrite.message.descriptor.protocol) {
       throw new DwnError(
         DwnErrorCode.RecordsGrantAuthorizationScopeProtocolMismatch,
-        `Grant scope specifies different protocol than in record with recordId ${recordsWrite.message.recordId}`
+        `Grant scope specifies different protocol than what appears in the record`
+      );
+    }
+
+    // If grant specifies either contextId, check that record is that context
+    if (grantScope.contextId !== undefined && grantScope.contextId !== recordsWrite.message.contextId) {
+      throw new DwnError(
+        DwnErrorCode.RecordsGrantAuthorizationScopeContextIdMismatch,
+        `Grant scope specifies different contextId than what appears in the record`
+      );
+    }
+
+    // If grant specifies protocolPath, check that record is at that protocolPath
+    if (grantScope.protocolPath !== undefined && grantScope.protocolPath !== recordsWrite.message.descriptor.protocolPath) {
+      throw new DwnError(
+        DwnErrorCode.RecordsGrantAuthorizationScopeProtocolPathMismatch,
+        `Grant scope specifies different protocolPath than what appears in the record`
       );
     }
   }

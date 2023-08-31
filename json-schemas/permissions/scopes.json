@@ -47,6 +47,15 @@
         },
         "schema": {
           "type": "string"
+        },
+        "protocol": {
+          "type": "string"
+        },
+        "contextId": {
+          "type": "string"
+        },
+        "protocolPath": {
+          "type": "string"
         }
       }
     },
@@ -64,6 +73,15 @@
           "const": "Write"
         },
         "schema": {
+          "type": "string"
+        },
+        "protocol": {
+          "type": "string"
+        },
+        "contextId": {
+          "type": "string"
+        },
+        "protocolPath": {
           "type": "string"
         }
       }

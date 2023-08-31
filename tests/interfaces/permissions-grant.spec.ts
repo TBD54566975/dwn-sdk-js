@@ -1,13 +1,14 @@
 import { expect } from 'chai';
 
 import type { CreateFromPermissionsRequestOverrides } from '../../src/interfaces/permissions-grant.js';
+import type { PermissionScope } from '../../src/index.js';
 
-import { DidKeyResolver } from '../../src/index.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { DidKeyResolver, DwnErrorCode } from '../../src/index.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message.js';
 
 describe('PermissionsGrant', () => {
@@ -37,6 +38,87 @@ describe('PermissionsGrant', () => {
       expect(message.descriptor.scope).to.eql({ interface: DwnInterfaceName.Records, method: DwnMethodName.Write });
       expect(message.descriptor.conditions).to.be.undefined;
       expect(message.descriptor.description).to.eql('drugs');
+    });
+
+    describe('scope validations', () => {
+      it('ensures that `schema` and protocol related fields `protocol`, `contextId` or `protocolPath`', async () => {
+        const { privateJwk } = await Secp256k1.generateKeyPair();
+        const authorizationSignatureInput = {
+          privateJwk,
+          protectedHeader: {
+            alg : privateJwk.alg as string,
+            kid : 'did:jank:bob'
+          }
+        };
+
+        const permissionsGrantOptions = {
+          dateExpires : getCurrentTimeInHighPrecision(),
+          grantedBy   : 'did:jank:bob',
+          grantedTo   : 'did:jank:alice',
+          grantedFor  : 'did:jank:bob',
+          authorizationSignatureInput
+        };
+
+        // Reject when `schema` and `protocol` are both present
+        let scope: PermissionScope = {
+          interface : DwnInterfaceName.Records,
+          method    : DwnMethodName.Write,
+          schema    : 'some-schema',
+          protocol  : 'some-protocol'
+        };
+        expect(PermissionsGrant.create({ ...permissionsGrantOptions, scope }))
+          .to.be.rejectedWith(DwnErrorCode.PermissionsGrantScopeSchemaProhibitedFields);
+
+        // Reject when `schema` and `contextId` are both present
+        scope = {
+          interface : DwnInterfaceName.Records,
+          method    : DwnMethodName.Write,
+          schema    : 'some-schema',
+          contextId : 'some-contextId'
+        };
+        expect(PermissionsGrant.create({ ...permissionsGrantOptions, scope }))
+          .to.be.rejectedWith(DwnErrorCode.PermissionsGrantScopeSchemaProhibitedFields);
+
+        // Reject when `schema` and `protocolPath` are both present
+        scope = {
+          interface    : DwnInterfaceName.Records,
+          method       : DwnMethodName.Write,
+          schema       : 'some-schema',
+          protocolPath : 'some-protocol-path'
+        };
+        expect(PermissionsGrant.create({ ...permissionsGrantOptions, scope }))
+          .to.be.rejectedWith(DwnErrorCode.PermissionsGrantScopeSchemaProhibitedFields);
+      });
+
+      it('ensures that `contextId` and `protocolPath` are not both present', async () => {
+        const { privateJwk } = await Secp256k1.generateKeyPair();
+        const authorizationSignatureInput = {
+          privateJwk,
+          protectedHeader: {
+            alg : privateJwk.alg as string,
+            kid : 'did:jank:bob'
+          }
+        };
+
+        const permissionsGrantOptions = {
+          dateExpires : getCurrentTimeInHighPrecision(),
+          grantedBy   : 'did:jank:bob',
+          grantedTo   : 'did:jank:alice',
+          grantedFor  : 'did:jank:bob',
+          authorizationSignatureInput
+        };
+
+        // Allow when `context to be present ` and `protocol` are both present
+        const scope = {
+          interface    : DwnInterfaceName.Records,
+          method       : DwnMethodName.Write,
+          protocol     : 'some-protocol',
+          contextId    : 'some-contextId',
+          protocolPath : 'some-protocol-path',
+        };
+        expect(PermissionsGrant.create({ ...permissionsGrantOptions, scope }))
+          .to.be.rejectedWith(DwnErrorCode.PermissionsGrantScopeContextIdAndProtocolPath);
+      });
     });
   });
 
