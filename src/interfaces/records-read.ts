@@ -7,15 +7,14 @@ import type { RecordsFilter , RecordsReadDescriptor, RecordsReadMessage } from '
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Message } from '../core/message.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
+import { Records } from '../utils/records.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
-import { RecordsQuery } from './records-query.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { validateAuthorizationIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type RecordsReadOptions = {
-  recordId?: string;
-  filter?: RecordsFilter;
+  filter: RecordsFilter;
   date?: string;
   authorizationSignatureInput?: SignatureInput;
   permissionsGrantId?: string;
@@ -40,20 +39,13 @@ export class RecordsRead extends Message<RecordsReadMessage> {
    * @throws {DwnError} when a combination of required RecordsReadOptions are missing
    */
   public static async create(options: RecordsReadOptions): Promise<RecordsRead> {
-    const {
-      recordId,
-      filter,
-      authorizationSignatureInput,
-      permissionsGrantId
-    } = options;
-
+    const { filter, authorizationSignatureInput, permissionsGrantId } = options;
     const currentTime = getCurrentTimeInHighPrecision();
 
     const descriptor: RecordsReadDescriptor = {
       interface        : DwnInterfaceName.Records,
       method           : DwnMethodName.Read,
-      recordId         : recordId,
-      filter           : filter ? RecordsQuery.normalizeFilter(filter) : undefined,
+      filter           : Records.normalizeFilter(filter),
       messageTimestamp : options.date ?? currentTime
     };
 

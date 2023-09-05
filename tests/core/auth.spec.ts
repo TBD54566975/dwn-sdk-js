@@ -9,7 +9,9 @@ describe('Auth', () => {
     it('should throw if given message does not have `authorization` property', async () => {
       // create a message without `authorization`
       const recordsRead = await RecordsRead.create({
-        recordId: await TestDataGenerator.randomCborSha256Cid()
+        filter: {
+          recordId: await TestDataGenerator.randomCborSha256Cid()
+        }
       });
 
       await expect(validateAuthorizationIntegrity(recordsRead.message)).to.be.rejectedWith(DwnErrorCode.AuthorizationMissing);

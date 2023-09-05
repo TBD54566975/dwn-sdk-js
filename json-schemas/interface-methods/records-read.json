@@ -16,7 +16,8 @@
       "required": [
         "interface",
         "method",
-        "messageTimestamp"
+        "messageTimestamp",
+        "filter"
       ],
       "properties": {
         "interface": {
@@ -34,26 +35,10 @@
         "messageTimestamp": {
           "type": "string"
         },
-        "recordId": {
-          "type": "string"
-        },
         "filter": {
           "$ref": "https://identity.foundation/dwn/json-schemas/records-filter.json"
         }
-      },
-      "$comment": "describe rule requiring either `recordId` OR both `protocol` and `protocolPath`",
-      "oneOf": [
-        {
-          "required": [
-            "recordId"
-          ]
-        },
-        {
-          "required": [
-            "filter"
-          ]
-        }
-      ]
+      }
     }
   }
 }

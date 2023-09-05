@@ -1,6 +1,9 @@
+import type { RecordsReadMessage } from '../../src/types/records-types.js';
+
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
+import dexProtocolDefinition from '../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { Jws } from '../../src/index.js';
 import { RecordsRead } from '../../src/interfaces/records-read.js';
@@ -15,7 +18,9 @@ describe('RecordsRead', () => {
 
       const currentTime = getCurrentTimeInHighPrecision();
       const recordsRead = await RecordsRead.create({
-        recordId                    : 'anything',
+        filter: {
+          recordId: 'anything',
+        },
         authorizationSignatureInput : Jws.createSignatureInput(alice),
         date                        : currentTime
       });
@@ -23,28 +28,40 @@ describe('RecordsRead', () => {
       expect(recordsRead.message.descriptor.messageTimestamp).to.equal(currentTime);
     });
 
-    it('should reject if both `recordId` and `filter` are passed', async () => {
+    it('should auto-normalize protocol URL', async () => {
       const alice = await TestDataGenerator.generatePersona();
-      const readPromise = RecordsRead.create({
-        filter: {
-          protocol     : 'protocol',
-          protocolPath : 'some/path',
-        },
-        recordId                    : 'some-id',
-        authorizationSignatureInput : Jws.createSignatureInput(alice),
-      });
 
-      await expect(readPromise).to.be.rejectedWith('/descriptor: must match exactly one schema in oneOf');
+      const options = {
+        recipient                   : alice.did,
+        data                        : TestDataGenerator.randomBytes(10),
+        dataFormat                  : 'application/json',
+        authorizationSignatureInput : Jws.createSignatureInput(alice),
+        filter                      : { protocol: 'example.com/' },
+        definition                  : dexProtocolDefinition
+      };
+      const recordsQuery = await RecordsRead.create(options);
+
+      const message = recordsQuery.message as RecordsReadMessage;
+
+      expect(message.descriptor.filter!.protocol).to.eq('http://example.com');
     });
 
-    it('should not reject if only `recordId` is passed', async () => {
+    it('should auto-normalize schema URL', async () => {
       const alice = await TestDataGenerator.generatePersona();
-      const readSuccess = await RecordsRead.create({
-        recordId                    : 'some-id',
-        authorizationSignatureInput : Jws.createSignatureInput(alice),
-      });
 
-      expect(readSuccess.message.descriptor.recordId).to.equal('some-id');
+      const options = {
+        recipient                   : alice.did,
+        data                        : TestDataGenerator.randomBytes(10),
+        dataFormat                  : 'application/json',
+        authorizationSignatureInput : Jws.createSignatureInput(alice),
+        filter                      : { schema: 'example.com/' },
+        definition                  : dexProtocolDefinition
+      };
+      const recordsQuery = await RecordsRead.create(options);
+
+      const message = recordsQuery.message as RecordsReadMessage;
+
+      expect(message.descriptor.filter!.schema).to.eq('http://example.com');
     });
   });
 });

@@ -36,15 +36,7 @@
           "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
         },
         "filter": {
-          "type": "object",
-          "allOf": [
-            { "$ref": "https://identity.foundation/dwn/json-schemas/records-filter.json" }
-          ],
-          "properties": {
-            "recordId": {
-              "type": "string"
-            }
-          }
+          "$ref": "https://identity.foundation/dwn/json-schemas/records-filter.json"
         },
         "dateSort": {
           "enum": [

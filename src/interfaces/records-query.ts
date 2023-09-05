@@ -1,13 +1,13 @@
 import type { SignatureInput } from '../types/jws-types.js';
-import type { Filter, RangeFilter } from '../types/message-types.js';
-import type { RecordsFilter, RecordsQueryDescriptor, RecordsQueryFilter, RecordsQueryMessage } from '../types/records-types.js';
+import type { RecordsFilter, RecordsQueryDescriptor, RecordsQueryMessage } from '../types/records-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Message } from '../core/message.js';
+import { Records } from '../utils/records.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { validateAuthorizationIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
-import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
+import { validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
 export enum DateSort {
   CreatedAscending = 'createdAscending',
@@ -18,7 +18,7 @@ export enum DateSort {
 
 export type RecordsQueryOptions = {
   messageTimestamp?: string;
-  filter: RecordsQueryFilter;
+  filter: RecordsFilter;
   dateSort?: DateSort;
   authorizationSignatureInput?: SignatureInput;
 };
@@ -45,7 +45,7 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
       interface        : DwnInterfaceName.Records,
       method           : DwnMethodName.Query,
       messageTimestamp : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
-      filter           : RecordsQuery.normalizeFilter(options.filter),
+      filter           : Records.normalizeFilter(options.filter),
       dateSort         : options.dateSort
     };
 
@@ -61,56 +61,5 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
     Message.validateJsonSchema(message);
 
     return new RecordsQuery(message);
-  }
-
-  public static convertFilter(filter: RecordsFilter): Filter {
-    const filterCopy = { ...filter };
-    const { dateCreated } = filterCopy;
-
-    let rangeFilter: RangeFilter | undefined = undefined;
-    if (dateCreated !== undefined) {
-      if (dateCreated.to !== undefined && dateCreated.from !== undefined) {
-        rangeFilter = {
-          gte : dateCreated.from,
-          lt  : dateCreated.to,
-        };
-      } else if (dateCreated.to !== undefined) {
-        rangeFilter = {
-          lt: dateCreated.to,
-        };
-      } else if (dateCreated.from !== undefined) {
-        rangeFilter = {
-          gte: dateCreated.from,
-        };
-      }
-    }
-
-    if (rangeFilter) {
-      (filterCopy as Filter).dateCreated = rangeFilter;
-    }
-
-    return filterCopy as Filter;
-  }
-
-  public static normalizeFilter(filter: RecordsFilter): RecordsFilter {
-    let protocol;
-    if (filter.protocol === undefined) {
-      protocol = undefined;
-    } else {
-      protocol = normalizeProtocolUrl(filter.protocol);
-    }
-
-    let schema;
-    if (filter.schema === undefined) {
-      schema = undefined;
-    } else {
-      schema = normalizeSchemaUrl(filter.schema);
-    }
-
-    return {
-      ...filter,
-      protocol,
-      schema,
-    };
   }
 }

@@ -134,8 +134,10 @@ export function testRecordsDeleteHandler(): void {
 
         // verify the other record with the same data is unaffected
         const aliceRead1 = await RecordsRead.create({
-          recordId                    : aliceAssociateData.message.recordId,
-          authorizationSignatureInput : Jws.createSignatureInput(alice)
+          filter: {
+            recordId: aliceAssociateData.message.recordId,
+          },
+          authorizationSignatureInput: Jws.createSignatureInput(alice)
         });
 
         const aliceRead1Reply = await dwn.handleRecordsRead(alice.did, aliceRead1.message);
@@ -158,8 +160,10 @@ export function testRecordsDeleteHandler(): void {
 
         // verify that bob can still fetch record with the same data
         const bobRead1 = await RecordsRead.create({
-          recordId                    : bobAssociateData.message.recordId,
-          authorizationSignatureInput : Jws.createSignatureInput(bob)
+          filter: {
+            recordId: bobAssociateData.message.recordId,
+          },
+          authorizationSignatureInput: Jws.createSignatureInput(bob)
         });
 
         const bobRead1Reply = await dwn.handleRecordsRead(bob.did, bobRead1.message);

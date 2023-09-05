@@ -3,6 +3,7 @@
   "$id": "https://identity.foundation/dwn/json-schemas/records-filter.json",
   "type": "object",
   "minProperties": 1,
+  "additionalProperties": false,
   "properties": {
     "protocol": {
       "type": "string"
@@ -20,6 +21,9 @@
       "type": "string"
     },
     "schema": {
+      "type": "string"
+    },
+    "recordId": {
       "type": "string"
     },
     "parentId": {

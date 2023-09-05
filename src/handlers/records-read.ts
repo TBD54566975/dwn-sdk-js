@@ -1,15 +1,15 @@
 import type { MethodHandler } from '../types/method-handler.js';
 import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
-import type { DataStore, DidResolver, MessageStore } from '../index.js';
-import type { Filter, TimestampedMessage } from '../types/message-types.js';
-import type { RecordsReadDescriptor, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from '../types/records-types.js';
+import type { DataStore, DidResolver, Filter, MessageStore } from '../index.js';
+import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
+import { Records } from '../utils/records.js';
 import { RecordsRead } from '../interfaces/records-read.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
-import { DataStream, DwnError, DwnErrorCode, Encoder, RecordsQuery } from '../index.js';
+import { DataStream, DwnError, DwnErrorCode, Encoder } from '../index.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export class RecordsReadHandler implements MethodHandler {
@@ -37,9 +37,14 @@ export class RecordsReadHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }
 
-    // get existing messages matching `recordId` or `protocol` with `protocolPath` so we can perform authorization
-    const query: Filter = RecordsReadHandler.createFilter(recordsRead.message.descriptor);
-    const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
+    // get the latest active records matching the supplied filter
+    // only RecordsWrite messages will be returned due to 'isLatestBaseState' being set to true.
+    const query: Filter = {
+      interface         : DwnInterfaceName.Records,
+      isLatestBaseState : true,
+      ...Records.convertFilter(message.descriptor.filter)
+    };
+    const existingMessages = await this.messageStore.query(tenant, query) as RecordsWriteMessage[];
 
     // ensure that the returned query only contains a unique record
     try {
@@ -100,11 +105,10 @@ export class RecordsReadHandler implements MethodHandler {
    * @param messages a list of messages returned from the MessageStore query.
    * @throws {DwnError} when the provided messages contain more than one unique record.
    */
-  private static enforceSingleRecordRule(messages: TimestampedMessage[]): void {
+  private static enforceSingleRecordRule(messages: RecordsWriteMessage[]): void {
     const uniqueRecordIds: string[] = [];
-    for (const message of messages) {
-      const recordId = message.descriptor.method === DwnMethodName.Write ? (message as RecordsWriteMessage).recordId : undefined;
-      if (recordId && !uniqueRecordIds.includes(recordId)) {
+    for (const { recordId } of messages) {
+      if (!uniqueRecordIds.includes(recordId)) {
         uniqueRecordIds.push(recordId);
       }
 
@@ -115,22 +119,5 @@ export class RecordsReadHandler implements MethodHandler {
         );
       }
     }
-  }
-
-  /**
-   * Creates a filter using `recordId` in given descriptor, if not given, `protocol` & `protocolPath` are used to create the filter instead.
-   * @param descriptor message descriptor with optional properties `recordId`, `protocol` and `protocolPath`
-   *
-   * @returns {Filter} with a Records interface as well as the appropriate filter params
-   */
-  private static createFilter(descriptor: RecordsReadDescriptor): Filter {
-    const commonFilter: Filter = { interface: DwnInterfaceName.Records, isLatestBaseState: true };
-    const { recordId, filter } = descriptor;
-    if (recordId !== undefined) {
-      return { ...commonFilter, recordId };
-    } else {
-      // filter must exist if recordId doesn't exist, validated prior by JSON Schema validation.
-      return { ...commonFilter, ...RecordsQuery.convertFilter(filter!) };
-    };
   }
 }
