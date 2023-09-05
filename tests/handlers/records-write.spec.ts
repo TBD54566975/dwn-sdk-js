@@ -34,6 +34,7 @@ import { Encoder } from '../../src/utils/encoder.js';
 import { GeneralJwsSigner } from '../../src/jose/jws/general/signer.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { Jws } from '../../src/utils/jws.js';
+import { PermissionsConditionPublication } from '../../src/types/permissions-types.js';
 import { RecordsRead } from '../../src/interfaces/records-read.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { RecordsWriteHandler } from '../../src/handlers/records-write.js';
@@ -2566,6 +2567,148 @@ export function testRecordsWriteHandler(): void {
             const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
             expect(recordsWriteReply.status.code).to.equal(401);
             expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationScopeSchema);
+          });
+        });
+
+        describe('grant condition published', () => {
+          it('Rejects unpublished records if grant condition `published` === required', async () => {
+            // scenario: Alice gives Bob a grant with condition `published` === required.
+            //           Bob is able to write a public record but not able to write an unpublished record.
+
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+
+            // Alice creates a grant for Bob with `published` === required
+            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
+              author     : alice,
+              grantedBy  : alice.did,
+              grantedFor : alice.did,
+              grantedTo  : bob.did,
+              scope      : {
+                interface : DwnInterfaceName.Records,
+                method    : DwnMethodName.Write,
+              },
+              conditions: {
+                publication: PermissionsConditionPublication.Required,
+              }
+            });
+            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            expect(permissionsGrantReply.status.code).to.equal(202);
+
+            const permissionsGrantId = await Message.getCid(permissionsGrant.message);
+
+            // Bob is able to write a published record
+            const publishedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author    : bob,
+              published : true,
+              permissionsGrantId
+            });
+            const publishedRecordsWriteReply = await dwn.processMessage(alice.did, publishedRecordsWrite.message, publishedRecordsWrite.dataStream);
+            expect(publishedRecordsWriteReply.status.code).to.equal(202);
+
+            // Bob is not able to write an unpublished record
+            const unpublishedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author    : bob,
+              published : false,
+              permissionsGrantId
+            });
+            const unpublishedRecordsWriteReply =
+              await dwn.processMessage(alice.did, unpublishedRecordsWrite.message, unpublishedRecordsWrite.dataStream);
+            expect(unpublishedRecordsWriteReply.status.code).to.equal(401);
+            expect(unpublishedRecordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationConditionPublicationRequired);
+          });
+
+          it('Rejects published records if grant condition `published` === prohibited', async () => {
+            // scenario: Alice gives Bob a grant with condition `published` === prohibited.
+            //           Bob is able to write a unpublished record but not able to write a public record.
+
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+
+            // Alice creates a grant for Bob with `published` === prohibited
+            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
+              author     : alice,
+              grantedBy  : alice.did,
+              grantedFor : alice.did,
+              grantedTo  : bob.did,
+              scope      : {
+                interface : DwnInterfaceName.Records,
+                method    : DwnMethodName.Write,
+              },
+              conditions: {
+                publication: PermissionsConditionPublication.Prohibited
+              }
+            });
+            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            expect(permissionsGrantReply.status.code).to.equal(202);
+
+            const permissionsGrantId = await Message.getCid(permissionsGrant.message);
+
+            // Bob not is able to write a published record
+            const publishedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author    : bob,
+              published : true,
+              permissionsGrantId
+            });
+            const publishedRecordsWriteReply = await dwn.processMessage(alice.did, publishedRecordsWrite.message, publishedRecordsWrite.dataStream);
+            expect(publishedRecordsWriteReply.status.code).to.equal(401);
+            expect(publishedRecordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationConditionPublicationProhibited);
+
+            // Bob is able to write an unpublished record
+            const unpublishedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author    : bob,
+              published : false,
+              permissionsGrantId
+            });
+            const unpublishedRecordsWriteReply =
+              await dwn.processMessage(alice.did, unpublishedRecordsWrite.message, unpublishedRecordsWrite.dataStream);
+            expect(unpublishedRecordsWriteReply.status.code).to.equal(202);
+          });
+
+          it('Allows both published and unpublished records if grant condition `published` is undefined', async () => {
+            // scenario: Alice gives Bob a grant without condition `published`.
+            //           Bob is able to write both an unpublished record and a published record.
+
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+
+            // Alice creates a grant for Bob with `published` === prohibited
+            const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
+              author     : alice,
+              grantedBy  : alice.did,
+              grantedFor : alice.did,
+              grantedTo  : bob.did,
+              scope      : {
+                interface : DwnInterfaceName.Records,
+                method    : DwnMethodName.Write,
+              },
+              conditions: {
+                // publication: '', // intentionally undefined
+              }
+            });
+            const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+            expect(permissionsGrantReply.status.code).to.equal(202);
+
+            const permissionsGrantId = await Message.getCid(permissionsGrant.message);
+
+            // Bob is able to write a published record
+            const publishedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author    : bob,
+              published : true,
+              permissionsGrantId
+            });
+            const publishedRecordsWriteReply = await dwn.processMessage(alice.did, publishedRecordsWrite.message, publishedRecordsWrite.dataStream);
+            expect(publishedRecordsWriteReply.status.code).to.equal(202);
+
+            // Bob is able to write an unpublished record
+            const unpublishedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author    : bob,
+              published : false,
+              permissionsGrantId
+            });
+            const unpublishedRecordsWriteReply =
+              await dwn.processMessage(alice.did, unpublishedRecordsWrite.message, unpublishedRecordsWrite.dataStream);
+            expect(unpublishedRecordsWriteReply.status.code).to.equal(202);
           });
         });
       });

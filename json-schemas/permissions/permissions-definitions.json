@@ -33,7 +33,11 @@
       "additionalProperties": false,
       "properties": {
         "publication": {
-          "type": "boolean"
+          "enum": [
+            "Required",
+            "Prohibited"
+          ],
+          "type": "string"
         }
       }
     }

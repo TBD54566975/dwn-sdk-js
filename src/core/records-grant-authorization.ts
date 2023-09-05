@@ -4,6 +4,7 @@ import type { RecordsWrite } from '../interfaces/records-write.js';
 import type { PermissionsGrantMessage, RecordsPermissionScope } from '../types/permissions-types.js';
 
 import { GrantAuthorization } from './grant-authorization.js';
+import { PermissionsConditionPublication } from '../types/permissions-types.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 
 export class RecordsGrantAuthorization {
@@ -16,6 +17,8 @@ export class RecordsGrantAuthorization {
     const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, author, messageStore);
 
     RecordsGrantAuthorization.verifyScope(incomingMessage, permissionsGrantMessage);
+
+    RecordsGrantAuthorization.verifyConditions(incomingMessage, permissionsGrantMessage);
   }
 
   /**
@@ -108,6 +111,30 @@ export class RecordsGrantAuthorization {
           `Record does not have schema in PermissionsGrant scope with schema '${grantScope.schema}'`
         );
       }
+    }
+  }
+
+  /**
+   * Verifies grant `conditions`.
+   * Currently the only condition is `published` which only applies to RecordsWrites
+   */
+  private static verifyConditions(incomingMessage: RecordsWrite, permissionsGrantMessage: PermissionsGrantMessage): void {
+    const conditions = permissionsGrantMessage.descriptor.conditions;
+
+    // If conditions require publication, RecordsWrite must have `published` === true
+    if (conditions?.publication === PermissionsConditionPublication.Required && !incomingMessage.message.descriptor.published) {
+      throw new DwnError(
+        DwnErrorCode.RecordsGrantAuthorizationConditionPublicationRequired,
+        'PermissionsGrant requires message to be published'
+      );
+    }
+
+    // if conditions prohibit publication, RecordsWrite must have published === false or undefined
+    if (conditions?.publication === PermissionsConditionPublication.Prohibited && incomingMessage.message.descriptor.published) {
+      throw new DwnError(
+        DwnErrorCode.RecordsGrantAuthorizationConditionPublicationProhibited,
+        'PermissionsGrant prohibits message from being published'
+      );
     }
   }
 
