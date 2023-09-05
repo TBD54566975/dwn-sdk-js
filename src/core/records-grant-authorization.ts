@@ -133,7 +133,7 @@ export class RecordsGrantAuthorization {
     if (conditions?.publication === PermissionsConditionPublication.Prohibited && incomingMessage.message.descriptor.published) {
       throw new DwnError(
         DwnErrorCode.RecordsGrantAuthorizationConditionPublicationProhibited,
-        'PermissionsGrant requires message to be published'
+        'PermissionsGrant prohibits message from being published'
       );
     }
   }
