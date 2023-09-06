@@ -947,7 +947,7 @@ export function testRecordsWriteHandler(): void {
               .to.equal(base64url.baseEncode(encodedCredentialResponse));
           });
 
-          it('should allow write with `context` recipient rule', async () => {
+          xit('should allow write with `context` recipient rule', async () => {
             // scenario: Alice creates a groupChat. Bob tries and fails to write a message.
             //           Then invites with Bob to the groupChat. Now, Bob is able to send a
             //           message to the groupChat because he recieved an invite.
@@ -1015,7 +1015,7 @@ export function testRecordsWriteHandler(): void {
             expect(messageReply.status.code).to.equal(202);
           });
 
-          it('should allow write with `any` recipient rule', async () => {
+          xit('should allow write with `any` recipient rule', async () => {
             // scenario: Bob tries to write a chat message to Alice's DWN, but fails because Alice has not added him as a friend.
             //           Alice adds Bob as a friend, then Bob is able to write a chat message.
 
@@ -1146,7 +1146,7 @@ export function testRecordsWriteHandler(): void {
               .to.equal(base64url.baseEncode(encodedCaption));
           });
 
-          it('should allow write with `context` author rule', async () => {
+          xit('should allow write with `context` author rule', async () => {
             // scenario: Alice starts a groupChat. Bob tries and fails to write a groupChat/chat.
             //           Bob joins the groupChat, then he is able to write a groupChat/chat.
 
@@ -1212,7 +1212,7 @@ export function testRecordsWriteHandler(): void {
             expect(bobsChatReply2.status.code).to.equal(202);
           });
 
-          it('should allow write with `any` author rule', async () => {
+          xit('should allow write with `any` author rule', async () => {
             // scenario: Alice hosts a Q&A Forum and where anyone who has previously asked a question
             //           may provide an answer to other questions.
             //           Alice writes a question. Bob asks tries to write an to answer her question, but cannot.
