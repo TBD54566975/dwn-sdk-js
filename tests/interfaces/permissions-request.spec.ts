@@ -25,7 +25,11 @@ describe('PermissionsRequest', () => {
         grantedBy   : 'did:jank:bob',
         grantedTo   : 'did:jank:alice',
         grantedFor  : 'did:jank:bob',
-        scope       : { interface: DwnInterfaceName.Records, method: DwnMethodName.Write },
+        scope       : {
+          interface : DwnInterfaceName.Records,
+          method    : DwnMethodName.Write,
+          protocol  : 'some-protocol',
+        },
         authorizationSignatureInput
       });
 

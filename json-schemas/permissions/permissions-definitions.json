@@ -13,20 +13,20 @@
       "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
     },
     "scope": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "interface",
-        "method"
-      ],
-      "properties": {
-        "interface": {
-          "type": "string"
+      "oneOf": [
+        {
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/protocols-query-scope"
         },
-        "method": {
-          "type": "string"
+        {
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/records-read-scope"
+        },
+        {
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/records-delete-scope"
+        },
+        {
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/records-write-scope"
         }
-      }
+      ]
     },
     "conditions": {
       "type": "object",
