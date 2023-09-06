@@ -25,13 +25,17 @@ describe('PermissionsRequest', () => {
         grantedBy   : 'did:jank:bob',
         grantedTo   : 'did:jank:alice',
         grantedFor  : 'did:jank:bob',
-        scope       : { interface: DwnInterfaceName.Records, method: DwnMethodName.Write },
+        scope       : {
+          interface : DwnInterfaceName.Records,
+          method    : DwnMethodName.Write,
+          protocol  : 'some-protocol',
+        },
         authorizationSignatureInput
       });
 
       expect(message.descriptor.grantedTo).to.equal('did:jank:alice');
       expect(message.descriptor.grantedBy).to.equal('did:jank:bob');
-      expect(message.descriptor.scope).to.eql({ interface: DwnInterfaceName.Records, method: DwnMethodName.Write });
+      expect(message.descriptor.scope).to.eql({ interface: DwnInterfaceName.Records, method: DwnMethodName.Write, protocol: 'some-protocol', });
       expect(message.descriptor.conditions).to.be.undefined;
       expect(message.descriptor.description).to.eql('drugs');
     });
