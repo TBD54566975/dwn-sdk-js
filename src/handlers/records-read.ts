@@ -44,7 +44,7 @@ export class RecordsReadHandler implements MethodHandler {
       isLatestBaseState : true,
       ...Records.convertFilter(message.descriptor.filter)
     };
-    const existingMessages = await this.messageStore.query(tenant, query, {}) as RecordsWriteMessage[];
+    const existingMessages = await this.messageStore.query(tenant, query, {}, {}) as RecordsWriteMessage[];
     if (existingMessages.length === 0) {
       return {
         status: { code: 404, detail: 'Not Found' }

@@ -39,7 +39,7 @@ export interface MessageStore {
     tenant: string,
     filter: Filter,
     dateSort: MessageSort,
-    pagination?: Pagination,
+    pagination: Pagination,
     options?: MessageStoreOptions
   ): Promise<GenericMessage[]>;
 

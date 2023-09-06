@@ -85,8 +85,8 @@ export class MessageStoreLevel implements MessageStore {
   async query(
     tenant: string,
     filter: Filter,
-    dateSort: MessageSort,
-    pagination?: Pagination,
+    sort: MessageSort,
+    pagination: Pagination,
     options?: MessageStoreOptions
   ): Promise<GenericMessage[]> {
     options?.signal?.throwIfAborted();
@@ -100,13 +100,13 @@ export class MessageStoreLevel implements MessageStore {
       if (message) { messages.push(message); }
     }
 
-    const sortedRecords = this.sortRecords(messages, dateSort);
+    const sortedRecords = this.sortRecords(messages, sort);
     return this.paginateRecords(sortedRecords, pagination);
   }
 
   private async paginateRecords(
     messages: GenericMessage[],
-    pagination: Pagination = {},
+    pagination: Pagination
   ): Promise<GenericMessage[]> {
     const { messageCid: messageId, limit = 0 } = pagination;
     if (messageId === undefined && limit > 0) {
@@ -135,14 +135,14 @@ export class MessageStoreLevel implements MessageStore {
    *
    * If sorting is based on date published, records that are not published are filtered out.
    * @param messages - Messages to be sorted if dateSort is present
-   * @param dateSort - Sorting scheme
+   * @param sort - Sorting scheme
    * @returns Sorted Messages
    */
   private sortRecords(
     messages: GenericMessage[],
-    dateSort: MessageSort
+    sort: MessageSort
   ): GenericMessage[] {
-    const { dateCreated, datePublished, messageTimestamp } = dateSort;
+    const { dateCreated, datePublished, messageTimestamp } = sort;
     if (dateCreated !== undefined) {
       return (messages as RecordsWriteMessage[]).sort((a,b) => dateCreated === SortOrder.Ascending ?
         lexicographicalCompare(a.descriptor.dateCreated, b.descriptor.dateCreated) :
