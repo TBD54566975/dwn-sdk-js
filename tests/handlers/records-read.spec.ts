@@ -314,7 +314,7 @@ export function testRecordsReadHandler(): void {
             expect(imposterReadReply.status.detail).to.include(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
           });
 
-          it('should allow read with `context` recipient rule', async () => {
+          xit('should allow read with `context` recipient rule', async () => {
             // scenario: Alice creates a groupChat and sends a message to the groupChat.
             //           Bob tries and fails to read the message. Then Alice invites with Bob to the groupChat.
             //           Now, Bob is able to send a message to the groupChat because he recieved an invite.
@@ -389,7 +389,7 @@ export function testRecordsReadHandler(): void {
             expect(readReply2.status.code).to.equal(200);
           });
 
-          it('should allow read with `any` recipient rule', async () => {
+          xit('should allow read with `any` recipient rule', async () => {
             // scenario: Bob tries to read a chat message to Alice's DWN, but fails because Alice has not added him as a friend.
             //           Alice adds Bob as a friend, then Bob is able to read a chat message.
 
@@ -499,7 +499,7 @@ export function testRecordsReadHandler(): void {
             expect(imposterReadReply.status.detail).to.include(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
           });
 
-          it('should allow read with `context` author rule', async () => {
+          xit('should allow read with `context` author rule', async () => {
             // scenario: Alice starts a groupChat. Bob tries and fails to read a groupChat/chat.
             //           Bob joins the groupChat, then he is able to read a groupChat/chat.
 
@@ -573,7 +573,7 @@ export function testRecordsReadHandler(): void {
             expect(readReply2.status.code).to.equal(200);
           });
 
-          it('should allow read with `any` author rule', async () => {
+          xit('should allow read with `any` author rule', async () => {
             // scenario: Alice writes a `reward` to the contribution-reward protocol. Bob tries and fails to read the reward.
             //           He makes a contribution, then he is able to read the reward
 

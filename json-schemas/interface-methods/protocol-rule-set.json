@@ -68,8 +68,6 @@
                   "inGroup": {
                     "type": "string",
                     "enum": [
-                      "any",
-                      "context",
                       "ancestors"
                     ]
                   }
