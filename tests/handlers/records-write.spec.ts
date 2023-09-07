@@ -225,6 +225,35 @@ export function testRecordsWriteHandler(): void {
           .to.equal(newerWrite.message.descriptor.dataCid); // expecting unchanged
       });
 
+      it.only('should not allow deleted records to be resurrected', async () => {
+        // Create a record
+        const alice = await TestDataGenerator.generatePersona();
+        TestStubGenerator.stubDidResolver(didResolver, [alice]);
+
+        const recordsWrite = await TestDataGenerator.generateRecordsWrite({
+          author : alice,
+          data   : Encoder.stringToBytes('unused')
+        });
+        const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+        expect(recordsWriteReply.status.code).to.eq(202);
+
+        // Delete the record
+        const recordsDelete = await TestDataGenerator.generateRecordsDelete({
+          author   : alice,
+          recordId : recordsWrite.message.recordId,
+        });
+        const recordsDeleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
+        expect(recordsDeleteReply.status.code).to.eq(202);
+
+        // Try and fail to resurrect the record with a new RecordsWrite
+        const resurrectingRecordsWrite = await TestDataGenerator.generateFromRecordsWrite({
+          author        : alice,
+          existingWrite : recordsWrite.recordsWrite,
+        });
+        const recordsWriteResurrectReply = await dwn.processMessage(alice.did, resurrectingRecordsWrite.message, resurrectingRecordsWrite.dataStream);
+        expect(recordsWriteResurrectReply.status.code).to.eq(404);
+      });
+
       it('should not allow changes to immutable properties', async () => {
         const initialWriteData = await TestDataGenerator.generateRecordsWrite();
         const tenant = initialWriteData.author.did;

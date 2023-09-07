@@ -673,14 +673,13 @@ export class RecordsWrite {
   /**
    * Gets the initial write from the given list or record write.
    */
-  public static async getInitialWrite(messages: GenericMessage[]): Promise<RecordsWriteMessage>{
+  public static async getInitialWrite(messages: GenericMessage[]): Promise<RecordsWriteMessage | undefined>{
     for (const message of messages) {
       if (await RecordsWrite.isInitialWrite(message)) {
         return message as RecordsWriteMessage;
       }
     }
-
-    throw new Error(`initial write is not found`);
+    return undefined;
   }
 
   /**

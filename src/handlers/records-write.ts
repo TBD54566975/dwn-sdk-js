@@ -50,19 +50,24 @@ export class RecordsWriteHandler implements MethodHandler {
       recordId  : message.recordId
     };
     const existingMessages = await this.messageStore.query(tenant, query) as (RecordsWriteMessage|RecordsDeleteMessage)[];
+    const newestExistingMessage = await Message.getNewestMessage(existingMessages);
 
     // if the incoming write is not the initial write, then it must not modify any immutable properties defined by the initial write
     const newMessageIsInitialWrite = await recordsWrite.isInitialWrite();
     if (!newMessageIsInitialWrite) {
+      const initialWrite = await RecordsWrite.getInitialWrite(existingMessages);
+      if (initialWrite === undefined || newestExistingMessage?.descriptor.method === DwnMethodName.Delete) {
+        return {
+          status: { code: 404, detail: `initial write is not found` }
+        };
+      };
+
       try {
-        const initialWrite = await RecordsWrite.getInitialWrite(existingMessages);
         RecordsWrite.verifyEqualityOfImmutableProperties(initialWrite, message);
       } catch (e) {
         return messageReplyFromError(e, 400);
       }
     }
-
-    const newestExistingMessage = await Message.getNewestMessage(existingMessages);
 
     let incomingMessageIsNewest = false;
     let newestMessage; // keep reference of newest message for pruning later
