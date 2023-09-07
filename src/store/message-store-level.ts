@@ -85,8 +85,8 @@ export class MessageStoreLevel implements MessageStore {
   async query(
     tenant: string,
     filter: Filter,
-    sort: MessageSort,
-    pagination: Pagination,
+    sort: MessageSort = {},
+    pagination: Pagination = {},
     options?: MessageStoreOptions
   ): Promise<GenericMessage[]> {
     options?.signal?.throwIfAborted();

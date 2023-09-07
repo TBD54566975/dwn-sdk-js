@@ -57,10 +57,10 @@ export function testMessageStore(): void {
         // inserting the message indicating it is the 'latest' in the index
         await messageStore.put(alice.did, message, { latest: 'true' });
 
-        const results1 = await messageStore.query(alice.did, { latest: 'true' }, {}, {});
+        const results1 = await messageStore.query(alice.did, { latest: 'true' });
         expect(results1.length).to.equal(1);
 
-        const results2 = await messageStore.query(alice.did, { latest: 'false' }, {}, {});
+        const results2 = await messageStore.query(alice.did, { latest: 'false' });
         expect(results2.length).to.equal(0);
 
         // deleting the existing indexes and replacing it indicating it is no longer the 'latest'
@@ -68,10 +68,10 @@ export function testMessageStore(): void {
         await messageStore.delete(alice.did, cid);
         await messageStore.put(alice.did, message, { latest: 'false' });
 
-        const results3 = await messageStore.query(alice.did, { latest: 'true' }, {}, {});
+        const results3 = await messageStore.query(alice.did, { latest: 'true' });
         expect(results3.length).to.equal(0);
 
-        const results4 = await messageStore.query(alice.did, { latest: 'false' }, {}, {});
+        const results4 = await messageStore.query(alice.did, { latest: 'false' });
         expect(results4.length).to.equal(1);
       });
 
@@ -83,7 +83,7 @@ export function testMessageStore(): void {
 
         await messageStore.put(alice.did, message, { schema });
 
-        const results = await messageStore.query(alice.did, { schema }, {}, {});
+        const results = await messageStore.query(alice.did, { schema });
         expect((results[0] as RecordsWriteMessage).descriptor.schema).to.equal(schema);
       });
 
@@ -125,7 +125,7 @@ export function testMessageStore(): void {
           expect(e).to.equal('reason');
         }
 
-        const results = await messageStore.query(alice.did, { schema }, {}, {});
+        const results = await messageStore.query(alice.did, { schema });
         expect(results.length).to.equal(0);
       });
     });
@@ -158,7 +158,7 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
           }
 
-          const messageQuery = await messageStore.query(alice.did, {}, {}, {});
+          const messageQuery = await messageStore.query(alice.did, {});
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
@@ -177,7 +177,7 @@ export function testMessageStore(): void {
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
           }
-          const messageQuery = await messageStore.query(alice.did, {}, { messageTimestamp: SortOrder.Ascending }, {});
+          const messageQuery = await messageStore.query(alice.did, {}, { messageTimestamp: SortOrder.Ascending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
@@ -196,7 +196,7 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
           }
 
-          const messageQuery = await messageStore.query(alice.did, {}, { dateCreated: SortOrder.Ascending }, {});
+          const messageQuery = await messageStore.query(alice.did, {}, { dateCreated: SortOrder.Ascending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
@@ -216,7 +216,7 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
           }
 
-          const messageQuery = await messageStore.query(alice.did, {}, { dateCreated: SortOrder.Descending }, {});
+          const messageQuery = await messageStore.query(alice.did, {}, { dateCreated: SortOrder.Descending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
@@ -237,7 +237,7 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
           }
 
-          const messageQuery = await messageStore.query(alice.did, {}, { datePublished: SortOrder.Ascending }, {});
+          const messageQuery = await messageStore.query(alice.did, {}, { datePublished: SortOrder.Ascending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
@@ -258,7 +258,7 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
           }
 
-          const messageQuery = await messageStore.query(alice.did, {}, { datePublished: SortOrder.Descending }, {});
+          const messageQuery = await messageStore.query(alice.did, {}, { datePublished: SortOrder.Descending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
@@ -280,7 +280,7 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
           }
 
-          const limitQuery = await messageStore.query(alice.did, {}, {}, {});
+          const limitQuery = await messageStore.query(alice.did, {});
           expect(limitQuery.length).to.equal(messages.length);
         });
 

@@ -38,8 +38,8 @@ export interface MessageStore {
   query(
     tenant: string,
     filter: Filter,
-    dateSort: MessageSort,
-    pagination: Pagination,
+    dateSort?: MessageSort,
+    pagination?: Pagination,
     options?: MessageStoreOptions
   ): Promise<GenericMessage[]>;
 
