@@ -58,7 +58,7 @@ export class RecordsWriteHandler implements MethodHandler {
       const initialWrite = await RecordsWrite.getInitialWrite(existingMessages);
       if (initialWrite === undefined || newestExistingMessage?.descriptor.method === DwnMethodName.Delete) {
         return {
-          status: { code: 404, detail: `initial write is not found` }
+          status: { code: 400, detail: `initial write is not found` }
         };
       };
 
@@ -92,10 +92,6 @@ export class RecordsWriteHandler implements MethodHandler {
 
     // try to store data, unless options explicitly say to skip storage
     if (options === undefined || !options.skipDataStorage) {
-      if (dataStream === undefined && newestExistingMessage?.descriptor.method === DwnMethodName.Delete) {
-        return messageReplyFromError(new DwnError(DwnErrorCode.RecordsWriteMissingDataStream, 'No data stream was provided with the previous message being a delete'), 400);
-      }
-
       try {
         // if data is below the threshold, we store it within MessageStore
         if (message.descriptor.dataSize <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
