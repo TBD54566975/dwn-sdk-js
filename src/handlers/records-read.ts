@@ -4,13 +4,13 @@ import type { DataStore, DidResolver, Filter, MessageStore } from '../index.js';
 import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
+import { DwnInterfaceName } from '../core/message.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { Records } from '../utils/records.js';
 import { RecordsRead } from '../interfaces/records-read.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DataStream, DwnError, DwnErrorCode, Encoder } from '../index.js';
-import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export class RecordsReadHandler implements MethodHandler {
 
@@ -45,23 +45,18 @@ export class RecordsReadHandler implements MethodHandler {
       ...Records.convertFilter(message.descriptor.filter)
     };
     const existingMessages = await this.messageStore.query(tenant, query) as RecordsWriteMessage[];
-
-    // ensure that the returned query only contains a unique record
-    try {
-      RecordsReadHandler.enforceSingleRecordRule(existingMessages);
-    } catch (e) {
-      return messageReplyFromError(e, 400);
-    }
-
-    const newestExistingMessage = await Message.getNewestMessage(existingMessages);
-    // if no record found or it has been deleted
-    if (newestExistingMessage === undefined || newestExistingMessage.descriptor.method === DwnMethodName.Delete) {
+    if (existingMessages.length === 0) {
       return {
         status: { code: 404, detail: 'Not Found' }
       };
+    } else if (existingMessages.length > 1) {
+      return messageReplyFromError(new DwnError(
+        DwnErrorCode.RecordsReadReturnedMultiple,
+        'Multiple records exist for the requested RecordRead filter'
+      ), 400);
     }
 
-    const newestRecordsWrite = newestExistingMessage as RecordsWriteMessageWithOptionalEncodedData;
+    const newestRecordsWrite = existingMessages[0] as RecordsWriteMessageWithOptionalEncodedData;
     try {
       await recordsRead.authorize(tenant, await RecordsWrite.parse(newestRecordsWrite), this.messageStore);
     } catch (error) {
@@ -94,30 +89,4 @@ export class RecordsReadHandler implements MethodHandler {
     };
     return messageReply;
   };
-
-  /**
-   * Enforces that the supplied messages only contain a single unique logical record.
-   *
-   * When users read a record based on anything other than an explicit `recordId` they may get multiple results.
-   * We want to make sure that the intent of which record they want to read is clear.
-   * If the supplied parameters may return more than one result it will fail and signal to the user.
-   *
-   * @param messages a list of messages returned from the MessageStore query.
-   * @throws {DwnError} when the provided messages contain more than one unique record.
-   */
-  private static enforceSingleRecordRule(messages: RecordsWriteMessage[]): void {
-    const uniqueRecordIds: string[] = [];
-    for (const { recordId } of messages) {
-      if (!uniqueRecordIds.includes(recordId)) {
-        uniqueRecordIds.push(recordId);
-      }
-
-      if (uniqueRecordIds.length > 1) {
-        throw new DwnError(
-          DwnErrorCode.RecordsReadReturnedMultiple,
-          'multiple records exist for requested RecordRead parameters'
-        );
-      }
-    }
-  }
 }
