@@ -37,7 +37,7 @@ export class RecordsReadHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }
 
-    // get the latest active records matching the supplied filter
+    // get the latest active messages matching the supplied filter
     // only RecordsWrite messages will be returned due to 'isLatestBaseState' being set to true.
     const query: Filter = {
       interface         : DwnInterfaceName.Records,
@@ -52,7 +52,7 @@ export class RecordsReadHandler implements MethodHandler {
     } else if (existingMessages.length > 1) {
       return messageReplyFromError(new DwnError(
         DwnErrorCode.RecordsReadReturnedMultiple,
-        'Multiple records exist for the requested RecordRead filter'
+        'Multiple records exist for the RecordRead filter'
       ), 400);
     }
 
