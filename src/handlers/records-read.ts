@@ -52,7 +52,7 @@ export class RecordsReadHandler implements MethodHandler {
     } else if (existingMessages.length > 1) {
       return messageReplyFromError(new DwnError(
         DwnErrorCode.RecordsReadReturnedMultiple,
-        'Multiple records exist for the RecordRead filter'
+        'Multiple records exist for the RecordsRead filter'
       ), 400);
     }
 
