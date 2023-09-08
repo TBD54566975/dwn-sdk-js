@@ -2,17 +2,19 @@ import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { RecordsWrite } from './records-write.js';
 import type { SignatureInput } from '../types/jws-types.js';
-import type { RecordsReadDescriptor, RecordsReadMessage } from '../types/records-types.js';
+import type { RecordsFilter , RecordsReadDescriptor, RecordsReadMessage } from '../types/records-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Message } from '../core/message.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
+import { Records } from '../utils/records.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
+import { removeUndefinedProperties } from '../utils/object.js';
 import { validateAuthorizationIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type RecordsReadOptions = {
-  recordId: string;
+  filter: RecordsFilter;
   date?: string;
   authorizationSignatureInput?: SignatureInput;
   permissionsGrantId?: string;
@@ -33,17 +35,21 @@ export class RecordsRead extends Message<RecordsReadMessage> {
    * Creates a RecordsRead message.
    * @param options.recordId If `undefined`, will be auto-filled as a originating message as convenience for developer.
    * @param options.date If `undefined`, it will be auto-filled with current time.
+   *
+   * @throws {DwnError} when a combination of required RecordsReadOptions are missing
    */
   public static async create(options: RecordsReadOptions): Promise<RecordsRead> {
-    const { recordId, authorizationSignatureInput, permissionsGrantId } = options;
+    const { filter, authorizationSignatureInput, permissionsGrantId } = options;
     const currentTime = getCurrentTimeInHighPrecision();
 
     const descriptor: RecordsReadDescriptor = {
       interface        : DwnInterfaceName.Records,
       method           : DwnMethodName.Read,
-      recordId,
+      filter           : Records.normalizeFilter(filter),
       messageTimestamp : options.date ?? currentTime
     };
+
+    removeUndefinedProperties(descriptor);
 
     // only generate the `authorization` property if signature input is given
     let authorization = undefined;

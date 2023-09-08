@@ -2,7 +2,7 @@ import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
 import type { DataStore, EventLog, MessageStore, ProtocolDefinition, ProtocolsConfigureMessage } from '../../src/index.js';
 
-import { Message } from '../../src/index.js';
+import { DwnConstant, Message } from '../../src/index.js';
 import { DwnInterfaceName, DwnMethodName } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -12,6 +12,7 @@ import emailProtocolDefinition from '../vectors/protocol-definitions/email.json'
 import friendChatProtocol from '../vectors/protocol-definitions/friend-chat.json' assert { type: 'json' };
 import groupChatProtocol from '../vectors/protocol-definitions/group-chat.json' assert { type: 'json' };
 import minimalProtocolDefinition from '../vectors/protocol-definitions/minimal.json' assert { type: 'json' };
+import nestedProtocol from '../vectors/protocol-definitions/nested.json' assert { type: 'json' };
 import publicChatProtocol from '../vectors/protocol-definitions/public-chat.json' assert { type: 'json' };
 import sinon from 'sinon';
 import socialMediaProtocolDefinition from '../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
@@ -30,7 +31,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
-import { DataStream, DidResolver, Dwn, DwnConstant, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsDelete, RecordsRead , RecordsWrite, Secp256k1 } from '../../src/index.js';
+import { DataStream, DidResolver, Dwn, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsDelete, RecordsRead , RecordsWrite, Secp256k1 } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -81,8 +82,10 @@ export function testRecordsReadHandler(): void {
 
         // testing RecordsRead
         const recordsRead = await RecordsRead.create({
-          recordId                    : message.recordId,
-          authorizationSignatureInput : Jws.createSignatureInput(alice)
+          filter: {
+            recordId: message.recordId,
+          },
+          authorizationSignatureInput: Jws.createSignatureInput(alice)
         });
 
         const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
@@ -106,8 +109,10 @@ export function testRecordsReadHandler(): void {
         const bob = await DidKeyResolver.generate();
 
         const recordsRead = await RecordsRead.create({
-          recordId                    : message.recordId,
-          authorizationSignatureInput : Jws.createSignatureInput(bob)
+          filter: {
+            recordId: message.recordId,
+          },
+          authorizationSignatureInput: Jws.createSignatureInput(bob)
         });
 
         const readReply = await dwn.processMessage(alice.did, recordsRead.message);
@@ -124,7 +129,9 @@ export function testRecordsReadHandler(): void {
 
         // testing public RecordsRead
         const recordsRead = await RecordsRead.create({
-          recordId: message.recordId
+          filter: {
+            recordId: message.recordId
+          }
         });
         expect(recordsRead.author).to.be.undefined; // making sure no author/authorization is created
 
@@ -147,8 +154,10 @@ export function testRecordsReadHandler(): void {
         const bob = await DidKeyResolver.generate();
 
         const recordsRead = await RecordsRead.create({
-          recordId                    : message.recordId,
-          authorizationSignatureInput : Jws.createSignatureInput(bob)
+          filter: {
+            recordId: message.recordId,
+          },
+          authorizationSignatureInput: Jws.createSignatureInput(bob)
         });
 
         const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
@@ -172,8 +181,10 @@ export function testRecordsReadHandler(): void {
 
         // Bob reads the data that Alice sent him
         const recordsRead = await RecordsRead.create({
-          recordId                    : message.recordId,
-          authorizationSignatureInput : Jws.createSignatureInput(bob)
+          filter: {
+            recordId: message.recordId,
+          },
+          authorizationSignatureInput: Jws.createSignatureInput(bob)
         });
 
         const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
@@ -218,8 +229,10 @@ export function testRecordsReadHandler(): void {
 
           // Bob (anyone) reads the image that Alice wrote
           const imageRecordsRead = await RecordsRead.create({
-            recordId                    : imageRecordsWrite.message.recordId,
-            authorizationSignatureInput : Jws.createSignatureInput(bob)
+            filter: {
+              recordId: imageRecordsWrite.message.recordId,
+            },
+            authorizationSignatureInput: Jws.createSignatureInput(bob)
           });
           const imageReadReply = await dwn.processMessage(alice.did, imageRecordsRead.message);
           expect(imageReadReply.status.code).to.equal(200);
@@ -256,7 +269,9 @@ export function testRecordsReadHandler(): void {
 
           // Anonymous tries and fails to read Alice's message
           const recordsRead = await RecordsRead.create({
-            recordId: recordsWrite.message.recordId,
+            filter: {
+              recordId: recordsWrite.message.recordId,
+            }
           });
           const recordsReadReply = await dwn.processMessage(alice.did, recordsRead.message);
           expect(recordsReadReply.status.code).to.equal(401);
@@ -298,16 +313,20 @@ export function testRecordsReadHandler(): void {
 
             // Bob reads Alice's email
             const bobRecordsRead = await RecordsRead.create({
-              recordId                    : emailRecordsWrite.message.recordId,
-              authorizationSignatureInput : Jws.createSignatureInput(bob)
+              filter: {
+                recordId: emailRecordsWrite.message.recordId,
+              },
+              authorizationSignatureInput: Jws.createSignatureInput(bob)
             });
             const bobReadReply = await dwn.processMessage(alice.did, bobRecordsRead.message);
             expect(bobReadReply.status.code).to.equal(200);
 
             // ImposterBob is not able to read Alice's email
             const imposterRecordsRead = await RecordsRead.create({
-              recordId                    : emailRecordsWrite.message.recordId,
-              authorizationSignatureInput : Jws.createSignatureInput(imposterBob)
+              filter: {
+                recordId: emailRecordsWrite.message.recordId,
+              },
+              authorizationSignatureInput: Jws.createSignatureInput(imposterBob)
             });
             const imposterReadReply = await dwn.processMessage(alice.did, imposterRecordsRead.message);
             expect(imposterReadReply.status.code).to.equal(401);
@@ -362,8 +381,10 @@ export function testRecordsReadHandler(): void {
 
             // Bob tries and fails to read Alice's message
             const bobsRead = await RecordsRead.create({
-              recordId                    : chatRecordsWrite.message.recordId,
-              authorizationSignatureInput : Jws.createSignatureInput(bob)
+              filter: {
+                recordId: chatRecordsWrite.message.recordId,
+              },
+              authorizationSignatureInput: Jws.createSignatureInput(bob)
             });
             const readReply = await dwn.processMessage(alice.did, bobsRead.message);
             expect(readReply.status.code).to.equal(401);
@@ -423,8 +444,10 @@ export function testRecordsReadHandler(): void {
 
             // Bob tries and fails to read Alice's `chat`
             const bobsRead = await RecordsRead.create({
-              recordId                    : chatRecordsWrite.message.recordId,
-              authorizationSignatureInput : Jws.createSignatureInput(bob)
+              filter: {
+                recordId: chatRecordsWrite.message.recordId,
+              },
+              authorizationSignatureInput: Jws.createSignatureInput(bob)
             });
             const readReply = await dwn.processMessage(alice.did, bobsRead.message);
             expect(readReply.status.code).to.equal(401);
@@ -483,16 +506,20 @@ export function testRecordsReadHandler(): void {
 
             // Bob reads the email he just sent
             const bobRecordsRead = await RecordsRead.create({
-              recordId                    : emailRecordsWrite.message.recordId,
-              authorizationSignatureInput : Jws.createSignatureInput(bob)
+              filter: {
+                recordId: emailRecordsWrite.message.recordId,
+              },
+              authorizationSignatureInput: Jws.createSignatureInput(bob)
             });
             const bobReadReply = await dwn.processMessage(alice.did, bobRecordsRead.message);
             expect(bobReadReply.status.code).to.equal(200);
 
             // ImposterBob is not able to read the email
             const imposterRecordsRead = await RecordsRead.create({
-              recordId                    : emailRecordsWrite.message.recordId,
-              authorizationSignatureInput : Jws.createSignatureInput(imposterBob)
+              filter: {
+                recordId: emailRecordsWrite.message.recordId,
+              },
+              authorizationSignatureInput: Jws.createSignatureInput(imposterBob)
             });
             const imposterReadReply = await dwn.processMessage(alice.did, imposterRecordsRead.message);
             expect(imposterReadReply.status.code).to.equal(401);
@@ -547,8 +574,10 @@ export function testRecordsReadHandler(): void {
 
             // Bob tries and fails to read Alice's message
             const bobsRead = await RecordsRead.create({
-              recordId                    : groupChatMessage.message.recordId,
-              authorizationSignatureInput : Jws.createSignatureInput(bob)
+              filter: {
+                recordId: groupChatMessage.message.recordId,
+              },
+              authorizationSignatureInput: Jws.createSignatureInput(bob)
             });
             const readReply = await dwn.processMessage(alice.did, bobsRead.message);
             expect(readReply.status.code).to.equal(401);
@@ -607,8 +636,10 @@ export function testRecordsReadHandler(): void {
 
             // Bob tries and fails to read the reward
             const bobsRead = await RecordsRead.create({
-              recordId                    : reward.message.recordId,
-              authorizationSignatureInput : Jws.createSignatureInput(bob)
+              filter: {
+                recordId: reward.message.recordId,
+              },
+              authorizationSignatureInput: Jws.createSignatureInput(bob)
             });
             const readReply = await dwn.processMessage(alice.did, bobsRead.message);
             expect(readReply.status.code).to.equal(401);
@@ -632,7 +663,91 @@ export function testRecordsReadHandler(): void {
           });
         });
 
+        describe('filter based reads', () => {
+          it('should return a filter based read if there is only a single result', async () => {
+            const alice = await DidKeyResolver.generate();
 
+            const protocolDefinition = { ...nestedProtocol };
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolConfigReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolConfigReply.status.code).to.equal(202);
+
+            const foo1Write = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              schema       : protocolDefinition.types.foo.schema,
+              dataFormat   : protocolDefinition.types.foo.dataFormats![0],
+              data         : new TextEncoder().encode('foo'),
+              recipient    : alice.did
+            });
+            const foo1WriteReply = await dwn.processMessage(alice.did, foo1Write.message, foo1Write.dataStream);
+            expect(foo1WriteReply.status.code).to.equal(202);
+
+            const fooPathRead = await RecordsRead.create({
+              filter: {
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'foo',
+              },
+              authorizationSignatureInput: Jws.createSignatureInput(alice),
+            });
+
+            const fooPathReply = await dwn.handleRecordsRead(alice.did, fooPathRead.message);
+            expect(fooPathReply.status.code).to.equal(200);
+            expect(fooPathReply.record!.recordId).to.equal(foo1Write.message.recordId);
+          });
+
+          it('should throw if requested filter has more than a single result', async () => {
+            const alice = await DidKeyResolver.generate();
+
+            const protocolDefinition = { ...nestedProtocol };
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolConfigReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            expect(protocolConfigReply.status.code).to.equal(202);
+
+            const foo1Write = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              schema       : protocolDefinition.types.foo.schema,
+              dataFormat   : protocolDefinition.types.foo.dataFormats![0],
+              data         : new TextEncoder().encode('foo'),
+              recipient    : alice.did
+            });
+            const foo1WriteReply = await dwn.processMessage(alice.did, foo1Write.message, foo1Write.dataStream);
+            expect(foo1WriteReply.status.code).to.equal(202);
+
+            const foo2Write = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'foo',
+              schema       : protocolDefinition.types.foo.schema,
+              dataFormat   : protocolDefinition.types.foo.dataFormats![0],
+              data         : new TextEncoder().encode('foo'),
+              recipient    : alice.did
+            });
+            const foo2WriteReply = await dwn.processMessage(alice.did, foo2Write.message, foo2Write.dataStream);
+            expect(foo2WriteReply.status.code).to.equal(202);
+
+            // Since there are two 'foo' records, this should fail.
+            const fooPathRead = await RecordsRead.create({
+              filter: {
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'foo',
+              },
+              authorizationSignatureInput: Jws.createSignatureInput(alice),
+            });
+            const fooPathReply = await dwn.handleRecordsRead(alice.did, fooPathRead.message);
+            expect(fooPathReply.status.code).to.equal(400);
+            expect(fooPathReply.status.detail).to.contain(DwnErrorCode.RecordsReadReturnedMultiple);
+          });
+        });
       });
 
       describe('grant based reads', () => {
@@ -665,7 +780,9 @@ export function testRecordsReadHandler(): void {
 
           // Bob tries to RecordsRead
           const recordsRead = await RecordsRead.create({
-            recordId                    : recordsWrite.message.recordId,
+            filter: {
+              recordId: recordsWrite.message.recordId,
+            },
             authorizationSignatureInput : Jws.createSignatureInput(bob),
             permissionsGrantId          : await Message.getCid(permissionsGrant.message),
           });
@@ -705,7 +822,9 @@ export function testRecordsReadHandler(): void {
 
           // Bob invokes that grant to read a record from Alice's DWN
           const recordsRead = await RecordsRead.create({
-            recordId                    : message.recordId,
+            filter: {
+              recordId: message.recordId,
+            },
             authorizationSignatureInput : Jws.createSignatureInput(bob),
             permissionsGrantId          : await Message.getCid(permissionsGrant.message),
           });
@@ -756,8 +875,11 @@ export function testRecordsReadHandler(): void {
 
             // Bob is unable to read the record without using the PermissionsGrant
             const recordsReadWithoutGrant = await RecordsRead.create({
-              recordId                    : recordsWrite.message.recordId,
-              authorizationSignatureInput : Jws.createSignatureInput(bob),
+              filter: {
+
+                recordId: recordsWrite.message.recordId,
+              },
+              authorizationSignatureInput: Jws.createSignatureInput(bob),
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
@@ -765,7 +887,9 @@ export function testRecordsReadHandler(): void {
 
             // Bob is able to read the record when he uses the PermissionsGrant
             const recordsReadWithGrant = await RecordsRead.create({
-              recordId                    : recordsWrite.message.recordId,
+              filter: {
+                recordId: recordsWrite.message.recordId,
+              },
               authorizationSignatureInput : Jws.createSignatureInput(bob),
               permissionsGrantId          : await Message.getCid(permissionsGrant.message),
             });
@@ -816,8 +940,10 @@ export function testRecordsReadHandler(): void {
 
             // Bob is unable to read the record without using the PermissionsGrant
             const recordsReadWithoutGrant = await RecordsRead.create({
-              recordId                    : recordsWrite.message.recordId,
-              authorizationSignatureInput : Jws.createSignatureInput(bob),
+              filter: {
+                recordId: recordsWrite.message.recordId,
+              },
+              authorizationSignatureInput: Jws.createSignatureInput(bob),
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
@@ -825,7 +951,9 @@ export function testRecordsReadHandler(): void {
 
             // Bob is able to read the record when he uses the PermissionsGrant
             const recordsReadWithGrant = await RecordsRead.create({
-              recordId                    : recordsWrite.message.recordId,
+              filter: {
+                recordId: recordsWrite.message.recordId,
+              },
               authorizationSignatureInput : Jws.createSignatureInput(bob),
               permissionsGrantId          : await Message.getCid(permissionsGrant.message),
             });
@@ -876,7 +1004,9 @@ export function testRecordsReadHandler(): void {
 
             // Bob is unable to read the record using the mismatched PermissionsGrant
             const recordsReadWithoutGrant = await RecordsRead.create({
-              recordId                    : recordsWrite.message.recordId,
+              filter: {
+                recordId: recordsWrite.message.recordId,
+              },
               authorizationSignatureInput : Jws.createSignatureInput(bob),
               permissionsGrantId          : await Message.getCid(permissionsGrant.message),
             });
@@ -928,7 +1058,9 @@ export function testRecordsReadHandler(): void {
 
             // Bob is unable to read the record using the mismatched PermissionsGrant
             const recordsReadWithoutGrant = await RecordsRead.create({
-              recordId                    : recordsWrite.message.recordId,
+              filter: {
+                recordId: recordsWrite.message.recordId,
+              },
               authorizationSignatureInput : Jws.createSignatureInput(bob),
               permissionsGrantId          : await Message.getCid(permissionsGrant.message),
             });
@@ -980,7 +1112,9 @@ export function testRecordsReadHandler(): void {
 
             // Bob is unable to read the record using the mismatched PermissionsGrant
             const recordsReadWithoutGrant = await RecordsRead.create({
-              recordId                    : recordsWrite.message.recordId,
+              filter: {
+                recordId: recordsWrite.message.recordId,
+              },
               authorizationSignatureInput : Jws.createSignatureInput(bob),
               permissionsGrantId          : await Message.getCid(permissionsGrant.message),
             });
@@ -1031,7 +1165,9 @@ export function testRecordsReadHandler(): void {
 
             // Bob is unable to read the record using the mismatched PermissionsGrant
             const recordsReadWithoutGrant = await RecordsRead.create({
-              recordId                    : recordsWrite.message.recordId,
+              filter: {
+                recordId: recordsWrite.message.recordId,
+              },
               authorizationSignatureInput : Jws.createSignatureInput(bob),
               permissionsGrantId          : await Message.getCid(permissionsGrant.message),
             });
@@ -1083,7 +1219,9 @@ export function testRecordsReadHandler(): void {
 
             // Bob is unable to read the record using the mismatched PermissionsGrant
             const recordsReadWithoutGrant = await RecordsRead.create({
-              recordId                    : recordsWrite.message.recordId,
+              filter: {
+                recordId: recordsWrite.message.recordId,
+              },
               authorizationSignatureInput : Jws.createSignatureInput(bob),
               permissionsGrantId          : await Message.getCid(permissionsGrant.message),
             });
@@ -1134,7 +1272,9 @@ export function testRecordsReadHandler(): void {
 
             // Bob is unable to read the record using the mismatched PermissionsGrant
             const recordsReadWithoutGrant = await RecordsRead.create({
-              recordId                    : recordsWrite.message.recordId,
+              filter: {
+                recordId: recordsWrite.message.recordId,
+              },
               authorizationSignatureInput : Jws.createSignatureInput(bob),
               permissionsGrantId          : await Message.getCid(permissionsGrant.message),
             });
@@ -1177,7 +1317,9 @@ export function testRecordsReadHandler(): void {
 
             // Bob invokes that grant to read a record from Alice's DWN
             const recordsRead = await RecordsRead.create({
-              recordId                    : message.recordId,
+              filter: {
+                recordId: message.recordId,
+              },
               authorizationSignatureInput : Jws.createSignatureInput(bob),
               permissionsGrantId          : await Message.getCid(permissionsGrant.message),
             });
@@ -1219,7 +1361,9 @@ export function testRecordsReadHandler(): void {
 
             // Bob invokes that grant to read a record from Alice's DWN
             const recordsRead = await RecordsRead.create({
-              recordId                    : message.recordId,
+              filter: {
+                recordId: message.recordId,
+              },
               authorizationSignatureInput : Jws.createSignatureInput(bob),
               permissionsGrantId          : await Message.getCid(permissionsGrant.message),
             });
@@ -1234,8 +1378,10 @@ export function testRecordsReadHandler(): void {
         const alice = await DidKeyResolver.generate();
 
         const recordsRead = await RecordsRead.create({
-          recordId                    : `non-existent-record-id`,
-          authorizationSignatureInput : Jws.createSignatureInput(alice)
+          filter: {
+            recordId: `non-existent-record-id`,
+          },
+          authorizationSignatureInput: Jws.createSignatureInput(alice)
         });
 
         const readReply = await dwn.processMessage(alice.did, recordsRead.message);
@@ -1271,8 +1417,10 @@ export function testRecordsReadHandler(): void {
 
         // RecordsRead
         const recordsRead = await RecordsRead.create({
-          recordId                    : message.recordId,
-          authorizationSignatureInput : Jws.createSignatureInput(alice)
+          filter: {
+            recordId: message.recordId,
+          },
+          authorizationSignatureInput: Jws.createSignatureInput(alice)
         });
 
         const readReply = await dwn.processMessage(alice.did, recordsRead.message);
@@ -1294,8 +1442,10 @@ export function testRecordsReadHandler(): void {
 
         // testing RecordsRead
         const recordsRead = await RecordsRead.create({
-          recordId                    : message.recordId,
-          authorizationSignatureInput : Jws.createSignatureInput(alice)
+          filter: {
+            recordId: message.recordId,
+          },
+          authorizationSignatureInput: Jws.createSignatureInput(alice)
         });
 
         const readReply = await dwn.processMessage(alice.did, recordsRead.message);
@@ -1316,8 +1466,10 @@ export function testRecordsReadHandler(): void {
           expect(writeReply.status.code).to.equal(202);
 
           const recordRead = await RecordsRead.create({
-            recordId                    : message.recordId,
-            authorizationSignatureInput : Jws.createSignatureInput(alice)
+            filter: {
+              recordId: message.recordId,
+            },
+            authorizationSignatureInput: Jws.createSignatureInput(alice)
           });
 
           const dataStoreGet = sinon.spy(dataStore, 'get');
@@ -1331,6 +1483,7 @@ export function testRecordsReadHandler(): void {
           const readData = await DataStream.toBytes(recordsReadResponse.record!.data);
           expect(readData).to.eql(dataBytes);
         });
+
         it('should get data from DataStore if encodedData does not exist', async () => {
           const alice = await DidKeyResolver.generate();
 
@@ -1344,8 +1497,10 @@ export function testRecordsReadHandler(): void {
           expect(writeReply.status.code).to.equal(202);
 
           const recordRead = await RecordsRead.create({
-            recordId                    : message.recordId,
-            authorizationSignatureInput : Jws.createSignatureInput(alice)
+            filter: {
+              recordId: message.recordId,
+            },
+            authorizationSignatureInput: Jws.createSignatureInput(alice)
           });
 
           const dataStoreGet = sinon.spy(dataStore, 'get');
@@ -1426,8 +1581,10 @@ export function testRecordsReadHandler(): void {
           expect(writeReply.status.code).to.equal(202);
 
           const recordsRead = await RecordsRead.create({
-            recordId                    : message.recordId,
-            authorizationSignatureInput : Jws.createSignatureInput(alice)
+            filter: {
+              recordId: message.recordId,
+            },
+            authorizationSignatureInput: Jws.createSignatureInput(alice)
           });
 
           // test able to derive correct key using `schemas` scheme from root key to decrypt the message
@@ -1512,8 +1669,10 @@ export function testRecordsReadHandler(): void {
           expect(writeReply.status.code).to.equal(202);
 
           const recordsRead = await RecordsRead.create({
-            recordId                    : recordsWrite.message.recordId,
-            authorizationSignatureInput : Jws.createSignatureInput(alice)
+            filter: {
+              recordId: recordsWrite.message.recordId,
+            },
+            authorizationSignatureInput: Jws.createSignatureInput(alice)
           });
 
 
@@ -1628,8 +1787,10 @@ export function testRecordsReadHandler(): void {
 
           // test that anyone with the protocol-context derived private key is able to decrypt the message
           const recordsRead = await RecordsRead.create({
-            recordId                    : message.recordId,
-            authorizationSignatureInput : Jws.createSignatureInput(alice)
+            filter: {
+              recordId: message.recordId,
+            },
+            authorizationSignatureInput: Jws.createSignatureInput(alice)
           });
           const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
           expect(readReply.status.code).to.equal(200);
@@ -1668,8 +1829,10 @@ export function testRecordsReadHandler(): void {
 
           // test that Bob is able to read and decrypt Alice's message
           const recordsReadByBob = await RecordsRead.create({
-            recordId                    : recordsWriteToBob.message.recordId,
-            authorizationSignatureInput : Jws.createSignatureInput(bob)
+            filter: {
+              recordId: recordsWriteToBob.message.recordId,
+            },
+            authorizationSignatureInput: Jws.createSignatureInput(bob)
           });
           const readByBobReply = await dwn.handleRecordsRead(bob.did, recordsReadByBob.message);
           expect(readByBobReply.status.code).to.equal(200);
@@ -1757,8 +1920,10 @@ export function testRecordsReadHandler(): void {
           // Alice reads the encrypted email
           // assume Alice already made query to get the `recordId` of the email
           const recordsRead = await RecordsRead.create({
-            recordId                    : message.recordId,
-            authorizationSignatureInput : Jws.createSignatureInput(alice)
+            filter: {
+              recordId: message.recordId,
+            },
+            authorizationSignatureInput: Jws.createSignatureInput(alice)
           });
           const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
           expect(readReply.status.code).to.equal(200);
@@ -1823,8 +1988,10 @@ export function testRecordsReadHandler(): void {
     it('should return 401 if signature check fails', async () => {
       const alice = await DidKeyResolver.generate();
       const recordsRead = await RecordsRead.create({
-        recordId                    : 'any-id',
-        authorizationSignatureInput : Jws.createSignatureInput(alice)
+        filter: {
+          recordId: 'any-id',
+        },
+        authorizationSignatureInput: Jws.createSignatureInput(alice)
       });
 
       // setting up a stub did resolver & message store
@@ -1842,8 +2009,10 @@ export function testRecordsReadHandler(): void {
     it('should return 400 if fail parsing the message', async () => {
       const alice = await DidKeyResolver.generate();
       const recordsRead = await RecordsRead.create({
-        recordId                    : 'any-id',
-        authorizationSignatureInput : Jws.createSignatureInput(alice)
+        filter: {
+          recordId: 'any-id',
+        },
+        authorizationSignatureInput: Jws.createSignatureInput(alice)
       });
 
       // setting up a stub method resolver & message store

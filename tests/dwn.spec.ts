@@ -98,7 +98,7 @@ export function testDwnClass(): void {
         sinon.assert.calledOnce(validateJsonSchemaSpy);
 
         expect(reply.status.code).to.equal(400);
-        expect(reply.status.detail).to.contain(`must have required property 'recordId'`);
+        expect(reply.status.detail).to.contain(`must have required property 'filter'`);
       });
 
       it('should throw 400 if given no interface or method found in message', async () => {
@@ -151,8 +151,10 @@ export function testDwnClass(): void {
         const alice = await DidKeyResolver.generate();
 
         const recordsRead = await RecordsRead.create({
-          recordId                    : 'recordId-doesnt-matter',
-          authorizationSignatureInput : Jws.createSignatureInput(alice)
+          filter: {
+            recordId: 'recordId-doesnt-matter',
+          },
+          authorizationSignatureInput: Jws.createSignatureInput(alice)
         });
         (recordsRead.message as any).descriptor.method = 'Write'; // Will cause interface and method check to fail
         const reply = await dwn.handleRecordsRead(alice.did, recordsRead.message);

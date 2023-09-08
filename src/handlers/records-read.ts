@@ -1,16 +1,16 @@
 import type { MethodHandler } from '../types/method-handler.js';
 import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
-import type { TimestampedMessage } from '../types/message-types.js';
-import type { DataStore, DidResolver, MessageStore } from '../index.js';
-import type { RecordsReadMessage, RecordsReadReply } from '../types/records-types.js';
+import type { DataStore, DidResolver, Filter, MessageStore } from '../index.js';
+import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
+import { DwnInterfaceName } from '../core/message.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
+import { Records } from '../utils/records.js';
 import { RecordsRead } from '../interfaces/records-read.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
-import { DataStream, Encoder } from '../index.js';
-import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
+import { DataStream, DwnError, DwnErrorCode, Encoder } from '../index.js';
 
 export class RecordsReadHandler implements MethodHandler {
 
@@ -37,23 +37,26 @@ export class RecordsReadHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }
 
-    // get existing messages matching `recordId` so we can perform authorization
-    const query = {
-      interface : DwnInterfaceName.Records,
-      recordId  : message.descriptor.recordId
+    // get the latest active messages matching the supplied filter
+    // only RecordsWrite messages will be returned due to 'isLatestBaseState' being set to true.
+    const query: Filter = {
+      interface         : DwnInterfaceName.Records,
+      isLatestBaseState : true,
+      ...Records.convertFilter(message.descriptor.filter)
     };
-    const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
-
-    const newestExistingMessage = await Message.getNewestMessage(existingMessages);
-
-    // if no record found or it has been deleted
-    if (newestExistingMessage === undefined || newestExistingMessage.descriptor.method === DwnMethodName.Delete) {
+    const existingMessages = await this.messageStore.query(tenant, query) as RecordsWriteMessage[];
+    if (existingMessages.length === 0) {
       return {
         status: { code: 404, detail: 'Not Found' }
       };
+    } else if (existingMessages.length > 1) {
+      return messageReplyFromError(new DwnError(
+        DwnErrorCode.RecordsReadReturnedMultiple,
+        'Multiple records exist for the RecordsRead filter'
+      ), 400);
     }
 
-    const newestRecordsWrite = newestExistingMessage as RecordsWriteMessageWithOptionalEncodedData;
+    const newestRecordsWrite = existingMessages[0] as RecordsWriteMessageWithOptionalEncodedData;
     try {
       await recordsRead.authorize(tenant, await RecordsWrite.parse(newestRecordsWrite), this.messageStore);
     } catch (error) {

@@ -1,6 +1,6 @@
 import type { DidResolutionResult } from '../../src/did/did-resolver.js';
 import type { Readable } from 'readable-stream';
-import type { RecordsQueryFilter } from '../../src/types/records-types.js';
+import type { RecordsFilter } from '../../src/types/records-types.js';
 import type {
   CreateFromOptions,
   DateSort,
@@ -157,7 +157,7 @@ export type GenerateRecordsQueryInput = {
   anonymous?: boolean;
   author?: Persona;
   messageTimestamp?: string;
-  filter?: RecordsQueryFilter;
+  filter?: RecordsFilter;
   dateSort?: DateSort;
 };
 

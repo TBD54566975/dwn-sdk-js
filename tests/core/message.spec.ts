@@ -10,7 +10,9 @@ describe('Message', () => {
   describe('getAuthor()', () => {
     it('should return `undefined` if message is not signed', async () => {
       const recordsRead = await RecordsRead.create({
-        recordId: await TestDataGenerator.randomCborSha256Cid()
+        filter: {
+          recordId: await TestDataGenerator.randomCborSha256Cid()
+        }
       });
 
       const author = Message.getAuthor(recordsRead.message);
@@ -22,7 +24,9 @@ describe('Message', () => {
     it('should return the message passed in to the constructor', async () => {
       // create a message without `authorization`
       const { message } = await RecordsRead.create({
-        recordId: await TestDataGenerator.randomCborSha256Cid()
+        filter: {
+          recordId: await TestDataGenerator.randomCborSha256Cid()
+        }
       });
 
       // NOTE: parse() calls constructor internally

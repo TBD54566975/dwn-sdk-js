@@ -301,7 +301,9 @@ export function testRecordsWriteHandler(): void {
         const writeUpdateReply = await dwn.processMessage(tenant, write2.message);
         expect(writeUpdateReply.status.code).to.equal(202);
         const readMessage = await RecordsRead.create({
-          recordId: message.recordId,
+          filter: {
+            recordId: message.recordId,
+          }
         });
 
         const readMessageReply = await dwn.handleRecordsRead(tenant, readMessage.message);
@@ -333,7 +335,9 @@ export function testRecordsWriteHandler(): void {
           const writeUpdateReply = await dwn.processMessage(tenant, write2.message);
           expect(writeUpdateReply.status.code).to.equal(202);
           const readMessage = await RecordsRead.create({
-            recordId: message.recordId,
+            filter: {
+              recordId: message.recordId,
+            }
           });
 
           const readMessageReply = await dwn.handleRecordsRead(tenant, readMessage.message);
@@ -364,7 +368,9 @@ export function testRecordsWriteHandler(): void {
           const writeUpdateReply = await dwn.processMessage(tenant, write2.message);
           expect(writeUpdateReply.status.code).to.equal(202);
           const readMessage = await RecordsRead.create({
-            recordId: message.recordId,
+            filter: {
+              recordId: message.recordId,
+            }
           });
 
           const readMessageReply = await dwn.handleRecordsRead(tenant, readMessage.message);
@@ -637,8 +643,10 @@ export function testRecordsWriteHandler(): void {
 
         // further sanity test to make sure the change is not written, ie. write2 still has the original data
         const read = await RecordsRead.create({
-          recordId                    : write2.message.recordId,
-          authorizationSignatureInput : Jws.createSignatureInput(alice)
+          filter: {
+            recordId: write2.message.recordId,
+          },
+          authorizationSignatureInput: Jws.createSignatureInput(alice)
         });
 
         const readReply = await dwn.handleRecordsRead(alice.did, read.message);
@@ -2095,8 +2103,10 @@ export function testRecordsWriteHandler(): void {
 
           // further sanity test to make sure record is never written
           const bobRecordsReadData = await RecordsRead.create({
-            recordId                    : imageRecordsWrite.message.recordId,
-            authorizationSignatureInput : Jws.createSignatureInput(bob)
+            filter: {
+              recordId: imageRecordsWrite.message.recordId,
+            },
+            authorizationSignatureInput: Jws.createSignatureInput(bob)
           });
 
           const bobRecordsReadReply = await dwn.handleRecordsRead(alice.did, bobRecordsReadData.message);

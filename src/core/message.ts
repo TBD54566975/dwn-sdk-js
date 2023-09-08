@@ -153,7 +153,6 @@ export abstract class Message<M extends GenericMessage> {
     return signer.getJws();
   }
 
-
   /**
    * @returns newest message in the array. `undefined` if given array is empty.
    */

@@ -1,12 +1,14 @@
 import type { DerivedPrivateJwk } from './hd-key.js';
 import type { Readable } from 'readable-stream';
-import type { RecordsWriteDescriptor, UnsignedRecordsWriteMessage } from '../types/records-types.js';
+import type { Filter, RangeFilter } from '../types/message-types.js';
+import type { RecordsFilter, RecordsWriteDescriptor, UnsignedRecordsWriteMessage } from '../types/records-types.js';
 
 import { Encoder } from './encoder.js';
 import { Encryption } from './encryption.js';
 import { KeyDerivationScheme } from './hd-key.js';
 import { Secp256k1 } from './secp256k1.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
+import { normalizeProtocolUrl, normalizeSchemaUrl } from './url.js';
 
 /**
  * Class containing useful utilities related to the Records interface.
@@ -208,5 +210,68 @@ export class Records {
           `Ancestor key derivation segment '${ancestorSegment}' mismatches against the descendant key derivation segment '${descendantSegment}'.`);
       }
     }
+  }
+
+  /**
+   * Normalizes the protocol and schema URLs within a provided RecordsFilter and returns a copy of RecordsFilter with the modified values.
+   *
+   * @param filter incoming RecordsFilter to normalize.
+   * @returns {RecordsFilter} a copy of the incoming RecordsFilter with the normalized properties.
+   */
+  public static normalizeFilter(filter: RecordsFilter): RecordsFilter {
+    let protocol;
+    if (filter.protocol === undefined) {
+      protocol = undefined;
+    } else {
+      protocol = normalizeProtocolUrl(filter.protocol);
+    }
+
+    let schema;
+    if (filter.schema === undefined) {
+      schema = undefined;
+    } else {
+      schema = normalizeSchemaUrl(filter.schema);
+    }
+
+    return {
+      ...filter,
+      protocol,
+      schema,
+    };
+  }
+
+  /**
+   *  Converts an incoming RecordsFilter into a Filter usable by MessageStore.
+   *
+   * @param filter A RecordsFilter
+   * @returns {Filter} a generic Filter able to be used with MessageStore.
+   */
+  public static convertFilter(filter: RecordsFilter): Filter {
+    const filterCopy = { ...filter };
+    const { dateCreated } = filterCopy;
+
+    let rangeFilter: RangeFilter | undefined = undefined;
+    if (dateCreated !== undefined) {
+      if (dateCreated.to !== undefined && dateCreated.from !== undefined) {
+        rangeFilter = {
+          gte : dateCreated.from,
+          lt  : dateCreated.to,
+        };
+      } else if (dateCreated.to !== undefined) {
+        rangeFilter = {
+          lt: dateCreated.to,
+        };
+      } else if (dateCreated.from !== undefined) {
+        rangeFilter = {
+          gte: dateCreated.from,
+        };
+      }
+    }
+
+    if (rangeFilter) {
+      (filterCopy as Filter).dateCreated = rangeFilter;
+    }
+
+    return filterCopy as Filter;
   }
 }

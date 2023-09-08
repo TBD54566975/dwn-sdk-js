@@ -17,7 +17,7 @@
         "interface",
         "method",
         "messageTimestamp",
-        "recordId"
+        "filter"
       ],
       "properties": {
         "interface": {
@@ -35,8 +35,8 @@
         "messageTimestamp": {
           "type": "string"
         },
-        "recordId": {
-          "type": "string"
+        "filter": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/records-filter.json"
         }
       }
     }

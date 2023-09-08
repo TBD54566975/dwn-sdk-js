@@ -6,6 +6,7 @@ import type { RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, Re
 import { authenticate } from '../core/auth.js';
 import { lexicographicalCompare } from '../utils/string.js';
 import { messageReplyFromError } from '../core/message-reply.js';
+import { Records } from '../utils/records.js';
 
 import { DateSort, RecordsQuery } from '../interfaces/records-query.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
@@ -80,7 +81,7 @@ export class RecordsQueryHandler implements MethodHandler {
   private async fetchRecordsAsOwner(tenant: string, recordsQuery: RecordsQuery): Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
     // fetch all published records matching the query
     const filter = {
-      ...RecordsQuery.convertFilter(recordsQuery.message.descriptor.filter),
+      ...Records.convertFilter(recordsQuery.message.descriptor.filter),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       isLatestBaseState : true
@@ -127,7 +128,7 @@ export class RecordsQueryHandler implements MethodHandler {
   private async fetchPublishedRecords(tenant: string, recordsQuery: RecordsQuery): Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
     // fetch all published records matching the query
     const filter = {
-      ...RecordsQuery.convertFilter(recordsQuery.message.descriptor.filter),
+      ...Records.convertFilter(recordsQuery.message.descriptor.filter),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       published         : true,
@@ -145,7 +146,7 @@ export class RecordsQueryHandler implements MethodHandler {
 
     // include records where recipient is query author
     const filter = {
-      ...RecordsQuery.convertFilter(recordsQuery.message.descriptor.filter),
+      ...Records.convertFilter(recordsQuery.message.descriptor.filter),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       recipient         : recordsQuery.author!,
@@ -164,7 +165,7 @@ export class RecordsQueryHandler implements MethodHandler {
 
     // include records where author is the same as the query author
     const filter = {
-      ...RecordsQuery.convertFilter(recordsQuery.message.descriptor.filter),
+      ...Records.convertFilter(recordsQuery.message.descriptor.filter),
       author            : recordsQuery.author!,
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
