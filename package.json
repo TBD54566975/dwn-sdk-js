@@ -85,7 +85,7 @@
     "multiformats": "11.0.2",
     "randombytes": "2.1.0",
     "readable-stream": "4.4.0",
-    "ulid": "2.3.0",
+    "ulidx": "2.1.0",
     "uuid": "8.3.2",
     "varint": "6.0.0"
   },
