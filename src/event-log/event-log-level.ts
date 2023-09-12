@@ -1,8 +1,8 @@
 import type { LevelWrapperBatchOperation } from '../store/level-wrapper.js';
-import type { ULID } from 'ulid';
+import type { ULIDFactory } from 'ulidx';
 import type { Event, EventLog, GetEventsOptions } from '../types/event-log.js';
 
-import { monotonicFactory } from 'ulid';
+import { monotonicFactory } from 'ulidx';
 import { createLevelDatabase, LevelWrapper } from '../store/level-wrapper.js';
 
 type EventLogLevelConfig = {
@@ -21,7 +21,7 @@ const CIDS_SUBLEVEL_NAME = 'cids';
 export class EventLogLevel implements EventLog {
   config: EventLogLevelConfig;
   db: LevelWrapper<string>;
-  ulid: ULID;
+  ulidFactory: ULIDFactory;
 
   constructor(config?: EventLogLevelConfig) {
     this.config = {
@@ -31,7 +31,7 @@ export class EventLogLevel implements EventLog {
     };
 
     this.db = new LevelWrapper<string>({ ...this.config, valueEncoding: 'utf8' });
-    this.ulid = monotonicFactory();
+    this.ulidFactory = monotonicFactory();
   }
 
   async open(): Promise<void> {
@@ -51,7 +51,7 @@ export class EventLogLevel implements EventLog {
     const watermarkLog = await tenantEventLog.partition(WATERMARKS_SUBLEVEL_NAME);
     const cidLog = await tenantEventLog.partition(CIDS_SUBLEVEL_NAME);
 
-    const watermark = this.ulid();
+    const watermark = this.ulidFactory();
 
     await watermarkLog.put(watermark, messageCid);
     await cidLog.put(messageCid, watermark);
