@@ -28,6 +28,7 @@
 
   The answer to the first-part question is more complicated: `recordId` technically is not needed in an initial `RecordsWrite`, but we chose to include it for data model consistency with subsequent `RecordsWrite`, such that we can simply return the latest message of a record as the response to `RecordsRead` and `RecordsQuery` (for the most part, we still remove `authorization`) without needing to re-inject/rehydrate `recordId` into any initial `RecordsWrite`. It is also the same reason why `contextId` is required for the initial `RecordsWrite` of a protocol-authorized record.
 
+
 ## Encryption
 
 - Why is `publicKeyId` required in `KeyEncryptionInput`?
@@ -48,6 +49,14 @@
   This is because:
   1. `kid` is an optional property of a JWK, there is no guarantee that the public JWK will contain it.
   2. In the future public key may not always be given in JWK format. A key in raw bytes does not contain metadata such as key ID.
+
+
+## Pagination
+- Why is `messageCid` mandated as the cursor for pagination?
+
+  (Last updated: 2023/09/12)
+
+  The requirement for using `messageCid` as the cursor for pagination aims to ensure compatibility across different DWN store implementations. The goal is for a query using the same cursor to yield identical results, regardless of which DWN is handling the query. This is useful because, if a DWN becomes unavailable after delivering a page of messages, user can switch to another DWN and resume fetching following pages without any interruption.
 
 
 ## Protocol
