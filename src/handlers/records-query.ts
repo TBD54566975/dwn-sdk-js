@@ -101,17 +101,18 @@ export class RecordsQueryHandler implements MethodHandler {
    * Fetches the records as the owner of the DWN with no additional filtering.
    */
   private async fetchRecordsAsOwner(tenant: string, recordsQuery: RecordsQuery): Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
-    const { dateSort, filter: queryFilter, pagination = {} } = recordsQuery.message.descriptor;
-    const sortOrder = this.convertDateSort(dateSort);
+    const { dateSort, filter, pagination } = recordsQuery.message.descriptor;
+
     // fetch all published records matching the query
-    const filter = {
-      ...Records.convertFilter(queryFilter),
+    const queryFilter = {
+      ...Records.convertFilter(filter),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       isLatestBaseState : true
     };
 
-    const records = (await this.messageStore.query(tenant, filter, sortOrder, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
+    const messageSort = this.convertDateSort(dateSort);
+    const records = (await this.messageStore.query(tenant, queryFilter, messageSort, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
     return records;
   }
 
@@ -150,18 +151,20 @@ export class RecordsQueryHandler implements MethodHandler {
    * Fetches only published records.
    */
   private async fetchPublishedRecords(tenant: string, recordsQuery: RecordsQuery): Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
-    const { dateSort, filter: queryFilter, pagination = {} } = recordsQuery.message.descriptor;
-    const sortOrder = this.convertDateSort(dateSort);
+    const { dateSort, filter, pagination } = recordsQuery.message.descriptor;
+
     // fetch all published records matching the query
-    const filter = {
-      ...Records.convertFilter(queryFilter),
+    const queryFilter = {
+      ...Records.convertFilter(filter),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       published         : true,
       isLatestBaseState : true
     };
 
-    const publishedRecords = (await this.messageStore.query(tenant, filter, sortOrder, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
+    const messageSort = this.convertDateSort(dateSort);
+    const publishedRecords =
+      (await this.messageStore.query(tenant, queryFilter, messageSort, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
     return publishedRecords;
   }
 
@@ -171,11 +174,11 @@ export class RecordsQueryHandler implements MethodHandler {
   private async fetchUnpublishedRecordsForQueryAuthor(tenant: string, recordsQuery: RecordsQuery)
     : Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
 
-    const { dateSort, filter: queryFilter, pagination = {} } = recordsQuery.message.descriptor;
-    const sortOrder = this.convertDateSort(dateSort);
+    const { dateSort, filter, pagination } = recordsQuery.message.descriptor;
+
     // include records where recipient is query author
-    const filter = {
-      ...Records.convertFilter(queryFilter),
+    const queryFilter = {
+      ...Records.convertFilter(filter),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       recipient         : recordsQuery.author!,
@@ -183,8 +186,9 @@ export class RecordsQueryHandler implements MethodHandler {
       published         : false
     };
 
+    const messageSort = this.convertDateSort(dateSort);
     const unpublishedRecordsForQueryAuthor =
-      (await this.messageStore.query(tenant, filter, sortOrder, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
+      (await this.messageStore.query(tenant, queryFilter, messageSort, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
     return unpublishedRecordsForQueryAuthor;
   }
 
@@ -194,11 +198,11 @@ export class RecordsQueryHandler implements MethodHandler {
   private async fetchUnpublishedRecordsByAuthor(tenant: string, recordsQuery: RecordsQuery)
     : Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
 
-    const { dateSort, filter: queryFilter, pagination = {} } = recordsQuery.message.descriptor;
-    const sortOrder = this.convertDateSort(dateSort);
+    const { dateSort, filter, pagination } = recordsQuery.message.descriptor;
+
     // include records where author is the same as the query author
-    const filter = {
-      ...Records.convertFilter(queryFilter),
+    const queryFilter = {
+      ...Records.convertFilter(filter),
       author            : recordsQuery.author!,
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
@@ -206,8 +210,9 @@ export class RecordsQueryHandler implements MethodHandler {
       published         : false
     };
 
+    const messageSort = this.convertDateSort(dateSort);
     const unpublishedRecordsForQueryAuthor =
-      (await this.messageStore.query(tenant, filter, sortOrder, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
+      (await this.messageStore.query(tenant, queryFilter, messageSort, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
     return unpublishedRecordsForQueryAuthor;
   }
 }
