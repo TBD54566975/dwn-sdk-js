@@ -23,7 +23,6 @@ export type Descriptor = {
   interface: string;
   method: string;
   messageTimestamp: string;
-
 };
 
 /**
@@ -35,10 +34,6 @@ export type Descriptor = {
 export type QueryResultEntry = {
   descriptor: Descriptor;
   encodedData?: string;
-};
-
-export type QueryReplyMetadata = {
-  messageCid?: string;
 };
 
 export type EqualFilter = string | number | boolean;

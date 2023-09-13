@@ -1,5 +1,5 @@
-import type { RecordsWriteMessage } from '../../src/index.js';
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
+import type { GenericMessage, RecordsWriteMessage } from '../../src/index.js';
 import type { RecordsQueryReply, RecordsQueryReplyEntry, RecordsWriteDescriptor } from '../../src/types/records-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -528,7 +528,7 @@ export function testRecordsQueryHandler(): void {
 
           const pageReply = await dwn.handleRecordsQuery(alice.did, pageQuery.message);
           expect(pageReply.status.code).to.equal(200);
-          messageCid = pageReply.metadata?.messageCid;
+          messageCid = pageReply.paginationMessageCid;
           if (pageReply.entries?.length === 0) {
             break;
           }
@@ -537,6 +537,37 @@ export function testRecordsQueryHandler(): void {
         }
         expect(results.length).to.equal(messages.length);
         expect(messages.every(({ message }) => results.map(e => (e as RecordsWriteMessage).recordId).includes(message.recordId)));
+      });
+
+      it('paginationMessageCid should match the messageCid of the last entry in the returned query', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        const messages = await Promise.all(Array(6).fill({}).map(_ => TestDataGenerator.generateRecordsWrite({
+          author : alice,
+          schema : 'https://schema'
+        })));
+        for (const message of messages) {
+          const result = await dwn.processMessage(alice.did, message.message, message.dataStream);
+          expect(result.status.code).to.equal(202);
+        }
+
+        const limit = 5;
+        const pageQuery = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            schema: 'https://schema'
+          },
+          pagination: {
+            limit: limit,
+          },
+        });
+
+        const pageReply = await dwn.handleRecordsQuery(alice.did, pageQuery.message);
+        expect(pageReply.status.code).to.equal(200);
+        expect(pageReply.entries?.length).to.be.lte(limit);
+        const { message: lastEntryMessage } = messages.find(m => m.message.recordId === pageReply.entries?.at(-1)?.recordId) || {};
+        expect(lastEntryMessage).to.not.be.undefined;
+        expect((await Message.getCid(lastEntryMessage as GenericMessage))).to.equal(pageReply.paginationMessageCid);
       });
 
       it('should allow an anonymous unauthenticated query to return published records', async () => {

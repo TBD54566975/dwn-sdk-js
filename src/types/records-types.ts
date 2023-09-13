@@ -5,7 +5,7 @@ import type { GenericMessageReply } from '../core/message-reply.js';
 import type { KeyDerivationScheme } from '../utils/hd-key.js';
 import type { PublicJwk } from './jose-types.js';
 import type { Readable } from 'readable-stream';
-import type { BaseAuthorizationPayload, GenericMessage, Pagination, QueryReplyMetadata } from './message-types.js';
+import type { BaseAuthorizationPayload, GenericMessage, Pagination } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type RecordsWriteDescriptor = {
@@ -136,7 +136,7 @@ export type RecordsQueryMessage = GenericMessage & {
 
 export type RecordsQueryReply = GenericMessageReply & {
   entries?: RecordsQueryReplyEntry[];
-  metadata?: QueryReplyMetadata;
+  paginationMessageCid?: string;
 };
 
 export type RecordsReadMessage = {

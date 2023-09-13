@@ -47,18 +47,18 @@ export class RecordsQueryHandler implements MethodHandler {
       }
     }
 
-    let lastRecordMessageCid: string|undefined;
+    let paginationMessageCid: string|undefined;
     const lastRecord = recordsWrites.at(-1);
     if (lastRecord) {
-      lastRecordMessageCid = await Message.getCid(lastRecord);
+      paginationMessageCid = await Message.getCid(lastRecord);
     }
 
     const entries = await RecordsQueryHandler.removeAuthorization(recordsWrites);
 
     return {
-      status   : { code: 200, detail: 'OK' },
-      metadata : { messageCid: lastRecordMessageCid },
+      status: { code: 200, detail: 'OK' },
       entries,
+      paginationMessageCid
     };
   }
 
