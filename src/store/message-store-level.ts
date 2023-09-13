@@ -127,8 +127,11 @@ export class MessageStoreLevel implements MessageStore {
   }
 
   /**
-   * Compares two string given in lexicographical order.
-   * @returns 1 if `a` is larger than `b`; -1 if `a` is smaller/older than `b`; 0 otherwise (same message)
+   * Compares the chosen property of two messages in lexicographical order.
+   * When the value is the same between the two objects, `messageCid` comparison is used to tiebreak.
+   *
+   * @returns 1 if the chosen property of `messageA` is larger than of `messageB`;
+   *         -1 if the chosen property `messageA` is smaller/older than of `messageB`; 0 otherwise
    */
   static async lexicographicalCompare(
     messageA: GenericMessage,
