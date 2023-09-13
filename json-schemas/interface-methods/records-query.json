@@ -44,7 +44,7 @@
           "properties": {
             "limit": {
               "type": "number",
-              "minimum": 0
+              "minimum": 1 
             },
             "messageCid": {
               "type": "string"
