@@ -53,7 +53,7 @@ export class RecordsQueryHandler implements MethodHandler {
       paginationMessageCid = await Message.getCid(lastRecord);
     }
 
-    const entries = await RecordsQueryHandler.removeAuthorization(recordsWrites);
+    const entries = RecordsQueryHandler.removeAuthorization(recordsWrites);
 
     return {
       status: { code: 200, detail: 'OK' },
@@ -65,7 +65,7 @@ export class RecordsQueryHandler implements MethodHandler {
   /**
    * Removes `authorization` property from each and every `RecordsWrite` message given and returns the result as a different array.
    */
-  private static async removeAuthorization(recordsWriteMessages: RecordsWriteMessageWithOptionalEncodedData[]): Promise<RecordsQueryReplyEntry[]> {
+  private static removeAuthorization(recordsWriteMessages: RecordsWriteMessageWithOptionalEncodedData[]): RecordsQueryReplyEntry[] {
     const recordsQueryReplyEntries: RecordsQueryReplyEntry[] = [];
     for (const record of recordsWriteMessages) {
       const { authorization: _, ...objectWithRemainingProperties } = record; // a trick to stripping away `authorization`
