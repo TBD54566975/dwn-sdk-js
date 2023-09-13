@@ -6,6 +6,7 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
+import { ArrayUtility } from '../../src/utils/array.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { DwnConstant } from '../../src/core/dwn-constant.js';
 import { DwnErrorCode } from '../../src/index.js';
@@ -389,7 +390,7 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should sort records if `dateSort` is specified', async () => {
-      // insert three messages into DB, two with matching protocol
+      // insert three messages into DB
         const alice = await TestDataGenerator.generatePersona();
         const schema = 'aSchema';
         const published = true;
@@ -457,6 +458,47 @@ export function testRecordsQueryHandler(): void {
         expect(publishedDescendingQueryReply.entries?.[1].descriptor['datePublished']).to.equal(write2Data.message.descriptor.datePublished);
         expect(publishedDescendingQueryReply.entries?.[2].descriptor['datePublished']).to.equal(write1Data.message.descriptor.datePublished);
       });
+
+      it('should tiebreak using `messageCid` when sorting encounters identical values', async () => {
+        // setup: 3 messages with the same `dateCreated` value
+        const dateCreated = createDateString(new Date());
+        const messageTimestamp = dateCreated;
+        const alice = await DidKeyResolver.generate();
+        const schema = 'aSchema';
+        const published = true;
+        const write1Data = await TestDataGenerator.generateRecordsWrite({ messageTimestamp, dateCreated, author: alice, schema, published });
+        const write2Data = await TestDataGenerator.generateRecordsWrite({ messageTimestamp, dateCreated, author: alice, schema, published });
+        const write3Data = await TestDataGenerator.generateRecordsWrite({ messageTimestamp, dateCreated, author: alice, schema, published });
+
+        // sort the messages in lexicographical order against `messageCid`
+        const [ oldestWrite, middleWrite, newestWrite ] = await ArrayUtility.asyncSort(
+          [ write1Data, write2Data, write3Data ],
+          (messageDataA, messageDataB) => { return Message.compareCid(messageDataA.message, messageDataB.message); }
+        );
+
+        // intentionally write the RecordsWrite of out lexicographical order to avoid the test query below accidentally having the correct order
+        const reply2 = await dwn.processMessage(alice.did, middleWrite.message, middleWrite.dataStream);
+        expect(reply2.status.code).to.equal(202);
+        const reply3 = await dwn.processMessage(alice.did, newestWrite.message, newestWrite.dataStream);
+        expect(reply3.status.code).to.equal(202);
+        const reply1 = await dwn.processMessage(alice.did, oldestWrite.message, oldestWrite.dataStream);
+        expect(reply1.status.code).to.equal(202);
+
+        const queryMessageData = await TestDataGenerator.generateRecordsQuery({
+          author   : alice,
+          filter   : { schema },
+          dateSort : DateSort.CreatedAscending
+        });
+        const queryReply = await dwn.processMessage(alice.did, queryMessageData.message);
+
+        // verify that messages returned are sorted/tiebreak by `messageCid`
+        expect(queryReply.status.code).to.equal(200);
+        expect(queryReply.entries?.length).to.equal(3);
+        expect((queryReply.entries![0] as RecordsWriteMessage).recordId).to.equal(oldestWrite.message.recordId);
+        expect((queryReply.entries![1] as RecordsWriteMessage).recordId).to.equal(middleWrite.message.recordId);
+        expect((queryReply.entries![2] as RecordsWriteMessage).recordId).to.equal(newestWrite.message.recordId);
+      });
+
       it('should paginate records if pagination is provided', async () => {
         const alice = await DidKeyResolver.generate();
 
