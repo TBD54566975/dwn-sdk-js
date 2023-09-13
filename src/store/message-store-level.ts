@@ -108,8 +108,8 @@ export class MessageStoreLevel implements MessageStore {
     messages: GenericMessage[],
     pagination: Pagination = { }
   ): Promise<GenericMessage[]> {
-    const { messageCid, limit = 0 } = pagination;
-    if (messageCid === undefined && limit > 0) {
+    const { messageCid, limit } = pagination;
+    if (messageCid === undefined && limit !== undefined) {
       return messages.slice(0, limit);
     } else if (messageCid === undefined) {
       return messages; // return all
@@ -125,7 +125,7 @@ export class MessageStoreLevel implements MessageStore {
       const testId = await Message.getCid(messages[i]);
       if (testId === messageCid && i + 1 < messages.length) {
         const start = i + 1;
-        const end = limit === 0 ? undefined : limit + start;
+        const end = limit === undefined ? undefined : limit + start;
         return messages.slice(start, end);
       }
     }

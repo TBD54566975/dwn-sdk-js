@@ -320,9 +320,8 @@ export function testMessageStore(): void {
 
           const offset = 5;
           const cursor = await Message.getCid(sortedRecords[offset - 1].message);
-          const limit = 0;
 
-          const limitQuery = await messageStore.query(alice.did, {}, {}, { messageCid: cursor, limit });
+          const limitQuery = await messageStore.query(alice.did, {}, {}, { messageCid: cursor });
           expect(limitQuery.length).to.equal(sortedRecords.slice(offset).length);
           for (let i = 0; i < limitQuery.length; i++) {
             const offsetIndex = i + offset;
