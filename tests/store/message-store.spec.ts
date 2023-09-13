@@ -147,6 +147,7 @@ export function testMessageStore(): void {
       after(async () => {
         await messageStore.close();
       });
+
       describe('sorting', async () => {
         it('should sort on messageTimestamp Ascending if no sort is specified', async () => {
           const alice = await DidKeyResolver.generate();

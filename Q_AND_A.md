@@ -56,7 +56,7 @@
 
   (Last updated: 2023/09/12)
 
-  The requirement for using `messageCid` as the cursor for pagination aims to ensure compatibility across different DWN store implementations. The goal is for a query using the same cursor to yield identical results, regardless of which DWN is handling the query. This is useful because, if a DWN becomes unavailable after delivering a page of messages, user can switch to another DWN and resume fetching following pages without any interruption.
+  The requirement for using `messageCid` as the cursor for pagination aims to ensure compatibility irrespective of DWN store implementations. The goal is for a query with the same cursor to yield identical results, regardless of which DWN is handling the query. This is useful because, if a DWN becomes unavailable after delivering a page of messages, the caller can switch to another DWN and resume fetching subsequent pages without interruption.
 
 
 ## Protocol

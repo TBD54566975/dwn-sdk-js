@@ -85,8 +85,8 @@ export class MessageStoreLevel implements MessageStore {
   async query(
     tenant: string,
     filter: Filter,
-    sort: MessageSort = {},
-    pagination: Pagination = {},
+    messageSort?: MessageSort,
+    pagination?: Pagination,
     options?: MessageStoreOptions
   ): Promise<GenericMessage[]> {
     options?.signal?.throwIfAborted();
@@ -100,29 +100,36 @@ export class MessageStoreLevel implements MessageStore {
       if (message) { messages.push(message); }
     }
 
-    const sortedRecords = await this.sortMessages(messages, sort);
+    const sortedRecords = await this.sortMessages(messages, messageSort);
     return this.paginateRecords(sortedRecords, pagination);
   }
 
   private async paginateRecords(
     messages: GenericMessage[],
-    pagination: Pagination
+    pagination: Pagination = { }
   ): Promise<GenericMessage[]> {
-    const { messageCid: messageId, limit = 0 } = pagination;
-    if (messageId === undefined && limit > 0) {
+    const { messageCid, limit = 0 } = pagination;
+    if (messageCid === undefined && limit > 0) {
       return messages.slice(0, limit);
-    } else if (messageId === undefined) {
+    } else if (messageCid === undefined) {
       return messages; // return all
     }
 
+    // linearly searches through the message to locate the message index that contains the message with the given pagination message CID,
+    // then construct a page of messages starting from the next message
+    // NOTE: there is a potential improvement here: since the messages are sorted,
+    // if we fetch the message of the pagination message CID to obtain the value of the sorted property,
+    // we could logarithmically go through the messages, reducing the number of times message CID computation is incurred;
+    // however this optimization will only be beneficial in practice if the message count is large.
     for (let i = 0; i < messages.length; i++) {
       const testId = await Message.getCid(messages[i]);
-      if (testId === messageId && i + 1 < messages.length) {
+      if (testId === messageCid && i + 1 < messages.length) {
         const start = i + 1;
         const end = limit === 0 ? undefined : limit + start;
         return messages.slice(start, end);
       }
     }
+
     return [];
   }
 
@@ -171,9 +178,9 @@ export class MessageStoreLevel implements MessageStore {
    */
   private async sortMessages(
     messages: GenericMessage[],
-    sort: MessageSort
+    messageSort: MessageSort = { }
   ): Promise<GenericMessage[]> {
-    const { dateCreated, datePublished, messageTimestamp } = sort;
+    const { dateCreated, datePublished, messageTimestamp } = messageSort;
 
     let sortOrder = SortOrder.Ascending; // default
     let messagesToSort = messages; // default
@@ -189,7 +196,7 @@ export class MessageStoreLevel implements MessageStore {
     }
 
     if (propertyToCompare !== undefined) {
-      sortOrder = sort[propertyToCompare]!;
+      sortOrder = messageSort[propertyToCompare]!;
     } else {
       propertyToCompare = 'messageTimestamp';
     }
