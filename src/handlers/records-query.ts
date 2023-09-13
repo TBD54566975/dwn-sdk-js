@@ -47,26 +47,29 @@ export class RecordsQueryHandler implements MethodHandler {
       }
     }
 
+    let lastRecordMessageCid: string|undefined;
+    const lastRecord = recordsWrites.at(-1);
+    if (lastRecord) {
+      lastRecordMessageCid = await Message.getCid(lastRecord);
+    }
+
     const entries = await RecordsQueryHandler.removeAuthorization(recordsWrites);
 
     return {
-      status: { code: 200, detail: 'OK' },
+      status   : { code: 200, detail: 'OK' },
+      metadata : { messageCid: lastRecordMessageCid },
       entries,
     };
   }
 
   /**
    * Removes `authorization` property from each and every `RecordsWrite` message given and returns the result as a different array.
-   * Adds `messageCid` as a cursor pointer for pagination as it can no longer be computed without the `authorization` property.
    */
   private static async removeAuthorization(recordsWriteMessages: RecordsWriteMessageWithOptionalEncodedData[]): Promise<RecordsQueryReplyEntry[]> {
     const recordsQueryReplyEntries: RecordsQueryReplyEntry[] = [];
     for (const record of recordsWriteMessages) {
       const { authorization: _, ...objectWithRemainingProperties } = record; // a trick to stripping away `authorization`
-      recordsQueryReplyEntries.push({
-        ...objectWithRemainingProperties,
-        messageCid: await Message.getCid(record)
-      });
+      recordsQueryReplyEntries.push(objectWithRemainingProperties);
     }
 
     return recordsQueryReplyEntries;

@@ -1,5 +1,5 @@
-import type { QueryResultEntry } from '../types/message-types.js';
 import type { Readable } from 'readable-stream';
+import type { QueryReplyMetadata, QueryResultEntry } from '../types/message-types.js';
 
 type Status = {
   code: number
@@ -33,4 +33,9 @@ export type UnionMessageReply = GenericMessageReply & {
    * Mutually exclusive with `entries`.
    */
   data?: Readable;
+
+  /**
+   * Metadata associated with the reply, currently only used within `RecordsQuery` replies
+   */
+  metadata?: QueryReplyMetadata;
 };

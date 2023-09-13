@@ -471,20 +471,22 @@ export function testRecordsQueryHandler(): void {
 
         const limit = 5;
         const results: RecordsQueryReplyEntry[] = [];
+        let messageCid;
         while (true) {
-          const cursor = results.length > 0 ? results[results.length - 1].messageCid : undefined;
           const pageQuery = await TestDataGenerator.generateRecordsQuery({
             author : alice,
             filter : {
               schema: 'https://schema'
             },
             pagination: {
-              limit      : limit,
-              messageCid : cursor,
+              limit: limit,
+              messageCid,
             },
           });
+
           const pageReply = await dwn.handleRecordsQuery(alice.did, pageQuery.message);
           expect(pageReply.status.code).to.equal(200);
+          messageCid = pageReply.metadata?.messageCid;
           if (pageReply.entries?.length === 0) {
             break;
           }

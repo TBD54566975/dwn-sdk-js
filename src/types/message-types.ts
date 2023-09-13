@@ -37,6 +37,10 @@ export type QueryResultEntry = {
   encodedData?: string;
 };
 
+export type QueryReplyMetadata = {
+  messageCid?: string;
+};
+
 export type EqualFilter = string | number | boolean;
 
 export type OneOfFilter = EqualFilter[];
