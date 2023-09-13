@@ -73,5 +73,7 @@ export enum SortOrder {
 }
 
 export type MessageSort = {
-  [property: string]: SortOrder
+  dateCreated?: SortOrder;
+  datePublished?: SortOrder;
+  messageTimestamp?: SortOrder;
 };

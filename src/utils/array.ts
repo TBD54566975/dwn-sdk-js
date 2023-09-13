@@ -20,4 +20,20 @@ export class ArrayUtility {
     }
     return array;
   }
+
+  /**
+   * Generic asynchronous sort method.
+   */
+  public static async asyncSort<T>(array: T[], asyncComparer: (a: T, b: T) => Promise<number>): Promise<T[]> {
+    // this is a bubble sort implementation
+    for (let i = 0; i < array.length; i++) {
+      for (let j = i + 1; j < array.length; j++) {
+        const comparison = await asyncComparer(array[i], array[j]);
+        if (comparison > 0) {
+          [array[i], array[j]] = [array[j], array[i]]; // Swap
+        }
+      }
+    }
+    return array;
+  }
 }

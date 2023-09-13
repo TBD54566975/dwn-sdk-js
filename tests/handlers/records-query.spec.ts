@@ -345,7 +345,7 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should omit records that are not published if `dateSort` sorts on `datePublished`', async () => {
-      // insert three messages into DB, two with matching protocol
+      // setup: 2 records in DWN: 1 published and 1 unpublished
         const alice = await TestDataGenerator.generatePersona();
         const schema = 'aSchema';
         const publishedWriteData = await TestDataGenerator.generateRecordsWrite({

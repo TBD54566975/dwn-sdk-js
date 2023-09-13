@@ -6,12 +6,12 @@ import type { MessageStore, MessageStoreOptions } from '../types/message-store.j
 import * as block from 'multiformats/block';
 import * as cbor from '@ipld/dag-cbor';
 
+import { ArrayUtility } from '../utils/array.js';
 import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
 import { createLevelDatabase } from './level-wrapper.js';
 import { executeUnlessAborted } from '../utils/abort.js';
 import { IndexLevel } from './index-level.js';
-import { lexicographicalCompare } from '../utils/string.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { SortOrder } from '../types/message-types.js';
 import { Cid, Message } from '../index.js';
@@ -100,7 +100,7 @@ export class MessageStoreLevel implements MessageStore {
       if (message) { messages.push(message); }
     }
 
-    const sortedRecords = this.sortRecords(messages, sort);
+    const sortedRecords = await this.sortMessages(messages, sort);
     return this.paginateRecords(sortedRecords, pagination);
   }
 
@@ -127,42 +127,76 @@ export class MessageStoreLevel implements MessageStore {
   }
 
   /**
+   * Compares two string given in lexicographical order.
+   * @returns 1 if `a` is larger than `b`; -1 if `a` is smaller/older than `b`; 0 otherwise (same message)
+   */
+  static async lexicographicalCompare(
+    messageA: GenericMessage,
+    messageB: GenericMessage,
+    comparedPropertyName: string,
+    sortOrder: SortOrder): Promise<number>
+  {
+    const a = (messageA.descriptor as any)[comparedPropertyName];
+    const b = (messageB.descriptor as any)[comparedPropertyName];
+
+    if (sortOrder === SortOrder.Ascending) {
+      if (a > b) {
+        return 1;
+      } else if (a < b) {
+        return -1;
+      }
+    } else {
+      // descending order
+      if (b > a) {
+        return 1;
+      } else if (b < a) {
+        return -1;
+      }
+    }
+
+    // if we reach here it means the compared properties have the same values, we need to fall back to compare the `messageCid` instead
+    return await Message.compareCid(messageA, messageB);
+  }
+
+  /**
    * This is a temporary naive sort, it will eventually be done within the underlying data store.
-   *
-   * This sort accepts a generalized MessageSort type which.
-   * currently only 3 type of search properties are explicitly used.
-   * `dateCreated`, `datePublished`, `messageTimestamp`
    *
    * If sorting is based on date published, records that are not published are filtered out.
    * @param messages - Messages to be sorted if dateSort is present
    * @param sort - Sorting scheme
    * @returns Sorted Messages
    */
-  private sortRecords(
+  private async sortMessages(
     messages: GenericMessage[],
     sort: MessageSort
-  ): GenericMessage[] {
+  ): Promise<GenericMessage[]> {
     const { dateCreated, datePublished, messageTimestamp } = sort;
+
+    let sortOrder = SortOrder.Ascending; // default
+    let messagesToSort = messages; // default
+    let propertyToCompare: keyof MessageSort | undefined; // `keyof MessageSort` = name of all properties of `MessageSort`
+
     if (dateCreated !== undefined) {
-      return (messages as RecordsWriteMessage[]).sort((a,b) => dateCreated === SortOrder.Ascending ?
-        lexicographicalCompare(a.descriptor.dateCreated, b.descriptor.dateCreated) :
-        lexicographicalCompare(b.descriptor.dateCreated, a.descriptor.dateCreated)
-      );
+      propertyToCompare = 'dateCreated';
     } else if (datePublished !== undefined) {
-      return (messages as RecordsWriteMessage[]).filter(message => message.descriptor.published)
-        .sort((a,b) => datePublished === SortOrder.Ascending ?
-          lexicographicalCompare(a.descriptor.datePublished!, b.descriptor.datePublished!) :
-          lexicographicalCompare(b.descriptor.datePublished!, a.descriptor.datePublished!)
-        );
+      propertyToCompare = 'datePublished';
+      messagesToSort = (messages as RecordsWriteMessage[]).filter(message => message.descriptor.published);
     } else if (messageTimestamp !== undefined) {
-      return messages.sort((a,b) => messageTimestamp === SortOrder.Ascending ?
-        lexicographicalCompare(a.descriptor.messageTimestamp, b.descriptor.messageTimestamp) :
-        lexicographicalCompare(b.descriptor.messageTimestamp, a.descriptor.messageTimestamp)
-      );
+      propertyToCompare = 'messageTimestamp';
     }
 
-    // default is messageTimestamp in Ascending order
-    return messages.sort((a,b) => lexicographicalCompare(a.descriptor.messageTimestamp, b.descriptor.messageTimestamp));
+    if (propertyToCompare !== undefined) {
+      sortOrder = sort[propertyToCompare]!;
+    } else {
+      propertyToCompare = 'messageTimestamp';
+    }
+
+    const asyncComparer = (a: GenericMessage, b: GenericMessage): Promise<number> => {
+      return MessageStoreLevel.lexicographicalCompare(a, b, propertyToCompare!, sortOrder);
+    };
+
+    // NOTE: we needed to implement our own asynchronous sort method because Array.sort() does not take an async comparer
+    return await ArrayUtility.asyncSort(messagesToSort, asyncComparer);
   }
 
   async delete(tenant: string, cidString: string, options?: MessageStoreOptions): Promise<void> {
