@@ -31,6 +31,7 @@ export enum DwnErrorCode {
   PermissionsGrantUnauthorizedGrant = 'PermissionsGrantUnauthorizedGrant',
   PermissionsRevokeMissingPermissionsGrant = 'PermissionsRevokeMissingPermissionsGrant',
   PermissionsRevokeUnauthorizedRevoke = 'PermissionsRevokeUnauthorizedRevoke',
+  PrivateKeySignerUnsupportedCurve = 'PrivateKeySignerUnsupportedCurve',
   ProtocolAuthorizationActionNotAllowed = 'ProtocolAuthorizationActionNotAllowed',
   ProtocolAuthorizationIncorrectDataFormat = 'ProtocolAuthorizationIncorrectDataFormat',
   ProtocolAuthorizationIncorrectProtocolPath = 'ProtocolAuthorizationIncorrectProtocolPath',

@@ -1,7 +1,7 @@
 import type { GeneralJws, SignatureInput } from '../../../types/jws-types.js';
 
 import { Encoder } from '../../../utils/encoder.js';
-import { signers } from '../../algorithms/signing/signers.js';
+import { PrivateKeySigner } from '../../../utils/private-key-signer.js';
 
 export class GeneralJwsSigner {
   private jws: GeneralJws;
@@ -27,11 +27,7 @@ export class GeneralJwsSigner {
 
   async addSignature(signatureInput: SignatureInput): Promise<void> {
     const { privateJwk, protectedHeader } = signatureInput;
-    const signer = signers[privateJwk.crv];
-
-    if (!signer) {
-      throw new Error(`unsupported crv. crv must be one of ${Object.keys(signers)}`);
-    }
+    const signer = new PrivateKeySigner(privateJwk);
 
     const protectedHeaderString = JSON.stringify(protectedHeader);
     const protectedHeaderBase64UrlString = Encoder.stringToBase64Url(protectedHeaderString);
@@ -39,7 +35,7 @@ export class GeneralJwsSigner {
     const signingInputString = `${protectedHeaderBase64UrlString}.${this.jws.payload}`;
     const signingInputBytes = Encoder.stringToBytes(signingInputString);
 
-    const signatureBytes = await signer.sign(signingInputBytes, privateJwk);
+    const signatureBytes = await signer.sign(signingInputBytes);
     const signature = Encoder.bytesToBase64Url(signatureBytes);
 
     this.jws.signatures.push({ protected: protectedHeaderBase64UrlString, signature });
