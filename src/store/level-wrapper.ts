@@ -47,6 +47,11 @@ export class LevelWrapper<V> {
   async open(): Promise<void> {
     await this.createLevelDatabase();
 
+    // `db.open()` is automatically called by the database constructor. We may need to call it explicitly
+    // in order to explicitly catch an error that would otherwise not surface until another method
+    // like `db.get()` is called.  Once `db.open()` has then been called, any read & write
+    // operations will again be queued internally until opening has finished.
+
     // Create an event handler that resolves the Promise when 'open' event is emitted
     // or if db.status is already === 'open'.
     return new Promise(async (resolve) => {
