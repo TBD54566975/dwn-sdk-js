@@ -60,7 +60,7 @@ export class LevelWrapper<V> {
     // If db is still opening, wait until the 'open' event is emitted
     case 'opening':
       return new Promise((resolve) => {
-        this.db.once('open', () => resolve());
+        this.db.once('open', resolve);
       });
 
     // If db is closing, wait until it is closed then await `db.open()`
