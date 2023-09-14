@@ -47,19 +47,43 @@ export class LevelWrapper<V> {
   async open(): Promise<void> {
     await this.createLevelDatabase();
 
-    while (this.db.status === 'opening' || this.db.status === 'closing') {
-      await sleep(200);
-    }
+    // Create an event handler that resolves the Promise when 'open' event is emitted
+    // or if db.status is already === 'open'.
+    return new Promise(async (resolve) => {
+      const onOpened = (): void => {
+        this.db.removeListener('open', onOpened);
+        resolve();
+      };
 
-    if (this.db.status === 'open') {
-      return;
-    }
+      const onClosed = async (): Promise<void> => {
+        this.db.removeListener('closed', onClosed);
+        await this.db.open();
+        resolve();
+      };
 
-    // `db.open()` is automatically called by the database constructor.  We're calling it explicitly
-    // in order to explicitly catch an error that would otherwise not surface until another method
-    // like `db.get()` is called.  Once `db.open()` has then been called, any read & write
-    // operations will again be queued internally until opening has finished.
-    return this.db.open();
+      switch (this.db.status) {
+      // if db is open, we are done.
+      case 'open':
+        resolve();
+        break;
+
+      case 'opening':
+        // if db is still opening, wait until it is open
+        this.db.on('open', onOpened);
+        break;
+
+      case 'closing':
+        // if db is closing, wait until it is closed then await `db.open()`
+        this.db.on('closed', onClosed);
+        break;
+
+      case 'closed':
+        // if db is closed, await `db.open`
+        await this.db.open();
+        resolve();
+        break;
+      }
+    });
   }
 
   async close(): Promise<void> {
