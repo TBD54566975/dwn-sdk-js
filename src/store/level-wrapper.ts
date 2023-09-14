@@ -52,43 +52,31 @@ export class LevelWrapper<V> {
     // like `db.get()` is called.  Once `db.open()` has then been called, any read & write
     // operations will again be queued internally until opening has finished.
 
-    // Create an event handler that resolves the Promise when 'open' event is emitted
-    // or if db.status is already === 'open'.
-    return new Promise(async (resolve) => {
-      const onOpened = (): void => {
-        this.db.removeListener('open', onOpened);
-        resolve();
-      };
+    switch (this.db.status) {
+    // If db is open, we are done.
+    case 'open':
+      return;
 
-      const onClosed = async (): Promise<void> => {
-        this.db.removeListener('closed', onClosed);
-        await this.db.open();
-        resolve();
-      };
+    // If db is still opening, wait until the 'open' event is emitted
+    case 'opening':
+      return new Promise((resolve) => {
+        this.db.once('open', () => resolve());
+      });
 
-      switch (this.db.status) {
-      // if db is open, we are done.
-      case 'open':
-        resolve();
-        break;
+    // If db is closing, wait until it is closed then await `db.open()`
+    case 'closing':
+      return new Promise((resolve, reject) => {
+        const onClosed = (): void => {
+          // Make sure that errors from `db.open()` propogate up
+          this.db.open().then(resolve).catch(reject);;
+        };
+        this.db.once('closed', onClosed);
+      });
 
-      case 'opening':
-        // if db is still opening, wait until it is open
-        this.db.on('open', onOpened);
-        break;
-
-      case 'closing':
-        // if db is closing, wait until it is closed then await `db.open()`
-        this.db.on('closed', onClosed);
-        break;
-
-      case 'closed':
-        // if db is closed, await `db.open`
-        await this.db.open();
-        resolve();
-        break;
-      }
-    });
+    // If db is closed, `db.open`
+    case 'closed':
+      return this.db.open();
+    }
   }
 
   async close(): Promise<void> {
