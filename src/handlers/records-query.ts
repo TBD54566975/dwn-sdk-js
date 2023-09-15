@@ -131,8 +131,12 @@ export class RecordsQueryHandler implements MethodHandler {
     const filters = [
       this.publishedRecordsFilter(recordsQuery),
       this.unpublishedRecordsByAuthorFilter(recordsQuery),
-      this.unpublishedRecordsForQueryAuthorFilter(recordsQuery)
     ];
+
+    const recipientFilter = recordsQuery.message.descriptor.filter.recipient;
+    if (recipientFilter === undefined || recipientFilter === recordsQuery.author) {
+      filters.push(this.unpublishedRecordsForQueryAuthorFilter(recordsQuery));
+    }
 
     const messageSort = this.convertDateSort(dateSort);
     return this.messageStore.query(tenant, filters, messageSort, pagination );
