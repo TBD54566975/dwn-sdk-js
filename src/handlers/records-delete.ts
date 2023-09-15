@@ -1,8 +1,8 @@
 import type { EventLog } from '../types/event-log.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { MethodHandler } from '../types/method-handler.js';
+import type { DataStore, DidResolver, MessageStore } from '../index.js';
 import type { RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
-import type { DataStore, DidResolver, GenericMessage, MessageStore, RecordsWrite } from '../index.js';
 
 import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
