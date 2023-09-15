@@ -42,19 +42,10 @@ export enum ProtocolAction {
   Write = 'write'
 }
 
-export enum ProtocolRecordGroup {
-  Any = 'any',
-  Context = 'context',
-  Ancestors = 'ancestors',
-}
-
 export type ProtocolActionRule = {
   who: string,
-  ofRecord?: {
-    atPath: string;
-    inGroup: ProtocolRecordGroup;
-  },
-  can: string
+  of?: string;
+  can: string;
 };
 /**
  * Config for protocol-path encryption scheme.

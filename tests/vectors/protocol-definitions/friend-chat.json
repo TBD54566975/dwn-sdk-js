@@ -20,18 +20,12 @@
       "$actions": [
         {
           "who": "recipient",
-          "ofRecord": {
-            "atPath": "friend",
-            "inGroup": "any"
-          },
+          "of": "friend",
           "can": "write"
         },
         {
           "who": "recipient",
-          "ofRecord": {
-            "atPath": "friend",
-            "inGroup": "any"
-          },
+          "of": "friend",
           "can": "read"
         }
       ]

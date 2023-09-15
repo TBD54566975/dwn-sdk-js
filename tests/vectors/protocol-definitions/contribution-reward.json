@@ -28,10 +28,7 @@
       "$actions": [
         {
           "who": "author",
-          "ofRecord": {
-            "atPath": "contribution",
-            "inGroup": "any"
-          },
+          "of": "contribution",
           "can": "read"
         }
       ]

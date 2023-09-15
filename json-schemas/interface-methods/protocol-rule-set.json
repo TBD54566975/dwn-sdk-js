@@ -47,7 +47,7 @@
           {
             "required": [
               "who",
-              "ofRecord",
+              "of",
               "can"
             ],
             "additionalProperties": false,
@@ -59,19 +59,8 @@
                   "recipient"
                 ]
               },
-              "ofRecord": {
-                "type": "object",
-                "properties": {
-                  "atPath": {
-                    "type": "string"
-                  },
-                  "inGroup": {
-                    "type": "string",
-                    "enum": [
-                      "ancestors"
-                    ]
-                  }
-                }
+              "of": {
+                "type": "string"
               },
               "can": {
                 "type": "string",

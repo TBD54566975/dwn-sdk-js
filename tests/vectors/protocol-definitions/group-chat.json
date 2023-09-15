@@ -27,26 +27,17 @@
         "$actions": [
           {
             "who": "recipient",
-            "ofRecord": {
-              "atPath": "groupChat/invite",
-              "inGroup": "context"
-            },
+            "of": "groupChat/invite",
             "can": "write"
           },
           {
             "who": "recipient",
-            "ofRecord": {
-              "atPath": "groupChat/invite",
-              "inGroup": "context"
-            },
+            "of": "groupChat/invite",
             "can": "read"
           },
           {
             "who": "author",
-            "ofRecord": {
-              "atPath": "groupChat",
-              "inGroup": "ancestors"
-            },
+            "of": "groupChat",
             "can": "write"
           }
         ]

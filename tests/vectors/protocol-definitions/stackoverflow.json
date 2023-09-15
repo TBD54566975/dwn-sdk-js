@@ -27,10 +27,7 @@
         "$actions": [
           {
             "who": "author",
-            "ofRecord": {
-              "atPath": "question",
-              "inGroup": "any"
-            },
+            "of": "question",
             "can": "write"
           }
         ]

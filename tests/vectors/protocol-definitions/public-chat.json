@@ -27,18 +27,12 @@
         "$actions": [
           {
             "who": "author",
-            "ofRecord": {
-              "atPath": "groupChat/joinChat",
-              "inGroup": "context"
-            },
+            "of": "groupChat/joinChat",
             "can": "write"
           },
           {
             "who": "author",
-            "ofRecord": {
-              "atPath": "groupChat/joinChat",
-              "inGroup": "context"
-            },
+            "of": "groupChat/joinChat",
             "can": "read"
           }
         ]

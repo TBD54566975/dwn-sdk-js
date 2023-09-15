@@ -4,7 +4,6 @@ import type { RecordsRead } from '../interfaces/records-read.js';
 import type { InternalRecordsWriteMessage, RecordsReadMessage, RecordsWriteMessage } from '../types/records-types.js';
 import type { ProtocolActionRule, ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../types/protocols-types.js';
 
-import { ProtocolRecordGroup } from '../types/protocols-types.js';
 import { RecordsGrantAuthorization } from './records-grant-authorization.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
@@ -306,30 +305,9 @@ export class ProtocolAuthorization {
         continue;
       }
 
-      switch (actionRule.ofRecord!.inGroup) {
-      case ProtocolRecordGroup.Ancestors:
-        const ancestorRuleSuccess: boolean = await ProtocolAuthorization.checkAncestorGroupActionRule(author, actionRule, ancestorMessageChain);
-        if (ancestorRuleSuccess) {
-          return;
-        }
-        break;
-
-      case ProtocolRecordGroup.Context:
-      case ProtocolRecordGroup.Any:
-        const anyOrContextRuleSuccess = await ProtocolAuthorization.checkAnyOrContextGroupActionRule(
-          tenant,
-          recordsWrite,
-          author,
-          actionRule,
-          messageStore
-        );
-        if (anyOrContextRuleSuccess) {
-          return;
-        }
-        break;
-
-      // default:
-        // JSON Schema ensures that no other values are possible
+      const ancestorRuleSuccess: boolean = await ProtocolAuthorization.checkAncestorGroupActionRule(author, actionRule, ancestorMessageChain);
+      if (ancestorRuleSuccess) {
+        return;
       }
     }
 
@@ -377,11 +355,11 @@ export class ProtocolAuthorization {
   ): Promise<boolean> {
     // Iterate up the ancestor chain to find a message with matching protocolPath
     const ancestorRecordsWrite = ancestorMessageChain.find((recordsWriteMessage) =>
-      recordsWriteMessage.descriptor.protocolPath === actionRule.ofRecord!.atPath
+      recordsWriteMessage.descriptor.protocolPath === actionRule.of!
     );
 
     // If this is reached, there is likely an issue with the protocol definition.
-    // The protocolPath to the actionRule should start with actionRule.ofRecord.atPath
+    // The protocolPath to the actionRule should start with actionRule.of
     // consider moving this check to ProtocolsConfigure message ingestion
     if (ancestorRecordsWrite === undefined) {
       return false;
@@ -395,42 +373,6 @@ export class ProtocolAuthorization {
       const ancestorAuthor = (await RecordsWrite.parse(ancestorRecordsWrite)).author;
       return author === ancestorAuthor;
     }
-  }
-
-  /**
-   * Checks if there is a RecordsWrite message that matches the protocolPath and actor in the given ProtocolActionRule.
-   * If actionRule.ofRecord.inGroup === 'context', also checks that there is a message with matching contextId as the incoming message.
-   * @returns true if there is a matching RecordsWrite that matches the actionRule. false otherwise
-   */
-  private static async checkAnyOrContextGroupActionRule(
-    tenant: string,
-    recordsWrite: RecordsWrite,
-    author: string,
-    actionRule: ProtocolActionRule,
-    messageStore: MessageStore,
-  ): Promise<boolean> {
-    const filter: { [key: string]: string } = {
-      interface    : DwnInterfaceName.Records,
-      method       : DwnMethodName.Write,
-      protocolPath : actionRule.ofRecord!.atPath,
-    };
-
-    if (actionRule.who === ProtocolActor.Recipient) {
-      // Find matching messages where recipient is the author of the inbound message
-      filter.recipient = author;
-    } else { // actionRule.who === ProtocolActor.Author
-      // Find matching messages authored by the author of the inbound message
-      filter.author = author;
-    }
-
-    if (actionRule.ofRecord!.inGroup === ProtocolRecordGroup.Context) {
-      filter.contextId = recordsWrite.message.contextId!;
-    }
-
-    const matchingRecordsWrites = await messageStore.query(tenant, filter);
-
-    // There exists at least one message satisfying the actionRule
-    return matchingRecordsWrites.length > 0;
   }
 
   private static getTypeName(protocolPath: string): string {

@@ -39,10 +39,7 @@
         "$actions": [
           {
             "who": "recipient",
-            "ofRecord": {
-              "atPath": "message",
-              "inGroup": "ancestors"
-            },
+            "of": "message",
             "can": "write"
           }
         ]
@@ -67,10 +64,7 @@
           },
           {
             "who": "author",
-            "ofRecord": {
-              "atPath": "image",
-              "inGroup": "ancestors"
-            },
+            "of": "image",
             "can": "write"
           }
         ]
@@ -79,18 +73,12 @@
         "$actions": [
           {
             "who": "author",
-            "ofRecord": {
-              "atPath": "image",
-              "inGroup": "ancestors"
-            },
+            "of": "image",
             "can": "read"
           },
           {
             "who": "recipient",
-            "ofRecord": {
-              "atPath": "image",
-              "inGroup": "ancestors"
-            },
+            "of": "image",
             "can": "write"
           }
         ]
