@@ -27,7 +27,7 @@ import { DidResolver } from '../../src/did/did-resolver.js';
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { Encoder } from '../../src/utils/encoder.js';
-import { GeneralJwsSigner } from '../../src/jose/jws/general/signer.js';
+import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { Jws } from '../../src/utils/jws.js';
 import { PermissionsConditionPublication } from '../../src/types/permissions-types.js';
@@ -2647,8 +2647,8 @@ export function testRecordsWriteHandler(): void {
         authorizationPayload.recordId = await TestDataGenerator.randomCborSha256Cid(); // make recordId mismatch in authorization payload
         const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
         const signatureInput = Jws.createSignatureInput(author);
-        const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
-        message.authorization = signer.getJws();
+        const jwsBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signatureInput]);
+        message.authorization = jwsBuilder.getJws();
 
         const tenant = author.did;
         const didResolver = TestStubGenerator.createDidResolverStub(author);
@@ -2671,8 +2671,8 @@ export function testRecordsWriteHandler(): void {
         authorizationPayload.contextId = await TestDataGenerator.randomCborSha256Cid(); // make contextId mismatch in authorization payload
         const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
         const signatureInput = Jws.createSignatureInput(author);
-        const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
-        message.authorization = signer.getJws();
+        const jwsBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signatureInput]);
+        message.authorization = jwsBuilder.getJws();
 
         const tenant = author.did;
         const didResolver = sinon.createStubInstance(DidResolver);
@@ -2731,15 +2731,15 @@ export function testRecordsWriteHandler(): void {
         const descriptorCid = recordsWrite.authorizationPayload!.descriptorCid;
         const attestationPayload = { descriptorCid, someAdditionalProperty: 'anyValue' }; // additional property is not allowed
         const attestationPayloadBytes = Encoder.objectToBytes(attestationPayload);
-        const attestationSigner = await GeneralJwsSigner.create(attestationPayloadBytes, [signatureInput]);
-        message.attestation = attestationSigner.getJws();
+        const attestationBuilder = await GeneralJwsBuilder.create(attestationPayloadBytes, [signatureInput]);
+        message.attestation = attestationBuilder.getJws();
 
         // recreate the `authorization` based on the new` attestationCid`
         const authorizationPayload = { ...recordsWrite.authorizationPayload };
         authorizationPayload.attestationCid = await Cid.computeCid(attestationPayload);
         const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
-        const authorizationSigner = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
-        message.authorization = authorizationSigner.getJws();
+        const authorizationBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signatureInput]);
+        message.authorization = authorizationBuilder.getJws();
 
         const didResolver = TestStubGenerator.createDidResolverStub(author);
         const messageStore = stubInterface<MessageStore>();

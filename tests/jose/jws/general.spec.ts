@@ -2,7 +2,7 @@ import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
 import { DidResolver } from '../../../src/did/did-resolver.js';
-import { GeneralJwsSigner } from '../../../src/jose/jws/general/signer.js';
+import { GeneralJwsBuilder } from '../../../src/jose/jws/general/builder.js';
 import { GeneralJwsVerifier } from '../../../src/jose/jws/general/verifier.js';
 import { Jws } from '../../../src/utils/jws.js';
 import { PrivateKeySigner } from '../../../src/index.js';
@@ -25,8 +25,8 @@ describe('General JWS Sign/Verify', () => {
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
     const protectedHeader = { alg: 'ES256K', kid: 'did:jank:alice#key1' };
 
-    const signer = await GeneralJwsSigner.create(payloadBytes, [{ signer: new PrivateKeySigner(privateJwk), protectedHeader }]);
-    const jws = signer.getJws();
+    const jwsBuilder = await GeneralJwsBuilder.create(payloadBytes, [{ signer: new PrivateKeySigner(privateJwk), protectedHeader }]);
+    const jws = jwsBuilder.getJws();
 
     const mockResolutionResult = {
       didResolutionMetadata : {},
@@ -59,8 +59,8 @@ describe('General JWS Sign/Verify', () => {
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
     const protectedHeader = { alg: 'EdDSA', kid: 'did:jank:alice#key1' };
 
-    const signer = await GeneralJwsSigner.create(payloadBytes, [{ signer: new PrivateKeySigner(privateJwk), protectedHeader }]);
-    const jws = signer.getJws();
+    const jwsBuilder = await GeneralJwsBuilder.create(payloadBytes, [{ signer: new PrivateKeySigner(privateJwk), protectedHeader }]);
+    const jws = jwsBuilder.getJws();
 
     const mockResolutionResult = {
       didResolutionMetadata : {},
@@ -136,8 +136,8 @@ describe('General JWS Sign/Verify', () => {
     ];
 
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
-    const signer = await GeneralJwsSigner.create(payloadBytes, signatureInputs);
-    const jws = signer.getJws();
+    const jwsBuilder = await GeneralJwsBuilder.create(payloadBytes, signatureInputs);
+    const jws = jwsBuilder.getJws();
 
     const resolveStub = sinon.stub();
     resolveStub.withArgs('did:jank:alice').resolves(alice.mockResolutionResult);
@@ -163,14 +163,14 @@ describe('General JWS Sign/Verify', () => {
     const protectedHeaderEd25519 = { alg: 'EdDSA', kid: 'did:jank:alice#key1' };
     const protectedHeaderSecp256k1 = { alg: 'ES256K', kid: 'did:jank:alice#key2' };
 
-    const signer = await GeneralJwsSigner.create(
+    const jwsBuilder = await GeneralJwsBuilder.create(
       payloadBytes,
       [
         { signer: new PrivateKeySigner(privateJwkEd25519), protectedHeader: protectedHeaderEd25519 },
         { signer: new PrivateKeySigner(privateJwkSecp256k1), protectedHeader: protectedHeaderSecp256k1 }
       ]
     );
-    const jws = signer.getJws();
+    const jws = jwsBuilder.getJws();
 
     const mockResolutionResult = {
       didResolutionMetadata : {},

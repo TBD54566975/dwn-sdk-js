@@ -3,7 +3,7 @@ import type { SignatureInput } from '../types/jws-types.js';
 import type { BaseAuthorizationPayload, Descriptor, GenericMessage } from '../types/message-types.js';
 
 import { Cid } from '../utils/cid.js';
-import { GeneralJwsSigner } from '../jose/jws/general/signer.js';
+import { GeneralJwsBuilder } from '../jose/jws/general/builder.js';
 import { Jws } from '../utils/jws.js';
 import { lexicographicalCompare } from '../utils/string.js';
 import { removeUndefinedProperties } from '../utils/object.js';
@@ -148,9 +148,9 @@ export abstract class Message<M extends GenericMessage> {
     const authPayloadStr = JSON.stringify(authPayload);
     const authPayloadBytes = new TextEncoder().encode(authPayloadStr);
 
-    const signer = await GeneralJwsSigner.create(authPayloadBytes, [signatureInput]);
+    const builder = await GeneralJwsBuilder.create(authPayloadBytes, [signatureInput]);
 
-    return signer.getJws();
+    return builder.getJws();
   }
 
   /**

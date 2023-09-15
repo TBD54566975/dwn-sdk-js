@@ -10,7 +10,7 @@ import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
-import { GeneralJwsSigner } from '../../src/jose/jws/general/signer.js';
+import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
@@ -170,8 +170,8 @@ export function testProtocolsQueryHandler(): void {
         authorizationPayload.descriptorCid = incorrectDescriptorCid;
         const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
         const signatureInput = Jws.createSignatureInput(author);
-        const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
-        message.authorization = signer.getJws();
+        const jwsBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signatureInput]);
+        message.authorization = jwsBuilder.getJws();
 
         const reply = await dwn.processMessage(tenant, message);
 

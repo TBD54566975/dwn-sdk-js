@@ -2,26 +2,26 @@ import type { GeneralJws, SignatureInput } from '../../../types/jws-types.js';
 
 import { Encoder } from '../../../utils/encoder.js';
 
-export class GeneralJwsSigner {
+export class GeneralJwsBuilder {
   private jws: GeneralJws;
 
   private constructor(jws: GeneralJws) {
     this.jws = jws;
   }
 
-  static async create(payload: Uint8Array, signatureInputs: SignatureInput[] = []): Promise<GeneralJwsSigner> {
+  static async create(payload: Uint8Array, signatureInputs: SignatureInput[] = []): Promise<GeneralJwsBuilder> {
     const jws: GeneralJws = {
       payload    : Encoder.bytesToBase64Url(payload),
       signatures : []
     };
 
-    const signer = new GeneralJwsSigner(jws);
+    const builder = new GeneralJwsBuilder(jws);
 
     for (const signatureInput of signatureInputs) {
-      await signer.addSignature(signatureInput);
+      await builder.addSignature(signatureInput);
     }
 
-    return signer;
+    return builder;
   }
 
   async addSignature(signatureInput: SignatureInput): Promise<void> {

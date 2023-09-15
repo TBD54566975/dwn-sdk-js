@@ -17,7 +17,7 @@ import { Cid } from '../utils/cid.js';
 import { Encoder } from '../utils/encoder.js';
 import { Encryption } from '../utils/encryption.js';
 import { EncryptionAlgorithm } from '../utils/encryption.js';
-import { GeneralJwsSigner } from '../jose/jws/general/signer.js';
+import { GeneralJwsBuilder } from '../jose/jws/general/builder.js';
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Jws } from '../utils/jws.js';
 import { KeyDerivationScheme } from '../index.js';
@@ -635,8 +635,8 @@ export class RecordsWrite {
     const attestationPayload: RecordsWriteAttestationPayload = { descriptorCid };
     const attestationPayloadBytes = Encoder.objectToBytes(attestationPayload);
 
-    const signer = await GeneralJwsSigner.create(attestationPayloadBytes, signatureInputs);
-    return signer.getJws();
+    const builder = await GeneralJwsBuilder.create(attestationPayloadBytes, signatureInputs);
+    return builder.getJws();
   }
 
   /**
@@ -666,8 +666,8 @@ export class RecordsWrite {
 
     const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
 
-    const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput]);
-    return signer.getJws();
+    const builder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signatureInput]);
+    return builder.getJws();
   }
 
   /**
