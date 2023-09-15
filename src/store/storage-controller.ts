@@ -1,8 +1,8 @@
 import type { DataStore } from '../types/data-store.js';
 import type { EventLog } from '../types/event-log.js';
+import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { RecordsWriteMessage } from '../types/records-types.js';
-import type { GenericMessage, TimestampedMessage } from '../types/message-types.js';
 
 import { constructRecordsWriteIndexes } from '../handlers/records-write.js';
 import { DwnConstant } from '../core/dwn-constant.js';
@@ -40,8 +40,8 @@ export class StorageController {
    */
   public static async deleteAllOlderMessagesButKeepInitialWrite(
     tenant: string,
-    existingMessages: TimestampedMessage[],
-    comparedToMessage: TimestampedMessage,
+    existingMessages: GenericMessage[],
+    comparedToMessage: GenericMessage,
     messageStore: MessageStore,
     dataStore: DataStore,
     eventLog: EventLog

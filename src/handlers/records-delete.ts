@@ -1,9 +1,8 @@
 import type { EventLog } from '../types/event-log.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { RecordsDeleteMessage } from '../types/records-types.js';
-import type { TimestampedMessage } from '../types/message-types.js';
-import type { DataStore, DidResolver, MessageStore } from '../index.js';
+import type { RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
+import type { DataStore, DidResolver, GenericMessage, MessageStore, RecordsWrite } from '../index.js';
 
 import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
@@ -40,7 +39,7 @@ export class RecordsDeleteHandler implements MethodHandler {
       interface : DwnInterfaceName.Records,
       recordId  : message.descriptor.recordId
     };
-    const existingMessages = await this.messageStore.query(tenant, query) as TimestampedMessage[];
+    const existingMessages = await this.messageStore.query(tenant, query) as (RecordsWriteMessage | RecordsDeleteMessage)[];
 
     // find which message is the newest, and if the incoming message is the newest
     const newestExistingMessage = await Message.getNewestMessage(existingMessages);
