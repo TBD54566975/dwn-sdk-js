@@ -51,6 +51,11 @@ export class RecordsWriteHandler implements MethodHandler {
     };
     const existingMessages = await this.messageStore.query(tenant, query) as (RecordsWriteMessage|RecordsDeleteMessage)[];
     const newestExistingMessage = await Message.getNewestMessage(existingMessages);
+    if (newestExistingMessage?.descriptor.method === DwnMethodName.Delete) {
+      return {
+        status: { code: 400, detail: `Record with id ${message.recordId} has been deleted` }
+      };
+    }
 
     // if the incoming write is not the initial write, then it must not modify any immutable properties defined by the initial write
     const newMessageIsInitialWrite = await recordsWrite.isInitialWrite();

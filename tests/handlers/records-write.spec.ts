@@ -252,6 +252,7 @@ export function testRecordsWriteHandler(): void {
         });
         const recordsWriteResurrectReply = await dwn.processMessage(alice.did, resurrectingRecordsWrite.message, resurrectingRecordsWrite.dataStream);
         expect(recordsWriteResurrectReply.status.code).to.eq(400);
+        expect(recordsWriteResurrectReply.status.detail).to.contain('has been deleted');
       });
 
       it('should not allow changes to immutable properties', async () => {
