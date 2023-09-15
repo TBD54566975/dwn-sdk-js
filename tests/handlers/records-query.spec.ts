@@ -530,11 +530,11 @@ export function testRecordsQueryHandler(): void {
           const pageReply = await dwn.handleRecordsQuery(alice.did, pageQuery.message);
           expect(pageReply.status.code).to.equal(200);
           messageCid = pageReply.paginationMessageCid;
-          if (pageReply.entries?.length === 0) {
-            break;
-          }
           expect(pageReply.entries?.length).to.be.lte(limit);
           results.push(...pageReply.entries!);
+          if (messageCid === undefined) {
+            break;
+          }
         }
         expect(results.length).to.equal(messages.length);
         expect(messages.every(({ message }) => results.map(e => (e as RecordsWriteMessage).recordId).includes(message.recordId)));
@@ -652,9 +652,10 @@ export function testRecordsQueryHandler(): void {
         const pageReply = await dwn.handleRecordsQuery(alice.did, pageQuery.message);
         expect(pageReply.status.code).to.equal(200);
         expect(pageReply.entries?.length).to.be.lte(limit);
-        const { message: lastEntryMessage } = messages.find(m => m.message.recordId === pageReply.entries?.at(-1)?.recordId) || {};
-        expect(lastEntryMessage).to.not.be.undefined;
-        expect((await Message.getCid(lastEntryMessage as GenericMessage))).to.equal(pageReply.paginationMessageCid);
+        expect(pageReply.paginationMessageCid).to.exist;
+        const lastMessageWithAuthorization = messages.find(m => m.message.recordId === pageReply.entries?.at(-1)!.recordId)!;
+        const messageCid = await Message.getCid(lastMessageWithAuthorization.message);
+        expect(pageReply.paginationMessageCid).to.equal(messageCid);
       });
 
       it('should allow an anonymous unauthenticated query to return published records', async () => {
@@ -851,9 +852,8 @@ export function testRecordsQueryHandler(): void {
         });
         results = await dwn.processMessage(alice.did, aliceQueryMessageDataPage3.message) as RecordsQueryReply;
         expect(results.status.code).to.equal(200);
-        expect(results.entries?.length).to.equal(5, 'alice page 2');
-        const page3PaginationLastMessage = await Message.getCid(sortedMessages.at(24)!); // get messageCid from message with authorization.
-        expect(results.paginationMessageCid).to.equal(page3PaginationLastMessage, 'alice page 3');
+        expect(results.entries?.length).to.equal(5, 'alice page 3');
+        expect(results.paginationMessageCid).to.not.exist;
 
         const bobs = (m: RecordsWriteMessage): boolean => {
           return m.descriptor.recipient === bob.did || m.descriptor.published === true || Message.getAuthor(m) === bob.did;
@@ -885,20 +885,8 @@ export function testRecordsQueryHandler(): void {
         results = await dwn.processMessage(alice.did, bobQueryMessagePage2.message) as RecordsQueryReply;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'bob page 2');
-        const page2BobPaginationLastMessage = await Message.getCid(bobSorted.at(19)!);
-        expect(results.paginationMessageCid).to.equal(page2BobPaginationLastMessage, 'bob page 2');
-        bobRetrieved.push(...results.entries!);
-
-        const bobQueryMessagePage3 = await TestDataGenerator.generateRecordsQuery({
-          author     : bob,
-          filter     : { schema },
-          dateSort   : DateSort.CreatedAscending,
-          pagination : { limit: 10, messageCid: results.paginationMessageCid },
-        });
-        results = await dwn.processMessage(alice.did, bobQueryMessagePage3.message) as RecordsQueryReply;
-        expect(results.status.code).to.equal(200);
-        expect(results.entries?.length).to.equal(0, 'bob page 3');
         expect(results.paginationMessageCid).to.not.exist;
+        bobRetrieved.push(...results.entries!);
 
         const compareRecordId = (a: GenericMessage, b:GenericMessage): boolean => {
           return (a as RecordsWriteMessage).recordId === (b as RecordsWriteMessage).recordId;

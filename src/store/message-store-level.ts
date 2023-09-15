@@ -133,9 +133,15 @@ export class MessageStoreLevel implements MessageStore {
     const end = limit === undefined ? undefined : limit + start;
     const results = messages.slice(start, end);
 
-    // we extract the cid of the last message in the result set.
-    const lastMessage = results.at(-1);
-    const paginationMessageCid = lastMessage ? await Message.getCid(lastMessage) : undefined;
+    // we only return a pagination MessageCid cursor if there are more results
+    const hasMoreResults = end !== undefined && end < messages.length;
+    let paginationMessageCid: string|undefined;
+    if (hasMoreResults) {
+      // we extract the cid of the last message in the result set.
+      const lastMessage = results.at(-1);
+      paginationMessageCid = lastMessage ? await Message.getCid(lastMessage) : undefined;
+    }
+
     return { messages: results, paginationMessageCid };
   }
 

@@ -306,6 +306,24 @@ export function testMessageStore(): void {
           }
         });
 
+        it('should only return a cursor if there are additional results', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            messageTimestamp: TestDataGenerator.randomTimestamp()
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          // get all of the records
+          const allRecords = await messageStore.query(alice.did, [{}], {}, { limit: 10 });
+          expect(allRecords.paginationMessageCid).to.not.exist;
+
+          // get only partial records
+          const partialRecords = await messageStore.query(alice.did, [{}], {}, { limit: 5 });
+          expect(partialRecords.paginationMessageCid).to.exist.and.to.not.be.undefined;
+        });
+
         it('should return all records from the cursor onwards when no limit is provided', async () => {
           const alice = await DidKeyResolver.generate();
           const messages = await Promise.all(Array(13).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
@@ -367,12 +385,12 @@ export function testMessageStore(): void {
           let cursor: string | undefined;
           while (true) {
             const { messages: limitQuery, paginationMessageCid } = await messageStore.query(alice.did, [{}], {}, { messageCid: cursor, limit });
-            if (limitQuery.length === 0) {
-              break;
-            }
             expect(limitQuery.length).to.be.lessThanOrEqual(limit);
             results.push(...limitQuery);
             cursor = paginationMessageCid;
+            if (cursor === undefined) {
+              break;
+            }
           }
           expect(results.length).to.equal(messages.length);
           const messageMessageIds = await Promise.all(messages.map(m => Message.getCid(m.message)));
