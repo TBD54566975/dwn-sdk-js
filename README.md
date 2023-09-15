@@ -234,6 +234,31 @@ const tenantGate = new CustomTenantGate();
 const dwn = await Dwn.create({ messageStore, dataStore, eventLog, tenantGate });
 ```
 
+### Custom Signature Signer
+Instead of using `PrivateKeySigner` to perform messger signing when you have the private key readily available, you can implement a customer signer to interface with external signing service, API, HSM, TPM etc and use it for signing your DWN messages:
+
+```ts
+// create a custom signer
+class CustomSigner implements Signer {
+  public async sign (content: Uint8Array): Promise<Uint8Array> {
+    ... // custom signing logic
+  }
+}
+
+const signer = new CustomSigner();
+
+const options: RecordsWriteOptions = {
+  ...
+  authorizationSignatureInput : {
+    signer,
+    protectedHeader: { alg: 'EdDSA', kid: 'did:example:alice#key1' } // see https://www.iana.org/assignments/jose/jose.xhtml for valid signature `alg` values
+  }
+};
+
+const recordsWrite = await RecordsWrite.create(options);
+```
+
+
 ## Release/Build Process
 
 The DWN JS SDK releases builds to [npmjs.com](https://www.npmjs.com/package/@tbd54566975/dwn-sdk-js). There are two build types: stable build and unstable build.

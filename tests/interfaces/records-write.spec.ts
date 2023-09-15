@@ -1,5 +1,6 @@
 import type { MessageStore } from '../../src/types/message-store.js';
 import type { RecordsWriteMessage } from '../../src/types/records-types.js';
+import type { Signer } from '../../src/index.js';
 import type { EncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -10,7 +11,7 @@ import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { Jws, KeyDerivationScheme } from '../../src/index.js';
+import { Encoder, Jws, KeyDerivationScheme } from '../../src/index.js';
 
 
 chai.use(chaiAsPromised);
@@ -193,6 +194,36 @@ describe('RecordsWrite', () => {
       const createPromise = RecordsWrite.create(options);
 
       await expect(createPromise).to.be.rejectedWith('`contextId` must also be given when `parentId` is specified');
+    });
+
+    it('should be able to create a RecordsWrite successfully using a custom signer', async () => {
+      // create a custom signer
+      const hardCodedSignature = Encoder.stringToBytes('some_hard_coded_signature');
+      class CustomSigner implements Signer {
+        public async sign (_content: Uint8Array): Promise<Uint8Array> {
+          return hardCodedSignature;
+        }
+      }
+
+      const signer = new CustomSigner();
+
+      const options: RecordsWriteOptions = {
+        schema                      : 'http://any-schema.com',
+        protocol                    : 'http://example.com',
+        protocolPath                : 'foo/bar',
+        dataCid                     : await TestDataGenerator.randomCborSha256Cid(),
+        dataSize                    : 123,
+        dataFormat                  : 'application/json',
+        recordId                    : await TestDataGenerator.randomCborSha256Cid(),
+        authorizationSignatureInput : {
+          signer,
+          protectedHeader: { alg: 'unused', kid: 'did:example:alice#key1' }
+        }
+      };
+
+      const recordsWrite = await RecordsWrite.create(options);
+
+      expect(recordsWrite.message.authorization!.signatures[0].signature).to.equal(Encoder.bytesToBase64Url(hardCodedSignature));
     });
 
     it('should throw if attempting to use `protocols` key derivation encryption scheme on non-protocol-based record', async () => {

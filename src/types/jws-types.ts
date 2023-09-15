@@ -29,9 +29,22 @@ export type SignatureEntry = {
 };
 
 export type JwsHeaderParameters = {
-  /** JWS "alg" (Algorithm) Header Parameter. */
+  /**
+   * JWS "alg" (Algorithm) Header Parameter.
+   *
+   * This parameter is not used by the DWN but is unfortunately a required header property for a JWS as per:
+   * https://datatracker.ietf.org/doc/html/rfc7515#section-4.1.1
+   *
+   * Valid signature algorithm values can be found at https://www.iana.org/assignments/jose/jose.xhtml
+   */
   alg: string
-  /** JWS "kid" (Key ID) Parameter. */
+
+  /**
+   * JWS "kid" (Key ID) Parameter.
+   *
+   * This property is not a required property per JWS specification, but is required for DWN authentication.
+   * This needs to be a fully-qualified ID (ie. prefixed with DID) so that author can be parsed out for processing such as `recordId` computation.
+   */
   kid: string
 };
 
