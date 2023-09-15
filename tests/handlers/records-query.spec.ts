@@ -9,11 +9,11 @@ import chai, { expect } from 'chai';
 import { ArrayUtility } from '../../src/utils/array.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { DwnConstant } from '../../src/core/dwn-constant.js';
-import { DwnErrorCode } from '../../src/index.js';
 import { Encoder } from '../../src/utils/encoder.js';
 import { Jws } from '../../src/utils/jws.js';
 import { Message } from '../../src/core/message.js';
 import { RecordsQueryHandler } from '../../src/handlers/records-query.js';
+import { SortOrder } from '../../src/types/message-types.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
@@ -22,6 +22,7 @@ import { toTemporalInstant } from '@js-temporal/polyfill';
 import { constructRecordsWriteIndexes, RecordsWriteHandler } from '../../src/handlers/records-write.js';
 import { DateSort, RecordsQuery } from '../../src/interfaces/records-query.js';
 import { DidResolver, Dwn } from '../../src/index.js';
+import { DwnErrorCode, MessageStoreLevel } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -539,6 +540,92 @@ export function testRecordsQueryHandler(): void {
         expect(messages.every(({ message }) => results.map(e => (e as RecordsWriteMessage).recordId).includes(message.recordId)));
       });
 
+      it('should return paginationMessageCid based on combined results', async () => {
+        // write 4 records into Alice's DB:
+        // 1st is unpublished authored by Alice
+        // 2nd is also unpublished authored by Alice, but is meant for (has recipient as) Bob
+        // 3rd is also unpublished but is authored by Bob
+        // 4th is published
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+        const schema = 'schema1';
+        const record1Data = await TestDataGenerator.generateRecordsWrite(
+          { author: alice, schema, data: Encoder.stringToBytes('1') }
+        );
+        const record2Data = await TestDataGenerator.generateRecordsWrite(
+          { author: alice, schema, protocol: 'protocol', protocolPath: 'path', recipient: bob.did, data: Encoder.stringToBytes('2') }
+        );
+        const record3Data = await TestDataGenerator.generateRecordsWrite(
+          { author: bob, schema, protocol: 'protocol', protocolPath: 'path', recipient: alice.did, data: Encoder.stringToBytes('3') }
+        );
+        const record4Data = await TestDataGenerator.generateRecordsWrite(
+          { author: alice, schema, data: Encoder.stringToBytes('4'), published: true }
+        );
+
+        // directly inserting data to datastore so that we don't have to setup to grant Bob permission to write to Alice's DWN
+        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
+
+        const additionalIndexes1 = await constructRecordsWriteIndexes(record1Data.recordsWrite, true);
+        record1Data.message = await recordsWriteHandler.processEncodedData(record1Data.message, record1Data.dataStream);
+        await messageStore.put(alice.did, record1Data.message, additionalIndexes1);
+        await eventLog.append(alice.did, await Message.getCid(record1Data.message));
+
+        const additionalIndexes2 = await constructRecordsWriteIndexes(record2Data.recordsWrite, true);
+        record2Data.message = await recordsWriteHandler.processEncodedData(record2Data.message, record2Data.dataStream);
+        await messageStore.put(alice.did, record2Data.message, additionalIndexes2);
+        await eventLog.append(alice.did, await Message.getCid(record2Data.message));
+
+        const additionalIndexes3 = await constructRecordsWriteIndexes(record3Data.recordsWrite, true);
+        record3Data.message = await recordsWriteHandler.processEncodedData(record3Data.message, record3Data.dataStream);
+        await messageStore.put(alice.did, record3Data.message, additionalIndexes3);
+        await eventLog.append(alice.did, await Message.getCid(record3Data.message));
+
+        const additionalIndexes4 = await constructRecordsWriteIndexes(record4Data.recordsWrite, true);
+        record4Data.message = await recordsWriteHandler.processEncodedData(record4Data.message, record4Data.dataStream);
+        await messageStore.put(alice.did, record4Data.message, additionalIndexes4);
+        await eventLog.append(alice.did, await Message.getCid(record4Data.message));
+
+        // first page
+        const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({
+          author     : bob,
+          filter     : { schema },
+          pagination : { limit: 2 }
+        });
+
+        const replyToBob = await dwn.processMessage(alice.did, bobQueryMessageData.message) as RecordsQueryReply;
+        expect(replyToBob.status.code).to.equal(200);
+        expect(replyToBob.entries?.length).to.equal(2); // expect 2 records (full page)
+
+        const bobQueryMessageDataPage2 = await TestDataGenerator.generateRecordsQuery({
+          author     : bob,
+          filter     : { schema },
+          pagination : { limit: 2, messageCid: replyToBob.paginationMessageCid }
+        });
+
+        const replyToBobPage2 = await dwn.processMessage(alice.did, bobQueryMessageDataPage2.message);
+        expect(replyToBobPage2.status.code).to.equal(200);
+        expect(replyToBobPage2.entries?.length).to.equal(1); // remaining 1;
+
+        const combinedRecords = [...replyToBob.entries!, ...replyToBobPage2.entries!];
+        const privateRecordsForBob = combinedRecords.filter(message => message.encodedData === Encoder.stringToBase64Url('2'))!;
+        const privateRecordsFromBob = combinedRecords.filter(message => message.encodedData === Encoder.stringToBase64Url('3'))!;
+        const publicRecords = combinedRecords.filter(message => message.encodedData === Encoder.stringToBase64Url('4'))!;
+        expect(privateRecordsForBob.length).to.equal(1);
+        expect(privateRecordsFromBob.length).to.equal(1);
+        expect(publicRecords.length).to.equal(1);
+
+        // test correctness for Alice's query
+        const aliceQueryMessageData = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : { schema }
+        });
+
+        const replyToAliceQuery = await dwn.processMessage(alice.did, aliceQueryMessageData.message);
+
+        expect(replyToAliceQuery.status.code).to.equal(200);
+        expect(replyToAliceQuery.entries?.length).to.equal(4); // expect all 4 records
+      });
+
       it('paginationMessageCid should match the messageCid of the last entry in the returned query', async () => {
         const alice = await DidKeyResolver.generate();
 
@@ -676,6 +763,148 @@ export function testRecordsQueryHandler(): void {
 
         expect(replyToAliceQuery.status.code).to.equal(200);
         expect(replyToAliceQuery.entries?.length).to.equal(4); // expect all 4 records
+      });
+
+      it('should paginate correctly for fetchRecordsAsNonOwner()', async () => {
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+        const schema = 'schema1';
+
+        // published messages bob
+        const bobPublishedPromise = Array(5).fill({}).map(_ => TestDataGenerator.generateRecordsWrite({
+          author: bob, schema, data: TestDataGenerator.randomBytes(10), published: true,
+        }));
+
+        // published messages alice
+        const alicePublishedPromise = Array(5).fill({}).map(_ => TestDataGenerator.generateRecordsWrite({
+          author: alice, schema, data: TestDataGenerator.randomBytes(10), published: true,
+        }));
+
+        // alice non public messages
+        const aliceMessagesPromise = Array(5).fill({}).map(_ => TestDataGenerator.generateRecordsWrite({
+          author: alice, schema, data: TestDataGenerator.randomBytes(10)
+        }));
+
+        // bob non public messages
+        const bobMessagesPromise = Array(5).fill({}).map(_ => TestDataGenerator.generateRecordsWrite({
+          author: bob, schema, data: TestDataGenerator.randomBytes(10)
+        }));
+
+        // non public messages intended for bob
+        const aliceMessagesForBobPromise = Array(5).fill({}).map(_ => TestDataGenerator.generateRecordsWrite({
+          author: alice, schema, data: TestDataGenerator.randomBytes(10), recipient: bob.did,
+        }));
+
+        const messagePromises = [
+          ...bobPublishedPromise,
+          ...aliceMessagesPromise,
+          ...bobMessagesPromise,
+          ...alicePublishedPromise,
+          ...aliceMessagesForBobPromise,
+        ];
+
+        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
+
+        const messages: GenericMessage[] = [];
+        for await (const { recordsWrite, message, dataStream } of messagePromises) {
+          const indexes = await constructRecordsWriteIndexes(recordsWrite, true);
+          const processedMessage = await recordsWriteHandler.processEncodedData(message, dataStream);
+          await messageStore.put(alice.did, processedMessage, indexes);
+          await eventLog.append(alice.did, await Message.getCid(processedMessage));
+          messages.push(processedMessage);
+        }
+
+        // page1 alice
+        const aliceQueryMessageDataPage1 = await TestDataGenerator.generateRecordsQuery({
+          author     : alice,
+          filter     : { schema },
+          dateSort   : DateSort.CreatedAscending,
+          pagination : { limit: 10 },
+        });
+
+        const sortedMessages = await MessageStoreLevel.sortMessages(messages, { dateCreated: SortOrder.Ascending });
+        let results = await dwn.processMessage(alice.did, aliceQueryMessageDataPage1.message) as RecordsQueryReply;
+        expect(results.status.code).to.equal(200);
+        expect(results.entries?.length).to.equal(10, 'alice page 1');
+        const page1PaginationLastMessage = await Message.getCid(sortedMessages.at(9)!); // get messageCid from message with authorization.
+        expect(results.paginationMessageCid).to.equal(page1PaginationLastMessage, 'alice page 1');
+
+        // page2 alice
+        const aliceQueryMessageDataPage2 = await TestDataGenerator.generateRecordsQuery({
+          author     : alice,
+          filter     : { schema },
+          dateSort   : DateSort.CreatedAscending,
+          pagination : { limit: 10, messageCid: results.paginationMessageCid },
+        });
+        results = await dwn.processMessage(alice.did, aliceQueryMessageDataPage2.message) as RecordsQueryReply;
+        expect(results.status.code).to.equal(200);
+        expect(results.entries?.length).to.equal(10, 'alice page 2');
+        const page2PaginationLastMessage = await Message.getCid(sortedMessages.at(19)!); // get messageCid from message with authorization.
+        expect(results.paginationMessageCid).to.equal(page2PaginationLastMessage, 'alice page 2');
+
+        // page3 alice
+        const aliceQueryMessageDataPage3 = await TestDataGenerator.generateRecordsQuery({
+          author     : alice,
+          filter     : { schema },
+          dateSort   : DateSort.CreatedAscending,
+          pagination : { limit: 10, messageCid: results.paginationMessageCid },
+        });
+        results = await dwn.processMessage(alice.did, aliceQueryMessageDataPage3.message) as RecordsQueryReply;
+        expect(results.status.code).to.equal(200);
+        expect(results.entries?.length).to.equal(5, 'alice page 2');
+        const page3PaginationLastMessage = await Message.getCid(sortedMessages.at(24)!); // get messageCid from message with authorization.
+        expect(results.paginationMessageCid).to.equal(page3PaginationLastMessage, 'alice page 3');
+
+        const bobs = (m: RecordsWriteMessage): boolean => {
+          return m.descriptor.recipient === bob.did || m.descriptor.published === true || Message.getAuthor(m) === bob.did;
+        };
+
+        const bobSorted = sortedMessages.filter(m => bobs(m as RecordsWriteMessage));
+        const bobRetrieved: GenericMessage[] = [];
+
+        // all records from alice have been validated
+        const bobQueryMessagePage1 = await TestDataGenerator.generateRecordsQuery({
+          author     : bob,
+          filter     : { schema },
+          dateSort   : DateSort.CreatedAscending,
+          pagination : { limit: 10 },
+        });
+        results = await dwn.processMessage(alice.did, bobQueryMessagePage1.message) as RecordsQueryReply;
+        expect(results.status.code).to.equal(200);
+        expect(results.entries?.length).to.equal(10, 'bob page 1');
+        const page1BobPaginationLastMessage = await Message.getCid(bobSorted.at(9)!);
+        expect(results.paginationMessageCid).to.equal(page1BobPaginationLastMessage, 'bob page 1');
+        bobRetrieved.push(...results.entries!);
+
+        const bobQueryMessagePage2 = await TestDataGenerator.generateRecordsQuery({
+          author     : bob,
+          filter     : { schema },
+          dateSort   : DateSort.CreatedAscending,
+          pagination : { limit: 10, messageCid: results.paginationMessageCid },
+        });
+        results = await dwn.processMessage(alice.did, bobQueryMessagePage2.message) as RecordsQueryReply;
+        expect(results.status.code).to.equal(200);
+        expect(results.entries?.length).to.equal(10, 'bob page 2');
+        const page2BobPaginationLastMessage = await Message.getCid(bobSorted.at(19)!);
+        expect(results.paginationMessageCid).to.equal(page2BobPaginationLastMessage, 'bob page 2');
+        bobRetrieved.push(...results.entries!);
+
+        const bobQueryMessagePage3 = await TestDataGenerator.generateRecordsQuery({
+          author     : bob,
+          filter     : { schema },
+          dateSort   : DateSort.CreatedAscending,
+          pagination : { limit: 10, messageCid: results.paginationMessageCid },
+        });
+        results = await dwn.processMessage(alice.did, bobQueryMessagePage3.message) as RecordsQueryReply;
+        expect(results.status.code).to.equal(200);
+        expect(results.entries?.length).to.equal(0, 'bob page 3');
+        expect(results.paginationMessageCid).to.not.exist;
+
+        const compareRecordId = (a: GenericMessage, b:GenericMessage): boolean => {
+          return (a as RecordsWriteMessage).recordId === (b as RecordsWriteMessage).recordId;
+        };
+
+        expect(bobSorted.every((m, i) => compareRecordId(bobRetrieved.at(i)!, m)));
       });
 
       // https://github.com/TBD54566975/dwn-sdk-js/issues/170

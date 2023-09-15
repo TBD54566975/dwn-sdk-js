@@ -49,7 +49,7 @@ export class ProtocolsQueryHandler implements MethodHandler {
     };
     removeUndefinedProperties(query);
 
-    const entries = await this.messageStore.query(tenant, query) as ProtocolsConfigureMessage[];
+    const { messages: entries } = await this.messageStore.query(tenant, [ query ]);
 
     return {
       status: { code: 200, detail: 'OK' },
@@ -68,7 +68,7 @@ export class ProtocolsQueryHandler implements MethodHandler {
       method    : DwnMethodName.Configure,
       published : true
     };
-    const publishedProtocolsConfigure = await this.messageStore.query(tenant, filter);
+    const { messages: publishedProtocolsConfigure } = await this.messageStore.query(tenant, [ filter ]);
     return publishedProtocolsConfigure as ProtocolsConfigureMessage[];
   }
 }

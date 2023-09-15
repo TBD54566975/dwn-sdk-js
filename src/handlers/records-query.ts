@@ -1,7 +1,7 @@
-import type { MessageSort } from '../types/message-types.js';
-import type { MethodHandler } from '..//types/method-handler.js';
+import type { MethodHandler } from '../types/method-handler.js';
 import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
+import type { Filter, GenericMessage, MessageSort } from '../types/message-types.js';
 import type { RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
@@ -10,7 +10,7 @@ import { Records } from '../utils/records.js';
 
 import { SortOrder } from '../types/message-types.js';
 import { DateSort, RecordsQuery } from '../interfaces/records-query.js';
-import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export class RecordsQueryHandler implements MethodHandler {
 
@@ -28,10 +28,12 @@ export class RecordsQueryHandler implements MethodHandler {
     }
 
     let recordsWrites: RecordsWriteMessageWithOptionalEncodedData[];
-
+    let paginationMessageCid: string|undefined;
     // if this is an anonymous query, query only published records
     if (recordsQuery.author === undefined) {
-      recordsWrites = await this.fetchPublishedRecords(tenant, recordsQuery);
+      const results = await this.fetchPublishedRecords(tenant, recordsQuery);
+      recordsWrites = results.messages as RecordsWriteMessageWithOptionalEncodedData[];
+      paginationMessageCid = results.paginationMessageCid;
     } else {
       // authentication
       try {
@@ -41,16 +43,14 @@ export class RecordsQueryHandler implements MethodHandler {
       }
 
       if (recordsQuery.author === tenant) {
-        recordsWrites = await this.fetchRecordsAsOwner(tenant, recordsQuery);
+        const results = await this.fetchRecordsAsOwner(tenant, recordsQuery);
+        recordsWrites = results.messages as RecordsWriteMessageWithOptionalEncodedData[];
+        paginationMessageCid = results.paginationMessageCid;
       } else {
-        recordsWrites = await this.fetchRecordsAsNonOwner(tenant, recordsQuery);
+        const results = await this.fetchRecordsAsNonOwner(tenant, recordsQuery);
+        recordsWrites = results.messages as RecordsWriteMessageWithOptionalEncodedData[];
+        paginationMessageCid = results.paginationMessageCid;
       }
-    }
-
-    let paginationMessageCid: string|undefined;
-    const lastRecord = recordsWrites.at(-1);
-    if (lastRecord) {
-      paginationMessageCid = await Message.getCid(lastRecord);
     }
 
     const entries = RecordsQueryHandler.removeAuthorization(recordsWrites);
@@ -100,7 +100,10 @@ export class RecordsQueryHandler implements MethodHandler {
   /**
    * Fetches the records as the owner of the DWN with no additional filtering.
    */
-  private async fetchRecordsAsOwner(tenant: string, recordsQuery: RecordsQuery): Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
+  private async fetchRecordsAsOwner(
+    tenant: string,
+    recordsQuery: RecordsQuery
+  ): Promise<{ messages: GenericMessage[], paginationMessageCid?: string }> {
     const { dateSort, filter, pagination } = recordsQuery.message.descriptor;
 
     // fetch all published records matching the query
@@ -112,8 +115,7 @@ export class RecordsQueryHandler implements MethodHandler {
     };
 
     const messageSort = this.convertDateSort(dateSort);
-    const records = (await this.messageStore.query(tenant, queryFilter, messageSort, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
-    return records;
+    return this.messageStore.query(tenant, [ queryFilter ], messageSort, pagination);
   }
 
   /**
@@ -121,98 +123,71 @@ export class RecordsQueryHandler implements MethodHandler {
    * 1. published records; and
    * 2. unpublished records intended for the query author (where `recipient` is the query author)
    */
-  private async fetchRecordsAsNonOwner(tenant: string, recordsQuery: RecordsQuery)
-    : Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
-    const publishedRecords = await this.fetchPublishedRecords(tenant, recordsQuery);
-    const unpublishedRecordsByAuthor = await this.fetchUnpublishedRecordsByAuthor(tenant, recordsQuery);
+  private async fetchRecordsAsNonOwner(
+    tenant: string, recordsQuery: RecordsQuery
+  ): Promise<{ messages: GenericMessage[], paginationMessageCid?: string }> {
+    const { dateSort, pagination } = recordsQuery.message.descriptor;
 
-    // the `RecordsQuery` author in addition is allowed to get private records that were meant for them
-    let unpublishedRecordsForQueryAuthor: RecordsWriteMessageWithOptionalEncodedData[] = [];
-    const recipientFilter = recordsQuery.message.descriptor.filter.recipient;
-    if (recipientFilter === undefined || recipientFilter === recordsQuery.author) {
-      unpublishedRecordsForQueryAuthor = await this.fetchUnpublishedRecordsForQueryAuthor(tenant, recordsQuery);
-    }
+    const filters = [
+      this.publishedRecordsFilter(recordsQuery),
+      this.unpublishedRecordsByAuthorFilter(recordsQuery),
+      this.unpublishedRecordsForQueryAuthorFilter(recordsQuery)
+    ];
 
-    const records = [...publishedRecords, ...unpublishedRecordsByAuthor, ...unpublishedRecordsForQueryAuthor];
-
-    // go through the records and remove duplicates
-    // this can happen between `unpublishedRecordsByAuthor` and `unpublishedRecordsForQueryAuthor` when `author` = `recipient`
-    const deduplicatedRecords = new Map<string, RecordsWriteMessageWithOptionalEncodedData>();
-    for (const record of records) {
-      if (!deduplicatedRecords.has(record.recordId)) {
-        deduplicatedRecords.set(record.recordId, record);
-      }
-    }
-
-    return Array.from(deduplicatedRecords.values());
+    const messageSort = this.convertDateSort(dateSort);
+    return this.messageStore.query(tenant, filters, messageSort, pagination );
   }
 
   /**
    * Fetches only published records.
    */
-  private async fetchPublishedRecords(tenant: string, recordsQuery: RecordsQuery): Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
-    const { dateSort, filter, pagination } = recordsQuery.message.descriptor;
+  private async fetchPublishedRecords(
+    tenant: string, recordsQuery: RecordsQuery
+  ): Promise<{ messages: GenericMessage[], paginationMessageCid?: string }> {
+    const { dateSort, pagination } = recordsQuery.message.descriptor;
+    const filter = this.publishedRecordsFilter(recordsQuery);
+    const messageSort = this.convertDateSort(dateSort);
+    return this.messageStore.query(tenant, [ filter ], messageSort, pagination);
+  }
 
+  private publishedRecordsFilter(recordsQuery: RecordsQuery): Filter {
     // fetch all published records matching the query
-    const queryFilter = {
-      ...Records.convertFilter(filter),
+    return {
+      ...Records.convertFilter(recordsQuery.message.descriptor.filter),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       published         : true,
       isLatestBaseState : true
     };
-
-    const messageSort = this.convertDateSort(dateSort);
-    const publishedRecords =
-      (await this.messageStore.query(tenant, queryFilter, messageSort, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
-    return publishedRecords;
   }
 
   /**
-   * Fetches unpublished records that are intended for the query author (where `recipient` is the author).
+   * Creates a filter for unpublished records that are intended for the query author (where `recipient` is the author).
    */
-  private async fetchUnpublishedRecordsForQueryAuthor(tenant: string, recordsQuery: RecordsQuery)
-    : Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
-
-    const { dateSort, filter, pagination } = recordsQuery.message.descriptor;
-
+  private unpublishedRecordsForQueryAuthorFilter(recordsQuery: RecordsQuery): Filter {
     // include records where recipient is query author
-    const queryFilter = {
-      ...Records.convertFilter(filter),
+    return {
+      ...Records.convertFilter(recordsQuery.message.descriptor.filter),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       recipient         : recordsQuery.author!,
       isLatestBaseState : true,
       published         : false
     };
-
-    const messageSort = this.convertDateSort(dateSort);
-    const unpublishedRecordsForQueryAuthor =
-      (await this.messageStore.query(tenant, queryFilter, messageSort, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
-    return unpublishedRecordsForQueryAuthor;
   }
 
   /**
-   * Fetches only unpublished records where the author is the same as the query author.
+   * Creates a filter for only unpublished records where the author is the same as the query author.
    */
-  private async fetchUnpublishedRecordsByAuthor(tenant: string, recordsQuery: RecordsQuery)
-    : Promise<RecordsWriteMessageWithOptionalEncodedData[]> {
-
-    const { dateSort, filter, pagination } = recordsQuery.message.descriptor;
-
+  private unpublishedRecordsByAuthorFilter(recordsQuery: RecordsQuery): Filter {
     // include records where author is the same as the query author
-    const queryFilter = {
-      ...Records.convertFilter(filter),
+    return {
+      ...Records.convertFilter(recordsQuery.message.descriptor.filter),
       author            : recordsQuery.author!,
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       isLatestBaseState : true,
       published         : false
     };
-
-    const messageSort = this.convertDateSort(dateSort);
-    const unpublishedRecordsForQueryAuthor =
-      (await this.messageStore.query(tenant, queryFilter, messageSort, pagination)) as RecordsWriteMessageWithOptionalEncodedData[];
-    return unpublishedRecordsForQueryAuthor;
   }
 }

@@ -34,14 +34,15 @@ export interface MessageStore {
 
   /**
    * Queries the underlying store for messages that match the provided filter.
+   * Supplying multiple Filters creates an OR condition.
    */
   query(
     tenant: string,
-    filter: Filter,
+    filters: Filter[],
     messageSort?: MessageSort,
     pagination?: Pagination,
     options?: MessageStoreOptions
-  ): Promise<GenericMessage[]>;
+  ): Promise<{ messages: GenericMessage[], paginationMessageCid?: string }>;
 
   /**
    * Deletes the message associated with the id provided.

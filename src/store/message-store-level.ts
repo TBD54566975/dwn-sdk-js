@@ -84,53 +84,59 @@ export class MessageStoreLevel implements MessageStore {
 
   async query(
     tenant: string,
-    filter: Filter,
+    filters: Filter[],
     messageSort?: MessageSort,
     pagination?: Pagination,
     options?: MessageStoreOptions
-  ): Promise<GenericMessage[]> {
+  ): Promise<{ messages: GenericMessage[], paginationMessageCid?: string }> {
     options?.signal?.throwIfAborted();
 
     const messages: GenericMessage[] = [];
+    const resultIds = await this.index.query(filters.map(f => ({ ...f, tenant })), options);
 
-    const resultIds = await this.index.query({ ...filter, tenant }, options);
-
+    // as an optimization for large data sets, we are finding the message object which matches the paginationMessageCid here.
+    // we can use this within the pagination function after sorting to determine the starting point of the array in a more efficient way.
+    let paginationMessage: GenericMessage | undefined;
     for (const id of resultIds) {
       const message = await this.get(tenant, id, options);
       if (message) { messages.push(message); }
+      if (pagination?.messageCid && pagination.messageCid === id) {
+        paginationMessage = message;
+      }
     }
 
-    const sortedRecords = await this.sortMessages(messages, messageSort);
-    return this.paginateRecords(sortedRecords, pagination);
+    if (pagination?.messageCid !== undefined && paginationMessage === undefined) {
+      return { messages: [] }; //if paginationMessage is not found, do not return any results
+    }
+
+    const sortedRecords = await MessageStoreLevel.sortMessages(messages, messageSort);
+    return this.paginateRecords(sortedRecords, paginationMessage, pagination);
   }
 
   private async paginateRecords(
     messages: GenericMessage[],
+    paginationMessage?: GenericMessage,
     pagination: Pagination = { }
-  ): Promise<GenericMessage[]> {
-    const { messageCid, limit } = pagination;
-    if (messageCid === undefined && limit !== undefined) {
-      return messages.slice(0, limit);
-    } else if (messageCid === undefined) {
-      return messages; // return all
+  ): Promise<{ messages: GenericMessage[], paginationMessageCid?: string } > {
+    const { limit } = pagination;
+    if (paginationMessage === undefined && limit === undefined) {
+      return { messages }; // return all without pagination pointer.
     }
 
-    // linearly searches through the message to locate the message index that contains the message with the given pagination message CID,
-    // then construct a page of messages starting from the next message
-    // NOTE: there is a potential improvement here: since the messages are sorted,
-    // if we fetch the message of the pagination message CID to obtain the value of the sorted property,
-    // we could logarithmically go through the messages, reducing the number of times message CID computation is incurred;
-    // however this optimization will only be beneficial in practice if the message count is large.
-    for (let i = 0; i < messages.length; i++) {
-      const testId = await Message.getCid(messages[i]);
-      if (testId === messageCid && i + 1 < messages.length) {
-        const start = i + 1;
-        const end = limit === undefined ? undefined : limit + start;
-        return messages.slice(start, end);
-      }
-    }
+    // this is an optimization hack, we are passing the pagination message object for an easier lookup
+    // since we know this object exists within the the array if passed, we can assume that it will always have a value greater than -1
+    // if no pagination message is passed, we start from the beginning of the array, so we set the "cursor" to -1
+    const cursorIndex = paginationMessage ? messages.indexOf(paginationMessage) : -1;
 
-    return [];
+    // the first element of the returned results is always the message immediately following the cursor.
+    const start = cursorIndex > 0 ? cursorIndex + 1 : 0;
+    const end = limit === undefined ? undefined : limit + start;
+    const results = messages.slice(start, end);
+
+    // we extract the cid of the last message in the result set.
+    const lastMessage = results.at(-1);
+    const paginationMessageCid = lastMessage ? await Message.getCid(lastMessage) : undefined;
+    return { messages: results, paginationMessageCid };
   }
 
   /**
@@ -176,7 +182,7 @@ export class MessageStoreLevel implements MessageStore {
    * @param sort - Sorting scheme
    * @returns Sorted Messages
    */
-  private async sortMessages(
+  public static async sortMessages(
     messages: GenericMessage[],
     messageSort: MessageSort = { }
   ): Promise<GenericMessage[]> {

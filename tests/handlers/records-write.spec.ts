@@ -2808,7 +2808,7 @@ export function testRecordsWriteHandler(): void {
       const didResolverStub = TestStubGenerator.createDidResolverStub(author);
 
       const messageStoreStub = stubInterface<MessageStore>();
-      messageStoreStub.query.resolves([]);
+      messageStoreStub.query.resolves({ messages: [] });
 
       const dataStoreStub = stubInterface<DataStore>();
 
