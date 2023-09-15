@@ -6,10 +6,10 @@ import { GeneralJwsSigner } from '../../../src/jose/jws/general/signer.js';
 import { GeneralJwsVerifier } from '../../../src/jose/jws/general/verifier.js';
 import { Jws } from '../../../src/utils/jws.js';
 import { PrivateKeySigner } from '../../../src/index.js';
-import { signers } from '../../../src/jose/algorithms/signing/signers.js';
+import { signatureAlgorithms } from '../../../src/jose/algorithms/signing/signature-algorithms.js';
 import sinon from 'sinon';
 
-const { Ed25519, secp256k1 } = signers;
+const { Ed25519, secp256k1 } = signatureAlgorithms;
 
 chai.use(chaiAsPromised);
 

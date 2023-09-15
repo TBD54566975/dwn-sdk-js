@@ -42,7 +42,7 @@ export type PrivateJwk = PublicJwk & {
   d: string;
 };
 
-export interface Signer {
+export interface SignatureAlgorithm {
   /**
    * signs the provided payload using the provided JWK
    * @param content - the content to sign

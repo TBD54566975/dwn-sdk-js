@@ -1,8 +1,8 @@
 import { expect } from 'chai';
-import { signers } from '../../../src/jose/algorithms/signing/signers.js';
+import { signatureAlgorithms } from '../../../src/jose/algorithms/signing/signature-algorithms.js';
 import { validateJsonSchema } from '../../../src/schema-validator.js';
 
-const { secp256k1 } = signers;
+const { secp256k1 } = signatureAlgorithms;
 
 describe('JwkVerificationMethod', async () => {
   // NOTE: @noble/secp256k1 requires globalThis.crypto polyfill for

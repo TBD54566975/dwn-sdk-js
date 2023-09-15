@@ -5,7 +5,7 @@ import { Encoder } from '../../../utils/encoder.js';
 export class GeneralJwsSigner {
   private jws: GeneralJws;
 
-  constructor(jws: GeneralJws) {
+  private constructor(jws: GeneralJws) {
     this.jws = jws;
   }
 

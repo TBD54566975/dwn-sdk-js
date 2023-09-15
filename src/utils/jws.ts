@@ -6,7 +6,7 @@ import isPlainObject from 'lodash/isPlainObject.js';
 
 import { Encoder } from './encoder.js';
 import { PrivateKeySigner } from './private-key-signer.js';
-import { signers as verifiers } from '../jose/algorithms/signing/signers.js';
+import { signatureAlgorithms } from '../jose/algorithms/signing/signature-algorithms.js';
 
 
 /**
@@ -35,16 +35,16 @@ export class Jws {
    * @returns `true` if signature is valid; `false` otherwise
    */
   public static async verifySignature(base64UrlPayload: string, signatureEntry: SignatureEntry, jwkPublic: PublicJwk): Promise<boolean> {
-    const verifier = verifiers[jwkPublic.crv];
+    const signatureAlgorithm = signatureAlgorithms[jwkPublic.crv];
 
-    if (!verifier) {
-      throw new Error(`unsupported crv. crv must be one of ${Object.keys(verifiers)}`);
+    if (!signatureAlgorithm) {
+      throw new Error(`unsupported crv. crv must be one of ${Object.keys(signatureAlgorithms)}`);
     }
 
     const payload = Encoder.stringToBytes(`${signatureEntry.protected}.${base64UrlPayload}`);
     const signatureBytes = Encoder.base64UrlToBytes(signatureEntry.signature);
 
-    return await verifier.verify(payload, signatureBytes, jwkPublic);
+    return await signatureAlgorithm.verify(payload, signatureBytes, jwkPublic);
   }
 
   /**

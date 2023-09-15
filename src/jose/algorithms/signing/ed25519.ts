@@ -1,5 +1,5 @@
 import * as Ed25519 from '@noble/ed25519';
-import type { PrivateJwk, PublicJwk, Signer } from '../../../types/jose-types.js';
+import type { PrivateJwk, PublicJwk, SignatureAlgorithm } from '../../../types/jose-types.js';
 
 import { Encoder } from '../../../utils/encoder.js';
 
@@ -22,7 +22,7 @@ function publicKeyToJwk(publicKeyBytes: Uint8Array): PublicJwk {
   return publicJwk;
 }
 
-export const ed25519: Signer = {
+export const ed25519: SignatureAlgorithm = {
   sign: async (content: Uint8Array, privateJwk: PrivateJwk): Promise<Uint8Array> => {
     validateKey(privateJwk);
 
