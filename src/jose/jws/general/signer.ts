@@ -1,7 +1,6 @@
 import type { GeneralJws, SignatureInput } from '../../../types/jws-types.js';
 
 import { Encoder } from '../../../utils/encoder.js';
-import { PrivateKeySigner } from '../../../utils/private-key-signer.js';
 
 export class GeneralJwsSigner {
   private jws: GeneralJws;
@@ -26,8 +25,7 @@ export class GeneralJwsSigner {
   }
 
   async addSignature(signatureInput: SignatureInput): Promise<void> {
-    const { privateJwk, protectedHeader } = signatureInput;
-    const signer = new PrivateKeySigner(privateJwk);
+    const { signer, protectedHeader } = signatureInput;
 
     const protectedHeaderString = JSON.stringify(protectedHeader);
     const protectedHeaderBase64UrlString = Encoder.stringToBase64Url(protectedHeaderString);

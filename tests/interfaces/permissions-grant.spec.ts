@@ -9,7 +9,7 @@ import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { DidKeyResolver, DwnErrorCode } from '../../src/index.js';
+import { DidKeyResolver, DwnErrorCode, PrivateKeySigner } from '../../src/index.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message.js';
 
 describe('PermissionsGrant', () => {
@@ -17,8 +17,8 @@ describe('PermissionsGrant', () => {
     it('creates a PermissionsGrant message', async () => {
       const { privateJwk } = await Secp256k1.generateKeyPair();
       const authorizationSignatureInput = {
-        privateJwk,
-        protectedHeader: {
+        signer          : new PrivateKeySigner(privateJwk),
+        protectedHeader : {
           alg : privateJwk.alg as string,
           kid : 'did:jank:bob'
         }
@@ -45,8 +45,8 @@ describe('PermissionsGrant', () => {
       it('ensures that `schema` and protocol related fields `protocol`, `contextId` or `protocolPath`', async () => {
         const { privateJwk } = await Secp256k1.generateKeyPair();
         const authorizationSignatureInput = {
-          privateJwk,
-          protectedHeader: {
+          signer          : new PrivateKeySigner(privateJwk),
+          protectedHeader : {
             alg : privateJwk.alg as string,
             kid : 'did:jank:bob'
           }
@@ -94,8 +94,8 @@ describe('PermissionsGrant', () => {
       it('ensures that `contextId` and `protocolPath` are not both present', async () => {
         const { privateJwk } = await Secp256k1.generateKeyPair();
         const authorizationSignatureInput = {
-          privateJwk,
-          protectedHeader: {
+          signer          : new PrivateKeySigner(privateJwk),
+          protectedHeader : {
             alg : privateJwk.alg as string,
             kid : 'did:jank:bob'
           }
@@ -130,8 +130,8 @@ describe('PermissionsGrant', () => {
 
       const { privateJwk } = await Secp256k1.generateKeyPair();
       const authorizationSignatureInput = {
-        privateJwk,
-        protectedHeader: {
+        signer          : new PrivateKeySigner(privateJwk),
+        protectedHeader : {
           alg : privateJwk.alg as string,
           kid : alice.did
         }
@@ -158,15 +158,15 @@ describe('PermissionsGrant', () => {
       expect(permissionsGrant.message.descriptor.permissionsRequestId).to.eq(await Message.getCid(permissionsRequest.message));
     });
 
-    it('should create a PermissionsGrant from a PerimssionsRequest and overrides', async () => {
+    it('should create a PermissionsGrant from a PermissionsRequest and overrides', async () => {
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
       const carol = await DidKeyResolver.generate();
 
       const { privateJwk } = await Secp256k1.generateKeyPair();
       const authorizationSignatureInput = {
-        privateJwk,
-        protectedHeader: {
+        signer          : new PrivateKeySigner(privateJwk),
+        protectedHeader : {
           alg : privateJwk.alg as string,
           kid : alice.did
         }

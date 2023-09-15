@@ -5,6 +5,7 @@ import type { KeyMaterial, PublicJwk } from '../types/jose-types.js';
 import isPlainObject from 'lodash/isPlainObject.js';
 
 import { Encoder } from './encoder.js';
+import { PrivateKeySigner } from './private-key-signer.js';
 import { signers as verifiers } from '../jose/algorithms/signing/signers.js';
 
 
@@ -85,7 +86,7 @@ export class Jws {
    */
   public static createSignatureInput(keyMaterial: KeyMaterial): SignatureInput {
     const signatureInput = {
-      privateJwk      : keyMaterial.keyPair.privateJwk,
+      signer          : new PrivateKeySigner(keyMaterial.keyPair.privateJwk),
       protectedHeader : {
         alg : keyMaterial.keyPair.privateJwk.alg as string,
         kid : keyMaterial.keyId

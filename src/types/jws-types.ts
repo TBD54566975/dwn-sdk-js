@@ -1,4 +1,4 @@
-import type { PrivateJwk } from './jose-types.js';
+import type { Signer } from '../types/signer.js';
 /**
  * General JWS definition. Payload is returned as an empty
  * string when JWS Unencoded Payload Option
@@ -40,5 +40,10 @@ export type JwsHeaderParameters = {
  */
 export type SignatureInput = {
   protectedHeader: JwsHeaderParameters
-  privateJwk: PrivateJwk
+
+  /**
+   * Signer used to produce the signature.
+   * You can use `PrivateKeySigner` if you have the private key readily available.
+   */
+  signer: Signer
 };

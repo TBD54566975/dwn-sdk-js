@@ -5,6 +5,7 @@ import { DidResolver } from '../../../src/did/did-resolver.js';
 import { GeneralJwsSigner } from '../../../src/jose/jws/general/signer.js';
 import { GeneralJwsVerifier } from '../../../src/jose/jws/general/verifier.js';
 import { Jws } from '../../../src/utils/jws.js';
+import { PrivateKeySigner } from '../../../src/index.js';
 import { signers } from '../../../src/jose/algorithms/signing/signers.js';
 import sinon from 'sinon';
 
@@ -24,7 +25,7 @@ describe('General JWS Sign/Verify', () => {
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
     const protectedHeader = { alg: 'ES256K', kid: 'did:jank:alice#key1' };
 
-    const signer = await GeneralJwsSigner.create(payloadBytes, [{ privateJwk, protectedHeader }]);
+    const signer = await GeneralJwsSigner.create(payloadBytes, [{ signer: new PrivateKeySigner(privateJwk), protectedHeader }]);
     const jws = signer.getJws();
 
     const mockResolutionResult = {
@@ -58,7 +59,7 @@ describe('General JWS Sign/Verify', () => {
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
     const protectedHeader = { alg: 'EdDSA', kid: 'did:jank:alice#key1' };
 
-    const signer = await GeneralJwsSigner.create(payloadBytes, [{ privateJwk, protectedHeader }]);
+    const signer = await GeneralJwsSigner.create(payloadBytes, [{ signer: new PrivateKeySigner(privateJwk), protectedHeader }]);
     const jws = signer.getJws();
 
     const mockResolutionResult = {
@@ -130,8 +131,8 @@ describe('General JWS Sign/Verify', () => {
     };
 
     const signatureInputs = [
-      { privateJwk: alice.privateJwk, protectedHeader: alice.protectedHeader },
-      { privateJwk: bob.privateJwk, protectedHeader: bob.protectedHeader },
+      { signer: new PrivateKeySigner(alice.privateJwk), protectedHeader: alice.protectedHeader },
+      { signer: new PrivateKeySigner(bob.privateJwk), protectedHeader: bob.protectedHeader },
     ];
 
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
@@ -165,8 +166,8 @@ describe('General JWS Sign/Verify', () => {
     const signer = await GeneralJwsSigner.create(
       payloadBytes,
       [
-        { privateJwk: privateJwkEd25519, protectedHeader: protectedHeaderEd25519 },
-        { privateJwk: privateJwkSecp256k1, protectedHeader: protectedHeaderSecp256k1 }
+        { signer: new PrivateKeySigner(privateJwkEd25519), protectedHeader: protectedHeaderEd25519 },
+        { signer: new PrivateKeySigner(privateJwkSecp256k1), protectedHeader: protectedHeaderSecp256k1 }
       ]
     );
     const jws = signer.getJws();
