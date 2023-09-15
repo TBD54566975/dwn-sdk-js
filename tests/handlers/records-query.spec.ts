@@ -611,8 +611,12 @@ export function testRecordsQueryHandler(): void {
       // 2nd is also unpublished authored by Alice, but is meant for (has recipient as) Bob
       // 3rd is also unpublished but is authored by Bob
       // 4th is published
+      // 5th is published, authored by Alice and is meant for Carol as recipient;
+
         const alice = await DidKeyResolver.generate();
         const bob = await DidKeyResolver.generate();
+        const carol = await DidKeyResolver.generate();
+
         const schema = 'schema1';
         const record1Data = await TestDataGenerator.generateRecordsWrite(
           { author: alice, schema, data: Encoder.stringToBytes('1') }
@@ -625,6 +629,9 @@ export function testRecordsQueryHandler(): void {
         );
         const record4Data = await TestDataGenerator.generateRecordsWrite(
           { author: alice, schema, data: Encoder.stringToBytes('4'), published: true }
+        );
+        const record5Data = await TestDataGenerator.generateRecordsWrite(
+          { author: alice, schema, data: Encoder.stringToBytes('5'), published: true, recipient: carol.did }
         );
 
         // directly inserting data to datastore so that we don't have to setup to grant Bob permission to write to Alice's DWN
@@ -650,6 +657,11 @@ export function testRecordsQueryHandler(): void {
         await messageStore.put(alice.did, record4Data.message, additionalIndexes4);
         await eventLog.append(alice.did, await Message.getCid(record4Data.message));
 
+        const additionalIndexes5 = await constructRecordsWriteIndexes(record5Data.recordsWrite, true);
+        record5Data.message = await recordsWriteHandler.processEncodedData(record5Data.message, record5Data.dataStream);
+        await messageStore.put(alice.did, record5Data.message, additionalIndexes5);
+        await eventLog.append(alice.did, await Message.getCid(record5Data.message));
+
         // test correctness for Bob's query
         const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({
           author : bob,
@@ -659,14 +671,14 @@ export function testRecordsQueryHandler(): void {
         const replyToBob = await dwn.processMessage(alice.did, bobQueryMessageData.message);
 
         expect(replyToBob.status.code).to.equal(200);
-        expect(replyToBob.entries?.length).to.equal(3); // expect 3 records
+        expect(replyToBob.entries?.length).to.equal(4); // expect 4 records
 
         const privateRecordsForBob = replyToBob.entries?.filter(message => message.encodedData === Encoder.stringToBase64Url('2'))!;
         const privateRecordsFromBob = replyToBob.entries?.filter(message => message.encodedData === Encoder.stringToBase64Url('3'))!;
-        const publicRecords = replyToBob.entries?.filter(message => message.encodedData === Encoder.stringToBase64Url('4'))!;
+        const publicRecords = replyToBob.entries?.filter(message => message.encodedData === Encoder.stringToBase64Url('4') || message.encodedData === Encoder.stringToBase64Url('5'))!;
         expect(privateRecordsForBob.length).to.equal(1);
         expect(privateRecordsFromBob.length).to.equal(1);
-        expect(publicRecords.length).to.equal(1);
+        expect(publicRecords.length).to.equal(2);
 
         // test correctness for Alice's query
         const aliceQueryMessageData = await TestDataGenerator.generateRecordsQuery({
@@ -677,7 +689,17 @@ export function testRecordsQueryHandler(): void {
         const replyToAliceQuery = await dwn.processMessage(alice.did, aliceQueryMessageData.message);
 
         expect(replyToAliceQuery.status.code).to.equal(200);
-        expect(replyToAliceQuery.entries?.length).to.equal(4); // expect all 4 records
+        expect(replyToAliceQuery.entries?.length).to.equal(5); // expect all 5 records
+
+        // filter for public records with carol as recipient
+        const bobQueryCarolMessageData = await TestDataGenerator.generateRecordsQuery({
+          author : bob,
+          filter : { schema, recipient: carol.did }
+        });
+        const replyToBobCarolQuery = await dwn.processMessage(alice.did, bobQueryCarolMessageData.message);
+        expect(replyToBobCarolQuery.status.code).to.equal(200);
+        expect(replyToBobCarolQuery.entries?.length).to.equal(1);
+        expect(replyToBobCarolQuery.entries![0]!.encodedData).to.equal(Encoder.stringToBase64Url('5'));
       });
 
       it('should paginate correctly for fetchRecordsAsNonOwner()', async () => {
