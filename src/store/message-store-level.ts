@@ -123,23 +123,22 @@ export class MessageStoreLevel implements MessageStore {
       return { messages }; // return all without pagination pointer.
     }
 
-    // this is an optimization hack, we are passing the pagination message object for an easier lookup
-    // since we know this object exists within the the array if passed, we can assume that it will always have a value greater than -1
-    // if no pagination message is passed, we start from the beginning of the array, so we set the "cursor" to -1
-    const cursorIndex = paginationMessage ? messages.indexOf(paginationMessage) : -1;
+    // this is an optimization, we are passing the pagination message object for an easier lookup
+    // since we know this object exists within the array if passed, we can assume that it will always have a value greater than -1
+    const cursorIndex = paginationMessage ? messages.indexOf(paginationMessage) : undefined;
 
     // the first element of the returned results is always the message immediately following the cursor.
-    const start = cursorIndex > 0 ? cursorIndex + 1 : 0;
-    const end = limit === undefined ? undefined : limit + start;
+    const start = cursorIndex === undefined ? 0 : cursorIndex + 1;
+    const end = limit === undefined ? undefined : start + limit;
     const results = messages.slice(start, end);
 
-    // we only return a pagination MessageCid cursor if there are more results
+    // we only return a paginationMessageCid cursor if there are more results
     const hasMoreResults = end !== undefined && end < messages.length;
     let paginationMessageCid: string|undefined;
     if (hasMoreResults) {
       // we extract the cid of the last message in the result set.
       const lastMessage = results.at(-1);
-      paginationMessageCid = lastMessage ? await Message.getCid(lastMessage) : undefined;
+      paginationMessageCid = await Message.getCid(lastMessage!);
     }
 
     return { messages: results, paginationMessageCid };
