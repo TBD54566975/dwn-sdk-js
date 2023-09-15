@@ -7,13 +7,9 @@ import { DwnInterfaceName, DwnMethodName } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import chatProtocolDefinition from '../vectors/protocol-definitions/chat.json' assert { type: 'json' };
-import contributionRewardProtocol from '../vectors/protocol-definitions/contribution-reward.json' assert { type: 'json' };
 import emailProtocolDefinition from '../vectors/protocol-definitions/email.json' assert { type: 'json' };
-import friendChatProtocol from '../vectors/protocol-definitions/friend-chat.json' assert { type: 'json' };
-import groupChatProtocol from '../vectors/protocol-definitions/group-chat.json' assert { type: 'json' };
 import minimalProtocolDefinition from '../vectors/protocol-definitions/minimal.json' assert { type: 'json' };
 import nestedProtocol from '../vectors/protocol-definitions/nested.json' assert { type: 'json' };
-import publicChatProtocol from '../vectors/protocol-definitions/public-chat.json' assert { type: 'json' };
 import sinon from 'sinon';
 import socialMediaProtocolDefinition from '../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
 import chai, { expect } from 'chai';
