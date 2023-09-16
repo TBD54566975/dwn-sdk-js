@@ -18,18 +18,12 @@
         },
         {
           "who": "author",
-          "ofRecord": {
-            "atPath": "email",
-            "inGroup": "ancestors"
-          },
+          "of": "email",
           "can": "read"
         },
         {
           "who": "recipient",
-          "ofRecord": {
-            "atPath": "email",
-            "inGroup": "ancestors"
-          },
+          "of": "email",
           "can": "read"
         }
       ],
@@ -41,18 +35,12 @@
           },
           {
             "who": "author",
-            "ofRecord": {
-              "atPath": "email/email",
-              "inGroup": "ancestors"
-            },
+            "of": "email/email",
             "can": "read"
           },
           {
             "who": "recipient",
-            "ofRecord": {
-              "atPath": "email/email",
-              "inGroup": "ancestors"
-            },
+            "of": "email/email",
             "can": "read"
           }
         ]
