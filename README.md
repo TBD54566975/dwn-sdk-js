@@ -235,7 +235,7 @@ const dwn = await Dwn.create({ messageStore, dataStore, eventLog, tenantGate });
 ```
 
 ### Custom Signature Signer
-Instead of using `PrivateKeySigner` to perform messger signing when you have the private key readily available, you can implement a customer signer to interface with external signing service, API, HSM, TPM etc and use it for signing your DWN messages:
+If you have the private key readily available, it is recommended to use the built-in `PrivateKeySigner`. Otherwise, you can implement a customer signer to interface with external signing service, API, HSM, TPM etc and use it for signing your DWN messages:
 
 ```ts
 // create a custom signer
