@@ -112,15 +112,19 @@ export class IndexLevel {
       // if count of missing property matches is 0, it means the data/object fully matches the filter
       const missingPropertyMatchesForId: { [dataId: string]: Set<string> } = { };
 
-      // Resolve promises and find the union of results for each individual propertyName DB query
+      // resolve promises for each property match and
+      // eliminate matched property from `missingPropertyMatchesForId` iteratively to work out complete matches
       for (const [propertyName, promises] of Object.entries(propertyNameToPromises)) {
         // acting as an OR match for the property, any of the promises returning a match will be treated as a property match
         for (const promise of promises) {
+          // reminder: the promise returns a list of IDs of data satisfying a particular match
           for (const dataId of await promise) {
-            // already matched
+            // short circuit: if a data is already included to the final matched ID set (by a different `Filter`),
+            // no need to evaluate if the data satisfies this current filter being evaluated
             if (matchedIDs.includes(dataId)) {
               continue;
             }
+
             // if first time seeing a property matching for the data/object, record all properties needing a match to track progress
             missingPropertyMatchesForId[dataId] ??= new Set<string>([ ...Object.keys(filter) ]);
 
