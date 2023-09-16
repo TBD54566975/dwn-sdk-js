@@ -129,13 +129,13 @@ export class RecordsQueryHandler implements MethodHandler {
     const { dateSort, pagination } = recordsQuery.message.descriptor;
 
     const filters = [
-      this.publishedRecordsFilter(recordsQuery),
-      this.unpublishedRecordsByAuthorFilter(recordsQuery),
+      RecordsQueryHandler.buildPublishedRecordsFilter(recordsQuery),
+      RecordsQueryHandler.buildUnpublishedRecordsByQueryAuthorFilter(recordsQuery),
     ];
 
     const recipientFilter = recordsQuery.message.descriptor.filter.recipient;
     if (recipientFilter === undefined || recipientFilter === recordsQuery.author) {
-      filters.push(this.unpublishedRecordsForQueryAuthorFilter(recordsQuery));
+      filters.push(RecordsQueryHandler.buildUnpublishedRecordsForQueryAuthorFilter(recordsQuery));
     }
 
     const messageSort = this.convertDateSort(dateSort);
@@ -149,12 +149,12 @@ export class RecordsQueryHandler implements MethodHandler {
     tenant: string, recordsQuery: RecordsQuery
   ): Promise<{ messages: GenericMessage[], paginationMessageCid?: string }> {
     const { dateSort, pagination } = recordsQuery.message.descriptor;
-    const filter = this.publishedRecordsFilter(recordsQuery);
+    const filter = RecordsQueryHandler.buildPublishedRecordsFilter(recordsQuery);
     const messageSort = this.convertDateSort(dateSort);
     return this.messageStore.query(tenant, [ filter ], messageSort, pagination);
   }
 
-  private publishedRecordsFilter(recordsQuery: RecordsQuery): Filter {
+  private static buildPublishedRecordsFilter(recordsQuery: RecordsQuery): Filter {
     // fetch all published records matching the query
     return {
       ...Records.convertFilter(recordsQuery.message.descriptor.filter),
@@ -168,7 +168,7 @@ export class RecordsQueryHandler implements MethodHandler {
   /**
    * Creates a filter for unpublished records that are intended for the query author (where `recipient` is the author).
    */
-  private unpublishedRecordsForQueryAuthorFilter(recordsQuery: RecordsQuery): Filter {
+  private static buildUnpublishedRecordsForQueryAuthorFilter(recordsQuery: RecordsQuery): Filter {
     // include records where recipient is query author
     return {
       ...Records.convertFilter(recordsQuery.message.descriptor.filter),
@@ -183,7 +183,7 @@ export class RecordsQueryHandler implements MethodHandler {
   /**
    * Creates a filter for only unpublished records where the author is the same as the query author.
    */
-  private unpublishedRecordsByAuthorFilter(recordsQuery: RecordsQuery): Filter {
+  private static buildUnpublishedRecordsByQueryAuthorFilter(recordsQuery: RecordsQuery): Filter {
     // include records where author is the same as the query author
     return {
       ...Records.convertFilter(recordsQuery.message.descriptor.filter),
