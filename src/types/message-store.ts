@@ -33,8 +33,8 @@ export interface MessageStore {
   get(tenant: string, cid: string, options?: MessageStoreOptions): Promise<GenericMessage | undefined>;
 
   /**
-   * Queries the underlying store for messages that match the provided filter.
-   * Supplying multiple Filters creates an OR condition.
+   * Queries the underlying store for messages that matches the provided filters.
+   * Supplying multiple filters establishes an OR condition between the filters.
    */
   query(
     tenant: string,
