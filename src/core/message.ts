@@ -1,6 +1,6 @@
 import type { GeneralJws } from '../types/jws-types.js';
 import type { SignatureInput } from '../types/jws-types.js';
-import type { BaseAuthorizationPayload, Descriptor, GenericMessage, TimestampedMessage } from '../types/message-types.js';
+import type { BaseAuthorizationPayload, Descriptor, GenericMessage } from '../types/message-types.js';
 
 import { Cid } from '../utils/cid.js';
 import { GeneralJwsSigner } from '../jose/jws/general/signer.js';
@@ -156,8 +156,8 @@ export abstract class Message<M extends GenericMessage> {
   /**
    * @returns newest message in the array. `undefined` if given array is empty.
    */
-  public static async getNewestMessage(messages: TimestampedMessage[]): Promise<TimestampedMessage | undefined> {
-    let currentNewestMessage: TimestampedMessage | undefined = undefined;
+  public static async getNewestMessage(messages: GenericMessage[]): Promise<GenericMessage | undefined> {
+    let currentNewestMessage: GenericMessage | undefined = undefined;
     for (const message of messages) {
       if (currentNewestMessage === undefined || await Message.isNewer(message, currentNewestMessage)) {
         currentNewestMessage = message;
@@ -170,8 +170,8 @@ export abstract class Message<M extends GenericMessage> {
   /**
    * @returns oldest message in the array. `undefined` if given array is empty.
    */
-  public static async getOldestMessage(messages: TimestampedMessage[]): Promise<TimestampedMessage | undefined> {
-    let currentOldestMessage: TimestampedMessage | undefined = undefined;
+  public static async getOldestMessage(messages: GenericMessage[]): Promise<GenericMessage | undefined> {
+    let currentOldestMessage: GenericMessage | undefined = undefined;
     for (const message of messages) {
       if (currentOldestMessage === undefined || await Message.isOlder(message, currentOldestMessage)) {
         currentOldestMessage = message;
@@ -185,7 +185,7 @@ export abstract class Message<M extends GenericMessage> {
    * Checks if first message is newer than second message.
    * @returns `true` if `a` is newer than `b`; `false` otherwise
    */
-  public static async isNewer(a: TimestampedMessage, b: TimestampedMessage): Promise<boolean> {
+  public static async isNewer(a: GenericMessage, b: GenericMessage): Promise<boolean> {
     const aIsNewer = (await Message.compareMessageTimestamp(a, b) > 0);
     return aIsNewer;
   }
@@ -194,7 +194,7 @@ export abstract class Message<M extends GenericMessage> {
    * Checks if first message is older than second message.
    * @returns `true` if `a` is older than `b`; `false` otherwise
    */
-  public static async isOlder(a: TimestampedMessage, b: TimestampedMessage): Promise<boolean> {
+  public static async isOlder(a: GenericMessage, b: GenericMessage): Promise<boolean> {
     const aIsOlder = (await Message.compareMessageTimestamp(a, b) < 0);
     return aIsOlder;
   }
@@ -203,7 +203,7 @@ export abstract class Message<M extends GenericMessage> {
    * Compares the `messageTimestamp` of the given messages with a fallback to message CID according to the spec.
    * @returns 1 if `a` is larger/newer than `b`; -1 if `a` is smaller/older than `b`; 0 otherwise (same age)
    */
-  public static async compareMessageTimestamp(a: TimestampedMessage, b: TimestampedMessage): Promise<number> {
+  public static async compareMessageTimestamp(a: GenericMessage, b: GenericMessage): Promise<number> {
     if (a.descriptor.messageTimestamp > b.descriptor.messageTimestamp) {
       return 1;
     } else if (a.descriptor.messageTimestamp < b.descriptor.messageTimestamp) {

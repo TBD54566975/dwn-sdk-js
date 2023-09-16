@@ -27,15 +27,6 @@ export type Descriptor = {
 };
 
 /**
- * Messages that have `messageTimestamp` in their `descriptor` property.
- */
-export type TimestampedMessage = GenericMessage & {
-  descriptor: {
-    messageTimestamp: string;
-  }
-};
-
-/**
  * Message returned in a query result.
  * NOTE: the message structure is a modified version of the message received, the most notable differences are:
  * 1. does not contain `authorization`
