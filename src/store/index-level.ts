@@ -74,8 +74,8 @@ export class IndexLevel {
   }
 
   async query(filters: Filter[], options?: IndexLevelOptions): Promise<Array<string>> {
-    // Resolve promises and find the union of results for each individual propertyName DB query
     const matchedIDs: string[] = [ ];
+
     for (const filter of filters) {
       // Note: We have an array of Promises in order to support OR (anyOf) matches when given a list of accepted values for a property
       const propertyNameToPromises: { [key: string]: Promise<string[]>[] } = {};
@@ -112,7 +112,7 @@ export class IndexLevel {
       // if count of missing property matches is 0, it means the data/object fully matches the filter
       const missingPropertyMatchesForId: { [dataId: string]: Set<string> } = { };
 
-
+      // Resolve promises and find the union of results for each individual propertyName DB query
       for (const [propertyName, promises] of Object.entries(propertyNameToPromises)) {
         // acting as an OR match for the property, any of the promises returning a match will be treated as a property match
         for (const promise of promises) {
