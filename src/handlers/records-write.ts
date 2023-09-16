@@ -53,7 +53,7 @@ export class RecordsWriteHandler implements MethodHandler {
     const newestExistingMessage = await Message.getNewestMessage(existingMessages);
     if (newestExistingMessage?.descriptor.method === DwnMethodName.Delete) {
       return {
-        status: { code: 400, detail: `Record with id ${message.recordId} has been deleted` }
+        status: { code: 400, detail: `Updating a deleted record (record ID ${message.recordId} ) is not allowed` }
       };
     }
 

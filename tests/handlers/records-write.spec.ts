@@ -252,7 +252,8 @@ export function testRecordsWriteHandler(): void {
         });
         const recordsWriteResurrectReply = await dwn.processMessage(alice.did, resurrectingRecordsWrite.message, resurrectingRecordsWrite.dataStream);
         expect(recordsWriteResurrectReply.status.code).to.eq(400);
-        expect(recordsWriteResurrectReply.status.detail).to.contain('has been deleted');
+        expect(recordsWriteResurrectReply.status.detail)
+          .to.contain(`Updating a deleted record (record ID ${resurrectingRecordsWrite.message.recordId} ) is not allowed`);
       });
 
       it('should not allow changes to immutable properties', async () => {
