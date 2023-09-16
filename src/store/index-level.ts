@@ -73,72 +73,79 @@ export class IndexLevel {
     await this.db.batch(operations, options);
   }
 
-  async query(filters: Filter[], options?: IndexLevelOptions): Promise<Array<string>> {
-    const matchedIDs: string[] = [ ];
+  /**
+   * Executes the given single filter query and appends the results without duplicate into `matchedIDs`.
+   */
+  private async executeSingleFilterQuery(filter: Filter, matchedIDs: Set<string>, options?: IndexLevelOptions): Promise<void> {
+    // Note: We have an array of Promises in order to support OR (anyOf) matches when given a list of accepted values for a property
+    const propertyNameToPromises: { [key: string]: Promise<string[]>[] } = {};
 
-    for (const filter of filters) {
-      // Note: We have an array of Promises in order to support OR (anyOf) matches when given a list of accepted values for a property
-      const propertyNameToPromises: { [key: string]: Promise<string[]>[] } = {};
+    // Do a separate DB query for each property in `filter`
+    // We will find the union of these many individual queries later.
+    for (const propertyName in filter) {
+      const propertyFilter = filter[propertyName];
 
-      // Do a separate DB query for each property in `filter`
-      // We will find the union of these many individual queries later.
-      for (const propertyName in filter) {
-        const propertyFilter = filter[propertyName];
+      if (typeof propertyFilter === 'object') {
+        if (Array.isArray(propertyFilter)) {
+          // `propertyFilter` is a AnyOfFilter
 
-        if (typeof propertyFilter === 'object') {
-          if (Array.isArray(propertyFilter)) {
-            // `propertyFilter` is a AnyOfFilter
-
-            // Support OR matches by querying for each values separately,
-            // then adding them to the promises associated with `propertyName`
-            propertyNameToPromises[propertyName] = [];
-            for (const propertyValue of new Set(propertyFilter)) {
-              const exactMatchesPromise = this.findExactMatches(propertyName, propertyValue, options);
-              propertyNameToPromises[propertyName].push(exactMatchesPromise);
-            }
-          } else {
-            // `propertyFilter` is a `RangeFilter`
-            const rangeMatchesPromise = this.findRangeMatches(propertyName, propertyFilter, options);
-            propertyNameToPromises[propertyName] = [rangeMatchesPromise];
+          // Support OR matches by querying for each values separately,
+          // then adding them to the promises associated with `propertyName`
+          propertyNameToPromises[propertyName] = [];
+          for (const propertyValue of new Set(propertyFilter)) {
+            const exactMatchesPromise = this.findExactMatches(propertyName, propertyValue, options);
+            propertyNameToPromises[propertyName].push(exactMatchesPromise);
           }
         } else {
-          // propertyFilter is an EqualFilter, meaning it is a non-object primitive type
-          const exactMatchesPromise = this.findExactMatches(propertyName, propertyFilter, options);
-          propertyNameToPromises[propertyName] = [exactMatchesPromise];
+          // `propertyFilter` is a `RangeFilter`
+          const rangeMatchesPromise = this.findRangeMatches(propertyName, propertyFilter, options);
+          propertyNameToPromises[propertyName] = [rangeMatchesPromise];
         }
+      } else {
+        // propertyFilter is an EqualFilter, meaning it is a non-object primitive type
+        const exactMatchesPromise = this.findExactMatches(propertyName, propertyFilter, options);
+        propertyNameToPromises[propertyName] = [exactMatchesPromise];
       }
+    }
 
-      // map of ID of all data/object -> list of missing property matches
-      // if count of missing property matches is 0, it means the data/object fully matches the filter
-      const missingPropertyMatchesForId: { [dataId: string]: Set<string> } = { };
+    // map of ID of all data/object -> list of missing property matches
+    // if count of missing property matches is 0, it means the data/object fully matches the filter
+    const missingPropertyMatchesForId: { [dataId: string]: Set<string> } = { };
 
-      // resolve promises for each property match and
-      // eliminate matched property from `missingPropertyMatchesForId` iteratively to work out complete matches
-      for (const [propertyName, promises] of Object.entries(propertyNameToPromises)) {
-        // acting as an OR match for the property, any of the promises returning a match will be treated as a property match
-        for (const promise of promises) {
-          // reminder: the promise returns a list of IDs of data satisfying a particular match
-          for (const dataId of await promise) {
-            // short circuit: if a data is already included to the final matched ID set (by a different `Filter`),
-            // no need to evaluate if the data satisfies this current filter being evaluated
-            if (matchedIDs.includes(dataId)) {
-              continue;
-            }
+    // resolve promises for each property match and
+    // eliminate matched property from `missingPropertyMatchesForId` iteratively to work out complete matches
+    for (const [propertyName, promises] of Object.entries(propertyNameToPromises)) {
+      // acting as an OR match for the property, any of the promises returning a match will be treated as a property match
+      for (const promise of promises) {
+        // reminder: the promise returns a list of IDs of data satisfying a particular match
+        for (const dataId of await promise) {
+          // short circuit: if a data is already included to the final matched ID set (by a different `Filter`),
+          // no need to evaluate if the data satisfies this current filter being evaluated
+          if (matchedIDs.has(dataId)) {
+            continue;
+          }
 
-            // if first time seeing a property matching for the data/object, record all properties needing a match to track progress
-            missingPropertyMatchesForId[dataId] ??= new Set<string>([ ...Object.keys(filter) ]);
+          // if first time seeing a property matching for the data/object, record all properties needing a match to track progress
+          missingPropertyMatchesForId[dataId] ??= new Set<string>([ ...Object.keys(filter) ]);
 
-            missingPropertyMatchesForId[dataId].delete(propertyName);
-            if (missingPropertyMatchesForId[dataId].size === 0) {
-              // full filter match, add it to return list
-              matchedIDs.push(dataId);
-            }
+          missingPropertyMatchesForId[dataId].delete(propertyName);
+          if (missingPropertyMatchesForId[dataId].size === 0) {
+            // full filter match, add it to return list
+            matchedIDs.add(dataId);
           }
         }
       }
-
     }
-    return matchedIDs;
+  }
+
+  async query(filters: Filter[], options?: IndexLevelOptions): Promise<Array<string>> {
+    const matchedIDs: Set<string> = new Set();
+
+    for (const filter of filters) {
+      await this.executeSingleFilterQuery(filter, matchedIDs, options);
+    }
+
+    return [...matchedIDs];
   }
 
   async delete(dataId: string, options?: IndexLevelOptions): Promise<void> {
