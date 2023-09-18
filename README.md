@@ -3,7 +3,7 @@
 # Decentralized Web Node (DWN) SDK <!-- omit in toc -->
 
 Code Coverage
-![Statements](https://img.shields.io/badge/statements-97.69%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-94.87%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-94.16%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-97.69%25-brightgreen.svg?style=flat)
+![Statements](https://img.shields.io/badge/statements-97.74%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-95%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-94.2%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-97.74%25-brightgreen.svg?style=flat)
 
 - [Introduction](#introduction)
 - [Installation](#installation)
@@ -92,7 +92,7 @@ DWN SDK includes a polyfilled distribution that can imported in a `module` scrip
       dataFormat: 'application/json',
       published: true,
       schema: 'yeeter/post',
-      authorizationSignatureInput: Jws.createSignatureInput(didKey)
+      authorizationSigner: Jws.createSigner(didKey)
     });
 
     // get the DWN to process the RecordsWrite
@@ -191,7 +191,7 @@ const recordsWrite = await RecordsWrite.create({
   dataFormat: 'application/json',
   published: true,
   schema: 'yeeter/post',
-  authorizationSignatureInput: Jws.createSignatureInput(didKey)
+  authorizationSigner: Jws.createSigner(didKey)
 });
 
 // get the DWN to process the RecordsWrite
@@ -233,6 +233,30 @@ const eventLog = new EventLogLevel();
 const tenantGate = new CustomTenantGate();
 const dwn = await Dwn.create({ messageStore, dataStore, eventLog, tenantGate });
 ```
+
+### Custom Signature Signer
+If you have the private key readily available, it is recommended to use the built-in `PrivateKeySigner`. Otherwise, you can implement a customer signer to interface with external signing service, API, HSM, TPM etc and use it for signing your DWN messages:
+
+```ts
+// create a custom signer
+class CustomSigner implements Signer {
+  public keyId = 'did:example:alice#key1';
+  public algorithm = 'EdDSA'; // use valid `alg` value published in https://www.iana.org/assignments/jose/jose.xhtml
+  public async sign (content: Uint8Array): Promise<Uint8Array> {
+    ... // custom signing logic
+  }
+}
+
+const authorizationSigner = new CustomSigner();
+
+const options: RecordsWriteOptions = {
+  ...
+  authorizationSigner
+};
+
+const recordsWrite = await RecordsWrite.create(options);
+```
+
 
 ## Release/Build Process
 

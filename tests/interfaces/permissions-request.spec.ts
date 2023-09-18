@@ -4,7 +4,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { expect } from 'chai';
 import { PermissionsRequest } from '../../src/interfaces/permissions-request.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
-import { DwnInterfaceName, DwnMethodName } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName, PrivateKeySigner } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -12,13 +12,7 @@ describe('PermissionsRequest', () => {
   describe('create', () => {
     it('creates a PermissionsRequest message', async () => {
       const { privateJwk } = await Secp256k1.generateKeyPair();
-      const authorizationSignatureInput = {
-        privateJwk,
-        protectedHeader: {
-          alg : privateJwk.alg as string,
-          kid : 'did:jank:bob'
-        }
-      };
+      const authorizationSigner = new PrivateKeySigner({ privateJwk, keyId: 'did:jank:bob' });
 
       const { message } = await PermissionsRequest.create({
         description : 'drugs',
@@ -30,7 +24,7 @@ describe('PermissionsRequest', () => {
           method    : DwnMethodName.Write,
           protocol  : 'some-protocol',
         },
-        authorizationSignatureInput
+        authorizationSigner
       });
 
       expect(message.descriptor.grantedTo).to.equal('did:jank:alice');

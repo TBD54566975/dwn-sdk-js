@@ -77,8 +77,8 @@ export function testRecordsDeleteHandler(): void {
 
         // testing delete
         const recordsDelete = await RecordsDelete.create({
-          recordId                    : message.recordId,
-          authorizationSignatureInput : Jws.createSignatureInput(alice)
+          recordId            : message.recordId,
+          authorizationSigner : Jws.createSigner(alice)
         });
 
         const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
@@ -91,8 +91,8 @@ export function testRecordsDeleteHandler(): void {
 
         // testing deleting a deleted record
         const recordsDelete2 = await RecordsDelete.create({
-          recordId                    : message.recordId,
-          authorizationSignatureInput : Jws.createSignatureInput(alice)
+          recordId            : message.recordId,
+          authorizationSigner : Jws.createSigner(alice)
         });
 
         const recordsDelete2Reply = await dwn.processMessage(alice.did, recordsDelete2.message);
@@ -137,7 +137,7 @@ export function testRecordsDeleteHandler(): void {
           filter: {
             recordId: aliceAssociateData.message.recordId,
           },
-          authorizationSignatureInput: Jws.createSignatureInput(alice)
+          authorizationSigner: Jws.createSigner(alice)
         });
 
         const aliceRead1Reply = await dwn.handleRecordsRead(alice.did, aliceRead1.message);
@@ -163,7 +163,7 @@ export function testRecordsDeleteHandler(): void {
           filter: {
             recordId: bobAssociateData.message.recordId,
           },
-          authorizationSignatureInput: Jws.createSignatureInput(bob)
+          authorizationSigner: Jws.createSigner(bob)
         });
 
         const bobRead1Reply = await dwn.handleRecordsRead(bob.did, bobRead1.message);
@@ -178,8 +178,8 @@ export function testRecordsDeleteHandler(): void {
 
         // testing deleting a non-existent record
         const recordsDelete = await RecordsDelete.create({
-          recordId                    : 'nonExistentRecordId',
-          authorizationSignatureInput : Jws.createSignatureInput(alice)
+          recordId            : 'nonExistentRecordId',
+          authorizationSigner : Jws.createSigner(alice)
         });
 
         const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
@@ -197,8 +197,8 @@ export function testRecordsDeleteHandler(): void {
         // generate subsequent write and delete with the delete having an earlier timestamp
         // NOTE: creating RecordsDelete first ensures it has an earlier `messageTimestamp` time
         const recordsDelete = await RecordsDelete.create({
-          recordId                    : initialWriteData.message.recordId,
-          authorizationSignatureInput : Jws.createSignatureInput(alice)
+          recordId            : initialWriteData.message.recordId,
+          authorizationSigner : Jws.createSigner(alice)
         });
         await minimalSleep();
         const subsequentWriteData = await TestDataGenerator.generateFromRecordsWrite({
@@ -291,8 +291,8 @@ export function testRecordsDeleteHandler(): void {
           expect(writeReply.status.code).to.equal(202);
 
           const recordsDelete = await RecordsDelete.create({
-            recordId                    : message.recordId,
-            authorizationSignatureInput : Jws.createSignatureInput(alice)
+            recordId            : message.recordId,
+            authorizationSigner : Jws.createSigner(alice)
           });
 
           const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
@@ -322,15 +322,15 @@ export function testRecordsDeleteHandler(): void {
           const newWrite = await RecordsWrite.createFrom({
             unsignedRecordsWriteMessage : recordsWrite.message,
             published                   : true,
-            authorizationSignatureInput : Jws.createSignatureInput(author)
+            authorizationSigner         : Jws.createSigner(author)
           });
 
           const newWriteReply = await dwn.processMessage(author.did, newWrite.message);
           expect(newWriteReply.status.code).to.equal(202);
 
           const recordsDelete = await RecordsDelete.create({
-            recordId                    : message.recordId,
-            authorizationSignatureInput : Jws.createSignatureInput(author)
+            recordId            : message.recordId,
+            authorizationSigner : Jws.createSigner(author)
           });
 
           const deleteReply = await dwn.processMessage(author.did, recordsDelete.message);

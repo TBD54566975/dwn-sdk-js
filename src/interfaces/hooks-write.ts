@@ -1,4 +1,4 @@
-import type { SignatureInput } from '../types/jws-types.js';
+import type { Signer } from '../types/signer.js';
 import type { HooksWriteDescriptor, HooksWriteMessage } from '../types/hooks-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
@@ -19,7 +19,7 @@ export type HooksWriteOptions = {
   filter: {
     method: string,
   },
-  authorizationSignatureInput: SignatureInput;
+  authorizationSigner: Signer;
 };
 
 /**
@@ -43,7 +43,7 @@ export class HooksWrite extends Message<HooksWriteMessage> {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
+    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSigner);
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

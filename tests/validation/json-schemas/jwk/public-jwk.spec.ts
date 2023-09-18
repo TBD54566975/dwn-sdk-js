@@ -1,8 +1,8 @@
 import { expect } from 'chai';
-import { signers } from '../../../../src/jose/algorithms/signing/signers.js';
+import { signatureAlgorithms } from '../../../../src/jose/algorithms/signing/signature-algorithms.js';
 import { validateJsonSchema } from '../../../../src/schema-validator.js';
 
-const { Ed25519, secp256k1 } = signers;
+const { Ed25519, secp256k1 } = signatureAlgorithms;
 
 describe('PublicJwk Schema', async () => {
   const { publicJwk: publicJwkSecp256k1 } = await secp256k1.generateKeyPair();

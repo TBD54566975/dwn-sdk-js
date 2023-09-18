@@ -13,7 +13,7 @@ import dexProtocolDefinition from '../vectors/protocol-definitions/dex.json' ass
 import minimalProtocolDefinition from '../vectors/protocol-definitions/minimal.json' assert { type: 'json' };
 
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
-import { GeneralJwsSigner } from '../../src/jose/jws/general/signer.js';
+import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
 import { minimalSleep } from '../../src/utils/time.js';
@@ -80,13 +80,13 @@ export function testProtocolsConfigureHandler(): void {
 
         // intentionally create more than one signature, which is not allowed
         const extraRandomPersona = await TestDataGenerator.generatePersona();
-        const signatureInput1 = Jws.createSignatureInput(author);
-        const signatureInput2 = Jws.createSignatureInput(extraRandomPersona);
+        const signatureInput1 = Jws.createSigner(author);
+        const signatureInput2 = Jws.createSigner(extraRandomPersona);
 
         const authorizationPayloadBytes = Encoder.objectToBytes(protocolsConfigure.authorizationPayload!);
 
-        const signer = await GeneralJwsSigner.create(authorizationPayloadBytes, [signatureInput1, signatureInput2]);
-        message.authorization = signer.getJws();
+        const jwsBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signatureInput1, signatureInput2]);
+        message.authorization = jwsBuilder.getJws();
 
         TestStubGenerator.stubDidResolver(didResolver, [author]);
 
@@ -233,7 +233,7 @@ export function testProtocolsConfigureHandler(): void {
         // Re-create auth because we altered the descriptor after signing
         protocolsConfig.message.authorization = await Message.signAsAuthorization(
           protocolsConfig.message.descriptor,
-          Jws.createSignatureInput(alice)
+          Jws.createSigner(alice)
         );
 
         // Send records write message
@@ -257,7 +257,7 @@ export function testProtocolsConfigureHandler(): void {
         // Re-create auth because we altered the descriptor after signing
         protocolsConfig.message.authorization = await Message.signAsAuthorization(
           protocolsConfig.message.descriptor,
-          Jws.createSignatureInput(alice)
+          Jws.createSigner(alice)
         );
 
         // Send records write message

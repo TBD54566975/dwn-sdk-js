@@ -154,7 +154,7 @@ export function testDwnClass(): void {
           filter: {
             recordId: 'recordId-doesnt-matter',
           },
-          authorizationSignatureInput: Jws.createSignatureInput(alice)
+          authorizationSigner: Jws.createSigner(alice)
         });
         (recordsRead.message as any).descriptor.method = 'Write'; // Will cause interface and method check to fail
         const reply = await dwn.handleRecordsRead(alice.did, recordsRead.message);

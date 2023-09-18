@@ -30,9 +30,9 @@ describe('SnapshotsCreate', () => {
       };
 
       const snapshotsCreate = await SnapshotsCreate.create({
-        messageTimestamp            : currentTime,
+        messageTimestamp    : currentTime,
         definition,
-        authorizationSignatureInput : Jws.createSignatureInput(alice),
+        authorizationSigner : Jws.createSigner(alice),
       });
 
       expect(snapshotsCreate.message.descriptor.messageTimestamp).to.equal(currentTime);

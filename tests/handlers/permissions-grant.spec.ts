@@ -171,7 +171,7 @@ export function testPermissionsGrantHandler(): void {
           };
           schemaAndProtocolGrant.message.authorization = await Message.signAsAuthorization(
             schemaAndProtocolGrant.message.descriptor,
-            Jws.createSignatureInput(alice)
+            Jws.createSigner(alice)
           );
           const schemaAndProtocolGrantReply = await dwn.processMessage(alice.did, schemaAndProtocolGrant.message);
           expect(schemaAndProtocolGrantReply.status.code).to.eq(400);
@@ -189,7 +189,7 @@ export function testPermissionsGrantHandler(): void {
           };
           schemaAndContextIdGrant.message.authorization = await Message.signAsAuthorization(
             schemaAndContextIdGrant.message.descriptor,
-            Jws.createSignatureInput(alice)
+            Jws.createSigner(alice)
           );
           const schemaAndContextIdGrantReply = await dwn.processMessage(alice.did, schemaAndProtocolGrant.message);
           expect(schemaAndContextIdGrantReply.status.code).to.eq(400);
@@ -207,7 +207,7 @@ export function testPermissionsGrantHandler(): void {
           };
           schemaAndProtocolPathGrant.message.authorization = await Message.signAsAuthorization(
             schemaAndProtocolPathGrant.message.descriptor,
-            Jws.createSignatureInput(alice)
+            Jws.createSigner(alice)
           );
           const schemaAndProtocolPathGrantReply = await dwn.processMessage(alice.did, schemaAndProtocolGrant.message);
           expect(schemaAndProtocolPathGrantReply.status.code).to.eq(400);
@@ -239,7 +239,7 @@ export function testPermissionsGrantHandler(): void {
           };
           contextIdAndProtocolPathGrant.message.authorization = await Message.signAsAuthorization(
             contextIdAndProtocolPathGrant.message.descriptor,
-            Jws.createSignatureInput(alice)
+            Jws.createSigner(alice)
           );
           const contextIdAndProtocolPathGrantReply = await dwn.processMessage(alice.did, contextIdAndProtocolPathGrant.message);
           expect(contextIdAndProtocolPathGrantReply.status.code).to.eq(400);

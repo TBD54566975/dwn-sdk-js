@@ -19,9 +19,9 @@ describe('ProtocolsConfigure', () => {
       const currentTime = getCurrentTimeInHighPrecision();
       const definition = { ...dexProtocolDefinition };
       const protocolsConfigure = await ProtocolsConfigure.create({
-        messageTimestamp            : currentTime,
+        messageTimestamp    : currentTime,
         definition,
-        authorizationSignatureInput : Jws.createSignatureInput(alice),
+        authorizationSigner : Jws.createSigner(alice),
       });
 
       expect(protocolsConfigure.message.descriptor.messageTimestamp).to.equal(currentTime);
@@ -32,10 +32,10 @@ describe('ProtocolsConfigure', () => {
 
       const definition = { ...dexProtocolDefinition, protocol: 'example.com/' };
       const options = {
-        recipient                   : alice.did,
-        data                        : TestDataGenerator.randomBytes(10),
-        dataFormat                  : 'application/json',
-        authorizationSignatureInput : Jws.createSignatureInput(alice),
+        recipient           : alice.did,
+        data                : TestDataGenerator.randomBytes(10),
+        dataFormat          : 'application/json',
+        authorizationSigner : Jws.createSigner(alice),
         definition,
       };
       const protocolsConfig = await ProtocolsConfigure.create(options);
@@ -52,12 +52,12 @@ describe('ProtocolsConfigure', () => {
       nonnormalizedDexProtocol.types.ask.schema = 'ask';
 
       const options = {
-        recipient                   : alice.did,
-        data                        : TestDataGenerator.randomBytes(10),
-        dataFormat                  : 'application/json',
-        authorizationSignatureInput : Jws.createSignatureInput(alice),
-        protocol                    : 'example.com/',
-        definition                  : nonnormalizedDexProtocol
+        recipient           : alice.did,
+        data                : TestDataGenerator.randomBytes(10),
+        dataFormat          : 'application/json',
+        authorizationSigner : Jws.createSigner(alice),
+        protocol            : 'example.com/',
+        definition          : nonnormalizedDexProtocol
       };
       const protocolsConfig = await ProtocolsConfigure.create(options);
 

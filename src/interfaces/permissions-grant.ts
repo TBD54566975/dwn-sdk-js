@@ -1,5 +1,5 @@
 import type { PermissionsRequest } from './permissions-request.js';
-import type { SignatureInput } from '../types/jws-types.js';
+import type { Signer } from '../types/signer.js';
 import type { PermissionConditions, PermissionScope, RecordsPermissionScope } from '../types/permissions-types.js';
 import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types/permissions-types.js';
 
@@ -19,7 +19,7 @@ export type PermissionsGrantOptions = {
   permissionsRequestId?: string;
   scope: PermissionScope;
   conditions?: PermissionConditions;
-  authorizationSignatureInput: SignatureInput;
+  authorizationSigner: Signer;
 };
 
 export type CreateFromPermissionsRequestOverrides = {
@@ -60,7 +60,7 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
+    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSigner);
     const message: PermissionsGrantMessage = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
@@ -72,12 +72,12 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
   /**
    * generates a PermissionsGrant using the provided PermissionsRequest
    * @param permissionsRequest
-   * @param authorizationSignatureInput - the private key and additional signature material of the grantor
+   * @param authorizationSigner - the private key and additional signature material of the grantor
    * @param overrides - overrides that will be used instead of the properties in `permissionsRequest`
    */
   public static async createFromPermissionsRequest(
     permissionsRequest: PermissionsRequest,
-    authorizationSignatureInput: SignatureInput,
+    authorizationSigner: Signer,
     overrides: CreateFromPermissionsRequestOverrides,
   ): Promise<PermissionsGrant> {
     const descriptor = permissionsRequest.message.descriptor;
@@ -90,7 +90,7 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
       permissionsRequestId : await Message.getCid(permissionsRequest.message),
       scope                : overrides.scope ?? descriptor.scope,
       conditions           : overrides.conditions ?? descriptor.conditions,
-      authorizationSignatureInput,
+      authorizationSigner,
     });
   }
 

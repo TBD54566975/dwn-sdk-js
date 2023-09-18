@@ -1,5 +1,5 @@
 import type { Pagination } from '../types/message-types.js';
-import type { SignatureInput } from '../types/jws-types.js';
+import type { Signer } from '../types/signer.js';
 import type { RecordsFilter, RecordsQueryDescriptor, RecordsQueryMessage } from '../types/records-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
@@ -22,7 +22,7 @@ export type RecordsQueryOptions = {
   filter: RecordsFilter;
   dateSort?: DateSort;
   pagination?: Pagination;
-  authorizationSignatureInput?: SignatureInput;
+  authorizationSigner?: Signer;
 };
 
 export class RecordsQuery extends Message<RecordsQueryMessage> {
@@ -57,8 +57,8 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
     removeUndefinedProperties(descriptor);
 
     // only generate the `authorization` property if signature input is given
-    const authorizationSignatureInput = options.authorizationSignatureInput;
-    const authorization = authorizationSignatureInput ? await Message.signAsAuthorization(descriptor, authorizationSignatureInput) : undefined;
+    const authorizationSigner = options.authorizationSigner;
+    const authorization = authorizationSigner ? await Message.signAsAuthorization(descriptor, authorizationSigner) : undefined;
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

@@ -326,12 +326,12 @@ export class TestDataGenerator {
     // TODO: #451 - Remove reference and use of dataStream everywhere in tests - https://github.com/TBD54566975/dwn-sdk-js/issues/451
     const dataStream = undefined;
 
-    const authorizationSignatureInput = Jws.createSignatureInput(author);
+    const authorizationSigner = Jws.createSigner(author);
 
     const options: ProtocolsConfigureOptions = {
       messageTimestamp   : input?.messageTimestamp,
       definition,
-      authorizationSignatureInput,
+      authorizationSigner,
       permissionsGrantId : input?.permissionsGrantId
     };
 
@@ -352,12 +352,12 @@ export class TestDataGenerator {
     // generate author persona if not given
     const author = input?.author ?? await TestDataGenerator.generatePersona();
 
-    const authorizationSignatureInput = Jws.createSignatureInput(author);
+    const authorizationSigner = Jws.createSigner(author);
 
     const options: ProtocolsQueryOptions = {
       messageTimestamp   : input?.messageTimestamp,
       filter             : input?.filter,
-      authorizationSignatureInput,
+      authorizationSigner,
       permissionsGrantId : input?.permissionsGrantId,
     };
     removeUndefinedProperties(options);
@@ -383,8 +383,8 @@ export class TestDataGenerator {
   public static async generateRecordsWrite(input?: GenerateRecordsWriteInput): Promise<GenerateRecordsWriteOutput> {
     const author = input?.author ?? await TestDataGenerator.generatePersona();
 
-    const authorizationSignatureInput = Jws.createSignatureInput(author);
-    const attestationSignatureInputs = Jws.createSignatureInputs(input?.attesters ?? []);
+    const authorizationSigner = Jws.createSigner(author);
+    const attestationSigners = Jws.createSigners(input?.attesters ?? []);
 
     const dataCid = input?.dataCid;
     const dataSize = input?.dataSize;
@@ -411,8 +411,8 @@ export class TestDataGenerator {
       data               : dataBytes,
       dataCid,
       dataSize,
-      authorizationSignatureInput,
-      attestationSignatureInputs,
+      authorizationSigner,
+      attestationSigners,
       encryptionInput    : input?.encryptionInput,
       permissionsGrantId : input?.permissionsGrantId,
     };
@@ -540,7 +540,7 @@ export class TestDataGenerator {
     };
 
     await recordsWrite.encryptSymmetricEncryptionKey(encryptionInput);
-    await recordsWrite.sign(Jws.createSignatureInput(author));
+    await recordsWrite.sign(Jws.createSigner(author));
 
     return { message, dataStream: dataStream!, recordsWrite, encryptedDataBytes, encryptionInput };
   }
@@ -566,7 +566,7 @@ export class TestDataGenerator {
       published,
       datePublished,
       messageTimestamp            : input.messageTimestamp,
-      authorizationSignatureInput : Jws.createSignatureInput(input.author)
+      authorizationSigner         : Jws.createSigner(input.author)
     };
 
     const recordsWrite = await RecordsWrite.createFrom(options);
@@ -594,14 +594,14 @@ export class TestDataGenerator {
       author = await TestDataGenerator.generatePersona();
     }
 
-    let authorizationSignatureInput = undefined;
+    let authorizationSigner = undefined;
     if (author !== undefined) {
-      authorizationSignatureInput = Jws.createSignatureInput(author);
+      authorizationSigner = Jws.createSigner(author);
     }
 
     const options: RecordsQueryOptions = {
       messageTimestamp : input?.messageTimestamp,
-      authorizationSignatureInput,
+      authorizationSigner,
       filter           : input?.filter ?? { schema: TestDataGenerator.randomString(10) }, // must have one filter property if no filter is given
       dateSort         : input?.dateSort,
       pagination       : input?.pagination
@@ -624,8 +624,8 @@ export class TestDataGenerator {
     const author = input?.author ?? await DidKeyResolver.generate();
 
     const recordsDelete = await RecordsDelete.create({
-      recordId                    : input?.recordId ?? await TestDataGenerator.randomCborSha256Cid(),
-      authorizationSignatureInput : Jws.createSignatureInput(author)
+      recordId            : input?.recordId ?? await TestDataGenerator.randomCborSha256Cid(),
+      authorizationSigner : Jws.createSigner(author)
     });
 
     return {
@@ -641,11 +641,11 @@ export class TestDataGenerator {
   public static async generateHooksWrite(input?: GenerateHooksWriteInput): Promise<GenerateHooksWriteOutput> {
     const author = input?.author ?? await TestDataGenerator.generatePersona();
 
-    const authorizationSignatureInput = Jws.createSignatureInput(author);
+    const authorizationSigner = Jws.createSigner(author);
 
     const options: HooksWriteOptions = {
       messageTimestamp : input?.messageTimestamp,
-      authorizationSignatureInput,
+      authorizationSigner,
       filter           : input?.filter ?? { method: 'RecordsWrite' }, // hardcode to filter on `RecordsWrite` if no filter is given
     };
     removeUndefinedProperties(options);
@@ -673,8 +673,8 @@ export class TestDataGenerator {
         interface : DwnInterfaceName.Records,
         method    : DwnMethodName.Write
       },
-      conditions                  : input?.conditions,
-      authorizationSignatureInput : Jws.createSignatureInput(author)
+      conditions          : input?.conditions,
+      authorizationSigner : Jws.createSigner(author)
     });
 
     return {
@@ -702,8 +702,8 @@ export class TestDataGenerator {
         interface : DwnInterfaceName.Records,
         method    : DwnMethodName.Write
       },
-      conditions                  : input?.conditions,
-      authorizationSignatureInput : Jws.createSignatureInput(author)
+      conditions          : input?.conditions,
+      authorizationSigner : Jws.createSigner(author)
     });
 
     return {
@@ -718,10 +718,10 @@ export class TestDataGenerator {
    */
   public static async generatePermissionsRevoke(input?: GeneratePermissionsRevokeInput): Promise<GeneratePermissionsRevokeOutput> {
     const author = input?.author ?? await TestDataGenerator.generatePersona();
-    const authorizationSignatureInput = Jws.createSignatureInput(author);
+    const authorizationSigner = Jws.createSigner(author);
 
     const permissionsRevoke = await PermissionsRevoke.create({
-      authorizationSignatureInput,
+      authorizationSigner,
       permissionsGrantId : input?.permissionsGrantId ?? await TestDataGenerator.randomCborSha256Cid(),
       messageTimestamp   : input?.dateCreated
     });
@@ -735,9 +735,9 @@ export class TestDataGenerator {
 
   public static async generateEventsGet(input?: GenerateEventsGetInput): Promise<GenerateEventsGetOutput> {
     const author = input?.author ?? await TestDataGenerator.generatePersona();
-    const authorizationSignatureInput = Jws.createSignatureInput(author);
+    const authorizationSigner = Jws.createSigner(author);
 
-    const options: EventsGetOptions = { authorizationSignatureInput };
+    const options: EventsGetOptions = { authorizationSigner };
     if (input?.watermark) {
       options.watermark = input.watermark;
     }
@@ -753,10 +753,10 @@ export class TestDataGenerator {
 
   public static async generateMessagesGet(input: GenerateMessagesGetInput): Promise<GenerateMessagesGetOutput> {
     const author = input?.author ?? await TestDataGenerator.generatePersona();
-    const authorizationSignatureInput = Jws.createSignatureInput(author);
+    const authorizationSigner = Jws.createSigner(author);
 
     const options: MessagesGetOptions = {
-      authorizationSignatureInput,
+      authorizationSigner,
       messageCids: input.messageCids
     };
 
