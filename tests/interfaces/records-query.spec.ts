@@ -18,9 +18,9 @@ describe('RecordsQuery', () => {
 
       const currentTime = getCurrentTimeInHighPrecision();
       const recordsQuery = await RecordsQuery.create({
-        filter                      : { schema: 'anything' },
-        messageTimestamp            : currentTime,
-        authorizationSignatureInput : Jws.createSignatureInput(alice),
+        filter              : { schema: 'anything' },
+        messageTimestamp    : currentTime,
+        authorizationSigner : Jws.createSigner(alice),
       });
 
       expect(recordsQuery.message.descriptor.messageTimestamp).to.equal(currentTime);
@@ -30,12 +30,12 @@ describe('RecordsQuery', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {
-        recipient                   : alice.did,
-        data                        : TestDataGenerator.randomBytes(10),
-        dataFormat                  : 'application/json',
-        authorizationSignatureInput : Jws.createSignatureInput(alice),
-        filter                      : { protocol: 'example.com/' },
-        definition                  : dexProtocolDefinition
+        recipient           : alice.did,
+        data                : TestDataGenerator.randomBytes(10),
+        dataFormat          : 'application/json',
+        authorizationSigner : Jws.createSigner(alice),
+        filter              : { protocol: 'example.com/' },
+        definition          : dexProtocolDefinition
       };
       const recordsQuery = await RecordsQuery.create(options);
 
@@ -48,12 +48,12 @@ describe('RecordsQuery', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {
-        recipient                   : alice.did,
-        data                        : TestDataGenerator.randomBytes(10),
-        dataFormat                  : 'application/json',
-        authorizationSignatureInput : Jws.createSignatureInput(alice),
-        filter                      : { schema: 'example.com/' },
-        definition                  : dexProtocolDefinition
+        recipient           : alice.did,
+        data                : TestDataGenerator.randomBytes(10),
+        dataFormat          : 'application/json',
+        authorizationSigner : Jws.createSigner(alice),
+        filter              : { schema: 'example.com/' },
+        definition          : dexProtocolDefinition
       };
       const recordsQuery = await RecordsQuery.create(options);
 

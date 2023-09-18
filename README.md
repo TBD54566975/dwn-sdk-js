@@ -3,7 +3,7 @@
 # Decentralized Web Node (DWN) SDK <!-- omit in toc -->
 
 Code Coverage
-![Statements](https://img.shields.io/badge/statements-97.69%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-94.87%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-94.16%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-97.69%25-brightgreen.svg?style=flat)
+![Statements](https://img.shields.io/badge/statements-97.54%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-94.52%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-94.2%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-97.54%25-brightgreen.svg?style=flat)
 
 - [Introduction](#introduction)
 - [Installation](#installation)
@@ -92,7 +92,7 @@ DWN SDK includes a polyfilled distribution that can imported in a `module` scrip
       dataFormat: 'application/json',
       published: true,
       schema: 'yeeter/post',
-      authorizationSignatureInput: Jws.createSignatureInput(didKey)
+      authorizationSigner: Jws.createSigner(didKey)
     });
 
     // get the DWN to process the RecordsWrite
@@ -191,7 +191,7 @@ const recordsWrite = await RecordsWrite.create({
   dataFormat: 'application/json',
   published: true,
   schema: 'yeeter/post',
-  authorizationSignatureInput: Jws.createSignatureInput(didKey)
+  authorizationSigner: Jws.createSigner(didKey)
 });
 
 // get the DWN to process the RecordsWrite
@@ -249,7 +249,7 @@ const signer = new CustomSigner();
 
 const options: RecordsWriteOptions = {
   ...
-  authorizationSignatureInput : {
+  authorizationSigner : {
     signer,
     protectedHeader: { alg: 'EdDSA', kid: 'did:example:alice#key1' } // see https://www.iana.org/assignments/jose/jose.xhtml for valid signature `alg` values
   }

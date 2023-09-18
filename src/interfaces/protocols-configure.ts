@@ -1,4 +1,4 @@
-import type { SignatureInput } from '../types/jws-types.js';
+import type { Signer } from '../types/signer.js';
 import type { ProtocolDefinition, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types/protocols-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
@@ -9,7 +9,7 @@ import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized
 export type ProtocolsConfigureOptions = {
   messageTimestamp? : string;
   definition : ProtocolDefinition;
-  authorizationSignatureInput: SignatureInput;
+  authorizationSigner: Signer;
   permissionsGrantId?: string;
 };
 
@@ -32,7 +32,7 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       definition       : ProtocolsConfigure.normalizeDefinition(options.definition)
     };
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput, options.permissionsGrantId);
+    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSigner, options.permissionsGrantId);
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

@@ -1,4 +1,4 @@
-import type { SignatureInput } from '../types/jws-types.js';
+import type { Signer } from '../types/signer.js';
 import type { MessagesGetDescriptor, MessagesGetMessage } from '../types/messages-types.js';
 
 import { Cid } from '../utils/cid.js';
@@ -8,7 +8,7 @@ import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 export type MessagesGetOptions = {
   messageCids: string[];
-  authorizationSignatureInput: SignatureInput;
+  authorizationSigner: Signer;
   messageTimestamp?: string;
 };
 
@@ -30,7 +30,7 @@ export class MessagesGet extends Message<MessagesGetMessage> {
       messageTimestamp : options?.messageTimestamp ?? getCurrentTimeInHighPrecision(),
     };
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
+    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSigner);
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

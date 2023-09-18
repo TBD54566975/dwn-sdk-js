@@ -918,7 +918,7 @@ export function testRecordsQueryHandler(): void {
         // Re-create auth because we altered the descriptor after signing
         recordsQuery.message.authorization = await Message.signAsAuthorization(
           recordsQuery.message.descriptor,
-          Jws.createSignatureInput(alice)
+          Jws.createSigner(alice)
         );
 
         // Send records write message
@@ -942,7 +942,7 @@ export function testRecordsQueryHandler(): void {
         // Re-create auth because we altered the descriptor after signing
         recordsQuery.message.authorization = await Message.signAsAuthorization(
           recordsQuery.message.descriptor,
-          Jws.createSignatureInput(alice)
+          Jws.createSigner(alice)
         );
 
         // Send records write message

@@ -4,19 +4,53 @@ import type { Signer } from '../types/signer.js';
 import { signatureAlgorithms } from '../jose/algorithms/signing/signature-algorithms.js';
 import { DwnError, DwnErrorCode } from '../index.js';
 
+export type PrivateKeySignerOptions = {
+  privateJwk: PrivateJwk;
+
+  /**
+   * If not specified, the constructor will attempt to default/fall back to the `kid` value in the given `privateJwk`.
+   */
+  keyId?: string;
+
+  /**
+   * If not specified, the constructor will attempt to default/fall back to the `alg` value in the given `privateJwk`.
+   */
+  algorithm?: string;
+};
+
 /**
  * A signer that signs using a private key.
  */
 export class PrivateKeySigner implements Signer {
+  public keyId;
+  public algorithm;
+  private privateJwk: PrivateJwk;
   private signatureAlgorithm;
 
-  public constructor(private privateJwk: PrivateJwk) {
-    this.signatureAlgorithm = signatureAlgorithms[privateJwk.crv];
+  public constructor(options: PrivateKeySignerOptions) {
+    if (options.keyId === undefined && options.privateJwk.kid === undefined) {
+      throw new DwnError(
+        DwnErrorCode.PrivateKeySignerUnableToDeduceKeyId,
+        `Unable to deduce the key ID`
+      );
+    }
+
+    if (options.algorithm === undefined && options.privateJwk.alg === undefined) {
+      throw new DwnError(
+        DwnErrorCode.PrivateKeySignerUnableToDeduceAlgorithm,
+        `Unable to deduce the signature algorithm`
+      );
+    }
+
+    this.keyId = options.keyId ?? options.privateJwk.kid!;
+    this.algorithm = options.algorithm ?? options.privateJwk.alg!;
+    this.privateJwk = options.privateJwk;
+    this.signatureAlgorithm = signatureAlgorithms[options.privateJwk.crv];
 
     if (!this.signatureAlgorithm) {
       throw new DwnError(
         DwnErrorCode.PrivateKeySignerUnsupportedCurve,
-        `Unsupported crv ${privateJwk.crv}, crv must be one of ${Object.keys(signatureAlgorithms)}`
+        `Unsupported crv ${options.privateJwk.crv}, crv must be one of ${Object.keys(signatureAlgorithms)}`
       );
     }
   }

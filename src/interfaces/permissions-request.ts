@@ -1,4 +1,4 @@
-import type { SignatureInput } from '../types/jws-types.js';
+import type { Signer } from '../types/signer.js';
 import type { PermissionConditions, PermissionScope } from '../types/permissions-types.js';
 import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types/permissions-types.js';
 
@@ -15,7 +15,7 @@ export type PermissionsRequestOptions = {
   grantedFor: string;
   scope: PermissionScope;
   conditions?: PermissionConditions;
-  authorizationSignatureInput: SignatureInput;
+  authorizationSigner: Signer;
 };
 
 export class PermissionsRequest extends Message<PermissionsRequestMessage> {
@@ -43,7 +43,7 @@ export class PermissionsRequest extends Message<PermissionsRequestMessage> {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const auth = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
+    const auth = await Message.signAsAuthorization(descriptor, options.authorizationSigner);
     const message: PermissionsRequestMessage = { descriptor, authorization: auth };
 
     Message.validateJsonSchema(message);

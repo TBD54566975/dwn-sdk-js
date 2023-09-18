@@ -1,5 +1,6 @@
+import type { GeneralJws } from '../types/jws-types.js';
 import type { SignatureEntry } from '../types/jws-types.js';
-import type { GeneralJws, SignatureInput } from '../types/jws-types.js';
+import type { Signer } from '../types/signer.js';
 import type { KeyMaterial, PublicJwk } from '../types/jose-types.js';
 
 import isPlainObject from 'lodash/isPlainObject.js';
@@ -74,25 +75,20 @@ export class Jws {
   }
 
   /**
-   * Creates a SignatureInput[] from the given Personas.
+   * Creates a Signer[] from the given Personas.
    */
-  public static createSignatureInputs(keyMaterials: KeyMaterial[]): SignatureInput[] {
-    const signatureInputs = keyMaterials.map((keyMaterial) => Jws.createSignatureInput(keyMaterial));
+  public static createSigners(keyMaterials: KeyMaterial[]): Signer[] {
+    const signatureInputs = keyMaterials.map((keyMaterial) => Jws.createSigner(keyMaterial));
     return signatureInputs;
   }
 
   /**
-   * Creates a SignatureInput from the given Persona.
+   * Creates a Signer from the given Persona.
    */
-  public static createSignatureInput(keyMaterial: KeyMaterial): SignatureInput {
-    const signatureInput = {
-      signer          : new PrivateKeySigner(keyMaterial.keyPair.privateJwk),
-      protectedHeader : {
-        alg : keyMaterial.keyPair.privateJwk.alg as string,
-        kid : keyMaterial.keyId
-      }
-    };
-
-    return signatureInput;
+  public static createSigner(keyMaterial: KeyMaterial): Signer {
+    const privateJwk = keyMaterial.keyPair.privateJwk;
+    const keyId = keyMaterial.keyId;
+    const signer = new PrivateKeySigner({ privateJwk, keyId });
+    return signer;
   }
 }

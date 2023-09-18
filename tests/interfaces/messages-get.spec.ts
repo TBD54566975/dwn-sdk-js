@@ -13,8 +13,8 @@ describe('MessagesGet Message', () => {
       const messageCid = await Message.getCid(message);
 
       const messagesGet = await MessagesGet.create({
-        authorizationSignatureInput : await Jws.createSignatureInput(author),
-        messageCids                 : [messageCid]
+        authorizationSigner : await Jws.createSigner(author),
+        messageCids         : [messageCid]
       });
 
       expect(messagesGet.message.authorization).to.exist;
@@ -29,8 +29,8 @@ describe('MessagesGet Message', () => {
 
       try {
         await MessagesGet.create({
-          authorizationSignatureInput : await Jws.createSignatureInput(alice),
-          messageCids                 : []
+          authorizationSigner : await Jws.createSigner(alice),
+          messageCids         : []
         });
 
         expect.fail();
@@ -45,8 +45,8 @@ describe('MessagesGet Message', () => {
 
       try {
         await MessagesGet.create({
-          authorizationSignatureInput : await Jws.createSignatureInput(alice),
-          messageCids                 : ['abcd']
+          authorizationSigner : await Jws.createSigner(alice),
+          messageCids         : ['abcd']
         });
 
         expect.fail();
@@ -62,8 +62,8 @@ describe('MessagesGet Message', () => {
       let messageCid = await Message.getCid(message);
 
       const messagesGet = await MessagesGet.create({
-        authorizationSignatureInput : await Jws.createSignatureInput(author),
-        messageCids                 : [messageCid]
+        authorizationSigner : await Jws.createSigner(author),
+        messageCids         : [messageCid]
       });
 
       const parsed = await MessagesGet.parse(messagesGet.message);
@@ -80,8 +80,8 @@ describe('MessagesGet Message', () => {
       const messageCid = await Message.getCid(recordsWriteMessage);
 
       const messagesGet = await MessagesGet.create({
-        authorizationSignatureInput : await Jws.createSignatureInput(author),
-        messageCids                 : [messageCid]
+        authorizationSigner : await Jws.createSigner(author),
+        messageCids         : [messageCid]
       });
 
       const message = messagesGet.toJSON() as MessagesGetMessage;

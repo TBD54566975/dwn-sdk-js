@@ -1,4 +1,4 @@
-import type { SignatureInput } from '../types/jws-types.js';
+import type { Signer } from '../types/signer.js';
 import type { PermissionsGrantMessage, PermissionsRevokeDescriptor, PermissionsRevokeMessage } from '../types/permissions-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
@@ -9,7 +9,7 @@ import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 export type PermissionsRevokeOptions = {
   messageTimestamp?: string;
   permissionsGrantId: string;
-  authorizationSignatureInput: SignatureInput;
+  authorizationSigner: Signer;
 };
 
 export class PermissionsRevoke extends Message<PermissionsRevokeMessage> {
@@ -27,7 +27,7 @@ export class PermissionsRevoke extends Message<PermissionsRevokeMessage> {
       permissionsGrantId : options.permissionsGrantId,
     };
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
+    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSigner);
     const message: PermissionsRevokeMessage = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

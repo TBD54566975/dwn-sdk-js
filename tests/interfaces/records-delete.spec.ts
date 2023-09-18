@@ -15,9 +15,9 @@ describe('RecordsDelete', () => {
 
       const currentTime = getCurrentTimeInHighPrecision();
       const recordsDelete = await RecordsDelete.create({
-        recordId                    : 'anything',
-        authorizationSignatureInput : Jws.createSignatureInput(alice),
-        messageTimestamp            : currentTime
+        recordId            : 'anything',
+        authorizationSigner : Jws.createSigner(alice),
+        messageTimestamp    : currentTime
       });
 
       expect(recordsDelete.message.descriptor.messageTimestamp).to.equal(currentTime);
@@ -27,8 +27,8 @@ describe('RecordsDelete', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const recordsDelete = await RecordsDelete.create({
-        recordId                    : 'anything',
-        authorizationSignatureInput : Jws.createSignatureInput(alice)
+        recordId            : 'anything',
+        authorizationSigner : Jws.createSigner(alice)
       });
 
       expect(recordsDelete.message.descriptor.messageTimestamp).to.exist;

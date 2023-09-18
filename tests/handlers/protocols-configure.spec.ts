@@ -80,8 +80,8 @@ export function testProtocolsConfigureHandler(): void {
 
         // intentionally create more than one signature, which is not allowed
         const extraRandomPersona = await TestDataGenerator.generatePersona();
-        const signatureInput1 = Jws.createSignatureInput(author);
-        const signatureInput2 = Jws.createSignatureInput(extraRandomPersona);
+        const signatureInput1 = Jws.createSigner(author);
+        const signatureInput2 = Jws.createSigner(extraRandomPersona);
 
         const authorizationPayloadBytes = Encoder.objectToBytes(protocolsConfigure.authorizationPayload!);
 
@@ -233,7 +233,7 @@ export function testProtocolsConfigureHandler(): void {
         // Re-create auth because we altered the descriptor after signing
         protocolsConfig.message.authorization = await Message.signAsAuthorization(
           protocolsConfig.message.descriptor,
-          Jws.createSignatureInput(alice)
+          Jws.createSigner(alice)
         );
 
         // Send records write message
@@ -257,7 +257,7 @@ export function testProtocolsConfigureHandler(): void {
         // Re-create auth because we altered the descriptor after signing
         protocolsConfig.message.authorization = await Message.signAsAuthorization(
           protocolsConfig.message.descriptor,
-          Jws.createSignatureInput(alice)
+          Jws.createSigner(alice)
         );
 
         // Send records write message

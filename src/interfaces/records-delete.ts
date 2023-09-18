@@ -2,7 +2,7 @@ import type { RecordsDeleteDescriptor, RecordsDeleteMessage } from '../types/rec
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Message } from '../core/message.js';
-import type { SignatureInput } from '../types/jws-types.js';
+import type { Signer } from '../types/signer.js';
 
 import { authorize, validateAuthorizationIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
@@ -10,7 +10,7 @@ import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 export type RecordsDeleteOptions = {
   recordId: string;
   messageTimestamp?: string;
-  authorizationSignatureInput: SignatureInput;
+  authorizationSigner: Signer;
 };
 
 export class RecordsDelete extends Message<RecordsDeleteMessage> {
@@ -38,7 +38,7 @@ export class RecordsDelete extends Message<RecordsDeleteMessage> {
       messageTimestamp : options.messageTimestamp ?? currentTime
     };
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput);
+    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSigner);
     const message: RecordsDeleteMessage = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

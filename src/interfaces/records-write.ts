@@ -1,6 +1,8 @@
+import type { GeneralJws } from '../types/jws-types.js';
 import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PublicJwk } from '../types/jose-types.js';
+import type { Signer } from '../types/signer.js';
 import type {
   EncryptedKey,
   EncryptionProperty,
@@ -11,7 +13,6 @@ import type {
   RecordsWriteMessage,
   UnsignedRecordsWriteMessage
 } from '../types/records-types.js';
-import type { GeneralJws, SignatureInput } from '../types/jws-types.js';
 
 import { Cid } from '../utils/cid.js';
 import { Encoder } from '../utils/encoder.js';
@@ -20,7 +21,7 @@ import { EncryptionAlgorithm } from '../utils/encryption.js';
 import { GeneralJwsBuilder } from '../jose/jws/general/builder.js';
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Jws } from '../utils/jws.js';
-import { KeyDerivationScheme } from '../index.js';
+import { KeyDerivationScheme } from '../utils/hd-key.js';
 import { Message } from '../core/message.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
@@ -47,8 +48,8 @@ export type RecordsWriteOptions = {
   published?: boolean;
   datePublished?: string;
   dataFormat: string;
-  authorizationSignatureInput?: SignatureInput;
-  attestationSignatureInputs?: SignatureInput[];
+  authorizationSigner?: Signer;
+  attestationSigners?: Signer[];
   encryptionInput?: EncryptionInput;
   permissionsGrantId?: string;
 };
@@ -111,8 +112,8 @@ export type CreateFromOptions = {
   published?: boolean;
   messageTimestamp?: string;
   datePublished?: string;
-  authorizationSignatureInput?: SignatureInput;
-  attestationSignatureInputs?: SignatureInput[];
+  authorizationSigner?: Signer;
+  attestationSigners?: Signer[];
   encryptionInput?: EncryptionInput;
 };
 
@@ -120,12 +121,12 @@ export class RecordsWrite {
   private _message: InternalRecordsWriteMessage;
   /**
    * Valid JSON message representing this RecordsWrite.
-   * @throws `DwnErrorCode.RecordsWriteMissingAuthorizationSignatureInput` if the message is not signed yet.
+   * @throws `DwnErrorCode.RecordsWriteMissingauthorizationSigner` if the message is not signed yet.
    */
   public get message(): RecordsWriteMessage {
     if (this._message.authorization === undefined) {
       throw new DwnError(
-        DwnErrorCode.RecordsWriteMissingAuthorizationSignatureInput,
+        DwnErrorCode.RecordsWriteMissingauthorizationSigner,
         'This RecordsWrite is not yet signed, JSON message cannot be generated from an incomplete state.'
       );
     }
@@ -246,7 +247,7 @@ export class RecordsWrite {
 
     // `attestation` generation
     const descriptorCid = await Cid.computeCid(descriptor);
-    const attestation = await RecordsWrite.createAttestation(descriptorCid, options.attestationSignatureInputs);
+    const attestation = await RecordsWrite.createAttestation(descriptorCid, options.attestationSigners);
 
     // `encryption` generation
     const encryption = await RecordsWrite.createEncryptionProperty(descriptor, options.encryptionInput);
@@ -265,8 +266,8 @@ export class RecordsWrite {
 
     const recordsWrite = new RecordsWrite(message);
 
-    if (options.authorizationSignatureInput !== undefined) {
-      await recordsWrite.sign(options.authorizationSignatureInput, options.permissionsGrantId);
+    if (options.authorizationSigner !== undefined) {
+      await recordsWrite.sign(options.authorizationSigner, options.permissionsGrantId);
     }
 
     return recordsWrite;
@@ -313,25 +314,25 @@ export class RecordsWrite {
 
     const createOptions: RecordsWriteOptions = {
       // immutable properties below, just inherit from the message given
-      recipient                   : unsignedMessage.descriptor.recipient,
-      recordId                    : unsignedMessage.recordId,
-      dateCreated                 : unsignedMessage.descriptor.dateCreated,
-      contextId                   : unsignedMessage.contextId,
-      protocol                    : unsignedMessage.descriptor.protocol,
-      protocolPath                : unsignedMessage.descriptor.protocolPath,
-      parentId                    : unsignedMessage.descriptor.parentId,
-      schema                      : unsignedMessage.descriptor.schema,
-      dataFormat                  : unsignedMessage.descriptor.dataFormat,
+      recipient           : unsignedMessage.descriptor.recipient,
+      recordId            : unsignedMessage.recordId,
+      dateCreated         : unsignedMessage.descriptor.dateCreated,
+      contextId           : unsignedMessage.contextId,
+      protocol            : unsignedMessage.descriptor.protocol,
+      protocolPath        : unsignedMessage.descriptor.protocolPath,
+      parentId            : unsignedMessage.descriptor.parentId,
+      schema              : unsignedMessage.descriptor.schema,
+      dataFormat          : unsignedMessage.descriptor.dataFormat,
       // mutable properties below
-      messageTimestamp            : options.messageTimestamp ?? currentTime,
+      messageTimestamp    : options.messageTimestamp ?? currentTime,
       published,
       datePublished,
-      data                        : options.data,
-      dataCid                     : options.data ? undefined : unsignedMessage.descriptor.dataCid, // if data not given, use base message dataCid
-      dataSize                    : options.data ? undefined : unsignedMessage.descriptor.dataSize, // if data not given, use base message dataSize
-      // finally still need input for signing
-      authorizationSignatureInput : options.authorizationSignatureInput,
-      attestationSignatureInputs  : options.attestationSignatureInputs
+      data                : options.data,
+      dataCid             : options.data ? undefined : unsignedMessage.descriptor.dataCid, // if data not given, use base message dataCid
+      dataSize            : options.data ? undefined : unsignedMessage.descriptor.dataSize, // if data not given, use base message dataSize
+      // finally still need signers
+      authorizationSigner : options.authorizationSigner,
+      attestationSigners  : options.attestationSigners
     };
 
     const recordsWrite = await RecordsWrite.create(createOptions);
@@ -360,8 +361,8 @@ export class RecordsWrite {
   /**
    * Signs the RecordsWrite.
    */
-  public async sign(signatureInput: SignatureInput, permissionsGrantId?: string): Promise<void> {
-    const author = Jws.extractDid(signatureInput.protectedHeader.kid);
+  public async sign(signer: Signer, permissionsGrantId?: string): Promise<void> {
+    const author = Jws.extractDid(signer.keyId);
 
     const descriptor = this._message.descriptor;
     const descriptorCid = await Cid.computeCid(descriptor);
@@ -381,7 +382,7 @@ export class RecordsWrite {
       descriptorCid,
       this._message.attestation,
       this._message.encryption,
-      signatureInput,
+      signer,
       permissionsGrantId
     );
 
@@ -627,15 +628,15 @@ export class RecordsWrite {
   /**
    * Creates the `attestation` property of a RecordsWrite message if given signature inputs; returns `undefined` otherwise.
    */
-  public static async createAttestation(descriptorCid: string, signatureInputs?: SignatureInput[]): Promise<GeneralJws | undefined> {
-    if (signatureInputs === undefined || signatureInputs.length === 0) {
+  public static async createAttestation(descriptorCid: string, signers?: Signer[]): Promise<GeneralJws | undefined> {
+    if (signers === undefined || signers.length === 0) {
       return undefined;
     }
 
     const attestationPayload: RecordsWriteAttestationPayload = { descriptorCid };
     const attestationPayloadBytes = Encoder.objectToBytes(attestationPayload);
 
-    const builder = await GeneralJwsBuilder.create(attestationPayloadBytes, signatureInputs);
+    const builder = await GeneralJwsBuilder.create(attestationPayloadBytes, signers);
     return builder.getJws();
   }
 
@@ -648,7 +649,7 @@ export class RecordsWrite {
     descriptorCid: string,
     attestation: GeneralJws | undefined,
     encryption: EncryptionProperty | undefined,
-    signatureInput: SignatureInput,
+    signer: Signer,
     permissionsGrantId: string | undefined,
   ): Promise<GeneralJws> {
     const authorizationPayload: RecordsWriteAuthorizationPayload = {
@@ -666,7 +667,7 @@ export class RecordsWrite {
 
     const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
 
-    const builder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signatureInput]);
+    const builder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);
     return builder.getJws();
   }
 

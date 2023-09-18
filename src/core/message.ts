@@ -1,5 +1,5 @@
 import type { GeneralJws } from '../types/jws-types.js';
-import type { SignatureInput } from '../types/jws-types.js';
+import type { Signer } from '../types/signer.js';
 import type { BaseAuthorizationPayload, Descriptor, GenericMessage } from '../types/message-types.js';
 
 import { Cid } from '../utils/cid.js';
@@ -138,7 +138,7 @@ export abstract class Message<M extends GenericMessage> {
    */
   public static async signAsAuthorization(
     descriptor: Descriptor,
-    signatureInput: SignatureInput,
+    signatureInput: Signer,
     permissionsGrantId?: string,
   ): Promise<GeneralJws> {
     const descriptorCid = await Cid.computeCid(descriptor);

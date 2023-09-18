@@ -1,7 +1,7 @@
 import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { RecordsWrite } from './records-write.js';
-import type { SignatureInput } from '../types/jws-types.js';
+import type { Signer } from '../types/signer.js';
 import type { RecordsFilter , RecordsReadDescriptor, RecordsReadMessage } from '../types/records-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
@@ -16,7 +16,7 @@ import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 export type RecordsReadOptions = {
   filter: RecordsFilter;
   date?: string;
-  authorizationSignatureInput?: SignatureInput;
+  authorizationSigner?: Signer;
   permissionsGrantId?: string;
 };
 
@@ -39,7 +39,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
    * @throws {DwnError} when a combination of required RecordsReadOptions are missing
    */
   public static async create(options: RecordsReadOptions): Promise<RecordsRead> {
-    const { filter, authorizationSignatureInput, permissionsGrantId } = options;
+    const { filter, authorizationSigner, permissionsGrantId } = options;
     const currentTime = getCurrentTimeInHighPrecision();
 
     const descriptor: RecordsReadDescriptor = {
@@ -53,8 +53,8 @@ export class RecordsRead extends Message<RecordsReadMessage> {
 
     // only generate the `authorization` property if signature input is given
     let authorization = undefined;
-    if (authorizationSignatureInput !== undefined) {
-      authorization = await Message.signAsAuthorization(descriptor, authorizationSignatureInput, permissionsGrantId);
+    if (authorizationSigner !== undefined) {
+      authorization = await Message.signAsAuthorization(descriptor, authorizationSigner, permissionsGrantId);
     }
     const message: RecordsReadMessage = { descriptor, authorization };
 

@@ -1,5 +1,6 @@
+import type { GeneralJws } from '../types/jws-types.js';
 import type { MessageStore } from '../types/message-store.js';
-import type { GeneralJws, SignatureInput } from '../types/jws-types.js';
+import type { Signer } from '../types/signer.js';
 import type { ProtocolsQueryDescriptor, ProtocolsQueryFilter, ProtocolsQueryMessage } from '../types/protocols-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
@@ -14,7 +15,7 @@ import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 export type ProtocolsQueryOptions = {
   messageTimestamp?: string;
   filter?: ProtocolsQueryFilter,
-  authorizationSignatureInput?: SignatureInput;
+  authorizationSigner?: Signer;
   permissionsGrantId?: string;
 };
 
@@ -46,8 +47,8 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
 
     // only generate the `authorization` property if signature input is given
     let authorization: GeneralJws | undefined;
-    if (options.authorizationSignatureInput !== undefined) {
-      authorization = await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput, options.permissionsGrantId);
+    if (options.authorizationSigner !== undefined) {
+      authorization = await Message.signAsAuthorization(descriptor, options.authorizationSigner, options.permissionsGrantId);
     }
 
     const message = { descriptor, authorization };
