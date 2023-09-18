@@ -5,6 +5,7 @@ export interface Signer {
   /**
    * The ID of the key used by this signer.
    * This needs to be a fully-qualified ID (ie. prefixed with DID) so that author can be parsed out for processing such as `recordId` computation.
+   * Example: did:example:alice#key1
    * This value will be used as the "kid" parameter in JWS produced.
    * While this property is not a required property per JWS specification, it is required for DWN authentication.
    */
