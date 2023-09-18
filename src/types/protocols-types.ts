@@ -42,9 +42,53 @@ export enum ProtocolAction {
   Write = 'write'
 }
 
+/**
+ * Rules defining which actors may access a record at the given protocol path.
+ * Rules take three forms:
+ * 1. Anyone can write.
+ *   {
+ *     who: 'anyone',
+ *     can: 'write
+ *   }
+ *
+ * 2. Author of protocolPath can write; OR
+ *    Recipient of protocolPath can write.
+ *   {
+ *     who: 'recipient'
+ *     of: 'requestForQuote',
+ *     can: 'write'
+ *   }
+ *
+ * 3. Role can write.
+ *   {
+ *     role: 'friend',
+ *     can: 'write'
+ *   }
+ */
 export type ProtocolActionRule = {
-  who: string,
+  /**
+   * May be 'anyone' | 'author' | 'recipient'.
+   * If `who` === 'anyone', then `of` must be omitted. Otherwise `of` must be present.
+   * Mutually exclusive with `role`
+   */
+  who?: string,
+
+  /**
+   * The protocol path of a record marked with $globalRole: true.
+   * Mutually exclusive with `who`
+   */
+  role?: string;
+
+  /**
+   * Protocol path.
+   * Must be present if `who` === 'author' or 'recipient'
+   */
   of?: string;
+
+  /**
+   * Action that the actor can perform.
+   * May be 'read' | 'write'
+   */
   can: string;
 };
 /**
@@ -63,6 +107,13 @@ export type ProtocolRuleSet = {
    */
   $encryption?: ProtocolPathEncryption;
   $actions?: ProtocolActionRule[];
+  /**
+   * If true, this marks a record as a `role` that may be used across contexts. Only root records
+   * may set $globalRole: true.
+   * The recipient of a $globalRole record may invoke their role in RecordsRead or RecordsWrites
+   * by setting `asRole` property to the protocol path of the $globalRole record.
+   */
+  $globalRole?: boolean;
   // JSON Schema verifies that properties other than `$actions` will actually have type ProtocolRuleSet
   [key: string]: any;
 };

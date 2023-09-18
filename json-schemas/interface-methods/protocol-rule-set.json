@@ -70,9 +70,32 @@
                 ]
               }
             }
+          },
+          {
+            "required": [
+              "role",
+              "can"
+            ],
+            "properties": {
+              "role": {
+                "$comment": "Must be the protocol path of a record with either $globalRole or $contextRole set to true",
+                "type": "string"
+              },
+              "can": {
+                "type": "string",
+                "enum": [
+                  "read",
+                  "write"
+                ]
+              }
+            }
           }
         ]
       }
+    },
+    "$globalRole": {
+      "$comment": "When `true`, this turns a record into `role` that may be used across contexts",
+      "type": "boolean"
     }
   },
   "patternProperties": {
