@@ -240,19 +240,18 @@ If you have the private key readily available, it is recommended to use the buil
 ```ts
 // create a custom signer
 class CustomSigner implements Signer {
+  public keyId = 'did:example:alice#key1';
+  public algorithm = 'EdDSA'; // use valid `alg` value published in https://www.iana.org/assignments/jose/jose.xhtml
   public async sign (content: Uint8Array): Promise<Uint8Array> {
     ... // custom signing logic
   }
 }
 
-const signer = new CustomSigner();
+const authorizationSigner = new CustomSigner();
 
 const options: RecordsWriteOptions = {
   ...
-  authorizationSigner : {
-    signer,
-    protectedHeader: { alg: 'EdDSA', kid: 'did:example:alice#key1' } // see https://www.iana.org/assignments/jose/jose.xhtml for valid signature `alg` values
-  }
+  authorizationSigner
 };
 
 const recordsWrite = await RecordsWrite.create(options);
