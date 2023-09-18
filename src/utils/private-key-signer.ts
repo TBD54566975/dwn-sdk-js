@@ -4,7 +4,13 @@ import type { Signer } from '../types/signer.js';
 import { signatureAlgorithms } from '../jose/algorithms/signing/signature-algorithms.js';
 import { DwnError, DwnErrorCode } from '../index.js';
 
+/**
+ * Input to `PrivateKeySigner` constructor.
+ */
 export type PrivateKeySignerOptions = {
+  /**
+   * Private JWK to create the signer from.
+   */
   privateJwk: PrivateJwk;
 
   /**
@@ -35,6 +41,7 @@ export class PrivateKeySigner implements Signer {
       );
     }
 
+    // NOTE: `alg` is optional for a JWK as specified in https://datatracker.ietf.org/doc/html/rfc7517#section-4.4
     if (options.algorithm === undefined && options.privateJwk.alg === undefined) {
       throw new DwnError(
         DwnErrorCode.PrivateKeySignerUnableToDeduceAlgorithm,
