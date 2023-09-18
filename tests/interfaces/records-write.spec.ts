@@ -323,7 +323,7 @@ describe('RecordsWrite', () => {
       expect(recordsWrite.author).to.not.exist;
       expect(recordsWrite.authorizationPayload).to.not.exist;
 
-      expect(() => recordsWrite.message).to.throw(DwnErrorCode.RecordsWriteMissingauthorizationSigner);
+      expect(() => recordsWrite.message).to.throw(DwnErrorCode.RecordsWriteMissingAuthorizationSigner);
     });
   });
 });
