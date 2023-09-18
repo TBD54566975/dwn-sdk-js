@@ -110,10 +110,10 @@ export class MessageStoreLevel implements MessageStore {
     }
 
     const sortedRecords = await MessageStoreLevel.sortMessages(messages, messageSort);
-    return this.paginateRecords(sortedRecords, paginationMessage, pagination);
+    return this.paginateMessages(sortedRecords, paginationMessage, pagination);
   }
 
-  private async paginateRecords(
+  private async paginateMessages(
     messages: GenericMessage[],
     paginationMessage?: GenericMessage,
     pagination: Pagination = { }
@@ -123,8 +123,9 @@ export class MessageStoreLevel implements MessageStore {
       return { messages }; // return all without pagination pointer.
     }
 
-    // this is an optimization, we are passing the pagination message object for an easier lookup
+    // we are passing the pagination message object for an easier lookup
     // since we know this object exists within the array if passed, we can assume that it will always have a value greater than -1
+    // TODO: #506 - Improve performance by modifying filters based on the pagination cursor (https://github.com/TBD54566975/dwn-sdk-js/issues/506)
     const cursorIndex = paginationMessage ? messages.indexOf(paginationMessage) : undefined;
 
     // the first element of the returned results is always the message immediately following the cursor.
