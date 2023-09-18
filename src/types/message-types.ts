@@ -23,7 +23,6 @@ export type Descriptor = {
   interface: string;
   method: string;
   messageTimestamp: string;
-
 };
 
 /**
@@ -60,4 +59,20 @@ export type RangeFilter = (GT | LT) & Partial<GT> & Partial<LT>;
 
 export type Filter = {
   [property: string]: EqualFilter | OneOfFilter | RangeFilter
+};
+
+export type Pagination = {
+  messageCid?: string
+  limit?: number
+};
+
+export enum SortOrder {
+  Descending = -1,
+  Ascending = 1
+}
+
+export type MessageSort = {
+  dateCreated?: SortOrder;
+  datePublished?: SortOrder;
+  messageTimestamp?: SortOrder;
 };

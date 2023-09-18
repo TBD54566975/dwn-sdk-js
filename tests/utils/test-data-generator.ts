@@ -1,6 +1,8 @@
 import type { DidResolutionResult } from '../../src/did/did-resolver.js';
+import type { Pagination } from '../../src/types/message-types.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsFilter } from '../../src/types/records-types.js';
+
 import type {
   CreateFromOptions,
   DateSort,
@@ -159,6 +161,7 @@ export type GenerateRecordsQueryInput = {
   messageTimestamp?: string;
   filter?: RecordsFilter;
   dateSort?: DateSort;
+  pagination?: Pagination;
 };
 
 export type GenerateRecordsQueryOutput = {
@@ -300,7 +303,6 @@ export class TestDataGenerator {
   public static async generateProtocolsConfigure(
     input?: GenerateProtocolsConfigureInput
   ): Promise<GenerateProtocolsConfigureOutput> {
-
     const author = input?.author ?? await TestDataGenerator.generatePersona();
 
     // generate protocol types and  definition if not given
@@ -601,7 +603,8 @@ export class TestDataGenerator {
       messageTimestamp : input?.messageTimestamp,
       authorizationSignatureInput,
       filter           : input?.filter ?? { schema: TestDataGenerator.randomString(10) }, // must have one filter property if no filter is given
-      dateSort         : input?.dateSort
+      dateSort         : input?.dateSort,
+      pagination       : input?.pagination
     };
     removeUndefinedProperties(options);
 
@@ -810,6 +813,23 @@ export class TestDataGenerator {
    */
   public static randomInt(min: number, max: number): number {
     return Math.floor(Math.random() * (max - min) + min);
+  }
+
+  /**
+   * Generates a random timestamp.
+   *
+   * @returns random UTC ISO-8601 timestamp
+   */
+  public static randomTimestamp(): string {
+    return Temporal.ZonedDateTime.from({
+      timeZone : 'UTC',
+      year     : this.randomInt(2000, 2022),
+      month    : this.randomInt(1, 12),
+      day      : this.randomInt(1, 28),
+      hour     : this.randomInt(0, 23),
+      minute   : this.randomInt(0, 59),
+      second   : this.randomInt(0, 59),
+    }).toInstant().toString({ smallestUnit: 'microseconds' });
   }
 
   /**

@@ -88,13 +88,13 @@ export class ProtocolAuthorization {
       method    : DwnMethodName.Configure,
       protocol  : protocolUri
     };
-    const protocols = await messageStore.query(tenant, query) as ProtocolsConfigureMessage[];
+    const { messages: protocols } = await messageStore.query(tenant, [ query ]);
 
     if (protocols.length === 0) {
       throw new Error(`unable to find protocol definition for ${protocolUri}`);
     }
 
-    const protocolMessage = protocols[0];
+    const protocolMessage = protocols[0] as ProtocolsConfigureMessage;
     return protocolMessage.descriptor.definition;
   }
 
@@ -130,13 +130,13 @@ export class ProtocolAuthorization {
         contextId,
         recordId  : currentParentId
       };
-      const parentMessages = await messageStore.query(tenant, query) as RecordsWriteMessage[];
+      const { messages: parentMessages } = await messageStore.query(tenant, [ query ]);
 
       if (parentMessages.length === 0) {
         throw new Error(`no parent found with ID ${currentParentId}`);
       }
 
-      const parent = parentMessages[0];
+      const parent = parentMessages[0] as RecordsWriteMessage;
       ancestorMessageChain.push(parent);
 
       currentParentId = parent.descriptor.parentId;
@@ -331,10 +331,10 @@ export class ProtocolAuthorization {
         const query = {
           entryId: recordsWrite.message.recordId
         };
-        const result = await messageStore.query(tenant, query) as RecordsWriteMessage[];
+        const { messages: result } = await messageStore.query(tenant, [ query ]);
 
         // check the author of the initial write matches the author of the incoming message
-        const initialWrite = result[0];
+        const initialWrite = result[0] as RecordsWriteMessage;
         const authorOfInitialWrite = Message.getAuthor(initialWrite);
         if (recordsWrite.author !== authorOfInitialWrite) {
           throw new Error(`author of incoming message '${recordsWrite.author}' must match to author of initial write '${authorOfInitialWrite}'`);

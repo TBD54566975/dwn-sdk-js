@@ -1,7 +1,7 @@
 import type { MethodHandler } from '../types/method-handler.js';
 import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
 import type { DataStore, DidResolver, Filter, MessageStore } from '../index.js';
-import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsReadMessage, RecordsReadReply } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { DwnInterfaceName } from '../core/message.js';
@@ -44,7 +44,7 @@ export class RecordsReadHandler implements MethodHandler {
       isLatestBaseState : true,
       ...Records.convertFilter(message.descriptor.filter)
     };
-    const existingMessages = await this.messageStore.query(tenant, query) as RecordsWriteMessage[];
+    const { messages: existingMessages } = await this.messageStore.query(tenant, [ query ]);
     if (existingMessages.length === 0) {
       return {
         status: { code: 404, detail: 'Not Found' }

@@ -12,8 +12,8 @@ export type { EncryptionProperty, RecordsDeleteMessage, RecordsQueryMessage, Rec
 export type { SnapshotsCreateDescriptor, SnapshotsCreateMessage, SnapshotDefinition, SnapshotScope, SnapshotScopeType } from './types/snapshots-types.js';
 export { AllowAllTenantGate, TenantGate } from './core/tenant-gate.js';
 export { Cid } from './utils/cid.js';
+export { DateSort, RecordsQuery, RecordsQueryOptions } from './interfaces/records-query.js';
 export { DataStore, PutResult, GetResult, AssociateResult } from './types/data-store.js';
-export { DateSort } from './interfaces/records-query.js';
 export { DataStream } from './utils/data-stream.js';
 export { DerivedPrivateJwk, HdKey, KeyDerivationScheme } from './utils/hd-key.js';
 export { DidKeyResolver } from './did/did-key-resolver.js';
@@ -43,7 +43,6 @@ export { ProtocolsConfigure, ProtocolsConfigureOptions } from './interfaces/prot
 export { ProtocolsQuery, ProtocolsQueryOptions } from './interfaces/protocols-query.js';
 export { Records } from './utils/records.js';
 export { RecordsDelete, RecordsDeleteOptions } from './interfaces/records-delete.js';
-export { RecordsQuery, RecordsQueryOptions } from './interfaces/records-query.js';
 export { RecordsRead, RecordsReadOptions } from './interfaces/records-read.js';
 export { SnapshotsCreate, SnapshotsCreateOptions } from './interfaces/snapshots-create.js';
 export { Secp256k1 } from './utils/secp256k1.js';

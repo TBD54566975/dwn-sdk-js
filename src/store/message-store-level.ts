@@ -1,16 +1,21 @@
-import type { Filter, GenericMessage } from '../types/message-types.js';
+
+import type { RecordsWriteMessage } from '../index.js';
+import type { Filter, GenericMessage, MessageSort, Pagination } from '../types/message-types.js';
 import type { MessageStore, MessageStoreOptions } from '../types/message-store.js';
 
 import * as block from 'multiformats/block';
 import * as cbor from '@ipld/dag-cbor';
 
+import { ArrayUtility } from '../utils/array.js';
 import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
 import { createLevelDatabase } from './level-wrapper.js';
 import { executeUnlessAborted } from '../utils/abort.js';
 import { IndexLevel } from './index-level.js';
 import { sha256 } from 'multiformats/hashes/sha2';
+import { SortOrder } from '../types/message-types.js';
 import { Cid, Message } from '../index.js';
+
 
 /**
  * A simple implementation of {@link MessageStore} that works in both the browser and server-side.
@@ -77,19 +82,150 @@ export class MessageStoreLevel implements MessageStore {
     return message;
   }
 
-  async query(tenant: string, filter: Filter, options?: MessageStoreOptions): Promise<GenericMessage[]> {
+  async query(
+    tenant: string,
+    filters: Filter[],
+    messageSort?: MessageSort,
+    pagination?: Pagination,
+    options?: MessageStoreOptions
+  ): Promise<{ messages: GenericMessage[], paginationMessageCid?: string }> {
     options?.signal?.throwIfAborted();
 
     const messages: GenericMessage[] = [];
+    const resultIds = await this.index.query(filters.map(f => ({ ...f, tenant })), options);
 
-    const resultIds = await this.index.query({ ...filter, tenant }, options);
-
+    // as an optimization for large data sets, we are finding the message object which matches the paginationMessageCid here.
+    // we can use this within the pagination function after sorting to determine the starting point of the array in a more efficient way.
+    let paginationMessage: GenericMessage | undefined;
     for (const id of resultIds) {
       const message = await this.get(tenant, id, options);
       if (message) { messages.push(message); }
+      if (pagination?.messageCid && pagination.messageCid === id) {
+        paginationMessage = message;
+      }
     }
 
-    return messages;
+    if (pagination?.messageCid !== undefined && paginationMessage === undefined) {
+      return { messages: [] }; //if paginationMessage is not found, do not return any results
+    }
+
+    const sortedRecords = await MessageStoreLevel.sortMessages(messages, messageSort);
+    return this.paginateMessages(sortedRecords, paginationMessage, pagination);
+  }
+
+  private async paginateMessages(
+    messages: GenericMessage[],
+    paginationMessage?: GenericMessage,
+    pagination: Pagination = { }
+  ): Promise<{ messages: GenericMessage[], paginationMessageCid?: string } > {
+    const { limit } = pagination;
+    if (paginationMessage === undefined && limit === undefined) {
+      return { messages }; // return all without pagination pointer.
+    }
+
+    // we are passing the pagination message object for an easier lookup
+    // since we know this object exists within the array if passed, we can assume that it will always have a value greater than -1
+    // TODO: #506 - Improve performance by modifying filters based on the pagination cursor (https://github.com/TBD54566975/dwn-sdk-js/issues/506)
+    const cursorIndex = paginationMessage ? messages.indexOf(paginationMessage) : undefined;
+
+    // the first element of the returned results is always the message immediately following the cursor.
+    const start = cursorIndex === undefined ? 0 : cursorIndex + 1;
+    const end = limit === undefined ? undefined : start + limit;
+    const results = messages.slice(start, end);
+
+    // we only return a paginationMessageCid cursor if there are more results
+    const hasMoreResults = end !== undefined && end < messages.length;
+    let paginationMessageCid: string|undefined;
+    if (hasMoreResults) {
+      // we extract the cid of the last message in the result set.
+      const lastMessage = results.at(-1);
+      paginationMessageCid = await Message.getCid(lastMessage!);
+    }
+
+    return { messages: results, paginationMessageCid };
+  }
+
+  /**
+   * Compares the chosen property of two messages in lexicographical order.
+   * When the value is the same between the two objects, `messageCid` comparison is used to tiebreak.
+   * tiebreaker always compares messageA to messageB
+   *
+   * @returns if SortOrder is Ascending:
+   *            1 if the chosen property of `messageA` is larger than of `messageB`;
+   *           -1 if the chosen property `messageA` is smaller/older than of `messageB`;
+   *            0 otherwise
+   *          if SortOrder is Descending:
+   *            1 if the chosen property of `messageB` is larger than of `messageA`;
+   *           -1 if the chosen property `messageB` is smaller/older than of `messageA`;
+   *            0 otherwise
+   */
+  static async lexicographicalCompare(
+    messageA: GenericMessage,
+    messageB: GenericMessage,
+    comparedPropertyName: string,
+    sortOrder: SortOrder): Promise<number>
+  {
+    const a = (messageA.descriptor as any)[comparedPropertyName];
+    const b = (messageB.descriptor as any)[comparedPropertyName];
+
+    if (sortOrder === SortOrder.Ascending) {
+      if (a > b) {
+        return 1;
+      } else if (a < b) {
+        return -1;
+      }
+    } else {
+      // descending order
+      if (b > a) {
+        return 1;
+      } else if (b < a) {
+        return -1;
+      }
+    }
+
+    // if we reach here it means the compared properties have the same values, we need to fall back to compare the `messageCid` instead
+    return await Message.compareCid(messageA, messageB);
+  }
+
+  /**
+   * This is a temporary naive sort, it will eventually be done within the underlying data store.
+   *
+   * If sorting is based on date published, records that are not published are filtered out.
+   * @param messages - Messages to be sorted if dateSort is present
+   * @param sort - Sorting scheme
+   * @returns Sorted Messages
+   */
+  public static async sortMessages(
+    messages: GenericMessage[],
+    messageSort: MessageSort = { }
+  ): Promise<GenericMessage[]> {
+    const { dateCreated, datePublished, messageTimestamp } = messageSort;
+
+    let sortOrder = SortOrder.Ascending; // default
+    let messagesToSort = messages; // default
+    let propertyToCompare: keyof MessageSort | undefined; // `keyof MessageSort` = name of all properties of `MessageSort`
+
+    if (dateCreated !== undefined) {
+      propertyToCompare = 'dateCreated';
+    } else if (datePublished !== undefined) {
+      propertyToCompare = 'datePublished';
+      messagesToSort = (messages as RecordsWriteMessage[]).filter(message => message.descriptor.published);
+    } else if (messageTimestamp !== undefined) {
+      propertyToCompare = 'messageTimestamp';
+    }
+
+    if (propertyToCompare !== undefined) {
+      sortOrder = messageSort[propertyToCompare]!;
+    } else {
+      propertyToCompare = 'messageTimestamp';
+    }
+
+    const asyncComparer = (a: GenericMessage, b: GenericMessage): Promise<number> => {
+      return MessageStoreLevel.lexicographicalCompare(a, b, propertyToCompare!, sortOrder);
+    };
+
+    // NOTE: we needed to implement our own asynchronous sort method because Array.sort() does not take an async comparer
+    return await ArrayUtility.asyncSort(messagesToSort, asyncComparer);
   }
 
   async delete(tenant: string, cidString: string, options?: MessageStoreOptions): Promise<void> {

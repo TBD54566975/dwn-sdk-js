@@ -90,7 +90,7 @@ describe('Index Level', () => {
         expect(e).to.equal('reason');
       }
 
-      const result = await index.query({ foo: 'bar' });
+      const result = await index.query([{ foo: 'bar' }]);
       expect(result.length).to.equal(0);
     });
 
@@ -144,10 +144,10 @@ describe('Index Level', () => {
       await index.put(id2, doc2);
       await index.put(id3, doc3);
 
-      const result = await index.query({
+      const result = await index.query([{
         'a' : 'b',
         'c' : 'e'
-      });
+      }]);
 
       expect(result.length).to.equal(1);
       expect(result[0]).to.equal(id3);
@@ -161,9 +161,9 @@ describe('Index Level', () => {
 
       await index.put(id, doc);
 
-      const resp = await index.query({
+      const resp = await index.query([{
         value: 'foo'
-      });
+      }]);
 
       expect(resp.length).to.equal(0);
     });
@@ -188,9 +188,9 @@ describe('Index Level', () => {
       await index.put(id2, doc2);
       await index.put(id3, doc3);
 
-      const resp = await index.query({
+      const resp = await index.query([{
         a: [ 'a', 'b' ]
-      });
+      }]);
 
       expect(resp.length).to.equal(2);
       expect(resp).to.include(id1);
@@ -207,11 +207,11 @@ describe('Index Level', () => {
         await index.put(id, doc);
       }
 
-      const resp = await index.query({
+      const resp = await index.query([{
         dateCreated: {
           gte: Temporal.PlainDateTime.from({ year: 2023, month: 1, day: 15 }).toString({ smallestUnit: 'microseconds' })
         }
-      });
+      }]);
 
       expect(resp.length).to.equal(5);
     });
@@ -224,11 +224,11 @@ describe('Index Level', () => {
 
       await index.put(id, doc);
 
-      const resp = await index.query({
+      const resp = await index.query([{
         value: {
           gte: 'foo'
         }
-      });
+      }]);
 
       expect(resp.length).to.equal(1);
       expect(resp).to.include(id);
@@ -248,11 +248,11 @@ describe('Index Level', () => {
       await index.put(id1, doc1);
       await index.put(id2, doc2);
 
-      const resp = await index.query({
+      const resp = await index.query([{
         foo: {
           lte: 'bar'
         }
-      });
+      }]);
 
       expect(resp.length).to.equal(1);
       expect(resp).to.include(id1);
@@ -272,9 +272,9 @@ describe('Index Level', () => {
       await index.put(id1, doc1);
       await index.put(id2, doc2);
 
-      const resp = await index.query({
+      const resp = await index.query([{
         foo: true
-      });
+      }]);
 
       expect(resp.length).to.equal(1);
       expect(resp).to.include(id1);
@@ -293,9 +293,9 @@ describe('Index Level', () => {
         for (const digit of testNumbers) {
           await index.put(digit.toString(), { digit });
         }
-        const resp = await index.query({
+        const resp = await index.query([{
           digit: testNumbers.at(testIndex)!
-        });
+        }]);
 
         expect(resp.length).to.equal(1);
         expect(resp.at(0)).to.equal(testNumbers.at(testIndex)!.toString());
@@ -306,9 +306,9 @@ describe('Index Level', () => {
         for (const digit of testNumbers.filter(n => n !== 1)) {
           await index.put(digit.toString(), { digit });
         }
-        const resp = await index.query({
+        const resp = await index.query([{
           digit: 1
-        });
+        }]);
 
         expect(resp.length).to.equal(0);
       });
@@ -320,12 +320,12 @@ describe('Index Level', () => {
 
         const upperBound = positiveDigits.at(positiveDigits.length - 3)!;
         const lowerBound = positiveDigits.at(2)!;
-        const resp = await index.query({
+        const resp = await index.query([{
           digit: {
             gte : lowerBound,
             lte : upperBound
           }
-        });
+        }]);
 
         const testResults = testNumbers.filter( n => n >= lowerBound && n <= upperBound).map(n => n.toString());
         expect(resp.sort()).to.eql(testResults.sort());
@@ -338,12 +338,12 @@ describe('Index Level', () => {
 
         const upperBound = negativeDigits.at(negativeDigits.length - 2)!;
         const lowerBound = negativeDigits.at(2)!;
-        const resp = await index.query({
+        const resp = await index.query([{
           digit: {
             gte : lowerBound,
             lte : upperBound
           }
-        });
+        }]);
 
         const testResults = testNumbers.filter( n => n >= lowerBound && n <= upperBound).map(n => n.toString());
         expect(resp.sort()).to.eql(testResults.sort());
@@ -356,11 +356,11 @@ describe('Index Level', () => {
 
         const lowerBound = negativeDigits.at(4)!;
 
-        const resp = await index.query({
+        const resp = await index.query([{
           digit: {
             gt: lowerBound,
           }
-        });
+        }]);
 
         const testResults = testNumbers.filter( n => n > lowerBound).map(n => n.toString());
         expect(resp.sort()).to.eql(testResults.sort());
@@ -373,11 +373,11 @@ describe('Index Level', () => {
 
         const lowerBound = positiveDigits.at(4)!;
 
-        const resp = await index.query({
+        const resp = await index.query([{
           digit: {
             gt: lowerBound,
           }
-        });
+        }]);
 
         const testResults = testNumbers.filter( n => n > lowerBound).map(n => n.toString());
         expect(resp.sort()).to.eql(testResults.sort());
@@ -390,11 +390,11 @@ describe('Index Level', () => {
 
         const upperBound = negativeDigits.at(4)!;
 
-        const resp = await index.query({
+        const resp = await index.query([{
           digit: {
             lt: upperBound,
           }
-        });
+        }]);
 
         const testResults = testNumbers.filter( n => n < upperBound).map(n => n.toString());
         expect(resp.sort()).to.eql(testResults.sort());
@@ -407,11 +407,11 @@ describe('Index Level', () => {
 
         const upperBound = positiveDigits.at(4)!;
 
-        const resp = await index.query({
+        const resp = await index.query([{
           digit: {
             lt: upperBound,
           }
-        });
+        }]);
 
         const testResults = testNumbers.filter( n => n < upperBound).map(n => n.toString());
         expect(resp.sort()).to.eql(testResults.sort());
@@ -449,7 +449,7 @@ describe('Index Level', () => {
       await index.put(id1, doc1);
       await index.put(id2, doc2);
 
-      let result = await index.query({ 'a': 'b', 'c': 'd' });
+      let result = await index.query([{ 'a': 'b', 'c': 'd' }]);
 
       expect(result.length).to.equal(2);
       expect(result).to.contain(id1);
@@ -457,7 +457,7 @@ describe('Index Level', () => {
       await index.delete(id1);
 
 
-      result = await index.query({ 'a': 'b', 'c': 'd' });
+      result = await index.query([{ 'a': 'b', 'c': 'd' }]);
 
       expect(result.length).to.equal(1);
     });
@@ -479,7 +479,7 @@ describe('Index Level', () => {
         expect(e).to.equal('reason');
       }
 
-      const result = await index.query({ foo: 'bar' });
+      const result = await index.query([{ foo: 'bar' }]);
       expect(result.length).to.equal(1);
       expect(result).to.contain(id);
     });

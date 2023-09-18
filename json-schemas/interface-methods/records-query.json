@@ -38,6 +38,19 @@
         "filter": {
           "$ref": "https://identity.foundation/dwn/json-schemas/records-filter.json"
         },
+        "pagination": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "limit": {
+              "type": "number",
+              "minimum": 1 
+            },
+            "messageCid": {
+              "type": "string"
+            }
+          }
+        },
         "dateSort": {
           "enum": [
             "createdAscending",

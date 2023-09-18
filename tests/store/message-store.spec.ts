@@ -1,9 +1,13 @@
 import type { MessageStore } from '../../src/index.js';
 import type { RecordsWriteMessage } from '../../src/types/records-types.js';
 
-import { DidKeyResolver } from '../../src/index.js';
 import { expect } from 'chai';
+
+import { constructRecordsWriteIndexes } from '../../src/handlers/records-write.js';
+import { DidKeyResolver } from '../../src/index.js';
+import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
+import { SortOrder } from '../../src/types/message-types.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 
@@ -53,10 +57,10 @@ export function testMessageStore(): void {
         // inserting the message indicating it is the 'latest' in the index
         await messageStore.put(alice.did, message, { latest: 'true' });
 
-        const results1 = await messageStore.query(alice.did, { latest: 'true' });
+        const { messages: results1 } = await messageStore.query(alice.did, [{ latest: 'true' }]);
         expect(results1.length).to.equal(1);
 
-        const results2 = await messageStore.query(alice.did, { latest: 'false' });
+        const { messages: results2 } = await messageStore.query(alice.did, [{ latest: 'false' }]);
         expect(results2.length).to.equal(0);
 
         // deleting the existing indexes and replacing it indicating it is no longer the 'latest'
@@ -64,10 +68,10 @@ export function testMessageStore(): void {
         await messageStore.delete(alice.did, cid);
         await messageStore.put(alice.did, message, { latest: 'false' });
 
-        const results3 = await messageStore.query(alice.did, { latest: 'true' });
+        const { messages: results3 } = await messageStore.query(alice.did, [{ latest: 'true' }]);
         expect(results3.length).to.equal(0);
 
-        const results4 = await messageStore.query(alice.did, { latest: 'false' });
+        const { messages: results4 } = await messageStore.query(alice.did, [{ latest: 'false' }]);
         expect(results4.length).to.equal(1);
       });
 
@@ -79,7 +83,7 @@ export function testMessageStore(): void {
 
         await messageStore.put(alice.did, message, { schema });
 
-        const results = await messageStore.query(alice.did, { schema });
+        const { messages: results } = await messageStore.query(alice.did, [{ schema }]);
         expect((results[0] as RecordsWriteMessage).descriptor.schema).to.equal(schema);
       });
 
@@ -121,8 +125,294 @@ export function testMessageStore(): void {
           expect(e).to.equal('reason');
         }
 
-        const results = await messageStore.query(alice.did, { schema });
+        const { messages: results } = await messageStore.query(alice.did, [{ schema }]);
         expect(results.length).to.equal(0);
+      });
+    });
+
+    describe('sort and pagination', () => {
+
+      // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
+      // so that different test suites can reuse the same backend store for testing
+      before(async () => {
+        const stores = TestStores.get();
+        messageStore = stores.messageStore;
+        await messageStore.open();
+      });
+
+      beforeEach(async () => {
+        await messageStore.clear(); // clean up before each test rather than after so that a test does not depend on other tests to do the clean up
+      });
+
+      after(async () => {
+        await messageStore.close();
+      });
+
+      describe('sorting', async () => {
+        it('should sort on messageTimestamp Ascending if no sort is specified', async () => {
+          const alice = await DidKeyResolver.generate();
+
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            messageTimestamp: TestDataGenerator.randomTimestamp()
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const { messages: messageQuery } = await messageStore.query(alice.did, [{}]);
+          expect(messageQuery.length).to.equal(messages.length);
+
+          const sortedRecords = messages.sort((a,b) =>
+            lexicographicalCompare(a.message.descriptor.messageTimestamp, b.message.descriptor.messageTimestamp));
+          for (let i = 0; i < sortedRecords.length; i++) {
+            expect(sortedRecords[i].message.descriptor.messageTimestamp).to.equal(messageQuery[i].descriptor.messageTimestamp);
+          }
+        });
+
+        it('should sort on messageTimestamp Ascending', async () => {
+          const alice = await DidKeyResolver.generate();
+
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            messageTimestamp: TestDataGenerator.randomTimestamp()
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { messageTimestamp: SortOrder.Ascending });
+          expect(messageQuery.length).to.equal(messages.length);
+
+          const sortedRecords = messages.sort((a,b) =>
+            lexicographicalCompare(a.message.descriptor.messageTimestamp, b.message.descriptor.messageTimestamp));
+          for (let i = 0; i < messages.length; i++) {
+            expect(sortedRecords[i].message.descriptor.messageTimestamp).to.equal(messageQuery[i].descriptor.messageTimestamp);
+          }
+        });
+
+        it('should sort on dateCreated Ascending', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            dateCreated: TestDataGenerator.randomTimestamp(),
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { dateCreated: SortOrder.Ascending });
+          expect(messageQuery.length).to.equal(messages.length);
+
+          const sortedRecords = messages.sort((a,b) =>
+            lexicographicalCompare(a.message.descriptor.dateCreated, b.message.descriptor.dateCreated));
+
+          for (let i = 0; i < messages.length; i++) {
+            expect(await Message.getCid(sortedRecords[i].message)).to.equal(await Message.getCid(messageQuery[i]));
+          }
+        });
+
+        it('should sort on dateCreated Descending', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            dateCreated: TestDataGenerator.randomTimestamp(),
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { dateCreated: SortOrder.Descending });
+          expect(messageQuery.length).to.equal(messages.length);
+
+          const sortedRecords = messages.sort((a,b) =>
+            lexicographicalCompare(b.message.descriptor.dateCreated, a.message.descriptor.dateCreated));
+
+          for (let i = 0; i < messages.length; i++) {
+            expect(await Message.getCid(sortedRecords[i].message)).to.equal(await Message.getCid(messageQuery[i]));
+          }
+        });
+
+        it('should sort on datePublished Ascending', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            published     : true,
+            datePublished : TestDataGenerator.randomTimestamp()
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { datePublished: SortOrder.Ascending });
+          expect(messageQuery.length).to.equal(messages.length);
+
+          const sortedRecords = messages.sort((a,b) =>
+            lexicographicalCompare(a.message.descriptor.datePublished!, b.message.descriptor.datePublished!));
+
+          for (let i = 0; i < messages.length; i++) {
+            expect(await Message.getCid(sortedRecords[i].message)).to.equal(await Message.getCid(messageQuery[i]));
+          }
+        });
+
+        it('should sort on datePublished Descending', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            published     : true,
+            datePublished : TestDataGenerator.randomTimestamp()
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { datePublished: SortOrder.Descending });
+          expect(messageQuery.length).to.equal(messages.length);
+
+          const sortedRecords = messages.sort((a,b) =>
+            lexicographicalCompare(b.message.descriptor.datePublished!, a.message.descriptor.datePublished!));
+
+          for (let i = 0; i < messages.length; i++) {
+            expect(await Message.getCid(sortedRecords[i].message)).to.equal(await Message.getCid(messageQuery[i]));
+          }
+        });
+      });
+
+      describe('pagination', async () => {
+        it('should return all records if no limit is specified', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            messageTimestamp: TestDataGenerator.randomTimestamp()
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const { messages: limitQuery } = await messageStore.query(alice.did, [{}]);
+          expect(limitQuery.length).to.equal(messages.length);
+        });
+
+        it('should limit records', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            messageTimestamp: TestDataGenerator.randomTimestamp()
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const sortedRecords = messages.sort((a,b) =>
+            lexicographicalCompare(a.message.descriptor.messageTimestamp, b.message.descriptor.messageTimestamp));
+
+          const limit = 5;
+
+          const { messages: limitQuery } = await messageStore.query(alice.did, [{}], {}, { limit });
+          expect(limitQuery.length).to.equal(limit);
+          for (let i = 0; i < limitQuery.length; i++) {
+            expect(await Message.getCid(sortedRecords[i].message)).to.equal(await Message.getCid(limitQuery[i]));
+          }
+        });
+
+        it('should only return a cursor if there are additional results', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            messageTimestamp: TestDataGenerator.randomTimestamp()
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          // get all of the records
+          const allRecords = await messageStore.query(alice.did, [{}], {}, { limit: 10 });
+          expect(allRecords.paginationMessageCid).to.not.exist;
+
+          // get only partial records
+          const partialRecords = await messageStore.query(alice.did, [{}], {}, { limit: 5 });
+          expect(partialRecords.paginationMessageCid).to.exist.and.to.not.be.undefined;
+        });
+
+        it('should return all records from the cursor onwards when no limit is provided', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(13).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            messageTimestamp: TestDataGenerator.randomTimestamp()
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const sortedRecords = messages.sort((a,b) =>
+            lexicographicalCompare(a.message.descriptor.messageTimestamp, b.message.descriptor.messageTimestamp));
+
+          const offset = 5;
+          const cursor = await Message.getCid(sortedRecords[offset - 1].message);
+
+          const { messages: limitQuery } = await messageStore.query(alice.did, [{}], {}, { messageCid: cursor });
+          expect(limitQuery.length).to.equal(sortedRecords.slice(offset).length);
+          for (let i = 0; i < limitQuery.length; i++) {
+            const offsetIndex = i + offset;
+            expect(await Message.getCid(sortedRecords[offsetIndex].message)).to.equal(await Message.getCid(limitQuery[i]));
+          }
+        });
+
+        it('should limit records when a cursor and limit are provided', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(10).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            messageTimestamp: TestDataGenerator.randomTimestamp()
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const sortedRecords = messages.sort((a,b) =>
+            lexicographicalCompare(a.message.descriptor.messageTimestamp, b.message.descriptor.messageTimestamp));
+
+          const offset = 5;
+          const cursor = await Message.getCid(sortedRecords[offset - 1].message);
+          const limit = 3;
+
+          const { messages: limitQuery } = await messageStore.query(alice.did, [{}], {}, { messageCid: cursor, limit });
+          expect(limitQuery.length).to.equal(limit);
+          for (let i = 0; i < limitQuery.length; i++) {
+            const offsetIndex = i + offset;
+            expect(await Message.getCid(sortedRecords[offsetIndex].message)).to.equal(await Message.getCid(limitQuery[i]));
+          }
+        });
+
+        it('should paginate through all of the records', async () => {
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(23).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            messageTimestamp: TestDataGenerator.randomTimestamp()
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const limit = 6;
+          const results = [];
+          let cursor: string | undefined;
+          while (true) {
+            const { messages: limitQuery, paginationMessageCid } = await messageStore.query(alice.did, [{}], {}, { messageCid: cursor, limit });
+            expect(limitQuery.length).to.be.lessThanOrEqual(limit);
+            results.push(...limitQuery);
+            cursor = paginationMessageCid;
+            if (cursor === undefined) {
+              break;
+            }
+          }
+          expect(results.length).to.equal(messages.length);
+          const messageMessageIds = await Promise.all(messages.map(m => Message.getCid(m.message)));
+          const resultMessageIds = await Promise.all(results.map(m => Message.getCid(m)));
+          for (const recordId of messageMessageIds) {
+            expect(resultMessageIds.includes(recordId)).to.be.true;
+          }
+        });
+
+        it('should not return results if the cursor is invalid', async () =>{
+          const alice = await DidKeyResolver.generate();
+          const messages = await Promise.all(Array(5).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
+            messageTimestamp: TestDataGenerator.randomTimestamp()
+          })));
+          for (const message of messages) {
+            await messageStore.put(alice.did, message.message, await constructRecordsWriteIndexes(message.recordsWrite, true));
+          }
+
+          const limit = 4;
+          const { messages: limitQuery } = await messageStore.query(alice.did, [{}], {}, { messageCid: 'some-cursor', limit });
+          expect(limitQuery.length).to.be.equal(0);
+        });
       });
     });
   });
