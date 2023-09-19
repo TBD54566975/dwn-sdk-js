@@ -130,7 +130,7 @@ export class RecordsWriteHandler implements MethodHandler {
     }
 
     await this.messageStore.put(tenant, messageWithOptionalEncodedData, indexes);
-    await this.eventLog.append(tenant, await Message.getCid(message));
+    await this.eventLog.append(tenant, await Message.getCid(message), indexes);
 
     const messageReply = {
       status: { code: 202, detail: 'Accepted' }
