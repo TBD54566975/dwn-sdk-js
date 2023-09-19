@@ -10,6 +10,7 @@ import chaiAsPromised from 'chai-as-promised';
 import credentialIssuanceProtocolDefinition from '../vectors/protocol-definitions/credential-issuance.json' assert { type: 'json' };
 import dexProtocolDefinition from '../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import emailProtocolDefinition from '../vectors/protocol-definitions/email.json' assert { type: 'json' };
+import friendRoleProtocolDefinition from '../vectors/protocol-definitions/friend-role.json' assert { type: 'json' };
 import messageProtocolDefinition from '../vectors/protocol-definitions/message.json' assert { type: 'json' };
 import minimalProtocolDefinition from '../vectors/protocol-definitions/minimal.json' assert { type: 'json' };
 import privateProtocol from '../vectors/protocol-definitions/private-protocol.json' assert { type: 'json' };
@@ -1029,6 +1030,131 @@ export function testRecordsWriteHandler(): void {
             expect(applicationResponseQueryReply.entries?.length).to.equal(1);
             expect(applicationResponseQueryReply.entries![0].encodedData)
               .to.equal(base64url.baseEncode(encodedCaption));
+          });
+        });
+
+        describe('role rules', () => {
+          describe('write $globalRole records', async () => {
+            it('allows a $globalRole record with unique recipient to be created and updated', async () => {
+              // scenario: Alice adds Bob to the 'friend' role. Then she updates the 'friend' record.
+
+              const alice = await DidKeyResolver.generate();
+              const bob = await DidKeyResolver.generate();
+
+              const protocolDefinition = friendRoleProtocolDefinition;
+
+              const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+                author: alice,
+                protocolDefinition
+              });
+              const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+              expect(protocolWriteReply.status.code).to.equal(202);
+
+              // Alice writes a 'friend' $globalRole record with Bob as recipient
+              const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'friend',
+                data         : new TextEncoder().encode('Bob is my friend'),
+              });
+              const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, friendRoleRecord.dataStream);
+              expect(friendRoleReply.status.code).to.equal(202);
+
+              // Alice updates Bob's 'friend' record
+              const updateFriendRecord = await TestDataGenerator.generateFromRecordsWrite({
+                author        : alice,
+                existingWrite : friendRoleRecord.recordsWrite,
+              });
+              const updateFriendReply = await dwn.processMessage(alice.did, updateFriendRecord.message, updateFriendRecord.dataStream);
+              expect(updateFriendReply.status.code).to.equal(202);
+            });
+
+            it('rejects writes to a $globalRole if there is already a record with the same role and recipient', async () => {
+              // scenario: Alice adds Bob to the 'friend' role. Then she tries and fails to write another separate record
+              //           adding Bob as a 'friend' again.
+
+              const alice = await DidKeyResolver.generate();
+              const bob = await DidKeyResolver.generate();
+
+              const protocolDefinition = friendRoleProtocolDefinition;
+
+              const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+                author: alice,
+                protocolDefinition
+              });
+              const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+              expect(protocolWriteReply.status.code).to.equal(202);
+
+              // Alice writes a 'friend' $globalRole record with Bob as recipient
+              const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'friend',
+                data         : new TextEncoder().encode('Bob is my friend'),
+              });
+              const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, friendRoleRecord.dataStream);
+              expect(friendRoleReply.status.code).to.equal(202);
+
+              // Alice writes a duplicate record adding Bob as a 'friend' again
+              const duplicateFriendRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'friend',
+                data         : new TextEncoder().encode('Bob is still my friend'),
+              });
+              const duplicateFriendReply = await dwn.processMessage(alice.did, duplicateFriendRecord.message, duplicateFriendRecord.dataStream);
+              expect(duplicateFriendReply.status.code).to.equal(401);
+              expect(duplicateFriendReply.status.detail).to.contain(DwnErrorCode.ProtocolsAuthorizationDuplicateGlobalRoleRecipient);
+            });
+
+            it('allows a new $globalRole record to be created for the same recipient if their old one was deleted', async () => {
+              // scenario: Alice adds Bob to the 'friend' role, then deletes the role. Alice writes a new record adding Bob as a 'friend' again.
+
+              const alice = await DidKeyResolver.generate();
+              const bob = await DidKeyResolver.generate();
+
+              const protocolDefinition = friendRoleProtocolDefinition;
+
+              const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+                author: alice,
+                protocolDefinition
+              });
+              const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+              expect(protocolWriteReply.status.code).to.equal(202);
+
+              // Alice writes a 'friend' $globalRole record with Bob as recipient
+              const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'friend',
+                data         : new TextEncoder().encode('Bob is my friend'),
+              });
+              const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, friendRoleRecord.dataStream);
+              expect(friendRoleReply.status.code).to.equal(202);
+
+              // Alice deletes Bob's 'friend' role record
+              const deleteFriend = await TestDataGenerator.generateRecordsDelete({
+                author   : alice,
+                recordId : friendRoleRecord.message.recordId,
+              });
+              const deleteFriendReply = await dwn.processMessage(alice.did, deleteFriend.message);
+              expect(deleteFriendReply.status.code).to.equal(202);
+
+              // Alice writes a new record adding Bob as a 'friend' again
+              const duplicateFriendRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'friend',
+                data         : new TextEncoder().encode('Bob is still my friend'),
+              });
+              const duplicateFriendReply = await dwn.processMessage(alice.did, duplicateFriendRecord.message, duplicateFriendRecord.dataStream);
+              expect(duplicateFriendReply.status.code).to.equal(202);
+            });
           });
         });
 

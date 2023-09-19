@@ -1,0 +1,25 @@
+{
+  "protocol": "http://minimal.xyz",
+  "published": false,
+  "types": {
+    "friend": {},
+    "chat": {}
+  },
+  "structure": {
+    "friend": {
+      "$globalRole": true
+    },
+    "chat": {
+      "$actions": [
+        {
+          "role": "friend",
+          "can": "write"
+        },
+        {
+          "role": "friend",
+          "can": "read"
+        }
+      ]
+    }
+  }
+}

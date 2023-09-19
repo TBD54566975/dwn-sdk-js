@@ -68,6 +68,13 @@ export class ProtocolAuthorization {
       messageStore,
     );
 
+    await ProtocolAuthorization.verifyUniqueRoleRecipient(
+      tenant,
+      incomingMessage,
+      inboundMessageRuleSet,
+      messageStore,
+    );
+
     // verify allowed condition of incoming message
     await ProtocolAuthorization.verifyActionCondition(tenant, incomingMessage, messageStore);
   }
@@ -313,6 +320,49 @@ export class ProtocolAuthorization {
 
     // No action rules were satisfied, author is not authorized
     throw new DwnError(DwnErrorCode.ProtocolAuthorizationActionNotAllowed, `inbound message action ${inboundMessageAction} not allowed for author`);
+  }
+
+  /**
+   * Verifies that writes to a $globalRole record do not have the same recipient as an existing RecordsWrite
+   * to the same $globalRole.
+   */
+  private static async verifyUniqueRoleRecipient(
+    tenant: string,
+    incomingMessage: RecordsRead | RecordsWrite,
+    inboundMessageRuleSet: ProtocolRuleSet,
+    messageStore: MessageStore,
+  ): Promise<void> {
+    if (incomingMessage.message.descriptor.method !== DwnMethodName.Write) {
+      return;
+    }
+
+    const incomingRecordsWrite = incomingMessage as RecordsWrite;
+    if (!inboundMessageRuleSet.$globalRole) {
+      return;
+    }
+
+    // FIXME(diehuxx): do we enforce presence of recipient for protocol records? I thought we required it
+    const recipient = incomingRecordsWrite.message.descriptor.recipient!;
+    const protocolPath = incomingRecordsWrite.message.descriptor.protocolPath!;
+    const filter = {
+      interface         : DwnInterfaceName.Records,
+      method            : DwnMethodName.Write,
+      isLatestBaseState : true,
+      protocol          : incomingRecordsWrite.message.descriptor.protocol!,
+      protocolPath,
+      recipient,
+    };
+    const { messages: matchingMessages } = await messageStore.query(tenant, [filter]);
+    const matchingRecords = matchingMessages as RecordsWriteMessage[];
+    const matchingRecordsExceptIncomingRecordId = matchingRecords.filter((recordsWriteMessage) =>
+      recordsWriteMessage.recordId !== incomingRecordsWrite.message.recordId
+    );
+    if (matchingRecordsExceptIncomingRecordId.length > 0) {
+      throw new DwnError(
+        DwnErrorCode.ProtocolsAuthorizationDuplicateGlobalRoleRecipient,
+        `DID '${recipient}' is already recipient of a $globalRole record at protocol path '${protocolPath}`
+      );
+    }
   }
 
   /**
