@@ -1341,27 +1341,27 @@ export function testRecordsQueryHandler(): void {
         const additionalIndexes1 = await record1Data.recordsWrite.constructRecordsWriteIndexes(true);
         record1Data.message = await recordsWriteHandler.processEncodedData(record1Data.message, record1Data.dataStream);
         await messageStore.put(alice.did, record1Data.message, additionalIndexes1);
-        await eventLog.append(alice.did, await Message.getCid(record1Data.message));
+        await eventLog.append(alice.did, await Message.getCid(record1Data.message), additionalIndexes1);
 
         const additionalIndexes2 = await record2Data.recordsWrite.constructRecordsWriteIndexes(true);
         record2Data.message = await recordsWriteHandler.processEncodedData(record2Data.message, record2Data.dataStream);
         await messageStore.put(alice.did, record2Data.message, additionalIndexes2);
-        await eventLog.append(alice.did, await Message.getCid(record2Data.message));
+        await eventLog.append(alice.did, await Message.getCid(record2Data.message), additionalIndexes2);
 
         const additionalIndexes3 = await record3Data.recordsWrite.constructRecordsWriteIndexes(true);
         record3Data.message = await recordsWriteHandler.processEncodedData(record3Data.message, record3Data.dataStream);
         await messageStore.put(alice.did, record3Data.message, additionalIndexes3);
-        await eventLog.append(alice.did, await Message.getCid(record3Data.message));
+        await eventLog.append(alice.did, await Message.getCid(record3Data.message), additionalIndexes3);
 
         const additionalIndexes4 = await record4Data.recordsWrite.constructRecordsWriteIndexes(true);
         record4Data.message = await recordsWriteHandler.processEncodedData(record4Data.message, record4Data.dataStream);
         await messageStore.put(alice.did, record4Data.message, additionalIndexes4);
-        await eventLog.append(alice.did, await Message.getCid(record4Data.message));
+        await eventLog.append(alice.did, await Message.getCid(record4Data.message), additionalIndexes4);
 
         const additionalIndexes5 = await record5Data.recordsWrite.constructRecordsWriteIndexes(true);
         record5Data.message = await recordsWriteHandler.processEncodedData(record5Data.message, record5Data.dataStream);
         await messageStore.put(alice.did, record5Data.message, additionalIndexes5);
-        await eventLog.append(alice.did, await Message.getCid(record5Data.message));
+        await eventLog.append(alice.did, await Message.getCid(record5Data.message), additionalIndexes5);
 
         // test correctness for Bob's query
         const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({
