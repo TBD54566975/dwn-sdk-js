@@ -25,7 +25,7 @@ export interface EventLog {
    * @param messageCid - the CID of the message
    * @returns {Promise<string>} watermark
    */
-  append(tenant: string, messageCid: string): Promise<string>
+  append(tenant: string, messageCid: string, indexes?: { [key:string]: string|boolean }): Promise<string>
 
   /**
    * retrieves all of a tenant's events that occurred after the watermark provided.
