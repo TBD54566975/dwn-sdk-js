@@ -3,6 +3,11 @@ import type { GenericMessageReply } from '../core/message-reply.js';
 import type { AuthorizationModel, GenericMessage } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
+export type EventsFilter = {
+  interface?: DwnInterfaceName
+  method?: DwnMethodName
+};
+
 export type EventsGetDescriptor = {
   interface : DwnInterfaceName.Events;
   method: DwnMethodName.Get;
