@@ -1,3 +1,5 @@
+import type { Filter } from './message-types.js';
+
 export type Event = {
   watermark: string,
   messageCid: string
@@ -32,6 +34,8 @@ export interface EventLog {
    * If no watermark is provided, all events for a given tenant will be returned.
    */
   getEvents(tenant: string, options?: GetEventsOptions): Promise<Array<Event>>
+
+  query(tenant: string, filters: Filter[]): Promise<Array<Event>>
 
   /**
    * deletes any events that have any of the cids provided
