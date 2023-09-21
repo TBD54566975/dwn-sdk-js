@@ -1,5 +1,5 @@
 import { RecordsFilter } from '../types/records-types.js';
-import type { EventType, EventMessage, EventFilter, RecordEventMessage } from '../types/event-types.js';
+import type { EventType, EventMessage, EventFilter, MessageEventMessage } from '../types/event-types.js';
 
 export type CallbackQueryRequest = RecordsFilter & { 
   eventType?: EventType;
@@ -8,7 +8,7 @@ export type CallbackQueryRequest = RecordsFilter & {
 // EventStream is a sinked stream for Events
 // TODO: change RecordEventMessage to generic message.
 export interface EventStreamI {
-  installCallback(filters: EventFilter, callback: (e: RecordEventMessage) => Promise<void>): Promise<void>;
+  installCallback(filters: EventFilter, callback: (e: MessageEventMessage) => Promise<void>): Promise<void>;
   removeCallback(callbackId: string): Promise<void>; // callback id;
   queryCallbacks(query: CallbackQueryRequest): Promise<EventStreamCallbackFunction[]>;
 
@@ -23,7 +23,7 @@ export interface EventStreamI {
 type EventStreamCallbackFunction = {
   id: string;
   desctription?: string; // callback description;
-  callback: (e: RecordEventMessage) => Promise<void>;
+  callback: (e: MessageEventMessage) => Promise<void>;
   filter: EventFilter;
 }
 
@@ -54,7 +54,7 @@ export class EventStream implements EventStreamI {
         this.callbacks = new Map<string, EventStreamCallbackFunction>();
     }
 
-    async installCallback(filter: EventFilter, callback: (e: RecordEventMessage) => Promise<void>): Promise<void> {
+    async installCallback(filter: EventFilter, callback: (e: MessageEventMessage) => Promise<void>): Promise<void> {
       // TODO create callback id
       const id = "FIXME"
       this.callbacks.set(id, {
@@ -116,7 +116,7 @@ export class EventStream implements EventStreamI {
     // an internal queue state can be maintained. 
     // which can be used to improve resiliance
     // for event processing. 
-    async add(e: RecordEventMessage): Promise<void> {
+    async add(e: MessageEventMessage): Promise<void> {
       if (!this.isOpen) {
         throw new Error("Event stream is not open. Cannot add to the stream.");
       }
