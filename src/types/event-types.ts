@@ -2,7 +2,7 @@ import type { Event } from './event-log.js';
 import type { GenericMessage } from './message-types.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
-import { RecordsFilter } from './records-types.js';
+import { RecordsFilter, RecordsWriteDescriptor } from './records-types.js';
 
 export type EventsGetDescriptor = {
   interface : DwnInterfaceName.Events;
@@ -66,8 +66,8 @@ export type EventMessage = GenericMessage & {
   descriptor: EventDescriptor;
 };
 
-export interface RecordsEventDescriptor extends OperationEventDescriptor {
-  interface: DwnInterfaceName.Records;
+export type MessageEventDescriptor = EventDescriptor & RecordsWriteDescriptor & {
+  type: EventType.Message;
   // The context ID associated with the event.
   contextId?: string;
   // The message CID associated with the event.
@@ -76,11 +76,11 @@ export interface RecordsEventDescriptor extends OperationEventDescriptor {
   tenant?: string;
 }
 
-export type RecordEventMessage = GenericMessage & {
-  descriptor: RecordsEventDescriptor;
+export type MessageEventMessage = GenericMessage & {
+  descriptor: MessageEventDescriptor;
 };
 
-export interface SyncEventSubscriptor extends EventDescriptor {
+export type SyncEventSubscriptor =  EventDescriptor & {
   interface : DwnInterfaceName.Events;
   eventType: EventType.Sync;
   method: DwnMethodName.Get;

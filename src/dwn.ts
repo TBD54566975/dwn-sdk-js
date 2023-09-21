@@ -9,6 +9,7 @@ import type { TenantGate } from './core/tenant-gate.js';
 import type { GenericMessageReply, UnionMessageReply } from './core/message-reply.js';
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
 import type { RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from './types/records-types.js';
+import type { EventStreamI } from './event-log/event-stream.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DidResolver } from './did/did-resolver.js';
@@ -25,6 +26,7 @@ import { RecordsQueryHandler } from './handlers/records-query.js';
 import { RecordsReadHandler } from './handlers/records-read.js';
 import { RecordsWriteHandler } from './handlers/records-write.js';
 import { DwnInterfaceName, DwnMethodName, Message } from './core/message.js';
+import { EventStream } from './event-log/event-stream.js';
 
 export class Dwn {
   private methodHandlers: { [key:string]: MethodHandler };
@@ -33,6 +35,7 @@ export class Dwn {
   private dataStore: DataStore;
   private eventLog: EventLog;
   private tenantGate: TenantGate;
+  private eventStream: EventStreamI;
 
   private constructor(config: DwnConfig) {
     this.didResolver = config.didResolver!;
@@ -40,6 +43,7 @@ export class Dwn {
     this.messageStore = config.messageStore;
     this.dataStore = config.dataStore;
     this.eventLog = config.eventLog;
+    this.eventStream = new EventStream()
 
     this.methodHandlers = {
       [DwnInterfaceName.Events + DwnMethodName.Get]        : new EventsGetHandler(this.didResolver, this.eventLog),
@@ -103,6 +107,10 @@ export class Dwn {
       dataStream
     });
 
+    // at the end of process message, add a message to event queue for handling.
+    const event = {descriptor: rawMessage.descriptor}
+    event.descriptor.tenant = tenant;
+    this.eventStream.add(event);
     return methodHandlerReply;
   }
 
