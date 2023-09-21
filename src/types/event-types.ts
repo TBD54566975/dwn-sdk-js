@@ -66,7 +66,19 @@ export type EventMessage = GenericMessage & {
   descriptor: EventDescriptor;
 };
 
-export type MessageEventDescriptor = EventDescriptor & RecordsWriteDescriptor & {
+export type MessageEventDescriptor =  EventDescriptor & {
+  protocolPath?: string;
+  recipient?: string;
+  schema?: string;
+  parentId?: string;
+  dataCid: string;
+  dataSize: number;
+  dateCreated: string;
+  messageTimestamp: string;
+  published?: boolean;
+  datePublished?: string;
+  dataFormat: string;
+  
   type: EventType.Message;
   // The context ID associated with the event.
   contextId?: string;
