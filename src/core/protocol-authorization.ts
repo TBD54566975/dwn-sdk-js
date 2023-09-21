@@ -58,6 +58,15 @@ export class ProtocolAuthorization {
       protocolDefinition,
     );
 
+    // If the incoming message has `protocolRole` in the descriptor, validate the invoked role
+    await ProtocolAuthorization.verifyInvokedRole(
+      tenant,
+      incomingMessage,
+      recordsWrite,
+      protocolDefinition,
+      messageStore,
+    );
+
     // verify method invoked against the allowed actions
     await ProtocolAuthorization.verifyAllowedActions(
       tenant,
@@ -68,6 +77,7 @@ export class ProtocolAuthorization {
       messageStore,
     );
 
+    // If the incoming message is writing a $globalRole record, validate that the recipient is unique
     await ProtocolAuthorization.verifyUniqueRoleRecipient(
       tenant,
       incomingMessage,
@@ -160,26 +170,13 @@ export class ProtocolAuthorization {
     protocolDefinition: ProtocolDefinition,
   ): ProtocolRuleSet {
     const protocolPath = recordsWrite.message.descriptor.protocolPath!;
-    const protocolPathArray = protocolPath.split('/');
 
-    // traverse rule sets using protocolPath
-    let currentRuleSet: ProtocolRuleSet = protocolDefinition.structure;
-    let i = 0;
-    while (i < protocolPathArray.length) {
-      const currentTypeName = protocolPathArray[i];
-      const nextRuleSet: ProtocolRuleSet | undefined = currentRuleSet[currentTypeName];
-
-      if (nextRuleSet === undefined) {
-        const partialProtocolPath = protocolPathArray.slice(0, i + 1).join('/');
-        throw new DwnError(DwnErrorCode.ProtocolAuthorizationMissingRuleSet,
-          `No rule set defined for protocolPath ${partialProtocolPath}`);
-      }
-
-      currentRuleSet = nextRuleSet;
-      i++;
+    const ruleSet = ProtocolAuthorization.getRuleSetAtProtocolPath(protocolPath, protocolDefinition);
+    if (ruleSet === undefined) {
+      throw new DwnError(DwnErrorCode.ProtocolAuthorizationMissingRuleSet,
+        `No rule set defined for protocolPath ${protocolPath}`);
     }
-
-    return currentRuleSet;
+    return ruleSet;
   }
 
   /**
@@ -265,6 +262,61 @@ export class ProtocolAuthorization {
   }
 
   /**
+   * Check if the incoming message is invoking a role. If so, validate the invoked role.
+   */
+  private static async verifyInvokedRole(
+    tenant: string,
+    incomingMessage: RecordsRead | RecordsWrite,
+    recordsWrite: RecordsWrite,
+    protocolDefinition: ProtocolDefinition,
+    messageStore: MessageStore,
+  ): Promise<void> {
+    // Currently only RecordsReads may invoke a role
+    if (incomingMessage.message.descriptor.method !== DwnMethodName.Read) {
+      return;
+    }
+
+    const protocolRole = (incomingMessage as RecordsRead).message.descriptor.protocolRole;
+
+    // Only verify role if there is a role being invoked
+    if (protocolRole === undefined) {
+      return;
+    }
+
+    if (incomingMessage.author === undefined) {
+      throw new DwnError(
+        DwnErrorCode.ProtocolAuthorizationRoleInvokedByAuthorless,
+        'Authorless messages may not invoke a protocolRole'
+      );
+    }
+
+    const roleRuleSet = ProtocolAuthorization.getRuleSetAtProtocolPath(protocolRole, protocolDefinition);
+    if (roleRuleSet?.$globalRole === undefined) {
+      throw new DwnError(
+        DwnErrorCode.ProtocolAuthorizationNotARole,
+        `Protocol path ${protocolRole} is not a valid protocolRole`
+      );
+    }
+
+    const roleRecordFilter = {
+      interface         : DwnInterfaceName.Records,
+      method            : DwnMethodName.Write,
+      protocol          : recordsWrite.message.descriptor.protocol!,
+      protocolPath      : protocolRole,
+      recipient         : incomingMessage.author!,
+      isLatestBaseState : true,
+    };
+    const { messages: matchingMessages } = await messageStore.query(tenant, [roleRecordFilter]);
+
+    if (matchingMessages.length === 0) {
+      throw new DwnError(
+        DwnErrorCode.ProtocolAuthorizationMissingRole,
+        `No role record found for protocol path ${protocolRole}`
+      );
+    }
+  }
+
+  /**
    * Verifies the actions specified in the given message matches the allowed actions in the rule set.
    * @throws {Error} if action not allowed.
    */
@@ -301,12 +353,26 @@ export class ProtocolAuthorization {
       throw new Error(`no action rule defined for ${incomingMessage.message.descriptor.method}, ${author} is unauthorized`);
     }
 
+    // Get role being invoked. Currently only Reads support role-based authorization
+    let invokedRole: string | undefined;
+    if (incomingMessage.message.descriptor.method === DwnMethodName.Read) {
+      invokedRole = incomingMessage.message.descriptor.protocolRole;
+    }
+
     for (const actionRule of actionRules) {
       if (actionRule.can !== inboundMessageAction) {
         continue;
       }
 
-      if (actionRule.who === ProtocolActor.Anyone) {
+      if (invokedRole !== undefined) {
+        // When a protocol role is being invoked, we require that there is a matching `role` rule.
+        if (actionRule.role === invokedRole) {
+          // role is successfully invoked
+          return;
+        } else {
+          continue;
+        }
+      } else if (actionRule.who === ProtocolActor.Anyone) {
         return;
       } else if (author === undefined) {
         continue;
@@ -359,7 +425,7 @@ export class ProtocolAuthorization {
     );
     if (matchingRecordsExceptIncomingRecordId.length > 0) {
       throw new DwnError(
-        DwnErrorCode.ProtocolsAuthorizationDuplicateGlobalRoleRecipient,
+        DwnErrorCode.ProtocolAuthorizationDuplicateGlobalRoleRecipient,
         `DID '${recipient}' is already recipient of a $globalRole record at protocol path '${protocolPath}`
       );
     }
@@ -391,6 +457,25 @@ export class ProtocolAuthorization {
         }
       }
     }
+  }
+
+  private static getRuleSetAtProtocolPath(protocolPath: string, protocolDefinition: ProtocolDefinition): ProtocolRuleSet | undefined {
+    const protocolPathArray = protocolPath.split('/');
+    let currentRuleSet: ProtocolRuleSet = protocolDefinition.structure;
+    let i = 0;
+    while (i < protocolPathArray.length) {
+      const currentTypeName = protocolPathArray[i];
+      const nextRuleSet: ProtocolRuleSet | undefined = currentRuleSet[currentTypeName];
+
+      if (nextRuleSet === undefined) {
+        return undefined;
+      }
+
+      currentRuleSet = nextRuleSet;
+      i++;
+    }
+
+    return currentRuleSet;
   }
 
   /**

@@ -1107,7 +1107,7 @@ export function testRecordsWriteHandler(): void {
               });
               const duplicateFriendReply = await dwn.processMessage(alice.did, duplicateFriendRecord.message, duplicateFriendRecord.dataStream);
               expect(duplicateFriendReply.status.code).to.equal(401);
-              expect(duplicateFriendReply.status.detail).to.contain(DwnErrorCode.ProtocolsAuthorizationDuplicateGlobalRoleRecipient);
+              expect(duplicateFriendReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationDuplicateGlobalRoleRecipient);
             });
 
             it('allows a new $globalRole record to be created for the same recipient if their old one was deleted', async () => {

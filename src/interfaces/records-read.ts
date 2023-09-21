@@ -18,6 +18,11 @@ export type RecordsReadOptions = {
   date?: string;
   authorizationSigner?: Signer;
   permissionsGrantId?: string;
+  /**
+   * Used when authorizing protocol records.
+   * The protocol path to a $globalRole record whose recipient is the author of this RecordsRead
+   */
+  protocolRole?: string;
 };
 
 export class RecordsRead extends Message<RecordsReadMessage> {
@@ -46,7 +51,8 @@ export class RecordsRead extends Message<RecordsReadMessage> {
       interface        : DwnInterfaceName.Records,
       method           : DwnMethodName.Read,
       filter           : Records.normalizeFilter(filter),
-      messageTimestamp : options.date ?? currentTime
+      messageTimestamp : options.date ?? currentTime,
+      protocolRole     : options.protocolRole,
     };
 
     removeUndefinedProperties(descriptor);
