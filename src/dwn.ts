@@ -82,12 +82,15 @@ export class Dwn {
     await this.messageStore.open();
     await this.dataStore.open();
     await this.eventLog.open();
+    await this.eventStream.open();
   }
 
   public async close(): Promise<void> {
     this.messageStore.close();
     this.dataStore.close();
     this.eventLog.close();
+    this.eventStream.close();
+
   }
 
   /**
@@ -108,8 +111,11 @@ export class Dwn {
     });
 
     // at the end of process message, add a message to event queue for handling.
-    const event = {descriptor: rawMessage.descriptor}
-    event.descriptor.tenant = tenant;
+    const event = {descriptor: {
+      ...rawMessage.descriptor,
+      tenant: tenant,
+    },}
+    
     this.eventStream.add(event);
     return methodHandlerReply;
   }

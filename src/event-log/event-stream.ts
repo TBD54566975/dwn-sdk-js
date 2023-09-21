@@ -8,11 +8,15 @@ export type CallbackQueryRequest = RecordsFilter & {
 // EventStream is a sinked stream for Events
 // TODO: change RecordEventMessage to generic message.
 export interface EventStreamI {
-  installCallback(filters: EventFilter, callback: (e: MessageEventMessage) => Promise<void>): Promise<void>;
+  installCallback(filters: EventFilter, callback: (e: MessageEventMessage) => Promise<void>): Promise<string>;
   removeCallback(callbackId: string): Promise<void>; // callback id;
   queryCallbacks(query: CallbackQueryRequest): Promise<EventStreamCallbackFunction[]>;
 
   add(e: EventMessage) : Promise<void>
+
+  open(): Promise<void>;
+  close(): Promise<void>;
+  clear(): Promise<void>;
 }
 
 /*
@@ -54,14 +58,19 @@ export class EventStream implements EventStreamI {
         this.callbacks = new Map<string, EventStreamCallbackFunction>();
     }
 
-    async installCallback(filter: EventFilter, callback: (e: MessageEventMessage) => Promise<void>): Promise<void> {
+    /*
+    * TODO: this should be a message so we can use the messegeId as the reference rather than internally
+    * trying to generate the Id.
+    */
+    async installCallback(filter: EventFilter, callback: (e: MessageEventMessage) => Promise<void>): Promise<string> {
       // TODO create callback id
       const id = "FIXME"
       this.callbacks.set(id, {
         id: id,
         filter: filter,
         callback: callback,
-      } )
+      })
+      return id;
     }
   
     async removeCallback(callbackId: string): Promise<void> {
