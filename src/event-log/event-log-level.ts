@@ -4,6 +4,8 @@ import type { Event, EventLog, GetEventsOptions } from '../types/event-log.js';
 
 import { monotonicFactory } from 'ulidx';
 import { createLevelDatabase, LevelWrapper } from '../store/level-wrapper.js';
+import { EventStreamI } from './event-stream.js';
+import { EventType } from '../types/event-types.js';
 
 type EventLogLevelConfig = {
  /**
@@ -13,6 +15,7 @@ type EventLogLevelConfig = {
   */
   location?: string,
   createLevelDatabase?: typeof createLevelDatabase,
+  eventStream?: EventStreamI,
 };
 
 const WATERMARKS_SUBLEVEL_NAME = 'watermarks';
@@ -60,6 +63,13 @@ export class EventLogLevel implements EventLog {
     await watermarkLog.put(watermark, messageCid);
     await cidLog.put(messageCid, watermark);
 
+    if (this.config.eventStream) {
+      this.config.eventStream.add({
+        descriptor: {
+          type: EventType.Log,
+        }
+      })
+    }
     return watermark;
   }
 

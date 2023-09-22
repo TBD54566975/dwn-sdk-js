@@ -20,21 +20,22 @@ export type EventsGetReply = GenericMessageReply & {
 };
 
 /*
-*  v2 of event implementation. 
+*  ----------------------------------------------------------
+*  Event Stream Updates Below 
+*  ----------------------------------------------------------
 */ 
 
 /**
  * Enum defining generic event types.
  */
 export enum EventType {
-  Message = 'Message',    // Represents a message event.
-  Sync = 'Sync',          // Represents a synchronization event.
-  Operation = 'Operation' // Represents an operation event.
+  Message = 'Message',     // Represents a message event.
+  Sync = 'Sync',           // Represents a synchronization event.
+  Operation = 'Operation', // Represents an operation event.
+  Log = 'Log'              // represents a log event.
 }
 
-/*
-* Events are generic
-*/
+// Base Event Desciptor
 export type EventDescriptor = {
   // The timestamp of the event.
   eventTimestamp?: string;
@@ -43,12 +44,16 @@ export type EventDescriptor = {
   //A description of the event.
   description?: string;
   // The type of the event.
-  type?: EventType;
+  type: EventType;
   // The unique identifier of the event.
   eventId?: string;
 };
 
-export interface OperationEventDescriptor extends EventDescriptor {
+export type BaseEventMessage = GenericMessage & {
+  descriptor: EventDescriptor;
+};
+
+export type InterfaceEventDescriptor = EventDescriptor & {
   // The interface associated with the event.
   interface? : DwnInterfaceName;
   // The method associated with the event.
@@ -57,16 +62,11 @@ export interface OperationEventDescriptor extends EventDescriptor {
   type: EventType.Operation;
 }
 
-export type OperationEventMessage = GenericMessage & {
-  descriptor: OperationEventDescriptor;
+export type InterfaceEventMessage = BaseEventMessage & {
+  descriptor: InterfaceEventDescriptor;
 };
 
-// Event message
-export type EventMessage = GenericMessage & {
-  descriptor: EventDescriptor;
-};
-
-export type MessageEventDescriptor =  EventDescriptor & {
+export type RecordEventDescriptor = InterfaceEventDescriptor & {
   protocolPath?: string;
   recipient?: string;
   schema?: string;
@@ -78,7 +78,7 @@ export type MessageEventDescriptor =  EventDescriptor & {
   published?: boolean;
   datePublished?: string;
   dataFormat: string;
-  
+
   type: EventType.Message;
   // The context ID associated with the event.
   contextId?: string;
@@ -88,16 +88,20 @@ export type MessageEventDescriptor =  EventDescriptor & {
   tenant?: string;
 }
 
-export type MessageEventMessage = GenericMessage & {
-  descriptor: MessageEventDescriptor;
+export type RecordEventMessage = BaseEventMessage & {
+  descriptor: RecordEventDescriptor;
 };
 
-export type SyncEventSubscriptor =  EventDescriptor & {
-  interface : DwnInterfaceName.Events;
-  eventType: EventType.Sync;
-  method: DwnMethodName.Get;
+export type SyncEventDescriptor = EventDescriptor & {
+  type: EventType.Sync;
+  interface?: DwnInterfaceName.Events;
+  method?: DwnMethodName.Get;
   watermark?: string;
-  messageTimestamp: string;
+  messageTimestamp?: string;
+};
+
+export type SyncEventMessage = BaseEventMessage & {
+  descriptor: SyncEventDescriptor;
 };
 
 export type EventFilter = RecordsFilter & {
@@ -108,3 +112,19 @@ export type EventFilter = RecordsFilter & {
   // filter by method
   method?: DwnMethodName;
 };
+
+export type AllEventDescriptors =
+  | EventDescriptor
+  | InterfaceEventDescriptor
+  | RecordEventDescriptor
+  | SyncEventDescriptor;
+
+export  type AllEventMessageTypes =
+  | InterfaceEventMessage
+  | RecordEventMessage
+  | SyncEventDescriptor;
+
+
+export interface EventMessageI<T extends EventDescriptor> {
+  descriptor: T;
+}

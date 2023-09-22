@@ -1,19 +1,27 @@
 import { RecordsFilter } from '../types/records-types.js';
-import type { EventType, EventMessage, EventFilter, MessageEventMessage } from '../types/event-types.js';
+import {
+  EventType,
+  EventMessageI,
+  EventDescriptor,
+  AllEventMessageTypes,
+  EventFilter,
+  InterfaceEventDescriptor,
+  RecordEventDescriptor,
+  SyncEventDescriptor,
+} from '../types/event-types.js';
+import { EventEmitter } from 'events';
 
-export type CallbackQueryRequest = RecordsFilter & { 
+export type CallbackQueryRequest = RecordsFilter & {
   eventType?: EventType;
 }
 
+const eventChannel = "event";
+
 // EventStream is a sinked stream for Events
-// TODO: change RecordEventMessage to generic message.
 export interface EventStreamI {
-  installCallback(filters: EventFilter, callback: (e: MessageEventMessage) => Promise<void>): Promise<string>;
-  removeCallback(callbackId: string): Promise<void>; // callback id;
-  queryCallbacks(query: CallbackQueryRequest): Promise<EventStreamCallbackFunction[]>;
+  add(e: EventMessageI<any>): Promise<void>
 
-  add(e: EventMessage) : Promise<void>
-
+  on(f: Function): EventEmitter;
   open(): Promise<void>;
   close(): Promise<void>;
   clear(): Promise<void>;
@@ -27,7 +35,7 @@ export interface EventStreamI {
 type EventStreamCallbackFunction = {
   id: string;
   desctription?: string; // callback description;
-  callback: (e: MessageEventMessage) => Promise<void>;
+  callback: (e: AllEventMessageTypes) => Promise<void>;
   filter: EventFilter;
 }
 
@@ -46,99 +54,94 @@ type EventStreamCallbackFunction = {
 * Note: We are purposely not queueing jobs in right now, so 
 * there is no internal state handling, but you could make an event 
 * stream some kafka like streamer if you wanted.
-*/ 
+*/
 export class EventStream implements EventStreamI {
 
-    private callbacks: Map<string, EventStreamCallbackFunction>
-    isOpen: boolean = false;
+  private isOpen: boolean = false;
+  private eventEmitter: EventEmitter;
+  private _eventChannel: string;
 
-    // TODO: Possibly add a buffered eventQueue for better handling. 
-    // Event stream should pull off the queue. 
-    constructor(){
-        this.callbacks = new Map<string, EventStreamCallbackFunction>();
-    }
+  // TODO: Possibly add a buffered eventQueue for better handling. 
+  // Event stream should pull off the queue. 
+  constructor(eventChannel: string = "event") {
+    this.eventEmitter = new EventEmitter();
+    this._eventChannel = eventChannel;
+  }
 
-    /*
-    * TODO: this should be a message so we can use the messegeId as the reference rather than internally
-    * trying to generate the Id.
-    */
-    async installCallback(filter: EventFilter, callback: (e: MessageEventMessage) => Promise<void>): Promise<string> {
-      // TODO create callback id
-      const id = "FIXME"
-      this.callbacks.set(id, {
-        id: id,
-        filter: filter,
-        callback: callback,
-      })
-      return id;
+  on(f: (e: EventMessageI<any>) => void): EventEmitter {
+    return this.eventEmitter.on(this._eventChannel, f)
+  }
+
+  get channel(): string {
+    return this.channel;
+  }
+
+  set channel(c: string) {
+    this._eventChannel = this.channel
+  }
+
+  async close(): Promise<void> {
+    this.isOpen = false;
+  }
+
+  async clear(): Promise<void> {
+    throw new Error("clear not available in event emitter...")
+  }
+
+  async open(): Promise<void> {
+    this.isOpen = true;
+  }
+
+  private emitEvent(e: EventMessageI<any>): void {
+    this.eventEmitter.emit(this._eventChannel, e);
+  }
+
+  /*
+  * override emitter. cannot override event topic.
+  */
+  async addCustomObject(topic: string, o: any): Promise<void> {
+    if (topic === this._eventChannel) {
+      throw new Error("can't add any object tppic over event channel. use addEvent instead...")
     }
-  
-    async removeCallback(callbackId: string): Promise<void> {
-      this.callbacks.delete(callbackId);
-    }
-  
-    // TODO: Better logic here.
-    // Check what's the right way to map paths out.
-    // Given a filter and a callback function, determines if it's scoped to be applied.
-    callbackInScope(req: CallbackQueryRequest, f: EventStreamCallbackFunction): boolean {
-      if (f.filter.contextId === req.contextId){
-        return true
+    this.eventEmitter.emit(topic, o)
+  }
+
+  handleEventMessage(e: EventMessageI<any>){
+      // TODO: Different handlers for different types.
+      const descriptor = e.descriptor;
+      switch (descriptor.type) {
+        case EventType.Message:
+          const messageEventDescriptor = descriptor as RecordEventDescriptor;
+          console.log(messageEventDescriptor);
+          break;
+        case EventType.Sync:
+          const syncEventDescriptor = descriptor as SyncEventDescriptor;
+          console.log(syncEventDescriptor);
+          break;
+        case EventType.Operation:
+          const operationEventDescriptor = descriptor as InterfaceEventDescriptor;
+          console.log(operationEventDescriptor);
+          break;
+        default:
+          console.error('Unknown Event Type:', descriptor);
+          break;
       }
-      return false;
-    }
+  }
 
-    // Get all the callback ids;
-    getCallbackIds() : string[] {
-      return Array.from(this.callbacks.keys());
+  // adds to the event stream.
+  // right now, we are doing some very basic callback handling. 
+  // but in cases of high performance, 
+  // an internal queue state can be maintained. 
+  // which can be used to improve resiliance
+  // for event processing. 
+  async add(e: EventMessageI<any>): Promise<void> {
+    if (!this.isOpen) {
+      throw new Error("Event stream is not open. Cannot add to the stream.");
     }
-
-    /*
-    * TODO: optimize. this.
-    * returns a subset of callbacks that are
-    * in scope for a particular filter.
-    */
-    async queryCallbacks(query: CallbackQueryRequest): Promise<EventStreamCallbackFunction[]> {
-      const filteredCallbacks: EventStreamCallbackFunction[] = [];
-      for (const [key, callback] of this.callbacks) {
-        if (this.callbackInScope(query, callback)) {
-          filteredCallbacks.push(callback);
-        }
-      }
-      return Promise.all(filteredCallbacks);
-    }
-  
-    async clear(): Promise<void> {
-      this.callbacks.clear();
-    }
-
-    async close(): Promise<void> {
-        this.isOpen = false;
-    }
-  
-    async open(): Promise<void> {
-        this.isOpen = true;
-    }
-  
-    // adds to the event stream.
-    // right now, we are doing some very basic callback handling. 
-    // but in cases of high performance, 
-    // an internal queue state can be maintained. 
-    // which can be used to improve resiliance
-    // for event processing. 
-    async add(e: MessageEventMessage): Promise<void> {
-      if (!this.isOpen) {
-        throw new Error("Event stream is not open. Cannot add to the stream.");
-      }
-      try {
-        // find installed callbacks that are part of this scope
-        const callbacks = await this.queryCallbacks({ contextId: e.descriptor.contextId});
-        for (const callback of callbacks) {
-          await callback.callback(e);
-        }
-      } catch (error) {
-        // Handle any errors that occur during the process.
-        console.error("Error while adding to the event stream:", error);
-        throw error; // You can choose to handle or propagate the error as needed.
-      }
+    try {
+      this.emitEvent(e)
+    } catch (error) {
+      throw error; // You can choose to handle or propagate the error as needed.
     }
   }
+}
