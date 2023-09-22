@@ -21,22 +21,29 @@ const eventChannel = "event";
 export interface EventStreamI {
   add(e: EventMessageI<any>): Promise<void>
 
-  on(f: Function): EventEmitter;
+  on(eventType: EventType, f: (e: EventMessageI<any>) => void): EventEmitter
   open(): Promise<void>;
   close(): Promise<void>;
   clear(): Promise<void>;
 }
 
-/*
-* Event callback wraps a callback function which
-* will be applied to a set scoped set of events
-* that hit the stream.
-*/
-type EventStreamCallbackFunction = {
-  id: string;
-  desctription?: string; // callback description;
-  callback: (e: AllEventMessageTypes) => Promise<void>;
-  filter: EventFilter;
+export const defaultConfig = {
+  channelNames: {
+    event: "event",
+    sync: "sync",
+    operation: "operation",
+    log: "log",
+    message: "message",
+  }
+}
+
+type EventStreamConfig = {
+  channelNames: {
+    sync: string,
+    operation: string,
+    message: string,
+    log: string;
+  }
 }
 
 /*
@@ -59,25 +66,36 @@ export class EventStream implements EventStreamI {
 
   private isOpen: boolean = false;
   private eventEmitter: EventEmitter;
-  private _eventChannel: string;
+  private config: EventStreamConfig
 
   // TODO: Possibly add a buffered eventQueue for better handling. 
   // Event stream should pull off the queue. 
-  constructor(eventChannel: string = "event") {
+  constructor(config?: EventStreamConfig) {
     this.eventEmitter = new EventEmitter();
-    this._eventChannel = eventChannel;
+    this.config = { ...defaultConfig, ...config };
+
   }
 
-  on(f: (e: EventMessageI<any>) => void): EventEmitter {
-    return this.eventEmitter.on(this._eventChannel, f)
-  }
-
-  get channel(): string {
-    return this.channel;
-  }
-
-  set channel(c: string) {
-    this._eventChannel = this.channel
+  on(eventType: EventType, f: (e: EventMessageI<any>) => void): EventEmitter {
+    let key: string
+    switch (eventType) {
+      case EventType.Log:
+        key = this.config.channelNames.log;
+        break;
+      case EventType.Operation:
+        key = this.config.channelNames.operation;
+        break;
+      case EventType.Sync:
+        key = this.config.channelNames.sync;
+        break;
+      case EventType.Message:
+        key = this.config.channelNames.message;
+        break;
+      default:
+        throw new Error("unknown type. not sure what channel to listen to...")
+        break;
+    }
+    return this.eventEmitter.on(key, f)
   }
 
   async close(): Promise<void> {
@@ -93,39 +111,27 @@ export class EventStream implements EventStreamI {
   }
 
   private emitEvent(e: EventMessageI<any>): void {
-    this.eventEmitter.emit(this._eventChannel, e);
-  }
-
-  /*
-  * override emitter. cannot override event topic.
-  */
-  async addCustomObject(topic: string, o: any): Promise<void> {
-    if (topic === this._eventChannel) {
-      throw new Error("can't add any object tppic over event channel. use addEvent instead...")
+    if (e.descriptor === undefined){
+      throw new Error("descriptor not defined");
     }
-    this.eventEmitter.emit(topic, o)
-  }
-
-  handleEventMessage(e: EventMessageI<any>){
-      // TODO: Different handlers for different types.
-      const descriptor = e.descriptor;
-      switch (descriptor.type) {
-        case EventType.Message:
-          const messageEventDescriptor = descriptor as RecordEventDescriptor;
-          console.log(messageEventDescriptor);
-          break;
-        case EventType.Sync:
-          const syncEventDescriptor = descriptor as SyncEventDescriptor;
-          console.log(syncEventDescriptor);
-          break;
-        case EventType.Operation:
-          const operationEventDescriptor = descriptor as InterfaceEventDescriptor;
-          console.log(operationEventDescriptor);
-          break;
-        default:
-          console.error('Unknown Event Type:', descriptor);
-          break;
-      }
+    const descriptor = e.descriptor;
+    switch (descriptor.type) {
+      case EventType.Message:
+        this.eventEmitter.emit(this.config.channelNames.message, e)
+        break;
+      case EventType.Sync:
+        this.eventEmitter.emit(this.config.channelNames.sync, e)
+        break;
+      case EventType.Operation:
+        this.eventEmitter.emit(this.config.channelNames.operation, e)
+        break;
+      case EventType.Log:
+        this.eventEmitter.emit(this.config.channelNames.log, e)
+        break;
+      default:
+        throw new Error("failed to emit event. unknown type")
+        break;
+    }
   }
 
   // adds to the event stream.

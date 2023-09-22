@@ -15,7 +15,7 @@ describe('Event Stream Tests', () => {
 
     beforeEach(() => {
         // Create a new instance of EventStream before each test
-        eventStream = new EventStream('testChannel');
+        eventStream = new EventStream();
     });
     beforeEach(async () => {
         await eventStream.open();
@@ -30,7 +30,7 @@ describe('Event Stream Tests', () => {
         try {
             let messageReceived;
             const eventHandledPromise = new Promise<void>((resolve, reject) => {
-                eventStream.on(async (e: EventMessageI<any>) => {
+                eventStream.on(EventType.Operation, async (e: EventMessageI<any>) => {
                     try {
                         messageReceived = e.descriptor;
                         resolve(); // Resolve the promise when the event is handled.
@@ -66,8 +66,8 @@ describe('Event Stream Tests', () => {
             await eventStream.open();
             await eventStream.add(badMessage);
             expect.fail('Expected an error to be thrown when adding a bad message.');
-        } catch (error) {
-            expect(error).to.be.an.instanceOf(AssertionError);
+        } catch (error: any) {
+            expect(error.message).to.equal("failed to emit event. unknown type")
         }
     });
 
@@ -93,7 +93,7 @@ describe('Event Stream Tests', () => {
         const eventPromises = [];
         let caughtMessages = 0;
         const eventHandledPromise = new Promise<void>((resolve, reject) => {
-            eventStream.on(async (e: EventMessageI<any>) => {
+            eventStream.on(EventType.Log, async (e: EventMessageI<any>) => {
                 try {
                     caughtMessages+=1;
                     resolve(); // Resolve the promise when the event is handled.
