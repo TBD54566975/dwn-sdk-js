@@ -4,12 +4,13 @@ export type { DwnServiceEndpoint, ServiceEndpoint, DidDocument, DidResolutionRes
 export type { EventLog, Event, GetEventsOptions } from './types/event-log.js';
 export type { EventsGetMessage, EventsGetReply } from './types/event-types.js';
 export type { HooksWriteMessage } from './types/hooks-types.js';
-export type { GenericMessage, Filter } from './types/message-types.js';
+export type { Filter, GenericMessage, MessageSort, Pagination } from './types/message-types.js';
 export type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
 export type { PermissionConditions, PermissionScope, PermissionsGrantDescriptor, PermissionsGrantMessage, PermissionsRequestDescriptor, PermissionsRequestMessage, PermissionsRevokeDescriptor, PermissionsRevokeMessage } from './types/permissions-types.js';
 export type { ProtocolsConfigureDescriptor, ProtocolDefinition, ProtocolTypes, ProtocolRuleSet, ProtocolsQueryFilter, ProtocolsConfigureMessage, ProtocolsQueryMessage } from './types/protocols-types.js';
 export type { EncryptionProperty, RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, RecordsReadReply, RecordsWriteDescriptor, RecordsWriteMessage } from './types/records-types.js';
 export type { SnapshotsCreateDescriptor, SnapshotsCreateMessage, SnapshotDefinition, SnapshotScope, SnapshotScopeType } from './types/snapshots-types.js';
+export { SortOrder } from './types/message-types.js';
 export { AllowAllTenantGate, TenantGate } from './core/tenant-gate.js';
 export { Cid } from './utils/cid.js';
 export { DateSort, RecordsQuery, RecordsQueryOptions } from './interfaces/records-query.js';
