@@ -15,7 +15,8 @@ export enum DwnInterfaceName {
   Permissions = 'Permissions',
   Protocols = 'Protocols',
   Records = 'Records',
-  Snapshots = 'Snapshots'
+  Snapshots = 'Snapshots',
+  Subscriptions = 'Subscriptions' // Used to grant subscriptions.
 }
 
 export enum DwnMethodName {

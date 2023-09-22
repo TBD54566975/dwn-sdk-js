@@ -1,10 +1,11 @@
 import type { GenericMessage } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../index.js';
+import { EventType } from './event-types.js';
 
 export type PermissionScope = {
   interface: DwnInterfaceName;
   method: DwnMethodName;
-} | RecordsPermissionScope;
+} | RecordsPermissionScope | SubscriptionPermissionScope ;
 
 // Method-specific scopes
 export type RecordsPermissionScope = {
@@ -88,4 +89,22 @@ export type PermissionsRevokeDescriptor = {
 
 export type PermissionsRevokeMessage = GenericMessage & {
   descriptor: PermissionsRevokeDescriptor;
+};
+
+// Method-specific scopes
+export type SubscriptionPermissionScope = {
+  // filter to certain interfaces.
+  interface: DwnInterfaceName;
+  // filter to certain methods
+  method: DwnMethodName;
+  /** Event type filter...i.e logs, sync, operations...*/
+  EventType?: EventType;
+  /** May only be present when `schema` is undefined */
+  protocol?: string;
+  /** May only be present when `protocol` is defined and `protocolPath` is undefined */
+  contextId?: string;
+  /** May only be present when `protocol` is defined and `contextId` is undefined */
+  protocolPath?: string;
+  /** May only be present when `protocol` is undefined */
+  schema?: string;
 };
