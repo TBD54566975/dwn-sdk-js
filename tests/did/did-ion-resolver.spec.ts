@@ -36,9 +36,10 @@ describe('DidIonResolver', () => {
     const did = 'did:ion:EiClkZMDxPKqC9c-umQfTkR8vvZ9JPhl_xLDI9Nfk38w5w';
     const didIonResolver = new DidIonResolver();
 
+    let resolverStub;
     // stub network call if network is not available
     if (!networkAvailable) {
-      sinon.stub(globalThis as any, 'fetch').resolves({
+      resolverStub = sinon.stub(didIonResolver as any, 'fetch').resolves({
         status : 200,
         json   : async () => Promise.resolve({
           didDocument         : { id: did },
@@ -48,6 +49,9 @@ describe('DidIonResolver', () => {
     }
 
     const resolutionDocument = await didIonResolver.resolve(did);
+    if (resolverStub) {
+      resolverStub.restore();
+    }
     expect(resolutionDocument.didDocument?.id).to.equal(did);
     expect(resolutionDocument.didDocumentMetadata.canonicalId).to.equal(did);
   });
@@ -56,12 +60,16 @@ describe('DidIonResolver', () => {
     const did = 'did:ion:SomethingThatCannotBeResolved';
     const didIonResolver = new DidIonResolver();
 
+    let resolverStub;
     // stub network call if network is not available
     if (!networkAvailable) {
-      sinon.stub(globalThis as any, 'fetch').resolves({ status: 404 });
+      resolverStub = sinon.stub(didIonResolver as any, 'fetch').resolves({ status: 404 });
     }
 
     const resolutionPromise = didIonResolver.resolve(did);
+    if (resolverStub) {
+      resolverStub.restore();
+    }
     await expect(resolutionPromise).to.be.rejectedWith('unable to resolve');
   });
 });
