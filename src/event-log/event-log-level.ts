@@ -11,7 +11,7 @@ type EventLogLevelConfig = {
    *  LevelDB will store its files, or in browsers, the name of the
    * {@link https://developer.mozilla.org/en-US/docs/Web/API/IDBDatabase IDBDatabase} to be opened.
   */
-  location: string,
+  location?: string,
   createLevelDatabase?: typeof createLevelDatabase,
 };
 
@@ -30,7 +30,11 @@ export class EventLogLevel implements EventLog {
       ...config,
     };
 
-    this.db = new LevelWrapper<string>({ ...this.config, valueEncoding: 'utf8' });
+    this.db = new LevelWrapper<string>({
+      location            : this.config.location!,
+      createLevelDatabase : this.config.createLevelDatabase,
+      valueEncoding       : 'utf8',
+    });
     this.ulidFactory = monotonicFactory();
   }
 
