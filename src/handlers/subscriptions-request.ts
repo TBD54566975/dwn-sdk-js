@@ -14,7 +14,7 @@ import { RecordsWrite } from '../interfaces/records-write.js';
 import { DataStream, DwnError, DwnErrorCode, Encoder } from '../index.js';
 import { Subscriptions } from '../utils/subscriptions.js';
 import { EventType, InterfaceEventMessage } from '../types/event-types.js';
-import { EventStreamI } from '../event-log/event-stream.js';
+import type { EventStreamI } from '../event-log/event-stream.js';
 
 export class SubscriptionsRequestHandler implements MethodHandler {
 

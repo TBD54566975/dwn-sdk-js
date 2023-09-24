@@ -24,8 +24,7 @@ export class SubscriptionGrantAuthorization {
     }
 
     /**
-    * @param subscriptionRequest The source of the record being authorized. If the incoming message is a write,
-    *                     then this is the incoming RecordsWrite. Otherwise, it is the newest existing RecordsWrite.
+    * @param subscriptionRequest The source of the record being authorized.
     */
     private static verifyScope(
         subscriptionRequest: SubscriptionRequest,
@@ -36,7 +35,7 @@ export class SubscriptionGrantAuthorization {
         if (SubscriptionGrantAuthorization.isUnrestrictedScope(grantScope)) {
             // scope has no restrictions beyond interface and method. Message is authorized to access any record.
             return;
-        } else if (subscriptionRequest.message.descriptor.protocol !== undefined) {
+        } else if (subscriptionRequest.message.descriptor.scope.protocol !== undefined) {
             // authorization of protocol records must have grants that explicitly include the protocol
             SubscriptionGrantAuthorization.authorizeProtocolRecord(subscriptionRequest, grantScope);
         } else {
@@ -71,7 +70,7 @@ export class SubscriptionGrantAuthorization {
         }
 
         // The record's protocol must match the protocol specified in the record
-        if (grantScope.protocol !== subscriptionRequest.message.descriptor.protocol) {
+        if (grantScope.protocol !== subscriptionRequest.message.descriptor.scope.protocol) {
             throw new DwnError(
                 DwnErrorCode.SubscriptionsGrantAuthorizationScopeProtocolMismatch,
                 `Grant scope specifies different protocol than what appears in the subscription`
@@ -79,7 +78,7 @@ export class SubscriptionGrantAuthorization {
         }
 
         // If grant specifies either contextId, check that record is that context
-        if (grantScope.contextId !== undefined && grantScope.contextId !== subscriptionRequest.message.contextId) {
+        if (grantScope.contextId !== undefined && grantScope.contextId !== subscriptionRequest.message.descriptor.scope.contextId) {
             throw new DwnError(
                 DwnErrorCode.SubscriptionsGrantAuthorizationScopeContextIdMismatch,
                 `Grant scope specifies different contextId than what appears in the subscription`
@@ -87,7 +86,7 @@ export class SubscriptionGrantAuthorization {
         }
 
         // If grant specifies protocolPath, check that record is at that protocolPath
-        if (grantScope.protocolPath !== undefined && grantScope.protocolPath !== subscriptionRequest.message.descriptor.protocolPath) {
+        if (grantScope.protocolPath !== undefined && grantScope.protocolPath !== subscriptionRequest.message.descriptor.scope.protocolPath) {
             throw new DwnError(
                 DwnErrorCode.SubscriptionsGrantAuthorizationScopeProtocolPathMismatch,
                 `Grant scope specifies different protocolPath than what appears in the subscription`
@@ -103,7 +102,7 @@ export class SubscriptionGrantAuthorization {
         grantScope: SubscriptionPermissionScope
     ): void {
         if (grantScope.schema !== undefined) {
-            if (grantScope.schema !== subscriptionRequest.message.descriptor.schema) {
+            if (grantScope.schema !== subscriptionRequest.message.descriptor.scope.schema) {
                 throw new DwnError(
                     DwnErrorCode.RecordsGrantAuthorizationScopeSchema,
                     `Record does not have schema in PermissionsGrant scope with schema '${grantScope.schema}'`

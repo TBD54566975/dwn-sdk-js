@@ -73,7 +73,6 @@ export class EventStream implements EventStreamI {
   constructor(config?: EventStreamConfig) {
     this.eventEmitter = new EventEmitter();
     this.config = { ...defaultConfig, ...config };
-
   }
 
   on(eventType: EventType, f: (e: EventMessageI<any>) => void): EventEmitter {
