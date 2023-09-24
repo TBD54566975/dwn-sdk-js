@@ -6,7 +6,7 @@ import type { PermissionsGrantMessage, SubscriptionPermissionScope } from '../ty
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 
 
-export class SubscriptionGrantAuthorization {
+export class SubscriptionsGrantAuthorization {
 
     /**
     * Authorizes the scope of a PermissionsGrant for Subscription.
@@ -20,7 +20,7 @@ export class SubscriptionGrantAuthorization {
         eventLog: EventStreamI,
     ): Promise<void> {
         const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, author, messageStore);
-        SubscriptionGrantAuthorization.verifyScope(incomingMessage, permissionsGrantMessage);
+        SubscriptionsGrantAuthorization.verifyScope(incomingMessage, permissionsGrantMessage);
     }
 
     /**
@@ -32,14 +32,14 @@ export class SubscriptionGrantAuthorization {
     ): void {
         const grantScope = permissionsGrantMessage.descriptor.scope as SubscriptionPermissionScope;
 
-        if (SubscriptionGrantAuthorization.isUnrestrictedScope(grantScope)) {
+        if (SubscriptionsGrantAuthorization.isUnrestrictedScope(grantScope)) {
             // scope has no restrictions beyond interface and method. Message is authorized to access any record.
             return;
         } else if (subscriptionRequest.message.descriptor.scope.protocol !== undefined) {
             // authorization of protocol records must have grants that explicitly include the protocol
-            SubscriptionGrantAuthorization.authorizeProtocolRecord(subscriptionRequest, grantScope);
+            SubscriptionsGrantAuthorization.authorizeProtocolRecord(subscriptionRequest, grantScope);
         } else {
-            SubscriptionGrantAuthorization.authorizeFlatRecord(subscriptionRequest, grantScope);
+            SubscriptionsGrantAuthorization.authorizeFlatRecord(subscriptionRequest, grantScope);
         }
     }
 
@@ -52,7 +52,6 @@ export class SubscriptionGrantAuthorization {
             grantScope.schema === undefined &&
             grantScope.eventType == undefined;
     }
-
 
     /**
      * Authorizes a grant scope for a protocol record

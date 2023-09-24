@@ -41,6 +41,11 @@ export class SubscriptionsRequestHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }    
     
+    try {
+      await subscriptionRequest.authorize(tenant, this.eventStream, this.messageStore);
+    } catch (error) {
+      return messageReplyFromError(error, 401);
+    }
     // store message
     const { scope, ...propertiesToIndex } = message.descriptor;
     const indexes: { [key: string]: string } = {
