@@ -25,8 +25,13 @@ import { RecordsDeleteHandler } from './handlers/records-delete.js';
 import { RecordsQueryHandler } from './handlers/records-query.js';
 import { RecordsReadHandler } from './handlers/records-read.js';
 import { RecordsWriteHandler } from './handlers/records-write.js';
+import { SubscriptionsRequestHandler } from './handlers/subscriptions-request.js';
+
 import { DwnInterfaceName, DwnMethodName, Message } from './core/message.js';
 import { EventStream } from './event-log/event-stream.js';
+import { EventEmitter } from 'events';
+import { SubscriptionRequest } from './interfaces/subscription-request.js';
+import { SubscriptionRequestMessage, SubscriptionRequestReply } from './types/subscriptions-request.js';
 
 export class Dwn {
   private methodHandlers: { [key:string]: MethodHandler };
@@ -35,7 +40,7 @@ export class Dwn {
   private dataStore: DataStore;
   private eventLog: EventLog;
   private tenantGate: TenantGate;
-  private eventStream: EventStreamI;
+  private eventStream?: EventStreamI;
 
   private constructor(config: DwnConfig) {
     this.didResolver = config.didResolver!;
@@ -43,7 +48,7 @@ export class Dwn {
     this.messageStore = config.messageStore;
     this.dataStore = config.dataStore;
     this.eventLog = config.eventLog;
-    this.eventStream = new EventStream()
+    this.eventStream = config.eventStream;
 
     this.methodHandlers = {
       [DwnInterfaceName.Events + DwnMethodName.Get]        : new EventsGetHandler(this.didResolver, this.eventLog),
@@ -63,6 +68,11 @@ export class Dwn {
       [DwnInterfaceName.Records + DwnMethodName.Read]  : new RecordsReadHandler(this.didResolver, this.messageStore, this.dataStore),
       [DwnInterfaceName.Records + DwnMethodName.Write] : new RecordsWriteHandler(this.didResolver, this.messageStore, this.dataStore, this.eventLog),
     };
+
+    // only add subscriptions if event stream is enabled.
+    if (this.eventStream !== undefined) {
+      this.methodHandlers[DwnInterfaceName.Subscriptions + DwnMethodName.Request] = new SubscriptionsRequestHandler(this.didResolver, this.messageStore, this.dataStore, this.eventStream)
+    }
   }
 
   /**
@@ -82,15 +92,18 @@ export class Dwn {
     await this.messageStore.open();
     await this.dataStore.open();
     await this.eventLog.open();
-    await this.eventStream.open();
+    if (this.eventStream){
+      await this.eventStream.open();
+    }
   }
 
   public async close(): Promise<void> {
     this.messageStore.close();
     this.dataStore.close();
     this.eventLog.close();
-    this.eventStream.close();
-
+    if (this.eventStream){
+      await this.eventStream.close();
+    }
   }
 
   /**
@@ -115,11 +128,29 @@ export class Dwn {
       ...rawMessage.descriptor,
       tenant: tenant,
     },}
-    
-    this.eventStream.add(event);
+
+    if (this.eventStream){
+      this.eventStream.add(event);
+    }
+
     return methodHandlerReply;
   }
 
+    /**
+   * Handles a `RecordsRead` message.
+   */
+    public async handleSubscriptionRequest(tenant: string, message: SubscriptionRequestMessage): Promise<SubscriptionRequestReply> {
+      const errorMessageReply =
+        await this.validateTenant(tenant) ??
+        await this.validateMessageIntegrity(message, DwnInterfaceName.Records, DwnMethodName.Read);
+      if (errorMessageReply !== undefined) {
+        return errorMessageReply;
+      }
+  
+      const handler = new SubscriptionsRequestHandler(this.didResolver, this.messageStore, this.dataStore, this.eventStream as EventStream);
+      return handler.handle({ tenant, message });
+    }
+    
   /**
    * Handles a `RecordsQuery` message.
    */
@@ -251,5 +282,6 @@ export type DwnConfig = {
 
   messageStore: MessageStore;
   dataStore: DataStore;
-  eventLog: EventLog
+  eventLog: EventLog;
+  eventStream?: EventStreamI;
 };

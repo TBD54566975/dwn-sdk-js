@@ -98,7 +98,7 @@ export type SubscriptionPermissionScope = {
   // filter to certain methods
   method: DwnMethodName;
   /** Event type filter...i.e logs, sync, operations...*/
-  EventType?: EventType;
+  eventType?: EventType;
   /** May only be present when `schema` is undefined */
   protocol?: string;
   /** May only be present when `protocol` is defined and `protocolPath` is undefined */

@@ -77,5 +77,12 @@ export enum DwnErrorCode {
   UrlProtocolNotNormalized = 'UrlProtocolNotNormalized',
   UrlProtocolNotNormalizable = 'UrlProtocolNotNormalizable',
   UrlSchemaNotNormalized = 'UrlSchemaNotNormalized',
-  UrlSchemaNotNormalizable = 'UrlSchemaNotNormalizable'
+  UrlSchemaNotNormalizable = 'UrlSchemaNotNormalizable',
+  SubscriptionsGrantAuthorizationConditionPublicationProhibited = 'SubscriptionsGrantAuthorizationConditionPublicationProhibited',
+  SubscriptionsGrantAuthorizationConditionPublicationRequired = 'SubscriptionsGrantAuthorizationConditionPublicationRequired',
+  SubscriptionsGrantAuthorizationScopeContextIdMismatch = 'SubscriptionsGrantAuthorizationScopeContextIdMismatch',
+  SubscriptionsGrantAuthorizationScopeNotProtocol = 'SubscriptionsGrantAuthorizationScopeNotProtocol',
+  SubscriptionsGrantAuthorizationScopeProtocolMismatch = 'SubscriptionsGrantAuthorizationScopeProtocolMismatch',
+  SubscriptionsGrantAuthorizationScopeProtocolPathMismatch = 'SubscriptionsGrantAuthorizationScopeProtocolPathMismatch',
+  SubscriptionsGrantAuthorizationScopeSchema = 'SubscriptionsGrantAuthorizationScopeSchema'
 };

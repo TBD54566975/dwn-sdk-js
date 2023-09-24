@@ -45,6 +45,8 @@ export type EventDescriptor = {
   description?: string;
   // The type of the event.
   type: EventType;
+  // tags help search events.
+  tags?: Map<string, any>
   // The unique identifier of the event.
   eventId?: string;
 };
