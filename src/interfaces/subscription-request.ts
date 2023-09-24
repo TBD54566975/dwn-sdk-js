@@ -1,5 +1,5 @@
 
-import type { SubscriptionFilter, SubscriptionsRequestDescriptor, SubscriptionRequestMessage } from '../types/subscriptions-request.js';
+import type { SubscriptionFilter, SubscriptionsRequestDescriptor, SubscriptionRequestMessage, SubscriptionRequestReply } from '../types/subscriptions-request.js';
 import type { SignatureInput } from '../types/jws-types.js';
 import type { GenericMessage } from '../types/message-types.js';
 import { validateAuthorizationIntegrity } from '../core/auth.js';
@@ -69,5 +69,5 @@ export class SubscriptionRequest extends Message<SubscriptionRequestMessage> {
       throw new Error('message failed authorization');
     }
   }
-
+  
 }

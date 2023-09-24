@@ -10,6 +10,7 @@ import {
   SyncEventDescriptor,
 } from '../types/event-types.js';
 import { EventEmitter } from 'events';
+import { SubscriptionFilter } from '../types/subscriptions-request.js';
 
 export type CallbackQueryRequest = RecordsFilter & {
   eventType?: EventType;
@@ -38,12 +39,13 @@ export const defaultConfig = {
 }
 
 type EventStreamConfig = {
-  channelNames: {
-    sync: string,
-    operation: string,
-    message: string,
-    log: string;
-  }
+  channelNames?: {
+    sync?: string,
+    operation?: string,
+    message?: string,
+    log?: string;
+  },
+  emitter: EventEmitter,
 }
 
 /*
@@ -68,27 +70,42 @@ export class EventStream implements EventStreamI {
   private eventEmitter: EventEmitter;
   private config: EventStreamConfig
 
-  // TODO: Possibly add a buffered eventQueue for better handling. 
-  // Event stream should pull off the queue. 
   constructor(config?: EventStreamConfig) {
-    this.eventEmitter = new EventEmitter();
-    this.config = { ...defaultConfig, ...config };
+    let emitter: EventEmitter;
+
+    if (config?.emitter === undefined) {
+      emitter = new EventEmitter();
+    } else {
+      emitter = config.emitter;
+    }
+
+    const channelConfig = {
+      ...(defaultConfig.channelNames || {}),
+      ...(config?.channelNames || {}),
+    };
+
+    this.config = {
+      channelNames: channelConfig,
+      emitter: emitter,
+    };
+
+    this.eventEmitter = emitter;
   }
 
   on(eventType: EventType, f: (e: EventMessageI<any>) => void): EventEmitter {
     let key: string
     switch (eventType) {
       case EventType.Log:
-        key = this.config.channelNames.log;
+        key = this.config.channelNames?.log || '';
         break;
       case EventType.Operation:
-        key = this.config.channelNames.operation;
+        key = this.config.channelNames?.operation || '';
         break;
       case EventType.Sync:
-        key = this.config.channelNames.sync;
+        key = this.config.channelNames?.sync || '';
         break;
       case EventType.Message:
-        key = this.config.channelNames.message;
+        key = this.config.channelNames?.message || '';
         break;
       default:
         throw new Error("unknown type. not sure what channel to listen to...")
@@ -149,4 +166,19 @@ export class EventStream implements EventStreamI {
       throw error; // You can choose to handle or propagate the error as needed.
     }
   }
+}
+
+class Subscription {
+
+}
+
+// Emits events via a scoped channel
+export class ScopedEventStream extends EventStream {
+
+  subscriptions = Map<string, Subscription>
+
+  createSubscription() {
+
+  }
+
 }
