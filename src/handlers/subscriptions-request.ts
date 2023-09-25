@@ -13,7 +13,7 @@ import { RecordsRead } from '../interfaces/records-read.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DataStream, DwnError, DwnErrorCode, Encoder } from '../index.js';
 import { Subscriptions } from '../utils/subscriptions.js';
-import { EventType, InterfaceEventMessage } from '../types/event-types.js';
+import { EventMessageI, EventType, InterfaceEventMessage } from '../types/event-types.js';
 import { EventStream, defaultConfig, type EventStreamI } from '../event-log/event-stream.js';
 
 export class SubscriptionsRequestHandler implements MethodHandler {
@@ -47,44 +47,39 @@ export class SubscriptionsRequestHandler implements MethodHandler {
             return messageReplyFromError(error, 401);
         }
 
-        // if subscription request isn't valid, chain a subscription request with a emission stream.  
-        // full event stream scope to reduced event stream scope.
-        // filters the initial event stream...
-        // const emitter = this.eventStream.on(subscriptionRequest.message.descriptor.scope.eventType,
-        //     async (event) => {
-        //         if (true) { // check filter here. 
-        //         }
-        //     });
 
-        // try {
-        //     if (subscriptionRequest.author !== undefined) {
-        //         await authenticate(message.authorization!, this.didResolver);
-        //     }
-        //     // Check permissions. 
-        //     console.log("checking auth...")
-        //     await subscriptionRequest.authorizeEvent(tenant, event, this.messageStore)
-        //     console.log("passed auth....")
+        try {
+            const filterFunction = async (event: EventMessageI<any>): Promise<boolean> => {
+                try {
+                    await authenticate(message.authorization!, this.didResolver);
+                    await subscriptionRequest.authorizeEvent(tenant, event, this.messageStore);
+                    return true;
+                } catch (error) {
+                    return false;
+                }
+            };
+        
+            // const childStream = await this.eventStream.createChild(filterFunction);
+            const childStream = await this.eventStream.createChild((event: EventMessageI<any>) => {
+                // Execute the asynchronous filter function and return the result as a boolean
+                return filterFunction(event)
+                    .then(result => result)
+                    .catch(() => false);
+            });
+        
+        
+            await childStream.open();
 
-        //     // should emit again.
-
-        //     // check authorization for message.
-        // } catch (e) {
-        //     return messageReplyFromError(e, 401);
-        // }
-
-
-        // emitter.on('subscriptionRequest.message.descriptor.scope.eventType', () => {
-        // subset data.
-
-        // })
-
-        const messageReply: SubscriptionRequestReply = {
-            status: { code: 200, detail: 'OK' },
-            subscription: {
-                // emitter: new EventStream({ emitter: emitter }),
-                filter: subscriptionRequest.message.descriptor.scope,
+            const messageReply: SubscriptionRequestReply = {
+                status: { code: 200, detail: 'OK' },
+                subscription: {
+                    emitter: childStream,
+                    filter: subscriptionRequest.message.descriptor.scope,
+                }
             }
+            return messageReply;
+        } catch (error) {
+            return messageReplyFromError(error, 401);
         }
-        return messageReply;
     };
 }

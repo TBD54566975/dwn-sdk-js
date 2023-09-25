@@ -131,7 +131,7 @@ describe('Event Stream Tests', () => {
         try {
             let count = 0;
 
-            const filterFunction = (event: EventMessageI<any>): boolean => {
+            const filterFunction = async (event: EventMessageI<any>): Promise<boolean> => {
                 const e: InterfaceEventDescriptor = event.descriptor as unknown as InterfaceEventDescriptor;
                 return e.method === DwnMethodName.Read
             }

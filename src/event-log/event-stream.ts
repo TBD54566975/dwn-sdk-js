@@ -23,6 +23,7 @@ export interface EventStreamI {
   add(e: EventMessageI<any>): Promise<void>
 
   on(f: (e: EventMessageI<any>) => void): EventEmitter
+  createChild(filter?: (e: EventMessageI<any>) => Promise<boolean>, transform?: (e: EventMessageI<any>) => Promise<EventMessageI<any>>): Promise<EventStream>
   open(): Promise<void>;
   close(): Promise<void>;
   clear(): Promise<void>;
@@ -116,26 +117,42 @@ export class EventStream implements EventStreamI {
     return this.eventEmitter.on(eventChannel, (event) => {f(event)});
   }
   
-  createChild(filter?: (e: EventMessageI<any>) => boolean, transform?: (e: EventMessageI<any>) => EventMessageI<any>): EventStream {
-    const childConfig: EventStreamConfig = {
-      emitter: new EventEmitter(),
-    };
-    const childStream = new EventStream(childConfig);
-    childStream.#parentId = this.#id;
-    // Attach event handler to the parent stream
-    this.eventEmitter.on(eventChannel, (event) => {
-      if (!filter || filter(event)) {
-        // If a filter is provided and it passes, emit the event in the child stream
-        if (transform) {
-          // If a transform function is provided, apply it to the event
-          const transformedEvent = transform(event);
-          childStream.add(transformedEvent);
-        } else {
-          childStream.add(event);
+  async createChild(
+    filter?: (e: EventMessageI<any>) => Promise<boolean>,
+    transform?: (e: EventMessageI<any>) => Promise<EventMessageI<any>>
+  ): Promise<EventStream> {
+    return new Promise((resolve, reject) => {
+      const childConfig: EventStreamConfig = {
+        emitter: new EventEmitter(),
+      };
+      const childStream = new EventStream(childConfig);
+      childStream.#parentId = this.#id;
+  
+      const eventListener = async (event: EventMessageI<any>) => {
+        try {
+          if (!filter || (await filter(event))) {
+            // If a filter is provided and it passes, emit the event in the child stream
+            if (transform) {
+              // If a transform function is provided, apply it to the event
+              const transformedEvent = await transform(event);
+              childStream.add(transformedEvent);
+            } else {
+              childStream.add(event);
+            }
+          }
+        } catch (error) {
+          reject(error);
+          console.error('Error processing event:', error);
         }
-      }
+      };
+  
+      // Attach the event handler to the parent stream
+      this.eventEmitter.on(eventChannel, eventListener);
+  
+      // Resolve the promise with childStream
+      resolve(childStream);
+
     });
-    return childStream;
   }
 
   async close(): Promise<void> {

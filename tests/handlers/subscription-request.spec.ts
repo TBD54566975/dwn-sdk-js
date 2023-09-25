@@ -68,7 +68,7 @@ export function testSubscriptionRequestHandler(): void {
                 const subscriptionReply = await dwn.handleSubscriptionRequest(alice.did, subscriptionRequest.message);
                 expect(subscriptionReply.status.code).to.equal(200, subscriptionReply.status.detail);
                 expect(subscriptionReply.subscription).to.exist;
-                //                expect(subscriptionReply.subscription?.id).to.exist; TODO: Subscriptoin should generate id
+                // expect(subscriptionReply.subscription?.id).to.exist; TODO: Subscriptoin should generate id
 
                 // set up subscription...
                 try {
