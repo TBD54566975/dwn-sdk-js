@@ -14,6 +14,10 @@ export type GenericMessage = {
 export type BaseAuthorizationPayload = {
   descriptorCid: string;
   permissionsGrantId?: string;
+  /**
+   * Used in the Records interface to authorize role-authorized actions for protocol records.
+   */
+  protocolRole?: string;
 };
 
 /**

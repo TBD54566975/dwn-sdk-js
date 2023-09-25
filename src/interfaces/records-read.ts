@@ -44,7 +44,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
    * @throws {DwnError} when a combination of required RecordsReadOptions are missing
    */
   public static async create(options: RecordsReadOptions): Promise<RecordsRead> {
-    const { filter, authorizationSigner, permissionsGrantId } = options;
+    const { filter, authorizationSigner, permissionsGrantId, protocolRole } = options;
     const currentTime = getCurrentTimeInHighPrecision();
 
     const descriptor: RecordsReadDescriptor = {
@@ -52,7 +52,6 @@ export class RecordsRead extends Message<RecordsReadMessage> {
       method           : DwnMethodName.Read,
       filter           : Records.normalizeFilter(filter),
       messageTimestamp : options.date ?? currentTime,
-      protocolRole     : options.protocolRole,
     };
 
     removeUndefinedProperties(descriptor);
@@ -60,7 +59,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
     // only generate the `authorization` property if signature input is given
     let authorization = undefined;
     if (authorizationSigner !== undefined) {
-      authorization = await Message.signAsAuthorization(descriptor, authorizationSigner, permissionsGrantId);
+      authorization = await Message.signAsAuthorization(descriptor, authorizationSigner, { permissionsGrantId, protocolRole });
     }
     const message: RecordsReadMessage = { descriptor, authorization };
 

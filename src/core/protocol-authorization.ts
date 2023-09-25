@@ -276,18 +276,11 @@ export class ProtocolAuthorization {
       return;
     }
 
-    const protocolRole = (incomingMessage as RecordsRead).message.descriptor.protocolRole;
+    const protocolRole = (incomingMessage as RecordsRead).authorizationPayload?.protocolRole;
 
     // Only verify role if there is a role being invoked
     if (protocolRole === undefined) {
       return;
-    }
-
-    if (incomingMessage.author === undefined) {
-      throw new DwnError(
-        DwnErrorCode.ProtocolAuthorizationRoleInvokedByAuthorless,
-        'Authorless messages may not invoke a protocolRole'
-      );
     }
 
     const roleRuleSet = ProtocolAuthorization.getRuleSetAtProtocolPath(protocolRole, protocolDefinition);
@@ -356,7 +349,7 @@ export class ProtocolAuthorization {
     // Get role being invoked. Currently only Reads support role-based authorization
     let invokedRole: string | undefined;
     if (incomingMessage.message.descriptor.method === DwnMethodName.Read) {
-      invokedRole = incomingMessage.message.descriptor.protocolRole;
+      invokedRole = (incomingMessage as RecordsRead).authorizationPayload?.protocolRole;
     }
 
     for (const actionRule of actionRules) {

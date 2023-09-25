@@ -37,9 +37,6 @@
         },
         "filter": {
           "$ref": "https://identity.foundation/dwn/json-schemas/records-filter.json"
-        },
-        "protocolRole": {
-          "type": "string"
         }
       }
     }

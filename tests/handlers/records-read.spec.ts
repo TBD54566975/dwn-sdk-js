@@ -524,45 +524,6 @@ export function testRecordsReadHandler(): void {
             expect(chatReadReply.status.code).to.equal(200);
           });
 
-          it('rejects role-authorized reads if the message has no author', async () => {
-            // scenario: Alice writes a chat message writes a chat message. An anonymous message tries and fails
-            //           to invoke a role to read it.
-
-            const alice = await DidKeyResolver.generate();
-
-            const protocolDefinition = friendRoleProtocolDefinition;
-
-            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-              author: alice,
-              protocolDefinition
-            });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
-
-            // Alice writes a 'chat' record
-            const chatRecord = await TestDataGenerator.generateRecordsWrite({
-              author       : alice,
-              recipient    : alice.did,
-              protocol     : protocolDefinition.protocol,
-              protocolPath : 'chat',
-              data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
-            });
-            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
-            expect(chatReply.status.code).to.equal(202);
-
-            // An anonymous message reads Alice's chat record
-            const readChatRecord = await RecordsRead.create({
-              // authorizationSigner intentionally omitted
-              filter: {
-                recordId: chatRecord.message.recordId,
-              },
-              protocolRole: 'friend'
-            });
-            const chatReadReply = await dwn.processMessage(alice.did, readChatRecord.message);
-            expect(chatReadReply.status.code).to.equal(401);
-            expect(chatReadReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationRoleInvokedByAuthorless);
-          });
-
           it('rejects role-authorized reads if the protocolRole is not a valid protocol path to a role record', async () => {
             // scenario: Alice writes a chat message writes a chat message. Bob tries to invoke the 'chat' role,
             //           but 'chat' is not a role.

@@ -161,7 +161,6 @@ export type RecordsReadDescriptor = {
   method: DwnMethodName.Read;
   filter: RecordsFilter;
   messageTimestamp: string;
-  protocolRole?: string;
 };
 
 export type RecordsDeleteMessage = GenericMessage & {

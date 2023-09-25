@@ -139,11 +139,11 @@ export abstract class Message<M extends GenericMessage> {
   public static async signAsAuthorization(
     descriptor: Descriptor,
     signatureInput: Signer,
-    permissionsGrantId?: string,
+    additionalPayloadProperties?: { permissionsGrantId?: string, protocolRole?: string }
   ): Promise<GeneralJws> {
     const descriptorCid = await Cid.computeCid(descriptor);
 
-    const authPayload: BaseAuthorizationPayload = { descriptorCid, permissionsGrantId };
+    const authPayload: BaseAuthorizationPayload = { descriptorCid, ...additionalPayloadProperties };
     removeUndefinedProperties(authPayload);
     const authPayloadStr = JSON.stringify(authPayload);
     const authPayloadBytes = new TextEncoder().encode(authPayloadStr);
