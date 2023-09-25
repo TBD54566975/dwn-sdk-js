@@ -665,6 +665,7 @@ export class RecordsWrite {
     if (encryptionCid !== undefined) { authorizationPayload.encryptionCid = encryptionCid; } // assign `encryptionCid` only if it is defined
     if (permissionsGrantId !== undefined) { authorizationPayload.permissionsGrantId = permissionsGrantId; }
 
+
     const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
 
     const builder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);

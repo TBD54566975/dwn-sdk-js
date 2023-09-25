@@ -4,6 +4,7 @@ import chai, { expect } from 'chai';
 import type { ProtocolsConfigureMessage } from '../../src/index.js';
 
 import dexProtocolDefinition from '../vectors/protocol-definitions/dex.json' assert { type: 'json' };
+import { DwnErrorCode } from '../../src/index.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { Jws } from '../../src/utils/jws.js';
 import { ProtocolsConfigure } from '../../src/interfaces/protocols-configure.js';
@@ -63,6 +64,107 @@ describe('ProtocolsConfigure', () => {
 
       const message = protocolsConfig.message as ProtocolsConfigureMessage;
       expect(message.descriptor.definition.types.ask.schema).to.eq('http://ask');
+    });
+
+    describe('protocol definition validations', () => {
+      it('allows `role` actions that have protocol path to valid $globalRole records', async () => {
+        const definition = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            rootRole    : {},
+            secondLevel : {},
+            otherRoot   : {}
+          },
+          structure: {
+            rootRole: {
+              $globalRole : true,
+              secondLevel : {
+                $actions: [{
+                  role : 'rootRole', // valid because 'rootRole` has $globalRole: true
+                  can  : 'write'
+                }]
+              }
+            },
+            otherRole: {
+              $actions: [{
+                role : 'rootRole', // valid because 'rootRole` has $globalRole: true
+                can  : 'write'
+              }]
+            }
+          }
+        };
+
+        const alice = await TestDataGenerator.generatePersona();
+
+        const protocolsConfigure = await ProtocolsConfigure.create({
+          authorizationSigner: Jws.createSigner(alice),
+          definition
+        });
+
+        expect(protocolsConfigure.message.descriptor.definition).not.to.be.undefined;
+      });
+
+      it('rejects protocol definitions with $globalRole at records that are not root records', async () => {
+        const definition = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            root        : {},
+            secondLevel : {}
+          },
+          structure: {
+            root: {
+              secondLevel: {
+                // $globalRole may only be set on root records, not nested records
+                $globalRole: true
+              }
+            }
+          }
+        };
+
+        const alice = await TestDataGenerator.generatePersona();
+
+        const createProtocolsConfigurePromise = ProtocolsConfigure.create({
+          authorizationSigner: Jws.createSigner(alice),
+          definition
+        });
+
+        await expect(createProtocolsConfigurePromise)
+          .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureGlobalRoleAtProhibitedProtocolPath);
+      });
+
+      it('rejects protocol definitions with `role` actions that contain invalid roles', async () => {
+        const definition = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            rootRole  : {},
+            otherRoot : {},
+          },
+          structure: {
+            rootRole: {
+              // $globalRole: true // deliberated omitted
+            },
+            otherRoot: {
+              $actions: [{
+                role : 'rootRole', // Not a valid role
+                can  : 'read'
+              }]
+            }
+          }
+        };
+
+        const alice = await TestDataGenerator.generatePersona();
+
+        const createProtocolsConfigurePromise = ProtocolsConfigure.create({
+          authorizationSigner: Jws.createSigner(alice),
+          definition
+        });
+
+        await expect(createProtocolsConfigurePromise)
+          .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidRole);
+      });
     });
   });
 });

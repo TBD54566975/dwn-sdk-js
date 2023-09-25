@@ -48,7 +48,11 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
     // only generate the `authorization` property if signature input is given
     let authorization: GeneralJws | undefined;
     if (options.authorizationSigner !== undefined) {
-      authorization = await Message.signAsAuthorization(descriptor, options.authorizationSigner, options.permissionsGrantId);
+      authorization = await Message.signAsAuthorization(
+        descriptor,
+        options.authorizationSigner,
+        { permissionsGrantId: options.permissionsGrantId }
+      );
     }
 
     const message = { descriptor, authorization };
