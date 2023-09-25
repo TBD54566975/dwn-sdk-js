@@ -40,7 +40,6 @@ export enum DwnErrorCode {
   ProtocolAuthorizationIncorrectProtocolPath = 'ProtocolAuthorizationIncorrectProtocolPath',
   ProtocolAuthorizationInvalidSchema = 'ProtocolAuthorizationInvalidSchema',
   ProtocolAuthorizationInvalidType = 'ProtocolAuthorizationInvalidType',
-  ProtocolAuthorizationRoleInvokedByAuthorless = 'ProtocolAuthorizationRoleInvokedByAuthorless',
   ProtocolAuthorizationMissingRole = 'ProtocolAuthorizationMissingRole',
   ProtocolAuthorizationMissingRuleSet = 'ProtocolAuthorizationMissingRuleSet',
   ProtocolAuthorizationNotARole = 'ProtocolAuthorizationNotARole',
