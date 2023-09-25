@@ -1,10 +1,23 @@
 {
-    // These tasks will run in order when initializing your CodeSandbox project.
-    "setupTasks": [
-      {
-        "name": "Build project",
-        "command": "npm run build"
+  "$schema": "https://codesandbox.io/schemas/tasks.json",
+  "setupTasks": [
+    {
+      "name": "Installing Dependencies",
+      "command": "npm install"
+    }
+  ],
+  "tasks": {
+    "dev": {
+      "name": "Build DWN SDK",
+      "command": "npm run build",
+      "runAtStart": true,
+      "restartOn": {
+        "files": ["package-lock.json"]
       }
-    ]
+    },
+    "tests": {
+      "name": "Run tests",
+      "command": "npm run test:node"
+    }
   }
-  
+}
