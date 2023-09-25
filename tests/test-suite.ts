@@ -12,6 +12,8 @@ import { testRecordsDeleteHandler } from './handlers/records-delete.spec.js';
 import { testRecordsQueryHandler } from './handlers/records-query.spec.js';
 import { testRecordsReadHandler } from './handlers/records-read.spec.js';
 import { testRecordsWriteHandler } from './handlers/records-write.spec.js';
+import { testSubscriptionRequestHandler } from './handlers/subscription-request.spec.js';
+
 import { TestStores } from './test-stores.js';
 
 /**
@@ -42,5 +44,6 @@ export class TestSuite {
     testRecordsQueryHandler();
     testRecordsReadHandler();
     testRecordsWriteHandler();
+    testSubscriptionRequestHandler();
   }
 }

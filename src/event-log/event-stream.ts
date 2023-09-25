@@ -22,10 +22,11 @@ const eventChannel = "event";
 export interface EventStreamI {
   add(e: EventMessageI<any>): Promise<void>
 
-  on(eventType: EventType, f: (e: EventMessageI<any>) => void): EventEmitter
+  on(f: (e: EventMessageI<any>) => void): EventEmitter
   open(): Promise<void>;
   close(): Promise<void>;
   clear(): Promise<void>;
+  id(): string; // returns the id
 }
 
 export const defaultConfig = {
@@ -40,12 +41,12 @@ export const defaultConfig = {
 
 type EventStreamConfig = {
   channelNames?: {
-    sync?: string,
-    operation?: string,
-    message?: string,
-    log?: string;
+    sync: string,
+    operation: string,
+    message: string,
+    log: string;
   },
-  emitter: EventEmitter,
+  emitter?: EventEmitter,
 }
 
 /*
@@ -68,16 +69,18 @@ export class EventStream implements EventStreamI {
 
   private isOpen: boolean = false;
   private eventEmitter: EventEmitter;
-  private config: EventStreamConfig
+  private config: EventStreamConfig;
+  #id: string;
+  #parentId: string = "";
 
   constructor(config?: EventStreamConfig) {
-    let emitter: EventEmitter;
-
+    let emitter: EventEmitter
     if (config?.emitter === undefined) {
       emitter = new EventEmitter();
     } else {
       emitter = config.emitter;
     }
+    this.#id = this.genUniqueId();
 
     const channelConfig = {
       ...(defaultConfig.channelNames || {}),
@@ -92,26 +95,47 @@ export class EventStream implements EventStreamI {
     this.eventEmitter = emitter;
   }
 
-  on(eventType: EventType, f: (e: EventMessageI<any>) => void): EventEmitter {
-    let key: string
-    switch (eventType) {
-      case EventType.Log:
-        key = this.config.channelNames?.log || '';
-        break;
-      case EventType.Operation:
-        key = this.config.channelNames?.operation || '';
-        break;
-      case EventType.Sync:
-        key = this.config.channelNames?.sync || '';
-        break;
-      case EventType.Message:
-        key = this.config.channelNames?.message || '';
-        break;
-      default:
-        throw new Error("unknown type. not sure what channel to listen to...")
-        break;
-    }
-    return this.eventEmitter.on(key, f)
+  id(): string {
+    return this.#id;
+  }
+
+  // improve. temporary. just for now....
+  genUniqueId(): string {
+    const dateStr = Date
+      .now()
+      .toString(36); // convert num to base 36 and stringify
+    const randomStr = Math
+      .random()
+      .toString(36)
+      .substring(2, 8); // start at index 2 to skip decimal point
+
+    return `${dateStr}-${randomStr}`;
+  }
+
+  on(f: (e: EventMessageI<any>) => void, filter?: (e: EventMessageI<any>) => boolean): EventEmitter {
+    return this.eventEmitter.on(eventChannel, (event) => {f(event)});
+  }
+  
+  createChild(filter?: (e: EventMessageI<any>) => boolean, transform?: (e: EventMessageI<any>) => EventMessageI<any>): EventStream {
+    const childConfig: EventStreamConfig = {
+      emitter: new EventEmitter(),
+    };
+    const childStream = new EventStream(childConfig);
+    childStream.#parentId = this.#id;
+    // Attach event handler to the parent stream
+    this.eventEmitter.on(eventChannel, (event) => {
+      if (!filter || filter(event)) {
+        // If a filter is provided and it passes, emit the event in the child stream
+        if (transform) {
+          // If a transform function is provided, apply it to the event
+          const transformedEvent = transform(event);
+          childStream.add(transformedEvent);
+        } else {
+          childStream.add(event);
+        }
+      }
+    });
+    return childStream;
   }
 
   async close(): Promise<void> {
@@ -126,28 +150,14 @@ export class EventStream implements EventStreamI {
     this.isOpen = true;
   }
 
-  private emitEvent(e: EventMessageI<any>): void {
-    if (e.descriptor === undefined){
+  private async emitEvent(e: EventMessageI<any>): Promise<void> {
+    if (e.descriptor === undefined) {
       throw new Error("descriptor not defined");
     }
-    const descriptor = e.descriptor;
-    switch (descriptor.type) {
-      case EventType.Message:
-        this.eventEmitter.emit(this.config.channelNames.message, e)
-        break;
-      case EventType.Sync:
-        this.eventEmitter.emit(this.config.channelNames.sync, e)
-        break;
-      case EventType.Operation:
-        this.eventEmitter.emit(this.config.channelNames.operation, e)
-        break;
-      case EventType.Log:
-        this.eventEmitter.emit(this.config.channelNames.log, e)
-        break;
-      default:
-        throw new Error("failed to emit event. unknown type")
-        break;
+    if (e.descriptor.type == undefined ) {
+      throw new Error("descriptor type not defined");
     }
+    this.eventEmitter.emit(eventChannel, e);
   }
 
   // adds to the event stream.
@@ -166,19 +176,4 @@ export class EventStream implements EventStreamI {
       throw error; // You can choose to handle or propagate the error as needed.
     }
   }
-}
-
-class Subscription {
-
-}
-
-// Emits events via a scoped channel
-export class ScopedEventStream extends EventStream {
-
-  subscriptions = Map<string, Subscription>
-
-  createSubscription() {
-
-  }
-
 }

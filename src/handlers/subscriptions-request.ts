@@ -1,7 +1,7 @@
 import type { MethodHandler } from '../types/method-handler.js';
 import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
 import type { DataStore, DidResolver, Filter, MessageStore } from '../index.js';
-import type { SubscriptionFilter, SubscriptionRequestMessage, SubscriptionRequestReply } from '../types/subscriptions-request.js';
+import type { EventMessageReply, SubscriptionFilter, SubscriptionRequestMessage, SubscriptionRequestReply } from '../types/subscriptions-request.js';
 import { SubscriptionRequest } from '../interfaces/subscription-request.js';
 
 import { authenticate } from '../core/auth.js';
@@ -14,52 +14,77 @@ import { RecordsWrite } from '../interfaces/records-write.js';
 import { DataStream, DwnError, DwnErrorCode, Encoder } from '../index.js';
 import { Subscriptions } from '../utils/subscriptions.js';
 import { EventType, InterfaceEventMessage } from '../types/event-types.js';
-import { EventStream, type EventStreamI } from '../event-log/event-stream.js';
+import { EventStream, defaultConfig, type EventStreamI } from '../event-log/event-stream.js';
 
 export class SubscriptionsRequestHandler implements MethodHandler {
 
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore, private eventStream: EventStreamI) { }
+    constructor(private didResolver: DidResolver, private messageStore: MessageStore, private dataStore: DataStore, private eventStream: EventStreamI) { }
 
-  public async handle({
-    tenant,
-    message
-  }: { tenant: string, message: SubscriptionRequestMessage }): Promise<SubscriptionRequestReply> {
+    public async handle({
+        tenant,
+        message
+    }: { tenant: string, message: SubscriptionRequestMessage }): Promise<SubscriptionRequestReply> {
 
-    let subscriptionRequest: SubscriptionRequest;
-    try {
-        subscriptionRequest = await SubscriptionRequest.parse(message);
-    } catch (e) {
-      return messageReplyFromError(e, 400);
-    }
-
-    // authentication
-    try {
-      if (subscriptionRequest.author !== undefined) {
-        await authenticate(message.authorization!, this.didResolver);
-      }
-    } catch (e) {
-      return messageReplyFromError(e, 401);
-    }    
-    
-    try {
-      await subscriptionRequest.authorize(tenant, this.eventStream, this.messageStore);
-    } catch (error) {
-      return messageReplyFromError(error, 401);
-    }
-    
-    // if subscription request isn't valid, chain a subscriptoin request with a emission stream.  
-    const emitter = this.eventStream.on(subscriptionRequest.message.descriptor.scope.eventType, (event) => {
-        if (true){ // pass filter
-            return event
+        let subscriptionRequest: SubscriptionRequest;
+        try {
+            subscriptionRequest = await SubscriptionRequest.parse(message);
+        } catch (e) {
+            return messageReplyFromError(e, 400);
         }
-    });
 
-    const messageReply: SubscriptionRequestReply = {
-        status : { code: 200, detail: 'OK' },
-        emitter: new EventStream({emitter: emitter}),
-    }
-    return messageReply;
-  };
+        // authentication
+        try {
+            if (subscriptionRequest.author !== undefined) {
+                await authenticate(message.authorization!, this.didResolver);
+            }
+        } catch (e) {
+            return messageReplyFromError(e, 401);
+        }
+
+        try {
+            await subscriptionRequest.authorize(tenant, this.eventStream, this.messageStore);
+        } catch (error) {
+            return messageReplyFromError(error, 401);
+        }
+
+        // if subscription request isn't valid, chain a subscription request with a emission stream.  
+        // full event stream scope to reduced event stream scope.
+        // filters the initial event stream...
+        // const emitter = this.eventStream.on(subscriptionRequest.message.descriptor.scope.eventType,
+        //     async (event) => {
+        //         if (true) { // check filter here. 
+        //         }
+        //     });
+
+        // try {
+        //     if (subscriptionRequest.author !== undefined) {
+        //         await authenticate(message.authorization!, this.didResolver);
+        //     }
+        //     // Check permissions. 
+        //     console.log("checking auth...")
+        //     await subscriptionRequest.authorizeEvent(tenant, event, this.messageStore)
+        //     console.log("passed auth....")
+
+        //     // should emit again.
+
+        //     // check authorization for message.
+        // } catch (e) {
+        //     return messageReplyFromError(e, 401);
+        // }
 
 
+        // emitter.on('subscriptionRequest.message.descriptor.scope.eventType', () => {
+        // subset data.
+
+        // })
+
+        const messageReply: SubscriptionRequestReply = {
+            status: { code: 200, detail: 'OK' },
+            subscription: {
+                // emitter: new EventStream({ emitter: emitter }),
+                filter: subscriptionRequest.message.descriptor.scope,
+            }
+        }
+        return messageReply;
+    };
 }

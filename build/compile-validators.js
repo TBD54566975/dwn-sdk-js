@@ -44,6 +44,7 @@ import RecordsWrite from '../json-schemas/interface-methods/records-write.json' 
 import RecordsWriteAuthorSignaturePayload from '../json-schemas/authorization-payloads/records-write-authorization-payload.json' assert { type: 'json' };
 import RecordsWriteUnidentified from '../json-schemas/interface-methods/records-write-unidentified.json' assert { type: 'json' };
 import SnapshotsCreate from '../json-schemas/interface-methods/snapshots-create.json' assert { type: 'json' };
+import SubscriptionsRequest from '../json-schemas/interface-methods/subscriptions-request.json' assert { type: 'json' };
 
 const schemas = {
   Authorization,
@@ -69,6 +70,7 @@ const schemas = {
   ProtocolsQuery,
   RecordsRead,
   RecordsFilter,
+  SubscriptionsRequest,
   PublicJwk,
   SnapshotsCreate,
   BaseAuthorizationPayload,

@@ -25,6 +25,9 @@
         },
         {
           "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/records-write-scope"
+        },
+        {
+          "$ref": "https://identity.foundation/dwn/json-schemas/permissions/scopes.json#/definitions/subscriptions-request-scope"
         }
       ]
     },

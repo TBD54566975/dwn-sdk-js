@@ -85,6 +85,33 @@
           "type": "string"
         }
       }
-    }
+    },
+    "subscriptions-request-scope": {
+      "type": "object",
+      "required": [
+        "interface",
+        "method"
+      ],
+      "properties": {
+        "interface": {
+          "const": "Subscriptions"
+        },
+        "method": {
+          "const": "Request"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "protocol": {
+          "type": "string"
+        },
+        "contextId": {
+          "type": "string"
+        },
+        "protocolPath": {
+          "type": "string"
+        }
+      }
+    }                
   }
 }

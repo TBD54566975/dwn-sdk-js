@@ -1,4 +1,4 @@
-import { EventStreamI } from '../src/event-log/event-stream.js';
+import { EventStream, EventStreamI } from '../src/event-log/event-stream.js';
 import type { DataStore, EventLog, MessageStore } from '../src/index.js';
 import { DataStoreLevel, EventLogLevel, MessageStoreLevel } from '../src/index.js';
 
@@ -42,6 +42,8 @@ export class TestStores {
     TestStores.eventLog ??= new EventLogLevel({
       location: 'TEST-EVENTLOG'
     });
+
+    TestStores.eventStream ??= new EventStream();
 
     return {
       messageStore : TestStores.messageStore,

@@ -1,9 +1,11 @@
 import type { MessageStore } from '../types/message-store.js';
-import { SubscriptionRequest } from "../interfaces/subscription-request";
+import { SubscriptionRequest } from "../interfaces/subscription-request.js";
 import { GrantAuthorization } from './grant-authorization.js';
 import { EventStreamI } from '../event-log/event-stream.js';
 import type { PermissionsGrantMessage, SubscriptionPermissionScope } from '../types/permissions-types.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
+import { EventMessageI } from '../types/event-types.js';
+import { Message } from './message.js';
 
 
 export class SubscriptionsGrantAuthorization {
@@ -17,9 +19,24 @@ export class SubscriptionsGrantAuthorization {
         incomingMessage: SubscriptionRequest,
         author: string,
         messageStore: MessageStore,
-        eventLog: EventStreamI,
+        eventStream: EventStreamI,
     ): Promise<void> {
         const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, author, messageStore);
+        SubscriptionsGrantAuthorization.verifyScope(incomingMessage, permissionsGrantMessage);
+    }
+
+    /**
+    * Authorizes the scope of a PermissionsGrant for Subscription.
+    * For initial connection setup.
+    */
+    public static async authorizeEvent(
+        tenant: string,
+        incomingMessage: SubscriptionRequest,
+        event: EventMessageI<any>,
+        messageStore: MessageStore,
+    ): Promise<void> {
+        // author will always be tenant on this. 
+        const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, tenant, messageStore);
         SubscriptionsGrantAuthorization.verifyScope(incomingMessage, permissionsGrantMessage);
     }
 
@@ -31,7 +48,6 @@ export class SubscriptionsGrantAuthorization {
         permissionsGrantMessage: PermissionsGrantMessage,
     ): void {
         const grantScope = permissionsGrantMessage.descriptor.scope as SubscriptionPermissionScope;
-
         if (SubscriptionsGrantAuthorization.isUnrestrictedScope(grantScope)) {
             // scope has no restrictions beyond interface and method. Message is authorized to access any record.
             return;

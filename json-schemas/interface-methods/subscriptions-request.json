@@ -1,0 +1,51 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://identity.foundation/dwn/json-schemas/subscriptions-request.json",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "descriptor"
+    ],
+    "properties": {
+      "authorization": {
+        "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
+      },
+      "descriptor": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+        ],
+        "properties": {
+          "interface": {
+            "enum": [
+                "Subscriptions"
+            ],
+             "type": "string"
+          },
+          "method": {
+            "enum": [
+              "Request"
+            ],
+            "type": "string"
+          },
+          "messageTimestamp": {
+            "type": "string"
+          },    
+          "scope": {
+            "type": "object",
+            "properties": {
+                "eventType": {
+                    "enum": [
+                        "Log",
+                        "Message",
+                        "Operation",
+                        "Sync"
+                    ],
+                    "type": "string"
+                }
+            }
+          }
+        }
+      }
+    }
+  }

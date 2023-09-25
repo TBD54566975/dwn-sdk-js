@@ -1,3 +1,4 @@
+import { validate } from 'uuid';
 import * as precompiledValidators from '../generated/precompiled-validators.js';
 
 /**

@@ -59,7 +59,7 @@ export function testSubscriptionsRequestHandler(): void {
                 const { message } = await SubscriptionRequest.create({
                   authorizationSignatureInput
                 });
-
+                
                 expect(message.descriptor.scope).to.eql({ interface: DwnInterfaceName.Subscriptions, method: DwnMethodName.Request});
             })
 

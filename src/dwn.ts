@@ -32,6 +32,7 @@ import { EventStream } from './event-log/event-stream.js';
 import { EventEmitter } from 'events';
 import { SubscriptionRequest } from './interfaces/subscription-request.js';
 import { SubscriptionRequestMessage, SubscriptionRequestReply } from './types/subscriptions-request.js';
+import { EventType } from './types/event-types.js';
 
 export class Dwn {
   private methodHandlers: { [key:string]: MethodHandler };
@@ -126,6 +127,7 @@ export class Dwn {
     // at the end of process message, add a message to event queue for handling.
     const event = {descriptor: {
       ...rawMessage.descriptor,
+      type: EventType.Operation,
       tenant: tenant,
     },}
 
@@ -142,11 +144,10 @@ export class Dwn {
     public async handleSubscriptionRequest(tenant: string, message: SubscriptionRequestMessage): Promise<SubscriptionRequestReply> {
       const errorMessageReply =
         await this.validateTenant(tenant) ??
-        await this.validateMessageIntegrity(message, DwnInterfaceName.Records, DwnMethodName.Read);
+        await this.validateMessageIntegrity(message, DwnInterfaceName.Subscriptions, DwnMethodName.Request);
       if (errorMessageReply !== undefined) {
         return errorMessageReply;
       }
-  
       const handler = new SubscriptionsRequestHandler(this.didResolver, this.messageStore, this.dataStore, this.eventStream as EventStream);
       return handler.handle({ tenant, message });
     }
@@ -246,12 +247,12 @@ export class Dwn {
     // Verify interface and method
     const dwnInterface = rawMessage?.descriptor?.interface;
     const dwnMethod = rawMessage?.descriptor?.method;
+
     if (dwnInterface === undefined || dwnMethod === undefined) {
       return {
         status: { code: 400, detail: `Both interface and method must be present, interface: ${dwnInterface}, method: ${dwnMethod}` }
       };
     }
-
     if (expectedInterface !== undefined && expectedInterface !== dwnInterface) {
       return {
         status: { code: 400, detail: `Expected interface ${expectedInterface}, received ${dwnInterface}` }

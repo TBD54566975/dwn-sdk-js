@@ -94,9 +94,9 @@ export type PermissionsRevokeMessage = GenericMessage & {
 // Method-specific scopes
 export type SubscriptionPermissionScope = {
   // filter to certain interfaces.
-  interface: DwnInterfaceName;
+  interface: DwnInterfaceName.Subscriptions;
   // filter to certain methods
-  method: DwnMethodName;
+  method: DwnMethodName.Request;
   /** Event type filter...i.e logs, sync, operations...*/
   eventType?: EventType;
   /** May only be present when `schema` is undefined */

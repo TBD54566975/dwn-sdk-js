@@ -13,6 +13,7 @@ import { removeUndefinedProperties } from '../utils/object.js';
 import { EventStream, EventStreamI } from '../event-log/event-stream.js';
 import { MessageStore } from '../index.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
+import { EventMessageI } from '../types/event-types.js';
 
 export type SubscriptionRequestOptions = {
   filter?: SubscriptionFilter;
@@ -61,13 +62,29 @@ export class SubscriptionRequest extends Message<SubscriptionRequestMessage> {
 
   // TODO: andorsk add scoping for protocls support
   public async authorize(tenant: string, eventStream: EventStreamI, messageStore: MessageStore): Promise<void> {
-    if (this.author === tenant) {
-      // if author is the same as the target tenant, we can directly grant access
+    if ( tenant === this.author ) { // if the eventStream owner is also the tenant, access is granted always. 
+      return;
     } else if (this.author !== undefined && this.authorizationPayload?.permissionsGrantId !== undefined) {
       await SubscriptionsGrantAuthorization.authorizeSubscribe(tenant, this, this.author, messageStore, eventStream);
     } else {
       throw new Error('message failed authorization');
     }
   }
-  
+
+  public async authorizeEvent(tenant: string, event: EventMessageI<any>, messageStore: MessageStore) : Promise<void> {
+    // checking authorization
+    if ( tenant === this.author ) {
+      return;
+    }
+
+    console.log("checking author and payload")
+    if (this.author !== undefined && this.authorizationPayload?.permissionsGrantId !== undefined) {
+      console.log("checking subscription grant")
+      await SubscriptionsGrantAuthorization.authorizeEvent(tenant, this, event, messageStore) 
+    } else {
+      console.log("message failed....")
+      throw new Error('message failed authorization');
+    }
+  }
+
 }

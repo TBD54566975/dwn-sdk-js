@@ -8,7 +8,7 @@ import type { Readable } from 'readable-stream';
 import type { BaseAuthorizationPayload, GenericMessage } from './message-types.js';
 import type { RangeCriterion } from './records-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
-import { EventType } from './event-types.js';
+import { EventMessageI, EventType } from './event-types.js';
 import { EventStreamI } from '../event-log/event-stream.js';
 
 export type SubscriptionRequestMessage = {
@@ -18,12 +18,13 @@ export type SubscriptionRequestMessage = {
 
 export type SubscriptionRequestReply = GenericMessageReply & {
   subscription?: {
-    id: string;
+    id?: string;
     grantedFrom?: string;
     grantedTo?: string;
     attestation?: GeneralJws;
-  },
-  emitter?: EventStreamI, // provides a subscription channel.
+    emitter?: EventStreamI;
+    filter?: SubscriptionFilter,
+  }
 };
 
 export type SubscriptionsRequestDescriptor = {
@@ -46,4 +47,8 @@ export type SubscriptionFilter = {
     parentId?: string;
     dataFormat?: string;
     dateCreated?: RangeCriterion;
+  };
+
+  export type EventMessageReply = GenericMessageReply & {
+    event?: EventMessageI<any>, 
   };
