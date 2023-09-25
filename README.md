@@ -77,6 +77,12 @@ This project is used as a dependency by several other projects.
 
 Proposals and issues for the specification itself should be submitted as pull requests to the [spec repo](https://github.com/decentralized-identity/decentralized-web-node).
 
+## Running online environment
+
+Interested in contributing instantly? You can make your updates directly without cloning in the running CodeSandbox environment.
+
+[![Edit in CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/github/TBD54566975/dwn-sdk-js/main)
+
 ## Installation
 
 If you are interested in using DWNs and web5 in your web app, you probably want to look at web5-js, instead of this repository. Head on over here: https://github.com/TBD54566975/web5-js.
