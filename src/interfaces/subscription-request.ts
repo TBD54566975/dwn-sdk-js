@@ -1,7 +1,7 @@
 
 import type { SubscriptionFilter, SubscriptionsRequestDescriptor, SubscriptionRequestMessage, SubscriptionRequestReply } from '../types/subscriptions-request.js';
 import type { SignatureInput } from '../types/jws-types.js';
-import type { GenericMessage } from '../types/message-types.js';
+import type { Descriptor, GenericMessage } from '../types/message-types.js';
 import { validateAuthorizationIntegrity } from '../core/auth.js';
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
@@ -13,7 +13,8 @@ import { removeUndefinedProperties } from '../utils/object.js';
 import { EventStream, EventStreamI } from '../event-log/event-stream.js';
 import { MessageStore } from '../index.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
-import { EventMessageI } from '../types/event-types.js';
+import { EventDescriptor, EventMessageI } from '../types/event-types.js';
+import { EventMessage } from './event-create.js';
 
 export type SubscriptionRequestOptions = {
   filter?: SubscriptionFilter;
@@ -65,26 +66,27 @@ export class SubscriptionRequest extends Message<SubscriptionRequestMessage> {
     if ( tenant === this.author ) { // if the eventStream owner is also the tenant, access is granted always. 
       return;
     } else if (this.author !== undefined && this.authorizationPayload?.permissionsGrantId !== undefined) {
-      await SubscriptionsGrantAuthorization.authorizeSubscribe(tenant, this, this.author, messageStore, eventStream);
+      await SubscriptionsGrantAuthorization.authorizeSubscribe(tenant, this, this.author, messageStore);
     } else {
       throw new Error('message failed authorization');
     }
   }
 
-  public async authorizeEvent(tenant: string, event: EventMessageI<any>, messageStore: MessageStore) : Promise<void> {
-    // checking authorization
-    if ( tenant === this.author ) {
+  public async authorizeEvent(tenant: string, event: EventMessage, messageStore: MessageStore) : Promise<void> {
+    if (tenant == this.author) {
       return;
-    }
-
-    console.log("checking author and payload")
-    if (this.author !== undefined && this.authorizationPayload?.permissionsGrantId !== undefined) {
-      console.log("checking subscription grant")
-      await SubscriptionsGrantAuthorization.authorizeEvent(tenant, this, event, messageStore) 
+    } else if ( this.author !== undefined && this.authorizationPayload?.permissionsGrantId !== undefined ){
+      await SubscriptionsGrantAuthorization.authorizeEvent(tenant, this, event, messageStore, this.author);
     } else {
-      console.log("message failed....")
       throw new Error('message failed authorization');
     }
   }
-
 }
+
+export type CreateEventOptions = {
+  messageTimestamp: string;
+  authorization: string;
+  author: string;
+  event: EventMessageI<any>;
+  authorizationSignatureInput?: SignatureInput;
+};

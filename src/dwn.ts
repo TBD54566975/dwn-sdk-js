@@ -31,6 +31,8 @@ import { DwnInterfaceName, DwnMethodName, Message } from './core/message.js';
 import { EventStream } from './event-log/event-stream.js';
 import { EventEmitter } from 'events';
 import { SubscriptionRequest } from './interfaces/subscription-request.js';
+import { EventMessage } from './interfaces/event-create.js';
+
 import { SubscriptionRequestMessage, SubscriptionRequestReply } from './types/subscriptions-request.js';
 import { EventType } from './types/event-types.js';
 
@@ -124,15 +126,14 @@ export class Dwn {
       dataStream
     });
 
-    // at the end of process message, add a message to event queue for handling.
-    const event = {descriptor: {
-      ...rawMessage.descriptor,
-      type: EventType.Operation,
-      tenant: tenant,
-    },}
+    const eventMessage = await EventMessage.create({
+      descriptor: {
+        ...rawMessage.descriptor,
+      },
+    })
 
     if (this.eventStream){
-      this.eventStream.add(event);
+      this.eventStream.add(eventMessage);
     }
 
     return methodHandlerReply;

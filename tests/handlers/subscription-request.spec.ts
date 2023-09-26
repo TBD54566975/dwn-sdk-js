@@ -10,6 +10,7 @@ import { SubscriptionRequest } from "../../src/interfaces/subscription-request.j
 import { ArrayUtility } from "../../src/utils/array.js";
 import { EventMessageI, EventType } from "../../src/types/event-types.js";
 import chaiAsPromised from 'chai-as-promised';
+import { EventMessage } from "../../src/interfaces/event-create.js";
 
 chai.use(chaiAsPromised);
 
@@ -72,9 +73,9 @@ export function testSubscriptionRequestHandler(): void {
 
                 // set up subscription...
                 try {
-                    let messageReceived: EventMessageI<any>;
+                    let messageReceived: EventMessage;
                     const eventHandledPromise = new Promise<void>((resolve, reject) => {
-                        subscriptionReply.subscription?.emitter?.on(async (e: EventMessageI<any>) => {
+                        subscriptionReply.subscription?.emitter?.on(async (e: EventMessage) => {
                             try {
                                 messageReceived = e;
                                 resolve(); // Resolve the promise when the event is handled.
@@ -83,17 +84,15 @@ export function testSubscriptionRequestHandler(): void {
                             }
                         });
                     });
-
                     const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: alice });
                     const writeReply = await dwn.processMessage(alice.did, message, dataStream);
                     expect(writeReply.status.code).to.equal(202);
-
                     await eventHandledPromise;
                     expect(messageReceived!).to.be.not.undefined;
-                    expect(messageReceived!.descriptor).to.not.be.undefined;
-                    expect(message.descriptor.dataCid).to.deep.equal(messageReceived!.descriptor.dataCid);
+                    expect(messageReceived!.message.descriptor).to.not.be.undefined;
+                    expect(message.descriptor.dataCid).to.deep.equal(messageReceived!.message.descriptor.eventDescriptor.dataCid);
                 } catch (error) {
-                    assert.fail(error, undefined, "Test failed due to an error");
+                    assert.fail(error, undefined, "Test failed due to an error" + error);
                 }
 
             });
@@ -139,19 +138,18 @@ export function testSubscriptionRequestHandler(): void {
                     filter: {
                         eventType: EventType.Operation,
                     },
-                    authorizationSignatureInput: Jws.createSignatureInput(alice)
+                    authorizationSignatureInput: Jws.createSignatureInput(bob),
+                    permissionsGrantId: await Message.getCid(permissionsGrant.message),
                 });
 
                 const subscriptionReply = await dwn.handleSubscriptionRequest(alice.did, subscriptionRequest.message);
                 expect(subscriptionReply.status.code).to.equal(200, subscriptionReply.status.detail);
-                expect(subscriptionReply.subscription).to.exist;
-                //                expect(subscriptionReply.subscription?.id).to.exist; TODO: Subscriptoin should generate id
+                assert.exists(subscriptionReply.subscription, "subscription exists")
 
-                // set up subscription...
                 try {
-                    let messageReceived: EventMessageI<any>;
+                    let messageReceived: EventMessage;
                     const eventHandledPromise = new Promise<void>((resolve, reject) => {
-                        subscriptionReply.subscription?.emitter?.on(async (e: EventMessageI<any>) => {
+                        subscriptionReply.subscription?.emitter?.on(async (e: EventMessage) => {
                             try {
                                 messageReceived = e;
                                 resolve(); // Resolve the promise when the event is handled.
@@ -167,14 +165,14 @@ export function testSubscriptionRequestHandler(): void {
 
                     await eventHandledPromise;
                     expect(messageReceived!).to.be.not.undefined;
-                    expect(messageReceived!.descriptor).to.not.be.undefined;
-                    expect(message.descriptor.dataCid).to.deep.equal(messageReceived!.descriptor.dataCid);
+                    expect(messageReceived!.message.descriptor).to.not.be.undefined;
+                    expect(message.descriptor.dataCid).to.deep.equal(messageReceived!.message.descriptor.eventDescriptor.dataCid);
                 } catch (error) {
                     assert.fail(error, undefined, "Test failed due to an error");
                 }
             })
 
-            it('should allow a non-tenant to read subscriptions stream access they are authorized to, and then revoke permissions. they should no longer have access.', async () => {
+            it('should now allow a non-tenant to read subscriptions stream access they are authorized to, and then revoke permissions. they should no longer have access', async () => {
 
                 const alice = await DidKeyResolver.generate();
                 const bob = await DidKeyResolver.generate();
@@ -193,25 +191,23 @@ export function testSubscriptionRequestHandler(): void {
 
                 const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
                 expect(permissionsGrantReply.status.code).to.equal(202);
-
                 // testing Subscription Request
                 const subscriptionRequest = await SubscriptionRequest.create({
                     filter: {
                         eventType: EventType.Operation,
                     },
-                    authorizationSignatureInput: Jws.createSignatureInput(alice)
-                });
-
+                    authorizationSignatureInput: Jws.createSignatureInput(bob),
+                    permissionsGrantId: await Message.getCid(permissionsGrant.message),
+                });        
                 const subscriptionReply = await dwn.handleSubscriptionRequest(alice.did, subscriptionRequest.message);
                 expect(subscriptionReply.status.code).to.equal(200, subscriptionReply.status.detail);
-                expect(subscriptionReply.subscription).to.exist;
-                //                expect(subscriptionReply.subscription?.id).to.exist; TODO: Subscriptoin should generate id
+                assert.exists(subscriptionReply.subscription, "subscription exists")
 
                 // set up subscription...
                 try {
-                    let messageReceived: EventMessageI<any> | undefined;
+                    let messageReceived: EventMessage | undefined;
                     const eventHandledPromise = new Promise<void>((resolve, reject) => {
-                        subscriptionReply.subscription?.emitter?.on(async (e: EventMessageI<any>) => {
+                        subscriptionReply.subscription?.emitter?.on(async (e: EventMessage) => {
                             try {
                                 messageReceived = e;
                                 resolve(); // Resolve the promise when the event is handled.
@@ -223,32 +219,33 @@ export function testSubscriptionRequestHandler(): void {
 
                     let { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: alice });
                     let writeReply = await dwn.processMessage(alice.did, message, dataStream);
-                    expect(writeReply.status.code).to.equal(202);
+                    expect(writeReply.status.code).to.equal(202, "could not write event...");
 
                     await eventHandledPromise;
                     expect(messageReceived!).to.be.not.undefined;
-                    expect(messageReceived!.descriptor).to.not.be.undefined;
-                    expect(message.descriptor.dataCid).to.deep.equal(messageReceived!.descriptor.dataCid);
-
-                    // Revoke permission
+                    expect(messageReceived!.message.descriptor).to.not.be.undefined;
+                    expect(message.descriptor.dataCid).to.deep.equal(messageReceived!.message.descriptor.eventDescriptor.dataCid);
+                    messageReceived = undefined;
+                    // Alice revokes the grant
                     const { permissionsRevoke } = await TestDataGenerator.generatePermissionsRevoke({
                         author: alice,
                         permissionsGrantId: await Message.getCid(permissionsGrant.message)
                     });
-
-                    messageReceived = undefined; // since it's a revoked message, should not see message
                     const permissionsRevokeReply = await dwn.processMessage(alice.did, permissionsRevoke.message);
                     expect(permissionsRevokeReply.status.code).to.eq(202);
-                    // expect(messageReceived!).to.be.undefined;
-
-                    // console.log("revoked permission and checking.......")
-                    // should get revocation operation.
-
-                    // ({ message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: alice }));
-                    // writeReply = await dwn.processMessage(alice.did, message, dataStream);
-                    // expect(writeReply.status.code).to.equal(202);
-
-
+                        // wait 100 ms to make sure it didn't propgate.
+                    await new Promise((resolve) => {
+                        setTimeout(resolve, 100);
+                    });
+                    assert.isUndefined(messageReceived, "message should be undefined on permission revoke...");
+                    messageReceived = undefined;
+                    assert.isUndefined(messageReceived, "message should be undefined on write...");
+                    ({ message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: alice }));
+                    writeReply = await dwn.processMessage(alice.did, message, dataStream);
+                    expect(writeReply.status.code).to.equal(202);
+                    await new Promise((resolve) => {
+                        setTimeout(resolve, 100);
+                    });
                 } catch (error) {
                     assert.fail(error, undefined, "Test failed due to an error");
                 }

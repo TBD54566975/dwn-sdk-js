@@ -3,7 +3,6 @@ import {
   EventType,
   EventMessageI,
   EventDescriptor,
-  AllEventMessageTypes,
   EventFilter,
   InterfaceEventDescriptor,
   RecordEventDescriptor,
@@ -11,6 +10,7 @@ import {
 } from '../types/event-types.js';
 import { EventEmitter } from 'events';
 import { SubscriptionFilter } from '../types/subscriptions-request.js';
+import { EventMessage } from '../interfaces/event-create.js';
 
 export type CallbackQueryRequest = RecordsFilter & {
   eventType?: EventType;
@@ -20,10 +20,10 @@ const eventChannel = "event";
 
 // EventStream is a sinked stream for Events
 export interface EventStreamI {
-  add(e: EventMessageI<any>): Promise<void>
+  add(e: EventMessage): Promise<void>
 
-  on(f: (e: EventMessageI<any>) => void): EventEmitter
-  createChild(filter?: (e: EventMessageI<any>) => Promise<boolean>, transform?: (e: EventMessageI<any>) => Promise<EventMessageI<any>>): Promise<EventStream>
+  on(f: (e: EventMessage) => void): EventEmitter
+  createChild(filter?: (e: EventMessage) => Promise<boolean>, transform?: (e: EventMessage) => Promise<EventMessage>): Promise<EventStream>
   open(): Promise<void>;
   close(): Promise<void>;
   clear(): Promise<void>;
@@ -113,13 +113,13 @@ export class EventStream implements EventStreamI {
     return `${dateStr}-${randomStr}`;
   }
 
-  on(f: (e: EventMessageI<any>) => void, filter?: (e: EventMessageI<any>) => boolean): EventEmitter {
+  on(f: (e: EventMessage) => void, filter?: (e: EventMessage) => boolean): EventEmitter {
     return this.eventEmitter.on(eventChannel, (event) => {f(event)});
   }
   
   async createChild(
-    filter?: (e: EventMessageI<any>) => Promise<boolean>,
-    transform?: (e: EventMessageI<any>) => Promise<EventMessageI<any>>
+    filter?: (e: EventMessage) => Promise<boolean>,
+    transform?: (e: EventMessage) => Promise<EventMessage>
   ): Promise<EventStream> {
     return new Promise((resolve, reject) => {
       const childConfig: EventStreamConfig = {
@@ -128,7 +128,7 @@ export class EventStream implements EventStreamI {
       const childStream = new EventStream(childConfig);
       childStream.#parentId = this.#id;
   
-      const eventListener = async (event: EventMessageI<any>) => {
+      const eventListener = async (event: EventMessage) => {
         try {
           if (!filter || (await filter(event))) {
             // If a filter is provided and it passes, emit the event in the child stream
@@ -167,12 +167,9 @@ export class EventStream implements EventStreamI {
     this.isOpen = true;
   }
 
-  private async emitEvent(e: EventMessageI<any>): Promise<void> {
-    if (e.descriptor === undefined) {
+  private async emitEvent(e: EventMessage): Promise<void> {
+    if (e.message.descriptor === undefined) {
       throw new Error("descriptor not defined");
-    }
-    if (e.descriptor.type == undefined ) {
-      throw new Error("descriptor type not defined");
     }
     this.eventEmitter.emit(eventChannel, e);
   }
@@ -183,7 +180,7 @@ export class EventStream implements EventStreamI {
   // an internal queue state can be maintained. 
   // which can be used to improve resiliance
   // for event processing. 
-  async add(e: EventMessageI<any>): Promise<void> {
+  async add(e: EventMessage): Promise<void> {
     if (!this.isOpen) {
       throw new Error("Event stream is not open. Cannot add to the stream.");
     }

@@ -6,6 +6,7 @@ import type { PermissionsGrantMessage, SubscriptionPermissionScope } from '../ty
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 import { EventMessageI } from '../types/event-types.js';
 import { Message } from './message.js';
+import { EventMessage } from '../interfaces/event-create.js';
 
 
 export class SubscriptionsGrantAuthorization {
@@ -19,7 +20,6 @@ export class SubscriptionsGrantAuthorization {
         incomingMessage: SubscriptionRequest,
         author: string,
         messageStore: MessageStore,
-        eventStream: EventStreamI,
     ): Promise<void> {
         const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, author, messageStore);
         SubscriptionsGrantAuthorization.verifyScope(incomingMessage, permissionsGrantMessage);
@@ -32,12 +32,38 @@ export class SubscriptionsGrantAuthorization {
     public static async authorizeEvent(
         tenant: string,
         incomingMessage: SubscriptionRequest,
-        event: EventMessageI<any>,
+        event: EventMessage,
         messageStore: MessageStore,
+        author: string,
     ): Promise<void> {
-        // author will always be tenant on this. 
-        const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, tenant, messageStore);
+        // 1. Get Grant from initial Subscription Request. Check if it's still valid. 
+            // Problem : Needs to check NEW message time. 
+        incomingMessage.message.descriptor.messageTimestamp = event.message.descriptor.messageTimestamp; // HACK!
+        const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, author, messageStore);
+        // 2. Check When Grant Was Valid
+        // 3. Check Event is Valid within Grant. 
+        // 4. Verify Scope
         SubscriptionsGrantAuthorization.verifyScope(incomingMessage, permissionsGrantMessage);
+    }
+
+    /**
+* @param subscriptionRequest The source of the record being authorized.
+*/
+    private static verifyEventScope(
+        subscriptionRequest: SubscriptionRequest,
+        event: EventMessage,
+        permissionsGrantMessage: PermissionsGrantMessage,
+    ): void {
+        const grantScope = permissionsGrantMessage.descriptor.scope as SubscriptionPermissionScope;
+        if (SubscriptionsGrantAuthorization.isUnrestrictedScope(grantScope)) {
+            // scope has no restrictions beyond interface and method. Message is authorized to access any record.
+            return;
+        } else if (subscriptionRequest.message.descriptor.scope.protocol !== undefined) {
+            // authorization of protocol records must have grants that explicitly include the protocol
+            SubscriptionsGrantAuthorization.authorizeProtocolRecord(subscriptionRequest, grantScope);
+        } else {
+            SubscriptionsGrantAuthorization.authorizeFlatRecord(subscriptionRequest, grantScope);
+        }
     }
 
     /**

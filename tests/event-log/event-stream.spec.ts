@@ -6,6 +6,8 @@ import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import chai, { expect, assert, AssertionError } from 'chai';
 import { EventDescriptor, EventMessageI, EventType, InterfaceEventDescriptor } from '../../src/types/event-types.js';
+import { EventMessage } from '../../src/interfaces/event-create.js';
+import { Jws } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -28,40 +30,46 @@ describe('Event Stream Tests', () => {
 
     it('test add callback', async () => {
         try {
+            const alice = await TestDataGenerator.generatePersona();
             let messageReceived;
             const eventHandledPromise = new Promise<void>((resolve, reject) => {
-                eventStream.on(async (e: EventMessageI<any>) => {
+                eventStream.on(async (e: EventMessage) => {
                     try {
-                        messageReceived = e.descriptor;
+                        console.log("got message....")
+                        messageReceived = e.message.descriptor;
                         resolve(); // Resolve the promise when the event is handled.
                     } catch (error) {
                         reject(error);
                     }
                 });
             });
-
-            const msg = {
+            const msg = await EventMessage.create({
                 descriptor: {
                     type: EventType.Operation,
                     interface: DwnInterfaceName.Records,
                     method: DwnMethodName.Read,
                     messageTimestamp: "123"
-                }
-            }
+                },
+                authorizationSignatureInput : Jws.createSignatureInput(alice),
+            })
             eventStream.add(msg); // add message
             await eventHandledPromise;
-            expect(messageReceived).to.deep.equal(msg.descriptor);
+            expect(messageReceived).to.deep.equal(msg.message.descriptor);
         } catch (error) {
             assert.fail(error, undefined, "Test failed due to an error");
         }
     })
 
     it('test bad message', async () => {
-        const badMessage = {
+        const alice = await TestDataGenerator.generatePersona();
+
+        const badMessage = await EventMessage.create({
             descriptor: {
-                // Type is missing, which makes it a "bad" message
+                type: EventType.Operation,
+                messageTimestamp: "1",
             },
-        };
+            authorizationSignatureInput : Jws.createSignatureInput(alice),
+        })
         try {
             await eventStream.open();
             await eventStream.add(badMessage);
@@ -71,13 +79,16 @@ describe('Event Stream Tests', () => {
     });
 
     it('should throw an error when adding events to a closed stream', async () => {
-        const event = {
+        const alice = await TestDataGenerator.generatePersona();
+        const event = await EventMessage.create({
             descriptor: {
-                type: EventType.Message,
-                // Add necessary properties here
+                type: EventType.Operation,
+                interface: DwnInterfaceName.Records,
+                method: DwnMethodName.Read,
+                messageTimestamp: "123"
             },
-            // Add other properties as needed
-        };
+            authorizationSignatureInput : Jws.createSignatureInput(alice),
+        })
         eventStream.close();
         // Attempt to add an event to a closed stream
         try {
@@ -90,9 +101,11 @@ describe('Event Stream Tests', () => {
     it('should handle concurrent event sending', async () => {
         const eventCount = 100; // Number of events to send concurrently
         const eventPromises = [];
+        const alice = await TestDataGenerator.generatePersona();
+
         let caughtMessages = 0;
         const eventHandledPromise = new Promise<void>((resolve, reject) => {
-            eventStream.on(async (e: EventMessageI<any>) => {
+            eventStream.on(async (e: EventMessage) => {
                 try {
                     caughtMessages += 1;
                     resolve(); // Resolve the promise when the event is handled.
@@ -106,16 +119,21 @@ describe('Event Stream Tests', () => {
         const events = Array.from({ length: eventCount }, (_, i) => ({
             descriptor: {
                 type: EventType.Log,
+                messageTimestamp: `${i}`,
                 eventNumber: i + 1, // Just an example property
             },
         }));
 
-        const sendEvent = (event: EventMessageI<any>) => {
+        const sendEvent = (event: EventMessage) => {
             return eventStream.add(event);
         };
 
         for (const event of events) {
-            const eventPromise = sendEvent(event);
+            const eMsg = await EventMessage.create({
+                descriptor: event.descriptor,
+                authorizationSignatureInput : Jws.createSignatureInput(alice),
+            })
+            const eventPromise = sendEvent(eMsg);
             eventPromises.push(eventPromise);
         }
 
@@ -130,9 +148,10 @@ describe('Event Stream Tests', () => {
 
         try {
             let count = 0;
+            const alice = await TestDataGenerator.generatePersona();
 
-            const filterFunction = async (event: EventMessageI<any>): Promise<boolean> => {
-                const e: InterfaceEventDescriptor = event.descriptor as unknown as InterfaceEventDescriptor;
+            const filterFunction = async (event: EventMessage): Promise<boolean> => {
+                const e: InterfaceEventDescriptor = event.message.descriptor.eventDescriptor as unknown as InterfaceEventDescriptor;
                 return e.method === DwnMethodName.Read
             }
 
@@ -141,7 +160,7 @@ describe('Event Stream Tests', () => {
 
             const eventHandledPromise = new Promise<void>((resolve, reject) => {
                 // Define the event handler function outside the setTimeout
-                const eventHandler = async (e: EventMessageI<any>) => {
+                const eventHandler = async (e: EventMessage) => {
                     try {
                         count += 1; // adding 1 if passes filter.
                         resolve(); // Resolve the promise when the event is handled.
@@ -154,34 +173,37 @@ describe('Event Stream Tests', () => {
                 }, 500);
             });
 
-            const msg = {
+            const msg = await EventMessage.create({
                 descriptor: {
                     type: EventType.Operation,
                     interface: DwnInterfaceName.Records,
                     method: DwnMethodName.Read,
                     messageTimestamp: "123"
-                }
-            }
+                },
+                authorizationSignatureInput : Jws.createSignatureInput(alice),
+            })
+
             await eventStream.add(msg); // add message
             await eventHandledPromise;
-            const msg2 = {
+            const msg2 = await EventMessage.create({
                 descriptor: {
                     type: EventType.Operation,
                     interface: DwnInterfaceName.Records,
                     method: DwnMethodName.Write,
-                    messageTimestamp: "123"
-                }
-            }
+                    messageTimestamp: "123",
+                },
+                authorizationSignatureInput : Jws.createSignatureInput(alice),
+            })
             await eventStream.add(msg2); // add second message
-
-            const msg3 = {
+            const msg3 = await EventMessage.create({
                 descriptor: {
                     type: EventType.Operation,
                     interface: DwnInterfaceName.Records,
                     method: DwnMethodName.Read,
                     messageTimestamp: "123"
-                }
-            }
+                },
+                authorizationSignatureInput : Jws.createSignatureInput(alice),
+            })
             await eventStream.add(msg3); // add second message
             await eventHandledPromise;
             assert.equal(2, count, "Wrong count. Should be 2 because of filters.");

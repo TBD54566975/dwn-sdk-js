@@ -6,6 +6,7 @@ import { monotonicFactory } from 'ulidx';
 import { createLevelDatabase, LevelWrapper } from '../store/level-wrapper.js';
 import { EventStreamI } from './event-stream.js';
 import { EventType } from '../types/event-types.js';
+import { EventMessage } from '../interfaces/event-create.js';
 
 type EventLogLevelConfig = {
  /**
@@ -63,13 +64,17 @@ export class EventLogLevel implements EventLog {
     await watermarkLog.put(watermark, messageCid);
     await cidLog.put(messageCid, watermark);
 
-    if (this.config.eventStream) {
-      this.config.eventStream.add({
-        descriptor: {
-          type: EventType.Log,
-        }
-      })
-    }
+    // if (this.config.eventStream) {
+    //   TODO: Either add signing or allow for event creation without signing. 
+    //   const logMessage = await EventMessage.create({
+    //     descriptor: {
+    //         type: EventType.Log,
+    //         messageTimestamp: "asfd",
+    //     },
+    //     authorizationSignatureInput : Jws.createSignatureInput(tennat),
+    //   })
+    //   this.config.eventStream.add(logMessage)
+    // }
     return watermark;
   }
 

@@ -3,6 +3,7 @@ import type { GenericMessage } from './message-types.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 import { RecordsFilter, RecordsWriteDescriptor } from './records-types.js';
+import { GeneralJws } from './jws-types.js';
 
 export type EventsGetDescriptor = {
   interface : DwnInterfaceName.Events;
@@ -35,8 +36,21 @@ export enum EventType {
   Log = 'Log'              // represents a log event.
 }
 
-// Base Event Desciptor
+
+export type EventsCreateDescriptor = {
+  interface : DwnInterfaceName.Subscriptions;
+  method: DwnMethodName.Request;
+  messageTimestamp: string;
+  messageId?: string; // attached message
+  eventDescriptor?: EventDescriptor
+};
+
 export type EventDescriptor = {
+  interface?: DwnInterfaceName;
+  // interface
+  method?: DwnMethodName;
+  // method
+  messageTimestamp: string;
   // The timestamp of the event.
   eventTimestamp?: string;
   // The duration of the event.
@@ -115,18 +129,8 @@ export type EventFilter = RecordsFilter & {
   method?: DwnMethodName;
 };
 
-export type AllEventDescriptors =
-  | EventDescriptor
-  | InterfaceEventDescriptor
-  | RecordEventDescriptor
-  | SyncEventDescriptor;
 
-export  type AllEventMessageTypes =
-  | InterfaceEventMessage
-  | RecordEventMessage
-  | SyncEventDescriptor;
-
-
-export interface EventMessageI<T extends EventDescriptor> {
+export type EventMessageI<T extends EventDescriptor> = GenericMessage & {
   descriptor: T;
+  authorization?: GeneralJws;
 }

@@ -20,10 +20,7 @@ export class GrantAuthorization {
     messageStore: MessageStore,
   ): Promise<PermissionsGrantMessage> {
     const permissionsGrantId: string = incomingMessage.authorizationPayload!.permissionsGrantId!;
-
-    // Fetch grant
     const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, author, messageStore, permissionsGrantId);
-
     // verify that grant is active during incomingMessage's timestamp
     await GrantAuthorization.verifyGrantActive(
       tenant,
@@ -35,7 +32,6 @@ export class GrantAuthorization {
 
     // Check grant scope for interface and method
     await GrantAuthorization.verifyGrantScopeInterfaceAndMethod(incomingMessage.message, permissionsGrantMessage, permissionsGrantId);
-
     return permissionsGrantMessage;
   }
 

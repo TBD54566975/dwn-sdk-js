@@ -15,6 +15,7 @@ import { DataStream, DwnError, DwnErrorCode, Encoder } from '../index.js';
 import { Subscriptions } from '../utils/subscriptions.js';
 import { EventMessageI, EventType, InterfaceEventMessage } from '../types/event-types.js';
 import { EventStream, defaultConfig, type EventStreamI } from '../event-log/event-stream.js';
+import { EventMessage } from '../interfaces/event-create.js';
 
 export class SubscriptionsRequestHandler implements MethodHandler {
 
@@ -47,9 +48,8 @@ export class SubscriptionsRequestHandler implements MethodHandler {
             return messageReplyFromError(error, 401);
         }
 
-
         try {
-            const filterFunction = async (event: EventMessageI<any>): Promise<boolean> => {
+            const filterFunction = async (event: EventMessage): Promise<boolean> => {
                 try {
                     await authenticate(message.authorization!, this.didResolver);
                     await subscriptionRequest.authorizeEvent(tenant, event, this.messageStore);
@@ -58,16 +58,15 @@ export class SubscriptionsRequestHandler implements MethodHandler {
                     return false;
                 }
             };
-        
-            // const childStream = await this.eventStream.createChild(filterFunction);
-            const childStream = await this.eventStream.createChild((event: EventMessageI<any>) => {
-                // Execute the asynchronous filter function and return the result as a boolean
+            
+            const synchronousFilterFunction = (event: EventMessage): Promise<boolean> => {
+                // Wrap the asynchronous filter function with synchronous behavior
                 return filterFunction(event)
                     .then(result => result)
                     .catch(() => false);
-            });
-        
-        
+            };
+            
+            const childStream = await this.eventStream.createChild(synchronousFilterFunction);
             await childStream.open();
 
             const messageReply: SubscriptionRequestReply = {
