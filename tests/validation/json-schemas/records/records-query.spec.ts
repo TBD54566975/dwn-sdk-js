@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { Message } from '../../../../src/core/message.js';
+import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 
 describe('RecordsQuery schema validation', () => {
   it('should allow descriptor with only required properties', async () => {
@@ -10,13 +11,7 @@ describe('RecordsQuery schema validation', () => {
         messageTimestamp : '2022-10-14T10:20:30.405060Z',
         filter           : { schema: 'anySchema' }
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      },
+      authorization: TestDataGenerator.generateAuthorization()
     };
     Message.validateJsonSchema(validMessage);
   });
@@ -79,13 +74,7 @@ describe('RecordsQuery schema validation', () => {
           filter           : { schema: 'anySchema' },
           dateSort         : dateSortValue
         },
-        authorization: {
-          payload    : 'anyPayload',
-          signatures : [{
-            protected : 'anyProtectedHeader',
-            signature : 'anySignature'
-          }]
-        },
+        authorization: TestDataGenerator.generateAuthorization()
       };
 
       Message.validateJsonSchema(validMessage);
@@ -100,13 +89,7 @@ describe('RecordsQuery schema validation', () => {
         filter           : { schema: 'anySchema' },
         dateSort         : 'unacceptable', // bad value
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      },
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     expect(() => {
@@ -123,13 +106,7 @@ describe('RecordsQuery schema validation', () => {
           messageTimestamp : '2022-10-14T10:20:30.405060Z',
           filter           : { }
         },
-        authorization: {
-          payload    : 'anyPayload',
-          signatures : [{
-            protected : 'anyProtectedHeader',
-            signature : 'anySignature'
-          }]
-        },
+        authorization: TestDataGenerator.generateAuthorization()
       };
 
       expect(() => {
@@ -146,11 +123,13 @@ describe('RecordsQuery schema validation', () => {
           filter           : { dateCreated: { } } // empty `dateCreated` criteria
         },
         authorization: {
-          payload    : 'anyPayload',
-          signatures : [{
-            protected : 'anyProtectedHeader',
-            signature : 'anySignature'
-          }]
+          author: {
+            payload    : 'anyPayload',
+            signatures : [{
+              protected : 'anyProtectedHeader',
+              signature : 'anySignature'
+            }]
+          }
         },
       };
 

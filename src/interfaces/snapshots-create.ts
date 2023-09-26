@@ -32,7 +32,7 @@ export class SnapshotsCreate extends Message<SnapshotsCreateMessage> {
       definitionCid
     };
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSigner);
+    const authorization = await Message.signAuthorizationAsAuthor(descriptor, options.authorizationSigner);
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

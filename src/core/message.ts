@@ -1,6 +1,5 @@
-import type { GeneralJws } from '../types/jws-types.js';
 import type { Signer } from '../types/signer.js';
-import type { BaseAuthorizationPayload, Descriptor, GenericMessage } from '../types/message-types.js';
+import type { AuthorizationModel, BaseAuthorizationPayload, Descriptor, GenericMessage } from '../types/message-types.js';
 
 import { Cid } from '../utils/cid.js';
 import { GeneralJwsBuilder } from '../jose/jws/general/builder.js';
@@ -41,7 +40,7 @@ export abstract class Message<M extends GenericMessage> {
     this.message = message;
 
     if (message.authorization !== undefined) {
-      this.authorizationPayload = Jws.decodePlainObjectPayload(message.authorization);
+      this.authorizationPayload = Jws.decodePlainObjectPayload(message.authorization.author);
       this.author = Message.getAuthor(message as GenericMessage);
     }
   }
@@ -74,7 +73,7 @@ export abstract class Message<M extends GenericMessage> {
       return undefined;
     }
 
-    const author = Jws.getSignerDid(message.authorization.signatures[0]);
+    const author = Jws.getSignerDid(message.authorization.author.signatures[0]);
     return author;
   }
 
@@ -132,15 +131,15 @@ export abstract class Message<M extends GenericMessage> {
   }
 
   /**
-   * Signs over the CID of provided `descriptor`. The output is used as an `authorization` property.
-   * @param signatureInput - the signature material to use (e.g. key and header data)
+   * Creates the `authorization` as the author to be used in a DWN message.
+   * @param signer Signer as the author
    * @returns General JWS signature used as an `authorization` property.
    */
-  public static async signAsAuthorization(
+  public static async signAuthorizationAsAuthor(
     descriptor: Descriptor,
-    signatureInput: Signer,
+    signer: Signer,
     additionalPayloadProperties?: { permissionsGrantId?: string, protocolRole?: string }
-  ): Promise<GeneralJws> {
+  ): Promise<AuthorizationModel> {
     const descriptorCid = await Cid.computeCid(descriptor);
 
     const authPayload: BaseAuthorizationPayload = { descriptorCid, ...additionalPayloadProperties };
@@ -148,9 +147,11 @@ export abstract class Message<M extends GenericMessage> {
     const authPayloadStr = JSON.stringify(authPayload);
     const authPayloadBytes = new TextEncoder().encode(authPayloadStr);
 
-    const builder = await GeneralJwsBuilder.create(authPayloadBytes, [signatureInput]);
+    const builder = await GeneralJwsBuilder.create(authPayloadBytes, [signer]);
+    const authorJws = builder.getJws();
 
-    return builder.getJws();
+    const authorization = { author: authorJws };
+    return authorization;
   }
 
   /**

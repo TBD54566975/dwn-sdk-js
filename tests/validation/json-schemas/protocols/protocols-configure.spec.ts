@@ -35,11 +35,13 @@ describe('ProtocolsConfigure schema definition', () => {
         definition       : protocolDefinition
       },
       authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
+        author: {
+          payload    : 'anyPayload',
+          signatures : [{
+            protected : 'anyProtectedHeader',
+            signature : 'anySignature'
+          }]
+        }
       },
     };
 

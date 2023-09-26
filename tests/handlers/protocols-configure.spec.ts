@@ -80,13 +80,13 @@ export function testProtocolsConfigureHandler(): void {
 
         // intentionally create more than one signature, which is not allowed
         const extraRandomPersona = await TestDataGenerator.generatePersona();
-        const signatureInput1 = Jws.createSigner(author);
-        const signatureInput2 = Jws.createSigner(extraRandomPersona);
+        const signer1 = Jws.createSigner(author);
+        const signer2 = Jws.createSigner(extraRandomPersona);
 
         const authorizationPayloadBytes = Encoder.objectToBytes(protocolsConfigure.authorizationPayload!);
 
-        const jwsBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signatureInput1, signatureInput2]);
-        message.authorization = jwsBuilder.getJws();
+        const jwsBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer1, signer2]);
+        message.authorization = { author: jwsBuilder.getJws() };
 
         TestStubGenerator.stubDidResolver(didResolver, [author]);
 
@@ -231,7 +231,7 @@ export function testProtocolsConfigureHandler(): void {
         protocolsConfig.message.descriptor.definition.protocol = 'example.com/';
 
         // Re-create auth because we altered the descriptor after signing
-        protocolsConfig.message.authorization = await Message.signAsAuthorization(
+        protocolsConfig.message.authorization = await Message.signAuthorizationAsAuthor(
           protocolsConfig.message.descriptor,
           Jws.createSigner(alice)
         );
@@ -255,7 +255,7 @@ export function testProtocolsConfigureHandler(): void {
         protocolsConfig.message.descriptor.definition.types.ask.schema = 'ask';
 
         // Re-create auth because we altered the descriptor after signing
-        protocolsConfig.message.authorization = await Message.signAsAuthorization(
+        protocolsConfig.message.authorization = await Message.signAuthorizationAsAuthor(
           protocolsConfig.message.descriptor,
           Jws.createSigner(alice)
         );

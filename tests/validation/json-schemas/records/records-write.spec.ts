@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { Message } from '../../../../src/core/message.js';
+import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 
 describe('RecordsWrite schema definition', () => {
   it('should allow descriptor with only required properties', async () => {
@@ -14,13 +15,7 @@ describe('RecordsWrite schema definition', () => {
         dateCreated      : '2022-12-19T10:20:30.123456Z',
         messageTimestamp : '2022-12-19T10:20:30.123456Z',
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      },
+      authorization: TestDataGenerator.generateAuthorization()
     };
     Message.validateJsonSchema(validMessage);
   });
@@ -36,13 +31,7 @@ describe('RecordsWrite schema definition', () => {
         dateCreated      : '2022-12-19T10:20:30.123456Z',
         messageTimestamp : '2022-12-19T10:20:30.123456Z'
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      },
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     expect(() => {
@@ -139,13 +128,7 @@ describe('RecordsWrite schema definition', () => {
         dateCreated      : '2022-12-19T10:20:30.123456Z',
         messageTimestamp : '2022-12-19T10:20:30.123456Z'
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      }
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     Message.validateJsonSchema(validMessage);
@@ -167,13 +150,7 @@ describe('RecordsWrite schema definition', () => {
         dateCreated      : '2022-12-19T10:20:30.123456Z',
         messageTimestamp : '2022-12-19T10:20:30.123456Z'
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      }
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     expect(() => {
@@ -193,13 +170,7 @@ describe('RecordsWrite schema definition', () => {
         dateCreated      : '2022-12-19T10:20:30.123456Z',
         messageTimestamp : '2022-12-19T10:20:30.123456Z'
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      }
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     Message.validateJsonSchema(invalidMessage);
@@ -275,13 +246,7 @@ describe('RecordsWrite schema definition', () => {
         dateCreated      : '2022-12-19T10:20:30.123456Z',
         messageTimestamp : '2022-12-19T10:20:30.123456Z'
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      }
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     expect(() => {
@@ -425,13 +390,7 @@ describe('RecordsWrite schema definition', () => {
         dateCreated      : '2022-12-19T10:20:30.123456Z',
         messageTimestamp : '2022-12-19T10:20:30.123456Z'
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      }
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     Message.validateJsonSchema(invalidMessage);
@@ -454,13 +413,7 @@ describe('RecordsWrite schema definition', () => {
         dateCreated      : '2022-12-19T10:20:30.123456Z',
         messageTimestamp : '2022-12-19T10:20:30.123456Z'
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      }
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     Message.validateJsonSchema(invalidMessage);
@@ -480,13 +433,7 @@ describe('RecordsWrite schema definition', () => {
         dateCreated      : '2022-12-19T10:20:30.123456Z',
         datePublished    : '2022-12-19T10:20:30.123456Z' // must not be present when not published
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      }
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     expect(() => {
@@ -507,13 +454,7 @@ describe('RecordsWrite schema definition', () => {
         messageTimestamp : '2022-12-19T10:20:30.123456Z',
         published        : true //datePublished must be present
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      }
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     expect(() => {
@@ -535,11 +476,13 @@ describe('RecordsWrite schema definition', () => {
         datePublished    : '2022-12-19T10:20:30.123456Z' //published must be present
       },
       authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
+        author: {
+          payload    : 'anyPayload',
+          signatures : [{
+            protected : 'anyProtectedHeader',
+            signature : 'anySignature'
+          }]
+        }
       }
     };
 

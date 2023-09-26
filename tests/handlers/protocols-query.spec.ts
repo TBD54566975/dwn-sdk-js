@@ -149,7 +149,7 @@ export function testProtocolsQueryHandler(): void {
       protocolsQuery.message.descriptor.filter!.protocol = 'example.com/';
 
       // Re-create auth because we altered the descriptor after signing
-      protocolsQuery.message.authorization = await Message.signAsAuthorization(
+      protocolsQuery.message.authorization = await Message.signAuthorizationAsAuthor(
         protocolsQuery.message.descriptor,
         Jws.createSigner(alice)
       );
@@ -169,9 +169,9 @@ export function testProtocolsQueryHandler(): void {
         const authorizationPayload = { ...protocolsQuery.authorizationPayload };
         authorizationPayload.descriptorCid = incorrectDescriptorCid;
         const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
-        const signatureInput = Jws.createSigner(author);
-        const jwsBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signatureInput]);
-        message.authorization = jwsBuilder.getJws();
+        const signer = Jws.createSigner(author);
+        const jwsBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);
+        message.authorization = { author: jwsBuilder.getJws() };
 
         const reply = await dwn.processMessage(tenant, message);
 
