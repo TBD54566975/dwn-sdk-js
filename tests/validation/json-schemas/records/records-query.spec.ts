@@ -24,14 +24,8 @@ describe('RecordsQuery schema validation', () => {
         messageTimestamp : '2022-10-14T10:20:30.405060Z',
         filter           : { schema: 'anySchema' }
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      },
-      unknownProperty: 'unknownProperty' // unknown property
+      authorization   : TestDataGenerator.generateAuthorization(),
+      unknownProperty : 'unknownProperty' // unknown property
     };
 
     expect(() => {
@@ -48,13 +42,7 @@ describe('RecordsQuery schema validation', () => {
         filter           : { schema: 'anySchema' },
         unknownProperty  : 'unknownProperty' // unknown property
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      },
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     expect(() => {
@@ -122,15 +110,7 @@ describe('RecordsQuery schema validation', () => {
           messageTimestamp : '2022-10-14T10:20:30.405060Z',
           filter           : { dateCreated: { } } // empty `dateCreated` criteria
         },
-        authorization: {
-          author: {
-            payload    : 'anyPayload',
-            signatures : [{
-              protected : 'anyProtectedHeader',
-              signature : 'anySignature'
-            }]
-          }
-        },
+        authorization: TestDataGenerator.generateAuthorization()
       };
 
       expect(() => {
@@ -146,13 +126,7 @@ describe('RecordsQuery schema validation', () => {
           messageTimestamp : '2022-10-14T10:20:30.405060Z',
           filter           : { dateCreated: { unexpectedProperty: 'anyValue' } } // unexpected property in `dateCreated` criteria
         },
-        authorization: {
-          payload    : 'anyPayload',
-          signatures : [{
-            protected : 'anyProtectedHeader',
-            signature : 'anySignature'
-          }]
-        },
+        authorization: TestDataGenerator.generateAuthorization()
       };
 
       expect(() => {

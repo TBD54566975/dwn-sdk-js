@@ -70,14 +70,8 @@ describe('RecordsWrite schema definition', () => {
         dateCreated      : '2022-12-19T10:20:30.123456Z',
         messageTimestamp : '2022-12-19T10:20:30.123456Z'
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      },
-      unknownProperty: 'unknownProperty' // unknown property
+      authorization   : TestDataGenerator.generateAuthorization(),
+      unknownProperty : 'unknownProperty' // unknown property
     };
 
     expect(() => {
@@ -98,13 +92,7 @@ describe('RecordsWrite schema definition', () => {
         messageTimestamp : '2022-12-19T10:20:30.123456Z',
         unknownProperty  : 'unknownProperty' // unknown property
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      },
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     expect(() => {
@@ -189,13 +177,7 @@ describe('RecordsWrite schema definition', () => {
         dateCreated      : '2022-12-19T10:20:30.123456Z',
         messageTimestamp : '2022-12-19T10:20:30.123456Z'
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      }
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     expect(() => {
@@ -216,13 +198,7 @@ describe('RecordsWrite schema definition', () => {
         dateCreated      : '2022-12-19T10:20:30.123456Z',
         messageTimestamp : '2022-12-19T10:20:30.123456Z'
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      }
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     expect(() => {
@@ -269,13 +245,7 @@ describe('RecordsWrite schema definition', () => {
         dateCreated      : '2022-12-19T10:20:30.123456Z',
         messageTimestamp : '2022-12-19T10:20:30.123456Z'
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      }
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     expect(() => {
@@ -298,13 +268,7 @@ describe('RecordsWrite schema definition', () => {
         dateCreated      : '2022-12-19T10:20:30.123456Z',
         messageTimestamp : '2022-12-19T10:20:30.123456Z'
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      }
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     expect(() => {
@@ -328,13 +292,7 @@ describe('RecordsWrite schema definition', () => {
         dateCreated      : '2022-12-19T10:20:30.123456Z',
         messageTimestamp : '2022-12-19T10:20:30.123456Z'
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      }
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     expect(() => {
@@ -359,13 +317,7 @@ describe('RecordsWrite schema definition', () => {
         dateCreated      : '2022-12-19T10:20:30.123456Z',
         messageTimestamp : '2022-12-19T10:20:30.123456Z'
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      }
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     expect(() => {
@@ -475,15 +427,7 @@ describe('RecordsWrite schema definition', () => {
         messageTimestamp : '2022-12-19T10:20:30.123456Z',
         datePublished    : '2022-12-19T10:20:30.123456Z' //published must be present
       },
-      authorization: {
-        author: {
-          payload    : 'anyPayload',
-          signatures : [{
-            protected : 'anyProtectedHeader',
-            signature : 'anySignature'
-          }]
-        }
-      }
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     expect(() => {
