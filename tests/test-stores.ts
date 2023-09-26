@@ -1,4 +1,5 @@
-import { EventStream, EventStreamI } from '../src/event-log/event-stream.js';
+import { EventStream } from '../src/event-log/event-stream.js';
+import type { EventStreamI } from '../src/event-log/event-stream.js';
 import type { DataStore, EventLog, MessageStore } from '../src/index.js';
 import { DataStoreLevel, EventLogLevel, MessageStoreLevel } from '../src/index.js';
 
@@ -49,7 +50,7 @@ export class TestStores {
       messageStore : TestStores.messageStore,
       dataStore    : TestStores.dataStore,
       eventLog     : TestStores.eventLog,
-      eventStream :  TestStores.eventStream 
+      eventStream  : TestStores.eventStream
     };
   }
 }

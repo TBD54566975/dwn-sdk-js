@@ -1,20 +1,18 @@
-
-import type { SubscriptionFilter, SubscriptionsRequestDescriptor, SubscriptionRequestMessage, SubscriptionRequestReply } from '../types/subscriptions-request.js';
-import type { SignatureInput } from '../types/jws-types.js';
-import type { Descriptor, GenericMessage } from '../types/message-types.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import type { EventMessage } from './event-create.js';
+import type { EventMessageI } from '../types/event-types.js';
+import type { EventStreamI } from '../event-log/event-stream.js';
+import type { GenericMessage } from '../types/message-types.js';
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
-import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
-import { SubscriptionsGrantAuthorization } from '../core/subscriptions-grant-authorization.js';
-
 import { Message } from '../core/message.js';
-import { Subscriptions } from '../utils/subscriptions.js';
+import type { MessageStore } from '../index.js';
 import { removeUndefinedProperties } from '../utils/object.js';
-import { EventStream, EventStreamI } from '../event-log/event-stream.js';
-import { MessageStore } from '../index.js';
-import { ProtocolAuthorization } from '../core/protocol-authorization.js';
-import { EventDescriptor, EventMessageI } from '../types/event-types.js';
-import { EventMessage } from './event-create.js';
+import type { SignatureInput } from '../types/jws-types.js';
+import { Subscriptions } from '../utils/subscriptions.js';
+import { SubscriptionsGrantAuthorization } from '../core/subscriptions-grant-authorization.js';
+import { validateAuthorizationIntegrity } from '../core/auth.js';
+
+import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
+import type { SubscriptionFilter, SubscriptionRequestMessage, SubscriptionsRequestDescriptor } from '../types/subscriptions-request.js';
 
 export type SubscriptionRequestOptions = {
   filter?: SubscriptionFilter;
@@ -43,10 +41,10 @@ export class SubscriptionRequest extends Message<SubscriptionRequestMessage> {
     const currentTime = getCurrentTimeInHighPrecision();
 
     const descriptor: SubscriptionsRequestDescriptor = {
-      interface: DwnInterfaceName.Subscriptions,
-      method: DwnMethodName.Request,
-      scope: Subscriptions.normalizeFilter(filter),
-      messageTimestamp: options.date ?? currentTime
+      interface        : DwnInterfaceName.Subscriptions,
+      method           : DwnMethodName.Request,
+      scope            : Subscriptions.normalizeFilter(filter),
+      messageTimestamp : options.date ?? currentTime
     };
 
     removeUndefinedProperties(descriptor);
@@ -61,9 +59,9 @@ export class SubscriptionRequest extends Message<SubscriptionRequestMessage> {
     return new SubscriptionRequest(message);
   }
 
-  // TODO: andorsk add scoping for protocls support
+  // TODO: @androsk add scoping for protocls support
   public async authorize(tenant: string, eventStream: EventStreamI, messageStore: MessageStore): Promise<void> {
-    if ( tenant === this.author ) { // if the eventStream owner is also the tenant, access is granted always. 
+    if ( tenant === this.author ) { // if the eventStream owner is also the tenant, access is granted always.
       return;
     } else if (this.author !== undefined && this.authorizationPayload?.permissionsGrantId !== undefined) {
       await SubscriptionsGrantAuthorization.authorizeSubscribe(tenant, this, this.author, messageStore);

@@ -1,40 +1,34 @@
-import type { DataStore } from './types/data-store.js';
-import type { EventLog } from './types/event-log.js';
-import type { GenericMessage } from './types/message-types.js';
-import type { MessageStore } from './types/message-store.js';
-import type { MethodHandler } from './types/method-handler.js';
-import type { Readable } from 'readable-stream';
-import type { RecordsWriteHandlerOptions } from './handlers/records-write.js';
-import type { TenantGate } from './core/tenant-gate.js';
-import type { GenericMessageReply, UnionMessageReply } from './core/message-reply.js';
-import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
-import type { RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from './types/records-types.js';
-import type { EventStreamI } from './event-log/event-stream.js';
-
 import { AllowAllTenantGate } from './core/tenant-gate.js';
+import type { DataStore } from './types/data-store.js';
 import { DidResolver } from './did/did-resolver.js';
+import type { EventLog } from './types/event-log.js';
+import { EventMessage } from './interfaces/event-create.js';
 import { EventsGetHandler } from './handlers/events-get.js';
+import type { GenericMessage } from './types/message-types.js';
 import { messageReplyFromError } from './core/message-reply.js';
 import { MessagesGetHandler } from './handlers/messages-get.js';
+import type { MessageStore } from './types/message-store.js';
+import type { MethodHandler } from './types/method-handler.js';
 import { PermissionsGrantHandler } from './handlers/permissions-grant.js';
 import { PermissionsRequestHandler } from './handlers/permissions-request.js';
 import { PermissionsRevokeHandler } from './handlers/permissions-revoke.js';
 import { ProtocolsConfigureHandler } from './handlers/protocols-configure.js';
 import { ProtocolsQueryHandler } from './handlers/protocols-query.js';
+import type { Readable } from 'readable-stream';
 import { RecordsDeleteHandler } from './handlers/records-delete.js';
 import { RecordsQueryHandler } from './handlers/records-query.js';
 import { RecordsReadHandler } from './handlers/records-read.js';
 import { RecordsWriteHandler } from './handlers/records-write.js';
+import type { RecordsWriteHandlerOptions } from './handlers/records-write.js';
 import { SubscriptionsRequestHandler } from './handlers/subscriptions-request.js';
+import type { TenantGate } from './core/tenant-gate.js';
 
 import { DwnInterfaceName, DwnMethodName, Message } from './core/message.js';
-import { EventStream } from './event-log/event-stream.js';
-import { EventEmitter } from 'events';
-import { SubscriptionRequest } from './interfaces/subscription-request.js';
-import { EventMessage } from './interfaces/event-create.js';
-
-import { SubscriptionRequestMessage, SubscriptionRequestReply } from './types/subscriptions-request.js';
-import { EventType } from './types/event-types.js';
+import type { EventStream, EventStreamI } from './event-log/event-stream.js';
+import type { GenericMessageReply, UnionMessageReply } from './core/message-reply.js';
+import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
+import type { RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from './types/records-types.js';
+import type { SubscriptionRequestMessage, SubscriptionRequestReply } from './types/subscriptions-request.js';
 
 export class Dwn {
   private methodHandlers: { [key:string]: MethodHandler };
@@ -74,7 +68,8 @@ export class Dwn {
 
     // only add subscriptions if event stream is enabled.
     if (this.eventStream !== undefined) {
-      this.methodHandlers[DwnInterfaceName.Subscriptions + DwnMethodName.Request] = new SubscriptionsRequestHandler(this.didResolver, this.messageStore, this.dataStore, this.eventStream)
+      this.methodHandlers[DwnInterfaceName.Subscriptions + DwnMethodName.Request] = new SubscriptionsRequestHandler(
+        this.didResolver,this.messageStore, this.dataStore, this.eventStream);
     }
   }
 
@@ -130,7 +125,7 @@ export class Dwn {
       descriptor: {
         ...rawMessage.descriptor,
       },
-    })
+    });
 
     if (this.eventStream){
       this.eventStream.add(eventMessage);
@@ -139,20 +134,20 @@ export class Dwn {
     return methodHandlerReply;
   }
 
-    /**
+  /**
    * Handles a `RecordsRead` message.
    */
-    public async handleSubscriptionRequest(tenant: string, message: SubscriptionRequestMessage): Promise<SubscriptionRequestReply> {
-      const errorMessageReply =
+  public async handleSubscriptionRequest(tenant: string, message: SubscriptionRequestMessage): Promise<SubscriptionRequestReply> {
+    const errorMessageReply =
         await this.validateTenant(tenant) ??
         await this.validateMessageIntegrity(message, DwnInterfaceName.Subscriptions, DwnMethodName.Request);
-      if (errorMessageReply !== undefined) {
-        return errorMessageReply;
-      }
-      const handler = new SubscriptionsRequestHandler(this.didResolver, this.messageStore, this.dataStore, this.eventStream as EventStream);
-      return handler.handle({ tenant, message });
+    if (errorMessageReply !== undefined) {
+      return errorMessageReply;
     }
-    
+    const handler = new SubscriptionsRequestHandler(this.didResolver, this.messageStore, this.dataStore, this.eventStream as EventStream);
+    return handler.handle({ tenant, message });
+  }
+
   /**
    * Handles a `RecordsQuery` message.
    */

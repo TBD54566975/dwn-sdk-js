@@ -1,9 +1,10 @@
 import type { Event } from './event-log.js';
+import type { GeneralJws } from './jws-types.js';
 import type { GenericMessage } from './message-types.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
-import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
-import { RecordsFilter, RecordsWriteDescriptor } from './records-types.js';
-import { GeneralJws } from './jws-types.js';
+import type { RecordsFilter } from './records-types.js';
+
+import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type EventsGetDescriptor = {
   interface : DwnInterfaceName.Events;
@@ -22,18 +23,18 @@ export type EventsGetReply = GenericMessageReply & {
 
 /*
 *  ----------------------------------------------------------
-*  Event Stream Updates Below 
+*  Event Stream Updates Below
 *  ----------------------------------------------------------
-*/ 
+*/
 
 /**
  * Enum defining generic event types.
  */
 export enum EventType {
-  Message = 'Message',     // Represents a message event.
-  Sync = 'Sync',           // Represents a synchronization event.
+  Message = 'Message', // Represents a message event.
+  Sync = 'Sync', // Represents a synchronization event.
   Operation = 'Operation', // Represents an operation event.
-  Log = 'Log'              // represents a log event.
+  Log = 'Log' // represents a log event.
 }
 
 
@@ -54,7 +55,7 @@ export type EventDescriptor = {
   // The timestamp of the event.
   eventTimestamp?: string;
   // The duration of the event.
-  eventDuration?: string; 
+  eventDuration?: string;
   //A description of the event.
   description?: string;
   // The type of the event.
@@ -76,7 +77,7 @@ export type InterfaceEventDescriptor = EventDescriptor & {
   method?: DwnMethodName;
   // event type
   type: EventType.Operation;
-}
+};
 
 export type InterfaceEventMessage = BaseEventMessage & {
   descriptor: InterfaceEventDescriptor;
@@ -102,7 +103,7 @@ export type RecordEventDescriptor = InterfaceEventDescriptor & {
   messageCid?: string;
   // The tenant associated with the event.
   tenant?: string;
-}
+};
 
 export type RecordEventMessage = BaseEventMessage & {
   descriptor: RecordEventDescriptor;
@@ -133,4 +134,4 @@ export type EventFilter = RecordsFilter & {
 export type EventMessageI<T extends EventDescriptor> = GenericMessage & {
   descriptor: T;
   authorization?: GeneralJws;
-}
+};

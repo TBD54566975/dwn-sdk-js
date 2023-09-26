@@ -1,6 +1,7 @@
+import type { EventType } from './event-types.js';
 import type { GenericMessage } from './message-types.js';
+
 import type { DwnInterfaceName, DwnMethodName } from '../index.js';
-import { EventType } from './event-types.js';
 
 export type PermissionScope = {
   interface: DwnInterfaceName;

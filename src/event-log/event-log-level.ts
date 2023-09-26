@@ -1,12 +1,12 @@
+import type { EventStreamI } from './event-stream.js';
 import type { LevelWrapperBatchOperation } from '../store/level-wrapper.js';
+import { monotonicFactory } from 'ulidx';
 import type { ULIDFactory } from 'ulidx';
+
+import { createLevelDatabase, LevelWrapper } from '../store/level-wrapper.js';
 import type { Event, EventLog, GetEventsOptions } from '../types/event-log.js';
 
-import { monotonicFactory } from 'ulidx';
-import { createLevelDatabase, LevelWrapper } from '../store/level-wrapper.js';
-import { EventStreamI } from './event-stream.js';
-import { EventType } from '../types/event-types.js';
-import { EventMessage } from '../interfaces/event-create.js';
+// import { EventMessage } from '../interfaces/event-create.js';
 
 type EventLogLevelConfig = {
  /**
@@ -65,7 +65,7 @@ export class EventLogLevel implements EventLog {
     await cidLog.put(messageCid, watermark);
 
     // if (this.config.eventStream) {
-    //   TODO: Either add signing or allow for event creation without signing. 
+    //   TODO: Either add signing or allow for event creation without signing.
     //   const logMessage = await EventMessage.create({
     //     descriptor: {
     //         type: EventType.Log,

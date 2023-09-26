@@ -1,9 +1,9 @@
-import { EventType } from "../types/event-types.js";
-import { SubscriptionFilter } from "../types/subscriptions-request.js";
+import type { EventType } from '../types/event-types.js';
+import type { SubscriptionFilter } from '../types/subscriptions-request.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from './url.js';
 
 export class Subscriptions {
-   
+
   /**
    * Normalizes the protocol and schema URLs within a provided SubscriptionFilter and returns a copy of SubscriptionFilter with the modified values.
    *

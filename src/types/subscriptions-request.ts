@@ -1,15 +1,10 @@
-import type { DateSort } from '../interfaces/records-query.js';
-import type { EncryptionAlgorithm } from '../utils/encryption.js';
+import type { EventStreamI } from '../event-log/event-stream.js';
 import type { GeneralJws } from './jws-types.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
-import type { KeyDerivationScheme } from '../utils/hd-key.js';
-import type { PublicJwk } from './jose-types.js';
-import type { Readable } from 'readable-stream';
-import type { BaseAuthorizationPayload, GenericMessage } from './message-types.js';
 import type { RangeCriterion } from './records-types.js';
+
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
-import { EventMessageI, EventType } from './event-types.js';
-import { EventStreamI } from '../event-log/event-stream.js';
+import type { EventMessageI, EventType } from './event-types.js';
 
 export type SubscriptionRequestMessage = {
   authorization?: GeneralJws;
@@ -49,6 +44,6 @@ export type SubscriptionFilter = {
     dateCreated?: RangeCriterion;
   };
 
-  export type EventMessageReply = GenericMessageReply & {
-    event?: EventMessageI<any>, 
+export type EventMessageReply = GenericMessageReply & {
+    event?: EventMessageI<any>,
   };
