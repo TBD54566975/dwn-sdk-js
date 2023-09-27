@@ -14,7 +14,6 @@ export interface IndexLevelOptions {
  */
 export class IndexLevel {
   config: IndexLevelConfig;
-
   db: LevelWrapper<string>;
 
   constructor(config: IndexLevelConfig) {

@@ -73,17 +73,12 @@ describe('EventLogLevel Tests', () => {
   });
 
   describe('selective sync', () => {
-    it('only gets events that match a filter', async () => {
+    it('get all events for a tenant that match a filter if watermark is not provided', async () => {
+      const author = await TestDataGenerator.generatePersona();
       const expectedSchema1Events: Event[] = [];
       const expectedSchema2Events: Event[] = [];
 
-      const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ schema: 'schema2' });
-      const indexes = await constructRecordsWriteIndexes(recordsWrite, true);
-      const messageCid = await Message.getCid(message);
-      const watermark = await eventLog.append(author.did, messageCid, indexes);
-      expectedSchema2Events.push({ messageCid, watermark });
-
-      for (let i = 0; i < 9; i += 1) {
+      for (let i = 0; i < 10; i += 1) {
         const schema = i % 2 === 0 ? 'schema1' : 'schema2';
         const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author, schema });
         const indexes = await constructRecordsWriteIndexes(recordsWrite, true);
@@ -107,6 +102,47 @@ describe('EventLogLevel Tests', () => {
       expect(schema2Events.length).to.equal(expectedSchema2Events.length);
 
       for (let i = 0; i < schema2Events.length; i += 1) {
+        expect(schema2Events[i].messageCid).to.equal(expectedSchema2Events[i].messageCid);
+        expect(schema2Events[i].watermark).to.equal(expectedSchema2Events[i].watermark);
+      }
+    });
+
+    it('get all events for a tenant that match a filter and occurred after the watermark provided ', async () => {
+      const author = await TestDataGenerator.generatePersona();
+      const expectedSchema1Events: Event[] = [];
+      const expectedSchema2Events: Event[] = [];
+
+      let testWatermark = '';
+      for (let i = 0; i < 12; i += 1) {
+        const schema = i % 2 === 0 ? 'schema1' : 'schema2';
+        const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author, schema });
+        const indexes = await constructRecordsWriteIndexes(recordsWrite, true);
+        const messageCid = await Message.getCid(message);
+        const watermark = await eventLog.append(author.did, messageCid, indexes);
+
+        if (i === 4) {
+          testWatermark = watermark;
+        }
+
+        if (i > 4) {
+          if (schema === 'schema1') {
+            expectedSchema1Events.push({ messageCid, watermark });
+          } else {
+            expectedSchema2Events.push({ messageCid, watermark });
+          }
+        }
+      }
+      // todo create a query interface that will handle tis
+      const schema1Events = await eventLog.query(author.did, [{ schema: normalizeSchemaUrl('schema1') }], testWatermark);
+      expect(schema1Events.length).to.equal(expectedSchema1Events.length);
+      for (let i = 0; i < schema1Events.length; i++) {
+        expect(schema1Events[i].messageCid).to.equal(expectedSchema1Events[i].messageCid);
+        expect(schema1Events[i].watermark).to.equal(expectedSchema1Events[i].watermark);
+      }
+
+      const schema2Events = await eventLog.query(author.did, [{ schema: normalizeSchemaUrl('schema2') }], testWatermark);
+      expect(schema2Events.length).to.equal(expectedSchema2Events.length);
+      for (let i = 0; i < schema2Events.length; i++) {
         expect(schema2Events[i].messageCid).to.equal(expectedSchema2Events[i].messageCid);
         expect(schema2Events[i].watermark).to.equal(expectedSchema2Events[i].watermark);
       }
@@ -140,7 +176,7 @@ describe('EventLogLevel Tests', () => {
       }
     });
 
-    it('gets all events that occured after the watermark provided', async () => {
+    it('gets all events that occurred after the watermark provided', async () => {
       const { author, message } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await Message.getCid(message);
 
