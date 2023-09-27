@@ -45,6 +45,7 @@ export enum DwnErrorCode {
   ProtocolAuthorizationNotARole = 'ProtocolAuthorizationNotARole',
   ProtocolsConfigureGlobalRoleAtProhibitedProtocolPath = 'ProtocolsConfigureGlobalRoleAtProhibitedProtocolPath',
   ProtocolsConfigureInvalidRole = 'ProtocolsConfigureInvalidRole',
+  ProtocolsConfigureInvalidAction = 'ProtocolsConfigureInvalidAction',
   ProtocolsConfigureUnauthorized = 'ProtocolsConfigureUnauthorized',
   ProtocolsQueryUnauthorized = 'ProtocolsQueryUnauthorized',
   RecordsDecryptNoMatchingKeyEncryptedFound = 'RecordsDecryptNoMatchingKeyEncryptedFound',

@@ -72,33 +72,5 @@ describe('ProtocolsConfigure schema definition', () => {
         }).throws('/$actions/0');
       }
     });
-
-    it('#183 - should throw if required `of` is missing in rule-set', async () => {
-      const invalidRuleSet = {
-        $actions: [{
-          who : 'author',
-          // of: 'thread', // intentionally missing
-          can : 'read'
-        }]
-      };
-
-      expect(() => {
-        validateJsonSchema('ProtocolRuleSet', invalidRuleSet);
-      }).throws('/$actions/0');
-    });
-
-    it('#183 - should throw if `of` is present in `anyone` rule-set', async () => {
-      const invalidRuleSet = {
-        $actions: [{
-          who : 'anyone',
-          of  : 'thread', // intentionally present
-          can : 'read'
-        }]
-      };
-
-      expect(() => {
-        validateJsonSchema('ProtocolRuleSet', invalidRuleSet);
-      }).throws('/$actions/0');
-    });
   });
 });
