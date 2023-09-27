@@ -6,7 +6,7 @@ import { SubscriptionRequest } from '../../src/interfaces/subscription-request.j
 import { TestStores } from '../test-stores.js';
 
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
-import { DidKeyResolver, DidResolver, DwnInterfaceName, DwnMethodName, Jws, Secp256k1 } from '../../src/index.js';
+import { DidKeyResolver, DidResolver, DwnInterfaceName, DwnMethodName, Jws } from '../../src/index.js';
 
 export function testSubscriptionsRequestHandler(): void {
   describe('SubscriptionRequest.handle()', () => {
