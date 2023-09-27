@@ -1,18 +1,16 @@
-import sinon from 'sinon';
-import chai, { assert, expect } from 'chai';
-
 import chaiAsPromised from 'chai-as-promised';
 import { Dwn } from '../../src/dwn.js';
 import type { EventMessage } from '../../src/interfaces/event-create.js';
 import type { EventStreamI } from '../../src/event-log/event-stream.js';
 import { EventType } from '../../src/types/event-types.js';
+import sinon from 'sinon';
 import { SubscriptionRequest } from '../../src/interfaces/subscription-request.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 
+import chai, { assert, expect } from 'chai';
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
 import { DidKeyResolver, DidResolver, DwnInterfaceName, DwnMethodName, Jws, Message } from '../../src/index.js';
-
 
 chai.use(chaiAsPromised);
 
@@ -61,10 +59,7 @@ export function testSubscriptionRequestHandler(): void {
 
         // testing Subscription Request
         const subscriptionRequest = await SubscriptionRequest.create({
-          filter: {
-            eventType: EventType.Operation,
-          },
-          authorizationSignatureInput: Jws.createSignatureInput(alice)
+          signer: Jws.createSigner(alice)
         });
 
 
@@ -106,7 +101,7 @@ export function testSubscriptionRequestHandler(): void {
           filter: {
             eventType: EventType.Operation,
           },
-          authorizationSignatureInput: Jws.createSignatureInput(alice)
+          signer: Jws.createSigner(alice)
         });
         const subscriptionReply = await dwn.handleSubscriptionRequest(bob.did, subscriptionRequest.message);
         expect(subscriptionReply.status.code).to.equal(401, subscriptionReply.status.detail);
@@ -138,8 +133,8 @@ export function testSubscriptionRequestHandler(): void {
           filter: {
             eventType: EventType.Operation,
           },
-          authorizationSignatureInput : Jws.createSignatureInput(bob),
-          permissionsGrantId          : await Message.getCid(permissionsGrant.message),
+          signer             : Jws.createSigner(bob),
+          permissionsGrantId : await Message.getCid(permissionsGrant.message),
         });
 
         const subscriptionReply = await dwn.handleSubscriptionRequest(alice.did, subscriptionRequest.message);
@@ -196,8 +191,8 @@ export function testSubscriptionRequestHandler(): void {
           filter: {
             eventType: EventType.Operation,
           },
-          authorizationSignatureInput : Jws.createSignatureInput(bob),
-          permissionsGrantId          : await Message.getCid(permissionsGrant.message),
+          signer             : Jws.createSigner(bob),
+          permissionsGrantId : await Message.getCid(permissionsGrant.message),
         });
         const subscriptionReply = await dwn.handleSubscriptionRequest(alice.did, subscriptionRequest.message);
         expect(subscriptionReply.status.code).to.equal(200, subscriptionReply.status.detail);

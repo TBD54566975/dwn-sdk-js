@@ -4,20 +4,19 @@ import type { EventStreamI } from '../event-log/event-stream.js';
 import type { GenericMessage } from '../types/message-types.js';
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Message } from '../core/message.js';
-import type { MessageStore } from '../index.js';
 import { removeUndefinedProperties } from '../utils/object.js';
-import type { SignatureInput } from '../types/jws-types.js';
 import { Subscriptions } from '../utils/subscriptions.js';
 import { SubscriptionsGrantAuthorization } from '../core/subscriptions-grant-authorization.js';
 import { validateAuthorizationIntegrity } from '../core/auth.js';
 
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
+import type { MessageStore, Signer } from '../index.js';
 import type { SubscriptionFilter, SubscriptionRequestMessage, SubscriptionsRequestDescriptor } from '../types/subscriptions-request.js';
 
 export type SubscriptionRequestOptions = {
   filter?: SubscriptionFilter;
   date?: string;
-  authorizationSignatureInput?: SignatureInput;
+  signer?: Signer;
   permissionsGrantId?: string;
 };
 
@@ -37,7 +36,7 @@ export class SubscriptionRequest extends Message<SubscriptionRequestMessage> {
    * @throws {DwnError} when a combination of required SubscriptionRequestOptions are missing
    */
   public static async create(options: SubscriptionRequestOptions): Promise<SubscriptionRequest> {
-    const { filter, authorizationSignatureInput, permissionsGrantId } = options;
+    const { filter, signer, } = options;
     const currentTime = getCurrentTimeInHighPrecision();
 
     const descriptor: SubscriptionsRequestDescriptor = {
@@ -51,8 +50,8 @@ export class SubscriptionRequest extends Message<SubscriptionRequestMessage> {
 
     // only generate the `authorization` property if signature input is given
     let authorization = undefined;
-    if (authorizationSignatureInput !== undefined) {
-      authorization = await Message.signAsAuthorization(descriptor, authorizationSignatureInput, permissionsGrantId);
+    if (signer !== undefined) {
+      authorization = await Message.signAsAuthorization(descriptor, signer);
     }
     const message: SubscriptionRequestMessage = { descriptor, authorization };
     Message.validateJsonSchema(message);
@@ -86,5 +85,5 @@ export type CreateEventOptions = {
   authorization: string;
   author: string;
   event: EventMessageI<any>;
-  authorizationSignatureInput?: SignatureInput;
+  signer?: Signer;
 };

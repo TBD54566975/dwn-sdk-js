@@ -1,12 +1,12 @@
 import { Dwn } from '../../src/dwn.js';
+import type { EventStreamI } from '../../src/event-log/event-stream.js';
 import { expect } from 'chai';
 import sinon from 'sinon';
 import { SubscriptionRequest } from '../../src/interfaces/subscription-request.js';
 import { TestStores } from '../test-stores.js';
 
-import type { EventStreamI } from '../../src/event-log/event-stream.js';
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
-import { DidKeyResolver, DidResolver, DwnInterfaceName, DwnMethodName, Secp256k1 } from '../../src/index.js';
+import { DidKeyResolver, DidResolver, DwnInterfaceName, DwnMethodName, Jws, Secp256k1 } from '../../src/index.js';
 
 export function testSubscriptionsRequestHandler(): void {
   describe('SubscriptionRequest.handle()', () => {
@@ -48,17 +48,9 @@ export function testSubscriptionsRequestHandler(): void {
 
       it('test create', async () => {
 
-        const { privateJwk } = await Secp256k1.generateKeyPair();
-        const authorizationSignatureInput = {
-          privateJwk,
-          protectedHeader: {
-            alg : privateJwk.alg as string,
-            kid : 'did:jank:bob'
-          }
-        };
-
+        const alice = await DidKeyResolver.generate();
         const { message } = await SubscriptionRequest.create({
-          authorizationSignatureInput
+          signer: Jws.createSigner(alice)
         });
 
         expect(message.descriptor.scope).to.eql({ interface: DwnInterfaceName.Subscriptions, method: DwnMethodName.Request });
