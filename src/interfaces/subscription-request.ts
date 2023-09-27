@@ -36,7 +36,7 @@ export class SubscriptionRequest extends Message<SubscriptionRequestMessage> {
    * @throws {DwnError} when a combination of required SubscriptionRequestOptions are missing
    */
   public static async create(options: SubscriptionRequestOptions): Promise<SubscriptionRequest> {
-    const { filter, signer, } = options;
+    const { filter, signer, permissionsGrantId } = options;
     const currentTime = getCurrentTimeInHighPrecision();
 
     const descriptor: SubscriptionsRequestDescriptor = {
@@ -51,7 +51,7 @@ export class SubscriptionRequest extends Message<SubscriptionRequestMessage> {
     // only generate the `authorization` property if signature input is given
     let authorization = undefined;
     if (signer !== undefined) {
-      authorization = await Message.signAsAuthorization(descriptor, signer);
+      authorization = await Message.signAsAuthorization(descriptor, signer, { permissionsGrantId });
     }
     const message: SubscriptionRequestMessage = { descriptor, authorization };
     Message.validateJsonSchema(message);
