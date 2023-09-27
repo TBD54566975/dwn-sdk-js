@@ -28,7 +28,7 @@ export class EventMessage extends Message<EventMessageI<any>> {
       await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput) : undefined;
     const message = { descriptor: descriptor, authorization: authorization };
     // Message.validateJsonSchema(message);
-    // TODO: @andorsk Fix schema validation....
+    // @andorsk Fix schema validation....
     return new EventMessage(message);
   }
 

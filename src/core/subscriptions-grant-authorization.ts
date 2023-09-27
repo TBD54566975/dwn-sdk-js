@@ -26,7 +26,7 @@ export class SubscriptionsGrantAuthorization {
       * Authorizes the scope of a PermissionsGrant for Subscription.
       * For initial connection setup.
       *
-      * TODO: @andorsk Improve/Update this and remove hack.
+      * @andorsk Improve/Update this and remove hack.
       */
   public static async authorizeEvent(
     tenant: string,

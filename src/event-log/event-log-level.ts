@@ -65,7 +65,7 @@ export class EventLogLevel implements EventLog {
     await cidLog.put(messageCid, watermark);
 
     // if (this.config.eventStream) {
-    //   TODO: Either add signing or allow for event creation without signing.
+    //   @andorsk: Either add signing or allow for event creation without signing.
     //   const logMessage = await EventMessage.create({
     //     descriptor: {
     //         type: EventType.Log,

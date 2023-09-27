@@ -58,7 +58,7 @@ export class SubscriptionRequest extends Message<SubscriptionRequestMessage> {
     return new SubscriptionRequest(message);
   }
 
-  // TODO: @androsk add scoping for protocls support
+  // @androsk add scoping for protocls support
   public async authorize(tenant: string, eventStream: EventStreamI, messageStore: MessageStore): Promise<void> {
     if ( tenant === this.author ) { // if the eventStream owner is also the tenant, access is granted always.
       return;
