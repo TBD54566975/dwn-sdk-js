@@ -36,6 +36,7 @@ export type RecordsWriteOptions = {
   recipient?: string;
   protocol?: string;
   protocolPath?: string;
+  protocolRole?: string;
   contextId?: string;
   schema?: string;
   recordId?: string;
@@ -267,7 +268,7 @@ export class RecordsWrite {
     const recordsWrite = new RecordsWrite(message);
 
     if (options.authorizationSigner !== undefined) {
-      await recordsWrite.sign(options.authorizationSigner, options.permissionsGrantId);
+      await recordsWrite.sign(options.authorizationSigner, { permissionsGrantId: options.permissionsGrantId, protocolRole: options.protocolRole });
     }
 
     return recordsWrite;
@@ -361,7 +362,7 @@ export class RecordsWrite {
   /**
    * Signs the RecordsWrite.
    */
-  public async sign(signer: Signer, permissionsGrantId?: string): Promise<void> {
+  public async sign(signer: Signer, options?: { permissionsGrantId?: string, protocolRole?: string }): Promise<void> {
     const author = Jws.extractDid(signer.keyId);
 
     const descriptor = this._message.descriptor;
@@ -383,7 +384,7 @@ export class RecordsWrite {
       this._message.attestation,
       this._message.encryption,
       signer,
-      permissionsGrantId
+      options
     );
 
     this._message.authorization = authorization;
@@ -650,7 +651,7 @@ export class RecordsWrite {
     attestation: GeneralJws | undefined,
     encryption: EncryptionProperty | undefined,
     signer: Signer,
-    permissionsGrantId: string | undefined,
+    additionalProperties?: { permissionsGrantId?: string, protocolRole?: string },
   ): Promise<AuthorizationModel> {
     const authorizationPayload: RecordsWriteAuthorSignaturePayload = {
       recordId,
@@ -663,7 +664,12 @@ export class RecordsWrite {
     if (contextId !== undefined) { authorizationPayload.contextId = contextId; } // assign `contextId` only if it is defined
     if (attestationCid !== undefined) { authorizationPayload.attestationCid = attestationCid; } // assign `attestationCid` only if it is defined
     if (encryptionCid !== undefined) { authorizationPayload.encryptionCid = encryptionCid; } // assign `encryptionCid` only if it is defined
-    if (permissionsGrantId !== undefined) { authorizationPayload.permissionsGrantId = permissionsGrantId; }
+    if (additionalProperties?.permissionsGrantId !== undefined) {
+      authorizationPayload.permissionsGrantId = additionalProperties?.permissionsGrantId;
+    }
+    if (additionalProperties?.protocolRole !== undefined) {
+      authorizationPayload.protocolRole = additionalProperties?.protocolRole;
+    }
 
     const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
 

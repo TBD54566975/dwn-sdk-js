@@ -1070,6 +1070,32 @@ export function testRecordsWriteHandler(): void {
               expect(updateFriendReply.status.code).to.equal(202);
             });
 
+            it('rejects writes to a $globalRole is recipient is undefined', async () => {
+              // scenario: Alice writes a global role record with no recipient and it is rejected
+
+              const alice = await DidKeyResolver.generate();
+
+              const protocolDefinition = friendRoleProtocolDefinition;
+
+              const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+                author: alice,
+                protocolDefinition
+              });
+              const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+              expect(protocolWriteReply.status.code).to.equal(202);
+
+              // Alice writes a 'friend' $globalRole record with no recipient
+              const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'friend',
+                data         : new TextEncoder().encode('Bob is my friend'),
+              });
+              const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, friendRoleRecord.dataStream);
+              expect(friendRoleReply.status.code).to.equal(401);
+              expect(friendRoleReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationRoleMissingRecipient);
+            });
+
             it('rejects writes to a $globalRole if there is already a record with the same role and recipient', async () => {
               // scenario: Alice adds Bob to the 'friend' role. Then she tries and fails to write another separate record
               //           adding Bob as a 'friend' again.
@@ -1154,6 +1180,117 @@ export function testRecordsWriteHandler(): void {
               });
               const duplicateFriendReply = await dwn.processMessage(alice.did, duplicateFriendRecord.message, duplicateFriendRecord.dataStream);
               expect(duplicateFriendReply.status.code).to.equal(202);
+            });
+          });
+
+          describe('protocolRole based writes', () => {
+            it('uses a protocolRole to authorize a write', async () => {
+              // scenario: Alice gives Bob a friend role. Bob invokes his
+              //           friend role in order to write a chat message
+
+              const alice = await DidKeyResolver.generate();
+              const bob = await DidKeyResolver.generate();
+
+              const protocolDefinition = friendRoleProtocolDefinition;
+
+              const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+                author: alice,
+                protocolDefinition
+              });
+              const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+              expect(protocolWriteReply.status.code).to.equal(202);
+
+              // Alice writes a 'friend' $globalRole record with Bob as recipient
+              const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'friend',
+                data         : new TextEncoder().encode('Bob is my friend'),
+              });
+              const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, friendRoleRecord.dataStream);
+              expect(friendRoleReply.status.code).to.equal(202);
+
+              // Bob writes a 'chat' record
+              const chatRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : bob,
+                recipient    : alice.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'chat',
+                data         : new TextEncoder().encode('Bob can write this cuz he is Alices friend'),
+                protocolRole : 'friend'
+              });
+              const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+              expect(chatReply.status.code).to.equal(202);
+            });
+
+            it('rejects role-authorized writes if the protocolRole is not a valid protocol path to a role record', async () => {
+              // scenario: Bob tries to invoke the 'chat' role to write to Alice's DWN, but 'chat' is not a role.
+
+              const alice = await DidKeyResolver.generate();
+              const bob = await DidKeyResolver.generate();
+
+              const protocolDefinition = friendRoleProtocolDefinition;
+
+              const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+                author: alice,
+                protocolDefinition
+              });
+              const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+              expect(protocolWriteReply.status.code).to.equal(202);
+
+              // Alice writes a 'chat' record with Bob as recipient
+              const chatRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'chat',
+                data         : new TextEncoder().encode('Blah blah blah'),
+              });
+              const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+              expect(chatReply.status.code).to.equal(202);
+
+              // Bob tries to invoke a 'chat' role but 'chat' is not a role
+              const writeChatRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : bob,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'chat',
+                data         : new TextEncoder().encode('Blah blah blah'),
+                protocolRole : 'chat',
+              });
+              const chatReadReply = await dwn.processMessage(alice.did, writeChatRecord.message, writeChatRecord.dataStream);
+              expect(chatReadReply.status.code).to.equal(401);
+              expect(chatReadReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationNotARole);
+            });
+
+            it('rejects role-authorized writes if there is no active role for the recipient', async () => {
+              // scenario: Bob tries to invoke a role to write, but he has not been given one.
+
+              const alice = await DidKeyResolver.generate();
+              const bob = await DidKeyResolver.generate();
+
+              const protocolDefinition = friendRoleProtocolDefinition;
+
+              const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+                author: alice,
+                protocolDefinition
+              });
+              const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+              expect(protocolWriteReply.status.code).to.equal(202);
+
+              // Bob writes a 'chat' record invoking a friend role that he does not have
+              const chatRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : bob,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'chat',
+                data         : new TextEncoder().encode('Blah blah blah'),
+                protocolRole : 'friend'
+              });
+              const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+              expect(chatReply.status.code).to.equal(401);
+              expect(chatReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
             });
           });
         });

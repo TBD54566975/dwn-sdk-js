@@ -25,6 +25,9 @@
     },
     "permissionsGrantId": {
       "type": "string"
+    },
+    "protocolRole": {
+      "type": "string"
     }
   }
 }
