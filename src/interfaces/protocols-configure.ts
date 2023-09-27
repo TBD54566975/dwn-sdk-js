@@ -107,7 +107,7 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       if (action.who === 'anyone' && action.of) {
         throw new DwnError(
           DwnErrorCode.ProtocolsConfigureInvalidAction,
-          `'of' is not allowed at protocol path (${protocolPath}) when 'who' is 'anyone'.`
+          `'of' is not allowed at protocol path (${protocolPath})`
         );
       }
 
@@ -115,7 +115,7 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       if (action.who !== undefined && ['author', 'recipient'].includes(action.who) && !action.of) {
         throw new DwnError(
           DwnErrorCode.ProtocolsConfigureInvalidAction,
-          `'of' is required at protocol path (${protocolPath}) when 'who' is 'author' or 'recipient'.`
+          `'of' is required at protocol path (${protocolPath})`
         );
       }
     }

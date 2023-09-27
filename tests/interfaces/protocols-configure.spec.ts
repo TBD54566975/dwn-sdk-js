@@ -176,7 +176,8 @@ describe('ProtocolsConfigure', () => {
           structure: {
             message: {
               $actions: [{
-                who : 'author', // Not a valid role
+                who : 'anyone',
+                of  : 'message', // Not allowed
                 can : 'read'
               }]
             }
@@ -204,7 +205,8 @@ describe('ProtocolsConfigure', () => {
           structure: {
             message: {
               $actions: [{
-                who : 'author', // Not a valid role
+                who : 'author',
+                // of : 'message', // Intentionally missing
                 can : 'read'
               }]
             }
