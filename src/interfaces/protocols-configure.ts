@@ -106,7 +106,7 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       // Validate that if `who` is set to `anyone` then `of` is not set
       if (action.who === 'anyone' && action.of) {
         throw new DwnError(
-          DwnErrorCode.ProtocolsConfigureInvalidAction,
+          DwnErrorCode.ProtocolsConfigureInvalidActionOfNotAllowed,
           `'of' is not allowed at protocol path (${protocolPath})`
         );
       }
@@ -114,7 +114,7 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       // Validate that if `who` is not set to `anyone` then `of` is set
       if (action.who !== undefined && ['author', 'recipient'].includes(action.who) && !action.of) {
         throw new DwnError(
-          DwnErrorCode.ProtocolsConfigureInvalidAction,
+          DwnErrorCode.ProtocolsConfigureInvalidActionMissingOf,
           `'of' is required at protocol path (${protocolPath})`
         );
       }

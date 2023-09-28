@@ -192,7 +192,7 @@ describe('ProtocolsConfigure', () => {
         });
 
         await expect(createProtocolsConfigurePromise)
-          .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidAction);
+          .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidActionOfNotAllowed);
       });
 
       it('rejects protocol definitions with actions that don\'t contain `of` and  `who` is `author` or `recipient`', async () => {
@@ -221,7 +221,7 @@ describe('ProtocolsConfigure', () => {
         });
 
         await expect(createProtocolsConfigurePromise)
-          .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidAction);
+          .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidActionMissingOf);
       });
 
     });
