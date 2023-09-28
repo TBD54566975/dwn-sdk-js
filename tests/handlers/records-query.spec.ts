@@ -66,12 +66,13 @@ export function testRecordsQueryHandler(): void {
         await dwn.close();
       });
 
-      it('should return recordId, descriptor, and attestation', async () => {
+      it('should return recordId, descriptor, authorization and attestation', async () => {
         const alice = await TestDataGenerator.generatePersona();
-        TestStubGenerator.stubDidResolver(didResolver, [alice]);
+        const bob = await TestDataGenerator.generatePersona();
+        TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
         const dataFormat = 'myAwesomeDataFormat';
 
-        const write = await TestDataGenerator.generateRecordsWrite({ author: alice, dataFormat });
+        const write = await TestDataGenerator.generateRecordsWrite({ author: alice, attesters: [bob], dataFormat });
         const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
         expect(writeReply.status.code).to.equal(202);
 
@@ -80,7 +81,8 @@ export function testRecordsQueryHandler(): void {
 
         expect(reply.entries?.length).to.equal(1);
         const entry = reply.entries![0];
-        expect(entry.attestation).to.equal(write.message.attestation);
+        expect(entry.authorization).to.deep.equal(write.message.authorization);
+        expect(entry.attestation).to.deep.equal(write.message.attestation);
         expect(entry.descriptor).to.deep.equal(write.message.descriptor);
         expect(entry.recordId).to.equal(write.message.recordId);
       });
@@ -302,7 +304,7 @@ export function testRecordsQueryHandler(): void {
         expect(reply.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes!));
       });
 
-      it('should not include `authorization` in returned records', async () => {
+      it('should include `authorization` in returned records', async () => {
         const alice = await TestDataGenerator.generatePersona();
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
 
@@ -321,7 +323,7 @@ export function testRecordsQueryHandler(): void {
         const queryReply = await dwn.processMessage(alice.did, queryData.message);
         expect(queryReply.status.code).to.equal(200);
         expect(queryReply.entries?.length).to.equal(1);
-        expect((queryReply.entries![0] as any).authorization).to.equal(undefined);
+        expect((queryReply.entries![0] as any).authorization).to.deep.equal(message.authorization);
       });
 
       it('should include `attestation` in returned records', async () => {

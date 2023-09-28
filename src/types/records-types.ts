@@ -145,13 +145,7 @@ export type RecordsReadMessage = {
 };
 
 export type RecordsReadReply = GenericMessageReply & {
-  record?: {
-    recordId: string,
-    contextId?: string;
-    descriptor: RecordsWriteDescriptor;
-    // authorization: AuthorizationModel; // intentionally omitted
-    attestation?: GeneralJws;
-    encryption?: EncryptionProperty;
+  record?: RecordsWriteMessage & {
     data: Readable;
   }
 };
