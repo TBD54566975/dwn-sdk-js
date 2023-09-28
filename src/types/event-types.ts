@@ -36,5 +36,6 @@ export type EventsQueryDescriptor = {
 };
 
 export type EventsQueryMessage = GenericMessage & {
+  authorization: AuthorizationModel;
   descriptor: EventsQueryDescriptor;
 };

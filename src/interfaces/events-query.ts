@@ -2,7 +2,7 @@ import type { Signer } from '../types/signer.js';
 import type { EventsFilter, EventsQueryDescriptor, EventsQueryMessage } from '../types/event-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
 
@@ -16,7 +16,7 @@ export class EventsQuery extends Message<EventsQueryMessage> {
 
   public static async parse(message: EventsQueryMessage): Promise<EventsQuery> {
     Message.validateJsonSchema(message);
-    await validateAuthorizationIntegrity(message);
+    await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
 
     return new EventsQuery(message);
   }
