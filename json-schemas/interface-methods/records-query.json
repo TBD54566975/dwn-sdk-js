@@ -8,7 +8,7 @@
   ],
   "properties": {
     "authorization": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
+      "$ref": "https://identity.foundation/dwn/json-schemas/authorization.json"
     },
     "descriptor": {
       "type": "object",
@@ -44,7 +44,7 @@
           "properties": {
             "limit": {
               "type": "number",
-              "minimum": 1 
+              "minimum": 1
             },
             "messageCid": {
               "type": "string"

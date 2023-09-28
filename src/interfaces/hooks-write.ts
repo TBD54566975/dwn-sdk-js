@@ -43,7 +43,7 @@ export class HooksWrite extends Message<HooksWriteMessage> {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const authorization = await Message.signAsAuthorization(descriptor, options.authorizationSigner);
+    const authorization = await Message.signAuthorizationAsAuthor(descriptor, options.authorizationSigner);
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

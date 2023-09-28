@@ -1,7 +1,7 @@
 import type { DidResolutionResult } from '../../src/did/did-resolver.js';
-import type { Pagination } from '../../src/types/message-types.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsFilter } from '../../src/types/records-types.js';
+import type { AuthorizationModel, Pagination } from '../../src/types/message-types.js';
 
 import type {
   CreateFromOptions,
@@ -766,6 +766,21 @@ export class TestDataGenerator {
       author,
       messagesGet,
       message: messagesGet.message,
+    };
+  }
+
+  /**
+   * Generates a dummy `authorization` property for a DWN message that only conforms to schema validation.
+   */
+  public static generateAuthorization(): AuthorizationModel {
+    return {
+      author: {
+        payload    : 'anyPayload',
+        signatures : [{
+          protected : 'anyProtectedHeader',
+          signature : 'anySignature'
+        }]
+      }
     };
   }
 

@@ -1,4 +1,4 @@
-import type { GeneralJws } from '../types/jws-types.js';
+import type { AuthorizationModel } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { Signer } from '../types/signer.js';
 import type { ProtocolsQueryDescriptor, ProtocolsQueryFilter, ProtocolsQueryMessage } from '../types/protocols-types.js';
@@ -46,9 +46,9 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
     removeUndefinedProperties(descriptor);
 
     // only generate the `authorization` property if signature input is given
-    let authorization: GeneralJws | undefined;
+    let authorization: AuthorizationModel | undefined;
     if (options.authorizationSigner !== undefined) {
-      authorization = await Message.signAsAuthorization(
+      authorization = await Message.signAuthorizationAsAuthor(
         descriptor,
         options.authorizationSigner,
         { permissionsGrantId: options.permissionsGrantId }

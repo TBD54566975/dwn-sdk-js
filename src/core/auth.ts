@@ -1,8 +1,7 @@
 import type { CID } from 'multiformats';
 import type { DidResolver } from '../did/did-resolver.js';
-import type { GeneralJws } from '../types/jws-types.js';
-import type { GenericMessage } from '../types/message-types.js';
 import type { Message } from './message.js';
+import type { AuthorizationModel, GenericMessage } from '../types/message-types.js';
 
 import { Cid } from '../utils/cid.js';
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
@@ -38,12 +37,12 @@ export async function validateAuthorizationIntegrity(
     throw new DwnError(DwnErrorCode.AuthorizationMissing, 'Property `authorization` is missing.');
   }
 
-  if (message.authorization.signatures.length !== 1) {
+  if (message.authorization.author.signatures.length !== 1) {
     throw new Error('expected no more than 1 signature for authorization');
   }
 
   // validate payload integrity
-  const payloadJson = Jws.decodePlainObjectPayload(message.authorization);
+  const payloadJson = Jws.decodePlainObjectPayload(message.authorization.author);
 
   validateJsonSchema(jsonSchemaKey, payloadJson);
 
@@ -62,12 +61,12 @@ export async function validateAuthorizationIntegrity(
  * Validates the signature(s) of the given JWS.
  * @throws {Error} if fails authentication
  */
-export async function authenticate(jws: GeneralJws | undefined, didResolver: DidResolver): Promise<void> {
-  if (jws === undefined) {
+export async function authenticate(authorizationModel: AuthorizationModel | undefined, didResolver: DidResolver): Promise<void> {
+  if (authorizationModel === undefined) {
     throw new DwnError(DwnErrorCode.AuthenticateJwsMissing, 'Missing JWS.');
   }
 
-  const verifier = new GeneralJwsVerifier(jws);
+  const verifier = new GeneralJwsVerifier(authorizationModel.author);
   await verifier.verify(didResolver);
 }
 

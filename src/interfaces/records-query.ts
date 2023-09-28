@@ -58,7 +58,7 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
 
     // only generate the `authorization` property if signature input is given
     const authorizationSigner = options.authorizationSigner;
-    const authorization = authorizationSigner ? await Message.signAsAuthorization(descriptor, authorizationSigner) : undefined;
+    const authorization = authorizationSigner ? await Message.signAuthorizationAsAuthor(descriptor, authorizationSigner) : undefined;
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

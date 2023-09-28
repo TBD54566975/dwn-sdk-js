@@ -78,8 +78,8 @@ export class Jws {
    * Creates a Signer[] from the given Personas.
    */
   public static createSigners(keyMaterials: KeyMaterial[]): Signer[] {
-    const signatureInputs = keyMaterials.map((keyMaterial) => Jws.createSigner(keyMaterial));
-    return signatureInputs;
+    const signers = keyMaterials.map((keyMaterial) => Jws.createSigner(keyMaterial));
+    return signers;
   }
 
   /**
