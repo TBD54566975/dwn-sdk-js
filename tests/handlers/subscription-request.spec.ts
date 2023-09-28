@@ -188,9 +188,6 @@ export function testSubscriptionRequestHandler(): void {
         expect(permissionsGrantReply.status.code).to.equal(202);
         // testing Subscription Request
         const subscriptionRequest = await SubscriptionRequest.create({
-          filter: {
-            eventType: EventType.Operation,
-          },
           signer             : Jws.createSigner(bob),
           permissionsGrantId : await Message.getCid(permissionsGrant.message),
         });

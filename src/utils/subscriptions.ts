@@ -1,5 +1,6 @@
 import type { EventType } from '../types/event-types.js';
 import type { SubscriptionFilter } from '../types/subscriptions-request.js';
+
 import { normalizeProtocolUrl, normalizeSchemaUrl } from './url.js';
 
 export class Subscriptions {
@@ -12,23 +13,28 @@ export class Subscriptions {
    */
   public static normalizeFilter(filter?: SubscriptionFilter): SubscriptionFilter {
     let protocol;
-    if (filter?.protocol === undefined) {
+    if (filter?.recordFilters?.protocol === undefined) {
       protocol = undefined;
     } else {
-      protocol = normalizeProtocolUrl(filter.protocol);
+      protocol = normalizeProtocolUrl(filter.recordFilters.protocol);
     }
 
     let schema;
-    if (filter?.schema === undefined) {
+    if (filter?.recordFilters?.schema === undefined) {
       schema = undefined;
     } else {
-      schema = normalizeSchemaUrl(filter.schema);
+      schema = normalizeSchemaUrl(filter.recordFilters.schema);
     }
 
-    return {
-      ...filter,
+    const recordFilters = {
+      ...filter?.recordFilters,
       protocol,
       schema,
+
+    };
+    return {
+      ...filter,
+      recordFilters,
       eventType: filter?.eventType as EventType
     };
   }

@@ -4,6 +4,8 @@ import { DidResolver } from './did/did-resolver.js';
 import type { EventLog } from './types/event-log.js';
 import { EventMessage } from './interfaces/event-create.js';
 import { EventsGetHandler } from './handlers/events-get.js';
+import { EventStream } from './event-log/event-stream.js';
+import type { EventStreamI } from './event-log/event-stream.js';
 import type { GenericMessage } from './types/message-types.js';
 import { messageReplyFromError } from './core/message-reply.js';
 import { MessagesGetHandler } from './handlers/messages-get.js';
@@ -24,7 +26,6 @@ import { SubscriptionsRequestHandler } from './handlers/subscriptions-request.js
 import type { TenantGate } from './core/tenant-gate.js';
 
 import { DwnInterfaceName, DwnMethodName, Message } from './core/message.js';
-import type { EventStream, EventStreamI } from './event-log/event-stream.js';
 import type { GenericMessageReply, UnionMessageReply } from './core/message-reply.js';
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
 import type { RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from './types/records-types.js';
@@ -45,7 +46,7 @@ export class Dwn {
     this.messageStore = config.messageStore;
     this.dataStore = config.dataStore;
     this.eventLog = config.eventLog;
-    this.eventStream = config.eventStream;
+    this.eventStream = config.eventStream? config.eventStream : new EventStream();
 
     this.methodHandlers = {
       [DwnInterfaceName.Events + DwnMethodName.Get]        : new EventsGetHandler(this.didResolver, this.eventLog),

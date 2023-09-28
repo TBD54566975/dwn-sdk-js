@@ -49,6 +49,7 @@ Here's to a thrilling Hacktoberfest voyage with us! 🎉
 
 Code Coverage
 ![Statements](https://img.shields.io/badge/statements-97.78%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-95.05%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-94.26%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-97.78%25-brightgreen.svg?style=flat)
+=======
 
 - [Introduction](#introduction)
 - [Installation](#installation)
