@@ -9,14 +9,7 @@ export type EventsFilter = RecordsFilter & {
   // Default to all methods. Otherwise, explicitly subscribe to subset of methods.
   interfaces?: string[];
   // Default to all interfaces. Can be subset.
-  recordId?: string;
-  // Rarely will be used.
-  contextId?: string;
-  messageId?: string;
   author?: string;
-  // filter based on author. defaults to all
-  receipient?: string;
-  // filter based on targets. defaults to all.
 };
 
 export type EventsGetDescriptor = {
@@ -33,4 +26,15 @@ export type EventsGetMessage = GenericMessage & {
 
 export type EventsGetReply = GenericMessageReply & {
   events?: Event[];
+};
+
+export type EventsQueryDescriptor = {
+  interface: DwnInterfaceName.Events;
+  method: DwnMethodName.Query;
+  messageTimestamp: string;
+  filter: EventsFilter;
+};
+
+export type EventsQueryMessage = GenericMessage & {
+  descriptor: EventsQueryDescriptor;
 };
