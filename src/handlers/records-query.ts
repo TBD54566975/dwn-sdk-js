@@ -53,26 +53,11 @@ export class RecordsQueryHandler implements MethodHandler {
       }
     }
 
-    const entries = RecordsQueryHandler.removeAuthorization(recordsWrites);
-
     return {
-      status: { code: 200, detail: 'OK' },
-      entries,
+      status  : { code: 200, detail: 'OK' },
+      entries : recordsWrites,
       paginationMessageCid
     };
-  }
-
-  /**
-   * Removes `authorization` property from each and every `RecordsWrite` message given and returns the result as a different array.
-   */
-  private static removeAuthorization(recordsWriteMessages: RecordsWriteMessageWithOptionalEncodedData[]): RecordsQueryReplyEntry[] {
-    const recordsQueryReplyEntries: RecordsQueryReplyEntry[] = [];
-    for (const record of recordsWriteMessages) {
-      const { authorization: _, ...objectWithRemainingProperties } = record; // a trick to stripping away `authorization`
-      recordsQueryReplyEntries.push(objectWithRemainingProperties);
-    }
-
-    return recordsQueryReplyEntries;
   }
 
   /**

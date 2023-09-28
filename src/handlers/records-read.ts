@@ -79,11 +79,10 @@ export class RecordsReadHandler implements MethodHandler {
       data = result.dataStream;
     }
 
-    const { authorization: _, ...recordsWriteWithoutAuthorization } = newestRecordsWrite; // a trick to stripping away `authorization`
-    const messageReply: RecordsReadReply ={
+    const messageReply: RecordsReadReply = {
       status : { code: 200, detail: 'OK' },
       record : {
-        ...recordsWriteWithoutAuthorization,
+        ...newestRecordsWrite,
         data,
       }
     };
