@@ -55,4 +55,5 @@ export { EventLogLevel } from './event-log/event-log-level.js';
 export { MessageStoreLevel } from './store/message-store-level.js';
 export { SubscriptionFilter, SubscriptionRequestReply, SubscriptionRequestMessage } from './types/subscriptions-request.js';
 export { SubscriptionRequest, SubscriptionRequestOptions } from './interfaces/subscription-request.js';
-export type { EventStream, EventStreamI } from './event-log/event-stream.js';
+export { EventStream } from './event-log/event-stream.js';
+export type { EventStreamI } from './event-log/event-stream.js';
