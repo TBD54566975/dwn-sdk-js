@@ -2,8 +2,8 @@ import type { EventsQueryMessage } from '../../src/types/event-types.js';
 
 import { EventsQuery } from '../../src/interfaces/events-query.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
-import { Jws, Message } from '../../src/index.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { Jws, Message } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
