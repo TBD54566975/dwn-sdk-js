@@ -165,6 +165,65 @@ describe('ProtocolsConfigure', () => {
         await expect(createProtocolsConfigurePromise)
           .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidRole);
       });
+
+      it('rejects protocol definitions with actions that contain `of` and  `who` is `anyone`', async () => {
+        const definition = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            message: {},
+          },
+          structure: {
+            message: {
+              $actions: [{
+                who : 'anyone',
+                of  : 'message', // Not allowed
+                can : 'read'
+              }]
+            }
+          }
+        };
+
+        const alice = await TestDataGenerator.generatePersona();
+
+        const createProtocolsConfigurePromise = ProtocolsConfigure.create({
+          authorizationSigner: Jws.createSigner(alice),
+          definition
+        });
+
+        await expect(createProtocolsConfigurePromise)
+          .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidActionOfNotAllowed);
+      });
+
+      it('rejects protocol definitions with actions that don\'t contain `of` and  `who` is `author` or `recipient`', async () => {
+        const definition = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            message: {},
+          },
+          structure: {
+            message: {
+              $actions: [{
+                who : 'author',
+                // of : 'message', // Intentionally missing
+                can : 'read'
+              }]
+            }
+          }
+        };
+
+        const alice = await TestDataGenerator.generatePersona();
+
+        const createProtocolsConfigurePromise = ProtocolsConfigure.create({
+          authorizationSigner: Jws.createSigner(alice),
+          definition
+        });
+
+        await expect(createProtocolsConfigurePromise)
+          .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidActionMissingOf);
+      });
+
     });
   });
 });

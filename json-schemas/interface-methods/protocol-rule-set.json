@@ -32,29 +32,7 @@
               "who": {
                 "type": "string",
                 "enum": [
-                  "anyone"
-                ]
-              },
-              "can": {
-                "type": "string",
-                "enum": [
-                  "read",
-                  "write"
-                ]
-              }
-            }
-          },
-          {
-            "required": [
-              "who",
-              "of",
-              "can"
-            ],
-            "additionalProperties": false,
-            "properties": {
-              "who": {
-                "type": "string",
-                "enum": [
+                  "anyone",
                   "author",
                   "recipient"
                 ]
