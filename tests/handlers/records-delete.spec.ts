@@ -20,7 +20,9 @@ import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread
 import { ArrayUtility } from '../../src/utils/array.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { DwnErrorCode } from '../../src/index.js';
+import { DwnMethodName } from '../../src/enums/dwn-interface-method.js';
 import { Message } from '../../src/core/message.js';
+import { normalizeSchemaUrl } from '../../src/utils/url.js';
 import { RecordsDeleteHandler } from '../../src/handlers/records-delete.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
@@ -646,6 +648,32 @@ export function testRecordsDeleteHandler(): void {
         const recordsDeleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
         expect(recordsDeleteReply.status.code).to.equal(401);
         expect(recordsDeleteReply.status.detail).to.contain(DwnErrorCode.RecordsDeleteAuthorizationFailed);
+      });
+
+      it('should index additional properties from the RecordsWrite being deleted', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        // initial write
+        const initialWriteData = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'testSchema' });
+        const initialWriteReply = await dwn.processMessage(alice.did, initialWriteData.message, initialWriteData.dataStream);
+        expect(initialWriteReply.status.code).to.equal(202);
+
+        // generate subsequent write and delete with the delete having an earlier timestamp
+        // NOTE: creating RecordsDelete first ensures it has an earlier `messageTimestamp` time
+        const recordsDelete = await RecordsDelete.create({
+          recordId : initialWriteData.message.recordId,
+          signer   : Jws.createSigner(alice)
+        });
+        const deleteMessageCid = await Message.getCid(recordsDelete.message);
+
+        const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
+        expect(deleteReply.status.code).to.equal(202);
+
+        const { messages } = await messageStore.query(alice.did, [{ schema: normalizeSchemaUrl('testSchema'), method: DwnMethodName.Delete }]);
+        expect(messages.length).to.equal(1);
+        const message = messages[0];
+        const compareMessageCid = await Message.getCid(message);
+        expect(deleteMessageCid).to.equal(compareMessageCid);
       });
 
       describe('event log', () => {
