@@ -1,9 +1,10 @@
 import type { EventsQueryMessage } from '../../src/types/event-types.js';
 
 import { EventsQuery } from '../../src/interfaces/events-query.js';
+import { Jws } from '../../src/utils/jws.js';
+import { Message } from '../../src/core/message.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { Time } from '../../src/utils/time.js';
-import { Jws, Message } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';

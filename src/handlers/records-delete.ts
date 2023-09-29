@@ -12,6 +12,7 @@ import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { RecordsDelete } from '../interfaces/records-delete.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
+import { removeUndefinedProperties } from '../utils/object.js';
 import { StorageController } from '../store/storage-controller.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
@@ -83,7 +84,8 @@ export class RecordsDeleteHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }
 
-    const indexes = await constructIndexes(tenant, recordsDelete);
+    const recordsWrite = await RecordsWrite.getInitialWrite(existingMessages);
+    const indexes = await constructIndexes(recordsDelete, recordsWrite);
     await this.messageStore.put(tenant, message, indexes);
 
     const messageCid = await Message.getCid(message);
@@ -119,7 +121,23 @@ export class RecordsDeleteHandler implements MethodHandler {
   }
 }
 
-export async function constructIndexes(tenant: string, recordsDelete: RecordsDelete): Promise<Record<string, string>> {
+function constructAdditionalIndexes(recordsWrite: RecordsWriteMessage): Record<string, string> {
+  const { protocol, protocolPath, recipient, schema, parentId, dataFormat, dateCreated } = recordsWrite.descriptor;
+
+  const indexes:Record<string, any> = {
+    protocol, protocolPath, recipient, schema, parentId, dataFormat, dateCreated,
+    contextId: recordsWrite.contextId
+  };
+
+  removeUndefinedProperties(indexes);
+  return indexes;
+}
+
+export async function constructIndexes(recordsDelete: RecordsDelete, recordsWrite: RecordsWriteMessage): Promise<Record<string, string>> {
+
+  // construct records write index
+  const additionalIndexes = constructAdditionalIndexes(recordsWrite);
+
   const message = recordsDelete.message;
   const descriptor = { ...message.descriptor };
 
@@ -130,6 +148,7 @@ export async function constructIndexes(tenant: string, recordsDelete: RecordsDel
   const indexes: Record<string, any> = {
     // isLatestBaseState : "true", // intentionally showing that this index is omitted
     author: recordsDelete.author,
+    ...additionalIndexes, // we add additional indexes from the RecordsWrite so we can filter for these Deletes in the EventLog
     ...descriptor
   };
 
