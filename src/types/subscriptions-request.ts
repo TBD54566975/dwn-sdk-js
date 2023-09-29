@@ -2,10 +2,10 @@ import type { EventStreamI } from '../event-log/event-stream.js';
 import type { GeneralJws } from './jws-types.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { ProtocolsQueryFilter } from './protocols-types.js';
+import type { RecordsFilter } from './records-types.js';
 
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 import type { EventMessageI, EventType } from './event-types.js';
-import type { RangeCriterion, RecordsFilter } from './records-types.js';
 
 export type SubscriptionRequestMessage = {
   authorization?: GeneralJws;
