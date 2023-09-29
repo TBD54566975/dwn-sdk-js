@@ -331,6 +331,7 @@ export class ProtocolAuthorization {
     } else if (incomingMessage.author !== undefined && incomingMessage.authorizationPayload?.permissionsGrantId !== undefined) {
       // PermissionsGrant gives the author explicit access to this record
       if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
+        // DON'T FORGET: ask Diane about this
         await RecordsGrantAuthorization.authorizeWrite(tenant, incomingMessage as RecordsWrite, incomingMessage.author, messageStore);
       } else {
         await RecordsGrantAuthorization.authorizeRead(

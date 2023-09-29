@@ -28,13 +28,13 @@ export async function canonicalAuth(
 /**
  * Validates the structural integrity of the message signature given.
  * NOTE: signature is not verified.
- * @param jsonSchemaKey The key to look up the JSON schema referenced in `compile-validators.js` and perform schema validation on.
+ * @param payloadJsonSchemaKey The key to look up the JSON schema referenced in `compile-validators.js` and perform payload schema validation on.
  * @returns the parsed JSON payload object if validation succeeds.
  */
 export async function validateMessageSignatureIntegrity(
   messageSignature: GeneralJws,
   messageDescriptor: Descriptor,
-  jsonSchemaKey: string = 'BaseAuthorizationPayload',
+  payloadJsonSchemaKey: string = 'GenericSignaturePayload',
 ): Promise<{ descriptorCid: CID, [key: string]: any }> {
 
   if (messageSignature.signatures.length !== 1) {
@@ -44,7 +44,7 @@ export async function validateMessageSignatureIntegrity(
   // validate payload integrity
   const payloadJson = Jws.decodePlainObjectPayload(messageSignature);
 
-  validateJsonSchema(jsonSchemaKey, payloadJson);
+  validateJsonSchema(payloadJsonSchemaKey, payloadJson);
 
   // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
   const { descriptorCid } = payloadJson;

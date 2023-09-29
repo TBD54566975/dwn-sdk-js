@@ -1,5 +1,5 @@
 import type { Signer } from '../types/signer.js';
-import type { AuthorizationModel, BaseAuthorizationPayload, Descriptor, GenericMessage } from '../types/message-types.js';
+import type { AuthorizationModel, Descriptor, GenericMessage, GenericSignaturePayload } from '../types/message-types.js';
 
 import { Cid } from '../utils/cid.js';
 import { GeneralJwsBuilder } from '../jose/jws/general/builder.js';
@@ -33,7 +33,7 @@ export enum DwnMethodName {
 
 export abstract class Message<M extends GenericMessage> {
   readonly message: M;
-  readonly authorizationPayload: BaseAuthorizationPayload | undefined;
+  readonly authorizationPayload: GenericSignaturePayload | undefined;
   readonly author: string | undefined;
 
   constructor(message: M) {
@@ -142,7 +142,7 @@ export abstract class Message<M extends GenericMessage> {
   ): Promise<AuthorizationModel> {
     const descriptorCid = await Cid.computeCid(descriptor);
 
-    const authPayload: BaseAuthorizationPayload = { descriptorCid, ...additionalPayloadProperties };
+    const authPayload: GenericSignaturePayload = { descriptorCid, ...additionalPayloadProperties };
     removeUndefinedProperties(authPayload);
     const authPayloadStr = JSON.stringify(authPayload);
     const authPayloadBytes = new TextEncoder().encode(authPayloadStr);

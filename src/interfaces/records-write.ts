@@ -8,9 +8,9 @@ import type {
   EncryptionProperty,
   InternalRecordsWriteMessage,
   RecordsWriteAttestationPayload,
-  RecordsWriteAuthorSignaturePayload,
   RecordsWriteDescriptor,
   RecordsWriteMessage,
+  RecordsWriteSignaturePayload,
   UnsignedRecordsWriteMessage
 } from '../types/records-types.js';
 
@@ -143,12 +143,11 @@ export class RecordsWrite {
     return this._author;
   }
 
-  // DON'T FORGET: rename type
-  private _authorSignaturePayload: RecordsWriteAuthorSignaturePayload | undefined;
+  private _authorSignaturePayload: RecordsWriteSignaturePayload | undefined;
   /**
    * Decoded author signature payload.
    */
-  public get authorizationPayload(): RecordsWriteAuthorSignaturePayload | undefined {
+  public get authorizationPayload(): RecordsWriteSignaturePayload | undefined {
     return this._authorSignaturePayload;
   }
 
@@ -160,11 +159,11 @@ export class RecordsWrite {
     return this._retainer;
   }
 
-  private _retainerSignaturePayload: RecordsWriteAuthorSignaturePayload | undefined;
+  private _retainerSignaturePayload: RecordsWriteSignaturePayload | undefined;
   /**
    * Decoded retainer signature payload.
    */
-  public get retainerSignaturePayload(): RecordsWriteAuthorSignaturePayload | undefined {
+  public get retainerSignaturePayload(): RecordsWriteSignaturePayload | undefined {
     return this._retainerSignaturePayload;
   }
 
@@ -192,11 +191,10 @@ export class RecordsWrite {
   public static async parse(message: RecordsWriteMessage): Promise<RecordsWrite> {
     // asynchronous checks that are required by the constructor to initialize members properly
 
-    // DON'T Forget: RecordsWriteAuthorSignaturePayload rename
-    await validateMessageSignatureIntegrity(message.authorization.author, message.descriptor, 'RecordsWriteAuthorSignaturePayload');
+    await validateMessageSignatureIntegrity(message.authorization.author, message.descriptor, 'RecordsWriteSignaturePayload');
 
     if (message.authorization.retainer !== undefined) {
-      await validateMessageSignatureIntegrity(message.authorization.retainer, message.descriptor, 'RecordsWriteAuthorSignaturePayload');
+      await validateMessageSignatureIntegrity(message.authorization.retainer, message.descriptor, 'RecordsWriteSignaturePayload');
     }
 
     await RecordsWrite.validateAttestationIntegrity(message);
@@ -390,8 +388,7 @@ export class RecordsWrite {
   }
 
   /**
-   * Signs the RecordsWrite.
-   * DON'T FORGET: rename
+   * Signs the RecordsWrite as the author.
    */
   public async sign(signer: Signer, permissionsGrantId?: string): Promise<void> {
     const author = Jws.extractDid(signer.keyId);
@@ -425,6 +422,10 @@ export class RecordsWrite {
     this._author = author;
   }
 
+  /**
+   * Signs the `RecordsWrite` as the retainer.
+   * NOTE: requires the `RecordsWrite` to already have the author's signature already.
+   */
   public async signAsRetainer(signer: Signer, permissionsGrantId?: string): Promise<void> {
     if (this._author === undefined) {
       throw new DwnError(
@@ -716,7 +717,7 @@ export class RecordsWrite {
     signer: Signer,
     permissionsGrantId: string | undefined,
   ): Promise<GeneralJws> {
-    const authorizationPayload: RecordsWriteAuthorSignaturePayload = {
+    const authorizationPayload: RecordsWriteSignaturePayload = {
       recordId,
       descriptorCid
     };

@@ -18,11 +18,11 @@ import mkdirp from 'mkdirp';
 import standaloneCode from 'ajv/dist/standalone/index.js';
 
 import Authorization from '../json-schemas/authorization.json' assert { type: 'json' };
-import BaseAuthorizationPayload from '../json-schemas/authorization-payloads/base-authorization-payload.json' assert { type: 'json' };
 import Definitions from '../json-schemas/definitions.json' assert { type: 'json' };
 import EventsGet from '../json-schemas/events/events-get.json' assert { type: 'json' };
 import GeneralJwk from '../json-schemas/jwk/general-jwk.json' assert { type: 'json' };
 import GeneralJws from '../json-schemas/general-jws.json' assert { type: 'json' };
+import GenericSignaturePayload from '../json-schemas/authorization-payloads/base-authorization-payload.json' assert { type: 'json' };
 import HooksWrite from '../json-schemas/hooks/hooks-write.json' assert { type: 'json' };
 import JwkVerificationMethod from '../json-schemas/jwk-verification-method.json' assert { type: 'json' };
 import MessagesGet from '../json-schemas/interface-methods/messages-get.json' assert { type: 'json' };
@@ -41,7 +41,7 @@ import RecordsFilter from '../json-schemas/interface-methods/records-filter.json
 import RecordsQuery from '../json-schemas/interface-methods/records-query.json' assert { type: 'json' };
 import RecordsRead from '../json-schemas/interface-methods/records-read.json' assert { type: 'json' };
 import RecordsWrite from '../json-schemas/interface-methods/records-write.json' assert { type: 'json' };
-import RecordsWriteAuthorSignaturePayload from '../json-schemas/authorization-payloads/records-write-authorization-payload.json' assert { type: 'json' };
+import RecordsWriteSignaturePayload from '../json-schemas/authorization-payloads/records-write-authorization-payload.json' assert { type: 'json' };
 import RecordsWriteUnidentified from '../json-schemas/interface-methods/records-write-unidentified.json' assert { type: 'json' };
 import SnapshotsCreate from '../json-schemas/interface-methods/snapshots-create.json' assert { type: 'json' };
 
@@ -71,8 +71,8 @@ const schemas = {
   RecordsFilter,
   PublicJwk,
   SnapshotsCreate,
-  BaseAuthorizationPayload,
-  RecordsWriteAuthorSignaturePayload
+  GenericSignaturePayload,
+  RecordsWriteSignaturePayload
 };
 
 const ajv = new Ajv({ code: { source: true, esm: true } });

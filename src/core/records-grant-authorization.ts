@@ -8,13 +8,17 @@ import { PermissionsConditionPublication } from '../types/permissions-types.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 
 export class RecordsGrantAuthorization {
+  /**
+   * Authorizes the given RecordsWrite in the scope of the DID given.
+   */
   public static async authorizeWrite(
     tenant: string,
     incomingMessage: RecordsWrite,
     didBeingAuthorized: string,
     messageStore: MessageStore,
   ): Promise<void> {
-    console.log('authorize3');
+
+    // DON'T FORGET to re-eval why `didBeingAuthorized` need to be passed in
 
     const signaturePayload = incomingMessage.retainer ? incomingMessage.retainerSignaturePayload : incomingMessage.authorizationPayload;
     const permissionsGrantId: string = signaturePayload!.permissionsGrantId!;

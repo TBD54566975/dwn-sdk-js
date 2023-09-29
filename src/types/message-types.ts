@@ -19,7 +19,7 @@ export type AuthorizationModel = {
 /**
  * Type of common decoded `authorization`property payload.
  */
-export type BaseAuthorizationPayload = {
+export type GenericSignaturePayload = {
   descriptorCid: string;
   permissionsGrantId?: string;
   /**
