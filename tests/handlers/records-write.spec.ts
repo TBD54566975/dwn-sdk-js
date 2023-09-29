@@ -81,6 +81,7 @@ export function testRecordsWriteHandler(): void {
       after(async () => {
         await dwn.close();
       });
+
       it('should only be able to overwrite existing record if new record has a later `messageTimestamp` value', async () => {
       // write a message into DB
         const author = await DidKeyResolver.generate();
@@ -310,6 +311,47 @@ export function testRecordsWriteHandler(): void {
         expect(data).to.eql(dataBytes);
       });
 
+      it('should use `retainer` for authorization when it is given', async () => {
+        // scenario: Alice fetch a message  authored by Bob from Bob's DWN and retains (writes) it in her DWN
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+
+        // Bob writes a message to his DWN
+        const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: bob, published: true });
+        const writeReply = await dwn.processMessage(bob.did, message, dataStream);
+        expect(writeReply.status.code).to.equal(202);
+
+        // Alice fetches the message from Bob's DWN
+        const recordsRead = await RecordsRead.create({
+          filter              : { recordId: message.recordId, },
+          authorizationSigner : Jws.createSigner(alice)
+        });
+
+        const readReply = await dwn.handleRecordsRead(bob.did, recordsRead.message);
+        expect(readReply.status.code).to.equal(200);
+        expect(readReply.record).to.exist;
+        expect(readReply.record?.descriptor).to.exist;
+
+        // Alice augments Bob's message as an external retainer
+        const { data, ...messageFetched } = readReply.record!; // remove data from message
+        const retainerSignedMessage = await RecordsWrite.parse(messageFetched);
+        await retainerSignedMessage.signAsRetainer(Jws.createSigner(alice));
+
+        // Alice retains/writes Bob's message to her DWN
+        const aliceDataStream = readReply.record!.data;
+        const aliceWriteReply = await dwn.processMessage(alice.did, retainerSignedMessage.message, aliceDataStream);
+        expect(aliceWriteReply.status.code).to.equal(202);
+
+        // Test that Alice successfully stored Bob's message in her DWN
+        const readReply2 = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+        expect(readReply2.status.code).to.equal(200);
+        expect(readReply2.record).to.exist;
+        expect(readReply2.record?.descriptor).to.exist;
+
+        const dataFetched = await DataStream.toBytes(readReply2.record!.data!);
+        expect(ArrayUtility.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
+      });
+
       describe('should inherit data from previous RecordsWrite given a matching dataCid and dataSize and no dataStream', () => {
         it('with data above the threshold for encodedData', async () => {
           const { message, author, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({
@@ -391,9 +433,9 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const authorization = await RecordsWrite['createAuthorization'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const signature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
-          message.authorization = authorization;
+          message.authorization = { author: signature };
 
           const reply = await dwn.processMessage(alice.did, message, dataStream);
           expect(reply.status.code).to.equal(400);
@@ -412,9 +454,9 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const authorization = await RecordsWrite['createAuthorization'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const signature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
-          message.authorization = authorization;
+          message.authorization = { author: signature };
 
           const reply = await dwn.processMessage(alice.did, message, dataStream);
           expect(reply.status.code).to.equal(400);
@@ -433,9 +475,9 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const authorization = await RecordsWrite['createAuthorization'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const signature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
-          message.authorization = authorization;
+          message.authorization = { author: signature };
 
           const reply = await dwn.processMessage(alice.did, message, dataStream);
           expect(reply.status.code).to.equal(400);
@@ -453,9 +495,9 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const authorization = await RecordsWrite['createAuthorization'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const signature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
-          message.authorization = authorization;
+          message.authorization = { author: signature };
 
           const reply = await dwn.processMessage(alice.did, message, dataStream);
           expect(reply.status.code).to.equal(400);
@@ -1906,7 +1948,7 @@ export function testRecordsWriteHandler(): void {
           // Re-create auth because we altered the descriptor after signing
           const descriptorCid = await Cid.computeCid(recordsWrite.message.descriptor);
           const attestation = await RecordsWrite.createAttestation(descriptorCid);
-          const authorization = await RecordsWrite.createAuthorization(
+          const authorSignature = await RecordsWrite.createAuthorizationSignature(
             recordsWrite.message.recordId,
             recordsWrite.message.contextId,
             descriptorCid,
@@ -1918,7 +1960,7 @@ export function testRecordsWriteHandler(): void {
           recordsWrite.message = {
             ...recordsWrite.message,
             attestation,
-            authorization
+            authorization: { author: authorSignature }
           };
 
           // Send records write message
@@ -2622,59 +2664,57 @@ export function testRecordsWriteHandler(): void {
         expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataAssociation);
       });
 
-      describe('reference counting tests', () => {
-        it('should not allow referencing data across tenants', async () => {
-          const alice = await DidKeyResolver.generate();
-          const bob = await DidKeyResolver.generate();
-          const data = Encoder.stringToBytes('test');
-          const dataCid = await Cid.computeDagPbCidFromBytes(data);
-          const encodedData = Encoder.bytesToBase64Url(data);
+      it('should not allow referencing data across tenants', async () => {
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+        const data = Encoder.stringToBytes('test');
+        const dataCid = await Cid.computeDagPbCidFromBytes(data);
+        const encodedData = Encoder.bytesToBase64Url(data);
 
-          // alice writes data to her DWN
-          const aliceWriteData = await TestDataGenerator.generateRecordsWrite({
-            author: alice,
-            data
-          });
-          const aliceWriteReply = await dwn.processMessage(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
-          expect(aliceWriteReply.status.code).to.equal(202);
-
-          const aliceQueryWriteAfterAliceWriteData = await TestDataGenerator.generateRecordsQuery({
-            author : alice,
-            filter : { recordId: aliceWriteData.message.recordId }
-          });
-          const aliceQueryWriteAfterAliceWriteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterAliceWriteData.message);
-          expect(aliceQueryWriteAfterAliceWriteReply.status.code).to.equal(200);
-          expect(aliceQueryWriteAfterAliceWriteReply.entries?.length).to.equal(1);
-          expect(aliceQueryWriteAfterAliceWriteReply.entries![0].encodedData).to.equal(encodedData);
-
-          // bob learns of the CID of data of alice and tries to gain unauthorized access by referencing it in his own DWN
-          const bobAssociateData = await TestDataGenerator.generateRecordsWrite({
-            author   : bob,
-            dataCid,
-            dataSize : 4
-          });
-          const bobAssociateReply = await dwn.processMessage(bob.did, bobAssociateData.message, bobAssociateData.dataStream);
-          expect(bobAssociateReply.status.code).to.equal(400); // expecting an error
-          expect(bobAssociateReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataInPrevious);
-
-          const aliceQueryWriteAfterBobAssociateData = await TestDataGenerator.generateRecordsQuery({
-            author : alice,
-            filter : { recordId: aliceWriteData.message.recordId }
-          });
-          const aliceQueryWriteAfterBobAssociateReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterBobAssociateData.message);
-          expect(aliceQueryWriteAfterBobAssociateReply.status.code).to.equal(200);
-          expect(aliceQueryWriteAfterBobAssociateReply.entries?.length).to.equal(1);
-          expect(aliceQueryWriteAfterBobAssociateReply.entries![0].encodedData).to.equal(encodedData);
-
-          // verify that bob has not gained access to alice's data
-          const bobQueryAssociateAfterBobAssociateData = await TestDataGenerator.generateRecordsQuery({
-            author : bob,
-            filter : { recordId: bobAssociateData.message.recordId }
-          });
-          const bobQueryAssociateAfterBobAssociateReply = await dwn.processMessage(bob.did, bobQueryAssociateAfterBobAssociateData.message);
-          expect(bobQueryAssociateAfterBobAssociateReply.status.code).to.equal(200);
-          expect(bobQueryAssociateAfterBobAssociateReply.entries?.length).to.equal(0);
+        // alice writes data to her DWN
+        const aliceWriteData = await TestDataGenerator.generateRecordsWrite({
+          author: alice,
+          data
         });
+        const aliceWriteReply = await dwn.processMessage(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
+        expect(aliceWriteReply.status.code).to.equal(202);
+
+        const aliceQueryWriteAfterAliceWriteData = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : { recordId: aliceWriteData.message.recordId }
+        });
+        const aliceQueryWriteAfterAliceWriteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterAliceWriteData.message);
+        expect(aliceQueryWriteAfterAliceWriteReply.status.code).to.equal(200);
+        expect(aliceQueryWriteAfterAliceWriteReply.entries?.length).to.equal(1);
+        expect(aliceQueryWriteAfterAliceWriteReply.entries![0].encodedData).to.equal(encodedData);
+
+        // bob learns of the CID of data of alice and tries to gain unauthorized access by referencing it in his own DWN
+        const bobAssociateData = await TestDataGenerator.generateRecordsWrite({
+          author   : bob,
+          dataCid,
+          dataSize : 4
+        });
+        const bobAssociateReply = await dwn.processMessage(bob.did, bobAssociateData.message, bobAssociateData.dataStream);
+        expect(bobAssociateReply.status.code).to.equal(400); // expecting an error
+        expect(bobAssociateReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataInPrevious);
+
+        const aliceQueryWriteAfterBobAssociateData = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : { recordId: aliceWriteData.message.recordId }
+        });
+        const aliceQueryWriteAfterBobAssociateReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterBobAssociateData.message);
+        expect(aliceQueryWriteAfterBobAssociateReply.status.code).to.equal(200);
+        expect(aliceQueryWriteAfterBobAssociateReply.entries?.length).to.equal(1);
+        expect(aliceQueryWriteAfterBobAssociateReply.entries![0].encodedData).to.equal(encodedData);
+
+        // verify that bob has not gained access to alice's data
+        const bobQueryAssociateAfterBobAssociateData = await TestDataGenerator.generateRecordsQuery({
+          author : bob,
+          filter : { recordId: bobAssociateData.message.recordId }
+        });
+        const bobQueryAssociateAfterBobAssociateReply = await dwn.processMessage(bob.did, bobQueryAssociateAfterBobAssociateData.message);
+        expect(bobQueryAssociateAfterBobAssociateReply.status.code).to.equal(200);
+        expect(bobQueryAssociateAfterBobAssociateReply.entries?.length).to.equal(0);
       });
 
       describe('encodedData threshold', async () => {

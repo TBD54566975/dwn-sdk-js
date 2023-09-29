@@ -11,10 +11,21 @@ export class RecordsGrantAuthorization {
   public static async authorizeWrite(
     tenant: string,
     incomingMessage: RecordsWrite,
-    author: string,
+    didBeingAuthorized: string,
     messageStore: MessageStore,
   ): Promise<void> {
-    const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, author, messageStore);
+    console.log('authorize3');
+
+    const signaturePayload = incomingMessage.retainer ? incomingMessage.retainerSignaturePayload : incomingMessage.authorizationPayload;
+    const permissionsGrantId: string = signaturePayload!.permissionsGrantId!;
+
+    const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(
+      tenant,
+      incomingMessage,
+      didBeingAuthorized,
+      permissionsGrantId,
+      messageStore
+    );
 
     RecordsGrantAuthorization.verifyScope(incomingMessage, permissionsGrantMessage);
 
@@ -31,7 +42,13 @@ export class RecordsGrantAuthorization {
     author: string,
     messageStore: MessageStore,
   ): Promise<void> {
-    const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, author, messageStore);
+    const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(
+      tenant,
+      incomingMessage,
+      author,
+      incomingMessage.authorizationPayload!.permissionsGrantId!,
+      messageStore
+    );
 
     RecordsGrantAuthorization.verifyScope(newestRecordsWrite, permissionsGrantMessage);
   }

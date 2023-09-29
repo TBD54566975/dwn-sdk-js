@@ -37,6 +37,7 @@ export type InternalRecordsWriteMessage = GenericMessage & {
 };
 
 export type RecordsWriteMessage = GenericMessage & {
+  authorization: AuthorizationModel; // overriding `GenericMessage` with `authorization` being required
   recordId: string,
   contextId?: string;
   descriptor: RecordsWriteDescriptor;
@@ -158,6 +159,7 @@ export type RecordsReadDescriptor = {
 };
 
 export type RecordsDeleteMessage = GenericMessage & {
+  authorization: AuthorizationModel; // overriding `GenericMessage` with `authorization` being required
   descriptor: RecordsDeleteDescriptor;
 };
 

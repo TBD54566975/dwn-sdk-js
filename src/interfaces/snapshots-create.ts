@@ -3,7 +3,7 @@ import type { SnapshotDefinition, SnapshotsCreateDescriptor, SnapshotsCreateMess
 
 import { Cid } from '../utils/cid.js';
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
 
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
@@ -16,7 +16,7 @@ export type SnapshotsCreateOptions = {
 export class SnapshotsCreate extends Message<SnapshotsCreateMessage> {
 
   public static async parse(message: SnapshotsCreateMessage): Promise<SnapshotsCreate> {
-    await validateAuthorizationIntegrity(message);
+    await validateMessageSignatureIntegrity(message.authorization.author, message.descriptor);
 
     return new SnapshotsCreate(message);
   }

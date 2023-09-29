@@ -1,8 +1,8 @@
 import type { GeneralJws } from '../types/jws-types.js';
+import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PublicJwk } from '../types/jose-types.js';
 import type { Signer } from '../types/signer.js';
-import type { AuthorizationModel, GenericMessage } from '../types/message-types.js';
 import type {
   EncryptedKey,
   EncryptionProperty,
@@ -27,7 +27,7 @@ import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Secp256k1 } from '../utils/secp256k1.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
@@ -49,6 +49,7 @@ export type RecordsWriteOptions = {
   datePublished?: string;
   dataFormat: string;
   authorizationSigner?: Signer;
+  tenantSigner?: Signer;
   attestationSigners?: Signer[];
   encryptionInput?: EncryptionInput;
   permissionsGrantId?: string;
@@ -142,12 +143,29 @@ export class RecordsWrite {
     return this._author;
   }
 
+  // DON'T FORGET: rename type
   private _authorSignaturePayload: RecordsWriteAuthorSignaturePayload | undefined;
   /**
-   * Decoded authorization payload.
+   * Decoded author signature payload.
    */
   public get authorizationPayload(): RecordsWriteAuthorSignaturePayload | undefined {
     return this._authorSignaturePayload;
+  }
+
+  private _retainer: string | undefined;
+  /**
+   * DID of retainer of this message.
+   */
+  public get retainer(): string | undefined {
+    return this._retainer;
+  }
+
+  private _retainerSignaturePayload: RecordsWriteAuthorSignaturePayload | undefined;
+  /**
+   * Decoded retainer signature payload.
+   */
+  public get retainerSignaturePayload(): RecordsWriteAuthorSignaturePayload | undefined {
+    return this._retainerSignaturePayload;
   }
 
   readonly attesters: string[];
@@ -156,8 +174,14 @@ export class RecordsWrite {
     this._message = message;
 
     if (message.authorization !== undefined) {
-      this._authorSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.author);
       this._author = Message.getAuthor(message as GenericMessage);
+      this._authorSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.author);
+
+
+      if (message.authorization.retainer !== undefined) {
+        this._retainer = Jws.getSignerDid(message.authorization.retainer.signatures[0]);
+        this._retainerSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.retainer);
+      }
     }
 
     this.attesters = RecordsWrite.getAttesters(message);
@@ -167,7 +191,14 @@ export class RecordsWrite {
 
   public static async parse(message: RecordsWriteMessage): Promise<RecordsWrite> {
     // asynchronous checks that are required by the constructor to initialize members properly
-    await validateAuthorizationIntegrity(message, 'RecordsWriteAuthorSignaturePayload');
+
+    // DON'T Forget: RecordsWriteAuthorSignaturePayload rename
+    await validateMessageSignatureIntegrity(message.authorization.author, message.descriptor, 'RecordsWriteAuthorSignaturePayload');
+
+    if (message.authorization.retainer !== undefined) {
+      await validateMessageSignatureIntegrity(message.authorization.retainer, message.descriptor, 'RecordsWriteAuthorSignaturePayload');
+    }
+
     await RecordsWrite.validateAttestationIntegrity(message);
 
     const recordsWrite = new RecordsWrite(message);
@@ -360,6 +391,7 @@ export class RecordsWrite {
 
   /**
    * Signs the RecordsWrite.
+   * DON'T FORGET: rename
    */
   public async sign(signer: Signer, permissionsGrantId?: string): Promise<void> {
     const author = Jws.extractDid(signer.keyId);
@@ -376,7 +408,7 @@ export class RecordsWrite {
     }
 
     // `authorization` generation
-    const authorization = await RecordsWrite.createAuthorization(
+    const authorSignature = await RecordsWrite.createAuthorizationSignature(
       this._message.recordId,
       this._message.contextId,
       descriptorCid,
@@ -386,21 +418,54 @@ export class RecordsWrite {
       permissionsGrantId
     );
 
-    this._message.authorization = authorization;
+    this._message.authorization = { author: authorSignature };
 
     // there is opportunity to optimize here as the payload is constructed within `createAuthorization(...)`
-    this._authorSignaturePayload = Jws.decodePlainObjectPayload(authorization.author);
+    this._authorSignaturePayload = Jws.decodePlainObjectPayload(authorSignature);
     this._author = author;
   }
 
+  public async signAsRetainer(signer: Signer, permissionsGrantId?: string): Promise<void> {
+    if (this._author === undefined) {
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteSignAsRetainerUnknownAuthor,
+        'Unable to sign as retainer if without author signature because retainer needs to sign over `recordId` which depends on author DID.');
+    }
+    const retainer = Jws.extractDid(signer.keyId);
+
+    const descriptor = this._message.descriptor;
+    const descriptorCid = await Cid.computeCid(descriptor);
+
+    // `authorization` generation
+    const retainerSignature = await RecordsWrite.createAuthorizationSignature(
+      this._message.recordId!,
+      this._message.contextId,
+      descriptorCid,
+      this._message.attestation,
+      this._message.encryption,
+      signer,
+      permissionsGrantId
+    );
+
+    this._message.authorization!.retainer = retainerSignature;
+
+    this._retainerSignaturePayload = Jws.decodePlainObjectPayload(retainerSignature);
+    this._retainer = retainer;
+  }
+
   public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
+    // if retainer is specified, use it for authorization, if not, use author's signature for authorization
+    const entityBeingAuthorized = this.retainer ?? this.author;
+    const signaturePayload = this.retainer ? this.retainerSignaturePayload : this.authorizationPayload;
+
     if (this.message.descriptor.protocol !== undefined) {
       // All protocol RecordsWrites must go through protocol auth, because protocolPath, contextId, and record type must be validated
       await ProtocolAuthorization.authorize(tenant, this, this, messageStore);
-    } else if (this.author === tenant) {
+    } else if (entityBeingAuthorized === tenant) {
       // if author is the same as the target tenant, we can directly grant access
-    } else if (this.author !== undefined && this.authorizationPayload?.permissionsGrantId !== undefined) {
-      await RecordsGrantAuthorization.authorizeWrite(tenant, this, this.author, messageStore);
+      return;
+    } else if (entityBeingAuthorized !== undefined && signaturePayload?.permissionsGrantId !== undefined) {
+      await RecordsGrantAuthorization.authorizeWrite(tenant, this, entityBeingAuthorized, messageStore);
     } else {
       throw new Error('message failed authorization');
     }
@@ -522,7 +587,6 @@ export class RecordsWrite {
    * Computes the deterministic Entry ID of this message.
    */
   public static async getEntryId(author: string | undefined, descriptor: RecordsWriteDescriptor): Promise<string> {
-    // TODO: this paves the way to allow unsigned RecordsWrite as suggested in #206 (https://github.com/TBD54566975/dwn-sdk-js/issues/206)
     if (author === undefined) {
       throw new DwnError(DwnErrorCode.RecordsWriteGetEntryIdUndefinedAuthor, 'Property `author` is needed to compute entry ID.');
     }
@@ -643,7 +707,7 @@ export class RecordsWrite {
   /**
    * Creates the `authorization` property of a RecordsWrite message.
    */
-  public static async createAuthorization(
+  public static async createAuthorizationSignature(
     recordId: string,
     contextId: string | undefined,
     descriptorCid: string,
@@ -651,7 +715,7 @@ export class RecordsWrite {
     encryption: EncryptionProperty | undefined,
     signer: Signer,
     permissionsGrantId: string | undefined,
-  ): Promise<AuthorizationModel> {
+  ): Promise<GeneralJws> {
     const authorizationPayload: RecordsWriteAuthorSignaturePayload = {
       recordId,
       descriptorCid
@@ -668,13 +732,9 @@ export class RecordsWrite {
     const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
 
     const builder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);
-    const authorJws = builder.getJws();
+    const signature = builder.getJws();
 
-    const authorization = {
-      author: authorJws
-    };
-
-    return authorization;
+    return signature;
   }
 
   /**

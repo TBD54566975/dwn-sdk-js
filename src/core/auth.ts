@@ -1,7 +1,8 @@
 import type { CID } from 'multiformats';
 import type { DidResolver } from '../did/did-resolver.js';
+import type { GeneralJws } from '../types/jws-types.js';
 import type { Message } from './message.js';
-import type { AuthorizationModel, GenericMessage } from '../types/message-types.js';
+import type { AuthorizationModel, Descriptor, GenericMessage } from '../types/message-types.js';
 
 import { Cid } from '../utils/cid.js';
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
@@ -25,31 +26,29 @@ export async function canonicalAuth(
 }
 
 /**
- * Validates the structural integrity of the `authorization` property.
+ * Validates the structural integrity of the message signature given.
  * NOTE: signature is not verified.
+ * @param jsonSchemaKey The key to look up the JSON schema referenced in `compile-validators.js` and perform schema validation on.
  * @returns the parsed JSON payload object if validation succeeds.
  */
-export async function validateAuthorizationIntegrity(
-  message: GenericMessage,
+export async function validateMessageSignatureIntegrity(
+  messageSignature: GeneralJws,
+  messageDescriptor: Descriptor,
   jsonSchemaKey: string = 'BaseAuthorizationPayload',
 ): Promise<{ descriptorCid: CID, [key: string]: any }> {
-  if (message.authorization === undefined) {
-    throw new DwnError(DwnErrorCode.AuthorizationMissing, 'Property `authorization` is missing.');
-  }
 
-  if (message.authorization.author.signatures.length !== 1) {
-    throw new Error('expected no more than 1 signature for authorization');
+  if (messageSignature.signatures.length !== 1) {
+    throw new Error('expected no more than 1 signature for authorization purpose');
   }
 
   // validate payload integrity
-  const payloadJson = Jws.decodePlainObjectPayload(message.authorization.author);
+  const payloadJson = Jws.decodePlainObjectPayload(messageSignature);
 
   validateJsonSchema(jsonSchemaKey, payloadJson);
 
-
   // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
   const { descriptorCid } = payloadJson;
-  const expectedDescriptorCid = await Cid.computeCid(message.descriptor);
+  const expectedDescriptorCid = await Cid.computeCid(messageDescriptor);
   if (descriptorCid !== expectedDescriptorCid) {
     throw new Error(`provided descriptorCid ${descriptorCid} does not match expected CID ${expectedDescriptorCid}`);
   }

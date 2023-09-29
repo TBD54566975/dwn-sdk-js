@@ -16,13 +16,16 @@ export class GrantAuthorization {
   public static async authorizeGenericMessage(
     tenant: string,
     incomingMessage: Message<GenericMessage>,
-    author: string,
+    didBeingAuthorized: string,
+    permissionsGrantId: string,
     messageStore: MessageStore,
   ): Promise<PermissionsGrantMessage> {
-    const permissionsGrantId: string = incomingMessage.authorizationPayload!.permissionsGrantId!;
+
+    // DON'T FORGET: consider not requiring the entire incomingMessage as input
+
 
     // Fetch grant
-    const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, author, messageStore, permissionsGrantId);
+    const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, didBeingAuthorized, messageStore, permissionsGrantId);
 
     // verify that grant is active during incomingMessage's timestamp
     await GrantAuthorization.verifyGrantActive(
@@ -47,7 +50,7 @@ export class GrantAuthorization {
    */
   private static async fetchGrant(
     tenant: string,
-    author: string,
+    didBeingAuthorized: string,
     messageStore: MessageStore,
     permissionsGrantId: string,
   ): Promise<PermissionsGrantMessage> {
@@ -65,10 +68,10 @@ export class GrantAuthorization {
     const permissionsGrantMessage = possibleGrantMessage as PermissionsGrantMessage;
 
     // Validate `grantedTo`
-    if (permissionsGrantMessage.descriptor.grantedTo !== author) {
+    if (permissionsGrantMessage.descriptor.grantedTo !== didBeingAuthorized) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationNotGrantedToAuthor,
-        `PermissionsGrant with CID ${permissionsGrantId} is not granted to ${author}`
+        `PermissionsGrant with CID ${permissionsGrantId} is not granted to ${didBeingAuthorized}`
       );
     }
 

@@ -13,6 +13,7 @@ export type GenericMessage = {
  */
 export type AuthorizationModel = {
   author: GeneralJws;
+  retainer?: GeneralJws;
 };
 
 /**
