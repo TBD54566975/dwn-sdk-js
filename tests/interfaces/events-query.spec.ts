@@ -1,8 +1,8 @@
 import type { EventsQueryMessage } from '../../src/types/event-types.js';
 
 import { EventsQuery } from '../../src/interfaces/events-query.js';
-import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { Time } from '../../src/utils/time.js';
 import { Jws, Message } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -10,16 +10,16 @@ import chai, { expect } from 'chai';
 
 chai.use(chaiAsPromised);
 
-describe('EventsQuery', () => {
+describe('EventsQuery Message', () => {
   describe('create()', () => {
     it('should use `messageTimestamp` as is if given', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
-      const currentTime = getCurrentTimeInHighPrecision();
+      const currentTime = Time.getCurrentTimestamp();
       const eventsQuery = await EventsQuery.create({
-        filter              : { schema: 'anything' },
-        messageTimestamp    : currentTime,
-        authorizationSigner : Jws.createSigner(alice),
+        filter           : { schema: 'anything' },
+        messageTimestamp : currentTime,
+        signer           : Jws.createSigner(alice),
       });
 
       expect(eventsQuery.message.descriptor.messageTimestamp).to.equal(currentTime);
@@ -29,9 +29,9 @@ describe('EventsQuery', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {
-        recipient           : alice.did,
-        authorizationSigner : Jws.createSigner(alice),
-        filter              : { protocol: 'example.com/' },
+        recipient : alice.did,
+        signer    : Jws.createSigner(alice),
+        filter    : { protocol: 'example.com/' },
       };
       const eventsQuery = await EventsQuery.create(options);
 
@@ -44,9 +44,9 @@ describe('EventsQuery', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {
-        recipient           : alice.did,
-        authorizationSigner : Jws.createSigner(alice),
-        filter              : { schema: 'example.com/' },
+        recipient : alice.did,
+        signer    : Jws.createSigner(alice),
+        filter    : { schema: 'example.com/' },
       };
       const eventsQuery = await EventsQuery.create(options);
 
@@ -57,15 +57,15 @@ describe('EventsQuery', () => {
   });
 
   describe('parse', () => {
-    it('parses a message into an EventsGet instance', async () => {
+    it('parses a message into an EventsQuery instance', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
-      const currentTime = getCurrentTimeInHighPrecision();
+      const currentTime = Time.getCurrentTimestamp();
 
       const eventsQuery = await EventsQuery.create({
-        filter              : { schema: 'anything' },
-        messageTimestamp    : currentTime,
-        authorizationSigner : Jws.createSigner(alice),
+        filter           : { schema: 'anything' },
+        messageTimestamp : currentTime,
+        signer           : Jws.createSigner(alice),
       });
 
       const parsed = await EventsQuery.parse(eventsQuery.message);
@@ -77,13 +77,13 @@ describe('EventsQuery', () => {
       expect(messageCid).to.equal(expectedMessageCid);
     });
 
-    it('throws an exception if message is not a valid EventsGet message', async () => {
+    it('throws an exception if message is not a valid EventsQuery message', async () => {
       const alice = await TestDataGenerator.generatePersona();
-      const currentTime = getCurrentTimeInHighPrecision();
+      const currentTime = Time.getCurrentTimestamp();
       const eventsQuery = await EventsQuery.create({
-        filter              : { schema: 'anything' },
-        messageTimestamp    : currentTime,
-        authorizationSigner : Jws.createSigner(alice),
+        filter           : { schema: 'anything' },
+        messageTimestamp : currentTime,
+        signer           : Jws.createSigner(alice),
       });
 
       const { message } = eventsQuery;

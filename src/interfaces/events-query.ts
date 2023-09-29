@@ -1,14 +1,18 @@
+import type { Filter } from '../index.js';
+import type { RangeFilter } from '../types/message-types.js';
 import type { Signer } from '../types/signer.js';
 import type { EventsFilter, EventsQueryDescriptor, EventsQueryMessage } from '../types/event-types.js';
 
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
-import { validateMessageSignatureIntegrity } from '../core/auth.js';
-import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+import { Message } from '../core/message.js';
+import { removeUndefinedProperties } from '../utils/object.js';
+import { Time } from '../utils/time.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
 
 export type EventsQueryOptions = {
   filter: EventsFilter;
-  authorizationSigner: Signer;
+  watermark?: string;
+  signer: Signer;
   messageTimestamp?: string;
 };
 
@@ -16,7 +20,7 @@ export class EventsQuery extends Message<EventsQueryMessage> {
 
   public static async parse(message: EventsQueryMessage): Promise<EventsQuery> {
     Message.validateJsonSchema(message);
-    await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
+    await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
 
     return new EventsQuery(message);
   }
@@ -26,10 +30,13 @@ export class EventsQuery extends Message<EventsQueryMessage> {
       interface        : DwnInterfaceName.Events,
       method           : DwnMethodName.Query,
       filter           : this.normalizeFilter(options.filter),
-      messageTimestamp : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      watermark        : options.watermark,
+      messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
     };
-    console.log('descriptor', descriptor);
-    const authorization = await Message.signAuthorizationAsAuthor(descriptor, options.authorizationSigner);
+
+    removeUndefinedProperties(descriptor);
+
+    const authorization = await Message.createAuthorization({ descriptor, signer: options.signer });
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
@@ -51,5 +58,40 @@ export class EventsQuery extends Message<EventsQueryMessage> {
     }
 
     return normalizedFilter;
+  }
+
+  /**
+ *  Converts an incoming RecordsFilter into a Filter usable by EventLog.
+ *
+ * @param filter An EventFilter
+ * @returns {Filter} a generic Filter able to be used with EventLog.
+ */
+  public static convertFilter(filter: EventsFilter): Filter {
+    const filterCopy = { ...filter };
+    const { dateCreated } = filterCopy;
+
+    let rangeFilter: RangeFilter | undefined = undefined;
+    if (dateCreated !== undefined) {
+      if (dateCreated.to !== undefined && dateCreated.from !== undefined) {
+        rangeFilter = {
+          gte : dateCreated.from,
+          lt  : dateCreated.to,
+        };
+      } else if (dateCreated.to !== undefined) {
+        rangeFilter = {
+          lt: dateCreated.to,
+        };
+      } else if (dateCreated.from !== undefined) {
+        rangeFilter = {
+          gte: dateCreated.from,
+        };
+      }
+    }
+
+    if (rangeFilter) {
+      (filterCopy as Filter).dateCreated = rangeFilter;
+    }
+
+    return filterCopy as Filter;
   }
 }

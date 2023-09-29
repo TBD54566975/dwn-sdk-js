@@ -33,9 +33,14 @@ export type EventsQueryDescriptor = {
   method: DwnMethodName.Query;
   messageTimestamp: string;
   filter: EventsFilter;
+  watermark?: string;
 };
 
 export type EventsQueryMessage = GenericMessage & {
   authorization: AuthorizationModel;
   descriptor: EventsQueryDescriptor;
+};
+
+export type EventsQueryReply = GenericMessageReply & {
+  events?: Event[];
 };

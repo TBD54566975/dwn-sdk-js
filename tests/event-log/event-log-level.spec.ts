@@ -1,7 +1,6 @@
 import type { Event } from '../../src/types/event-log.js';
 
 import chaiAsPromised from 'chai-as-promised';
-import { constructRecordsWriteIndexes } from '../../src/handlers/records-write.js';
 import { EventLogLevel } from '../../src/event-log/event-log-level.js';
 import { Message } from '../../src/core/message.js';
 import { normalizeSchemaUrl } from '../../src/utils/url.js';
@@ -81,7 +80,7 @@ describe('EventLogLevel Tests', () => {
       for (let i = 0; i < 10; i += 1) {
         const schema = i % 2 === 0 ? 'schema1' : 'schema2';
         const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author, schema });
-        const indexes = await constructRecordsWriteIndexes(recordsWrite, true);
+        const indexes = await recordsWrite.constructRecordsWriteIndexes(true);
         const messageCid = await Message.getCid(message);
         const watermark = await eventLog.append(author.did, messageCid, indexes);
         if (schema === 'schema1') {
@@ -116,7 +115,7 @@ describe('EventLogLevel Tests', () => {
       for (let i = 0; i < 12; i += 1) {
         const schema = i % 2 === 0 ? 'schema1' : 'schema2';
         const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author, schema });
-        const indexes = await constructRecordsWriteIndexes(recordsWrite, true);
+        const indexes = await recordsWrite.constructRecordsWriteIndexes(true);
         const messageCid = await Message.getCid(message);
         const watermark = await eventLog.append(author.did, messageCid, indexes);
 

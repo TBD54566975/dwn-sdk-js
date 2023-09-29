@@ -35,7 +35,7 @@ export interface EventLog {
    */
   getEvents(tenant: string, options?: GetEventsOptions): Promise<Array<Event>>
 
-  query(tenant: string, filters: Filter[]): Promise<Array<Event>>
+  query(tenant: string, filters: Filter[], watermark?: string): Promise<Array<Event>>
 
   /**
    * deletes any events that have any of the cids provided
