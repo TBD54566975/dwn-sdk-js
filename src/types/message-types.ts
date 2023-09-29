@@ -4,8 +4,15 @@ import type { GeneralJws } from './jws-types.js';
  * Intersection type for all concrete message types.
  */
 export type GenericMessage = {
-  descriptor: Descriptor
-  authorization?: GeneralJws;
+  descriptor: Descriptor;
+  authorization?: AuthorizationModel;
+};
+
+/**
+ * The data model for the `authorization` property in a DWN message.
+ */
+export type AuthorizationModel = {
+  author: GeneralJws;
 };
 
 /**

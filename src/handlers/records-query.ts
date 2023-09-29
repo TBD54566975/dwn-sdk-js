@@ -2,7 +2,7 @@ import type { MethodHandler } from '../types/method-handler.js';
 import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
 import type { Filter, GenericMessage, MessageSort } from '../types/message-types.js';
-import type { RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry } from '../types/records-types.js';
+import type { RecordsQueryMessage, RecordsQueryReply } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
@@ -53,26 +53,11 @@ export class RecordsQueryHandler implements MethodHandler {
       }
     }
 
-    const entries = RecordsQueryHandler.removeAuthorization(recordsWrites);
-
     return {
-      status: { code: 200, detail: 'OK' },
-      entries,
+      status  : { code: 200, detail: 'OK' },
+      entries : recordsWrites,
       paginationMessageCid
     };
-  }
-
-  /**
-   * Removes `authorization` property from each and every `RecordsWrite` message given and returns the result as a different array.
-   */
-  private static removeAuthorization(recordsWriteMessages: RecordsWriteMessageWithOptionalEncodedData[]): RecordsQueryReplyEntry[] {
-    const recordsQueryReplyEntries: RecordsQueryReplyEntry[] = [];
-    for (const record of recordsWriteMessages) {
-      const { authorization: _, ...objectWithRemainingProperties } = record; // a trick to stripping away `authorization`
-      recordsQueryReplyEntries.push(objectWithRemainingProperties);
-    }
-
-    return recordsQueryReplyEntries;
   }
 
   /**

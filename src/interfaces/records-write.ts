@@ -1,14 +1,14 @@
 import type { GeneralJws } from '../types/jws-types.js';
-import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PublicJwk } from '../types/jose-types.js';
 import type { Signer } from '../types/signer.js';
+import type { AuthorizationModel, GenericMessage } from '../types/message-types.js';
 import type {
   EncryptedKey,
   EncryptionProperty,
   InternalRecordsWriteMessage,
   RecordsWriteAttestationPayload,
-  RecordsWriteAuthorizationPayload,
+  RecordsWriteAuthorSignaturePayload,
   RecordsWriteDescriptor,
   RecordsWriteMessage,
   UnsignedRecordsWriteMessage
@@ -142,12 +142,12 @@ export class RecordsWrite {
     return this._author;
   }
 
-  private _authorizationPayload: RecordsWriteAuthorizationPayload | undefined;
+  private _authorSignaturePayload: RecordsWriteAuthorSignaturePayload | undefined;
   /**
    * Decoded authorization payload.
    */
-  public get authorizationPayload(): RecordsWriteAuthorizationPayload | undefined {
-    return this._authorizationPayload;
+  public get authorizationPayload(): RecordsWriteAuthorSignaturePayload | undefined {
+    return this._authorSignaturePayload;
   }
 
   readonly attesters: string[];
@@ -156,7 +156,7 @@ export class RecordsWrite {
     this._message = message;
 
     if (message.authorization !== undefined) {
-      this._authorizationPayload = Jws.decodePlainObjectPayload(message.authorization);
+      this._authorSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.author);
       this._author = Message.getAuthor(message as GenericMessage);
     }
 
@@ -167,7 +167,7 @@ export class RecordsWrite {
 
   public static async parse(message: RecordsWriteMessage): Promise<RecordsWrite> {
     // asynchronous checks that are required by the constructor to initialize members properly
-    await validateAuthorizationIntegrity(message, 'RecordsWriteAuthorizationPayload');
+    await validateAuthorizationIntegrity(message, 'RecordsWriteAuthorSignaturePayload');
     await RecordsWrite.validateAttestationIntegrity(message);
 
     const recordsWrite = new RecordsWrite(message);
@@ -354,7 +354,7 @@ export class RecordsWrite {
 
     // opportunity here to re-sign instead of remove
     delete this._message.authorization;
-    this._authorizationPayload = undefined;
+    this._authorSignaturePayload = undefined;
     this._author = undefined;
   }
 
@@ -389,7 +389,7 @@ export class RecordsWrite {
     this._message.authorization = authorization;
 
     // there is opportunity to optimize here as the payload is constructed within `createAuthorization(...)`
-    this._authorizationPayload = Jws.decodePlainObjectPayload(authorization);
+    this._authorSignaturePayload = Jws.decodePlainObjectPayload(authorization.author);
     this._author = author;
   }
 
@@ -651,8 +651,8 @@ export class RecordsWrite {
     encryption: EncryptionProperty | undefined,
     signer: Signer,
     permissionsGrantId: string | undefined,
-  ): Promise<GeneralJws> {
-    const authorizationPayload: RecordsWriteAuthorizationPayload = {
+  ): Promise<AuthorizationModel> {
+    const authorizationPayload: RecordsWriteAuthorSignaturePayload = {
       recordId,
       descriptorCid
     };
@@ -665,11 +665,16 @@ export class RecordsWrite {
     if (encryptionCid !== undefined) { authorizationPayload.encryptionCid = encryptionCid; } // assign `encryptionCid` only if it is defined
     if (permissionsGrantId !== undefined) { authorizationPayload.permissionsGrantId = permissionsGrantId; }
 
-
     const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
 
     const builder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);
-    return builder.getJws();
+    const authorJws = builder.getJws();
+
+    const authorization = {
+      author: authorJws
+    };
+
+    return authorization;
   }
 
   /**

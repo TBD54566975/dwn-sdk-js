@@ -88,7 +88,8 @@ export function testRecordsReadHandler(): void {
         const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
         expect(readReply.status.code).to.equal(200);
         expect(readReply.record).to.exist;
-        expect(readReply.record?.descriptor).to.exist;
+        expect(readReply.record?.authorization).to.deep.equal(message.authorization);
+        expect(readReply.record?.descriptor).to.deep.equal(message.descriptor);
 
         const dataFetched = await DataStream.toBytes(readReply.record!.data!);
         expect(ArrayUtility.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;

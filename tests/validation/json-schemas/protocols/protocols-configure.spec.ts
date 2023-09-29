@@ -1,8 +1,9 @@
-import { expect } from 'chai';
+import type { ProtocolDefinition, ProtocolsConfigureMessage } from '../../../../src/types/protocols-types.js';
 
+import { expect } from 'chai';
+import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { validateJsonSchema } from '../../../../src/schema-validator.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../../../src/core/message.js';
-import type { ProtocolDefinition, ProtocolsConfigureMessage } from '../../../../src/types/protocols-types.js';
 
 describe('ProtocolsConfigure schema definition', () => {
   it('should throw if unknown actor is encountered in action rule', async () => {
@@ -34,13 +35,7 @@ describe('ProtocolsConfigure schema definition', () => {
         messageTimestamp : '2022-10-14T10:20:30.405060Z',
         definition       : protocolDefinition
       },
-      authorization: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      },
+      authorization: TestDataGenerator.generateAuthorization()
     };
 
     expect(() => {

@@ -5,7 +5,7 @@ import type { GenericMessageReply } from '../core/message-reply.js';
 import type { KeyDerivationScheme } from '../utils/hd-key.js';
 import type { PublicJwk } from './jose-types.js';
 import type { Readable } from 'readable-stream';
-import type { BaseAuthorizationPayload, GenericMessage, Pagination } from './message-types.js';
+import type { AuthorizationModel, BaseAuthorizationPayload, GenericMessage, Pagination } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type RecordsWriteDescriptor = {
@@ -123,7 +123,7 @@ export type RecordsWriteAttestationPayload = {
   descriptorCid: string;
 };
 
-export type RecordsWriteAuthorizationPayload = BaseAuthorizationPayload & {
+export type RecordsWriteAuthorSignaturePayload = BaseAuthorizationPayload & {
   recordId: string;
   contextId?: string;
   attestationCid?: string;
@@ -140,18 +140,12 @@ export type RecordsQueryReply = GenericMessageReply & {
 };
 
 export type RecordsReadMessage = {
-  authorization?: GeneralJws;
+  authorization?: AuthorizationModel;
   descriptor: RecordsReadDescriptor;
 };
 
 export type RecordsReadReply = GenericMessageReply & {
-  record?: {
-    recordId: string,
-    contextId?: string;
-    descriptor: RecordsWriteDescriptor;
-    // authorization: GeneralJws; // intentionally omitted
-    attestation?: GeneralJws;
-    encryption?: EncryptionProperty;
+  record?: RecordsWriteMessage & {
     data: Readable;
   }
 };
