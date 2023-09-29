@@ -10,14 +10,15 @@ import chai, { expect } from 'chai';
 
 import { ArrayUtility } from '../../src/utils/array.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
-import { Message } from '../../src/core/message.js';
 import { minimalSleep } from '../../src/utils/time.js';
+import { normalizeSchemaUrl } from '../../src/utils/url.js';
 import { RecordsDeleteHandler } from '../../src/handlers/records-delete.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { DataStream, DidResolver, Dwn, Encoder, Jws, RecordsDelete, RecordsRead, RecordsWrite } from '../../src/index.js';
+import { DwnMethodName, Message } from '../../src/core/message.js';
 
 chai.use(chaiAsPromised);
 
@@ -280,6 +281,32 @@ export function testRecordsDeleteHandler(): void {
         expect(aliceQueryWriteAfterAliceRewriteReply.status.code).to.equal(200);
         expect(aliceQueryWriteAfterAliceRewriteReply.entries?.length).to.equal(1);
         expect(aliceQueryWriteAfterAliceRewriteReply.entries![0].encodedData).to.equal(encodedData);
+      });
+
+      it('should index additional properties from the RecordsWrite being deleted', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        // initial write
+        const initialWriteData = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'testSchema' });
+        const initialWriteReply = await dwn.processMessage(alice.did, initialWriteData.message, initialWriteData.dataStream);
+        expect(initialWriteReply.status.code).to.equal(202);
+
+        // generate subsequent write and delete with the delete having an earlier timestamp
+        // NOTE: creating RecordsDelete first ensures it has an earlier `messageTimestamp` time
+        const recordsDelete = await RecordsDelete.create({
+          recordId            : initialWriteData.message.recordId,
+          authorizationSigner : Jws.createSigner(alice)
+        });
+        const deleteMessageCid = await Message.getCid(recordsDelete.message);
+
+        const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
+        expect(deleteReply.status.code).to.equal(202);
+
+        const { messages } = await messageStore.query(alice.did, [{ schema: normalizeSchemaUrl('testSchema'), method: DwnMethodName.Delete }]);
+        expect(messages.length).to.equal(1);
+        const message = messages[0];
+        const compareMessageCid = await Message.getCid(message);
+        expect(deleteMessageCid).to.equal(compareMessageCid);
       });
 
       describe('event log', () => {
