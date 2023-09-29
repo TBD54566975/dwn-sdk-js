@@ -1,9 +1,8 @@
 import type { Event } from './event-log.js';
-import type { GeneralJws } from './jws-types.js';
-import type { GenericMessage } from './message-types.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { RecordsFilter } from './records-types.js';
 
+import type { AuthorizationModel, GenericMessage } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type EventsGetDescriptor = {
@@ -133,5 +132,5 @@ export type EventFilter = RecordsFilter & {
 
 export type EventMessageI<T extends EventDescriptor> = GenericMessage & {
   descriptor: T;
-  authorization?: GeneralJws;
+  authorization?: AuthorizationModel;
 };

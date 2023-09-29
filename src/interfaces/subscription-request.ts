@@ -51,7 +51,7 @@ export class SubscriptionRequest extends Message<SubscriptionRequestMessage> {
     // only generate the `authorization` property if signature input is given
     let authorization = undefined;
     if (signer !== undefined) {
-      authorization = await Message.signAsAuthorization(descriptor, signer, { permissionsGrantId });
+      authorization = await Message.signAuthorizationAsAuthor(descriptor, signer, { permissionsGrantId });
     }
     const message: SubscriptionRequestMessage = { descriptor, authorization };
     Message.validateJsonSchema(message);

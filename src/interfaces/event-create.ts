@@ -8,7 +8,7 @@ import type { EventDescriptor, EventMessageI, EventsCreateDescriptor } from '../
 export type EventCreateOptions = {
     descriptor: EventDescriptor;
     messageId?: string;
-    authorizationSignatureInput?: Signer;
+    authorizationSigner?: Signer;
     permissionsGrantId?: string;
     messageTimestamp?: string;
 };
@@ -24,9 +24,8 @@ export class EventMessage extends Message<EventMessageI<any>> {
       eventDescriptor  : options.descriptor,
     };
     removeUndefinedProperties(descriptor);
-    const authorization = options.authorizationSignatureInput ?
-      await Message.signAsAuthorization(descriptor, options.authorizationSignatureInput) : undefined;
-    const message = { descriptor: descriptor, authorization: authorization };
+    const authorization = await Message.signAuthorizationAsAuthor(descriptor, options.authorizationSigner!);
+    const message = { descriptor, authorization };
     // Message.validateJsonSchema(message);
     // @andorsk Fix schema validation....
     return new EventMessage(message);

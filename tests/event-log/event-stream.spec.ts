@@ -49,7 +49,7 @@ describe('Event Stream Tests', () => {
           method           : DwnMethodName.Read,
           messageTimestamp : '123'
         },
-        authorizationSignatureInput: Jws.createSigner(alice),
+        authorizationSigner: Jws.createSigner(alice),
       });
       eventStream.add(msg); // add message
       await eventHandledPromise;
@@ -67,7 +67,7 @@ describe('Event Stream Tests', () => {
         type             : EventType.Operation,
         messageTimestamp : '1',
       },
-      authorizationSignatureInput: Jws.createSigner(alice),
+      authorizationSigner: Jws.createSigner(alice),
     });
     try {
       await eventStream.open();
@@ -86,7 +86,7 @@ describe('Event Stream Tests', () => {
         method           : DwnMethodName.Read,
         messageTimestamp : '123'
       },
-      authorizationSignatureInput: Jws.createSigner(alice),
+      authorizationSigner: Jws.createSigner(alice),
     });
     eventStream.close();
     // Attempt to add an event to a closed stream
@@ -129,8 +129,8 @@ describe('Event Stream Tests', () => {
 
     for (const event of events) {
       const eMsg = await EventMessage.create({
-        descriptor                  : event.descriptor,
-        authorizationSignatureInput : Jws.createSigner(alice),
+        descriptor          : event.descriptor,
+        authorizationSigner : Jws.createSigner(alice),
       });
       const eventPromise = sendEvent(eMsg);
       eventPromises.push(eventPromise);
@@ -179,7 +179,7 @@ describe('Event Stream Tests', () => {
           method           : DwnMethodName.Read,
           messageTimestamp : '123'
         },
-        authorizationSignatureInput: Jws.createSigner(alice),
+        authorizationSigner: Jws.createSigner(alice),
       });
 
       await eventStream.add(msg); // add message
@@ -191,7 +191,7 @@ describe('Event Stream Tests', () => {
           method           : DwnMethodName.Write,
           messageTimestamp : '123',
         },
-        authorizationSignatureInput: Jws.createSigner(alice),
+        authorizationSigner: Jws.createSigner(alice),
       });
       await eventStream.add(msg2); // add second message
       const msg3 = await EventMessage.create({
@@ -201,7 +201,7 @@ describe('Event Stream Tests', () => {
           method           : DwnMethodName.Read,
           messageTimestamp : '123'
         },
-        authorizationSignatureInput: Jws.createSigner(alice),
+        authorizationSigner: Jws.createSigner(alice),
       });
       await eventStream.add(msg3); // add second message
       await eventHandledPromise;
