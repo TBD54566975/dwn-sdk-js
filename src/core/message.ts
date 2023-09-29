@@ -6,7 +6,7 @@ import { removeUndefinedProperties } from '../utils/object.js';
 import type { Signer } from '../types/signer.js';
 import { validateJsonSchema } from '../schema-validator.js';
 
-import type { BaseAuthorizationPayload, Descriptor, GenericMessage } from '../types/message-types.js';
+import type { AuthorizationModel, BaseAuthorizationPayload, Descriptor, GenericMessage } from '../types/message-types.js';
 
 export enum DwnInterfaceName {
   Events = 'Events',
