@@ -10,7 +10,7 @@ import chai, { expect } from 'chai';
 
 chai.use(chaiAsPromised);
 
-describe('EventsQuery', () => {
+describe('EventsQuery Message', () => {
   describe('create()', () => {
     it('should use `messageTimestamp` as is if given', async () => {
       const alice = await TestDataGenerator.generatePersona();
@@ -57,7 +57,7 @@ describe('EventsQuery', () => {
   });
 
   describe('parse', () => {
-    it('parses a message into an EventsGet instance', async () => {
+    it('parses a message into an EventsQuery instance', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const currentTime = getCurrentTimeInHighPrecision();
@@ -77,7 +77,7 @@ describe('EventsQuery', () => {
       expect(messageCid).to.equal(expectedMessageCid);
     });
 
-    it('throws an exception if message is not a valid EventsGet message', async () => {
+    it('throws an exception if message is not a valid EventsQuery message', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const currentTime = getCurrentTimeInHighPrecision();
       const eventsQuery = await EventsQuery.create({
