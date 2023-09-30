@@ -85,7 +85,7 @@ export class RecordsDeleteHandler implements MethodHandler {
     }
 
     const recordsWrite = await RecordsWrite.getInitialWrite(existingMessages);
-    const indexes = await constructIndexes(recordsDelete, recordsWrite);
+    const indexes = RecordsDeleteHandler.constructIndexes(recordsDelete, recordsWrite);
     await this.messageStore.put(tenant, message, indexes);
 
     const messageCid = await Message.getCid(message);
@@ -119,38 +119,25 @@ export class RecordsDeleteHandler implements MethodHandler {
       );
     }
   }
-}
 
-function constructAdditionalIndexes(recordsWrite: RecordsWriteMessage): Record<string, string> {
-  const { protocol, protocolPath, recipient, schema, parentId, dataFormat, dateCreated } = recordsWrite.descriptor;
+  static constructIndexes(recordsDelete: RecordsDelete, recordsWrite: RecordsWriteMessage): Record<string, string> {
+    const message = recordsDelete.message;
+    const descriptor = { ...message.descriptor };
+    const { protocol, protocolPath, recipient, schema, parentId, dataFormat, dateCreated } = recordsWrite.descriptor;
 
-  const indexes:Record<string, any> = {
-    protocol, protocolPath, recipient, schema, parentId, dataFormat, dateCreated,
-    contextId: recordsWrite.contextId
-  };
+    // NOTE: the "trick" not may not be apparent on how a query is able to omit deleted records:
+    // we intentionally not add index for `isLatestBaseState` at all, this means that upon a successful delete,
+    // no messages with the record ID will match any query because queries by design filter by `isLatestBaseState = true`,
+    // `isLatestBaseState` for the initial delete would have been toggled to `false`
+    const indexes: Record<string, any> = {
+      // isLatestBaseState : "true", // intentionally showing that this index is omitted
+      protocol, protocolPath, recipient, schema, parentId, dataFormat, dateCreated,
+      contextId : recordsWrite.contextId,
+      author    : recordsDelete.author,
+      ...descriptor
+    };
+    removeUndefinedProperties(indexes);
 
-  removeUndefinedProperties(indexes);
-  return indexes;
-}
-
-export async function constructIndexes(recordsDelete: RecordsDelete, recordsWrite: RecordsWriteMessage): Promise<Record<string, string>> {
-
-  // construct records write index
-  const additionalIndexes = constructAdditionalIndexes(recordsWrite);
-
-  const message = recordsDelete.message;
-  const descriptor = { ...message.descriptor };
-
-  // NOTE: the "trick" not may not be apparent on how a query is able to omit deleted records:
-  // we intentionally not add index for `isLatestBaseState` at all, this means that upon a successful delete,
-  // no messages with the record ID will match any query because queries by design filter by `isLatestBaseState = true`,
-  // `isLatestBaseState` for the initial delete would have been toggled to `false`
-  const indexes: Record<string, any> = {
-    // isLatestBaseState : "true", // intentionally showing that this index is omitted
-    author: recordsDelete.author,
-    ...additionalIndexes, // we add additional indexes from the RecordsWrite so we can filter for these Deletes in the EventLog
-    ...descriptor
-  };
-
-  return indexes;
-}
+    return indexes;
+  }
+};
