@@ -4,9 +4,9 @@ import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { RecordsWriteMessage } from '../types/records-types.js';
 
-import { constructRecordsWriteIndexes } from '../handlers/records-write.js';
 import { DwnConstant } from '../core/dwn-constant.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
+import { RecordsWriteHandler } from '../handlers/records-write.js';
 import { DwnMethodName, Message } from '../core/message.js';
 
 /**
@@ -64,7 +64,7 @@ export class StorageController {
         if (existingMessageIsInitialWrite) {
           const existingRecordsWrite = await RecordsWrite.parse(message as RecordsWriteMessage);
           const isLatestBaseState = false;
-          const indexes = await constructRecordsWriteIndexes(existingRecordsWrite, isLatestBaseState);
+          const indexes = await RecordsWriteHandler.constructIndexes(existingRecordsWrite, isLatestBaseState);
           const writeMessage = message as RecordsWriteMessageWithOptionalEncodedData;
           delete writeMessage.encodedData;
           await messageStore.put(tenant, writeMessage, indexes);

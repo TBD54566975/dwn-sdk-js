@@ -3,11 +3,12 @@ import type { EventLog } from '../types/event-log.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { PermissionsGrantMessage, PermissionsRevokeMessage } from '../types/permissions-types.js';
+import type { PermissionsGrantMessage, PermissionsRevokeMessage, RecordsPermissionScope } from '../types/permissions-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { PermissionsRevoke } from '../interfaces/permissions-revoke.js';
+import { removeUndefinedProperties } from '../utils/object.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 export class PermissionsRevokeHandler implements MethodHandler {
@@ -83,13 +84,12 @@ export class PermissionsRevokeHandler implements MethodHandler {
     }
 
     // Store incoming PermissionsRevoke
-    const indexes: { [key: string]: string } = {
-      interface          : DwnInterfaceName.Permissions,
-      method             : DwnMethodName.Revoke,
-      permissionsGrantId : message.descriptor.permissionsGrantId,
-    };
+    const indexes = PermissionsRevokeHandler.constructIndexes(permissionsRevoke);
     await this.messageStore.put(tenant, message, indexes);
-    await this.eventLog.append(tenant, await Message.getCid(message), indexes);
+
+    // get associated grant for indexing
+    const additionalIndexes = await PermissionsRevokeHandler.constructAdditionalIndexes(permissionsGrantMessage);
+    await this.eventLog.append(tenant, await Message.getCid(message), { ...indexes, ...additionalIndexes });
 
     // Delete existing revokes which are all newer than the incoming message
     const removedRevokeCids: string[] = [];
@@ -115,6 +115,40 @@ export class PermissionsRevokeHandler implements MethodHandler {
 
     return {
       status: { code: 202, detail: 'Accepted' }
+    };
+  }
+
+
+  static async constructAdditionalIndexes(
+    grant: PermissionsGrantMessage,
+  ): Promise<Record<string, string>> {
+    let indexes: Record<string, any> = {};
+    // additional indexing for RecordsWrite
+    if (grant.descriptor.scope.interface === DwnInterfaceName.Records) {
+      const scope = grant.descriptor.scope as RecordsPermissionScope;
+      const { protocol, protocolPath, schema, contextId } = scope;
+      indexes = {
+        ...indexes,
+        contextId,
+        protocol,
+        protocolPath,
+        schema,
+      };
+    }
+
+    removeUndefinedProperties(indexes);
+    return indexes;
+  };
+
+  static constructIndexes(
+    permissionsRevoke: PermissionsRevoke,
+  ): Record<string, string> {
+    const { descriptor } = permissionsRevoke.message;
+
+    return {
+      interface          : DwnInterfaceName.Permissions,
+      method             : DwnMethodName.Revoke,
+      permissionsGrantId : descriptor.permissionsGrantId,
     };
   }
 }
