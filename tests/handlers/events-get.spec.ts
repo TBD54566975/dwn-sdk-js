@@ -5,6 +5,7 @@ import type {
   MessageStore
 } from '../../src/index.js';
 
+import { EventsGetHandler } from '../../src/handlers/events-get.js';
 import { expect } from 'chai';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import {
@@ -53,9 +54,11 @@ export function testEventsGetHandler(): void {
       const bob = await DidKeyResolver.generate();
 
       const { message } = await TestDataGenerator.generateEventsGet({ author: alice });
-      const reply = await dwn.processMessage(bob.did, message);
+      const eventsGetHandler = new EventsGetHandler(didResolver, eventLog);
+      const reply = await eventsGetHandler.handle({ tenant: bob.did, message });
 
       expect(reply.status.code).to.equal(401);
+      expect(reply.events).to.not.exist;
     });
 
     it('returns a 400 if message is invalid', async () => {
@@ -63,10 +66,11 @@ export function testEventsGetHandler(): void {
 
       const { message } = await TestDataGenerator.generateEventsGet({ author: alice });
       (message['descriptor'] as any)['troll'] = 'hehe';
-
-      const reply = await dwn.processMessage(alice.did, message);
+      const eventsGetHandler = new EventsGetHandler(didResolver, eventLog);
+      const reply = await eventsGetHandler.handle({ tenant: alice.did, message });
 
       expect(reply.status.code).to.equal(400);
+      expect(reply.events).to.not.exist;
     });
 
     it('returns all events for a tenant if watermark is not provided', async () => {
