@@ -164,9 +164,11 @@ describe('EventLogLevel Tests', () => {
   });
   describe('query', () => {
     it('returns filtered events in the order that they were appended', async () => {
+      expect(false).to.be.true; // implement tests
     });
 
     it('returns filtered events after watermark', async () => {
+      expect(false).to.be.true; // implement tests
     });
   });
 });
