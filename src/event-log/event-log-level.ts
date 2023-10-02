@@ -1,7 +1,7 @@
 import type { Filter } from '../index.js';
 import type { RangeFilter } from '../types/message-types.js';
 import type { ULIDFactory } from 'ulidx';
-import type { Event, EventLog, GetEventsOptions } from '../types/event-log.js';
+import type { Event, EventLog, GetEventsOptions, QueryEventsFilter } from '../types/event-log.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions } from '../store/level-wrapper.js';
 
 import { flatten } from '../utils/object.js';
@@ -185,10 +185,10 @@ export class EventLogLevel implements EventLog {
     return matches;
   }
 
-  async query(tenant: string, filters: Filter[], watermark?: string): Promise<Event[]> {
+  async queryEvents(tenant: string, filters: QueryEventsFilter[]): Promise<Event[]> {
     const matchedEvents: Map<string, Event> = new Map();
 
-    await Promise.all(filters.map(f => this.executeSingleFilterQuery(tenant, f, matchedEvents, watermark)));
+    await Promise.all(filters.map(f => this.executeSingleFilterQuery(tenant, f.filter, matchedEvents, f.gt)));
     return [...matchedEvents.values()];
   }
 

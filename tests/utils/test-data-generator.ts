@@ -4,7 +4,7 @@ import type { GeneralJws } from '../../src/types/jws-types.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsFilter } from '../../src/types/records-types.js';
 import type { AuthorizationModel, Pagination } from '../../src/types/message-types.js';
-import type { EventsFilter, EventsQueryMessage } from '../../src/types/event-types.js';
+import type { EventsQueryFilter, EventsQueryMessage } from '../../src/types/event-types.js';
 
 import type {
   CreateFromOptions,
@@ -246,8 +246,7 @@ export type GenerateEventsGetOutput = {
 
 export type GenerateEventsQueryInput = {
   author?: Persona;
-  filter: EventsFilter;
-  watermark?: string;
+  filters: EventsQueryFilter[];
 };
 
 export type GenerateEventsQueryOutput = {
@@ -755,10 +754,7 @@ export class TestDataGenerator {
     const author = input.author ?? await TestDataGenerator.generatePersona();
     const authorizationSigner = Jws.createSigner(author);
 
-    const options: EventsQueryOptions = { authorizationSigner, filter: input.filter };
-    if (input?.watermark) {
-      options.watermark = input.watermark;
-    }
+    const options: EventsQueryOptions = { authorizationSigner, filters: input.filters };
 
     const eventsQuery = await EventsQuery.create(options);
 
