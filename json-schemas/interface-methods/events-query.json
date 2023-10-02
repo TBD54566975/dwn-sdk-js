@@ -17,7 +17,7 @@
         "interface",
         "method",
         "messageTimestamp",
-        "filter"
+        "filters"
       ],
       "properties": {
         "interface": {
@@ -35,8 +35,12 @@
         "messageTimestamp": {
           "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
         },
-        "filter": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/events-filter.json"
+        "filters": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "https://identity.foundation/dwn/json-schemas/events-filter.json"
+          }
         },
         "watermark": {
           "type": "string"

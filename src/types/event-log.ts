@@ -5,9 +5,13 @@ export type Event = {
   messageCid: string
 };
 
-
 export type GetEventsOptions = {
   gt: string
+};
+
+export type QueryEventsFilter = {
+  filter: Filter
+  gt?: string
 };
 
 export interface EventLog {
@@ -35,7 +39,13 @@ export interface EventLog {
    */
   getEvents(tenant: string, options?: GetEventsOptions): Promise<Array<Event>>
 
-  query(tenant: string, filters: Filter[], watermark?: string): Promise<Array<Event>>
+  /**
+   * retrieves a filtered set of events that occurred after a the watermark provided.
+   * accepts multiple filters each with their own watermark.
+   *
+   * If no watermark is provided, all events for a given tenant and filter combo will be returned.
+   */
+  queryEvents(tenant: string, filters: QueryEventsFilter[]): Promise<Array<Event>>
 
   /**
    * deletes any events that have any of the cids provided
