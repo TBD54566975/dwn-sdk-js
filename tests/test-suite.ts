@@ -4,6 +4,7 @@ import { testDelegatedGrantScenarios } from './scenarios/delegated-grant.spec.js
 import { testDwnClass } from './dwn.spec.js';
 import { testEndToEndScenarios } from './scenarios/end-to-end-tests.spec.js';
 import { testEventsGetHandler } from './handlers/events-get.spec.js';
+import { testEventsQueryHandler } from './handlers/events-query.spec.js';
 import { testMessagesGetHandler } from './handlers/messages-get.spec.js';
 import { testMessageStore } from './store/message-store.spec.js';
 import { testPermissionsGrantHandler } from './handlers/permissions-grant.spec.js';
@@ -36,6 +37,7 @@ export class TestSuite {
 
     // handler tests
     testEventsGetHandler();
+    testEventsQueryHandler();
     testMessagesGetHandler();
     testPermissionsGrantHandler();
     testPermissionsRequestHandler();
