@@ -1,5 +1,5 @@
+import type { EventsLogFilter } from '../types/event-log.js';
 import type { Filter } from '../index.js';
-import type { QueryEventsFilter } from '../types/event-log.js';
 import type { RangeFilter } from '../types/message-types.js';
 import type { Signer } from '../types/signer.js';
 import type { EventsQueryDescriptor, EventsQueryFilter, EventsQueryMessage } from '../types/event-types.js';
@@ -67,10 +67,10 @@ export class EventsQuery extends Message<EventsQueryMessage> {
  *  Converts an incoming RecordsFilter into a Filter usable by EventLog.
  *
  * @param filters An EventQueryFilter
- * @returns {QueryEventsFilter} a generic Filter able to be used with EventLog query.
+ * @returns {EventsLogFilter} a generic Filter able to be used with EventLog query.
  */
-  public static convertFilters(filters: EventsQueryFilter[]): QueryEventsFilter[] {
-    const eventLogFilters: QueryEventsFilter[] = [];
+  public static convertFilters(filters: EventsQueryFilter[]): EventsLogFilter[] {
+    const eventLogFilters: EventsLogFilter[] = [];
 
     for (const queryFilter of filters) {
       const { filter, watermark } = queryFilter;

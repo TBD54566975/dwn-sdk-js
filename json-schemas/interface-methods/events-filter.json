@@ -13,11 +13,29 @@
       "additionalProperties": false,
       "minProperties": 1,
       "properties": {
-        "interfaces": {
-          "type": "array"
+        "interface": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "Permissions",
+              "Protocols",
+              "Records"
+            ],
+            "type": "string"
+          }
         },
-        "methods":{
-          "type": "array"
+        "method":{
+          "type": "array",
+          "items": {
+            "enum": [
+              "Configure",
+              "Delete",
+              "Grant",
+              "Revoke",
+              "Write"
+            ],
+            "type": "string"
+          }
         },
         "protocol": {
           "type": "string"

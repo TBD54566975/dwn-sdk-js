@@ -5,9 +5,9 @@ import type { AuthorizationModel, GenericMessage } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export type EventsFilter = RecordsFilter & {
-  methods?: string[];
+  method?: string[];
   // Default to all methods. Otherwise, explicitly subscribe to subset of methods.
-  interfaces?: string[];
+  interface?: string[];
   // Default to all interfaces. Can be subset.
   author?: string;
 };

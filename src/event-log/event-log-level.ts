@@ -1,7 +1,7 @@
 import type { Filter } from '../types/message-types.js';
 import type { RangeFilter } from '../types/message-types.js';
 import type { ULIDFactory } from 'ulidx';
-import type { Event, EventLog, GetEventsOptions, QueryEventsFilter } from '../types/event-log.js';
+import type { Event, EventLog, EventsLogFilter, GetEventsOptions } from '../types/event-log.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions } from '../store/level-wrapper.js';
 
 import { flatten } from '../utils/object.js';
@@ -54,6 +54,15 @@ export class EventLogLevel implements EventLog {
     return this.db.clear();
   }
 
+  /**
+   * Appends messageCids to the EventLog in the order they are appended using a ulid watermark.
+   * optionally add indexable properties to allow for querying filtered events.
+   *
+   * @param tenant
+   * @param messageCid the messageCid of the message that is being appended to the log.
+   * @param indexes property and value indexes to use for querying potential events.
+   * @returns the ulid watermark generated during this operation.
+   */
   async append(tenant: string, messageCid: string, indexes?: { [key:string]:unknown }): Promise<string> {
     const tenantEventLog = await this.db.partition(tenant);
     const watermarkLog = await tenantEventLog.partition(WATERMARKS_SUBLEVEL_NAME);
@@ -83,7 +92,23 @@ export class EventLogLevel implements EventLog {
   }
 
   /**
-   * Executes the given single filter query and appends the results without duplicate into `matchedIDs`.
+   * Queries Events for a given tenant using the filters provided.
+   * Each filter has it's own watermark, this is to prevent returning already fetched data
+   * if adding a new filter to a subsequent request.
+   *
+   * @param tenant
+   * @param filters an array of filters that designates which event properties are being queried.
+   * @returns an array of matching Events without duplicate entries between the filters.
+   */
+  async queryEvents(tenant: string, filters: EventsLogFilter[]): Promise<Event[]> {
+    const matchedEvents: Map<string, Event> = new Map();
+
+    await Promise.all(filters.map(f => this.executeSingleFilterQuery(tenant, f.filter, matchedEvents, f.gt)));
+    return [...matchedEvents.values()];
+  }
+
+  /**
+   * Executes the given single filter query and appends the results without duplicates into `matchedEvents`.
    */
   private async executeSingleFilterQuery(tenant: string, filter: Filter, matchedEvents: Map<string, Event>, watermark?: string): Promise<void> {
     // Note: We have an array of Promises in order to support OR (anyOf) matches when given a list of accepted values for a property
@@ -183,13 +208,6 @@ export class EventLogLevel implements EventLog {
       matches.push(watermarkValue);
     }
     return matches;
-  }
-
-  async queryEvents(tenant: string, filters: QueryEventsFilter[]): Promise<Event[]> {
-    const matchedEvents: Map<string, Event> = new Map();
-
-    await Promise.all(filters.map(f => this.executeSingleFilterQuery(tenant, f.filter, matchedEvents, f.gt)));
-    return [...matchedEvents.values()];
   }
 
   /**

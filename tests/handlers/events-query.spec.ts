@@ -126,7 +126,7 @@ export function testEventsQueryHandler(): void {
 
         const grant1Response = await dwn.processMessage(author.did, grant1.message);
         expect(grant1Response.status.code).equals(202);
-        testMessages.set(grant1.message, [ proto1 ]);
+        testMessages.set(grant1.message, [ proto1, 'grant' ]);
 
         // get a watermark here for testing;
         let eventsGet = await TestDataGenerator.generateEventsGet({ author });
@@ -145,8 +145,8 @@ export function testEventsQueryHandler(): void {
         });
         const grant2Response = await dwn.processMessage(author.did, grant2.message);
         expect(grant2Response.status.code).to.equal(202);
-        testMessages.set(grant2.message, [ 'reward' ]);
-        testMessagesAfterWatermark.set(grant2.message, [ 'reward' ]);
+        testMessages.set(grant2.message, [ 'reward', 'grant' ]);
+        testMessagesAfterWatermark.set(grant2.message, [ 'reward', 'grant' ]);
 
         const write3 = await TestDataGenerator.generateRecordsWrite({ author, schema: 'contribution', protocol: proto2, protocolPath: 'contribution' });
         const write3Response = await dwn.processMessage(author.did, write3.message, write3.dataStream);
@@ -170,8 +170,8 @@ export function testEventsQueryHandler(): void {
         const revokeForGrant2 = await TestDataGenerator.generatePermissionsRevoke({ author, permissionsGrantId: grant2Id });
         const revokeForGrant2Response = await dwn.processMessage(author.did, revokeForGrant2.message);
         expect(revokeForGrant2Response.status.code).equals(202);
-        testMessages.set(revokeForGrant2.message, [ 'reward' ]);
-        testMessagesAfterWatermark.set(revokeForGrant2.message, [ 'reward' ]);
+        testMessages.set(revokeForGrant2.message, [ 'reward', 'revoke' ]);
+        testMessagesAfterWatermark.set(revokeForGrant2.message, [ 'reward', 'revoke' ]);
 
         // make sure all messages were logged and indexed
         eventsGet = await TestDataGenerator.generateEventsGet({ author });
@@ -519,50 +519,63 @@ export function testEventsQueryHandler(): void {
         expect(proto2RewardEvents.length).to.equal(0); //should not exist
       });
 
-      // it('returns events from multiple filters in a single request', async () => {
-      //   const protocol1And2Events = await eventLog.query(author.did, [{ protocol: proto1 }, { protocol: proto2 }]);
-      //   expect(protocol1And2Events.length).to.equal(9);
+      it('returns events from multiple filters in a single request', async () => {
+        // filter for proto1 as well as all grants and revokes.
+        const eventsQuery = await TestDataGenerator.generateEventsQuery({
+          author,
+          filters: [
+            { filter: { protocol: proto1 } },
+            { filter: { interface: [ DwnInterfaceName.Permissions ], method: [ DwnMethodName.Grant, DwnMethodName.Revoke ] } }
+          ]
+        });
+        const eventsQueryReply = await dwn.processMessage(author.did, eventsQuery.message) as EventsQueryReply;
+        expect(eventsQueryReply.status.code).equals(200);
 
-      //   const eventArray = [...events.keys()];
+        //filter for proto 1 messages or grant or revoke messages
+        const expectedMessageCids: string[] = [];
+        for (const [message, indexes] of testMessages) {
+          if (indexes.includes(proto1) || indexes.includes('grant') || indexes.includes('revoke')) {
+            const messageCid = await Message.getCid(message);
+            expectedMessageCids.push(messageCid);
+          }
+        }
 
-      //   const expectedEvents:Event[] = [];
-      //   eventArray.forEach((e) => {
-      //     const indexes = events.get(e)!;
-      //     if (indexes.protocol === proto1 || indexes.protocol === proto2) {
-      //       expectedEvents.push(e);
-      //     }
-      //   });
+        const events = eventsQueryReply.events!;
+        expect(events.length).to.equal(expectedMessageCids.length);
+        expect(events.every(e => expectedMessageCids.includes(e.messageCid))).to.be.true;
+      });
 
-      //   expectedEvents.forEach(expected => {
-      //     const event = protocol1And2Events.find(e => e.messageCid === expected.messageCid);
-      //     expect(event?.watermark).to.equal(expected.watermark);
-      //   });
-      // });
+      it('returns events from multiple filters in a single request after a watermark', async () => {
+        // filter for proto1 as well as all grants and revokes after a watermark
+        const eventsQuery = await TestDataGenerator.generateEventsQuery({
+          author,
+          filters: [
+            {
+              filter    : { protocol: proto1 },
+              watermark : testWatermark
+            },
+            {
+              filter    : { interface: [ DwnInterfaceName.Permissions ], method: [ DwnMethodName.Grant, DwnMethodName.Revoke ] },
+              watermark : testWatermark
+            }
+          ]
+        });
+        const eventsQueryReply = await dwn.processMessage(author.did, eventsQuery.message) as EventsQueryReply;
+        expect(eventsQueryReply.status.code).equals(200);
 
-      // it('returns events from multiple filters in a single request after a watermark', async () => {
-      //   const protocol1And2Events = await eventLog.query(
-      //     author.did,
-      //     [{ protocol: proto1 }, { protocol: proto2 }],
-      //     testWatermark
-      //   );
-      //   expect(protocol1And2Events.length).to.equal(3);
+        //filter for proto 1 messages or grant or revoke messages after a watermark
+        const expectedMessageCids: string[] = [];
+        for (const [message, indexes] of testMessagesAfterWatermark) {
+          if (indexes.includes(proto1) || indexes.includes('grant') || indexes.includes('revoke')) {
+            const messageCid = await Message.getCid(message);
+            expectedMessageCids.push(messageCid);
+          }
+        }
 
-      //   // filter for events after watermark
-      //   const eventArray = [...events.keys()].filter(e => e.watermark > testWatermark);
-
-      //   const expectedEvents:Event[] = [];
-      //   eventArray.forEach((e) => {
-      //     const indexes = events.get(e)!;
-      //     if (indexes.protocol === proto1 || indexes.protocol === proto2) {
-      //       expectedEvents.push(e);
-      //     }
-      //   });
-
-      //   expectedEvents.forEach(expected => {
-      //     const event = protocol1And2Events.find(e => e.messageCid === expected.messageCid);
-      //     expect(event?.watermark).to.equal(expected.watermark);
-      //   });
-      // });
+        const events = eventsQueryReply.events!;
+        expect(events.length).to.equal(expectedMessageCids.length);
+        expect(events.every(e => expectedMessageCids.includes(e.messageCid))).to.be.true;
+      });
     });
 
     it('returns a 401 if tenant is not author', async () => {
