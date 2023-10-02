@@ -15,7 +15,7 @@ export class GrantAuthorization {
   public static async authorizeGenericMessage(
     tenant: string,
     incomingMessage: Message<GenericMessage>,
-    didBeingAuthorized: string,
+    author: string,
     permissionsGrantId: string,
     messageStore: MessageStore,
   ): Promise<PermissionsGrantMessage> {
@@ -25,7 +25,7 @@ export class GrantAuthorization {
     // Fetch grant
     const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, permissionsGrantId);
 
-    GrantAuthorization.verifyGrantedToAndGrantedFor(didBeingAuthorized, tenant, permissionsGrantMessage);
+    GrantAuthorization.verifyGrantedToAndGrantedFor(author, tenant, permissionsGrantMessage);
 
     // verify that grant is active during incomingMessage's timestamp
     await GrantAuthorization.verifyGrantActive(

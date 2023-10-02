@@ -11,7 +11,7 @@ import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { Encoder, Jws, KeyDerivationScheme } from '../../src/index.js';
+import { DidKeyResolver, Encoder, Jws, KeyDerivationScheme } from '../../src/index.js';
 
 
 chai.use(chaiAsPromised);
@@ -307,6 +307,27 @@ describe('RecordsWrite', () => {
       const { message }= await TestDataGenerator.generateRecordsWrite();
       const author = undefined;
       expect(RecordsWrite.getEntryId(author, message.descriptor)).to.be.rejectedWith(DwnErrorCode.RecordsWriteGetEntryIdUndefinedAuthor);
+    });
+  });
+
+  describe('signAsRetainer()', () => {
+    it('should throw if the RecordsWrite is not signed by an author yet', async () => {
+      const options = {
+        data        : TestDataGenerator.randomBytes(10),
+        dataFormat  : 'application/json',
+        dateCreated : '2023-07-27T10:20:30.405060Z',
+        recordId    : await TestDataGenerator.randomCborSha256Cid(),
+      };
+      const recordsWrite = await RecordsWrite.create(options);
+
+      expect(recordsWrite.author).to.not.exist;
+      expect(recordsWrite.authorizationPayload).to.not.exist;
+
+      const alice = await DidKeyResolver.generate();
+      await expect(recordsWrite.signAsRetainer(Jws.createSigner(alice))).to.rejectedWith(DwnErrorCode.RecordsWriteSignAsRetainerUnknownAuthor);
+
+      expect(recordsWrite.retainer).to.be.undefined;
+      expect(recordsWrite.retainerSignaturePayload).to.be.undefined;
     });
   });
 

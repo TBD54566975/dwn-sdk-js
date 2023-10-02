@@ -14,19 +14,16 @@ export class RecordsGrantAuthorization {
   public static async authorizeWrite(
     tenant: string,
     incomingMessage: RecordsWrite,
-    didBeingAuthorized: string,
+    author: string,
     messageStore: MessageStore,
   ): Promise<void> {
-
-    // DON'T FORGET to re-eval why `didBeingAuthorized` need to be passed in
-
     const signaturePayload = incomingMessage.retainer ? incomingMessage.retainerSignaturePayload : incomingMessage.authorizationPayload;
     const permissionsGrantId: string = signaturePayload!.permissionsGrantId!;
 
     const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(
       tenant,
       incomingMessage,
-      didBeingAuthorized,
+      author,
       permissionsGrantId,
       messageStore
     );

@@ -463,18 +463,23 @@ export class RecordsWrite {
       );
     }
 
-    // if retainer is specified, use it for authorization, if not, use author's signature for authorization
-    const entityBeingAuthorized = this.retainer ?? this.author;
-    const signaturePayload = this.retainer ? this.retainerSignaturePayload : this.authorizationPayload;
-
+    // All protocol RecordsWrites must go through protocol auth, because protocolPath, contextId, and record type must be validated
     if (this.message.descriptor.protocol !== undefined) {
-      // All protocol RecordsWrites must go through protocol auth, because protocolPath, contextId, and record type must be validated
       await ProtocolAuthorization.authorize(tenant, this, this, messageStore);
-    } else if (entityBeingAuthorized === tenant) {
+      return;
+    }
+
+    // Remainder of the code is for flat-space writes
+
+    if (this.retainer !== undefined) {
+      // if incoming message is a write retained by this tenant, we by-design always allow
+      // NOTE: the "retainer === tenant" check is already done earlier in this method
+      return;
+    } else if (this.author === tenant) {
       // if author is the same as the target tenant, we can directly grant access
       return;
-    } else if (entityBeingAuthorized !== undefined && signaturePayload?.permissionsGrantId !== undefined) {
-      await RecordsGrantAuthorization.authorizeWrite(tenant, this, entityBeingAuthorized, messageStore);
+    } else if (this.author !== undefined && this.authorizationPayload?.permissionsGrantId !== undefined) {
+      await RecordsGrantAuthorization.authorizeWrite(tenant, this, this.author, messageStore);
     } else {
       throw new Error('message failed authorization');
     }

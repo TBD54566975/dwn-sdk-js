@@ -108,29 +108,6 @@ export abstract class Message<M extends GenericMessage> {
   }
 
   /**
-   * Compares the CID of two messages.
-   * @returns `true` if `a` is newer than `b`; `false` otherwise
-   */
-  public static async isCidLarger(a: GenericMessage, b: GenericMessage): Promise<boolean> {
-    const aIsLarger = (await Message.compareCid(a, b) > 0);
-    return aIsLarger;
-  }
-
-  /**
-   * @returns message with the largest CID in the array using lexicographical compare. `undefined` if given array is empty.
-   */
-  public static async getMessageWithLargestCid(messages: GenericMessage[]): Promise<GenericMessage | undefined> {
-    let currentNewestMessage: GenericMessage | undefined = undefined;
-    for (const message of messages) {
-      if (currentNewestMessage === undefined || await Message.isCidLarger(message, currentNewestMessage)) {
-        currentNewestMessage = message;
-      }
-    }
-
-    return currentNewestMessage;
-  }
-
-  /**
    * Creates the `authorization` as the author to be used in a DWN message.
    * @param signer Signer as the author
    * @returns General JWS signature used as an `authorization` property.
