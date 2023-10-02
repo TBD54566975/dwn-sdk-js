@@ -54,8 +54,9 @@ export class PermissionsGrantHandler implements MethodHandler {
     permissionsGrant: PermissionsGrant
   ): Record<string, string> {
     let indexes: Record<string,any> = {};
-    if (permissionsGrant.message.descriptor.scope.interface === DwnInterfaceName.Records) {
-      const { protocol, protocolPath, schema, contextId } = permissionsGrant.message.descriptor.scope as RecordsPermissionScope;
+    const { scope } = permissionsGrant.message.descriptor;
+    if (scope.interface === DwnInterfaceName.Records) {
+      const { protocol, protocolPath, schema, contextId } = scope as RecordsPermissionScope;
       indexes = {
         ...indexes,
         contextId,
