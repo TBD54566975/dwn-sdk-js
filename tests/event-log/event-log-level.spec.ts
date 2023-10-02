@@ -163,10 +163,10 @@ describe('EventLogLevel Tests', () => {
     });
   });
   describe('query', () => {
-    it('returns filtered events in the order that they were appended', async () => {
+    xit('returns filtered events in the order that they were appended', async () => {
     });
 
-    it('returns filtered events after watermark', async () => {
+    xit('returns filtered events after watermark', async () => {
     });
   });
 });
