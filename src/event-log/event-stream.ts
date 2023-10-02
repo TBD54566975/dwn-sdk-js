@@ -1,8 +1,6 @@
 import { EventEmitter } from 'events';
 import type { EventMessage } from '../interfaces/event-create.js';
-import type {
-  EventType
-} from '../types/event-types.js';
+import type { EventType } from '../types/event-types.js';
 import type { RecordsFilter } from '../types/records-types.js';
 
 export type CallbackQueryRequest = RecordsFilter & {
@@ -13,10 +11,13 @@ const eventChannel = 'event';
 
 // EventStream is a sinked stream for Events
 export interface EventStreamI {
-  add(e: EventMessage): Promise<void>
+  add(e: EventMessage): Promise<void>;
 
-  on(f: (e: EventMessage) => void): EventEmitter
-  createChild(filter?: (e: EventMessage) => Promise<boolean>, transform?: (e: EventMessage) => Promise<EventMessage>): Promise<EventStream>
+  on(f: (e: EventMessage) => void): EventEmitter;
+  createChild(
+    filter?: (e: EventMessage) => Promise<boolean>,
+    transform?: (e: EventMessage) => Promise<EventMessage>
+  ): Promise<EventStream>;
   open(): Promise<void>;
   close(): Promise<void>;
   clear(): Promise<void>;
@@ -30,37 +31,36 @@ export const defaultConfig = {
     operation : 'operation',
     log       : 'log',
     message   : 'message',
-  }
+  },
 };
 
 type EventStreamConfig = {
   channelNames?: {
-    sync: string,
-    operation: string,
-    message: string,
+    sync: string;
+    operation: string;
+    message: string;
     log: string;
-  },
-  emitter?: EventEmitter,
+  };
+  emitter?: EventEmitter;
 };
 
 /*
-* Event stream provides a single pipeline for
-* Event data to pass through.
-* It allows for developers to attach multiple callback functions
-* To an event stream, and also allows event buffering
-* if needed.
-*
-* A few known use cases:
-*  - attaching a logger to the end of a event stream
-*  - attaching telemetry to the event stream.
-*  - attaching callback functions for subscription use case.
-*
-* Note: We are purposely not queueing jobs in right now, so
-* there is no internal state handling, but you could make an event
-* stream some kafka like streamer if you wanted.
-*/
+ * Event stream provides a single pipeline for
+ * Event data to pass through.
+ * It allows for developers to attach multiple callback functions
+ * To an event stream, and also allows event buffering
+ * if needed.
+ *
+ * A few known use cases:
+ *  - attaching a logger to the end of a event stream
+ *  - attaching telemetry to the event stream.
+ *  - attaching callback functions for subscription use case.
+ *
+ * Note: We are purposely not queueing jobs in right now, so
+ * there is no internal state handling, but you could make an event
+ * stream some kafka like streamer if you wanted.
+ */
 export class EventStream implements EventStreamI {
-
   private isOpen: boolean = false;
   private eventEmitter: EventEmitter;
   private config: EventStreamConfig;
@@ -95,19 +95,16 @@ export class EventStream implements EventStreamI {
 
   // improve. temporary. just for now....
   genUniqueId(): string {
-    const dateStr = Date
-      .now()
-      .toString(36); // convert num to base 36 and stringify
-    const randomStr = Math
-      .random()
-      .toString(36)
-      .substring(2, 8); // start at index 2 to skip decimal point
+    const dateStr = Date.now().toString(36); // convert num to base 36 and stringify
+    const randomStr = Math.random().toString(36).substring(2, 8); // start at index 2 to skip decimal point
 
     return `${dateStr}-${randomStr}`;
   }
 
   on(f: (e: EventMessage) => void): EventEmitter {
-    return this.eventEmitter.on(eventChannel, (event) => {f(event);});
+    return this.eventEmitter.on(eventChannel, (event) => {
+      f(event);
+    });
   }
 
   async createChild(
@@ -120,8 +117,14 @@ export class EventStream implements EventStreamI {
       };
       const childStream = new EventStream(childConfig);
       childStream.#parentId = this.#id;
+      // console.log(
+      //   "Created event stream",
+      //   childStream.id(),
+      //   "from parent",
+      //   this.id()
+      // );
 
-      const eventListener = async (event: EventMessage) : Promise<void> => {
+      const eventListener = async (event: EventMessage): Promise<void> => {
         try {
           if (!filter || (await filter(event))) {
             // If a filter is provided and it passes, emit the event in the child stream
@@ -144,7 +147,6 @@ export class EventStream implements EventStreamI {
 
       // Resolve the promise with childStream
       resolve(childStream);
-
     });
   }
 

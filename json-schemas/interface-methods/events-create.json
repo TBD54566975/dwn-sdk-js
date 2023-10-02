@@ -1,0 +1,54 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://identity.foundation/dwn/json-schemas/events-create.json",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "descriptor"
+    ],
+    "properties": {
+      "authorization": {
+        "$ref": "https://identity.foundation/dwn/json-schemas/authorization.json"
+      },
+      "descriptor": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+        ],
+        "properties": {
+          "interface": {
+            "enum": [
+              "Events"
+            ],
+             "type": "string"
+          },
+          "method": {
+            "enum": [
+              "Create"
+            ],
+            "type": "string"
+          },
+          "messageTimestamp": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "object",
+            "properties": {
+                "eventType": {
+                    "enum": [
+                        "Log",
+                        "Message",
+                        "Operation",
+                        "Sync"
+                    ],
+                    "type": "string"
+                }
+            }
+          }
+        }
+      }
+    }
+  }

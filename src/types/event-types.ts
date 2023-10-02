@@ -6,7 +6,7 @@ import type { AuthorizationModel, GenericMessage } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type EventsGetDescriptor = {
-  interface : DwnInterfaceName.Events;
+  interface: DwnInterfaceName.Events;
   method: DwnMethodName.Get;
   watermark?: string;
   messageTimestamp: string;
@@ -21,10 +21,10 @@ export type EventsGetReply = GenericMessageReply & {
 };
 
 /*
-*  ----------------------------------------------------------
-*  Event Stream Updates Below
-*  ----------------------------------------------------------
-*/
+ *  ----------------------------------------------------------
+ *  Event Stream Updates Below
+ *  ----------------------------------------------------------
+ */
 
 /**
  * Enum defining generic event types.
@@ -33,19 +33,22 @@ export enum EventType {
   Message = 'Message', // Represents a message event.
   Sync = 'Sync', // Represents a synchronization event.
   Operation = 'Operation', // Represents an operation event.
-  Log = 'Log' // represents a log event.
+  Log = 'Log', // represents a log event.
+  Record = 'Record', // represents a record event
 }
 
-
 export type EventsCreateDescriptor = {
-  interface : DwnInterfaceName.Subscriptions;
-  method: DwnMethodName.Request;
-  messageTimestamp: string;
+  interface: DwnInterfaceName.Events;
+  method: DwnMethodName.Create;
   messageId?: string; // attached message
-  eventDescriptor?: EventDescriptor
+  eventDescriptor?: EventDescriptor;
+  messageTimestamp: string;
 };
 
 export type EventDescriptor = {
+  // The type of the event.
+  type: EventType;
+
   interface?: DwnInterfaceName;
   // interface
   method?: DwnMethodName;
@@ -57,10 +60,8 @@ export type EventDescriptor = {
   eventDuration?: string;
   //A description of the event.
   description?: string;
-  // The type of the event.
-  type: EventType;
   // tags help search events.
-  tags?: Map<string, any>
+  tags?: Map<string, any>;
   // The unique identifier of the event.
   eventId?: string;
 };
@@ -71,7 +72,7 @@ export type BaseEventMessage = GenericMessage & {
 
 export type InterfaceEventDescriptor = EventDescriptor & {
   // The interface associated with the event.
-  interface? : DwnInterfaceName;
+  interface?: DwnInterfaceName;
   // The method associated with the event.
   method?: DwnMethodName;
   // event type
@@ -124,11 +125,10 @@ export type EventFilter = RecordsFilter & {
   // filter by event type
   eventType?: EventType;
   // filter by interface
-  interface? : DwnInterfaceName;
+  interface?: DwnInterfaceName;
   // filter by method
   method?: DwnMethodName;
 };
-
 
 export type EventMessageI<T extends EventDescriptor> = GenericMessage & {
   descriptor: T;

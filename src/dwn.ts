@@ -1,50 +1,51 @@
-import { AllowAllTenantGate } from "./core/tenant-gate.js";
-import type { DataStore } from "./types/data-store.js";
-import { DidResolver } from "./did/did-resolver.js";
-import type { EventLog } from "./types/event-log.js";
-import { EventMessage } from "./interfaces/event-create.js";
-import { EventsGetHandler } from "./handlers/events-get.js";
-import { EventStream } from "./event-log/event-stream.js";
-import type { EventStreamI } from "./event-log/event-stream.js";
-import type { GenericMessage } from "./types/message-types.js";
-import { messageReplyFromError } from "./core/message-reply.js";
-import { MessagesGetHandler } from "./handlers/messages-get.js";
-import type { MessageStore } from "./types/message-store.js";
-import type { MethodHandler } from "./types/method-handler.js";
-import { PermissionsGrantHandler } from "./handlers/permissions-grant.js";
-import { PermissionsRequestHandler } from "./handlers/permissions-request.js";
-import { PermissionsRevokeHandler } from "./handlers/permissions-revoke.js";
-import { ProtocolsConfigureHandler } from "./handlers/protocols-configure.js";
-import { ProtocolsQueryHandler } from "./handlers/protocols-query.js";
-import type { Readable } from "readable-stream";
-import { RecordsDeleteHandler } from "./handlers/records-delete.js";
-import { RecordsQueryHandler } from "./handlers/records-query.js";
-import { RecordsReadHandler } from "./handlers/records-read.js";
-import { RecordsWriteHandler } from "./handlers/records-write.js";
-import type { RecordsWriteHandlerOptions } from "./handlers/records-write.js";
-import { SubscriptionsRequestHandler } from "./handlers/subscriptions-request.js";
-import type { TenantGate } from "./core/tenant-gate.js";
+import { AllowAllTenantGate } from './core/tenant-gate.js';
+import type { DataStore } from './types/data-store.js';
+import { DidResolver } from './did/did-resolver.js';
+import type { EventLog } from './types/event-log.js';
+import { EventMessage } from './interfaces/event-create.js';
+import { EventsGetHandler } from './handlers/events-get.js';
+import { EventStream } from './event-log/event-stream.js';
+import type { EventStreamI } from './event-log/event-stream.js';
+import type { GenericMessage } from './types/message-types.js';
+import { messageReplyFromError } from './core/message-reply.js';
+import { MessagesGetHandler } from './handlers/messages-get.js';
+import type { MessageStore } from './types/message-store.js';
+import type { MethodHandler } from './types/method-handler.js';
+import { PermissionsGrantHandler } from './handlers/permissions-grant.js';
+import { PermissionsRequestHandler } from './handlers/permissions-request.js';
+import { PermissionsRevokeHandler } from './handlers/permissions-revoke.js';
+import { ProtocolsConfigureHandler } from './handlers/protocols-configure.js';
+import { ProtocolsQueryHandler } from './handlers/protocols-query.js';
+import type { Readable } from 'readable-stream';
+import { RecordsDeleteHandler } from './handlers/records-delete.js';
+import { RecordsQueryHandler } from './handlers/records-query.js';
+import { RecordsReadHandler } from './handlers/records-read.js';
+import { RecordsWriteHandler } from './handlers/records-write.js';
+import type { RecordsWriteHandlerOptions } from './handlers/records-write.js';
+import { SubscriptionsRequestHandler } from './handlers/subscriptions-request.js';
+import type { TenantGate } from './core/tenant-gate.js';
 
-import { DwnInterfaceName, DwnMethodName, Message } from "./core/message.js";
+import { EventType } from './index.js';
+import { DwnInterfaceName, DwnMethodName, Message } from './core/message.js';
 import type {
   GenericMessageReply,
   UnionMessageReply,
-} from "./core/message-reply.js";
+} from './core/message-reply.js';
 import type {
   MessagesGetMessage,
   MessagesGetReply,
-} from "./types/messages-types.js";
+} from './types/messages-types.js';
 import type {
   RecordsQueryMessage,
   RecordsQueryReply,
   RecordsReadMessage,
   RecordsReadReply,
   RecordsWriteMessage,
-} from "./types/records-types.js";
+} from './types/records-types.js';
 import type {
   SubscriptionRequestMessage,
   SubscriptionRequestReply,
-} from "./types/subscriptions-request.js";
+} from './types/subscriptions-request.js';
 
 export class Dwn {
   private methodHandlers: { [key: string]: MethodHandler };
@@ -202,8 +203,9 @@ export class Dwn {
     const eventMessage = await EventMessage.create({
       descriptor: {
         ...rawMessage.descriptor,
+        type: EventType.Operation,
       },
-      message: rawMessage as GenericMessage,
+      message: rawMessage as GenericMessage, // add message
     });
 
     if (this.eventStream) {
@@ -389,24 +391,24 @@ export class Dwn {
     if (dwnInterface === undefined || dwnMethod === undefined) {
       return {
         status: {
-          code: 400,
-          detail: `Both interface and method must be present, interface: ${dwnInterface}, method: ${dwnMethod}`,
+          code   : 400,
+          detail : `Both interface and method must be present, interface: ${dwnInterface}, method: ${dwnMethod}`,
         },
       };
     }
     if (expectedInterface !== undefined && expectedInterface !== dwnInterface) {
       return {
         status: {
-          code: 400,
-          detail: `Expected interface ${expectedInterface}, received ${dwnInterface}`,
+          code   : 400,
+          detail : `Expected interface ${expectedInterface}, received ${dwnInterface}`,
         },
       };
     }
     if (expectedMethod !== undefined && expectedMethod !== dwnMethod) {
       return {
         status: {
-          code: 400,
-          detail: `Expected method ${expectedInterface}${expectedMethod}, received ${dwnInterface}${dwnMethod}`,
+          code   : 400,
+          detail : `Expected method ${expectedInterface}${expectedMethod}, received ${dwnInterface}${dwnMethod}`,
         },
       };
     }

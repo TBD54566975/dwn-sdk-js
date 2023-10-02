@@ -11,7 +11,6 @@ import { DwnInterfaceName, DwnMethodName } from '../../src/core/message.js';
 
 chai.use(chaiAsPromised);
 
-
 describe('Event Stream Tests', () => {
   let eventStream: EventStream;
 
@@ -47,7 +46,7 @@ describe('Event Stream Tests', () => {
           type             : EventType.Operation,
           interface        : DwnInterfaceName.Records,
           method           : DwnMethodName.Read,
-          messageTimestamp : '123'
+          messageTimestamp : '123',
         },
         authorizationSigner: Jws.createSigner(alice),
       });
@@ -84,7 +83,7 @@ describe('Event Stream Tests', () => {
         type             : EventType.Operation,
         interface        : DwnInterfaceName.Records,
         method           : DwnMethodName.Read,
-        messageTimestamp : '123'
+        messageTimestamp : '123',
       },
       authorizationSigner: Jws.createSigner(alice),
     });
@@ -93,7 +92,9 @@ describe('Event Stream Tests', () => {
     try {
       await eventStream.add(event);
     } catch (error: any) {
-      expect(error.message).to.equal('Event stream is not open. Cannot add to the stream.');
+      expect(error.message).to.equal(
+        'Event stream is not open. Cannot add to the stream.'
+      );
     }
   });
 
@@ -123,7 +124,7 @@ describe('Event Stream Tests', () => {
       },
     }));
 
-    const sendEvent = (event: EventMessage) : Promise<void> => {
+    const sendEvent = (event: EventMessage): Promise<void> => {
       return eventStream.add(event);
     };
 
@@ -144,13 +145,13 @@ describe('Event Stream Tests', () => {
   });
 
   it('test emitter chaining', async () => {
-
     try {
       let count = 0;
       const alice = await TestDataGenerator.generatePersona();
 
       const filterFunction = async (event: EventMessage): Promise<boolean> => {
-        const e: InterfaceEventDescriptor = event.message.descriptor.eventDescriptor as unknown as InterfaceEventDescriptor;
+        const e: InterfaceEventDescriptor = event.message.descriptor
+          .eventDescriptor as unknown as InterfaceEventDescriptor;
         return e.method === DwnMethodName.Read;
       };
 
@@ -159,7 +160,7 @@ describe('Event Stream Tests', () => {
 
       const eventHandledPromise = new Promise<void>((resolve, reject) => {
         // Define the event handler function outside the setTimeout
-        const eventHandler = async () : Promise<void> =>{
+        const eventHandler = async (): Promise<void> => {
           try {
             count += 1; // adding 1 if passes filter.
             resolve(); // Resolve the promise when the event is handled.
@@ -168,8 +169,7 @@ describe('Event Stream Tests', () => {
           }
         };
         childStream.on(eventHandler);
-        setTimeout(() => {
-        }, 500);
+        setTimeout(() => {}, 500);
       });
 
       const msg = await EventMessage.create({
@@ -177,7 +177,7 @@ describe('Event Stream Tests', () => {
           type             : EventType.Operation,
           interface        : DwnInterfaceName.Records,
           method           : DwnMethodName.Read,
-          messageTimestamp : '123'
+          messageTimestamp : '123',
         },
         authorizationSigner: Jws.createSigner(alice),
       });
@@ -199,7 +199,7 @@ describe('Event Stream Tests', () => {
           type             : EventType.Operation,
           interface        : DwnInterfaceName.Records,
           method           : DwnMethodName.Read,
-          messageTimestamp : '123'
+          messageTimestamp : '123',
         },
         authorizationSigner: Jws.createSigner(alice),
       });

@@ -1,15 +1,15 @@
-import chaiAsPromised from "chai-as-promised";
-import { Dwn } from "../../src/dwn.js";
-import type { EventMessage } from "../../src/interfaces/event-create.js";
-import type { EventStreamI } from "../../src/event-log/event-stream.js";
-import { EventType } from "../../src/types/event-types.js";
-import sinon from "sinon";
-import { SubscriptionRequest } from "../../src/interfaces/subscription-request.js";
-import { TestDataGenerator } from "../utils/test-data-generator.js";
-import { TestStores } from "../test-stores.js";
+import chaiAsPromised from 'chai-as-promised';
+import { Dwn } from '../../src/dwn.js';
+import type { EventMessage } from '../../src/interfaces/event-create.js';
+import type { EventStreamI } from '../../src/event-log/event-stream.js';
+import { EventType } from '../../src/types/event-types.js';
+import sinon from 'sinon';
+import { SubscriptionRequest } from '../../src/interfaces/subscription-request.js';
+import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestStores } from '../test-stores.js';
 
-import chai, { assert, expect } from "chai";
-import type { DataStore, EventLog, MessageStore } from "../../src/index.js";
+import chai, { assert, expect } from 'chai';
+import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
 import {
   DidKeyResolver,
   DidResolver,
@@ -17,12 +17,12 @@ import {
   DwnMethodName,
   Jws,
   Message,
-} from "../../src/index.js";
+} from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
 export function testSubscriptionRequestHandler(): void {
-  describe("SubscriptionRequest.handle()", () => {
+  describe('SubscriptionRequest.handle()', () => {
     let didResolver: DidResolver;
     let messageStore: MessageStore;
     let dataStore: DataStore;
@@ -30,7 +30,7 @@ export function testSubscriptionRequestHandler(): void {
     let eventLog: EventLog;
     let dwn: Dwn;
 
-    describe("functional tests", () => {
+    describe('functional tests', () => {
       // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
       // so that different test suites can reuse the same backend store for testing
       before(async () => {
@@ -64,7 +64,7 @@ export function testSubscriptionRequestHandler(): void {
         await dwn.close();
       });
 
-      it("should allow tenant to subscribe their own event stream", async () => {
+      it('should allow tenant to subscribe their own event stream', async () => {
         const alice = await DidKeyResolver.generate();
 
         // testing Subscription Request
@@ -111,12 +111,12 @@ export function testSubscriptionRequestHandler(): void {
             messageReceived!.message.descriptor.eventDescriptor.dataCid
           );
         } catch (error) {
-          assert.fail(error, undefined, "Test failed due to an error" + error);
+          assert.fail(error, undefined, 'Test failed due to an error' + error);
         }
       });
 
-      it("should not allow non-tenant to subscribe their an event stream", async () => {
-        const alice = await DidKeyResolver.generate();
+      it('should not allow non-tenant to subscribe their an event stream', async () => {
+        //    const alice = await DidKeyResolver.generate();
         const bob = await DidKeyResolver.generate();
 
         // testing Subscription Request
@@ -136,20 +136,20 @@ export function testSubscriptionRequestHandler(): void {
         expect(subscriptionReply.subscription).to.not.exist;
       });
 
-      it("should allow a non-tenant to read subscriptions stream access they are authorized to", async () => {
+      it('should allow a non-tenant to read subscriptions stream access they are authorized to', async () => {
         const alice = await DidKeyResolver.generate();
         const bob = await DidKeyResolver.generate();
 
         // Alice gives Bob a PermissionsGrant with scope RecordsRead
         const permissionsGrant =
           await TestDataGenerator.generatePermissionsGrant({
-            author: alice,
-            grantedBy: alice.did,
-            grantedFor: alice.did,
-            grantedTo: bob.did,
-            scope: {
-              interface: DwnInterfaceName.Subscriptions,
-              method: DwnMethodName.Request,
+            author     : alice,
+            grantedBy  : alice.did,
+            grantedFor : alice.did,
+            grantedTo  : bob.did,
+            scope      : {
+              interface : DwnInterfaceName.Subscriptions,
+              method    : DwnMethodName.Request,
             },
           });
 
@@ -164,8 +164,8 @@ export function testSubscriptionRequestHandler(): void {
           filter: {
             eventType: EventType.Operation,
           },
-          signer: Jws.createSigner(bob),
-          permissionsGrantId: await Message.getCid(permissionsGrant.message),
+          signer             : Jws.createSigner(bob),
+          permissionsGrantId : await Message.getCid(permissionsGrant.message),
         });
 
         const subscriptionReply = await dwn.handleSubscriptionRequest(
@@ -176,7 +176,7 @@ export function testSubscriptionRequestHandler(): void {
           200,
           subscriptionReply.status.detail
         );
-        assert.exists(subscriptionReply.subscription, "subscription exists");
+        assert.exists(subscriptionReply.subscription, 'subscription exists');
 
         try {
           let messageReceived: EventMessage;
@@ -209,24 +209,24 @@ export function testSubscriptionRequestHandler(): void {
             messageReceived!.message.descriptor.eventDescriptor.dataCid
           );
         } catch (error) {
-          assert.fail(error, undefined, "Test failed due to an error");
+          assert.fail(error, undefined, 'Test failed due to an error');
         }
       });
 
-      it("should now allow a non-tenant to read subscriptions stream access they are authorized to, and then revoke permissions. they should no longer have access", async () => {
+      it('should now allow a non-tenant to read subscriptions stream access they are authorized to, and then revoke permissions. they should no longer have access', async () => {
         const alice = await DidKeyResolver.generate();
         const bob = await DidKeyResolver.generate();
 
         // Alice gives Bob a PermissionsGrant with scope RecordsRead
         const permissionsGrant =
           await TestDataGenerator.generatePermissionsGrant({
-            author: alice,
-            grantedBy: alice.did,
-            grantedFor: alice.did,
-            grantedTo: bob.did,
-            scope: {
-              interface: DwnInterfaceName.Subscriptions,
-              method: DwnMethodName.Request,
+            author     : alice,
+            grantedBy  : alice.did,
+            grantedFor : alice.did,
+            grantedTo  : bob.did,
+            scope      : {
+              interface : DwnInterfaceName.Subscriptions,
+              method    : DwnMethodName.Request,
             },
           });
 
@@ -237,8 +237,8 @@ export function testSubscriptionRequestHandler(): void {
         expect(permissionsGrantReply.status.code).to.equal(202);
         // testing Subscription Request
         const subscriptionRequest = await SubscriptionRequest.create({
-          signer: Jws.createSigner(bob),
-          permissionsGrantId: await Message.getCid(permissionsGrant.message),
+          signer             : Jws.createSigner(bob),
+          permissionsGrantId : await Message.getCid(permissionsGrant.message),
         });
         const subscriptionReply = await dwn.handleSubscriptionRequest(
           alice.did,
@@ -248,7 +248,7 @@ export function testSubscriptionRequestHandler(): void {
           200,
           subscriptionReply.status.detail
         );
-        assert.exists(subscriptionReply.subscription, "subscription exists");
+        assert.exists(subscriptionReply.subscription, 'subscription exists');
 
         // set up subscription...
         try {
@@ -275,7 +275,7 @@ export function testSubscriptionRequestHandler(): void {
           );
           expect(writeReply.status.code).to.equal(
             202,
-            "could not write event..."
+            'could not write event...'
           );
 
           await eventHandledPromise;
@@ -288,8 +288,8 @@ export function testSubscriptionRequestHandler(): void {
           // Alice revokes the grant
           const { permissionsRevoke } =
             await TestDataGenerator.generatePermissionsRevoke({
-              author: alice,
-              permissionsGrantId: await Message.getCid(
+              author             : alice,
+              permissionsGrantId : await Message.getCid(
                 permissionsGrant.message
               ),
             });
@@ -304,12 +304,12 @@ export function testSubscriptionRequestHandler(): void {
           });
           assert.isUndefined(
             messageReceived,
-            "message should be undefined on permission revoke..."
+            'message should be undefined on permission revoke...'
           );
           messageReceived = undefined;
           assert.isUndefined(
             messageReceived,
-            "message should be undefined on write..."
+            'message should be undefined on write...'
           );
           ({ message, dataStream } =
             await TestDataGenerator.generateRecordsWrite({ author: alice }));
@@ -319,7 +319,7 @@ export function testSubscriptionRequestHandler(): void {
             setTimeout(resolve, 100);
           });
         } catch (error) {
-          assert.fail(error, undefined, "Test failed due to an error");
+          assert.fail(error, undefined, 'Test failed due to an error');
         }
       });
     });

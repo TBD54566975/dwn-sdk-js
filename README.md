@@ -48,7 +48,7 @@ Here's to a thrilling Hacktoberfest voyage with us! 🎉
 # Decentralized Web Node (DWN) SDK <!-- omit in toc -->
 
 Code Coverage
-![Statements](https://img.shields.io/badge/statements-96.88%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-93.98%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-93.38%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-96.88%25-brightgreen.svg?style=flat)
+![Statements](https://img.shields.io/badge/statements-96.86%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-93.91%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-93.38%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-96.86%25-brightgreen.svg?style=flat)
 
 - [Introduction](#introduction)
 - [Installation](#installation)
