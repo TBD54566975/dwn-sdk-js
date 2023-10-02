@@ -208,7 +208,7 @@ export function testRecordsReadHandler(): void {
             author: alice,
             protocolDefinition
           });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
           expect(protocolWriteReply.status.code).to.equal(202);
 
           // Alice writes image to her DWN
@@ -250,7 +250,7 @@ export function testRecordsReadHandler(): void {
             author: alice,
             protocolDefinition
           });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
           expect(protocolWriteReply.status.code).to.equal(202);
 
           // Alice writes a message to the minimal protocol
@@ -292,7 +292,7 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition,
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolWriteReply.status.code).to.equal(202);
 
             // Alice writes an email with Bob as recipient
@@ -347,7 +347,7 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolWriteReply.status.code).to.equal(202);
 
             // Alice writes an email with Bob as recipient
@@ -396,7 +396,7 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolConfigReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolConfigReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolConfigReply.status.code).to.equal(202);
 
             const foo1Write = await TestDataGenerator.generateRecordsWrite({
@@ -432,7 +432,7 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolConfigReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolConfigReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolConfigReply.status.code).to.equal(202);
 
             const foo1Write = await TestDataGenerator.generateRecordsWrite({
@@ -704,7 +704,7 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolWriteReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
@@ -768,7 +768,7 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolWriteReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
@@ -832,7 +832,7 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolWriteReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
@@ -886,7 +886,7 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolWriteReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
@@ -939,7 +939,7 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolWriteReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
@@ -992,7 +992,7 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolWriteReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
@@ -1046,7 +1046,7 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolWriteReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
@@ -1099,7 +1099,7 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolWriteReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
@@ -1565,8 +1565,7 @@ export function testRecordsReadHandler(): void {
 
           const protocolsConfigureForAliceReply = await dwn.processMessage(
             alice.did,
-            protocolsConfigureForAlice.message,
-            protocolsConfigureForAlice.dataStream
+            protocolsConfigureForAlice.message
           );
           expect(protocolsConfigureForAliceReply.status.code).to.equal(202);
 
@@ -1578,7 +1577,7 @@ export function testRecordsReadHandler(): void {
             protocolDefinition : encryptedProtocolDefinitionForBob
           });
 
-          const protocolsConfigureReply = await dwn.processMessage(bob.did, protocolsConfigureForBob.message, protocolsConfigureForBob.dataStream);
+          const protocolsConfigureReply = await dwn.processMessage(bob.did, protocolsConfigureForBob.message);
           expect(protocolsConfigureReply.status.code).to.equal(202);
 
           // Bob queries for Alice's chat protocol definition
@@ -1719,7 +1718,7 @@ export function testRecordsReadHandler(): void {
             protocolDefinition : encryptedProtocolDefinition
           });
 
-          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfigure.message, protocolsConfigure.dataStream);
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfigure.message);
           expect(protocolsConfigureReply.status.code).to.equal(202);
 
           // Bob queries for Alice's email protocol definition

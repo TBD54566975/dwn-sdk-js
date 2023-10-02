@@ -8,8 +8,8 @@ import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
 export type ProtocolsConfigureOptions = {
-  messageTimestamp? : string;
-  definition : ProtocolDefinition;
+  messageTimestamp?: string;
+  definition: ProtocolDefinition;
   authorizationSigner: Signer;
   permissionsGrantId?: string;
 };
@@ -92,13 +92,30 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       );
     }
 
-    // Validate that all `role` properties contain protocol paths $globalRole records
+    // Validate $actions in the ruleset
     const actions = ruleSet.$actions ?? [];
     for (const action of actions) {
+      // Validate that all `role` properties contain protocol paths $globalRole records
       if (action.role !== undefined && !globalRoles.includes(action.role)) {
         throw new DwnError(
           DwnErrorCode.ProtocolsConfigureInvalidRole,
           `Invalid role '${action.role}' found at protocol path '${protocolPath}'`
+        );
+      }
+
+      // Validate that if `who` is set to `anyone` then `of` is not set
+      if (action.who === 'anyone' && action.of) {
+        throw new DwnError(
+          DwnErrorCode.ProtocolsConfigureInvalidActionOfNotAllowed,
+          `'of' is not allowed at protocol path (${protocolPath})`
+        );
+      }
+
+      // Validate that if `who` is not set to `anyone` then `of` is set
+      if (action.who !== undefined && ['author', 'recipient'].includes(action.who) && !action.of) {
+        throw new DwnError(
+          DwnErrorCode.ProtocolsConfigureInvalidActionMissingOf,
+          `'of' is required at protocol path (${protocolPath})`
         );
       }
     }

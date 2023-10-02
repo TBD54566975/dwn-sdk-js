@@ -996,7 +996,7 @@ export function testRecordsWriteHandler(): void {
           // setting up a stub DID resolver
           TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
 
-          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
           expect(protocolsConfigureReply.status.code).to.equal(202);
 
           // generate a `RecordsWrite` message from bob
@@ -1047,7 +1047,7 @@ export function testRecordsWriteHandler(): void {
             // setting up a stub DID resolver
             TestStubGenerator.stubDidResolver(didResolver, [alice, vcIssuer, carol]);
 
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolWriteReply.status.code).to.equal(202);
 
             // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
@@ -1116,7 +1116,7 @@ export function testRecordsWriteHandler(): void {
               author: bob,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(bob.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolWriteReply = await dwn.processMessage(bob.did, protocolsConfig.message);
             expect(protocolWriteReply.status.code).to.equal(202);
 
             // Alice writes image to bob's DWN
@@ -1320,7 +1320,7 @@ export function testRecordsWriteHandler(): void {
           // setting up a stub DID resolver
           TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
 
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
           expect(protocolWriteReply.status.code).to.equal(202);
 
           // generate a `RecordsWrite` message from bob
@@ -1385,7 +1385,7 @@ export function testRecordsWriteHandler(): void {
           // setting up a stub DID resolver
           TestStubGenerator.stubDidResolver(didResolver, [alice, bob, carol]);
 
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
           expect(protocolWriteReply.status.code).to.equal(202);
 
           // generate a `RecordsWrite` message from bob
@@ -1453,7 +1453,7 @@ export function testRecordsWriteHandler(): void {
           // setting up a stub DID resolver
           TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
 
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
           expect(protocolWriteReply.status.code).to.equal(202);
 
           // generate a `RecordsWrite` message from bob
@@ -1522,7 +1522,7 @@ export function testRecordsWriteHandler(): void {
           // setting up a stub DID resolver
           TestStubGenerator.stubDidResolver(didResolver, [alice, fakeVcIssuer]);
 
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
           expect(protocolWriteReply.status.code).to.equal(202);
 
           // write a credential application to Alice's DWN to simulate that she has sent a credential application to a VC issuer
@@ -1590,7 +1590,7 @@ export function testRecordsWriteHandler(): void {
             protocolDefinition
           });
 
-          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
+          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message);
           expect(protocolConfigureReply.status.code).to.equal(202);
 
           const data = Encoder.stringToBytes('any data');
@@ -1618,7 +1618,7 @@ export function testRecordsWriteHandler(): void {
             protocolDefinition
           });
 
-          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
+          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message);
           expect(protocolConfigureReply.status.code).to.equal(202);
 
 
@@ -1646,7 +1646,7 @@ export function testRecordsWriteHandler(): void {
             protocolDefinition,
           });
 
-          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
+          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message);
           expect(protocolConfigureReply.status.code).to.equal(202);
 
           const data = Encoder.stringToBytes('any data');
@@ -1675,7 +1675,7 @@ export function testRecordsWriteHandler(): void {
             protocolDefinition : protocolDefinition,
           });
 
-          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
+          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message);
           expect(protocolConfigureReply.status.code).to.equal(202);
 
           // write record with matching dataFormat
@@ -1721,7 +1721,7 @@ export function testRecordsWriteHandler(): void {
           const credentialApplicationSchema = protocolDefinition.types.credentialApplication.schema;
           const credentialResponseSchema = protocolDefinition.types.credentialResponse.schema;
 
-          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
+          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message);
           expect(protocolConfigureReply.status.code).to.equal(202);
 
           // Try and fail to write a 'credentialResponse', which is not allowed at the top level of the record hierarchy
@@ -1811,7 +1811,7 @@ export function testRecordsWriteHandler(): void {
             protocolDefinition
           });
 
-          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message, protocolConfig.dataStream);
+          const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfig.message);
           expect(protocolConfigureReply.status.code).to.equal(202);
 
           // test that Alice is allowed to write to her own DWN
@@ -1863,7 +1863,7 @@ export function testRecordsWriteHandler(): void {
             protocolDefinition : protocolDefinition
           });
 
-          const protocolConfigureReply = await dwn.processMessage(pfi.did, protocolConfig.message, protocolConfig.dataStream);
+          const protocolConfigureReply = await dwn.processMessage(pfi.did, protocolConfig.message);
           expect(protocolConfigureReply.status.code).to.equal(202);
 
           // simulate Alice's ask and PFI's offer already occurred
@@ -1942,7 +1942,7 @@ export function testRecordsWriteHandler(): void {
             protocolDefinition : protocolDefinition
           });
 
-          const protocolConfigureReply = await dwn.processMessage(pfi.did, protocolConfig.message, protocolConfig.dataStream);
+          const protocolConfigureReply = await dwn.processMessage(pfi.did, protocolConfig.message);
           expect(protocolConfigureReply.status.code).to.equal(202);
 
           // simulate Alice's ask
@@ -1989,7 +1989,7 @@ export function testRecordsWriteHandler(): void {
             protocolDefinition
           });
 
-          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
           expect(protocolsConfigureReply.status.code).to.equal(202);
 
           const bobMessageBytes = Encoder.stringToBytes('message from bob');
@@ -2098,7 +2098,7 @@ export function testRecordsWriteHandler(): void {
             author: alice,
             protocolDefinition
           });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
           expect(protocolWriteReply.status.code).to.equal(202);
 
           // bob learns of metadata (ie. dataCid) of alice's secret data,
@@ -2145,7 +2145,7 @@ export function testRecordsWriteHandler(): void {
             author: alice,
             protocolDefinition
           });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
           expect(protocolWriteReply.status.code).to.equal(202);
 
           // Alice issues Bob a PermissionsGrant for unrestricted RecordsWrite access
@@ -2199,7 +2199,7 @@ export function testRecordsWriteHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant
@@ -2242,7 +2242,7 @@ export function testRecordsWriteHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant with a different protocol than what Bob will try to write to
@@ -2286,7 +2286,7 @@ export function testRecordsWriteHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant with a non-protocol scope
@@ -2330,7 +2330,7 @@ export function testRecordsWriteHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolWriteReply.status.code).to.equal(202);
 
             // Alice creates the context that she will give Bob access to
@@ -2390,7 +2390,7 @@ export function testRecordsWriteHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolWriteReply.status.code).to.equal(202);
 
             // Alice creates the context that she will give Bob access to
@@ -2451,7 +2451,7 @@ export function testRecordsWriteHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant
@@ -2495,7 +2495,7 @@ export function testRecordsWriteHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant
