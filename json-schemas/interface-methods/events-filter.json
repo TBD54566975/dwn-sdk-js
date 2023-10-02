@@ -4,52 +4,65 @@
   "type": "object",
   "minProperties": 1,
   "additionalProperties": false,
+  "required": [
+    "filter"
+  ],
   "properties": {
-    "interfaces": {
-      "type": "array"
-    },
-    "methods":{
-      "type": "array"
-    },
-    "protocol": {
-      "type": "string"
-    },
-    "protocolPath": {
-      "type": "string"
-    },
-    "attester": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
-    },
-    "recipient": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
-    },
-    "contextId": {
-      "type": "string"
-    },
-    "schema": {
-      "type": "string"
-    },
-    "recordId": {
-      "type": "string"
-    },
-    "parentId": {
-      "type": "string"
-    },
-    "dataFormat": {
-      "type": "string"
-    },
-    "dateCreated": {
+    "filter": {
       "type": "object",
-      "minProperties": 1,
       "additionalProperties": false,
+      "minProperties": 1,
       "properties": {
-        "from": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+        "interfaces": {
+          "type": "array"
         },
-        "to": {
-          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+        "methods":{
+          "type": "array"
+        },
+        "protocol": {
+          "type": "string"
+        },
+        "protocolPath": {
+          "type": "string"
+        },
+        "attester": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+        },
+        "recipient": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+        },
+        "contextId": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "recordId": {
+          "type": "string"
+        },
+        "parentId": {
+          "type": "string"
+        },
+        "dataFormat": {
+          "type": "string"
+        },
+        "dateCreated": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": false,
+          "properties": {
+            "from": {
+              "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+            },
+            "to": {
+              "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+            }
+          }
         }
       }
+    },
+    "watermark": {
+      "type": "string"
     }
   }
 }
