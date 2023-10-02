@@ -67,9 +67,9 @@ export function testProtocolsQueryHandler(): void {
         const protocol2 = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
         const protocol3 = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
 
-        await dwn.processMessage(alice.did, protocol1.message, protocol1.dataStream);
-        await dwn.processMessage(alice.did, protocol2.message, protocol2.dataStream);
-        await dwn.processMessage(alice.did, protocol3.message, protocol3.dataStream);
+        await dwn.processMessage(alice.did, protocol1.message);
+        await dwn.processMessage(alice.did, protocol2.message);
+        await dwn.processMessage(alice.did, protocol3.message);
 
         // testing singular conditional query
         const queryMessageData = await TestDataGenerator.generateProtocolsQuery({
@@ -107,9 +107,9 @@ export function testProtocolsQueryHandler(): void {
         const protocol2 = await TestDataGenerator.generateProtocolsConfigure({ author: alice, published: true });
         const protocol3 = await TestDataGenerator.generateProtocolsConfigure({ author: alice, published: true });
 
-        await dwn.processMessage(alice.did, protocol1.message, protocol1.dataStream);
-        await dwn.processMessage(alice.did, protocol2.message, protocol2.dataStream);
-        await dwn.processMessage(alice.did, protocol3.message, protocol3.dataStream);
+        await dwn.processMessage(alice.did, protocol1.message);
+        await dwn.processMessage(alice.did, protocol2.message);
+        await dwn.processMessage(alice.did, protocol3.message);
 
         // testing unauthenticated conditional query
         const conditionalQuery = await ProtocolsQuery.create({
