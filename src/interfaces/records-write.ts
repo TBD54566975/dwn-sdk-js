@@ -147,7 +147,7 @@ export class RecordsWrite {
   /**
    * Decoded author signature payload.
    */
-  public get authorizationPayload(): RecordsWriteSignaturePayload | undefined {
+  public get authorSignaturePayload(): RecordsWriteSignaturePayload | undefined {
     return this._authorSignaturePayload;
   }
 
@@ -478,7 +478,7 @@ export class RecordsWrite {
     } else if (this.author === tenant) {
       // if author is the same as the target tenant, we can directly grant access
       return;
-    } else if (this.author !== undefined && this.authorizationPayload?.permissionsGrantId !== undefined) {
+    } else if (this.author !== undefined && this.authorSignaturePayload?.permissionsGrantId !== undefined) {
       await RecordsGrantAuthorization.authorizeWrite(tenant, this, this.author, messageStore);
     } else {
       throw new Error('message failed authorization');
@@ -491,7 +491,7 @@ export class RecordsWrite {
    */
   private async validateIntegrity(): Promise<void> {
     // validateAuthorizationIntegrity() enforces the presence of authorization for RecordsWrite
-    const authorizationPayload = this.authorizationPayload!;
+    const authorizationPayload = this.authorSignaturePayload!;
 
     // make sure the `recordId` in message is the same as the `recordId` in `authorization`
     if (this.message.recordId !== authorizationPayload.recordId) {

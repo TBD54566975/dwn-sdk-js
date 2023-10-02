@@ -2912,7 +2912,7 @@ export function testRecordsWriteHandler(): void {
         const { author, message, recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite();
 
         // replace `authorization` with mismatching `record`, even though signature is still valid
-        const authorizationPayload = { ...recordsWrite.authorizationPayload };
+        const authorizationPayload = { ...recordsWrite.authorSignaturePayload };
         authorizationPayload.recordId = await TestDataGenerator.randomCborSha256Cid(); // make recordId mismatch in authorization payload
         const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
         const signer = Jws.createSigner(author);
@@ -2936,7 +2936,7 @@ export function testRecordsWriteHandler(): void {
         const { author, message, recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({ protocol: 'http://any.value', protocolPath: 'any/value' });
 
         // replace `authorization` with mismatching `contextId`, even though signature is still valid
-        const authorizationPayload = { ...recordsWrite.authorizationPayload };
+        const authorizationPayload = { ...recordsWrite.authorSignaturePayload };
         authorizationPayload.contextId = await TestDataGenerator.randomCborSha256Cid(); // make contextId mismatch in authorization payload
         const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
         const signer = Jws.createSigner(author);
@@ -2997,14 +2997,14 @@ export function testRecordsWriteHandler(): void {
         const signer = Jws.createSigner(author);
 
         // replace `attestation` with one that has an additional property, but go the extra mile of making sure signature is valid
-        const descriptorCid = recordsWrite.authorizationPayload!.descriptorCid;
+        const descriptorCid = recordsWrite.authorSignaturePayload!.descriptorCid;
         const attestationPayload = { descriptorCid, someAdditionalProperty: 'anyValue' }; // additional property is not allowed
         const attestationPayloadBytes = Encoder.objectToBytes(attestationPayload);
         const attestationBuilder = await GeneralJwsBuilder.create(attestationPayloadBytes, [signer]);
         message.attestation = attestationBuilder.getJws();
 
         // recreate the `authorization` based on the new` attestationCid`
-        const authorizationPayload = { ...recordsWrite.authorizationPayload };
+        const authorizationPayload = { ...recordsWrite.authorSignaturePayload };
         authorizationPayload.attestationCid = await Cid.computeCid(attestationPayload);
         const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
         const authorizationBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);

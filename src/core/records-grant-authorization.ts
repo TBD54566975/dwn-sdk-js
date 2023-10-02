@@ -17,14 +17,11 @@ export class RecordsGrantAuthorization {
     author: string,
     messageStore: MessageStore,
   ): Promise<void> {
-    const signaturePayload = incomingMessage.retainer ? incomingMessage.retainerSignaturePayload : incomingMessage.authorizationPayload;
-    const permissionsGrantId: string = signaturePayload!.permissionsGrantId!;
-
     const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(
       tenant,
       incomingMessage,
       author,
-      permissionsGrantId,
+      incomingMessage.authorSignaturePayload!.permissionsGrantId!,
       messageStore
     );
 
@@ -47,7 +44,7 @@ export class RecordsGrantAuthorization {
       tenant,
       incomingMessage,
       author,
-      incomingMessage.authorizationPayload!.permissionsGrantId!,
+      incomingMessage.authorSignaturePayload!.permissionsGrantId!,
       messageStore
     );
 

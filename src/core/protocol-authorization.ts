@@ -276,7 +276,7 @@ export class ProtocolAuthorization {
       return;
     }
 
-    const protocolRole = (incomingMessage as RecordsRead).authorizationPayload?.protocolRole;
+    const protocolRole = (incomingMessage as RecordsRead).authorSignaturePayload?.protocolRole;
 
     // Only verify role if there is a role being invoked
     if (protocolRole === undefined) {
@@ -333,7 +333,7 @@ export class ProtocolAuthorization {
     } else if (author === tenant) {
       // tenant is always authorized
       return;
-    } else if (incomingMessage.author !== undefined && incomingMessage.authorizationPayload?.permissionsGrantId !== undefined) {
+    } else if (incomingMessage.author !== undefined && incomingMessage.authorSignaturePayload?.permissionsGrantId !== undefined) {
       // PermissionsGrant gives the author explicit access to this record
       if (incomingMessageMethod === DwnMethodName.Write) {
         await RecordsGrantAuthorization.authorizeWrite(tenant, incomingMessage as RecordsWrite, incomingMessage.author, messageStore);
@@ -354,7 +354,7 @@ export class ProtocolAuthorization {
     // Get role being invoked. Currently only Reads support role-based authorization
     let invokedRole: string | undefined;
     if (incomingMessage.message.descriptor.method === DwnMethodName.Read) {
-      invokedRole = (incomingMessage as RecordsRead).authorizationPayload?.protocolRole;
+      invokedRole = (incomingMessage as RecordsRead).authorSignaturePayload?.protocolRole;
     }
 
     for (const actionRule of actionRules) {

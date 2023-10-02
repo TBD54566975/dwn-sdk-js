@@ -321,7 +321,7 @@ describe('RecordsWrite', () => {
       const recordsWrite = await RecordsWrite.create(options);
 
       expect(recordsWrite.author).to.not.exist;
-      expect(recordsWrite.authorizationPayload).to.not.exist;
+      expect(recordsWrite.authorSignaturePayload).to.not.exist;
 
       const alice = await DidKeyResolver.generate();
       await expect(recordsWrite.signAsRetainer(Jws.createSigner(alice))).to.rejectedWith(DwnErrorCode.RecordsWriteSignAsRetainerUnknownAuthor);
@@ -342,7 +342,7 @@ describe('RecordsWrite', () => {
       const recordsWrite = await RecordsWrite.create(options);
 
       expect(recordsWrite.author).to.not.exist;
-      expect(recordsWrite.authorizationPayload).to.not.exist;
+      expect(recordsWrite.authorSignaturePayload).to.not.exist;
 
       expect(() => recordsWrite.message).to.throw(DwnErrorCode.RecordsWriteMissingAuthorizationSigner);
     });
