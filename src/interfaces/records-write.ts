@@ -455,6 +455,14 @@ export class RecordsWrite {
   }
 
   public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
+    // if retainer DID is specified, it must be the same as the tenant DID
+    if (this.retainer !== undefined && this.retainer !== tenant) {
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteRetainerAndTenantMismatch,
+        `Retainer ${this.retainer } must be the same as tenant ${tenant} when specified.`
+      );
+    }
+
     // if retainer is specified, use it for authorization, if not, use author's signature for authorization
     const entityBeingAuthorized = this.retainer ?? this.author;
     const signaturePayload = this.retainer ? this.retainerSignaturePayload : this.authorizationPayload;

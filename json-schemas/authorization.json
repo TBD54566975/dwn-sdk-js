@@ -6,15 +6,6 @@
   "properties": {
     "author": {
       "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
-    },
-    "retainer": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
     }
-  },
-  "description": "`author` can exist by itself. But if `retainer` is present, then `author` must also exist",
-  "dependencies": {
-    "retainer": [
-      "author"
-    ]
   }
 }

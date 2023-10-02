@@ -69,6 +69,7 @@ export enum DwnErrorCode {
   RecordsWriteMissingDataStream = 'RecordsWriteMissingDataStream',
   RecordsWriteMissingProtocol = 'RecordsWriteMissingProtocol',
   RecordsWriteMissingSchema = 'RecordsWriteMissingSchema',
+  RecordsWriteRetainerAndTenantMismatch = 'RecordsWriteRetainerAndTenantMismatch',
   RecordsWriteSignAsRetainerUnknownAuthor = 'RecordsWriteSignAsRetainerUnknownAuthor',
   RecordsWriteValidateIntegrityEncryptionCidMismatch = 'RecordsWriteValidateIntegrityEncryptionCidMismatch',
   Secp256k1KeyNotValid = 'Secp256k1KeyNotValid',

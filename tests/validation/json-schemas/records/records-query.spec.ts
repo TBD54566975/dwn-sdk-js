@@ -85,6 +85,25 @@ describe('RecordsQuery schema validation', () => {
     }).throws('dateSort: must be equal to one of the allowed values');
   });
 
+  it('should throw if `retainer` is specified in `authorization`', () => {
+    const authorization = TestDataGenerator.generateAuthorization();
+    authorization.retainer = TestDataGenerator.generateAuthorizationSignature();
+
+    const invalidMessage = {
+      descriptor: {
+        interface        : 'Records',
+        method           : 'Query',
+        messageTimestamp : '2022-10-14T10:20:30.405060Z',
+        filter           : { schema: 'anySchema' }
+      },
+      authorization
+    };
+
+    expect(() => {
+      Message.validateJsonSchema(invalidMessage);
+    }).throws('must NOT have additional properties');
+  });
+
   describe('`filter` property validation', () => {
     it('should throw if empty `filter` property is given in the `descriptor`', () => {
       const invalidMessage = {

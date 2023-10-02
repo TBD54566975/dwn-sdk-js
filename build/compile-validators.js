@@ -18,6 +18,7 @@ import mkdirp from 'mkdirp';
 import standaloneCode from 'ajv/dist/standalone/index.js';
 
 import Authorization from '../json-schemas/authorization.json' assert { type: 'json' };
+import AuthorizationRetainer from '../json-schemas/authorization-retainer.json' assert { type: 'json' };
 import Definitions from '../json-schemas/definitions.json' assert { type: 'json' };
 import EventsGet from '../json-schemas/events/events-get.json' assert { type: 'json' };
 import GeneralJwk from '../json-schemas/jwk/general-jwk.json' assert { type: 'json' };
@@ -47,6 +48,7 @@ import SnapshotsCreate from '../json-schemas/interface-methods/snapshots-create.
 
 const schemas = {
   Authorization,
+  AuthorizationRetainer,
   RecordsDelete,
   RecordsQuery,
   RecordsWrite,

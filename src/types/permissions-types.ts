@@ -59,18 +59,37 @@ export type PermissionsGrantDescriptor = {
   interface: DwnInterfaceName.Permissions;
   method: DwnMethodName.Grant;
   messageTimestamp: string;
-  // Optional CID of a PermissionsRequest message. This is optional because grants may be given without being officially requested
+
+  /**
+   * Optional CID of a PermissionsRequest message. This is optional because grants may be given without being officially requested
+   * */
   permissionsRequestId?: string;
-  // Optional timestamp at which this grant will no longer be active.
+
+  /**
+   * optional timestamp at which this grant will no longer be active.
+   */
   dateExpires: string;
-  // The DID of the DWN which the grantee will be given access
+
+  /**
+   * The DID of the DWN which the grantee will be given access
+   */
   grantedFor: string;
-  // The recipient of the grant. Usually this is the author of the PermissionsRequest message
+
+  /**
+   * The recipient of the grant. Usually this is the author of the PermissionsRequest message
+   */
   grantedTo: string;
-  // The granter, who will be either the DWN owner or an entity who the DWN owner has delegated permission to.
+
+  /**
+   * The granter, who will be either the DWN owner or an entity who the DWN owner has delegated permission to.
+   */
   grantedBy: string;
-  // Optional string that communicates what the grant would be used for
+
+  /**
+   * Optional string that communicates what the grant would be used for
+   */
   description?: string;
+
   scope: PermissionScope;
   conditions?: PermissionConditions
 };

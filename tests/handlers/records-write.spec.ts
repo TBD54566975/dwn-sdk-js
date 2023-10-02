@@ -311,45 +311,148 @@ export function testRecordsWriteHandler(): void {
         expect(data).to.eql(dataBytes);
       });
 
-      it('should use `retainer` for authorization when it is given', async () => {
-        // scenario: Alice fetch a message  authored by Bob from Bob's DWN and retains (writes) it in her DWN
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
+      describe('retainer tests', () => {
+        it('should use `retainer` for authorization when it is given - flat-space', async () => {
+          // scenario: Alice fetch a message authored by Bob from Bob's DWN and retains (writes) it in her DWN
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
 
-        // Bob writes a message to his DWN
-        const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: bob, published: true });
-        const writeReply = await dwn.processMessage(bob.did, message, dataStream);
-        expect(writeReply.status.code).to.equal(202);
+          // Bob writes a message to his DWN
+          const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: bob, published: true });
+          const writeReply = await dwn.processMessage(bob.did, message, dataStream);
+          expect(writeReply.status.code).to.equal(202);
 
-        // Alice fetches the message from Bob's DWN
-        const recordsRead = await RecordsRead.create({
-          filter              : { recordId: message.recordId, },
-          authorizationSigner : Jws.createSigner(alice)
+          // Alice fetches the message from Bob's DWN
+          const recordsRead = await RecordsRead.create({
+            filter              : { recordId: message.recordId },
+            authorizationSigner : Jws.createSigner(alice)
+          });
+
+          const readReply = await dwn.handleRecordsRead(bob.did, recordsRead.message);
+          expect(readReply.status.code).to.equal(200);
+          expect(readReply.record).to.exist;
+          expect(readReply.record?.descriptor).to.exist;
+
+          // Alice augments Bob's message as an external retainer
+          const { data, ...messageFetched } = readReply.record!; // remove data from message
+          const retainerSignedMessage = await RecordsWrite.parse(messageFetched);
+          await retainerSignedMessage.signAsRetainer(Jws.createSigner(alice));
+
+          // Test that Alice can successfully retain/write Bob's message to her DWN
+          const aliceDataStream = readReply.record!.data;
+          const aliceWriteReply = await dwn.processMessage(alice.did, retainerSignedMessage.message, aliceDataStream);
+          expect(aliceWriteReply.status.code).to.equal(202);
+
+          // Test that Bob's message can be read from Alice's DWN
+          const readReply2 = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+          expect(readReply2.status.code).to.equal(200);
+          expect(readReply2.record).to.exist;
+          expect(readReply2.record?.descriptor).to.exist;
+
+          const dataFetched = await DataStream.toBytes(readReply2.record!.data!);
+          expect(ArrayUtility.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
         });
 
-        const readReply = await dwn.handleRecordsRead(bob.did, recordsRead.message);
-        expect(readReply.status.code).to.equal(200);
-        expect(readReply.record).to.exist;
-        expect(readReply.record?.descriptor).to.exist;
+        it('should use `retainer` for authorization when it is given - protocol-space', async () => {
+          // scenario: Alice and Bob both have the same protocol which does NOT allow external entities to write,
+          // but Alice can store a message authored by Bob as a retainer in her own DWN
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
 
-        // Alice augments Bob's message as an external retainer
-        const { data, ...messageFetched } = readReply.record!; // remove data from message
-        const retainerSignedMessage = await RecordsWrite.parse(messageFetched);
-        await retainerSignedMessage.signAsRetainer(Jws.createSigner(alice));
+          const protocolDefinition = minimalProtocolDefinition;
 
-        // Alice retains/writes Bob's message to her DWN
-        const aliceDataStream = readReply.record!.data;
-        const aliceWriteReply = await dwn.processMessage(alice.did, retainerSignedMessage.message, aliceDataStream);
-        expect(aliceWriteReply.status.code).to.equal(202);
+          // Alice installs the protocol
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+          expect(protocolWriteReply.status.code).to.equal(202);
 
-        // Test that Alice successfully stored Bob's message in her DWN
-        const readReply2 = await dwn.handleRecordsRead(alice.did, recordsRead.message);
-        expect(readReply2.status.code).to.equal(200);
-        expect(readReply2.record).to.exist;
-        expect(readReply2.record?.descriptor).to.exist;
+          // Sanity test that Bob cannot write to a protocol record to Alice's DWN
+          const bobRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+            author       : bob,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo'
+          });
+          const recordsWriteReply = await dwn.processMessage(alice.did, bobRecordsWrite.message, bobRecordsWrite.dataStream);
+          expect(recordsWriteReply.status.code).to.equal(401);
 
-        const dataFetched = await DataStream.toBytes(readReply2.record!.data!);
-        expect(ArrayUtility.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
+          // Skipping Alice fetching the message from Bob's DWN (as this is tested already in the flat-space test)
+
+          // Alice augments Bob's message as an external retainer
+          const retainerSignedMessage = await RecordsWrite.parse(bobRecordsWrite.message);
+          await retainerSignedMessage.signAsRetainer(Jws.createSigner(alice));
+
+          // Test that Alice can successfully retain/write Bob's message to her DWN
+          const aliceDataStream = DataStream.fromBytes(bobRecordsWrite.dataBytes!);
+          const aliceWriteReply = await dwn.processMessage(alice.did, retainerSignedMessage.message, aliceDataStream);
+          expect(aliceWriteReply.status.code).to.equal(202);
+
+          // Test that Bob's message can be read from Alice's DWN
+          const recordsRead = await RecordsRead.create({
+            filter              : { recordId: bobRecordsWrite.message.recordId },
+            authorizationSigner : Jws.createSigner(alice)
+          });
+          const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+          expect(readReply.status.code).to.equal(200);
+          expect(readReply.record).to.exist;
+          expect(readReply.record?.descriptor).to.exist;
+
+          const dataFetched = await DataStream.toBytes(readReply.record!.data!);
+          expect(ArrayUtility.byteArraysEqual(dataFetched, bobRecordsWrite.dataBytes!)).to.be.true;
+        });
+
+        it('should throw if `retainer` in `authorization` is mismatching with the tenant - flat-space', async () => {
+          // scenario: Carol attempts to store a message with Alice being the retainer, and should fail
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+          const carol = await DidKeyResolver.generate();
+
+          // Bob creates a message, we skip writing to bob's DWN because that's orthogonal to this test
+          const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: bob, published: true });
+
+          // Alice augments Bob's message as an external retainer, we also skipping writing to Alice's DWN because that's also orthogonal to this test
+          await recordsWrite.signAsRetainer(Jws.createSigner(alice));
+
+          // Test that Carol is not able to store the message Alice created
+          const carolWriteReply = await dwn.processMessage(carol.did, recordsWrite.message, dataStream);
+          expect(carolWriteReply.status.code).to.equal(401);
+          expect(carolWriteReply.status.detail).to.contain('RecordsWriteRetainerAndTenantMismatch');
+        });
+
+        it('should throw if `retainer` in `authorization` is mismatching with the tenant - protocol-space', async () => {
+          // scenario: Alice, Bob, and Carol all have the same protocol which does NOT allow external entities to write,
+          // scenario: Carol attempts to store a message with Alice being the retainer, and should fail
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+          const carol = await DidKeyResolver.generate();
+
+          const protocolDefinition = minimalProtocolDefinition;
+
+          // Bob creates a message, we skip writing to Bob's DWN because that's orthogonal to this test
+          const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
+            author       : bob,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'foo'
+          });
+
+          // Alice augments Bob's message as an external retainer, we also skipping writing to Alice's DWN because that's also orthogonal to this test
+          await recordsWrite.signAsRetainer(Jws.createSigner(alice));
+
+          // Carol installs the protocol
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: carol,
+            protocolDefinition
+          });
+          const protocolWriteReply = await dwn.processMessage(carol.did, protocolsConfig.message, protocolsConfig.dataStream);
+          expect(protocolWriteReply.status.code).to.equal(202);
+
+          // Test that Carol is not able to store the message Alice created
+          const carolWriteReply = await dwn.processMessage(carol.did, recordsWrite.message, dataStream);
+          expect(carolWriteReply.status.code).to.equal(401);
+          expect(carolWriteReply.status.detail).to.contain('RecordsWriteRetainerAndTenantMismatch');
+        });
       });
 
       describe('should inherit data from previous RecordsWrite given a matching dataCid and dataSize and no dataStream', () => {

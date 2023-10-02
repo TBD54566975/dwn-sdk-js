@@ -11,7 +11,6 @@ export class GrantAuthorization {
    * Performs PermissionsGrant-based authorization against the given message
    * Does not validate grant `conditions` or `scope` beyond `interface` and `method`
    * @throws {Error} if authorization fails
-   * @returns PermissionsGrantMessage
    */
   public static async authorizeGenericMessage(
     tenant: string,
@@ -24,10 +23,9 @@ export class GrantAuthorization {
     const incomingMessageDescriptor = incomingMessage.message.descriptor;
 
     // Fetch grant
-    const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, didBeingAuthorized, messageStore, permissionsGrantId);
+    const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, permissionsGrantId);
 
-    // DON'T FORGET: why not rename to fetchAndValidateGrant because it is not just doing fetching
-
+    GrantAuthorization.verifyGrantedToAndGrantedFor(didBeingAuthorized, tenant, permissionsGrantMessage);
 
     // verify that grant is active during incomingMessage's timestamp
     await GrantAuthorization.verifyGrantActive(
@@ -57,7 +55,6 @@ export class GrantAuthorization {
    */
   private static async fetchGrant(
     tenant: string,
-    didBeingAuthorized: string,
     messageStore: MessageStore,
     permissionsGrantId: string,
   ): Promise<PermissionsGrantMessage> {
@@ -73,24 +70,30 @@ export class GrantAuthorization {
     }
 
     const permissionsGrantMessage = possibleGrantMessage as PermissionsGrantMessage;
+    return permissionsGrantMessage;
+  }
 
+  /**
+   * Verifies the given `grantedTo` and `grantedFor` values against the given permissions grant and throws error if there is a mismatch.
+   */
+  private static verifyGrantedToAndGrantedFor(grantedTo: string, grantedFor: string, permissionsGrantMessage: PermissionsGrantMessage): void {
     // Validate `grantedTo`
-    if (permissionsGrantMessage.descriptor.grantedTo !== didBeingAuthorized) {
+    const expectedGrantedTo = permissionsGrantMessage.descriptor.grantedTo;
+    if (expectedGrantedTo !== grantedTo) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationNotGrantedToAuthor,
-        `PermissionsGrant with CID ${permissionsGrantId} is not granted to ${didBeingAuthorized}`
+        `PermissionsGrant has grantedTo ${expectedGrantedTo}, but given ${grantedTo}`
       );
     }
 
     // Validate `grantedFor`
-    if (permissionsGrantMessage.descriptor.grantedFor !== tenant) {
+    const expectedGrantedFor = permissionsGrantMessage.descriptor.grantedFor;
+    if (expectedGrantedFor !== grantedFor) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationNotGrantedForTenant,
-        `PermissionsGrant with CID ${permissionsGrantId} is not granted for DWN belonging to ${tenant}`
+        `PermissionsGrant has grantedFor ${expectedGrantedFor}, but given ${grantedFor}`
       );
     }
-
-    return permissionsGrantMessage;
   }
 
   /**
