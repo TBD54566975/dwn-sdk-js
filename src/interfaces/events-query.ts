@@ -1,7 +1,8 @@
 import type { Filter } from '../index.js';
+import type { QueryEventsFilter } from '../types/event-log.js';
 import type { RangeFilter } from '../types/message-types.js';
 import type { Signer } from '../types/signer.js';
-import type { EventsFilter, EventsQueryDescriptor, EventsQueryMessage } from '../types/event-types.js';
+import type { EventsQueryDescriptor, EventsQueryFilter, EventsQueryMessage } from '../types/event-types.js';
 
 import { Message } from '../core/message.js';
 import { removeUndefinedProperties } from '../utils/object.js';
@@ -10,8 +11,8 @@ import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.j
 import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
 
 export type EventsQueryOptions = {
-  filter: EventsFilter;
   watermark?: string;
+  filters: EventsQueryFilter[];
   signer: Signer;
   messageTimestamp?: string;
 };
@@ -29,9 +30,8 @@ export class EventsQuery extends Message<EventsQueryMessage> {
     const descriptor: EventsQueryDescriptor = {
       interface        : DwnInterfaceName.Events,
       method           : DwnMethodName.Query,
-      filter           : this.normalizeFilter(options.filter),
-      watermark        : options.watermark,
-      messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
+      filters          : this.normalizeFilters(options.filters),
+      messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp()
     };
 
     removeUndefinedProperties(descriptor);
@@ -44,54 +44,64 @@ export class EventsQuery extends Message<EventsQueryMessage> {
     return new EventsQuery(message);
   }
 
-  private static normalizeFilter(filter: EventsFilter): EventsFilter {
-    const normalizedFilter = {
-      ...filter,
-    };
+  private static normalizeFilters(filters: EventsQueryFilter[]): EventsQueryFilter[] {
+    return filters.map(queryFilter => {
+      const { filter, watermark } = queryFilter;
+      const normalizedFilter = {
+        ...filter,
+      };
 
-    if (filter.protocol !== undefined) {
-      normalizedFilter.protocol = normalizeProtocolUrl(filter.protocol);
-    }
+      if (filter.protocol !== undefined) {
+        normalizedFilter.protocol = normalizeProtocolUrl(filter.protocol);
+      }
 
-    if (filter.schema !== undefined) {
-      normalizedFilter.schema = normalizeSchemaUrl(filter.schema);
-    }
+      if (filter.schema !== undefined) {
+        normalizedFilter.schema = normalizeSchemaUrl(filter.schema);
+      }
 
-    return normalizedFilter;
+      return { filter: normalizedFilter, watermark };
+    });
   }
 
   /**
  *  Converts an incoming RecordsFilter into a Filter usable by EventLog.
  *
- * @param filter An EventFilter
- * @returns {Filter} a generic Filter able to be used with EventLog.
+ * @param filters An EventQueryFilter
+ * @returns {QueryEventsFilter} a generic Filter able to be used with EventLog query.
  */
-  public static convertFilter(filter: EventsFilter): Filter {
-    const filterCopy = { ...filter };
-    const { dateCreated } = filterCopy;
+  public static convertFilters(filters: EventsQueryFilter[]): QueryEventsFilter[] {
+    const eventLogFilters: QueryEventsFilter[] = [];
 
-    let rangeFilter: RangeFilter | undefined = undefined;
-    if (dateCreated !== undefined) {
-      if (dateCreated.to !== undefined && dateCreated.from !== undefined) {
-        rangeFilter = {
-          gte : dateCreated.from,
-          lt  : dateCreated.to,
-        };
-      } else if (dateCreated.to !== undefined) {
-        rangeFilter = {
-          lt: dateCreated.to,
-        };
-      } else if (dateCreated.from !== undefined) {
-        rangeFilter = {
-          gte: dateCreated.from,
-        };
+    for (const queryFilter of filters) {
+      const { filter, watermark } = queryFilter;
+      const filterCopy = { ...filter };
+      const { dateCreated } = filterCopy;
+
+      let rangeFilter: RangeFilter | undefined = undefined;
+      if (dateCreated !== undefined) {
+        if (dateCreated.to !== undefined && dateCreated.from !== undefined) {
+          rangeFilter = {
+            gte : dateCreated.from,
+            lt  : dateCreated.to,
+          };
+        } else if (dateCreated.to !== undefined) {
+          rangeFilter = {
+            lt: dateCreated.to,
+          };
+        } else if (dateCreated.from !== undefined) {
+          rangeFilter = {
+            gte: dateCreated.from,
+          };
+        }
       }
+
+      if (rangeFilter) {
+        (filterCopy as Filter).dateCreated = rangeFilter;
+      }
+
+      eventLogFilters.push({ filter: filterCopy as Filter, gt: watermark });
     }
 
-    if (rangeFilter) {
-      (filterCopy as Filter).dateCreated = rangeFilter;
-    }
-
-    return filterCopy as Filter;
+    return eventLogFilters;
   }
 }

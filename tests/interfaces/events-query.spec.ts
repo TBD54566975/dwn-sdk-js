@@ -18,7 +18,7 @@ describe('EventsQuery Message', () => {
 
       const currentTime = Time.getCurrentTimestamp();
       const eventsQuery = await EventsQuery.create({
-        filter           : { schema: 'anything' },
+        filters          : [{ filter: { schema: 'anything' } }],
         messageTimestamp : currentTime,
         signer           : Jws.createSigner(alice),
       });
@@ -32,13 +32,13 @@ describe('EventsQuery Message', () => {
       const options = {
         recipient : alice.did,
         signer    : Jws.createSigner(alice),
-        filter    : { protocol: 'example.com/' },
+        filters   : [{ filter: { protocol: 'example.com/' } }],
       };
       const eventsQuery = await EventsQuery.create(options);
 
       const message = eventsQuery.message as EventsQueryMessage;
-
-      expect(message.descriptor.filter!.protocol).to.eq('http://example.com');
+      expect(message.descriptor.filters.length).to.equal(1);
+      expect(message.descriptor.filters[0].filter!.protocol).to.eq('http://example.com');
     });
 
     it('should auto-normalize schema URL', async () => {
@@ -47,13 +47,46 @@ describe('EventsQuery Message', () => {
       const options = {
         recipient : alice.did,
         signer    : Jws.createSigner(alice),
-        filter    : { schema: 'example.com/' },
+        filters   : [{ filter: { schema: 'example.com/' } }],
       };
       const eventsQuery = await EventsQuery.create(options);
 
       const message = eventsQuery.message as EventsQueryMessage;
 
-      expect(message.descriptor.filter!.schema).to.eq('http://example.com');
+      expect(message.descriptor.filters.length).to.equal(1);
+      expect(message.descriptor.filters[0].filter!.schema).to.eq('http://example.com');
+    });
+
+    it('throws an exception if message has no filters', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+      const currentTime = Time.getCurrentTimestamp();
+
+      try {
+        await EventsQuery.create({
+          filters          : [],
+          messageTimestamp : currentTime,
+          signer           : Jws.createSigner(alice),
+        });
+        expect.fail();
+      } catch (e: any) {
+        expect(e.message).to.include('fewer than 1 items');
+      }
+    });
+
+    it('throws an exception if message has an empty filter', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+      const currentTime = Time.getCurrentTimestamp();
+
+      try {
+        await EventsQuery.create({
+          filters          : [{ filter: { schema: 'schema' } },{ filter: {} }], // one empty filter
+          messageTimestamp : currentTime,
+          signer           : Jws.createSigner(alice),
+        });
+        expect.fail();
+      } catch (e: any) {
+        expect(e.message).to.include('fewer than 1 properties');
+      }
     });
   });
 
@@ -64,7 +97,7 @@ describe('EventsQuery Message', () => {
       const currentTime = Time.getCurrentTimestamp();
 
       const eventsQuery = await EventsQuery.create({
-        filter           : { schema: 'anything' },
+        filters          : [{ filter: { schema: 'anything' } }],
         messageTimestamp : currentTime,
         signer           : Jws.createSigner(alice),
       });
@@ -82,7 +115,7 @@ describe('EventsQuery Message', () => {
       const alice = await TestDataGenerator.generatePersona();
       const currentTime = Time.getCurrentTimestamp();
       const eventsQuery = await EventsQuery.create({
-        filter           : { schema: 'anything' },
+        filters          : [{ filter: { schema: 'anything' } }],
         messageTimestamp : currentTime,
         signer           : Jws.createSigner(alice),
       });
@@ -95,6 +128,46 @@ describe('EventsQuery Message', () => {
         expect.fail();
       } catch (e: any) {
         expect(e.message).to.include('additional properties');
+      }
+    });
+
+    it('throws an exception if message has no filters', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+      const currentTime = Time.getCurrentTimestamp();
+      const eventsQuery = await EventsQuery.create({
+        filters          : [{ filter: { schema: 'anything' } }],
+        messageTimestamp : currentTime,
+        signer           : Jws.createSigner(alice),
+      });
+
+      const { message } = eventsQuery;
+      message.descriptor.filters = []; //empty out the filters
+
+      try {
+        await EventsQuery.parse(message as any);
+        expect.fail();
+      } catch (e: any) {
+        expect(e.message).to.include('fewer than 1 items');
+      }
+    });
+
+    it('throws an exception if message has an empty filter', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+      const currentTime = Time.getCurrentTimestamp();
+      const eventsQuery = await EventsQuery.create({
+        filters          : [{ filter: { schema: 'anything' } }],
+        messageTimestamp : currentTime,
+        signer           : Jws.createSigner(alice),
+      });
+
+      const { message } = eventsQuery;
+      message.descriptor.filters.push({ filter: {} }); // add an empty filter
+
+      try {
+        await EventsQuery.parse(message as any);
+        expect.fail();
+      } catch (e: any) {
+        expect(e.message).to.include('fewer than 1 properties');
       }
     });
   });
