@@ -2767,57 +2767,59 @@ export function testRecordsWriteHandler(): void {
         expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataAssociation);
       });
 
-      it('should not allow referencing data across tenants', async () => {
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
-        const data = Encoder.stringToBytes('test');
-        const dataCid = await Cid.computeDagPbCidFromBytes(data);
-        const encodedData = Encoder.bytesToBase64Url(data);
+      describe('reference counting tests', () => {
+        it('should not allow referencing data across tenants', async () => {
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+          const data = Encoder.stringToBytes('test');
+          const dataCid = await Cid.computeDagPbCidFromBytes(data);
+          const encodedData = Encoder.bytesToBase64Url(data);
 
-        // alice writes data to her DWN
-        const aliceWriteData = await TestDataGenerator.generateRecordsWrite({
-          author: alice,
-          data
-        });
-        const aliceWriteReply = await dwn.processMessage(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
-        expect(aliceWriteReply.status.code).to.equal(202);
+          // alice writes data to her DWN
+          const aliceWriteData = await TestDataGenerator.generateRecordsWrite({
+            author: alice,
+            data
+          });
+          const aliceWriteReply = await dwn.processMessage(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
+          expect(aliceWriteReply.status.code).to.equal(202);
 
-        const aliceQueryWriteAfterAliceWriteData = await TestDataGenerator.generateRecordsQuery({
-          author : alice,
-          filter : { recordId: aliceWriteData.message.recordId }
-        });
-        const aliceQueryWriteAfterAliceWriteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterAliceWriteData.message);
-        expect(aliceQueryWriteAfterAliceWriteReply.status.code).to.equal(200);
-        expect(aliceQueryWriteAfterAliceWriteReply.entries?.length).to.equal(1);
-        expect(aliceQueryWriteAfterAliceWriteReply.entries![0].encodedData).to.equal(encodedData);
+          const aliceQueryWriteAfterAliceWriteData = await TestDataGenerator.generateRecordsQuery({
+            author : alice,
+            filter : { recordId: aliceWriteData.message.recordId }
+          });
+          const aliceQueryWriteAfterAliceWriteReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterAliceWriteData.message);
+          expect(aliceQueryWriteAfterAliceWriteReply.status.code).to.equal(200);
+          expect(aliceQueryWriteAfterAliceWriteReply.entries?.length).to.equal(1);
+          expect(aliceQueryWriteAfterAliceWriteReply.entries![0].encodedData).to.equal(encodedData);
 
-        // bob learns of the CID of data of alice and tries to gain unauthorized access by referencing it in his own DWN
-        const bobAssociateData = await TestDataGenerator.generateRecordsWrite({
-          author   : bob,
-          dataCid,
-          dataSize : 4
-        });
-        const bobAssociateReply = await dwn.processMessage(bob.did, bobAssociateData.message, bobAssociateData.dataStream);
-        expect(bobAssociateReply.status.code).to.equal(400); // expecting an error
-        expect(bobAssociateReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataInPrevious);
+          // bob learns of the CID of data of alice and tries to gain unauthorized access by referencing it in his own DWN
+          const bobAssociateData = await TestDataGenerator.generateRecordsWrite({
+            author   : bob,
+            dataCid,
+            dataSize : 4
+          });
+          const bobAssociateReply = await dwn.processMessage(bob.did, bobAssociateData.message, bobAssociateData.dataStream);
+          expect(bobAssociateReply.status.code).to.equal(400); // expecting an error
+          expect(bobAssociateReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataInPrevious);
 
-        const aliceQueryWriteAfterBobAssociateData = await TestDataGenerator.generateRecordsQuery({
-          author : alice,
-          filter : { recordId: aliceWriteData.message.recordId }
-        });
-        const aliceQueryWriteAfterBobAssociateReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterBobAssociateData.message);
-        expect(aliceQueryWriteAfterBobAssociateReply.status.code).to.equal(200);
-        expect(aliceQueryWriteAfterBobAssociateReply.entries?.length).to.equal(1);
-        expect(aliceQueryWriteAfterBobAssociateReply.entries![0].encodedData).to.equal(encodedData);
+          const aliceQueryWriteAfterBobAssociateData = await TestDataGenerator.generateRecordsQuery({
+            author : alice,
+            filter : { recordId: aliceWriteData.message.recordId }
+          });
+          const aliceQueryWriteAfterBobAssociateReply = await dwn.processMessage(alice.did, aliceQueryWriteAfterBobAssociateData.message);
+          expect(aliceQueryWriteAfterBobAssociateReply.status.code).to.equal(200);
+          expect(aliceQueryWriteAfterBobAssociateReply.entries?.length).to.equal(1);
+          expect(aliceQueryWriteAfterBobAssociateReply.entries![0].encodedData).to.equal(encodedData);
 
-        // verify that bob has not gained access to alice's data
-        const bobQueryAssociateAfterBobAssociateData = await TestDataGenerator.generateRecordsQuery({
-          author : bob,
-          filter : { recordId: bobAssociateData.message.recordId }
+          // verify that bob has not gained access to alice's data
+          const bobQueryAssociateAfterBobAssociateData = await TestDataGenerator.generateRecordsQuery({
+            author : bob,
+            filter : { recordId: bobAssociateData.message.recordId }
+          });
+          const bobQueryAssociateAfterBobAssociateReply = await dwn.processMessage(bob.did, bobQueryAssociateAfterBobAssociateData.message);
+          expect(bobQueryAssociateAfterBobAssociateReply.status.code).to.equal(200);
+          expect(bobQueryAssociateAfterBobAssociateReply.entries?.length).to.equal(0);
         });
-        const bobQueryAssociateAfterBobAssociateReply = await dwn.processMessage(bob.did, bobQueryAssociateAfterBobAssociateData.message);
-        expect(bobQueryAssociateAfterBobAssociateReply.status.code).to.equal(200);
-        expect(bobQueryAssociateAfterBobAssociateReply.entries?.length).to.equal(0);
       });
 
       describe('encodedData threshold', async () => {
@@ -3066,7 +3068,7 @@ export function testRecordsWriteHandler(): void {
       });
     });
 
-    it('should throw if `recordsWritehandler.putData()` throws unknown error', async () => {
+    it('should throw if `recordsWriteHandler.putData()` throws unknown error', async () => {
 
       // must generate a large enough data payload for putData to be triggered
       const { author, message, dataStream } = await TestDataGenerator.generateRecordsWrite({
