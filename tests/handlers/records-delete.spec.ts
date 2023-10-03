@@ -12,6 +12,7 @@ import { ArrayUtility } from '../../src/utils/array.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { Message } from '../../src/core/message.js';
 import { minimalSleep } from '../../src/utils/time.js';
+import { normalizeSchemaUrl } from '../../src/utils/url.js';
 import { RecordsDeleteHandler } from '../../src/handlers/records-delete.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
@@ -346,6 +347,35 @@ export function testRecordsDeleteHandler(): void {
               expect.fail(`${messageCid} should not exist`);
             }
           }
+        });
+
+        it('should index additional properties from the original RecordsWrite for event log querying', async () => {
+          const alice = await DidKeyResolver.generate();
+
+          const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'schema1' });
+          const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+          expect(writeReply.status.code).to.equal(202);
+
+          const recordsDelete = await RecordsDelete.create({
+            recordId            : message.recordId,
+            authorizationSigner : Jws.createSigner(alice)
+          });
+
+          const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
+          expect(deleteReply.status.code).to.equal(202);
+
+          const events = await eventLog.queryEvents(alice.did, [{ filter: { schema: normalizeSchemaUrl('schema1') } }]);
+          expect(events.length).to.equal(2);
+
+          const writeMessageCid = await Message.getCid(message);
+          const deleteMessageCid = await Message.getCid(recordsDelete.message);
+          const expectedMessageCids = new Set([writeMessageCid, deleteMessageCid]);
+
+          for (const { messageCid } of events) {
+            expectedMessageCids.delete(messageCid);
+          }
+
+          expect(expectedMessageCids.size).to.equal(0);
         });
       });
     });
