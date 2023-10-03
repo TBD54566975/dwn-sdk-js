@@ -341,7 +341,6 @@ export class ProtocolAuthorization {
       throw new Error(`no action rule defined for ${incomingMessage.message.descriptor.method}, ${author} is unauthorized`);
     }
 
-    // Get role being invoked. Currently only Reads support role-based authorization
     const invokedRole = incomingMessage.authorizationPayload?.protocolRole;
 
     for (const actionRule of actionRules) {
