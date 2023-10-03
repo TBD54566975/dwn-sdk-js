@@ -6,6 +6,7 @@ import type { PermissionScope } from '../../src/index.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { PermissionsConditionPublication } from '../../src/types/permissions-types.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
+import type { RecordsPermissionScope } from '../../src/types/permissions-types.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
@@ -33,6 +34,56 @@ describe('PermissionsGrant', () => {
       expect(message.descriptor.scope).to.eql({ interface: DwnInterfaceName.Records, method: DwnMethodName.Write });
       expect(message.descriptor.conditions).to.be.undefined;
       expect(message.descriptor.description).to.eql('drugs');
+    });
+
+    describe('scope property normalizations', async () => {
+      it('ensures that `schema` is normalized', async () => {
+        const { privateJwk } = await Secp256k1.generateKeyPair();
+        const authorizationSigner = new PrivateKeySigner({ privateJwk, keyId: 'did:jank:bob' });
+
+        const scope: PermissionScope = {
+          interface : DwnInterfaceName.Records,
+          method    : DwnMethodName.Write,
+          schema    : 'example.com/',
+        };
+
+        const { message } = await PermissionsGrant.create({
+          dateExpires : getCurrentTimeInHighPrecision(),
+          description : 'schema normalization test',
+          grantedBy   : 'did:jank:bob',
+          grantedTo   : 'did:jank:alice',
+          grantedFor  : 'did:jank:bob',
+          scope       : scope,
+          authorizationSigner
+        });
+
+
+        expect((message.descriptor.scope as RecordsPermissionScope).schema).to.equal('http://example.com');
+      });
+
+      it('ensures that `protocol` is normalized', async () => {
+        const { privateJwk } = await Secp256k1.generateKeyPair();
+        const authorizationSigner = new PrivateKeySigner({ privateJwk, keyId: 'did:jank:bob' });
+
+        const scope: PermissionScope = {
+          interface : DwnInterfaceName.Records,
+          method    : DwnMethodName.Write,
+          protocol  : 'https://example.com/',
+        };
+
+        const { message } = await PermissionsGrant.create({
+          dateExpires : getCurrentTimeInHighPrecision(),
+          description : 'protocol normalization test',
+          grantedBy   : 'did:jank:bob',
+          grantedTo   : 'did:jank:alice',
+          grantedFor  : 'did:jank:bob',
+          scope       : scope,
+          authorizationSigner
+        });
+
+
+        expect((message.descriptor.scope as RecordsPermissionScope).protocol).to.equal('https://example.com');
+      });
     });
 
     describe('scope validations', () => {
@@ -129,7 +180,7 @@ describe('PermissionsGrant', () => {
       expect(permissionsGrant.message.descriptor.grantedBy).to.eq(permissionsRequest.message.descriptor.grantedBy);
       expect(permissionsGrant.message.descriptor.grantedTo).to.eq(permissionsRequest.message.descriptor.grantedTo);
       expect(permissionsGrant.message.descriptor.grantedFor).to.eq(permissionsRequest.message.descriptor.grantedFor);
-      expect(permissionsGrant.message.descriptor.scope).to.eq(permissionsRequest.message.descriptor.scope);
+      expect(permissionsGrant.message.descriptor.scope).to.eql(permissionsRequest.message.descriptor.scope);
       expect(permissionsGrant.message.descriptor.conditions).to.eq(permissionsRequest.message.descriptor.conditions);
       expect(permissionsGrant.message.descriptor.permissionsRequestId).to.eq(await Message.getCid(permissionsRequest.message));
     });
@@ -168,7 +219,7 @@ describe('PermissionsGrant', () => {
       expect(permissionsGrant.message.descriptor.grantedBy).to.eq(overrides.grantedBy);
       expect(permissionsGrant.message.descriptor.grantedTo).to.eq(overrides.grantedTo);
       expect(permissionsGrant.message.descriptor.grantedFor).to.eq(overrides.grantedFor);
-      expect(permissionsGrant.message.descriptor.scope).to.eq(overrides.scope);
+      expect(permissionsGrant.message.descriptor.scope).to.eql(overrides.scope);
       expect(permissionsGrant.message.descriptor.conditions).to.eq(overrides.conditions);
       expect(permissionsGrant.message.descriptor.permissionsRequestId).to.eq(await Message.getCid(permissionsRequest.message));
     });
