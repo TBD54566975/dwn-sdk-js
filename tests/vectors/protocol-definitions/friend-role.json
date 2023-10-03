@@ -9,8 +9,15 @@
     "friend": {
       "$globalRole": true
     },
+    "fan": {
+      "$globalRole": true
+    },
     "chat": {
       "$actions": [
+        {
+          "role": "fan",
+          "can": "read"
+        },
         {
           "role": "friend",
           "can": "write"

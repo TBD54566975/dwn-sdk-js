@@ -400,7 +400,7 @@ export class RecordsWrite {
       await ProtocolAuthorization.authorize(tenant, this, this, messageStore);
     } else if (this.author === tenant) {
       // if author is the same as the target tenant, we can directly grant access
-    } else if (this.author !== undefined && this.authorizationPayload?.permissionsGrantId !== undefined) {
+    } else if (this.author !== undefined && this.authorizationPayload!.permissionsGrantId !== undefined) {
       await RecordsGrantAuthorization.authorizeWrite(tenant, this, this.author, messageStore);
     } else {
       throw new Error('message failed authorization');
@@ -653,23 +653,19 @@ export class RecordsWrite {
     signer: Signer,
     additionalProperties?: { permissionsGrantId?: string, protocolRole?: string },
   ): Promise<AuthorizationModel> {
-    const authorizationPayload: RecordsWriteAuthorSignaturePayload = {
-      recordId,
-      descriptorCid
-    };
-
     const attestationCid = attestation ? await Cid.computeCid(attestation) : undefined;
     const encryptionCid = encryption ? await Cid.computeCid(encryption) : undefined;
 
-    if (contextId !== undefined) { authorizationPayload.contextId = contextId; } // assign `contextId` only if it is defined
-    if (attestationCid !== undefined) { authorizationPayload.attestationCid = attestationCid; } // assign `attestationCid` only if it is defined
-    if (encryptionCid !== undefined) { authorizationPayload.encryptionCid = encryptionCid; } // assign `encryptionCid` only if it is defined
-    if (additionalProperties?.permissionsGrantId !== undefined) {
-      authorizationPayload.permissionsGrantId = additionalProperties?.permissionsGrantId;
-    }
-    if (additionalProperties?.protocolRole !== undefined) {
-      authorizationPayload.protocolRole = additionalProperties?.protocolRole;
-    }
+    const authorizationPayload: RecordsWriteAuthorSignaturePayload = {
+      recordId,
+      descriptorCid,
+      contextId,
+      attestationCid,
+      encryptionCid,
+      permissionsGrantId : additionalProperties?.permissionsGrantId,
+      protocolRole       : additionalProperties?.protocolRole
+    };
+    removeUndefinedProperties(authorizationPayload);
 
     const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
 
