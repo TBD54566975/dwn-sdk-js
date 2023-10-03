@@ -49,7 +49,6 @@ export type RecordsWriteOptions = {
   datePublished?: string;
   dataFormat: string;
   authorizationSigner?: Signer;
-  tenantSigner?: Signer;
   attestationSigners?: Signer[];
   encryptionInput?: EncryptionInput;
   permissionsGrantId?: string;
