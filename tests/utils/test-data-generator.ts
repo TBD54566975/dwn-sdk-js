@@ -48,7 +48,7 @@ import { PermissionsRevoke } from '../../src/interfaces/permissions-revoke.js';
 import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { sha256 } from 'multiformats/hashes/sha2';
-import { Temporal } from '@js-temporal/polyfill';
+import { Temporal, toTemporalInstant } from '@js-temporal/polyfill';
 
 import {
   DidKeyResolver,
@@ -866,6 +866,10 @@ export class TestDataGenerator {
       minute   : this.randomInt(0, 59),
       second   : this.randomInt(0, 59),
     }).toInstant().toString({ smallestUnit: 'microseconds' });
+  }
+
+  public static createDateString(d: Date): string {
+    return toTemporalInstant.call(d).toString({ smallestUnit: 'microseconds' });
   }
 
   /**

@@ -5,6 +5,7 @@ import type { Event, EventLog, EventsLogFilter, GetEventsOptions } from '../type
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions } from '../store/level-wrapper.js';
 
 import { flatten } from '../utils/object.js';
+import { lexicographicalCompare } from '../utils/string.js';
 import { monotonicFactory } from 'ulidx';
 import { createLevelDatabase, LevelWrapper } from '../store/level-wrapper.js';
 
@@ -76,7 +77,7 @@ export class EventLogLevel implements EventLog {
       for (const propertyName in indexes) {
         const propertyValue = indexes[propertyName];
         if (propertyValue !== undefined) {
-          const key = this.join(propertyName, this.encodeValue(propertyValue), watermark, messageCid);
+          const key = this.join(propertyName, this.encodeValue(propertyValue), watermark);
           const value = `${messageCid}~${watermark}`;
           indexOps.push({ type: 'put', key, value });
         }
@@ -104,7 +105,7 @@ export class EventLogLevel implements EventLog {
     const matchedEvents: Map<string, Event> = new Map();
 
     await Promise.all(filters.map(f => this.executeSingleFilterQuery(tenant, f.filter, matchedEvents, f.gt)));
-    return [...matchedEvents.values()];
+    return this.sortEvents([...matchedEvents.values()]);
   }
 
   /**
@@ -188,7 +189,7 @@ export class EventLogLevel implements EventLog {
    */
   private async executeSingleFilterQuery(tenant: string, filter: Filter, matchedEvents: Map<string, Event>, watermark?: string): Promise<void> {
     // Note: We have an array of Promises in order to support OR (anyOf) matches when given a list of accepted values for a property
-    const propertyNameToPromises: { [key: string]: Promise<string[]>[] } = {};
+    const propertyNameToPromises: { [key: string]: Promise<Event[]>[] } = {};
 
     // Do a separate DB query for each property in `filter`
     // We will find the union of these many individual queries later.
@@ -228,24 +229,19 @@ export class EventLogLevel implements EventLog {
       // acting as an OR match for the property, any of the promises returning a match will be treated as a property match
       for (const promise of promises) {
         // reminder: the promise returns a list of IDs of data satisfying a particular match
-        for (const watermarkData of await promise) {
-          const [ messageCid, watermark ] = watermarkData.split('~');
-          if (messageCid === undefined || watermark === undefined) {
-            continue;
-          }
-
+        for (const event of await promise) {
           // short circuit: if a data is already included to the final matched ID set (by a different `Filter`),
           // no need to evaluate if the data satisfies this current filter being evaluated
-          if (matchedEvents.has(messageCid)) {
+          if (matchedEvents.has(event.messageCid)) {
             continue;
           }
 
           // if first time seeing a property matching for the data/object, record all properties needing a match to track progress
-          missingPropertyMatchesForId[watermarkData] ??= new Set<string>([ ...Object.keys(filter) ]);
-          missingPropertyMatchesForId[watermarkData].delete(propertyName);
-          if (missingPropertyMatchesForId[watermarkData].size === 0) {
+          missingPropertyMatchesForId[event.messageCid] ??= new Set<string>([ ...Object.keys(filter) ]);
+          missingPropertyMatchesForId[event.messageCid].delete(propertyName);
+          if (missingPropertyMatchesForId[event.messageCid].size === 0) {
             // full filter match, add it to return list
-            matchedEvents.set(messageCid, { messageCid, watermark });
+            matchedEvents.set(event.messageCid, event);
           }
         }
       }
@@ -255,52 +251,49 @@ export class EventLogLevel implements EventLog {
   /**
    * @returns IDs of data that matches the exact property and value.
    */
-  private async findExactMatches(tenant:string, propertyName: string, propertyValue: unknown, watermark?: string): Promise<string[]> {
+  private async findExactMatches(tenant:string, propertyName: string, propertyValue: unknown, watermark?: string): Promise<Event[]> {
     const tenantEventLog = await this.db.partition(tenant);
     const cidIndex = await tenantEventLog.partition(INDEXS_SUBLEVEL_NAME);
     const prefixProperties = [ propertyName, this.encodeValue(propertyValue) ];
     const propertyValuePrefix = this.join(...prefixProperties, '');
 
-    const iteratorOptions: LevelWrapperIteratorOptions<string> = {};
-    if (watermark) {
-      prefixProperties.push(watermark);
-      iteratorOptions.gt = this.join(...prefixProperties, '');
-    } else {
-      iteratorOptions.gt = propertyValuePrefix;
-    }
+    const iteratorOptions: LevelWrapperIteratorOptions<string> = {
+      gt: propertyValuePrefix
+    };
 
-
-
-    const matches: string[] = [];
+    const matches: Event[] = [];
     for await (const [ key, watermarkValue ] of cidIndex.iterator(iteratorOptions)) {
       if (!key.startsWith(propertyValuePrefix)) {
         break;
       }
-      // don't match exact watermark
-      if (watermark && key.includes(watermark)) {
+
+      const event = this.extractEventFromValue(watermarkValue);
+      if (event === undefined) {
+        break; // throw?
+      }
+
+      // skip events prior to the watermark.
+      if (watermark !== undefined && watermark >= event.watermark) {
         continue;
       }
 
-      matches.push(watermarkValue);
+      matches.push(event);
     }
+
     return matches;
   }
 
   /**
    * @returns IDs of data that matches the range filter.
    */
-  private async findRangeMatches(tenant: string, propertyName: string, rangeFilter: RangeFilter, watermark?: string): Promise<string[]> {
+  private async findRangeMatches(tenant: string, propertyName: string, rangeFilter: RangeFilter, watermark?: string): Promise<Event[]> {
     const tenantEventLog = await this.db.partition(tenant);
     const cidIndex = await tenantEventLog.partition(INDEXS_SUBLEVEL_NAME);
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {};
 
     for (const comparator in rangeFilter) {
       const comparatorName = comparator as keyof RangeFilter;
-      const prefixProperties = [ propertyName, this.encodeValue(rangeFilter[comparatorName]) ];
-      if (watermark) {
-        prefixProperties.push(watermark);
-      }
-      iteratorOptions[comparatorName] = this.join(...prefixProperties);
+      iteratorOptions[comparatorName] = this.join(propertyName, this.encodeValue(rangeFilter[comparatorName]));
     }
 
     // if there is no lower bound specified (`gt` or `gte`), we need to iterate from the upper bound,
@@ -309,8 +302,8 @@ export class EventLogLevel implements EventLog {
       iteratorOptions.reverse = true;
     }
 
-    const matches: string[] = [];
-    for await (const [ key, dataId ] of cidIndex.iterator(iteratorOptions)) {
+    const matches: Event[] = [];
+    for await (const [ key, watermarkValue ] of cidIndex.iterator(iteratorOptions)) {
       // if "greater-than" is specified, skip all keys that contains the exact value given in the "greater-than" condition
       if ('gt' in rangeFilter && EventLogLevel.extractValueFromKey(key) === this.encodeValue(rangeFilter.gt)) {
         continue;
@@ -321,7 +314,17 @@ export class EventLogLevel implements EventLog {
         break;
       }
 
-      matches.push(dataId);
+      const event = this.extractEventFromValue(watermarkValue);
+      if (event === undefined) {
+        break; // throw?
+      }
+
+      // skip events prior to the watermark.
+      if (watermark && watermark >= event.watermark) {
+        continue;
+      }
+
+      matches.push(event);
     }
 
     if ('lte' in rangeFilter) {
@@ -330,12 +333,25 @@ export class EventLogLevel implements EventLog {
       // key = 'dateCreated\u0000"2023-05-25T11:22:33.000000Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
       // the value would be considered greater than { lte: `dateCreated\u0000"2023-05-25T11:22:33.000000Z"` } used in the iterator options,
       // thus would not be included in the iterator even though we'd like it to be.
-      for (const dataId of await this.findExactMatches(tenant, propertyName, rangeFilter.lte, watermark)) {
-        matches.push(dataId);
+      for (const event of await this.findExactMatches(tenant, propertyName, rangeFilter.lte, watermark)) {
+        matches.push(event);
       }
     }
 
+    // if we iterated in reverse the results are reversed as well.
+    if (iteratorOptions.reverse === true) {
+      matches.reverse();
+    }
     return matches;
+  }
+
+  /**
+   * Sorts events queried based on watermark.
+   * @param events incoming events from query filters.
+   * @returns {Event[]} sorted events by watermark ascending.
+   */
+  private sortEvents(events: Event[]): Event[] {
+    return events.sort((a,b) => lexicographicalCompare(a.watermark, b.watermark));
   }
 
   async dump(): Promise<void> {
@@ -382,6 +398,14 @@ export class EventLogLevel implements EventLog {
   static extractValueFromKey(key: string): string {
     const [, value] = key.split(this.delimiter);
     return value;
+  }
+
+  private extractEventFromValue(value: string): Event|undefined {
+    const [ messageCid, watermark ] = value.split('~');
+    if (messageCid === undefined || watermark === undefined) {
+      return undefined;
+    }
+    return { messageCid, watermark };
   }
 
   private encodeValue(value: unknown): string {
