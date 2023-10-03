@@ -3,6 +3,7 @@ import type { Event } from '../../src/types/event-log.js';
 import chaiAsPromised from 'chai-as-promised';
 import { EventLogLevel } from '../../src/event-log/event-log-level.js';
 import { Message } from '../../src/core/message.js';
+import { normalizeSchemaUrl } from '../../src/utils/url.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 
 import chai, { expect } from 'chai';
@@ -162,11 +163,99 @@ describe('EventLogLevel Tests', () => {
       }
     });
   });
+
   describe('query', () => {
-    xit('returns filtered events in the order that they were appended', async () => {
+    it('returns filtered events in the order that they were appended', async () => {
+      const expectedEvents: Array<Event> = [];
+
+      const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ schema: 'schema1' });
+      const messageCid = await Message.getCid(message);
+      const indexes = await recordsWrite.constructRecordsWriteIndexes(true);
+      const watermark = await eventLog.append(author.did, messageCid, indexes);
+
+      expectedEvents.push({ watermark, messageCid });
+
+      for (let i = 0; i < 5; i += 1) {
+        const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author, schema: 'schema1' });
+        const messageCid = await Message.getCid(message);
+        const indexes = await recordsWrite.constructRecordsWriteIndexes(true);
+        const watermark = await eventLog.append(author.did, messageCid, indexes);
+
+        expectedEvents.push({ watermark, messageCid });
+      }
+
+      // insert a record that will not show up in the filtered query.
+      // not inserted into expected events.
+      const { message: message2, recordsWrite: recordsWrite2 } = await TestDataGenerator.generateRecordsWrite({ author });
+      const message2Cid = await Message.getCid(message2);
+      const message2Indexes = await recordsWrite2.constructRecordsWriteIndexes(true);
+      await eventLog.append(author.did, message2Cid, message2Indexes);
+
+      for (let i = 0; i < 5; i += 1) {
+        const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author, schema: 'schema1' });
+        const messageCid = await Message.getCid(message);
+        const indexes = await recordsWrite.constructRecordsWriteIndexes(true);
+        const watermark = await eventLog.append(author.did, messageCid, indexes);
+
+        expectedEvents.push({ watermark, messageCid });
+      }
+
+      const events = await eventLog.queryEvents(author.did, [{ filter: { schema: normalizeSchemaUrl('schema1') } }]);
+      expect(events.length).to.equal(expectedEvents.length);
+
+      for (let i = 0; i < expectedEvents.length; i += 1) {
+        expect(events[i].watermark).to.equal(expectedEvents[i].watermark);
+        expect(events[i].messageCid).to.equal(expectedEvents[i].messageCid);
+      }
     });
 
-    xit('returns filtered events after watermark', async () => {
+    it('returns filtered events after watermark', async () => {
+      const expectedEvents: Array<Event> = [];
+      let testWatermark;
+
+      const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ schema: 'schema1' });
+      const messageCid = await Message.getCid(message);
+      const indexes = await recordsWrite.constructRecordsWriteIndexes(true);
+      await eventLog.append(author.did, messageCid, indexes);
+
+      for (let i = 0; i < 5; i += 1) {
+        const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author, schema: 'schema1' });
+        const messageCid = await Message.getCid(message);
+        const indexes = await recordsWrite.constructRecordsWriteIndexes(true);
+        const watermark = await eventLog.append(author.did, messageCid, indexes);
+
+        if (i === 3) {
+          testWatermark = watermark;
+        }
+
+        if (i > 3) {
+          expectedEvents.push({ watermark, messageCid });
+        }
+      }
+
+      // insert a record that will not show up in the filtered query.
+      // not inserted into expected events.
+      const { message: message2, recordsWrite: recordsWrite2 } = await TestDataGenerator.generateRecordsWrite({ author });
+      const message2Cid = await Message.getCid(message2);
+      const message2Indexes = await recordsWrite2.constructRecordsWriteIndexes(true);
+      await eventLog.append(author.did, message2Cid, message2Indexes);
+
+      for (let i = 0; i < 5; i += 1) {
+        const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author, schema: 'schema1' });
+        const messageCid = await Message.getCid(message);
+        const indexes = await recordsWrite.constructRecordsWriteIndexes(true);
+        const watermark = await eventLog.append(author.did, messageCid, indexes);
+
+        expectedEvents.push({ watermark, messageCid });
+      }
+
+      const events = await eventLog.queryEvents(author.did, [{ filter: { schema: normalizeSchemaUrl('schema1') }, gt: testWatermark }]);
+      expect(events.length).to.equal(expectedEvents.length);
+
+      for (let i = 0; i < expectedEvents.length; i += 1) {
+        expect(events[i].watermark).to.equal(expectedEvents[i].watermark);
+        expect(events[i].messageCid).to.equal(expectedEvents[i].messageCid);
+      }
     });
   });
 });
