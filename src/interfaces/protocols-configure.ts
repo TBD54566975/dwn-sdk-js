@@ -79,16 +79,34 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
     // Traverse nested rule sets
     for (const rootRecordPath in definition.structure) {
       const rootRuleSet = definition.structure[rootRecordPath];
-      ProtocolsConfigure.validateRuleSet(rootRuleSet, rootRecordPath, globalRoles);
+
+      // gather $contextRoles
+      const contextRoles: string[] = [];
+      for (const childRecordType in rootRuleSet) {
+        if (childRecordType.startsWith('$')) {
+          continue;
+        }
+        const childRuleSet: ProtocolRuleSet = rootRuleSet[childRecordType];
+        if (childRuleSet.$contextRole) {
+          contextRoles.push(`${rootRecordPath}/${childRecordType}`);
+        }
+      }
+
+      ProtocolsConfigure.validateRuleSet(rootRuleSet, rootRecordPath, [...globalRoles, ...contextRoles]);
     }
   }
 
-  private static validateRuleSet(ruleSet: ProtocolRuleSet, protocolPath: string, globalRoles: string[]): void {
+  private static validateRuleSet(ruleSet: ProtocolRuleSet, protocolPath: string, roles: string[]): void {
     const depth = protocolPath.split('/').length;
     if (ruleSet.$globalRole && depth !== 1) {
       throw new DwnError(
         DwnErrorCode.ProtocolsConfigureGlobalRoleAtProhibitedProtocolPath,
         `$globalRole is not allowed at protocol path (${protocolPath}). Only root records may set $globalRole true.`
+      );
+    } else if (ruleSet.$contextRole && depth !== 2) {
+      throw new DwnError(
+        DwnErrorCode.ProtocolsConfigureContextRoleAtProhibitedProtocolPath,
+        `$contextRole is not allowed at protocol path (${protocolPath}). Only second-level records may set $contextRole true.`
       );
     }
 
@@ -96,7 +114,7 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
     const actions = ruleSet.$actions ?? [];
     for (const action of actions) {
       // Validate that all `role` properties contain protocol paths $globalRole records
-      if (action.role !== undefined && !globalRoles.includes(action.role)) {
+      if (action.role !== undefined && !roles.includes(action.role)) {
         throw new DwnError(
           DwnErrorCode.ProtocolsConfigureInvalidRole,
           `Invalid role '${action.role}' found at protocol path '${protocolPath}'`
@@ -127,7 +145,7 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       }
       const rootRuleSet = ruleSet[recordType];
       const nextProtocolPath = `${protocolPath}/${recordType}`;
-      ProtocolsConfigure.validateRuleSet(rootRuleSet, nextProtocolPath, globalRoles);
+      ProtocolsConfigure.validateRuleSet(rootRuleSet, nextProtocolPath, roles);
     }
   }
 
