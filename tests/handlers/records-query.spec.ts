@@ -559,7 +559,7 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should be able to range query by `dateCreated`', async () => {
-        // scenario: 3 records authored by alice, created on first of 2021, 2022, and 2023 respectively,
+        // scenario: 3 records authored by alice, created on first of 2021, 2022, and 2023 respectively
         // only the first 2 records share the same schema
         const firstDayOf2021 = Time.createTimestamp({ year: 2021, month: 1, day: 1 });
         const firstDayOf2022 = Time.createTimestamp({ year: 2022, month: 1, day: 1 });
@@ -947,9 +947,8 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should be able use range and exact match queries at the same time', async () => {
-        // scenario: 3 records authored by alice, created on first of 2021, 2022, and 2023 respectively,
+        // scenario: 3 records authored by alice, created on first of 2021, 2022, and 2023 respectively
         // only the first 2 records share the same schema
-
         const firstDayOf2021 = Time.createTimestamp({ year: 2021, month: 1, day: 1 });
         const firstDayOf2022 = Time.createTimestamp({ year: 2022, month: 1, day: 1 });
         const firstDayOf2023 = Time.createTimestamp({ year: 2023, month: 1, day: 1 });
