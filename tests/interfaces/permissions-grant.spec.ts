@@ -68,7 +68,7 @@ describe('PermissionsGrant', () => {
         const scope: PermissionScope = {
           interface : DwnInterfaceName.Records,
           method    : DwnMethodName.Write,
-          protocol  : 'https://example.com/',
+          protocol  : 'example.com/',
         };
 
         const { message } = await PermissionsGrant.create({
@@ -82,7 +82,7 @@ describe('PermissionsGrant', () => {
         });
 
 
-        expect((message.descriptor.scope as RecordsPermissionScope).protocol).to.equal('https://example.com');
+        expect((message.descriptor.scope as RecordsPermissionScope).protocol).to.equal('http://example.com');
       });
     });
 
