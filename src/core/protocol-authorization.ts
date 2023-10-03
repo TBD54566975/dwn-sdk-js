@@ -326,9 +326,9 @@ export class ProtocolAuthorization {
     const author = incomingMessage.author;
     const actionRules = inboundMessageRuleSet.$actions;
 
-    if (incomingMessage.message.authorization?.retainer !== undefined) {
+    if (incomingMessage.message.authorization?.owner !== undefined) {
       // if incoming message is a write retained by this tenant, we by design bypass allowed action verification
-      // NOTE: the "retainer === tenant" check is already done before this method is invoked
+      // NOTE: the "owner === tenant" check is already done before this method is invoked
       return;
     } else if (author === tenant) {
       // tenant is always authorized

@@ -150,20 +150,20 @@ export class RecordsWrite {
     return this._authorSignaturePayload;
   }
 
-  private _retainer: string | undefined;
+  private _owner: string | undefined;
   /**
-   * DID of retainer of this message.
+   * DID of owner of this message.
    */
-  public get retainer(): string | undefined {
-    return this._retainer;
+  public get owner(): string | undefined {
+    return this._owner;
   }
 
-  private _retainerSignaturePayload: RecordsWriteSignaturePayload | undefined;
+  private _ownerSignaturePayload: RecordsWriteSignaturePayload | undefined;
   /**
-   * Decoded retainer signature payload.
+   * Decoded owner signature payload.
    */
-  public get retainerSignaturePayload(): RecordsWriteSignaturePayload | undefined {
-    return this._retainerSignaturePayload;
+  public get ownerSignaturePayload(): RecordsWriteSignaturePayload | undefined {
+    return this._ownerSignaturePayload;
   }
 
   readonly attesters: string[];
@@ -176,9 +176,9 @@ export class RecordsWrite {
       this._authorSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.author);
 
 
-      if (message.authorization.retainer !== undefined) {
-        this._retainer = Jws.getSignerDid(message.authorization.retainer.signatures[0]);
-        this._retainerSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.retainer);
+      if (message.authorization.owner !== undefined) {
+        this._owner = Jws.getSignerDid(message.authorization.owner.signatures[0]);
+        this._ownerSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.owner);
       }
     }
 
@@ -192,8 +192,8 @@ export class RecordsWrite {
 
     await validateMessageSignatureIntegrity(message.authorization.author, message.descriptor, 'RecordsWriteSignaturePayload');
 
-    if (message.authorization.retainer !== undefined) {
-      await validateMessageSignatureIntegrity(message.authorization.retainer, message.descriptor, 'RecordsWriteSignaturePayload');
+    if (message.authorization.owner !== undefined) {
+      await validateMessageSignatureIntegrity(message.authorization.owner, message.descriptor, 'RecordsWriteSignaturePayload');
     }
 
     await RecordsWrite.validateAttestationIntegrity(message);
@@ -422,22 +422,22 @@ export class RecordsWrite {
   }
 
   /**
-   * Signs the `RecordsWrite` as the retainer.
+   * Signs the `RecordsWrite` as the owner.
    * NOTE: requires the `RecordsWrite` to already have the author's signature already.
    */
-  public async signAsRetainer(signer: Signer, permissionsGrantId?: string): Promise<void> {
+  public async signAsOwner(signer: Signer, permissionsGrantId?: string): Promise<void> {
     if (this._author === undefined) {
       throw new DwnError(
-        DwnErrorCode.RecordsWriteSignAsRetainerUnknownAuthor,
-        'Unable to sign as retainer if without author signature because retainer needs to sign over `recordId` which depends on author DID.');
+        DwnErrorCode.RecordsWriteSignAsOwnerUnknownAuthor,
+        'Unable to sign as owner if without author signature because owner needs to sign over `recordId` which depends on author DID.');
     }
-    const retainer = Jws.extractDid(signer.keyId);
+    const owner = Jws.extractDid(signer.keyId);
 
     const descriptor = this._message.descriptor;
     const descriptorCid = await Cid.computeCid(descriptor);
 
     // `authorization` generation
-    const retainerSignature = await RecordsWrite.createAuthorizationSignature(
+    const ownerSignature = await RecordsWrite.createAuthorizationSignature(
       this._message.recordId!,
       this._message.contextId,
       descriptorCid,
@@ -447,18 +447,18 @@ export class RecordsWrite {
       permissionsGrantId
     );
 
-    this._message.authorization!.retainer = retainerSignature;
+    this._message.authorization!.owner = ownerSignature;
 
-    this._retainerSignaturePayload = Jws.decodePlainObjectPayload(retainerSignature);
-    this._retainer = retainer;
+    this._ownerSignaturePayload = Jws.decodePlainObjectPayload(ownerSignature);
+    this._owner = owner;
   }
 
   public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
-    // if retainer DID is specified, it must be the same as the tenant DID
-    if (this.retainer !== undefined && this.retainer !== tenant) {
+    // if owner DID is specified, it must be the same as the tenant DID
+    if (this.owner !== undefined && this.owner !== tenant) {
       throw new DwnError(
-        DwnErrorCode.RecordsWriteRetainerAndTenantMismatch,
-        `Retainer ${this.retainer } must be the same as tenant ${tenant} when specified.`
+        DwnErrorCode.RecordsWriteOwnerAndTenantMismatch,
+        `Owner ${this.owner } must be the same as tenant ${tenant} when specified.`
       );
     }
 
@@ -470,9 +470,9 @@ export class RecordsWrite {
 
     // Remainder of the code is for flat-space writes
 
-    if (this.retainer !== undefined) {
+    if (this.owner !== undefined) {
       // if incoming message is a write retained by this tenant, we by-design always allow
-      // NOTE: the "retainer === tenant" check is already done earlier in this method
+      // NOTE: the "owner === tenant" check is already done earlier in this method
       return;
     } else if (this.author === tenant) {
       // if author is the same as the target tenant, we can directly grant access

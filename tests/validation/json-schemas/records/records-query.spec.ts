@@ -85,9 +85,9 @@ describe('RecordsQuery schema validation', () => {
     }).throws('dateSort: must be equal to one of the allowed values');
   });
 
-  it('should throw if `retainer` is specified in `authorization`', () => {
+  it('should throw if `owner` is specified in `authorization`', () => {
     const authorization = TestDataGenerator.generateAuthorization();
-    authorization.retainer = TestDataGenerator.generateAuthorizationSignature();
+    authorization.owner = TestDataGenerator.generateAuthorizationSignature();
 
     const invalidMessage = {
       descriptor: {

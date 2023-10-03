@@ -310,7 +310,7 @@ describe('RecordsWrite', () => {
     });
   });
 
-  describe('signAsRetainer()', () => {
+  describe('signAsOwner()', () => {
     it('should throw if the RecordsWrite is not signed by an author yet', async () => {
       const options = {
         data        : TestDataGenerator.randomBytes(10),
@@ -324,10 +324,10 @@ describe('RecordsWrite', () => {
       expect(recordsWrite.authorSignaturePayload).to.not.exist;
 
       const alice = await DidKeyResolver.generate();
-      await expect(recordsWrite.signAsRetainer(Jws.createSigner(alice))).to.rejectedWith(DwnErrorCode.RecordsWriteSignAsRetainerUnknownAuthor);
+      await expect(recordsWrite.signAsOwner(Jws.createSigner(alice))).to.rejectedWith(DwnErrorCode.RecordsWriteSignAsOwnerUnknownAuthor);
 
-      expect(recordsWrite.retainer).to.be.undefined;
-      expect(recordsWrite.retainerSignaturePayload).to.be.undefined;
+      expect(recordsWrite.owner).to.be.undefined;
+      expect(recordsWrite.ownerSignaturePayload).to.be.undefined;
     });
   });
 
