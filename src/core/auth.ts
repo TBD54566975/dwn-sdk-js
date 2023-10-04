@@ -49,7 +49,7 @@ export async function authenticate(authorizationModel: AuthorizationModel | unde
     throw new DwnError(DwnErrorCode.AuthenticateJwsMissing, 'Missing JWS.');
   }
 
-  const verifier = new GeneralJwsVerifier(authorizationModel.author);
+  const verifier = new GeneralJwsVerifier(authorizationModel.authorSignature);
   await verifier.verify(didResolver);
 }
 

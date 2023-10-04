@@ -16,7 +16,7 @@ export type RecordsDeleteOptions = {
 export class RecordsDelete extends Message<RecordsDeleteMessage> {
 
   public static async parse(message: RecordsDeleteMessage): Promise<RecordsDelete> {
-    await validateMessageSignatureIntegrity(message.authorization.author, message.descriptor);
+    await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
 
     const recordsDelete = new RecordsDelete(message);
     return recordsDelete;

@@ -222,7 +222,7 @@ describe('RecordsWrite', () => {
 
       const recordsWrite = await RecordsWrite.create(options);
 
-      expect(recordsWrite.message.authorization!.author.signatures[0].signature).to.equal(Encoder.bytesToBase64Url(hardCodedSignature));
+      expect(recordsWrite.message.authorization!.authorSignature.signatures[0].signature).to.equal(Encoder.bytesToBase64Url(hardCodedSignature));
     });
 
     it('should throw if attempting to use `protocols` key derivation encryption scheme on non-protocol-based record', async () => {
