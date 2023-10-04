@@ -87,7 +87,7 @@ describe('RecordsQuery schema validation', () => {
 
   it('should throw if `owner` is specified in `authorization`', () => {
     const authorization = TestDataGenerator.generateAuthorization();
-    authorization.owner = TestDataGenerator.generateAuthorizationSignature();
+    authorization.ownerSignature = TestDataGenerator.generateAuthorizationSignature();
 
     const invalidMessage = {
       descriptor: {

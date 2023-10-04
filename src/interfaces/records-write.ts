@@ -173,12 +173,11 @@ export class RecordsWrite {
 
     if (message.authorization !== undefined) {
       this._author = Message.getAuthor(message as GenericMessage);
-      this._authorSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.author);
+      this._authorSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.authorSignature);
 
-
-      if (message.authorization.owner !== undefined) {
-        this._owner = Jws.getSignerDid(message.authorization.owner.signatures[0]);
-        this._ownerSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.owner);
+      if (message.authorization.ownerSignature !== undefined) {
+        this._owner = Jws.getSignerDid(message.authorization.ownerSignature.signatures[0]);
+        this._ownerSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.ownerSignature);
       }
     }
 
@@ -190,10 +189,10 @@ export class RecordsWrite {
   public static async parse(message: RecordsWriteMessage): Promise<RecordsWrite> {
     // asynchronous checks that are required by the constructor to initialize members properly
 
-    await validateMessageSignatureIntegrity(message.authorization.author, message.descriptor, 'RecordsWriteSignaturePayload');
+    await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor, 'RecordsWriteSignaturePayload');
 
-    if (message.authorization.owner !== undefined) {
-      await validateMessageSignatureIntegrity(message.authorization.owner, message.descriptor, 'RecordsWriteSignaturePayload');
+    if (message.authorization.ownerSignature !== undefined) {
+      await validateMessageSignatureIntegrity(message.authorization.ownerSignature, message.descriptor, 'RecordsWriteSignaturePayload');
     }
 
     await RecordsWrite.validateAttestationIntegrity(message);
@@ -414,7 +413,7 @@ export class RecordsWrite {
       permissionsGrantId
     );
 
-    this._message.authorization = { author: authorSignature };
+    this._message.authorization = { authorSignature };
 
     // there is opportunity to optimize here as the payload is constructed within `createAuthorization(...)`
     this._authorSignaturePayload = Jws.decodePlainObjectPayload(authorSignature);
@@ -447,7 +446,7 @@ export class RecordsWrite {
       permissionsGrantId
     );
 
-    this._message.authorization!.owner = ownerSignature;
+    this._message.authorization!.ownerSignature = ownerSignature;
 
     this._ownerSignaturePayload = Jws.decodePlainObjectPayload(ownerSignature);
     this._owner = owner;

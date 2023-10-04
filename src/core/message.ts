@@ -40,7 +40,7 @@ export abstract class Message<M extends GenericMessage> {
     this.message = message;
 
     if (message.authorization !== undefined) {
-      this.authorSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.author);
+      this.authorSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.authorSignature);
       this.author = Message.getAuthor(message as GenericMessage);
     }
   }
@@ -73,7 +73,7 @@ export abstract class Message<M extends GenericMessage> {
       return undefined;
     }
 
-    const author = Jws.getSignerDid(message.authorization.author.signatures[0]);
+    const author = Jws.getSignerDid(message.authorization.authorSignature.signatures[0]);
     return author;
   }
 
@@ -125,9 +125,9 @@ export abstract class Message<M extends GenericMessage> {
     const authPayloadBytes = new TextEncoder().encode(authPayloadStr);
 
     const builder = await GeneralJwsBuilder.create(authPayloadBytes, [signer]);
-    const authorJws = builder.getJws();
+    const authorSignature = builder.getJws();
 
-    const authorization = { author: authorJws };
+    const authorization = { authorSignature };
     return authorization;
   }
 

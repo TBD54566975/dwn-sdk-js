@@ -171,7 +171,7 @@ export function testProtocolsQueryHandler(): void {
         const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
         const signer = Jws.createSigner(author);
         const jwsBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);
-        message.authorization = { author: jwsBuilder.getJws() };
+        message.authorization = { authorSignature: jwsBuilder.getJws() };
 
         const reply = await dwn.processMessage(tenant, message);
 

@@ -28,7 +28,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
 
   public static async parse(message: RecordsReadMessage): Promise<RecordsRead> {
     if (message.authorization !== undefined) {
-      await validateMessageSignatureIntegrity(message.authorization.author, message.descriptor);
+      await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
     }
 
     const recordsRead = new RecordsRead(message);
