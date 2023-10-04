@@ -8,7 +8,6 @@ export type { MessagesGetMessage, MessagesGetReply } from './types/messages-type
 export type { PermissionConditions, PermissionScope, PermissionsGrantDescriptor, PermissionsGrantMessage, PermissionsRequestDescriptor, PermissionsRequestMessage, PermissionsRevokeDescriptor, PermissionsRevokeMessage } from './types/permissions-types.js';
 export type { ProtocolsConfigureDescriptor, ProtocolDefinition, ProtocolTypes, ProtocolRuleSet, ProtocolsQueryFilter, ProtocolsConfigureMessage, ProtocolsQueryMessage } from './types/protocols-types.js';
 export type { EncryptionProperty, RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, RecordsReadReply, RecordsWriteDescriptor, RecordsWriteMessage } from './types/records-types.js';
-export type { SnapshotsCreateDescriptor, SnapshotsCreateMessage, SnapshotDefinition, SnapshotScope, SnapshotScopeType } from './types/snapshots-types.js';
 export { SortOrder } from './types/message-types.js';
 export { AllowAllTenantGate, TenantGate } from './core/tenant-gate.js';
 export { Cid } from './utils/cid.js';
@@ -44,7 +43,6 @@ export { ProtocolsQuery, ProtocolsQueryOptions } from './interfaces/protocols-qu
 export { Records } from './utils/records.js';
 export { RecordsDelete, RecordsDeleteOptions } from './interfaces/records-delete.js';
 export { RecordsRead, RecordsReadOptions } from './interfaces/records-read.js';
-export { SnapshotsCreate, SnapshotsCreateOptions } from './interfaces/snapshots-create.js';
 export { Secp256k1 } from './utils/secp256k1.js';
 export { Signer } from './types/signer.js';
 export { DataStoreLevel } from './store/data-store-level.js';

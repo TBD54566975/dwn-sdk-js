@@ -13,8 +13,7 @@ export enum DwnInterfaceName {
   Messages = 'Messages',
   Permissions = 'Permissions',
   Protocols = 'Protocols',
-  Records = 'Records',
-  Snapshots = 'Snapshots'
+  Records = 'Records'
 }
 
 export enum DwnMethodName {
