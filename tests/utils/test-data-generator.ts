@@ -11,8 +11,6 @@ import type {
   EncryptionInput,
   EventsGetMessage,
   EventsGetOptions,
-  HooksWriteMessage,
-  HooksWriteOptions,
   KeyEncryptionInput,
   MessagesGetMessage,
   MessagesGetOptions,
@@ -52,7 +50,6 @@ import { Temporal } from '@js-temporal/polyfill';
 import {
   DidKeyResolver,
   EventsGet,
-  HooksWrite,
   Jws,
   MessagesGet,
   ProtocolsConfigure,
@@ -179,20 +176,6 @@ export type GenerateRecordsDeleteOutput = {
   author: Persona;
   recordsDelete: RecordsDelete;
   message: RecordsDeleteMessage;
-};
-
-export type GenerateHooksWriteInput = {
-  author?: Persona;
-  messageTimestamp?: string;
-  filter?: {
-    method: string;
-  }
-  uri?: string;
-};
-
-export type GenerateHooksWriteOutput = {
-  author: Persona;
-  message: HooksWriteMessage;
 };
 
 export type GeneratePermissionsRequestInput = {
@@ -635,29 +618,6 @@ export class TestDataGenerator {
       message: recordsDelete.message
     };
   }
-
-  /**
-   * Generates a HooksWrite message for testing.
-   */
-  public static async generateHooksWrite(input?: GenerateHooksWriteInput): Promise<GenerateHooksWriteOutput> {
-    const author = input?.author ?? await TestDataGenerator.generatePersona();
-
-    const authorizationSigner = Jws.createSigner(author);
-
-    const options: HooksWriteOptions = {
-      messageTimestamp : input?.messageTimestamp,
-      authorizationSigner,
-      filter           : input?.filter ?? { method: 'RecordsWrite' }, // hardcode to filter on `RecordsWrite` if no filter is given
-    };
-    removeUndefinedProperties(options);
-
-    const hooksWrite = await HooksWrite.create(options);
-
-    return {
-      author,
-      message: hooksWrite.message
-    };
-  };
 
   /**
    * Generates a PermissionsRequest message for testing.

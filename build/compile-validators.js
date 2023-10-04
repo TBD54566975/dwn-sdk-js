@@ -24,7 +24,6 @@ import EventsGet from '../json-schemas/events/events-get.json' assert { type: 'j
 import GeneralJwk from '../json-schemas/jwk/general-jwk.json' assert { type: 'json' };
 import GeneralJws from '../json-schemas/general-jws.json' assert { type: 'json' };
 import GenericSignaturePayload from '../json-schemas/authorization-payloads/base-authorization-payload.json' assert { type: 'json' };
-import HooksWrite from '../json-schemas/hooks/hooks-write.json' assert { type: 'json' };
 import JwkVerificationMethod from '../json-schemas/jwk-verification-method.json' assert { type: 'json' };
 import MessagesGet from '../json-schemas/interface-methods/messages-get.json' assert { type: 'json' };
 import PermissionsDefinitions from '../json-schemas/permissions/permissions-definitions.json' assert { type: 'json' };
@@ -57,7 +56,6 @@ const schemas = {
   Definitions,
   GeneralJwk,
   GeneralJws,
-  HooksWrite,
   JwkVerificationMethod,
   MessagesGet,
   PermissionsDefinitions,
