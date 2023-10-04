@@ -149,7 +149,7 @@ export function testProtocolsQueryHandler(): void {
       protocolsQuery.message.descriptor.filter!.protocol = 'example.com/';
 
       // Re-create auth because we altered the descriptor after signing
-      protocolsQuery.message.authorization = await Message.signAuthorizationAsAuthor(
+      protocolsQuery.message.authorization = await Message.createAuthorizationAsAuthor(
         protocolsQuery.message.descriptor,
         Jws.createSigner(alice)
       );

@@ -110,9 +110,9 @@ export abstract class Message<M extends GenericMessage> {
   /**
    * Creates the `authorization` as the author to be used in a DWN message.
    * @param signer Signer as the author
-   * @returns General JWS signature used as an `authorization` property.
+   * @returns {AuthorizationModel} used as an `authorization` property.
    */
-  public static async signAuthorizationAsAuthor(
+  public static async createAuthorizationAsAuthor(
     descriptor: Descriptor,
     signer: Signer,
     additionalPayloadProperties?: { permissionsGrantId?: string, protocolRole?: string }
