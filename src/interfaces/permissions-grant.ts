@@ -8,6 +8,7 @@ import { removeUndefinedProperties } from '../utils/object.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
 
 export type PermissionsGrantOptions = {
   messageTimestamp?: string;
@@ -42,6 +43,10 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
   }
 
   static async create(options: PermissionsGrantOptions): Promise<PermissionsGrant> {
+    const scope = { ...options.scope } as RecordsPermissionScope;
+    scope.protocol = scope.protocol !== undefined ? normalizeProtocolUrl(scope.protocol) : undefined;
+    scope.schema = scope.schema !== undefined ? normalizeSchemaUrl(scope.schema) : undefined;
+
     const descriptor: PermissionsGrantDescriptor = {
       interface            : DwnInterfaceName.Permissions,
       method               : DwnMethodName.Grant,
@@ -52,7 +57,7 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
       grantedBy            : options.grantedBy,
       grantedFor           : options.grantedFor,
       permissionsRequestId : options.permissionsRequestId,
-      scope                : options.scope,
+      scope                : scope,
       conditions           : options.conditions,
     };
 
