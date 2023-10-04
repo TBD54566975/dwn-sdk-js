@@ -29,6 +29,7 @@ export interface EventLog {
    * adds an event to a tenant's event log
    * @param tenant - the tenant's DID
    * @param messageCid - the CID of the message
+   * @param indexes - (key-value pairs) to be included as part of indexing this event.
    * @returns {Promise<string>} watermark
    */
   append(tenant: string, messageCid: string, indexes?: { [key:string]: string|boolean }): Promise<string>
