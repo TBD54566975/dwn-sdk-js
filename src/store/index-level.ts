@@ -10,18 +10,11 @@ export interface IndexLevelOptions {
 }
 
 /**
- * A LevelDB implementation for indexing the messages stored in the DWN.
+ * IndexLevel is a base class with some common functions used between MessageIndex and EventLog.
  */
 export class IndexLevel {
-  config: IndexLevelConfig;
   db: LevelWrapper<string>;
-
-  constructor(config: IndexLevelConfig) {
-    this.config = {
-      createLevelDatabase,
-      ...config
-    };
-
+  constructor(private config: IndexLevelConfig) {
     this.db = new LevelWrapper<string>({ ...this.config, valueEncoding: 'utf8' });
   }
 
@@ -32,6 +25,66 @@ export class IndexLevel {
   async close(): Promise<void> {
     return this.db.close();
   }
+
+  async clear(): Promise<void> {
+    return this.db.clear();
+  }
+
+  /**
+   *  Encodes a numerical value as a string for lexicographical comparison.
+   *  If the number is positive it simply pads it with leading zeros.
+   *  ex.: input:  1024 => "0000000000001024"
+   *       input: -1024 => "!9007199254739967"
+   *
+   * @param value the number to encode.
+   * @returns a string representation of the number.
+   */
+  static encodeNumberValue(value: number): string {
+    const NEGATIVE_OFFSET = Number.MAX_SAFE_INTEGER;
+    const NEGATIVE_PREFIX = '!'; // this will be sorted below positive numbers lexicographically
+    const PADDING_LENGTH = String(Number.MAX_SAFE_INTEGER).length;
+
+    const prefix: string = value < 0 ? NEGATIVE_PREFIX : '';
+    const offset: number = value < 0 ? NEGATIVE_OFFSET : 0;
+    return prefix + String(value + offset).padStart(PADDING_LENGTH, '0');
+  }
+
+  protected encodeValue(value: unknown): string {
+    switch (typeof value) {
+    case 'string':
+      // We can't just `JSON.stringify` as that'll affect the sort order of strings.
+      // For example, `'\x00'` becomes `'\\u0000'`.
+      return `"${value}"`;
+    case 'number':
+      return MessageIndex.encodeNumberValue(value);
+    default:
+      return String(value);
+    }
+  }
+
+  /**
+   * Joins the given values using the `\x00` (\u0000) character.
+   */
+  protected static delimiter = `\x00`;
+  protected join(...values: unknown[]): string {
+    return values.join(IndexLevel.delimiter);
+  }
+}
+
+/**
+ * A LevelDB implementation for indexing the messages stored in the DWN.
+ */
+export class MessageIndex extends IndexLevel {
+
+  constructor(config: IndexLevelConfig) {
+    const indexConfig: IndexLevelConfig = {
+      createLevelDatabase,
+      ...config
+    };
+    super(indexConfig);
+
+  }
+
 
   /**
    * Adds indexes for a specific data/object/content.
@@ -171,10 +224,6 @@ export class IndexLevel {
     await partition.batch(ops, options);
   }
 
-  async clear(): Promise<void> {
-    return this.db.clear();
-  }
-
   /**
    * @returns IDs of data that matches the exact property and value.
    */
@@ -218,7 +267,7 @@ export class IndexLevel {
     const matches: string[] = [];
     for await (const [ key, dataId ] of partition.iterator(iteratorOptions, options)) {
       // if "greater-than" is specified, skip all keys that contains the exact value given in the "greater-than" condition
-      if ('gt' in rangeFilter && IndexLevel.extractValueFromKey(key) === this.encodeValue(rangeFilter.gt)) {
+      if ('gt' in rangeFilter && MessageIndex.extractValueFromKey(key) === this.encodeValue(rangeFilter.gt)) {
         continue;
       }
 
@@ -244,38 +293,6 @@ export class IndexLevel {
     return matches;
   }
 
-  private encodeValue(value: unknown): string {
-    switch (typeof value) {
-    case 'string':
-      // We can't just `JSON.stringify` as that'll affect the sort order of strings.
-      // For example, `'\x00'` becomes `'\\u0000'`.
-      return `"${value}"`;
-    case 'number':
-      return IndexLevel.encodeNumberValue(value);
-    default:
-      return String(value);
-    }
-  }
-
-  /**
-   *  Encodes a numerical value as a string for lexicographical comparison.
-   *  If the number is positive it simply pads it with leading zeros.
-   *  ex.: input:  1024 => "0000000000001024"
-   *       input: -1024 => "!9007199254739967"
-   *
-   * @param value the number to encode.
-   * @returns a string representation of the number.
-   */
-  static encodeNumberValue(value: number): string {
-    const NEGATIVE_OFFSET = Number.MAX_SAFE_INTEGER;
-    const NEGATIVE_PREFIX = '!'; // this will be sorted below positive numbers lexicographically
-    const PADDING_LENGTH = String(Number.MAX_SAFE_INTEGER).length;
-
-    const prefix: string = value < 0 ? NEGATIVE_PREFIX : '';
-    const offset: number = value < 0 ? NEGATIVE_OFFSET : 0;
-    return prefix + String(value + offset).padStart(PADDING_LENGTH, '0');
-  }
-
   /**
    * Extracts the value encoded within the indexed key when a record is inserted.
    *
@@ -288,14 +305,6 @@ export class IndexLevel {
   static extractValueFromKey(key: string): string {
     const [, value] = key.split(this.delimiter);
     return value;
-  }
-
-  /**
-   * Joins the given values using the `\x00` (\u0000) character.
-   */
-  private static delimiter = `\x00`;
-  private join(...values: unknown[]): string {
-    return values.join(IndexLevel.delimiter);
   }
 }
 
