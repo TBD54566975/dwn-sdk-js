@@ -13,12 +13,13 @@ export type GenericMessage = {
  */
 export type AuthorizationModel = {
   author: GeneralJws;
+  owner?: GeneralJws;
 };
 
 /**
  * Type of common decoded `authorization`property payload.
  */
-export type BaseAuthorizationPayload = {
+export type GenericSignaturePayload = {
   descriptorCid: string;
   permissionsGrantId?: string;
   /**

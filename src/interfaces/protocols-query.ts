@@ -6,7 +6,7 @@ import type { ProtocolsQueryDescriptor, ProtocolsQueryFilter, ProtocolsQueryMess
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { GrantAuthorization } from '../core/grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 import { normalizeProtocolUrl, validateProtocolUrlNormalized } from '../utils/url.js';
 
@@ -23,7 +23,7 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
 
   public static async parse(message: ProtocolsQueryMessage): Promise<ProtocolsQuery> {
     if (message.authorization !== undefined) {
-      await validateAuthorizationIntegrity(message);
+      await validateMessageSignatureIntegrity(message.authorization.author, message.descriptor);
     }
 
     if (message.descriptor.filter !== undefined) {
@@ -78,8 +78,14 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
     // if author is the same as the target tenant, we can directly grant access
     if (this.author === tenant) {
       return;
-    } else if (this.authorizationPayload?.permissionsGrantId) {
-      await GrantAuthorization.authorizeGenericMessage(tenant, this, this.author!, messageStore);
+    } else if (this.authorSignaturePayload?.permissionsGrantId) {
+      await GrantAuthorization.authorizeGenericMessage(
+        tenant,
+        this,
+        this.author!,
+        this.authorSignaturePayload.permissionsGrantId,
+        messageStore
+      );
     } else {
       throw new DwnError(
         DwnErrorCode.ProtocolsQueryUnauthorized,

@@ -1,7 +1,7 @@
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { PublicJwk } from './jose-types.js';
+import type { AuthorizationModel, GenericMessage, QueryResultEntry } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
-import type { GenericMessage, QueryResultEntry } from './message-types.js';
 
 export type ProtocolsConfigureDescriptor = {
   interface : DwnInterfaceName.Protocols;
@@ -119,6 +119,7 @@ export type ProtocolRuleSet = {
 };
 
 export type ProtocolsConfigureMessage = GenericMessage & {
+  authorization: AuthorizationModel; // overriding `GenericMessage` with `authorization` being required
   descriptor: ProtocolsConfigureDescriptor;
 };
 

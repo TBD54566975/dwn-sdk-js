@@ -1,5 +1,5 @@
 import type { Signer } from '../types/signer.js';
-import type { AuthorizationModel, BaseAuthorizationPayload, Descriptor, GenericMessage } from '../types/message-types.js';
+import type { AuthorizationModel, Descriptor, GenericMessage, GenericSignaturePayload } from '../types/message-types.js';
 
 import { Cid } from '../utils/cid.js';
 import { GeneralJwsBuilder } from '../jose/jws/general/builder.js';
@@ -33,14 +33,14 @@ export enum DwnMethodName {
 
 export abstract class Message<M extends GenericMessage> {
   readonly message: M;
-  readonly authorizationPayload: BaseAuthorizationPayload | undefined;
+  readonly authorSignaturePayload: GenericSignaturePayload | undefined;
   readonly author: string | undefined;
 
   constructor(message: M) {
     this.message = message;
 
     if (message.authorization !== undefined) {
-      this.authorizationPayload = Jws.decodePlainObjectPayload(message.authorization.author);
+      this.authorSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.author);
       this.author = Message.getAuthor(message as GenericMessage);
     }
   }
@@ -108,29 +108,6 @@ export abstract class Message<M extends GenericMessage> {
   }
 
   /**
-   * Compares the CID of two messages.
-   * @returns `true` if `a` is newer than `b`; `false` otherwise
-   */
-  public static async isCidLarger(a: GenericMessage, b: GenericMessage): Promise<boolean> {
-    const aIsLarger = (await Message.compareCid(a, b) > 0);
-    return aIsLarger;
-  }
-
-  /**
-   * @returns message with the largest CID in the array using lexicographical compare. `undefined` if given array is empty.
-   */
-  public static async getMessageWithLargestCid(messages: GenericMessage[]): Promise<GenericMessage | undefined> {
-    let currentNewestMessage: GenericMessage | undefined = undefined;
-    for (const message of messages) {
-      if (currentNewestMessage === undefined || await Message.isCidLarger(message, currentNewestMessage)) {
-        currentNewestMessage = message;
-      }
-    }
-
-    return currentNewestMessage;
-  }
-
-  /**
    * Creates the `authorization` as the author to be used in a DWN message.
    * @param signer Signer as the author
    * @returns General JWS signature used as an `authorization` property.
@@ -142,7 +119,7 @@ export abstract class Message<M extends GenericMessage> {
   ): Promise<AuthorizationModel> {
     const descriptorCid = await Cid.computeCid(descriptor);
 
-    const authPayload: BaseAuthorizationPayload = { descriptorCid, ...additionalPayloadProperties };
+    const authPayload: GenericSignaturePayload = { descriptorCid, ...additionalPayloadProperties };
     removeUndefinedProperties(authPayload);
     const authPayloadStr = JSON.stringify(authPayload);
     const authPayloadBytes = new TextEncoder().encode(authPayloadStr);

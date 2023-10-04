@@ -276,7 +276,7 @@ export class ProtocolAuthorization {
       return;
     }
 
-    const protocolRole = (incomingMessage as RecordsRead).authorizationPayload?.protocolRole;
+    const protocolRole = (incomingMessage as RecordsRead).authorSignaturePayload?.protocolRole;
 
     // Only verify role if there is a role being invoked
     if (protocolRole === undefined) {
@@ -310,7 +310,7 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Verifies the actions specified in the given message matches the allowed actions in the rule set.
+   * Verifies the action (e.g. read/write) specified in the given message matches the allowed actions in the rule set.
    * @throws {Error} if action not allowed.
    */
   private static async verifyAllowedActions(
@@ -321,16 +321,21 @@ export class ProtocolAuthorization {
     ancestorMessageChain: RecordsWriteMessage[],
     messageStore: MessageStore,
   ): Promise<void> {
-    const inboundMessageAction = methodToAllowedActionMap[incomingMessage.message.descriptor.method];
+    const incomingMessageMethod = incomingMessage.message.descriptor.method;
+    const inboundMessageAction = methodToAllowedActionMap[incomingMessageMethod];
     const author = incomingMessage.author;
-
     const actionRules = inboundMessageRuleSet.$actions;
-    if (author === tenant) {
+
+    if (incomingMessage.message.authorization?.owner !== undefined) {
+      // if incoming message is a write retained by this tenant, we by design bypass allowed action verification
+      // NOTE: the "owner === tenant" check is already done before this method is invoked
+      return;
+    } else if (author === tenant) {
       // tenant is always authorized
       return;
-    } else if (incomingMessage.author !== undefined && incomingMessage.authorizationPayload?.permissionsGrantId !== undefined) {
+    } else if (incomingMessage.author !== undefined && incomingMessage.authorSignaturePayload?.permissionsGrantId !== undefined) {
       // PermissionsGrant gives the author explicit access to this record
-      if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
+      if (incomingMessageMethod === DwnMethodName.Write) {
         await RecordsGrantAuthorization.authorizeWrite(tenant, incomingMessage as RecordsWrite, incomingMessage.author, messageStore);
       } else {
         await RecordsGrantAuthorization.authorizeRead(
@@ -343,13 +348,13 @@ export class ProtocolAuthorization {
       }
       return;
     } else if (actionRules === undefined) {
-      throw new Error(`no action rule defined for ${incomingMessage.message.descriptor.method}, ${author} is unauthorized`);
+      throw new Error(`no action rule defined for ${incomingMessageMethod}, ${author} is unauthorized`);
     }
 
     // Get role being invoked. Currently only Reads support role-based authorization
     let invokedRole: string | undefined;
     if (incomingMessage.message.descriptor.method === DwnMethodName.Read) {
-      invokedRole = (incomingMessage as RecordsRead).authorizationPayload?.protocolRole;
+      invokedRole = (incomingMessage as RecordsRead).authorSignaturePayload?.protocolRole;
     }
 
     for (const actionRule of actionRules) {

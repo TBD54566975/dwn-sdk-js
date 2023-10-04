@@ -11,7 +11,7 @@ import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { Encoder, Jws, KeyDerivationScheme } from '../../src/index.js';
+import { DidKeyResolver, Encoder, Jws, KeyDerivationScheme } from '../../src/index.js';
 
 
 chai.use(chaiAsPromised);
@@ -310,6 +310,27 @@ describe('RecordsWrite', () => {
     });
   });
 
+  describe('signAsOwner()', () => {
+    it('should throw if the RecordsWrite is not signed by an author yet', async () => {
+      const options = {
+        data        : TestDataGenerator.randomBytes(10),
+        dataFormat  : 'application/json',
+        dateCreated : '2023-07-27T10:20:30.405060Z',
+        recordId    : await TestDataGenerator.randomCborSha256Cid(),
+      };
+      const recordsWrite = await RecordsWrite.create(options);
+
+      expect(recordsWrite.author).to.not.exist;
+      expect(recordsWrite.authorSignaturePayload).to.not.exist;
+
+      const alice = await DidKeyResolver.generate();
+      await expect(recordsWrite.signAsOwner(Jws.createSigner(alice))).to.rejectedWith(DwnErrorCode.RecordsWriteSignAsOwnerUnknownAuthor);
+
+      expect(recordsWrite.owner).to.be.undefined;
+      expect(recordsWrite.ownerSignaturePayload).to.be.undefined;
+    });
+  });
+
   describe('message', () => {
     it('should throw if attempting to access the message of a RecordsWrite that is not given authorization signature input', async () => {
       const options = {
@@ -321,7 +342,7 @@ describe('RecordsWrite', () => {
       const recordsWrite = await RecordsWrite.create(options);
 
       expect(recordsWrite.author).to.not.exist;
-      expect(recordsWrite.authorizationPayload).to.not.exist;
+      expect(recordsWrite.authorSignaturePayload).to.not.exist;
 
       expect(() => recordsWrite.message).to.throw(DwnErrorCode.RecordsWriteMissingAuthorizationSigner);
     });
