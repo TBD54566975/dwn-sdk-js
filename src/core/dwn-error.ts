@@ -42,6 +42,7 @@ export enum DwnErrorCode {
   ProtocolAuthorizationMissingRole = 'ProtocolAuthorizationMissingRole',
   ProtocolAuthorizationMissingRuleSet = 'ProtocolAuthorizationMissingRuleSet',
   ProtocolAuthorizationNotARole = 'ProtocolAuthorizationNotARole',
+  ProtocolAuthorizationRoleMissingRecipient = 'ProtocolAuthorizationRoleMissingRecipient',
   ProtocolsConfigureGlobalRoleAtProhibitedProtocolPath = 'ProtocolsConfigureGlobalRoleAtProhibitedProtocolPath',
   ProtocolsConfigureInvalidRole = 'ProtocolsConfigureInvalidRole',
   ProtocolsConfigureInvalidActionMissingOf = 'ProtocolsConfigureInvalidActionMissingOf',

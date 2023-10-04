@@ -271,12 +271,7 @@ export class ProtocolAuthorization {
     protocolDefinition: ProtocolDefinition,
     messageStore: MessageStore,
   ): Promise<void> {
-    // Currently only RecordsReads may invoke a role
-    if (incomingMessage.message.descriptor.method !== DwnMethodName.Read) {
-      return;
-    }
-
-    const protocolRole = (incomingMessage as RecordsRead).authorSignaturePayload?.protocolRole;
+    const protocolRole = incomingMessage.authorSignaturePayload?.protocolRole;
 
     // Only verify role if there is a role being invoked
     if (protocolRole === undefined) {
@@ -351,11 +346,7 @@ export class ProtocolAuthorization {
       throw new Error(`no action rule defined for ${incomingMessageMethod}, ${author} is unauthorized`);
     }
 
-    // Get role being invoked. Currently only Reads support role-based authorization
-    let invokedRole: string | undefined;
-    if (incomingMessage.message.descriptor.method === DwnMethodName.Read) {
-      invokedRole = (incomingMessage as RecordsRead).authorSignaturePayload?.protocolRole;
-    }
+    const invokedRole = incomingMessage.authorSignaturePayload?.protocolRole;
 
     for (const actionRule of actionRules) {
       if (actionRule.can !== inboundMessageAction) {
@@ -396,19 +387,20 @@ export class ProtocolAuthorization {
     inboundMessageRuleSet: ProtocolRuleSet,
     messageStore: MessageStore,
   ): Promise<void> {
-    if (incomingMessage.message.descriptor.method !== DwnMethodName.Write) {
-      return;
-    }
-
     const incomingRecordsWrite = incomingMessage as RecordsWrite;
     if (!inboundMessageRuleSet.$globalRole) {
       return;
     }
 
-    // FIXME(diehuxx): do we enforce presence of recipient for protocol records? I thought we required it
-    const recipient = incomingRecordsWrite.message.descriptor.recipient!;
+    const recipient = incomingRecordsWrite.message.descriptor.recipient;
+    if (recipient === undefined) {
+      throw new DwnError(
+        DwnErrorCode.ProtocolAuthorizationRoleMissingRecipient,
+        'Role records must have a recipient'
+      );
+    }
     const protocolPath = incomingRecordsWrite.message.descriptor.protocolPath!;
-    const filter = {
+    const filter: Filter = {
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       isLatestBaseState : true,

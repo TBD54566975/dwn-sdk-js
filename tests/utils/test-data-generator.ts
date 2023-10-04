@@ -111,6 +111,7 @@ export type GenerateRecordsWriteInput = {
   recipient?: string;
   protocol?: string;
   protocolPath?: string;
+  protocolRole?: string;
   contextId?: string;
   schema?: string;
   recordId?: string;
@@ -400,6 +401,7 @@ export class TestDataGenerator {
       recipient          : input?.recipient,
       protocol           : input?.protocol,
       protocolPath       : input?.protocolPath,
+      protocolRole       : input?.protocolRole,
       contextId          : input?.contextId,
       schema             : input?.schema ?? `http://${TestDataGenerator.randomString(20)}`,
       recordId           : input?.recordId,
