@@ -4,8 +4,8 @@ import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
 import { ArrayUtility } from '../../src/utils/array.js';
-import { IndexLevel } from '../../src/store/index-level.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
+import { MessageIndex } from '../../src/store/index-level.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { Time } from '../../src/index.js';
 import { v4 as uuid } from 'uuid';
@@ -13,15 +13,14 @@ import { v4 as uuid } from 'uuid';
 chai.use(chaiAsPromised);
 
 
-
 describe('Index Level', () => {
 
   describe('put', () => {
-    let index: IndexLevel;
+    let index: MessageIndex;
     let testPartition: LevelWrapper<string>;
     const tenant = 'did:alice:index';
     before(async () => {
-      index = new IndexLevel({ location: 'TEST-INDEX' });
+      index = new MessageIndex({ location: 'TEST-INDEX' });
       await index.open();
       testPartition = await index.db.partition(tenant);
     });
@@ -110,15 +109,15 @@ describe('Index Level', () => {
 
       const keys = await ArrayUtility.fromAsyncGenerator(testPartition.keys());
       // encoded string values are surrounded by quotes.
-      expect(keys.filter( k => IndexLevel.extractValueFromKey(k) === `"${testValue}"`).length).to.equal(1);
+      expect(keys.filter( k => MessageIndex.extractValueFromKey(k) === `"${testValue}"`).length).to.equal(1);
     });
   });
 
   describe('query', () => {
-    let index: IndexLevel;
+    let index: MessageIndex;
     const tenant = 'did:alice:index';
     before(async () => {
-      index = new IndexLevel({ location: 'TEST-INDEX' });
+      index = new MessageIndex({ location: 'TEST-INDEX' });
       await index.open();
     });
 
@@ -429,10 +428,10 @@ describe('Index Level', () => {
   });
 
   describe('delete', () => {
-    let index: IndexLevel;
+    let index: MessageIndex;
     const tenant = 'did:alice:index';
     before(async () => {
-      index = new IndexLevel({ location: 'TEST-INDEX' });
+      index = new MessageIndex({ location: 'TEST-INDEX' });
       await index.open();
     });
 
@@ -499,7 +498,7 @@ describe('Index Level', () => {
   describe('encodeNumberValue', () => {
     it('should encode positive digits and pad with leading zeros', () => {
       const expectedLength = String(Number.MAX_SAFE_INTEGER).length; //16
-      const encoded = IndexLevel.encodeNumberValue(100);
+      const encoded = MessageIndex.encodeNumberValue(100);
       expect(encoded.length).to.equal(expectedLength);
       expect(encoded).to.equal('0000000000000100');
     });
@@ -507,17 +506,17 @@ describe('Index Level', () => {
       const expectedPrefix = '!';
       // expected length is maximum padding + the prefix.
       const expectedLength = (expectedPrefix + String(Number.MAX_SAFE_INTEGER)).length; //17
-      const encoded = IndexLevel.encodeNumberValue(-100);
+      const encoded = MessageIndex.encodeNumberValue(-100);
       expect(encoded.length).to.equal(String(Number.MIN_SAFE_INTEGER).length);
       expect(encoded.length).to.equal(expectedLength);
       expect(encoded).to.equal('!9007199254740891');
     });
     it('should encode digits to sort using lexicographical comparison', () => {
       const digits = [ -1000, -100, -10, 10, 100, 1000 ].sort((a,b) => a - b);
-      const encodedDigits = digits.map(d => IndexLevel.encodeNumberValue(d))
+      const encodedDigits = digits.map(d => MessageIndex.encodeNumberValue(d))
         .sort((a,b) => lexicographicalCompare(a, b));
 
-      digits.forEach((n,i) => expect(encodedDigits.at(i)).to.equal(IndexLevel.encodeNumberValue(n)));
+      digits.forEach((n,i) => expect(encodedDigits.at(i)).to.equal(MessageIndex.encodeNumberValue(n)));
     });
   });
 });
