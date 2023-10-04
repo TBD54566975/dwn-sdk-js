@@ -14,7 +14,6 @@ export class DwnError extends Error {
  */
 export enum DwnErrorCode {
   AuthenticateJwsMissing = 'AuthenticateJwsMissing',
-  AuthorizationMissing = 'AuthorizationMissing',
   AuthorizationUnknownAuthor = 'AuthorizationUnknownAuthor',
   GrantAuthorizationGrantExpired = 'GrantAuthorizationGrantExpired',
   GrantAuthorizationGrantMissing = 'GrantAuthorizationGrantMissing',
@@ -72,6 +71,8 @@ export enum DwnErrorCode {
   RecordsWriteMissingDataStream = 'RecordsWriteMissingDataStream',
   RecordsWriteMissingProtocol = 'RecordsWriteMissingProtocol',
   RecordsWriteMissingSchema = 'RecordsWriteMissingSchema',
+  RecordsWriteOwnerAndTenantMismatch = 'RecordsWriteOwnerAndTenantMismatch',
+  RecordsWriteSignAsOwnerUnknownAuthor = 'RecordsWriteSignAsOwnerUnknownAuthor',
   RecordsWriteValidateIntegrityEncryptionCidMismatch = 'RecordsWriteValidateIntegrityEncryptionCidMismatch',
   Secp256k1KeyNotValid = 'Secp256k1KeyNotValid',
   UrlProtocolNotNormalized = 'UrlProtocolNotNormalized',

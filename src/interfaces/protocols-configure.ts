@@ -2,7 +2,7 @@ import type { Signer } from '../types/signer.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types/protocols-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../index.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
@@ -21,7 +21,7 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
   public static async parse(message: ProtocolsConfigureMessage): Promise<ProtocolsConfigure> {
     Message.validateJsonSchema(message);
     ProtocolsConfigure.validateProtocolDefinition(message.descriptor.definition);
-    await validateAuthorizationIntegrity(message);
+    await validateMessageSignatureIntegrity(message.authorization.author, message.descriptor);
 
     return new ProtocolsConfigure(message);
   }

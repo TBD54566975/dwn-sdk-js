@@ -8,13 +8,22 @@ import { PermissionsConditionPublication } from '../types/permissions-types.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 
 export class RecordsGrantAuthorization {
+  /**
+   * Authorizes the given RecordsWrite in the scope of the DID given.
+   */
   public static async authorizeWrite(
     tenant: string,
     incomingMessage: RecordsWrite,
     author: string,
     messageStore: MessageStore,
   ): Promise<void> {
-    const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, author, messageStore);
+    const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(
+      tenant,
+      incomingMessage,
+      author,
+      incomingMessage.authorSignaturePayload!.permissionsGrantId!,
+      messageStore
+    );
 
     RecordsGrantAuthorization.verifyScope(incomingMessage, permissionsGrantMessage);
 
@@ -31,7 +40,13 @@ export class RecordsGrantAuthorization {
     author: string,
     messageStore: MessageStore,
   ): Promise<void> {
-    const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, author, messageStore);
+    const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(
+      tenant,
+      incomingMessage,
+      author,
+      incomingMessage.authorSignaturePayload!.permissionsGrantId!,
+      messageStore
+    );
 
     RecordsGrantAuthorization.verifyScope(newestRecordsWrite, permissionsGrantMessage);
   }

@@ -1,0 +1,20 @@
+{
+  "$id": "https://identity.foundation/dwn/json-schemas/authorization-owner.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "author": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
+    },
+    "owner": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
+    }
+  },
+  "description": "`author` can exist by itself. But if `owner` is present, then `author` must also exist",
+  "dependencies": {
+    "owner": [
+      "author"
+    ]
+  }
+}

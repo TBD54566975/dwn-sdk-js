@@ -2,7 +2,7 @@ import type { Signer } from '../types/signer.js';
 import type { PermissionsGrantMessage, PermissionsRevokeDescriptor, PermissionsRevokeMessage } from '../types/permissions-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
@@ -14,7 +14,7 @@ export type PermissionsRevokeOptions = {
 
 export class PermissionsRevoke extends Message<PermissionsRevokeMessage> {
   public static async parse(message: PermissionsRevokeMessage): Promise<PermissionsRevoke> {
-    await validateAuthorizationIntegrity(message);
+    await validateMessageSignatureIntegrity(message.authorization.author, message.descriptor);
 
     return new PermissionsRevoke(message);
   }
