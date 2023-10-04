@@ -1,5 +1,4 @@
 import type { GeneralJws } from '../types/jws-types.js';
-import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PublicJwk } from '../types/jose-types.js';
 import type { Signer } from '../types/signer.js';
@@ -13,6 +12,7 @@ import type {
   RecordsWriteSignaturePayload,
   UnsignedRecordsWriteMessage
 } from '../types/records-types.js';
+import type { GenericMessage, GenericSignaturePayload } from '../types/message-types.js';
 
 import { Cid } from '../utils/cid.js';
 import { Encoder } from '../utils/encoder.js';
@@ -159,11 +159,11 @@ export class RecordsWrite {
     return this._owner;
   }
 
-  private _ownerSignaturePayload: RecordsWriteSignaturePayload | undefined;
+  private _ownerSignaturePayload: GenericSignaturePayload | undefined;
   /**
    * Decoded owner signature payload.
    */
-  public get ownerSignaturePayload(): RecordsWriteSignaturePayload | undefined {
+  public get ownerSignaturePayload(): GenericSignaturePayload | undefined {
     return this._ownerSignaturePayload;
   }
 
@@ -193,7 +193,7 @@ export class RecordsWrite {
     await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor, 'RecordsWriteSignaturePayload');
 
     if (message.authorization.ownerSignature !== undefined) {
-      await validateMessageSignatureIntegrity(message.authorization.ownerSignature, message.descriptor, 'RecordsWriteSignaturePayload');
+      await validateMessageSignatureIntegrity(message.authorization.ownerSignature, message.descriptor);
     }
 
     await RecordsWrite.validateAttestationIntegrity(message);
@@ -403,8 +403,8 @@ export class RecordsWrite {
       this._message.contextId = await RecordsWrite.getEntryId(author, descriptor);
     }
 
-    // `authorization` generation
-    const authorSignature = await RecordsWrite.createAuthorizationSignature(
+    // `authorSignature` generation
+    const authorSignature = await RecordsWrite.createAuthorSignature(
       this._message.recordId,
       this._message.contextId,
       descriptorCid,
@@ -432,26 +432,15 @@ export class RecordsWrite {
         DwnErrorCode.RecordsWriteSignAsOwnerUnknownAuthor,
         'Unable to sign as owner if without author signature because owner needs to sign over `recordId` which depends on author DID.');
     }
-    const owner = Jws.extractDid(signer.keyId);
 
     const descriptor = this._message.descriptor;
-    const descriptorCid = await Cid.computeCid(descriptor);
-
-    // `authorization` generation
-    const ownerSignature = await RecordsWrite.createAuthorizationSignature(
-      this._message.recordId!,
-      this._message.contextId,
-      descriptorCid,
-      this._message.attestation,
-      this._message.encryption,
-      signer,
-      { permissionsGrantId },
-    );
+    const ownerSignature = await Message.createSignature(descriptor, signer, { permissionsGrantId });
 
     this._message.authorization!.ownerSignature = ownerSignature;
 
     this._ownerSignaturePayload = Jws.decodePlainObjectPayload(ownerSignature);
-    this._owner = owner;
+    this._owner = Jws.extractDid(signer.keyId);
+    ;
   }
 
   public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
@@ -721,7 +710,7 @@ export class RecordsWrite {
   /**
    * Creates the `authorization` property of a RecordsWrite message.
    */
-  public static async createAuthorizationSignature(
+  public static async createAuthorSignature(
     recordId: string,
     contextId: string | undefined,
     descriptorCid: string,

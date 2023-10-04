@@ -555,7 +555,7 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const authorSignature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const authorSignature = await RecordsWrite['createAuthorSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
           message.authorization = { authorSignature };
 
@@ -576,7 +576,7 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const authorSignature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const authorSignature = await RecordsWrite['createAuthorSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
           message.authorization = { authorSignature };
 
@@ -597,7 +597,7 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const authorSignature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const authorSignature = await RecordsWrite['createAuthorSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
           message.authorization = { authorSignature };
 
@@ -617,7 +617,7 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const authorSignature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const authorSignature = await RecordsWrite['createAuthorSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
           message.authorization = { authorSignature };
 
@@ -2207,7 +2207,7 @@ export function testRecordsWriteHandler(): void {
           // Re-create auth because we altered the descriptor after signing
           const descriptorCid = await Cid.computeCid(recordsWrite.message.descriptor);
           const attestation = await RecordsWrite.createAttestation(descriptorCid);
-          const authorSignature = await RecordsWrite.createAuthorizationSignature(
+          const authorSignature = await RecordsWrite.createAuthorSignature(
             recordsWrite.message.recordId,
             recordsWrite.message.contextId,
             descriptorCid,
