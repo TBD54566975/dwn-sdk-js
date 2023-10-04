@@ -78,8 +78,8 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
     // if author is the same as the target tenant, we can directly grant access
     if (this.author === tenant) {
       return;
-    } else if (this.authorizationPayload?.permissionsGrantId) {
-      await GrantAuthorization.authorizeGenericMessage(tenant, this, this.author!, messageStore);
+    } else if (this.author !== undefined && this.authorizationPayload!.permissionsGrantId) {
+      await GrantAuthorization.authorizeGenericMessage(tenant, this, this.author, messageStore);
     } else {
       throw new DwnError(
         DwnErrorCode.ProtocolsQueryUnauthorized,
