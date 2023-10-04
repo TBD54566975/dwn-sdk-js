@@ -311,8 +311,8 @@ export function testRecordsWriteHandler(): void {
         expect(data).to.eql(dataBytes);
       });
 
-      describe('owner tests', () => {
-        it('should use `owner` for authorization when it is given - flat-space', async () => {
+      describe('owner signature tests', () => {
+        it('should use `ownerSignature` for authorization when it is given - flat-space', async () => {
           // scenario: Alice fetch a message authored by Bob from Bob's DWN and retains (writes) it in her DWN
           const alice = await DidKeyResolver.generate();
           const bob = await DidKeyResolver.generate();
@@ -353,7 +353,7 @@ export function testRecordsWriteHandler(): void {
           expect(ArrayUtility.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
         });
 
-        it('should use `owner` for authorization when it is given - protocol-space', async () => {
+        it('should use `ownerSignature` for authorization when it is given - protocol-space', async () => {
           // scenario: Alice and Bob both have the same protocol which does NOT allow external entities to write,
           // but Alice can store a message authored by Bob as a owner in her own DWN
           const alice = await DidKeyResolver.generate();
@@ -403,7 +403,7 @@ export function testRecordsWriteHandler(): void {
           expect(ArrayUtility.byteArraysEqual(dataFetched, bobRecordsWrite.dataBytes!)).to.be.true;
         });
 
-        it('should throw if `owner` in `authorization` is mismatching with the tenant - flat-space', async () => {
+        it('should throw if `ownerSignature` in `authorization` is mismatching with the tenant - flat-space', async () => {
           // scenario: Carol attempts to store a message with Alice being the owner, and should fail
           const alice = await DidKeyResolver.generate();
           const bob = await DidKeyResolver.generate();
