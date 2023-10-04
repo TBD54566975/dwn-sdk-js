@@ -11,7 +11,7 @@ import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
 import { createLevelDatabase } from './level-wrapper.js';
 import { executeUnlessAborted } from '../utils/abort.js';
-import { IndexLevel } from './index-level.js';
+import { MessageIndex } from './index-level.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { SortOrder } from '../types/message-types.js';
 import { Cid, Message } from '../index.js';
@@ -26,7 +26,7 @@ export class MessageStoreLevel implements MessageStore {
 
   blockstore: BlockstoreLevel;
 
-  index: IndexLevel;
+  index: MessageIndex;
 
   /**
    * @param {MessageStoreLevelConfig} config
@@ -48,7 +48,7 @@ export class MessageStoreLevel implements MessageStore {
       createLevelDatabase : this.config.createLevelDatabase,
     });
 
-    this.index = new IndexLevel({
+    this.index = new MessageIndex({
       location            : this.config.indexLocation!,
       createLevelDatabase : this.config.createLevelDatabase,
     });

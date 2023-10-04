@@ -149,11 +149,13 @@ describe('EventLogLevel Tests', () => {
           cids.push(messageCid);
         }
       }
-
+      console.log('number of cids', cids.length);
       const numEventsDeleted = await eventLog.deleteEventsByCid(author.did, cids);
       expect(numEventsDeleted).to.equal(cids.length);
 
+      console.log('expected remaining ', 10 - cids.length);
       const remainingEvents = await eventLog.getEvents(author.did);
+      console.log('remaining ', remainingEvents.length);
       expect(remainingEvents.length).to.equal(10 - cids.length);
 
       const cidSet = new Set(cids);
