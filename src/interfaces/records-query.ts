@@ -29,7 +29,7 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
 
   public static async parse(message: RecordsQueryMessage): Promise<RecordsQuery> {
     if (message.authorization !== undefined) {
-      await validateMessageSignatureIntegrity(message.authorization.author, message.descriptor);
+      await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
     }
 
     if (message.descriptor.filter.protocol !== undefined) {

@@ -12,8 +12,8 @@ export type GenericMessage = {
  * The data model for the `authorization` property in a DWN message.
  */
 export type AuthorizationModel = {
-  author: GeneralJws;
-  owner?: GeneralJws;
+  authorSignature: GeneralJws;
+  ownerSignature?: GeneralJws;
 };
 
 /**

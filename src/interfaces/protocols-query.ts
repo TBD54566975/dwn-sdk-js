@@ -23,7 +23,7 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
 
   public static async parse(message: ProtocolsQueryMessage): Promise<ProtocolsQuery> {
     if (message.authorization !== undefined) {
-      await validateMessageSignatureIntegrity(message.authorization.author, message.descriptor);
+      await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
     }
 
     if (message.descriptor.filter !== undefined) {

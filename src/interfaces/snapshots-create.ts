@@ -16,7 +16,7 @@ export type SnapshotsCreateOptions = {
 export class SnapshotsCreate extends Message<SnapshotsCreateMessage> {
 
   public static async parse(message: SnapshotsCreateMessage): Promise<SnapshotsCreate> {
-    await validateMessageSignatureIntegrity(message.authorization.author, message.descriptor);
+    await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
 
     return new SnapshotsCreate(message);
   }

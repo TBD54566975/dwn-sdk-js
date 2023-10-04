@@ -36,7 +36,7 @@ export type CreateFromPermissionsRequestOverrides = {
 export class PermissionsGrant extends Message<PermissionsGrantMessage> {
 
   public static async parse(message: PermissionsGrantMessage): Promise<PermissionsGrant> {
-    await validateMessageSignatureIntegrity(message.authorization.author, message.descriptor);
+    await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
     PermissionsGrant.validateScope(message);
 
     return new PermissionsGrant(message);

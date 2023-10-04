@@ -4,17 +4,17 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "author": {
+    "authorSignature": {
       "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
     },
-    "owner": {
+    "ownerSignature": {
       "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
     }
   },
-  "description": "`author` can exist by itself. But if `owner` is present, then `author` must also exist",
+  "description": "`authorSignature` can exist by itself. But if `ownerSignature` is present, then `authorSignature` must also exist",
   "dependencies": {
-    "owner": [
-      "author"
+    "ownerSignature": [
+      "authorSignature"
     ]
   }
 }

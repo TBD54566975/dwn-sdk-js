@@ -311,8 +311,8 @@ export function testRecordsWriteHandler(): void {
         expect(data).to.eql(dataBytes);
       });
 
-      describe('owner tests', () => {
-        it('should use `owner` for authorization when it is given - flat-space', async () => {
+      describe('owner signature tests', () => {
+        it('should use `ownerSignature` for authorization when it is given - flat-space', async () => {
           // scenario: Alice fetch a message authored by Bob from Bob's DWN and retains (writes) it in her DWN
           const alice = await DidKeyResolver.generate();
           const bob = await DidKeyResolver.generate();
@@ -353,7 +353,7 @@ export function testRecordsWriteHandler(): void {
           expect(ArrayUtility.byteArraysEqual(dataFetched, dataBytes!)).to.be.true;
         });
 
-        it('should use `owner` for authorization when it is given - protocol-space', async () => {
+        it('should use `ownerSignature` for authorization when it is given - protocol-space', async () => {
           // scenario: Alice and Bob both have the same protocol which does NOT allow external entities to write,
           // but Alice can store a message authored by Bob as a owner in her own DWN
           const alice = await DidKeyResolver.generate();
@@ -403,7 +403,7 @@ export function testRecordsWriteHandler(): void {
           expect(ArrayUtility.byteArraysEqual(dataFetched, bobRecordsWrite.dataBytes!)).to.be.true;
         });
 
-        it('should throw if `owner` in `authorization` is mismatching with the tenant - flat-space', async () => {
+        it('should throw if `ownerSignature` in `authorization` is mismatching with the tenant - flat-space', async () => {
           // scenario: Carol attempts to store a message with Alice being the owner, and should fail
           const alice = await DidKeyResolver.generate();
           const bob = await DidKeyResolver.generate();
@@ -536,9 +536,9 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const signature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const authorSignature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
-          message.authorization = { author: signature };
+          message.authorization = { authorSignature };
 
           const reply = await dwn.processMessage(alice.did, message, dataStream);
           expect(reply.status.code).to.equal(400);
@@ -557,9 +557,9 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const signature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const authorSignature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
-          message.authorization = { author: signature };
+          message.authorization = { authorSignature };
 
           const reply = await dwn.processMessage(alice.did, message, dataStream);
           expect(reply.status.code).to.equal(400);
@@ -578,9 +578,9 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const signature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const authorSignature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
-          message.authorization = { author: signature };
+          message.authorization = { authorSignature };
 
           const reply = await dwn.processMessage(alice.did, message, dataStream);
           expect(reply.status.code).to.equal(400);
@@ -598,9 +598,9 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const signature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const authorSignature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
-          message.authorization = { author: signature };
+          message.authorization = { authorSignature };
 
           const reply = await dwn.processMessage(alice.did, message, dataStream);
           expect(reply.status.code).to.equal(400);
@@ -2063,7 +2063,7 @@ export function testRecordsWriteHandler(): void {
           recordsWrite.message = {
             ...recordsWrite.message,
             attestation,
-            authorization: { author: authorSignature }
+            authorization: { authorSignature }
           };
 
           // Send records write message
@@ -2919,7 +2919,7 @@ export function testRecordsWriteHandler(): void {
         const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
         const signer = Jws.createSigner(author);
         const jwsBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);
-        message.authorization = { author: jwsBuilder.getJws() };
+        message.authorization = { authorSignature: jwsBuilder.getJws() };
 
         const tenant = author.did;
         const didResolver = TestStubGenerator.createDidResolverStub(author);
@@ -2943,7 +2943,7 @@ export function testRecordsWriteHandler(): void {
         const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
         const signer = Jws.createSigner(author);
         const jwsBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);
-        message.authorization = { author: jwsBuilder.getJws() };
+        message.authorization = { authorSignature: jwsBuilder.getJws() };
 
         const tenant = author.did;
         const didResolver = sinon.createStubInstance(DidResolver);
@@ -3010,7 +3010,7 @@ export function testRecordsWriteHandler(): void {
         authorizationPayload.attestationCid = await Cid.computeCid(attestationPayload);
         const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
         const authorizationBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);
-        message.authorization = { author: authorizationBuilder.getJws() };
+        message.authorization = { authorSignature: authorizationBuilder.getJws() };
 
         const didResolver = TestStubGenerator.createDidResolverStub(author);
         const messageStore = stubInterface<MessageStore>();

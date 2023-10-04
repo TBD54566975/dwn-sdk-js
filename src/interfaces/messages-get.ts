@@ -17,7 +17,7 @@ export class MessagesGet extends Message<MessagesGetMessage> {
     Message.validateJsonSchema(message);
     this.validateMessageCids(message.descriptor.messageCids);
 
-    await validateMessageSignatureIntegrity(message.authorization.author, message.descriptor);
+    await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
 
     return new MessagesGet(message);
   }
