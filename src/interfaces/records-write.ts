@@ -36,6 +36,7 @@ export type RecordsWriteOptions = {
   recipient?: string;
   protocol?: string;
   protocolPath?: string;
+  protocolRole?: string;
   contextId?: string;
   schema?: string;
   recordId?: string;
@@ -294,7 +295,7 @@ export class RecordsWrite {
     const recordsWrite = new RecordsWrite(message);
 
     if (options.authorizationSigner !== undefined) {
-      await recordsWrite.sign(options.authorizationSigner, options.permissionsGrantId);
+      await recordsWrite.sign(options.authorizationSigner, { permissionsGrantId: options.permissionsGrantId, protocolRole: options.protocolRole });
     }
 
     return recordsWrite;
@@ -388,7 +389,7 @@ export class RecordsWrite {
   /**
    * Signs the RecordsWrite as the author.
    */
-  public async sign(signer: Signer, permissionsGrantId?: string): Promise<void> {
+  public async sign(signer: Signer, options?: { permissionsGrantId?: string, protocolRole?: string }): Promise<void> {
     const author = Jws.extractDid(signer.keyId);
 
     const descriptor = this._message.descriptor;
@@ -410,7 +411,7 @@ export class RecordsWrite {
       this._message.attestation,
       this._message.encryption,
       signer,
-      permissionsGrantId
+      options
     );
 
     this._message.authorization = { authorSignature };
@@ -443,7 +444,7 @@ export class RecordsWrite {
       this._message.attestation,
       this._message.encryption,
       signer,
-      permissionsGrantId
+      { permissionsGrantId },
     );
 
     this._message.authorization!.ownerSignature = ownerSignature;
@@ -476,7 +477,7 @@ export class RecordsWrite {
     } else if (this.author === tenant) {
       // if author is the same as the target tenant, we can directly grant access
       return;
-    } else if (this.author !== undefined && this.authorSignaturePayload?.permissionsGrantId !== undefined) {
+    } else if (this.author !== undefined && this.authorSignaturePayload!.permissionsGrantId !== undefined) {
       await RecordsGrantAuthorization.authorizeWrite(tenant, this, this.author, messageStore);
     } else {
       throw new Error('message failed authorization');
@@ -726,20 +727,21 @@ export class RecordsWrite {
     attestation: GeneralJws | undefined,
     encryption: EncryptionProperty | undefined,
     signer: Signer,
-    permissionsGrantId: string | undefined,
+    additionalProperties?: { permissionsGrantId?: string, protocolRole?: string },
   ): Promise<GeneralJws> {
-    const authorizationPayload: RecordsWriteSignaturePayload = {
-      recordId,
-      descriptorCid
-    };
-
     const attestationCid = attestation ? await Cid.computeCid(attestation) : undefined;
     const encryptionCid = encryption ? await Cid.computeCid(encryption) : undefined;
 
-    if (contextId !== undefined) { authorizationPayload.contextId = contextId; } // assign `contextId` only if it is defined
-    if (attestationCid !== undefined) { authorizationPayload.attestationCid = attestationCid; } // assign `attestationCid` only if it is defined
-    if (encryptionCid !== undefined) { authorizationPayload.encryptionCid = encryptionCid; } // assign `encryptionCid` only if it is defined
-    if (permissionsGrantId !== undefined) { authorizationPayload.permissionsGrantId = permissionsGrantId; }
+    const authorizationPayload: RecordsWriteSignaturePayload = {
+      recordId,
+      descriptorCid,
+      contextId,
+      attestationCid,
+      encryptionCid,
+      permissionsGrantId : additionalProperties?.permissionsGrantId,
+      protocolRole       : additionalProperties?.protocolRole
+    };
+    removeUndefinedProperties(authorizationPayload);
 
     const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
 
