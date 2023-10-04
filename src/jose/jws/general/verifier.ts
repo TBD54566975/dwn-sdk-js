@@ -6,6 +6,7 @@ import type { DidResolver, VerificationMethod } from '../../../did/did-resolver.
 import { Jws } from '../../../utils/jws.js';
 import { MemoryCache } from '../../../utils/memory-cache.js';
 import { validateJsonSchema } from '../../../schema-validator.js';
+import { DwnError, DwnErrorCode } from '../../../index.js';
 
 type VerificationResult = {
   /** DIDs of all signers */
@@ -45,7 +46,7 @@ export class GeneralJwsVerifier {
       if (isVerified) {
         signers.push(did);
       } else {
-        throw new Error(`signature verification failed for ${did}`);
+        throw new DwnError(DwnErrorCode.GeneralJwsVerifierInvalidSignature, `Signature verification failed for ${did}`);
       }
     }
 

@@ -166,11 +166,11 @@ export function testProtocolsQueryHandler(): void {
 
         // replace `authorization` with incorrect `descriptorCid`, even though signature is still valid
         const incorrectDescriptorCid = await TestDataGenerator.randomCborSha256Cid();
-        const authorizationPayload = { ...protocolsQuery.authorSignaturePayload };
-        authorizationPayload.descriptorCid = incorrectDescriptorCid;
-        const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
+        const authorSignaturePayload = { ...protocolsQuery.authorSignaturePayload };
+        authorSignaturePayload.descriptorCid = incorrectDescriptorCid;
+        const authorSignaturePayloadBytes = Encoder.objectToBytes(authorSignaturePayload);
         const signer = Jws.createSigner(author);
-        const jwsBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);
+        const jwsBuilder = await GeneralJwsBuilder.create(authorSignaturePayloadBytes, [signer]);
         message.authorization = { authorSignature: jwsBuilder.getJws() };
 
         const reply = await dwn.processMessage(tenant, message);
