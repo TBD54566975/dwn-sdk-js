@@ -5,7 +5,7 @@ import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../typ
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { removeUndefinedProperties } from '../utils/object.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
@@ -35,7 +35,7 @@ export type CreateFromPermissionsRequestOverrides = {
 export class PermissionsGrant extends Message<PermissionsGrantMessage> {
 
   public static async parse(message: PermissionsGrantMessage): Promise<PermissionsGrant> {
-    await validateAuthorizationIntegrity(message);
+    await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
     PermissionsGrant.validateScope(message);
 
     return new PermissionsGrant(message);

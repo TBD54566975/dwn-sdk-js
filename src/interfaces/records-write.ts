@@ -1,16 +1,16 @@
 import type { GeneralJws } from '../types/jws-types.js';
+import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PublicJwk } from '../types/jose-types.js';
 import type { Signer } from '../types/signer.js';
-import type { AuthorizationModel, GenericMessage } from '../types/message-types.js';
 import type {
   EncryptedKey,
   EncryptionProperty,
   InternalRecordsWriteMessage,
   RecordsWriteAttestationPayload,
-  RecordsWriteAuthorSignaturePayload,
   RecordsWriteDescriptor,
   RecordsWriteMessage,
+  RecordsWriteSignaturePayload,
   UnsignedRecordsWriteMessage
 } from '../types/records-types.js';
 
@@ -27,7 +27,7 @@ import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Secp256k1 } from '../utils/secp256k1.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
@@ -143,12 +143,28 @@ export class RecordsWrite {
     return this._author;
   }
 
-  private _authorSignaturePayload: RecordsWriteAuthorSignaturePayload | undefined;
+  private _authorSignaturePayload: RecordsWriteSignaturePayload | undefined;
   /**
-   * Decoded authorization payload.
+   * Decoded author signature payload.
    */
-  public get authorizationPayload(): RecordsWriteAuthorSignaturePayload | undefined {
+  public get authorSignaturePayload(): RecordsWriteSignaturePayload | undefined {
     return this._authorSignaturePayload;
+  }
+
+  private _owner: string | undefined;
+  /**
+   * DID of owner of this message.
+   */
+  public get owner(): string | undefined {
+    return this._owner;
+  }
+
+  private _ownerSignaturePayload: RecordsWriteSignaturePayload | undefined;
+  /**
+   * Decoded owner signature payload.
+   */
+  public get ownerSignaturePayload(): RecordsWriteSignaturePayload | undefined {
+    return this._ownerSignaturePayload;
   }
 
   readonly attesters: string[];
@@ -157,8 +173,13 @@ export class RecordsWrite {
     this._message = message;
 
     if (message.authorization !== undefined) {
-      this._authorSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.author);
       this._author = Message.getAuthor(message as GenericMessage);
+      this._authorSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.authorSignature);
+
+      if (message.authorization.ownerSignature !== undefined) {
+        this._owner = Jws.getSignerDid(message.authorization.ownerSignature.signatures[0]);
+        this._ownerSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.ownerSignature);
+      }
     }
 
     this.attesters = RecordsWrite.getAttesters(message);
@@ -168,7 +189,13 @@ export class RecordsWrite {
 
   public static async parse(message: RecordsWriteMessage): Promise<RecordsWrite> {
     // asynchronous checks that are required by the constructor to initialize members properly
-    await validateAuthorizationIntegrity(message, 'RecordsWriteAuthorSignaturePayload');
+
+    await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor, 'RecordsWriteSignaturePayload');
+
+    if (message.authorization.ownerSignature !== undefined) {
+      await validateMessageSignatureIntegrity(message.authorization.ownerSignature, message.descriptor, 'RecordsWriteSignaturePayload');
+    }
+
     await RecordsWrite.validateAttestationIntegrity(message);
 
     const recordsWrite = new RecordsWrite(message);
@@ -360,7 +387,7 @@ export class RecordsWrite {
   }
 
   /**
-   * Signs the RecordsWrite.
+   * Signs the RecordsWrite as the author.
    */
   public async sign(signer: Signer, options?: { permissionsGrantId?: string, protocolRole?: string }): Promise<void> {
     const author = Jws.extractDid(signer.keyId);
@@ -377,7 +404,7 @@ export class RecordsWrite {
     }
 
     // `authorization` generation
-    const authorization = await RecordsWrite.createAuthorization(
+    const authorSignature = await RecordsWrite.createAuthorizationSignature(
       this._message.recordId,
       this._message.contextId,
       descriptorCid,
@@ -387,20 +414,70 @@ export class RecordsWrite {
       options
     );
 
-    this._message.authorization = authorization;
+    this._message.authorization = { authorSignature };
 
     // there is opportunity to optimize here as the payload is constructed within `createAuthorization(...)`
-    this._authorSignaturePayload = Jws.decodePlainObjectPayload(authorization.author);
+    this._authorSignaturePayload = Jws.decodePlainObjectPayload(authorSignature);
     this._author = author;
   }
 
+  /**
+   * Signs the `RecordsWrite` as the owner.
+   * NOTE: requires the `RecordsWrite` to already have the author's signature already.
+   */
+  public async signAsOwner(signer: Signer, permissionsGrantId?: string): Promise<void> {
+    if (this._author === undefined) {
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteSignAsOwnerUnknownAuthor,
+        'Unable to sign as owner if without author signature because owner needs to sign over `recordId` which depends on author DID.');
+    }
+    const owner = Jws.extractDid(signer.keyId);
+
+    const descriptor = this._message.descriptor;
+    const descriptorCid = await Cid.computeCid(descriptor);
+
+    // `authorization` generation
+    const ownerSignature = await RecordsWrite.createAuthorizationSignature(
+      this._message.recordId!,
+      this._message.contextId,
+      descriptorCid,
+      this._message.attestation,
+      this._message.encryption,
+      signer,
+      { permissionsGrantId },
+    );
+
+    this._message.authorization!.ownerSignature = ownerSignature;
+
+    this._ownerSignaturePayload = Jws.decodePlainObjectPayload(ownerSignature);
+    this._owner = owner;
+  }
+
   public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
+    // if owner DID is specified, it must be the same as the tenant DID
+    if (this.owner !== undefined && this.owner !== tenant) {
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteOwnerAndTenantMismatch,
+        `Owner ${this.owner } must be the same as tenant ${tenant} when specified.`
+      );
+    }
+
+    // All protocol RecordsWrites must go through protocol auth, because protocolPath, contextId, and record type must be validated
     if (this.message.descriptor.protocol !== undefined) {
-      // All protocol RecordsWrites must go through protocol auth, because protocolPath, contextId, and record type must be validated
       await ProtocolAuthorization.authorize(tenant, this, this, messageStore);
+      return;
+    }
+
+    // Remainder of the code is for flat-space writes
+
+    if (this.owner !== undefined) {
+      // if incoming message is a write retained by this tenant, we by-design always allow
+      // NOTE: the "owner === tenant" check is already done earlier in this method
+      return;
     } else if (this.author === tenant) {
       // if author is the same as the target tenant, we can directly grant access
-    } else if (this.author !== undefined && this.authorizationPayload!.permissionsGrantId !== undefined) {
+      return;
+    } else if (this.author !== undefined && this.authorSignaturePayload!.permissionsGrantId !== undefined) {
       await RecordsGrantAuthorization.authorizeWrite(tenant, this, this.author, messageStore);
     } else {
       throw new Error('message failed authorization');
@@ -413,7 +490,7 @@ export class RecordsWrite {
    */
   private async validateIntegrity(): Promise<void> {
     // validateAuthorizationIntegrity() enforces the presence of authorization for RecordsWrite
-    const authorizationPayload = this.authorizationPayload!;
+    const authorizationPayload = this.authorSignaturePayload!;
 
     // make sure the `recordId` in message is the same as the `recordId` in `authorization`
     if (this.message.recordId !== authorizationPayload.recordId) {
@@ -523,7 +600,6 @@ export class RecordsWrite {
    * Computes the deterministic Entry ID of this message.
    */
   public static async getEntryId(author: string | undefined, descriptor: RecordsWriteDescriptor): Promise<string> {
-    // TODO: this paves the way to allow unsigned RecordsWrite as suggested in #206 (https://github.com/TBD54566975/dwn-sdk-js/issues/206)
     if (author === undefined) {
       throw new DwnError(DwnErrorCode.RecordsWriteGetEntryIdUndefinedAuthor, 'Property `author` is needed to compute entry ID.');
     }
@@ -644,7 +720,7 @@ export class RecordsWrite {
   /**
    * Creates the `authorization` property of a RecordsWrite message.
    */
-  public static async createAuthorization(
+  public static async createAuthorizationSignature(
     recordId: string,
     contextId: string | undefined,
     descriptorCid: string,
@@ -652,11 +728,11 @@ export class RecordsWrite {
     encryption: EncryptionProperty | undefined,
     signer: Signer,
     additionalProperties?: { permissionsGrantId?: string, protocolRole?: string },
-  ): Promise<AuthorizationModel> {
+  ): Promise<GeneralJws> {
     const attestationCid = attestation ? await Cid.computeCid(attestation) : undefined;
     const encryptionCid = encryption ? await Cid.computeCid(encryption) : undefined;
 
-    const authorizationPayload: RecordsWriteAuthorSignaturePayload = {
+    const authorizationPayload: RecordsWriteSignaturePayload = {
       recordId,
       descriptorCid,
       contextId,
@@ -670,13 +746,9 @@ export class RecordsWrite {
     const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
 
     const builder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);
-    const authorJws = builder.getJws();
+    const signature = builder.getJws();
 
-    const authorization = {
-      author: authorJws
-    };
-
-    return authorization;
+    return signature;
   }
 
   /**

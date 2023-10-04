@@ -4,7 +4,7 @@ import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '..
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { removeUndefinedProperties } from '../utils/object.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 export type PermissionsRequestOptions = {
@@ -21,7 +21,7 @@ export type PermissionsRequestOptions = {
 export class PermissionsRequest extends Message<PermissionsRequestMessage> {
 
   public static async parse(message: PermissionsRequestMessage): Promise<PermissionsRequest> {
-    await validateAuthorizationIntegrity(message);
+    await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
 
     return new PermissionsRequest(message);
   }

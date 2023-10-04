@@ -2,7 +2,7 @@ import type { Signer } from '../types/signer.js';
 import type { EventsGetDescriptor, EventsGetMessage } from '../types/event-types.js';
 
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 export type EventsGetOptions = {
@@ -15,7 +15,7 @@ export class EventsGet extends Message<EventsGetMessage> {
 
   public static async parse(message: EventsGetMessage): Promise<EventsGet> {
     Message.validateJsonSchema(message);
-    await validateAuthorizationIntegrity(message);
+    await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
 
     return new EventsGet(message);
   }

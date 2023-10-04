@@ -1,4 +1,5 @@
 import type { DidResolutionResult } from '../../src/did/did-resolver.js';
+import type { GeneralJws } from '../../src/types/jws-types.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsFilter } from '../../src/types/records-types.js';
 import type { AuthorizationModel, Pagination } from '../../src/types/message-types.js';
@@ -776,13 +777,20 @@ export class TestDataGenerator {
    */
   public static generateAuthorization(): AuthorizationModel {
     return {
-      author: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      }
+      authorSignature: TestDataGenerator.generateAuthorizationSignature()
+    };
+  }
+
+  /**
+   * Generates a dummy `authorization` property for a DWN message that only conforms to schema validation.
+   */
+  public static generateAuthorizationSignature(): GeneralJws {
+    return {
+      payload    : 'anyPayload',
+      signatures : [{
+        protected : 'anyProtectedHeader',
+        signature : 'anySignature'
+      }]
     };
   }
 

@@ -17,7 +17,7 @@
       "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
     },
     "authorization": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/authorization.json"
+      "$ref": "https://identity.foundation/dwn/json-schemas/authorization-owner.json"
     },
     "encryption": {
       "type": "object",

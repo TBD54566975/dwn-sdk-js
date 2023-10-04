@@ -4,7 +4,7 @@ import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Message } from '../core/message.js';
 import type { Signer } from '../types/signer.js';
 
-import { authorize, validateAuthorizationIntegrity } from '../core/auth.js';
+import { authorize, validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type RecordsDeleteOptions = {
@@ -16,7 +16,7 @@ export type RecordsDeleteOptions = {
 export class RecordsDelete extends Message<RecordsDeleteMessage> {
 
   public static async parse(message: RecordsDeleteMessage): Promise<RecordsDelete> {
-    await validateAuthorizationIntegrity(message);
+    await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
 
     const recordsDelete = new RecordsDelete(message);
     return recordsDelete;

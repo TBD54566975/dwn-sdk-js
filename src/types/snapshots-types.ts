@@ -1,4 +1,4 @@
-import type { GenericMessage } from './message-types.js';
+import type { AuthorizationModel, GenericMessage } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type SnapshotsCreateDescriptor = {
@@ -31,5 +31,6 @@ export type SnapshotProtocolScope = {
 };
 
 export type SnapshotsCreateMessage = GenericMessage & {
+  authorization: AuthorizationModel; // overriding `GenericMessage` with `authorization` being required
   descriptor: SnapshotsCreateDescriptor;
 };

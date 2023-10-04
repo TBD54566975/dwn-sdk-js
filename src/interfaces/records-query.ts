@@ -6,7 +6,7 @@ import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Message } from '../core/message.js';
 import { Records } from '../utils/records.js';
 import { removeUndefinedProperties } from '../utils/object.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 import { validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
@@ -29,7 +29,7 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
 
   public static async parse(message: RecordsQueryMessage): Promise<RecordsQuery> {
     if (message.authorization !== undefined) {
-      await validateAuthorizationIntegrity(message);
+      await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
     }
 
     if (message.descriptor.filter.protocol !== undefined) {

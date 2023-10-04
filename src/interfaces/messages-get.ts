@@ -3,7 +3,7 @@ import type { MessagesGetDescriptor, MessagesGetMessage } from '../types/message
 
 import { Cid } from '../utils/cid.js';
 import { getCurrentTimeInHighPrecision } from '../utils/time.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 export type MessagesGetOptions = {
@@ -17,7 +17,7 @@ export class MessagesGet extends Message<MessagesGetMessage> {
     Message.validateJsonSchema(message);
     this.validateMessageCids(message.descriptor.messageCids);
 
-    await validateAuthorizationIntegrity(message);
+    await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
 
     return new MessagesGet(message);
   }
