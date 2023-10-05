@@ -53,8 +53,15 @@ jobs:
       - run: npm run lint
       # runs tests in node environment without attempting to generate code coverage badges
       - run: npm run test:node:ci
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: true
+          verbose: true
       # runs code coverage badge generation, throws if README output differs to README to be checked in (thus detects if tests were not run)
-      - run: npm run make-coverage-badges:ci
+      #- run: npm run make-coverage-badges:ci
+
 
   test-with-browsers:
     # Run browser tests using macOS so that WebKit tests don't fail under a Linux environment
