@@ -37,8 +37,8 @@ describe('DidIonResolver', () => {
     const didIonResolver = new DidIonResolver();
 
     let resolverStub;
-    // stub network call if network is not available
-    if (!networkAvailable) {
+    // stub network call if network is not available or if running in browser
+    if (!networkAvailable || typeof window !== 'undefined') {
       resolverStub = sinon.stub(didIonResolver as any, 'fetch').resolves({
         status : 200,
         json   : async () => Promise.resolve({
@@ -61,8 +61,8 @@ describe('DidIonResolver', () => {
     const didIonResolver = new DidIonResolver();
 
     let resolverStub;
-    // stub network call if network is not available
-    if (!networkAvailable) {
+    // stub network call if network is not available or if running in browser
+    if (!networkAvailable || typeof window !== 'undefined') {
       resolverStub = sinon.stub(didIonResolver as any, 'fetch').resolves({ status: 404 });
     }
 
