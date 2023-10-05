@@ -1,4 +1,4 @@
-import type { Filter } from './message-types.js';
+import type { Filter, SortOrder } from './message-types.js';
 
 export type Event = {
   watermark: string,
@@ -9,9 +9,12 @@ export type GetEventsOptions = {
   gt: string
 };
 
+//todo: rename
 export type EventsLogFilter = {
   filter: Filter
-  gt?: string
+  sort: string
+  sortDirection: SortOrder
+  cursor?: string
 };
 
 export interface EventLog {
