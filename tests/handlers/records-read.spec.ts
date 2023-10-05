@@ -13,6 +13,8 @@ import minimalProtocolDefinition from '../vectors/protocol-definitions/minimal.j
 import nestedProtocol from '../vectors/protocol-definitions/nested.json' assert { type: 'json' };
 import sinon from 'sinon';
 import socialMediaProtocolDefinition from '../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
+import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
+
 import chai, { expect } from 'chai';
 
 import { ArrayUtility } from '../../src/utils/array.js';
@@ -474,7 +476,7 @@ export function testRecordsReadHandler(): void {
         });
 
         describe('protocolRole based reads', () => {
-          it('uses a protocolRole to authorize a read', async () => {
+          it('uses a globalRole to authorize a read', async () => {
             // scenario: Alice writes a chat message writes a chat message. Bob invokes his
             //           friend role in order to read the chat message.
 
@@ -525,7 +527,7 @@ export function testRecordsReadHandler(): void {
             expect(chatReadReply.status.code).to.equal(200);
           });
 
-          it('rejects role-authorized reads if the protocolRole is not a valid protocol path to a role record', async () => {
+          it('rejects globalRole-authorized reads if the protocolRole is not a valid protocol path to a role record', async () => {
             // scenario: Alice writes a chat message writes a chat message. Bob tries to invoke the 'chat' role,
             //           but 'chat' is not a role.
 
@@ -565,7 +567,7 @@ export function testRecordsReadHandler(): void {
             expect(chatReadReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationNotARole);
           });
 
-          it('rejects role-authorized reads if there is no active role for the recipient', async () => {
+          it('rejects globalRole-authorized reads if there is no active role for the recipient', async () => {
             // scenario: Alice writes a chat message writes a chat message. Bob tries to invoke a role,
             //           but he has not been given one.
 
@@ -601,6 +603,139 @@ export function testRecordsReadHandler(): void {
               protocolRole: 'friend',
             });
             const chatReadReply = await dwn.processMessage(alice.did, readChatRecord.message);
+            expect(chatReadReply.status.code).to.equal(401);
+            expect(chatReadReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
+          });
+
+          it('uses a contextRole to authorize a read', async () => {
+            // scenario: Alice creates a thread and adds Bob to the 'thread/participant' role. Alice writes a chat message.
+            //           Bob invokes the record to read in the chat message.
+
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+
+            const protocolDefinition = threadRoleProtocolDefinition;
+
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice creates a thread
+            const threadRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread'
+            });
+            const threadRecordReply = await dwn.processMessage(alice.did, threadRecord.message, threadRecord.dataStream);
+            expect(threadRecordReply.status.code).to.equal(202);
+
+            // Alice adds Bob as a 'thread/participant' in that thread
+            const participantRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/participant',
+              contextId    : threadRecord.message.contextId,
+              parentId     : threadRecord.message.recordId,
+            });
+            const participantRecordReply = await dwn.processMessage(alice.did, participantRecord.message, participantRecord.dataStream);
+            expect(participantRecordReply.status.code).to.equal(202);
+
+            // Alice writes a chat message in the thread
+            const chatRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/chat',
+              contextId    : threadRecord.message.contextId,
+              parentId     : threadRecord.message.recordId,
+            });
+            const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+            expect(chatRecordReply.status.code).to.equal(202);
+
+            // Bob invokes his 'participant' role to read the chat message
+            const chatRead = await RecordsRead.create({
+              authorizationSigner : Jws.createSigner(bob),
+              filter              : {
+                recordId: chatRecord.message.recordId,
+              },
+              protocolRole: 'thread/participant'
+            });
+            const chatReadReply = await dwn.processMessage(alice.did, chatRead.message);
+            expect(chatReadReply.status.code).to.equal(200);
+          });
+
+          it('rejects contextRole-authorized read if there is no active role in that context for the recipient', async () => {
+            // scenario: Alice creates a thread and adds Bob as a participant. ALice creates another thread. Bob tries and fails to invoke his
+            //           contextRole to write a chat in the second thread
+
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+
+            const protocolDefinition = threadRoleProtocolDefinition;
+
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice creates a thread
+            const threadRecord1 = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread'
+            });
+            const threadRecordReply1 = await dwn.processMessage(alice.did, threadRecord1.message, threadRecord1.dataStream);
+            expect(threadRecordReply1.status.code).to.equal(202);
+
+            // Alice adds Bob as a 'thread/participant' in that thread
+            const participantRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/participant',
+              contextId    : threadRecord1.message.contextId,
+              parentId     : threadRecord1.message.recordId,
+            });
+            const participantRecordReply = await dwn.processMessage(alice.did, participantRecord.message, participantRecord.dataStream);
+            expect(participantRecordReply.status.code).to.equal(202);
+
+            // Alice creates a second thread
+            const threadRecord2 = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread'
+            });
+            const threadRecordReply2 = await dwn.processMessage(alice.did, threadRecord2.message, threadRecord2.dataStream);
+            expect(threadRecordReply2.status.code).to.equal(202);
+
+            // Alice writes a chat message in the thread
+            const chatRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/chat',
+              contextId    : threadRecord2.message.contextId,
+              parentId     : threadRecord2.message.recordId,
+            });
+            const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+            expect(chatRecordReply.status.code).to.equal(202);
+
+            // Bob invokes his 'participant' role to read the chat message
+            const chatRead = await RecordsRead.create({
+              authorizationSigner : Jws.createSigner(bob),
+              filter              : {
+                recordId: chatRecord.message.recordId,
+              },
+              protocolRole: 'thread/participant'
+            });
+            const chatReadReply = await dwn.processMessage(alice.did, chatRead.message);
             expect(chatReadReply.status.code).to.equal(401);
             expect(chatReadReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
           });

@@ -105,7 +105,7 @@ describe('ProtocolsConfigure', () => {
         expect(protocolsConfigure.message.descriptor.definition).not.to.be.undefined;
       });
 
-      it('allows `role` acitons that have protocol path to valid $contextRole records', async () => {
+      it('allows `role` actions that have protocol path to valid $contextRole records', async () => {
         const definition = {
           published : true,
           protocol  : 'http://example.com',

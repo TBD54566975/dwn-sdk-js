@@ -279,14 +279,14 @@ export class ProtocolAuthorization {
     }
 
     const roleRuleSet = ProtocolAuthorization.getRuleSetAtProtocolPath(protocolRole, protocolDefinition);
-    if (roleRuleSet?.$globalRole === undefined) {
+    if (!roleRuleSet?.$globalRole && !roleRuleSet?.$contextRole) {
       throw new DwnError(
         DwnErrorCode.ProtocolAuthorizationNotARole,
         `Protocol path ${protocolRole} is not a valid protocolRole`
       );
     }
 
-    const roleRecordFilter = {
+    const roleRecordFilter: Filter = {
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       protocol          : recordsWrite.message.descriptor.protocol!,
@@ -294,6 +294,9 @@ export class ProtocolAuthorization {
       recipient         : incomingMessage.author!,
       isLatestBaseState : true,
     };
+    if (roleRuleSet?.$contextRole) {
+      roleRecordFilter.contextId = recordsWrite.message.contextId!;
+    }
     const { messages: matchingMessages } = await messageStore.query(tenant, [roleRecordFilter]);
 
     if (matchingMessages.length === 0) {
@@ -378,8 +381,8 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Verifies that writes to a $globalRole record do not have the same recipient as an existing RecordsWrite
-   * to the same $globalRole.
+   * Verifies that writes to a $globalRole or $contextRole record do not have the same recipient as an existing RecordsWrite
+   * to the same $globalRole or the same $contextRole in the same context.
    */
   private static async verifyUniqueRoleRecipient(
     tenant: string,
@@ -387,8 +390,12 @@ export class ProtocolAuthorization {
     inboundMessageRuleSet: ProtocolRuleSet,
     messageStore: MessageStore,
   ): Promise<void> {
+    if (incomingMessage.message.descriptor.method !== DwnMethodName.Write) {
+      return;
+    }
+
     const incomingRecordsWrite = incomingMessage as RecordsWrite;
-    if (!inboundMessageRuleSet.$globalRole) {
+    if (!inboundMessageRuleSet.$globalRole && !inboundMessageRuleSet.$contextRole) {
       return;
     }
 
@@ -408,16 +415,27 @@ export class ProtocolAuthorization {
       protocolPath,
       recipient,
     };
+    if (inboundMessageRuleSet.$contextRole) {
+      filter.contextId = incomingRecordsWrite.message.contextId!;
+    }
     const { messages: matchingMessages } = await messageStore.query(tenant, [filter]);
     const matchingRecords = matchingMessages as RecordsWriteMessage[];
     const matchingRecordsExceptIncomingRecordId = matchingRecords.filter((recordsWriteMessage) =>
       recordsWriteMessage.recordId !== incomingRecordsWrite.message.recordId
     );
     if (matchingRecordsExceptIncomingRecordId.length > 0) {
-      throw new DwnError(
-        DwnErrorCode.ProtocolAuthorizationDuplicateGlobalRoleRecipient,
-        `DID '${recipient}' is already recipient of a $globalRole record at protocol path '${protocolPath}`
-      );
+      if (inboundMessageRuleSet.$globalRole) {
+        throw new DwnError(
+          DwnErrorCode.ProtocolAuthorizationDuplicateGlobalRoleRecipient,
+          `DID '${recipient}' is already recipient of a $globalRole record at protocol path '${protocolPath}`
+        );
+      } else {
+        // $contextRole
+        throw new DwnError(
+          DwnErrorCode.ProtocolAuthorizationDuplicateContextRoleRecipient,
+          `DID '${recipient}' is already recipient of a $context record at protocol path '${protocolPath} in the same context`
+        );
+      }
     }
   }
 
