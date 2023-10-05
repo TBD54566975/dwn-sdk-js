@@ -8,8 +8,20 @@
   },
   "structure": {
     "thread": {
+      "$actions": [
+        {
+          "role": "thread/participant",
+          "can": "read"
+        }
+      ],
       "participant": {
-        "$contextRole": true
+        "$contextRole": true,
+        "$actions": [
+          {
+            "role": "thread/participant",
+            "can": "read"
+          }
+        ]
       },
       "chat": {
         "$actions": [

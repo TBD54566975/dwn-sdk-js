@@ -1,6 +1,6 @@
 import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
-import type { DataStore, EventLog, MessageStore, ProtocolDefinition, ProtocolsConfigureMessage } from '../../src/index.js';
+import type { DataStore, EventLog, MessageStore, ProtocolDefinition, ProtocolsConfigureMessage, RecordsReadReply } from '../../src/index.js';
 
 import { DwnConstant, Message } from '../../src/index.js';
 import { DwnInterfaceName, DwnMethodName } from '../../src/index.js';
@@ -655,6 +655,30 @@ export function testRecordsReadHandler(): void {
             });
             const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
             expect(chatRecordReply.status.code).to.equal(202);
+
+            // Bob is able to read his own 'participant' role
+            // He doesn't need to invoke the role because recipients of a record are always authorized to read it
+            const participantRead = await RecordsRead.create({
+              authorizationSigner : Jws.createSigner(bob),
+              filter              : {
+                protocolPath : 'thread/participant',
+                recipient    : bob.did,
+                contextId    : threadRecord.message.contextId
+              },
+            });
+            const participantReadReply = await dwn.processMessage(alice.did, participantRead.message) as RecordsReadReply;
+            expect(participantReadReply.status.code).to.equal(200);
+
+            // Bob is able to read the thread root record
+            const threadRead = await RecordsRead.create({
+              authorizationSigner : Jws.createSigner(bob),
+              filter              : {
+                recordId: participantReadReply.record!.descriptor.parentId,
+              },
+              protocolRole: 'thread/participant'
+            });
+            const threadReadReply = await dwn.processMessage(alice.did, threadRead.message) as RecordsReadReply;
+            expect(threadReadReply.status.code).to.equal(200);
 
             // Bob invokes his 'participant' role to read the chat message
             const chatRead = await RecordsRead.create({
