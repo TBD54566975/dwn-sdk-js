@@ -18,7 +18,8 @@ import { PermissionsGrantHandler } from '../../src/handlers/permissions-grant.js
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
-import { DwnInterfaceName, DwnMethodName, Jws } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName } from '../../src/enums/dwn-interface-method.js';
+import { Jws, SortOrder } from '../../src/index.js';
 
 export function testPermissionsGrantHandler(): void {
   describe('PermissionsGrantHandler.handle()', () => {
@@ -301,7 +302,7 @@ export function testPermissionsGrantHandler(): void {
           const reply = await dwn.processMessage(alice.did, message);
           expect(reply.status.code).to.equal(202);
 
-          const events = await eventLog.queryEvents(alice.did, [{ filter: { schema: normalizeSchemaUrl('schema1') } }]);
+          const events = await eventLog.queryEvents(alice.did, [{ filter: { schema: normalizeSchemaUrl('schema1') }, sort: 'watermark', sortDirection: SortOrder.Ascending }]);
           expect(events.length).to.equal(1);
 
           const messageCid = await Message.getCid(message);

@@ -4,6 +4,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { EventLogLevel } from '../../src/event-log/event-log-level.js';
 import { Message } from '../../src/core/message.js';
 import { normalizeSchemaUrl } from '../../src/utils/url.js';
+import { SortOrder } from '../../src/index.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 
 import chai, { expect } from 'chai';
@@ -148,13 +149,10 @@ describe('EventLogLevel Tests', () => {
           cids.push(messageCid);
         }
       }
-      console.log('number of cids', cids.length);
       const numEventsDeleted = await eventLog.deleteEventsByCid(author.did, cids);
       expect(numEventsDeleted).to.equal(cids.length);
 
-      console.log('expected remaining ', 10 - cids.length);
       const remainingEvents = await eventLog.getEvents(author.did);
-      console.log('remaining ', remainingEvents.length);
       expect(remainingEvents.length).to.equal(10 - cids.length);
 
       const cidSet = new Set(cids);
@@ -202,7 +200,7 @@ describe('EventLogLevel Tests', () => {
         expectedEvents.push({ watermark, messageCid });
       }
 
-      const events = await eventLog.queryEvents(author.did, [{ filter: { schema: normalizeSchemaUrl('schema1') } }]);
+      const events = await eventLog.queryEvents(author.did, [{ filter: { schema: normalizeSchemaUrl('schema1') }, sort: 'watermark', sortDirection: SortOrder.Ascending }]);
       expect(events.length).to.equal(expectedEvents.length);
 
       for (let i = 0; i < expectedEvents.length; i += 1) {
@@ -251,7 +249,7 @@ describe('EventLogLevel Tests', () => {
         expectedEvents.push({ watermark, messageCid });
       }
 
-      const events = await eventLog.queryEvents(author.did, [{ filter: { schema: normalizeSchemaUrl('schema1') }, gt: testWatermark }]);
+      const events = await eventLog.queryEvents(author.did, [{ filter: { schema: normalizeSchemaUrl('schema1') }, cursor: testWatermark, sort: 'watermark', sortDirection: SortOrder.Ascending }]);
       expect(events.length).to.equal(expectedEvents.length);
 
       for (let i = 0; i < expectedEvents.length; i += 1) {
