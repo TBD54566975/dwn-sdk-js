@@ -168,7 +168,7 @@ describe('ProtocolsConfigure', () => {
           .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureGlobalRoleAtProhibitedProtocolPath);
       });
 
-      it('rejects protocol definitions with $globalRole at records that are not root records', async () => {
+      it('rejects protocol definitions with $contextRole at records that are not second-level records', async () => {
         const alice = await TestDataGenerator.generatePersona();
 
         // it rejects context roles too high in the structure
