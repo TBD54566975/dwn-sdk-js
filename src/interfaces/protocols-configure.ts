@@ -96,6 +96,9 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
     }
   }
 
+  /**
+   * Validates the given rule set structure then recursively validates its nested child rule sets.
+   */
   private static validateRuleSet(ruleSet: ProtocolRuleSet, protocolPath: string, roles: string[]): void {
     const depth = protocolPath.split('/').length;
     if (ruleSet.$globalRole && depth !== 1) {
@@ -113,7 +116,7 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
     // Validate $actions in the ruleset
     const actions = ruleSet.$actions ?? [];
     for (const action of actions) {
-      // Validate that all `role` properties contain protocol paths $globalRole records
+      // Validate that all `role` properties contain protocol paths $globalRole or $contextRole records
       if (action.role !== undefined && !roles.includes(action.role)) {
         throw new DwnError(
           DwnErrorCode.ProtocolsConfigureInvalidRole,
