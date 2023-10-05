@@ -117,7 +117,7 @@ export type ProtocolRuleSet = {
   /**
    * If true, this marks a record as a `role` that may used within a single context. Only
    * second-level records may set $contextRole: true.
-   * They recipient of a $contextRole record may invoke their role in RecordsReads or RecordsWrites
+   * The recipient of a $contextRole record may invoke their role in RecordsReads or RecordsWrites
    * by setting `protocolRole` property to the protocol path of the $contextRole record.
    */
   $contextRole?: boolean;
