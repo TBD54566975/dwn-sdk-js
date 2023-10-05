@@ -105,6 +105,40 @@ describe('ProtocolsConfigure', () => {
         expect(protocolsConfigure.message.descriptor.definition).not.to.be.undefined;
       });
 
+      it('allows `role` actions that have protocol path to valid $contextRole records', async () => {
+        const definition = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            rootRole    : {},
+            secondLevel : {},
+            otherRoot   : {}
+          },
+          structure: {
+            thread: {
+              participant: {
+                $contextRole: true,
+              },
+              chat: {
+                $actions: [{
+                  role : 'thread/participant', // valid because 'thread/participant` has $contextRole: true
+                  can  : 'write'
+                }]
+              }
+            }
+          }
+        };
+
+        const alice = await TestDataGenerator.generatePersona();
+
+        const protocolsConfigure = await ProtocolsConfigure.create({
+          authorizationSigner: Jws.createSigner(alice),
+          definition
+        });
+
+        expect(protocolsConfigure.message.descriptor.definition).not.to.be.undefined;
+      });
+
       it('rejects protocol definitions with $globalRole at records that are not root records', async () => {
         const definition = {
           published : true,
@@ -132,6 +166,62 @@ describe('ProtocolsConfigure', () => {
 
         await expect(createProtocolsConfigurePromise)
           .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureGlobalRoleAtProhibitedProtocolPath);
+      });
+
+      it('rejects protocol definitions with $contextRole at records that are not second-level records', async () => {
+        const alice = await TestDataGenerator.generatePersona();
+
+        // it rejects context roles too high in the structure
+        const definitionRootContextRole = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            root        : {},
+            secondLevel : {}
+          },
+          structure: {
+            root: {
+              // $contextRole may only be set on second-level records, not root records
+              $contextRole: true,
+            }
+          }
+        };
+
+        const createProtocolsConfigurePromise = ProtocolsConfigure.create({
+          authorizationSigner : Jws.createSigner(alice),
+          definition          : definitionRootContextRole
+        });
+
+        await expect(createProtocolsConfigurePromise)
+          .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureContextRoleAtProhibitedProtocolPath);
+
+        // it rejects contextRoles too nested in the structure
+        const definitionTooNestedContextRole = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            root        : {},
+            secondLevel : {}
+          },
+          structure: {
+            root: {
+              secondLevel: {
+                thirdLevel: {
+                  // $contextRole may only be set on second-level records, not third-level or lower records
+                  $contextRole: true,
+                }
+              }
+            }
+          }
+        };
+
+        const createProtocolsConfigurePromise2 = ProtocolsConfigure.create({
+          authorizationSigner : Jws.createSigner(alice),
+          definition          : definitionTooNestedContextRole
+        });
+
+        await expect(createProtocolsConfigurePromise2)
+          .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureContextRoleAtProhibitedProtocolPath);
       });
 
       it('rejects protocol definitions with `role` actions that contain invalid roles', async () => {

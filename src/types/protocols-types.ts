@@ -111,9 +111,16 @@ export type ProtocolRuleSet = {
    * If true, this marks a record as a `role` that may be used across contexts. Only root records
    * may set $globalRole: true.
    * The recipient of a $globalRole record may invoke their role in RecordsRead or RecordsWrites
-   * by setting `asRole` property to the protocol path of the $globalRole record.
+   * by setting `protocolRole` property to the protocol path of the $globalRole record.
    */
   $globalRole?: boolean;
+  /**
+   * If true, this marks a record as a `role` that may used within a single context. Only
+   * second-level records may set $contextRole: true.
+   * The recipient of a $contextRole record may invoke their role in RecordsReads or RecordsWrites
+   * by setting `protocolRole` property to the protocol path of the $contextRole record.
+   */
+  $contextRole?: boolean;
   // JSON Schema verifies that properties other than `$actions` will actually have type ProtocolRuleSet
   [key: string]: any;
 };
