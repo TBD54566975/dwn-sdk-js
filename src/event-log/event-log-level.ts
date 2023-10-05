@@ -46,22 +46,23 @@ export class EventLogLevel extends IndexLevel implements EventLog {
    * @param indexes property and value indexes to use for querying potential events.
    * @returns the ulid watermark generated during this operation.
    */
-  async append(tenant: string, messageCid: string, indexes: { [key:string]:unknown } = {}): Promise<string> {
+  async append(tenant: string, messageCid: string, indexes: { [key:string]: unknown } = {}): Promise<string> {
     const tenantEventLog = await this.db.partition(tenant);
     const watermarkLog = await tenantEventLog.partition(WATERMARKS_SUBLEVEL_NAME);
     const cidIndex = await tenantEventLog.partition(CID_INDEX_SUBLEVEL_NAME);
     const watermark = this.ulidFactory();
 
     const indexOps: LevelWrapperBatchOperation<string>[] = [];
+
+    // store the watermark and indexes in a reverse lookup
+    indexOps.push({ type: 'put', key: `__${messageCid}__indexes`, value: JSON.stringify({ indexes, watermark }) });
     if (indexes !== undefined) {
       indexes = flatten(indexes);
-      indexOps.push({ type: 'put', key: `__${messageCid}__indexes`, value: JSON.stringify({ indexes, watermark }) });
-
       for (const propertyName in indexes) {
         const propertyValue = indexes[propertyName];
         if (propertyValue !== undefined) {
-          const key = this.join(propertyName, this.encodeValue(propertyValue), watermark);
-          const value = `${messageCid}~${watermark}`;
+          const value = this.join(messageCid, watermark);
+          const key = this.constructIndexedKey(propertyName, propertyValue, watermark, messageCid);
           indexOps.push({ type: 'put', key, value });
         }
       }
@@ -86,7 +87,7 @@ export class EventLogLevel extends IndexLevel implements EventLog {
     const matchedEvents: Map<string, Event> = new Map();
 
     await Promise.all(filters.map(f => this.executeSingleFilterQuery(tenant, f.filter, matchedEvents, f.gt)));
-    return this.sortEvents([...matchedEvents.values()]);
+    return [...matchedEvents.values()];
   }
 
   /**
@@ -112,11 +113,11 @@ export class EventLogLevel extends IndexLevel implements EventLog {
   /**
    * Deletes Events associated with a given cid. Deletes any indexes that were created along with it as well.
    * @param tenant
-   * @param cids an array of messageCids to delete.
+   * @param messageCids an array of messageCids to delete.
    * @returns the number of events deleted.
    */
-  async deleteEventsByCid(tenant: string, cids: Array<string>): Promise<number> {
-    if (cids.length === 0) {
+  async deleteEventsByCid(tenant: string, messageCids: Array<string>): Promise<number> {
+    if (messageCids.length === 0) {
       return 0;
     }
 
@@ -128,8 +129,8 @@ export class EventLogLevel extends IndexLevel implements EventLog {
     const indexOps: LevelWrapperBatchOperation<string>[] = [];
 
     let numEventsDeleted = 0;
-    for (const cid of cids) {
-      const serializedIndexes = await cidIndex.get(`__${cid}__indexes`);
+    for (const messageCid of messageCids) {
+      const serializedIndexes = await cidIndex.get(`__${messageCid}__indexes`);
       if (serializedIndexes === undefined) {
         continue;
       }
@@ -140,7 +141,7 @@ export class EventLogLevel extends IndexLevel implements EventLog {
       // delete all indexes associated with the data of the given ID
       for (const propertyName in indexes) {
         const propertyValue = indexes[propertyName];
-        const key = this.join(propertyName, this.encodeValue(propertyValue), cid);
+        const key = this.constructIndexedKey(propertyName, propertyValue, watermark, messageCid);
         indexOps.push({ type: 'del', key });
       }
     }
@@ -149,6 +150,10 @@ export class EventLogLevel extends IndexLevel implements EventLog {
     await watermarkLog.batch(ops);
 
     return numEventsDeleted;
+  }
+
+  private constructIndexedKey(propertyName: string, propertyValue: unknown, watermark: string, messageCid: string): string {
+    return this.join(propertyName, this.encodeValue(propertyValue), watermark, messageCid);
   }
 
   /**
@@ -162,7 +167,6 @@ export class EventLogLevel extends IndexLevel implements EventLog {
     // We will find the union of these many individual queries later.
     for (const propertyName in filter) {
       const propertyFilter = filter[propertyName];
-
       if (typeof propertyFilter === 'object') {
         if (Array.isArray(propertyFilter)) {
           // `propertyFilter` is a AnyOfFilter
@@ -218,29 +222,32 @@ export class EventLogLevel extends IndexLevel implements EventLog {
   /**
    * @returns IDs of data that matches the exact property and value.
    */
-  private async findExactMatches(tenant:string, propertyName: string, propertyValue: unknown, watermark?: string): Promise<Event[]> {
+  private async findExactMatches(
+    tenant:string,
+    propertyName: string,
+    propertyValue: unknown,
+    watermark?: string
+  ): Promise<Event[]> {
     const tenantEventLog = await this.db.partition(tenant);
     const cidIndex = await tenantEventLog.partition(CID_INDEX_SUBLEVEL_NAME);
-    const prefixProperties = [ propertyName, this.encodeValue(propertyValue) ];
-    const propertyValuePrefix = this.join(...prefixProperties, '');
+
+    const prefixParts = [ propertyName, this.encodeValue(propertyValue) ];
+    const matchPrefix = this.join(...prefixParts, '');
 
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {
-      gt: propertyValuePrefix
+      gt: watermark ? this.join(...prefixParts, watermark, '') : matchPrefix
     };
 
     const matches: Event[] = [];
-    for await (const [ key, watermarkValue ] of cidIndex.iterator(iteratorOptions)) {
-      if (!key.startsWith(propertyValuePrefix)) {
+    for await (const [ key, eventDetails ] of cidIndex.iterator(iteratorOptions)) {
+      if (!key.startsWith(matchPrefix)) {
         break;
       }
 
-      const event = this.extractEventFromValue(watermarkValue);
-
-      // skip events prior to the watermark.
-      if (watermark !== undefined && watermark >= event.watermark) {
+      const event = this.extractEventFromValue(eventDetails);
+      if (watermark && event.watermark <= watermark) {
         continue;
       }
-
       matches.push(event);
     }
 
@@ -267,9 +274,9 @@ export class EventLogLevel extends IndexLevel implements EventLog {
     }
 
     const matches: Event[] = [];
-    for await (const [ key, watermarkValue ] of cidIndex.iterator(iteratorOptions)) {
+    for await (const [ key, eventDetails ] of cidIndex.iterator(iteratorOptions)) {
       // if "greater-than" is specified, skip all keys that contains the exact value given in the "greater-than" condition
-      if ('gt' in rangeFilter && EventLogLevel.extractValueFromKey(key) === this.encodeValue(rangeFilter.gt)) {
+      if ('gt' in rangeFilter && this.extractRangeValueFromKey(key) === this.encodeValue(rangeFilter.gt)) {
         continue;
       }
 
@@ -278,10 +285,8 @@ export class EventLogLevel extends IndexLevel implements EventLog {
         break;
       }
 
-      const event = this.extractEventFromValue(watermarkValue);
-
-      // skip events prior to the watermark.
-      if (watermark && watermark >= event.watermark) {
+      const event = this.extractEventFromValue(eventDetails);
+      if (watermark && event.watermark <= watermark) {
         continue;
       }
 
@@ -303,27 +308,28 @@ export class EventLogLevel extends IndexLevel implements EventLog {
     if (iteratorOptions.reverse === true) {
       matches.reverse();
     }
-    return matches;
+
+    return matches.sort((a,b) => lexicographicalCompare(a.watermark, b.watermark));
   }
 
   /**
-   * Extracts the value encoded within the indexed key when a record is inserted.
+   * Extracts the value encoded within the range index key when an event is inserted.
    *
-   * ex. key: 'dateCreated\u0000"2023-05-25T18:23:29.425008Z"\u000001HBY2E1TPY1W95SE0PEG2AM96'
+   * ex. key: 'dateCreated\u0000"2023-05-25T18:23:29.425008Z"\u000....'
    *     extracted value: "2023-05-25T18:23:29.425008Z"
    *
    * @param key an EventLogLevel db key.
    * @returns the extracted encodedValue from the key.
    */
-  static extractValueFromKey(key: string): string {
-    const [, value] = key.split(this.delimiter);
+  private extractRangeValueFromKey(key: string): string {
+    const [,value] = key.split(EventLogLevel.delimiter);
     return value;
   }
 
   /**
    * Extracts the Event object from the given db value.
    *
-   * ex. value: 'bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry~01HBY2E1TPY1W95SE0PEG2AM96'
+   * ex. value: 'bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry\u000001HBY2E1TPY1W95SE0PEG2AM96'
    *     extracted: Event : {
    *                  messageCid : 'bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry',
    *                  watermark  : '01HBY2E1TPY1W95SE0PEG2AM96'
@@ -333,17 +339,7 @@ export class EventLogLevel extends IndexLevel implements EventLog {
    * @returns a parsed Event object or undefined if invalid.
    */
   private extractEventFromValue(value: string): Event {
-    const [ messageCid, watermark ] = value.split('~');
+    const [ messageCid, watermark ] = value.split(EventLogLevel.delimiter);
     return { messageCid, watermark };
-  }
-
-  /**
-   * Sorts events queried by watermark.
-   *
-   * @param events incoming events from query filters.
-   * @returns {Event[]} sorted events by watermark ascending.
-   */
-  private sortEvents(events: Event[]): Event[] {
-    return events.sort((a,b) => lexicographicalCompare(a.watermark, b.watermark));
   }
 }
