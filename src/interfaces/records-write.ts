@@ -451,10 +451,9 @@ export class RecordsWrite {
       );
     }
 
-    // All protocol RecordsWrites must go through protocol auth, because protocolPath, contextId, and record type must be validated
+    // All protocol RecordsWrites must go through protocol validation
     if (this.message.descriptor.protocol !== undefined) {
-      await ProtocolAuthorization.authorize(tenant, this, this, messageStore);
-      return;
+      await ProtocolAuthorization.validate(tenant, this, messageStore);
     }
 
     // Remainder of the code is for flat-space writes
@@ -468,6 +467,8 @@ export class RecordsWrite {
       return;
     } else if (this.author !== undefined && this.authorSignaturePayload!.permissionsGrantId !== undefined) {
       await RecordsGrantAuthorization.authorizeWrite(tenant, this, this.author, messageStore);
+    } else if (this.message.descriptor.protocol !== undefined) {
+      await ProtocolAuthorization.authorize(tenant, this, this, messageStore);
     } else {
       throw new Error('message failed authorization');
     }

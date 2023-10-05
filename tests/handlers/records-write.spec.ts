@@ -2666,9 +2666,7 @@ export function testRecordsWriteHandler(): void {
 
           // Bob writes a non-protocol record to Alice's DWN
           const nonProtocolRecordsWrite = await TestDataGenerator.generateRecordsWrite({
-            author       : bob,
-            protocol     : protocolDefinition.protocol,
-            protocolPath : 'foo',
+            author: bob,
             permissionsGrantId,
           });
           const recordsWriteReply2 = await dwn.handleRecordsWrite(alice.did, nonProtocolRecordsWrite.message, nonProtocolRecordsWrite.dataStream);
