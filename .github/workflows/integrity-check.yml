@@ -36,7 +36,7 @@ jobs:
     # read more about matrix strategies here: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstrategymatrix
     strategy:
       matrix:
-        node-version: [18.16.0, 20.3.0]
+        node-version: [20.3.0]
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.node-version }}
