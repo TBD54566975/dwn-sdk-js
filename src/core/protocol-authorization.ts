@@ -433,7 +433,7 @@ export class ProtocolAuthorization {
         // $contextRole
         throw new DwnError(
           DwnErrorCode.ProtocolAuthorizationDuplicateContextRoleRecipient,
-          `DID '${recipient}' is already recipient of a $context record at protocol path '${protocolPath} in the same context`
+          `DID '${recipient}' is already recipient of a $contextRole record at protocol path '${protocolPath} in the same context`
         );
       }
     }
