@@ -15,7 +15,7 @@ describe('MemoryCache', () => {
     let valueInCache = await memoryCache.get('key');
     expect(valueInCache).to.equal('aValue');
 
-    await new Promise(resolve => setTimeout(resolve, 20)); // wait for 10 millisecond for value to expire
+    await new Promise(resolve => setTimeout(resolve, 11)); // wait for 10 millisecond for value to expire
     valueInCache = await memoryCache.get('key');
     expect(valueInCache).to.be.undefined;
   });
