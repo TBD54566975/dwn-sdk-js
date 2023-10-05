@@ -6,6 +6,7 @@ import type { EventsQueryDescriptor, EventsQueryFilter, EventsQueryMessage } fro
 
 import { Message } from '../core/message.js';
 import { removeUndefinedProperties } from '../utils/object.js';
+import { SortOrder } from '../types/message-types.js';
 import { Time } from '../utils/time.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
@@ -99,7 +100,7 @@ export class EventsQuery extends Message<EventsQueryMessage> {
         (filterCopy as Filter).dateCreated = rangeFilter;
       }
 
-      eventLogFilters.push({ filter: filterCopy as Filter, gt: watermark });
+      eventLogFilters.push({ filter: filterCopy as Filter, sort: 'watermark', sortDirection: SortOrder.Ascending, cursor: watermark });
     }
 
     return eventLogFilters;
