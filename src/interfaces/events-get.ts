@@ -31,7 +31,7 @@ export class EventsGet extends Message<EventsGetMessage> {
       descriptor.watermark = options.watermark;
     }
 
-    const authorization = await Message.signAuthorizationAsAuthor(descriptor, options.authorizationSigner);
+    const authorization = await Message.createAuthorizationAsAuthor(descriptor, options.authorizationSigner);
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

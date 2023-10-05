@@ -422,7 +422,7 @@ export function testRecordsWriteHandler(): void {
           expect(carolWriteReply.status.detail).to.contain('RecordsWriteOwnerAndTenantMismatch');
         });
 
-        it('should throw if `owner` in `authorization` is mismatching with the tenant - protocol-space', async () => {
+        it('should throw if `ownerSignature` in `authorization` is mismatching with the tenant - protocol-space', async () => {
           // scenario: Alice, Bob, and Carol all have the same protocol which does NOT allow external entities to write,
           // scenario: Carol attempts to store a message with Alice being the owner, and should fail
           const alice = await DidKeyResolver.generate();
@@ -453,6 +453,25 @@ export function testRecordsWriteHandler(): void {
           const carolWriteReply = await dwn.processMessage(carol.did, recordsWrite.message, dataStream);
           expect(carolWriteReply.status.code).to.equal(401);
           expect(carolWriteReply.status.detail).to.contain('RecordsWriteOwnerAndTenantMismatch');
+        });
+
+        it('should throw if `ownerSignature` fails verification', async () => {
+          // scenario: Malicious Bob attempts to retain an externally authored message in Alice's DWN by providing an invalid `ownerSignature`
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+
+          // Bob creates a message, we skip writing to bob's DWN because that's orthogonal to this test
+          const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: bob, published: true });
+
+          // Bob pretends to be Alice by adding an invalid `ownerSignature`
+          // We do this by creating a valid signature first then swap out with an invalid one
+          await recordsWrite.signAsOwner(Jws.createSigner(alice));
+          const bobSignature = recordsWrite.message.authorization.authorSignature.signatures[0];
+          recordsWrite.message.authorization.ownerSignature!.signatures[0].signature = bobSignature.signature; // invalid `ownerSignature`
+
+          // Test that Bob is not able to store the message in Alice's DWN using an invalid `ownerSignature`
+          const aliceWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+          expect(aliceWriteReply.status.detail).to.contain(DwnErrorCode.GeneralJwsVerifierInvalidSignature);
         });
       });
 
@@ -537,7 +556,7 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const authorSignature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const authorSignature = await RecordsWrite['createAuthorSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
           message.authorization = { authorSignature };
 
@@ -558,7 +577,7 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const authorSignature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const authorSignature = await RecordsWrite['createAuthorSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
           message.authorization = { authorSignature };
 
@@ -579,7 +598,7 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const authorSignature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const authorSignature = await RecordsWrite['createAuthorSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
           message.authorization = { authorSignature };
 
@@ -599,7 +618,7 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const authorSignature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const authorSignature = await RecordsWrite['createAuthorSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
           message.authorization = { authorSignature };
 
@@ -2519,7 +2538,7 @@ export function testRecordsWriteHandler(): void {
           // Re-create auth because we altered the descriptor after signing
           const descriptorCid = await Cid.computeCid(recordsWrite.message.descriptor);
           const attestation = await RecordsWrite.createAttestation(descriptorCid);
-          const authorSignature = await RecordsWrite.createAuthorizationSignature(
+          const authorSignature = await RecordsWrite.createAuthorSignature(
             recordsWrite.message.recordId,
             recordsWrite.message.contextId,
             descriptorCid,
@@ -3381,12 +3400,12 @@ export function testRecordsWriteHandler(): void {
       it('should return 400 if `recordId` in `authorization` payload mismatches with `recordId` in the message', async () => {
         const { author, message, recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite();
 
-        // replace `authorization` with mismatching `record`, even though signature is still valid
-        const authorizationPayload = { ...recordsWrite.authorSignaturePayload };
-        authorizationPayload.recordId = await TestDataGenerator.randomCborSha256Cid(); // make recordId mismatch in authorization payload
-        const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
+        // replace author signature with mismatching `recordId`, even though signature is still valid
+        const authorSignaturePayload = { ...recordsWrite.authorSignaturePayload };
+        authorSignaturePayload.recordId = await TestDataGenerator.randomCborSha256Cid(); // make recordId mismatch in authorization payload
+        const authorSignaturePayloadBytes = Encoder.objectToBytes(authorSignaturePayload);
         const signer = Jws.createSigner(author);
-        const jwsBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);
+        const jwsBuilder = await GeneralJwsBuilder.create(authorSignaturePayloadBytes, [signer]);
         message.authorization = { authorSignature: jwsBuilder.getJws() };
 
         const tenant = author.did;
@@ -3406,11 +3425,11 @@ export function testRecordsWriteHandler(): void {
         const { author, message, recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({ protocol: 'http://any.value', protocolPath: 'any/value' });
 
         // replace `authorization` with mismatching `contextId`, even though signature is still valid
-        const authorizationPayload = { ...recordsWrite.authorSignaturePayload };
-        authorizationPayload.contextId = await TestDataGenerator.randomCborSha256Cid(); // make contextId mismatch in authorization payload
-        const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
+        const authorSignaturePayload = { ...recordsWrite.authorSignaturePayload };
+        authorSignaturePayload.contextId = await TestDataGenerator.randomCborSha256Cid(); // make contextId mismatch in authorization payload
+        const authorSignaturePayloadBytes = Encoder.objectToBytes(authorSignaturePayload);
         const signer = Jws.createSigner(author);
-        const jwsBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);
+        const jwsBuilder = await GeneralJwsBuilder.create(authorSignaturePayloadBytes, [signer]);
         message.authorization = { authorSignature: jwsBuilder.getJws() };
 
         const tenant = author.did;
@@ -3474,10 +3493,10 @@ export function testRecordsWriteHandler(): void {
         message.attestation = attestationBuilder.getJws();
 
         // recreate the `authorization` based on the new` attestationCid`
-        const authorizationPayload = { ...recordsWrite.authorSignaturePayload };
-        authorizationPayload.attestationCid = await Cid.computeCid(attestationPayload);
-        const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
-        const authorizationBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);
+        const authorSignaturePayload = { ...recordsWrite.authorSignaturePayload };
+        authorSignaturePayload.attestationCid = await Cid.computeCid(attestationPayload);
+        const authorSignaturePayloadBytes = Encoder.objectToBytes(authorSignaturePayload);
+        const authorizationBuilder = await GeneralJwsBuilder.create(authorSignaturePayloadBytes, [signer]);
         message.authorization = { authorSignature: authorizationBuilder.getJws() };
 
         const didResolver = TestStubGenerator.createDidResolverStub(author);

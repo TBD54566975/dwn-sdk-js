@@ -1,7 +1,9 @@
+import type { GeneralJws } from '../types/jws-types.js';
 import type { Signer } from '../types/signer.js';
 import type { AuthorizationModel, Descriptor, GenericMessage, GenericSignaturePayload } from '../types/message-types.js';
 
 import { Cid } from '../utils/cid.js';
+import { Encoder } from '../index.js';
 import { GeneralJwsBuilder } from '../jose/jws/general/builder.js';
 import { Jws } from '../utils/jws.js';
 import { lexicographicalCompare } from '../utils/string.js';
@@ -10,12 +12,10 @@ import { validateJsonSchema } from '../schema-validator.js';
 
 export enum DwnInterfaceName {
   Events = 'Events',
-  Hooks = 'Hooks',
   Messages = 'Messages',
   Permissions = 'Permissions',
   Protocols = 'Protocols',
-  Records = 'Records',
-  Snapshots = 'Snapshots'
+  Records = 'Records'
 }
 
 export enum DwnMethodName {
@@ -110,25 +110,39 @@ export abstract class Message<M extends GenericMessage> {
   /**
    * Creates the `authorization` as the author to be used in a DWN message.
    * @param signer Signer as the author
-   * @returns General JWS signature used as an `authorization` property.
+   * @returns {AuthorizationModel} used as an `authorization` property.
    */
-  public static async signAuthorizationAsAuthor(
+  public static async createAuthorizationAsAuthor(
     descriptor: Descriptor,
     signer: Signer,
     additionalPayloadProperties?: { permissionsGrantId?: string, protocolRole?: string }
   ): Promise<AuthorizationModel> {
-    const descriptorCid = await Cid.computeCid(descriptor);
-
-    const authPayload: GenericSignaturePayload = { descriptorCid, ...additionalPayloadProperties };
-    removeUndefinedProperties(authPayload);
-    const authPayloadStr = JSON.stringify(authPayload);
-    const authPayloadBytes = new TextEncoder().encode(authPayloadStr);
-
-    const builder = await GeneralJwsBuilder.create(authPayloadBytes, [signer]);
-    const authorSignature = builder.getJws();
+    const authorSignature = await Message.createSignature(descriptor, signer, additionalPayloadProperties);
 
     const authorization = { authorSignature };
     return authorization;
+  }
+
+  /**
+   * Creates a generic signature from the given DWN message descriptor by including `descriptorCid` as the required property in the signature payload.
+   * NOTE: there is an opportunity to consolidate RecordsWrite.createAuthorSignature() wth this method
+   */
+  public static async createSignature(
+    descriptor: Descriptor,
+    signer: Signer,
+    additionalPayloadProperties?: { permissionsGrantId?: string, protocolRole?: string }
+  ): Promise<GeneralJws> {
+    const descriptorCid = await Cid.computeCid(descriptor);
+
+    const signaturePayload: GenericSignaturePayload = { descriptorCid, ...additionalPayloadProperties };
+    removeUndefinedProperties(signaturePayload);
+
+    const signaturePayloadBytes = Encoder.objectToBytes(signaturePayload);
+
+    const builder = await GeneralJwsBuilder.create(signaturePayloadBytes, [signer]);
+    const signature = builder.getJws();
+
+    return signature;
   }
 
   /**

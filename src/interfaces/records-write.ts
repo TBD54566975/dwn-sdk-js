@@ -1,5 +1,4 @@
 import type { GeneralJws } from '../types/jws-types.js';
-import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PublicJwk } from '../types/jose-types.js';
 import type { Signer } from '../types/signer.js';
@@ -13,6 +12,7 @@ import type {
   RecordsWriteSignaturePayload,
   UnsignedRecordsWriteMessage
 } from '../types/records-types.js';
+import type { GenericMessage, GenericSignaturePayload } from '../types/message-types.js';
 
 import { Cid } from '../utils/cid.js';
 import { Encoder } from '../utils/encoder.js';
@@ -159,11 +159,11 @@ export class RecordsWrite {
     return this._owner;
   }
 
-  private _ownerSignaturePayload: RecordsWriteSignaturePayload | undefined;
+  private _ownerSignaturePayload: GenericSignaturePayload | undefined;
   /**
    * Decoded owner signature payload.
    */
-  public get ownerSignaturePayload(): RecordsWriteSignaturePayload | undefined {
+  public get ownerSignaturePayload(): GenericSignaturePayload | undefined {
     return this._ownerSignaturePayload;
   }
 
@@ -193,7 +193,7 @@ export class RecordsWrite {
     await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor, 'RecordsWriteSignaturePayload');
 
     if (message.authorization.ownerSignature !== undefined) {
-      await validateMessageSignatureIntegrity(message.authorization.ownerSignature, message.descriptor, 'RecordsWriteSignaturePayload');
+      await validateMessageSignatureIntegrity(message.authorization.ownerSignature, message.descriptor);
     }
 
     await RecordsWrite.validateAttestationIntegrity(message);
@@ -403,8 +403,8 @@ export class RecordsWrite {
       this._message.contextId = await RecordsWrite.getEntryId(author, descriptor);
     }
 
-    // `authorization` generation
-    const authorSignature = await RecordsWrite.createAuthorizationSignature(
+    // `authorSignature` generation
+    const authorSignature = await RecordsWrite.createAuthorSignature(
       this._message.recordId,
       this._message.contextId,
       descriptorCid,
@@ -422,7 +422,8 @@ export class RecordsWrite {
   }
 
   /**
-   * Signs the `RecordsWrite` as the owner.
+   * Signs the `RecordsWrite` as the DWN owner.
+   * This is used when the DWN owner wants to retain a copy of a message that the owner did not author.
    * NOTE: requires the `RecordsWrite` to already have the author's signature already.
    */
   public async signAsOwner(signer: Signer, permissionsGrantId?: string): Promise<void> {
@@ -431,26 +432,15 @@ export class RecordsWrite {
         DwnErrorCode.RecordsWriteSignAsOwnerUnknownAuthor,
         'Unable to sign as owner if without author signature because owner needs to sign over `recordId` which depends on author DID.');
     }
-    const owner = Jws.extractDid(signer.keyId);
 
     const descriptor = this._message.descriptor;
-    const descriptorCid = await Cid.computeCid(descriptor);
-
-    // `authorization` generation
-    const ownerSignature = await RecordsWrite.createAuthorizationSignature(
-      this._message.recordId!,
-      this._message.contextId,
-      descriptorCid,
-      this._message.attestation,
-      this._message.encryption,
-      signer,
-      { permissionsGrantId },
-    );
+    const ownerSignature = await Message.createSignature(descriptor, signer, { permissionsGrantId });
 
     this._message.authorization!.ownerSignature = ownerSignature;
 
     this._ownerSignaturePayload = Jws.decodePlainObjectPayload(ownerSignature);
-    this._owner = owner;
+    this._owner = Jws.extractDid(signer.keyId);
+    ;
   }
 
   public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
@@ -489,16 +479,6 @@ export class RecordsWrite {
    * There is opportunity to integrate better with `validateSchema(...)`
    */
   private async validateIntegrity(): Promise<void> {
-    // validateAuthorizationIntegrity() enforces the presence of authorization for RecordsWrite
-    const authorizationPayload = this.authorSignaturePayload!;
-
-    // make sure the `recordId` in message is the same as the `recordId` in `authorization`
-    if (this.message.recordId !== authorizationPayload.recordId) {
-      throw new Error(
-        `recordId in message ${this.message.recordId} does not match recordId in authorization: ${authorizationPayload.recordId}`
-      );
-    }
-
     // if the new message is the initial write
     const isInitialWrite = await this.isInitialWrite();
     if (isInitialWrite) {
@@ -520,17 +500,27 @@ export class RecordsWrite {
       }
     }
 
-    // if `contextId` is given in message, make sure the same `contextId` is in the `authorization`
-    if (this.message.contextId !== authorizationPayload.contextId) {
+    // NOTE: validateMessageSignatureIntegrity() call earlier enforces the presence of `authorization` and thus `authorSignature` for RecordsWrite
+    const authorSignaturePayload = this.authorSignaturePayload!;
+
+    // make sure the `recordId` in message is the same as the `recordId` in author signature payload
+    if (this.message.recordId !== authorSignaturePayload.recordId) {
       throw new Error(
-        `contextId in message ${this.message.contextId} does not match contextId in authorization: ${authorizationPayload.contextId}`
+        `recordId in message ${this.message.recordId} does not match recordId in authorization: ${authorSignaturePayload.recordId}`
       );
     }
 
-    // if `attestation` is given in message, make sure the correct `attestationCid` is in the `authorization`
-    if (authorizationPayload.attestationCid !== undefined) {
+    // if `contextId` is given in message, make sure the same `contextId` is in the author signature payload
+    if (this.message.contextId !== authorSignaturePayload.contextId) {
+      throw new Error(
+        `contextId in message ${this.message.contextId} does not match contextId in authorization: ${authorSignaturePayload.contextId}`
+      );
+    }
+
+    // if `attestation` is given in message, make sure the correct `attestationCid` is in the author signature payload
+    if (authorSignaturePayload.attestationCid !== undefined) {
       const expectedAttestationCid = await Cid.computeCid(this.message.attestation);
-      const actualAttestationCid = authorizationPayload.attestationCid;
+      const actualAttestationCid = authorSignaturePayload.attestationCid;
       if (actualAttestationCid !== expectedAttestationCid) {
         throw new Error(
           `CID ${expectedAttestationCid} of attestation property in message does not match attestationCid in authorization: ${actualAttestationCid}`
@@ -538,10 +528,10 @@ export class RecordsWrite {
       }
     }
 
-    // if `encryption` is given in message, make sure the correct `encryptionCid` is in the `authorization`
-    if (authorizationPayload.encryptionCid !== undefined) {
+    // if `encryption` is given in message, make sure the correct `encryptionCid` is in the author signature payload
+    if (authorSignaturePayload.encryptionCid !== undefined) {
       const expectedEncryptionCid = await Cid.computeCid(this.message.encryption);
-      const actualEncryptionCid = authorizationPayload.encryptionCid;
+      const actualEncryptionCid = authorSignaturePayload.encryptionCid;
       if (actualEncryptionCid !== expectedEncryptionCid) {
         throw new DwnError(
           DwnErrorCode.RecordsWriteValidateIntegrityEncryptionCidMismatch,
@@ -720,7 +710,7 @@ export class RecordsWrite {
   /**
    * Creates the `authorization` property of a RecordsWrite message.
    */
-  public static async createAuthorizationSignature(
+  public static async createAuthorSignature(
     recordId: string,
     contextId: string | undefined,
     descriptorCid: string,
@@ -732,7 +722,7 @@ export class RecordsWrite {
     const attestationCid = attestation ? await Cid.computeCid(attestation) : undefined;
     const encryptionCid = encryption ? await Cid.computeCid(encryption) : undefined;
 
-    const authorizationPayload: RecordsWriteSignaturePayload = {
+    const signaturePayload: RecordsWriteSignaturePayload = {
       recordId,
       descriptorCid,
       contextId,
@@ -741,11 +731,11 @@ export class RecordsWrite {
       permissionsGrantId : additionalProperties?.permissionsGrantId,
       protocolRole       : additionalProperties?.protocolRole
     };
-    removeUndefinedProperties(authorizationPayload);
+    removeUndefinedProperties(signaturePayload);
 
-    const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
+    const signaturePayloadBytes = Encoder.objectToBytes(signaturePayload);
 
-    const builder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);
+    const builder = await GeneralJwsBuilder.create(signaturePayloadBytes, [signer]);
     const signature = builder.getJws();
 
     return signature;
