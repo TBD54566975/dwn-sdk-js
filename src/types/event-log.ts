@@ -35,7 +35,7 @@ export interface EventLog {
    * @param indexes - (key-value pairs) to be included as part of indexing this event.
    * @returns {Promise<string>} watermark
    */
-  append(tenant: string, messageCid: string, indexes?: { [key:string]: string|boolean }): Promise<string>
+  append(tenant: string, messageCid: string, indexes: { [key:string]: string|boolean }): Promise<string>
 
   /**
    * retrieves all of a tenant's events that occurred after the watermark provided.

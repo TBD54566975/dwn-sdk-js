@@ -743,7 +743,7 @@ export function testRecordsQueryHandler(): void {
           const indexes = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
           const processedMessage = await recordsWriteHandler.processEncodedData(message, dataStream);
           await messageStore.put(alice.did, processedMessage, indexes);
-          await eventLog.append(alice.did, await Message.getCid(processedMessage));
+          await eventLog.append(alice.did, await Message.getCid(processedMessage), indexes);
           messages.push(processedMessage);
         }
 
