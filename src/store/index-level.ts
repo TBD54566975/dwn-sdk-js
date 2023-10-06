@@ -1,6 +1,7 @@
 import type { Filter, RangeFilter } from '../types/message-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions } from './level-wrapper.js';
 
+import { executeUnlessAborted } from '../index.js';
 import { flatten } from '../utils/object.js';
 import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 
@@ -38,11 +39,12 @@ export class IndexLevel {
    * @param dataId ID of the data/object/content being indexed.
    */
   async put(
+    tenant: string,
     dataId: string,
     indexes: { [property: string]: unknown },
     options?: IndexLevelOptions
   ): Promise<void> {
-
+    const partition = await executeUnlessAborted(this.db.partition(tenant), options?.signal);
     indexes = flatten(indexes);
 
     const operations: LevelWrapperBatchOperation<string>[] = [ ];
@@ -70,13 +72,13 @@ export class IndexLevel {
     // we can consider putting this info in a different data partition if this ever becomes more complex/confusing
     operations.push({ type: 'put', key: `__${dataId}__indexes`, value: JSON.stringify(indexes) });
 
-    await this.db.batch(operations, options);
+    await partition.batch(operations, options);
   }
 
   /**
    * Executes the given single filter query and appends the results without duplicate into `matchedIDs`.
    */
-  private async executeSingleFilterQuery(filter: Filter, matchedIDs: Set<string>, options?: IndexLevelOptions): Promise<void> {
+  private async executeSingleFilterQuery(tenant: string, filter: Filter, matchedIDs: Set<string>, options?: IndexLevelOptions): Promise<void> {
     // Note: We have an array of Promises in order to support OR (anyOf) matches when given a list of accepted values for a property
     const propertyNameToPromises: { [key: string]: Promise<string[]>[] } = {};
 
@@ -93,17 +95,17 @@ export class IndexLevel {
           // then adding them to the promises associated with `propertyName`
           propertyNameToPromises[propertyName] = [];
           for (const propertyValue of new Set(propertyFilter)) {
-            const exactMatchesPromise = this.findExactMatches(propertyName, propertyValue, options);
+            const exactMatchesPromise = this.findExactMatches(tenant, propertyName, propertyValue, options);
             propertyNameToPromises[propertyName].push(exactMatchesPromise);
           }
         } else {
           // `propertyFilter` is a `RangeFilter`
-          const rangeMatchesPromise = this.findRangeMatches(propertyName, propertyFilter, options);
+          const rangeMatchesPromise = this.findRangeMatches(tenant, propertyName, propertyFilter, options);
           propertyNameToPromises[propertyName] = [rangeMatchesPromise];
         }
       } else {
         // propertyFilter is an EqualFilter, meaning it is a non-object primitive type
-        const exactMatchesPromise = this.findExactMatches(propertyName, propertyFilter, options);
+        const exactMatchesPromise = this.findExactMatches(tenant, propertyName, propertyFilter, options);
         propertyNameToPromises[propertyName] = [exactMatchesPromise];
       }
     }
@@ -138,18 +140,19 @@ export class IndexLevel {
     }
   }
 
-  async query(filters: Filter[], options?: IndexLevelOptions): Promise<Array<string>> {
+  async query(tenant: string, filters: Filter[], options?: IndexLevelOptions): Promise<Array<string>> {
     const matchedIDs: Set<string> = new Set();
 
     for (const filter of filters) {
-      await this.executeSingleFilterQuery(filter, matchedIDs, options);
+      await this.executeSingleFilterQuery(tenant, filter, matchedIDs, options);
     }
 
     return [...matchedIDs];
   }
 
-  async delete(dataId: string, options?: IndexLevelOptions): Promise<void> {
-    const serializedIndexes = await this.db.get(`__${dataId}__indexes`, options);
+  async delete(tenant: string, dataId: string, options?: IndexLevelOptions): Promise<void> {
+    const partition = await executeUnlessAborted(this.db.partition(tenant), options?.signal);
+    const serializedIndexes = await partition.get(`__${dataId}__indexes`, options);
     if (!serializedIndexes) {
       return;
     }
@@ -166,7 +169,7 @@ export class IndexLevel {
 
     ops.push({ type: 'del', key: `__${dataId}__indexes` });
 
-    await this.db.batch(ops, options);
+    await partition.batch(ops, options);
   }
 
   async clear(): Promise<void> {
@@ -176,7 +179,8 @@ export class IndexLevel {
   /**
    * @returns IDs of data that matches the exact property and value.
    */
-  private async findExactMatches(propertyName: string, propertyValue: unknown, options?: IndexLevelOptions): Promise<string[]> {
+  private async findExactMatches(tenant: string, propertyName: string, propertyValue: unknown, options?: IndexLevelOptions): Promise<string[]> {
+    const partition = await executeUnlessAborted(this.db.partition(tenant), options?.signal);
     const propertyValuePrefix = this.join(propertyName, this.encodeValue(propertyValue), '');
 
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {
@@ -184,7 +188,7 @@ export class IndexLevel {
     };
 
     const matches: string[] = [];
-    for await (const [ key, dataId ] of this.db.iterator(iteratorOptions, options)) {
+    for await (const [ key, dataId ] of partition.iterator(iteratorOptions, options)) {
       if (!key.startsWith(propertyValuePrefix)) {
         break;
       }
@@ -197,7 +201,8 @@ export class IndexLevel {
   /**
    * @returns IDs of data that matches the range filter.
    */
-  private async findRangeMatches(propertyName: string, rangeFilter: RangeFilter, options?: IndexLevelOptions): Promise<string[]> {
+  private async findRangeMatches(tenant: string, propertyName: string, rangeFilter: RangeFilter, options?: IndexLevelOptions): Promise<string[]> {
+    const partition = await executeUnlessAborted(this.db.partition(tenant), options?.signal);
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {};
 
     for (const comparator in rangeFilter) {
@@ -212,7 +217,7 @@ export class IndexLevel {
     }
 
     const matches: string[] = [];
-    for await (const [ key, dataId ] of this.db.iterator(iteratorOptions, options)) {
+    for await (const [ key, dataId ] of partition.iterator(iteratorOptions, options)) {
       // if "greater-than" is specified, skip all keys that contains the exact value given in the "greater-than" condition
       if ('gt' in rangeFilter && IndexLevel.extractValueFromKey(key) === this.encodeValue(rangeFilter.gt)) {
         continue;
@@ -232,7 +237,7 @@ export class IndexLevel {
       // key = 'dateCreated\u0000"2023-05-25T11:22:33.000000Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
       // the value would be considered greater than { lte: `dateCreated\u0000"2023-05-25T11:22:33.000000Z"` } used in the iterator options,
       // thus would not be included in the iterator even though we'd like it to be.
-      for (const dataId of await this.findExactMatches(propertyName, rangeFilter.lte, options)) {
+      for (const dataId of await this.findExactMatches(tenant, propertyName, rangeFilter.lte, options)) {
         matches.push(dataId);
       }
     }

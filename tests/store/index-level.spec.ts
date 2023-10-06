@@ -1,3 +1,5 @@
+import type { LevelWrapper } from '../../src/store/level-wrapper.js';
+
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
@@ -10,13 +12,18 @@ import { v4 as uuid } from 'uuid';
 
 chai.use(chaiAsPromised);
 
-let index: IndexLevel;
+
 
 describe('Index Level', () => {
+
   describe('put', () => {
+    let index: IndexLevel;
+    let testPartition: LevelWrapper<string>;
+    const tenant = 'did:alice:index';
     before(async () => {
       index = new IndexLevel({ location: 'TEST-INDEX' });
       await index.open();
+      testPartition = await index.db.partition(tenant);
     });
 
     beforeEach(async () => {
@@ -28,13 +35,13 @@ describe('Index Level', () => {
     });
 
     it('adds 1 key per property aside from id', async () => {
-      await index.put(uuid(), {
+      await index.put(tenant, uuid(), {
         dateCreated : new Date().toISOString(),
         'a'         : 'b',
         'c'         : 'd'
       });
 
-      const keys = await ArrayUtility.fromAsyncGenerator(index.db.keys());
+      const keys = await ArrayUtility.fromAsyncGenerator(testPartition.keys());
       expect(keys.length).to.equal(4);
     });
 
@@ -47,9 +54,9 @@ describe('Index Level', () => {
           }
         }
       };
-      await index.put(id, doc);
+      await index.put(tenant, id, doc);
 
-      const key = await index.db.get(index['join']('some.nested.object', true, id));
+      const key = await testPartition.get(index['join']('some.nested.object', true, id));
       expect(key).to.equal(id);
     });
 
@@ -58,10 +65,10 @@ describe('Index Level', () => {
       const doc = {
         empty: { nested: { } }
       };
-      await index.put(id, doc);
+      await index.put(tenant, id, doc);
 
-      await expect(index.db.get(index['join']('empty', '[object Object]', id))).to.eventually.be.undefined;
-      await expect(index.db.get(index['join']('empty.nested', '[object Object]', id))).to.eventually.be.undefined;
+      await expect(testPartition.get(index['join']('empty', '[object Object]', id))).to.eventually.be.undefined;
+      await expect(testPartition.get(index['join']('empty.nested', '[object Object]', id))).to.eventually.be.undefined;
     });
 
     it('removes empty arrays', async () => {
@@ -69,10 +76,10 @@ describe('Index Level', () => {
       const doc = {
         empty: [ [ ] ]
       };
-      await index.put(id, doc);
+      await index.put(tenant, id, doc);
 
-      await expect(index.db.get(index['join']('empty', '', id))).to.eventually.be.undefined;
-      await expect(index.db.get(index['join']('empty.0', '', id))).to.eventually.be.undefined;
+      await expect(testPartition.get(index['join']('empty', '', id))).to.eventually.be.undefined;
+      await expect(testPartition.get(index['join']('empty.0', '', id))).to.eventually.be.undefined;
     });
 
     it('should not put anything if aborted beforehand', async () => {
@@ -85,29 +92,31 @@ describe('Index Level', () => {
       };
 
       try {
-        await index.put(id, doc, { signal: controller.signal });
+        await index.put(tenant, id, doc, { signal: controller.signal });
       } catch (e) {
         expect(e).to.equal('reason');
       }
 
-      const result = await index.query([{ foo: 'bar' }]);
+      const result = await index.query(tenant, [{ foo: 'bar' }]);
       expect(result.length).to.equal(0);
     });
 
     it('should extract value from key', async () => {
       const testValue = 'testValue';
-      await index.put(uuid(), {
+      await index.put(tenant, uuid(), {
         dateCreated : new Date().toISOString(),
         'testKey'   : testValue,
       });
 
-      const keys = await ArrayUtility.fromAsyncGenerator(index.db.keys());
+      const keys = await ArrayUtility.fromAsyncGenerator(testPartition.keys());
       // encoded string values are surrounded by quotes.
       expect(keys.filter( k => IndexLevel.extractValueFromKey(k) === `"${testValue}"`).length).to.equal(1);
     });
   });
 
   describe('query', () => {
+    let index: IndexLevel;
+    const tenant = 'did:alice:index';
     before(async () => {
       index = new IndexLevel({ location: 'TEST-INDEX' });
       await index.open();
@@ -140,11 +149,11 @@ describe('Index Level', () => {
         'c' : 'e'
       };
 
-      await index.put(id1, doc1);
-      await index.put(id2, doc2);
-      await index.put(id3, doc3);
+      await index.put(tenant, id1, doc1);
+      await index.put(tenant, id2, doc2);
+      await index.put(tenant, id3, doc3);
 
-      const result = await index.query([{
+      const result = await index.query(tenant, [{
         'a' : 'b',
         'c' : 'e'
       }]);
@@ -159,9 +168,9 @@ describe('Index Level', () => {
         value: 'foobar'
       };
 
-      await index.put(id, doc);
+      await index.put(tenant, id, doc);
 
-      const resp = await index.query([{
+      const resp = await index.query(tenant, [{
         value: 'foo'
       }]);
 
@@ -184,11 +193,11 @@ describe('Index Level', () => {
         'a': 'c'
       };
 
-      await index.put(id1, doc1);
-      await index.put(id2, doc2);
-      await index.put(id3, doc3);
+      await index.put(tenant, id1, doc1);
+      await index.put(tenant, id2, doc2);
+      await index.put(tenant, id3, doc3);
 
-      const resp = await index.query([{
+      const resp = await index.query(tenant, [{
         a: [ 'a', 'b' ]
       }]);
 
@@ -204,10 +213,10 @@ describe('Index Level', () => {
           dateCreated: Temporal.PlainDateTime.from({ year: 2023, month: 1, day: 15 + i }).toString({ smallestUnit: 'microseconds' })
         };
 
-        await index.put(id, doc);
+        await index.put(tenant, id, doc);
       }
 
-      const resp = await index.query([{
+      const resp = await index.query(tenant, [{
         dateCreated: {
           gte: Temporal.PlainDateTime.from({ year: 2023, month: 1, day: 15 }).toString({ smallestUnit: 'microseconds' })
         }
@@ -222,9 +231,9 @@ describe('Index Level', () => {
         value: 'foobar'
       };
 
-      await index.put(id, doc);
+      await index.put(tenant, id, doc);
 
-      const resp = await index.query([{
+      const resp = await index.query(tenant, [{
         value: {
           gte: 'foo'
         }
@@ -245,10 +254,10 @@ describe('Index Level', () => {
         foo: 'barbaz'
       };
 
-      await index.put(id1, doc1);
-      await index.put(id2, doc2);
+      await index.put(tenant, id1, doc1);
+      await index.put(tenant, id2, doc2);
 
-      const resp = await index.query([{
+      const resp = await index.query(tenant, [{
         foo: {
           lte: 'bar'
         }
@@ -269,10 +278,10 @@ describe('Index Level', () => {
         foo: 'true'
       };
 
-      await index.put(id1, doc1);
-      await index.put(id2, doc2);
+      await index.put(tenant, id1, doc1);
+      await index.put(tenant, id2, doc2);
 
-      const resp = await index.query([{
+      const resp = await index.query(tenant, [{
         foo: true
       }]);
 
@@ -291,9 +300,9 @@ describe('Index Level', () => {
         const testIndex = Math.floor(Math.random() * testNumbers.length);
 
         for (const digit of testNumbers) {
-          await index.put(digit.toString(), { digit });
+          await index.put(tenant, digit.toString(), { digit });
         }
-        const resp = await index.query([{
+        const resp = await index.query(tenant, [{
           digit: testNumbers.at(testIndex)!
         }]);
 
@@ -304,9 +313,9 @@ describe('Index Level', () => {
       it ('should not return records that do not match provided number equality filter', async() => {
         // remove the potential (but unlikely) negative test result
         for (const digit of testNumbers.filter(n => n !== 1)) {
-          await index.put(digit.toString(), { digit });
+          await index.put(tenant, digit.toString(), { digit });
         }
-        const resp = await index.query([{
+        const resp = await index.query(tenant, [{
           digit: 1
         }]);
 
@@ -315,12 +324,12 @@ describe('Index Level', () => {
 
       it('supports range queries with positive numbers inclusive', async () => {
         for (const digit of testNumbers) {
-          await index.put(digit.toString(), { digit });
+          await index.put(tenant, digit.toString(), { digit });
         }
 
         const upperBound = positiveDigits.at(positiveDigits.length - 3)!;
         const lowerBound = positiveDigits.at(2)!;
-        const resp = await index.query([{
+        const resp = await index.query(tenant, [{
           digit: {
             gte : lowerBound,
             lte : upperBound
@@ -333,12 +342,12 @@ describe('Index Level', () => {
 
       it('supports range queries with negative numbers inclusive', async () => {
         for (const digit of testNumbers) {
-          await index.put(digit.toString(), { digit });
+          await index.put(tenant, digit.toString(), { digit });
         }
 
         const upperBound = negativeDigits.at(negativeDigits.length - 2)!;
         const lowerBound = negativeDigits.at(2)!;
-        const resp = await index.query([{
+        const resp = await index.query(tenant, [{
           digit: {
             gte : lowerBound,
             lte : upperBound
@@ -351,12 +360,12 @@ describe('Index Level', () => {
 
       it('should return numbers gt a negative digit', async () => {
         for (const digit of testNumbers) {
-          await index.put(digit.toString(), { digit });
+          await index.put(tenant, digit.toString(), { digit });
         }
 
         const lowerBound = negativeDigits.at(4)!;
 
-        const resp = await index.query([{
+        const resp = await index.query(tenant, [{
           digit: {
             gt: lowerBound,
           }
@@ -368,12 +377,12 @@ describe('Index Level', () => {
 
       it('should return numbers gt a digit', async () => {
         for (const digit of testNumbers) {
-          await index.put(digit.toString(), { digit });
+          await index.put(tenant, digit.toString(), { digit });
         }
 
         const lowerBound = positiveDigits.at(4)!;
 
-        const resp = await index.query([{
+        const resp = await index.query(tenant, [{
           digit: {
             gt: lowerBound,
           }
@@ -385,12 +394,12 @@ describe('Index Level', () => {
 
       it('should return numbers lt a negative digit', async () => {
         for (const digit of testNumbers) {
-          await index.put(digit.toString(), { digit });
+          await index.put(tenant, digit.toString(), { digit });
         }
 
         const upperBound = negativeDigits.at(4)!;
 
-        const resp = await index.query([{
+        const resp = await index.query(tenant, [{
           digit: {
             lt: upperBound,
           }
@@ -402,12 +411,12 @@ describe('Index Level', () => {
 
       it('should return numbers lt a digit', async () => {
         for (const digit of testNumbers) {
-          await index.put(digit.toString(), { digit });
+          await index.put(tenant, digit.toString(), { digit });
         }
 
         const upperBound = positiveDigits.at(4)!;
 
-        const resp = await index.query([{
+        const resp = await index.query(tenant, [{
           digit: {
             lt: upperBound,
           }
@@ -420,6 +429,8 @@ describe('Index Level', () => {
   });
 
   describe('delete', () => {
+    let index: IndexLevel;
+    const tenant = 'did:alice:index';
     before(async () => {
       index = new IndexLevel({ location: 'TEST-INDEX' });
       await index.open();
@@ -446,18 +457,18 @@ describe('Index Level', () => {
         'c' : 'd'
       };
 
-      await index.put(id1, doc1);
-      await index.put(id2, doc2);
+      await index.put(tenant, id1, doc1);
+      await index.put(tenant, id2, doc2);
 
-      let result = await index.query([{ 'a': 'b', 'c': 'd' }]);
+      let result = await index.query(tenant, [{ 'a': 'b', 'c': 'd' }]);
 
       expect(result.length).to.equal(2);
       expect(result).to.contain(id1);
 
-      await index.delete(id1);
+      await index.delete(tenant, id1);
 
 
-      result = await index.query([{ 'a': 'b', 'c': 'd' }]);
+      result = await index.query(tenant, [{ 'a': 'b', 'c': 'd' }]);
 
       expect(result.length).to.equal(1);
     });
@@ -471,15 +482,15 @@ describe('Index Level', () => {
         foo: 'bar'
       };
 
-      await index.put(id, doc);
+      await index.put(tenant, id, doc);
 
       try {
-        await index.delete(id, { signal: controller.signal });
+        await index.delete(tenant, id, { signal: controller.signal });
       } catch (e) {
         expect(e).to.equal('reason');
       }
 
-      const result = await index.query([{ foo: 'bar' }]);
+      const result = await index.query(tenant, [{ foo: 'bar' }]);
       expect(result.length).to.equal(1);
       expect(result).to.contain(id);
     });

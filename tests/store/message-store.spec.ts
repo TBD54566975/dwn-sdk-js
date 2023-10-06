@@ -125,11 +125,36 @@ export function testMessageStore(): void {
           expect(e).to.equal('reason');
         }
 
+        // index should not return the message
         const { messages: results } = await messageStore.query(alice.did, [{ schema }]);
         expect(results.length).to.equal(0);
+
+        // check that message doesn't exist
+        const messageCid = await Message.getCid(message);
+        const fetchedMessage = await messageStore.get(alice.did, messageCid);
+        expect(fetchedMessage).to.be.undefined;
       });
 
-      it('should not delete another the message of another tenant', async () => {
+      it('should not delete if aborted', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        const { message } = await TestDataGenerator.generateRecordsWrite();
+        await messageStore.put(alice.did, message, { latest: 'true' });
+
+        const messageCid = await Message.getCid(message);
+        const resultsAlice1 = await messageStore.get(alice.did, messageCid);
+        expect((resultsAlice1 as RecordsWriteMessage).recordId).to.equal((message as RecordsWriteMessage).recordId);
+
+        const controller = new AbortController();
+        controller.signal.throwIfAborted = (): void => { }; // simulate aborting happening async
+        controller.abort('reason');
+
+        // aborted delete
+        const deletePromise = messageStore.delete(alice.did, messageCid, { signal: controller.signal });
+        await expect(deletePromise).to.eventually.rejectedWith('reason');
+      });
+
+      it('should not delete the message of another tenant', async () => {
         const alice = await DidKeyResolver.generate();
         const bob = await DidKeyResolver.generate();
 
@@ -153,7 +178,7 @@ export function testMessageStore(): void {
         expect((resultsAlice2 as RecordsWriteMessage).recordId).to.equal((message as RecordsWriteMessage).recordId);
       });
 
-      it('should not clear the index of another tenant', async () => {
+      it('should not clear the MessageStore index of another tenant', async () => {
         const alice = await DidKeyResolver.generate();
         const bob = await DidKeyResolver.generate();
 
