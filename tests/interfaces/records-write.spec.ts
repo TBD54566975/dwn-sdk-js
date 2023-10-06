@@ -285,9 +285,9 @@ describe('RecordsWrite', () => {
       });
 
       const write = await RecordsWrite.createFrom({
-        unsignedRecordsWriteMessage : recordsWrite.message,
-        datePublished               : getCurrentTimeInHighPrecision(),
-        authorizationSigner         : Jws.createSigner(author)
+        recordsWriteMessage : recordsWrite.message,
+        datePublished       : getCurrentTimeInHighPrecision(),
+        authorizationSigner : Jws.createSigner(author)
       });
 
       expect(write.message.descriptor.published).to.be.true;

@@ -9,8 +9,7 @@ import type {
   RecordsWriteAttestationPayload,
   RecordsWriteDescriptor,
   RecordsWriteMessage,
-  RecordsWriteSignaturePayload,
-  UnsignedRecordsWriteMessage
+  RecordsWriteSignaturePayload
 } from '../types/records-types.js';
 import type { GenericMessage, GenericSignaturePayload } from '../types/message-types.js';
 
@@ -108,7 +107,7 @@ export type KeyEncryptionInput = {
 };
 
 export type CreateFromOptions = {
-  unsignedRecordsWriteMessage: UnsignedRecordsWriteMessage,
+  recordsWriteMessage: RecordsWriteMessage,
   data?: Uint8Array;
   published?: boolean;
   messageTimestamp?: string;
@@ -303,10 +302,10 @@ export class RecordsWrite {
 
   /**
    * Convenience method that creates a message by:
-   * 1. Copying over immutable properties from the given unsigned message
-   * 2. Copying over mutable properties that are not overwritten from the given unsigned message
+   * 1. Copying over immutable properties from the given source message
+   * 2. Copying over mutable properties that are not overwritten from the given source message
    * 3. Replace the mutable properties that are given new value
-   * @param options.unsignedRecordsWriteMessage Unsigned message that the new RecordsWrite will be based from.
+   * @param options.recordsWriteMessage Message that the new RecordsWrite will be based from.
    * @param options.messageTimestamp The new date the record is modified. If not given, current time will be used .
    * @param options.data The new data or the record. If not given, data from given message will be used.
    * @param options.published The new published state. If not given, then will be set to `true` if {options.messageTimestamp} is given;
@@ -317,11 +316,11 @@ export class RecordsWrite {
    * - will be set to current time (because this is a toggle from unpublished to published)
    */
   public static async createFrom(options: CreateFromOptions): Promise<RecordsWrite> {
-    const unsignedMessage = options.unsignedRecordsWriteMessage;
+    const sourceMessage = options.recordsWriteMessage;
     const currentTime = getCurrentTimeInHighPrecision();
 
     // inherit published value from parent if neither published nor datePublished is specified
-    const published = options.published ?? (options.datePublished ? true : unsignedMessage.descriptor.published);
+    const published = options.published ?? (options.datePublished ? true : sourceMessage.descriptor.published);
     // use current time if published but no explicit time given
     let datePublished: string | undefined = undefined;
     // if given explicitly published dated
@@ -331,8 +330,8 @@ export class RecordsWrite {
       // if this RecordsWrite will publish the record
       if (published) {
         // the parent was already published, inherit the same published date
-        if (unsignedMessage.descriptor.published) {
-          datePublished = unsignedMessage.descriptor.datePublished;
+        if (sourceMessage.descriptor.published) {
+          datePublished = sourceMessage.descriptor.datePublished;
         } else {
           // this is a toggle from unpublished to published, use current time
           datePublished = currentTime;
@@ -342,22 +341,22 @@ export class RecordsWrite {
 
     const createOptions: RecordsWriteOptions = {
       // immutable properties below, just inherit from the message given
-      recipient           : unsignedMessage.descriptor.recipient,
-      recordId            : unsignedMessage.recordId,
-      dateCreated         : unsignedMessage.descriptor.dateCreated,
-      contextId           : unsignedMessage.contextId,
-      protocol            : unsignedMessage.descriptor.protocol,
-      protocolPath        : unsignedMessage.descriptor.protocolPath,
-      parentId            : unsignedMessage.descriptor.parentId,
-      schema              : unsignedMessage.descriptor.schema,
-      dataFormat          : unsignedMessage.descriptor.dataFormat,
+      recipient           : sourceMessage.descriptor.recipient,
+      recordId            : sourceMessage.recordId,
+      dateCreated         : sourceMessage.descriptor.dateCreated,
+      contextId           : sourceMessage.contextId,
+      protocol            : sourceMessage.descriptor.protocol,
+      protocolPath        : sourceMessage.descriptor.protocolPath,
+      parentId            : sourceMessage.descriptor.parentId,
+      schema              : sourceMessage.descriptor.schema,
+      dataFormat          : sourceMessage.descriptor.dataFormat,
       // mutable properties below
       messageTimestamp    : options.messageTimestamp ?? currentTime,
       published,
       datePublished,
       data                : options.data,
-      dataCid             : options.data ? undefined : unsignedMessage.descriptor.dataCid, // if data not given, use base message dataCid
-      dataSize            : options.data ? undefined : unsignedMessage.descriptor.dataSize, // if data not given, use base message dataSize
+      dataCid             : options.data ? undefined : sourceMessage.descriptor.dataCid, // if data not given, use base message dataCid
+      dataSize            : options.data ? undefined : sourceMessage.descriptor.dataSize, // if data not given, use base message dataSize
       // finally still need signers
       authorizationSigner : options.authorizationSigner,
       attestationSigners  : options.attestationSigners

@@ -320,9 +320,9 @@ export function testRecordsDeleteHandler(): void {
           expect(reply.status.code).to.equal(202);
 
           const newWrite = await RecordsWrite.createFrom({
-            unsignedRecordsWriteMessage : recordsWrite.message,
-            published                   : true,
-            authorizationSigner         : Jws.createSigner(author)
+            recordsWriteMessage : recordsWrite.message,
+            published           : true,
+            authorizationSigner : Jws.createSigner(author)
           });
 
           const newWriteReply = await dwn.handleRecordsWrite(author.did, newWrite.message);
