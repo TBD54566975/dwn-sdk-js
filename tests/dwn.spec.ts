@@ -53,7 +53,7 @@ export function testDwnClass(): void {
           author: alice,
         });
 
-        const reply = await dwn.processMessage(alice.did, message, dataStream);
+        const reply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
 
         expect(reply.status.code).to.equal(202);
       });
@@ -177,7 +177,7 @@ export function testDwnClass(): void {
         const messageCid = await Message.getCid(recordsWrite.message);
         messageCids.push(messageCid);
 
-        const reply = await dwn.processMessage(alice.did, recordsWrite.toJSON(), dataStream);
+        const reply = await dwn.handleRecordsWrite(alice.did, recordsWrite.toJSON(), dataStream);
         expect(reply.status.code).to.equal(202);
 
         const { messagesGet } = await TestDataGenerator.generateMessagesGet({
@@ -248,7 +248,7 @@ export function testDwnClass(): void {
           data          : newDataBytes
         });
 
-        const newRecordsWriteReply = await dwn.processMessage(alice.did, newRecordsWrite.message, newRecordsWrite.dataStream);
+        const newRecordsWriteReply = await dwn.handleRecordsWrite(alice.did, newRecordsWrite.message, newRecordsWrite.dataStream);
         expect(newRecordsWriteReply.status.code).to.equal(202);
 
         // verify new `RecordsWrite` has overwritten the existing record with new data
@@ -328,5 +328,42 @@ export function testDwnClass(): void {
         expect(reply3.status.detail).to.contain(`Expected method ${DwnInterfaceName.Records}${DwnMethodName.Write}`);
       });
     });
+
+    describe('handleRecordsWrite', () => {
+      it('should return 400 error for bad message (invalid method)', async () => {
+        const alice = await DidKeyResolver.generate();
+        const data = Encoder.stringToBytes('test');
+
+        // alice writes a record
+        const aliceWriteData = await TestDataGenerator.generateRecordsWrite({
+          author: alice,
+          data
+        });
+
+        (aliceWriteData.message as any).descriptor.method = 'Foo';
+
+        const reply = await dwn.handleRecordsWrite(alice.did, aliceWriteData.message);
+
+        expect(reply.status.code).to.equal(400);
+        expect(reply.status.detail).to.equal('Expected method RecordsWrite, received RecordsFoo');
+      });
+
+      it('should successfully write a record', async () => {
+        const alice = await DidKeyResolver.generate();
+        const data = Encoder.stringToBytes('test');
+
+        // alice writes a record
+        const aliceWriteData = await TestDataGenerator.generateRecordsWrite({
+          author: alice,
+          data
+        });
+
+        const reply = await dwn.handleRecordsWrite(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
+
+        expect(reply.status.code).to.equal(202);
+      });
+
+    });
+
   });
 }

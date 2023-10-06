@@ -62,7 +62,7 @@ export function testRecordsDeleteHandler(): void {
 
         // insert data
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
-        const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+        const writeReply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
         expect(writeReply.status.code).to.equal(202);
 
         // ensure data is inserted
@@ -106,22 +106,22 @@ export function testRecordsDeleteHandler(): void {
 
         // alice writes a records with data
         const aliceWriteData = await TestDataGenerator.generateRecordsWrite({ author: alice, data });
-        const aliceWriteReply = await dwn.processMessage(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
+        const aliceWriteReply = await dwn.handleRecordsWrite(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
         expect(aliceWriteReply.status.code).to.equal(202);
 
         // alice writes another record with the same data
         const aliceAssociateData = await TestDataGenerator.generateRecordsWrite({ author: alice, data });
-        const aliceAssociateReply = await dwn.processMessage(alice.did, aliceAssociateData.message, aliceAssociateData.dataStream);
+        const aliceAssociateReply = await dwn.handleRecordsWrite(alice.did, aliceAssociateData.message, aliceAssociateData.dataStream);
         expect(aliceAssociateReply.status.code).to.equal(202);
 
         // bob writes a records with same data
         const bobWriteData = await TestDataGenerator.generateRecordsWrite({ author: bob, data });
-        const bobWriteReply = await dwn.processMessage(bob.did, bobWriteData.message, bobWriteData.dataStream);
+        const bobWriteReply = await dwn.handleRecordsWrite(bob.did, bobWriteData.message, bobWriteData.dataStream);
         expect(bobWriteReply.status.code).to.equal(202);
 
         // bob writes another record with the same data
         const bobAssociateData = await TestDataGenerator.generateRecordsWrite({ author: bob, data });
-        const bobAssociateReply = await dwn.processMessage(bob.did, bobAssociateData.message, bobAssociateData.dataStream);
+        const bobAssociateReply = await dwn.handleRecordsWrite(bob.did, bobAssociateData.message, bobAssociateData.dataStream);
         expect(bobAssociateReply.status.code).to.equal(202);
 
         // alice deletes one of the two records
@@ -191,7 +191,7 @@ export function testRecordsDeleteHandler(): void {
 
         // initial write
         const initialWriteData = await TestDataGenerator.generateRecordsWrite({ author: alice });
-        const initialWriteReply = await dwn.processMessage(alice.did, initialWriteData.message, initialWriteData.dataStream);
+        const initialWriteReply = await dwn.handleRecordsWrite(alice.did, initialWriteData.message, initialWriteData.dataStream);
         expect(initialWriteReply.status.code).to.equal(202);
 
         // generate subsequent write and delete with the delete having an earlier timestamp
@@ -207,7 +207,7 @@ export function testRecordsDeleteHandler(): void {
         });
 
         // subsequent write
-        const subsequentWriteReply = await dwn.processMessage(alice.did, subsequentWriteData.message, subsequentWriteData.dataStream);
+        const subsequentWriteReply = await dwn.handleRecordsWrite(alice.did, subsequentWriteData.message, subsequentWriteData.dataStream);
         expect(subsequentWriteReply.status.code).to.equal(202);
 
         // test that a delete with an earlier `messageTimestamp` results in a 409
@@ -236,7 +236,7 @@ export function testRecordsDeleteHandler(): void {
           author: alice,
           data
         });
-        const aliceWriteReply = await dwn.processMessage(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
+        const aliceWriteReply = await dwn.handleRecordsWrite(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
         expect(aliceWriteReply.status.code).to.equal(202);
 
         const aliceQueryWriteAfterAliceWriteData = await TestDataGenerator.generateRecordsQuery({
@@ -269,7 +269,7 @@ export function testRecordsDeleteHandler(): void {
           author: alice,
           data
         });
-        const aliceRewriteReply = await dwn.processMessage(alice.did, aliceRewriteData.message, aliceRewriteData.dataStream);
+        const aliceRewriteReply = await dwn.handleRecordsWrite(alice.did, aliceRewriteData.message, aliceRewriteData.dataStream);
         expect(aliceRewriteReply.status.code).to.equal(202);
 
         const aliceQueryWriteAfterAliceRewriteData = await TestDataGenerator.generateRecordsQuery({
@@ -287,7 +287,7 @@ export function testRecordsDeleteHandler(): void {
           const alice = await DidKeyResolver.generate();
 
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
-          const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+          const writeReply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
           expect(writeReply.status.code).to.equal(202);
 
           const recordsDelete = await RecordsDelete.create({
@@ -316,7 +316,7 @@ export function testRecordsDeleteHandler(): void {
           const { message, author, dataStream, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
           TestStubGenerator.stubDidResolver(didResolver, [author]);
 
-          const reply = await dwn.processMessage(author.did, message, dataStream);
+          const reply = await dwn.handleRecordsWrite(author.did, message, dataStream);
           expect(reply.status.code).to.equal(202);
 
           const newWrite = await RecordsWrite.createFrom({
@@ -325,7 +325,7 @@ export function testRecordsDeleteHandler(): void {
             authorizationSigner         : Jws.createSigner(author)
           });
 
-          const newWriteReply = await dwn.processMessage(author.did, newWrite.message);
+          const newWriteReply = await dwn.handleRecordsWrite(author.did, newWrite.message);
           expect(newWriteReply.status.code).to.equal(202);
 
           const recordsDelete = await RecordsDelete.create({

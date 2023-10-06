@@ -25,6 +25,8 @@ export type RecordsWriteDescriptor = {
   dataFormat: string;
 };
 
+export type RecordsWriteReply = GenericMessageReply;
+
 /**
  * Internal RecordsWrite message representation that can be in an incomplete state.
  */
