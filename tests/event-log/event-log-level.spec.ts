@@ -28,13 +28,15 @@ describe('EventLogLevel Tests', () => {
   });
 
   it('separates events by tenant', async () => {
-    const { author, message } = await TestDataGenerator.generateRecordsWrite();
+    const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
+    const message1Index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
     const messageCid = await Message.getCid(message);
-    const watermark = await eventLog.append(author.did, messageCid);
+    const watermark = await eventLog.append(author.did, messageCid, message1Index);
 
-    const { author: author2, message: message2 } = await TestDataGenerator.generateRecordsWrite();
+    const { author: author2, message: message2, recordsWrite: recordsWrite2 } = await TestDataGenerator.generateRecordsWrite();
+    const message2Index = await RecordsWriteHandler.constructIndexes(recordsWrite2, true);
     const messageCid2 = await Message.getCid(message2);
-    const watermark2 = await eventLog.append(author2.did, messageCid2);
+    const watermark2 = await eventLog.append(author2.did, messageCid2, message2Index);
 
     let events = await eventLog.getEvents(author.did);
     expect(events.length).to.equal(1);
@@ -50,16 +52,18 @@ describe('EventLogLevel Tests', () => {
   it('returns events in the order that they were appended', async () => {
     const expectedEvents: Array<Event> = [];
 
-    const { author, message } = await TestDataGenerator.generateRecordsWrite();
+    const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
     const messageCid = await Message.getCid(message);
-    const watermark = await eventLog.append(author.did, messageCid);
+    const messageIndex = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
+    const watermark = await eventLog.append(author.did, messageCid, messageIndex);
 
     expectedEvents.push({ watermark, messageCid });
 
     for (let i = 0; i < 9; i += 1) {
-      const { message } = await TestDataGenerator.generateRecordsWrite({ author });
+      const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
       const messageCid = await Message.getCid(message);
-      const watermark = await eventLog.append(author.did, messageCid);
+      const index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
+      const watermark = await eventLog.append(author.did, messageCid, index);
 
       expectedEvents.push({ watermark, messageCid });
     }
@@ -77,16 +81,18 @@ describe('EventLogLevel Tests', () => {
     it('gets all events for a tenant if watermark is not provided', async () => {
       const expectedEvents: Event[] = [];
 
-      const { author, message } = await TestDataGenerator.generateRecordsWrite();
+      const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await Message.getCid(message);
-      const watermark = await eventLog.append(author.did, messageCid);
+      const messageIndex = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
+      const watermark = await eventLog.append(author.did, messageCid, messageIndex);
       expectedEvents.push({ messageCid, watermark });
 
       for (let i = 0; i < 9; i += 1) {
-        const { message } = await TestDataGenerator.generateRecordsWrite({ author });
+        const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
         const messageCid = await Message.getCid(message);
+        const index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
 
-        const watermark = await eventLog.append(author.did, messageCid);
+        const watermark = await eventLog.append(author.did, messageCid, index);
         expectedEvents.push({ messageCid, watermark });
       }
 
@@ -100,19 +106,21 @@ describe('EventLogLevel Tests', () => {
     });
 
     it('gets all events that occurred after the watermark provided', async () => {
-      const { author, message } = await TestDataGenerator.generateRecordsWrite();
+      const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await Message.getCid(message);
+      const index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
 
-      await eventLog.append(author.did, messageCid);
+      await eventLog.append(author.did, messageCid, index);
 
       const messageCids: string[] = [];
       let testWatermark = '';
 
       for (let i = 0; i < 9; i += 1) {
-        const { message } = await TestDataGenerator.generateRecordsWrite({ author });
+        const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
         const messageCid = await Message.getCid(message);
+        const index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
 
-        const watermark = await eventLog.append(author.did, messageCid);
+        const watermark = await eventLog.append(author.did, messageCid, index);
 
         if (i === 4) {
           testWatermark = watermark;
@@ -135,16 +143,18 @@ describe('EventLogLevel Tests', () => {
   describe('deleteEventsByCid', () => {
     it('finds and deletes events that whose values match the cids provided', async () => {
       const cids: string[] = [];
-      const { author, message } = await TestDataGenerator.generateRecordsWrite();
+      const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await Message.getCid(message);
+      const index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
 
-      await eventLog.append(author.did, messageCid);
+      await eventLog.append(author.did, messageCid, index);
 
       for (let i = 0; i < 9; i += 1) {
-        const { message } = await TestDataGenerator.generateRecordsWrite({ author });
+        const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
         const messageCid = await Message.getCid(message);
+        const index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
 
-        await eventLog.append(author.did, messageCid);
+        await eventLog.append(author.did, messageCid, index);
         if (i % 2 === 0) {
           cids.push(messageCid);
         }
