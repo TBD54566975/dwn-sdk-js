@@ -10,14 +10,14 @@ type MessageIndexConfig = {
   createLevelDatabase?: typeof createLevelDatabase,
 };
 
-export interface IndexLevelOptions {
+export interface MessageLevelOptions {
   signal?: AbortSignal;
 }
 
 /**
  * A LevelDB implementation for indexing the messages stored in the DWN.
  */
-export class MessageIndex {
+export class MessageIndexLevel {
   config: MessageIndexConfig;
 
   db: LevelWrapper<string>;
@@ -47,7 +47,7 @@ export class MessageIndex {
     tenant: string,
     dataId: string,
     indexes: { [property: string]: unknown },
-    options?: IndexLevelOptions
+    options?: MessageLevelOptions
   ): Promise<void> {
     const partition = await executeUnlessAborted(this.db.partition(tenant), options?.signal);
     indexes = flatten(indexes);
@@ -83,7 +83,7 @@ export class MessageIndex {
   /**
    * Executes the given single filter query and appends the results without duplicate into `matchedIDs`.
    */
-  private async executeSingleFilterQuery(tenant: string, filter: Filter, matchedIDs: Set<string>, options?: IndexLevelOptions): Promise<void> {
+  private async executeSingleFilterQuery(tenant: string, filter: Filter, matchedIDs: Set<string>, options?: MessageLevelOptions): Promise<void> {
     // Note: We have an array of Promises in order to support OR (anyOf) matches when given a list of accepted values for a property
     const propertyNameToPromises: { [key: string]: Promise<string[]>[] } = {};
 
@@ -145,7 +145,7 @@ export class MessageIndex {
     }
   }
 
-  async query(tenant: string, filters: Filter[], options?: IndexLevelOptions): Promise<Array<string>> {
+  async query(tenant: string, filters: Filter[], options?: MessageLevelOptions): Promise<Array<string>> {
     const matchedIDs: Set<string> = new Set();
 
     for (const filter of filters) {
@@ -155,7 +155,7 @@ export class MessageIndex {
     return [...matchedIDs];
   }
 
-  async delete(tenant: string, dataId: string, options?: IndexLevelOptions): Promise<void> {
+  async delete(tenant: string, dataId: string, options?: MessageLevelOptions): Promise<void> {
     const partition = await executeUnlessAborted(this.db.partition(tenant), options?.signal);
     const serializedIndexes = await partition.get(`__${dataId}__indexes`, options);
     if (!serializedIndexes) {
@@ -184,7 +184,7 @@ export class MessageIndex {
   /**
    * @returns IDs of data that matches the exact property and value.
    */
-  private async findExactMatches(tenant: string, propertyName: string, propertyValue: unknown, options?: IndexLevelOptions): Promise<string[]> {
+  private async findExactMatches(tenant: string, propertyName: string, propertyValue: unknown, options?: MessageLevelOptions): Promise<string[]> {
     const partition = await executeUnlessAborted(this.db.partition(tenant), options?.signal);
     const propertyValuePrefix = this.join(propertyName, this.encodeValue(propertyValue), '');
 
@@ -206,7 +206,7 @@ export class MessageIndex {
   /**
    * @returns IDs of data that matches the range filter.
    */
-  private async findRangeMatches(tenant: string, propertyName: string, rangeFilter: RangeFilter, options?: IndexLevelOptions): Promise<string[]> {
+  private async findRangeMatches(tenant: string, propertyName: string, rangeFilter: RangeFilter, options?: MessageLevelOptions): Promise<string[]> {
     const partition = await executeUnlessAborted(this.db.partition(tenant), options?.signal);
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {};
 
@@ -224,7 +224,7 @@ export class MessageIndex {
     const matches: string[] = [];
     for await (const [ key, dataId ] of partition.iterator(iteratorOptions, options)) {
       // if "greater-than" is specified, skip all keys that contains the exact value given in the "greater-than" condition
-      if ('gt' in rangeFilter && MessageIndex.extractValueFromKey(key) === this.encodeValue(rangeFilter.gt)) {
+      if ('gt' in rangeFilter && MessageIndexLevel.extractValueFromKey(key) === this.encodeValue(rangeFilter.gt)) {
         continue;
       }
 
@@ -257,7 +257,7 @@ export class MessageIndex {
       // For example, `'\x00'` becomes `'\\u0000'`.
       return `"${value}"`;
     case 'number':
-      return MessageIndex.encodeNumberValue(value);
+      return MessageIndexLevel.encodeNumberValue(value);
     default:
       return String(value);
     }
@@ -301,7 +301,7 @@ export class MessageIndex {
    */
   private static delimiter = `\x00`;
   private join(...values: unknown[]): string {
-    return values.join(MessageIndex.delimiter);
+    return values.join(MessageIndexLevel.delimiter);
   }
 
   async dump(): Promise<void> {

@@ -22,6 +22,10 @@ type FilteredQuery = {
 
 const INDEX_SUBLEVEL_NAME = 'index';
 
+export interface IndexLevelOptions {
+  signal?: AbortSignal;
+}
+
 /**
  * IndexLevel is a base class with some common functions used between MessageIndex and EventLog.
  */
@@ -33,14 +37,25 @@ export class IndexLevel<T> {
     dataId: string,
     value: T,
     indexes: { [key:string]: unknown },
-    sortIndexes: { [key:string]: unknown }
+    sortIndexes: { [key:string]: unknown },
+    options?: IndexLevelOptions
   ): Promise<void> {
+    // ensure sorted indexes are flat and exist
+    sortIndexes = flatten(sortIndexes);
+    if (!sortIndexes || Object.keys(sortIndexes).length === 0) {
+      throw new Error('must include at least one sorted index');
+    }
+
     const tenantPartition = await this.db.partition(tenant);
     const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
 
     const indexOps: LevelWrapperBatchOperation<string>[] = [];
 
     indexes = flatten(indexes);
+    if (!indexes || Object.keys(indexes).length === 0) {
+      throw new Error('no properties to index');
+    }
+
     indexOps.push({ type: 'put', key: `__${dataId}__indexes`, value: JSON.stringify({ indexes, sortIndexes }) });
 
     for (const propertyName in indexes) {
@@ -60,10 +75,10 @@ export class IndexLevel<T> {
       }
     }
 
-    await indexPartition.batch(indexOps);
+    await indexPartition.batch(indexOps, options);
   }
 
-  async purge(tenant: string, dataId: string): Promise<void> {
+  async purge(tenant: string, dataId: string, options?: IndexLevelOptions): Promise<void> {
     const tenantPartition = await this.db.partition(tenant);
     const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
 
@@ -90,16 +105,16 @@ export class IndexLevel<T> {
       }
     }
 
-    await indexPartition.batch(indexOps);
+    await indexPartition.batch(indexOps, options);
   }
 
-  async query(tenant:string, queries: FilteredQuery[]): Promise<T[]> {
+  async query(tenant:string, queries: FilteredQuery[], options?: IndexLevelOptions): Promise<T[]> {
     const matched:Map<string, T> = new Map();
-    await Promise.all(queries.map(query => this.executeSingleFilterQuery(tenant, query, matched)));
+    await Promise.all(queries.map(query => this.executeSingleFilterQuery(tenant, query, matched, options)));
     return [...matched.values()];
   }
 
-  async executeSingleFilterQuery(tenant:string, query: FilteredQuery, matches: Map<string, T>): Promise<void> {
+  async executeSingleFilterQuery(tenant:string, query: FilteredQuery, matches: Map<string, T>, options?: IndexLevelOptions): Promise<void> {
     // Note: We have an array of Promises in order to support OR (anyOf) matches when given a list of accepted values for a property
     const propertyNameToPromises: { [key: string]: Promise<SortableValue<T>[]>[] } = {};
 
@@ -117,17 +132,17 @@ export class IndexLevel<T> {
           // then adding them to the promises associated with `propertyName`
           propertyNameToPromises[propertyName] = [];
           for (const propertyValue of new Set(propertyFilter)) {
-            const exactMatchesPromise = this.findExactMatches(tenant, propertyName, propertyValue, sort, sortDirection, cursor);
+            const exactMatchesPromise = this.findExactMatches(tenant, propertyName, propertyValue, sort, sortDirection, cursor, options);
             propertyNameToPromises[propertyName].push(exactMatchesPromise);
           }
         } else {
           // `propertyFilter` is a `RangeFilter`
-          const rangeMatchesPromise = this.findRangeMatches(tenant, propertyName, propertyFilter, sort, sortDirection, cursor);
+          const rangeMatchesPromise = this.findRangeMatches(tenant, propertyName, propertyFilter, sort, sortDirection, cursor, options);
           propertyNameToPromises[propertyName] = [rangeMatchesPromise];
         }
       } else {
         // propertyFilter is an EqualFilter, meaning it is a non-object primitive type
-        const exactMatchesPromise = this.findExactMatches(tenant, propertyName, propertyFilter, sort, sortDirection, cursor);
+        const exactMatchesPromise = this.findExactMatches(tenant, propertyName, propertyFilter, sort, sortDirection, cursor, options);
         propertyNameToPromises[propertyName] = [exactMatchesPromise];
       }
     }
@@ -172,6 +187,7 @@ export class IndexLevel<T> {
     sortProperty: string,
     sortDirection: SortOrder,
     cursor?: string,
+    options?: IndexLevelOptions
   ): Promise<SortableValue<T>[]> {
     const tenantPartition = await this.db.partition(tenant);
     const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
@@ -189,7 +205,7 @@ export class IndexLevel<T> {
 
     const matches: SortableValue<T>[] = [];
 
-    for await (const [ key, value ] of indexPartition.iterator(iteratorOptions)) {
+    for await (const [ key, value ] of indexPartition.iterator(iteratorOptions, options)) {
       if (!key.startsWith(matchPrefix)) {
         break;
       }
@@ -214,7 +230,8 @@ export class IndexLevel<T> {
     rangeFilter: RangeFilter,
     sortProperty: string,
     sortDirection: SortOrder,
-    cursor?: string
+    cursor?: string,
+    options?: IndexLevelOptions
   ): Promise<SortableValue<T>[]> {
     const tenantPartition = await this.db.partition(tenant);
     const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
@@ -235,7 +252,7 @@ export class IndexLevel<T> {
 
     const matches: SortableValue<T>[] = [];
 
-    for await (const [ key, value ] of indexPartition.iterator(iteratorOptions)) {
+    for await (const [ key, value ] of indexPartition.iterator(iteratorOptions, options)) {
       // if "greater-than" is specified, skip all keys that contains the exact value given in the "greater-than" condition
       if ('gt' in rangeFilter && this.extractValueFromKey(key) === this.encodeValue(rangeFilter.gt)) {
         continue;
@@ -262,7 +279,7 @@ export class IndexLevel<T> {
       // key = 'dateCreated\u0000"2023-05-25T11:22:33.000000Z"\u000001HBY2E1TPY1W95SE0PEG2AM96'
       // the value would be considered greater than { lte: `dateCreated\u0000"2023-05-25T11:22:33.000000Z"` } used in the iterator options,
       // thus would not be included in the iterator even though we'd like it to be.
-      for (const event of await this.findExactMatches(tenant, propertyName, rangeFilter.lte, sortProperty, sortDirection, cursor)) {
+      for (const event of await this.findExactMatches(tenant, propertyName, rangeFilter.lte, sortProperty, sortDirection, cursor, options)) {
         matches.push(event);
       }
     }
