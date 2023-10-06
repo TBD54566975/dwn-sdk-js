@@ -58,7 +58,7 @@ export class EventLogLevel implements EventLog {
    * @param indexes property and value indexes to use for querying potential events.
    * @returns the ulid watermark generated during this operation.
    */
-  async append(tenant: string, messageCid: string, indexes: { [key:string]: unknown } = {}): Promise<string> {
+  async append(tenant: string, messageCid: string, indexes: { [key:string]: unknown }): Promise<string> {
     const tenantEventLog = await this.db.partition(tenant);
     const watermarkLog = await tenantEventLog.partition(WATERMARKS_SUBLEVEL_NAME);
     const cidLog = await tenantEventLog.partition(CID_WATERMARKS_SUBLEVEL_NAME);
