@@ -15,6 +15,7 @@ export class DwnError extends Error {
 export enum DwnErrorCode {
   AuthenticateJwsMissing = 'AuthenticateJwsMissing',
   AuthorizationUnknownAuthor = 'AuthorizationUnknownAuthor',
+  GeneralJwsVerifierInvalidSignature = 'GeneralJwsVerifierInvalidSignature',
   GrantAuthorizationGrantExpired = 'GrantAuthorizationGrantExpired',
   GrantAuthorizationGrantMissing = 'GrantAuthorizationGrantMissing',
   GrantAuthorizationGrantRevoked = 'GrantAuthorizationGrantRevoked',
@@ -34,6 +35,7 @@ export enum DwnErrorCode {
   PrivateKeySignerUnableToDeduceKeyId = 'PrivateKeySignerUnableToDeduceKeyId',
   PrivateKeySignerUnsupportedCurve = 'PrivateKeySignerUnsupportedCurve',
   ProtocolAuthorizationActionNotAllowed = 'ProtocolAuthorizationActionNotAllowed',
+  ProtocolAuthorizationDuplicateContextRoleRecipient = 'ProtocolAuthorizationDuplicateContextRoleRecipient',
   ProtocolAuthorizationDuplicateGlobalRoleRecipient = 'ProtocolAuthorizationDuplicateGlobalRoleRecipient',
   ProtocolAuthorizationIncorrectDataFormat = 'ProtocolAuthorizationIncorrectDataFormat',
   ProtocolAuthorizationIncorrectProtocolPath = 'ProtocolAuthorizationIncorrectProtocolPath',
@@ -43,6 +45,7 @@ export enum DwnErrorCode {
   ProtocolAuthorizationMissingRuleSet = 'ProtocolAuthorizationMissingRuleSet',
   ProtocolAuthorizationNotARole = 'ProtocolAuthorizationNotARole',
   ProtocolAuthorizationRoleMissingRecipient = 'ProtocolAuthorizationRoleMissingRecipient',
+  ProtocolsConfigureContextRoleAtProhibitedProtocolPath = 'ProtocolsConfigureContextRoleAtProhibitedProtocolPath',
   ProtocolsConfigureGlobalRoleAtProhibitedProtocolPath = 'ProtocolsConfigureGlobalRoleAtProhibitedProtocolPath',
   ProtocolsConfigureInvalidRole = 'ProtocolsConfigureInvalidRole',
   ProtocolsConfigureInvalidActionMissingOf = 'ProtocolsConfigureInvalidActionMissingOf',

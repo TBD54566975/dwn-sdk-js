@@ -16,6 +16,7 @@ import minimalProtocolDefinition from '../vectors/protocol-definitions/minimal.j
 import privateProtocol from '../vectors/protocol-definitions/private-protocol.json' assert { type: 'json' };
 import sinon from 'sinon';
 import socialMediaProtocolDefinition from '../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
+import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
 
 import chai, { expect } from 'chai';
 
@@ -421,7 +422,7 @@ export function testRecordsWriteHandler(): void {
           expect(carolWriteReply.status.detail).to.contain('RecordsWriteOwnerAndTenantMismatch');
         });
 
-        it('should throw if `owner` in `authorization` is mismatching with the tenant - protocol-space', async () => {
+        it('should throw if `ownerSignature` in `authorization` is mismatching with the tenant - protocol-space', async () => {
           // scenario: Alice, Bob, and Carol all have the same protocol which does NOT allow external entities to write,
           // scenario: Carol attempts to store a message with Alice being the owner, and should fail
           const alice = await DidKeyResolver.generate();
@@ -452,6 +453,25 @@ export function testRecordsWriteHandler(): void {
           const carolWriteReply = await dwn.processMessage(carol.did, recordsWrite.message, dataStream);
           expect(carolWriteReply.status.code).to.equal(401);
           expect(carolWriteReply.status.detail).to.contain('RecordsWriteOwnerAndTenantMismatch');
+        });
+
+        it('should throw if `ownerSignature` fails verification', async () => {
+          // scenario: Malicious Bob attempts to retain an externally authored message in Alice's DWN by providing an invalid `ownerSignature`
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+
+          // Bob creates a message, we skip writing to bob's DWN because that's orthogonal to this test
+          const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: bob, published: true });
+
+          // Bob pretends to be Alice by adding an invalid `ownerSignature`
+          // We do this by creating a valid signature first then swap out with an invalid one
+          await recordsWrite.signAsOwner(Jws.createSigner(alice));
+          const bobSignature = recordsWrite.message.authorization.authorSignature.signatures[0];
+          recordsWrite.message.authorization.ownerSignature!.signatures[0].signature = bobSignature.signature; // invalid `ownerSignature`
+
+          // Test that Bob is not able to store the message in Alice's DWN using an invalid `ownerSignature`
+          const aliceWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+          expect(aliceWriteReply.status.detail).to.contain(DwnErrorCode.GeneralJwsVerifierInvalidSignature);
         });
       });
 
@@ -536,7 +556,7 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const authorSignature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const authorSignature = await RecordsWrite['createAuthorSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
           message.authorization = { authorSignature };
 
@@ -557,7 +577,7 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const authorSignature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const authorSignature = await RecordsWrite['createAuthorSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
           message.authorization = { authorSignature };
 
@@ -578,7 +598,7 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const authorSignature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const authorSignature = await RecordsWrite['createAuthorSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
           message.authorization = { authorSignature };
 
@@ -598,7 +618,7 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const authorizationSigner = Jws.createSigner(alice);
-          const authorSignature = await RecordsWrite['createAuthorizationSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
+          const authorSignature = await RecordsWrite['createAuthorSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, authorizationSigner, undefined);
           message.recordId = recordId;
           message.authorization = { authorSignature };
 
@@ -1179,7 +1199,7 @@ export function testRecordsWriteHandler(): void {
         });
 
         describe('role rules', () => {
-          describe('write $globalRole records', async () => {
+          describe('write $globalRole records', () => {
             it('allows a $globalRole record with unique recipient to be created and updated', async () => {
               // scenario: Alice adds Bob to the 'friend' role. Then she updates the 'friend' record.
 
@@ -1215,7 +1235,7 @@ export function testRecordsWriteHandler(): void {
               expect(updateFriendReply.status.code).to.equal(202);
             });
 
-            it('rejects writes to a $globalRole is recipient is undefined', async () => {
+            it('rejects writes to a $globalRole if recipient is undefined', async () => {
               // scenario: Alice writes a global role record with no recipient and it is rejected
 
               const alice = await DidKeyResolver.generate();
@@ -1328,8 +1348,226 @@ export function testRecordsWriteHandler(): void {
             });
           });
 
+          describe('write contextRole records', () => {
+            it('allows a $contextRole record with recipient unique to the context to be created and updated', async () => {
+              // scenario: Alice creates a thread and adds Bob to the 'thread/participant' role. Then she updates Bob's role record.
+
+              const alice = await DidKeyResolver.generate();
+              const bob = await DidKeyResolver.generate();
+
+              const protocolDefinition = threadRoleProtocolDefinition;
+
+              const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+                author: alice,
+                protocolDefinition
+              });
+              const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+              expect(protocolWriteReply.status.code).to.equal(202);
+
+              // Alice creates a thread
+              const threadRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread'
+              });
+              const threadRecordReply = await dwn.processMessage(alice.did, threadRecord.message, threadRecord.dataStream);
+              expect(threadRecordReply.status.code).to.equal(202);
+
+              // Alice adds Bob as a 'thread/participant' in that thread
+              const participantRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread/participant',
+                contextId    : threadRecord.message.contextId,
+                parentId     : threadRecord.message.recordId,
+              });
+              const participantRecordReply = await dwn.processMessage(alice.did, participantRecord.message, participantRecord.dataStream);
+              expect(participantRecordReply.status.code).to.equal(202);
+
+              // Alice updates Bob's role record
+              const participantUpdateRecord = await TestDataGenerator.generateFromRecordsWrite({
+                author        : alice,
+                existingWrite : participantRecord.recordsWrite,
+              });
+              const participantUpdateRecordReply =
+                await dwn.processMessage(alice.did, participantUpdateRecord.message, participantUpdateRecord.dataStream);
+              expect(participantUpdateRecordReply.status.code).to.equal(202);
+            });
+
+            it('allows a $contextRole record to be created even if there is a $contextRole in a different context', async () => {
+              // scenario: Alice creates a thread and adds Bob to the 'thread/participant' role. Alice repeats the steps with a new thread.
+
+              const alice = await DidKeyResolver.generate();
+              const bob = await DidKeyResolver.generate();
+
+              const protocolDefinition = threadRoleProtocolDefinition;
+
+              const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+                author: alice,
+                protocolDefinition
+              });
+              const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+              expect(protocolWriteReply.status.code).to.equal(202);
+
+              // Alice creates the first thread
+              const threadRecord1 = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread'
+              });
+              const threadRecordReply1 = await dwn.processMessage(alice.did, threadRecord1.message, threadRecord1.dataStream);
+              expect(threadRecordReply1.status.code).to.equal(202);
+
+              // Alice adds Bob as a 'thread/participant' to the first thread
+              const participantRecord1 = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread/participant',
+                contextId    : threadRecord1.message.contextId,
+                parentId     : threadRecord1.message.recordId,
+              });
+              const participantRecordReply1 = await dwn.processMessage(alice.did, participantRecord1.message, participantRecord1.dataStream);
+              expect(participantRecordReply1.status.code).to.equal(202);
+
+              // Alice creates a second thread
+              const threadRecord2 = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread'
+              });
+              const threadRecordReply2 = await dwn.processMessage(alice.did, threadRecord2.message, threadRecord2.dataStream);
+              expect(threadRecordReply2.status.code).to.equal(202);
+
+              // Alice adds Bob as a 'thread/participant' to the second thread
+              const participantRecord2 = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread/participant',
+                contextId    : threadRecord2.message.contextId,
+                parentId     : threadRecord2.message.recordId,
+              });
+              const participantRecordReply2 = await dwn.processMessage(alice.did, participantRecord2.message, participantRecord2.dataStream);
+              expect(participantRecordReply2.status.code).to.equal(202);
+            });
+
+            it('rejects writes to a $contextRole record if there already exists one in the same context', async () => {
+              // scenario: Alice creates a thread and adds Bob to the 'thread/participant' role. She adds Bob to the role second time and fails
+
+              const alice = await DidKeyResolver.generate();
+              const bob = await DidKeyResolver.generate();
+
+              const protocolDefinition = threadRoleProtocolDefinition;
+
+              const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+                author: alice,
+                protocolDefinition
+              });
+              const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+              expect(protocolWriteReply.status.code).to.equal(202);
+
+              // Alice creates the first thread
+              const threadRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread'
+              });
+              const threadRecordReply = await dwn.processMessage(alice.did, threadRecord.message, threadRecord.dataStream);
+              expect(threadRecordReply.status.code).to.equal(202);
+
+              // Alice adds Bob as a 'thread/participant' to the thread
+              const participantRecord1 = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread/participant',
+                contextId    : threadRecord.message.contextId,
+                parentId     : threadRecord.message.recordId,
+              });
+              const participantRecordReply1 = await dwn.processMessage(alice.did, participantRecord1.message, participantRecord1.dataStream);
+              expect(participantRecordReply1.status.code).to.equal(202);
+
+              // Alice adds Bob as a 'thread/participant' again to the same thread
+              const participantRecord2 = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread/participant',
+                contextId    : threadRecord.message.contextId,
+                parentId     : threadRecord.message.recordId,
+              });
+              const participantRecordReply2 = await dwn.processMessage(alice.did, participantRecord2.message, participantRecord2.dataStream);
+              expect(participantRecordReply2.status.code).to.equal(401);
+              expect(participantRecordReply2.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationDuplicateContextRoleRecipient);
+            });
+
+            it('allows a new $contextRole record to be created for the same recipient in the same context if their old one was deleted', async () => {
+              // scenario: Alice creates a thread and adds Bob to the 'thread/participant' role. She deletes the role and then adds a new one.
+
+              const alice = await DidKeyResolver.generate();
+              const bob = await DidKeyResolver.generate();
+
+              const protocolDefinition = threadRoleProtocolDefinition;
+
+              const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+                author: alice,
+                protocolDefinition
+              });
+              const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+              expect(protocolWriteReply.status.code).to.equal(202);
+
+              // Alice creates the first thread
+              const threadRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread'
+              });
+              const threadRecordReply = await dwn.processMessage(alice.did, threadRecord.message, threadRecord.dataStream);
+              expect(threadRecordReply.status.code).to.equal(202);
+
+              // Alice adds Bob as a 'thread/participant' to the thread
+              const participantRecord1 = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread/participant',
+                contextId    : threadRecord.message.contextId,
+                parentId     : threadRecord.message.recordId,
+              });
+              const participantRecordReply1 = await dwn.processMessage(alice.did, participantRecord1.message, participantRecord1.dataStream);
+              expect(participantRecordReply1.status.code).to.equal(202);
+
+              // Alice deletes the participant record
+              const partipantDelete = await TestDataGenerator.generateRecordsDelete({
+                author   : alice,
+                recordId : participantRecord1.message.recordId,
+              });
+              const participantDeleteReply = await dwn.processMessage(alice.did, partipantDelete.message);
+              expect(participantDeleteReply.status.code).to.equal(202);
+
+              // Alice creates a new 'thread/participant' record
+              const participantRecord2 = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread/participant',
+                contextId    : threadRecord.message.contextId,
+                parentId     : threadRecord.message.recordId,
+              });
+              const participantRecordReply2 = await dwn.processMessage(alice.did, participantRecord2.message, participantRecord2.dataStream);
+              expect(participantRecordReply2.status.code).to.equal(202);
+            });
+          });
+
           describe('protocolRole based writes', () => {
-            it('uses a protocolRole to authorize a write', async () => {
+            it('uses a globalRole to authorize a write', async () => {
               // scenario: Alice gives Bob a friend role. Bob invokes his
               //           friend role in order to write a chat message
 
@@ -1409,7 +1647,7 @@ export function testRecordsWriteHandler(): void {
               expect(chatReadReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationNotARole);
             });
 
-            it('rejects role-authorized writes if there is no active role for the recipient', async () => {
+            it('rejects global-authorized writes if there is no active role for the recipient', async () => {
               // scenario: Bob tries to invoke a role to write, but he has not been given one.
 
               const alice = await DidKeyResolver.generate();
@@ -1436,6 +1674,118 @@ export function testRecordsWriteHandler(): void {
               const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
               expect(chatReply.status.code).to.equal(401);
               expect(chatReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
+            });
+
+            it('uses a contextRole to authorize a write', async () => {
+              // scenario: Alice creates a thread and adds Bob to the 'thread/participant' role. Bob invokes the record to write in the thread
+
+              const alice = await DidKeyResolver.generate();
+              const bob = await DidKeyResolver.generate();
+
+              const protocolDefinition = threadRoleProtocolDefinition;
+
+              const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+                author: alice,
+                protocolDefinition
+              });
+              const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+              expect(protocolWriteReply.status.code).to.equal(202);
+
+              // Alice creates a thread
+              const threadRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread'
+              });
+              const threadRecordReply = await dwn.processMessage(alice.did, threadRecord.message, threadRecord.dataStream);
+              expect(threadRecordReply.status.code).to.equal(202);
+
+              // Alice adds Bob as a 'thread/participant' in that thread
+              const participantRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread/participant',
+                contextId    : threadRecord.message.contextId,
+                parentId     : threadRecord.message.recordId,
+              });
+              const participantRecordReply = await dwn.processMessage(alice.did, participantRecord.message, participantRecord.dataStream);
+              expect(participantRecordReply.status.code).to.equal(202);
+
+              // Bob invokes the role to write to the thread
+              const chatRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : bob,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread/chat',
+                contextId    : threadRecord.message.contextId,
+                parentId     : threadRecord.message.recordId,
+                protocolRole : 'thread/participant'
+              });
+              const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+              expect(chatRecordReply.status.code).to.equal(202);
+            });
+
+            it('rejects contextRole-authorized writes if there is no active role in that context for the recipient', async () => {
+              // scenario: Alice creates a thread and adds Bob as a participant. ALice creates another thread. Bob tries and fails to invoke his
+              //           contextRole to write a chat in the second thread
+
+              const alice = await DidKeyResolver.generate();
+              const bob = await DidKeyResolver.generate();
+
+              const protocolDefinition = threadRoleProtocolDefinition;
+
+              const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+                author: alice,
+                protocolDefinition
+              });
+              const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+              expect(protocolWriteReply.status.code).to.equal(202);
+
+              // Alice creates a thread
+              const threadRecord1 = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread'
+              });
+              const threadRecordReply1 = await dwn.processMessage(alice.did, threadRecord1.message, threadRecord1.dataStream);
+              expect(threadRecordReply1.status.code).to.equal(202);
+
+              // Alice adds Bob as a 'thread/participant' in that thread
+              const participantRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread/participant',
+                contextId    : threadRecord1.message.contextId,
+                parentId     : threadRecord1.message.recordId,
+              });
+              const participantRecordReply = await dwn.processMessage(alice.did, participantRecord.message, participantRecord.dataStream);
+              expect(participantRecordReply.status.code).to.equal(202);
+
+              // Alice creates a second thread
+              const threadRecord2 = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread'
+              });
+              const threadRecordReply2 = await dwn.processMessage(alice.did, threadRecord2.message, threadRecord2.dataStream);
+              expect(threadRecordReply2.status.code).to.equal(202);
+
+              // Bob invokes his role to try to write to the second thread
+              const chatRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : bob,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread/chat',
+                contextId    : threadRecord2.message.contextId,
+                parentId     : threadRecord2.message.recordId,
+                protocolRole : 'thread/participant'
+              });
+              const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+              expect(chatRecordReply.status.code).to.equal(401);
+              expect(chatRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
             });
           });
         });
@@ -2188,7 +2538,7 @@ export function testRecordsWriteHandler(): void {
           // Re-create auth because we altered the descriptor after signing
           const descriptorCid = await Cid.computeCid(recordsWrite.message.descriptor);
           const attestation = await RecordsWrite.createAttestation(descriptorCid);
-          const authorSignature = await RecordsWrite.createAuthorizationSignature(
+          const authorSignature = await RecordsWrite.createAuthorSignature(
             recordsWrite.message.recordId,
             recordsWrite.message.contextId,
             descriptorCid,
@@ -3050,12 +3400,12 @@ export function testRecordsWriteHandler(): void {
       it('should return 400 if `recordId` in `authorization` payload mismatches with `recordId` in the message', async () => {
         const { author, message, recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite();
 
-        // replace `authorization` with mismatching `record`, even though signature is still valid
-        const authorizationPayload = { ...recordsWrite.authorSignaturePayload };
-        authorizationPayload.recordId = await TestDataGenerator.randomCborSha256Cid(); // make recordId mismatch in authorization payload
-        const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
+        // replace author signature with mismatching `recordId`, even though signature is still valid
+        const authorSignaturePayload = { ...recordsWrite.authorSignaturePayload };
+        authorSignaturePayload.recordId = await TestDataGenerator.randomCborSha256Cid(); // make recordId mismatch in authorization payload
+        const authorSignaturePayloadBytes = Encoder.objectToBytes(authorSignaturePayload);
         const signer = Jws.createSigner(author);
-        const jwsBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);
+        const jwsBuilder = await GeneralJwsBuilder.create(authorSignaturePayloadBytes, [signer]);
         message.authorization = { authorSignature: jwsBuilder.getJws() };
 
         const tenant = author.did;
@@ -3075,11 +3425,11 @@ export function testRecordsWriteHandler(): void {
         const { author, message, recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({ protocol: 'http://any.value', protocolPath: 'any/value' });
 
         // replace `authorization` with mismatching `contextId`, even though signature is still valid
-        const authorizationPayload = { ...recordsWrite.authorSignaturePayload };
-        authorizationPayload.contextId = await TestDataGenerator.randomCborSha256Cid(); // make contextId mismatch in authorization payload
-        const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
+        const authorSignaturePayload = { ...recordsWrite.authorSignaturePayload };
+        authorSignaturePayload.contextId = await TestDataGenerator.randomCborSha256Cid(); // make contextId mismatch in authorization payload
+        const authorSignaturePayloadBytes = Encoder.objectToBytes(authorSignaturePayload);
         const signer = Jws.createSigner(author);
-        const jwsBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);
+        const jwsBuilder = await GeneralJwsBuilder.create(authorSignaturePayloadBytes, [signer]);
         message.authorization = { authorSignature: jwsBuilder.getJws() };
 
         const tenant = author.did;
@@ -3143,10 +3493,10 @@ export function testRecordsWriteHandler(): void {
         message.attestation = attestationBuilder.getJws();
 
         // recreate the `authorization` based on the new` attestationCid`
-        const authorizationPayload = { ...recordsWrite.authorSignaturePayload };
-        authorizationPayload.attestationCid = await Cid.computeCid(attestationPayload);
-        const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
-        const authorizationBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);
+        const authorSignaturePayload = { ...recordsWrite.authorSignaturePayload };
+        authorSignaturePayload.attestationCid = await Cid.computeCid(attestationPayload);
+        const authorSignaturePayloadBytes = Encoder.objectToBytes(authorSignaturePayload);
+        const authorizationBuilder = await GeneralJwsBuilder.create(authorSignaturePayloadBytes, [signer]);
         message.authorization = { authorSignature: authorizationBuilder.getJws() };
 
         const didResolver = TestStubGenerator.createDidResolverStub(author);
