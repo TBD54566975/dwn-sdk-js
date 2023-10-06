@@ -5,7 +5,7 @@ import chai, { expect } from 'chai';
 
 import { ArrayUtility } from '../../src/utils/array.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
-import { MessageIndex } from '../../src/store/index-level.js';
+import { MessageIndex } from '../../src/store/message-index.js';
 import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { v4 as uuid } from 'uuid';

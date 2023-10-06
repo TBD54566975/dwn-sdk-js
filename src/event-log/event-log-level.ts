@@ -2,9 +2,9 @@ import type { LevelWrapperBatchOperation } from '../store/level-wrapper.js';
 import type { ULIDFactory } from 'ulidx';
 import type { Event, EventLog, EventsLogFilter, GetEventsOptions } from '../types/event-log.js';
 
-import { createLevelDatabase } from '../store/level-wrapper.js';
 import { IndexLevel } from '../store/index-level.js';
 import { monotonicFactory } from 'ulidx';
+import { createLevelDatabase, LevelWrapper } from '../store/level-wrapper.js';
 
 type EventLogLevelConfig = {
  /**
@@ -18,9 +18,12 @@ type EventLogLevelConfig = {
 
 const WATERMARKS_SUBLEVEL_NAME = 'watermarks';
 const CID_WATERMARKS_SUBLEVEL_NAME = 'cid_watermarks';
+// const INDEX_SUBLEVEL_NAME = 'index';
 
-export class EventLogLevel extends IndexLevel implements EventLog {
+export class EventLogLevel implements EventLog {
+  db: LevelWrapper<string>;
   ulidFactory: ULIDFactory;
+  index: IndexLevel<Event>;
 
   constructor(config?: EventLogLevelConfig) {
     const eventLogConfig = {
@@ -28,9 +31,22 @@ export class EventLogLevel extends IndexLevel implements EventLog {
       createLevelDatabase,
       ...config,
     };
-    super(eventLogConfig);
 
+    this.db = new LevelWrapper<string>({ ...eventLogConfig, valueEncoding: 'utf8' });
+    this.index = new IndexLevel(this.db);
     this.ulidFactory = monotonicFactory();
+  }
+
+  async open(): Promise<void> {
+    return this.db.open();
+  }
+
+  async close(): Promise<void> {
+    return this.db.close();
+  }
+
+  async clear(): Promise<void> {
+    return this.db.clear();
   }
 
   /**
@@ -49,7 +65,7 @@ export class EventLogLevel extends IndexLevel implements EventLog {
     const watermark = this.ulidFactory();
     await watermarkLog.put(watermark, messageCid);
     await cidLog.put(messageCid, watermark);
-    await this.index(tenant, messageCid, { messageCid, watermark }, indexes, { watermark });
+    await this.index.index(tenant, messageCid, { messageCid, watermark }, indexes, { watermark });
     return watermark;
   }
 
@@ -63,12 +79,7 @@ export class EventLogLevel extends IndexLevel implements EventLog {
    * @returns an array of matching Events without duplicate entries between the filters.
    */
   async queryEvents(tenant: string, filters: EventsLogFilter[]): Promise<Event[]> {
-    const matchedEvents: Map<string, string> = new Map();
-
-    await Promise.all(filters.map(f => this.executeSingleFilterQuery(tenant, f, matchedEvents)));
-
-    // something different here
-    return [...matchedEvents.values()].map(v => JSON.parse(v));
+    return this.index.query(tenant, filters);
   }
 
   /**
@@ -117,7 +128,7 @@ export class EventLogLevel extends IndexLevel implements EventLog {
       }
       ops.push({ type: 'del', key: watermark });
       cidOps.push({ type: 'del', key: messageCid });
-      await this.purge(tenant, messageCid);
+      await this.index.purge(tenant, messageCid);
       numEventsDeleted += 1;
     }
 

@@ -11,7 +11,7 @@ import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
 import { createLevelDatabase } from './level-wrapper.js';
 import { executeUnlessAborted } from '../utils/abort.js';
-import { MessageIndex } from './index-level.js';
+import { MessageIndex } from '../store/message-index.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { SortOrder } from '../types/message-types.js';
 import { Cid, Message } from '../index.js';
