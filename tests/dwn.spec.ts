@@ -365,5 +365,21 @@ export function testDwnClass(): void {
 
     });
 
+    describe('handleRecordsDelete', () => {
+      it('should return 400 error for bad message (invalid method)', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        const { message } = await TestDataGenerator.generateRecordsDelete();
+
+        ( message as any).descriptor.method = 'Foo';
+
+        const reply = await dwn.handleRecordsDelete(alice.did, message);
+
+        expect(reply.status.code).to.equal(400);
+        expect(reply.status.detail).to.equal('Expected method RecordsDelete, received RecordsFoo');
+      });
+
+    });
+
   });
 }

@@ -8,7 +8,8 @@ import type { RecordsWriteHandlerOptions } from './handlers/records-write.js';
 import type { TenantGate } from './core/tenant-gate.js';
 import type { GenericMessageReply, UnionMessageReply } from './core/message-reply.js';
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
-import type { RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage, RecordsWriteReply } from './types/records-types.js';
+import type { RecordsDeleteMessage, RecordsDeleteReply, RecordsQueryMessage, RecordsQueryReply,
+  RecordsReadMessage, RecordsReadReply, RecordsWriteMessage, RecordsWriteReply } from './types/records-types.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DidResolver } from './did/did-resolver.js';
@@ -152,6 +153,21 @@ export class Dwn {
     }
 
     const handler = new RecordsReadHandler(this.didResolver, this.messageStore, this.dataStore);
+    return handler.handle({ tenant, message });
+  }
+
+  /**
+   * Handles a `RecordsDelete` message.
+   */
+  public async handleRecordsDelete(tenant: string, message: RecordsDeleteMessage): Promise<RecordsDeleteReply> {
+    const errorMessageReply =
+      await this.validateTenant(tenant) ??
+      await this.validateMessageIntegrity(message, DwnInterfaceName.Records, DwnMethodName.Delete);
+    if (errorMessageReply !== undefined) {
+      return errorMessageReply;
+    }
+
+    const handler = new RecordsDeleteHandler(this.didResolver, this.messageStore, this.dataStore, this.eventLog);
     return handler.handle({ tenant, message });
   }
 

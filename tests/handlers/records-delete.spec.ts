@@ -81,7 +81,7 @@ export function testRecordsDeleteHandler(): void {
           authorizationSigner : Jws.createSigner(alice)
         });
 
-        const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
+        const deleteReply = await dwn.handleRecordsDelete(alice.did, recordsDelete.message);
         expect(deleteReply.status.code).to.equal(202);
 
         // ensure a query will no longer find the deleted record
@@ -95,7 +95,7 @@ export function testRecordsDeleteHandler(): void {
           authorizationSigner : Jws.createSigner(alice)
         });
 
-        const recordsDelete2Reply = await dwn.processMessage(alice.did, recordsDelete2.message);
+        const recordsDelete2Reply = await dwn.handleRecordsDelete(alice.did, recordsDelete2.message);
         expect(recordsDelete2Reply.status.code).to.equal(404);
       });
 
@@ -129,7 +129,7 @@ export function testRecordsDeleteHandler(): void {
           author   : alice,
           recordId : aliceWriteData.message.recordId
         });
-        const aliceDeleteWriteReply = await dwn.processMessage(alice.did, aliceDeleteWriteData.message);
+        const aliceDeleteWriteReply = await dwn.handleRecordsDelete(alice.did, aliceDeleteWriteData.message);
         expect(aliceDeleteWriteReply.status.code).to.equal(202);
 
         // verify the other record with the same data is unaffected
@@ -151,7 +151,7 @@ export function testRecordsDeleteHandler(): void {
           author   : alice,
           recordId : aliceAssociateData.message.recordId
         });
-        const aliceDeleteAssociateReply = await dwn.processMessage(alice.did, aliceDeleteAssociateData.message);
+        const aliceDeleteAssociateReply = await dwn.handleRecordsDelete(alice.did, aliceDeleteAssociateData.message);
         expect(aliceDeleteAssociateReply.status.code).to.equal(202);
 
         // verify that alice can no longer fetch the 2nd record
@@ -182,7 +182,7 @@ export function testRecordsDeleteHandler(): void {
           authorizationSigner : Jws.createSigner(alice)
         });
 
-        const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
+        const deleteReply = await dwn.handleRecordsDelete(alice.did, recordsDelete.message);
         expect(deleteReply.status.code).to.equal(404);
       });
 
@@ -211,7 +211,7 @@ export function testRecordsDeleteHandler(): void {
         expect(subsequentWriteReply.status.code).to.equal(202);
 
         // test that a delete with an earlier `messageTimestamp` results in a 409
-        const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
+        const deleteReply = await dwn.handleRecordsDelete(alice.did, recordsDelete.message);
         expect(deleteReply.status.code).to.equal(409);
 
         // ensure data still exists
@@ -253,7 +253,7 @@ export function testRecordsDeleteHandler(): void {
           author   : alice,
           recordId : aliceWriteData.message.recordId
         });
-        const aliceDeleteWriteReply = await dwn.processMessage(alice.did, aliceDeleteWriteData.message);
+        const aliceDeleteWriteReply = await dwn.handleRecordsDelete(alice.did, aliceDeleteWriteData.message);
         expect(aliceDeleteWriteReply.status.code).to.equal(202);
 
         const aliceQueryWriteAfterAliceDeleteData = await TestDataGenerator.generateRecordsQuery({
@@ -295,7 +295,7 @@ export function testRecordsDeleteHandler(): void {
             authorizationSigner : Jws.createSigner(alice)
           });
 
-          const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
+          const deleteReply = await dwn.handleRecordsDelete(alice.did, recordsDelete.message);
           expect(deleteReply.status.code).to.equal(202);
 
           const events = await eventLog.getEvents(alice.did);
@@ -333,7 +333,7 @@ export function testRecordsDeleteHandler(): void {
             authorizationSigner : Jws.createSigner(author)
           });
 
-          const deleteReply = await dwn.processMessage(author.did, recordsDelete.message);
+          const deleteReply = await dwn.handleRecordsDelete(author.did, recordsDelete.message);
           expect(deleteReply.status.code).to.equal(202);
 
           const events = await eventLog.getEvents(author.did);

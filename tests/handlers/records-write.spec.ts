@@ -644,7 +644,7 @@ export function testRecordsWriteHandler(): void {
           recordId            : message.recordId,
           authorizationSigner : Jws.createSigner(author),
         });
-        const deleteReply = await dwn.processMessage(tenant, recordsDelete.message);
+        const deleteReply = await dwn.handleRecordsDelete(tenant, recordsDelete.message);
         expect(deleteReply.status.code).to.equal(202);
 
         const write = await RecordsWrite.createFrom({
@@ -676,7 +676,7 @@ export function testRecordsWriteHandler(): void {
           recordId            : message.recordId,
           authorizationSigner : Jws.createSigner(author),
         });
-        const deleteReply = await dwn.processMessage(tenant, recordsDelete.message);
+        const deleteReply = await dwn.handleRecordsDelete(tenant, recordsDelete.message);
         expect(deleteReply.status.code).to.equal(202);
 
         const write = await RecordsWrite.createFrom({
@@ -1336,7 +1336,7 @@ export function testRecordsWriteHandler(): void {
                 author   : alice,
                 recordId : friendRoleRecord.message.recordId,
               });
-              const deleteFriendReply = await dwn.processMessage(alice.did, deleteFriend.message);
+              const deleteFriendReply = await dwn.handleRecordsDelete(alice.did, deleteFriend.message);
               expect(deleteFriendReply.status.code).to.equal(202);
 
               // Alice writes a new record adding Bob as a 'friend' again
@@ -1553,7 +1553,7 @@ export function testRecordsWriteHandler(): void {
                 author   : alice,
                 recordId : participantRecord1.message.recordId,
               });
-              const participantDeleteReply = await dwn.processMessage(alice.did, partipantDelete.message);
+              const participantDeleteReply = await dwn.handleRecordsDelete(alice.did, partipantDelete.message);
               expect(participantDeleteReply.status.code).to.equal(202);
 
               // Alice creates a new 'thread/participant' record

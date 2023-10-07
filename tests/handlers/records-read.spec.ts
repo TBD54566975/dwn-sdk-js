@@ -1428,7 +1428,7 @@ export function testRecordsReadHandler(): void {
           authorizationSigner : Jws.createSigner(alice)
         });
 
-        const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
+        const deleteReply = await dwn.handleRecordsDelete(alice.did, recordsDelete.message);
         expect(deleteReply.status.code).to.equal(202);
 
         // RecordsRead

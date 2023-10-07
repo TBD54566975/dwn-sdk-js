@@ -27,6 +27,8 @@ export type RecordsWriteDescriptor = {
 
 export type RecordsWriteReply = GenericMessageReply;
 
+export type RecordsDeleteReply = GenericMessageReply;
+
 /**
  * Internal RecordsWrite message representation that can be in an incomplete state.
  */
