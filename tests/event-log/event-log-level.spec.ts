@@ -172,6 +172,30 @@ describe('EventLogLevel Tests', () => {
         }
       }
     });
+
+    it('skips if cid is invalid', async () => {
+      const cids: string[] = [];
+      const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
+      const messageCid = await Message.getCid(message);
+      const index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
+
+      await eventLog.append(author.did, messageCid, index);
+      cids.push(messageCid);
+
+      for (let i = 0; i < 3; i += 1) {
+        const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
+        const messageCid = await Message.getCid(message);
+        const index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
+
+        await eventLog.append(author.did, messageCid, index);
+        cids.push(messageCid);
+      }
+      const numEventsDeleted = await eventLog.deleteEventsByCid(author.did, [...cids, 'someInvalidCid' ]);
+      expect(numEventsDeleted).to.equal(cids.length);
+
+      const remainingEvents = await eventLog.getEvents(author.did);
+      expect(remainingEvents.length).to.equal(0);
+    });
   });
 
   describe('query', () => {

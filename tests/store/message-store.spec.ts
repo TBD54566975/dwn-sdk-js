@@ -32,6 +32,15 @@ export function testMessageStore(): void {
         await messageStore.close();
       });
 
+      it('must have a messageTimestamp index property', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        const { message } = await TestDataGenerator.generatePermissionsRequest();
+
+        const messagePutPromise = messageStore.put(alice.did, message, { });
+        expect(messagePutPromise).to.eventually.be.rejectedWith('must include messageTimestamp index');
+      });
+
       it('stores messages as cbor/sha256 encoded blocks with CID as key', async () => {
         const alice = await DidKeyResolver.generate();
 
