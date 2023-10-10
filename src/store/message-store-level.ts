@@ -257,7 +257,6 @@ export class MessageStoreLevel implements MessageStore {
 
     const messageTimestamp = indexes.messageTimestamp;
     if (messageTimestamp === undefined) {
-      console.log('indexes', indexes);
       throw new Error('must include messageTimestamp index');
     }
 
