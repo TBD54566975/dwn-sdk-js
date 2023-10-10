@@ -8,14 +8,13 @@ import * as cbor from '@ipld/dag-cbor';
 
 import { ArrayUtility } from '../utils/array.js';
 import { BlockstoreLevel } from './blockstore-level.js';
-import { Cid } from '../utils/cid.js';
 import { CID } from 'multiformats/cid';
-import { createLevelDatabase } from './level-wrapper.js';
 import { executeUnlessAborted } from '../utils/abort.js';
-import { Message } from '../core/message.js';
-import { MessageIndexLevel } from './message-index-leve.js';
+import { IndexLevel } from './index-level.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { SortOrder } from '../types/message-types.js';
+import { Cid, Message } from '../index.js';
+import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 
 
 /**
@@ -27,7 +26,8 @@ export class MessageStoreLevel implements MessageStore {
 
   blockstore: BlockstoreLevel;
 
-  index: MessageIndexLevel;
+  indexDB: LevelWrapper<string>;
+  index: IndexLevel<string>;
 
   /**
    * @param {MessageStoreLevelConfig} config
@@ -49,20 +49,22 @@ export class MessageStoreLevel implements MessageStore {
       createLevelDatabase : this.config.createLevelDatabase,
     });
 
-    this.index = new MessageIndexLevel({
+    this.indexDB = new LevelWrapper({
       location            : this.config.indexLocation!,
       createLevelDatabase : this.config.createLevelDatabase,
     });
+
+    this.index = new IndexLevel(this.indexDB);
   }
 
   async open(): Promise<void> {
     await this.blockstore.open();
-    await this.index.open();
+    await this.indexDB.open();
   }
 
   async close(): Promise<void> {
     await this.blockstore.close();
-    await this.index.close();
+    await this.indexDB.close();
   }
 
   async get(tenant: string, cidString: string, options?: MessageStoreOptions): Promise<GenericMessage | undefined> {
@@ -95,7 +97,11 @@ export class MessageStoreLevel implements MessageStore {
     const messages: GenericMessage[] = [];
     // note: injecting tenant into filters to allow querying with an "empty" filter.
     // if there are no other filters present it will return all the messages the tenant.
-    const resultIds = await this.index.query(tenant, filters.map(f => ({ ...f, tenant })), options);
+    const resultIds = await this.index.query(
+      tenant,
+      filters.map(filter => ({ filter: { ...filter, tenant }, sort: 'messageTimestamp', sortDirection: SortOrder.Ascending })),
+      options
+    );
 
     // as an optimization for large data sets, we are finding the message object which matches the cursor here.
     // we can use this within the pagination function after sorting to determine the starting point of the array in a more efficient way.
@@ -238,7 +244,7 @@ export class MessageStoreLevel implements MessageStore {
 
     const cid = CID.parse(cidString);
     await partition.delete(cid, options);
-    await this.index.delete(tenant, cidString, options);
+    await this.index.purge(tenant, cidString, options);
   }
 
   async put(
@@ -248,6 +254,12 @@ export class MessageStoreLevel implements MessageStore {
     options?: MessageStoreOptions
   ): Promise<void> {
     options?.signal?.throwIfAborted();
+
+    const messageTimestamp = indexes.messageTimestamp;
+    if (messageTimestamp === undefined) {
+      console.log('indexes', indexes);
+      throw new Error('must include messageTimestamp index');
+    }
 
     const partition = await executeUnlessAborted(this.blockstore.partition(tenant), options?.signal);
 
@@ -266,7 +278,7 @@ export class MessageStoreLevel implements MessageStore {
       ...indexes,
       tenant,
     };
-    await this.index.put(tenant, messageCidString, indexDocument, options);
+    await this.index.index(tenant, messageCidString, messageCidString, indexDocument, { messageTimestamp }, options);
   }
 
   /**
@@ -274,7 +286,7 @@ export class MessageStoreLevel implements MessageStore {
    */
   async clear(): Promise<void> {
     await this.blockstore.clear();
-    await this.index.clear();
+    await this.indexDB.clear();
   }
 }
 
