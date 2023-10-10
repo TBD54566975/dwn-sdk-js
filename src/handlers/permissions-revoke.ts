@@ -148,6 +148,7 @@ export class PermissionsRevokeHandler implements MethodHandler {
     return {
       interface          : DwnInterfaceName.Permissions,
       method             : DwnMethodName.Revoke,
+      messageTimestamp   : descriptor.messageTimestamp,
       permissionsGrantId : descriptor.permissionsGrantId,
     };
   }
