@@ -17,7 +17,7 @@ type FilteredQuery = {
   filter: Filter
   sort: string
   sortDirection: SortOrder
-  cursor?: string
+  cursor?: unknown
 };
 
 const INDEX_SUBLEVEL_NAME = 'index';
@@ -83,10 +83,13 @@ export class IndexLevel<T> {
     const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
 
     const indexOps: LevelWrapperBatchOperation<string>[] = [];
+    const indexKey = `__${dataId}__indexes`;
     const serializedIndexes = await indexPartition.get(`__${dataId}__indexes`);
     if (serializedIndexes === undefined) {
       return;
     }
+
+    indexOps.push({ type: 'del', key: indexKey });
 
     const { indexes, sortIndexes } = JSON.parse(serializedIndexes);
     // delete all indexes associated with the data of the given ID
@@ -186,7 +189,7 @@ export class IndexLevel<T> {
     propertyValue: unknown,
     sortProperty: string,
     sortDirection: SortOrder,
-    cursor?: string,
+    cursor?: unknown,
     options?: IndexLevelOptions
   ): Promise<SortableValue<T>[]> {
     const tenantPartition = await this.db.partition(tenant);
@@ -195,13 +198,9 @@ export class IndexLevel<T> {
     const prefixParts = [ `__${sortProperty}`, propertyName, this.encodeValue(propertyValue) ];
     const matchPrefix = this.join(...prefixParts, '');
 
-    const iteratorOptions: LevelWrapperIteratorOptions<string> = {};
-    if (sortDirection === SortOrder.Ascending) {
-      iteratorOptions.gt = cursor ? this.join(...prefixParts, this.encodeValue(cursor)) : matchPrefix;
-    } else {
-      iteratorOptions.lt = cursor ? this.join(...prefixParts, this.encodeValue(cursor)) : matchPrefix;
-      iteratorOptions.reverse = true;
-    }
+    const iteratorOptions: LevelWrapperIteratorOptions<string> = {
+      gt: cursor ? this.join(...prefixParts, this.encodeValue(cursor)) : matchPrefix
+    };
 
     const matches: SortableValue<T>[] = [];
 
@@ -218,9 +217,10 @@ export class IndexLevel<T> {
       matches.push({ value: JSON.parse(value), sortValue, messageCid });
     }
 
-    if (iteratorOptions.reverse === true) {
+    if (sortDirection !== SortOrder.Ascending) {
       return matches.reverse();
     }
+
     return matches;
   }
 
@@ -230,7 +230,7 @@ export class IndexLevel<T> {
     rangeFilter: RangeFilter,
     sortProperty: string,
     sortDirection: SortOrder,
-    cursor?: string,
+    cursor?: unknown,
     options?: IndexLevelOptions
   ): Promise<SortableValue<T>[]> {
     const tenantPartition = await this.db.partition(tenant);
@@ -242,6 +242,11 @@ export class IndexLevel<T> {
     for (const comparator in rangeFilter) {
       const comparatorName = comparator as keyof RangeFilter;
       iteratorOptions[comparatorName] = this.join(...prefix, this.encodeValue(rangeFilter[comparatorName]));
+    }
+
+    if (cursor !== undefined) {
+      iteratorOptions.gt = this.join(...prefix, this.encodeValue(cursor));
+      delete iteratorOptions.gte;
     }
 
     // if there is no lower bound specified (`gt` or `gte`), we need to iterate from the upper bound,
