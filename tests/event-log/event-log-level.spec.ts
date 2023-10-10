@@ -29,12 +29,12 @@ describe('EventLogLevel Tests', () => {
 
   it('separates events by tenant', async () => {
     const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
-    const message1Index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
+    const message1Index = await recordsWrite.constructRecordsWriteIndexes(true);
     const messageCid = await Message.getCid(message);
     const watermark = await eventLog.append(author.did, messageCid, message1Index);
 
     const { author: author2, message: message2, recordsWrite: recordsWrite2 } = await TestDataGenerator.generateRecordsWrite();
-    const message2Index = await RecordsWriteHandler.constructIndexes(recordsWrite2, true);
+    const message2Index = await recordsWrite2.constructRecordsWriteIndexes(true);
     const messageCid2 = await Message.getCid(message2);
     const watermark2 = await eventLog.append(author2.did, messageCid2, message2Index);
 
@@ -54,7 +54,7 @@ describe('EventLogLevel Tests', () => {
 
     const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
     const messageCid = await Message.getCid(message);
-    const messageIndex = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
+    const messageIndex = await recordsWrite.constructRecordsWriteIndexes(true);
     const watermark = await eventLog.append(author.did, messageCid, messageIndex);
 
     expectedEvents.push({ watermark, messageCid });
@@ -62,7 +62,7 @@ describe('EventLogLevel Tests', () => {
     for (let i = 0; i < 9; i += 1) {
       const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
       const messageCid = await Message.getCid(message);
-      const index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
+      const index = await recordsWrite.constructRecordsWriteIndexes(true);
       const watermark = await eventLog.append(author.did, messageCid, index);
 
       expectedEvents.push({ watermark, messageCid });
@@ -83,14 +83,14 @@ describe('EventLogLevel Tests', () => {
 
       const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await Message.getCid(message);
-      const messageIndex = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
+      const messageIndex = await recordsWrite.constructRecordsWriteIndexes(true);
       const watermark = await eventLog.append(author.did, messageCid, messageIndex);
       expectedEvents.push({ messageCid, watermark });
 
       for (let i = 0; i < 9; i += 1) {
         const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
         const messageCid = await Message.getCid(message);
-        const index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
+        const index = await recordsWrite.constructRecordsWriteIndexes(true);
 
         const watermark = await eventLog.append(author.did, messageCid, index);
         expectedEvents.push({ messageCid, watermark });
@@ -108,7 +108,7 @@ describe('EventLogLevel Tests', () => {
     it('gets all events that occurred after the watermark provided', async () => {
       const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await Message.getCid(message);
-      const index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
+      const index = await recordsWrite.constructRecordsWriteIndexes(true);
 
       await eventLog.append(author.did, messageCid, index);
 
@@ -118,7 +118,7 @@ describe('EventLogLevel Tests', () => {
       for (let i = 0; i < 9; i += 1) {
         const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
         const messageCid = await Message.getCid(message);
-        const index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
+        const index = await recordsWrite.constructRecordsWriteIndexes(true);
 
         const watermark = await eventLog.append(author.did, messageCid, index);
 
@@ -145,14 +145,14 @@ describe('EventLogLevel Tests', () => {
       const cids: string[] = [];
       const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await Message.getCid(message);
-      const index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
+      const index = await recordsWrite.constructRecordsWriteIndexes(true);
 
       await eventLog.append(author.did, messageCid, index);
 
       for (let i = 0; i < 9; i += 1) {
         const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
         const messageCid = await Message.getCid(message);
-        const index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
+        const index = await recordsWrite.constructRecordsWriteIndexes(true);
 
         await eventLog.append(author.did, messageCid, index);
         if (i % 2 === 0) {
