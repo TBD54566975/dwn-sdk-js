@@ -17,7 +17,7 @@ describe('EventsQuery Message', () => {
 
       const currentTime = getCurrentTimeInHighPrecision();
       const eventsQuery = await EventsQuery.create({
-        filters             : [{ filter: { schema: 'anything' } }],
+        filters             : [{ schema: 'anything' }],
         messageTimestamp    : currentTime,
         authorizationSigner : Jws.createSigner(alice),
       });
@@ -31,13 +31,13 @@ describe('EventsQuery Message', () => {
       const options = {
         recipient           : alice.did,
         authorizationSigner : Jws.createSigner(alice),
-        filters             : [{ filter: { protocol: 'example.com/' } }],
+        filters             : [{ protocol: 'example.com/' }],
       };
       const eventsQuery = await EventsQuery.create(options);
 
       const message = eventsQuery.message as EventsQueryMessage;
       expect(message.descriptor.filters.length).to.equal(1);
-      expect(message.descriptor.filters[0].filter!.protocol).to.eq('http://example.com');
+      expect(message.descriptor.filters[0].protocol).to.eq('http://example.com');
     });
 
     it('should auto-normalize schema URL', async () => {
@@ -46,14 +46,14 @@ describe('EventsQuery Message', () => {
       const options = {
         recipient           : alice.did,
         authorizationSigner : Jws.createSigner(alice),
-        filters             : [{ filter: { schema: 'example.com/' } }],
+        filters             : [{ schema: 'example.com/' }],
       };
       const eventsQuery = await EventsQuery.create(options);
 
       const message = eventsQuery.message as EventsQueryMessage;
 
       expect(message.descriptor.filters.length).to.equal(1);
-      expect(message.descriptor.filters[0].filter!.schema).to.eq('http://example.com');
+      expect(message.descriptor.filters[0].schema).to.eq('http://example.com');
     });
 
     it('throws an exception if message has no filters', async () => {
@@ -78,7 +78,7 @@ describe('EventsQuery Message', () => {
 
       try {
         await EventsQuery.create({
-          filters             : [{ filter: { schema: 'schema' } },{ filter: {} }], // one empty filter
+          filters             : [{ schema: 'schema' },{ }], // one empty filter
           messageTimestamp    : currentTime,
           authorizationSigner : Jws.createSigner(alice),
         });
@@ -96,7 +96,7 @@ describe('EventsQuery Message', () => {
       const currentTime = getCurrentTimeInHighPrecision();
 
       const eventsQuery = await EventsQuery.create({
-        filters             : [{ filter: { schema: 'anything' } }],
+        filters             : [{ schema: 'anything' }],
         messageTimestamp    : currentTime,
         authorizationSigner : Jws.createSigner(alice),
       });
@@ -114,7 +114,7 @@ describe('EventsQuery Message', () => {
       const alice = await TestDataGenerator.generatePersona();
       const currentTime = getCurrentTimeInHighPrecision();
       const eventsQuery = await EventsQuery.create({
-        filters             : [{ filter: { schema: 'anything' } }],
+        filters             : [{ schema: 'anything' }],
         messageTimestamp    : currentTime,
         authorizationSigner : Jws.createSigner(alice),
       });
@@ -134,7 +134,7 @@ describe('EventsQuery Message', () => {
       const alice = await TestDataGenerator.generatePersona();
       const currentTime = getCurrentTimeInHighPrecision();
       const eventsQuery = await EventsQuery.create({
-        filters             : [{ filter: { schema: 'anything' } }],
+        filters             : [{ schema: 'anything' }],
         messageTimestamp    : currentTime,
         authorizationSigner : Jws.createSigner(alice),
       });
@@ -154,13 +154,13 @@ describe('EventsQuery Message', () => {
       const alice = await TestDataGenerator.generatePersona();
       const currentTime = getCurrentTimeInHighPrecision();
       const eventsQuery = await EventsQuery.create({
-        filters             : [{ filter: { schema: 'anything' } }],
+        filters             : [{ schema: 'anything' }],
         messageTimestamp    : currentTime,
         authorizationSigner : Jws.createSigner(alice),
       });
 
       const { message } = eventsQuery;
-      message.descriptor.filters.push({ filter: {} }); // add an empty filter
+      message.descriptor.filters.push({ }); // add an empty filter
 
       try {
         await EventsQuery.parse(message as any);
@@ -171,4 +171,3 @@ describe('EventsQuery Message', () => {
     });
   });
 });
-
