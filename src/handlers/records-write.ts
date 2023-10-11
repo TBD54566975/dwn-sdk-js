@@ -7,6 +7,7 @@ import type { RecordsDeleteMessage, RecordsWriteMessage } from '../types/records
 
 import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
+import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { StorageController } from '../store/storage-controller.js';
 import { Cid, DataStream, DwnConstant, Encoder } from '../index.js';
@@ -32,6 +33,11 @@ export class RecordsWriteHandler implements MethodHandler {
     let recordsWrite: RecordsWrite;
     try {
       recordsWrite = await RecordsWrite.parse(message);
+
+      // Protocol record specific validation
+      if (message.descriptor.protocol !== undefined) {
+        await ProtocolAuthorization.validate(tenant, recordsWrite, this.messageStore);
+      }
     } catch (e) {
       return messageReplyFromError(e, 400);
     }

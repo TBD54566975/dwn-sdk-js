@@ -451,11 +451,6 @@ export class RecordsWrite {
       );
     }
 
-    // All protocol RecordsWrites must go through protocol validation
-    if (this.message.descriptor.protocol !== undefined) {
-      await ProtocolAuthorization.validate(tenant, this, messageStore);
-    }
-
     // Remainder of the code is for flat-space writes
 
     if (this.owner !== undefined) {

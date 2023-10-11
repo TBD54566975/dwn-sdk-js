@@ -1261,7 +1261,7 @@ export function testRecordsWriteHandler(): void {
                 data         : new TextEncoder().encode('Bob is my friend'),
               });
               const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, friendRoleRecord.dataStream);
-              expect(friendRoleReply.status.code).to.equal(401);
+              expect(friendRoleReply.status.code).to.equal(400);
               expect(friendRoleReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationRoleMissingRecipient);
             });
 
@@ -1301,7 +1301,7 @@ export function testRecordsWriteHandler(): void {
                 data         : new TextEncoder().encode('Bob is still my friend'),
               });
               const duplicateFriendReply = await dwn.handleRecordsWrite(alice.did, duplicateFriendRecord.message, duplicateFriendRecord.dataStream);
-              expect(duplicateFriendReply.status.code).to.equal(401);
+              expect(duplicateFriendReply.status.code).to.equal(400);
               expect(duplicateFriendReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationDuplicateGlobalRoleRecipient);
             });
 
@@ -1507,7 +1507,7 @@ export function testRecordsWriteHandler(): void {
                 parentId     : threadRecord.message.recordId,
               });
               const participantRecordReply2 = await dwn.processMessage(alice.did, participantRecord2.message, participantRecord2.dataStream);
-              expect(participantRecordReply2.status.code).to.equal(401);
+              expect(participantRecordReply2.status.code).to.equal(400);
               expect(participantRecordReply2.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationDuplicateContextRoleRecipient);
             });
 
@@ -1920,7 +1920,7 @@ export function testRecordsWriteHandler(): void {
           );
 
           const carolWriteReply = await dwn.handleRecordsWrite(alice.did, modifiedMessageFromCarol.message, modifiedMessageFromCarol.dataStream);
-          expect(carolWriteReply.status.code).to.equal(401);
+          expect(carolWriteReply.status.code).to.equal(400);
           expect(carolWriteReply.status.detail).to.contain('must match to author of initial write');
         });
 
@@ -2067,7 +2067,7 @@ export function testRecordsWriteHandler(): void {
           });
 
           const reply = await dwn.handleRecordsWrite(alice.did, credentialApplication.message, credentialApplication.dataStream);
-          expect(reply.status.code).to.equal(401);
+          expect(reply.status.code).to.equal(400);
           expect(reply.status.detail).to.contain('unable to find protocol definition');
         });
 
@@ -2095,7 +2095,7 @@ export function testRecordsWriteHandler(): void {
           });
 
           const reply = await dwn.handleRecordsWrite(alice.did, credentialApplication.message, credentialApplication.dataStream);
-          expect(reply.status.code).to.equal(401);
+          expect(reply.status.code).to.equal(400);
           expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationInvalidSchema);
         });
 
@@ -2123,7 +2123,7 @@ export function testRecordsWriteHandler(): void {
           });
 
           const reply = await dwn.handleRecordsWrite(alice.did, credentialApplication.message, credentialApplication.dataStream);
-          expect(reply.status.code).to.equal(401);
+          expect(reply.status.code).to.equal(400);
           expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationInvalidType);
         });
 
@@ -2151,7 +2151,7 @@ export function testRecordsWriteHandler(): void {
           });
 
           const reply = await dwn.handleRecordsWrite(alice.did, credentialApplication.message, credentialApplication.dataStream);
-          expect(reply.status.code).to.equal(401);
+          expect(reply.status.code).to.equal(400);
           expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationIncorrectProtocolPath);
         });
 
@@ -2195,7 +2195,7 @@ export function testRecordsWriteHandler(): void {
           });
 
           const replyMismatch = await dwn.handleRecordsWrite(alice.did, recordsWriteMismatch.message, recordsWriteMismatch.dataStream);
-          expect(replyMismatch.status.code).to.equal(401);
+          expect(replyMismatch.status.code).to.equal(400);
           expect(replyMismatch.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationIncorrectDataFormat);
         });
 
@@ -2227,7 +2227,7 @@ export function testRecordsWriteHandler(): void {
           });
           const failedCredentialResponseReply = await dwn.handleRecordsWrite(
             alice.did, failedCredentialResponse.message, failedCredentialResponse.dataStream);
-          expect(failedCredentialResponseReply.status.code).to.equal(401);
+          expect(failedCredentialResponseReply.status.code).to.equal(400);
           expect(failedCredentialResponseReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRuleSet);
 
           // Successfully write a 'credentialApplication' at the top level of the of the record hierarchy
@@ -2256,7 +2256,7 @@ export function testRecordsWriteHandler(): void {
           });
           const failedCredentialApplicationReply2 = await dwn.handleRecordsWrite(
             alice.did, failedCredentialApplication.message, failedCredentialApplication.dataStream);
-          expect(failedCredentialApplicationReply2.status.code).to.equal(401);
+          expect(failedCredentialApplicationReply2.status.code).to.equal(400);
           expect(failedCredentialApplicationReply2.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRuleSet);
 
           // Successfully write a 'credentialResponse' below the 'credentialApplication'
@@ -2287,7 +2287,7 @@ export function testRecordsWriteHandler(): void {
           });
           const nestedCredentialApplicationReply = await dwn.handleRecordsWrite(
             alice.did, nestedCredentialApplication.message, nestedCredentialApplication.dataStream);
-          expect(nestedCredentialApplicationReply.status.code).to.equal(401);
+          expect(nestedCredentialApplicationReply.status.code).to.equal(400);
           expect(nestedCredentialApplicationReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRuleSet);
         });
 
@@ -2464,7 +2464,7 @@ export function testRecordsWriteHandler(): void {
           });
 
           reply = await dwn.handleRecordsWrite(pfi.did, fulfillmentMessageData.message, fulfillmentMessageData.dataStream);
-          expect(reply.status.code).to.equal(401);
+          expect(reply.status.code).to.equal(400);
           expect(reply.status.detail).to.contain('no parent found');
         });
 
