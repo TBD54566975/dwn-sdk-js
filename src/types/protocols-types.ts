@@ -1,6 +1,6 @@
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { PublicJwk } from './jose-types.js';
-import type { AuthorizationModel, GenericMessage, QueryResultEntry } from './message-types.js';
+import type { AuthorizationModel, GenericMessage } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type ProtocolsConfigureDescriptor = {
@@ -146,5 +146,5 @@ export type ProtocolsQueryMessage = GenericMessage & {
 };
 
 export type ProtocolsQueryReply = GenericMessageReply & {
-  entries?: QueryResultEntry[];
+  entries?: ProtocolsConfigureMessage[];
 };
