@@ -223,7 +223,7 @@ export class MessageStoreLevel implements MessageStore {
 
     const cid = CID.parse(cidString);
     await partition.delete(cid, options);
-    await this.index.purge(tenant, cidString, options);
+    await this.index.delete(tenant, cidString, options);
   }
 
   async put(
