@@ -99,48 +99,27 @@ export class MessageStoreLevel implements MessageStore {
     // if there are no other filters present it will return all the messages the tenant.
     const resultIds = await this.index.query(
       tenant,
-      filters.map(filter => ({ filter: { ...filter, tenant }, sort: 'messageTimestamp', sortDirection: SortOrder.Ascending })),
+      filters.map(filter => ({ filter: { ...filter, tenant }, sort: 'messageTimestamp', sortDirection: SortOrder.Ascending, cursor: pagination?.messageCid })),
       options
     );
 
-    // as an optimization for large data sets, we are finding the message object which matches the paginationMessageCid here.
-    // we can use this within the pagination function after sorting to determine the starting point of the array in a more efficient way.
-    let paginationMessage: GenericMessage | undefined;
     for (const id of resultIds) {
       const message = await this.get(tenant, id, options);
       if (message) { messages.push(message); }
-      if (pagination?.messageCid && pagination.messageCid === id) {
-        paginationMessage = message;
-      }
-    }
-
-    if (pagination?.messageCid !== undefined && paginationMessage === undefined) {
-      return { messages: [] }; //if paginationMessage is not found, do not return any results
     }
 
     const sortedRecords = await MessageStoreLevel.sortMessages(messages, messageSort);
-    return this.paginateMessages(sortedRecords, paginationMessage, pagination);
+    return this.paginateMessages(sortedRecords, pagination);
   }
 
   private async paginateMessages(
     messages: GenericMessage[],
-    paginationMessage?: GenericMessage,
     pagination: Pagination = { }
   ): Promise<{ messages: GenericMessage[], paginationMessageCid?: string } > {
     const { limit } = pagination;
-    if (paginationMessage === undefined && limit === undefined) {
-      return { messages }; // return all without pagination pointer.
-    }
 
-    // we are passing the pagination message object for an easier lookup
-    // since we know this object exists within the array if passed, we can assume that it will always have a value greater than -1
-    // TODO: #506 - Improve performance by modifying filters based on the pagination cursor (https://github.com/TBD54566975/dwn-sdk-js/issues/506)
-    const cursorIndex = paginationMessage ? messages.indexOf(paginationMessage) : undefined;
-
-    // the first element of the returned results is always the message immediately following the cursor.
-    const start = cursorIndex === undefined ? 0 : cursorIndex + 1;
-    const end = limit === undefined ? undefined : start + limit;
-    const results = messages.slice(start, end);
+    const end = limit === undefined ? undefined : limit;
+    const results = messages.slice(0, end);
 
     // we only return a paginationMessageCid cursor if there are more results
     const hasMoreResults = end !== undefined && end < messages.length;
@@ -277,7 +256,7 @@ export class MessageStoreLevel implements MessageStore {
       ...indexes,
       tenant,
     };
-    await this.index.index(tenant, messageCidString, messageCidString, indexDocument, { messageTimestamp }, options);
+    await this.index.index(tenant, messageCidString, messageCidString, messageCidString, indexDocument, { messageTimestamp }, options);
   }
 
   /**

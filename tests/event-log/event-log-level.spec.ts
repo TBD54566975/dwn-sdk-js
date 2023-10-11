@@ -269,7 +269,7 @@ describe('EventLogLevel Tests', () => {
       }
 
       // insert a record that will not show up in the filtered query.
-      // not inserted into expected events.
+      // not inserted into expected events because it's not a part of the schema.
       const { message: message2, recordsWrite: recordsWrite2 } = await TestDataGenerator.generateRecordsWrite({ author });
       const message2Cid = await Message.getCid(message2);
       const message2Indexes = await RecordsWriteHandler.constructIndexes(recordsWrite2, true);
