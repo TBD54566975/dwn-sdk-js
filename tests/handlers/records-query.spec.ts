@@ -77,7 +77,7 @@ export function testRecordsQueryHandler(): void {
         expect(writeReply.status.code).to.equal(202);
 
         const query = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { dataFormat } });
-        const reply = await dwn.processMessage(alice.did, query.message) as RecordsQueryReply;
+        const reply = await dwn.processMessage(alice.did, query.message);
 
         expect(reply.entries?.length).to.equal(1);
         const entry = reply.entries![0];
@@ -764,7 +764,7 @@ export function testRecordsQueryHandler(): void {
         });
 
         const sortedMessages = await MessageStoreLevel.sortMessages(messages, { dateCreated: SortOrder.Ascending });
-        let results = await dwn.processMessage(alice.did, aliceQueryMessageDataPage1.message) as RecordsQueryReply;
+        let results = await dwn.processMessage(alice.did, aliceQueryMessageDataPage1.message) ;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'alice page 1');
         const page1PaginationLastMessage = await Message.getCid(sortedMessages.at(9)!); // get messageCid from message with authorization.
@@ -777,7 +777,7 @@ export function testRecordsQueryHandler(): void {
           dateSort   : DateSort.CreatedAscending,
           pagination : { limit: 10, messageCid: results.paginationMessageCid },
         });
-        results = await dwn.processMessage(alice.did, aliceQueryMessageDataPage2.message) as RecordsQueryReply;
+        results = await dwn.processMessage(alice.did, aliceQueryMessageDataPage2.message) ;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'alice page 2');
         const page2PaginationLastMessage = await Message.getCid(sortedMessages.at(19)!); // get messageCid from message with authorization.
@@ -790,7 +790,7 @@ export function testRecordsQueryHandler(): void {
           dateSort   : DateSort.CreatedAscending,
           pagination : { limit: 10, messageCid: results.paginationMessageCid },
         });
-        results = await dwn.processMessage(alice.did, aliceQueryMessageDataPage3.message) as RecordsQueryReply;
+        results = await dwn.processMessage(alice.did, aliceQueryMessageDataPage3.message) ;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(5, 'alice page 3');
         expect(results.paginationMessageCid).to.not.exist;
@@ -811,7 +811,7 @@ export function testRecordsQueryHandler(): void {
           dateSort   : DateSort.CreatedAscending,
           pagination : { limit: 10 },
         });
-        results = await dwn.processMessage(alice.did, bobQueryMessagePage1.message) as RecordsQueryReply;
+        results = await dwn.processMessage(alice.did, bobQueryMessagePage1.message) ;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'bob page 1');
         const page1BobPaginationLastMessage = await Message.getCid(bobSorted.at(9)!);
@@ -824,7 +824,7 @@ export function testRecordsQueryHandler(): void {
           dateSort   : DateSort.CreatedAscending,
           pagination : { limit: 10, messageCid: results.paginationMessageCid },
         });
-        results = await dwn.processMessage(alice.did, bobQueryMessagePage2.message) as RecordsQueryReply;
+        results = await dwn.processMessage(alice.did, bobQueryMessagePage2.message) ;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'bob page 2');
         expect(results.paginationMessageCid).to.not.exist;
