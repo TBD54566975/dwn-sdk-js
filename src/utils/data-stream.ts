@@ -25,6 +25,15 @@ export class DataStream {
   }
 
   /**
+   * Reads the entire readable stream and JSON parses it into an object.
+   */
+  public static async toObject(readableStream: Readable): Promise<object> {
+    const contentBytes = await DataStream.toBytes(readableStream);
+    const contentObject = Encoder.bytesToObject(contentBytes);
+    return contentObject;
+  }
+
+  /**
    * Concatenates the array of bytes given into one Uint8Array.
    */
   private static concatenateArrayOfBytes(arrayOfBytes: Uint8Array[]): Uint8Array {
