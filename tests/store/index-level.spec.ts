@@ -69,12 +69,12 @@ describe('IndexLevel', () => {
       const id = uuid();
 
       let failedIndex = testIndex.index(tenant, id, id, id, {}, { id });
-      await expect(failedIndex).to.eventually.be.rejectedWith('no properties to index');
+      await expect(failedIndex).to.eventually.be.rejectedWith('must include at least one indexable property');
 
       failedIndex = testIndex.index(tenant, id, id, id, {
         empty: [ [] ]
       }, { id });
-      await expect(failedIndex).to.eventually.be.rejectedWith('no properties to index');
+      await expect(failedIndex).to.eventually.be.rejectedWith('must include at least one indexable property');
 
       failedIndex = testIndex.index(tenant, id, id, id, {
         foo : {},
@@ -83,7 +83,7 @@ describe('IndexLevel', () => {
         }
       }, { id });
 
-      await expect(failedIndex).to.eventually.be.rejectedWith('no properties to index');
+      await expect(failedIndex).to.eventually.be.rejectedWith('must include at least one indexable property');
 
       const keys = await ArrayUtility.fromAsyncGenerator(partitionedDB.keys());
       expect(keys.length).to.equal(0);
@@ -525,13 +525,13 @@ describe('IndexLevel', () => {
       expect(result.length).to.equal(2);
       expect(result).to.contain(id1);
 
-      await testIndex.purge(tenant, id1);
+      await testIndex.delete(tenant, id1);
 
       result = await testIndex.query(tenant, [{ filter: { 'a': 'b', 'c': 'd' }, sort: 'id', sortDirection: SortOrder.Ascending }]);
 
       expect(result.length).to.equal(1);
 
-      await testIndex.purge(tenant, id2);
+      await testIndex.delete(tenant, id2);
 
       const allKeys = await ArrayUtility.fromAsyncGenerator(db.keys());
       expect(allKeys.length).to.equal(0);
@@ -549,7 +549,7 @@ describe('IndexLevel', () => {
       await testIndex.index(tenant, id, id, id, doc, { id });
 
       try {
-        await testIndex.purge(tenant, id, { signal: controller.signal });
+        await testIndex.delete(tenant, id, { signal: controller.signal });
       } catch (e) {
         expect(e).to.equal('reason');
       }
@@ -571,7 +571,7 @@ describe('IndexLevel', () => {
       await testIndex.index(tenant, id, id, id, doc, { id });
 
       // attempt purge an invalid id
-      await testIndex.purge(tenant, 'invalid-id');
+      await testIndex.delete(tenant, 'invalid-id');
 
       const result = await testIndex.query(tenant, [{ filter: { foo: 'bar' }, sort: 'id', sortDirection: SortOrder.Ascending }]);
       expect(result.length).to.equal(1);
