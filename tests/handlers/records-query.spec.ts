@@ -1,10 +1,13 @@
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
 import type { GenericMessage, RecordsWriteMessage } from '../../src/index.js';
-import type { RecordsQueryReplyEntry, RecordsWriteDescriptor } from '../../src/types/records-types.js';
+import type { RecordsQueryReply, RecordsQueryReplyEntry, RecordsWriteDescriptor } from '../../src/types/records-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
+
+import friendRoleProtocolDefinition from '../vectors/protocol-definitions/friend-role.json' assert { type: 'json' };
+import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
 
 import { ArrayUtility } from '../../src/utils/array.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
@@ -951,6 +954,436 @@ export function testRecordsQueryHandler(): void {
         const reply = await dwn.processMessage(alice.did, recordsQuery.message);
         expect(reply.status.code).to.equal(400);
         expect(reply.status.detail).to.contain(DwnErrorCode.UrlSchemaNotNormalized);
+      });
+
+      describe('protocol based queries', () => {
+        it('does not try protocol authorization if protocolRole is not invoked', async () => {
+          // scenario: Alice creates a thread and writes some chat messages writes a chat message. Alice addresses
+          //           only one chat message to Bob. Bob queries by protocol URI without invoking a protocolRole,
+          //           and he is able to receive the message addressed to him.
+
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+
+          const protocolDefinition = threadRoleProtocolDefinition;
+
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolWriteReply.status.code).to.equal(202);
+
+          // Alice writes a 'thread' record
+          const threadRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'thread',
+          });
+          const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, threadRecord.dataStream);
+          expect(threadRoleReply.status.code).to.equal(202);
+
+          // Alice writes one 'chat' record addressed to Bob
+          const chatRecordForBob = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : bob.did,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'thread/chat',
+            published    : false,
+            contextId    : threadRecord.message.contextId,
+            parentId     : threadRecord.message.recordId,
+            data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
+          });
+          const chatRecordForBobReply = await dwn.handleRecordsWrite(alice.did, chatRecordForBob.message, chatRecordForBob.dataStream);
+          expect(chatRecordForBobReply.status.code).to.equal(202);
+
+          // Alice writes two 'chat' records NOT addressed to Bob
+          for (let i = 0; i < 2; i++) {
+            const chatRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : alice.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/chat',
+              published    : false,
+              contextId    : threadRecord.message.contextId,
+              parentId     : threadRecord.message.recordId,
+              data         : new TextEncoder().encode('Bob cannot read this'),
+            });
+            const chatReply = await dwn.handleRecordsWrite(alice.did, chatRecord.message, chatRecord.dataStream);
+            expect(chatReply.status.code).to.equal(202);
+          }
+
+          // Bob queries without invoking any protocolRole
+          const chatQuery = await TestDataGenerator.generateRecordsQuery({
+            author : bob,
+            filter : {
+              protocol: protocolDefinition.protocol,
+            },
+          });
+          const chatQueryReply = await dwn.processMessage(alice.did, chatQuery.message) as RecordsQueryReply;
+          expect(chatQueryReply.status.code).to.equal(200);
+          expect(chatQueryReply.entries?.length).to.equal(1);
+          expect(chatQueryReply.entries![0].recordId).to.eq(chatRecordForBob.message.recordId);
+        });
+
+        it('allows $globalRole authorized queries', async () => {
+          // scenario: Alice creates a thread and writes some chat messages writes a chat message. Bob invokes his
+          //           thread member role in order to query the chat messages.
+
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+
+          const protocolDefinition = friendRoleProtocolDefinition;
+
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolWriteReply.status.code).to.equal(202);
+
+          // Alice writes a 'friend' $globalRole record with Bob as recipient
+          const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : bob.did,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'friend',
+            data         : new TextEncoder().encode('Bob is my friend'),
+          });
+          const friendRoleReply = await dwn.handleRecordsWrite(alice.did, friendRoleRecord.message, friendRoleRecord.dataStream);
+          expect(friendRoleReply.status.code).to.equal(202);
+
+          // Alice writes three 'chat' records
+          const chatRecordIds = [];
+          for (let i = 0; i < 3; i++) {
+            const chatRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : alice.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'chat',
+              published    : false,
+              data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
+            });
+            const chatReply = await dwn.handleRecordsWrite(alice.did, chatRecord.message, chatRecord.dataStream);
+            expect(chatReply.status.code).to.equal(202);
+            chatRecordIds.push(chatRecord.message.recordId);
+          }
+
+          // Bob invokes his friendRole to query that records
+          const chatQuery = await TestDataGenerator.generateRecordsQuery({
+            author : bob,
+            filter : {
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'chat',
+            },
+            protocolRole: 'friend',
+          });
+          const chatQueryReply = await dwn.processMessage(alice.did, chatQuery.message) as RecordsQueryReply;
+          expect(chatQueryReply.status.code).to.equal(200);
+          expect(chatQueryReply.entries?.length).to.equal(3);
+          expect(chatQueryReply.entries!.map((record) => record.recordId)).to.have.all.members(chatRecordIds);
+        });
+
+        it('allows $contextRole authorized queries', async () => {
+          // scenario: Alice writes some chat messages writes a chat message. Bob invokes his
+          //           friend role in order to query the chat message.
+
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+
+          const protocolDefinition = threadRoleProtocolDefinition;
+
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolWriteReply.status.code).to.equal(202);
+
+          // Alice writes a 'thread' record
+          const threadRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'thread',
+          });
+          const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, threadRecord.dataStream);
+          expect(threadRoleReply.status.code).to.equal(202);
+
+          // Alice writes a 'friend' $globalRole record with Bob as recipient
+          const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : bob.did,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'thread/participant',
+            contextId    : threadRecord.message.contextId,
+            parentId     : threadRecord.message.recordId,
+            data         : new TextEncoder().encode('Bob is my friend'),
+          });
+          const participantRoleReply = await dwn.handleRecordsWrite(alice.did, participantRoleRecord.message, participantRoleRecord.dataStream);
+          expect(participantRoleReply.status.code).to.equal(202);
+
+          // Alice writes three 'chat' records
+          const chatRecordIds = [];
+          for (let i = 0; i < 3; i++) {
+            const chatRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : alice.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/chat',
+              published    : false,
+              contextId    : threadRecord.message.contextId,
+              parentId     : threadRecord.message.recordId,
+              data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
+            });
+            const chatReply = await dwn.handleRecordsWrite(alice.did, chatRecord.message, chatRecord.dataStream);
+            expect(chatReply.status.code).to.equal(202);
+            chatRecordIds.push(chatRecord.message.recordId);
+          }
+
+          // Bob invokes his friendRole to query that records
+          const chatQuery = await TestDataGenerator.generateRecordsQuery({
+            author : bob,
+            filter : {
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/chat',
+              contextId    : threadRecord.message.contextId,
+            },
+            protocolRole: 'thread/participant',
+          });
+          const chatQueryReply = await dwn.processMessage(alice.did, chatQuery.message) as RecordsQueryReply;
+          expect(chatQueryReply.status.code).to.equal(200);
+          expect(chatQueryReply.entries?.length).to.equal(3);
+          expect(chatQueryReply.entries!.map((record) => record.recordId)).to.have.all.members(chatRecordIds);
+        });
+
+        it('does not execute protocol queries where protocolPath is missing from the filter', async () => {
+          // scenario: Alice writes some chat messages. Bob invokes his $globalRole to query those messages,
+          //           but his query filter does not include protocolPath.
+
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+
+          const protocolDefinition = friendRoleProtocolDefinition;
+
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolWriteReply.status.code).to.equal(202);
+
+          // Alice writes a 'friend' $globalRole record with Bob as recipient
+          const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : bob.did,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'friend',
+            data         : new TextEncoder().encode('Bob is my friend'),
+          });
+          const friendRoleReply = await dwn.handleRecordsWrite(alice.did, friendRoleRecord.message, friendRoleRecord.dataStream);
+          expect(friendRoleReply.status.code).to.equal(202);
+
+          // Alice writes three 'chat' records
+          const chatRecordIds = [];
+          for (let i = 0; i < 3; i++) {
+            const chatRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : alice.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'chat',
+              published    : false,
+              data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
+            });
+            const chatReply = await dwn.handleRecordsWrite(alice.did, chatRecord.message, chatRecord.dataStream);
+            expect(chatReply.status.code).to.equal(202);
+            chatRecordIds.push(chatRecord.message.recordId);
+          }
+
+          // Bob invokes his friendRole to query but does not have `protocolPath` in the filter
+          const chatQuery = await TestDataGenerator.generateRecordsQuery({
+            author : bob,
+            filter : {
+              protocol: protocolDefinition.protocol,
+              // protocolPath deliberately omitted
+            },
+            protocolRole: 'friend',
+          });
+          const chatQueryReply = await dwn.processMessage(alice.did, chatQuery.message) as RecordsQueryReply;
+          expect(chatQueryReply.status.code).to.equal(401);
+          expect(chatQueryReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationQueryFilterMissingRequiredProperties);
+        });
+
+        it('does not execute $contextRole authorized queries where contextId is missing from the filter', async () => {
+          // scenario: Alice writes some chat messages and gives Bob a role allowing him to access them. But Bob's filter
+          //           does not contain a contextId so the query fails.
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+
+          const protocolDefinition = threadRoleProtocolDefinition;
+
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolWriteReply.status.code).to.equal(202);
+
+          // Alice writes a 'thread' record
+          const threadRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'thread',
+          });
+          const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, threadRecord.dataStream);
+          expect(threadRoleReply.status.code).to.equal(202);
+
+          // Alice writes a 'friend' $globalRole record with Bob as recipient
+          const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : bob.did,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'thread/participant',
+            contextId    : threadRecord.message.contextId,
+            parentId     : threadRecord.message.recordId,
+            data         : new TextEncoder().encode('Bob is my friend'),
+          });
+          const participantRoleReply = await dwn.handleRecordsWrite(alice.did, participantRoleRecord.message, participantRoleRecord.dataStream);
+          expect(participantRoleReply.status.code).to.equal(202);
+
+          // Alice writes three 'chat' records
+          const chatRecordIds = [];
+          for (let i = 0; i < 3; i++) {
+            const chatRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : alice.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/chat',
+              published    : false,
+              contextId    : threadRecord.message.contextId,
+              parentId     : threadRecord.message.recordId,
+              data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
+            });
+            const chatReply = await dwn.handleRecordsWrite(alice.did, chatRecord.message, chatRecord.dataStream);
+            expect(chatReply.status.code).to.equal(202);
+            chatRecordIds.push(chatRecord.message.recordId);
+          }
+
+          // Bob invokes his thread participant role to query
+          const chatQuery = await TestDataGenerator.generateRecordsQuery({
+            author : bob,
+            filter : {
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/chat',
+              // contextId deliberately omitted
+            },
+            protocolRole: 'thread/participant',
+          });
+          const chatQueryReply = await dwn.processMessage(alice.did, chatQuery.message) as RecordsQueryReply;
+          expect(chatQueryReply.status.code).to.eq(401);
+          expect(chatQueryReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingContextId);
+        });
+
+        it('rejects $globalRole authorized queries if the query author does not have a matching $globalRole', async () => {
+          // scenario: Alice creates a thread and writes some chat messages writes a chat message. Bob invokes a
+          //           $globalRole but fails because he does not actually have a role.
+
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+
+          const protocolDefinition = friendRoleProtocolDefinition;
+
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolWriteReply.status.code).to.equal(202);
+
+          // Alice writes three 'chat' records
+          const chatRecordIds = [];
+          for (let i = 0; i < 3; i++) {
+            const chatRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : alice.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'chat',
+              published    : false,
+              data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
+            });
+            const chatReply = await dwn.handleRecordsWrite(alice.did, chatRecord.message, chatRecord.dataStream);
+            expect(chatReply.status.code).to.equal(202);
+            chatRecordIds.push(chatRecord.message.recordId);
+          }
+
+          // Bob invokes his friendRole to query that records
+          const chatQuery = await TestDataGenerator.generateRecordsQuery({
+            author : bob,
+            filter : {
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'chat',
+            },
+            protocolRole: 'friend',
+          });
+          const chatQueryReply = await dwn.processMessage(alice.did, chatQuery.message) as RecordsQueryReply;
+          expect(chatQueryReply.status.code).to.eq(401);
+          expect(chatQueryReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
+        });
+
+        it('rejects $contextRole authorized queries where the query author does not have a matching $contextRole', async () => {
+
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+
+          const protocolDefinition = threadRoleProtocolDefinition;
+
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolWriteReply.status.code).to.equal(202);
+
+          // Alice writes a 'thread' record
+          const threadRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'thread',
+          });
+          const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, threadRecord.dataStream);
+          expect(threadRoleReply.status.code).to.equal(202);
+
+          // Alice writes three 'chat' records
+          const chatRecordIds = [];
+          for (let i = 0; i < 3; i++) {
+            const chatRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : alice.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/chat',
+              published    : false,
+              contextId    : threadRecord.message.contextId,
+              parentId     : threadRecord.message.recordId,
+              data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
+            });
+            const chatReply = await dwn.handleRecordsWrite(alice.did, chatRecord.message, chatRecord.dataStream);
+            expect(chatReply.status.code).to.equal(202);
+            chatRecordIds.push(chatRecord.message.recordId);
+          }
+
+          // Bob invokes his friendRole to query that records
+          const chatQuery = await TestDataGenerator.generateRecordsQuery({
+            author : bob,
+            filter : {
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/chat',
+              contextId    : threadRecord.message.contextId,
+            },
+            protocolRole: 'thread/participant',
+          });
+          const chatQueryReply = await dwn.processMessage(alice.did, chatQuery.message) as RecordsQueryReply;
+          expect(chatQueryReply.status.code).to.eq(401);
+          expect(chatQueryReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
+        });
       });
     });
 

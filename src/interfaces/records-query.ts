@@ -23,6 +23,7 @@ export type RecordsQueryOptions = {
   dateSort?: DateSort;
   pagination?: Pagination;
   authorizationSigner?: Signer;
+  protocolRole?: string;
 };
 
 export class RecordsQuery extends Message<RecordsQueryMessage> {
@@ -58,7 +59,10 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
 
     // only generate the `authorization` property if signature input is given
     const authorizationSigner = options.authorizationSigner;
-    const authorization = authorizationSigner ? await Message.createAuthorizationAsAuthor(descriptor, authorizationSigner) : undefined;
+    let authorization;
+    if (authorizationSigner) {
+      authorization = await Message.createAuthorizationAsAuthor(descriptor, authorizationSigner, { protocolRole: options.protocolRole });
+    }
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

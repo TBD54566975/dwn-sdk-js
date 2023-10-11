@@ -25,6 +25,10 @@
         {
           "role": "friend",
           "can": "read"
+        },
+        {
+          "role": "friend",
+          "can": "query"
         }
       ]
     }

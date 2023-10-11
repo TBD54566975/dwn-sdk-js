@@ -36,6 +36,10 @@
           {
             "role": "thread/participant",
             "can": "write"
+          },
+          {
+            "role": "thread/participant",
+            "can": "query"
           }
         ]
       }

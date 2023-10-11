@@ -38,6 +38,7 @@ export enum ProtocolActor {
 }
 
 export enum ProtocolAction {
+  Query = 'query',
   Read = 'read',
   Write = 'write'
 }
@@ -87,7 +88,8 @@ export type ProtocolActionRule = {
 
   /**
    * Action that the actor can perform.
-   * May be 'read' | 'write'
+   * May be 'query' | 'read' | 'write'
+   * 'query' is only supported for `role` rules.
    */
   can: string;
 };
@@ -121,7 +123,7 @@ export type ProtocolRuleSet = {
    * by setting `protocolRole` property to the protocol path of the $contextRole record.
    */
   $contextRole?: boolean;
-  // JSON Schema verifies that properties other than `$actions` will actually have type ProtocolRuleSet
+  // JSON Schema verifies that properties other than properties prefixed with $ will actually have type ProtocolRuleSet
   [key: string]: any;
 };
 

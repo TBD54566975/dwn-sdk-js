@@ -6,6 +6,7 @@ import type { RecordsQueryMessage, RecordsQueryReply } from '../types/records-ty
 
 import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
+import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Records } from '../utils/records.js';
 
 import { SortOrder } from '../types/message-types.js';
@@ -38,6 +39,11 @@ export class RecordsQueryHandler implements MethodHandler {
       // authentication
       try {
         await authenticate(message.authorization!, this.didResolver);
+
+        // Only run protocol authz if message deliberately invokes it
+        if (RecordsQueryHandler.shouldProtocolAuthorizeQuery(recordsQuery)) {
+          await ProtocolAuthorization.authorizeQuery(tenant, recordsQuery, this.messageStore);
+        }
       } catch (e) {
         return messageReplyFromError(e, 401);
       }
@@ -123,6 +129,10 @@ export class RecordsQueryHandler implements MethodHandler {
       filters.push(RecordsQueryHandler.buildUnpublishedRecordsForQueryAuthorFilter(recordsQuery));
     }
 
+    if (RecordsQueryHandler.shouldProtocolAuthorizeQuery(recordsQuery)) {
+      filters.push(RecordsQueryHandler.buildUnpublishedProtocolAuthorizedRecordsFilter(recordsQuery));
+    }
+
     const messageSort = this.convertDateSort(dateSort);
     return this.messageStore.query(tenant, filters, messageSort, pagination );
   }
@@ -166,6 +176,19 @@ export class RecordsQueryHandler implements MethodHandler {
   }
 
   /**
+   * Creates a filter for unpublished records that are intended for the query author (where `recipient` is the author).
+   */
+  private static buildUnpublishedProtocolAuthorizedRecordsFilter(recordsQuery: RecordsQuery): Filter {
+    return {
+      ...Records.convertFilter(recordsQuery.message.descriptor.filter),
+      interface         : DwnInterfaceName.Records,
+      method            : DwnMethodName.Write,
+      isLatestBaseState : true,
+      published         : false
+    };
+  }
+
+  /**
    * Creates a filter for only unpublished records where the author is the same as the query author.
    */
   private static buildUnpublishedRecordsByQueryAuthorFilter(recordsQuery: RecordsQuery): Filter {
@@ -178,5 +201,12 @@ export class RecordsQueryHandler implements MethodHandler {
       isLatestBaseState : true,
       published         : false
     };
+  }
+
+  /**
+   * Determines if ProtocolAuthorization.authorizeQuery should be run and if the corresponding filter should be used.
+   */
+  private static shouldProtocolAuthorizeQuery(recordsQuery: RecordsQuery): boolean {
+    return recordsQuery.message.descriptor.filter.protocol !== undefined && recordsQuery.authorSignaturePayload?.protocolRole !== undefined;
   }
 }

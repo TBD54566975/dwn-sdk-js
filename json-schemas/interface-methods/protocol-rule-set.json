@@ -62,6 +62,7 @@
               "can": {
                 "type": "string",
                 "enum": [
+                  "query",
                   "read",
                   "write"
                 ]
