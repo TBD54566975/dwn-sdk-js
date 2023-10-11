@@ -2,7 +2,7 @@ import type { EventsLogFilter } from '../types/event-log.js';
 import type { Filter } from '../index.js';
 import type { RangeFilter } from '../types/message-types.js';
 import type { Signer } from '../types/signer.js';
-import type { EventsQueryDescriptor, EventsQueryFilter, EventsQueryMessage } from '../types/event-types.js';
+import type { EventsFilter, EventsQueryDescriptor, EventsQueryMessage } from '../types/event-types.js';
 
 import { Message } from '../core/message.js';
 import { removeUndefinedProperties } from '../utils/object.js';
@@ -12,9 +12,8 @@ import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.j
 import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
 
 export type EventsQueryOptions = {
-  watermark?: string;
-  filters: EventsQueryFilter[];
   signer: Signer;
+  filters: EventsFilter[];
   messageTimestamp?: string;
 };
 
@@ -45,9 +44,8 @@ export class EventsQuery extends Message<EventsQueryMessage> {
     return new EventsQuery(message);
   }
 
-  private static normalizeFilters(filters: EventsQueryFilter[]): EventsQueryFilter[] {
-    return filters.map(queryFilter => {
-      const { filter, watermark } = queryFilter;
+  private static normalizeFilters(filters: EventsFilter[]): EventsFilter[] {
+    return filters.map(filter => {
       const normalizedFilter = {
         ...filter,
       };
@@ -60,7 +58,7 @@ export class EventsQuery extends Message<EventsQueryMessage> {
         normalizedFilter.schema = normalizeSchemaUrl(filter.schema);
       }
 
-      return { filter: normalizedFilter, watermark };
+      return normalizedFilter;
     });
   }
 
@@ -70,14 +68,15 @@ export class EventsQuery extends Message<EventsQueryMessage> {
  * @param filters An EventQueryFilter
  * @returns {EventsLogFilter} a generic Filter able to be used with EventLog query.
  */
-  public static convertFilters(filters: EventsQueryFilter[]): EventsLogFilter[] {
+  public static convertFilters(filters: EventsFilter[]): EventsLogFilter[] {
     const eventLogFilters: EventsLogFilter[] = [];
 
-    for (const queryFilter of filters) {
-      const { filter, watermark } = queryFilter;
-      const filterCopy = { ...filter };
+    for (const filter of filters) {
+      // remove watermark from the rest of the filter properties
+      const { watermark, ...filterCopy } = { ...filter };
       const { dateCreated } = filterCopy;
 
+      // set a range filter for dates
       let rangeFilter: RangeFilter | undefined = undefined;
       if (dateCreated !== undefined) {
         if (dateCreated.to !== undefined && dateCreated.from !== undefined) {
@@ -100,6 +99,7 @@ export class EventsQuery extends Message<EventsQueryMessage> {
         (filterCopy as Filter).dateCreated = rangeFilter;
       }
 
+      // add to event log filters array, sorted by the watermark property
       eventLogFilters.push({ filter: filterCopy as Filter, sort: 'watermark', sortDirection: SortOrder.Ascending, cursor: watermark });
     }
 
