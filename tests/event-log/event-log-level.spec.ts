@@ -177,7 +177,7 @@ describe('EventLogLevel Tests', () => {
       const cids: string[] = [];
       const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await Message.getCid(message);
-      const index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
+      const index = await recordsWrite.constructRecordsWriteIndexes(true);
 
       await eventLog.append(author.did, messageCid, index);
       cids.push(messageCid);
@@ -185,7 +185,7 @@ describe('EventLogLevel Tests', () => {
       for (let i = 0; i < 3; i += 1) {
         const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
         const messageCid = await Message.getCid(message);
-        const index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
+        const index = await recordsWrite.constructRecordsWriteIndexes(true);
 
         await eventLog.append(author.did, messageCid, index);
         cids.push(messageCid);
@@ -268,7 +268,7 @@ describe('EventLogLevel Tests', () => {
       }
 
       // insert a record that will not show up in the filtered query.
-      // not inserted into expected events.
+      // not inserted into expected events because it's not a part of the schema.
       const { message: message2, recordsWrite: recordsWrite2 } = await TestDataGenerator.generateRecordsWrite({ author });
       const message2Cid = await Message.getCid(message2);
       const message2Indexes = await recordsWrite2.constructRecordsWriteIndexes(true);

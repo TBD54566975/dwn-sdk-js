@@ -13,11 +13,11 @@ type SortableValue<T> = {
   messageCid: string;
 };
 
-type FilteredQuery = {
-  filter: Filter
-  sort: string
-  sortDirection: SortOrder
-  cursor?: unknown
+export type FilteredQuery = {
+  filter: Filter;
+  sort: string;
+  sortDirection: SortOrder;
+  cursor?: string;
 };
 
 const INDEX_SUBLEVEL_NAME = 'index';
@@ -34,8 +34,9 @@ export class IndexLevel<T> {
 
   async index(
     tenant: string,
-    dataId: string,
+    key: string,
     value: T,
+    cursorValue: string,
     indexes: { [key:string]: unknown },
     sortIndexes: { [key:string]: unknown },
     options?: IndexLevelOptions
@@ -56,21 +57,24 @@ export class IndexLevel<T> {
       throw new Error('no properties to index');
     }
 
-    indexOps.push({ type: 'put', key: `__${dataId}__indexes`, value: JSON.stringify({ indexes, sortIndexes }) });
+    // adding a reverse lookup for the value->indexes this is useful for looking up the indexes of a cursor query
+    indexOps.push({ type: 'put', key: `__${cursorValue}__dataKey`, value: key });
 
+    // adding a reverse lookup to be able to delete cursor and index data.
+    indexOps.push({ type: 'put', key: `__${key}__indexes`, value: JSON.stringify({ indexes, sortIndexes, cursor: cursorValue }) });
     for (const propertyName in indexes) {
       const propertyValue = indexes[propertyName];
       if (propertyValue !== undefined) {
         for (const sortProperty in sortIndexes) {
           const sortValue = sortIndexes[sortProperty];
-          const key = this.constructIndexedKey(
+          const sortedKey = this.constructIndexedKey(
             `__${sortProperty}`,
             propertyName,
             this.encodeValue(propertyValue),
             this.encodeValue(sortValue),
-            dataId,
+            key,
           );
-          indexOps.push({ type: 'put', key, value: JSON.stringify(value) });
+          indexOps.push({ type: 'put', key: sortedKey, value: JSON.stringify(value) });
         }
       }
     }
@@ -78,33 +82,35 @@ export class IndexLevel<T> {
     await indexPartition.batch(indexOps, options);
   }
 
-  async purge(tenant: string, dataId: string, options?: IndexLevelOptions): Promise<void> {
+  async purge(tenant: string, key: string, options?: IndexLevelOptions): Promise<void> {
     const tenantPartition = await this.db.partition(tenant);
     const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
 
     const indexOps: LevelWrapperBatchOperation<string>[] = [];
-    const indexKey = `__${dataId}__indexes`;
-    const serializedIndexes = await indexPartition.get(`__${dataId}__indexes`);
+    const indexKey = `__${key}__indexes`;
+    const serializedIndexes = await indexPartition.get(`__${key}__indexes`);
     if (serializedIndexes === undefined) {
       return;
     }
+    const { indexes, sortIndexes, cursor } = JSON.parse(serializedIndexes);
 
+    // delete reverse lookups
     indexOps.push({ type: 'del', key: indexKey });
+    indexOps.push({ type: 'del', key: `__${cursor}__dataKey` });
 
-    const { indexes, sortIndexes } = JSON.parse(serializedIndexes);
     // delete all indexes associated with the data of the given ID
     for (const propertyName in indexes) {
       const propertyValue = indexes[propertyName];
       for (const sortProperty in sortIndexes) {
         const sortValue = sortIndexes[sortProperty];
-        const key = this.constructIndexedKey(
+        const sortedKey = this.constructIndexedKey(
           `__${sortProperty}`,
           propertyName,
           this.encodeValue(propertyValue),
           this.encodeValue(sortValue),
-          dataId,
+          key,
         );
-        indexOps.push({ type: 'del', key });
+        indexOps.push({ type: 'del', key: sortedKey });
       }
     }
 
@@ -118,10 +124,65 @@ export class IndexLevel<T> {
   }
 
   async executeSingleFilterQuery(tenant:string, query: FilteredQuery, matches: Map<string, T>, options?: IndexLevelOptions): Promise<void> {
+    const tenantPartition = await this.db.partition(tenant);
+    const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
+
+    const { filter, sort, sortDirection, cursor } = query;
+
+    const propertyCursors: { [key:string]:string | Map<unknown, string>} = {};
+    // get beginning point for cursor:
+    if (cursor !== undefined) {
+      const dataKey = await indexPartition.get(`__${cursor}__dataKey`);
+      if (dataKey === undefined) {
+        return;
+      }
+      const serializedIndexes = await indexPartition.get(`__${dataKey}__indexes`);
+      if (serializedIndexes === undefined) {
+        return;
+      }
+      const { sortIndexes, indexes } = JSON.parse(serializedIndexes);
+      for (const propertyName in filter) {
+        const sortValue = sortIndexes[sort];
+        const propertyFilter = filter[propertyName];
+        if (typeof propertyFilter === 'object' && Array.isArray(propertyFilter)) {
+          const arrayFilter = new Map<unknown, string>();
+          for (const propertyValue of new Set(propertyFilter)) {
+            const key = this.constructIndexedKey(
+              `__${sort}`,
+              propertyName,
+              this.encodeValue(propertyValue),
+              this.encodeValue(sortValue),
+              dataKey,
+            );
+            arrayFilter.set(propertyValue, key);
+          }
+          propertyCursors[propertyName] = arrayFilter;
+        } else if (typeof propertyFilter === 'object') {
+          const value = indexes[propertyName];
+          const key = this.constructIndexedKey(
+            `__${sort}`,
+            propertyName,
+            this.encodeValue(value),
+            this.encodeValue(sortValue),
+            dataKey,
+          );
+          propertyCursors[propertyName] = key;
+        } else {
+          const key = this.constructIndexedKey(
+            `__${sort}`,
+            propertyName,
+            this.encodeValue(propertyFilter),
+            this.encodeValue(sortValue),
+            dataKey,
+          );
+          propertyCursors[propertyName] = key;
+        }
+      }
+    }
+
     // Note: We have an array of Promises in order to support OR (anyOf) matches when given a list of accepted values for a property
     const propertyNameToPromises: { [key: string]: Promise<SortableValue<T>[]>[] } = {};
 
-    const { filter, sort, sortDirection, cursor } = query;
 
     // Do a separate DB query for each property in `filter`
     // We will find the union of these many individual queries later.
@@ -129,21 +190,25 @@ export class IndexLevel<T> {
       const propertyFilter = filter[propertyName];
       if (typeof propertyFilter === 'object') {
         if (Array.isArray(propertyFilter)) {
+          const cursorMap = propertyCursors[propertyName] as Map<unknown, string>|undefined;
           // `propertyFilter` is a AnyOfFilter
 
           // Support OR matches by querying for each values separately,
           // then adding them to the promises associated with `propertyName`
           propertyNameToPromises[propertyName] = [];
           for (const propertyValue of new Set(propertyFilter)) {
+            const cursor = cursorMap ? cursorMap.get(propertyValue) : undefined;
             const exactMatchesPromise = this.findExactMatches(tenant, propertyName, propertyValue, sort, sortDirection, cursor, options);
             propertyNameToPromises[propertyName].push(exactMatchesPromise);
           }
         } else {
+          const cursor = propertyCursors[propertyName] as string | undefined;
           // `propertyFilter` is a `RangeFilter`
           const rangeMatchesPromise = this.findRangeMatches(tenant, propertyName, propertyFilter, sort, sortDirection, cursor, options);
           propertyNameToPromises[propertyName] = [rangeMatchesPromise];
         }
       } else {
+        const cursor = propertyCursors[propertyName] as string | undefined;
         // propertyFilter is an EqualFilter, meaning it is a non-object primitive type
         const exactMatchesPromise = this.findExactMatches(tenant, propertyName, propertyFilter, sort, sortDirection, cursor, options);
         propertyNameToPromises[propertyName] = [exactMatchesPromise];
@@ -189,7 +254,7 @@ export class IndexLevel<T> {
     propertyValue: unknown,
     sortProperty: string,
     sortDirection: SortOrder,
-    cursor?: unknown,
+    cursor?: string,
     options?: IndexLevelOptions
   ): Promise<SortableValue<T>[]> {
     const tenantPartition = await this.db.partition(tenant);
@@ -197,10 +262,13 @@ export class IndexLevel<T> {
 
     const prefixParts = [ `__${sortProperty}`, propertyName, this.encodeValue(propertyValue) ];
     const matchPrefix = this.join(...prefixParts, '');
-
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {
-      gt: cursor ? this.join(...prefixParts, this.encodeValue(cursor)) : matchPrefix
+      gt: matchPrefix
     };
+
+    if (cursor !== undefined && cursor.startsWith(matchPrefix)) {
+      iteratorOptions.gt = cursor;
+    }
 
     const matches: SortableValue<T>[] = [];
 
@@ -208,12 +276,9 @@ export class IndexLevel<T> {
       if (!key.startsWith(matchPrefix)) {
         break;
       }
-      const sortValue = this.extractSortValueFromKey(key);
-      // do not match the exact cursor
-      if (cursor && sortValue === this.encodeValue(cursor)) {
-        continue;
-      }
+
       const messageCid = this.extractMessageCidFromKey(key);
+      const sortValue = this.extractSortValueFromKey(key);
       matches.push({ value: JSON.parse(value), sortValue, messageCid });
     }
 
@@ -230,7 +295,7 @@ export class IndexLevel<T> {
     rangeFilter: RangeFilter,
     sortProperty: string,
     sortDirection: SortOrder,
-    cursor?: unknown,
+    cursor?: string,
     options?: IndexLevelOptions
   ): Promise<SortableValue<T>[]> {
     const tenantPartition = await this.db.partition(tenant);
@@ -245,7 +310,7 @@ export class IndexLevel<T> {
     }
 
     if (cursor !== undefined) {
-      iteratorOptions.gt = this.join(...prefix, this.encodeValue(cursor));
+      iteratorOptions.gt = cursor;
       delete iteratorOptions.gte;
     }
 
@@ -268,13 +333,8 @@ export class IndexLevel<T> {
         break;
       }
 
-      const sortValue = this.extractSortValueFromKey(key);
-      // do not match the cursor
-      if (cursor && sortValue === this.encodeValue(cursor)) {
-        continue;
-      }
-
       const messageCid = this.extractMessageCidFromKey(key);
+      const sortValue = this.extractSortValueFromKey(key);
       matches.push({ sortValue, messageCid, value: JSON.parse(value) });
     }
 
