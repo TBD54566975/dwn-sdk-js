@@ -198,7 +198,7 @@ export function testEndToEndScenarios(): void {
       expect(threadReadReply.record).to.exist;
 
       // Test Bob can invoke his 'participant' role to read the chat message
-      // NOTE: we are currently lacking role-authorized RecordsQuery for a more efficient and realistic fetch of messages
+      // TODO: #555 - We currently lack role-authorized RecordsQuery for a realistic scenario (https://github.com/TBD54566975/dwn-sdk-js/issues/555)
       const chatRead = await RecordsRead.create({
         authorizationSigner : Jws.createSigner(bob),
         filter              : {

@@ -14,7 +14,7 @@ import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type RecordsReadOptions = {
   filter: RecordsFilter;
-  date?: string;
+  messageTimestamp?: string;
   authorizationSigner?: Signer;
   permissionsGrantId?: string;
   /**
@@ -50,7 +50,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
       interface        : DwnInterfaceName.Records,
       method           : DwnMethodName.Read,
       filter           : Records.normalizeFilter(filter),
-      messageTimestamp : options.date ?? currentTime,
+      messageTimestamp : options.messageTimestamp ?? currentTime,
     };
 
     removeUndefinedProperties(descriptor);
