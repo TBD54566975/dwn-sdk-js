@@ -73,13 +73,6 @@ export type EncryptedKey = {
   encryptedKey: string;
 };
 
-export type UnsignedRecordsWriteMessage = {
-  recordId: string,
-  contextId?: string;
-  descriptor: RecordsWriteDescriptor;
-  encryption?: EncryptionProperty;
-};
-
 /**
  * Data structure returned in a `RecordsQuery` reply entry.
  * NOTE: the message structure is a modified version of the message received, the most notable differences are:

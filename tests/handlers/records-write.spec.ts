@@ -292,9 +292,9 @@ export function testRecordsWriteHandler(): void {
         expect(initialWriteReply.status.code).to.equal(202);
 
         const write2 = await RecordsWrite.createFrom({
-          unsignedRecordsWriteMessage : message,
-          published                   : true,
-          authorizationSigner         : Jws.createSigner(author),
+          recordsWriteMessage : message,
+          published           : true,
+          authorizationSigner : Jws.createSigner(author),
         });
 
         const writeUpdateReply = await dwn.handleRecordsWrite(tenant, write2.message);
@@ -489,9 +489,9 @@ export function testRecordsWriteHandler(): void {
           expect(initialWriteReply.status.code).to.equal(202);
 
           const write2 = await RecordsWrite.createFrom({
-            unsignedRecordsWriteMessage : message,
-            published                   : true,
-            authorizationSigner         : Jws.createSigner(author),
+            recordsWriteMessage : message,
+            published           : true,
+            authorizationSigner : Jws.createSigner(author),
           });
 
           const writeUpdateReply = await dwn.handleRecordsWrite(tenant, write2.message);
@@ -522,9 +522,9 @@ export function testRecordsWriteHandler(): void {
           expect(initialWriteReply.status.code).to.equal(202);
 
           const write2 = await RecordsWrite.createFrom({
-            unsignedRecordsWriteMessage : message,
-            published                   : true,
-            authorizationSigner         : Jws.createSigner(author),
+            recordsWriteMessage : message,
+            published           : true,
+            authorizationSigner : Jws.createSigner(author),
           });
 
           const writeUpdateReply = await dwn.handleRecordsWrite(tenant, write2.message);
@@ -648,8 +648,8 @@ export function testRecordsWriteHandler(): void {
         expect(deleteReply.status.code).to.equal(202);
 
         const write = await RecordsWrite.createFrom({
-          unsignedRecordsWriteMessage : message,
-          authorizationSigner         : Jws.createSigner(author),
+          recordsWriteMessage : message,
+          authorizationSigner : Jws.createSigner(author),
         });
 
         const withoutDataReply = await dwn.handleRecordsWrite(tenant, write.message);
@@ -680,8 +680,8 @@ export function testRecordsWriteHandler(): void {
         expect(deleteReply.status.code).to.equal(202);
 
         const write = await RecordsWrite.createFrom({
-          unsignedRecordsWriteMessage : message,
-          authorizationSigner         : Jws.createSigner(author),
+          recordsWriteMessage : message,
+          authorizationSigner : Jws.createSigner(author),
         });
 
         const withoutDataReply = await dwn.handleRecordsWrite(tenant, write.message);
@@ -839,9 +839,9 @@ export function testRecordsWriteHandler(): void {
 
             // changing the `published` property
             const newWrite = await RecordsWrite.createFrom({
-              unsignedRecordsWriteMessage : recordsWrite.message,
-              published                   : true,
-              authorizationSigner         : Jws.createSigner(author)
+              recordsWriteMessage : recordsWrite.message,
+              published           : true,
+              authorizationSigner : Jws.createSigner(author)
             });
 
             const newWriteReply = await dwn.handleRecordsWrite(tenant, newWrite.message);
@@ -876,9 +876,9 @@ export function testRecordsWriteHandler(): void {
 
             const newData = Encoder.stringToBytes('new data');
             const newWrite = await RecordsWrite.createFrom({
-              unsignedRecordsWriteMessage : recordsWrite.message,
-              data                        : newData,
-              authorizationSigner         : Jws.createSigner(author)
+              recordsWriteMessage : recordsWrite.message,
+              data                : newData,
+              authorizationSigner : Jws.createSigner(author)
             });
 
             const newWriteReply = await dwn.handleRecordsWrite(tenant, newWrite.message, DataStream.fromBytes(newData));
@@ -968,18 +968,18 @@ export function testRecordsWriteHandler(): void {
             expect(reply.status.code).to.equal(202);
 
             const newWrite = await RecordsWrite.createFrom({
-              unsignedRecordsWriteMessage : recordsWrite.message,
-              published                   : true,
-              authorizationSigner         : Jws.createSigner(author)
+              recordsWriteMessage : recordsWrite.message,
+              published           : true,
+              authorizationSigner : Jws.createSigner(author)
             });
 
             const newWriteReply = await dwn.handleRecordsWrite(author.did, newWrite.message);
             expect(newWriteReply.status.code).to.equal(202);
 
             const newestWrite = await RecordsWrite.createFrom({
-              unsignedRecordsWriteMessage : recordsWrite.message,
-              published                   : true,
-              authorizationSigner         : Jws.createSigner(author)
+              recordsWriteMessage : recordsWrite.message,
+              published           : true,
+              authorizationSigner : Jws.createSigner(author)
             });
 
             const newestWriteReply = await dwn.handleRecordsWrite(author.did, newestWrite.message);
@@ -3392,10 +3392,10 @@ export function testRecordsWriteHandler(): void {
 
           const updatedDataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
           const newWrite = await RecordsWrite.createFrom({
-            unsignedRecordsWriteMessage : message,
-            published                   : true,
-            authorizationSigner         : Jws.createSigner(alice),
-            data                        : updatedDataBytes,
+            recordsWriteMessage : message,
+            published           : true,
+            authorizationSigner : Jws.createSigner(alice),
+            data                : updatedDataBytes,
           });
 
           const updateDataStream = DataStream.fromBytes(updatedDataBytes);

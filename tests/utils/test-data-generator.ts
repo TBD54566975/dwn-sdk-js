@@ -547,12 +547,12 @@ export class TestDataGenerator {
     const dataStream = DataStream.fromBytes(dataBytes);
 
     const options: CreateFromOptions = {
-      unsignedRecordsWriteMessage : input.existingWrite.message,
-      data                        : dataBytes,
+      recordsWriteMessage : input.existingWrite.message,
+      data                : dataBytes,
       published,
       datePublished,
-      messageTimestamp            : input.messageTimestamp,
-      authorizationSigner         : Jws.createSigner(input.author)
+      messageTimestamp    : input.messageTimestamp,
+      authorizationSigner : Jws.createSigner(input.author)
     };
 
     const recordsWrite = await RecordsWrite.createFrom(options);
