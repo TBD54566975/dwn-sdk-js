@@ -41,9 +41,6 @@
           "items": {
             "$ref": "https://identity.foundation/dwn/json-schemas/events-filter.json"
           }
-        },
-        "watermark": {
-          "type": "string"
         }
       }
     }

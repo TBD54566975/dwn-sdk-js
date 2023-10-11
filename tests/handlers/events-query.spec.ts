@@ -200,7 +200,7 @@ export function testEventsQueryHandler(): void {
         // filter for proto1
         const proto1EventsQuery = await TestDataGenerator.generateEventsQuery({
           author,
-          filters: [{ filter: { protocol: proto1 } }]
+          filters: [{ protocol: proto1 }]
         });
         const proto1EventsReply = await dwn.processMessage(author.did, proto1EventsQuery.message) as EventsQueryReply;
         expect(proto1EventsReply.status.code).equals(200);
@@ -221,7 +221,7 @@ export function testEventsQueryHandler(): void {
         // filter for proto2
         const proto2EventsQuery = await TestDataGenerator.generateEventsQuery({
           author,
-          filters: [{ filter: { protocol: proto2 } }]
+          filters: [{ protocol: proto2 }]
         });
         const proto2EventsReply = await dwn.processMessage(author.did, proto2EventsQuery.message) as EventsQueryReply;
         expect(proto2EventsReply.status.code).equals(200);
@@ -244,7 +244,7 @@ export function testEventsQueryHandler(): void {
         // filter for proto1 given a watermark
         const proto1EventsQuery = await TestDataGenerator.generateEventsQuery({
           author,
-          filters: [{ filter: { protocol: proto1 }, watermark: testWatermark }],
+          filters: [{ protocol: proto1, watermark: testWatermark }],
         });
         const proto1EventsReply = await dwn.processMessage(author.did, proto1EventsQuery.message) as EventsQueryReply;
         expect(proto1EventsReply.status.code).equals(200);
@@ -265,7 +265,7 @@ export function testEventsQueryHandler(): void {
         // filter for proto2 given a watermark
         const proto2EventsQuery = await TestDataGenerator.generateEventsQuery({
           author,
-          filters: [{ filter: { protocol: proto2 }, watermark: testWatermark }],
+          filters: [{ protocol: proto2, watermark: testWatermark }],
         });
         const proto2EventsReply = await dwn.processMessage(author.did, proto2EventsQuery.message) as EventsQueryReply;
         expect(proto2EventsReply.status.code).equals(200);
@@ -288,7 +288,7 @@ export function testEventsQueryHandler(): void {
         // filter for contribution schema
         const contributionSchemaEventsQuery = await TestDataGenerator.generateEventsQuery({
           author,
-          filters: [{ filter: { schema: 'contribution' } }]
+          filters: [{ schema: 'contribution' }]
         });
         const contributionSchemaEventsReply = await dwn.processMessage(author.did, contributionSchemaEventsQuery.message) as EventsQueryReply;
         expect(contributionSchemaEventsReply.status.code).equals(200);
@@ -309,7 +309,7 @@ export function testEventsQueryHandler(): void {
         // filter for reward schema
         const rewardEventsQuery = await TestDataGenerator.generateEventsQuery({
           author,
-          filters: [{ filter: { schema: 'reward' } }]
+          filters: [{ schema: 'reward' }]
         });
         const rewardEventsReply = await dwn.processMessage(author.did, rewardEventsQuery.message) as EventsQueryReply;
         expect(rewardEventsReply.status.code).equals(200);
@@ -332,7 +332,7 @@ export function testEventsQueryHandler(): void {
         // filter for contribution schema given a watermark
         const contributionSchemaEventsQuery = await TestDataGenerator.generateEventsQuery({
           author,
-          filters: [{ filter: { schema: 'contribution' }, watermark: testWatermark }]
+          filters: [{ schema: 'contribution', watermark: testWatermark }]
         });
         const contributionSchemaEventsReply = await dwn.processMessage(author.did, contributionSchemaEventsQuery.message) as EventsQueryReply;
         expect(contributionSchemaEventsReply.status.code).equals(200);
@@ -353,7 +353,7 @@ export function testEventsQueryHandler(): void {
         // filter for reward schema given a watermark
         const rewardEventsQuery = await TestDataGenerator.generateEventsQuery({
           author,
-          filters: [{ filter: { schema: 'reward' }, watermark: testWatermark }]
+          filters: [{ schema: 'reward', watermark: testWatermark }]
         });
         const rewardEventsReply = await dwn.processMessage(author.did, rewardEventsQuery.message) as EventsQueryReply;
         expect(rewardEventsReply.status.code).equals(200);
@@ -376,7 +376,7 @@ export function testEventsQueryHandler(): void {
         // query for proto1 contribution path
         const proto1ContributionQuery = await TestDataGenerator.generateEventsQuery({
           author,
-          filters: [{ filter: { protocol: proto1, protocolPath: 'contribution' } }]
+          filters: [{ protocol: proto1, protocolPath: 'contribution' }]
         });
         const proto1ContributionReply = await dwn.processMessage(author.did, proto1ContributionQuery.message) as EventsQueryReply;
         expect(proto1ContributionReply.status.code).equals(200);
@@ -396,7 +396,7 @@ export function testEventsQueryHandler(): void {
         // query for proto1 reward path
         const proto1RewardQuery = await TestDataGenerator.generateEventsQuery({
           author,
-          filters: [{ filter: { protocol: proto1, protocolPath: 'reward' } }]
+          filters: [{ protocol: proto1, protocolPath: 'reward' }]
         });
         const proto1RewardReply = await dwn.processMessage(author.did, proto1RewardQuery.message) as EventsQueryReply;
         expect(proto1RewardReply.status.code).equals(200);
@@ -417,7 +417,7 @@ export function testEventsQueryHandler(): void {
         // query for proto2 contribution path
         const proto2ContributionQuery = await TestDataGenerator.generateEventsQuery({
           author,
-          filters: [{ filter: { protocol: proto2, protocolPath: 'contribution' } }]
+          filters: [{ protocol: proto2, protocolPath: 'contribution' }]
         });
         const proto2ContributionReply = await dwn.processMessage(author.did, proto2ContributionQuery.message) as EventsQueryReply;
         expect(proto2ContributionReply.status.code).equals(200);
@@ -437,7 +437,7 @@ export function testEventsQueryHandler(): void {
         // query for proto2 reward path
         const proto2RewardQuery = await TestDataGenerator.generateEventsQuery({
           author,
-          filters: [{ filter: { protocol: proto2, protocolPath: 'reward' } }]
+          filters: [{ protocol: proto2, protocolPath: 'reward' }]
         });
         const proto2RewardReply = await dwn.processMessage(author.did, proto2RewardQuery.message) as EventsQueryReply;
         expect(proto2RewardReply.status.code).equals(200);
@@ -460,7 +460,7 @@ export function testEventsQueryHandler(): void {
         // query for proto1 contribution path given a watermark
         const proto1ContributionQuery = await TestDataGenerator.generateEventsQuery({
           author,
-          filters: [{ filter: { protocol: proto1, protocolPath: 'contribution' }, watermark: testWatermark }]
+          filters: [{ protocol: proto1, protocolPath: 'contribution', watermark: testWatermark }]
         });
         const proto1ContributionReply = await dwn.processMessage(author.did, proto1ContributionQuery.message) as EventsQueryReply;
         expect(proto1ContributionReply.status.code).equals(200);
@@ -471,7 +471,7 @@ export function testEventsQueryHandler(): void {
         // query for proto1 reward path given a watermark
         const proto1RewardQuery = await TestDataGenerator.generateEventsQuery({
           author,
-          filters: [{ filter: { protocol: proto1, protocolPath: 'reward' }, watermark: testWatermark }]
+          filters: [{ protocol: proto1, protocolPath: 'reward', watermark: testWatermark }]
         });
         const proto1RewardReply = await dwn.processMessage(author.did, proto1RewardQuery.message) as EventsQueryReply;
         expect(proto1RewardReply.status.code).equals(200);
@@ -492,7 +492,7 @@ export function testEventsQueryHandler(): void {
         // query for proto2 contribution path given a watermark
         const proto2ContributionQuery = await TestDataGenerator.generateEventsQuery({
           author,
-          filters: [{ filter: { protocol: proto2, protocolPath: 'contribution' }, watermark: testWatermark }]
+          filters: [{ protocol: proto2, protocolPath: 'contribution', watermark: testWatermark }]
         });
         const proto2ContributionReply = await dwn.processMessage(author.did, proto2ContributionQuery.message) as EventsQueryReply;
         expect(proto2ContributionReply.status.code).equals(200);
@@ -512,7 +512,7 @@ export function testEventsQueryHandler(): void {
         // query for proto2 reward path given a watermark
         const proto2RewardQuery = await TestDataGenerator.generateEventsQuery({
           author,
-          filters: [{ filter: { protocol: proto2, protocolPath: 'reward' }, watermark: testWatermark }]
+          filters: [{ protocol: proto2, protocolPath: 'reward', watermark: testWatermark }]
         });
         const proto2RewardReply = await dwn.processMessage(author.did, proto2RewardQuery.message) as EventsQueryReply;
         expect(proto2RewardReply.status.code).equals(200);
@@ -525,8 +525,8 @@ export function testEventsQueryHandler(): void {
         const eventsQuery = await TestDataGenerator.generateEventsQuery({
           author,
           filters: [
-            { filter: { protocol: proto1 } },
-            { filter: { interface: [ DwnInterfaceName.Permissions ], method: [ DwnMethodName.Grant, DwnMethodName.Revoke ] } }
+            { protocol: proto1 },
+            { interface: [ DwnInterfaceName.Permissions ], method: [ DwnMethodName.Grant, DwnMethodName.Revoke ] }
           ]
         });
         const eventsQueryReply = await dwn.processMessage(author.did, eventsQuery.message) as EventsQueryReply;
@@ -551,14 +551,8 @@ export function testEventsQueryHandler(): void {
         const eventsQuery = await TestDataGenerator.generateEventsQuery({
           author,
           filters: [
-            {
-              filter    : { protocol: proto1 },
-              watermark : testWatermark
-            },
-            {
-              filter    : { interface: [ DwnInterfaceName.Permissions ], method: [ DwnMethodName.Grant, DwnMethodName.Revoke ] },
-              watermark : testWatermark
-            }
+            { protocol: proto1, watermark: testWatermark },
+            { interface: [ DwnInterfaceName.Permissions ], method: [ DwnMethodName.Grant, DwnMethodName.Revoke ], watermark: testWatermark }
           ]
         });
         const eventsQueryReply = await dwn.processMessage(author.did, eventsQuery.message) as EventsQueryReply;
@@ -606,7 +600,7 @@ export function testEventsQueryHandler(): void {
       const lastDayOf2021 = Time.createTimestamp({ year: 2021, month: 12, day: 31 });
       const eventsQuery1 = await TestDataGenerator.generateEventsQuery({
         author  : alice,
-        filters : [{ filter: { dateCreated: { from: lastDayOf2021 } } }],
+        filters : [{ dateCreated: { from: lastDayOf2021 } }],
       });
       const reply1 = await dwn.processMessage(alice.did, eventsQuery1.message) as EventsQueryReply;
       expect(reply1.status.code).to.equal(200);
@@ -619,7 +613,7 @@ export function testEventsQueryHandler(): void {
       const lastDayOf2022 = Time.createTimestamp({ year: 2022, month: 12, day: 31 });
       const eventsQuery2 = await TestDataGenerator.generateEventsQuery({
         author  : alice,
-        filters : [{ filter: { dateCreated: { to: lastDayOf2022 } } }],
+        filters : [{ dateCreated: { to: lastDayOf2022 } }],
       });
       const reply2 = await dwn.processMessage(alice.did, eventsQuery2.message) as EventsQueryReply;
       expect(reply2.status.code).to.equal(200);
@@ -631,7 +625,7 @@ export function testEventsQueryHandler(): void {
       const lastDayOf2023 = Time.createTimestamp({ year: 2023, month: 12, day: 31 });
       const eventsQuery3 = await TestDataGenerator.generateEventsQuery({
         author  : alice,
-        filters : [{ filter: { dateCreated: { from: lastDayOf2022, to: lastDayOf2023 } } }],
+        filters : [{ dateCreated: { from: lastDayOf2022, to: lastDayOf2023 } }],
       });
       const reply3 = await dwn.processMessage(alice.did, eventsQuery3.message) as EventsQueryReply;
       expect(reply3.status.code).to.equal(200);
@@ -641,7 +635,7 @@ export function testEventsQueryHandler(): void {
       // testing edge case where value equals `from` and `to`
       const eventsQuery4 = await TestDataGenerator.generateEventsQuery({
         author  : alice,
-        filters : [{ filter: { dateCreated: { from: firstDayOf2022, to: firstDayOf2023 } } }],
+        filters : [{ dateCreated: { from: firstDayOf2022, to: firstDayOf2023 } }],
       });
       const reply4 = await dwn.processMessage(alice.did, eventsQuery4.message) as EventsQueryReply;
       expect(reply4.status.code).to.equal(200);
@@ -655,7 +649,7 @@ export function testEventsQueryHandler(): void {
 
       const { message } = await TestDataGenerator.generateEventsQuery({
         author  : alice,
-        filters : [{ filter: { schema: 'schema1' } }]
+        filters : [{ schema: 'schema1' }]
       });
       const eventsQueryHandler = new EventsQueryHandler(didResolver, eventLog);
       const reply = await eventsQueryHandler.handle({ tenant: bob.did, message });
@@ -669,7 +663,7 @@ export function testEventsQueryHandler(): void {
 
       const { message } = await TestDataGenerator.generateEventsQuery({
         author  : alice,
-        filters : [{ filter: { schema: 'schema1' } }]
+        filters : [{ schema: 'schema1' }]
       });
       (message['descriptor'] as any)['troll'] = 'hehe';
 
@@ -685,7 +679,7 @@ export function testEventsQueryHandler(): void {
 
       const { message } = await TestDataGenerator.generateEventsQuery({
         author  : alice,
-        filters : [{ filter: { schema: 'schema1' } }],
+        filters : [{ schema: 'schema1' }],
       }); // create with filter to prevent failure on .create()
       message.descriptor.filters = []; // remove filters
       const eventsQueryHandler = new EventsQueryHandler(didResolver, eventLog);
@@ -700,9 +694,9 @@ export function testEventsQueryHandler(): void {
 
       const { message } = await TestDataGenerator.generateEventsQuery({
         author  : alice,
-        filters : [{ filter: { schema: 'schema1' } }],
+        filters : [{ schema: 'schema1' }],
       }); // create with filter to prevent failure on .create()
-      message.descriptor.filters = [{ filter: {} }]; // empty out filter properties
+      message.descriptor.filters = [{}]; // empty out filter properties
       const eventsQueryHandler = new EventsQueryHandler(didResolver, eventLog);
       const reply = await eventsQueryHandler.handle({ tenant: alice.did, message });
 
