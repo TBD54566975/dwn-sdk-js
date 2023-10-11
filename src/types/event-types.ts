@@ -10,10 +10,8 @@ export type EventsFilter = RecordsFilter & {
   interface?: string[];
   // Default to all interfaces. Can be subset.
   author?: string;
-};
 
-export type EventsQueryFilter = {
-  filter: EventsFilter;
+  // optional watermark of the last message received from this filter.
   watermark?: string;
 };
 
@@ -37,7 +35,7 @@ export type EventsQueryDescriptor = {
   interface: DwnInterfaceName.Events;
   method: DwnMethodName.Query;
   messageTimestamp: string;
-  filters: EventsQueryFilter[];
+  filters: EventsFilter[];
 };
 
 export type EventsQueryMessage = GenericMessage & {
