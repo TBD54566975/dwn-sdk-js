@@ -1,6 +1,7 @@
+import type { FilteredQuery } from '../store/index-level.js';
 import type { LevelWrapperBatchOperation } from '../store/level-wrapper.js';
 import type { ULIDFactory } from 'ulidx';
-import type { Event, EventLog, EventsLogFilter, GetEventsOptions } from '../types/event-log.js';
+import type { Event, EventLog, GetEventsOptions } from '../types/event-log.js';
 
 import { IndexLevel } from '../store/index-level.js';
 import { monotonicFactory } from 'ulidx';
@@ -65,7 +66,7 @@ export class EventLogLevel implements EventLog {
     const watermark = this.ulidFactory();
     await watermarkLog.put(watermark, messageCid);
     await cidLog.put(messageCid, watermark);
-    await this.index.index(tenant, messageCid, { messageCid, watermark }, indexes, { watermark });
+    await this.index.index(tenant, messageCid, { messageCid, watermark }, watermark, indexes, { watermark });
     return watermark;
   }
 
@@ -78,7 +79,7 @@ export class EventLogLevel implements EventLog {
    * @param filters an array of filters that designates which event properties are being queried.
    * @returns an array of matching Events without duplicate entries between the filters.
    */
-  async queryEvents(tenant: string, filters: EventsLogFilter[]): Promise<Event[]> {
+  async queryEvents(tenant: string, filters: FilteredQuery[]): Promise<Event[]> {
     return this.index.query(tenant, filters);
   }
 

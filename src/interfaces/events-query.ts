@@ -1,9 +1,10 @@
-import type { EventsLogFilter } from '../types/event-log.js';
 import type { Filter } from '../index.js';
+import type { FilteredQuery } from '../store/index-level.js';
 import type { RangeFilter } from '../types/message-types.js';
 import type { Signer } from '../types/signer.js';
 import type { EventsFilter, EventsQueryDescriptor, EventsQueryMessage } from '../types/event-types.js';
 
+import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { SortOrder } from '../types/message-types.js';
@@ -17,7 +18,7 @@ export type EventsQueryOptions = {
   messageTimestamp?: string;
 };
 
-export class EventsQuery extends Message<EventsQueryMessage> {
+export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
 
   public static async parse(message: EventsQueryMessage): Promise<EventsQuery> {
     Message.validateJsonSchema(message);
@@ -68,12 +69,12 @@ export class EventsQuery extends Message<EventsQueryMessage> {
  * @param filters An EventQueryFilter
  * @returns {EventsLogFilter} a generic Filter able to be used with EventLog query.
  */
-  public static convertFilters(filters: EventsFilter[]): EventsLogFilter[] {
-    const eventLogFilters: EventsLogFilter[] = [];
+  public static convertFilters(filters: EventsFilter[]): FilteredQuery[] {
+    const eventLogFilters: FilteredQuery[] = [];
 
     for (const filter of filters) {
       // remove watermark from the rest of the filter properties
-      const { watermark, ...filterCopy } = { ...filter };
+      const { watermark, ...filterCopy } = filter;
       const { dateCreated } = filterCopy;
 
       // set a range filter for dates

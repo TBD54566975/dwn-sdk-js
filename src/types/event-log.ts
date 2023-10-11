@@ -1,4 +1,4 @@
-import type { Filter, SortOrder } from './message-types.js';
+import type { FilteredQuery } from '../store/index-level.js';
 
 export type Event = {
   watermark: string,
@@ -7,14 +7,6 @@ export type Event = {
 
 export type GetEventsOptions = {
   gt: string
-};
-
-//todo: rename
-export type EventsLogFilter = {
-  filter: Filter
-  sort: string
-  sortDirection: SortOrder
-  cursor?: string
 };
 
 export interface EventLog {
@@ -49,7 +41,7 @@ export interface EventLog {
    *
    * If no watermark is provided, all events for a given tenant and filter combo will be returned.
    */
-  queryEvents(tenant: string, filters: EventsLogFilter[]): Promise<Array<Event>>
+  queryEvents(tenant: string, filters: FilteredQuery[]): Promise<Array<Event>>
 
   /**
    * deletes any events that have any of the cids provided
