@@ -1,6 +1,6 @@
 import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
-import type { DataStore, EventLog, MessageStore, ProtocolDefinition, ProtocolsConfigureMessage, RecordsReadReply } from '../../src/index.js';
+import type { DataStore, EventLog, MessageStore, ProtocolDefinition, ProtocolsConfigureMessage } from '../../src/index.js';
 
 import { DwnConstant, Message } from '../../src/index.js';
 import { DwnInterfaceName, DwnMethodName } from '../../src/index.js';
@@ -666,7 +666,7 @@ export function testRecordsReadHandler(): void {
                 contextId    : threadRecord.message.contextId
               },
             });
-            const participantReadReply = await dwn.processMessage(alice.did, participantRead.message) as RecordsReadReply;
+            const participantReadReply = await dwn.processMessage(alice.did, participantRead.message);
             expect(participantReadReply.status.code).to.equal(200);
 
             // Bob is able to read the thread root record
@@ -677,7 +677,7 @@ export function testRecordsReadHandler(): void {
               },
               protocolRole: 'thread/participant'
             });
-            const threadReadReply = await dwn.processMessage(alice.did, threadRead.message) as RecordsReadReply;
+            const threadReadReply = await dwn.processMessage(alice.did, threadRead.message);
             expect(threadReadReply.status.code).to.equal(200);
 
             // Bob invokes his 'participant' role to read the chat message

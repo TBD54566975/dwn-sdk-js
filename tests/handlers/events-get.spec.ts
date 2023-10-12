@@ -56,8 +56,6 @@ export function testEventsGetHandler(): void {
       const reply = await dwn.processMessage(bob.did, message);
 
       expect(reply.status.code).to.equal(401);
-      expect(reply.entries).to.not.exist;
-      expect(reply.data).to.not.exist;
     });
 
     it('returns a 400 if message is invalid', async () => {
@@ -69,8 +67,6 @@ export function testEventsGetHandler(): void {
       const reply = await dwn.processMessage(alice.did, message);
 
       expect(reply.status.code).to.equal(400);
-      expect(reply.entries).to.not.exist;
-      expect(reply.data).to.not.exist;
     });
 
     it('returns all events for a tenant if watermark is not provided', async () => {
