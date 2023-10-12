@@ -1,6 +1,6 @@
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
 import type { GenericMessage, RecordsWriteMessage } from '../../src/index.js';
-import type { RecordsQueryReply, RecordsQueryReplyEntry, RecordsWriteDescriptor } from '../../src/types/records-types.js';
+import type { RecordsQueryReplyEntry, RecordsWriteDescriptor } from '../../src/types/records-types.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
