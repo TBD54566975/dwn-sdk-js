@@ -25,7 +25,7 @@ export interface IndexLevelOptions {
 }
 
 /**
- * IndexLevel is a base class with some common functions used between MessageIndex and EventLog.
+ * A LevelDB implementation for indexing the messages and events stored in the DWN.
  */
 export class IndexLevel<T> {
   constructor(private db: LevelWrapper<string>) {}
