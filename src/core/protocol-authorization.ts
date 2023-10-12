@@ -20,7 +20,7 @@ export class ProtocolAuthorization {
    * Performs validation on the structure of RecordsWrite messages that use a protocol.
    * @throws {Error} if validation fails.
    */
-  public static async validate(
+  public static async validateReferentialIntegrity(
     tenant: string,
     incomingMessage: RecordsWrite,
     messageStore: MessageStore,
@@ -61,9 +61,6 @@ export class ProtocolAuthorization {
       inboundMessageRuleSet,
       messageStore,
     );
-
-    // verify allowed condition of incoming message
-    await ProtocolAuthorization.verifyActionCondition(tenant, incomingMessage, messageStore);
   }
 
   /**
@@ -110,6 +107,9 @@ export class ProtocolAuthorization {
       inboundMessageRuleSet,
       ancestorMessageChain,
     );
+
+    // verify allowed condition of incoming message
+    await ProtocolAuthorization.verifyActionCondition(tenant, incomingMessage, messageStore);
   }
 
   /**
@@ -430,21 +430,25 @@ export class ProtocolAuthorization {
    * Currently the only check is: if the write is not the initial write, the author must be the same as the initial write
    * @throws {Error} if fails verification
    */
-  private static async verifyActionCondition(tenant: string, incomingMessage: RecordsWrite, messageStore: MessageStore): Promise<void> {
-    const recordsWrite = incomingMessage as RecordsWrite;
-    const isInitialWrite = await recordsWrite.isInitialWrite();
-    if (!isInitialWrite) {
-      // fetch the initialWrite
-      const query = {
-        entryId: recordsWrite.message.recordId
-      };
-      const { messages: result } = await messageStore.query(tenant, [ query ]);
+  private static async verifyActionCondition(tenant: string, incomingMessage: RecordsRead | RecordsWrite, messageStore: MessageStore): Promise<void> {
+    if (incomingMessage.message.descriptor.method === DwnMethodName.Read) {
+      // Currently no conditions for reads
+    } else if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
+      const recordsWrite = incomingMessage as RecordsWrite;
+      const isInitialWrite = await recordsWrite.isInitialWrite();
+      if (!isInitialWrite) {
+        // fetch the initialWrite
+        const query = {
+          entryId: recordsWrite.message.recordId
+        };
+        const { messages: result } = await messageStore.query(tenant, [ query ]);
 
-      // check the author of the initial write matches the author of the incoming message
-      const initialWrite = result[0] as RecordsWriteMessage;
-      const authorOfInitialWrite = Message.getAuthor(initialWrite);
-      if (recordsWrite.author !== authorOfInitialWrite) {
-        throw new Error(`author of incoming message '${recordsWrite.author}' must match to author of initial write '${authorOfInitialWrite}'`);
+        // check the author of the initial write matches the author of the incoming message
+        const initialWrite = result[0] as RecordsWriteMessage;
+        const authorOfInitialWrite = Message.getAuthor(initialWrite);
+        if (recordsWrite.author !== authorOfInitialWrite) {
+          throw new Error(`author of incoming message '${recordsWrite.author}' must match to author of initial write '${authorOfInitialWrite}'`);
+        }
       }
     }
   }

@@ -36,7 +36,7 @@ export class RecordsWriteHandler implements MethodHandler {
 
       // Protocol record specific validation
       if (message.descriptor.protocol !== undefined) {
-        await ProtocolAuthorization.validate(tenant, recordsWrite, this.messageStore);
+        await ProtocolAuthorization.validateReferentialIntegrity(tenant, recordsWrite, this.messageStore);
       }
     } catch (e) {
       return messageReplyFromError(e, 400);

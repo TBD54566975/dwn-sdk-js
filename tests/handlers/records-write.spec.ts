@@ -1920,7 +1920,7 @@ export function testRecordsWriteHandler(): void {
           );
 
           const carolWriteReply = await dwn.handleRecordsWrite(alice.did, modifiedMessageFromCarol.message, modifiedMessageFromCarol.dataStream);
-          expect(carolWriteReply.status.code).to.equal(400);
+          expect(carolWriteReply.status.code).to.equal(401);
           expect(carolWriteReply.status.detail).to.contain('must match to author of initial write');
         });
 
