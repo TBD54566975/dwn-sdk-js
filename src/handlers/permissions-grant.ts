@@ -50,6 +50,25 @@ export class PermissionsGrantHandler implements MethodHandler {
     };
   }
 
+  /**
+  * Indexed properties needed for MessageStore indexing.
+  */
+  static constructIndexes(
+    permissionsGrant: PermissionsGrant,
+  ): Record<string, string> {
+    const message = permissionsGrant.message;
+    const { scope, conditions, ...propertiesToIndex } = message.descriptor;
+
+    const indexes: Record<string, any> = {
+      author: permissionsGrant.author!,
+      ...propertiesToIndex,
+    };
+    return indexes;
+  }
+
+  /**
+   * Additional indexes that are not needed within the MessageStore but are necessary within the EventLog.
+   */
   static constructAdditionalIndexes(
     permissionsGrant: PermissionsGrant
   ): Record<string, string> {
@@ -66,19 +85,6 @@ export class PermissionsGrantHandler implements MethodHandler {
       };
     }
     removeUndefinedProperties(indexes);
-    return indexes;
-  }
-
-  static constructIndexes(
-    permissionsGrant: PermissionsGrant,
-  ): Record<string, string> {
-    const message = permissionsGrant.message;
-    const { scope, conditions, ...propertiesToIndex } = message.descriptor;
-
-    const indexes: Record<string, any> = {
-      author: permissionsGrant.author!,
-      ...propertiesToIndex,
-    };
     return indexes;
   }
 }

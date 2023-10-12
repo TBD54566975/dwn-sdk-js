@@ -41,7 +41,7 @@ describe('IndexLevel', () => {
       await db.close();
     });
 
-    it('fails to index with no sort properties', async () => {
+    it('fails to index with no sorting properties', async () => {
       const id = uuid();
 
       let failedIndex = testIndex.index(tenant, id, id, id, {
@@ -599,6 +599,17 @@ describe('IndexLevel', () => {
       await db.close();
     });
 
+    it('invalid sort property returns no results', async () => {
+      const testVals = ['b', 'd', 'c', 'a'];
+      for (const val of testVals) {
+        await testIndex.index(tenant, val, val, val, { val, schema: 'schema' }, { val });
+      }
+
+      // sort by invalid property returns no results
+      const invalidResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, sort: 'invalid', sortDirection: SortOrder.Ascending }]);
+      expect(invalidResults.length).to.equal(0);
+    });
+
     it('can have multiple sort properties', async () => {
       const testVals = ['b', 'd', 'c', 'a'];
       for (const val of testVals) {
@@ -718,6 +729,25 @@ describe('IndexLevel', () => {
       const descResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, sort: 'val', sortDirection: SortOrder.Descending }]);
       expect(descResults.length).to.equal(testVals.length);
       descResults.forEach((r,i) => expect(testVals[i].toString()).to.equal(r));
+    });
+
+    it('supports sort and cursor with OR queries', async () => {
+      const testValsSchema1 = ['a1', 'b1', 'c1', 'd1'];
+      for (const val of testValsSchema1) {
+        await testIndex.index(tenant, val, val, val, { val, schema: 'schema1' }, { val });
+      }
+      const testValsSchema2 = ['a2', 'b2', 'c2', 'd2'];
+      for (const val of testValsSchema2) {
+        await testIndex.index(tenant, val, val, val, { val, schema: 'schema1' }, { val });
+      }
+
+      // sort ascending from b2 onwards
+      const ascResults = await testIndex.query(tenant, [{ filter: { schema: ['schema1', 'schema2'] }, sort: 'val', sortDirection: SortOrder.Ascending, cursor: 'b2' }]);
+      expect(ascResults.length).to.equal(4);
+      expect(ascResults[0]).to.equal('c1');
+      expect(ascResults[1]).to.equal('c2');
+      expect(ascResults[2]).to.equal('d1');
+      expect(ascResults[3]).to.equal('d2');
     });
   });
 
