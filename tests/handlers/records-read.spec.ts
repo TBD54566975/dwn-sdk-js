@@ -1715,11 +1715,11 @@ export function testRecordsReadHandler(): void {
           // Alice configures chat protocol with encryption
           const protocolDefinition: ProtocolDefinition = chatProtocolDefinition as ProtocolDefinition;
 
-          const encryptedProtocolDefinitionForAlice
+          const protocolDefinitionForAlice
                       = await Protocols.deriveAndInjectPublicEncryptionKeys(protocolDefinition, alice.keyId, alice.keyPair.privateJwk);
           const protocolsConfigureForAlice = await TestDataGenerator.generateProtocolsConfigure({
             author             : alice,
-            protocolDefinition : encryptedProtocolDefinitionForAlice
+            protocolDefinition : protocolDefinitionForAlice
           });
 
           const protocolsConfigureForAliceReply = await dwn.processMessage(
@@ -1729,11 +1729,11 @@ export function testRecordsReadHandler(): void {
           expect(protocolsConfigureForAliceReply.status.code).to.equal(202);
 
           // Bob configures chat protocol with encryption
-          const encryptedProtocolDefinitionForBob
+          const protocolDefinitionForBob
           = await Protocols.deriveAndInjectPublicEncryptionKeys(protocolDefinition, bob.keyId, bob.keyPair.privateJwk);
           const protocolsConfigureForBob = await TestDataGenerator.generateProtocolsConfigure({
             author             : bob,
-            protocolDefinition : encryptedProtocolDefinitionForBob
+            protocolDefinition : protocolDefinitionForBob
           });
 
           const protocolsConfigureReply = await dwn.processMessage(bob.did, protocolsConfigureForBob.message);
@@ -1755,10 +1755,12 @@ export function testRecordsReadHandler(): void {
           const plaintextMessageToAlice = TestDataGenerator.randomBytes(100);
           const { message, dataStream, recordsWrite, encryptedDataBytes, encryptionInput } =
           await TestDataGenerator.generateProtocolEncryptedRecordsWrite({
-            plaintextBytes           : plaintextMessageToAlice,
-            author                   : bob,
-            targetProtocolDefinition : protocolsConfigureForAlice.message.descriptor.definition,
-            protocolPath             : 'thread'
+            plaintextBytes                                   : plaintextMessageToAlice,
+            author                                           : bob,
+            protocolDefinition                               : protocolsConfigureForAlice.message.descriptor.definition,
+            protocolPath                                     : 'thread',
+            encryptSymmetricKeyWithProtocolPathDerivedKey    : true,
+            encryptSymmetricKeyWithProtocolContextDerivedKey : true
           });
 
           // Bob writes the encrypted chat thread to Alice's DWN
@@ -1828,14 +1830,16 @@ export function testRecordsReadHandler(): void {
 
           const plaintextMessageToBob = TestDataGenerator.randomBytes(100);
           const recordsWriteToBob = await TestDataGenerator.generateProtocolEncryptedRecordsWrite({
-            plaintextBytes                   : plaintextMessageToBob,
-            author                           : alice,
-            targetProtocolDefinition         : protocolsConfigureForBob.message.descriptor.definition,
-            protocolPath                     : 'thread/message',
-            protocolContextId                : fetchedRecordsWrite.contextId,
-            protocolContextDerivingRootKeyId : protocolContextDerivingRootKeyIdReturned,
-            protocolContextDerivedPublicJwk  : protocolContextDerivedPublicJwkReturned!,
-            protocolParentId                 : fetchedRecordsWrite.recordId
+            plaintextBytes                                   : plaintextMessageToBob,
+            author                                           : alice,
+            protocolDefinition                               : protocolsConfigureForBob.message.descriptor.definition,
+            protocolPath                                     : 'thread/message',
+            protocolContextId                                : fetchedRecordsWrite.contextId,
+            protocolContextDerivingRootKeyId                 : protocolContextDerivingRootKeyIdReturned,
+            protocolContextDerivedPublicJwk                  : protocolContextDerivedPublicJwkReturned!,
+            protocolParentId                                 : fetchedRecordsWrite.recordId,
+            encryptSymmetricKeyWithProtocolPathDerivedKey    : true,
+            encryptSymmetricKeyWithProtocolContextDerivedKey : true
           });
 
           // Alice sends the message to Bob
