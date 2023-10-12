@@ -18,7 +18,6 @@ import chai, { expect } from 'chai';
 import { DataStream, DidResolver, Dwn, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsRead } from '../src/index.js';
 
 chai.use(chaiAsPromised);
-chai.use(chaiAsPromised);
 
 export function testEndToEndScenarios(): void {
   describe('End-to-end Scenarios Spanning Features', () => {
@@ -57,10 +56,10 @@ export function testEndToEndScenarios(): void {
     it('should support a multi-participant encrypted chat protocol', async () => {
       // Scenario:
       // 1. Alice starts a chat thread
-      // 2. Alice adds Bob as a participant with [symmetric key] encrypted using [Bob's thread-level public key]
+      // 2. Alice adds Bob as a participant with [symmetric key] encrypted using [Bob's participant-level public key]
       // 3. Alice writes a chat message(s) in the thread
       // 4. Alice sends an invite to Bob's DWN with the [context/thread ID]
-      // 5. Bob fetches the invite from this DWN and obtains the [context/thread ID]
+      // 5. Bob fetches the invite from his DWN and obtains the [context/thread ID]
       // 6. Bob fetches the entire thread using the [context/thread ID]
       // 7. Bob is able to decrypt all thread content
 
@@ -109,7 +108,7 @@ export function testEndToEndScenarios(): void {
       const threadRecordReply1 = await dwn.processMessage(alice.did, threadRecord.message, threadRecord.dataStream);
       expect(threadRecordReply1.status.code).to.equal(202);
 
-      // 2. Alice adds Bob as a participant giving him the [context-derived private key] encrypted using [Bob's thread-level public key]
+      // 2. Alice adds Bob as a participant giving him the [context-derived private key] encrypted using [Bob's participant-level public key]
 
       // the context-derived key to be used for encrypting symmetric keys
       const aliceRootKey = {
@@ -168,7 +167,7 @@ export function testEndToEndScenarios(): void {
 
       // Assume the below steps can be done since it is a common DWN usage pattern
       // 4. Alice sends an invite to Bob's DWN with the [context/thread ID]
-      // 5. Bob fetches the invite from this DWN and obtains the [context/thread ID]
+      // 5. Bob fetches the invite from his DWN and obtains the [context/thread ID]
 
       // 6. Bob fetches the entire thread using the [context/thread ID]
       // Test that Bob is able to read his 'participant' role to obtain the context-derived private key for message decryption.
