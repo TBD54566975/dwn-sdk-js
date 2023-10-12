@@ -118,7 +118,25 @@ export class PermissionsRevokeHandler implements MethodHandler {
     };
   }
 
+  /**
+  * Indexed properties needed for MessageStore indexing.
+  */
+  static constructIndexes(
+    permissionsRevoke: PermissionsRevoke,
+  ): Record<string, string> {
+    const { descriptor } = permissionsRevoke.message;
 
+    return {
+      interface          : DwnInterfaceName.Permissions,
+      method             : DwnMethodName.Revoke,
+      messageTimestamp   : descriptor.messageTimestamp,
+      permissionsGrantId : descriptor.permissionsGrantId,
+    };
+  }
+
+  /**
+   * Additional indexed properties that are not needed within the MessageStore but are necessary within the EventLog.
+   */
   static async constructAdditionalIndexes(
     grant: PermissionsGrantMessage,
   ): Promise<Record<string, string>> {
@@ -139,17 +157,4 @@ export class PermissionsRevokeHandler implements MethodHandler {
     removeUndefinedProperties(indexes);
     return indexes;
   };
-
-  static constructIndexes(
-    permissionsRevoke: PermissionsRevoke,
-  ): Record<string, string> {
-    const { descriptor } = permissionsRevoke.message;
-
-    return {
-      interface          : DwnInterfaceName.Permissions,
-      method             : DwnMethodName.Revoke,
-      messageTimestamp   : descriptor.messageTimestamp,
-      permissionsGrantId : descriptor.permissionsGrantId,
-    };
-  }
 }

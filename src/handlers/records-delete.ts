@@ -87,6 +87,9 @@ export class RecordsDeleteHandler implements MethodHandler {
     return messageReply;
   };
 
+  /**
+  * Indexed properties needed for MessageStore indexing.
+  */
   static async constructIndexes(recordsDelete: RecordsDelete): Promise<Record<string, string>> {
     const message = recordsDelete.message;
     const descriptor = { ...message.descriptor };
@@ -104,6 +107,9 @@ export class RecordsDeleteHandler implements MethodHandler {
     return indexes;
   }
 
+  /**
+   * Additional indexed properties that are not needed within the MessageStore but are necessary within the EventLog.
+   */
   static constructAdditionalIndexes(recordsWrite: RecordsWriteMessage): Record<string, string> {
     const { protocol, protocolPath, recipient, schema, parentId, dataFormat, dateCreated } = recordsWrite.descriptor;
 
