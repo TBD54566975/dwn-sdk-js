@@ -92,7 +92,9 @@ export class MessageStoreLevel implements MessageStore {
     options?.signal?.throwIfAborted();
 
     const messages: GenericMessage[] = [];
-    const resultIds = await this.index.query(filters.map(f => ({ ...f, tenant })), options);
+    // note: injecting tenant into filters to allow querying with an "empty" filter.
+    // if there are no other filters present it will return all the messages the tenant.
+    const resultIds = await this.index.query(tenant, filters.map(f => ({ ...f, tenant })), options);
 
     // as an optimization for large data sets, we are finding the message object which matches the paginationMessageCid here.
     // we can use this within the pagination function after sorting to determine the starting point of the array in a more efficient way.
@@ -235,7 +237,7 @@ export class MessageStoreLevel implements MessageStore {
 
     const cid = CID.parse(cidString);
     await partition.delete(cid, options);
-    await this.index.delete(cidString, options);
+    await this.index.delete(tenant, cidString, options);
   }
 
   async put(
@@ -255,11 +257,15 @@ export class MessageStoreLevel implements MessageStore {
     await partition.put(messageCid, encodedMessageBlock.bytes, options);
 
     const messageCidString = messageCid.toString();
+
+    // note: leaving the additional tenant indexing to allow for querying with an "empty" filter.
+    // when querying, we also inject a filter for the specific tenant.
+    // if there are no other filters present it will return all the messages for that tenant.
     const indexDocument = {
       ...indexes,
       tenant,
     };
-    await this.index.put(messageCidString, indexDocument, options);
+    await this.index.put(tenant, messageCidString, indexDocument, options);
   }
 
   /**

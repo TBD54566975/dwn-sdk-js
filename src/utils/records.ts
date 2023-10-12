@@ -1,7 +1,7 @@
 import type { DerivedPrivateJwk } from './hd-key.js';
 import type { Readable } from 'readable-stream';
 import type { Filter, RangeFilter } from '../types/message-types.js';
-import type { RecordsFilter, RecordsWriteDescriptor, UnsignedRecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsFilter, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
 
 import { Encoder } from './encoder.js';
 import { Encryption } from './encryption.js';
@@ -19,7 +19,7 @@ export class Records {
    * @param ancestorPrivateKey Any ancestor private key in the key derivation path.
    */
   public static async decrypt(
-    recordsWrite: UnsignedRecordsWriteMessage,
+    recordsWrite: RecordsWriteMessage,
     ancestorPrivateKey: DerivedPrivateJwk,
     cipherStream: Readable
   ): Promise<Readable> {
@@ -69,7 +69,7 @@ export class Records {
    */
   public static constructKeyDerivationPath(
     keyDerivationScheme: KeyDerivationScheme,
-    recordsWriteMessage: UnsignedRecordsWriteMessage
+    recordsWriteMessage: RecordsWriteMessage
   ): string[] {
 
     const descriptor = recordsWriteMessage.descriptor;

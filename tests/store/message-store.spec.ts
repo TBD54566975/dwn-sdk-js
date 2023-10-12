@@ -125,8 +125,81 @@ export function testMessageStore(): void {
           expect(e).to.equal('reason');
         }
 
+        // index should not return the message
         const { messages: results } = await messageStore.query(alice.did, [{ schema }]);
         expect(results.length).to.equal(0);
+
+        // check that message doesn't exist
+        const messageCid = await Message.getCid(message);
+        const fetchedMessage = await messageStore.get(alice.did, messageCid);
+        expect(fetchedMessage).to.be.undefined;
+      });
+
+      it('should not delete if aborted', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        const { message } = await TestDataGenerator.generateRecordsWrite();
+        await messageStore.put(alice.did, message, { latest: 'true' });
+
+        const messageCid = await Message.getCid(message);
+        const resultsAlice1 = await messageStore.get(alice.did, messageCid);
+        expect((resultsAlice1 as RecordsWriteMessage).recordId).to.equal((message as RecordsWriteMessage).recordId);
+
+        const controller = new AbortController();
+        controller.signal.throwIfAborted = (): void => { }; // simulate aborting happening async
+        controller.abort('reason');
+
+        // aborted delete
+        const deletePromise = messageStore.delete(alice.did, messageCid, { signal: controller.signal });
+        await expect(deletePromise).to.eventually.rejectedWith('reason');
+      });
+
+      it('should not delete the message of another tenant', async () => {
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+
+        const { message } = await TestDataGenerator.generateRecordsWrite();
+        await messageStore.put(alice.did, message, { latest: 'true' });
+        await messageStore.put(bob.did, message, { latest: 'true' });
+
+        const messageCid = await Message.getCid(message);
+        const resultsAlice1 = await messageStore.get(alice.did, messageCid);
+        expect((resultsAlice1 as RecordsWriteMessage).recordId).to.equal((message as RecordsWriteMessage).recordId);
+        const resultsBob1 = await messageStore.get(bob.did, messageCid);
+        expect((resultsBob1 as RecordsWriteMessage).recordId).to.equal((message as RecordsWriteMessage).recordId);
+
+        // bob deletes message
+        await messageStore.delete(bob.did, messageCid);
+        const resultsBob2 = await messageStore.get(bob.did, messageCid);
+        expect(resultsBob2).to.be.undefined;
+
+        //expect alice to retain the message
+        const resultsAlice2 = await messageStore.get(alice.did, messageCid);
+        expect((resultsAlice2 as RecordsWriteMessage).recordId).to.equal((message as RecordsWriteMessage).recordId);
+      });
+
+      it('should not clear the MessageStore index of another tenant', async () => {
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+
+        const { message } = await TestDataGenerator.generateRecordsWrite();
+        await messageStore.put(alice.did, message, { latest: 'true' });
+        await messageStore.put(bob.did, message, { latest: 'true' });
+
+        const messageCid = await Message.getCid(message);
+        const resultsAlice1 = await messageStore.query(alice.did, [{ latest: 'true' }]);
+        expect(resultsAlice1.messages.length).to.equal(1);
+        const resultsBob1 = await messageStore.query(bob.did, [{ latest: 'true' }]);
+        expect(resultsBob1.messages.length).to.equal(1);
+
+        // bob deletes message
+        await messageStore.delete(bob.did, messageCid);
+        const resultsBob2 = await messageStore.query(bob.did, [{ latest: 'true' }]);
+        expect(resultsBob2.messages.length).to.equal(0);
+
+        //expect alice to retain the message
+        const resultsAlice2 = await messageStore.query(alice.did, [{ latest: 'true' }]);
+        expect(resultsAlice2.messages.length).to.equal(1);
       });
     });
 

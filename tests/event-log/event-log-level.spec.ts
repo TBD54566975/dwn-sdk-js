@@ -42,8 +42,6 @@ describe('EventLogLevel Tests', () => {
     expect(events.length).to.equal(1);
     expect(events[0].watermark).to.equal(watermark2);
     expect(events[0].messageCid).to.equal(messageCid2);
-
-
   });
 
   it('returns events in the order that they were appended', async () => {

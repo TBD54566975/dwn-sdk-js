@@ -130,7 +130,7 @@
     "ms": "2.1.3",
     "node-stdlib-browser": "1.2.0",
     "playwright": "1.29.2",
-    "rimraf": "3.0.2",
+    "rimraf": "^3.0.2",
     "search-index": "3.4.0",
     "sinon": "13.0.1",
     "ts-sinon": "^2.0.2",

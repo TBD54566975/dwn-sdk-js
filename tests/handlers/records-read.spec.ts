@@ -76,7 +76,7 @@ export function testRecordsReadHandler(): void {
 
         // insert data
         const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: alice });
-        const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+        const writeReply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
         expect(writeReply.status.code).to.equal(202);
 
         // testing RecordsRead
@@ -102,7 +102,7 @@ export function testRecordsReadHandler(): void {
 
         // insert data
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice });
-        const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+        const writeReply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
         expect(writeReply.status.code).to.equal(202);
 
         // testing RecordsRead
@@ -124,7 +124,7 @@ export function testRecordsReadHandler(): void {
 
         // insert public data
         const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true });
-        const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+        const writeReply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
         expect(writeReply.status.code).to.equal(202);
 
         // testing public RecordsRead
@@ -147,7 +147,7 @@ export function testRecordsReadHandler(): void {
 
         // insert public data
         const { message, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true });
-        const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+        const writeReply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
         expect(writeReply.status.code).to.equal(202);
 
         // testing public RecordsRead
@@ -176,7 +176,7 @@ export function testRecordsReadHandler(): void {
           author    : alice,
           recipient : bob.did,
         });
-        const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+        const writeReply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
         expect(writeReply.status.code).to.equal(202);
 
         // Bob reads the data that Alice sent him
@@ -224,7 +224,7 @@ export function testRecordsReadHandler(): void {
             data         : encodedImage,
             recipient    : alice.did
           });
-          const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
+          const imageReply = await dwn.handleRecordsWrite(alice.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
           expect(imageReply.status.code).to.equal(202);
 
           // Bob (anyone) reads the image that Alice wrote
@@ -308,7 +308,7 @@ export function testRecordsReadHandler(): void {
               data         : encodedEmail,
               recipient    : bob.did
             });
-            const imageReply = await dwn.processMessage(alice.did, emailRecordsWrite.message, emailRecordsWrite.dataStream);
+            const imageReply = await dwn.handleRecordsWrite(alice.did, emailRecordsWrite.message, emailRecordsWrite.dataStream);
             expect(imageReply.status.code).to.equal(202);
 
             // Bob reads Alice's email
@@ -363,7 +363,7 @@ export function testRecordsReadHandler(): void {
               data         : encodedEmail,
               recipient    : alice.did
             });
-            const imageReply = await dwn.processMessage(alice.did, emailRecordsWrite.message, emailRecordsWrite.dataStream);
+            const imageReply = await dwn.handleRecordsWrite(alice.did, emailRecordsWrite.message, emailRecordsWrite.dataStream);
             expect(imageReply.status.code).to.equal(202);
 
             // Bob reads the email he just sent
@@ -410,7 +410,7 @@ export function testRecordsReadHandler(): void {
               data         : new TextEncoder().encode('foo'),
               recipient    : alice.did
             });
-            const foo1WriteReply = await dwn.processMessage(alice.did, foo1Write.message, foo1Write.dataStream);
+            const foo1WriteReply = await dwn.handleRecordsWrite(alice.did, foo1Write.message, foo1Write.dataStream);
             expect(foo1WriteReply.status.code).to.equal(202);
 
             const fooPathRead = await RecordsRead.create({
@@ -446,7 +446,7 @@ export function testRecordsReadHandler(): void {
               data         : new TextEncoder().encode('foo'),
               recipient    : alice.did
             });
-            const foo1WriteReply = await dwn.processMessage(alice.did, foo1Write.message, foo1Write.dataStream);
+            const foo1WriteReply = await dwn.handleRecordsWrite(alice.did, foo1Write.message, foo1Write.dataStream);
             expect(foo1WriteReply.status.code).to.equal(202);
 
             const foo2Write = await TestDataGenerator.generateRecordsWrite({
@@ -458,7 +458,7 @@ export function testRecordsReadHandler(): void {
               data         : new TextEncoder().encode('foo'),
               recipient    : alice.did
             });
-            const foo2WriteReply = await dwn.processMessage(alice.did, foo2Write.message, foo2Write.dataStream);
+            const foo2WriteReply = await dwn.handleRecordsWrite(alice.did, foo2Write.message, foo2Write.dataStream);
             expect(foo2WriteReply.status.code).to.equal(202);
 
             // Since there are two 'foo' records, this should fail.
@@ -500,7 +500,7 @@ export function testRecordsReadHandler(): void {
               protocolPath : 'friend',
               data         : new TextEncoder().encode('Bob is my friend'),
             });
-            const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, friendRoleRecord.dataStream);
+            const friendRoleReply = await dwn.handleRecordsWrite(alice.did, friendRoleRecord.message, friendRoleRecord.dataStream);
             expect(friendRoleReply.status.code).to.equal(202);
 
             // Alice writes a 'chat' record
@@ -511,7 +511,7 @@ export function testRecordsReadHandler(): void {
               protocolPath : 'chat',
               data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
             });
-            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+            const chatReply = await dwn.handleRecordsWrite(alice.did, chatRecord.message, chatRecord.dataStream);
             expect(chatReply.status.code).to.equal(202);
 
             // Bob reads Alice's chat record
@@ -551,7 +551,7 @@ export function testRecordsReadHandler(): void {
               protocolPath : 'chat',
               data         : new TextEncoder().encode('Blah blah blah'),
             });
-            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+            const chatReply = await dwn.handleRecordsWrite(alice.did, chatRecord.message, chatRecord.dataStream);
             expect(chatReply.status.code).to.equal(202);
 
             // Bob tries to invoke a 'chat' role but 'chat' is not a role
@@ -591,7 +591,7 @@ export function testRecordsReadHandler(): void {
               protocolPath : 'chat',
               data         : new TextEncoder().encode('Blah blah blah'),
             });
-            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+            const chatReply = await dwn.handleRecordsWrite(alice.did, chatRecord.message, chatRecord.dataStream);
             expect(chatReply.status.code).to.equal(202);
 
             // Bob tries to invoke a 'friend' role but he is not a 'friend'
@@ -777,7 +777,7 @@ export function testRecordsReadHandler(): void {
           const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
             author: alice,
           });
-          const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+          const recordsWriteReply = await dwn.handleRecordsWrite(alice.did, recordsWrite.message, dataStream);
           expect(recordsWriteReply.status.code).to.equal(202);
 
           // Alice gives Bob a PermissionsGrant with scope RecordsRead
@@ -818,7 +818,7 @@ export function testRecordsReadHandler(): void {
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
             author: alice,
           });
-          const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+          const writeReply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
           expect(writeReply.status.code).to.equal(202);
 
           // Alice issues a PermissionsGrant allowing Bob to read any record in her DWN
@@ -872,7 +872,7 @@ export function testRecordsReadHandler(): void {
               protocol     : protocolDefinition.protocol,
               protocolPath : 'foo',
             });
-            const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+            const recordsWriteReply = await dwn.handleRecordsWrite(alice.did, recordsWrite.message, dataStream);
             expect(recordsWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant with scope RecordsRead
@@ -936,7 +936,7 @@ export function testRecordsReadHandler(): void {
               protocol     : protocolDefinition.protocol,
               protocolPath : 'foo',
             });
-            const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+            const recordsWriteReply = await dwn.handleRecordsWrite(alice.did, recordsWrite.message, dataStream);
             expect(recordsWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant with scope RecordsRead
@@ -1000,7 +1000,7 @@ export function testRecordsReadHandler(): void {
               protocol     : protocolDefinition.protocol,
               protocolPath : 'foo',
             });
-            const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+            const recordsWriteReply = await dwn.handleRecordsWrite(alice.did, recordsWrite.message, dataStream);
             expect(recordsWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant with scope RecordsRead
@@ -1054,7 +1054,7 @@ export function testRecordsReadHandler(): void {
               protocol     : protocolDefinition.protocol,
               protocolPath : 'foo',
             });
-            const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+            const recordsWriteReply = await dwn.handleRecordsWrite(alice.did, recordsWrite.message, dataStream);
             expect(recordsWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant with scope RecordsRead
@@ -1107,7 +1107,7 @@ export function testRecordsReadHandler(): void {
               protocol     : protocolDefinition.protocol,
               protocolPath : 'foo',
             });
-            const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+            const recordsWriteReply = await dwn.handleRecordsWrite(alice.did, recordsWrite.message, dataStream);
             expect(recordsWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant with scope RecordsRead
@@ -1160,7 +1160,7 @@ export function testRecordsReadHandler(): void {
               protocol     : protocolDefinition.protocol,
               protocolPath : 'foo',
             });
-            const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+            const recordsWriteReply = await dwn.handleRecordsWrite(alice.did, recordsWrite.message, dataStream);
             expect(recordsWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant with scope RecordsRead
@@ -1214,7 +1214,7 @@ export function testRecordsReadHandler(): void {
               protocol     : protocolDefinition.protocol,
               protocolPath : 'foo',
             });
-            const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+            const recordsWriteReply = await dwn.handleRecordsWrite(alice.did, recordsWrite.message, dataStream);
             expect(recordsWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant with scope RecordsRead
@@ -1267,7 +1267,7 @@ export function testRecordsReadHandler(): void {
               protocol     : protocolDefinition.protocol,
               protocolPath : 'foo',
             });
-            const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+            const recordsWriteReply = await dwn.handleRecordsWrite(alice.did, recordsWrite.message, dataStream);
             expect(recordsWriteReply.status.code).to.equal(202);
 
             // Alice gives Bob a PermissionsGrant with scope RecordsRead
@@ -1313,7 +1313,7 @@ export function testRecordsReadHandler(): void {
               author : alice,
               schema : 'some-schema',
             });
-            const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+            const writeReply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
             expect(writeReply.status.code).to.equal(202);
 
             // Alice issues a PermissionsGrant allowing Bob to read a specific recordId
@@ -1356,7 +1356,7 @@ export function testRecordsReadHandler(): void {
               author : alice,
               schema : recordSchema,
             });
-            const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+            const writeReply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
             expect(writeReply.status.code).to.equal(202);
 
             // Alice issues a PermissionsGrant allowing Bob to read a specific recordId
@@ -1409,7 +1409,7 @@ export function testRecordsReadHandler(): void {
 
         // insert public data
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true });
-        const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+        const writeReply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
         expect(writeReply.status.code).to.equal(202);
 
         // ensure data is inserted
@@ -1453,7 +1453,7 @@ export function testRecordsReadHandler(): void {
           author : alice,
           data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded +1)
         });
-        const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+        const writeReply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
         expect(writeReply.status.code).to.equal(202);
 
         // testing RecordsRead
@@ -1478,7 +1478,7 @@ export function testRecordsReadHandler(): void {
             data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded)
           });
 
-          const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+          const writeReply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
           expect(writeReply.status.code).to.equal(202);
 
           const recordRead = await RecordsRead.create({
@@ -1509,7 +1509,7 @@ export function testRecordsReadHandler(): void {
             data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded +1)
           });
 
-          const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+          const writeReply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
           expect(writeReply.status.code).to.equal(202);
 
           const recordRead = await RecordsRead.create({
@@ -1593,7 +1593,7 @@ export function testRecordsReadHandler(): void {
             encryptionInput
           });
 
-          const writeReply = await dwn.processMessage(alice.did, message, dataStream);
+          const writeReply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
           expect(writeReply.status.code).to.equal(202);
 
           const recordsRead = await RecordsRead.create({
@@ -1606,10 +1606,10 @@ export function testRecordsReadHandler(): void {
           // test able to derive correct key using `schemas` scheme from root key to decrypt the message
           const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
           expect(readReply.status.code).to.equal(200);
-          const unsignedRecordsWrite = readReply.record!;
+          const recordsWriteMessage = readReply.record!;
           const cipherStream = readReply.record!.data;
 
-          const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, schemaDerivedPrivateKey, cipherStream);
+          const plaintextDataStream = await Records.decrypt(recordsWriteMessage, schemaDerivedPrivateKey, cipherStream);
           const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
           expect(ArrayUtility.byteArraysEqual(plaintextBytes, originalData)).to.be.true;
 
@@ -1619,7 +1619,7 @@ export function testRecordsReadHandler(): void {
           expect(readReply2.status.code).to.equal(200);
           const cipherStream2 = readReply2.record!.data;
 
-          const plaintextDataStream2 = await Records.decrypt(unsignedRecordsWrite, rootPrivateKeyWithDataFormatsScheme, cipherStream2);
+          const plaintextDataStream2 = await Records.decrypt(recordsWriteMessage, rootPrivateKeyWithDataFormatsScheme, cipherStream2);
           const plaintextBytes2 = await DataStream.toBytes(plaintextDataStream2);
           expect(ArrayUtility.byteArraysEqual(plaintextBytes2, originalData)).to.be.true;
 
@@ -1633,7 +1633,7 @@ export function testRecordsReadHandler(): void {
           const inValidDescendantPrivateKey: DerivedPrivateJwk
             = await HdKey.derivePrivateKey(rootPrivateKeyWithDataFormatsScheme, invalidDerivationPath);
 
-          await expect(Records.decrypt(unsignedRecordsWrite, inValidDescendantPrivateKey, cipherStream3)).to.be.rejectedWith(
+          await expect(Records.decrypt(recordsWriteMessage, inValidDescendantPrivateKey, cipherStream3)).to.be.rejectedWith(
             DwnErrorCode.RecordsInvalidAncestorKeyDerivationSegment
           );
         });
@@ -1681,7 +1681,7 @@ export function testRecordsReadHandler(): void {
           });
 
           const dataStream = DataStream.fromBytes(encryptedDataBytes);
-          const writeReply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+          const writeReply = await dwn.handleRecordsWrite(alice.did, recordsWrite.message, dataStream);
           expect(writeReply.status.code).to.equal(202);
 
           const recordsRead = await RecordsRead.create({
@@ -1696,9 +1696,9 @@ export function testRecordsReadHandler(): void {
           const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message); // send the same read message to get a new cipher stream
           expect(readReply.status.code).to.equal(200);
           const cipherStream = readReply.record!.data;
-          const unsignedRecordsWrite = readReply.record!;
+          const recordsWriteMessage = readReply.record!;
 
-          const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, rootPrivateKeyWithDataFormatsScheme, cipherStream);
+          const plaintextDataStream = await Records.decrypt(recordsWriteMessage, rootPrivateKeyWithDataFormatsScheme, cipherStream);
           const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
           expect(ArrayUtility.byteArraysEqual(plaintextBytes, originalData)).to.be.true;
         });
@@ -1762,14 +1762,14 @@ export function testRecordsReadHandler(): void {
           });
 
           // Bob writes the encrypted chat thread to Alice's DWN
-          const bobToAliceWriteReply = await dwn.processMessage(alice.did, message, dataStream);
+          const bobToAliceWriteReply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
           expect(bobToAliceWriteReply.status.code).to.equal(202);
 
           // Bob also needs to write the same encrypted chat thread to his own DWN
           // Opportunity here to create a much nicer utility method for this entire block
           const bobToBobRecordsWrite = await RecordsWrite.createFrom({
-            unsignedRecordsWriteMessage : recordsWrite.message,
-            messageTimestamp            : recordsWrite.message.descriptor.messageTimestamp
+            recordsWriteMessage : recordsWrite.message,
+            messageTimestamp    : recordsWrite.message.descriptor.messageTimestamp
           });
 
           const bobRootPrivateKey: DerivedPrivateJwk = {
@@ -1795,7 +1795,7 @@ export function testRecordsReadHandler(): void {
           await bobToBobRecordsWrite.sign(Jws.createSigner(bob));
 
           const dataStreamForBobsDwn = DataStream.fromBytes(encryptedDataBytes);
-          const bobToBobWriteReply = await dwn.processMessage(bob.did, bobToBobRecordsWrite.message, dataStreamForBobsDwn);
+          const bobToBobWriteReply = await dwn.handleRecordsWrite(bob.did, bobToBobRecordsWrite.message, dataStreamForBobsDwn);
           expect(bobToBobWriteReply.status.code).to.equal(202);
 
           // NOTE: we know Alice is able to decrypt the message using protocol-path derived key through other tests, so we won't verify it again
@@ -1810,19 +1810,19 @@ export function testRecordsReadHandler(): void {
           const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
           expect(readReply.status.code).to.equal(200);
 
-          const unsignedRecordsWrite = readReply.record!;
+          const fetchedRecordsWrite = readReply.record!;
           const cipherStream = readReply.record!.data;
 
-          const derivationPathFromReadContext = Records.constructKeyDerivationPathUsingProtocolContextScheme(unsignedRecordsWrite.contextId);
+          const derivationPathFromReadContext = Records.constructKeyDerivationPathUsingProtocolContextScheme(fetchedRecordsWrite.contextId);
           const protocolContextDerivedPrivateJwk = await HdKey.derivePrivateKey(bobRootPrivateKey, derivationPathFromReadContext);
-          const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, protocolContextDerivedPrivateJwk, cipherStream);
+          const plaintextDataStream = await Records.decrypt(fetchedRecordsWrite, protocolContextDerivedPrivateJwk, cipherStream);
           const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
           expect(ArrayUtility.byteArraysEqual(plaintextBytes, plaintextMessageToAlice)).to.be.true;
 
           // verify that Alice is able to send an encrypted message using the protocol-context derived public key and Bob is able to decrypt it
           // NOTE: we will skip verification of Bob's protocol configuration because we have test the such scenario above as well as in other tests
           const { derivedPublicKey: protocolContextDerivedPublicJwkReturned, rootKeyId: protocolContextDerivingRootKeyIdReturned }
-            = unsignedRecordsWrite.encryption!.keyEncryption.find(
+            = fetchedRecordsWrite.encryption!.keyEncryption.find(
               encryptedKey => encryptedKey.derivationScheme === KeyDerivationScheme.ProtocolContext
             )!;
 
@@ -1832,14 +1832,14 @@ export function testRecordsReadHandler(): void {
             author                           : alice,
             targetProtocolDefinition         : protocolsConfigureForBob.message.descriptor.definition,
             protocolPath                     : 'thread/message',
-            protocolContextId                : unsignedRecordsWrite.contextId,
+            protocolContextId                : fetchedRecordsWrite.contextId,
             protocolContextDerivingRootKeyId : protocolContextDerivingRootKeyIdReturned,
             protocolContextDerivedPublicJwk  : protocolContextDerivedPublicJwkReturned!,
-            protocolParentId                 : unsignedRecordsWrite.recordId
+            protocolParentId                 : fetchedRecordsWrite.recordId
           });
 
           // Alice sends the message to Bob
-          const aliceWriteReply = await dwn.processMessage(bob.did, recordsWriteToBob.message, recordsWriteToBob.dataStream);
+          const aliceWriteReply = await dwn.handleRecordsWrite(bob.did, recordsWriteToBob.message, recordsWriteToBob.dataStream);
           expect(aliceWriteReply.status.code).to.equal(202);
 
           // test that Bob is able to read and decrypt Alice's message
@@ -1852,10 +1852,10 @@ export function testRecordsReadHandler(): void {
           const readByBobReply = await dwn.handleRecordsRead(bob.did, recordsReadByBob.message);
           expect(readByBobReply.status.code).to.equal(200);
 
-          const unsignedRecordsWrite2 = readByBobReply.record!;
+          const fetchedRecordsWrite2 = readByBobReply.record!;
           const cipherStream2 = readByBobReply.record!.data;
 
-          const plaintextDataStream2 = await Records.decrypt(unsignedRecordsWrite2, protocolContextDerivedPrivateJwk, cipherStream2);
+          const plaintextDataStream2 = await Records.decrypt(fetchedRecordsWrite2, protocolContextDerivedPrivateJwk, cipherStream2);
           const plaintextBytes2 = await DataStream.toBytes(plaintextDataStream2);
           expect(ArrayUtility.byteArraysEqual(plaintextBytes2, plaintextMessageToBob)).to.be.true;
         });
@@ -1929,7 +1929,7 @@ export function testRecordsReadHandler(): void {
           );
 
           // Bob writes the encrypted email to Alice's DWN
-          const bobWriteReply = await dwn.processMessage(alice.did, message, dataStream);
+          const bobWriteReply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
           expect(bobWriteReply.status.code).to.equal(202);
 
           // Alice reads the encrypted email
@@ -1950,10 +1950,10 @@ export function testRecordsReadHandler(): void {
             derivedPrivateKey : alice.keyPair.privateJwk
           };
 
-          const unsignedRecordsWrite = readReply.record!;
+          const fetchedRecordsWrite = readReply.record!;
           const cipherStream = readReply.record!.data;
 
-          const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, rootPrivateKey, cipherStream);
+          const plaintextDataStream = await Records.decrypt(fetchedRecordsWrite, rootPrivateKey, cipherStream);
           const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
           expect(ArrayUtility.byteArraysEqual(plaintextBytes, bobMessageBytes)).to.be.true;
 
@@ -1961,19 +1961,19 @@ export function testRecordsReadHandler(): void {
           const readReply2 = await dwn.handleRecordsRead(alice.did, recordsRead.message);
           expect(readReply2.status.code).to.equal(200);
 
-          const relativeDescendantDerivationPath = Records.constructKeyDerivationPath(KeyDerivationScheme.ProtocolPath, unsignedRecordsWrite);
+          const relativeDescendantDerivationPath = Records.constructKeyDerivationPath(KeyDerivationScheme.ProtocolPath, fetchedRecordsWrite);
           const derivedPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, relativeDescendantDerivationPath);
 
-          const unsignedRecordsWrite2 = readReply2.record!;
+          const fetchedRecordsWrite2 = readReply2.record!;
           const cipherStream2 = readReply2.record!.data;
-          const plaintextDataStream2 = await Records.decrypt(unsignedRecordsWrite2, derivedPrivateKey, cipherStream2);
+          const plaintextDataStream2 = await Records.decrypt(fetchedRecordsWrite2, derivedPrivateKey, cipherStream2);
           const plaintextBytes2 = await DataStream.toBytes(plaintextDataStream2);
           expect(ArrayUtility.byteArraysEqual(plaintextBytes2, bobMessageBytes)).to.be.true;
 
           // test unable to decrypt the message if derived key has an unexpected path
           const invalidDerivationPath = [KeyDerivationScheme.ProtocolPath, protocolDefinition.protocol, 'invalidContextId'];
           const inValidDescendantPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, invalidDerivationPath);
-          await expect(Records.decrypt(unsignedRecordsWrite, inValidDescendantPrivateKey, cipherStream)).to.be.rejectedWith(
+          await expect(Records.decrypt(fetchedRecordsWrite, inValidDescendantPrivateKey, cipherStream)).to.be.rejectedWith(
             DwnErrorCode.RecordsInvalidAncestorKeyDerivationSegment
           );
 
@@ -1983,7 +1983,7 @@ export function testRecordsReadHandler(): void {
             derivationScheme  : 'scheme-that-is-not-protocol-context' as any,
             derivedPrivateKey : alice.keyPair.privateJwk
           };
-          await expect(Records.decrypt(unsignedRecordsWrite, privateKeyWithMismatchingDerivationScheme, cipherStream)).to.be.rejectedWith(
+          await expect(Records.decrypt(fetchedRecordsWrite, privateKeyWithMismatchingDerivationScheme, cipherStream)).to.be.rejectedWith(
             DwnErrorCode.RecordsDecryptNoMatchingKeyEncryptedFound
           );
 
@@ -1993,7 +1993,7 @@ export function testRecordsReadHandler(): void {
             derivationScheme  : KeyDerivationScheme.ProtocolPath,
             derivedPrivateKey : alice.keyPair.privateJwk
           };
-          await expect(Records.decrypt(unsignedRecordsWrite, privateKeyWithMismatchingKeyId, cipherStream)).to.be.rejectedWith(
+          await expect(Records.decrypt(fetchedRecordsWrite, privateKeyWithMismatchingKeyId, cipherStream)).to.be.rejectedWith(
             DwnErrorCode.RecordsDecryptNoMatchingKeyEncryptedFound
           );
         });

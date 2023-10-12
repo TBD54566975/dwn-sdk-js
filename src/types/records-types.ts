@@ -25,6 +25,8 @@ export type RecordsWriteDescriptor = {
   dataFormat: string;
 };
 
+export type RecordsWriteReply = GenericMessageReply;
+
 /**
  * Internal RecordsWrite message representation that can be in an incomplete state.
  */
@@ -67,13 +69,6 @@ export type EncryptedKey = {
   ephemeralPublicKey: PublicJwk;
   messageAuthenticationCode: string;
   encryptedKey: string;
-};
-
-export type UnsignedRecordsWriteMessage = {
-  recordId: string,
-  contextId?: string;
-  descriptor: RecordsWriteDescriptor;
-  encryption?: EncryptionProperty;
 };
 
 /**

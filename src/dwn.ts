@@ -8,7 +8,7 @@ import type { RecordsWriteHandlerOptions } from './handlers/records-write.js';
 import type { TenantGate } from './core/tenant-gate.js';
 import type { GenericMessageReply, UnionMessageReply } from './core/message-reply.js';
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
-import type { RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from './types/records-types.js';
+import type { RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage, RecordsWriteReply } from './types/records-types.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DidResolver } from './did/did-resolver.js';
@@ -104,6 +104,25 @@ export class Dwn {
     });
 
     return methodHandlerReply;
+  }
+
+  /**
+   * Handles a `RecordsWrite` message.
+   */
+  public async handleRecordsWrite(
+    tenant: string,
+    message: RecordsWriteMessage,
+    dataStream?: Readable,
+    options?: RecordsWriteHandlerOptions): Promise<RecordsWriteReply> {
+    const errorMessageReply =
+      await this.validateTenant(tenant) ??
+      await this.validateMessageIntegrity(message, DwnInterfaceName.Records, DwnMethodName.Write);
+    if (errorMessageReply !== undefined) {
+      return errorMessageReply;
+    }
+
+    const handler = new RecordsWriteHandler(this.didResolver, this.messageStore, this.dataStore, this.eventLog);
+    return handler.handle({ tenant, message, options, dataStream });
   }
 
   /**
