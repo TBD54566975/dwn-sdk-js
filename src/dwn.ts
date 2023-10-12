@@ -91,20 +91,19 @@ export class Dwn {
    * Processes the given DWN message and returns with a reply.
    * @param tenant The tenant DID to route the given message to.
    */
-  public async processMessage(tenant: string, rawMessage: EventsGetMessage, dataStream?: Readable): Promise<EventsGetReply>;
-  public async processMessage(tenant: string, rawMessage: MessagesGetMessage, dataStream?: Readable): Promise<MessagesGetReply>;
-  public async processMessage(tenant: string, rawMessage: ProtocolsConfigureMessage, dataStream?: Readable): Promise<GenericMessageReply>;
-  public async processMessage(tenant: string, rawMessage: ProtocolsQueryMessage, dataStream?: Readable): Promise<ProtocolsQueryReply>;
-  public async processMessage(tenant: string, rawMessage: PermissionsRequestMessage, dataStream?: Readable): Promise<GenericMessageReply>;
-  public async processMessage(tenant: string, rawMessage: PermissionsGrantMessage, dataStream?: Readable): Promise<GenericMessageReply>;
-  public async processMessage(tenant: string, rawMessage: PermissionsRevokeMessage, dataStream?: Readable): Promise<GenericMessageReply>;
-  public async processMessage(tenant: string, rawMessage: RecordsDeleteMessage, dataStream?: Readable): Promise<GenericMessageReply>;
-  public async processMessage(tenant: string, rawMessage: RecordsQueryMessage, dataStream?: Readable): Promise<RecordsQueryReply>;
-  public async processMessage(tenant: string, rawMessage: RecordsReadMessage, dataStream?: Readable): Promise<RecordsReadReply>;
+  public async processMessage(tenant: string, rawMessage: EventsGetMessage): Promise<EventsGetReply>;
+  public async processMessage(tenant: string, rawMessage: MessagesGetMessage): Promise<MessagesGetReply>;
+  public async processMessage(tenant: string, rawMessage: ProtocolsConfigureMessage): Promise<GenericMessageReply>;
+  public async processMessage(tenant: string, rawMessage: ProtocolsQueryMessage): Promise<ProtocolsQueryReply>;
+  public async processMessage(tenant: string, rawMessage: PermissionsRequestMessage): Promise<GenericMessageReply>;
+  public async processMessage(tenant: string, rawMessage: PermissionsGrantMessage): Promise<GenericMessageReply>;
+  public async processMessage(tenant: string, rawMessage: PermissionsRevokeMessage): Promise<GenericMessageReply>;
+  public async processMessage(tenant: string, rawMessage: RecordsDeleteMessage): Promise<GenericMessageReply>;
+  public async processMessage(tenant: string, rawMessage: RecordsQueryMessage): Promise<RecordsQueryReply>;
+  public async processMessage(tenant: string, rawMessage: RecordsReadMessage): Promise<RecordsReadReply>;
   public async processMessage(tenant: string, rawMessage: RecordsWriteMessage, dataStream?: Readable): Promise<GenericMessageReply>;
-  public async processMessage(tenant: string, rawMessage: GenericMessage, dataStream?: Readable): Promise<GenericMessageReply>;
   public async processMessage(tenant: string, rawMessage: unknown, dataStream?: Readable): Promise<UnionMessageReply>;
-  public async processMessage(tenant: string, rawMessage: any, dataStream?: Readable): Promise<UnionMessageReply> {
+  public async processMessage(tenant: string, rawMessage: GenericMessage, dataStream?: Readable): Promise<UnionMessageReply> {
     const errorMessageReply = await this.validateTenant(tenant) ?? await this.validateMessageIntegrity(rawMessage);
     if (errorMessageReply !== undefined) {
       return errorMessageReply;
