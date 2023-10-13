@@ -1,3 +1,4 @@
+import type { FilteredQuery } from '../types/event-log.js';
 import type { LevelWrapper } from './level-wrapper.js';
 import type { EqualFilter, Filter, OneOfFilter, RangeFilter } from '../types/message-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions } from './level-wrapper.js';
@@ -9,13 +10,6 @@ import { SortOrder } from '../types/message-types.js';
 type IndexedItem<T> = {
   value: T;
   key: string;
-};
-
-export type FilteredQuery = {
-  filter: Filter;
-  sort: string;
-  sortDirection: SortOrder;
-  cursor?: string;
 };
 
 const INDEX_SUBLEVEL_NAME = 'index';

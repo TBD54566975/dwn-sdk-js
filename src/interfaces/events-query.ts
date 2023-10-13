@@ -1,5 +1,5 @@
 import type { Filter } from '../index.js';
-import type { FilteredQuery } from '../store/index-level.js';
+import type { FilteredQuery } from '../types/event-log.js';
 import type { RangeFilter } from '../types/message-types.js';
 import type { Signer } from '../types/signer.js';
 import type { EventsFilter, EventsQueryDescriptor, EventsQueryMessage } from '../types/event-types.js';
