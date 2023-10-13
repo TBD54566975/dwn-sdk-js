@@ -19,7 +19,6 @@ type EventLogLevelConfig = {
 
 const WATERMARKS_SUBLEVEL_NAME = 'watermarks';
 const CID_WATERMARKS_SUBLEVEL_NAME = 'cid_watermarks';
-// const INDEX_SUBLEVEL_NAME = 'index';
 
 export class EventLogLevel implements EventLog {
   db: LevelWrapper<string>;
