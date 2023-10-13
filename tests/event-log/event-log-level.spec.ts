@@ -234,7 +234,7 @@ describe('EventLogLevel Tests', () => {
         expectedEvents.push({ watermark, messageCid });
       }
 
-      const events = await eventLog.queryEvents(author.did, [{ filter: { schema: normalizeSchemaUrl('schema1') }, sort: 'watermark', sortDirection: SortOrder.Ascending }]);
+      const events = await eventLog.queryEvents(author.did, [{ filter: { schema: normalizeSchemaUrl('schema1') }, sortProperty: 'watermark', sortDirection: SortOrder.Ascending }]);
       expect(events.length).to.equal(expectedEvents.length);
 
       for (let i = 0; i < expectedEvents.length; i += 1) {
@@ -283,7 +283,7 @@ describe('EventLogLevel Tests', () => {
         expectedEvents.push({ watermark, messageCid });
       }
 
-      const events = await eventLog.queryEvents(author.did, [{ filter: { schema: normalizeSchemaUrl('schema1') }, cursor: testWatermark, sort: 'watermark', sortDirection: SortOrder.Ascending }]);
+      const events = await eventLog.queryEvents(author.did, [{ filter: { schema: normalizeSchemaUrl('schema1') }, cursor: testWatermark, sortProperty: 'watermark', sortDirection: SortOrder.Ascending }]);
       expect(events.length).to.equal(expectedEvents.length);
 
       for (let i = 0; i < expectedEvents.length; i += 1) {
