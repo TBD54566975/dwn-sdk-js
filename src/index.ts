@@ -2,7 +2,7 @@
 export type { DwnConfig } from './dwn.js';
 export type { DidMethodResolver, DwnServiceEndpoint, ServiceEndpoint, DidDocument, DidResolutionResult, DidResolutionMetadata, DidDocumentMetadata, VerificationMethod } from './types/did-types.js';
 export type { EventLog, Event, FilteredQuery, GetEventsOptions } from './types/event-log.js';
-export type { EventsGetMessage, EventsGetReply } from './types/event-types.js';
+export type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply } from './types/event-types.js';
 export type { Filter, GenericMessage, MessageSort, Pagination } from './types/message-types.js';
 export type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
 export type { PermissionConditions, PermissionScope, PermissionsGrantDescriptor } from './types/permissions-grant-descriptor.js';
