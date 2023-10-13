@@ -105,7 +105,7 @@ export class IndexLevel<T> {
 
     const indexOps: LevelWrapperBatchOperation<string>[] = [];
     const indexKey = `__${key}__indexes`;
-    const serializedIndexes = await indexPartition.get(`__${key}__indexes`);
+    const serializedIndexes = await indexPartition.get(indexKey);
     if (serializedIndexes === undefined) {
       return;
     }

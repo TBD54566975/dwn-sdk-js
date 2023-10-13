@@ -1,12 +1,13 @@
 import type { Event } from '../../src/types/event-log.js';
 
-import chaiAsPromised from 'chai-as-promised';
+import { ArrayUtility } from '../../src/utils/array.js';
 import { EventLogLevel } from '../../src/event-log/event-log-level.js';
 import { Message } from '../../src/core/message.js';
 import { normalizeSchemaUrl } from '../../src/utils/url.js';
 import { SortOrder } from '../../src/index.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 
+import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
 chai.use(chaiAsPromised);
@@ -174,15 +175,15 @@ describe('EventLogLevel Tests', () => {
     });
 
     it('deletes all index related data', async () => {
-      const cids: string[] = [];
       const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await Message.getCid(message);
-      const index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
+      const index = await recordsWrite.constructRecordsWriteIndexes(true);
       await eventLog.append(author.did, messageCid, index);
 
-      const numEventsDeleted = await eventLog.deleteEventsByCid(author.did, cids);
+      const numEventsDeleted = await eventLog.deleteEventsByCid(author.did, [ messageCid ]);
       expect(numEventsDeleted).to.equal(1);
-      expect(eventLog.db.keys()).to.equal(0);
+      const keysAfterDelete = await ArrayUtility.fromAsyncGenerator(eventLog.db.keys());
+      expect(keysAfterDelete.length).to.equal(0);
     });
 
     it('skips if cid is invalid', async () => {

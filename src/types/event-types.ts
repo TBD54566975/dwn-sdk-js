@@ -4,14 +4,17 @@ import type { RecordsFilter } from './records-types.js';
 import type { AuthorizationModel, GenericMessage } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
+/**
+ * @param method optional array of methods to filter.
+ * @param interface optional array of interfaces to filter.
+ * @param author optional author to filter.
+ *
+ * @param watermark optional watermark of the last message received from this filter.
+ */
 export type EventsFilter = RecordsFilter & {
   method?: string[];
-  // Default to all methods. Otherwise, explicitly subscribe to subset of methods.
   interface?: string[];
-  // Default to all interfaces. Can be subset.
   author?: string;
-
-  // optional watermark of the last message received from this filter.
   watermark?: string;
 };
 

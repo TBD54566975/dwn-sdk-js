@@ -129,7 +129,7 @@ export class EventLogLevel implements EventLog {
       }
       ops.push({ type: 'del', key: watermark });
       cidOps.push({ type: 'del', key: messageCid });
-      indexDeletePromises.push(this.index.delete(tenant, messageCid));
+      indexDeletePromises.push(this.index.delete(tenant, watermark));
       numEventsDeleted += 1;
     }
 

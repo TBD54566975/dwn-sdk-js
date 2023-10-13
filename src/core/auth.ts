@@ -38,6 +38,6 @@ export async function authorize(tenant: string, incomingMessage: { author: strin
   if (incomingMessage.author === tenant) {
     return;
   } else {
-    throw new DwnError(DwnErrorCode.AuthorizationUnknownAuthor, 'message failed authorization, permission grant check not yet implemented');
+    throw new DwnError(DwnErrorCode.AuthorizationUnknownAuthor, 'message failed authorization. Only the tenant is authorized');
   }
 }
