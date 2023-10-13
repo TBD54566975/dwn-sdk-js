@@ -610,6 +610,21 @@ describe('IndexLevel', () => {
       expect(invalidResults.length).to.equal(0);
     });
 
+    it('invalid cursor returns no results', async () => {
+      const testVals = ['b', 'd', 'c', 'a'];
+      for (const val of testVals) {
+        await testIndex.put(tenant, val, val, { val, schema: 'schema' }, { val });
+      }
+
+      // verify valid cursor
+      const validResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, sort: 'val', sortDirection: SortOrder.Ascending, cursor: 'a' }]);
+      expect(validResults.length).to.equal(3);
+      expect(validResults).to.eql(['b', 'c', 'd']);
+
+      // invalid cursor
+      const invalidResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, sort: 'val', sortDirection: SortOrder.Ascending, cursor: 'invalid' }]);
+      expect(invalidResults.length).to.equal(0);
+    });
     it('can have multiple sort properties', async () => {
       const testVals = ['b', 'd', 'c', 'a'];
       for (const val of testVals) {
