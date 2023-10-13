@@ -108,7 +108,7 @@ describe('IndexLevel', () => {
       };
       await testIndex.index(tenant, id, id, index, { id });
       const indexKey = testIndex['constructIndexedKey'](
-        `__id`,
+        `id`,
         'some.nested.object',
         'true',
         `"${id}"`,
