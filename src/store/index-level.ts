@@ -74,14 +74,14 @@ export class IndexLevel<T> {
     //  propertyName  : 'dateCreated'
     //  propertyValue : '2023-01-10T00:00:00.000000'
     //  key           : 'bafyreigup3ymvwjik3qadcrrshrsehedxgjhlya75qh5oexqelnsto2bpu'
-    // __watermark\u0000dateCreated\u0000"2023-01-10T00:00:00.000000"\u0000"01HCG7W7P6WBC88WRKKYPN1Z9J"\u0000bafyreigu...
+    //  watermark\u0000dateCreated\u0000"2023-01-10T00:00:00.000000"\u0000"01HCG7W7P6WBC88WRKKYPN1Z9J"\u0000bafyreigu...
     //
     //  sortProperty  : 'messageTimestamp'
     //  sortValue     : '2023-01-10T00:00:00.000000'
     //  propertyName  : 'dateCreated'
     //  propertyValue : '2023-01-10T00:00:00.000000'
     //  key           : 'bafyreigup3ymvwjik3qadcrrshrsehedxgjhlya75qh5oexqelnsto2bpu'
-    // __messageTimestamp\u0000dateCreated\u0000"2023-01-10T00:00:00.000000"\u0000"2023-01-10T00:00:00.000000"\u0000bafyreigu...
+    //  messageTimestamp\u0000dateCreated\u0000"2023-01-10T00:00:00.000000"\u0000"2023-01-10T00:00:00.000000"\u0000bafyreigu...
 
     for (const propertyName in indexes) {
       const propertyValue = indexes[propertyName];
@@ -89,7 +89,7 @@ export class IndexLevel<T> {
         for (const sortProperty in sortIndexes) {
           const sortValue = sortIndexes[sortProperty];
           const sortedKey = this.constructIndexedKey(
-            `__${sortProperty}`,
+            sortProperty,
             propertyName,
             this.encodeValue(propertyValue),
             this.encodeValue(sortValue),
@@ -126,7 +126,7 @@ export class IndexLevel<T> {
       for (const sortProperty in sortIndexes) {
         const sortValue = sortIndexes[sortProperty];
         const sortedKey = this.constructIndexedKey(
-          `__${sortProperty}`,
+          sortProperty,
           propertyName,
           this.encodeValue(propertyValue),
           this.encodeValue(sortValue),
@@ -193,18 +193,18 @@ export class IndexLevel<T> {
       }
     }
 
-    // map of ID of all data/object -> list of missing property matches
+    // map of keys of all data/object -> list of missing property matches
     // if count of missing property matches is 0, it means the data/object fully matches the filter
-    const missingPropertyMatchesForId: { [dataId: string]: Set<string> } = { };
+    const missingPropertyMatchesForId: { [key: string]: Set<string> } = { };
 
     // resolve promises for each property match and
     // eliminate matched property from `missingPropertyMatchesForId` iteratively to work out complete matches
     for (const [propertyName, promises] of Object.entries(propertyNameToPromises)) {
       // acting as an OR match for the property, any of the promises returning a match will be treated as a property match
       for (const promise of promises) {
-        // reminder: the promise returns a list of IDs of data satisfying a particular match
+        // reminder: the promise returns a list of IndexValue objects (with unique key and value) of data satisfying a particular match
         for (const sortableValue of await promise) {
-          // short circuit: if a data is already included to the final matched ID set (by a different `Filter`),
+          // short circuit: if a data is already included to the final matched key set (by a different `Filter`),
           // no need to evaluate if the data satisfies this current filter being evaluated
           if (matches.has(sortableValue.key)) {
             continue;
@@ -234,21 +234,19 @@ export class IndexLevel<T> {
     const tenantPartition = await this.db.partition(tenant);
     const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
 
-    const prefixParts = [ `__${sortProperty}`, propertyName, this.encodeValue(propertyValue) ];
-    const matchPrefix = this.join(...prefixParts, '');
+    const matchPrefix = this.constructIndexedKey(sortProperty, propertyName, this.encodeValue(propertyValue));
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {
       gt: matchPrefix
     };
 
     // if a cursor is defined we want to set it as the starting point for the query.
-    // however there are cases where `findExactMatches` is called from within `findRangeMatches`
-    // in some of these cases the cursor could be associated with a different propertyValue.
-    if (cursor !== undefined && cursor.startsWith(matchPrefix)) {
+    if (cursor !== undefined) {
       iteratorOptions.gt = cursor;
     }
 
     const matches: IndexedItem<T>[] = [];
     for await (const [ key, value ] of indexPartition.iterator(iteratorOptions, options)) {
+      // immediately stop if we arrive at an index that contains a different property
       if (!key.startsWith(matchPrefix)) {
         break;
       }
@@ -276,14 +274,14 @@ export class IndexLevel<T> {
     const tenantPartition = await this.db.partition(tenant);
     const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {};
-    const prefix = [ `__${sortProperty}`, propertyName ];
-    const matchPrefix = this.join(...prefix, '');
+    const matchPrefix = this.constructIndexedKey(sortProperty, propertyName);
 
     for (const comparator in rangeFilter) {
       const comparatorName = comparator as keyof RangeFilter;
-      iteratorOptions[comparatorName] = this.join(...prefix, this.encodeValue(rangeFilter[comparatorName]));
+      iteratorOptions[comparatorName] = this.constructIndexedKey(sortProperty, propertyName, this.encodeValue(rangeFilter[comparatorName]));
     }
 
+    // if a cursor exists, it will be the starting point for the range query but not equal to.
     if (cursor !== undefined) {
       iteratorOptions.gt = cursor;
       delete iteratorOptions.gte;
@@ -315,11 +313,13 @@ export class IndexLevel<T> {
     if ('lte' in rangeFilter) {
       // When `lte` is used, we must also query the exact match explicitly because the exact match will not be included in the iterator above.
       // This is due to the extra data appended to the (property + value) key prefix, e.g.
-      // the key '__watermark\u0000dateCreated\u0000"2023-05-25T11:22:33.000000Z"\u000001HBY2E1TPY1W95SE0PEG2AM96\u0000bayfreigu....'
-      // would be considered greater than { lte: '__watermark\u0000dateCreated\u0000"2023-05-25T11:22:33.000000Z"` } used in the iterator options,
+      // the key 'watermark\u0000dateCreated\u0000"2023-05-25T11:22:33.000000Z"\u000001HBY2E1TPY1W95SE0PEG2AM96\u0000bayfreigu....'
+      // would be considered greater than { lte: 'watermark\u0000dateCreated\u0000"2023-05-25T11:22:33.000000Z"` } used in the iterator options,
       // thus would not be included in the iterator even though we'd like it to be.
       // we always sort in ascending for exact matches here because we reverse the entire result set later if necessary.
-      for (const event of await this.findExactMatches(tenant, propertyName, rangeFilter.lte, sortProperty, SortOrder.Ascending, cursor, options)) {
+      // we also only include the cursor if it is relevant to the exact property in the 'lte' filter.
+      const lteCursor = cursor && this.extractValueFromKey(cursor) === this.encodeValue(rangeFilter.lte) ? cursor : undefined;
+      for (const event of await this.findExactMatches(tenant, propertyName, rangeFilter.lte, sortProperty, SortOrder.Ascending, lteCursor, options)) {
         matches.push(event);
       }
     }
@@ -332,8 +332,21 @@ export class IndexLevel<T> {
     return matches;
   }
 
-  protected constructIndexedKey(prefix: string, propertyName: string, propertyValue?: string, sortValue?: string, key?: string): string {
-    const keyConstruction = [ prefix, propertyName ];
+  /**
+   * Construct a sortable index key to be used for each individual property of an indexed item.
+   * Although all of the properties are required to construct the key when inserting, we also use this function for creating a prefix.
+   *
+   * ex: sortProperty\u0000propertyName\u0000[propertyValue]\u0000[sortValue]\u0000[key]
+   *
+   * @param sortProperty the sorting property to construct the prefix of the key.
+   * @param propertyName the specific property name being indexed.
+   * @param propertyValue the optional specific property value being indexed.
+   * @param sortValue the optional value that determines the sort order in a lexicographical sorted way
+   * @param key the optional unique key of the item being indexed, this is used as a tiebreaker in case the other properties are the same.
+   * @returns a key to be used for sorted indexing within the LevelDB Index.
+   */
+  protected constructIndexedKey(sortProperty: string, propertyName: string, propertyValue?: string, sortValue?: string, key?: string): string {
+    const keyConstruction = [ sortProperty, propertyName ];
     if (propertyValue !== undefined) {
       keyConstruction.push(propertyValue);
     }
@@ -371,24 +384,25 @@ export class IndexLevel<T> {
 
     const { sortIndexes, indexes } = JSON.parse(serializedIndexes);
     const sortValue = sortIndexes[sortProperty];
+    // construct the starting points for each individual property within the filter.
     for (const propertyName in filter) {
       const propertyFilter = filter[propertyName];
-      const propertyValue = indexes[propertyName];
-      propertyCursors[propertyName] = this.extractCursorValue(cursor, propertyName, propertyFilter, sortProperty, sortValue, propertyValue);
+      const indexedValue = indexes[propertyName];
+      propertyCursors[propertyName] = this.extractCursorValue(cursor, propertyName, propertyFilter, sortProperty, sortValue, indexedValue);
     }
 
     return propertyCursors;
   }
 
   /**
-   * Extracts the specific 'gt' starting point values for each filtered property.
+   * Extracts the specific indexed key a a 'gt' starting point values for each filtered property.
    *
-   * @param cursor the key that was used to index.
+   * @param cursor the unique key of the item that was used to index
    * @param propertyName the indexed property name.
-   * @param propertyFilter the filter to extract a value from.
+   * @param propertyFilter the filter value to extract a value from.
    * @param sortProperty the sort property to use for creating the starting key.
    * @param sortValue the sort value to use when creating the starting key.
-   * @param propertyValue the property value for this specific cursor.
+   * @param indexedValue the property value for this specific cursor to be used.
    * @returns a string starting value 'gt' to use within a query, or a Map of them for a OneOfFilter.
    */
   private extractCursorValue(
@@ -397,25 +411,27 @@ export class IndexLevel<T> {
     propertyFilter: EqualFilter | OneOfFilter | RangeFilter,
     sortProperty: string,
     sortValue: string,
-    propertyValue: unknown
+    indexedValue: unknown
   ): string | Map<EqualFilter,string> {
-    const prefix = `__${sortProperty}`;
     let value : unknown;
 
-    // if filter is not an object, it's of type string | number | boolean
     if (typeof propertyFilter !== 'object') {
+      // if filter is not an object, it's of type string | number | boolean
+      // this is an exact filter. In this case we are matching for the propertyFilter exactly.
+      // the sort value is what determines the starting point.
       value = propertyFilter;
     } else {
       if (!Array.isArray(propertyFilter)) {
         // if it's not an array, it is a range filter.
         // the property value for the cursor should come from the indexes for the specific cursor
-        value = propertyValue;
+        value = indexedValue;
       } else {
-        // if the filter is an array we will create a map of propertyValue to cursor key for retrieval later.
+        // if the filter is an array it is an OR filter and will be treated like multiple exact filters.
+        // we create a map of propertyValue to cursor key for each individual propertyValue for retrieval later.
         const values = new Map<EqualFilter, string>();
         for (const propertyValue of new Set(propertyFilter)) {
           values.set(propertyValue, this.constructIndexedKey(
-            prefix,
+            sortProperty,
             propertyName,
             this.encodeValue(propertyValue),
             this.encodeValue(sortValue),
@@ -427,7 +443,7 @@ export class IndexLevel<T> {
     }
 
     return this.constructIndexedKey(
-      prefix,
+      sortProperty,
       propertyName,
       this.encodeValue(value),
       this.encodeValue(sortValue),
@@ -440,8 +456,8 @@ export class IndexLevel<T> {
    *  this is the third element in the key after splitting.
    *
    * ex:
-   *  key - __watermark\u0000dateCreated\u0000"2023-05-25T11:22:33.000000Z"\u000001HBY2E1TPY1W95SE0PEG2AM96\u0000bayfreigu....
-   *  returns "2023-05-25T11:22:33.000000Z"
+   *  key - sortProperty\u0000propertyName\u0000__propertyValue__\u0000sortValue\u0000dataKey
+   *  returns __propertyValue__
    *
    * @param key the constructed key that is used in the Index.
    * @returns a string that represents the unique key used when indexing an item.
@@ -456,8 +472,8 @@ export class IndexLevel<T> {
    *  this is the last element in the key after splitting.
    *
    * ex:
-   *  key - __watermark\u0000dateCreated\u0000"2023-05-25T11:22:33.000000Z"\u000001HBY2E1TPY1W95SE0PEG2AM96\u0000bayfreigu....
-   *  returns bayfreigu....
+   *  key - sortProperty\u0000propertyName\u0000propertyValue\u0000sortValue\u0000__dataKey__
+   *  returns __dataKey__
    *
    * @param key the constructed key that is used in the Index.
    * @returns a string that represents the unique key used when indexing an item.
