@@ -451,14 +451,6 @@ export class RecordsWrite {
       );
     }
 
-    // All protocol RecordsWrites must go through protocol auth, because protocolPath, contextId, and record type must be validated
-    if (this.message.descriptor.protocol !== undefined) {
-      await ProtocolAuthorization.authorize(tenant, this, this, messageStore);
-      return;
-    }
-
-    // Remainder of the code is for flat-space writes
-
     if (this.owner !== undefined) {
       // if incoming message is a write retained by this tenant, we by-design always allow
       // NOTE: the "owner === tenant" check is already done earlier in this method
@@ -468,6 +460,8 @@ export class RecordsWrite {
       return;
     } else if (this.author !== undefined && this.authorSignaturePayload!.permissionsGrantId !== undefined) {
       await RecordsGrantAuthorization.authorizeWrite(tenant, this, this.author, messageStore);
+    } else if (this.message.descriptor.protocol !== undefined) {
+      await ProtocolAuthorization.authorize(tenant, this, this, messageStore);
     } else {
       throw new Error('message failed authorization');
     }
