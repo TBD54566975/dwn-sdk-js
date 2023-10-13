@@ -120,6 +120,9 @@ export class RecordsDeleteHandler implements MethodHandler {
     }
   }
 
+  /**
+  * Indexed properties needed for MessageStore indexing.
+  */
   static constructIndexes(recordsDelete: RecordsDelete, recordsWrite: RecordsWriteMessage): Record<string, string> {
     const message = recordsDelete.message;
     const descriptor = { ...message.descriptor };

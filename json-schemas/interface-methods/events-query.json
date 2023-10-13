@@ -4,6 +4,7 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
+    "authorization",
     "descriptor"
   ],
   "properties": {
