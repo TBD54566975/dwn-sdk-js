@@ -134,6 +134,7 @@ export class EventLogLevel implements EventLog {
     }
 
     await watermarkLog.batch(ops);
+    await cidLog.batch(cidOps);
     await Promise.all(indexDeletePromises);
     return numEventsDeleted;
   }
