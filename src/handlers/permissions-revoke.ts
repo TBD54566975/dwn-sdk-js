@@ -87,7 +87,7 @@ export class PermissionsRevokeHandler implements MethodHandler {
     const indexes = PermissionsRevokeHandler.constructIndexes(permissionsRevoke);
     await this.messageStore.put(tenant, message, indexes);
 
-    // get associated grant for indexing
+    // get additional indexes for the associated grant message.
     const additionalIndexes = await PermissionsRevokeHandler.constructAdditionalIndexes(permissionsGrantMessage);
     await this.eventLog.append(tenant, await Message.getCid(message), { ...indexes, ...additionalIndexes });
 

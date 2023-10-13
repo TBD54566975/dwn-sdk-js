@@ -31,7 +31,7 @@ export class IndexLevel<T> {
   constructor(private db: LevelWrapper<string>) {}
 
   /**
-   * Index an item using information that will allow it to be queried for.
+   * Put an item into the index using information that will allow it to be queried for.
    *
    * @param tenant
    * @param key a unique key that represents the item being indexed, this is also used as the cursor value in a query.
@@ -40,7 +40,7 @@ export class IndexLevel<T> {
    * @param sortIndexes - (key-value pairs) to be used for sorting the index. Must include at least one sorting property.
    * @param options IndexLevelOptions that include an AbortSignal.
    */
-  async index(
+  async put(
     tenant: string,
     key: string,
     value: T,
@@ -222,7 +222,7 @@ export class IndexLevel<T> {
     }
   }
 
-  protected async findExactMatches(
+  private async findExactMatches(
     tenant:string,
     propertyName: string,
     propertyValue: unknown,
@@ -310,26 +310,35 @@ export class IndexLevel<T> {
       matches.push({ key: dataKey, value: JSON.parse(value) });
     }
 
+    // we gather the lte matches separately to include before or after the results depending on the sort.
+    const lteMatches:IndexedItem<T>[] = [];
     if ('lte' in rangeFilter) {
       // When `lte` is used, we must also query the exact match explicitly because the exact match will not be included in the iterator above.
       // This is due to the extra data appended to the (property + value) key prefix, e.g.
       // the key 'watermark\u0000dateCreated\u0000"2023-05-25T11:22:33.000000Z"\u000001HBY2E1TPY1W95SE0PEG2AM96\u0000bayfreigu....'
       // would be considered greater than { lte: 'watermark\u0000dateCreated\u0000"2023-05-25T11:22:33.000000Z"` } used in the iterator options,
       // thus would not be included in the iterator even though we'd like it to be.
-      // we always sort in ascending for exact matches here because we reverse the entire result set later if necessary.
-      // we also only include the cursor if it is relevant to the exact property in the 'lte' filter.
+      //
+      // we also only include the cursor ONLY if it is relevant to the exact property in the 'lte' filter.
       const lteCursor = cursor && this.extractValueFromKey(cursor) === this.encodeValue(rangeFilter.lte) ? cursor : undefined;
-      for (const event of await this.findExactMatches(tenant, propertyName, rangeFilter.lte, sortProperty, SortOrder.Ascending, lteCursor, options)) {
-        matches.push(event);
+      for (const item of await this.findExactMatches(tenant, propertyName, rangeFilter.lte, sortProperty, sortDirection, lteCursor, options)) {
+        lteMatches.push(item);
       }
     }
 
-    // if we iterated in reverse the results are reversed as well so we need to correct that.
-    if (iteratorOptions.reverse === true || sortDirection !== SortOrder.Ascending) {
+    // if the iterator is reversed and the results should be in Ascending order, we reverse the iterated matches.
+    // if the iterator is not reversed and the results should be in Descending order, we also reverse the iterated matches.
+    if ((iteratorOptions.reverse === true && sortDirection === SortOrder.Ascending) ||
+      (iteratorOptions.reverse !== true && sortDirection === SortOrder.Descending)) {
       matches.reverse();
     }
 
-    return matches;
+    // the 'lteMatches' are already sorted, but depending on the sort we add them before or after the range matches.
+    if (sortDirection === SortOrder.Ascending) {
+      return [...matches, ...lteMatches];
+    } else {
+      return [...lteMatches, ...matches];
+    }
   }
 
   /**
