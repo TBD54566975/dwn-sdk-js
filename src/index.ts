@@ -1,7 +1,7 @@
 // export everything that we want to be consumable
 export type { DwnConfig } from './dwn.js';
 export type { DwnServiceEndpoint, ServiceEndpoint, DidDocument, DidResolutionResult, DidResolutionMetadata, DidDocumentMetadata, VerificationMethod } from './did/did-resolver.js';
-export type { EventLog, Event, GetEventsOptions } from './types/event-log.js';
+export type { EventLog, Event, FilteredQuery, GetEventsOptions } from './types/event-log.js';
 export type { EventsGetMessage, EventsGetReply } from './types/event-types.js';
 export type { Filter, GenericMessage, MessageSort, Pagination } from './types/message-types.js';
 export type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
