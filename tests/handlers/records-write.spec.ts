@@ -2152,7 +2152,7 @@ export function testRecordsWriteHandler(): void {
 
           const reply = await dwn.handleRecordsWrite(alice.did, credentialApplication.message, credentialApplication.dataStream);
           expect(reply.status.code).to.equal(400);
-          expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationIncorrectProtocolPath);
+          expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationParentlessIncorrectProtocolPath);
         });
 
         it('should fail authorization if given `dataFormat` is mismatching with the dataFormats in protocol definition', async () => {
@@ -2465,7 +2465,7 @@ export function testRecordsWriteHandler(): void {
 
           reply = await dwn.handleRecordsWrite(pfi.did, fulfillmentMessageData.message, fulfillmentMessageData.dataStream);
           expect(reply.status.code).to.equal(400);
-          expect(reply.status.detail).to.contain('no parent found');
+          expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationIncorrectProtocolPath);
         });
 
         it('should 400 if expected CID of `encryption` mismatches the `encryptionCid` in `authorization`', async () => {

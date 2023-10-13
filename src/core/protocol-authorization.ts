@@ -25,10 +25,6 @@ export class ProtocolAuthorization {
     incomingMessage: RecordsWrite,
     messageStore: MessageStore,
   ): Promise<void> {
-    // fetch ancestor message chain
-    const ancestorMessageChain: RecordsWriteMessage[] =
-      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, incomingMessage, messageStore);
-
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
       tenant,
@@ -43,9 +39,10 @@ export class ProtocolAuthorization {
     );
 
     // validate `protocolPath`
-    ProtocolAuthorization.verifyProtocolPath(
+    await ProtocolAuthorization.verifyProtocolPath(
+      tenant,
       incomingMessage,
-      ancestorMessageChain,
+      messageStore,
     );
 
     // get the rule set for the inbound message
@@ -172,6 +169,8 @@ export class ProtocolAuthorization {
       };
       const { messages: parentMessages } = await messageStore.query(tenant, [ query ]);
 
+      // We already check the immediate parent in `verifyProtocolPath`, so if it triggers,
+      // it means a bug that caused an invalid message to be saved to the DWN.
       if (parentMessages.length === 0) {
         throw new Error(`no parent found with ID ${currentParentId}`);
       }
@@ -206,27 +205,41 @@ export class ProtocolAuthorization {
    * Verifies the `protocolPath` declared in the given message (if it is a RecordsWrite) matches the path of actual ancestor chain.
    * @throws {DwnError} if fails verification.
    */
-  private static verifyProtocolPath(
+  private static async verifyProtocolPath(
+    tenant: string,
     inboundMessage: RecordsWrite,
-    ancestorMessageChain: RecordsWriteMessage[],
-  ): void {
-    const declaredProtocolPath = (inboundMessage as RecordsWrite).message.descriptor.protocolPath!;
+    messageStore: MessageStore
+  ): Promise<void> {
+    const declaredProtocolPath = inboundMessage.message.descriptor.protocolPath!;
     const declaredTypeName = ProtocolAuthorization.getTypeName(declaredProtocolPath);
 
-    let ancestorProtocolPath: string = '';
-    for (const ancestor of ancestorMessageChain) {
-      const protocolPath = ancestor.descriptor.protocolPath!;
-      const ancestorTypeName = ProtocolAuthorization.getTypeName(protocolPath);
-      ancestorProtocolPath += `${ancestorTypeName}/`; // e.g. `foo/bar/`, notice the trailing slash
-    }
-
-    const actualProtocolPath = ancestorProtocolPath + declaredTypeName; // e.g. `foo/bar/baz`
-
-    if (declaredProtocolPath !== actualProtocolPath) {
-      throw new DwnError(
-        DwnErrorCode.ProtocolAuthorizationIncorrectProtocolPath,
-        `Declared protocol path '${declaredProtocolPath}' is not the same as actual protocol path '${actualProtocolPath}'.`
-      );
+    const parentId = inboundMessage.message.descriptor.parentId;
+    if (parentId === undefined) {
+      if (declaredProtocolPath !== declaredTypeName) {
+        throw new DwnError(
+          DwnErrorCode.ProtocolAuthorizationParentlessIncorrectProtocolPath,
+          `Declared protocol path '${declaredProtocolPath}' is not valid for records with no parentId'.`
+        );
+      }
+    } else {
+      const protocol = inboundMessage.message.descriptor.protocol!;
+      const contextId = inboundMessage.message.contextId!;
+      const query: Filter = {
+        interface : DwnInterfaceName.Records,
+        method    : DwnMethodName.Write,
+        protocol,
+        contextId,
+        recordId  : parentId
+      };
+      const { messages: parentMessages } = await messageStore.query(tenant, [ query ]);
+      const parentProtocolPath = (parentMessages as RecordsWriteMessage[])[0]?.descriptor?.protocolPath;
+      const actualProtocolPath = `${parentProtocolPath}/${declaredTypeName}`;
+      if (parentProtocolPath === undefined || actualProtocolPath !== declaredProtocolPath) {
+        throw new DwnError(
+          DwnErrorCode.ProtocolAuthorizationIncorrectProtocolPath,
+          `Could not find matching parent record to verify declared protocol path '${declaredProtocolPath}'.`
+        );
+      }
     }
   }
 
