@@ -1,4 +1,4 @@
-import type { FilteredQuery } from '../store/index-level.js';
+import type { FilteredQuery } from '../types/event-log.js';
 import type { LevelWrapperBatchOperation } from '../store/level-wrapper.js';
 import type { ULIDFactory } from 'ulidx';
 import type { Event, EventLog, GetEventsOptions } from '../types/event-log.js';
