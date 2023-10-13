@@ -15,8 +15,7 @@ export class Encoder {
 
   public static base64UrlToObject(base64urlString: string): any {
     const payloadBytes = base64url.baseDecode(base64urlString);
-    const payloadString = Encoder.bytesToString(payloadBytes);
-    const payloadObject = JSON.parse(payloadString);
+    const payloadObject = Encoder.bytesToObject(payloadBytes);
     return payloadObject;
   }
 
@@ -28,6 +27,12 @@ export class Encoder {
   public static bytesToString(content: Uint8Array): string {
     const bytes = textDecoder.decode(content);
     return bytes;
+  }
+
+  public static bytesToObject(content: Uint8Array): object {
+    const contentString = Encoder.bytesToString(content);
+    const contentObject = JSON.parse(contentString);
+    return contentObject;
   }
 
   public static objectToBytes(obj: Record<string, any>): Uint8Array {

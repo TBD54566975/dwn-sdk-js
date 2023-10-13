@@ -22,7 +22,7 @@ describe('RecordsRead', () => {
           recordId: 'anything',
         },
         authorizationSigner : Jws.createSigner(alice),
-        date                : currentTime
+        messageTimestamp    : currentTime
       });
 
       expect(recordsRead.message.descriptor.messageTimestamp).to.equal(currentTime);

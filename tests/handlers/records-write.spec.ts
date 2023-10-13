@@ -367,7 +367,7 @@ export function testRecordsWriteHandler(): void {
             author: alice,
             protocolDefinition
           });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
           expect(protocolWriteReply.status.code).to.equal(202);
 
           // Sanity test that Bob cannot write to a protocol record to Alice's DWN
@@ -446,7 +446,7 @@ export function testRecordsWriteHandler(): void {
             author: carol,
             protocolDefinition
           });
-          const protocolWriteReply = await dwn.processMessage(carol.did, protocolsConfig.message, protocolsConfig.dataStream);
+          const protocolWriteReply = await dwn.processMessage(carol.did, protocolsConfig.message);
           expect(protocolWriteReply.status.code).to.equal(202);
 
           // Test that Carol is not able to store the message Alice created
