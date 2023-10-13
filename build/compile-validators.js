@@ -21,7 +21,7 @@ import Authorization from '../json-schemas/authorization.json' assert { type: 'j
 import AuthorizationOwner from '../json-schemas/authorization-owner.json' assert { type: 'json' };
 import Definitions from '../json-schemas/definitions.json' assert { type: 'json' };
 import EventsFilter from '../json-schemas/interface-methods/events-filter.json' assert { type: 'json' };
-import EventsGet from '../json-schemas/events/events-get.json' assert { type: 'json' };
+import EventsGet from '../json-schemas/interface-methods/events-get.json' assert { type: 'json' };
 import EventsQuery from '../json-schemas/interface-methods/events-query.json' assert { type: 'json' };
 import GeneralJwk from '../json-schemas/jwk/general-jwk.json' assert { type: 'json' };
 import GeneralJws from '../json-schemas/general-jws.json' assert { type: 'json' };
