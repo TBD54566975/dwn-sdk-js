@@ -301,7 +301,7 @@ export function testPermissionsGrantHandler(): void {
           const reply = await dwn.processMessage(alice.did, message);
           expect(reply.status.code).to.equal(202);
 
-          const events = await eventLog.queryEvents(alice.did, [{ filter: { schema: normalizeSchemaUrl('schema1') }, sort: 'watermark', sortDirection: SortOrder.Ascending }]);
+          const events = await eventLog.queryEvents(alice.did, [{ filter: { schema: normalizeSchemaUrl('schema1') }, sortProperty: 'watermark', sortDirection: SortOrder.Ascending }]);
           expect(events.length).to.equal(1);
 
           const messageCid = await Message.getCid(message);

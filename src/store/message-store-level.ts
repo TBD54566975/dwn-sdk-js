@@ -100,7 +100,7 @@ export class MessageStoreLevel implements MessageStore {
     // note: we are always sorting by messageTimestamp Ascending without using a cursor here since we don't yet index other sort properties
     const resultIds = await this.index.query(
       tenant,
-      filters.map(filter => ({ filter: { ...filter, tenant }, sort: 'messageTimestamp', sortDirection: SortOrder.Ascending })),
+      filters.map(filter => ({ filter: { ...filter, tenant }, sortProperty: 'messageTimestamp', sortDirection: SortOrder.Ascending })),
       options
     );
 

@@ -100,7 +100,7 @@ export class EventsQuery extends Message<EventsQueryMessage> {
       }
 
       // add to event log filters array, sorted by the watermark property
-      eventLogFilters.push({ filter: filterCopy as Filter, sort: 'watermark', sortDirection: SortOrder.Ascending, cursor: watermark });
+      eventLogFilters.push({ filter: filterCopy as Filter, sortProperty: 'watermark', sortDirection: SortOrder.Ascending, cursor: watermark });
     }
 
     return eventLogFilters;
