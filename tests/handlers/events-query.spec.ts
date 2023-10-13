@@ -1,4 +1,3 @@
-import type { EventsQueryReply } from '../../src/types/event-types.js';
 import type {
   DataStore,
   EventLog,
@@ -78,7 +77,7 @@ export function testEventsQueryHandler(): void {
         author  : alice,
         filters : [{ dateCreated: { from: lastDayOf2021 } }],
       });
-      const reply1 = await dwn.processMessage(alice.did, eventsQuery1.message) as EventsQueryReply;
+      const reply1 = await dwn.processMessage(alice.did, eventsQuery1.message);
       expect(reply1.status.code).to.equal(200);
       expect(reply1.events?.length).to.equal(3);
       expect(reply1.events![0].messageCid).to.equal(await Message.getCid(write2.message!));
@@ -91,7 +90,7 @@ export function testEventsQueryHandler(): void {
         author  : alice,
         filters : [{ dateCreated: { to: lastDayOf2022 } }],
       });
-      const reply2 = await dwn.processMessage(alice.did, eventsQuery2.message) as EventsQueryReply;
+      const reply2 = await dwn.processMessage(alice.did, eventsQuery2.message);
       expect(reply2.status.code).to.equal(200);
       expect(reply2.events?.length).to.equal(2);
       expect(reply2.events![0].messageCid).to.equal(await Message.getCid(write1.message!));
@@ -103,7 +102,7 @@ export function testEventsQueryHandler(): void {
         author  : alice,
         filters : [{ dateCreated: { from: lastDayOf2022, to: lastDayOf2023 } }],
       });
-      const reply3 = await dwn.processMessage(alice.did, eventsQuery3.message) as EventsQueryReply;
+      const reply3 = await dwn.processMessage(alice.did, eventsQuery3.message);
       expect(reply3.status.code).to.equal(200);
       expect(reply3.events?.length).to.equal(1);
       expect(reply3.events![0].messageCid).to.equal(await Message.getCid(write3.message!));
@@ -113,7 +112,7 @@ export function testEventsQueryHandler(): void {
         author  : alice,
         filters : [{ dateCreated: { from: firstDayOf2022, to: firstDayOf2023 } }],
       });
-      const reply4 = await dwn.processMessage(alice.did, eventsQuery4.message) as EventsQueryReply;
+      const reply4 = await dwn.processMessage(alice.did, eventsQuery4.message);
       expect(reply4.status.code).to.equal(200);
       expect(reply4.events?.length).to.equal(1);
       expect(reply4.events![0].messageCid).to.equal(await Message.getCid(write2.message!));
