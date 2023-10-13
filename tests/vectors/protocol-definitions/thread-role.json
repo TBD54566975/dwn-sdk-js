@@ -1,6 +1,6 @@
 {
   "protocol": "http://thread-role.xyz",
-  "published": false,
+  "published": true,
   "types": {
     "thread": {},
     "participant": {},
@@ -20,6 +20,10 @@
           {
             "role": "thread/participant",
             "can": "read"
+          },
+          {
+            "role": "thread/participant",
+            "can": "write"
           }
         ]
       },

@@ -49,11 +49,11 @@ export class ProtocolsQueryHandler implements MethodHandler {
     };
     removeUndefinedProperties(query);
 
-    const { messages: entries } = await this.messageStore.query(tenant, [ query ]);
+    const { messages } = await this.messageStore.query(tenant, [ query ]);
 
     return {
-      status: { code: 200, detail: 'OK' },
-      entries
+      status  : { code: 200, detail: 'OK' },
+      entries : messages as ProtocolsConfigureMessage[]
     };
   };
 
