@@ -140,12 +140,12 @@ export class IndexLevel<T> {
   }
 
   async executeSingleFilterQuery(tenant:string, query: FilteredQuery, matches: Map<string, T>, options?: IndexLevelOptions): Promise<void> {
-    const { filter, sort, sortDirection, cursor } = query;
+    const { filter, sortProperty , sortDirection, cursor } = query;
 
     // get beginning points for the cursor if provided.
     // returns undefined if cursor is defined but could not fetch the necessary information.
     // this is usually an invalid cursor. In this case we return zero results.
-    const propertyCursors = await this.getFilterCursors(tenant, filter, sort, cursor);
+    const propertyCursors = await this.getFilterCursors(tenant, filter, sortProperty, cursor);
     if (propertyCursors === undefined) {
       return;
     }
@@ -168,21 +168,21 @@ export class IndexLevel<T> {
           propertyNameToPromises[propertyName] = [];
           for (const propertyValue of new Set(propertyFilter)) {
             const cursor = cursorMap ? cursorMap.get(propertyValue) : undefined;
-            const exactMatchesPromise = this.findExactMatches(tenant, propertyName, propertyValue, sort, sortDirection, cursor, options);
+            const exactMatchesPromise = this.findExactMatches(tenant, propertyName, propertyValue, sortProperty, sortDirection, cursor, options);
             propertyNameToPromises[propertyName].push(exactMatchesPromise);
           }
         } else {
           // `propertyFilter` is a `RangeFilter`
           // if RangeFilter use the string curser associated with the `propertyName`
           const cursor = propertyCursors[propertyName] as string | undefined;
-          const rangeMatchesPromise = this.findRangeMatches(tenant, propertyName, propertyFilter, sort, sortDirection, cursor, options);
+          const rangeMatchesPromise = this.findRangeMatches(tenant, propertyName, propertyFilter, sortProperty, sortDirection, cursor, options);
           propertyNameToPromises[propertyName] = [rangeMatchesPromise];
         }
       } else {
         // propertyFilter is an EqualFilter, meaning it is a non-object primitive type
         // if EqualFilter use the string cursor associated with the `propertyName`
         const cursor = propertyCursors[propertyName] as string | undefined;
-        const exactMatchesPromise = this.findExactMatches(tenant, propertyName, propertyFilter, sort, sortDirection, cursor, options);
+        const exactMatchesPromise = this.findExactMatches(tenant, propertyName, propertyFilter, sortProperty, sortDirection, cursor, options);
         propertyNameToPromises[propertyName] = [exactMatchesPromise];
       }
     }
