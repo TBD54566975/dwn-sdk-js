@@ -6,7 +6,7 @@ import type { MethodHandler } from './types/method-handler.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsWriteHandlerOptions } from './handlers/records-write.js';
 import type { TenantGate } from './core/tenant-gate.js';
-import type { EventsGetMessage, EventsGetReply } from './types/event-types.js';
+import type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply } from './types/event-types.js';
 import type { GenericMessageReply, UnionMessageReply } from './core/message-reply.js';
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
 import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from './types/permissions-types.js';
@@ -97,6 +97,7 @@ export class Dwn {
    * @param tenant The tenant DID to route the given message to.
    */
   public async processMessage(tenant: string, rawMessage: EventsGetMessage): Promise<EventsGetReply>;
+  public async processMessage(tenant: string, rawMessage: EventsQueryMessage): Promise<EventsQueryReply>;
   public async processMessage(tenant: string, rawMessage: MessagesGetMessage): Promise<MessagesGetReply>;
   public async processMessage(tenant: string, rawMessage: ProtocolsConfigureMessage): Promise<GenericMessageReply>;
   public async processMessage(tenant: string, rawMessage: ProtocolsQueryMessage): Promise<ProtocolsQueryReply>;
