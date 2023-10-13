@@ -451,8 +451,6 @@ export class RecordsWrite {
       );
     }
 
-    // Remainder of the code is for flat-space writes
-
     if (this.owner !== undefined) {
       // if incoming message is a write retained by this tenant, we by-design always allow
       // NOTE: the "owner === tenant" check is already done earlier in this method

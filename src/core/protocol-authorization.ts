@@ -444,9 +444,8 @@ export class ProtocolAuthorization {
    * @throws {Error} if fails verification
    */
   private static async verifyActionCondition(tenant: string, incomingMessage: RecordsRead | RecordsWrite, messageStore: MessageStore): Promise<void> {
-    if (incomingMessage.message.descriptor.method === DwnMethodName.Read) {
-      // Currently no conditions for reads
-    } else if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
+    // Currently no conditions for methods other than Write
+    if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
       const recordsWrite = incomingMessage as RecordsWrite;
       const isInitialWrite = await recordsWrite.isInitialWrite();
       if (!isInitialWrite) {
