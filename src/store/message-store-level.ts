@@ -97,29 +97,52 @@ export class MessageStoreLevel implements MessageStore {
     const messages: GenericMessage[] = [];
     // note: injecting tenant into filters to allow querying with an "empty" filter.
     // if there are no other filters present it will return all the messages the tenant.
+    // note: we are always sorting by messageTimestamp Ascending without using a cursor here since we don't yet index other sort properties
     const resultIds = await this.index.query(
       tenant,
-      filters.map(filter => ({ filter: { ...filter, tenant }, sort: 'messageTimestamp', sortDirection: SortOrder.Ascending, cursor: pagination?.cursor })),
+      filters.map(filter => ({ filter: { ...filter, tenant }, sort: 'messageTimestamp', sortDirection: SortOrder.Ascending })),
       options
     );
 
+    // as an optimization for large data sets, we are finding the message object which matches the paginationMessageCid here.
+    // we can use this within the pagination function after sorting to determine the starting point of the array in a more efficient way.
+    let paginationMessage: GenericMessage | undefined;
     for (const id of resultIds) {
       const message = await this.get(tenant, id, options);
       if (message) { messages.push(message); }
+      if (pagination?.cursor && pagination.cursor === id) {
+        paginationMessage = message;
+      }
+    }
+
+    //if pagination cursor is invalid, return empty results
+    if (pagination?.cursor && paginationMessage === undefined) {
+      return { messages: [] };
     }
 
     const sortedRecords = await MessageStoreLevel.sortMessages(messages, messageSort);
-    return this.paginateMessages(sortedRecords, pagination);
+    return this.paginateMessages(sortedRecords, paginationMessage, pagination);
   }
 
   private async paginateMessages(
     messages: GenericMessage[],
+    paginationMessage?: GenericMessage,
     pagination: Pagination = { }
   ): Promise<{ messages: GenericMessage[], cursor?: string } > {
     const { limit } = pagination;
+    if (paginationMessage === undefined && limit === undefined) {
+      return { messages }; // return all without pagination pointer.
+    }
 
-    const end = limit === undefined ? undefined : limit;
-    const results = messages.slice(0, end);
+    // we are passing the pagination message object for an easier lookup
+    // since we know this object exists within the array if passed, we can assume that it will always have a value greater than -1
+    // TODO: #506 - Improve performance by modifying filters based on the pagination cursor (https://github.com/TBD54566975/dwn-sdk-js/issues/506)
+    const cursorIndex = paginationMessage ? messages.indexOf(paginationMessage) : undefined;
+
+    // the first element of the returned results is always the message immediately following the cursor.
+    const start = cursorIndex === undefined ? 0 : cursorIndex + 1;
+    const end = limit === undefined ? undefined : start + limit;
+    const results = messages.slice(start, end);
 
     // we only return a cursor cursor if there are more results
     const hasMoreResults = end !== undefined && end < messages.length;
