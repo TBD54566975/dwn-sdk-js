@@ -18,7 +18,7 @@ type EventLogLevelConfig = {
 };
 
 const WATERMARKS_SUBLEVEL_NAME = 'watermarks';
-const CID_WATERMARKS_SUBLEVEL_NAME = 'cid_watermarks';
+const CIDS_SUBLEVEL_NAME = 'cids';
 
 export class EventLogLevel implements EventLog {
   db: LevelWrapper<string>;
@@ -61,11 +61,11 @@ export class EventLogLevel implements EventLog {
   async append(tenant: string, messageCid: string, indexes: { [key:string]: unknown }): Promise<string> {
     const tenantEventLog = await this.db.partition(tenant);
     const watermarkLog = await tenantEventLog.partition(WATERMARKS_SUBLEVEL_NAME);
-    const cidLog = await tenantEventLog.partition(CID_WATERMARKS_SUBLEVEL_NAME);
+    const cidLog = await tenantEventLog.partition(CIDS_SUBLEVEL_NAME);
     const watermark = this.ulidFactory();
     await watermarkLog.put(watermark, messageCid);
     await cidLog.put(messageCid, watermark);
-    await this.index.index(tenant, watermark, { messageCid, watermark }, indexes, { watermark });
+    await this.index.put(tenant, watermark, { messageCid, watermark }, indexes, { watermark });
     return watermark;
   }
 
@@ -114,13 +114,14 @@ export class EventLogLevel implements EventLog {
     }
 
     const tenantEventLog = await this.db.partition(tenant);
-    const cidLog = await tenantEventLog.partition(CID_WATERMARKS_SUBLEVEL_NAME);
+    const cidLog = await tenantEventLog.partition(CIDS_SUBLEVEL_NAME);
     const watermarkLog = await tenantEventLog.partition(WATERMARKS_SUBLEVEL_NAME);
 
     const ops: LevelWrapperBatchOperation<string>[] = [];
     const cidOps: LevelWrapperBatchOperation<string>[] = [];
 
     let numEventsDeleted = 0;
+    const indexDeletePromises: Promise<void>[] = [];
     for (const messageCid of messageCids) {
       const watermark = await cidLog.get(messageCid);
       if (watermark === undefined) {
@@ -128,11 +129,12 @@ export class EventLogLevel implements EventLog {
       }
       ops.push({ type: 'del', key: watermark });
       cidOps.push({ type: 'del', key: messageCid });
-      await this.index.delete(tenant, messageCid);
+      indexDeletePromises.push(this.index.delete(tenant, messageCid));
       numEventsDeleted += 1;
     }
 
     await watermarkLog.batch(ops);
+    await Promise.all(indexDeletePromises);
     return numEventsDeleted;
   }
 }
