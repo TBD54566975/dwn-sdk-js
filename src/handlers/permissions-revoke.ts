@@ -84,11 +84,11 @@ export class PermissionsRevokeHandler implements MethodHandler {
     }
 
     // Store incoming PermissionsRevoke
-    const indexes = PermissionsRevokeHandler.constructIndexes(permissionsRevoke);
+    const indexes = PermissionsRevokeHandler.constructMessageStoreIndexes(permissionsRevoke);
     await this.messageStore.put(tenant, message, indexes);
 
     // get additional indexes for the associated grant message.
-    const additionalIndexes = await PermissionsRevokeHandler.constructAdditionalIndexes(permissionsGrantMessage);
+    const additionalIndexes = await PermissionsRevokeHandler.constructAdditionalEventLogIndexes(permissionsGrantMessage);
     await this.eventLog.append(tenant, await Message.getCid(message), { ...indexes, ...additionalIndexes });
 
     // Delete existing revokes which are all newer than the incoming message
@@ -121,7 +121,7 @@ export class PermissionsRevokeHandler implements MethodHandler {
   /**
   * Indexed properties needed for MessageStore indexing.
   */
-  static constructIndexes(
+  static constructMessageStoreIndexes(
     permissionsRevoke: PermissionsRevoke,
   ): Record<string, string> {
     const { descriptor } = permissionsRevoke.message;
@@ -137,7 +137,7 @@ export class PermissionsRevokeHandler implements MethodHandler {
   /**
    * Additional indexed properties that are not needed within the MessageStore but are necessary within the EventLog.
    */
-  static async constructAdditionalIndexes(
+  static async constructAdditionalEventLogIndexes(
     grant: PermissionsGrantMessage,
   ): Promise<Record<string, string>> {
     let indexes: Record<string, any> = {};

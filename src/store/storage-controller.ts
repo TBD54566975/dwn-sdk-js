@@ -64,7 +64,7 @@ export class StorageController {
         if (existingMessageIsInitialWrite) {
           const existingRecordsWrite = await RecordsWrite.parse(message as RecordsWriteMessage);
           const isLatestBaseState = false;
-          const indexes = await RecordsWriteHandler.constructIndexes(existingRecordsWrite, isLatestBaseState);
+          const indexes = await RecordsWriteHandler.constructMessageStoreIndexes(existingRecordsWrite, isLatestBaseState);
           const writeMessage = message as RecordsWriteMessageWithOptionalEncodedData;
           delete writeMessage.encodedData;
           await messageStore.put(tenant, writeMessage, indexes);

@@ -80,7 +80,7 @@ export class RecordsWriteHandler implements MethodHandler {
     }
 
     const isLatestBaseState = true;
-    const indexes = await RecordsWriteHandler.constructIndexes(recordsWrite, isLatestBaseState);
+    const indexes = await RecordsWriteHandler.constructMessageStoreIndexes(recordsWrite, isLatestBaseState);
 
     // if data is below a certain threshold, we embed the data directly into the message for storage in MessageStore.
     let messageWithOptionalEncodedData: RecordsWriteMessageWithOptionalEncodedData = message;
@@ -239,7 +239,7 @@ export class RecordsWriteHandler implements MethodHandler {
     }
   }
 
-  static async constructIndexes(
+  static async constructMessageStoreIndexes(
     recordsWrite: RecordsWrite,
     isLatestBaseState: boolean
   ): Promise<Record<string, string>> {

@@ -53,7 +53,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     // write the incoming message to DB if incoming message is newest
     let messageReply: GenericMessageReply;
     if (incomingMessageIsNewest) {
-      const indexes = ProtocolsConfigureHandler.constructIndexes(protocolsConfigure);
+      const indexes = ProtocolsConfigureHandler.constructMessageStoreIndexes(protocolsConfigure);
 
       const messageCid = await Message.getCid(message);
       await this.messageStore.put(tenant, message, indexes);
@@ -84,7 +84,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     return messageReply;
   };
 
-  static constructIndexes(protocolsConfigure: ProtocolsConfigure): { [key: string]: string | boolean } {
+  static constructMessageStoreIndexes(protocolsConfigure: ProtocolsConfigure): { [key: string]: string | boolean } {
     // strip out `definition` as it is not indexable
     const { messageTimestamp, definition, ...propertiesToIndex } = protocolsConfigure.message.descriptor;
     const { author } = protocolsConfigure;

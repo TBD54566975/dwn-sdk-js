@@ -67,6 +67,6 @@ export async function authorize(tenant: string, incomingMessage: { author: strin
   if (incomingMessage.author === tenant) {
     return;
   } else {
-    throw new Error('message failed authorization, permission grant check not yet implemented');
+    throw new Error('message failed authorization. Only the tenant is authorized.');
   }
 }

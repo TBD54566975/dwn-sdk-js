@@ -67,12 +67,12 @@ export class RecordsDeleteHandler implements MethodHandler {
         status: { code: 404, detail: 'Not Found' }
       };
     }
-    const indexes = await RecordsDeleteHandler.constructIndexes(recordsDelete);
+    const indexes = await RecordsDeleteHandler.constructMessageStoreIndexes(recordsDelete);
     await this.messageStore.put(tenant, message, indexes);
 
     // add additional indexes to the eventLog to be be able to query DeleteEvents for SelectiveSync.
     const recordsWrite = await RecordsWrite.getInitialWrite(existingMessages);
-    const additionalIndexes = RecordsDeleteHandler.constructAdditionalIndexes(recordsWrite);
+    const additionalIndexes = RecordsDeleteHandler.constructAdditionalEventLogIndexes(recordsWrite);
     const messageCid = await Message.getCid(message);
     await this.eventLog.append(tenant, messageCid, { ...indexes, ...additionalIndexes });
 
@@ -90,7 +90,7 @@ export class RecordsDeleteHandler implements MethodHandler {
   /**
   * Indexed properties needed for MessageStore indexing.
   */
-  static async constructIndexes(recordsDelete: RecordsDelete): Promise<Record<string, string>> {
+  static async constructMessageStoreIndexes(recordsDelete: RecordsDelete): Promise<Record<string, string>> {
     const message = recordsDelete.message;
     const descriptor = { ...message.descriptor };
 
@@ -110,7 +110,7 @@ export class RecordsDeleteHandler implements MethodHandler {
   /**
    * Additional indexed properties that are not needed within the MessageStore but are necessary within the EventLog.
    */
-  static constructAdditionalIndexes(recordsWrite: RecordsWriteMessage): Record<string, string> {
+  static constructAdditionalEventLogIndexes(recordsWrite: RecordsWriteMessage): Record<string, string> {
     const { protocol, protocolPath, recipient, schema, parentId, dataFormat, dateCreated } = recordsWrite.descriptor;
 
     const indexes:Record<string, any> = {

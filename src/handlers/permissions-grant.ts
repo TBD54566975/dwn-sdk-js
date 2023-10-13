@@ -30,14 +30,14 @@ export class PermissionsGrantHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }
 
-    const indexes = PermissionsGrantHandler.constructIndexes(permissionsGrant);
+    const indexes = PermissionsGrantHandler.constructMessageStoreIndexes(permissionsGrant);
 
     // If we have not seen this message before, store it
     const messageCid = await Message.getCid(message);
     const existingMessage = await this.messageStore.get(tenant, messageCid);
     if (existingMessage === undefined) {
       await this.messageStore.put(tenant, message, indexes);
-      const additionalIndexes = PermissionsGrantHandler.constructAdditionalIndexes(permissionsGrant);
+      const additionalIndexes = PermissionsGrantHandler.constructAdditionalEventLogIndexes(permissionsGrant);
       await this.eventLog.append(tenant, messageCid, { ...indexes, ...additionalIndexes });
     }
 
@@ -49,7 +49,7 @@ export class PermissionsGrantHandler implements MethodHandler {
   /**
   * Indexed properties needed for MessageStore indexing.
   */
-  static constructIndexes(
+  static constructMessageStoreIndexes(
     permissionsGrant: PermissionsGrant,
   ): Record<string, string> {
     const message = permissionsGrant.message;
@@ -65,7 +65,7 @@ export class PermissionsGrantHandler implements MethodHandler {
   /**
    * Additional indexes that are not needed within the MessageStore but are necessary within the EventLog.
    */
-  static constructAdditionalIndexes(
+  static constructAdditionalEventLogIndexes(
     permissionsGrant: PermissionsGrant
   ): Record<string, string> {
     let indexes: Record<string,any> = {};

@@ -247,7 +247,7 @@ export function testMessageStore(): void {
             messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
-            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructIndexes(message.recordsWrite, true));
+            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructMessageStoreIndexes(message.recordsWrite, true));
           }
 
           const { messages: messageQuery } = await messageStore.query(alice.did, [{}]);
@@ -267,7 +267,7 @@ export function testMessageStore(): void {
             messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
-            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructIndexes(message.recordsWrite, true));
+            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructMessageStoreIndexes(message.recordsWrite, true));
           }
           const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { messageTimestamp: SortOrder.Ascending });
           expect(messageQuery.length).to.equal(messages.length);
@@ -285,7 +285,7 @@ export function testMessageStore(): void {
             dateCreated: TestDataGenerator.randomTimestamp(),
           })));
           for (const message of messages) {
-            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructIndexes(message.recordsWrite, true));
+            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructMessageStoreIndexes(message.recordsWrite, true));
           }
 
           const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { dateCreated: SortOrder.Ascending });
@@ -305,7 +305,7 @@ export function testMessageStore(): void {
             dateCreated: TestDataGenerator.randomTimestamp(),
           })));
           for (const message of messages) {
-            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructIndexes(message.recordsWrite, true));
+            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructMessageStoreIndexes(message.recordsWrite, true));
           }
 
           const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { dateCreated: SortOrder.Descending });
@@ -326,7 +326,7 @@ export function testMessageStore(): void {
             datePublished : TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
-            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructIndexes(message.recordsWrite, true));
+            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructMessageStoreIndexes(message.recordsWrite, true));
           }
 
           const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { datePublished: SortOrder.Ascending });
@@ -347,7 +347,7 @@ export function testMessageStore(): void {
             datePublished : TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
-            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructIndexes(message.recordsWrite, true));
+            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructMessageStoreIndexes(message.recordsWrite, true));
           }
 
           const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { datePublished: SortOrder.Descending });
@@ -369,7 +369,7 @@ export function testMessageStore(): void {
             messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
-            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructIndexes(message.recordsWrite, true));
+            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructMessageStoreIndexes(message.recordsWrite, true));
           }
 
           const { messages: limitQuery } = await messageStore.query(alice.did, [{}]);
@@ -382,7 +382,7 @@ export function testMessageStore(): void {
             messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
-            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructIndexes(message.recordsWrite, true));
+            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructMessageStoreIndexes(message.recordsWrite, true));
           }
 
           const sortedRecords = messages.sort((a,b) =>
@@ -403,7 +403,7 @@ export function testMessageStore(): void {
             messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
-            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructIndexes(message.recordsWrite, true));
+            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructMessageStoreIndexes(message.recordsWrite, true));
           }
 
           // get all of the records
@@ -421,7 +421,7 @@ export function testMessageStore(): void {
             messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
-            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructIndexes(message.recordsWrite, true));
+            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructMessageStoreIndexes(message.recordsWrite, true));
           }
 
           const sortedRecords = messages.sort((a,b) =>
@@ -444,7 +444,7 @@ export function testMessageStore(): void {
             messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
-            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructIndexes(message.recordsWrite, true));
+            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructMessageStoreIndexes(message.recordsWrite, true));
           }
 
           const sortedRecords = messages.sort((a,b) =>
@@ -468,7 +468,7 @@ export function testMessageStore(): void {
             messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
-            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructIndexes(message.recordsWrite, true));
+            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructMessageStoreIndexes(message.recordsWrite, true));
           }
 
           const limit = 6;
@@ -497,7 +497,7 @@ export function testMessageStore(): void {
             messageTimestamp: TestDataGenerator.randomTimestamp()
           })));
           for (const message of messages) {
-            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructIndexes(message.recordsWrite, true));
+            await messageStore.put(alice.did, message.message, await RecordsWriteHandler.constructMessageStoreIndexes(message.recordsWrite, true));
           }
 
           const limit = 4;
