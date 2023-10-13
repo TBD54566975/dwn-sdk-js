@@ -174,6 +174,18 @@ describe('EventLogLevel Tests', () => {
       }
     });
 
+    it('deletes all index related data', async () => {
+      const cids: string[] = [];
+      const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
+      const messageCid = await Message.getCid(message);
+      const index = await RecordsWriteHandler.constructIndexes(recordsWrite, true);
+      await eventLog.append(author.did, messageCid, index);
+
+      const numEventsDeleted = await eventLog.deleteEventsByCid(author.did, cids);
+      expect(numEventsDeleted).to.equal(1);
+      expect(eventLog.db.keys()).to.equal(0);
+    });
+
     it('skips if cid is invalid', async () => {
       const cids: string[] = [];
       const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
