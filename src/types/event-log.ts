@@ -12,7 +12,7 @@ export type GetEventsOptions = {
 
 export type FilteredQuery = {
   filter: Filter;
-  sort: string;
+  sortProperty: string;
   sortDirection: SortOrder;
   cursor?: string;
 };
