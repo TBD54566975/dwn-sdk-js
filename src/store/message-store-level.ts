@@ -256,7 +256,7 @@ export class MessageStoreLevel implements MessageStore {
       ...indexes,
       tenant,
     };
-    await this.index.index(tenant, messageCidString, messageCidString, messageCidString, indexDocument, { messageTimestamp }, options);
+    await this.index.index(tenant, messageCidString, messageCidString, indexDocument, { messageTimestamp }, options);
   }
 
   /**

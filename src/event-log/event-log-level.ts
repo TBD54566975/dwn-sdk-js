@@ -66,7 +66,7 @@ export class EventLogLevel implements EventLog {
     const watermark = this.ulidFactory();
     await watermarkLog.put(watermark, messageCid);
     await cidLog.put(messageCid, watermark);
-    await this.index.index(tenant, messageCid, { messageCid, watermark }, watermark, indexes, { watermark });
+    await this.index.index(tenant, watermark, { messageCid, watermark }, indexes, { watermark });
     return watermark;
   }
 
