@@ -107,15 +107,17 @@ describe('Encryption', () => {
   });
 
   describe('ECIES-SECP256K1', () => {
-    it('should be able to encrypt and decrypt given bytes correctly', async () => {
-      const { publicKey, privateKey } = await Secp256k1.generateKeyPairRaw();
-
-      const originalPlaintext = TestDataGenerator.randomBytes(32);
-      const encryptionOutput = await Encryption.eciesSecp256k1Encrypt(publicKey, originalPlaintext);
-      const decryptionInput = { privateKey, ...encryptionOutput };
-      const decryptedPlaintext = await Encryption.eciesSecp256k1Decrypt(decryptionInput);
-
-      expect(ArrayUtility.byteArraysEqual(originalPlaintext, decryptedPlaintext)).to.be.true;
+    describe('should be able to encrypt and decrypt given bytes correctly', async ()=>{
+      for(const isCompressed of [true, false]){
+        const { publicKey, privateKey } = await Secp256k1.generateKeyPairRaw(isCompressed);
+  
+        const originalPlaintext = TestDataGenerator.randomBytes(32);
+        const encryptionOutput = await Encryption.eciesSecp256k1Encrypt(publicKey, originalPlaintext);
+        const decryptionInput = { privateKey, ...encryptionOutput };
+        const decryptedPlaintext = await Encryption.eciesSecp256k1Decrypt(decryptionInput);
+  
+        expect(ArrayUtility.byteArraysEqual(originalPlaintext, decryptedPlaintext)).to.be.true;
+      }
     });
   });
 });
