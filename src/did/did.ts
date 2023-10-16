@@ -18,7 +18,7 @@ export class Did {
    */
   public static validate(did: unknown): void {
     if (typeof did !== 'string') {
-      throw new DwnError(DwnErrorCode.DidNotValid, `DID is not string: ${did}`);
+      throw new DwnError(DwnErrorCode.DidNotString, `DID is not string: ${did}`);
     }
 
     // eslint-disable-next-line
