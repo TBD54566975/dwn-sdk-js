@@ -28,6 +28,9 @@ describe('Secp256k1', () => {
 
       expect(publicJwk1.x).to.equal(publicJwk2.x);
       expect(publicJwk1.y).to.equal(publicJwk2.y);
+
+      expect(base64url.baseEncode(Secp256k1.publicJwkToBytes(publicJwk1, true))).to.equal(compressedPublicKeyBase64UrlString);
+      expect(base64url.baseEncode(Secp256k1.publicJwkToBytes(publicJwk2, false))).to.equal(uncompressedPublicKeyBase64UrlString);
     });
   });
 
