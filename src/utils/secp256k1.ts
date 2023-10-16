@@ -129,11 +129,13 @@ export class Secp256k1 {
   }
 
   /**
-   * Generates key pair in raw bytes, where the `publicKey` is uncompressed.
+   * Generates key pair in raw bytes.
+   * 
+   * @param {boolean} [isCompressed=false] controls `publicKey` to be compressed bytes
    */
-  public static async generateKeyPairRaw(): Promise<{publicKey: Uint8Array, privateKey: Uint8Array}> {
+  public static async generateKeyPairRaw(isCompressed: boolean=false): Promise<{publicKey: Uint8Array, privateKey: Uint8Array}> {
     const privateKey = secp256k1.utils.randomPrivateKey();
-    const publicKey = secp256k1.getPublicKey(privateKey, false); // `false` = uncompressed
+    const publicKey = secp256k1.getPublicKey(privateKey, isCompressed);
 
     return { publicKey, privateKey };
   }

@@ -42,6 +42,15 @@ describe('Secp256k1', () => {
     });
   });
 
+  describe('generateKeyPairRaw()', () => {
+    it('should generate compressed and uncompressed publicKey', async ()=>{
+      const { publicKey:uncompressed } = await Secp256k1.generateKeyPairRaw(false);
+      expect(uncompressed.length).to.equal(65);
+      const { publicKey:compressed } = await Secp256k1.generateKeyPairRaw(true);
+      expect(compressed.length).to.equal(33);
+    })
+  });
+
   describe('derivePublic/PrivateKey()', () => {
     it('should be able to derive same key using different ancestor along the chain path', async () => {
       const { privateKey } = await Secp256k1.generateKeyPairRaw();
