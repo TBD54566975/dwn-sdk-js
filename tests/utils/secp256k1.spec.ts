@@ -72,12 +72,14 @@ describe('Secp256k1', () => {
     });
 
     it('should throw if derivation path is invalid', async () => {
-      const { publicKey, privateKey } = await Secp256k1.generateKeyPairRaw();
+      for(const compressed of [true, false]){
+        const { publicKey, privateKey } = await Secp256k1.generateKeyPairRaw(compressed);
 
-      const invalidPath = ['should not have segment with empty string', ''];
+        const invalidPath = ['should not have segment with empty string', ''];
 
-      await expect(Secp256k1.derivePublicKey(publicKey, invalidPath)).to.be.rejectedWith(DwnErrorCode.HdKeyDerivationPathInvalid);
-      await expect(Secp256k1.derivePrivateKey(privateKey, invalidPath)).to.be.rejectedWith(DwnErrorCode.HdKeyDerivationPathInvalid);
+        await expect(Secp256k1.derivePublicKey(publicKey, invalidPath)).to.be.rejectedWith(DwnErrorCode.HdKeyDerivationPathInvalid);
+        await expect(Secp256k1.derivePrivateKey(privateKey, invalidPath)).to.be.rejectedWith(DwnErrorCode.HdKeyDerivationPathInvalid);
+      }
     });
   });
 });
