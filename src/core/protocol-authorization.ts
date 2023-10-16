@@ -430,7 +430,7 @@ export class ProtocolAuthorization {
         continue;
       }
 
-      const ancestorRuleSuccess: boolean = await ProtocolAuthorization.checkAncestorGroupActionRule(author, actionRule, ancestorMessageChain);
+      const ancestorRuleSuccess: boolean = await ProtocolAuthorization.checkAncestorActionRule(author, actionRule, ancestorMessageChain);
       if (ancestorRuleSuccess) {
         return;
       }
@@ -546,7 +546,7 @@ export class ProtocolAuthorization {
    * Assumes that the actionRule authorizes either recipient or author, but not 'anyone'.
    * @returns true if there is an ancestorRecordsWrite that matches actionRule. false otherwise.
    */
-  private static async checkAncestorGroupActionRule(
+  private static async checkAncestorActionRule(
     author: string,
     actionRule: ProtocolActionRule,
     ancestorMessageChain: RecordsWriteMessage[],
