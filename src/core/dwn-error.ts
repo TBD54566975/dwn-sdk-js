@@ -15,6 +15,10 @@ export class DwnError extends Error {
 export enum DwnErrorCode {
   AuthenticateJwsMissing = 'AuthenticateJwsMissing',
   AuthorizationUnknownAuthor = 'AuthorizationUnknownAuthor',
+  DidMethodNotSupported = 'DidMethodNotSupported',
+  DidNotString = 'DidNotString',
+  DidNotValid = 'DidNotValid',
+  DidResolutionFailed = 'DidResolutionFailed',
   GeneralJwsVerifierInvalidSignature = 'GeneralJwsVerifierInvalidSignature',
   GrantAuthorizationGrantExpired = 'GrantAuthorizationGrantExpired',
   GrantAuthorizationGrantMissing = 'GrantAuthorizationGrantMissing',
