@@ -543,7 +543,7 @@ export class ProtocolAuthorization {
 
   /**
    * Checks if there is a record in the ancestor chain matching the `who: 'author' | 'recipient'` action rule.
-   * @returns true if there is an ancestorRecordsWrite that matches actionRule. false otherwise.
+   * @returns true if the action rule is satisfied. false otherwise
    */
   private static async checkActor(
     author: string,
