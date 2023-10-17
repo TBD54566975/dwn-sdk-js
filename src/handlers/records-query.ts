@@ -36,7 +36,7 @@ export class RecordsQueryHandler implements MethodHandler {
       recordsWrites = results.messages as RecordsWriteMessageWithOptionalEncodedData[];
       paginationMessageCid = results.paginationMessageCid;
     } else {
-      // authentication
+      // authentication and authorization
       try {
         await authenticate(message.authorization!, this.didResolver);
 
