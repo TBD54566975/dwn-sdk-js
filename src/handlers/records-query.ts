@@ -176,7 +176,8 @@ export class RecordsQueryHandler implements MethodHandler {
   }
 
   /**
-   * Creates a filter for unpublished records that are intended for the query author (where `recipient` is the author).
+   * Creates a filter for unpublished records that are within the specified protocol.
+   * Validation that `protocol` and other required protocol-related fields occurs before this method.
    */
   private static buildUnpublishedProtocolAuthorizedRecordsFilter(recordsQuery: RecordsQuery): Filter {
     return {
