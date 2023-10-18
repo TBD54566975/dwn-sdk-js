@@ -78,12 +78,18 @@ export class Encryption {
     const cryptogram = eciesjs.encrypt(publicKey, plaintextBuffer);
 
     // split cryptogram returned into constituent parts
-    let start = 0; let end = eciesjs.ECIES_CONFIG.isEphemeralKeyCompressed ? 33 : 65;
+    let start = 0;
+    let end = Encryption.isEphemeralKeyCompressed ? 33 : 65;
     const ephemeralPublicKey = cryptogram.subarray(start, end);
-    start = end; end += eciesjs.ECIES_CONFIG.symmetricNonceLength;
+
+    start = end;
+    end += eciesjs.ECIES_CONFIG.symmetricNonceLength;
     const initializationVector = cryptogram.subarray(start, end);
-    start = end; end += 16; // eciesjs.consts.AEAD_TAG_LENGTH
+
+    start = end;
+    end += 16; // eciesjs.consts.AEAD_TAG_LENGTH
     const messageAuthenticationCode = cryptogram.subarray(start, end);
+
     const ciphertext = cryptogram.subarray(end);
 
     return {

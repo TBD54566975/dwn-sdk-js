@@ -6,8 +6,8 @@ import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { TestDataGenerator } from './test-data-generator.js';
 
 describe('Secp256k1', () => {
-  describe('generateKeyPairRaw()', ()=>{
-    it('should generate compressed publicKey', async()=>{
+  describe('generateKeyPairRaw()', () => {
+    it('should generate compressed publicKey', async () => {
       const { publicKey } = await Secp256k1.generateKeyPairRaw();
       expect(publicKey.length).to.equal(33);
     });
