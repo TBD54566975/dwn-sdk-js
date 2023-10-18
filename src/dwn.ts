@@ -9,7 +9,7 @@ import type { TenantGate } from './core/tenant-gate.js';
 import type { EventsGetMessage, EventsGetReply, PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage, ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './index.js';
 import type { GenericMessageReply, UnionMessageReply } from './core/message-reply.js';
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
-import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage, RecordsWriteReply } from './types/records-types.js';
+import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from './types/records-types.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DidResolver } from './did/did-resolver.js';
@@ -117,70 +117,6 @@ export class Dwn {
     });
 
     return methodHandlerReply;
-  }
-
-  /**
-   * Handles a `RecordsWrite` message.
-   */
-  public async handleRecordsWrite(
-    tenant: string,
-    message: RecordsWriteMessage,
-    dataStream?: Readable,
-    options?: RecordsWriteHandlerOptions): Promise<RecordsWriteReply> {
-    const errorMessageReply =
-      await this.validateTenant(tenant) ??
-      await this.validateMessageIntegrity(message, DwnInterfaceName.Records, DwnMethodName.Write);
-    if (errorMessageReply !== undefined) {
-      return errorMessageReply;
-    }
-
-    const handler = new RecordsWriteHandler(this.didResolver, this.messageStore, this.dataStore, this.eventLog);
-    return handler.handle({ tenant, message, options, dataStream });
-  }
-
-  /**
-   * Handles a `RecordsQuery` message.
-   */
-  public async handleRecordsQuery(tenant: string, message: RecordsQueryMessage): Promise<RecordsQueryReply> {
-    const errorMessageReply =
-      await this.validateTenant(tenant) ??
-      await this.validateMessageIntegrity(message, DwnInterfaceName.Records, DwnMethodName.Query);
-    if (errorMessageReply !== undefined) {
-      return errorMessageReply;
-    }
-
-    const handler = new RecordsQueryHandler(this.didResolver, this.messageStore, this.dataStore);
-    return handler.handle({ tenant, message });
-  }
-
-  /**
-   * Handles a `RecordsRead` message.
-   */
-  public async handleRecordsRead(tenant: string, message: RecordsReadMessage): Promise<RecordsReadReply> {
-    const errorMessageReply =
-      await this.validateTenant(tenant) ??
-      await this.validateMessageIntegrity(message, DwnInterfaceName.Records, DwnMethodName.Read);
-    if (errorMessageReply !== undefined) {
-      return errorMessageReply;
-    }
-
-    const handler = new RecordsReadHandler(this.didResolver, this.messageStore, this.dataStore);
-    return handler.handle({ tenant, message });
-  }
-
-  /**
-   * Handles a `MessagesGet` message.
-   */
-  public async handleMessagesGet(tenant: string, message: MessagesGetMessage): Promise<MessagesGetReply> {
-    const errorMessageReply =
-      await this.validateTenant(tenant) ??
-      await this.validateMessageIntegrity(message, DwnInterfaceName.Messages, DwnMethodName.Get);
-    if (errorMessageReply !== undefined) {
-      return errorMessageReply;
-    }
-
-    const handler = new MessagesGetHandler(this.didResolver, this.messageStore, this.dataStore);
-    return handler.handle({ tenant, message });
   }
 
   /**
