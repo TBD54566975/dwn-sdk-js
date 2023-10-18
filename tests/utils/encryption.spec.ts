@@ -122,7 +122,7 @@ describe('Encryption', () => {
     it('should be able to accept both compressed and uncompressed publicKeys', async () => {
       const originalPlaintext = TestDataGenerator.randomBytes(32);
       const h2b = Secp256k1Etc.hexToBytes;
-      // Follwing test vector was taken from @noble/secp256k1 test file.
+      // Following test vector was taken from @noble/secp256k1 test file.
       // noble-secp256k1/main/test/vectors/secp256k1/privates.json
       const privateKey = h2b('9c7fc36bc106fd7df5e1078d03e34b9a045892abdd053ec69bfeb22327529f6c');
       const compressed = h2b('03936cb2bd56e681d360bbce6a3a7a1ccbf72f3ab8792edbc45fb08f55b929c588');
