@@ -67,15 +67,18 @@ export class Secp256k1 {
   }
 
   /**
-   * Creates a uncompressed key in raw bytes from the given SECP256K1 JWK.
+   * Creates a compressed or uncompressed key in raw bytes from the given SECP256K1 JWK.
+   *
+   * @param [isCompressed=true] uncompressed switch is for
+   *  eciesjs isEphemeralKeyCompressed=false configuration support.
    */
-  public static publicJwkToBytes(publicJwk: PublicJwk): Uint8Array {
+  public static publicJwkToBytes(publicJwk: PublicJwk, isCompressed:boolean=true): Uint8Array {
     const x = Encoder.base64UrlToBytes(publicJwk.x);
     const y = Encoder.base64UrlToBytes(publicJwk.y!);
-
-    // leading byte of 0x04 indicates that the public key is uncompressed
-    const publicKey = new Uint8Array([0x04, ...x, ...y]);
-    return publicKey;
+    return secp256k1.ProjectivePoint.fromAffine({
+      x : secp256k1.etc.bytesToNumberBE(x),
+      y : secp256k1.etc.bytesToNumberBE(y)
+    }).toRawBytes(isCompressed);
   }
 
   /**

@@ -44,7 +44,7 @@ export class Records {
     // so we will assume that's the algorithm without additional switch/if statements
     const leafPrivateKey = await Records.derivePrivateKey(ancestorPrivateKey, fullDerivationPath);
     const encryptedKeyBytes = Encoder.base64UrlToBytes(matchingEncryptedKey.encryptedKey);
-    const ephemeralPublicKey = Secp256k1.publicJwkToBytes(matchingEncryptedKey.ephemeralPublicKey);
+    const ephemeralPublicKey = Secp256k1.publicJwkToBytes(matchingEncryptedKey.ephemeralPublicKey, Encryption.isEphemeralKeyCompressed);
     const keyEncryptionInitializationVector = Encoder.base64UrlToBytes(matchingEncryptedKey.initializationVector);
     const messageAuthenticationCode = Encoder.base64UrlToBytes(matchingEncryptedKey.messageAuthenticationCode);
     const dataEncryptionKey = await Encryption.eciesSecp256k1Decrypt({
