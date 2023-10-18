@@ -1,23 +1,28 @@
 {
-  "protocol": "http://anyone-collaborate-protocol.xyz",
+  "protocol": "http://free-for-all-protocol.xyz",
   "published": true,
   "types": {
-    "doc": {}
+    "post": {
+      "schema": "eph",
+      "dataFormats": [
+        "application/json"
+      ]
+    }
   },
   "structure": {
-    "doc": {
+    "post": {
       "$actions": [
         {
           "who": "anyone",
-          "can": "update"
-        },
-        {
-          "who": "anyone",
-          "can": "read"
+          "can": "write"
         },
         {
           "who": "anyone",
           "can": "delete"
+        },
+        {
+          "who": "anyone",
+          "can": "read"
         }
       ]
     }

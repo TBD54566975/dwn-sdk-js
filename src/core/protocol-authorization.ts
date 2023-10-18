@@ -1,5 +1,6 @@
 import type { Filter } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
+import type { RecordsDelete } from '../interfaces/records-delete.js';
 import type { RecordsQuery } from '../interfaces/records-query.js';
 import type { RecordsRead } from '../interfaces/records-read.js';
 import type { RecordsWriteMessage } from '../types/records-types.js';
@@ -196,6 +197,51 @@ export class ProtocolAuthorization {
     );
   }
 
+  public static async authorizeDelete(
+    tenant: string,
+    incomingMessage: RecordsDelete,
+    newestRecordsWrite: RecordsWrite,
+    messageStore: MessageStore,
+  ): Promise<void> {
+
+    // fetch ancestor message chain
+    const ancestorMessageChain: RecordsWriteMessage[] =
+      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, newestRecordsWrite, messageStore);
+
+    // fetch the protocol definition
+    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
+      tenant,
+      newestRecordsWrite.message.descriptor.protocol!,
+      messageStore,
+    );
+
+    // get the rule set for the inbound message
+    const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
+      newestRecordsWrite.message.descriptor.protocolPath!,
+      protocolDefinition,
+    );
+
+    // If the incoming message has `protocolRole` in the descriptor, validate the invoked role
+    await ProtocolAuthorization.verifyInvokedRole(
+      tenant,
+      incomingMessage,
+      newestRecordsWrite.message.descriptor.protocol!,
+      newestRecordsWrite.message.contextId!,
+      protocolDefinition,
+      messageStore,
+    );
+
+    // verify method invoked against the allowed actions
+    await ProtocolAuthorization.verifyAllowedActions(
+      tenant,
+      incomingMessage,
+      inboundMessageRuleSet,
+      ancestorMessageChain,
+      messageStore,
+    );
+
+  }
+
   /**
    * Fetches the protocol definition based on the protocol specified in the given message.
    */
@@ -226,7 +272,7 @@ export class ProtocolAuthorization {
    */
   private static async constructAncestorMessageChain(
     tenant: string,
-    incomingMessage: RecordsRead | RecordsWrite,
+    incomingMessage: RecordsDelete | RecordsRead | RecordsWrite,
     recordsWrite: RecordsWrite,
     messageStore: MessageStore
   )
@@ -375,7 +421,7 @@ export class ProtocolAuthorization {
    */
   private static async verifyInvokedRole(
     tenant: string,
-    incomingMessage: RecordsQuery | RecordsRead | RecordsWrite,
+    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsWrite,
     protocolUri: string,
     contextId: string | undefined,
     protocolDefinition: ProtocolDefinition,
@@ -430,26 +476,35 @@ export class ProtocolAuthorization {
    */
   private static async getActionsSeekingARuleMatch(
     tenant: string,
-    incomingMessage: RecordsQuery | RecordsRead | RecordsWrite,
+    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsWrite,
     messageStore: MessageStore,
   ): Promise<ProtocolAction[]> {
-    if (incomingMessage.message.descriptor.method === DwnMethodName.Read) {
-      return [ProtocolAction.Read];
-    } else if (incomingMessage.message.descriptor.method === DwnMethodName.Query) {
-      return [ProtocolAction.Query];
-    }
-    // else 'Write'
 
-    const incomingRecordsWrite = incomingMessage as RecordsWrite;
-    if (await incomingRecordsWrite.isInitialWrite()) {
-      // only 'write' allows initial RecordsWrites; 'update' only applies to subsequent RecordsWrites
-      return [ProtocolAction.Write];
-    } else if (await incomingRecordsWrite.isAuthoredByInitialRecordAuthor(tenant, messageStore)) {
-      // Both 'update' and 'write' authorize the incoming message
-      return [ProtocolAction.Write, ProtocolAction.Update];
-    } else {
-      // Actors other than the initial record author must be authorized to 'update' the message
-      return [ProtocolAction.Update];
+    switch (incomingMessage.message.descriptor.method) {
+    case DwnMethodName.Delete:
+      return [ProtocolAction.Delete];
+
+    case DwnMethodName.Query:
+      return [ProtocolAction.Query];
+
+    case DwnMethodName.Read:
+      return [ProtocolAction.Read];
+
+    case DwnMethodName.Write:
+      const incomingRecordsWrite = incomingMessage as RecordsWrite;
+      if (await incomingRecordsWrite.isInitialWrite()) {
+        // only 'write' allows initial RecordsWrites; 'update' only applies to subsequent RecordsWrites
+        return [ProtocolAction.Write];
+      } else if (await incomingRecordsWrite.isAuthoredByInitialRecordAuthor(tenant, messageStore)) {
+        // Both 'update' and 'write' authorize the incoming message
+        return [ProtocolAction.Write, ProtocolAction.Update];
+      } else {
+        // Actors other than the initial record author must be authorized to 'update' the message
+        return [ProtocolAction.Update];
+      }
+
+    // default:
+      // not reachable in typescript
     }
   }
 
@@ -459,7 +514,7 @@ export class ProtocolAuthorization {
    */
   private static async verifyAllowedActions(
     tenant: string,
-    incomingMessage: RecordsQuery | RecordsRead | RecordsWrite,
+    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsWrite,
     inboundMessageRuleSet: ProtocolRuleSet,
     ancestorMessageChain: RecordsWriteMessage[],
     messageStore: MessageStore,

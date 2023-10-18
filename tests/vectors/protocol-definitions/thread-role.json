@@ -48,6 +48,10 @@
           {
             "role": "thread/admin",
             "can": "update"
+          },
+          {
+            "role": "thread/admin",
+            "can": "delete"
           }
         ]
       }

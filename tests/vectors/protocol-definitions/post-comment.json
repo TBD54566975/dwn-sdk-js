@@ -1,0 +1,45 @@
+{
+  "protocol": "http://post-comment-protocol.xyz",
+  "published": true,
+  "types": {
+    "post": {
+      "schema": "post",
+      "dataFormats": [
+        "application/json"
+      ]
+    },
+    "comment": {
+      "schema": "comment",
+      "dataFormats": [
+        "application/json"
+      ]
+    }
+  },
+  "structure": {
+    "post": {
+      "$actions": [
+        {
+          "who": "anyone",
+          "can": "read"
+        }
+      ],
+      "comment": {
+        "$actions": [
+          {
+            "who": "anyone",
+            "can": "read"
+          },
+          {
+            "who": "anyone",
+            "can": "write"
+          },
+          {
+            "who": "author",
+            "of": "post",
+            "can": "delete"
+          }
+        ]
+      }
+    }
+  }
+}

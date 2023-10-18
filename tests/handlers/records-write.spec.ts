@@ -7,7 +7,7 @@ import type { RecordsWriteMessageWithOptionalEncodedData } from '../../src/store
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
 
 import anyoneCollaborateProtocolDefinition from '../vectors/protocol-definitions/anyone-collaborate.json' assert { type: 'json' };
-import authorUpdateProtocolDefinition from '../vectors/protocol-definitions/author-update.json' assert { type: 'json' };
+import authorCanProtocolDefinition from '../vectors/protocol-definitions/author-can.json' assert { type: 'json' };
 import chaiAsPromised from 'chai-as-promised';
 import credentialIssuanceProtocolDefinition from '../vectors/protocol-definitions/credential-issuance.json' assert { type: 'json' };
 import dexProtocolDefinition from '../vectors/protocol-definitions/dex.json' assert { type: 'json' };
@@ -1321,7 +1321,7 @@ export function testRecordsWriteHandler(): void {
             const alice = await DidKeyResolver.generate();
             const bob = await DidKeyResolver.generate();
 
-            const protocolDefinition = authorUpdateProtocolDefinition;
+            const protocolDefinition = authorCanProtocolDefinition;
 
             const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
               author: alice,
