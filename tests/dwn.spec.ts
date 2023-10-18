@@ -53,7 +53,7 @@ export function testDwnClass(): void {
           author: alice,
         });
 
-        const reply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
+        const reply = await dwn.processMessage(alice.did, message, dataStream);
 
         expect(reply.status.code).to.equal(202);
       });
@@ -157,7 +157,7 @@ export function testDwnClass(): void {
           authorizationSigner: Jws.createSigner(alice)
         });
         (recordsRead.message as any).descriptor.method = 'Write'; // Will cause interface and method check to fail
-        const reply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+        const reply = await dwn.processMessage(alice.did, recordsRead.message);
 
         expect(reply.status.code).to.not.equal(200);
       });
@@ -177,7 +177,7 @@ export function testDwnClass(): void {
         const messageCid = await Message.getCid(recordsWrite.message);
         messageCids.push(messageCid);
 
-        const reply = await dwn.handleRecordsWrite(alice.did, recordsWrite.toJSON(), dataStream);
+        const reply = await dwn.processMessage(alice.did, recordsWrite.toJSON(), dataStream);
         expect(reply.status.code).to.equal(202);
 
         const { messagesGet } = await TestDataGenerator.generateMessagesGet({
@@ -185,7 +185,7 @@ export function testDwnClass(): void {
           messageCids
         });
 
-        const messagesGetReply = await dwn.handleMessagesGet(alice.did, messagesGet.message);
+        const messagesGetReply = await dwn.processMessage(alice.did, messagesGet.message);
         expect(messagesGetReply.status.code).to.equal(200);
         expect(messagesGetReply.messages!.length).to.equal(messageCids.length);
 
@@ -212,7 +212,7 @@ export function testDwnClass(): void {
           messageCids
         });
         (messagesGet.message as any).descriptor.interface = 'Protocols'; // Will cause interface and method check to fail
-        const reply = await dwn.handleMessagesGet(alice.did, messagesGet.message);
+        const reply = await dwn.processMessage(alice.did, messagesGet.message);
 
         expect(reply.status.code).to.not.equal(200);
       });
@@ -248,7 +248,7 @@ export function testDwnClass(): void {
           data          : newDataBytes
         });
 
-        const newRecordsWriteReply = await dwn.handleRecordsWrite(alice.did, newRecordsWrite.message, newRecordsWrite.dataStream);
+        const newRecordsWriteReply = await dwn.processMessage(alice.did, newRecordsWrite.message, newRecordsWrite.dataStream);
         expect(newRecordsWriteReply.status.code).to.equal(202);
 
         // verify new `RecordsWrite` has overwritten the existing record with new data
@@ -340,12 +340,11 @@ export function testDwnClass(): void {
           data
         });
 
-        (aliceWriteData.message as any).descriptor.method = 'Foo';
+        (aliceWriteData.message as any).descriptor.method = 'IncorrectMethod';
 
-        const reply = await dwn.handleRecordsWrite(alice.did, aliceWriteData.message);
+        const reply = await dwn.processMessage(alice.did, aliceWriteData.message);
 
         expect(reply.status.code).to.equal(400);
-        expect(reply.status.detail).to.equal('Expected method RecordsWrite, received RecordsFoo');
       });
 
       it('should successfully write a record', async () => {
@@ -358,7 +357,7 @@ export function testDwnClass(): void {
           data
         });
 
-        const reply = await dwn.handleRecordsWrite(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
+        const reply = await dwn.processMessage(alice.did, aliceWriteData.message, aliceWriteData.dataStream);
 
         expect(reply.status.code).to.equal(202);
       });
