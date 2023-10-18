@@ -73,7 +73,7 @@ export function testRecordsQueryHandler(): void {
         const dataFormat = 'myAwesomeDataFormat';
 
         const write = await TestDataGenerator.generateRecordsWrite({ author: alice, attesters: [bob], dataFormat });
-        const writeReply = await dwn.handleRecordsWrite(alice.did, write.message, write.dataStream);
+        const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
         expect(writeReply.status.code).to.equal(202);
 
         const query = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { dataFormat } });
@@ -100,9 +100,9 @@ export function testRecordsQueryHandler(): void {
         sinon.stub(didResolver, 'resolve').resolves(mockResolution);
 
         // insert data
-        const writeReply1 = await dwn.handleRecordsWrite(alice.did, write1.message, write1.dataStream);
-        const writeReply2 = await dwn.handleRecordsWrite(alice.did, write2.message, write2.dataStream);
-        const writeReply3 = await dwn.handleRecordsWrite(alice.did, write3.message, write3.dataStream);
+        const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
+        const writeReply2 = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
+        const writeReply3 = await dwn.processMessage(alice.did, write3.message, write3.dataStream);
         expect(writeReply1.status.code).to.equal(202);
         expect(writeReply2.status.code).to.equal(202);
         expect(writeReply3.status.code).to.equal(202);
@@ -135,7 +135,7 @@ export function testRecordsQueryHandler(): void {
         const alice = await DidKeyResolver.generate();
         const write= await TestDataGenerator.generateRecordsWrite({ author: alice, data });
 
-        const writeReply = await dwn.handleRecordsWrite(alice.did, write.message, write.dataStream);
+        const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
         expect(writeReply.status.code).to.equal(202);
 
         const messageData = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { recordId: write.message.recordId } });
@@ -151,7 +151,7 @@ export function testRecordsQueryHandler(): void {
         const alice = await DidKeyResolver.generate();
         const write= await TestDataGenerator.generateRecordsWrite({ author: alice, data });
 
-        const writeReply = await dwn.handleRecordsWrite(alice.did, write.message, write.dataStream);
+        const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
         expect(writeReply.status.code).to.equal(202);
 
         const messageData = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { recordId: write.message.recordId } });
@@ -170,8 +170,8 @@ export function testRecordsQueryHandler(): void {
         const recordsWrite2 = await TestDataGenerator.generateRecordsWrite({ author: alice, attesters: [bob] });
 
         // insert data
-        const writeReply1 = await dwn.handleRecordsWrite(alice.did, recordsWrite1.message, recordsWrite1.dataStream);
-        const writeReply2 = await dwn.handleRecordsWrite(alice.did, recordsWrite2.message, recordsWrite2.dataStream);
+        const writeReply1 = await dwn.processMessage(alice.did, recordsWrite1.message, recordsWrite1.dataStream);
+        const writeReply2 = await dwn.processMessage(alice.did, recordsWrite2.message, recordsWrite2.dataStream);
         expect(writeReply1.status.code).to.equal(202);
         expect(writeReply2.status.code).to.equal(202);
 
@@ -210,9 +210,9 @@ export function testRecordsQueryHandler(): void {
         const write3 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2023, messageTimestamp: firstDayOf2023 });
 
         // insert data
-        const writeReply1 = await dwn.handleRecordsWrite(alice.did, write1.message, write1.dataStream);
-        const writeReply2 = await dwn.handleRecordsWrite(alice.did, write2.message, write2.dataStream);
-        const writeReply3 = await dwn.handleRecordsWrite(alice.did, write3.message, write3.dataStream);
+        const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
+        const writeReply2 = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
+        const writeReply3 = await dwn.processMessage(alice.did, write3.message, write3.dataStream);
         expect(writeReply1.status.code).to.equal(202);
         expect(writeReply2.status.code).to.equal(202);
         expect(writeReply3.status.code).to.equal(202);
@@ -281,9 +281,9 @@ export function testRecordsQueryHandler(): void {
         });
 
         // insert data
-        const writeReply1 = await dwn.handleRecordsWrite(alice.did, write1.message, write1.dataStream);
-        const writeReply2 = await dwn.handleRecordsWrite(alice.did, write2.message, write2.dataStream);
-        const writeReply3 = await dwn.handleRecordsWrite(alice.did, write3.message, write3.dataStream);
+        const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
+        const writeReply2 = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
+        const writeReply3 = await dwn.processMessage(alice.did, write3.message, write3.dataStream);
         expect(writeReply1.status.code).to.equal(202);
         expect(writeReply2.status.code).to.equal(202);
         expect(writeReply3.status.code).to.equal(202);
@@ -312,7 +312,7 @@ export function testRecordsQueryHandler(): void {
         const mockResolution = TestDataGenerator.createDidResolutionResult(alice);
         sinon.stub(didResolver, 'resolve').resolves(mockResolution);
 
-        const writeReply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
+        const writeReply = await dwn.processMessage(alice.did, message, dataStream);
         expect(writeReply.status.code).to.equal(202);
 
         const queryData = await TestDataGenerator.generateRecordsQuery({
@@ -332,7 +332,7 @@ export function testRecordsQueryHandler(): void {
         const alice = await DidKeyResolver.generate();
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, attesters: [alice] });
 
-        const writeReply = await dwn.handleRecordsWrite(alice.did, message, dataStream);
+        const writeReply = await dwn.processMessage(alice.did, message, dataStream);
         expect(writeReply.status.code).to.equal(202);
 
         const queryData = await TestDataGenerator.generateRecordsQuery({
@@ -364,8 +364,8 @@ export function testRecordsQueryHandler(): void {
         sinon.stub(didResolver, 'resolve').resolves(mockResolution);
 
         // insert data
-        const publishedWriteReply = await dwn.handleRecordsWrite(alice.did, publishedWriteData.message, publishedWriteData.dataStream);
-        const unpublishedWriteReply = await dwn.handleRecordsWrite(alice.did, unpublishedWriteData.message, unpublishedWriteData.dataStream);
+        const publishedWriteReply = await dwn.processMessage(alice.did, publishedWriteData.message, publishedWriteData.dataStream);
+        const unpublishedWriteReply = await dwn.processMessage(alice.did, unpublishedWriteData.message, unpublishedWriteData.dataStream);
         expect(publishedWriteReply.status.code).to.equal(202);
         expect(unpublishedWriteReply.status.code).to.equal(202);
 
@@ -375,7 +375,7 @@ export function testRecordsQueryHandler(): void {
           dateSort : DateSort.PublishedAscending,
           filter   : { schema }
         });
-        const publishedAscendingQueryReply = await dwn.handleRecordsQuery(alice.did, publishedAscendingQueryData.message);
+        const publishedAscendingQueryReply = await dwn.processMessage(alice.did, publishedAscendingQueryData.message);
 
         expect(publishedAscendingQueryReply.entries?.length).to.equal(1);
         expect(publishedAscendingQueryReply.entries![0].descriptor['datePublished']).to.equal(publishedWriteData.message.descriptor.datePublished);
@@ -386,7 +386,7 @@ export function testRecordsQueryHandler(): void {
           dateSort : DateSort.PublishedDescending,
           filter   : { schema }
         });
-        const publishedDescendingQueryReply = await dwn.handleRecordsQuery(alice.did, publishedDescendingQueryData.message);
+        const publishedDescendingQueryReply = await dwn.processMessage(alice.did, publishedDescendingQueryData.message);
 
         expect(publishedDescendingQueryReply.entries?.length).to.equal(1);
         expect(publishedDescendingQueryReply.entries![0].descriptor['datePublished']).to.equal(publishedWriteData.message.descriptor.datePublished);
@@ -406,9 +406,9 @@ export function testRecordsQueryHandler(): void {
         sinon.stub(didResolver, 'resolve').resolves(mockResolution);
 
         // insert data, intentionally out of order
-        const writeReply2 = await dwn.handleRecordsWrite(alice.did, write2Data.message, write2Data.dataStream);
-        const writeReply1 = await dwn.handleRecordsWrite(alice.did, write1Data.message, write1Data.dataStream);
-        const writeReply3 = await dwn.handleRecordsWrite(alice.did, write3Data.message, write3Data.dataStream);
+        const writeReply2 = await dwn.processMessage(alice.did, write2Data.message, write2Data.dataStream);
+        const writeReply1 = await dwn.processMessage(alice.did, write1Data.message, write1Data.dataStream);
+        const writeReply3 = await dwn.processMessage(alice.did, write3Data.message, write3Data.dataStream);
         expect(writeReply1.status.code).to.equal(202);
         expect(writeReply2.status.code).to.equal(202);
         expect(writeReply3.status.code).to.equal(202);
@@ -419,7 +419,7 @@ export function testRecordsQueryHandler(): void {
           dateSort : DateSort.CreatedAscending,
           filter   : { schema }
         });
-        const createdAscendingQueryReply = await dwn.handleRecordsQuery(alice.did, createdAscendingQueryData.message);
+        const createdAscendingQueryReply = await dwn.processMessage(alice.did, createdAscendingQueryData.message);
 
         expect(createdAscendingQueryReply.entries?.[0].descriptor['dateCreated']).to.equal(write1Data.message.descriptor.dateCreated);
         expect(createdAscendingQueryReply.entries?.[1].descriptor['dateCreated']).to.equal(write2Data.message.descriptor.dateCreated);
@@ -431,7 +431,7 @@ export function testRecordsQueryHandler(): void {
           dateSort : DateSort.CreatedDescending,
           filter   : { schema }
         });
-        const createdDescendingQueryReply = await dwn.handleRecordsQuery(alice.did, createdDescendingQueryData.message);
+        const createdDescendingQueryReply = await dwn.processMessage(alice.did, createdDescendingQueryData.message);
 
         expect(createdDescendingQueryReply.entries?.[0].descriptor['dateCreated']).to.equal(write3Data.message.descriptor.dateCreated);
         expect(createdDescendingQueryReply.entries?.[1].descriptor['dateCreated']).to.equal(write2Data.message.descriptor.dateCreated);
@@ -443,7 +443,7 @@ export function testRecordsQueryHandler(): void {
           dateSort : DateSort.PublishedAscending,
           filter   : { schema }
         });
-        const publishedAscendingQueryReply = await dwn.handleRecordsQuery(alice.did, publishedAscendingQueryData.message);
+        const publishedAscendingQueryReply = await dwn.processMessage(alice.did, publishedAscendingQueryData.message);
 
         expect(publishedAscendingQueryReply.entries?.[0].descriptor['datePublished']).to.equal(write1Data.message.descriptor.datePublished);
         expect(publishedAscendingQueryReply.entries?.[1].descriptor['datePublished']).to.equal(write2Data.message.descriptor.datePublished);
@@ -455,7 +455,7 @@ export function testRecordsQueryHandler(): void {
           dateSort : DateSort.PublishedDescending,
           filter   : { schema }
         });
-        const publishedDescendingQueryReply = await dwn.handleRecordsQuery(alice.did, publishedDescendingQueryData.message);
+        const publishedDescendingQueryReply = await dwn.processMessage(alice.did, publishedDescendingQueryData.message);
 
         expect(publishedDescendingQueryReply.entries?.[0].descriptor['datePublished']).to.equal(write3Data.message.descriptor.datePublished);
         expect(publishedDescendingQueryReply.entries?.[1].descriptor['datePublished']).to.equal(write2Data.message.descriptor.datePublished);
@@ -480,11 +480,11 @@ export function testRecordsQueryHandler(): void {
         );
 
         // intentionally write the RecordsWrite of out lexicographical order to avoid the test query below accidentally having the correct order
-        const reply2 = await dwn.handleRecordsWrite(alice.did, middleWrite.message, middleWrite.dataStream);
+        const reply2 = await dwn.processMessage(alice.did, middleWrite.message, middleWrite.dataStream);
         expect(reply2.status.code).to.equal(202);
-        const reply3 = await dwn.handleRecordsWrite(alice.did, newestWrite.message, newestWrite.dataStream);
+        const reply3 = await dwn.processMessage(alice.did, newestWrite.message, newestWrite.dataStream);
         expect(reply3.status.code).to.equal(202);
-        const reply1 = await dwn.handleRecordsWrite(alice.did, oldestWrite.message, oldestWrite.dataStream);
+        const reply1 = await dwn.processMessage(alice.did, oldestWrite.message, oldestWrite.dataStream);
         expect(reply1.status.code).to.equal(202);
 
         const queryMessageData = await TestDataGenerator.generateRecordsQuery({
@@ -510,7 +510,7 @@ export function testRecordsQueryHandler(): void {
           schema : 'https://schema'
         })));
         for (const message of messages) {
-          const result = await dwn.handleRecordsWrite(alice.did, message.message, message.dataStream);
+          const result = await dwn.processMessage(alice.did, message.message, message.dataStream);
           expect(result.status.code).to.equal(202);
         }
 
@@ -529,7 +529,7 @@ export function testRecordsQueryHandler(): void {
             },
           });
 
-          const pageReply = await dwn.handleRecordsQuery(alice.did, pageQuery.message);
+          const pageReply = await dwn.processMessage(alice.did, pageQuery.message);
           expect(pageReply.status.code).to.equal(200);
           messageCid = pageReply.paginationMessageCid;
           expect(pageReply.entries?.length).to.be.lte(limit);
@@ -550,7 +550,7 @@ export function testRecordsQueryHandler(): void {
           schema : 'https://schema'
         })));
         for (const message of messages) {
-          const result = await dwn.handleRecordsWrite(alice.did, message.message, message.dataStream);
+          const result = await dwn.processMessage(alice.did, message.message, message.dataStream);
           expect(result.status.code).to.equal(202);
         }
 
@@ -565,7 +565,7 @@ export function testRecordsQueryHandler(): void {
           },
         });
 
-        const pageReply = await dwn.handleRecordsQuery(alice.did, pageQuery.message);
+        const pageReply = await dwn.processMessage(alice.did, pageQuery.message);
         expect(pageReply.status.code).to.equal(200);
         expect(pageReply.entries?.length).to.be.lte(limit);
         expect(pageReply.paginationMessageCid).to.exist;
@@ -586,9 +586,9 @@ export function testRecordsQueryHandler(): void {
           { author: alice, schema: 'https://schema2', published: true }
         );
 
-        const recordsWrite1Reply = await dwn.handleRecordsWrite(alice.did, record1Data.message, record1Data.dataStream);
+        const recordsWrite1Reply = await dwn.processMessage(alice.did, record1Data.message, record1Data.dataStream);
         expect(recordsWrite1Reply.status.code).to.equal(202);
-        const recordsWrite2Reply = await dwn.handleRecordsWrite(alice.did, record2Data.message, record2Data.dataStream);
+        const recordsWrite2Reply = await dwn.processMessage(alice.did, record2Data.message, record2Data.dataStream);
         expect(recordsWrite2Reply.status.code).to.equal(202);
 
         // test correctness for anonymous query
@@ -846,7 +846,7 @@ export function testRecordsQueryHandler(): void {
           { author: alice, schema, data: Encoder.stringToBytes('1'), published: false } // explicitly setting `published` to `false`
         );
 
-        const result1 = await dwn.handleRecordsWrite(alice.did, unpublishedRecordsWrite.message, unpublishedRecordsWrite.dataStream);
+        const result1 = await dwn.processMessage(alice.did, unpublishedRecordsWrite.message, unpublishedRecordsWrite.dataStream);
         expect(result1.status.code).to.equal(202);
 
         // alice should be able to see the unpublished record
@@ -896,8 +896,8 @@ export function testRecordsQueryHandler(): void {
         });
 
         // insert data into 2 different tenants
-        await dwn.handleRecordsWrite(alice.did, recordsWriteMessage1Data.message, recordsWriteMessage1Data.dataStream);
-        await dwn.handleRecordsWrite(bob.did, recordsWriteMessage2Data.message, recordsWriteMessage2Data.dataStream);
+        await dwn.processMessage(alice.did, recordsWriteMessage1Data.message, recordsWriteMessage1Data.dataStream);
+        await dwn.processMessage(bob.did, recordsWriteMessage2Data.message, recordsWriteMessage2Data.dataStream);
 
         const reply = await dwn.processMessage(alice.did, aliceQueryMessageData.message);
 
