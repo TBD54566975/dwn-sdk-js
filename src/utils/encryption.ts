@@ -67,9 +67,9 @@ export class Encryption {
    * with SECP256K1 for the asymmetric calculations, HKDF as the key-derivation function,
    * and AES-GCM for the symmetric encryption and MAC algorithms.
    */
-  public static async eciesSecp256k1Encrypt(uncompressedPublicKey: Uint8Array, plaintext: Uint8Array): Promise<EciesEncryptionOutput> {
+  public static async eciesSecp256k1Encrypt(publicKeyBytes: Uint8Array, plaintext: Uint8Array): Promise<EciesEncryptionOutput> {
     // underlying library requires Buffer as input
-    const publicKey = Buffer.from(uncompressedPublicKey);
+    const publicKey = Buffer.from(publicKeyBytes);
     const plaintextBuffer = Buffer.from(plaintext);
 
     const cryptogram = eciesjs.encrypt(publicKey, plaintextBuffer);
