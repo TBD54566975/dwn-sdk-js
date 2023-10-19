@@ -199,6 +199,117 @@ export function testRecordsQueryHandler(): void {
         expect(reply3.entries?.length).to.equal(0);
       });
 
+      it('should be able to query with `dataSize` filter (half-open range)', async () => {
+        const alice = await DidKeyResolver.generate();
+        const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, data: TestDataGenerator.randomBytes(10) });
+        const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice, data: TestDataGenerator.randomBytes(50) });
+        const write3 = await TestDataGenerator.generateRecordsWrite({ author: alice, data: TestDataGenerator.randomBytes(100) });
+
+        // insert data
+        const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
+        const writeReply2 = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
+        const writeReply3 = await dwn.processMessage(alice.did, write3.message, write3.dataStream);
+        expect(writeReply1.status.code).to.equal(202);
+        expect(writeReply2.status.code).to.equal(202);
+        expect(writeReply3.status.code).to.equal(202);
+
+        // testing gt
+        const recordsQuery1 = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : { dataSize: { gt: 10 } },
+        });
+        const reply1 = await dwn.processMessage(alice.did, recordsQuery1.message);
+        expect(reply1.entries?.length).to.equal(2);
+        expect(reply1.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes!));
+        expect(reply1.entries![1].encodedData).to.equal(Encoder.bytesToBase64Url(write3.dataBytes!));
+
+        // testing lt
+        const recordsQuery2 = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : { dataSize: { lt: 100 } },
+        });
+        const reply2 = await dwn.processMessage(alice.did, recordsQuery2.message);
+        expect(reply2.entries?.length).to.equal(2);
+        expect(reply2.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(write1.dataBytes!));
+        expect(reply2.entries![1].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes!));
+
+        // testing gte
+        const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : { dataSize: { gte: 10 } },
+        });
+        const reply3 = await dwn.processMessage(alice.did, recordsQuery3.message);
+        expect(reply3.entries?.length).to.equal(3);
+        expect(reply3.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(write1.dataBytes!));
+        expect(reply3.entries![1].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes!));
+        expect(reply3.entries![2].encodedData).to.equal(Encoder.bytesToBase64Url(write3.dataBytes!));
+
+        // testing lte
+        const recordsQuery4 = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : { dataSize: { lte: 100 } },
+        });
+        const reply4 = await dwn.processMessage(alice.did, recordsQuery4.message);
+        expect(reply4.entries?.length).to.equal(3);
+        expect(reply4.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(write1.dataBytes!));
+        expect(reply4.entries![1].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes!));
+        expect(reply4.entries![2].encodedData).to.equal(Encoder.bytesToBase64Url(write3.dataBytes!));
+      });
+
+      it('should be able to range query with `dataSize` filter (open & closed range)', async () => {
+        const alice = await DidKeyResolver.generate();
+        const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, data: TestDataGenerator.randomBytes(10) });
+        const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice, data: TestDataGenerator.randomBytes(50) });
+        const write3 = await TestDataGenerator.generateRecordsWrite({ author: alice, data: TestDataGenerator.randomBytes(100) });
+
+        // insert data
+        const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
+        const writeReply2 = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
+        const writeReply3 = await dwn.processMessage(alice.did, write3.message, write3.dataStream);
+        expect(writeReply1.status.code).to.equal(202);
+        expect(writeReply2.status.code).to.equal(202);
+        expect(writeReply3.status.code).to.equal(202);
+
+        // testing range using gt & lt
+        const recordsQuery1 = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : { dataSize: { gt: 10, lt: 60 } },
+        });
+        const reply1 = await dwn.processMessage(alice.did, recordsQuery1.message);
+        expect(reply1.entries?.length).to.equal(1);
+        expect(reply1.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes!));
+
+        // testing range using gte & lt
+        const recordsQuery2 = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : { dataSize: { gte: 10, lt: 60 } },
+        });
+        const reply2 = await dwn.processMessage(alice.did, recordsQuery2.message);
+        expect(reply2.entries?.length).to.equal(2);
+        expect(reply2.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(write1.dataBytes!));
+        expect(reply2.entries![1].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes!));
+
+        // testing range using gt & lte
+        const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : { dataSize: { gt: 50, lte: 100 } },
+        });
+        const reply3 = await dwn.processMessage(alice.did, recordsQuery3.message);
+        expect(reply3.entries?.length).to.equal(1);
+        expect(reply3.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(write3.dataBytes!));
+
+        // testing range using gte & lte
+        const recordsQuery4 = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : { dataSize: { gte: 10, lte: 100 } },
+        });
+        const reply4 = await dwn.processMessage(alice.did, recordsQuery4.message);
+        expect(reply4.entries?.length).to.equal(3);
+        expect(reply4.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(write1.dataBytes!));
+        expect(reply4.entries![1].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes!));
+        expect(reply4.entries![2].encodedData).to.equal(Encoder.bytesToBase64Url(write3.dataBytes!));
+      });
+
       it('should be able to range query by `dateCreated`', async () => {
       // scenario: 3 records authored by alice, created on first of 2021, 2022, and 2023 respectively, only the first 2 records share the same schema
         const firstDayOf2021 = createDateString(new Date(2021, 1, 1));
