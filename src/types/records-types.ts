@@ -4,6 +4,7 @@ import type { GeneralJws } from './jws-types.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { KeyDerivationScheme } from '../utils/hd-key.js';
 import type { PublicJwk } from './jose-types.js';
+import type { RangeFilter } from './message-types.js';
 import type { Readable } from 'readable-stream';
 import type { AuthorizationModel, GenericMessage, GenericSignaturePayload, Pagination } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
@@ -100,6 +101,7 @@ export type RecordsFilter = {
   recordId?: string;
   parentId?: string;
   dataFormat?: string;
+  dataSize?: RangeFilter;
   dateCreated?: RangeCriterion;
 };
 
