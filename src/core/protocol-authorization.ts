@@ -401,7 +401,7 @@ export class ProtocolAuthorization {
     }
 
     const roleRuleSet = ProtocolAuthorization.getRuleSetAtProtocolPath(protocolRole, protocolDefinition);
-    if (!roleRuleSet?.$globalRole && !roleRuleSet?.$contextRole) {
+    if (roleRuleSet === undefined || (!roleRuleSet.$globalRole && !roleRuleSet.$contextRole)) {
       throw new DwnError(
         DwnErrorCode.ProtocolAuthorizationNotARole,
         `Protocol path ${protocolRole} is not a valid protocolRole`
@@ -417,7 +417,7 @@ export class ProtocolAuthorization {
       isLatestBaseState : true,
     };
 
-    if (roleRuleSet?.$contextRole) {
+    if (roleRuleSet.$contextRole) {
       if (contextId === undefined) {
         throw new DwnError(
           DwnErrorCode.ProtocolAuthorizationMissingContextId,
