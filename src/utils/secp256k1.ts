@@ -67,15 +67,16 @@ export class Secp256k1 {
   }
 
   /**
-   * Creates a uncompressed key in raw bytes from the given SECP256K1 JWK.
+   * Creates a compressed key in raw bytes from the given SECP256K1 JWK.
    */
   public static publicJwkToBytes(publicJwk: PublicJwk): Uint8Array {
     const x = Encoder.base64UrlToBytes(publicJwk.x);
     const y = Encoder.base64UrlToBytes(publicJwk.y!);
 
-    // leading byte of 0x04 indicates that the public key is uncompressed
-    const publicKey = new Uint8Array([0x04, ...x, ...y]);
-    return publicKey;
+    return secp256k1.ProjectivePoint.fromAffine({
+      x : secp256k1.etc.bytesToNumberBE(x),
+      y : secp256k1.etc.bytesToNumberBE(y)
+    }).toRawBytes(true);
   }
 
   /**
@@ -129,20 +130,20 @@ export class Secp256k1 {
   }
 
   /**
-   * Generates key pair in raw bytes, where the `publicKey` is uncompressed.
+   * Generates key pair in raw bytes, where the `publicKey` is compressed.
    */
   public static async generateKeyPairRaw(): Promise<{publicKey: Uint8Array, privateKey: Uint8Array}> {
     const privateKey = secp256k1.utils.randomPrivateKey();
-    const publicKey = secp256k1.getPublicKey(privateKey, false); // `false` = uncompressed
+    const publicKey = secp256k1.getPublicKey(privateKey, true); // `true` = compressed
 
     return { publicKey, privateKey };
   }
 
   /**
-   * Gets the uncompressed public key of the given private key.
+   * Gets the compressed public key of the given private key.
    */
   public static async getPublicKey(privateKey: Uint8Array): Promise<Uint8Array> {
-    const publicKey = secp256k1.getPublicKey(privateKey, false); // `false` = uncompressed
+    const publicKey = secp256k1.getPublicKey(privateKey, true); // `true` = compressed
     return publicKey;
   }
 
