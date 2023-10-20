@@ -115,6 +115,7 @@ export type CreateFromOptions = {
   authorizationSigner?: Signer;
   attestationSigners?: Signer[];
   encryptionInput?: EncryptionInput;
+  protocolRole?: string;
 };
 
 export class RecordsWrite {
@@ -357,6 +358,7 @@ export class RecordsWrite {
       data                : options.data,
       dataCid             : options.data ? undefined : sourceMessage.descriptor.dataCid, // if data not given, use base message dataCid
       dataSize            : options.data ? undefined : sourceMessage.descriptor.dataSize, // if data not given, use base message dataSize
+      protocolRole        : options.protocolRole,
       // finally still need signers
       authorizationSigner : options.authorizationSigner,
       attestationSigners  : options.attestationSigners
@@ -600,6 +602,17 @@ export class RecordsWrite {
   public async isInitialWrite(): Promise<boolean> {
     const entryId = await this.getEntryId();
     return (entryId === this.message.recordId);
+  }
+
+  public async authoredByInitialRecordAuthor(tenant: string, messageStore: MessageStore): Promise<boolean> {
+    // fetch the initialWrite
+    const query = {
+      entryId: this.message.recordId
+    };
+    const { messages: result } = await messageStore.query(tenant, [ query ]);
+
+    const initialRecordsWrite = await RecordsWrite.parse(result[0] as RecordsWriteMessage);
+    return initialRecordsWrite.author === this.author;
   }
 
   /**

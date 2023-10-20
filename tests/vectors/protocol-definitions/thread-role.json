@@ -4,6 +4,7 @@
   "types": {
     "thread": {},
     "participant": {},
+    "admin": {},
     "chat": {}
   },
   "structure": {
@@ -14,6 +15,9 @@
           "can": "read"
         }
       ],
+      "admin": {
+        "$contextRole": true
+      },
       "participant": {
         "$contextRole": true,
         "$actions": [
@@ -36,6 +40,10 @@
           {
             "role": "thread/participant",
             "can": "write"
+          },
+          {
+            "role": "thread/admin",
+            "can": "update"
           }
         ]
       }

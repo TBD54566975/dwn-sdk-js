@@ -6,6 +6,8 @@ import type { RecordsWriteMessage } from '../../src/types/records-types.js';
 import type { RecordsWriteMessageWithOptionalEncodedData } from '../../src/store/storage-controller.js';
 import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
 
+import anyoneCollaborateProtocolDefinition from '../vectors/protocol-definitions/anyone-collaborate.json' assert { type: 'json' };
+import authorUpdateProtocolDefinition from '../vectors/protocol-definitions/author-update.json' assert { type: 'json' };
 import chaiAsPromised from 'chai-as-promised';
 import credentialIssuanceProtocolDefinition from '../vectors/protocol-definitions/credential-issuance.json' assert { type: 'json' };
 import dexProtocolDefinition from '../vectors/protocol-definitions/dex.json' assert { type: 'json' };
@@ -14,6 +16,7 @@ import friendRoleProtocolDefinition from '../vectors/protocol-definitions/friend
 import messageProtocolDefinition from '../vectors/protocol-definitions/message.json' assert { type: 'json' };
 import minimalProtocolDefinition from '../vectors/protocol-definitions/minimal.json' assert { type: 'json' };
 import privateProtocol from '../vectors/protocol-definitions/private-protocol.json' assert { type: 'json' };
+import recipientUpdateProtocol from '../vectors/protocol-definitions/recipient-update.json' assert { type: 'json' };
 import sinon from 'sinon';
 import socialMediaProtocolDefinition from '../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
 import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
@@ -44,6 +47,7 @@ import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { DwnConstant, KeyDerivationScheme, RecordsDelete } from '../../src/index.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message.js';
 import { Encryption, EncryptionAlgorithm } from '../../src/utils/encryption.js';
+import { ProtocolAuthorization } from '../../src/core/protocol-authorization.js';
 
 chai.use(chaiAsPromised);
 
@@ -1046,6 +1050,54 @@ export function testRecordsWriteHandler(): void {
           expect(bobRecordQueryReply.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(bobData));
         });
 
+        it('should allow update with allow-anyone rule', async () => {
+          // scenario: Alice creates a record on her DWN, and Bob (anyone) is able to update it. Bob is not able to
+          //           create a record.
+
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+
+          const protocolDefinition = anyoneCollaborateProtocolDefinition;
+
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolWriteReply.status.code).to.equal(202);
+
+          // Alice creates a doc
+          const docRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            recipient    : alice.did,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'doc'
+          });
+          const docRecordsReply = await dwn.processMessage(alice.did, docRecord.message, docRecord.dataStream);
+          expect(docRecordsReply.status.code).to.equal(202);
+
+          // Bob updates Alice's doc
+          const bobsData = await TestDataGenerator.randomBytes(10);
+          const docUpdateRecord = await TestDataGenerator.generateFromRecordsWrite({
+            author        : bob,
+            existingWrite : docRecord.recordsWrite,
+            data          : bobsData
+          });
+          const docUpdateRecordsReply = await dwn.processMessage(alice.did, docUpdateRecord.message, docUpdateRecord.dataStream);
+          expect(docUpdateRecordsReply.status.code).to.equal(202);
+
+          // Bob tries and fails to create a new record
+          const bobDocRecord = await TestDataGenerator.generateRecordsWrite({
+            author       : bob,
+            recipient    : bob.did,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'doc'
+          });
+          const bobDocRecordsReply = await dwn.processMessage(alice.did, bobDocRecord.message, bobDocRecord.dataStream);
+          expect(bobDocRecordsReply.status.code).to.equal(401);
+          expect(bobDocRecordsReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+        });
+
         describe('recipient rules', () => {
           it('should allow write with ancestor recipient rule', async () => {
             // scenario: VC issuer writes into Alice's DWN an asynchronous credential response upon receiving Alice's credential application
@@ -1119,6 +1171,68 @@ export function testRecordsWriteHandler(): void {
             expect(applicationResponseQueryReply.entries?.length).to.equal(1);
             expect(applicationResponseQueryReply.entries![0].encodedData)
               .to.equal(base64url.baseEncode(encodedCredentialResponse));
+          });
+
+          it('should allow update with ancestor recipient rule', async () => {
+            // scenario: Alice creates a post with Bob as recipient. Alice adds a tag to the post. Bob is able to update
+            //           the tag because he is recipient of the post. Bob is not able to create a new tag.
+
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+
+            const protocolDefinition = recipientUpdateProtocol;
+
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice creates a post with Bob as recipient
+            const docRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'post'
+            });
+            const docRecordsReply = await dwn.processMessage(alice.did, docRecord.message, docRecord.dataStream);
+            expect(docRecordsReply.status.code).to.equal(202);
+
+            // Alice creates a post/tag
+            const tagRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : alice.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'post/tag',
+              contextId    : docRecord.message.contextId!,
+              parentId     : docRecord.message.recordId!,
+            });
+            const tagRecordsReply = await dwn.processMessage(alice.did, tagRecord.message, tagRecord.dataStream);
+            expect(tagRecordsReply.status.code).to.equal(202);
+
+            // Bob updates Alice's post
+            const bobsData = await TestDataGenerator.randomBytes(10);
+            const tagUpdateRecord = await TestDataGenerator.generateFromRecordsWrite({
+              author        : bob,
+              existingWrite : tagRecord.recordsWrite,
+              data          : bobsData
+            });
+            const tagUpdateRecordsReply = await dwn.processMessage(alice.did, tagUpdateRecord.message, tagUpdateRecord.dataStream);
+            expect(tagUpdateRecordsReply.status.code).to.equal(202);
+
+            // Bob tries and fails to create a new record
+            const bobTagRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : bob,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'post/tag',
+              contextId    : docRecord.message.contextId!,
+              parentId     : docRecord.message.recordId!,
+            });
+            const bobTagRecordsReply = await dwn.processMessage(alice.did, bobTagRecord.message, bobTagRecord.dataStream);
+            expect(bobTagRecordsReply.status.code).to.equal(401);
+            expect(bobTagRecordsReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
           });
         });
 
@@ -1199,6 +1313,68 @@ export function testRecordsWriteHandler(): void {
             expect(applicationResponseQueryReply.entries?.length).to.equal(1);
             expect(applicationResponseQueryReply.entries![0].encodedData)
               .to.equal(base64url.baseEncode(encodedCaption));
+          });
+
+          it('should allow update with ancestor author rule', async () => {
+            // scenario: Bob authors a post on Alice's DWN. Alice adds a comment to the post. Bob is able to update the comment,
+            //           since he authored the post.
+
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+
+            const protocolDefinition = authorUpdateProtocolDefinition;
+
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Bob creates a post
+            const postRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : bob,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'post'
+            });
+            const postRecordsReply = await dwn.processMessage(alice.did, postRecord.message, postRecord.dataStream);
+            expect(postRecordsReply.status.code).to.equal(202);
+
+            // Alice creates a post/comment
+            const commentRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : alice.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'post/comment',
+              contextId    : postRecord.message.contextId!,
+              parentId     : postRecord.message.recordId!,
+            });
+            const commentRecordsReply = await dwn.processMessage(alice.did, commentRecord.message, commentRecord.dataStream);
+            expect(commentRecordsReply.status.code).to.equal(202);
+
+            // Bob updates Alice's comment
+            const bobsData = await TestDataGenerator.randomBytes(10);
+            const postUpdateRecord = await TestDataGenerator.generateFromRecordsWrite({
+              author        : alice,
+              existingWrite : commentRecord.recordsWrite,
+              data          : bobsData
+            });
+            const commentUpdateRecordsReply = await dwn.processMessage(alice.did, postUpdateRecord.message, postUpdateRecord.dataStream);
+            expect(commentUpdateRecordsReply.status.code).to.equal(202);
+
+            // Bob tries and fails to create a new comment
+            const bobPostRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : bob,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'post/comment',
+              contextId    : postRecord.message.contextId!,
+              parentId     : postRecord.message.recordId!,
+            });
+            const bobPostRecordsReply = await dwn.processMessage(alice.did, bobPostRecord.message, bobPostRecord.dataStream);
+            expect(bobPostRecordsReply.status.code).to.equal(401);
+            expect(bobPostRecordsReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
           });
         });
 
@@ -1611,6 +1787,54 @@ export function testRecordsWriteHandler(): void {
               expect(chatReply.status.code).to.equal(202);
             });
 
+            it('uses a $globalRole to authorize an update', async () => {
+              // scenario: Alice gives Bob a admin role. Bob invokes his
+              //           admin role in order to update a chat message that Alice wrote
+
+              const alice = await DidKeyResolver.generate();
+              const bob = await DidKeyResolver.generate();
+
+              const protocolDefinition = friendRoleProtocolDefinition;
+
+              const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+                author: alice,
+                protocolDefinition
+              });
+              const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+              expect(protocolWriteReply.status.code).to.equal(202);
+
+              // Alice writes a 'admin' $globalRole record with Bob as recipient
+              const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'admin',
+                data         : new TextEncoder().encode('Bob is my friend'),
+              });
+              const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, friendRoleRecord.dataStream);
+              expect(friendRoleReply.status.code).to.equal(202);
+
+              // Alice creates a 'chat' record
+              const chatRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : alice.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'chat',
+                data         : new TextEncoder().encode('Bob can write this cuz he is Alices friend'),
+              });
+              const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+              expect(chatReply.status.code).to.equal(202);
+
+              // Bob invokes his admin role to update the 'chat' record
+              const chatUpdateRecord = await TestDataGenerator.generateFromRecordsWrite({
+                author        : bob,
+                existingWrite : chatRecord.recordsWrite,
+                protocolRole  : 'admin',
+              });
+              const chatUpdateReply = await dwn.processMessage(alice.did, chatUpdateRecord.message, chatUpdateRecord.dataStream);
+              expect(chatUpdateReply.status.code).to.equal(202);
+            });
+
             it('rejects role-authorized writes if the protocolRole is not a valid protocol path to a role record', async () => {
               // scenario: Bob tries to invoke the 'chat' role to write to Alice's DWN, but 'chat' is not a role.
 
@@ -1728,6 +1952,65 @@ export function testRecordsWriteHandler(): void {
               });
               const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
               expect(chatRecordReply.status.code).to.equal(202);
+            });
+
+            it('uses a contextRole to authorize an update', async () => {
+              // scenario: Alice creates a thread and adds Bob to the 'thread/admin' role.
+              //           Bob invokes the record to write in the thread
+
+              const alice = await DidKeyResolver.generate();
+              const bob = await DidKeyResolver.generate();
+
+              const protocolDefinition = threadRoleProtocolDefinition;
+
+              const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+                author: alice,
+                protocolDefinition
+              });
+              const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+              expect(protocolWriteReply.status.code).to.equal(202);
+
+              // Alice creates a thread
+              const threadRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread'
+              });
+              const threadRecordReply = await dwn.processMessage(alice.did, threadRecord.message, threadRecord.dataStream);
+              expect(threadRecordReply.status.code).to.equal(202);
+
+              // Alice adds Bob as a 'thread/participant' in that thread
+              const participantRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                recipient    : bob.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread/admin',
+                contextId    : threadRecord.message.contextId,
+                parentId     : threadRecord.message.recordId,
+              });
+              const participantRecordReply = await dwn.processMessage(alice.did, participantRecord.message, participantRecord.dataStream);
+              expect(participantRecordReply.status.code).to.equal(202);
+
+              // Alice writes a chat message in the thread
+              const chatRecord = await TestDataGenerator.generateRecordsWrite({
+                author       : alice,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread/chat',
+                contextId    : threadRecord.message.contextId,
+                parentId     : threadRecord.message.recordId,
+              });
+              const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+              expect(chatRecordReply.status.code).to.equal(202);
+
+              // Bob invokes his admin role to update the chat message
+              const chatUpdateRecord = await TestDataGenerator.generateFromRecordsWrite({
+                author        : bob,
+                existingWrite : chatRecord.recordsWrite,
+                protocolRole  : 'thread/admin',
+              });
+              const chatUpdateRecordReply = await dwn.processMessage(alice.did, chatUpdateRecord.message, chatUpdateRecord.dataStream);
+              expect(chatUpdateRecordReply.status.code).to.equal(202);
             });
 
             it('rejects contextRole-authorized writes if there is no active role in that context for the recipient', async () => {
@@ -1858,8 +2141,8 @@ export function testRecordsWriteHandler(): void {
           expect(newRecordQueryReply.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(updatedMessageBytes));
         });
 
-        it('should disallow overwriting existing records by a different author', async () => {
-        // scenario: Bob writes into Alice's DWN given Alice's "message" protocol, Carol then attempts to modify the existing message
+        it('should disallow overwriting existing records by a different author if author is not authorized to `update`', async () => {
+          // scenario: Bob writes into Alice's DWN given Alice's "message" protocol, Carol then attempts to modify the existing message
 
           // write a protocol definition with an allow-anyone rule
           const protocolDefinition = messageProtocolDefinition;
@@ -1921,7 +2204,7 @@ export function testRecordsWriteHandler(): void {
 
           const carolWriteReply = await dwn.processMessage(alice.did, modifiedMessageFromCarol.message, modifiedMessageFromCarol.dataStream);
           expect(carolWriteReply.status.code).to.equal(401);
-          expect(carolWriteReply.status.detail).to.contain('must match to author of initial write');
+          expect(carolWriteReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
         });
 
         it('should not allow to change immutable recipient', async () => {

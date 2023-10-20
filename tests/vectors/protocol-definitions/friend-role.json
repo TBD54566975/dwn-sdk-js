@@ -3,9 +3,13 @@
   "published": false,
   "types": {
     "friend": {},
+    "admin": {},
     "chat": {}
   },
   "structure": {
+    "admin": {
+      "$globalRole": true
+    },
     "friend": {
       "$globalRole": true
     },
@@ -25,6 +29,10 @@
         {
           "role": "friend",
           "can": "read"
+        },
+        {
+          "role": "admin",
+          "can": "update"
         }
       ]
     }
