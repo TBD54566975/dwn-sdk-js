@@ -2,6 +2,9 @@ import * as crypto from 'crypto';
 import * as eciesjs from 'eciesjs';
 import { Readable } from 'readable-stream';
 
+// compress publicKey for message encryption
+eciesjs.ECIES_CONFIG.isEphemeralKeyCompressed = true;
+
 /**
  * Utility class for performing common, non-DWN specific encryption operations.
  */
@@ -67,18 +70,27 @@ export class Encryption {
    * with SECP256K1 for the asymmetric calculations, HKDF as the key-derivation function,
    * and AES-GCM for the symmetric encryption and MAC algorithms.
    */
-  public static async eciesSecp256k1Encrypt(uncompressedPublicKey: Uint8Array, plaintext: Uint8Array): Promise<EciesEncryptionOutput> {
+  public static async eciesSecp256k1Encrypt(publicKeyBytes: Uint8Array, plaintext: Uint8Array): Promise<EciesEncryptionOutput> {
     // underlying library requires Buffer as input
-    const publicKey = Buffer.from(uncompressedPublicKey);
+    const publicKey = Buffer.from(publicKeyBytes);
     const plaintextBuffer = Buffer.from(plaintext);
 
     const cryptogram = eciesjs.encrypt(publicKey, plaintextBuffer);
 
     // split cryptogram returned into constituent parts
-    const ephemeralPublicKey = cryptogram.subarray(0, 65);
-    const initializationVector = cryptogram.subarray(65, 81);
-    const messageAuthenticationCode = cryptogram.subarray(81, 97);
-    const ciphertext = cryptogram.subarray(97);
+    let start = 0;
+    let end = Encryption.isEphemeralKeyCompressed ? 33 : 65;
+    const ephemeralPublicKey = cryptogram.subarray(start, end);
+
+    start = end;
+    end += eciesjs.ECIES_CONFIG.symmetricNonceLength;
+    const initializationVector = cryptogram.subarray(start, end);
+
+    start = end;
+    end += 16; // eciesjs.consts.AEAD_TAG_LENGTH
+    const messageAuthenticationCode = cryptogram.subarray(start, end);
+
+    const ciphertext = cryptogram.subarray(end);
 
     return {
       ciphertext,
@@ -106,6 +118,13 @@ export class Encryption {
     const plaintext = eciesjs.decrypt(privateKeyBuffer, eciesEncryptionOutput);
 
     return plaintext;
+  }
+
+  /**
+   * Expose eciesjs library configuration
+   */
+  static get isEphemeralKeyCompressed():boolean {
+    return eciesjs.ECIES_CONFIG.isEphemeralKeyCompressed;
   }
 }
 

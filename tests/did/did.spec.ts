@@ -3,6 +3,8 @@ import chai, { expect } from 'chai';
 
 import { Did } from '../../src/did/did.js';
 
+import { DwnError } from '../../src/core/dwn-error.js';
+
 // extends chai to test promises
 chai.use(chaiAsPromised);
 
@@ -15,6 +17,6 @@ describe('Did.validate', () => {
 
   it('should fail validation for valid DIDs', () => {
     expect(() => Did.validate(null)).to.throw(Error);
-    expect(() => Did.validate('did:123456789abcdefghijk')).to.throw(Error);
+    expect(() => Did.validate('did:123456789abcdefghijk')).to.throw(DwnError);
   });
 });

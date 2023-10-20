@@ -36,6 +36,13 @@ module.exports = function configure(config) {
     // available frameworks: https://www.npmjs.com/search?q=keywords:karma-adapter
     frameworks: ['mocha'],
 
+    client: {
+      // Increase Mocha's default timeout of 2 seconds to prevent timeouts during GitHub CI runs.
+      mocha: {
+        timeout: 10000 // 10 seconds
+      }
+    },
+
     // list of files / patterns to load in the browser
     files: [
       { pattern: 'tests/**/*.spec.ts', watched: false }
@@ -74,6 +81,10 @@ module.exports = function configure(config) {
 
     // Continuous Integration mode
     // if true, Karma captures browsers, runs the tests and exits
-    singleRun: true
+    singleRun: true,
+
+    // Increase browser timeouts to avoid DISCONNECTED messages during GitHub CI runs.
+    browserDisconnectTimeout   : 10000, // default 2000
+    browserDisconnectTolerance : 1, // default 0
   });
 };

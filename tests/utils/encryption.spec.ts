@@ -4,6 +4,7 @@ import { Encryption } from '../../src/utils/encryption.js';
 import { expect } from 'chai';
 import { Readable } from 'readable-stream';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
+import { etc as Secp256k1Etc } from '@noble/secp256k1';
 import { TestDataGenerator } from './test-data-generator.js';
 
 describe('Encryption', () => {
@@ -116,6 +117,21 @@ describe('Encryption', () => {
       const decryptedPlaintext = await Encryption.eciesSecp256k1Decrypt(decryptionInput);
 
       expect(ArrayUtility.byteArraysEqual(originalPlaintext, decryptedPlaintext)).to.be.true;
+    });
+
+    it('should be able to accept both compressed and uncompressed publicKeys', async () => {
+      const originalPlaintext = TestDataGenerator.randomBytes(32);
+      const h2b = Secp256k1Etc.hexToBytes;
+      // Following test vector was taken from @noble/secp256k1 test file.
+      // noble-secp256k1/main/test/vectors/secp256k1/privates.json
+      const privateKey = h2b('9c7fc36bc106fd7df5e1078d03e34b9a045892abdd053ec69bfeb22327529f6c');
+      const compressed = h2b('03936cb2bd56e681d360bbce6a3a7a1ccbf72f3ab8792edbc45fb08f55b929c588');
+      const uncompressed = h2b('04936cb2bd56e681d360bbce6a3a7a1ccbf72f3ab8792edbc45fb08f55b929c588529b8cee53f7eff1da5fc0e6050d952b37d4de5c3b85e952dfe9d9e9b2b3b6eb');
+      for (const publicKey of [compressed, uncompressed]) {
+        const encrypted = await Encryption.eciesSecp256k1Encrypt(publicKey, originalPlaintext);
+        const decrypted = await Encryption.eciesSecp256k1Decrypt({ privateKey, ...encrypted });
+        expect(ArrayUtility.byteArraysEqual(originalPlaintext, decrypted)).to.be.true;
+      }
     });
   });
 });
