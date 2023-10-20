@@ -26,6 +26,7 @@ import GeneralJws from '../json-schemas/general-jws.json' assert { type: 'json' 
 import GenericSignaturePayload from '../json-schemas/signature-payloads/generic-signature-payload.json' assert { type: 'json' };
 import JwkVerificationMethod from '../json-schemas/jwk-verification-method.json' assert { type: 'json' };
 import MessagesGet from '../json-schemas/interface-methods/messages-get.json' assert { type: 'json' };
+import NumberRangeFilter from '../json-schemas/interface-methods/number-range-filter.json' assert { type: 'json' };
 import PermissionsDefinitions from '../json-schemas/permissions/permissions-definitions.json' assert { type: 'json' };
 import PermissionsGrant from '../json-schemas/interface-methods/permissions-grant.json' assert { type: 'json' };
 import PermissionsRequest from '../json-schemas/interface-methods/permissions-request.json' assert { type: 'json' };
@@ -57,6 +58,7 @@ const schemas = {
   GeneralJws,
   JwkVerificationMethod,
   MessagesGet,
+  NumberRangeFilter,
   PermissionsDefinitions,
   PermissionsGrant,
   PermissionsRequest,
