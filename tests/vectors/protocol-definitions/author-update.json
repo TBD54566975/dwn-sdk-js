@@ -1,5 +1,5 @@
 {
-  "protocol": "http://recipient-update-protocol.xyz",
+  "protocol": "http://author-update-protocol.xyz",
   "published": true,
   "types": {
     "post": {},

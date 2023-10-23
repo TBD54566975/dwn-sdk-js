@@ -328,7 +328,10 @@ export class ProtocolAuthorization {
     }
   }
 
-  private static async getInboundMessageActions(
+  /**
+   * Returns a list of ProtocolAction(s) based on the incoming message, one of which must be allowed for the message to be authorized.
+   */
+  private static async getActionsSeekingARuleMatch(
     tenant: string,
     incomingMessage: RecordsRead | RecordsWrite,
     messageStore: MessageStore,
@@ -342,7 +345,7 @@ export class ProtocolAuthorization {
     if (await incomingRecordsWrite.isInitialWrite()) {
       // only 'write' allows initial RecordsWrites; 'update' only applies to subsequent RecordsWrites
       return [ProtocolAction.Write];
-    } else if (await incomingRecordsWrite.authoredByInitialRecordAuthor(tenant, messageStore)) {
+    } else if (await incomingRecordsWrite.isAuthoredByInitialRecordAuthor(tenant, messageStore)) {
       // Both 'update' and 'write' authorize the incoming message
       return [ProtocolAction.Write, ProtocolAction.Update];
     } else {
@@ -363,7 +366,7 @@ export class ProtocolAuthorization {
     messageStore: MessageStore,
   ): Promise<void> {
     const incomingMessageMethod = incomingMessage.message.descriptor.method;
-    const inboundMessageActions = await ProtocolAuthorization.getInboundMessageActions(tenant, incomingMessage, messageStore);
+    const inboundMessageActions = await ProtocolAuthorization.getActionsSeekingARuleMatch(tenant, incomingMessage, messageStore);
     const author = incomingMessage.author;
     const actionRules = inboundMessageRuleSet.$actions;
 

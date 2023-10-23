@@ -604,7 +604,11 @@ export class RecordsWrite {
     return (entryId === this.message.recordId);
   }
 
-  public async authoredByInitialRecordAuthor(tenant: string, messageStore: MessageStore): Promise<boolean> {
+  /**
+   * Checks if the author of the RecordsWrite is the same as the author of the initial RecordsWrite for the record.
+   * Returns true if `this` is the initial RecordsWrite.
+   */
+  public async isAuthoredByInitialRecordAuthor(tenant: string, messageStore: MessageStore): Promise<boolean> {
     // fetch the initialWrite
     const query = {
       entryId: this.message.recordId
