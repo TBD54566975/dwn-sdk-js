@@ -47,7 +47,6 @@ import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { DwnConstant, KeyDerivationScheme, RecordsDelete } from '../../src/index.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message.js';
 import { Encryption, EncryptionAlgorithm } from '../../src/utils/encryption.js';
-import { ProtocolAuthorization } from '../../src/core/protocol-authorization.js';
 
 chai.use(chaiAsPromised);
 
