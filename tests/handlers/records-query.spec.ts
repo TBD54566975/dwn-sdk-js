@@ -1105,7 +1105,7 @@ export function testRecordsQueryHandler(): void {
             parentId     : threadRecord.message.recordId,
             data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
           });
-          const chatRecordForBobReply = await dwn.handleRecordsWrite(alice.did, chatRecordForBob.message, chatRecordForBob.dataStream);
+          const chatRecordForBobReply = await dwn.processMessage(alice.did, chatRecordForBob.message, chatRecordForBob.dataStream);
           expect(chatRecordForBobReply.status.code).to.equal(202);
 
           // Alice writes two 'chat' records NOT addressed to Bob
@@ -1120,7 +1120,7 @@ export function testRecordsQueryHandler(): void {
               parentId     : threadRecord.message.recordId,
               data         : new TextEncoder().encode('Bob cannot read this'),
             });
-            const chatReply = await dwn.handleRecordsWrite(alice.did, chatRecord.message, chatRecord.dataStream);
+            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
             expect(chatReply.status.code).to.equal(202);
           }
 
@@ -1161,7 +1161,7 @@ export function testRecordsQueryHandler(): void {
             protocolPath : 'friend',
             data         : new TextEncoder().encode('Bob is my friend'),
           });
-          const friendRoleReply = await dwn.handleRecordsWrite(alice.did, friendRoleRecord.message, friendRoleRecord.dataStream);
+          const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, friendRoleRecord.dataStream);
           expect(friendRoleReply.status.code).to.equal(202);
 
           // Alice writes three 'chat' records
@@ -1175,7 +1175,7 @@ export function testRecordsQueryHandler(): void {
               published    : false,
               data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
             });
-            const chatReply = await dwn.handleRecordsWrite(alice.did, chatRecord.message, chatRecord.dataStream);
+            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
             expect(chatReply.status.code).to.equal(202);
             chatRecordIds.push(chatRecord.message.recordId);
           }
@@ -1230,7 +1230,7 @@ export function testRecordsQueryHandler(): void {
             parentId     : threadRecord.message.recordId,
             data         : new TextEncoder().encode('Bob is my friend'),
           });
-          const participantRoleReply = await dwn.handleRecordsWrite(alice.did, participantRoleRecord.message, participantRoleRecord.dataStream);
+          const participantRoleReply = await dwn.processMessage(alice.did, participantRoleRecord.message, participantRoleRecord.dataStream);
           expect(participantRoleReply.status.code).to.equal(202);
 
           // Alice writes three 'chat' records
@@ -1246,7 +1246,7 @@ export function testRecordsQueryHandler(): void {
               parentId     : threadRecord.message.recordId,
               data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
             });
-            const chatReply = await dwn.handleRecordsWrite(alice.did, chatRecord.message, chatRecord.dataStream);
+            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
             expect(chatReply.status.code).to.equal(202);
             chatRecordIds.push(chatRecord.message.recordId);
           }
@@ -1291,7 +1291,7 @@ export function testRecordsQueryHandler(): void {
             protocolPath : 'friend',
             data         : new TextEncoder().encode('Bob is my friend'),
           });
-          const friendRoleReply = await dwn.handleRecordsWrite(alice.did, friendRoleRecord.message, friendRoleRecord.dataStream);
+          const friendRoleReply = await dwn.processMessage(alice.did, friendRoleRecord.message, friendRoleRecord.dataStream);
           expect(friendRoleReply.status.code).to.equal(202);
 
           // Alice writes three 'chat' records
@@ -1305,7 +1305,7 @@ export function testRecordsQueryHandler(): void {
               published    : false,
               data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
             });
-            const chatReply = await dwn.handleRecordsWrite(alice.did, chatRecord.message, chatRecord.dataStream);
+            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
             expect(chatReply.status.code).to.equal(202);
             chatRecordIds.push(chatRecord.message.recordId);
           }
@@ -1358,7 +1358,7 @@ export function testRecordsQueryHandler(): void {
             parentId     : threadRecord.message.recordId,
             data         : new TextEncoder().encode('Bob is my friend'),
           });
-          const participantRoleReply = await dwn.handleRecordsWrite(alice.did, participantRoleRecord.message, participantRoleRecord.dataStream);
+          const participantRoleReply = await dwn.processMessage(alice.did, participantRoleRecord.message, participantRoleRecord.dataStream);
           expect(participantRoleReply.status.code).to.equal(202);
 
           // Alice writes three 'chat' records
@@ -1374,7 +1374,7 @@ export function testRecordsQueryHandler(): void {
               parentId     : threadRecord.message.recordId,
               data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
             });
-            const chatReply = await dwn.handleRecordsWrite(alice.did, chatRecord.message, chatRecord.dataStream);
+            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
             expect(chatReply.status.code).to.equal(202);
             chatRecordIds.push(chatRecord.message.recordId);
           }
@@ -1421,7 +1421,7 @@ export function testRecordsQueryHandler(): void {
               published    : false,
               data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
             });
-            const chatReply = await dwn.handleRecordsWrite(alice.did, chatRecord.message, chatRecord.dataStream);
+            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
             expect(chatReply.status.code).to.equal(202);
             chatRecordIds.push(chatRecord.message.recordId);
           }
@@ -1476,7 +1476,7 @@ export function testRecordsQueryHandler(): void {
               parentId     : threadRecord.message.recordId,
               data         : new TextEncoder().encode('Bob can read this cuz he is my friend'),
             });
-            const chatReply = await dwn.handleRecordsWrite(alice.did, chatRecord.message, chatRecord.dataStream);
+            const chatReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
             expect(chatReply.status.code).to.equal(202);
             chatRecordIds.push(chatRecord.message.recordId);
           }
