@@ -6,13 +6,8 @@ import type { ProtocolActionRule, ProtocolDefinition, ProtocolRuleSet, Protocols
 
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
-import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
+import { DwnInterfaceName, DwnMethodName } from './message.js';
 import { ProtocolAction, ProtocolActor } from '../types/protocols-types.js';
-
-const methodToAllowedActionMap: Record<string, ProtocolAction> = {
-  [DwnMethodName.Write] : ProtocolAction.Write,
-  [DwnMethodName.Read]  : ProtocolAction.Read,
-};
 
 export class ProtocolAuthorization {
 
@@ -100,13 +95,12 @@ export class ProtocolAuthorization {
 
     // verify method invoked against the allowed actions
     await ProtocolAuthorization.verifyAllowedActions(
+      tenant,
       incomingMessage,
       inboundMessageRuleSet,
       ancestorMessageChain,
+      messageStore,
     );
-
-    // verify allowed condition of incoming message
-    await ProtocolAuthorization.verifyActionCondition(tenant, incomingMessage, messageStore);
   }
 
   /**
@@ -334,16 +328,44 @@ export class ProtocolAuthorization {
   }
 
   /**
+   * Returns a list of ProtocolAction(s) based on the incoming message, one of which must be allowed for the message to be authorized.
+   */
+  private static async getActionsSeekingARuleMatch(
+    tenant: string,
+    incomingMessage: RecordsRead | RecordsWrite,
+    messageStore: MessageStore,
+  ): Promise<ProtocolAction[]> {
+    if (incomingMessage.message.descriptor.method === DwnMethodName.Read) {
+      return [ProtocolAction.Read];
+    }
+    // else 'Write'
+
+    const incomingRecordsWrite = incomingMessage as RecordsWrite;
+    if (await incomingRecordsWrite.isInitialWrite()) {
+      // only 'write' allows initial RecordsWrites; 'update' only applies to subsequent RecordsWrites
+      return [ProtocolAction.Write];
+    } else if (await incomingRecordsWrite.isAuthoredByInitialRecordAuthor(tenant, messageStore)) {
+      // Both 'update' and 'write' authorize the incoming message
+      return [ProtocolAction.Write, ProtocolAction.Update];
+    } else {
+      // Actors other than the initial record author must be authorized to 'update' the message
+      return [ProtocolAction.Update];
+    }
+  }
+
+  /**
    * Verifies the action (e.g. read/write) specified in the given message matches the allowed actions in the rule set.
    * @throws {Error} if action not allowed.
    */
   private static async verifyAllowedActions(
+    tenant: string,
     incomingMessage: RecordsRead | RecordsWrite,
     inboundMessageRuleSet: ProtocolRuleSet,
     ancestorMessageChain: RecordsWriteMessage[],
+    messageStore: MessageStore,
   ): Promise<void> {
     const incomingMessageMethod = incomingMessage.message.descriptor.method;
-    const inboundMessageAction = methodToAllowedActionMap[incomingMessageMethod];
+    const inboundMessageActions = await ProtocolAuthorization.getActionsSeekingARuleMatch(tenant, incomingMessage, messageStore);
     const author = incomingMessage.author;
     const actionRules = inboundMessageRuleSet.$actions;
 
@@ -355,7 +377,7 @@ export class ProtocolAuthorization {
     const invokedRole = incomingMessage.authorSignaturePayload?.protocolRole;
 
     for (const actionRule of actionRules) {
-      if (actionRule.can !== inboundMessageAction) {
+      if (!inboundMessageActions.includes(actionRule.can as ProtocolAction)) {
         continue;
       }
 
@@ -380,7 +402,7 @@ export class ProtocolAuthorization {
     }
 
     // No action rules were satisfied, author is not authorized
-    throw new DwnError(DwnErrorCode.ProtocolAuthorizationActionNotAllowed, `inbound message action ${inboundMessageAction} not allowed for author`);
+    throw new DwnError(DwnErrorCode.ProtocolAuthorizationActionNotAllowed, `inbound message action not allowed for author`);
   }
 
   /**
@@ -434,33 +456,6 @@ export class ProtocolAuthorization {
           DwnErrorCode.ProtocolAuthorizationDuplicateContextRoleRecipient,
           `DID '${recipient}' is already recipient of a $contextRole record at protocol path '${protocolPath} in the same context`
         );
-      }
-    }
-  }
-
-  /**
-   * Verifies if the desired action can be taken.
-   * Currently the only check is: if the write is not the initial write, the author must be the same as the initial write
-   * @throws {Error} if fails verification
-   */
-  private static async verifyActionCondition(tenant: string, incomingMessage: RecordsRead | RecordsWrite, messageStore: MessageStore): Promise<void> {
-    // Currently no conditions for methods other than Write
-    if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
-      const recordsWrite = incomingMessage as RecordsWrite;
-      const isInitialWrite = await recordsWrite.isInitialWrite();
-      if (!isInitialWrite) {
-        // fetch the initialWrite
-        const query = {
-          entryId: recordsWrite.message.recordId
-        };
-        const { messages: result } = await messageStore.query(tenant, [ query ]);
-
-        // check the author of the initial write matches the author of the incoming message
-        const initialWrite = result[0] as RecordsWriteMessage;
-        const authorOfInitialWrite = Message.getAuthor(initialWrite);
-        if (recordsWrite.author !== authorOfInitialWrite) {
-          throw new Error(`author of incoming message '${recordsWrite.author}' must match to author of initial write '${authorOfInitialWrite}'`);
-        }
       }
     }
   }

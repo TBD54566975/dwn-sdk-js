@@ -44,6 +44,7 @@
                 "type": "string",
                 "enum": [
                   "read",
+                  "update",
                   "write"
                 ]
               }
@@ -63,6 +64,7 @@
                 "type": "string",
                 "enum": [
                   "read",
+                  "update",
                   "write"
                 ]
               }
