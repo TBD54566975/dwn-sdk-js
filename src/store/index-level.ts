@@ -62,44 +62,16 @@ export class IndexLevel<T> {
     // adding a reverse lookup to be able to delete index data as well as look up sorted indexes by a cursor
     indexOps.push({ type: 'put', key: `__${itemId}__indexes`, value: JSON.stringify({ indexes, sortIndexes }) });
 
-    // since LevelDB keys are sorted lexicographically, we need to create sortable keys for each indexable property.
-    // for each indexable property we go through the different sorting indexes and construct a unique sorted index key.
-    // the sort property is the last property in the key before the tie-breaker, the key itself is used as a tie-breaker.
-    // for ex:
-    //
-    //  sortProperty  : 'watermark'
-    //  sortValue     : '01HCG7W7P6WBC88WRKKYPN1Z9J'
-    //  propertyName  : 'dateCreated'
-    //  propertyValue : '2023-01-10T00:00:00.000000'
-    //  itemId        : 'bafyreigup3ymvwjik3qadcrrshrsehedxgjhlya75qh5oexqelnsto2bpu'
-    //  watermark\u0000dateCreated\u0000"2023-01-10T00:00:00.000000"\u0000"01HCG7W7P6WBC88WRKKYPN1Z9J"\u0000bafyreigu...
-    //
-    //  sortProperty  : 'messageTimestamp'
-    //  sortValue     : '2023-01-10T00:00:00.000000'
-    //  propertyName  : 'dateCreated'
-    //  propertyValue : '2023-01-10T00:00:00.000000'
-    //  itemId        : 'bafyreigup3ymvwjik3qadcrrshrsehedxgjhlya75qh5oexqelnsto2bpu'
-    //  messageTimestamp\u0000dateCreated\u0000"2023-01-10T00:00:00.000000"\u0000"2023-01-10T00:00:00.000000"\u0000bafyreigu...
-
-    for (const propertyName in indexes) {
-      const propertyValue = indexes[propertyName];
-      for (const sortProperty in sortIndexes) {
-        const sortValue = sortIndexes[sortProperty];
-        const sortedKey = this.constructIndexedKey(
-          sortProperty,
-          propertyName,
-          this.encodeValue(propertyValue),
-          this.encodeValue(sortValue),
-          itemId,
-        );
-        indexOps.push({ type: 'put', key: sortedKey, value: JSON.stringify(value) });
-      }
-    }
+    // create sorted index keys for each of the indexable properties
+    this.constructIndexKeys(itemId, indexes, sortIndexes).forEach(sortedKey => {
+      indexOps.push({ type: 'put', key: sortedKey, value: JSON.stringify(value) });
+    });
 
     const tenantPartition = await this.db.partition(tenant);
     const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
     await indexPartition.batch(indexOps, options);
   }
+
 
   async delete(tenant: string, itemId: string, options?: IndexLevelOptions): Promise<void> {
     const tenantPartition = await this.db.partition(tenant);
@@ -117,20 +89,9 @@ export class IndexLevel<T> {
     indexOps.push({ type: 'del', key: indexKey });
 
     // delete all indexes associated with the data of the given ID
-    for (const propertyName in indexes) {
-      const propertyValue = indexes[propertyName];
-      for (const sortProperty in sortIndexes) {
-        const sortValue = sortIndexes[sortProperty];
-        const sortedKey = this.constructIndexedKey(
-          sortProperty,
-          propertyName,
-          this.encodeValue(propertyValue),
-          this.encodeValue(sortValue),
-          itemId,
-        );
-        indexOps.push({ type: 'del', key: sortedKey });
-      }
-    }
+    this.constructIndexKeys(itemId, indexes, sortIndexes).forEach(sortedKey => {
+      indexOps.push({ type: 'del', key: sortedKey });
+    });
 
     await indexPartition.batch(indexOps, options);
   }
@@ -231,7 +192,7 @@ export class IndexLevel<T> {
     const tenantPartition = await this.db.partition(tenant);
     const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
 
-    const matchPrefix = this.constructIndexedKey(sortProperty, propertyName, this.encodeValue(propertyValue));
+    const matchPrefix = IndexLevel.keySegmentJoin(sortProperty, propertyName, this.encodeValue(propertyValue));
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {
       gt: matchPrefix
     };
@@ -271,11 +232,11 @@ export class IndexLevel<T> {
     const tenantPartition = await this.db.partition(tenant);
     const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {};
-    const matchPrefix = this.constructIndexedKey(sortProperty, propertyName);
+    const matchPrefix = IndexLevel.keySegmentJoin(sortProperty, propertyName);
 
     for (const comparator in rangeFilter) {
       const comparatorName = comparator as keyof RangeFilter;
-      iteratorOptions[comparatorName] = this.constructIndexedKey(sortProperty, propertyName, this.encodeValue(rangeFilter[comparatorName]));
+      iteratorOptions[comparatorName] = IndexLevel.keySegmentJoin(sortProperty, propertyName, this.encodeValue(rangeFilter[comparatorName]));
     }
 
     // if a cursor exists, it will be the starting point for the range query but not equal to.
@@ -346,25 +307,13 @@ export class IndexLevel<T> {
    *
    * @param sortProperty the sorting property to construct the prefix of the key.
    * @param propertyName the specific property name being indexed.
-   * @param propertyValue the optional specific property value being indexed.
-   * @param sortValue the optional value that determines the sort order in a lexicographical sorted way
-   * @param key the optional unique key of the item being indexed, this is used as a tiebreaker in case the other properties are the same.
+   * @param propertyValue the specific property value being indexed.
+   * @param sortValue the value determines the sort order in a lexicographical sort
+   * @param id the unique id of the item being indexed, this is used as a tiebreaker in case the other properties are the same.
    * @returns a key to be used for sorted indexing within the LevelDB Index.
    */
-  protected constructIndexedKey(sortProperty: string, propertyName: string, propertyValue?: string, sortValue?: string, key?: string): string {
-    const keyConstruction = [ sortProperty, propertyName ];
-    if (propertyValue !== undefined) {
-      keyConstruction.push(propertyValue);
-    }
-
-    if (sortValue !== undefined) {
-      keyConstruction.push(sortValue);
-    }
-    if (key !== undefined) {
-      keyConstruction.push(key);
-    }
-
-    return IndexLevel.join(...keyConstruction);
+  private constructIndexKey(sortProperty: string, propertyName: string, propertyValue: string, sortValue: string, id: string): string {
+    return IndexLevel.keySegmentJoin(sortProperty, propertyName, propertyValue, sortValue, id);
   }
 
   async getFilterCursors(
@@ -398,6 +347,51 @@ export class IndexLevel<T> {
     }
 
     return propertyCursors;
+  }
+
+  /**
+   * Constructs an array of sortable keys for lexicographical sorting in LevelDB.
+   *
+   * For each of the indexes key/value pair we go through the different sorting indexes and construct a unique sorted key.
+   * the sort value is the last part in the key before the tie-breaker, and the key itself is used as a tie-breaker.
+   *
+   * ex:
+   *  sortProperty  : 'watermark'
+   *  sortValue     : '01HCG7W7P6WBC88WRKKYPN1Z9J'
+   *  propertyName  : 'dateCreated'
+   *  propertyValue : '2023-01-10T00:00:00.000000'
+   *  itemId        : 'bafyreigup3ymvwjik3qadcrrshrsehedxgjhlya75qh5oexqelnsto2bpu'
+   *  watermark\u0000dateCreated\u0000"2023-01-10T00:00:00.000000"\u0000"01HCG7W7P6WBC88WRKKYPN1Z9J"\u0000bafyreigu...
+   *
+   *  sortProperty  : 'messageTimestamp'
+   *  sortValue     : '2023-01-10T00:00:00.000000'
+   *  propertyName  : 'dateCreated'
+   *  propertyValue : '2023-01-10T00:00:00.000000'
+   *  itemId        : 'bafyreigup3ymvwjik3qadcrrshrsehedxgjhlya75qh5oexqelnsto2bpu'
+   *  messageTimestamp\u0000dateCreated\u0000"2023-01-10T00:00:00.000000"\u0000"2023-01-10T00:00:00.000000"\u0000bafyreigu...
+   *
+   * @param itemId the unique Id of the item we that is being indexed.
+   * @param indexes - (key-value pairs) to be indexed
+   * @param sortIndexes - (key-value pairs) to be used for sorting the index. Must include at least one sorting property.
+   * @returns an array of sortable string keys for lexicographical sorting.
+   */
+  private constructIndexKeys(itemId: string, indexes: { [key:string]:unknown }, sortIndexes: { [key:string]:unknown }): Array<string> {
+    const keys:Array<string> = [];
+    for (const propertyName in indexes) {
+      const propertyValue = indexes[propertyName];
+      for (const sortProperty in sortIndexes) {
+        const sortValue = sortIndexes[sortProperty];
+        const sortedKey = this.constructIndexKey(
+          sortProperty,
+          propertyName,
+          this.encodeValue(propertyValue),
+          this.encodeValue(sortValue),
+          itemId,
+        );
+        keys.push(sortedKey);
+      }
+    }
+    return keys;
   }
 
   /**
@@ -436,7 +430,7 @@ export class IndexLevel<T> {
         // we create a map of propertyValue to cursor key for each individual propertyValue for retrieval later.
         const values = new Map<EqualFilter, string>();
         for (const propertyValue of new Set(propertyFilter)) {
-          values.set(propertyValue, this.constructIndexedKey(
+          values.set(propertyValue, this.constructIndexKey(
             sortProperty,
             propertyName,
             this.encodeValue(propertyValue),
@@ -448,7 +442,7 @@ export class IndexLevel<T> {
       }
     }
 
-    return this.constructIndexedKey(
+    return this.constructIndexKey(
       sortProperty,
       propertyName,
       this.encodeValue(value),
@@ -508,7 +502,7 @@ export class IndexLevel<T> {
     return prefix + String(value + offset).padStart(PADDING_LENGTH, '0');
   }
 
-  protected encodeValue(value: unknown): string {
+  private encodeValue(value: unknown): string {
     switch (typeof value) {
     case 'string':
       // We can't just `JSON.stringify` as that'll affect the sort order of strings.
@@ -524,8 +518,8 @@ export class IndexLevel<T> {
   /**
    * Joins the given values using the `\x00` (\u0000) character.
    */
-  protected static delimiter = `\x00`;
-  protected static join(...values: unknown[]): string {
+  private static delimiter = `\x00`;
+  private static keySegmentJoin(...values: unknown[]): string {
     return values.join(IndexLevel.delimiter);
   }
 }
