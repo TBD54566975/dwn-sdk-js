@@ -220,7 +220,6 @@ export function testRecordsQueryHandler(): void {
         });
         const reply1 = await dwn.processMessage(alice.did, recordsQuery1.message);
         expect(reply1.entries?.length).to.equal(2);
-        expect(reply1.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes!));
 
         expect(
           reply1.entries?.map((entry) => entry.encodedData)
