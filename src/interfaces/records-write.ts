@@ -463,7 +463,7 @@ export class RecordsWrite {
     } else if (this.author !== undefined && this.authorSignaturePayload!.permissionsGrantId !== undefined) {
       await RecordsGrantAuthorization.authorizeWrite(tenant, this, this.author, messageStore);
     } else if (this.message.descriptor.protocol !== undefined) {
-      await ProtocolAuthorization.authorize(tenant, this, this, messageStore);
+      await ProtocolAuthorization.authorizeWrite(tenant, this, messageStore);
     } else {
       throw new Error('message failed authorization');
     }

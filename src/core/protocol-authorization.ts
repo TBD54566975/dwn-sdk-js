@@ -1,5 +1,6 @@
 import type { Filter } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
+import type { RecordsQuery } from '../interfaces/records-query.js';
 import type { RecordsRead } from '../interfaces/records-read.js';
 import type { RecordsWriteMessage } from '../types/records-types.js';
 import type { ProtocolActionRule, ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../types/protocols-types.js';
@@ -23,7 +24,7 @@ export class ProtocolAuthorization {
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
       tenant,
-      incomingMessage,
+      incomingMessage.message.descriptor.protocol!,
       messageStore,
     );
 
@@ -42,7 +43,7 @@ export class ProtocolAuthorization {
 
     // get the rule set for the inbound message
     const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
-      incomingMessage,
+      incomingMessage.message.descriptor.protocolPath!,
       protocolDefinition,
     );
 
@@ -56,31 +57,28 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Performs protocol-based authorization against the given message.
-   * @param recordsWrite Either the incomingMessage itself if the incoming is a RecordsWrite,
-   *                     or the latest RecordsWrite associated with the recordId being read.
+   * Performs protocol-based authorization against the incoming RecordsWrite message.
    * @throws {Error} if authorization fails.
    */
-  public static async authorize(
+  public static async authorizeWrite(
     tenant: string,
-    incomingMessage: RecordsRead | RecordsWrite,
-    recordsWrite: RecordsWrite,
+    incomingMessage: RecordsWrite,
     messageStore: MessageStore,
   ): Promise<void> {
     // fetch ancestor message chain
     const ancestorMessageChain: RecordsWriteMessage[] =
-      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, recordsWrite, messageStore);
+      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, incomingMessage, messageStore);
 
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
       tenant,
-      recordsWrite,
+      incomingMessage.message.descriptor.protocol!,
       messageStore,
     );
 
     // get the rule set for the inbound message
     const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
-      recordsWrite,
+      incomingMessage.message.descriptor.protocolPath!,
       protocolDefinition,
     );
 
@@ -88,7 +86,8 @@ export class ProtocolAuthorization {
     await ProtocolAuthorization.verifyInvokedRole(
       tenant,
       incomingMessage,
-      recordsWrite,
+      incomingMessage.message.descriptor.protocol!,
+      incomingMessage.message.contextId!,
       protocolDefinition,
       messageStore,
     );
@@ -104,15 +103,107 @@ export class ProtocolAuthorization {
   }
 
   /**
+   * Performs protocol-based authorization against the incoming RecordsRead  message.
+   * @param newestRecordsWrite Either the incomingMessage itself if the incoming is a RecordsWrite,
+   *                     or the latest RecordsWrite associated with the recordId being read.
+   * @throws {Error} if authorization fails.
+   */
+  public static async authorizeRead(
+    tenant: string,
+    incomingMessage: RecordsRead,
+    newestRecordsWrite: RecordsWrite,
+    messageStore: MessageStore,
+  ): Promise<void> {
+    // fetch ancestor message chain
+    const ancestorMessageChain: RecordsWriteMessage[] =
+      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, newestRecordsWrite, messageStore);
+
+    // fetch the protocol definition
+    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
+      tenant,
+      newestRecordsWrite.message.descriptor.protocol!,
+      messageStore,
+    );
+
+    // get the rule set for the inbound message
+    const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
+      newestRecordsWrite.message.descriptor.protocolPath!,
+      protocolDefinition,
+    );
+
+    // If the incoming message has `protocolRole` in the descriptor, validate the invoked role
+    await ProtocolAuthorization.verifyInvokedRole(
+      tenant,
+      incomingMessage,
+      newestRecordsWrite.message.descriptor.protocol!,
+      newestRecordsWrite.message.contextId!,
+      protocolDefinition,
+      messageStore,
+    );
+
+    // verify method invoked against the allowed actions
+    await ProtocolAuthorization.verifyAllowedActions(
+      tenant,
+      incomingMessage,
+      inboundMessageRuleSet,
+      ancestorMessageChain,
+      messageStore,
+    );
+  }
+
+  /**
+   * Performs protocol-based authorization against the incoming RecordsQuery message.
+   * @throws {Error} if authorization fails.
+   */
+  public static async authorizeQuery(
+    tenant: string,
+    incomingMessage: RecordsQuery,
+    messageStore: MessageStore,
+  ): Promise<void> {
+    // validate that required properties exist in query filter
+    const { protocol, protocolPath, contextId } = incomingMessage.message.descriptor.filter;
+
+    // fetch the protocol definition
+    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
+      tenant,
+      protocol!, // authorizeQuery` is only called if `protocol` is present
+      messageStore,
+    );
+
+    // get the rule set for the inbound message
+    const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
+      protocolPath!, // presence of `protocolPath` is verified in `parse()`
+      protocolDefinition,
+    );
+
+    // If the incoming message has `protocolRole` in the descriptor, validate the invoked role
+    await ProtocolAuthorization.verifyInvokedRole(
+      tenant,
+      incomingMessage,
+      protocol!,
+      contextId,
+      protocolDefinition,
+      messageStore,
+    );
+
+    // verify method invoked against the allowed actions
+    await ProtocolAuthorization.verifyAllowedActions(
+      tenant,
+      incomingMessage,
+      inboundMessageRuleSet,
+      [], // ancestor chain is not relevant to queries
+      messageStore,
+    );
+  }
+
+  /**
    * Fetches the protocol definition based on the protocol specified in the given message.
    */
   private static async fetchProtocolDefinition(
     tenant: string,
-    recordsWrite: RecordsWrite,
+    protocolUri: string,
     messageStore: MessageStore
   ): Promise<ProtocolDefinition> {
-    const protocolUri = recordsWrite.message.descriptor.protocol!;
-
     // fetch the corresponding protocol definition
     const query: Filter = {
       interface : DwnInterfaceName.Protocols,
@@ -182,11 +273,9 @@ export class ProtocolAuthorization {
    * Gets the rule set corresponding to the given message chain.
    */
   private static getRuleSet(
-    recordsWrite: RecordsWrite,
+    protocolPath: string,
     protocolDefinition: ProtocolDefinition,
   ): ProtocolRuleSet {
-    const protocolPath = recordsWrite.message.descriptor.protocolPath!;
-
     const ruleSet = ProtocolAuthorization.getRuleSetAtProtocolPath(protocolPath, protocolDefinition);
     if (ruleSet === undefined) {
       throw new DwnError(DwnErrorCode.ProtocolAuthorizationMissingRuleSet,
@@ -286,8 +375,9 @@ export class ProtocolAuthorization {
    */
   private static async verifyInvokedRole(
     tenant: string,
-    incomingMessage: RecordsRead | RecordsWrite,
-    recordsWrite: RecordsWrite,
+    incomingMessage: RecordsQuery | RecordsRead | RecordsWrite,
+    protocolUri: string,
+    contextId: string | undefined,
     protocolDefinition: ProtocolDefinition,
     messageStore: MessageStore,
   ): Promise<void> {
@@ -299,7 +389,7 @@ export class ProtocolAuthorization {
     }
 
     const roleRuleSet = ProtocolAuthorization.getRuleSetAtProtocolPath(protocolRole, protocolDefinition);
-    if (!roleRuleSet?.$globalRole && !roleRuleSet?.$contextRole) {
+    if (roleRuleSet === undefined || (!roleRuleSet.$globalRole && !roleRuleSet.$contextRole)) {
       throw new DwnError(
         DwnErrorCode.ProtocolAuthorizationNotARole,
         `Protocol path ${protocolRole} is not a valid protocolRole`
@@ -309,14 +399,22 @@ export class ProtocolAuthorization {
     const roleRecordFilter: Filter = {
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
-      protocol          : recordsWrite.message.descriptor.protocol!,
+      protocol          : protocolUri,
       protocolPath      : protocolRole,
       recipient         : incomingMessage.author!,
       isLatestBaseState : true,
     };
-    if (roleRuleSet?.$contextRole) {
-      roleRecordFilter.contextId = recordsWrite.message.contextId!;
+
+    if (roleRuleSet.$contextRole) {
+      if (contextId === undefined) {
+        throw new DwnError(
+          DwnErrorCode.ProtocolAuthorizationMissingContextId,
+          'Could not verify $contextRole because contextId is missing'
+        );
+      }
+      roleRecordFilter.contextId = contextId;
     }
+
     const { messages: matchingMessages } = await messageStore.query(tenant, [roleRecordFilter]);
 
     if (matchingMessages.length === 0) {
@@ -332,11 +430,13 @@ export class ProtocolAuthorization {
    */
   private static async getActionsSeekingARuleMatch(
     tenant: string,
-    incomingMessage: RecordsRead | RecordsWrite,
+    incomingMessage: RecordsQuery | RecordsRead | RecordsWrite,
     messageStore: MessageStore,
   ): Promise<ProtocolAction[]> {
     if (incomingMessage.message.descriptor.method === DwnMethodName.Read) {
       return [ProtocolAction.Read];
+    } else if (incomingMessage.message.descriptor.method === DwnMethodName.Query) {
+      return [ProtocolAction.Query];
     }
     // else 'Write'
 
@@ -359,7 +459,7 @@ export class ProtocolAuthorization {
    */
   private static async verifyAllowedActions(
     tenant: string,
-    incomingMessage: RecordsRead | RecordsWrite,
+    incomingMessage: RecordsQuery | RecordsRead | RecordsWrite,
     inboundMessageRuleSet: ProtocolRuleSet,
     ancestorMessageChain: RecordsWriteMessage[],
     messageStore: MessageStore,
@@ -395,7 +495,7 @@ export class ProtocolAuthorization {
         continue;
       }
 
-      const ancestorRuleSuccess: boolean = await ProtocolAuthorization.checkAncestorGroupActionRule(author, actionRule, ancestorMessageChain);
+      const ancestorRuleSuccess: boolean = await ProtocolAuthorization.checkActor(author, actionRule, ancestorMessageChain);
       if (ancestorRuleSuccess) {
         return;
       }
@@ -480,11 +580,10 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Checks if there is a RecordsWriteMessage in the ancestor chain that matches the protocolPath in given ProtocolActionRule.
-   * Assumes that the actionRule authorizes either recipient or author, but not 'anyone'.
-   * @returns true if there is an ancestorRecordsWrite that matches actionRule. false otherwise.
+   * Checks if there is a record in the ancestor chain matching the `who: 'author' | 'recipient'` action rule.
+   * @returns true if the action rule is satisfied. false otherwise
    */
-  private static async checkAncestorGroupActionRule(
+  private static async checkActor(
     author: string,
     actionRule: ProtocolActionRule,
     ancestorMessageChain: RecordsWriteMessage[],

@@ -31,6 +31,10 @@
           "can": "read"
         },
         {
+          "role": "friend",
+          "can": "query"
+        },
+        {
           "role": "admin",
           "can": "update"
         }

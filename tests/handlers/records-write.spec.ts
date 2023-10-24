@@ -2073,6 +2073,34 @@ export function testRecordsWriteHandler(): void {
               expect(chatRecordReply.status.code).to.equal(401);
               expect(chatRecordReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
             });
+
+            it('rejects attempts to invoke an invalid path as a protocolRole', async () => {
+              // scenario: Bob tries to invoke 'notARealPath' as a protocolRole and fails
+
+              const alice = await DidKeyResolver.generate();
+              const bob = await DidKeyResolver.generate();
+
+              const protocolDefinition = threadRoleProtocolDefinition;
+
+              const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+                author: alice,
+                protocolDefinition
+              });
+              const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+              expect(protocolWriteReply.status.code).to.equal(202);
+
+              // Bob invokes a fake protocolRole to write
+              const fakeRoleInvocation = await TestDataGenerator.generateRecordsWrite({
+                author       : bob,
+                recipient    : alice.did,
+                protocol     : protocolDefinition.protocol,
+                protocolPath : 'thread',
+                protocolRole : 'notARealPath',
+              });
+              const fakeRoleInvocationReply = await dwn.processMessage(alice.did, fakeRoleInvocation.message, fakeRoleInvocation.dataStream);
+              expect(fakeRoleInvocationReply.status.code).to.equal(401);
+              expect(fakeRoleInvocationReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationNotARole);
+            });
           });
         });
 
