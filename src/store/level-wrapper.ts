@@ -2,7 +2,6 @@ import type { AbstractBatchOperation, AbstractDatabaseOptions, AbstractIteratorO
 
 import { executeUnlessAborted } from '../utils/abort.js';
 import { Level } from 'level';
-import { sleep } from '../utils/time.js';
 
 export type CreateLevelDatabaseOptions<V> = AbstractDatabaseOptions<string, V>;
 
@@ -84,15 +83,31 @@ export class LevelWrapper<V> {
       return;
     }
 
-    while (this.db.status === 'opening' || this.db.status === 'closing') {
-      await sleep(200);
-    }
+    switch (this.db.status) {
+    // If db is open, we `db.close`.
+    case 'open':
+      return this.db.close();
 
-    if (this.db.status === 'closed') {
+    // If db is still opening, wait until it is open then await `db.close()`
+    case 'opening':
+      return new Promise((resolve, reject) => {
+        const onOpen = (): void => {
+          // Make sure that errors from `db.open()` propogate up
+          this.db.close().then(resolve).catch(reject);;
+        };
+        this.db.once('open', onOpen);
+      });
+
+    // If db is closing, wait until the 'closed' event is emitted
+    case 'closing':
+      return new Promise((resolve) => {
+        this.db.once('closed', resolve);
+      });
+
+    // If db is closed, we are done
+    case 'closed':
       return;
     }
-
-    return this.db.close();
   }
 
   async partition(name: string): Promise<LevelWrapper<V>> {
