@@ -1320,8 +1320,8 @@ export function testRecordsQueryHandler(): void {
             protocolRole: 'friend',
           });
           const chatQueryReply = await dwn.processMessage(alice.did, chatQuery.message) as RecordsQueryReply;
-          expect(chatQueryReply.status.code).to.equal(401);
-          expect(chatQueryReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationQueryFilterMissingRequiredProperties);
+          expect(chatQueryReply.status.code).to.equal(400);
+          expect(chatQueryReply.status.detail).to.contain(DwnErrorCode.RecordsQueryFilterMissingRequiredProperties);
         });
 
         it('does not execute $contextRole authorized queries where contextId is missing from the filter', async () => {

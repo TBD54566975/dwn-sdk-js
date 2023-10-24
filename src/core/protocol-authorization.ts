@@ -162,23 +162,17 @@ export class ProtocolAuthorization {
   ): Promise<void> {
     // validate that required properties exist in query filter
     const { protocol, protocolPath, contextId } = incomingMessage.message.descriptor.filter;
-    if (protocolPath === undefined) {
-      throw new DwnError(
-        DwnErrorCode.ProtocolAuthorizationQueryFilterMissingRequiredProperties,
-        'Role-authorized queries must include `protocolPath` in the filter'
-      );
-    }
 
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
       tenant,
-      protocol!,
+      protocol!, // authorizeQuery` is only called if `protocol` is present
       messageStore,
     );
 
     // get the rule set for the inbound message
     const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
-      protocolPath,
+      protocolPath!, // presence of `protocolPath` is verified in `parse()`
       protocolDefinition,
     );
 

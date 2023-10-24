@@ -7,6 +7,7 @@ import { Message } from '../core/message.js';
 import { Records } from '../utils/records.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 import { validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
@@ -29,10 +30,19 @@ export type RecordsQueryOptions = {
 export class RecordsQuery extends Message<RecordsQueryMessage> {
 
   public static async parse(message: RecordsQueryMessage): Promise<RecordsQuery> {
+    let authorizationPayload;
     if (message.authorization !== undefined) {
-      await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
+      authorizationPayload = await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
     }
 
+    if (authorizationPayload?.protocolRole !== undefined) {
+      if (message.descriptor.filter.protocolPath === undefined) {
+        throw new DwnError(
+          DwnErrorCode.RecordsQueryFilterMissingRequiredProperties,
+          'Role-authorized queries must include `protocolPath` in the filter'
+        );
+      }
+    }
     if (message.descriptor.filter.protocol !== undefined) {
       validateProtocolUrlNormalized(message.descriptor.filter.protocol);
     }
