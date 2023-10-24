@@ -119,6 +119,28 @@ describe('IndexLevel', () => {
       expect(JSON.parse(key!)).to.equal(id);
     });
 
+    it('ignores undefined indexes', async () => {
+      const id = uuid();
+      const index = {
+        some: {
+          undefined: {
+            value: undefined,
+          }
+        }
+      };
+      const failedIndex = testIndex.put(tenant, id, id, index, { id });
+      await expect(failedIndex).to.eventually.be.rejectedWith('must include at least one indexable property');
+    });
+
+    it('ignores undefined sort indexes', async () => {
+      const id = uuid();
+      const index = {
+        id: id,
+      };
+      const failedIndex = testIndex.put(tenant, id, id, index, { sort: undefined });
+      await expect(failedIndex).to.eventually.be.rejectedWith('must include at least one sorted index');
+    });
+
     it('adds 1 key per property, per sorted property, aside from id', async () => {
       const id = uuid();
       const dateCreated = new Date().toISOString();
