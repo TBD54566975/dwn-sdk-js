@@ -42,6 +42,10 @@
             "can": "write"
           },
           {
+            "role": "thread/participant",
+            "can": "query"
+          },
+          {
             "role": "thread/admin",
             "can": "update"
           }

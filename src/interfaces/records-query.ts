@@ -7,6 +7,7 @@ import { Message } from '../core/message.js';
 import { Records } from '../utils/records.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 import { validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
@@ -23,15 +24,25 @@ export type RecordsQueryOptions = {
   dateSort?: DateSort;
   pagination?: Pagination;
   authorizationSigner?: Signer;
+  protocolRole?: string;
 };
 
 export class RecordsQuery extends Message<RecordsQueryMessage> {
 
   public static async parse(message: RecordsQueryMessage): Promise<RecordsQuery> {
+    let authorizationPayload;
     if (message.authorization !== undefined) {
-      await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
+      authorizationPayload = await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
     }
 
+    if (authorizationPayload?.protocolRole !== undefined) {
+      if (message.descriptor.filter.protocolPath === undefined) {
+        throw new DwnError(
+          DwnErrorCode.RecordsQueryFilterMissingRequiredProperties,
+          'Role-authorized queries must include `protocolPath` in the filter'
+        );
+      }
+    }
     if (message.descriptor.filter.protocol !== undefined) {
       validateProtocolUrlNormalized(message.descriptor.filter.protocol);
     }
@@ -58,7 +69,10 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
 
     // only generate the `authorization` property if signature input is given
     const authorizationSigner = options.authorizationSigner;
-    const authorization = authorizationSigner ? await Message.createAuthorizationAsAuthor(descriptor, authorizationSigner) : undefined;
+    let authorization;
+    if (authorizationSigner) {
+      authorization = await Message.createAuthorizationAsAuthor(descriptor, authorizationSigner, { protocolRole: options.protocolRole });
+    }
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

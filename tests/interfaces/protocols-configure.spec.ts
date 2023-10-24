@@ -314,6 +314,34 @@ describe('ProtocolsConfigure', () => {
           .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidActionMissingOf);
       });
 
+      it('rejects protocol definitions with `can: query` in non-role rules', async () => {
+        const definition = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            message: {},
+          },
+          structure: {
+            message: {
+              $actions: [{
+                who : 'author',
+                of  : 'message',
+                can : 'query'
+              }]
+            }
+          }
+        };
+
+        const alice = await TestDataGenerator.generatePersona();
+
+        const createProtocolsConfigurePromise = ProtocolsConfigure.create({
+          authorizationSigner: Jws.createSigner(alice),
+          definition
+        });
+
+        await expect(createProtocolsConfigurePromise)
+          .to.be.rejected;
+      });
     });
   });
 });
