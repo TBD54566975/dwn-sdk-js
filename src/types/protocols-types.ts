@@ -40,6 +40,7 @@ export enum ProtocolActor {
 export enum ProtocolAction {
   Query = 'query',
   Read = 'read',
+  Update = 'update',
   Write = 'write'
 }
 

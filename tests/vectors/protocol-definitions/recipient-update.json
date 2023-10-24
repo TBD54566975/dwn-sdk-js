@@ -1,0 +1,21 @@
+{
+  "protocol": "http://recipient-update-protocol.xyz",
+  "published": true,
+  "types": {
+    "post": {},
+    "tag": {}
+  },
+  "structure": {
+    "post": {
+      "tag": {
+        "$actions": [
+          {
+            "who": "recipient",
+            "of": "post",
+            "can": "update"
+          }
+        ]
+      }
+    }
+  }
+}
