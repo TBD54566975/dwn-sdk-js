@@ -2,7 +2,6 @@ import type { AbstractBatchOperation, AbstractDatabaseOptions, AbstractIteratorO
 
 import { executeUnlessAborted } from '../utils/abort.js';
 import { Level } from 'level';
-import { sleep } from '../utils/time.js';
 
 export type CreateLevelDatabaseOptions<V> = AbstractDatabaseOptions<string, V>;
 
