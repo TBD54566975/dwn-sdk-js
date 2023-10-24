@@ -77,7 +77,6 @@ export class PermissionsGrantHandler implements MethodHandler {
     if (scope.interface === DwnInterfaceName.Records) {
       const { protocol, protocolPath, schema, contextId } = scope as RecordsPermissionScope;
       indexes = {
-        ...indexes,
         contextId,
         protocol,
         protocolPath,

@@ -3,8 +3,8 @@ import type { LevelWrapper } from './level-wrapper.js';
 import type { EqualFilter, Filter, OneOfFilter, RangeFilter } from '../types/message-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions } from './level-wrapper.js';
 
-import { flatten } from '../utils/object.js';
 import { SortOrder } from '../types/message-types.js';
+import { flatten, removeUndefinedProperties } from '../utils/object.js';
 
 
 type IndexedItem<T> = {
@@ -44,12 +44,16 @@ export class IndexLevel<T> {
   ): Promise<void> {
     // ensure sorted indexes are flat and exist
     sortIndexes = flatten(sortIndexes);
+    removeUndefinedProperties(sortIndexes);
+
     if (!sortIndexes || Object.keys(sortIndexes).length === 0) {
       throw new Error('must include at least one sorted index');
     }
 
     // ensure indexable properties exist
     indexes = flatten(indexes);
+    removeUndefinedProperties(indexes);
+
     if (!indexes || Object.keys(indexes).length === 0) {
       throw new Error('must include at least one indexable property');
     }
@@ -58,9 +62,9 @@ export class IndexLevel<T> {
     // adding a reverse lookup to be able to delete index data as well as look up sorted indexes by a cursor
     indexOps.push({ type: 'put', key: `__${itemId}__indexes`, value: JSON.stringify({ indexes, sortIndexes }) });
 
-    // for each indexable property we go through the different sorting indexes and construct a sorted index key.
-    // the sort property is the last property in the key before the tie-breaker.
-    // the itemId itself is used as a tie-breaker in sorting as well as a truly unique sorted key.
+    // since LevelDB keys are sorted lexicographically, we need to create sortable keys for each indexable property.
+    // for each indexable property we go through the different sorting indexes and construct a unique sorted index key.
+    // the sort property is the last property in the key before the tie-breaker, the key itself is used as a tie-breaker.
     // for ex:
     //
     //  sortProperty  : 'watermark'
@@ -79,18 +83,16 @@ export class IndexLevel<T> {
 
     for (const propertyName in indexes) {
       const propertyValue = indexes[propertyName];
-      if (propertyValue !== undefined) {
-        for (const sortProperty in sortIndexes) {
-          const sortValue = sortIndexes[sortProperty];
-          const sortedKey = this.constructIndexedKey(
-            sortProperty,
-            propertyName,
-            this.encodeValue(propertyValue),
-            this.encodeValue(sortValue),
-            itemId,
-          );
-          indexOps.push({ type: 'put', key: sortedKey, value: JSON.stringify(value) });
-        }
+      for (const sortProperty in sortIndexes) {
+        const sortValue = sortIndexes[sortProperty];
+        const sortedKey = this.constructIndexedKey(
+          sortProperty,
+          propertyName,
+          this.encodeValue(propertyValue),
+          this.encodeValue(sortValue),
+          itemId,
+        );
+        indexOps.push({ type: 'put', key: sortedKey, value: JSON.stringify(value) });
       }
     }
 
