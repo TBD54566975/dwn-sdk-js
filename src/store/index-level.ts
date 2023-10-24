@@ -8,8 +8,8 @@ import { SortOrder } from '../types/message-types.js';
 
 
 type IndexedItem<T> = {
+  id: string;
   value: T;
-  key: string;
 };
 
 const INDEX_SUBLEVEL_NAME = 'index';
@@ -28,7 +28,7 @@ export class IndexLevel<T> {
    * Put an item into the index using information that will allow it to be queried for.
    *
    * @param tenant
-   * @param key a unique key that represents the item being indexed, this is also used as the cursor value in a query.
+   * @param itemId a unique ID that represents the item being indexed, this is also used as the cursor value in a query.
    * @param value the value representing the data being indexed.
    * @param indexes - (key-value pairs) to be included as part of indexing this item. Must include at least one indexing property.
    * @param sortIndexes - (key-value pairs) to be used for sorting the index. Must include at least one sorting property.
@@ -36,7 +36,7 @@ export class IndexLevel<T> {
    */
   async put(
     tenant: string,
-    key: string,
+    itemId: string,
     value: T,
     indexes: { [key:string]: unknown },
     sortIndexes: { [key:string]: unknown },
@@ -56,25 +56,25 @@ export class IndexLevel<T> {
 
     const indexOps: LevelWrapperBatchOperation<string>[] = [];
     // adding a reverse lookup to be able to delete index data as well as look up sorted indexes by a cursor
-    indexOps.push({ type: 'put', key: `__${key}__indexes`, value: JSON.stringify({ indexes, sortIndexes }) });
+    indexOps.push({ type: 'put', key: `__${itemId}__indexes`, value: JSON.stringify({ indexes, sortIndexes }) });
 
     // for each indexable property we go through the different sorting indexes and construct a sorted index key.
     // the sort property is the last property in the key before the tie-breaker.
-    // the key itself is used as a tie-breaker in sorting as well as a truly unique sorted key.
+    // the itemId itself is used as a tie-breaker in sorting as well as a truly unique sorted key.
     // for ex:
     //
     //  sortProperty  : 'watermark'
     //  sortValue     : '01HCG7W7P6WBC88WRKKYPN1Z9J'
     //  propertyName  : 'dateCreated'
     //  propertyValue : '2023-01-10T00:00:00.000000'
-    //  key           : 'bafyreigup3ymvwjik3qadcrrshrsehedxgjhlya75qh5oexqelnsto2bpu'
+    //  itemId        : 'bafyreigup3ymvwjik3qadcrrshrsehedxgjhlya75qh5oexqelnsto2bpu'
     //  watermark\u0000dateCreated\u0000"2023-01-10T00:00:00.000000"\u0000"01HCG7W7P6WBC88WRKKYPN1Z9J"\u0000bafyreigu...
     //
     //  sortProperty  : 'messageTimestamp'
     //  sortValue     : '2023-01-10T00:00:00.000000'
     //  propertyName  : 'dateCreated'
     //  propertyValue : '2023-01-10T00:00:00.000000'
-    //  key           : 'bafyreigup3ymvwjik3qadcrrshrsehedxgjhlya75qh5oexqelnsto2bpu'
+    //  itemId        : 'bafyreigup3ymvwjik3qadcrrshrsehedxgjhlya75qh5oexqelnsto2bpu'
     //  messageTimestamp\u0000dateCreated\u0000"2023-01-10T00:00:00.000000"\u0000"2023-01-10T00:00:00.000000"\u0000bafyreigu...
 
     for (const propertyName in indexes) {
@@ -87,7 +87,7 @@ export class IndexLevel<T> {
             propertyName,
             this.encodeValue(propertyValue),
             this.encodeValue(sortValue),
-            key,
+            itemId,
           );
           indexOps.push({ type: 'put', key: sortedKey, value: JSON.stringify(value) });
         }
@@ -99,12 +99,12 @@ export class IndexLevel<T> {
     await indexPartition.batch(indexOps, options);
   }
 
-  async delete(tenant: string, key: string, options?: IndexLevelOptions): Promise<void> {
+  async delete(tenant: string, itemId: string, options?: IndexLevelOptions): Promise<void> {
     const tenantPartition = await this.db.partition(tenant);
     const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
 
     const indexOps: LevelWrapperBatchOperation<string>[] = [];
-    const indexKey = `__${key}__indexes`;
+    const indexKey = `__${itemId}__indexes`;
     const serializedIndexes = await indexPartition.get(indexKey);
     if (serializedIndexes === undefined) {
       return;
@@ -124,7 +124,7 @@ export class IndexLevel<T> {
           propertyName,
           this.encodeValue(propertyValue),
           this.encodeValue(sortValue),
-          key,
+          itemId,
         );
         indexOps.push({ type: 'del', key: sortedKey });
       }
@@ -200,16 +200,16 @@ export class IndexLevel<T> {
         for (const sortableValue of await promise) {
           // short circuit: if a data is already included to the final matched key set (by a different `Filter`),
           // no need to evaluate if the data satisfies this current filter being evaluated
-          if (matches.has(sortableValue.key)) {
+          if (matches.has(sortableValue.id)) {
             continue;
           }
 
           // if first time seeing a property matching for the data/object, record all properties needing a match to track progress
-          missingPropertyMatchesForId[sortableValue.key] ??= new Set<string>([ ...Object.keys(filter) ]);
-          missingPropertyMatchesForId[sortableValue.key].delete(propertyName);
-          if (missingPropertyMatchesForId[sortableValue.key].size === 0) {
+          missingPropertyMatchesForId[sortableValue.id] ??= new Set<string>([ ...Object.keys(filter) ]);
+          missingPropertyMatchesForId[sortableValue.id].delete(propertyName);
+          if (missingPropertyMatchesForId[sortableValue.id].size === 0) {
             // full filter match, add it to return list
-            matches.set(sortableValue.key, sortableValue.value);
+            matches.set(sortableValue.id, sortableValue.value);
           }
         }
       }
@@ -245,8 +245,8 @@ export class IndexLevel<T> {
         break;
       }
 
-      const dataKey = this.extractIndexedKey(key);
-      matches.push({ key: dataKey, value: JSON.parse(value) });
+      const itemId = this.extractItemId(key);
+      matches.push({ id: itemId, value: JSON.parse(value) });
     }
 
     if (sortDirection !== SortOrder.Ascending) {
@@ -300,8 +300,8 @@ export class IndexLevel<T> {
         break;
       }
 
-      const dataKey = this.extractIndexedKey(key);
-      matches.push({ key: dataKey, value: JSON.parse(value) });
+      const itemId = this.extractItemId(key);
+      matches.push({ id: itemId, value: JSON.parse(value) });
     }
 
     // we gather the lte matches separately to include before or after the results depending on the sort.
@@ -361,12 +361,12 @@ export class IndexLevel<T> {
       keyConstruction.push(key);
     }
 
-    return this.join(...keyConstruction);
+    return IndexLevel.join(...keyConstruction);
   }
 
   async getFilterCursors(
     tenant: string,
-    filter: Filter,
+    filters: Filter,
     sortProperty: string,
     cursor?: string
   ): Promise<{ [key:string]: string | Map<EqualFilter, string> } | undefined> {
@@ -388,10 +388,10 @@ export class IndexLevel<T> {
     const { sortIndexes, indexes } = JSON.parse(serializedIndexes);
     const sortValue = sortIndexes[sortProperty];
     // construct the starting points for each individual property within the filter.
-    for (const propertyName in filter) {
-      const propertyFilter = filter[propertyName];
-      const indexedValue = indexes[propertyName];
-      propertyCursors[propertyName] = this.extractCursorValue(cursor, propertyName, propertyFilter, sortProperty, sortValue, indexedValue);
+    for (const filterName in filters) {
+      const filterValue = filters[filterName];
+      const indexedValue = indexes[filterName];
+      propertyCursors[filterName] = this.extractCursorValue(cursor, filterName, filterValue, sortProperty, sortValue, indexedValue);
     }
 
     return propertyCursors;
@@ -459,7 +459,7 @@ export class IndexLevel<T> {
    *  this is the third element in the key after splitting.
    *
    * ex:
-   *  key - sortProperty\u0000propertyName\u0000__propertyValue__\u0000sortValue\u0000dataKey
+   *  key - sortProperty\u0000propertyName\u0000__propertyValue__\u0000sortValue\u0000dataId
    *  returns __propertyValue__
    *
    * @param key the constructed key that is used in the Index.
@@ -471,19 +471,19 @@ export class IndexLevel<T> {
   }
 
   /**
-   * Extracts the unique key used during indexing from a constructed key.
-   *  this is the last element in the key after splitting.
+   * Extracts the unique data/item ID from a index key.
+   *  this is the last element in the index key after splitting.
    *
    * ex:
-   *  key - sortProperty\u0000propertyName\u0000propertyValue\u0000sortValue\u0000__dataKey__
-   *  returns __dataKey__
+   *  key - sortProperty\u0000propertyName\u0000propertyValue\u0000sortValue\u0000dataId
+   *  returns dataId
    *
    * @param key the constructed key that is used in the Index.
-   * @returns a string that represents the unique key used when indexing an item.
+   * @returns a string that represents the unique data ID of an indexed item.
    */
-  private extractIndexedKey(key: string): string {
-    const [,,,,value] = key.split(IndexLevel.delimiter);
-    return value;
+  private extractItemId(key: string): string {
+    const [,,,,itemId] = key.split(IndexLevel.delimiter);
+    return itemId;
   }
 
   /**
@@ -522,7 +522,7 @@ export class IndexLevel<T> {
    * Joins the given values using the `\x00` (\u0000) character.
    */
   protected static delimiter = `\x00`;
-  protected join(...values: unknown[]): string {
+  protected static join(...values: unknown[]): string {
     return values.join(IndexLevel.delimiter);
   }
 }
