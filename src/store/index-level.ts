@@ -288,7 +288,7 @@ export class IndexLevel<T> {
       // would be considered greater than { lte: 'watermark\u0000dateCreated\u0000"2023-05-25T11:22:33.000000Z"` } used in the iterator options,
       // thus would not be included in the iterator even though we'd like it to be.
       //
-      // we also only include the cursor ONLY if it is relevant to the exact property in the 'lte' filter.
+      // we also only include the index key ONLY if it is relevant to the exact property in the 'lte' filter.
       const lteIndexKey = greaterThanIndexKey &&
                         this.extractValueFromKey(greaterThanIndexKey) === this.encodeValue(rangeFilter.lte) ? greaterThanIndexKey : undefined;
       for (const item of await this.findExactMatches(tenant, propertyName, rangeFilter.lte, sortProperty, sortDirection, lteIndexKey, options)) {
