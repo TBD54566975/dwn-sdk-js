@@ -103,13 +103,13 @@ export class IndexLevel<T> {
   }
 
   async executeSingleFilterQuery(tenant:string, query: FilteredQuery, matches: Map<string, T>, options?: IndexLevelOptions): Promise<void> {
-    const { filter, sortProperty , sortDirection, cursor } = query;
+    const { filter: andFilter, sortProperty , sortDirection, cursor } = query;
 
-    // get beginning points for the cursor if provided.
+    // get greater-than index keys for every property in the and/compound filters if a cursor is provided.
     // returns undefined if cursor is defined but could not fetch the necessary information.
     // this is usually an invalid cursor. In this case we return zero results.
-    const propertyCursors = await this.getFilterCursors(tenant, filter, sortProperty, cursor);
-    if (propertyCursors === undefined) {
+    const greaterThanIndexKeys = await this.getGreaterThanIndexKeyPerPropertyFilter(tenant, andFilter, sortProperty, cursor);
+    if (greaterThanIndexKeys === undefined) {
       return;
     }
 
@@ -118,34 +118,46 @@ export class IndexLevel<T> {
 
     // Do a separate DB query for each property in `filter`
     // We will find the union of these many individual queries later.
-    for (const propertyName in filter) {
-      const propertyFilter = filter[propertyName];
+    for (const propertyName in andFilter) {
+      const propertyFilter = andFilter[propertyName];
       if (typeof propertyFilter === 'object') {
         if (Array.isArray(propertyFilter)) {
           // `propertyFilter` is a OneOfFilter
           // if OneOfFilter, the cursor properties are a map of each individual EqualFilter and the associated cursor string
-          const cursorMap = propertyCursors[propertyName] as Map<EqualFilter, string>|undefined;
+          const propertyValueToGreaterThanIndexKeyMap = greaterThanIndexKeys[propertyName] as Map<EqualFilter, string>|undefined;
 
           // Support OR matches by querying for each values separately,
           // then adding them to the promises associated with `propertyName`
           propertyNameToPromises[propertyName] = [];
           for (const propertyValue of new Set(propertyFilter)) {
-            const cursor = cursorMap ? cursorMap.get(propertyValue) : undefined;
-            const exactMatchesPromise = this.findExactMatches(tenant, propertyName, propertyValue, sortProperty, sortDirection, cursor, options);
+            const greaterThanIndexKey = propertyValueToGreaterThanIndexKeyMap ? propertyValueToGreaterThanIndexKeyMap.get(propertyValue) : undefined;
+            const exactMatchesPromise = this.findExactMatches(
+              tenant,
+              propertyName,
+              propertyValue,
+              sortProperty,
+              sortDirection,
+              greaterThanIndexKey,
+              options
+            );
             propertyNameToPromises[propertyName].push(exactMatchesPromise);
           }
         } else {
           // `propertyFilter` is a `RangeFilter`
           // if RangeFilter use the string curser associated with the `propertyName`
-          const cursor = propertyCursors[propertyName] as string | undefined;
-          const rangeMatchesPromise = this.findRangeMatches(tenant, propertyName, propertyFilter, sortProperty, sortDirection, cursor, options);
+          const greaterThanIndexKey = greaterThanIndexKeys[propertyName] as string | undefined;
+          const rangeMatchesPromise = this.findRangeMatches(
+            tenant, propertyName, propertyFilter, sortProperty, sortDirection, greaterThanIndexKey, options
+          );
           propertyNameToPromises[propertyName] = [rangeMatchesPromise];
         }
       } else {
         // propertyFilter is an EqualFilter, meaning it is a non-object primitive type
         // if EqualFilter use the string cursor associated with the `propertyName`
-        const cursor = propertyCursors[propertyName] as string | undefined;
-        const exactMatchesPromise = this.findExactMatches(tenant, propertyName, propertyFilter, sortProperty, sortDirection, cursor, options);
+        const greaterThanIndexKey = greaterThanIndexKeys[propertyName] as string | undefined;
+        const exactMatchesPromise = this.findExactMatches(
+          tenant, propertyName, propertyFilter, sortProperty, sortDirection, greaterThanIndexKey, options
+        );
         propertyNameToPromises[propertyName] = [exactMatchesPromise];
       }
     }
@@ -168,8 +180,7 @@ export class IndexLevel<T> {
           }
 
           // if first time seeing a property matching for the data/object, record all properties needing a match to track progress
-          missingPropertyMatchesForId[indexedItem.itemId] ??= new Set<string>([ ...Object.keys(filter) ]);
-
+          missingPropertyMatchesForId[indexedItem.itemId] ??= new Set<string>([ ...Object.keys(andFilter) ]);
           missingPropertyMatchesForId[indexedItem.itemId].delete(propertyName);
           if (missingPropertyMatchesForId[indexedItem.itemId].size === 0) {
             // full filter match, add it to return list
@@ -186,7 +197,7 @@ export class IndexLevel<T> {
     propertyValue: unknown,
     sortProperty: string,
     sortDirection: SortOrder,
-    cursor?: string,
+    greaterThanIndexKey?: string,
     options?: IndexLevelOptions
   ): Promise<IndexedItem<T>[]> {
     const tenantPartition = await this.db.partition(tenant);
@@ -197,9 +208,9 @@ export class IndexLevel<T> {
       gt: matchPrefix
     };
 
-    // if a cursor is defined we want to set it as the starting point for the query.
-    if (cursor !== undefined) {
-      iteratorOptions.gt = cursor;
+    // if a greaterThanIndexKey is defined we want to set it as the starting point for the query.
+    if (greaterThanIndexKey !== undefined) {
+      iteratorOptions.gt = greaterThanIndexKey;
     }
 
     const matches: IndexedItem<T>[] = [];
@@ -226,7 +237,7 @@ export class IndexLevel<T> {
     rangeFilter: RangeFilter,
     sortProperty: string,
     sortDirection: SortOrder,
-    cursor?: string,
+    greaterThanIndexKey?: string,
     options?: IndexLevelOptions
   ): Promise<IndexedItem<T>[]> {
     const tenantPartition = await this.db.partition(tenant);
@@ -239,9 +250,9 @@ export class IndexLevel<T> {
       iteratorOptions[comparatorName] = IndexLevel.keySegmentJoin(sortProperty, propertyName, this.encodeValue(rangeFilter[comparatorName]));
     }
 
-    // if a cursor exists, it will be the starting point for the range query but not equal to.
-    if (cursor !== undefined) {
-      iteratorOptions.gt = cursor;
+    // if a greaterThanIndexKey exists, it will be the starting point for the range query but not equal to.
+    if (greaterThanIndexKey !== undefined) {
+      iteratorOptions.gt = greaterThanIndexKey;
       delete iteratorOptions.gte;
     }
 
@@ -277,9 +288,10 @@ export class IndexLevel<T> {
       // would be considered greater than { lte: 'watermark\u0000dateCreated\u0000"2023-05-25T11:22:33.000000Z"` } used in the iterator options,
       // thus would not be included in the iterator even though we'd like it to be.
       //
-      // we also only include the cursor ONLY if it is relevant to the exact property in the 'lte' filter.
-      const lteCursor = cursor && this.extractValueFromKey(cursor) === this.encodeValue(rangeFilter.lte) ? cursor : undefined;
-      for (const item of await this.findExactMatches(tenant, propertyName, rangeFilter.lte, sortProperty, sortDirection, lteCursor, options)) {
+      // we also only include the index key ONLY if it is relevant to the exact property in the 'lte' filter.
+      const lteIndexKey = greaterThanIndexKey &&
+                        this.extractValueFromKey(greaterThanIndexKey) === this.encodeValue(rangeFilter.lte) ? greaterThanIndexKey : undefined;
+      for (const item of await this.findExactMatches(tenant, propertyName, rangeFilter.lte, sortProperty, sortDirection, lteIndexKey, options)) {
         lteMatches.push(item);
       }
     }
@@ -316,7 +328,11 @@ export class IndexLevel<T> {
     return IndexLevel.keySegmentJoin(sortProperty, propertyName, propertyValue, sortValue, id);
   }
 
-  async getFilterCursors(
+  /**
+   * Gets the greater-than index keys for each property in the filter.
+   * @cursor The unique ID of the indexed item to construct the index key per property filter from.
+   */
+  async getGreaterThanIndexKeyPerPropertyFilter(
     tenant: string,
     filters: Filter,
     sortProperty: string,
@@ -324,7 +340,7 @@ export class IndexLevel<T> {
   ): Promise<{ [key:string]: string | Map<EqualFilter, string> } | undefined> {
     const tenantPartition = await this.db.partition(tenant);
     const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
-    const propertyCursors: { [key:string]:string | Map<EqualFilter, string>} = {};
+    const greaterThanIndexKeyPerPropertyFilter: { [key:string]:string | Map<EqualFilter, string>} = {};
 
     // if cursor is undefined return empty property cursors;
     if (cursor === undefined) {
@@ -343,10 +359,12 @@ export class IndexLevel<T> {
     for (const filterName in filters) {
       const filterValue = filters[filterName];
       const indexedValue = indexes[filterName];
-      propertyCursors[filterName] = this.extractCursorValue(cursor, filterName, filterValue, sortProperty, sortValue, indexedValue);
+      greaterThanIndexKeyPerPropertyFilter[filterName] = this.constructGreatThanIndexKey(
+        cursor, filterName, filterValue, sortProperty, sortValue, indexedValue
+      );
     }
 
-    return propertyCursors;
+    return greaterThanIndexKeyPerPropertyFilter;
   }
 
   /**
@@ -395,17 +413,18 @@ export class IndexLevel<T> {
   }
 
   /**
-   * Extracts the specific indexed key a a 'gt' starting point values for each filtered property.
+   * Extracts the specific indexed key as a 'gt' starting point values for each filtered property.
+   * Constructs the greater-than index for the specified property filter.
    *
-   * @param cursor the unique key of the item that was used to index
+   * @param cursor the unique ID of an indexed item
    * @param propertyName the indexed property name.
    * @param propertyFilter the filter value to extract a value from.
    * @param sortProperty the sort property to use for creating the starting key.
    * @param sortValue the sort value to use when creating the starting key.
-   * @param indexedValue the property value for this specific cursor to be used.
+   * @param indexedValue the value of the specified property from the indexed item with the given cursor.
    * @returns a string starting value 'gt' to use within a query, or a Map of them for a OneOfFilter.
    */
-  private extractCursorValue(
+  private constructGreatThanIndexKey(
     cursor: string,
     propertyName: string,
     propertyFilter: EqualFilter | OneOfFilter | RangeFilter,
@@ -427,18 +446,18 @@ export class IndexLevel<T> {
         value = indexedValue;
       } else {
         // if the filter is an array it is an OR filter and will be treated like multiple exact filters.
-        // we create a map of propertyValue to cursor key for each individual propertyValue for retrieval later.
-        const values = new Map<EqualFilter, string>();
-        for (const propertyValue of new Set(propertyFilter)) {
-          values.set(propertyValue, this.constructIndexKey(
+        // we create a map of filterValue to greater-than index key for usage later.
+        const map = new Map<EqualFilter, string>();
+        for (const filterValue of new Set(propertyFilter)) {
+          map.set(filterValue, this.constructIndexKey(
             sortProperty,
             propertyName,
-            this.encodeValue(propertyValue),
+            this.encodeValue(filterValue),
             this.encodeValue(sortValue),
             cursor
           ));
         }
-        return values;
+        return map;
       }
     }
 
