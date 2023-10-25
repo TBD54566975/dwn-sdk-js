@@ -8,7 +8,7 @@ import { SortOrder } from '../types/message-types.js';
 
 
 type IndexedItem<T> = {
-  id: string;
+  itemId: string;
   value: T;
 };
 
@@ -187,29 +187,30 @@ export class IndexLevel<T> {
       }
     }
 
-    // map of keys of all data/object -> list of missing property matches
+    // map of ID of items -> list of missing property matches
     // if count of missing property matches is 0, it means the data/object fully matches the filter
-    const missingPropertyMatchesForId: { [key: string]: Set<string> } = { };
+    const missingPropertyMatchesForId: { [itemId: string]: Set<string> } = { };
 
     // resolve promises for each property match and
     // eliminate matched property from `missingPropertyMatchesForId` iteratively to work out complete matches
     for (const [propertyName, promises] of Object.entries(propertyNameToPromises)) {
       // acting as an OR match for the property, any of the promises returning a match will be treated as a property match
       for (const promise of promises) {
-        // reminder: the promise returns a list of IndexValue objects (with unique key and value) of data satisfying a particular match
-        for (const sortableValue of await promise) {
+        // reminder: the promise returns a list of IndexedItem satisfying a particular property match
+        for (const indexedItem of await promise) {
           // short circuit: if a data is already included to the final matched key set (by a different `Filter`),
           // no need to evaluate if the data satisfies this current filter being evaluated
-          if (matches.has(sortableValue.id)) {
+          if (matches.has(indexedItem.itemId)) {
             continue;
           }
 
           // if first time seeing a property matching for the data/object, record all properties needing a match to track progress
-          missingPropertyMatchesForId[sortableValue.id] ??= new Set<string>([ ...Object.keys(filter) ]);
-          missingPropertyMatchesForId[sortableValue.id].delete(propertyName);
-          if (missingPropertyMatchesForId[sortableValue.id].size === 0) {
+          missingPropertyMatchesForId[indexedItem.itemId] ??= new Set<string>([ ...Object.keys(filter) ]);
+
+          missingPropertyMatchesForId[indexedItem.itemId].delete(propertyName);
+          if (missingPropertyMatchesForId[indexedItem.itemId].size === 0) {
             // full filter match, add it to return list
-            matches.set(sortableValue.id, sortableValue.value);
+            matches.set(indexedItem.itemId, indexedItem.value);
           }
         }
       }
@@ -246,7 +247,7 @@ export class IndexLevel<T> {
       }
 
       const itemId = this.extractItemId(key);
-      matches.push({ id: itemId, value: JSON.parse(value) });
+      matches.push({ itemId, value: JSON.parse(value) });
     }
 
     if (sortDirection !== SortOrder.Ascending) {
@@ -301,7 +302,7 @@ export class IndexLevel<T> {
       }
 
       const itemId = this.extractItemId(key);
-      matches.push({ id: itemId, value: JSON.parse(value) });
+      matches.push({ itemId, value: JSON.parse(value) });
     }
 
     // we gather the lte matches separately to include before or after the results depending on the sort.
