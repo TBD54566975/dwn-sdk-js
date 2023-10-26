@@ -297,7 +297,7 @@ export function testRecordsQueryHandler(): void {
         });
         const reply1 = await dwn.processMessage(alice.did, recordsQuery1.message);
         expect(reply1.entries?.length).to.equal(1);
-        expect(reply1.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes!));
+        expect(reply1.entries![0].recordId).to.equal(write2.message.recordId);
 
         // testing range using gte & lt
         const recordsQuery2 = await TestDataGenerator.generateRecordsQuery({
@@ -306,8 +306,8 @@ export function testRecordsQueryHandler(): void {
         });
         const reply2 = await dwn.processMessage(alice.did, recordsQuery2.message);
         expect(reply2.entries?.length).to.equal(2);
-        expect(reply2.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(write1.dataBytes!));
-        expect(reply2.entries![1].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes!));
+        const reply2RecordIds = reply2.entries?.map(e => e.recordId);
+        expect(reply2RecordIds).to.have.members([ write1.message.recordId, write2.message.recordId ]);
 
         // testing range using gt & lte
         const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({
@@ -316,7 +316,7 @@ export function testRecordsQueryHandler(): void {
         });
         const reply3 = await dwn.processMessage(alice.did, recordsQuery3.message);
         expect(reply3.entries?.length).to.equal(1);
-        expect(reply3.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(write3.dataBytes!));
+        expect(reply3.entries![0].recordId).to.equal(write3.message.recordId);
 
         // testing range using gte & lte
         const recordsQuery4 = await TestDataGenerator.generateRecordsQuery({
@@ -325,9 +325,8 @@ export function testRecordsQueryHandler(): void {
         });
         const reply4 = await dwn.processMessage(alice.did, recordsQuery4.message);
         expect(reply4.entries?.length).to.equal(3);
-        expect(reply4.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(write1.dataBytes!));
-        expect(reply4.entries![1].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes!));
-        expect(reply4.entries![2].encodedData).to.equal(Encoder.bytesToBase64Url(write3.dataBytes!));
+        const reply4RecordIds = reply4.entries?.map(e => e.recordId);
+        expect(reply4RecordIds).to.have.members([ write1.message.recordId, write2.message.recordId, write3.message.recordId ]);
       });
 
       it('should be able to range query by `dateCreated`', async () => {
