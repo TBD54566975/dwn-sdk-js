@@ -3,6 +3,7 @@ import type { DataStore, EventLog, MessageStore } from '../src/index.js';
 import { testDelegatedGrantScenarios } from './scenarios/delegated-grant.spec.js';
 import { testDwnClass } from './dwn.spec.js';
 import { testEndToEndScenarios } from './scenarios/end-to-end-tests.spec.js';
+import { testEventLog } from './event-log/event-log.spec.js';
 import { testEventsGetHandler } from './handlers/events-get.spec.js';
 import { testEventsQueryHandler } from './handlers/events-query.spec.js';
 import { testMessagesGetHandler } from './handlers/messages-get.spec.js';
@@ -34,6 +35,7 @@ export class TestSuite {
 
     testDwnClass();
     testMessageStore();
+    testEventLog();
 
     // handler tests
     testEventsGetHandler();

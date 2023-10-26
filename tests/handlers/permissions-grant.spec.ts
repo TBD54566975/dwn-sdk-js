@@ -11,6 +11,7 @@ import { DidResolver } from '../../src/did/did-resolver.js';
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { expect } from 'chai';
+import { Jws } from '../../src/index.js';
 import { Message } from '../../src/core/message.js';
 import { normalizeSchemaUrl } from '../../src/utils/url.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
@@ -19,7 +20,6 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
 import { DwnInterfaceName, DwnMethodName } from '../../src/enums/dwn-interface-method.js';
-import { Jws, SortOrder } from '../../src/index.js';
 
 export function testPermissionsGrantHandler(): void {
   describe('PermissionsGrantHandler.handle()', () => {
@@ -302,7 +302,7 @@ export function testPermissionsGrantHandler(): void {
           const reply = await dwn.processMessage(alice.did, message);
           expect(reply.status.code).to.equal(202);
 
-          const events = await eventLog.queryEvents(alice.did, [{ filter: { schema: normalizeSchemaUrl('schema1') }, sortProperty: 'watermark', sortDirection: SortOrder.Ascending }]);
+          const events = await eventLog.queryEvents(alice.did, [{ filter: { schema: normalizeSchemaUrl('schema1') } }]);
           expect(events.length).to.equal(1);
 
           const messageCid = await Message.getCid(message);

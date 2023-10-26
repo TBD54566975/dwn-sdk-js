@@ -103,13 +103,13 @@ export type Pagination = {
   limit?: number;
 };
 
-export enum SortOrder {
+export enum SortDirection {
   Descending = -1,
   Ascending = 1
 }
 
 export type MessageSort = {
-  dateCreated?: SortOrder;
-  datePublished?: SortOrder;
-  messageTimestamp?: SortOrder;
+  dateCreated?: SortDirection;
+  datePublished?: SortDirection;
+  messageTimestamp?: SortDirection;
 };

@@ -79,7 +79,7 @@ export class EventLogLevel implements EventLog {
    * @returns an array of matching Events without duplicate entries between the filters.
    */
   async queryEvents(tenant: string, filters: FilteredQuery[]): Promise<Event[]> {
-    return this.index.query(tenant, filters);
+    return await this.index.query(tenant, filters, { sortProperty: 'watermark' });
   }
 
   /**

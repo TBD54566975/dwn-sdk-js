@@ -1,4 +1,6 @@
 
+import type { FilteredQuery } from '../types/event-log.js';
+import type { QueryOptions } from './index-level.js';
 import type { RecordsWriteMessage } from '../types/records-types.js';
 import type { Filter, GenericMessage, MessageSort, Pagination } from '../types/message-types.js';
 import type { MessageStore, MessageStoreOptions } from '../types/message-store.js';
@@ -12,7 +14,7 @@ import { CID } from 'multiformats/cid';
 import { executeUnlessAborted } from '../utils/abort.js';
 import { IndexLevel } from './index-level.js';
 import { sha256 } from 'multiformats/hashes/sha2';
-import { SortOrder } from '../types/message-types.js';
+import { SortDirection } from '../types/message-types.js';
 import { Cid, Message } from '../index.js';
 import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 
@@ -94,34 +96,27 @@ export class MessageStoreLevel implements MessageStore {
   ): Promise<{ messages: GenericMessage[], cursor?: string }> {
     options?.signal?.throwIfAborted();
 
-    const messages: GenericMessage[] = [];
+    const queryOptions = MessageStoreLevel.getQueryOptions(messageSort, pagination?.limit);
     // note: injecting tenant into filters to allow querying with an "empty" filter.
     // if there are no other filters present it will return all the messages the tenant.
-    // note: we are always sorting by messageTimestamp Ascending without using a cursor here since we don't yet index other sort properties
-    const resultIds = await this.index.query(
-      tenant,
-      filters.map(filter => ({ filter: { ...filter, tenant }, sortProperty: 'messageTimestamp', sortDirection: SortOrder.Ascending })),
-      options
-    );
+    const queryFilters: FilteredQuery[] = filters.map(filter => ({ filter: { ...filter, tenant }, cursor: pagination?.cursor }));
+    const resultIds = await this.index.query(tenant, queryFilters, queryOptions, options);
 
-    // as an optimization for large data sets, we are finding the message object which matches the paginationMessageCid here.
-    // we can use this within the pagination function after sorting to determine the starting point of the array in a more efficient way.
-    let paginationMessage: GenericMessage | undefined;
-    for (const id of resultIds) {
+    const messages: GenericMessage[] = [];
+    let cursor: string | undefined;
+    for (let i = 0; i < resultIds.length; i++) {
+      const id = resultIds[i];
       const message = await this.get(tenant, id, options);
       if (message) { messages.push(message); }
-      if (pagination?.cursor && pagination.cursor === id) {
-        paginationMessage = message;
-      }
+    }
+    const hasMoreResults = pagination?.limit !== undefined && pagination.limit < resultIds.length;
+    if (hasMoreResults) {
+      messages.splice(-1); // remove last element
+      const lastMessage = messages.at(-1);
+      cursor = await Message.getCid(lastMessage!);
     }
 
-    //if pagination cursor is invalid, return empty results
-    if (pagination?.cursor && paginationMessage === undefined) {
-      return { messages: [] };
-    }
-
-    const sortedRecords = await MessageStoreLevel.sortMessages(messages, messageSort);
-    return this.paginateMessages(sortedRecords, paginationMessage, pagination);
+    return { messages, cursor };
   }
 
   private async paginateMessages(
@@ -161,11 +156,11 @@ export class MessageStoreLevel implements MessageStore {
    * When the value is the same between the two objects, `messageCid` comparison is used to tiebreak.
    * tiebreaker always compares messageA to messageB
    *
-   * @returns if SortOrder is Ascending:
+   * @returns if SortDirection is Ascending:
    *            1 if the chosen property of `messageA` is larger than of `messageB`;
    *           -1 if the chosen property `messageA` is smaller/older than of `messageB`;
    *            0 otherwise
-   *          if SortOrder is Descending:
+   *          if SortDirection is Descending:
    *            1 if the chosen property of `messageB` is larger than of `messageA`;
    *           -1 if the chosen property `messageB` is smaller/older than of `messageA`;
    *            0 otherwise
@@ -174,12 +169,12 @@ export class MessageStoreLevel implements MessageStore {
     messageA: GenericMessage,
     messageB: GenericMessage,
     comparedPropertyName: string,
-    sortOrder: SortOrder): Promise<number>
+    sortDirection: SortDirection): Promise<number>
   {
     const a = (messageA.descriptor as any)[comparedPropertyName];
     const b = (messageB.descriptor as any)[comparedPropertyName];
 
-    if (sortOrder === SortOrder.Ascending) {
+    if (sortDirection === SortDirection.Ascending) {
       if (a > b) {
         return 1;
       } else if (a < b) {
@@ -198,6 +193,34 @@ export class MessageStoreLevel implements MessageStore {
     return await Message.compareCid(messageA, messageB);
   }
 
+  static getQueryOptions(messageSort: MessageSort = {}, limit?: number ): QueryOptions {
+    const { dateCreated, datePublished, messageTimestamp } = messageSort;
+
+    let sortDirection = SortDirection.Ascending; // default
+    let sortProperty: keyof MessageSort | undefined; // `keyof MessageSort` = name of all properties of `MessageSort`
+
+    if (dateCreated !== undefined) {
+      sortProperty = 'dateCreated';
+    } else if (datePublished !== undefined) {
+      sortProperty = 'datePublished';
+    } else if (messageTimestamp !== undefined) {
+      sortProperty = 'messageTimestamp';
+    }
+
+    if (sortProperty !== undefined && messageSort[sortProperty] !== undefined) {
+      sortDirection = messageSort[sortProperty]!;
+    } else {
+      sortProperty = 'messageTimestamp';
+    }
+
+    // we add one more to the limit to return a pagination cursor
+    if (limit && limit > 0) {
+      limit = limit + 1;
+    }
+
+    return { sortDirection, sortProperty, limit };
+  }
+
   /**
    * This is a temporary naive sort, it will eventually be done within the underlying data store.
    *
@@ -212,7 +235,7 @@ export class MessageStoreLevel implements MessageStore {
   ): Promise<GenericMessage[]> {
     const { dateCreated, datePublished, messageTimestamp } = messageSort;
 
-    let sortOrder = SortOrder.Ascending; // default
+    let sortDirection = SortDirection.Ascending; // default
     let messagesToSort = messages; // default
     let propertyToCompare: keyof MessageSort | undefined; // `keyof MessageSort` = name of all properties of `MessageSort`
 
@@ -226,13 +249,13 @@ export class MessageStoreLevel implements MessageStore {
     }
 
     if (propertyToCompare !== undefined) {
-      sortOrder = messageSort[propertyToCompare]!;
+      sortDirection = messageSort[propertyToCompare]!;
     } else {
       propertyToCompare = 'messageTimestamp';
     }
 
     const asyncComparer = (a: GenericMessage, b: GenericMessage): Promise<number> => {
-      return MessageStoreLevel.lexicographicalCompare(a, b, propertyToCompare!, sortOrder);
+      return MessageStoreLevel.lexicographicalCompare(a, b, propertyToCompare!, sortDirection);
     };
 
     // NOTE: we needed to implement our own asynchronous sort method because Array.sort() does not take an async comparer
@@ -249,6 +272,26 @@ export class MessageStoreLevel implements MessageStore {
     await this.index.delete(tenant, cidString, options);
   }
 
+  getSortIndexes(indexes: { [key: string]: string | boolean }):{ [key:string]: string } {
+    const sortIndexes: { [key:string]: string } = {};
+    if (indexes.messageTimestamp !== undefined
+      && typeof indexes.messageTimestamp === 'string') {
+      sortIndexes.messageTimestamp = indexes.messageTimestamp;
+    }
+
+    if (indexes.dateCreated !== undefined
+      && typeof indexes.dateCreated === 'string') {
+      sortIndexes.dateCreated = indexes.dateCreated;
+    }
+
+    if (indexes.datePublished !== undefined
+      && typeof indexes.datePublished === 'string') {
+      sortIndexes.datePublished = indexes.datePublished;
+    }
+
+    return sortIndexes;
+  }
+
   async put(
     tenant: string,
     message: GenericMessage,
@@ -257,8 +300,8 @@ export class MessageStoreLevel implements MessageStore {
   ): Promise<void> {
     options?.signal?.throwIfAborted();
 
-    const messageTimestamp = indexes.messageTimestamp;
-    if (messageTimestamp === undefined) {
+    const sortIndexes = this.getSortIndexes(indexes);
+    if (sortIndexes.messageTimestamp === undefined) {
       throw new Error('must include messageTimestamp index');
     }
 
@@ -279,7 +322,7 @@ export class MessageStoreLevel implements MessageStore {
       ...indexes,
       tenant,
     };
-    await this.index.put(tenant, messageCidString, messageCidString, indexDocument, { messageTimestamp }, options);
+    await this.index.put(tenant, messageCidString, messageCidString, indexDocument, sortIndexes, options);
   }
 
   /**
