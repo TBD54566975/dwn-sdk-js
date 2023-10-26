@@ -503,8 +503,8 @@ export function testRecordsDeleteHandler(): void {
         expect(recordsWriteReply.status.code).to.equal(202);
 
         const recordsDelete = await TestDataGenerator.generateRecordsDelete({
-          author: bob,
-          recordId: recordsWrite.message.recordId,
+          author   : bob,
+          recordId : recordsWrite.message.recordId,
         });
         const recordsDeleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
         expect(recordsDeleteReply.status.code).to.equal(401);
