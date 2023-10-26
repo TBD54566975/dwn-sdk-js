@@ -455,6 +455,78 @@ export function testRecordsQueryHandler(): void {
         expect(reply4.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes!));
       });
 
+      it('should be able to range query by `datePublished`', async () => {
+      // scenario: 3 records authored by alice, published on first of 2021, 2022, and 2023 respectively
+      // all 3 records are created on first of 2020
+        const firstDayOf2020 = createDateString(new Date(2020, 1, 1));
+        const firstDayOf2021 = createDateString(new Date(2021, 1, 1));
+        const firstDayOf2022 = createDateString(new Date(2022, 1, 1));
+        const firstDayOf2023 = createDateString(new Date(2023, 1, 1));
+        const alice = await DidKeyResolver.generate();
+        const write1 = await TestDataGenerator.generateRecordsWrite({
+          author: alice, published: true, dateCreated: firstDayOf2020, datePublished: firstDayOf2021, messageTimestamp: firstDayOf2020
+        });
+        const write2 = await TestDataGenerator.generateRecordsWrite({
+          author: alice, published: true, dateCreated: firstDayOf2020, datePublished: firstDayOf2022, messageTimestamp: firstDayOf2020
+        });
+        const write3 = await TestDataGenerator.generateRecordsWrite({
+          author: alice, published: true, dateCreated: firstDayOf2020, datePublished: firstDayOf2023, messageTimestamp: firstDayOf2020
+        });
+
+        // insert data
+        const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
+        const writeReply2 = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
+        const writeReply3 = await dwn.processMessage(alice.did, write3.message, write3.dataStream);
+        expect(writeReply1.status.code).to.equal(202);
+        expect(writeReply2.status.code).to.equal(202);
+        expect(writeReply3.status.code).to.equal(202);
+
+        // testing `from` range
+        const lastDayOf2021 = createDateString(new Date(2021, 12, 31));
+        const recordsQuery1 = await TestDataGenerator.generateRecordsQuery({
+          author   : alice,
+          filter   : { datePublished: { from: lastDayOf2021 } },
+          dateSort : DateSort.CreatedAscending
+        });
+        const reply1 = await dwn.processMessage(alice.did, recordsQuery1.message);
+        expect(reply1.entries?.length).to.equal(2);
+        const reply1RecordIds = reply1.entries?.map(e => e.recordId);
+        expect(reply1RecordIds).to.have.members([ write2.message.recordId, write3.message.recordId ]);
+
+        // testing `to` range
+        const lastDayOf2022 = createDateString(new Date(2022, 12, 31));
+        const recordsQuery2 = await TestDataGenerator.generateRecordsQuery({
+          author   : alice,
+          filter   : { datePublished: { to: lastDayOf2022 } },
+          dateSort : DateSort.CreatedAscending
+        });
+        const reply2 = await dwn.processMessage(alice.did, recordsQuery2.message);
+        expect(reply2.entries?.length).to.equal(2);
+        const reply2RecordIds = reply2.entries?.map(e => e.recordId);
+        expect(reply2RecordIds).to.have.members([ write1.message.recordId, write2.message.recordId ]);
+
+        // testing `from` and `to` range
+        const lastDayOf2023 = createDateString(new Date(2023, 12, 31));
+        const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({
+          author   : alice,
+          filter   : { datePublished: { from: lastDayOf2022, to: lastDayOf2023 } },
+          dateSort : DateSort.CreatedAscending
+        });
+        const reply3 = await dwn.processMessage(alice.did, recordsQuery3.message);
+        expect(reply3.entries?.length).to.equal(1);
+        expect(reply3.entries![0].recordId).to.equal(write3.message.recordId);
+
+        // testing edge case where value equals `from` and `to`
+        const recordsQuery4 = await TestDataGenerator.generateRecordsQuery({
+          author   : alice,
+          filter   : { datePublished: { from: firstDayOf2022, to: firstDayOf2023 } },
+          dateSort : DateSort.CreatedAscending
+        });
+        const reply4 = await dwn.processMessage(alice.did, recordsQuery4.message);
+        expect(reply4.entries?.length).to.equal(1);
+        expect(reply4.entries![0].recordId).to.equal(write2.message.recordId);
+      });
+
       it('should be able use range and exact match queries at the same time', async () => {
       // scenario: 3 records authored by alice, created on first of 2021, 2022, and 2023 respectively, only the first 2 records share the same schema
         const firstDayOf2021 = createDateString(new Date(2021, 1, 1));

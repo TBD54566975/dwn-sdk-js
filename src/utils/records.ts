@@ -1,7 +1,7 @@
 import type { DerivedPrivateJwk } from './hd-key.js';
 import type { Readable } from 'readable-stream';
 import type { Filter, RangeFilter } from '../types/message-types.js';
-import type { RecordsFilter, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
+import type { RangeCriterion, RecordsFilter, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
 
 import { Encoder } from './encoder.js';
 import { Encryption } from './encryption.js';
@@ -247,31 +247,38 @@ export class Records {
    * @returns {Filter} a generic Filter able to be used with MessageStore.
    */
   public static convertFilter(filter: RecordsFilter): Filter {
-    const filterCopy = { ...filter };
-    const { dateCreated } = filterCopy;
+    const filterCopy = { ...filter } as Filter;
 
-    let rangeFilter: RangeFilter | undefined = undefined;
-    if (dateCreated !== undefined) {
-      if (dateCreated.to !== undefined && dateCreated.from !== undefined) {
-        rangeFilter = {
-          gte : dateCreated.from,
-          lt  : dateCreated.to,
-        };
-      } else if (dateCreated.to !== undefined) {
-        rangeFilter = {
-          lt: dateCreated.to,
-        };
-      } else if (dateCreated.from !== undefined) {
-        rangeFilter = {
-          gte: dateCreated.from,
-        };
-      }
+    const { dateCreated, datePublished } = filter;
+    const dateCreatedFilter = dateCreated ? this.convertRangeCriterion(dateCreated) : undefined;
+    if (dateCreatedFilter) {
+      filterCopy.dateCreated = dateCreatedFilter;
     }
 
-    if (rangeFilter) {
-      (filterCopy as Filter).dateCreated = rangeFilter;
+    const datePublishedFilter = datePublished ? this.convertRangeCriterion(datePublished): undefined;
+    if (datePublishedFilter) {
+      filterCopy.datePublished = datePublishedFilter;
     }
 
     return filterCopy as Filter;
+  }
+
+  private static convertRangeCriterion(inputFilter: RangeCriterion): RangeFilter | undefined {
+    let rangeFilter: RangeFilter | undefined;
+    if (inputFilter.to !== undefined && inputFilter.from !== undefined) {
+      rangeFilter = {
+        gte : inputFilter.from,
+        lt  : inputFilter.to,
+      };
+    } else if (inputFilter.to !== undefined) {
+      rangeFilter = {
+        lt: inputFilter.to,
+      };
+    } else if (inputFilter.from !== undefined) {
+      rangeFilter = {
+        gte: inputFilter.from,
+      };
+    }
+    return rangeFilter;
   }
 }
