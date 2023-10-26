@@ -24,7 +24,7 @@ import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { toTemporalInstant } from '@js-temporal/polyfill';
 import { constructRecordsWriteIndexes, RecordsWriteHandler } from '../../src/handlers/records-write.js';
 import { DateSort, RecordsQuery } from '../../src/interfaces/records-query.js';
-import { DidResolver, Dwn } from '../../src/index.js';
+import { DidResolver, Dwn, RecordsWrite } from '../../src/index.js';
 import { DwnErrorCode, MessageStoreLevel } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
@@ -200,6 +200,68 @@ export function testRecordsQueryHandler(): void {
         const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { attester: carol.did } });
         const reply3 = await dwn.processMessage(alice.did, recordsQuery3.message);
         expect(reply3.entries?.length).to.equal(0);
+      });
+
+      it('should be able to query for published records', async () => {
+        const alice = await TestDataGenerator.generatePersona();
+        // setting up a stub resolver
+        const mockResolution = TestDataGenerator.createDidResolutionResult(alice);;
+        sinon.stub(didResolver, 'resolve').resolves(mockResolution);
+
+        // create a published record
+        const publishedWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true, schema: 'post' });
+        const publishedWriteReply = await dwn.processMessage(alice.did, publishedWrite.message, publishedWrite.dataStream);
+        expect(publishedWriteReply.status.code).to.equal(202);
+
+        // create an unpublished record
+        const draftWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'post' });
+        const draftWriteReply = await dwn.processMessage(alice.did, draftWrite.message, draftWrite.dataStream);
+        expect(draftWriteReply.status.code).to.equal(202);
+
+        // query for only published records
+        const publishedPostQuery = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { schema: 'post', published: true } });
+        let publishedPostReply = await dwn.processMessage(alice.did, publishedPostQuery.message);
+        expect(publishedPostReply.status.code).to.equal(200);
+        expect(publishedPostReply.entries?.length).to.equal(1);
+        expect(publishedPostReply.entries![0].recordId).to.equal(publishedWrite.message.recordId);
+
+        // publish the unpublished record
+        const publishedDraftWrite = await RecordsWrite.createFrom({
+          recordsWriteMessage : draftWrite.message,
+          published           : true,
+          authorizationSigner : Jws.createSigner(alice)
+        });
+        const publishedDraftReply = await dwn.processMessage(alice.did, publishedDraftWrite.message);
+        expect(publishedDraftReply.status.code).to.equal(202);
+
+        // issue the same query for published records
+        publishedPostReply = await dwn.processMessage(alice.did, publishedPostQuery.message);
+        expect(publishedPostReply.status.code).to.equal(200);
+        expect(publishedPostReply.entries?.length).to.equal(2);
+        const returnedRecordIds = publishedPostReply.entries?.map(e => e.recordId);
+
+        // ensure that both records now exist in results
+        expect(returnedRecordIds).to.have.members([ publishedWrite.message.recordId, draftWrite.message.recordId ]);
+      });
+
+      it('should be able to query for a record by a dataCid', async () => {
+        const alice = await TestDataGenerator.generatePersona();
+        // setting up a stub resolver
+        const mockResolution = TestDataGenerator.createDidResolutionResult(alice);;
+        sinon.stub(didResolver, 'resolve').resolves(mockResolution);
+
+        // create a record
+        const writeRecord = await TestDataGenerator.generateRecordsWrite({ author: alice });
+        const writeRecordReply = await dwn.processMessage(alice.did, writeRecord.message, writeRecord.dataStream);
+        expect(writeRecordReply.status.code).to.equal(202);
+        const recordDataCid = writeRecord.message.descriptor.dataCid;
+
+        // query for the record by it's dataCid
+        const dataCidQuery = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { dataCid: recordDataCid } });
+        const dataCidQueryReply = await dwn.processMessage(alice.did, dataCidQuery.message);
+        expect(dataCidQueryReply.status.code).to.equal(200);
+        expect(dataCidQueryReply.entries?.length).to.equal(1);
+        expect(dataCidQueryReply.entries![0].recordId).to.equal(writeRecord.message.recordId);
       });
 
       it('should be able to query with `dataSize` filter (half-open range)', async () => {

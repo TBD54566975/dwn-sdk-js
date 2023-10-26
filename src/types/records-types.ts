@@ -96,12 +96,14 @@ export type RecordsFilter = {
   recipient?: string;
   protocol?: string;
   protocolPath?: string;
+  published?: boolean;
   contextId?: string;
   schema?: string;
   recordId?: string;
   parentId?: string;
   dataFormat?: string;
   dataSize?: RangeFilter;
+  dataCid?: string;
   dateCreated?: RangeCriterion;
 };
 

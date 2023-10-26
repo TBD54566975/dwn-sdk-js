@@ -29,11 +29,17 @@
     "parentId": {
       "type": "string"
     },
+    "published": {
+      "type": "boolean"
+    },
     "dataFormat": {
       "type": "string"
     },
     "dataSize": {
       "$ref": "https://identity.foundation/dwn/json-schemas/number-range-filter.json"
+    },
+    "dataCid": {
+      "type": "string"
     },
     "dateCreated": {
       "type": "object",
