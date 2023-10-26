@@ -204,6 +204,7 @@ export function testRecordsQueryHandler(): void {
 
       it('should be able to query for published records', async () => {
         const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
 
         // create a published record
         const publishedWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true, schema: 'post' });
@@ -222,6 +223,20 @@ export function testRecordsQueryHandler(): void {
         expect(publishedPostReply.entries?.length).to.equal(1);
         expect(publishedPostReply.entries![0].recordId).to.equal(publishedWrite.message.recordId);
 
+        // make an query for published records from non owner
+        const notOwnerPostQuery = await TestDataGenerator.generateRecordsQuery({ author: bob, filter: { schema: 'post', published: true } });
+        let notOwnerPublishedPostReply = await dwn.processMessage(alice.did, notOwnerPostQuery.message);
+        expect(notOwnerPublishedPostReply.status.code).to.equal(200);
+        expect(notOwnerPublishedPostReply.entries?.length).to.equal(1);
+        expect(notOwnerPublishedPostReply.entries![0].recordId).to.equal(publishedWrite.message.recordId);
+
+        // anonymous query for published records
+        const anonymousPostQuery = await RecordsQuery.create({ filter: { schema: 'post', published: true } });
+        let anonymousPublishedPostReply = await dwn.processMessage(alice.did, anonymousPostQuery.message);
+        expect(anonymousPublishedPostReply.status.code).to.equal(200);
+        expect(anonymousPublishedPostReply.entries?.length).to.equal(1);
+        expect(anonymousPublishedPostReply.entries![0].recordId).to.equal(publishedWrite.message.recordId);
+
         // publish the unpublished record
         const publishedDraftWrite = await RecordsWrite.createFrom({
           recordsWriteMessage : draftWrite.message,
@@ -239,6 +254,84 @@ export function testRecordsQueryHandler(): void {
 
         // ensure that both records now exist in results
         expect(returnedRecordIds).to.have.members([ publishedWrite.message.recordId, draftWrite.message.recordId ]);
+
+        // query after publishing from non owner
+        notOwnerPublishedPostReply = await dwn.processMessage(alice.did, anonymousPostQuery.message);
+        expect(notOwnerPublishedPostReply.status.code).to.equal(200);
+        expect(notOwnerPublishedPostReply.entries?.length).to.equal(2);
+        const nonOwnerReturnedRecordIds = notOwnerPublishedPostReply.entries?.map(e => e.recordId);
+        expect(nonOwnerReturnedRecordIds).to.have.members([ publishedWrite.message.recordId, draftWrite.message.recordId ]);
+
+        // anonymous query after publishing
+        anonymousPublishedPostReply = await dwn.processMessage(alice.did, anonymousPostQuery.message);
+        expect(anonymousPublishedPostReply.status.code).to.equal(200);
+        expect(anonymousPublishedPostReply.entries?.length).to.equal(2);
+        const anonymousReturnedRecordIds = anonymousPublishedPostReply.entries?.map(e => e.recordId);
+        expect(anonymousReturnedRecordIds).to.have.members([ publishedWrite.message.recordId, draftWrite.message.recordId ]);
+      });
+
+      it('should return 401 for anonymous queries that filter explicitly for unpublished records', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        // create an unpublished record
+        const draftWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'post' });
+        const draftWriteReply = await dwn.processMessage(alice.did, draftWrite.message, draftWrite.dataStream);
+        expect(draftWriteReply.status.code).to.equal(202);
+
+        // validate that alice can query
+        const unpublishedPostQuery = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { schema: 'post', published: false } });
+        const unpublishedPostReply = await dwn.processMessage(alice.did, unpublishedPostQuery.message);
+        expect(unpublishedPostReply.status.code).to.equal(200);
+        expect(unpublishedPostReply.entries?.length).to.equal(1);
+        expect(unpublishedPostReply.entries![0].recordId).to.equal(draftWrite.message.recordId);
+
+        // anonymous query for unpublished records
+        const unpublishedAnonymous = await RecordsQuery.create({ filter: { schema: 'post', published: false } });
+        const anonymousPostReply = await dwn.processMessage(alice.did, unpublishedAnonymous.message);
+        expect(anonymousPostReply.status.code).to.equal(401);
+        expect(anonymousPostReply.status.detail).contains('Missing JWS');
+      });
+
+      it('should be able to query for unpublished records', async () => {
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+
+        // create a published record
+        const publishedWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true, schema: 'post' });
+        const publishedWriteReply = await dwn.processMessage(alice.did, publishedWrite.message, publishedWrite.dataStream);
+        expect(publishedWriteReply.status.code).to.equal(202);
+
+        // create an unpublished record
+        const draftWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'post' });
+        const draftWriteReply = await dwn.processMessage(alice.did, draftWrite.message, draftWrite.dataStream);
+        expect(draftWriteReply.status.code).to.equal(202);
+
+        // query for only unpublished records
+        const unpublishedPostQuery = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { schema: 'post', published: false } });
+        let unpublishedPostReply = await dwn.processMessage(alice.did, unpublishedPostQuery.message);
+        expect(unpublishedPostReply.status.code).to.equal(200);
+        expect(unpublishedPostReply.entries?.length).to.equal(1);
+        expect(unpublishedPostReply.entries![0].recordId).to.equal(draftWrite.message.recordId);
+
+        // bob queries for unpublished records
+        const unpublishedNotOwner = await TestDataGenerator.generateRecordsQuery({ author: bob, filter: { schema: 'post', published: false } });
+        const notOwnerPostReply = await dwn.processMessage(alice.did, unpublishedNotOwner.message);
+        expect(notOwnerPostReply.status.code).to.equal(200);
+        expect(notOwnerPostReply.entries?.length).to.equal(0);
+
+        // publish the unpublished record
+        const publishedDraftWrite = await RecordsWrite.createFrom({
+          recordsWriteMessage : draftWrite.message,
+          published           : true,
+          authorizationSigner : Jws.createSigner(alice)
+        });
+        const publishedDraftReply = await dwn.processMessage(alice.did, publishedDraftWrite.message);
+        expect(publishedDraftReply.status.code).to.equal(202);
+
+        // issue the same query for unpublished records
+        unpublishedPostReply = await dwn.processMessage(alice.did, unpublishedPostQuery.message);
+        expect(unpublishedPostReply.status.code).to.equal(200);
+        expect(unpublishedPostReply.entries?.length).to.equal(0);
       });
 
       it('should be able to query for a record by a dataCid', async () => {
@@ -589,7 +682,6 @@ export function testRecordsQueryHandler(): void {
           dateSort : DateSort.CreatedAscending
         });
         const reply1 = await dwn.processMessage(alice.did, recordsQuery1.message);
-        console.log('reply1', reply1.entries);
         expect(reply1.entries?.length).to.equal(2);
         const reply1RecordIds = reply1.entries?.map(e => e.recordId);
         expect(reply1RecordIds).to.have.members([ write2.message.recordId, write3.message.recordId ]);
@@ -602,7 +694,6 @@ export function testRecordsQueryHandler(): void {
           dateSort : DateSort.CreatedAscending
         });
         const reply2 = await dwn.processMessage(alice.did, recordsQuery2.message);
-        console.log('reply2', reply2.entries);
         expect(reply2.entries?.length).to.equal(2);
         const reply2RecordIds = reply2.entries?.map(e => e.recordId);
         expect(reply2RecordIds).to.have.members([ write1.message.recordId, write2.message.recordId ]);
@@ -615,7 +706,6 @@ export function testRecordsQueryHandler(): void {
           dateSort : DateSort.CreatedAscending
         });
         const reply3 = await dwn.processMessage(alice.did, recordsQuery3.message);
-        console.log('reply3', reply3.entries);
         expect(reply3.entries?.length).to.equal(1);
         expect(reply3.entries![0].recordId).to.equal(write3.message.recordId);
 
@@ -626,7 +716,6 @@ export function testRecordsQueryHandler(): void {
           dateSort : DateSort.CreatedAscending
         });
         const reply4 = await dwn.processMessage(alice.did, recordsQuery4.message);
-        console.log('reply4', reply4.entries);
         expect(reply4.entries?.length).to.equal(1);
         expect(reply4.entries![0].recordId).to.equal(write2.message.recordId);
       });

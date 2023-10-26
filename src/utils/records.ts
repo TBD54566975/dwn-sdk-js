@@ -257,6 +257,7 @@ export class Records {
 
     const datePublishedFilter = datePublished ? this.convertRangeCriterion(datePublished): undefined;
     if (datePublishedFilter) {
+      filterCopy.published = true;
       filterCopy.datePublished = datePublishedFilter;
     }
 

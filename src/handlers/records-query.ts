@@ -30,8 +30,8 @@ export class RecordsQueryHandler implements MethodHandler {
 
     let recordsWrites: RecordsWriteMessageWithOptionalEncodedData[];
     let paginationMessageCid: string|undefined;
-    // if this is an anonymous query, query only published records
-    if (recordsQuery.author === undefined) {
+    // if this is an anonymous query and there is no explicit published filter set to false, query only published records
+    if (RecordsQueryHandler.filtersForPublishedRecords(recordsQuery) && recordsQuery.author === undefined) {
       const results = await this.fetchPublishedRecords(tenant, recordsQuery);
       recordsWrites = results.messages as RecordsWriteMessageWithOptionalEncodedData[];
       paginationMessageCid = results.paginationMessageCid;
@@ -118,19 +118,23 @@ export class RecordsQueryHandler implements MethodHandler {
     tenant: string, recordsQuery: RecordsQuery
   ): Promise<{ messages: GenericMessage[], paginationMessageCid?: string }> {
     const { dateSort, pagination } = recordsQuery.message.descriptor;
+    const filters = [];
 
-    const filters = [
-      RecordsQueryHandler.buildPublishedRecordsFilter(recordsQuery),
-      RecordsQueryHandler.buildUnpublishedRecordsByQueryAuthorFilter(recordsQuery),
-    ];
-
-    const recipientFilter = recordsQuery.message.descriptor.filter.recipient;
-    if (recipientFilter === undefined || recipientFilter === recordsQuery.author) {
-      filters.push(RecordsQueryHandler.buildUnpublishedRecordsForQueryAuthorFilter(recordsQuery));
+    if (RecordsQueryHandler.filtersForPublishedRecords(recordsQuery)) {
+      filters.push(RecordsQueryHandler.buildPublishedRecordsFilter(recordsQuery));
     }
 
-    if (RecordsQueryHandler.shouldProtocolAuthorizeQuery(recordsQuery)) {
-      filters.push(RecordsQueryHandler.buildUnpublishedProtocolAuthorizedRecordsFilter(recordsQuery));
+    if (RecordsQueryHandler.filtersForUnpublishedRecords(recordsQuery)) {
+      filters.push(RecordsQueryHandler.buildUnpublishedRecordsByQueryAuthorFilter(recordsQuery));
+
+      const recipientFilter = recordsQuery.message.descriptor.filter.recipient;
+      if (recipientFilter === undefined || recipientFilter === recordsQuery.author) {
+        filters.push(RecordsQueryHandler.buildUnpublishedRecordsForQueryAuthorFilter(recordsQuery));
+      }
+
+      if (RecordsQueryHandler.shouldProtocolAuthorizeQuery(recordsQuery)) {
+        filters.push(RecordsQueryHandler.buildUnpublishedProtocolAuthorizedRecordsFilter(recordsQuery));
+      }
     }
 
     const messageSort = this.convertDateSort(dateSort);
@@ -209,5 +213,15 @@ export class RecordsQueryHandler implements MethodHandler {
    */
   private static shouldProtocolAuthorizeQuery(recordsQuery: RecordsQuery): boolean {
     return recordsQuery.authorSignaturePayload!.protocolRole !== undefined;
+  }
+
+  private static filtersForPublishedRecords(recordsQuery: RecordsQuery): boolean {
+    const { filter } = recordsQuery.message.descriptor;
+    return filter.published !== false || filter.datePublished !== undefined;
+  }
+
+  private static filtersForUnpublishedRecords(recordsQuery: RecordsQuery): boolean {
+    const { filter } = recordsQuery.message.descriptor;
+    return filter.published !== true && filter.datePublished === undefined;
   }
 }
