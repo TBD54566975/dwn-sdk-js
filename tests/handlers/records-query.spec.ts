@@ -542,9 +542,128 @@ export function testRecordsQueryHandler(): void {
         expect(reply4.entries![0].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes!));
       });
 
+      it('should not return records that were unpublished ', async () => {
+      // scenario: 3 records authored by alice, published on first of 2021, 2022, and 2023 respectively
+      // then the records are unpublished and tested to not return when filtering for published records
+
+        const firstDayOf2020 = createDateString(new Date(2020, 1, 1));
+        const firstDayOf2021 = createDateString(new Date(2021, 1, 1));
+        const firstDayOf2022 = createDateString(new Date(2022, 1, 1));
+        const firstDayOf2023 = createDateString(new Date(2023, 1, 1));
+        const alice = await DidKeyResolver.generate();
+        const write1 = await TestDataGenerator.generateRecordsWrite({
+          author: alice, published: true, dateCreated: firstDayOf2020, datePublished: firstDayOf2021, messageTimestamp: firstDayOf2020
+        });
+        const write2 = await TestDataGenerator.generateRecordsWrite({
+          author: alice, published: true, dateCreated: firstDayOf2020, datePublished: firstDayOf2022, messageTimestamp: firstDayOf2020
+        });
+        const write3 = await TestDataGenerator.generateRecordsWrite({
+          author: alice, published: true, dateCreated: firstDayOf2020, datePublished: firstDayOf2023, messageTimestamp: firstDayOf2020
+        });
+
+        // insert data
+        const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
+        const writeReply2 = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
+        const writeReply3 = await dwn.processMessage(alice.did, write3.message, write3.dataStream);
+        expect(writeReply1.status.code).to.equal(202);
+        expect(writeReply2.status.code).to.equal(202);
+        expect(writeReply3.status.code).to.equal(202);
+
+        // confirm range before un-publishing.
+        const lastDayOf2021 = createDateString(new Date(2021, 12, 31));
+        const ownerRangeQuery = await TestDataGenerator.generateRecordsQuery({
+          author   : alice,
+          filter   : { datePublished: { from: lastDayOf2021 } },
+          dateSort : DateSort.CreatedAscending
+        });
+        const reply1 = await dwn.processMessage(alice.did, ownerRangeQuery.message);
+        expect(reply1.entries?.length).to.equal(2);
+        const reply1RecordIds = reply1.entries?.map(e => e.recordId);
+        expect(reply1RecordIds).to.have.members([ write2.message.recordId, write3.message.recordId ]);
+
+        // confirm published true filter before un-publishing
+        const ownerPublishedQuery = await TestDataGenerator.generateRecordsQuery({
+          author   : alice,
+          filter   : { published: true },
+          dateSort : DateSort.CreatedAscending
+        });
+        let ownerPublishedReply = await dwn.processMessage(alice.did, ownerPublishedQuery.message);
+        expect(ownerPublishedReply.status.code).to.equal(200);
+        expect(ownerPublishedReply.entries?.length).to.equal(3);
+        const ownerPublishedIds = ownerPublishedReply.entries?.map(e => e.recordId);
+        expect(ownerPublishedIds).to.have.members([ write1.message.recordId, write2.message.recordId, write3.message.recordId ]);
+
+        // confirm for anonymous query before un-publishing
+        const anonymousRangeQuery = await RecordsQuery.create({
+          filter   : { datePublished: { from: lastDayOf2021 } },
+          dateSort : DateSort.CreatedAscending
+        });
+
+        let anonymousRangeReply = await dwn.processMessage(alice.did, anonymousRangeQuery.message);
+        expect(anonymousRangeReply.status.code).to.equal(200);
+        expect(anonymousRangeReply.entries?.length).to.equal(2);
+        const anonymousReplyIds = anonymousRangeReply.entries?.map(e => e.recordId);
+        expect(anonymousReplyIds).to.have.members([ write2.message.recordId, write3.message.recordId ]);
+
+        // confirm anonymous published true filter before un-publishing
+        const anonymousPublishedQuery = await RecordsQuery.create({
+          filter   : { published: true },
+          dateSort : DateSort.CreatedAscending
+        });
+        let anonymousPublishedReply = await dwn.processMessage(alice.did, anonymousPublishedQuery.message);
+        expect(anonymousPublishedReply.status.code).to.equal(200);
+        expect(anonymousPublishedReply.entries?.length).to.equal(3);
+        const anonymousPublishedIds = anonymousPublishedReply.entries?.map(e => e.recordId);
+        expect(anonymousPublishedIds).to.have.members([ write1.message.recordId, write2.message.recordId, write3.message.recordId ]);
+
+        //unpublish records
+        const write1Unpublish = await RecordsWrite.createFrom({
+          authorizationSigner : Jws.createSigner(alice),
+          recordsWriteMessage : write1.message,
+          published           : false
+        });
+        const write2Unpublish = await RecordsWrite.createFrom({
+          authorizationSigner : Jws.createSigner(alice),
+          recordsWriteMessage : write2.message,
+          published           : false
+        });
+        const write3Unpublish = await RecordsWrite.createFrom({
+          authorizationSigner : Jws.createSigner(alice),
+          recordsWriteMessage : write3.message,
+          published           : false
+        });
+        const unpublished1Response = await dwn.processMessage(alice.did, write1Unpublish.message);
+        const unpublished2Response = await dwn.processMessage(alice.did, write2Unpublish.message);
+        const unpublished3Response = await dwn.processMessage(alice.did, write3Unpublish.message);
+        expect(unpublished1Response.status.code).to.equal(202);
+        expect(unpublished2Response.status.code).to.equal(202);
+        expect(unpublished3Response.status.code).to.equal(202);
+
+        // try datePublished range query as an anonymous user after unpublish
+        anonymousRangeReply = await dwn.processMessage(alice.did, anonymousRangeQuery.message);
+        expect(anonymousRangeReply.status.code).to.equal(200);
+        expect(anonymousRangeReply.entries?.length).to.equal(0);
+
+        // try published:true filter as an anonymous user after unpublish
+        anonymousPublishedReply = await dwn.processMessage(alice.did, anonymousPublishedQuery.message);
+        expect(anonymousPublishedReply.status.code).to.equal(200);
+        expect(anonymousPublishedReply.entries?.length).to.equal(0);
+
+        // try datePublished range query as owner after unpublish
+        const ownerRangeReply = await dwn.processMessage(alice.did, ownerRangeQuery.message);
+        expect(ownerRangeReply.status.code).to.equal(200);
+        expect(ownerRangeReply.entries?.length).to.equal(0);
+
+        // try published:true filter as owner after unpublish
+        ownerPublishedReply = await dwn.processMessage(alice.did, ownerPublishedQuery.message);
+        expect(ownerPublishedReply.status.code).to.equal(200);
+        expect(ownerPublishedReply.entries?.length).to.equal(0);
+      });
+
       it('should be able to range query by `datePublished`', async () => {
       // scenario: 3 records authored by alice, published on first of 2021, 2022, and 2023 respectively
       // all 3 records are created on first of 2020
+
         const firstDayOf2020 = createDateString(new Date(2020, 1, 1));
         const firstDayOf2021 = createDateString(new Date(2021, 1, 1));
         const firstDayOf2022 = createDateString(new Date(2022, 1, 1));
@@ -612,6 +731,32 @@ export function testRecordsQueryHandler(): void {
         const reply4 = await dwn.processMessage(alice.did, recordsQuery4.message);
         expect(reply4.entries?.length).to.equal(1);
         expect(reply4.entries![0].recordId).to.equal(write2.message.recordId);
+
+        // check for anonymous range query
+        const anonymousRecordQuery = await RecordsQuery.create({
+          filter   : { datePublished: { from: lastDayOf2021 } },
+          dateSort : DateSort.CreatedAscending
+        });
+
+        const anonymousReply = await dwn.processMessage(alice.did, anonymousRecordQuery.message);
+        expect(anonymousReply.status.code).to.equal(200);
+        expect(anonymousReply.entries?.length).to.equal(2);
+        const anonymousReplyIds = anonymousReply.entries?.map(e => e.recordId);
+        expect(anonymousReplyIds).to.have.members([ write2.message.recordId, write3.message.recordId ]);
+
+        // check for non owner range query
+        const bob = await DidKeyResolver.generate();
+        const nonOwnerRange = await TestDataGenerator.generateRecordsQuery({
+          author   : bob,
+          filter   : { datePublished: { from: lastDayOf2021 } },
+          dateSort : DateSort.CreatedAscending
+        });
+
+        const nonOwnerReply = await dwn.processMessage(alice.did, nonOwnerRange.message);
+        expect(nonOwnerReply.status.code).to.equal(200);
+        expect(nonOwnerReply.entries?.length).to.equal(2);
+        const nonOwnerReplyIds = nonOwnerReply.entries?.map(e => e.recordId);
+        expect(nonOwnerReplyIds).to.have.members([ write2.message.recordId, write3.message.recordId ]);
       });
 
       it('should be able to range query by `dateUpdated`', async () => {
@@ -1138,6 +1283,17 @@ export function testRecordsQueryHandler(): void {
         expect(privateRecordsForBob.length).to.equal(1);
         expect(privateRecordsFromBob.length).to.equal(1);
         expect(publicRecords.length).to.equal(2);
+
+        // check for explicitly published:false records for Bob
+        const bobQueryPublishedFalse = await TestDataGenerator.generateRecordsQuery({
+          author : bob,
+          filter : { schema, published: false }
+        });
+        const unpublishedBobReply = await dwn.processMessage(alice.did, bobQueryPublishedFalse.message);
+        expect(unpublishedBobReply.status.code).to.equal(200);
+        expect(unpublishedBobReply.entries?.length).to.equal(2);
+        const unpublishedBobRecordIds = unpublishedBobReply.entries?.map(e => e.recordId);
+        expect(unpublishedBobRecordIds).to.have.members([ record2Data.message.recordId, record3Data.message.recordId ]);
 
         // test correctness for Alice's query
         const aliceQueryMessageData = await TestDataGenerator.generateRecordsQuery({
