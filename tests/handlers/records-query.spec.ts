@@ -203,10 +203,7 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should be able to query for published records', async () => {
-        const alice = await TestDataGenerator.generatePersona();
-        // setting up a stub resolver
-        const mockResolution = TestDataGenerator.createDidResolutionResult(alice);;
-        sinon.stub(didResolver, 'resolve').resolves(mockResolution);
+        const alice = await DidKeyResolver.generate();
 
         // create a published record
         const publishedWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true, schema: 'post' });
@@ -245,10 +242,7 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should be able to query for a record by a dataCid', async () => {
-        const alice = await TestDataGenerator.generatePersona();
-        // setting up a stub resolver
-        const mockResolution = TestDataGenerator.createDidResolutionResult(alice);;
-        sinon.stub(didResolver, 'resolve').resolves(mockResolution);
+        const alice = await DidKeyResolver.generate();
 
         // create a record
         const writeRecord = await TestDataGenerator.generateRecordsWrite({ author: alice });
@@ -523,6 +517,116 @@ export function testRecordsQueryHandler(): void {
           dateSort : DateSort.CreatedAscending
         });
         const reply4 = await dwn.processMessage(alice.did, recordsQuery4.message);
+        expect(reply4.entries?.length).to.equal(1);
+        expect(reply4.entries![0].recordId).to.equal(write2.message.recordId);
+      });
+
+      it('should be able to range query by `dateUpdated`', async () => {
+        // scenario: alice creates 3 records on the first day of 2020.
+        // alice then updates these records to published on first of 2021, 2022, and 2023 respectively
+        // this should update the messageTimestamp on the respective messages
+
+        const firstDayOf2020 = createDateString(new Date(2020, 1, 1));
+        const firstDayOf2021 = createDateString(new Date(2021, 1, 1));
+        const firstDayOf2022 = createDateString(new Date(2022, 1, 1));
+        const firstDayOf2023 = createDateString(new Date(2023, 1, 1));
+        const alice = await DidKeyResolver.generate();
+
+        const write1 = await TestDataGenerator.generateRecordsWrite({
+          author: alice, dateCreated: firstDayOf2020, messageTimestamp: firstDayOf2020
+        });
+        const write2 = await TestDataGenerator.generateRecordsWrite({
+          author: alice, dateCreated: firstDayOf2020, messageTimestamp: firstDayOf2020
+        });
+        const write3 = await TestDataGenerator.generateRecordsWrite({
+          author: alice, dateCreated: firstDayOf2020, messageTimestamp: firstDayOf2020
+        });
+
+        // insert data
+        const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
+        const writeReply2 = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
+        const writeReply3 = await dwn.processMessage(alice.did, write3.message, write3.dataStream);
+        expect(writeReply1.status.code).to.equal(202);
+        expect(writeReply2.status.code).to.equal(202);
+        expect(writeReply3.status.code).to.equal(202);
+
+        // update to published
+        const write1Update = await RecordsWrite.createFrom({
+          recordsWriteMessage : write1.message,
+          published           : true,
+          messageTimestamp    : firstDayOf2021,
+          datePublished       : firstDayOf2021,
+          authorizationSigner : Jws.createSigner(alice)
+        });
+
+        const write2Update = await RecordsWrite.createFrom({
+          recordsWriteMessage : write2.message,
+          published           : true,
+          messageTimestamp    : firstDayOf2022,
+          datePublished       : firstDayOf2022,
+          authorizationSigner : Jws.createSigner(alice)
+        });
+
+        const write3Update = await RecordsWrite.createFrom({
+          recordsWriteMessage : write3.message,
+          published           : true,
+          messageTimestamp    : firstDayOf2023,
+          datePublished       : firstDayOf2023,
+          authorizationSigner : Jws.createSigner(alice)
+        });
+        const writeReplyUpdate1 = await dwn.processMessage(alice.did, write1Update.message);
+        const writeReplyUpdate2 = await dwn.processMessage(alice.did, write2Update.message);
+        const writeReplyUpdate3 = await dwn.processMessage(alice.did, write3Update.message);
+        expect(writeReplyUpdate1.status.code).to.equal(202);
+        expect(writeReplyUpdate2.status.code).to.equal(202);
+        expect(writeReplyUpdate3.status.code).to.equal(202);
+
+        // testing `from` range
+        const lastDayOf2021 = createDateString(new Date(2021, 12, 31));
+        const recordsQuery1 = await TestDataGenerator.generateRecordsQuery({
+          author   : alice,
+          filter   : { dateUpdated: { from: lastDayOf2021 } },
+          dateSort : DateSort.CreatedAscending
+        });
+        const reply1 = await dwn.processMessage(alice.did, recordsQuery1.message);
+        console.log('reply1', reply1.entries);
+        expect(reply1.entries?.length).to.equal(2);
+        const reply1RecordIds = reply1.entries?.map(e => e.recordId);
+        expect(reply1RecordIds).to.have.members([ write2.message.recordId, write3.message.recordId ]);
+
+        // testing `to` range
+        const lastDayOf2022 = createDateString(new Date(2022, 12, 31));
+        const recordsQuery2 = await TestDataGenerator.generateRecordsQuery({
+          author   : alice,
+          filter   : { dateUpdated: { to: lastDayOf2022 } },
+          dateSort : DateSort.CreatedAscending
+        });
+        const reply2 = await dwn.processMessage(alice.did, recordsQuery2.message);
+        console.log('reply2', reply2.entries);
+        expect(reply2.entries?.length).to.equal(2);
+        const reply2RecordIds = reply2.entries?.map(e => e.recordId);
+        expect(reply2RecordIds).to.have.members([ write1.message.recordId, write2.message.recordId ]);
+
+        // testing `from` and `to` range
+        const lastDayOf2023 = createDateString(new Date(2023, 12, 31));
+        const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({
+          author   : alice,
+          filter   : { dateUpdated: { from: lastDayOf2022, to: lastDayOf2023 } },
+          dateSort : DateSort.CreatedAscending
+        });
+        const reply3 = await dwn.processMessage(alice.did, recordsQuery3.message);
+        console.log('reply3', reply3.entries);
+        expect(reply3.entries?.length).to.equal(1);
+        expect(reply3.entries![0].recordId).to.equal(write3.message.recordId);
+
+        // testing edge case where value equals `from` and `to`
+        const recordsQuery4 = await TestDataGenerator.generateRecordsQuery({
+          author   : alice,
+          filter   : { dateUpdated: { from: firstDayOf2022, to: firstDayOf2023 } },
+          dateSort : DateSort.CreatedAscending
+        });
+        const reply4 = await dwn.processMessage(alice.did, recordsQuery4.message);
+        console.log('reply4', reply4.entries);
         expect(reply4.entries?.length).to.equal(1);
         expect(reply4.entries![0].recordId).to.equal(write2.message.recordId);
       });

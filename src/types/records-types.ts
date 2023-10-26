@@ -106,6 +106,7 @@ export type RecordsFilter = {
   dataCid?: string;
   dateCreated?: RangeCriterion;
   datePublished?: RangeCriterion;
+  dateUpdated?: RangeCriterion;
 };
 
 export type RangeCriterion = {

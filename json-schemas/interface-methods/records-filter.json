@@ -66,6 +66,19 @@
           "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
         }
       }
+    },
+    "dateUpdated": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+        },
+        "to": {
+          "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+        }
+      }
     }
   }
 }

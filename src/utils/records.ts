@@ -249,7 +249,7 @@ export class Records {
   public static convertFilter(filter: RecordsFilter): Filter {
     const filterCopy = { ...filter } as Filter;
 
-    const { dateCreated, datePublished } = filter;
+    const { dateCreated, datePublished, dateUpdated } = filter;
     const dateCreatedFilter = dateCreated ? this.convertRangeCriterion(dateCreated) : undefined;
     if (dateCreatedFilter) {
       filterCopy.dateCreated = dateCreatedFilter;
@@ -260,6 +260,11 @@ export class Records {
       filterCopy.datePublished = datePublishedFilter;
     }
 
+    const messageTimestampFilter = dateUpdated ? this.convertRangeCriterion(dateUpdated) : undefined;
+    if (messageTimestampFilter) {
+      filterCopy.messageTimestamp = messageTimestampFilter;
+      delete filterCopy.dateUpdated;
+    }
     return filterCopy as Filter;
   }
 
