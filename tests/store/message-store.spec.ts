@@ -6,7 +6,7 @@ import { expect } from 'chai';
 import { DidKeyResolver } from '../../src/index.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
-import { SortOrder } from '../../src/types/message-types.js';
+import { SortDirection } from '../../src/types/message-types.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 
@@ -268,7 +268,7 @@ export function testMessageStore(): void {
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await message.recordsWrite.constructRecordsWriteIndexes(true));
           }
-          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { messageTimestamp: SortOrder.Ascending });
+          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { messageTimestamp: SortDirection.Ascending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
@@ -287,7 +287,7 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await message.recordsWrite.constructRecordsWriteIndexes(true));
           }
 
-          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { dateCreated: SortOrder.Ascending });
+          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { dateCreated: SortDirection.Ascending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
@@ -307,7 +307,7 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await message.recordsWrite.constructRecordsWriteIndexes(true));
           }
 
-          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { dateCreated: SortOrder.Descending });
+          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { dateCreated: SortDirection.Descending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
@@ -328,7 +328,7 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await message.recordsWrite.constructRecordsWriteIndexes(true));
           }
 
-          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { datePublished: SortOrder.Ascending });
+          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { datePublished: SortDirection.Ascending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
@@ -349,7 +349,7 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await message.recordsWrite.constructRecordsWriteIndexes(true));
           }
 
-          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { datePublished: SortOrder.Descending });
+          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { datePublished: SortDirection.Descending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>

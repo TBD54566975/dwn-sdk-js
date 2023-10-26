@@ -3,13 +3,21 @@ import type { LevelWrapper } from './level-wrapper.js';
 import type { EqualFilter, Filter, OneOfFilter, RangeFilter } from '../types/message-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions } from './level-wrapper.js';
 
-import { SortOrder } from '../types/message-types.js';
+import { lexicographicalCompare } from '../utils/string.js';
+import { SortDirection } from '../types/message-types.js';
 import { flatten, removeUndefinedProperties } from '../utils/object.js';
 
 
 type IndexedItem<T> = {
   itemId: string;
   value: T;
+  sortValue: string;
+};
+
+export type QueryOptions = {
+  sortProperty: string;
+  sortDirection?: SortDirection;
+  limit?: number;
 };
 
 const INDEX_SUBLEVEL_NAME = 'index';
@@ -96,14 +104,23 @@ export class IndexLevel<T> {
     await indexPartition.batch(indexOps, options);
   }
 
-  async query(tenant:string, queries: FilteredQuery[], options?: IndexLevelOptions): Promise<T[]> {
-    const matched:Map<string, T> = new Map();
-    await Promise.all(queries.map(query => this.executeSingleFilterQuery(tenant, query, matched, options)));
-    return [...matched.values()];
+  async query(tenant:string, queries: FilteredQuery[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<T[]> {
+    const matched:Map<string, IndexedItem<T>> = new Map();
+    const { sortProperty, sortDirection = SortDirection.Ascending, limit = 0 } = queryOptions;
+    await Promise.all(queries.map(query => this.executeSingleFilterQuery(tenant, query, sortProperty, matched, options)));
+
+    const results = [...matched.values()].sort((a,b) => {
+      return sortDirection === SortDirection.Ascending ?
+        lexicographicalCompare(a.sortValue, b.sortValue) : lexicographicalCompare(b.sortValue, a.sortValue);
+    });
+
+    return limit > 0 ? results.slice(0, limit).map(r => r.value) : results.map(r => r.value);
   }
 
-  async executeSingleFilterQuery(tenant:string, query: FilteredQuery, matches: Map<string, T>, options?: IndexLevelOptions): Promise<void> {
-    const { filter: andFilter, sortProperty , sortDirection, cursor } = query;
+  async executeSingleFilterQuery(
+    tenant:string, query: FilteredQuery, sortProperty: string, matches: Map<string, IndexedItem<T>>, options?: IndexLevelOptions
+  ): Promise<void> {
+    const { filter: andFilter, cursor } = query;
 
     // get greater-than index keys for every property in the and/compound filters if a cursor is provided.
     // returns undefined if cursor is defined but could not fetch the necessary information.
@@ -131,15 +148,7 @@ export class IndexLevel<T> {
           propertyNameToPromises[propertyName] = [];
           for (const propertyValue of new Set(propertyFilter)) {
             const greaterThanIndexKey = propertyValueToGreaterThanIndexKeyMap ? propertyValueToGreaterThanIndexKeyMap.get(propertyValue) : undefined;
-            const exactMatchesPromise = this.findExactMatches(
-              tenant,
-              propertyName,
-              propertyValue,
-              sortProperty,
-              sortDirection,
-              greaterThanIndexKey,
-              options
-            );
+            const exactMatchesPromise = this.findExactMatches(tenant, propertyName, propertyValue, sortProperty, greaterThanIndexKey, options);
             propertyNameToPromises[propertyName].push(exactMatchesPromise);
           }
         } else {
@@ -147,7 +156,7 @@ export class IndexLevel<T> {
           // if RangeFilter use the string curser associated with the `propertyName`
           const greaterThanIndexKey = greaterThanIndexKeys[propertyName] as string | undefined;
           const rangeMatchesPromise = this.findRangeMatches(
-            tenant, propertyName, propertyFilter, sortProperty, sortDirection, greaterThanIndexKey, options
+            tenant, propertyName, propertyFilter, sortProperty, greaterThanIndexKey, options
           );
           propertyNameToPromises[propertyName] = [rangeMatchesPromise];
         }
@@ -156,7 +165,7 @@ export class IndexLevel<T> {
         // if EqualFilter use the string cursor associated with the `propertyName`
         const greaterThanIndexKey = greaterThanIndexKeys[propertyName] as string | undefined;
         const exactMatchesPromise = this.findExactMatches(
-          tenant, propertyName, propertyFilter, sortProperty, sortDirection, greaterThanIndexKey, options
+          tenant, propertyName, propertyFilter, sortProperty, greaterThanIndexKey, options
         );
         propertyNameToPromises[propertyName] = [exactMatchesPromise];
       }
@@ -184,7 +193,7 @@ export class IndexLevel<T> {
           missingPropertyMatchesForId[indexedItem.itemId].delete(propertyName);
           if (missingPropertyMatchesForId[indexedItem.itemId].size === 0) {
             // full filter match, add it to return list
-            matches.set(indexedItem.itemId, indexedItem.value);
+            matches.set(indexedItem.itemId, indexedItem);
           }
         }
       }
@@ -196,7 +205,6 @@ export class IndexLevel<T> {
     propertyName: string,
     propertyValue: unknown,
     sortProperty: string,
-    sortDirection: SortOrder,
     greaterThanIndexKey?: string,
     options?: IndexLevelOptions
   ): Promise<IndexedItem<T>[]> {
@@ -221,11 +229,8 @@ export class IndexLevel<T> {
       }
 
       const itemId = this.extractItemId(key);
-      matches.push({ itemId, value: JSON.parse(value) });
-    }
-
-    if (sortDirection !== SortOrder.Ascending) {
-      return matches.reverse();
+      const sortValue = this.extractSortValue(key);
+      matches.push({ itemId, sortValue, value: JSON.parse(value) });
     }
 
     return matches;
@@ -236,7 +241,6 @@ export class IndexLevel<T> {
     propertyName: string,
     rangeFilter: RangeFilter,
     sortProperty: string,
-    sortDirection: SortOrder,
     greaterThanIndexKey?: string,
     options?: IndexLevelOptions
   ): Promise<IndexedItem<T>[]> {
@@ -276,11 +280,10 @@ export class IndexLevel<T> {
       }
 
       const itemId = this.extractItemId(key);
-      matches.push({ itemId, value: JSON.parse(value) });
+      const sortValue = this.extractSortValue(key);
+      matches.push({ itemId, sortValue, value: JSON.parse(value) });
     }
 
-    // we gather the lte matches separately to include before or after the results depending on the sort.
-    const lteMatches:IndexedItem<T>[] = [];
     if ('lte' in rangeFilter) {
       // When `lte` is used, we must also query the exact match explicitly because the exact match will not be included in the iterator above.
       // This is due to the extra data appended to the (property + value) key prefix, e.g.
@@ -291,64 +294,35 @@ export class IndexLevel<T> {
       // we also only include the index key ONLY if it is relevant to the exact property in the 'lte' filter.
       const lteIndexKey = greaterThanIndexKey &&
                         this.extractValueFromKey(greaterThanIndexKey) === this.encodeValue(rangeFilter.lte) ? greaterThanIndexKey : undefined;
-      for (const item of await this.findExactMatches(tenant, propertyName, rangeFilter.lte, sortProperty, sortDirection, lteIndexKey, options)) {
-        lteMatches.push(item);
+      for (const item of await this.findExactMatches(tenant, propertyName, rangeFilter.lte, sortProperty, lteIndexKey, options)) {
+        matches.push(item);
       }
     }
 
-    // if the iterator is reversed and the results should be in Ascending order, we reverse the iterated matches.
-    // if the iterator is not reversed and the results should be in Descending order, we also reverse the iterated matches.
-    if ((iteratorOptions.reverse === true && sortDirection === SortOrder.Ascending) ||
-      (iteratorOptions.reverse !== true && sortDirection === SortOrder.Descending)) {
-      matches.reverse();
-    }
-
-    // the 'lteMatches' are already sorted, but depending on the sort we add them before or after the range matches.
-    if (sortDirection === SortOrder.Ascending) {
-      return [...matches, ...lteMatches];
-    } else {
-      return [...lteMatches, ...matches];
-    }
-  }
-
-  /**
-   * Construct a sortable index key to be used for each individual property of an indexed item.
-   * Although all of the properties are required to construct the key when inserting, we also use this function for creating a prefix.
-   *
-   * ex: sortProperty\u0000propertyName\u0000[propertyValue]\u0000[sortValue]\u0000[key]
-   *
-   * @param sortProperty the sorting property to construct the prefix of the key.
-   * @param propertyName the specific property name being indexed.
-   * @param propertyValue the specific property value being indexed.
-   * @param sortValue the value determines the sort order in a lexicographical sort
-   * @param id the unique id of the item being indexed, this is used as a tiebreaker in case the other properties are the same.
-   * @returns a key to be used for sorted indexing within the LevelDB Index.
-   */
-  private constructIndexKey(sortProperty: string, propertyName: string, propertyValue: string, sortValue: string, id: string): string {
-    return IndexLevel.keySegmentJoin(sortProperty, propertyName, propertyValue, sortValue, id);
+    return matches;
   }
 
   /**
    * Gets the greater-than index keys for each property in the filter.
-   * @cursor The unique ID of the indexed item to construct the index key per property filter from.
+   * @itemId The unique ID of the indexed item to construct the index key per property filter from.
    */
   async getGreaterThanIndexKeyPerPropertyFilter(
     tenant: string,
     filters: Filter,
     sortProperty: string,
-    cursor?: string
+    itemId?: string
   ): Promise<{ [key:string]: string | Map<EqualFilter, string> } | undefined> {
     const tenantPartition = await this.db.partition(tenant);
     const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
     const greaterThanIndexKeyPerPropertyFilter: { [key:string]:string | Map<EqualFilter, string>} = {};
 
     // if cursor is undefined return empty property cursors;
-    if (cursor === undefined) {
+    if (itemId === undefined) {
       return { };
     }
 
     // if we don't find any index data we return undefined so that we can return zero results
-    const serializedIndexes = await indexPartition.get(`__${cursor}__indexes`);
+    const serializedIndexes = await indexPartition.get(`__${itemId}__indexes`);
     if (serializedIndexes === undefined) {
       return;
     }
@@ -360,7 +334,7 @@ export class IndexLevel<T> {
       const filterValue = filters[filterName];
       const indexedValue = indexes[filterName];
       greaterThanIndexKeyPerPropertyFilter[filterName] = this.constructGreatThanIndexKey(
-        cursor, filterName, filterValue, sortProperty, sortValue, indexedValue
+        itemId, filterName, filterValue, sortProperty, sortValue, indexedValue
       );
     }
 
@@ -399,7 +373,7 @@ export class IndexLevel<T> {
       const propertyValue = indexes[propertyName];
       for (const sortProperty in sortIndexes) {
         const sortValue = sortIndexes[sortProperty];
-        const sortedKey = this.constructIndexKey(
+        const sortedKey = IndexLevel.keySegmentJoin(
           sortProperty,
           propertyName,
           this.encodeValue(propertyValue),
@@ -449,7 +423,7 @@ export class IndexLevel<T> {
         // we create a map of filterValue to greater-than index key for usage later.
         const map = new Map<EqualFilter, string>();
         for (const filterValue of new Set(propertyFilter)) {
-          map.set(filterValue, this.constructIndexKey(
+          map.set(filterValue, IndexLevel.keySegmentJoin(
             sortProperty,
             propertyName,
             this.encodeValue(filterValue),
@@ -461,7 +435,7 @@ export class IndexLevel<T> {
       }
     }
 
-    return this.constructIndexKey(
+    return IndexLevel.keySegmentJoin(
       sortProperty,
       propertyName,
       this.encodeValue(value),
@@ -500,6 +474,22 @@ export class IndexLevel<T> {
   private extractItemId(key: string): string {
     const [,,,,itemId] = key.split(IndexLevel.delimiter);
     return itemId;
+  }
+
+  /**
+   * Extracts the sortable value from a index key.
+   *  this is the last element in the index key after splitting.
+   *
+   * ex:
+   *  key - sortProperty\u0000propertyName\u0000propertyValue\u0000sortValue\u0000dataId
+   *  returns sortValue
+   *
+   * @param key the constructed key that is used in the Index.
+   * @returns a string that represents the sortable value of an indexed item.
+   */
+  private extractSortValue(key: string): string {
+    const [,,,sortValue] = key.split(IndexLevel.delimiter);
+    return sortValue;
   }
 
   /**

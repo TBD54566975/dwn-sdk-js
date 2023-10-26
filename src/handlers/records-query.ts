@@ -11,7 +11,7 @@ import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Records } from '../utils/records.js';
 import { RecordsQuery } from '../interfaces/records-query.js';
-import { SortOrder } from '../types/message-types.js';
+import { SortDirection } from '../types/message-types.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export class RecordsQueryHandler implements MethodHandler {
@@ -77,15 +77,15 @@ export class RecordsQueryHandler implements MethodHandler {
   private convertDateSort(dateSort?: DateSort): MessageSort {
     switch (dateSort) {
     case DateSort.CreatedAscending:
-      return { dateCreated: SortOrder.Ascending };
+      return { dateCreated: SortDirection.Ascending };
     case DateSort.CreatedDescending:
-      return { dateCreated: SortOrder.Descending };
+      return { dateCreated: SortDirection.Descending };
     case DateSort.PublishedAscending:
-      return { datePublished: SortOrder.Ascending };
+      return { datePublished: SortDirection.Ascending };
     case DateSort.PublishedDescending:
-      return { datePublished: SortOrder.Descending };
+      return { datePublished: SortDirection.Descending };
     default:
-      return { dateCreated: SortOrder.Ascending };
+      return { dateCreated: SortDirection.Ascending };
     }
   }
 

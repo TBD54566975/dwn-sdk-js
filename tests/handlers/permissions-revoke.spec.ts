@@ -11,7 +11,6 @@ import { Message } from '../../src/core/message.js';
 import { MessageStoreLevel } from '../../src/store/message-store-level.js';
 import { normalizeSchemaUrl } from '../../src/utils/url.js';
 import { PermissionsRevoke } from '../../src/interfaces/permissions-revoke.js';
-import { SortOrder } from '../../src/index.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { Time } from '../../src/utils/time.js';
 import { DwnInterfaceName, DwnMethodName } from '../../src/enums/dwn-interface-method.js';
@@ -378,7 +377,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
         const reply = await dwn.processMessage(alice.did, permissionsRevoke.message);
         expect(reply.status.code).to.equal(202);
 
-        events = await eventLog.queryEvents(alice.did, [{ filter: { schema: normalizeSchemaUrl('schema1') }, sortProperty: 'watermark', sortDirection: SortOrder.Ascending } ]);
+        events = await eventLog.queryEvents(alice.did, [{ filter: { schema: normalizeSchemaUrl('schema1') } }]);
         expect(events.length).to.equal(2);
 
         // The revoke should be the second event

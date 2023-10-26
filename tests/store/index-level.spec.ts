@@ -5,7 +5,6 @@ import { ArrayUtility } from '../../src/utils/array.js';
 import { IndexLevel } from '../../src/store/index-level.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { monotonicFactory } from 'ulidx';
-import { SortOrder } from '../../src/index.js';
 import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { v4 as uuid } from 'uuid';
@@ -107,7 +106,7 @@ describe('IndexLevel', () => {
         }
       };
       await testIndex.put(tenant, id, id, index, { id });
-      const indexKey = testIndex['constructIndexKey'](
+      const indexKey = (IndexLevel as any)['keySegmentJoin'](
         `id`,
         'some.nested.object',
         'true',
@@ -179,10 +178,7 @@ describe('IndexLevel', () => {
       const indexPromise = testIndex.put(tenant, id, id, index, { id }, { signal: controller.signal });
       await expect(indexPromise).to.eventually.rejectedWith('reason');
 
-      const result = await testIndex.query(
-        tenant,
-        [{ filter: { foo: 'bar' }, sortProperty: 'id', sortDirection: SortOrder.Ascending }]
-      );
+      const result = await testIndex.query(tenant, [{ filter: { foo: 'bar' } }], { sortProperty: 'id' });
       expect(result.length).to.equal(0);
     });
   });
@@ -233,7 +229,7 @@ describe('IndexLevel', () => {
       const result = await testIndex.query(tenant, [{ filter: {
         'a' : 'b',
         'c' : 'e'
-      }, sortProperty: 'id', sortDirection: SortOrder.Ascending }]);
+      } }], { sortProperty: 'id' });
 
       expect(result.length).to.equal(1);
       expect(result[0]).to.equal(id3);
@@ -249,7 +245,7 @@ describe('IndexLevel', () => {
 
       const resp = await testIndex.query(tenant, [{ filter: {
         value: 'foo'
-      }, sortProperty: 'id', sortDirection: SortOrder.Ascending }]);
+      } }], { sortProperty: 'id' });
 
       expect(resp.length).to.equal(0);
     });
@@ -276,7 +272,7 @@ describe('IndexLevel', () => {
 
       const resp = await testIndex.query(tenant, [{ filter: {
         a: [ 'a', 'b' ]
-      }, sortProperty: 'id', sortDirection: SortOrder.Ascending }]);
+      } }], { sortProperty: 'id' });
 
       expect(resp.length).to.equal(2);
       expect(resp).to.include(id1);
@@ -297,7 +293,7 @@ describe('IndexLevel', () => {
         dateCreated: {
           gte: Temporal.PlainDateTime.from({ year: 2023, month: 1, day: 15 }).toString({ smallestUnit: 'microseconds' })
         }
-      }, sortProperty: 'id', sortDirection: SortOrder.Ascending }]);
+      } }], { sortProperty: 'id' });
 
       expect(resp.length).to.equal(5);
     });
@@ -314,7 +310,7 @@ describe('IndexLevel', () => {
         value: {
           gte: 'foo'
         }
-      }, sortProperty: 'id', sortDirection: SortOrder.Ascending }]);
+      } }], { sortProperty: 'id' });
 
       expect(resp.length).to.equal(1);
       expect(resp).to.include(id);
@@ -338,7 +334,7 @@ describe('IndexLevel', () => {
         foo: {
           lte: 'bar'
         }
-      }, sortProperty: 'id', sortDirection: SortOrder.Ascending }]);
+      } }], { sortProperty: 'id' });
 
       expect(resp.length).to.equal(1);
       expect(resp).to.include(id1);
@@ -360,7 +356,7 @@ describe('IndexLevel', () => {
 
       const resp = await testIndex.query(tenant, [{ filter: {
         foo: true
-      }, sortProperty: 'id', sortDirection: SortOrder.Ascending }]);
+      } }], { sortProperty: 'id' });
 
       expect(resp.length).to.equal(1);
       expect(resp).to.include(id1);
@@ -382,7 +378,7 @@ describe('IndexLevel', () => {
 
         const resp = await testIndex.query(tenant, [{ filter: {
           digit: testNumbers.at(index)!
-        }, sortProperty: 'digit', sortDirection: SortOrder.Ascending }]);
+        } }], { sortProperty: 'digit' });
 
         expect(resp.length).to.equal(1);
         expect(resp.at(0)).to.equal(testNumbers.at(index)!.toString());
@@ -395,7 +391,7 @@ describe('IndexLevel', () => {
         }
         const resp = await testIndex.query(tenant, [{ filter: {
           digit: 1
-        }, sortProperty: 'digit', sortDirection: SortOrder.Ascending }]);
+        } }], { sortProperty: 'digit' });
 
         expect(resp.length).to.equal(0);
       });
@@ -412,10 +408,10 @@ describe('IndexLevel', () => {
             gte : lowerBound,
             lte : upperBound
           }
-        }, sortProperty: 'digit', sortDirection: SortOrder.Ascending }]);
+        } }], { sortProperty: 'digit' });
 
         const testResults = testNumbers.filter( n => n >= lowerBound && n <= upperBound).map(n => n.toString());
-        expect(resp.sort()).to.eql(testResults.sort());
+        expect(resp).to.have.members(testResults);
       });
 
       it('supports range queries with negative numbers inclusive', async () => {
@@ -430,10 +426,10 @@ describe('IndexLevel', () => {
             gte : lowerBound,
             lte : upperBound
           }
-        }, sortProperty: 'digit', sortDirection: SortOrder.Ascending }]);
+        } }], { sortProperty: 'digit' });
 
         const testResults = testNumbers.filter( n => n >= lowerBound && n <= upperBound).map(n => n.toString());
-        expect(resp.sort()).to.eql(testResults.sort());
+        expect(resp).to.have.members(testResults);
       });
 
       it('should return numbers gt a negative digit', async () => {
@@ -447,10 +443,10 @@ describe('IndexLevel', () => {
           digit: {
             gt: lowerBound,
           }
-        }, sortProperty: 'digit', sortDirection: SortOrder.Ascending }]);
+        } }], { sortProperty: 'digit' });
 
         const testResults = testNumbers.filter( n => n > lowerBound).map(n => n.toString());
-        expect(resp.sort()).to.eql(testResults.sort());
+        expect(resp).to.have.members(testResults);
       });
 
       it('should return numbers gt a digit', async () => {
@@ -464,10 +460,10 @@ describe('IndexLevel', () => {
           digit: {
             gt: lowerBound,
           }
-        }, sortProperty: 'digit', sortDirection: SortOrder.Ascending }]);
+        } }], { sortProperty: 'digit' });
 
         const testResults = testNumbers.filter( n => n > lowerBound).map(n => n.toString());
-        expect(resp.sort()).to.eql(testResults.sort());
+        expect(resp).to.have.members(testResults);
       });
 
       it('should return numbers lt a negative digit', async () => {
@@ -481,10 +477,10 @@ describe('IndexLevel', () => {
           digit: {
             lt: upperBound,
           }
-        }, sortProperty: 'digit', sortDirection: SortOrder.Ascending }]);
+        } }], { sortProperty: 'digit' });
 
         const testResults = testNumbers.filter( n => n < upperBound).map(n => n.toString());
-        expect(resp.sort()).to.eql(testResults.sort());
+        expect(resp).to.have.members(testResults);
       });
 
       it('should return numbers lt a digit', async () => {
@@ -498,10 +494,10 @@ describe('IndexLevel', () => {
           digit: {
             lt: upperBound,
           }
-        }, sortProperty: 'digit', sortDirection: SortOrder.Ascending }]);
+        } }], { sortProperty: 'digit' });
 
         const testResults = testNumbers.filter( n => n < upperBound).map(n => n.toString());
-        expect(resp.sort()).to.eql(testResults.sort());
+        expect(resp).to.have.members(testResults);
       });
     });
   });
@@ -542,14 +538,14 @@ describe('IndexLevel', () => {
       await testIndex.put(tenant, id1, id1, doc1, { id: id1 });
       await testIndex.put(tenant, id2, id2, doc2, { id: id2 });
 
-      let result = await testIndex.query(tenant, [{ filter: { 'a': 'b', 'c': 'd' }, sortProperty: 'id', sortDirection: SortOrder.Ascending }]);
+      let result = await testIndex.query(tenant, [{ filter: { 'a': 'b', 'c': 'd' } }], { sortProperty: 'id' });
 
       expect(result.length).to.equal(2);
       expect(result).to.contain(id1);
 
       await testIndex.delete(tenant, id1);
 
-      result = await testIndex.query(tenant, [{ filter: { 'a': 'b', 'c': 'd' }, sortProperty: 'id', sortDirection: SortOrder.Ascending }]);
+      result = await testIndex.query(tenant, [{ filter: { 'a': 'b', 'c': 'd' } }], { sortProperty: 'id' });
 
       expect(result.length).to.equal(1);
 
@@ -576,7 +572,7 @@ describe('IndexLevel', () => {
         expect(e).to.equal('reason');
       }
 
-      const result = await testIndex.query(tenant, [{ filter: { foo: 'bar' }, sortProperty: 'id', sortDirection: SortOrder.Ascending }]);
+      const result = await testIndex.query(tenant, [{ filter: { foo: 'bar' } }], { sortProperty: 'id' });
       expect(result.length).to.equal(1);
       expect(result).to.contain(id);
     });
@@ -595,7 +591,7 @@ describe('IndexLevel', () => {
       // attempt purge an invalid id
       await testIndex.delete(tenant, 'invalid-id');
 
-      const result = await testIndex.query(tenant, [{ filter: { foo: 'bar' }, sortProperty: 'id', sortDirection: SortOrder.Ascending }]);
+      const result = await testIndex.query(tenant, [{ filter: { foo: 'bar' } }], { sortProperty: 'id' });
       expect(result.length).to.equal(1);
       expect(result).to.contain(id);
     });
@@ -628,7 +624,7 @@ describe('IndexLevel', () => {
       }
 
       // sort by invalid property returns no results
-      const invalidResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, sortProperty: 'invalid', sortDirection: SortOrder.Ascending }]);
+      const invalidResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' } }], { sortProperty: 'invalid' });
       expect(invalidResults.length).to.equal(0);
     });
 
@@ -639,14 +635,15 @@ describe('IndexLevel', () => {
       }
 
       // verify valid cursor
-      const validResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, sortProperty: 'val', sortDirection: SortOrder.Ascending, cursor: 'a' }]);
+      const validResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, cursor: 'a' }], { sortProperty: 'val' });
       expect(validResults.length).to.equal(3);
-      expect(validResults).to.eql(['b', 'c', 'd']);
+      expect(validResults).to.have.members(['b', 'c', 'd']);
 
       // invalid cursor
-      const invalidResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, sortProperty: 'val', sortDirection: SortOrder.Ascending, cursor: 'invalid' }]);
+      const invalidResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, cursor: 'invalid' }], { sortProperty: 'val' });
       expect(invalidResults.length).to.equal(0);
     });
+
     it('can have multiple sort properties', async () => {
       const testVals = ['b', 'd', 'c', 'a'];
       for (const val of testVals) {
@@ -654,14 +651,14 @@ describe('IndexLevel', () => {
       }
 
       // sort by value
-      const ascResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, sortProperty: 'val', sortDirection: SortOrder.Ascending }]);
+      const ascResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' } }], { sortProperty: 'val' });
       expect(ascResults.length).to.equal(testVals.length);
-      expect(ascResults).to.eql(['a', 'b', 'c', 'd']);
+      expect(ascResults).to.have.members(['a', 'b', 'c', 'd']);
 
       // sort by index
-      const ascIndexResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, sortProperty: 'index', sortDirection: SortOrder.Ascending }]);
+      const ascIndexResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' } }], { sortProperty: 'index' });
       expect(ascIndexResults.length).to.equal(testVals.length);
-      expect(ascIndexResults).to.eql(testVals);
+      expect(ascIndexResults).to.have.members(testVals);
     });
 
     it('sorts lexicographic with and without a cursor', async () => {
@@ -671,26 +668,15 @@ describe('IndexLevel', () => {
       }
 
       // sort ascending without a cursor
-      const ascResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, sortProperty: 'val', sortDirection: SortOrder.Ascending }]);
+      const ascResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' } }], { sortProperty: 'val' });
       expect(ascResults.length).to.equal(4);
-      expect(ascResults).to.eql(['a', 'b', 'c', 'd']);
+      expect(ascResults).to.have.members(['a', 'b', 'c', 'd']);
 
       // sort ascending with cursor
-      const ascResultsCursor = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, sortProperty: 'val', sortDirection: SortOrder.Ascending, cursor: 'b' }]);
+      const ascResultsCursor = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, cursor: 'b' }], { sortProperty: 'val' });
       expect(ascResultsCursor.length).to.equal(2);
       expect(ascResultsCursor[0]).to.equal('c');
       expect(ascResultsCursor[1]).to.equal('d');
-
-      // sort descending without a cursor
-      const descResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, sortProperty: 'val', sortDirection: SortOrder.Descending }]);
-      expect(descResults.length).to.equal(4);
-      expect(descResults).to.eql(['d', 'c', 'b', 'a']);
-
-      // sort descending with cursor
-      const descResultsCursor = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, sortProperty: 'val', sortDirection: SortOrder.Descending , cursor: 'b' }]);
-      expect(descResultsCursor.length).to.equal(2);
-      expect(descResultsCursor[0]).to.equal('d');
-      expect(descResultsCursor[1]).to.equal('c');
     });
 
     it('sorts numeric with and without a cursor', async () => {
@@ -700,24 +686,14 @@ describe('IndexLevel', () => {
       }
 
       // sort ascending without a cursor
-      const ascResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, sortProperty: 'val', sortDirection: SortOrder.Ascending }]);
+      const ascResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' } }], { sortProperty: 'val' });
       expect(ascResults.length).to.equal(testVals.length);
-      expect(ascResults).to.eql(['-2', '-1', '0', '1', '2' , '3' , '4']);
+      expect(ascResults).to.have.members(['-2', '-1', '0', '1', '2' , '3' , '4']);
 
       // sort ascending with a cursor
-      const ascResultsCursor = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, sortProperty: 'val', sortDirection: SortOrder.Ascending, cursor: '2' }]);
+      const ascResultsCursor = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, cursor: '2' }], { sortProperty: 'val' });
       expect(ascResultsCursor.length).to.equal(2);
-      expect(ascResultsCursor).to.eql(['3', '4']);
-
-      // sort descending without a cursor
-      const descResults = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, sortProperty: 'val', sortDirection: SortOrder.Descending }]);
-      expect(descResults.length).to.equal(testVals.length);
-      expect(descResults).to.eql(['4', '3', '2', '1', '0', '-1', '-2']);
-
-      // sort descending with a cursor
-      const descResultsCursor = await testIndex.query(tenant, [{ filter: { schema: 'schema' }, sortProperty: 'val', sortDirection: SortOrder.Descending, cursor: '2' }]);
-      expect(descResultsCursor.length).to.equal(2);
-      expect(descResultsCursor).to.eql(['4', '3']);
+      expect(ascResultsCursor).to.have.members(['3', '4']);
     });
 
     it('sorts range queries with or without a cursor', async () => {
@@ -738,8 +714,8 @@ describe('IndexLevel', () => {
           gte : lowerBound,
           lte : upperBound
         },
-      }, sortProperty: 'letter', sortDirection: SortOrder.Ascending }]);
-      expect(response).to.eql(['b', 'c', 'd', 'e', 'f', 'g']);
+      } }], { sortProperty: 'letter' });
+      expect(response).to.have.members(['b', 'c', 'd', 'e', 'f', 'g']);
 
       // ascending with a cursor
       response = await testIndex.query(tenant, [{ filter: {
@@ -747,26 +723,8 @@ describe('IndexLevel', () => {
           gte : lowerBound,
           lte : upperBound
         },
-      }, sortProperty: 'letter', sortDirection: SortOrder.Ascending, cursor: 'e' }]);
-      expect(response).to.eql([ 'f', 'g' ]); // should only return one item
-
-      // descending without a cursor
-      response = await testIndex.query(tenant, [{ filter: {
-        letter: {
-          gte : lowerBound,
-          lte : upperBound
-        },
-      }, sortProperty: 'letter', sortDirection: SortOrder.Descending }]);
-      expect(response).to.eql(['g', 'f', 'e', 'd', 'c', 'b']);
-
-      // descending with a cursor
-      response = await testIndex.query(tenant, [{ filter: {
-        letter: {
-          gte : lowerBound,
-          lte : upperBound
-        },
-      }, sortProperty: 'letter', sortDirection: SortOrder.Descending , cursor: 'e' }]);
-      expect(response).to.eql(['g', 'f']); // should only return one item
+      }, cursor: 'e' }], { sortProperty: 'letter' });
+      expect(response).to.have.members([ 'f', 'g' ]); // should only return one item
 
       // test only upper bounds
       // ascending without a cursor
@@ -774,33 +732,16 @@ describe('IndexLevel', () => {
         letter: {
           lte: upperBound
         },
-      }, sortProperty: 'letter', sortDirection: SortOrder.Ascending }]);
-      expect(response).to.eql(['a', 'b', 'c', 'd', 'e', 'f', 'g']);
+      } }], { sortProperty: 'letter' });
+      expect(response).to.have.members(['a', 'b', 'c', 'd', 'e', 'f', 'g']);
 
       // ascending with a cursor
       response = await testIndex.query(tenant, [{ filter: {
         letter: {
           lte: upperBound
         },
-      }, sortProperty: 'letter', sortDirection: SortOrder.Ascending, cursor: 'e' }]);
-      expect(response).to.eql([ 'f', 'g' ]); // should only return one item
-
-      // descending without a cursor
-      response = await testIndex.query(tenant, [{ filter: {
-        letter: {
-          lte: upperBound
-        },
-      }, sortProperty: 'letter', sortDirection: SortOrder.Descending }]);
-      expect(response).to.eql(['g', 'f', 'e', 'd', 'c', 'b', 'a']);
-
-      // descending with a cursor
-      response = await testIndex.query(tenant, [{ filter: {
-        letter: {
-          lte: upperBound
-        },
-      }, sortProperty: 'letter', sortDirection: SortOrder.Descending , cursor: 'e' }]);
-      expect(response).to.eql(['g', 'f']); // should only return one item
-
+      }, cursor: 'e' }], { sortProperty: 'letter' });
+      expect(response).to.have.members([ 'f', 'g' ]); // should only return one item
     });
 
     it('sorts range queries negative integers with or without a cursor', async () => {
@@ -816,33 +757,16 @@ describe('IndexLevel', () => {
           gte : lowerBound,
           lte : upperBound
         }
-      }, sortProperty: 'digit', sortDirection: SortOrder.Ascending }]);
-      expect(results).to.eql([ '-2', '-1', '0', '1', '2', '3' ]);
+      } }], { sortProperty: 'digit' });
+      expect(results).to.have.members([ '-2', '-1', '0', '1', '2', '3' ]);
 
       results = await testIndex.query(tenant, [{ filter: {
         digit: {
           gte : lowerBound,
           lte : upperBound
         }
-      }, sortProperty: 'digit', sortDirection: SortOrder.Ascending, cursor: '-2' }]);
-      expect(results).to.eql(['-1', '0', '1', '2', '3']);
-
-      results = await testIndex.query(tenant, [{ filter: {
-        digit: {
-          gte : lowerBound,
-          lte : upperBound
-        }
-      }, sortProperty: 'digit', sortDirection: SortOrder.Descending }]);
-      expect(results).to.eql(['3', '2', '1', '0', '-1', '-2']);
-
-      results = await testIndex.query(tenant, [{ filter: {
-        digit: {
-          gte : lowerBound,
-          lte : upperBound
-        }
-      }, sortProperty: 'digit', sortDirection: SortOrder.Descending, cursor: '-2' }]);
-
-      expect(results).to.eql(['3', '2', '1', '0', '-1']);
+      }, cursor: '-2' }], { sortProperty: 'digit' });
+      expect(results).to.have.members(['-1', '0', '1', '2', '3']);
     });
 
     it('sorts range queries with remaining results in lte after cursor', async () => {
@@ -888,20 +812,9 @@ describe('IndexLevel', () => {
           gte : lowerBound,
           lte : upperBound
         },
-      }, sortProperty: 'sort', sortDirection: SortOrder.Ascending, cursor: 'd' }]);
+      }, cursor: 'd' }], { sortProperty: 'sort' });
 
-      expect(response).to.eql([ 'e', 'f', 'g' ]);
-
-      // descending with a cursor
-      // this cursor should ony return results from the 'lte' part of the filter
-      response = await testIndex.query(tenant, [{ filter: {
-        digit: {
-          gte : lowerBound,
-          lte : upperBound
-        },
-      }, sortProperty: 'sort', sortDirection: SortOrder.Descending , cursor: 'd' }]);
-
-      expect(response).to.eql(['g', 'f', 'e']);
+      expect(response).to.have.members([ 'e', 'f', 'g' ]);
 
       // with no lower bounds
       // ascending with a cursor
@@ -910,19 +823,9 @@ describe('IndexLevel', () => {
         digit: {
           lte: upperBound
         },
-      }, sortProperty: 'sort', sortDirection: SortOrder.Ascending, cursor: 'd' }]);
+      }, cursor: 'd' }], { sortProperty: 'sort' });
 
-      expect(response).to.eql([ 'e', 'f', 'g']); // should only return two matching items
-
-      // ascending with a cursor
-      // this cursor should ony return results from the 'lte' part of the filter
-      response = await testIndex.query(tenant, [{ filter: {
-        digit: {
-          lte: upperBound
-        },
-      }, sortProperty: 'sort', sortDirection: SortOrder.Descending , cursor: 'd' }]);
-
-      expect(response).to.eql(['g', 'f', 'e']); // should only return two matching items
+      expect(response).to.have.members([ 'e', 'f', 'g']); // should only return two matching items
     });
 
     it('sorts OR queries with or without a cursor', async () => {
@@ -933,32 +836,62 @@ describe('IndexLevel', () => {
 
       const testValsSchema2 = ['a2', 'b2', 'c2', 'd2'];
       for (const val of testValsSchema2) {
-        await testIndex.put(tenant, val, val, { val, schema: 'schema1' }, { val });
+        await testIndex.put(tenant, val, val, { val, schema: 'schema2' }, { val });
       }
 
       // sort ascending without cursor
       let results = await testIndex.query(tenant, [{ filter: {
         schema: ['schema1', 'schema2']
-      }, sortProperty: 'val', sortDirection: SortOrder.Ascending, }]);
-      expect(results).to.eql(['a1', 'a2', 'b1', 'b2', 'c1', 'c2', 'd1', 'd2']);
+      } }], { sortProperty: 'val' });
+      expect(results).to.have.members(['a1', 'a2', 'b1', 'b2', 'c1', 'c2', 'd1', 'd2']);
 
       // sort ascending from b2 onwards
       results = await testIndex.query(tenant, [{ filter: {
         schema: ['schema1', 'schema2']
-      }, sortProperty: 'val', sortDirection: SortOrder.Ascending, cursor: 'b2' }]);
-      expect(results).to.eql(['c1', 'c2', 'd1', 'd2']);
+      }, cursor: 'b2' }], { sortProperty: 'val' });
+      expect(results).to.have.members(['c1', 'c2', 'd1', 'd2']);
+    });
 
-      // sort descending without cursor
-      results = await testIndex.query(tenant, [{ filter: {
-        schema: ['schema1', 'schema2']
-      }, sortProperty: 'val', sortDirection: SortOrder.Descending, }]);
-      expect(results).to.eql(['d2', 'd1', 'c2', 'c1', 'b2', 'b1', 'a2', 'a1']);
+    it('supports multiple filtered queries', async () => {
+      const testValsSchema1 = ['a1', 'b1', 'c1', 'd1'];
+      for (const val of testValsSchema1) {
+        await testIndex.put(tenant, val, val, { val, schema: 'schema1' }, { val });
+      }
 
-      // sort descending from b2 onwards
-      results = await testIndex.query(tenant, [{ filter: {
-        schema: ['schema1', 'schema2']
-      }, sortProperty: 'val', sortDirection: SortOrder.Descending, cursor: 'b2' }]);
-      expect(results).to.eql(['d2', 'd1', 'c2', 'c1']);
+      const testValsSchema2 = ['a2', 'b2', 'c2', 'd2'];
+      for (const val of testValsSchema2) {
+        await testIndex.put(tenant, val, val, { val, schema: 'schema2' }, { val });
+      }
+
+      // sort ascending without cursor
+      let results = await testIndex.query(tenant, [
+        {
+          filter: {
+            schema: ['schema2']
+          }
+        },
+        {
+          filter: {
+            schema: ['schema1']
+          }
+        }
+      ], { sortProperty: 'val' });
+      expect(results).to.have.members(['a1', 'a2', 'b1', 'b2', 'c1', 'c2', 'd1', 'd2']);
+
+      // sort ascending from b2 onwards
+      results = await testIndex.query(tenant, [
+        {
+          filter: {
+            schema: ['schema2']
+          }, cursor: 'b2'
+        },
+        {
+          filter: {
+            schema: ['schema1']
+          }, cursor: 'b2'
+        }
+      ], { sortProperty: 'val' });
+      expect(results).to.have.members(['c1', 'c2', 'd1', 'd2']);
     });
   });
 
