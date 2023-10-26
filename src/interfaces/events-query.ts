@@ -7,7 +7,6 @@ import type { EventsFilter, EventsQueryDescriptor, EventsQueryMessage } from '..
 import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
 import { removeUndefinedProperties } from '../utils/object.js';
-import { SortOrder } from '../types/message-types.js';
 import { Time } from '../utils/time.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
@@ -101,7 +100,7 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
       }
 
       // add to event log filters array, sorted by the watermark property
-      eventLogFilters.push({ filter: filterCopy as Filter, sortProperty: 'watermark', sortDirection: SortOrder.Ascending, cursor: watermark });
+      eventLogFilters.push({ filter: filterCopy as Filter, cursor: watermark });
     }
 
     return eventLogFilters;

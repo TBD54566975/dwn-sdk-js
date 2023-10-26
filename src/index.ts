@@ -47,7 +47,7 @@ export { RecordsDelete, RecordsDeleteOptions } from './interfaces/records-delete
 export { RecordsRead, RecordsReadOptions } from './interfaces/records-read.js';
 export { Secp256k1 } from './utils/secp256k1.js';
 export { Signer } from './types/signer.js';
-export { SortOrder } from './types/message-types.js';
+export { SortDirection } from './types/message-types.js';
 export { Time } from './utils/time.js';
 
 // store interfaces

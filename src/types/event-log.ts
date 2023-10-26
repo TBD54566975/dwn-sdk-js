@@ -1,4 +1,4 @@
-import type { Filter, SortOrder } from './message-types.js';
+import type { Filter } from './message-types.js';
 
 export type Event = {
   watermark: string,
@@ -9,11 +9,8 @@ export type GetEventsOptions = {
   gt: string
 };
 
-
 export type FilteredQuery = {
   filter: Filter;
-  sortProperty: string;
-  sortDirection: SortOrder;
   cursor?: string;
 };
 
