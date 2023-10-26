@@ -490,6 +490,27 @@ export function testRecordsDeleteHandler(): void {
         });
       });
 
+      it('should return 401 if message is not authorized', async () => {
+        // scenario: Alice creates a record and Bob is unable to delete it.
+
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+
+        const recordsWrite = await TestDataGenerator.generateRecordsWrite({
+          author: alice,
+        });
+        const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+        expect(recordsWriteReply.status.code).to.equal(202);
+
+        const recordsDelete = await TestDataGenerator.generateRecordsDelete({
+          author: bob,
+          recordId: recordsWrite.message.recordId,
+        });
+        const recordsDeleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
+        expect(recordsDeleteReply.status.code).to.equal(401);
+        expect(recordsDeleteReply.status.detail).to.contain('message failed authorization');
+      });
+
       describe('event log', () => {
         it('should include RecordsDelete event and keep initial RecordsWrite event', async () => {
           const alice = await DidKeyResolver.generate();
