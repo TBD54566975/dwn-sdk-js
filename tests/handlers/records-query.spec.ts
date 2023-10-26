@@ -270,6 +270,22 @@ export function testRecordsQueryHandler(): void {
         expect(anonymousReturnedRecordIds).to.have.members([ publishedWrite.message.recordId, draftWrite.message.recordId ]);
       });
 
+      it('should return 400 if published is set to false and a datePublished range is provided', async () => {
+        const firstDayOf2021 = createDateString(new Date(2021, 1, 1));
+        const alice = await DidKeyResolver.generate();
+        // set to true so create does not fail
+        const recordQuery = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : { datePublished: { from: firstDayOf2021 }, published: true }
+        });
+
+        // set to false
+        recordQuery.message.descriptor.filter.published = false;
+        const queryResponse = await dwn.processMessage(alice.did, recordQuery.message);
+        expect(queryResponse.status.code).to.equal(400);
+        expect(queryResponse.status.detail).to.contain('descriptor/filter/published: must be equal to one of the allowed values');
+      });
+
       it('should return 401 for anonymous queries that filter explicitly for unpublished records', async () => {
         const alice = await DidKeyResolver.generate();
 

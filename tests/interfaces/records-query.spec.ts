@@ -13,6 +13,21 @@ chai.use(chaiAsPromised);
 
 describe('RecordsQuery', () => {
   describe('create()', () => {
+    it('should not allow published to be set to false with a datePublished filter also set', async () => {
+      // test control
+      const randomDate = TestDataGenerator.randomTimestamp();
+      const recordQueryControl = TestDataGenerator.generateRecordsQuery({
+        filter: { datePublished: { from: randomDate, }, published: true }
+      });
+
+      await expect(recordQueryControl).to.eventually.not.be.rejected;
+
+      const recordQueryRejected = TestDataGenerator.generateRecordsQuery({
+        filter: { datePublished: { from: randomDate }, published: false }
+      });
+      await expect(recordQueryRejected).to.eventually.be.rejectedWith('descriptor/filter/published: must be equal to one of the allowed values');
+    });
+
     it('should use `messageTimestamp` as is if given', async () => {
       const alice = await TestDataGenerator.generatePersona();
 

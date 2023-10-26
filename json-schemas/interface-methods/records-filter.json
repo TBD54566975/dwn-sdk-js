@@ -80,5 +80,24 @@
         }
       }
     }
+  },
+  "dependencies": {
+    "datePublished": {
+      "oneOf": [
+        {
+          "properties": {
+            "published": {
+              "enum": [true]
+            }
+          },
+          "required": ["published"]
+        },
+        {
+          "not": {
+            "required": ["published"]
+          }
+        }
+      ]
+    }
   }
 }
