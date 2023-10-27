@@ -7,6 +7,9 @@
     "authorSignature": {
       "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
     },
+    "authorDelegatedGrant": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/permissions-grant.json"
+    },
     "ownerSignature": {
       "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
     }

@@ -1,3 +1,4 @@
+import type { DelegatedGrantMessage } from '../types/permissions-types.js';
 import type { GeneralJws } from '../types/jws-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PublicJwk } from '../types/jose-types.js';
@@ -48,7 +49,17 @@ export type RecordsWriteOptions = {
   published?: boolean;
   datePublished?: string;
   dataFormat: string;
-  authorizationSigner?: Signer;
+
+  /**
+   * Signer of the message.
+   */
+  signer?: Signer;
+
+  /**
+   * The delegated grant to sign on behalf of the logical author, which is the grantor (`grantedBy`) of the delegated grant.
+   */
+  delegatedGrant?: DelegatedGrantMessage;
+
   attestationSigners?: Signer[];
   encryptionInput?: EncryptionInput;
   permissionsGrantId?: string;
@@ -112,7 +123,17 @@ export type CreateFromOptions = {
   published?: boolean;
   messageTimestamp?: string;
   datePublished?: string;
-  authorizationSigner?: Signer;
+
+  /**
+   * Signer of the message.
+   */
+  signer?: Signer;
+
+  /**
+   * The delegated grant to sign on behalf of the logical author, which is the grantor (`grantedBy`) of the delegated grant.
+   */
+  delegatedGrant?: DelegatedGrantMessage;
+
   attestationSigners?: Signer[];
   encryptionInput?: EncryptionInput;
   protocolRole?: string;
@@ -137,7 +158,10 @@ export class RecordsWrite {
 
   private _author: string | undefined;
   /**
-   * DID of author of this message.
+   * DID of the logical author of this message.
+   * NOTE: we say "logical" author because a message can be signed by a delegate of the actual author,
+   * in which case the author DID would not be the same as the signer/delegate DID,
+   * but be the DID of the grantor (`grantedBy`) of the delegated grant presented.
    */
   public get author(): string | undefined {
     return this._author;
@@ -145,7 +169,7 @@ export class RecordsWrite {
 
   private _authorSignaturePayload: RecordsWriteSignaturePayload | undefined;
   /**
-   * Decoded author signature payload.
+   * Decoded signer signature payload.
    */
   public get authorSignaturePayload(): RecordsWriteSignaturePayload | undefined {
     return this._authorSignaturePayload;
@@ -173,7 +197,14 @@ export class RecordsWrite {
     this._message = message;
 
     if (message.authorization !== undefined) {
-      this._author = Message.getAuthor(message as GenericMessage);
+      // if the message authorization contains author delegated grant, the author would be the grantor of the grant
+      // else the author would be the signer of the message
+      if (message.authorization.authorDelegatedGrant !== undefined) {
+        this._author = Message.getSigner(message.authorization.authorDelegatedGrant);
+      } else {
+        this._author = Message.getSigner(message as GenericMessage);
+      }
+
       this._authorSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.authorSignature);
 
       if (message.authorization.ownerSignature !== undefined) {
@@ -235,6 +266,10 @@ export class RecordsWrite {
       throw new Error('`contextId` must also be given when `parentId` is specified');
     }
 
+    if (options.signer === undefined && options.delegatedGrant !== undefined) {
+      throw new DwnError(DwnErrorCode.RecordsWriteCreateMissingSigner, '`signer` must be given when `delegatedGrant` is given');
+    }
+
     const dataCid = options.dataCid ?? await Cid.computeDagPbCidFromBytes(options.data!);
     const dataSize = options.dataSize ?? options.data!.length;
 
@@ -290,12 +325,15 @@ export class RecordsWrite {
     if (attestation !== undefined) { message.attestation = attestation; }
     if (encryption !== undefined) { message.encryption = encryption; }
 
-    // validateJsonSchema('RecordsWriteUnauthorized', message);
-
     const recordsWrite = new RecordsWrite(message);
 
-    if (options.authorizationSigner !== undefined) {
-      await recordsWrite.sign(options.authorizationSigner, { permissionsGrantId: options.permissionsGrantId, protocolRole: options.protocolRole });
+    if (options.signer !== undefined) {
+      await recordsWrite.sign({
+        signer             : options.signer,
+        delegatedGrant     : options.delegatedGrant,
+        permissionsGrantId : options.permissionsGrantId,
+        protocolRole       : options.protocolRole
+      });
     }
 
     return recordsWrite;
@@ -342,26 +380,27 @@ export class RecordsWrite {
 
     const createOptions: RecordsWriteOptions = {
       // immutable properties below, just inherit from the message given
-      recipient           : sourceMessage.descriptor.recipient,
-      recordId            : sourceMessage.recordId,
-      dateCreated         : sourceMessage.descriptor.dateCreated,
-      contextId           : sourceMessage.contextId,
-      protocol            : sourceMessage.descriptor.protocol,
-      protocolPath        : sourceMessage.descriptor.protocolPath,
-      parentId            : sourceMessage.descriptor.parentId,
-      schema              : sourceMessage.descriptor.schema,
-      dataFormat          : sourceMessage.descriptor.dataFormat,
+      recipient          : sourceMessage.descriptor.recipient,
+      recordId           : sourceMessage.recordId,
+      dateCreated        : sourceMessage.descriptor.dateCreated,
+      contextId          : sourceMessage.contextId,
+      protocol           : sourceMessage.descriptor.protocol,
+      protocolPath       : sourceMessage.descriptor.protocolPath,
+      parentId           : sourceMessage.descriptor.parentId,
+      schema             : sourceMessage.descriptor.schema,
+      dataFormat         : sourceMessage.descriptor.dataFormat,
       // mutable properties below
-      messageTimestamp    : options.messageTimestamp ?? currentTime,
+      messageTimestamp   : options.messageTimestamp ?? currentTime,
       published,
       datePublished,
-      data                : options.data,
-      dataCid             : options.data ? undefined : sourceMessage.descriptor.dataCid, // if data not given, use base message dataCid
-      dataSize            : options.data ? undefined : sourceMessage.descriptor.dataSize, // if data not given, use base message dataSize
-      protocolRole        : options.protocolRole,
+      data               : options.data,
+      dataCid            : options.data ? undefined : sourceMessage.descriptor.dataCid, // if data not given, use base message dataCid
+      dataSize           : options.data ? undefined : sourceMessage.descriptor.dataSize, // if data not given, use base message dataSize
+      protocolRole       : options.protocolRole,
+      delegatedGrant     : options.delegatedGrant,
       // finally still need signers
-      authorizationSigner : options.authorizationSigner,
-      attestationSigners  : options.attestationSigners
+      signer             : options.signer,
+      attestationSigners : options.attestationSigners
     };
 
     const recordsWrite = await RecordsWrite.create(createOptions);
@@ -388,38 +427,62 @@ export class RecordsWrite {
   }
 
   /**
-   * Signs the RecordsWrite as the author.
+   * Signs the RecordsWrite, commonly as author, but can also be a delegate.
    */
-  public async sign(signer: Signer, options?: { permissionsGrantId?: string, protocolRole?: string }): Promise<void> {
-    const author = Jws.extractDid(signer.keyId);
+  public async sign(options: {
+    signer: Signer,
+    delegatedGrant?: DelegatedGrantMessage,
+    permissionsGrantId?: string,
+    protocolRole?: string
+  }): Promise<void> {
+    const { signer, delegatedGrant, permissionsGrantId, protocolRole } = options;
+
+    // compute delegated grant ID and author if delegated grant is given
+    let delegatedGrantId;
+    let authorDid;
+    if (delegatedGrant !== undefined) {
+      delegatedGrantId = await Message.getCid(delegatedGrant);
+      authorDid = Jws.getSignerDid(delegatedGrant.authorization.authorSignature.signatures[0]);
+    } else {
+      authorDid = Jws.extractDid(signer.keyId);
+    }
 
     const descriptor = this._message.descriptor;
     const descriptorCid = await Cid.computeCid(descriptor);
 
     // `recordId` computation if not given at construction time
-    this._message.recordId = this._message.recordId ?? await RecordsWrite.getEntryId(author, descriptor);
+    this._message.recordId = this._message.recordId ?? await RecordsWrite.getEntryId(authorDid, descriptor);
 
     // `contextId` computation if not given at construction time and this is a protocol-space record
     if (this._message.contextId === undefined && this._message.descriptor.protocol !== undefined) {
-      this._message.contextId = await RecordsWrite.getEntryId(author, descriptor);
+      this._message.contextId = await RecordsWrite.getEntryId(authorDid, descriptor);
     }
 
     // `authorSignature` generation
-    const authorSignature = await RecordsWrite.createAuthorSignature(
+    const additionalPropertiesToSign = {
+      delegatedGrantId,
+      permissionsGrantId,
+      protocolRole
+    };
+    const authorSignature = await RecordsWrite.createSignerSignature(
       this._message.recordId,
       this._message.contextId,
       descriptorCid,
       this._message.attestation,
       this._message.encryption,
       signer,
-      options
+      additionalPropertiesToSign
     );
 
     this._message.authorization = { authorSignature };
 
+    if (delegatedGrant !== undefined) {
+      this._message.authorization.authorDelegatedGrant = delegatedGrant;
+    }
+
     // there is opportunity to optimize here as the payload is constructed within `createAuthorization(...)`
     this._authorSignaturePayload = Jws.decodePlainObjectPayload(authorSignature);
-    this._author = author;
+    this._author = authorDid;
   }
 
   /**
@@ -431,7 +494,7 @@ export class RecordsWrite {
     if (this._author === undefined) {
       throw new DwnError(
         DwnErrorCode.RecordsWriteSignAsOwnerUnknownAuthor,
-        'Unable to sign as owner if without author signature because owner needs to sign over `recordId` which depends on author DID.');
+        'Unable to sign as owner if without signer signature because owner needs to sign over `recordId` which depends on author DID.');
     }
 
     const descriptor = this._message.descriptor;
@@ -498,21 +561,47 @@ export class RecordsWrite {
     // NOTE: validateMessageSignatureIntegrity() call earlier enforces the presence of `authorization` and thus `authorSignature` for RecordsWrite
     const authorSignaturePayload = this.authorSignaturePayload!;
 
-    // make sure the `recordId` in message is the same as the `recordId` in author signature payload
+    // make sure the `recordId` in message is the same as the `recordId` in signer signature payload
     if (this.message.recordId !== authorSignaturePayload.recordId) {
       throw new Error(
         `recordId in message ${this.message.recordId} does not match recordId in authorization: ${authorSignaturePayload.recordId}`
       );
     }
 
-    // if `contextId` is given in message, make sure the same `contextId` is in the author signature payload
+    // if `contextId` is given in message, make sure the same `contextId` is in the signer signature payload
     if (this.message.contextId !== authorSignaturePayload.contextId) {
       throw new Error(
         `contextId in message ${this.message.contextId} does not match contextId in authorization: ${authorSignaturePayload.contextId}`
       );
     }
 
-    // if `attestation` is given in message, make sure the correct `attestationCid` is in the author signature payload
+    // `deletedGrantId` in the signer signature payload and `authorDelegatedGrant` in `authorization` must both exist or be both undefined
+    const delegatedGrantIdDefined = authorSignaturePayload.delegatedGrantId !== undefined;
+    const authorDelegatedGrantDefined = this.message.authorization!.authorDelegatedGrant !== undefined;
+    if (delegatedGrantIdDefined !== authorDelegatedGrantDefined) {
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteValidateIntegrityDelegatedGrantAndIdExistenceMismatch,
+        `delegatedGrantId and authorDelegatedGrant must both exist or be undefine. \
+         delegatedGrantId defined: ${delegatedGrantIdDefined}, authorDelegatedGrant defined: ${authorDelegatedGrantDefined}`
+      );
+    }
+
+    // when delegated grant exists, the grantee (grantedTo) must be the same as the signer of the message
+    if (authorDelegatedGrantDefined) {
+      const grantedTo = this.message.authorization!.authorDelegatedGrant!.descriptor.grantedTo;
+      const signer = Message.getSigner(this.message);
+      if (grantedTo !== signer) {
+        throw new DwnError(
+          DwnErrorCode.RecordsWriteValidateIntegrityGrantedToAndSignerMismatch,
+          `grantedTo ${grantedTo} must be the same as the signer ${signer} of the message`
+        );
+      }
+    }
+
+    // if `delegatedGrantId` is given in message, make sure the same `delegatedGrantId` is in the signer signature payload
+    // TODO:
+
+    // if `attestation` is given in message, make sure the correct `attestationCid` is in the signer signature payload
     if (authorSignaturePayload.attestationCid !== undefined) {
       const expectedAttestationCid = await Cid.computeCid(this.message.attestation);
       const actualAttestationCid = authorSignaturePayload.attestationCid;
@@ -523,7 +612,7 @@ export class RecordsWrite {
       }
     }
 
-    // if `encryption` is given in message, make sure the correct `encryptionCid` is in the author signature payload
+    // if `encryption` is given in message, make sure the correct `encryptionCid` is in the signer signature payload
     if (authorSignaturePayload.encryptionCid !== undefined) {
       const expectedEncryptionCid = await Cid.computeCid(this.message.encryption);
       const actualEncryptionCid = authorSignaturePayload.encryptionCid;
@@ -636,9 +725,24 @@ export class RecordsWrite {
     }
 
     const recordsWriteMessage = message as RecordsWriteMessage;
-    const author = Message.getAuthor(message);
+    const author = RecordsWrite.getAuthor(recordsWriteMessage);
     const entryId = await RecordsWrite.getEntryId(author, recordsWriteMessage.descriptor);
     return (entryId === recordsWriteMessage.recordId);
+  }
+
+  /**
+   * Gets the DID of the author of the given message.
+   */
+  public static getAuthor(message: RecordsWriteMessage): string | undefined {
+    let author;
+
+    if (message.authorization.authorDelegatedGrant !== undefined) {
+      author = Message.getSigner(message.authorization.authorDelegatedGrant);
+    } else {
+      author = Message.getSigner(message);
+    }
+
+    return author;
   }
 
   /**
@@ -724,16 +828,16 @@ export class RecordsWrite {
   }
 
   /**
-   * Creates the `authorization` property of a RecordsWrite message.
+   * Creates the `signerSignature` property in the `authorization` of a `RecordsWrite` message.
    */
-  public static async createAuthorSignature(
+  public static async createSignerSignature(
     recordId: string,
     contextId: string | undefined,
     descriptorCid: string,
     attestation: GeneralJws | undefined,
     encryption: EncryptionProperty | undefined,
     signer: Signer,
-    additionalProperties?: { permissionsGrantId?: string, protocolRole?: string },
+    additionalProperties?: { delegatedGrantId?: string, permissionsGrantId?: string, protocolRole?: string },
   ): Promise<GeneralJws> {
     const attestationCid = attestation ? await Cid.computeCid(attestation) : undefined;
     const encryptionCid = encryption ? await Cid.computeCid(encryption) : undefined;
@@ -744,6 +848,7 @@ export class RecordsWrite {
       contextId,
       attestationCid,
       encryptionCid,
+      delegatedGrantId   : additionalProperties?.delegatedGrantId,
       permissionsGrantId : additionalProperties?.permissionsGrantId,
       protocolRole       : additionalProperties?.protocolRole
     };

@@ -41,7 +41,7 @@ export abstract class Message<M extends GenericMessage> {
 
     if (message.authorization !== undefined) {
       this.authorSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.authorSignature);
-      this.author = Message.getAuthor(message as GenericMessage);
+      this.author = Message.getSigner(message as GenericMessage);
     }
   }
 
@@ -66,15 +66,15 @@ export abstract class Message<M extends GenericMessage> {
   };
 
   /**
-   * Gets the DID of the author of the given message, returned `undefined` if message is not signed.
+   * Gets the DID of the signer of the given message, returns `undefined` if message is not signed.
    */
-  public static getAuthor(message: GenericMessage): string | undefined {
+  public static getSigner(message: GenericMessage): string | undefined {
     if (message.authorization === undefined) {
       return undefined;
     }
 
-    const author = Jws.getSignerDid(message.authorization.authorSignature.signatures[0]);
-    return author;
+    const signer = Jws.getSignerDid(message.authorization.authorSignature.signatures[0]);
+    return signer;
   }
 
   /**
@@ -125,7 +125,7 @@ export abstract class Message<M extends GenericMessage> {
 
   /**
    * Creates a generic signature from the given DWN message descriptor by including `descriptorCid` as the required property in the signature payload.
-   * NOTE: there is an opportunity to consolidate RecordsWrite.createAuthorSignature() wth this method
+   * NOTE: there is an opportunity to consolidate RecordsWrite.createSignerSignature() wth this method
    */
   public static async createSignature(
     descriptor: Descriptor,

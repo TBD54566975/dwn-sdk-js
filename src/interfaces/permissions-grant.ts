@@ -1,6 +1,6 @@
 import type { PermissionsRequest } from './permissions-request.js';
 import type { Signer } from '../types/signer.js';
-import type { PermissionConditions, PermissionScope, RecordsPermissionScope } from '../types/permissions-types.js';
+import type { DelegatedGrantMessage, PermissionConditions, PermissionScope, RecordsPermissionScope } from '../types/permissions-types.js';
 import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types/permissions-types.js';
 
 import { removeUndefinedProperties } from '../utils/object.js';
@@ -17,6 +17,7 @@ export type PermissionsGrantOptions = {
   grantedTo: string;
   grantedBy: string;
   grantedFor: string;
+  delegated?: boolean;
   permissionsRequestId?: string;
   scope: PermissionScope;
   conditions?: PermissionConditions;
@@ -58,6 +59,7 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
       grantedTo            : options.grantedTo,
       grantedBy            : options.grantedBy,
       grantedFor           : options.grantedFor,
+      delegated            : options.delegated,
       permissionsRequestId : options.permissionsRequestId,
       scope                : scope,
       conditions           : options.conditions,
@@ -75,6 +77,30 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
 
     return new PermissionsGrant(message);
   }
+
+  /**
+   * A convenience method for casting a PermissionsGrantMessage to a DelegatedGrantMessage if the `delegated` property is `true`.
+   * @throws {DwnError} if the `delegated` property is not `true`.
+   */
+  public asDelegatedGrant(): DelegatedGrantMessage {
+    return PermissionsGrant.asDelegatedGrant(this.message);
+  }
+
+  /**
+   * A convenience method for casting a PermissionsGrantMessage to a DelegatedGrantMessage if the `delegated` property is `true`.
+   * @throws {DwnError} if the `delegated` property is not `true`.
+   */
+  public static asDelegatedGrant(message: PermissionsGrantMessage): DelegatedGrantMessage {
+    if (!message.descriptor.delegated) {
+      throw new DwnError(
+        DwnErrorCode.PermissionsGrantNotADelegatedGrant,
+        `PermissionsGrant given is not a delegated grant. Descriptor: ${message.descriptor}`
+      );
+    }
+
+    return message as DelegatedGrantMessage;
+  }
+
 
   /**
    * generates a PermissionsGrant using the provided PermissionsRequest
@@ -101,6 +127,9 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
     });
   }
 
+  /**
+   * Current implementation only allows the DWN owner to store grants they created.
+   */
   public authorize(): void {
     const { grantedBy, grantedFor } = this.message.descriptor;
     if (this.author !== grantedBy) {

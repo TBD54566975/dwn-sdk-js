@@ -66,7 +66,7 @@ export type PermissionsGrantDescriptor = {
   permissionsRequestId?: string;
 
   /**
-   * optional timestamp at which this grant will no longer be active.
+   * Timestamp at which this grant will no longer be active.
    */
   dateExpires: string;
 
@@ -86,6 +86,11 @@ export type PermissionsGrantDescriptor = {
   grantedBy: string;
 
   /**
+   * Whether this grant is delegated or not. If `true`, the `grantedTo` will be able to act as the `grantedTo` within the scope of this grant.
+   */
+  delegated?: boolean;
+
+  /**
    * Optional string that communicates what the grant would be used for
    */
   description?: string;
@@ -97,6 +102,14 @@ export type PermissionsGrantDescriptor = {
 export type PermissionsGrantMessage = GenericMessage & {
   authorization: AuthorizationModel; // overriding `GenericMessage` with `authorization` being required
   descriptor: PermissionsGrantDescriptor;
+};
+
+
+export type DelegatedGrantMessage = PermissionsGrantMessage & {
+  // overriding `PermissionsGrantMessage` with `delegated` being required to be true
+  descriptor: {
+    delegated: true;
+  };
 };
 
 export type PermissionsRevokeDescriptor = {

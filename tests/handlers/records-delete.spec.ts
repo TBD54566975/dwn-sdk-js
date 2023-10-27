@@ -640,7 +640,7 @@ export function testRecordsDeleteHandler(): void {
           const newWrite = await RecordsWrite.createFrom({
             recordsWriteMessage : recordsWrite.message,
             published           : true,
-            authorizationSigner : Jws.createSigner(author)
+            signer              : Jws.createSigner(author)
           });
 
           const newWriteReply = await dwn.processMessage(author.did, newWrite.message);

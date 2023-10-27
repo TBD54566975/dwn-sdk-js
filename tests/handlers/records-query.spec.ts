@@ -926,7 +926,7 @@ export function testRecordsQueryHandler(): void {
         expect(results.paginationMessageCid).to.not.exist;
 
         const bobs = (m: RecordsWriteMessage): boolean => {
-          return m.descriptor.recipient === bob.did || m.descriptor.published === true || Message.getAuthor(m) === bob.did;
+          return m.descriptor.recipient === bob.did || m.descriptor.published === true || Message.getSigner(m) === bob.did;
         };
 
         // all records from alice have been validated
@@ -1236,7 +1236,7 @@ export function testRecordsQueryHandler(): void {
           const threadRoleReply = await dwn.processMessage(alice.did, threadRecord.message, threadRecord.dataStream);
           expect(threadRoleReply.status.code).to.equal(202);
 
-          // Alice writes a 'friend' $globalRole record with Bob as recipient
+          // Alice writes a 'participant' $contextRole record with Bob as recipient
           const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
             author       : alice,
             recipient    : bob.did,

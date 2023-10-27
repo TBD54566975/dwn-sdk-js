@@ -107,6 +107,7 @@ export type GenerateProtocolsQueryOutput = {
 };
 
 export type GenerateRecordsWriteInput = {
+  // Will refactor only when the PR is reviewed approved to avoid polluting the PR.
   author?: Persona;
   attesters?: Persona[];
   recipient?: string;
@@ -365,13 +366,13 @@ export class TestDataGenerator {
    * @param input.attesters Attesters of the message. Will NOT be generated if not given.
    * @param input.data Data that belongs to the record. Generated when not given only if `dataCid` and `dataSize` are also not given.
    * @param input.dataFormat Format of the data. Defaults to 'application/json' if not given.
-   * @param input.author Author of the message. Generated if not given.
+   * @param input.signer Signer of the message. Generated if not given.
    * @param input.schema Schema of the message. Randomly generated if not given.
    */
   public static async generateRecordsWrite(input?: GenerateRecordsWriteInput): Promise<GenerateRecordsWriteOutput> {
     const author = input?.author ?? await TestDataGenerator.generatePersona();
 
-    const authorizationSigner = Jws.createSigner(author);
+    const signer = Jws.createSigner(author);
     const attestationSigners = Jws.createSigners(input?.attesters ?? []);
 
     const dataCid = input?.dataCid;
@@ -400,7 +401,7 @@ export class TestDataGenerator {
       data               : dataBytes,
       dataCid,
       dataSize,
-      authorizationSigner,
+      signer,
       attestationSigners,
       encryptionInput    : input?.encryptionInput,
       permissionsGrantId : input?.permissionsGrantId,
@@ -552,7 +553,7 @@ export class TestDataGenerator {
     }
 
     await recordsWrite.encryptSymmetricEncryptionKey(encryptionInput);
-    await recordsWrite.sign(Jws.createSigner(author));
+    await recordsWrite.sign({ signer: Jws.createSigner(author) });
 
     return { message, dataStream: dataStream!, recordsWrite, encryptedDataBytes, encryptionInput };
   }
@@ -579,7 +580,7 @@ export class TestDataGenerator {
       datePublished,
       messageTimestamp    : input.messageTimestamp,
       protocolRole        : input.protocolRole,
-      authorizationSigner : Jws.createSigner(input.author)
+      signer              : Jws.createSigner(input.author)
     };
 
     const recordsWrite = await RecordsWrite.createFrom(options);

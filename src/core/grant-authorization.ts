@@ -48,8 +48,7 @@ export class GrantAuthorization {
   }
 
   /**
-   * Fetches PermissionsGrantMessage with CID `permissionsGrantId`, and validates that message author may use the grant
-   * for this tenant.
+   * Fetches PermissionsGrantMessage with CID `permissionsGrantId`.
    * @returns the PermissionsGrantMessage with CID `permissionsGrantId` if message exists
    * @throws {Error} if PermissionsGrantMessage with CID `permissionsGrantId` does not exist
    */
