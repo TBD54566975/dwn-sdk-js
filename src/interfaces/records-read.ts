@@ -3,7 +3,6 @@ import type { RecordsWrite } from './records-write.js';
 import type { Signer } from '../types/signer.js';
 import type { RecordsFilter , RecordsReadDescriptor, RecordsReadMessage } from '../types/records-types.js';
 
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Message } from '../core/message.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Records } from '../utils/records.js';
@@ -11,6 +10,7 @@ import { RecordsGrantAuthorization } from '../core/records-grant-authorization.j
 import { removeUndefinedProperties } from '../utils/object.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
+import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.js';
 
 export type RecordsReadOptions = {
   filter: RecordsFilter;
@@ -30,6 +30,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
     if (message.authorization !== undefined) {
       await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
     }
+    validateTimestamp(message.descriptor.messageTimestamp);
 
     const recordsRead = new RecordsRead(message);
     return recordsRead;

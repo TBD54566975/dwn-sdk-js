@@ -3,11 +3,11 @@ import type { MessageStore } from '../types/message-store.js';
 import type { Signer } from '../types/signer.js';
 import type { ProtocolsQueryDescriptor, ProtocolsQueryFilter, ProtocolsQueryMessage } from '../types/protocols-types.js';
 
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { GrantAuthorization } from '../core/grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.js';
 import { normalizeProtocolUrl, validateProtocolUrlNormalized } from '../utils/url.js';
 
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
@@ -29,6 +29,7 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
     if (message.descriptor.filter !== undefined) {
       validateProtocolUrlNormalized(message.descriptor.filter.protocol);
     }
+    validateTimestamp(message.descriptor.messageTimestamp);
 
     return new ProtocolsQuery(message);
   }

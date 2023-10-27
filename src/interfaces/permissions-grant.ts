@@ -3,11 +3,11 @@ import type { Signer } from '../types/signer.js';
 import type { PermissionConditions, PermissionScope, RecordsPermissionScope } from '../types/permissions-types.js';
 import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types/permissions-types.js';
 
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
 
 export type PermissionsGrantOptions = {
@@ -38,6 +38,8 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
   public static async parse(message: PermissionsGrantMessage): Promise<PermissionsGrant> {
     await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
     PermissionsGrant.validateScope(message);
+    validateTimestamp(message.descriptor.messageTimestamp);
+    validateTimestamp(message.descriptor.dateExpires);
 
     return new PermissionsGrant(message);
   }

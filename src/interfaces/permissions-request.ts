@@ -2,10 +2,10 @@ import type { Signer } from '../types/signer.js';
 import type { PermissionConditions, PermissionScope } from '../types/permissions-types.js';
 import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types/permissions-types.js';
 
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.js';
 
 export type PermissionsRequestOptions = {
   messageTimestamp?: string;
@@ -22,6 +22,7 @@ export class PermissionsRequest extends Message<PermissionsRequestMessage> {
 
   public static async parse(message: PermissionsRequestMessage): Promise<PermissionsRequest> {
     await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
+    validateTimestamp(message.descriptor.messageTimestamp);
 
     return new PermissionsRequest(message);
   }

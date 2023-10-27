@@ -2,13 +2,13 @@ import type { Pagination } from '../types/message-types.js';
 import type { Signer } from '../types/signer.js';
 import type { RecordsFilter, RecordsQueryDescriptor, RecordsQueryMessage } from '../types/records-types.js';
 
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Message } from '../core/message.js';
 import { Records } from '../utils/records.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
+import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.js';
 import { validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
 export enum DateSort {
@@ -49,6 +49,7 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
     if (message.descriptor.filter.schema !== undefined) {
       validateSchemaUrlNormalized(message.descriptor.filter.schema);
     }
+    validateTimestamp(message.descriptor.messageTimestamp);
 
     return new RecordsQuery(message);
   }

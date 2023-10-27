@@ -2,9 +2,9 @@ import type { Signer } from '../types/signer.js';
 import type { MessagesGetDescriptor, MessagesGetMessage } from '../types/messages-types.js';
 
 import { Cid } from '../utils/cid.js';
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.js';
 
 export type MessagesGetOptions = {
   messageCids: string[];
@@ -18,6 +18,7 @@ export class MessagesGet extends Message<MessagesGetMessage> {
     this.validateMessageCids(message.descriptor.messageCids);
 
     await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
+    validateTimestamp(message.descriptor.messageTimestamp);
 
     return new MessagesGet(message);
   }
