@@ -208,6 +208,6 @@ export class RecordsQueryHandler implements MethodHandler {
    * Determines if ProtocolAuthorization.authorizeQuery should be run and if the corresponding filter should be used.
    */
   private static shouldProtocolAuthorizeQuery(recordsQuery: RecordsQuery): boolean {
-    return recordsQuery.authorSignaturePayload!.protocolRole !== undefined;
+    return recordsQuery.signerSignaturePayload!.protocolRole !== undefined;
   }
 }

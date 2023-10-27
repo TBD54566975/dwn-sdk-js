@@ -33,9 +33,7 @@ import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { Encoder } from '../../src/utils/encoder.js';
 import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
-import { createOffsetTimestamp, getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { Jws } from '../../src/utils/jws.js';
-import type { DelegatedGrantMessage } from '../../src/types/permissions-types.js';
 import { PermissionsConditionPublication } from '../../src/types/permissions-types.js';
 import { RecordsRead } from '../../src/interfaces/records-read.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
@@ -45,6 +43,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
+import { createOffsetTimestamp, getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { DwnConstant, KeyDerivationScheme, PermissionsGrant, RecordsDelete } from '../../src/index.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message.js';
 import { Encryption, EncryptionAlgorithm } from '../../src/utils/encryption.js';
@@ -3978,15 +3977,15 @@ export function testRecordsWriteHandler(): void {
     });
 
     describe('authorization validation tests', () => {
-      it('should return 400 if `recordId` in `authorization` payload mismatches with `recordId` in the message', async () => {
+      it('should return 400 if `recordId` in signer signature payload mismatches with `recordId` in the message', async () => {
         const { author, message, recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite();
 
         // replace signer signature with mismatching `recordId`, even though signature is still valid
-        const authorSignaturePayload = { ...recordsWrite.authorSignaturePayload };
-        authorSignaturePayload.recordId = await TestDataGenerator.randomCborSha256Cid(); // make recordId mismatch in authorization payload
-        const authorSignaturePayloadBytes = Encoder.objectToBytes(authorSignaturePayload);
+        const signerSignaturePayload = { ...recordsWrite.signerSignaturePayload };
+        signerSignaturePayload.recordId = await TestDataGenerator.randomCborSha256Cid(); // make recordId mismatch in authorization payload
+        const signerSignaturePayloadBytes = Encoder.objectToBytes(signerSignaturePayload);
         const signer = Jws.createSigner(author);
-        const jwsBuilder = await GeneralJwsBuilder.create(authorSignaturePayloadBytes, [signer]);
+        const jwsBuilder = await GeneralJwsBuilder.create(signerSignaturePayloadBytes, [signer]);
         message.authorization = { authorSignature: jwsBuilder.getJws() };
 
         const tenant = author.did;
@@ -4001,16 +4000,16 @@ export function testRecordsWriteHandler(): void {
         expect(reply.status.detail).to.contain('does not match recordId in authorization');
       });
 
-      it('should return 400 if `contextId` in `authorization` payload mismatches with `contextId` in the message', async () => {
+      it('should return 400 if `contextId` in signer signature payload mismatches with `contextId` in the message', async () => {
         // generate a message with protocol so that computed contextId is also computed and included in message
         const { author, message, recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({ protocol: 'http://any.value', protocolPath: 'any/value' });
 
         // replace `authorization` with mismatching `contextId`, even though signature is still valid
-        const authorSignaturePayload = { ...recordsWrite.authorSignaturePayload };
-        authorSignaturePayload.contextId = await TestDataGenerator.randomCborSha256Cid(); // make contextId mismatch in authorization payload
-        const authorSignaturePayloadBytes = Encoder.objectToBytes(authorSignaturePayload);
+        const signerSignaturePayload = { ...recordsWrite.signerSignaturePayload };
+        signerSignaturePayload.contextId = await TestDataGenerator.randomCborSha256Cid(); // make contextId mismatch in authorization payload
+        const signerSignaturePayloadBytes = Encoder.objectToBytes(signerSignaturePayload);
         const signer = Jws.createSigner(author);
-        const jwsBuilder = await GeneralJwsBuilder.create(authorSignaturePayloadBytes, [signer]);
+        const jwsBuilder = await GeneralJwsBuilder.create(signerSignaturePayloadBytes, [signer]);
         message.authorization = { authorSignature: jwsBuilder.getJws() };
 
         const tenant = author.did;
@@ -4067,17 +4066,17 @@ export function testRecordsWriteHandler(): void {
         const signer = Jws.createSigner(author);
 
         // replace `attestation` with one that has an additional property, but go the extra mile of making sure signature is valid
-        const descriptorCid = recordsWrite.authorSignaturePayload!.descriptorCid;
+        const descriptorCid = recordsWrite.signerSignaturePayload!.descriptorCid;
         const attestationPayload = { descriptorCid, someAdditionalProperty: 'anyValue' }; // additional property is not allowed
         const attestationPayloadBytes = Encoder.objectToBytes(attestationPayload);
         const attestationBuilder = await GeneralJwsBuilder.create(attestationPayloadBytes, [signer]);
         message.attestation = attestationBuilder.getJws();
 
         // recreate the `authorization` based on the new` attestationCid`
-        const authorSignaturePayload = { ...recordsWrite.authorSignaturePayload };
-        authorSignaturePayload.attestationCid = await Cid.computeCid(attestationPayload);
-        const authorSignaturePayloadBytes = Encoder.objectToBytes(authorSignaturePayload);
-        const authorizationBuilder = await GeneralJwsBuilder.create(authorSignaturePayloadBytes, [signer]);
+        const signerSignaturePayload = { ...recordsWrite.signerSignaturePayload };
+        signerSignaturePayload.attestationCid = await Cid.computeCid(attestationPayload);
+        const signerSignaturePayloadBytes = Encoder.objectToBytes(signerSignaturePayload);
+        const authorizationBuilder = await GeneralJwsBuilder.create(signerSignaturePayloadBytes, [signer]);
         message.authorization = { authorSignature: authorizationBuilder.getJws() };
 
         const didResolver = TestStubGenerator.createDidResolverStub(author);

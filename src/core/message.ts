@@ -33,14 +33,14 @@ export enum DwnMethodName {
 
 export abstract class Message<M extends GenericMessage> {
   readonly message: M;
-  readonly authorSignaturePayload: GenericSignaturePayload | undefined;
+  readonly signerSignaturePayload: GenericSignaturePayload | undefined;
   readonly author: string | undefined;
 
   constructor(message: M) {
     this.message = message;
 
     if (message.authorization !== undefined) {
-      this.authorSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.authorSignature);
+      this.signerSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.authorSignature);
       this.author = Message.getSigner(message as GenericMessage);
     }
   }
