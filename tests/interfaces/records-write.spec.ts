@@ -1,17 +1,18 @@
 import type { MessageStore } from '../../src/types/message-store.js';
 import type { RecordsWriteMessage } from '../../src/types/records-types.js';
-import type { Signer } from '../../src/index.js';
 import type { EncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
+import type { PermissionScope, Signer } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
-import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { DidKeyResolver, Encoder, Jws, KeyDerivationScheme } from '../../src/index.js';
+
+import { createOffsetTimestamp, getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
+import { DidKeyResolver, DwnInterfaceName, DwnMethodName, Encoder, Jws, KeyDerivationScheme, PermissionsGrant } from '../../src/index.js';
 
 
 chai.use(chaiAsPromised);
@@ -276,6 +277,34 @@ describe('RecordsWrite', () => {
 
       await expect(createPromise).to.be.rejectedWith(DwnErrorCode.RecordsWriteMissingSchema);
     });
+
+    it('should throw if delegated grant is given but signer is not given', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+      const bob = await TestDataGenerator.generatePersona();
+
+      const scope: PermissionScope = {
+        interface : DwnInterfaceName.Records,
+        method    : DwnMethodName.Write
+      };
+      const grantToBob = await PermissionsGrant.create({
+        delegated           : true, // this is a delegated grant
+        dateExpires         : createOffsetTimestamp({ seconds: 100 }),
+        description         : 'Allow to Bob write as me in chat protocol',
+        grantedBy           : alice.did,
+        grantedTo           : bob.did,
+        grantedFor          : alice.did,
+        scope,
+        authorizationSigner : Jws.createSigner(alice)
+      });
+
+      const createPromise = RecordsWrite.create({
+        delegatedGrant : grantToBob.asDelegatedGrant(),
+        dataFormat     : 'application/octet-stream',
+        data           : TestDataGenerator.randomBytes(10),
+      });
+
+      await expect(createPromise).to.be.rejectedWith(DwnErrorCode.RecordsWriteCreateMissingSigner);
+    });
   });
 
   describe('createFrom()', () => {
@@ -293,6 +322,41 @@ describe('RecordsWrite', () => {
       expect(write.message.descriptor.published).to.be.true;
     });
   });
+
+  describe('parse()', () => {
+    it('should throw if delegated grant is given but signer is not given', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+      const bob = await TestDataGenerator.generatePersona();
+
+      const scope: PermissionScope = {
+        interface : DwnInterfaceName.Records,
+        method    : DwnMethodName.Write
+      };
+      const grantToBob = await PermissionsGrant.create({
+        delegated           : true, // this is a delegated grant
+        dateExpires         : createOffsetTimestamp({ seconds: 100 }),
+        description         : 'Allow to Bob write as me in chat protocol',
+        grantedBy           : alice.did,
+        grantedTo           : bob.did,
+        grantedFor          : alice.did,
+        scope,
+        authorizationSigner : Jws.createSigner(alice)
+      });
+
+      const recordsWrite = await RecordsWrite.create({
+        signer         : Jws.createSigner(alice),
+        delegatedGrant : grantToBob.asDelegatedGrant(),
+        dataFormat     : 'application/octet-stream',
+        data           : TestDataGenerator.randomBytes(10),
+      });
+
+      delete recordsWrite.message.authorization!.authorDelegatedGrant; // intentionally remove `authorDelegatedGrant`
+      const parsePromise = RecordsWrite.parse(recordsWrite.message);
+
+      await expect(parsePromise).to.be.rejectedWith(DwnErrorCode.RecordsWriteValidateIntegrityDelegatedGrantAndIdExistenceMismatch);
+    });
+  });
+
 
   describe('isInitialWrite()', () => {
     it('should return false if given message is not a RecordsWrite', async () => {
