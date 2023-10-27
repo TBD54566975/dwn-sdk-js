@@ -1,11 +1,11 @@
 import type { RecordsDeleteDescriptor, RecordsDeleteMessage } from '../types/records-types.js';
 
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Message } from '../core/message.js';
 import type { Signer } from '../types/signer.js';
 
 import { authorize, validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
+import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.js';
 
 export type RecordsDeleteOptions = {
   recordId: string;
@@ -17,6 +17,7 @@ export class RecordsDelete extends Message<RecordsDeleteMessage> {
 
   public static async parse(message: RecordsDeleteMessage): Promise<RecordsDelete> {
     await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
+    validateTimestamp(message.descriptor.messageTimestamp);
 
     const recordsDelete = new RecordsDelete(message);
     return recordsDelete;

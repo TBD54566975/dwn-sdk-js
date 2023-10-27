@@ -1,4 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
+import { DwnError, DwnErrorCode } from '../index.js';
 
 /**
  * sleeps for the desired duration
@@ -23,4 +24,17 @@ export function getCurrentTimeInHighPrecision(): string {
  */
 export async function minimalSleep(): Promise<void> {
   await sleep(2);
+}
+
+/**
+ * Validates that the provided timestamp is a valid number
+ * @param timestamp the timestamp to validate
+ * @throws DwnError if timestamp is not a valid number
+ */
+export function validateTimestamp(timestamp: string): void {
+  try {
+    Temporal.Instant.from(timestamp);
+  } catch {
+    throw new DwnError(DwnErrorCode.TimestampInvalid,`Invalid timestamp: ${timestamp}`);
+  }
 }

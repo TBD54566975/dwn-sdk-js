@@ -88,6 +88,7 @@ export enum DwnErrorCode {
   RecordsWriteSignAsOwnerUnknownAuthor = 'RecordsWriteSignAsOwnerUnknownAuthor',
   RecordsWriteValidateIntegrityEncryptionCidMismatch = 'RecordsWriteValidateIntegrityEncryptionCidMismatch',
   Secp256k1KeyNotValid = 'Secp256k1KeyNotValid',
+  TimestampInvalid = 'TimestampInvalid',
   UrlProtocolNotNormalized = 'UrlProtocolNotNormalized',
   UrlProtocolNotNormalizable = 'UrlProtocolNotNormalizable',
   UrlSchemaNotNormalized = 'UrlSchemaNotNormalized',

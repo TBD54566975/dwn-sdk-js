@@ -18,7 +18,6 @@ import { Encoder } from '../utils/encoder.js';
 import { Encryption } from '../utils/encryption.js';
 import { EncryptionAlgorithm } from '../utils/encryption.js';
 import { GeneralJwsBuilder } from '../jose/jws/general/builder.js';
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Jws } from '../utils/jws.js';
 import { KeyDerivationScheme } from '../utils/hd-key.js';
 import { Message } from '../core/message.js';
@@ -29,6 +28,7 @@ import { Secp256k1 } from '../utils/secp256k1.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
+import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
 export type RecordsWriteOptions = {
@@ -540,6 +540,12 @@ export class RecordsWrite {
     }
     if (this.message.descriptor.schema !== undefined) {
       validateSchemaUrlNormalized(this.message.descriptor.schema);
+    }
+
+    validateTimestamp(this.message.descriptor.messageTimestamp);
+    validateTimestamp(this.message.descriptor.dateCreated);
+    if (this.message.descriptor.datePublished){
+      validateTimestamp(this.message.descriptor.datePublished);
     }
   }
 

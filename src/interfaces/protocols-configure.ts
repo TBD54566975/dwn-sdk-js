@@ -1,10 +1,10 @@
 import type { Signer } from '../types/signer.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types/protocols-types.js';
 
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../index.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
 export type ProtocolsConfigureOptions = {
@@ -22,6 +22,7 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
     Message.validateJsonSchema(message);
     ProtocolsConfigure.validateProtocolDefinition(message.descriptor.definition);
     await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
+    validateTimestamp(message.descriptor.messageTimestamp);
 
     return new ProtocolsConfigure(message);
   }
