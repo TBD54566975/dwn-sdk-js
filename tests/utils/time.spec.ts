@@ -60,7 +60,7 @@ describe('time', () => {
   });
 
   describe('createOffsetTimestamp', () => {
-    it('should use the ', () => {
+    it('should use the given timestamp as the base timestamp to compute the offset timestamp', () => {
       const baseTimestamp = '2000-04-29T10:30:00.123456Z';
       const offsetTimestamp = createOffsetTimestamp({ seconds: 60 * 60 * 24 * 365 }, baseTimestamp);
 
