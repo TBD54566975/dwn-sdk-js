@@ -41,6 +41,7 @@ export { Protocols } from './utils/protocols.js';
 export { ProtocolsConfigure, ProtocolsConfigureOptions } from './interfaces/protocols-configure.js';
 export { ProtocolsQuery, ProtocolsQueryOptions } from './interfaces/protocols-query.js';
 export { Records } from './utils/records.js';
+export { createTimestamp } from './utils/time.js';
 export { RecordsDelete, RecordsDeleteOptions } from './interfaces/records-delete.js';
 export { RecordsRead, RecordsReadOptions } from './interfaces/records-read.js';
 export { Secp256k1 } from './utils/secp256k1.js';
