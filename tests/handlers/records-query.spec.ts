@@ -1607,7 +1607,7 @@ export function testRecordsQueryHandler(): void {
 
       describe('protocol based queries', () => {
         it('does not try protocol authorization if protocolRole is not invoked', async () => {
-          // scenario: Alice creates a thread and writes some chat messages writes a chat message. Alice addresses
+          // scenario: Alice creates a thread and writes some chat messages. Alice addresses
           //           only one chat message to Bob. Bob queries by protocol URI without invoking a protocolRole,
           //           and he is able to receive the message addressed to him.
 
