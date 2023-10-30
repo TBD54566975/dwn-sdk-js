@@ -122,37 +122,43 @@ DWN SDK includes a polyfilled distribution that can imported in a `module` scrip
 <html lang="en">
 <body>
   <script type="module">
+     // Import necessary modules from external sources using ES6 modules.
     import { Dwn, DataStream, DidKeyResolver, Jws, RecordsWrite } from 'https://cdn.jsdelivr.net/npm/@tbd54566975/dwn-sdk-js@0.1.1/dist/bundles/dwn.js'
     import { MessageStoreLevel, DataStoreLevel, EventLogLevel } from 'https://cdn.jsdelivr.net/npm/@tbd54566975/dwn-sdk-js@0.1.1/dist/bundles/level-stores.js'
 
+    // Create instances of various components from the imported modules.
     const messageStore = new MessageStoreLevel();
     const dataStore = new DataStoreLevel();
     const eventLog = new EventLogLevel();
     const dwn = await Dwn.create({ messageStore, dataStore, eventLog });
 
-    // generate a did:key DID
+    // Generate a did:key DID (Decentralized Identifier).
     const didKey = await DidKeyResolver.generate();
 
-    // create some data
+    // Create some data to be stored.
     const encoder = new TextEncoder();
     const data = encoder.encode('Hello, World!');
 
-    // create a RecordsWrite message
+    // Create a RecordsWrite message to be stored in DWN.
     const recordsWrite = await RecordsWrite.create({
       data,
       dataFormat: 'application/json',
       published: true,
-      schema: 'yeeter/post',
-      authorizationSigner: Jws.createSigner(didKey)
+      schema: 'yeeter/post',  // Specify a schema for the data.
+      authorizationSigner: Jws.createSigner(didKey) // Sign the data using the generated DID key.
+    });
     });
 
-    // get the DWN to process the RecordsWrite
+    // Create a readable stream from the data to be stored.
     const dataStream = DataStream.fromBytes(data);
+    // Process the RecordsWrite message using the DWN instance.
     const result = await dwn.processMessage(didKey.did, recordsWrite.message, dataStream);
 
+    // Log the processing result status and perform an assertion.
     console.log(result.status);
     console.assert(result.status.code === 202)
 
+    // Close the DWN instance, freeing up resources.
     await dwn.close()
 
   </script>
@@ -201,14 +207,19 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 
+// Build the project using esbuild.
 esbuild.build({
   entryPoints: ['dwn-sdk-test.js'],
   platform: 'browser',
   bundle: true,
   format: 'esm',
   outfile: 'dist/dwn-sdk-test.js',
+
+  // Inject the specified shim for Node.js standard library browser compatibility.
   inject      : [require.resolve('node-stdlib-browser/helpers/esbuild/shim')],
+  // Use the polyfillProviderPlugin to provide polyfills for Node.js standard library.
   plugins     : [polyfillProviderPlugin(stdLibBrowser)],
+  // Define 'global' as 'globalThis' to ensure compatibility with global objects.
   define      : {
     'global': 'globalThis'
   }
@@ -224,30 +235,33 @@ esbuild.build({
 import { Dwn, DataStream, DidKeyResolver, Jws, RecordsWrite } from '@tbd54566975/dwn-sdk-js';
 import { DataStoreLevel, EventLogLevel, MessageStoreLevel } from '@tbd54566975/dwn-sdk-js/stores';
 
+// Initialize the required stores and components for the DWN SDK.
 const messageStore = new MessageStoreLevel();
 const dataStore = new DataStoreLevel();
 const eventLog = new EventLogLevel();
 const dwn = await Dwn.create({ messageStore, dataStore, eventLog });
 
-// generate a did:key DID
+// Generate a did:key DID (Decentralized Identifier).
 const didKey = await DidKeyResolver.generate();
 
-// create some data
+// Create some data to be stored.
 const encoder = new TextEncoder();
 const data = encoder.encode('Hello, World!');
 
-// create a RecordsWrite message
+// Create a RecordsWrite message to be stored in the DWN.
 const recordsWrite = await RecordsWrite.create({
   data,
   dataFormat: 'application/json',
-  published: true,
-  schema: 'yeeter/post',
-  authorizationSigner: Jws.createSigner(didKey)
+  published: true, // Mark the data as published.
+  schema: 'yeeter/post', // Specify a schema for the data.
+  authorizationSigner: Jws.createSigner(didKey) // Sign the data using the generated DID key.
 });
 
-// get the DWN to process the RecordsWrite
+// Create a readable stream from the data to be stored.
 const dataStream = DataStream.fromBytes(data);
+// Process the RecordsWrite message using the DWN instance.
 const result = await dwn.processMessage(didKey.did, recordsWrite.message, dataStream);
+// Log the processing result status.
 console.log(result.status);
 
 ```
@@ -271,6 +285,7 @@ By default, all DIDs are allowed as tenants. A custom tenant gate implementation
 ```ts
 import { Dwn, TenantGate, DataStoreLevel, EventLogLevel, MessageStoreLevel } from '@tbd54566975/dwn-sdk-js';
 
+// Define a custom implementation of the TenantGate interface.
 class CustomTenantGate implements TenantGate {
   public async isTenant(did): Promise<void> {
     // Custom implementation
@@ -278,10 +293,13 @@ class CustomTenantGate implements TenantGate {
   }
 }
 
+// Initialize the required stores and components for the DWN SDK.
 const messageStore = new MessageStoreLevel();
 const dataStore = new DataStoreLevel();
 const eventLog = new EventLogLevel();
+// Create an instance of the custom TenantGate.
 const tenantGate = new CustomTenantGate();
+// Create a DWN instance with configured stores, logs, and the custom TenantGate.
 const dwn = await Dwn.create({ messageStore, dataStore, eventLog, tenantGate });
 ```
 
@@ -289,22 +307,26 @@ const dwn = await Dwn.create({ messageStore, dataStore, eventLog, tenantGate });
 If you have the private key readily available, it is recommended to use the built-in `PrivateKeySigner`. Otherwise, you can implement a customer signer to interface with external signing service, API, HSM, TPM etc and use it for signing your DWN messages:
 
 ```ts
-// create a custom signer
+// Create a custom signer implementing the Signer interface.
 class CustomSigner implements Signer {
-  public keyId = 'did:example:alice#key1';
-  public algorithm = 'EdDSA'; // use valid `alg` value published in https://www.iana.org/assignments/jose/jose.xhtml
+  public keyId = 'did:example:alice#key1'; // Specify the key ID.
+  public algorithm = 'EdDSA'; // Specify the signing algorithm (valid `alg` value published).
+  https://www.iana.org/assignments/jose/jose.xhtml
   public async sign (content: Uint8Array): Promise<Uint8Array> {
     ... // custom signing logic
   }
 }
 
+// Create an instance of the custom signer for authorization.
 const authorizationSigner = new CustomSigner();
 
+// Define options for creating a RecordsWrite message.
 const options: RecordsWriteOptions = {
   ...
-  authorizationSigner
+  authorizationSigner // Use the custom signer for authorization.
 };
 
+// Create a RecordsWrite message with the specified options.
 const recordsWrite = await RecordsWrite.create(options);
 ```
 
