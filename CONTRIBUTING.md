@@ -16,7 +16,7 @@ As we work our way towards a beta release, we'll be creating more focused issues
 - `good first issue`
 - `help wanted`
 
-These issues are excellent candidates for contribution and we'd be thrilled to get all the help we can get! You can take a look at all of the Issues that match the labels above [here](https://github.com/TBD54566975/dwn-sdk-js/issues?q=is%3Aopen+label%3A%22help+wanted%22%2C%22good+first+issue%22%2C%22documentation%22%2C%22bug%22+)
+These issues are excellent candidates for contribution and we'd be thrilled to get all the help we can get! You can take a look at all of the Issues that match the labels above [on the Issues tab](https://github.com/TBD54566975/dwn-sdk-js/issues?q=is%3Aopen+label%3A%22help+wanted%22%2C%22good+first+issue%22%2C%22documentation%22%2C%22bug%22+)
 
 We suggest the following process when picking up one of these issues:
 - Check to see if anyone is already working on the issue by looking to see if the issue has a `WIP` tag. 
@@ -72,7 +72,7 @@ Note that some benchmarks require that `npm run build` has been run beforehand.
 Any dependencies needed by benchmarks should be in `devDependencies` (e.g. `index-store` for `node benchmarks/store/index/index-store.js`).
 
 ### Code Style
-Our preferred code style has been codified into `eslint` rules. Feel free to take a look [here](https://github.com/TBD54566975/dwn-sdk-js/blob/main/.eslintrc.cjs). Running `npm run lint` will auto-format as much as `eslint` can. Everything it wasn't able to will be printed out as errors or warnings. Please make sure to run `npm run lint` before switching your PR to ready for review! We hope to have this automated via a github action very soon.
+Our preferred code style has been codified into `eslint` rules. Feel free to take a look [at the relevant `.eslintrc` file](https://github.com/TBD54566975/dwn-sdk-js/blob/main/.eslintrc.cjs). Running `npm run lint` will auto-format as much as `eslint` can. Everything it wasn't able to will be printed out as errors or warnings. Please make sure to run `npm run lint` before switching your PR to ready for review! We hope to have this automated via a github action very soon.
 
 ### Code Guidelines
 1. A `TODO` in comment must always link to a GitHub issue.
