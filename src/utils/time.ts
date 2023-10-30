@@ -31,7 +31,7 @@ export function getCurrentTimeInHighPrecision(): string {
  * @returns string
  */
 export function createTimestamp(
-  year: number, month: number, day: number, hour: number, minute: number, second: number, millisecond: number, microsecond: number
+  year?: number, month?: number, day?: number, hour?: number, minute?: number, second?: number, millisecond?: number, microsecond?: number
 ): string {
   return Temporal.ZonedDateTime.from({
     timeZone: 'UTC',

@@ -839,9 +839,7 @@ export class TestDataGenerator {
       this.randomInt(1, 28),
       this.randomInt(0, 23),
       this.randomInt(0, 59),
-      this.randomInt(0, 59),
-      this.randomInt(0, 999),
-      this.randomInt(0, 999)
+      this.randomInt(0, 59)
     );
   }
 
