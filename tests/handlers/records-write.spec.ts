@@ -16,7 +16,7 @@ import friendRoleProtocolDefinition from '../vectors/protocol-definitions/friend
 import messageProtocolDefinition from '../vectors/protocol-definitions/message.json' assert { type: 'json' };
 import minimalProtocolDefinition from '../vectors/protocol-definitions/minimal.json' assert { type: 'json' };
 import privateProtocol from '../vectors/protocol-definitions/private-protocol.json' assert { type: 'json' };
-import recipientUpdateProtocol from '../vectors/protocol-definitions/recipient-update.json' assert { type: 'json' };
+import recipientCanProtocol from '../vectors/protocol-definitions/recipient-can.json' assert { type: 'json' };
 import sinon from 'sinon';
 import socialMediaProtocolDefinition from '../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
 import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
@@ -1179,7 +1179,7 @@ export function testRecordsWriteHandler(): void {
             const alice = await DidKeyResolver.generate();
             const bob = await DidKeyResolver.generate();
 
-            const protocolDefinition = recipientUpdateProtocol;
+            const protocolDefinition = recipientCanProtocol;
 
             const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
               author: alice,
