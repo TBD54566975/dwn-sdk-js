@@ -1,20 +1,20 @@
 <!-- @format -->
-# 🎉 **We're participating in Hacktoberfest 2023!** 🎉
+# :tada: **We're participating in Hacktoberfest 2023!** :tada:
 
 Want to contribute during Hacktoberfest? We'd love to have you! Dive in, and your contributions could earn you some exclusive rewards.
 
-The **first 20 contributors** to successfully merge a PR will secure exclusive swag of their choosing from our [TBD shop](https://www.tbd.shop/)— we're in the midst of uploading new swag! Keep an eye on our [leaderboard issue](https://github.com/TBD54566975/developer.tbd.website/issues/721) to see where you rank! ⭐️
+The **first 20 contributors** to successfully merge a PR will secure exclusive swag of their choosing from our [TBD shop](https://www.tbd.shop/)— we're in the midst of uploading new swag! Keep an eye on our [leaderboard issue](https://github.com/TBD54566975/developer.tbd.website/issues/721) to see where you rank! :star:
 
-🚀 **Gear up for a month packed with exciting events!** 🎉
+🚀 **Gear up for a month packed with exciting events!** :tada:
 
-- Mark your calendars for our **Hacktoberfest Launch event on [October 2nd](https://discord.com/events/937858703112155166/1154126364484583465)**.
+- Mark your calendars for our **Hacktoberfest Launch event on [October 2nd on Discord](https://discord.com/events/937858703112155166/1154126364484583465)**.
 - Stay in the loop - keep an eye on our Discord calendar and pop into our [events-and-updates channel](https://discord.com/channels/937858703112155166/1151972299814215701) regularly! You won't want to miss out!
 
 ## **Hacktoberfest Guidelines:**
 
 - Ensure your contribution is meaningful and fits within the scope of our project, by reading an open issue in its entirety before diving in.
 - Check out our `good-first-issue` and `hacktoberfest` labels in the issues section.
-- Join our Discord: Connect with the community, stay up to date with Hacktoberfest events/prizes, and discuss Hacktoberfest contributions on our Discord server. Click [here](https://discord.com/channels/937858703112155166/1151216855957123104) to join.
+- Join our Discord: Connect with the community, stay up to date with Hacktoberfest events/prizes, and discuss Hacktoberfest contributions on our Discord server. Click [to Join our Discord channel](https://discord.com/channels/937858703112155166/1151216855957123104).
 - Always be respectful and follow our [code of conduct](https://developer.tbd.website/open-source/code-of-conduct).
 - If in doubt about what to contribute, reach out to maintainers by raising a question in the relevant issue or specified discord channel.
 - **Other participating TBD Repos:**
@@ -26,9 +26,9 @@ The **first 20 contributors** to successfully merge a PR will secure exclusive s
 
 Celebrate the 10th anniversary of Hacktoberfest this year! Hosted annually every October, Hacktoberfest is a month-long event sponsored by DigitalOcean, GitHub, and various other partners, championing open-source contributions. 
 
-> ⭐️ If you're new to Hacktoberfest, you can learn more and register to participate [here](https://hacktoberfest.com/participation/). Registration is from **September 26th- October 31st**.
+> :star: If you're new to Hacktoberfest, you can learn more and register to participate [on the Hacktoberfest website](https://hacktoberfest.com/participation/). Registration is from **September 26th- October 31st**.
 
-## **New Contributor? Welcome!** 🌟
+## **New Contributor? Welcome!** :star2:
 
 We wholeheartedly embrace new contributors to our community. Remember, every expert was once a beginner, and we understand the initial hurdles you might feel. Here’s how you can dive in:
 
@@ -43,7 +43,7 @@ We wholeheartedly embrace new contributors to our community. Remember, every exp
 
 Your contribution, be it big or minuscule, carries immense value. We eagerly await to see the waves you'll make in our community! 🚀
 
-Here's to a thrilling Hacktoberfest voyage with us! 🎉
+Here's to a thrilling Hacktoberfest voyage with us! :tada:
 
 # Decentralized Web Node (DWN) SDK <!-- omit in toc -->
 
@@ -71,7 +71,7 @@ Code Coverage
 
 ## Introduction
 
-This repository contains a reference implementation of Decentralized Web Node (DWN) as per the [specification](https://identity.foundation/decentralized-web-node/spec/). This specification is in a draft state and very much so a WIP. For the foreseeable future, a lot of the work on DWN will be split across this repo and the repo that houses the specification, which you can find [here](https://github.com/decentralized-identity/decentralized-web-node). The current implementation does not include all interfaces described in the DWN spec, but is enough to begin building test applications.
+This repository contains a reference implementation of Decentralized Web Node (DWN) as per the [specification](https://identity.foundation/decentralized-web-node/spec/). This specification is in a draft state and very much so a WIP. For the foreseeable future, a lot of the work on DWN will be split across this repo and the [repo that houses the specification](https://github.com/decentralized-identity/decentralized-web-node). The current implementation does not include all interfaces described in the DWN spec, but is enough to begin building test applications.
 
 This project is used as a dependency by several other projects.
 
@@ -81,7 +81,7 @@ Proposals and issues for the specification itself should be submitted as pull re
 
 Interested in contributing instantly? You can make your updates directly without cloning in the running CodeSandbox environment.
 
-[![Edit in CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/github/TBD54566975/dwn-sdk-js/main)
+[![Button to click to edit code in CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/github/TBD54566975/dwn-sdk-js/main)
 
 ## Installation
 
@@ -107,7 +107,7 @@ if (!globalThis.crypto) globalThis.crypto = webcrypto;
 ```
 
 ### React Native
-Usage of DWN SDK in react native requires a bit of set up at the moment. To simplify, we've published an npm package that can be used to set everything up which you can find [here](https://www.npmjs.com/package/@tbd54566975/web5-react-native-polyfills). Follow the instructions there to get everything set up.
+Usage of DWN SDK in react native requires a bit of set up at the moment. To simplify, we've [published an npm package](https://www.npmjs.com/package/@tbd54566975/web5-react-native-polyfills) that can be used to set everything up. Follow the instructions to get started.
 
 ### Usage in Browser:
 
@@ -163,7 +163,7 @@ DWN SDK includes a polyfilled distribution that can imported in a `module` scrip
 
 #### Webpack >= 5
 
-add the following to the top level of your webpack config (`webpack.config.js`)
+Add the following to the top level of your webpack config (`webpack.config.js`)
 
 ```js
 resolve: {
@@ -175,7 +175,7 @@ resolve: {
 ```
 
 #### Vite
-add the following to the top level of your vite config (`vite.config.js`)
+Add the following to the top level of your vite config (`vite.config.js`)
 
 ```js
 define: {
@@ -190,7 +190,7 @@ resolve: {
 ```
 
 #### esbuild
-we recommend using `node-stdlib-browser` instead of `crypto-browserify` and `stream-browserify` individually. Example usage:
+We recommend using `node-stdlib-browser` instead of `crypto-browserify` and `stream-browserify` individually. Example usage:
 
 ```js
 import esbuild from 'esbuild'
@@ -346,7 +346,7 @@ An example version string:
 
 ## Architecture
 
-<img src="./images/dwn-architecture.png" alt="Architecture of DWN SDN" width="700">
+<img src="./images/dwn-architecture.png" alt="Architecture diagram of DWN SDN" width="700">
 
 > NOTE: The diagram is a conceptual view of the architecture, the actual component abstraction and names in source file may differ.
 
