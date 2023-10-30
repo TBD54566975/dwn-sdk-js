@@ -272,7 +272,6 @@ export function testRecordsQueryHandler(): void {
 
       it('should be able to query for unpublished records', async () => {
         const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
 
         // create a published record
         const publishedWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true, schema: 'post' });
@@ -291,12 +290,6 @@ export function testRecordsQueryHandler(): void {
         expect(unpublishedPostReply.entries?.length).to.equal(1);
         expect(unpublishedPostReply.entries![0].recordId).to.equal(draftWrite.message.recordId);
 
-        // bob queries for unpublished records
-        const unpublishedNotOwner = await TestDataGenerator.generateRecordsQuery({ author: bob, filter: { schema: 'post', published: false } });
-        const notOwnerPostReply = await dwn.processMessage(alice.did, unpublishedNotOwner.message);
-        expect(notOwnerPostReply.status.code).to.equal(200);
-        expect(notOwnerPostReply.entries?.length).to.equal(0);
-
         // publish the unpublished record
         const publishedDraftWrite = await RecordsWrite.createFrom({
           recordsWriteMessage : draftWrite.message,
@@ -310,6 +303,53 @@ export function testRecordsQueryHandler(): void {
         unpublishedPostReply = await dwn.processMessage(alice.did, unpublishedPostQuery.message);
         expect(unpublishedPostReply.status.code).to.equal(200);
         expect(unpublishedPostReply.entries?.length).to.equal(0);
+      });
+
+      it('should not be able to query for unpublished records if unauthorized', async () => {
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+
+        // create a published record
+        const publishedWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, published: true, schema: 'post' });
+        const publishedWriteReply = await dwn.processMessage(alice.did, publishedWrite.message, publishedWrite.dataStream);
+        expect(publishedWriteReply.status.code).to.equal(202);
+
+        // create an unpublished record
+        const draftWrite = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'post' });
+        const draftWriteReply = await dwn.processMessage(alice.did, draftWrite.message, draftWrite.dataStream);
+        expect(draftWriteReply.status.code).to.equal(202);
+
+        // bob queries for unpublished records returns zero
+        const unpublishedNotOwner = await TestDataGenerator.generateRecordsQuery({ author: bob, filter: { schema: 'post', published: false } });
+        let notOwnerPostReply = await dwn.processMessage(alice.did, unpublishedNotOwner.message);
+        expect(notOwnerPostReply.status.code).to.equal(200);
+        expect(notOwnerPostReply.entries?.length).to.equal(0);
+
+        // publish the unpublished record
+        const publishedDraftWrite = await RecordsWrite.createFrom({
+          recordsWriteMessage : draftWrite.message,
+          published           : true,
+          authorizationSigner : Jws.createSigner(alice)
+        });
+        const publishedDraftReply = await dwn.processMessage(alice.did, publishedDraftWrite.message);
+        expect(publishedDraftReply.status.code).to.equal(202);
+
+        // without published filter
+        let publishedNotOwner = await TestDataGenerator.generateRecordsQuery({ author: bob, filter: { schema: 'post' } });
+        let publishedNotOwnerReply = await dwn.processMessage(alice.did, publishedNotOwner.message);
+        expect(publishedNotOwnerReply.status.code).to.equal(200);
+        expect(publishedNotOwnerReply.entries?.length).to.equal(2);
+
+        // with explicit published true
+        publishedNotOwner = await TestDataGenerator.generateRecordsQuery({ author: bob, filter: { schema: 'post', published: true } });
+        publishedNotOwnerReply = await dwn.processMessage(alice.did, publishedNotOwner.message);
+        expect(publishedNotOwnerReply.status.code).to.equal(200);
+        expect(publishedNotOwnerReply.entries?.length).to.equal(2);
+
+        // with explicit published false after publishing should still return nothing
+        notOwnerPostReply = await dwn.processMessage(alice.did, unpublishedNotOwner.message);
+        expect(notOwnerPostReply.status.code).to.equal(200);
+        expect(notOwnerPostReply.entries?.length).to.equal(0);
       });
 
       it('should be able to query for a record by a dataCid', async () => {
@@ -1180,25 +1220,25 @@ export function testRecordsQueryHandler(): void {
         // sanity check
         expect(anonymousQueryMessageData.message.authorization).to.not.exist;
 
-        const replyToQuery= await dwn.processMessage(alice.did, anonymousQueryMessageData.message);
+        const replyToQuery = await dwn.processMessage(alice.did, anonymousQueryMessageData.message);
 
         expect(replyToQuery.status.code).to.equal(200);
         expect(replyToQuery.entries?.length).to.equal(1);
         expect((replyToQuery.entries![0].descriptor as RecordsWriteDescriptor).schema).to.equal('https://schema2');
 
         // explicitly for published records
-        const anonymousQueryUnpublished = await TestDataGenerator.generateRecordsQuery({
+        const anonymousQueryPublished = await TestDataGenerator.generateRecordsQuery({
           anonymous : true,
           filter    : { dateCreated: { from: '2000-01-01T10:20:30.123456Z' }, published: true }
         });
         // sanity check
-        expect(anonymousQueryUnpublished.message.authorization).to.not.exist;
+        expect(anonymousQueryPublished.message.authorization).to.not.exist;
 
-        // should not return any records
-        const unpublishedReply = await dwn.processMessage(alice.did, anonymousQueryUnpublished.message);
-        expect(unpublishedReply.status.code).to.equal(200);
-        expect(unpublishedReply.entries?.length).to.equal(1);
-        expect((unpublishedReply.entries![0].descriptor as RecordsWriteDescriptor).schema).to.equal('https://schema2');
+        // should return the published records
+        const publishedReply = await dwn.processMessage(alice.did, anonymousQueryPublished.message);
+        expect(publishedReply.status.code).to.equal(200);
+        expect(publishedReply.entries?.length).to.equal(1);
+        expect((publishedReply.entries![0].descriptor as RecordsWriteDescriptor).schema).to.equal('https://schema2');
       });
 
       it('should only return published records and unpublished records that is meant for author', async () => {
@@ -1472,7 +1512,7 @@ export function testRecordsQueryHandler(): void {
         expect(replyToAliceQuery.status.code).to.equal(200);
         expect(replyToAliceQuery.entries?.length).to.equal(1);
 
-        // actual test: bob should not be able to see unpublished record without published filter
+        // actual test: bob should not be able to see unpublished record
         const queryByBob = await TestDataGenerator.generateRecordsQuery({
           author : bob,
           filter : { schema }
