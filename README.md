@@ -149,7 +149,7 @@ DWN SDK includes a polyfilled distribution that can imported in a `module` scrip
     });
     });
 
-    // Create a DataStream from the data to be processed.
+    // Create a readable stream from the data to be stored.
     const dataStream = DataStream.fromBytes(data);
     // Process the RecordsWrite message using the DWN instance.
     const result = await dwn.processMessage(didKey.did, recordsWrite.message, dataStream);
@@ -257,7 +257,7 @@ const recordsWrite = await RecordsWrite.create({
   authorizationSigner: Jws.createSigner(didKey) // Sign the data using the generated DID key.
 });
 
-// Create a DataStream from the data to be processed.
+// Create a readable stream from the data to be stored.
 const dataStream = DataStream.fromBytes(data);
 // Process the RecordsWrite message using the DWN instance.
 const result = await dwn.processMessage(didKey.did, recordsWrite.message, dataStream);
