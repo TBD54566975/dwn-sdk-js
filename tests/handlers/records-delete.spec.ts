@@ -597,7 +597,7 @@ export function testRecordsDeleteHandler(): void {
         });
         const recordsDeleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
         expect(recordsDeleteReply.status.code).to.equal(401);
-        expect(recordsDeleteReply.status.detail).to.contain('message failed authorization');
+        expect(recordsDeleteReply.status.detail).to.contain(DwnErrorCode.RecordsDeleteAuthorizationFailed);
       });
 
       describe('event log', () => {

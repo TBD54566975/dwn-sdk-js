@@ -8,6 +8,7 @@ import { Message } from '../core/message.js';
 
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
+import { DwnError, DwnErrorCode } from '../index.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type RecordsDeleteOptions = {
@@ -60,7 +61,10 @@ export class RecordsDelete extends Message<RecordsDeleteMessage> {
     } else if (newestRecordsWrite.message.descriptor.protocol !== undefined) {
       await ProtocolAuthorization.authorizeDelete(tenant, this, newestRecordsWrite, messageStore);
     } else {
-      throw new Error('message failed authorization');
+      throw new DwnError(
+        DwnErrorCode.RecordsDeleteAuthorizationFailed,
+        'RecordsDelete message failed authorization'
+      );
     }
   }
 }
