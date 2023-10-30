@@ -560,8 +560,8 @@ export function testRecordsDeleteHandler(): void {
 
             // Carol is unable to delete the chat message
             const chatDeleteCarol = await TestDataGenerator.generateRecordsDelete({
-              author       : carol,
-              recordId     : chatRecord.message.recordId,
+              author   : carol,
+              recordId : chatRecord.message.recordId,
             });
             const chatDeleteCarolReply = await dwn.processMessage(alice.did, chatDeleteCarol.message);
             expect(chatDeleteCarolReply.status.code).to.equal(401);
