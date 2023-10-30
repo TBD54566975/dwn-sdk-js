@@ -37,6 +37,7 @@ import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 
 import * as cbor from '@ipld/dag-cbor';
 import { CID } from 'multiformats/cid';
+import { createTimestamp } from '../../src/index.js';
 import { DataStream } from '../../src/utils/data-stream.js';
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
@@ -832,15 +833,14 @@ export class TestDataGenerator {
    * @returns random UTC ISO-8601 timestamp
    */
   public static randomTimestamp(): string {
-    return Temporal.ZonedDateTime.from({
-      timeZone : 'UTC',
-      year     : this.randomInt(2000, 2022),
-      month    : this.randomInt(1, 12),
-      day      : this.randomInt(1, 28),
-      hour     : this.randomInt(0, 23),
-      minute   : this.randomInt(0, 59),
-      second   : this.randomInt(0, 59),
-    }).toInstant().toString({ smallestUnit: 'microseconds' });
+    return createTimestamp({
+      year   : this.randomInt(2000, 2022),
+      month  : this.randomInt(1, 12),
+      day    : this.randomInt(1, 28),
+      hour   : this.randomInt(0, 23),
+      minute : this.randomInt(0, 59),
+      second : this.randomInt(0, 59),
+    });
   }
 
   /**

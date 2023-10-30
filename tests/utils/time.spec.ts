@@ -1,7 +1,7 @@
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { expect } from 'chai';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { validateTimestamp } from '../../src/utils/time.js';
+import { createTimestamp, validateTimestamp } from '../../src/utils/time.js';
 
 
 describe('time', () => {
@@ -25,5 +25,36 @@ describe('time', () => {
         expect(() => validateTimestamp(TestDataGenerator.randomTimestamp())).to.not.throw();
       });
     });
+  });
+
+  describe('createTimestamp', () => {
+    it('should create a valid timestamp', () => {
+      const timestamp = createTimestamp({
+        year        : 2022,
+        month       : 4,
+        day         : 29,
+        hour        : 10,
+        minute      : 30,
+        second      : 0,
+        millisecond : 123,
+        microsecond : 456
+      });
+      expect(timestamp).to.equal('2022-04-29T10:30:00.123456Z');
+    });
+
+    for (let i = 0; i < 5; i++) {
+      const year = TestDataGenerator.randomInt(1900, 2500);
+      const month = TestDataGenerator.randomInt(1, 12);
+      const day = TestDataGenerator.randomInt(1, 28);
+      const hour = TestDataGenerator.randomInt(0, 23);
+      const minute = TestDataGenerator.randomInt(0, 59);
+      const second = TestDataGenerator.randomInt(0, 59);
+      const millisecond = TestDataGenerator.randomInt(0, 999);
+      const microsecond = TestDataGenerator.randomInt(0, 999);
+      it(`should create a valid timestamp for random values ${i}`, () => {
+        const timestamp = createTimestamp({ year, month, day, hour, minute, second, millisecond, microsecond });
+        expect(()=> validateTimestamp(timestamp)).to.not.throw();
+      });
+    }
   });
 });
