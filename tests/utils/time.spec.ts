@@ -29,7 +29,16 @@ describe('time', () => {
 
   describe('createTimestamp', () => {
     it('should create a valid timestamp', () => {
-      const timestamp = createTimestamp(2022, 4, 29, 10, 30, 0, 123, 456);
+      const timestamp = createTimestamp({
+        year        : 2022,
+        month       : 4,
+        day         : 29,
+        hour        : 10,
+        minute      : 30,
+        second      : 0,
+        millisecond : 123,
+        microsecond : 456
+      });
       expect(timestamp).to.equal('2022-04-29T10:30:00.123456Z');
     });
 
@@ -43,7 +52,7 @@ describe('time', () => {
       const millisecond = TestDataGenerator.randomInt(0, 999);
       const microsecond = TestDataGenerator.randomInt(0, 999);
       it(`should create a valid timestamp for random values ${i}`, () => {
-        const timestamp = createTimestamp(year, month, day, hour, minute, second, millisecond, microsecond);
+        const timestamp = createTimestamp({ year, month, day, hour, minute, second, millisecond, microsecond });
         expect(()=> validateTimestamp(timestamp)).to.not.throw();
       });
     }

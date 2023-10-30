@@ -833,14 +833,14 @@ export class TestDataGenerator {
    * @returns random UTC ISO-8601 timestamp
    */
   public static randomTimestamp(): string {
-    return createTimestamp(
-      this.randomInt(2000, 2022),
-      this.randomInt(1, 12),
-      this.randomInt(1, 28),
-      this.randomInt(0, 23),
-      this.randomInt(0, 59),
-      this.randomInt(0, 59)
-    );
+    return createTimestamp({
+      year   : this.randomInt(2000, 2022),
+      month  : this.randomInt(1, 12),
+      day    : this.randomInt(1, 28),
+      hour   : this.randomInt(0, 23),
+      minute : this.randomInt(0, 59),
+      second : this.randomInt(0, 59),
+    });
   }
 
   /**

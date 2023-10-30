@@ -20,19 +20,13 @@ export function getCurrentTimeInHighPrecision(): string {
 
 /**
  * Creates a UTC ISO-8601 timestamp in microsecond precision accepted by DWN.
- * @param year
- * @param month
- * @param day
- * @param hour
- * @param minute
- * @param second
- * @param millisecond
- * @param microsecond
+ * @param options - Options for creating the timestamp.
  * @returns string
  */
 export function createTimestamp(
-  year?: number, month?: number, day?: number, hour?: number, minute?: number, second?: number, millisecond?: number, microsecond?: number
+  options: {year?: number, month?: number, day?: number, hour?: number, minute?: number, second?: number, millisecond?: number, microsecond?: number}
 ): string {
+  const { year, month, day, hour, minute, second, millisecond, microsecond } = options;
   return Temporal.ZonedDateTime.from({
     timeZone: 'UTC',
     year,
