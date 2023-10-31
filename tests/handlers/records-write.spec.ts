@@ -647,7 +647,7 @@ export function testRecordsWriteHandler(): void {
           const participantRoleReply = await dwn.processMessage(carol.did, participantRoleRecord.message, participantRoleRecord.dataStream);
           expect(participantRoleReply.status.code).to.equal(202);
 
-          // Alice creates a delegated grant for device X and device Y
+          // Alice creates a delegated grant for Bob to act as Alice.
           const scope: PermissionScope = {
             interface : DwnInterfaceName.Records,
             method    : DwnMethodName.Write,

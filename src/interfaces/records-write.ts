@@ -581,7 +581,7 @@ export class RecordsWrite {
     if (delegatedGrantIdDefined !== authorDelegatedGrantDefined) {
       throw new DwnError(
         DwnErrorCode.RecordsWriteValidateIntegrityDelegatedGrantAndIdExistenceMismatch,
-        `delegatedGrantId and authorDelegatedGrant must both exist or be undefine. \
+        `delegatedGrantId and authorDelegatedGrant must both exist or be undefined. \
          delegatedGrantId defined: ${delegatedGrantIdDefined}, authorDelegatedGrant defined: ${authorDelegatedGrantDefined}`
       );
     }

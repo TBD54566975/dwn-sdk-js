@@ -324,7 +324,7 @@ describe('RecordsWrite', () => {
   });
 
   describe('parse()', () => {
-    it('should throw if delegated grant is given but signer is not given', async () => {
+    it('should throw if signer signs over a delegated grant ID but the delegated grant is not given', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const bob = await TestDataGenerator.generatePersona();
 
