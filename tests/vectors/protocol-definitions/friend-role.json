@@ -37,6 +37,10 @@
         {
           "role": "admin",
           "can": "update"
+        },
+        {
+          "role": "admin",
+          "can": "delete"
         }
       ]
     }

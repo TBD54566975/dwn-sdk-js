@@ -1,15 +1,20 @@
+import type { MessageStore } from '../index.js';
+import type { RecordsWrite } from './records-write.js';
+import type { Signer } from '../types/signer.js';
 import type { RecordsDeleteDescriptor, RecordsDeleteMessage } from '../types/records-types.js';
 
 import { Message } from '../core/message.js';
-import type { Signer } from '../types/signer.js';
 
-import { authorize, validateMessageSignatureIntegrity } from '../core/auth.js';
+import { ProtocolAuthorization } from '../core/protocol-authorization.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
+import { DwnError, DwnErrorCode } from '../index.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.js';
 
 export type RecordsDeleteOptions = {
   recordId: string;
   messageTimestamp?: string;
+  protocolRole?: string;
   authorizationSigner: Signer;
 };
 
@@ -39,7 +44,11 @@ export class RecordsDelete extends Message<RecordsDeleteMessage> {
       messageTimestamp : options.messageTimestamp ?? currentTime
     };
 
-    const authorization = await Message.createAuthorizationAsAuthor(descriptor, options.authorizationSigner);
+    const authorization = await Message.createAuthorizationAsAuthor(
+      descriptor,
+      options.authorizationSigner,
+      { protocolRole: options.protocolRole },
+    );
     const message: RecordsDeleteMessage = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
@@ -47,8 +56,16 @@ export class RecordsDelete extends Message<RecordsDeleteMessage> {
     return new RecordsDelete(message);
   }
 
-  public async authorize(tenant: string): Promise<void> {
-    // TODO: #203 - implement protocol-based authorization for RecordsDelete (https://github.com/TBD54566975/dwn-sdk-js/issues/203)
-    await authorize(tenant, this);
+  public async authorize(tenant: string, newestRecordsWrite: RecordsWrite, messageStore: MessageStore): Promise<void> {
+    if (this.author === tenant) {
+      return;
+    } else if (newestRecordsWrite.message.descriptor.protocol !== undefined) {
+      await ProtocolAuthorization.authorizeDelete(tenant, this, newestRecordsWrite, messageStore);
+    } else {
+      throw new DwnError(
+        DwnErrorCode.RecordsDeleteAuthorizationFailed,
+        'RecordsDelete message failed authorization'
+      );
+    }
   }
 }

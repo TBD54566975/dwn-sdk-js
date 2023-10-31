@@ -1,15 +1,25 @@
 import type {
   DataStore,
   EventLog,
-  MessageStore
+  MessageStore,
+  ProtocolDefinition
 } from '../../src/index.js';
+
+
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
+import anyoneCollaborateProtocolDefinition from '../vectors/protocol-definitions/anyone-collaborate.json' assert { type: 'json' };
+import authorCanProtocolDefinition from '../vectors/protocol-definitions/author-can.json' assert { type: 'json' };
+import friendRoleProtocolDefinition from '../vectors/protocol-definitions/friend-role.json' assert { type: 'json' };
+import recipientCanProtocolDefinition from '../vectors/protocol-definitions/recipient-can.json' assert { type: 'json' };
+import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
+
 import { ArrayUtility } from '../../src/utils/array.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
+import { DwnErrorCode } from '../../src/index.js';
 import { Message } from '../../src/core/message.js';
 import { minimalSleep } from '../../src/utils/time.js';
 import { RecordsDeleteHandler } from '../../src/handlers/records-delete.js';
@@ -280,6 +290,314 @@ export function testRecordsDeleteHandler(): void {
         expect(aliceQueryWriteAfterAliceRewriteReply.status.code).to.equal(200);
         expect(aliceQueryWriteAfterAliceRewriteReply.entries?.length).to.equal(1);
         expect(aliceQueryWriteAfterAliceRewriteReply.entries![0].encodedData).to.equal(encodedData);
+      });
+
+      describe('protocol based deletes', () => {
+        it('should allow delete with allow-anyone rule', async () => {
+          // scenario: Alice creates a record in her DWN. Bob (anyone) is able to delete the record.
+
+          const protocolDefinition = anyoneCollaborateProtocolDefinition as ProtocolDefinition;
+          const alice = await TestDataGenerator.generatePersona();
+          const bob = await TestDataGenerator.generatePersona();
+
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+
+          // setting up a stub DID resolver
+          TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
+
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
+
+          // Alice writes a record
+          const recordsWrite = await TestDataGenerator.generateRecordsWrite({
+            author       : alice,
+            protocol     : protocolDefinition.protocol,
+            protocolPath : 'doc',
+          });
+          const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+          expect(recordsWriteReply.status.code).to.eq(202);
+
+          // Bob (anyone) is able to delete the record
+          const recordsDelete = await TestDataGenerator.generateRecordsDelete({
+            author   : bob,
+            recordId : recordsWrite.message.recordId,
+          });
+          const recordsDeleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
+          expect(recordsDeleteReply.status.code).to.eq(202);
+        });
+
+        describe('recipient rules', () => {
+          it('should allow delete with ancestor recipient rule', async () => {
+            // scenario: Alice creates a 'post' with Bob as recipient and a 'post/tag'. Bob is able to delete
+            //           the 'chat/tag' because he was recipient of the 'chat'. Carol is not able to delete.
+
+            const protocolDefinition = recipientCanProtocolDefinition as ProtocolDefinition;
+            const alice = await TestDataGenerator.generatePersona();
+            const bob = await TestDataGenerator.generatePersona();
+            const carol = await TestDataGenerator.generatePersona();
+
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+
+            // setting up a stub DID resolver
+            TestStubGenerator.stubDidResolver(didResolver, [alice, bob, carol]);
+
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
+
+            // Alice writes a chat
+            const chatRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'post',
+            });
+            const chatRecordsWriteReply = await dwn.processMessage(alice.did, chatRecordsWrite.message, chatRecordsWrite.dataStream);
+            expect(chatRecordsWriteReply.status.code).to.eq(202);
+
+            // Alice writes a 'chat/tag'
+            const tagRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'post/tag',
+              contextId    : chatRecordsWrite.message.contextId,
+              parentId     : chatRecordsWrite.message.recordId,
+            });
+            const tagRecordsWriteReply = await dwn.processMessage(alice.did, tagRecordsWrite.message, tagRecordsWrite.dataStream);
+            expect(tagRecordsWriteReply.status.code).to.eq(202);
+
+            // Carol is unable to delete the 'chat/tag'
+            const recordsDeleteCarol = await TestDataGenerator.generateRecordsDelete({
+              author   : carol,
+              recordId : tagRecordsWrite.message.recordId,
+            });
+            const recordsDeleteCarolReply = await dwn.processMessage(alice.did, recordsDeleteCarol.message);
+            expect(recordsDeleteCarolReply.status.code).to.eq(401);
+            expect(recordsDeleteCarolReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+            // Bob is able to delete the 'chat/tag'
+            const recordsDelete = await TestDataGenerator.generateRecordsDelete({
+              author   : bob,
+              recordId : tagRecordsWrite.message.recordId,
+            });
+            const recordsDeleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
+            expect(recordsDeleteReply.status.code).to.eq(202);
+          });
+        });
+
+        describe('author action rules', () => {
+          it('allow author to delete with ancestor author rule', async () => {
+            // scenario: Bob writes a 'post' and Alice writes a 'post/comment' to her DWN. Bob deletes the comment
+            //           because author of post can delete. Carol is unable to delete the comment.
+
+            const protocolDefinition = authorCanProtocolDefinition as ProtocolDefinition;
+            const alice = await TestDataGenerator.generatePersona();
+            const bob = await TestDataGenerator.generatePersona();
+            const carol = await TestDataGenerator.generatePersona();
+
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+
+            // setting up a stub DID resolver
+            TestStubGenerator.stubDidResolver(didResolver, [alice, bob, carol]);
+
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
+
+            // Bob writes a post
+            const postRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : bob,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'post',
+            });
+            const postRecordsWriteReply = await dwn.processMessage(alice.did, postRecordsWrite.message, postRecordsWrite.dataStream);
+            expect(postRecordsWriteReply.status.code).to.eq(202);
+
+            // Alice writes a 'post/comment'
+            const commentRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'post/comment',
+              contextId    : postRecordsWrite.message.contextId,
+              parentId     : postRecordsWrite.message.recordId,
+            });
+            const commentRecordsWriteReply = await dwn.processMessage(alice.did, commentRecordsWrite.message, commentRecordsWrite.dataStream);
+            expect(commentRecordsWriteReply.status.code).to.eq(202);
+
+            // Carol is unable to delete Alice's 'post/comment'
+            const recordsDeleteCarol = await TestDataGenerator.generateRecordsDelete({
+              author   : carol,
+              recordId : commentRecordsWrite.message.recordId,
+            });
+            const recordsDeleteCarolReply = await dwn.processMessage(alice.did, recordsDeleteCarol.message);
+            expect(recordsDeleteCarolReply.status.code).to.eq(401);
+            expect(recordsDeleteCarolReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+            // Bob is able to delete the Alice's 'post/comment'
+            const recordsDelete = await TestDataGenerator.generateRecordsDelete({
+              author   : bob,
+              recordId : commentRecordsWrite.message.recordId,
+            });
+            const recordsDeleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
+            expect(recordsDeleteReply.status.code).to.eq(202);
+          });
+        });
+
+        describe('role based deletes', () => {
+          it('should allow deletes with $contextRole', async () => {
+            // scenario: Alice adds Bob as a 'thread/admin' $contextRole. She writes a 'thread/chat'.
+            //           Bob invokes his admin role to delete the 'thread/chat'. Carol is unable to delete
+            //           the 'thread/chat'.
+
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+            const carol = await DidKeyResolver.generate();
+
+            const protocolDefinition = threadRoleProtocolDefinition;
+
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice creates a thread
+            const threadRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread'
+            });
+            const threadRecordReply = await dwn.processMessage(alice.did, threadRecord.message, threadRecord.dataStream);
+            expect(threadRecordReply.status.code).to.equal(202);
+
+            // Alice adds Bob as a 'thread/admin' in that thread
+            const participantRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/admin',
+              contextId    : threadRecord.message.contextId,
+              parentId     : threadRecord.message.recordId,
+            });
+            const participantRecordReply = await dwn.processMessage(alice.did, participantRecord.message, participantRecord.dataStream);
+            expect(participantRecordReply.status.code).to.equal(202);
+
+            // Alice writes a chat message in that thread
+            const chatRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : alice.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/chat',
+              contextId    : threadRecord.message.contextId,
+              parentId     : threadRecord.message.recordId,
+            });
+            const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+            expect(chatRecordReply.status.code).to.equal(202);
+
+            const chatDeleteCarol = await TestDataGenerator.generateRecordsDelete({
+              author   : carol,
+              recordId : chatRecord.message.recordId,
+            });
+            const chatDeleteReplyCarol = await dwn.processMessage(alice.did, chatDeleteCarol.message);
+            expect(chatDeleteReplyCarol.status.code).to.eq(401);
+            expect(chatDeleteReplyCarol.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+            // Bob invokes the role to delete the chat message
+            const chatDelete = await TestDataGenerator.generateRecordsDelete({
+              author       : bob,
+              recordId     : chatRecord.message.recordId,
+              protocolRole : 'thread/admin',
+            });
+            const chatDeleteReply = await dwn.processMessage(alice.did, chatDelete.message);
+            expect(chatDeleteReply.status.code).to.equal(202);
+          });
+
+          it('should allow delete with $globalRole', async () => {
+            // scenario: Alice adds Bob as an 'admin' $globalRole. She writes a 'chat'.
+            //           Bob invokes his admin role to delete the 'chat'.
+
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+            const carol = await DidKeyResolver.generate();
+
+            const protocolDefinition = friendRoleProtocolDefinition;
+
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolWriteReply.status.code).to.equal(202);
+
+            // Alice adds Bob as a 'thread/admin' in that thread
+            const participantRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'admin',
+            });
+            const participantRecordReply = await dwn.processMessage(alice.did, participantRecord.message, participantRecord.dataStream);
+            expect(participantRecordReply.status.code).to.equal(202);
+
+            // Alice writes a chat message in that thread
+            const chatRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : alice.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'chat',
+            });
+            const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+            expect(chatRecordReply.status.code).to.equal(202);
+
+            // Carol is unable to delete the chat message
+            const chatDeleteCarol = await TestDataGenerator.generateRecordsDelete({
+              author   : carol,
+              recordId : chatRecord.message.recordId,
+            });
+            const chatDeleteCarolReply = await dwn.processMessage(alice.did, chatDeleteCarol.message);
+            expect(chatDeleteCarolReply.status.code).to.equal(401);
+            expect(chatDeleteCarolReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+            // Bob invokes the role to delete the chat message
+            const chatDelete = await TestDataGenerator.generateRecordsDelete({
+              author       : bob,
+              recordId     : chatRecord.message.recordId,
+              protocolRole : 'admin',
+            });
+            const chatDeleteReply = await dwn.processMessage(alice.did, chatDelete.message);
+            expect(chatDeleteReply.status.code).to.equal(202);
+          });
+        });
+      });
+
+      it('should return 401 if message is not authorized', async () => {
+        // scenario: Alice creates a record and Bob is unable to delete it.
+
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+
+        const recordsWrite = await TestDataGenerator.generateRecordsWrite({
+          author: alice,
+        });
+        const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+        expect(recordsWriteReply.status.code).to.equal(202);
+
+        const recordsDelete = await TestDataGenerator.generateRecordsDelete({
+          author   : bob,
+          recordId : recordsWrite.message.recordId,
+        });
+        const recordsDeleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
+        expect(recordsDeleteReply.status.code).to.equal(401);
+        expect(recordsDeleteReply.status.detail).to.contain(DwnErrorCode.RecordsDeleteAuthorizationFailed);
       });
 
       describe('event log', () => {

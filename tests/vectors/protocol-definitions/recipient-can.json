@@ -1,5 +1,5 @@
 {
-  "protocol": "http://recipient-update-protocol.xyz",
+  "protocol": "http://recipient-can-protocol.xyz",
   "published": true,
   "types": {
     "post": {},
@@ -13,6 +13,11 @@
             "who": "recipient",
             "of": "post",
             "can": "update"
+          },
+          {
+            "who": "recipient",
+            "of": "post",
+            "can": "delete"
           }
         ]
       }

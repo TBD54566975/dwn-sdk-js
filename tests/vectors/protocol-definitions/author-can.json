@@ -1,5 +1,5 @@
 {
-  "protocol": "http://author-update-protocol.xyz",
+  "protocol": "http://author-can-protocol.xyz",
   "published": true,
   "types": {
     "post": {},
@@ -19,6 +19,11 @@
             "who": "author",
             "of": "post",
             "can": "update"
+          },
+          {
+            "who": "author",
+            "of": "post",
+            "can": "delete"
           }
         ]
       }

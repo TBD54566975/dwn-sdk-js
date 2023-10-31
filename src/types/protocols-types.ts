@@ -38,6 +38,7 @@ export enum ProtocolActor {
 }
 
 export enum ProtocolAction {
+  Delete = 'delete',
   Query = 'query',
   Read = 'read',
   Update = 'update',
