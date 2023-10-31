@@ -30,8 +30,8 @@ export class RecordsQueryHandler implements MethodHandler {
 
     let recordsWrites: RecordsWriteMessageWithOptionalEncodedData[];
     let paginationMessageCid: string|undefined;
-    // if this is an anonymous query and the filters support published records, query only published records
-    if (RecordsQueryHandler.filtersForPublishedRecords(recordsQuery) && recordsQuery.author === undefined) {
+    // if this is an anonymous query and the filter supports published records, query only published records
+    if (RecordsQueryHandler.filterIncludesPublishedRecords(recordsQuery) && recordsQuery.author === undefined) {
       const results = await this.fetchPublishedRecords(tenant, recordsQuery);
       recordsWrites = results.messages as RecordsWriteMessageWithOptionalEncodedData[];
       paginationMessageCid = results.paginationMessageCid;
@@ -125,7 +125,7 @@ export class RecordsQueryHandler implements MethodHandler {
    *
    * C) UNPUBLISHED:
    *    1. unpublished records intended for the query author (where `recipient` is the query author); and
-   *    3. unpublished records authorized by a protocol rule.
+   *    2. unpublished records authorized by a protocol rule.
    *
    */
   private async fetchRecordsAsNonOwner(
@@ -134,11 +134,11 @@ export class RecordsQueryHandler implements MethodHandler {
     const { dateSort, pagination } = recordsQuery.message.descriptor;
     const filters = [];
 
-    if (RecordsQueryHandler.filtersForPublishedRecords(recordsQuery)) {
+    if (RecordsQueryHandler.filterIncludesPublishedRecords(recordsQuery)) {
       filters.push(RecordsQueryHandler.buildPublishedRecordsFilter(recordsQuery));
     }
 
-    if (RecordsQueryHandler.filtersForUnpublishedRecords(recordsQuery)) {
+    if (RecordsQueryHandler.filterIncludesUnpublishedRecords(recordsQuery)) {
       filters.push(RecordsQueryHandler.buildUnpublishedRecordsByQueryAuthorFilter(recordsQuery));
 
       const recipientFilter = recordsQuery.message.descriptor.filter.recipient;
@@ -232,24 +232,21 @@ export class RecordsQueryHandler implements MethodHandler {
   /**
    * Checks if the recordQuery filter supports returning published records.
    */
-  private static filtersForPublishedRecords(recordsQuery: RecordsQuery): boolean {
+  private static filterIncludesPublishedRecords(recordsQuery: RecordsQuery): boolean {
     const { filter } = recordsQuery.message.descriptor;
     // When `published` and `datePublished` range are both undefined, published records can be returned.
-    if (filter.datePublished === undefined && filter.published === undefined) {
-      return true;
-    }
-    return filter.datePublished !== undefined || filter.published === true;
+    return filter.datePublished !== undefined || filter.published !== false;
   }
 
   /**
    * Checks if the recordQuery filter supports returning unpublished records.
    */
-  private static filtersForUnpublishedRecords(recordsQuery: RecordsQuery): boolean {
+  private static filterIncludesUnpublishedRecords(recordsQuery: RecordsQuery): boolean {
     const { filter } = recordsQuery.message.descriptor;
     // When `published` and `datePublished` range are both undefined, unpublished records can be returned.
     if (filter.datePublished === undefined && filter.published === undefined) {
       return true;
     }
-    return filter.published === false && filter.datePublished === undefined;
+    return filter.published === false;
   }
 }
