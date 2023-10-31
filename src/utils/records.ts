@@ -257,6 +257,7 @@ export class Records {
 
     const datePublishedFilter = datePublished ? this.convertRangeCriterion(datePublished): undefined;
     if (datePublishedFilter) {
+      // only return published records when filtering with a datePublished range.
       filterCopy.published = true;
       filterCopy.datePublished = datePublishedFilter;
     }
