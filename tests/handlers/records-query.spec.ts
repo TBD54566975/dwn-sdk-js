@@ -241,7 +241,7 @@ export function testRecordsQueryHandler(): void {
         const publishedDraftWrite = await RecordsWrite.createFrom({
           recordsWriteMessage : draftWrite.message,
           published           : true,
-          authorizationSigner : Jws.createSigner(alice)
+          signer              : Jws.createSigner(alice)
         });
         const publishedDraftReply = await dwn.processMessage(alice.did, publishedDraftWrite.message);
         expect(publishedDraftReply.status.code).to.equal(202);
@@ -294,7 +294,7 @@ export function testRecordsQueryHandler(): void {
         const publishedDraftWrite = await RecordsWrite.createFrom({
           recordsWriteMessage : draftWrite.message,
           published           : true,
-          authorizationSigner : Jws.createSigner(alice)
+          signer              : Jws.createSigner(alice)
         });
         const publishedDraftReply = await dwn.processMessage(alice.did, publishedDraftWrite.message);
         expect(publishedDraftReply.status.code).to.equal(202);
@@ -329,7 +329,7 @@ export function testRecordsQueryHandler(): void {
         const publishedDraftWrite = await RecordsWrite.createFrom({
           recordsWriteMessage : draftWrite.message,
           published           : true,
-          authorizationSigner : Jws.createSigner(alice)
+          signer              : Jws.createSigner(alice)
         });
         const publishedDraftReply = await dwn.processMessage(alice.did, publishedDraftWrite.message);
         expect(publishedDraftReply.status.code).to.equal(202);
@@ -636,17 +636,17 @@ export function testRecordsQueryHandler(): void {
 
         //unpublish records
         const write1Unpublish = await RecordsWrite.createFrom({
-          authorizationSigner : Jws.createSigner(alice),
+          signer              : Jws.createSigner(alice),
           recordsWriteMessage : write1.message,
           published           : false
         });
         const write2Unpublish = await RecordsWrite.createFrom({
-          authorizationSigner : Jws.createSigner(alice),
+          signer              : Jws.createSigner(alice),
           recordsWriteMessage : write2.message,
           published           : false
         });
         const write3Unpublish = await RecordsWrite.createFrom({
-          authorizationSigner : Jws.createSigner(alice),
+          signer              : Jws.createSigner(alice),
           recordsWriteMessage : write3.message,
           published           : false
         });
@@ -812,7 +812,7 @@ export function testRecordsQueryHandler(): void {
           published           : true,
           messageTimestamp    : firstDayOf2021,
           datePublished       : firstDayOf2021,
-          authorizationSigner : Jws.createSigner(alice)
+          signer              : Jws.createSigner(alice)
         });
 
         const write2Update = await RecordsWrite.createFrom({
@@ -820,7 +820,7 @@ export function testRecordsQueryHandler(): void {
           published           : true,
           messageTimestamp    : firstDayOf2022,
           datePublished       : firstDayOf2022,
-          authorizationSigner : Jws.createSigner(alice)
+          signer              : Jws.createSigner(alice)
         });
 
         const write3Update = await RecordsWrite.createFrom({
@@ -828,7 +828,7 @@ export function testRecordsQueryHandler(): void {
           published           : true,
           messageTimestamp    : firstDayOf2023,
           datePublished       : firstDayOf2023,
-          authorizationSigner : Jws.createSigner(alice)
+          signer              : Jws.createSigner(alice)
         });
         const writeReplyUpdate1 = await dwn.processMessage(alice.did, write1Update.message);
         const writeReplyUpdate2 = await dwn.processMessage(alice.did, write2Update.message);
