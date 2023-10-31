@@ -10,7 +10,7 @@ import type { RecordsPermissionScope } from '../../src/types/permissions-types.j
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { DidKeyResolver, DwnErrorCode, PrivateKeySigner } from '../../src/index.js';
+import { DidKeyResolver, DwnErrorCode, Jws, PrivateKeySigner } from '../../src/index.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message.js';
 
 describe('PermissionsGrant', () => {
@@ -222,6 +222,23 @@ describe('PermissionsGrant', () => {
       expect(permissionsGrant.message.descriptor.scope).to.eql(overrides.scope);
       expect(permissionsGrant.message.descriptor.conditions).to.eq(overrides.conditions);
       expect(permissionsGrant.message.descriptor.permissionsRequestId).to.eq(await Message.getCid(permissionsRequest.message));
+    });
+  });
+
+  describe('asDelegatedGrant()', async () => {
+    it('should throw if the `delegated` property is not `true`', async () => {
+      const alice = await TestDataGenerator.generatePersona();
+
+      const { message } = await PermissionsGrant.create({
+        dateExpires         : getCurrentTimeInHighPrecision(),
+        grantedBy           : alice.did,
+        grantedTo           : 'did:example:bob',
+        grantedFor          : alice.did,
+        scope               : { interface: DwnInterfaceName.Records, method: DwnMethodName.Write },
+        authorizationSigner : Jws.createSigner(alice)
+      });
+
+      expect(() => PermissionsGrant.asDelegatedGrant(message)).to.throw(DwnErrorCode.PermissionsGrantNotADelegatedGrant);
     });
   });
 });

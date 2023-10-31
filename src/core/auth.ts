@@ -6,6 +6,7 @@ import type { AuthorizationModel, Descriptor } from '../types/message-types.js';
 import { Cid } from '../utils/cid.js';
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
 import { Jws } from '../utils/jws.js';
+import { PermissionsGrant } from '../interfaces/permissions-grant.js';
 import { validateJsonSchema } from '../schema-validator.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 
@@ -41,10 +42,12 @@ export async function validateMessageSignatureIntegrity(
 }
 
 /**
- * Validates the signature(s) of the given JWS.
+ * Verifies all the signature(s) within the authorization property.
+ *
  * @throws {Error} if fails authentication
  */
 export async function authenticate(authorizationModel: AuthorizationModel | undefined, didResolver: DidResolver): Promise<void> {
+
   if (authorizationModel === undefined) {
     throw new DwnError(DwnErrorCode.AuthenticateJwsMissing, 'Missing JWS.');
   }
@@ -55,6 +58,13 @@ export async function authenticate(authorizationModel: AuthorizationModel | unde
   if (authorizationModel.ownerSignature !== undefined) {
     const ownerSignatureVerifier = new GeneralJwsVerifier(authorizationModel.ownerSignature);
     await ownerSignatureVerifier.verify(didResolver);
+  }
+
+  if (authorizationModel.authorDelegatedGrant !== undefined) {
+    // verify the signature of the author delegated grant
+    const authorDelegatedGrant = await PermissionsGrant.parse(authorizationModel.authorDelegatedGrant);
+    const grantedByAuthorSignatureVerifier = new GeneralJwsVerifier(authorDelegatedGrant.message.authorization.authorSignature);
+    await grantedByAuthorSignatureVerifier.verify(didResolver);
   }
 }
 

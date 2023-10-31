@@ -60,3 +60,14 @@ export function validateTimestamp(timestamp: string): void {
     throw new DwnError(DwnErrorCode.TimestampInvalid, `Invalid timestamp: ${timestamp}`);
   }
 }
+
+/**
+ * Creates a UTC ISO-8601 timestamp offset from now or given timestamp accepted by DWN.
+ * @param offset Negative number means offset into the past.
+ */
+export function createOffsetTimestamp(offset: { seconds: number }, timestamp?: string): string {
+  const timestampInstant = timestamp ? Temporal.Instant.from(timestamp) : Temporal.Now.instant();
+  const offsetDuration = Temporal.Duration.from(offset);
+  const offsetInstant = timestampInstant.add(offsetDuration);
+  return offsetInstant.toString({ smallestUnit: 'microseconds' });
+}

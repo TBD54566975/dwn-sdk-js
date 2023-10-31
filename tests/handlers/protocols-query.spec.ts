@@ -160,17 +160,17 @@ export function testProtocolsQueryHandler(): void {
       expect(reply.status.detail).to.contain(DwnErrorCode.UrlProtocolNotNormalized);
       });
 
-      it('should fail with 400 if `authorization` is referencing a different message (`descriptorCid`)', async () => {
+      it('should fail with 400 if signer signature payload is referencing a different message (`descriptorCid`)', async () => {
         const { author, message, protocolsQuery } = await TestDataGenerator.generateProtocolsQuery();
         const tenant = author.did;
 
-        // replace `authorization` with incorrect `descriptorCid`, even though signature is still valid
+        // replace signer signature with incorrect `descriptorCid`, even though signature is still valid
         const incorrectDescriptorCid = await TestDataGenerator.randomCborSha256Cid();
-        const authorSignaturePayload = { ...protocolsQuery.authorSignaturePayload };
-        authorSignaturePayload.descriptorCid = incorrectDescriptorCid;
-        const authorSignaturePayloadBytes = Encoder.objectToBytes(authorSignaturePayload);
+        const signerSignaturePayload = { ...protocolsQuery.signerSignaturePayload };
+        signerSignaturePayload.descriptorCid = incorrectDescriptorCid;
+        const signerSignaturePayloadBytes = Encoder.objectToBytes(signerSignaturePayload);
         const signer = Jws.createSigner(author);
-        const jwsBuilder = await GeneralJwsBuilder.create(authorSignaturePayloadBytes, [signer]);
+        const jwsBuilder = await GeneralJwsBuilder.create(signerSignaturePayloadBytes, [signer]);
         message.authorization = { authorSignature: jwsBuilder.getJws() };
 
         const reply = await dwn.processMessage(tenant, message);

@@ -7,7 +7,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { getCurrentTimeInHighPrecision, minimalSleep } from '../../src/utils/time.js';
 
 describe('Message', () => {
-  describe('getAuthor()', () => {
+  describe('getSigner()', () => {
     it('should return `undefined` if message is not signed', async () => {
       const recordsRead = await RecordsRead.create({
         filter: {
@@ -15,7 +15,7 @@ describe('Message', () => {
         }
       });
 
-      const author = Message.getAuthor(recordsRead.message);
+      const author = Message.getSigner(recordsRead.message);
       expect(author).to.be.undefined;
     });
   });

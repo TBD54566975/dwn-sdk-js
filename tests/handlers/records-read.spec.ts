@@ -1674,9 +1674,9 @@ export function testRecordsReadHandler(): void {
           };
 
           const recordsWrite = await RecordsWrite.create({
-            authorizationSigner : Jws.createSigner(alice),
+            signer : Jws.createSigner(alice),
             dataFormat,
-            data                : encryptedDataBytes,
+            data   : encryptedDataBytes,
             encryptionInput
           });
 
@@ -1794,7 +1794,7 @@ export function testRecordsReadHandler(): void {
           encryptionInputForBobsDwn.keyEncryptionInputs[indexOfKeyEncryptionInputToReplace] = protocolPathDerivedKeyEncryptionInputForBobsDwn;
 
           await bobToBobRecordsWrite.encryptSymmetricEncryptionKey(encryptionInputForBobsDwn);
-          await bobToBobRecordsWrite.sign(Jws.createSigner(bob));
+          await bobToBobRecordsWrite.sign({ signer: Jws.createSigner(bob) });
 
           const dataStreamForBobsDwn = DataStream.fromBytes(encryptedDataBytes);
           const bobToBobWriteReply = await dwn.processMessage(bob.did, bobToBobRecordsWrite.message, dataStreamForBobsDwn);
