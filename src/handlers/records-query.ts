@@ -110,9 +110,23 @@ export class RecordsQueryHandler implements MethodHandler {
   }
 
   /**
-   * Fetches the records as a non-owner, return only:
-   * 1. published records; and
-   * 2. unpublished records intended for the query author (where `recipient` is the query author)
+   * Fetches the records as a non-owner.
+   *
+   * Filters can support returning both published and unpublished records,
+   * as well as explicitly only published or only unpublished records.
+   *
+   * A) BOTH published and unpublished:
+   *    1. published records; and
+   *    2. unpublished records intended for the query author (where `recipient` is the query author); and
+   *    3. unpublished records authorized by a protocol rule.
+   *
+   * B) PUBLISHED:
+   *    1. only published records;
+   *
+   * C) UNPUBLISHED:
+   *    1. unpublished records intended for the query author (where `recipient` is the query author); and
+   *    3. unpublished records authorized by a protocol rule.
+   *
    */
   private async fetchRecordsAsNonOwner(
     tenant: string, recordsQuery: RecordsQuery
@@ -216,20 +230,26 @@ export class RecordsQueryHandler implements MethodHandler {
   }
 
   /**
-   * Does the recordQuery filter explicitly for published records.
-   * Checks that there is either an explicit datePublished filter, or published is explicitly not set to false.
+   * Checks if the recordQuery filter supports returning published records.
    */
   private static filtersForPublishedRecords(recordsQuery: RecordsQuery): boolean {
     const { filter } = recordsQuery.message.descriptor;
-    return filter.datePublished !== undefined || filter.published !== false;
+    // When `published` and `datePublished` range are both undefined, published records can be returned.
+    if (filter.datePublished === undefined && filter.published === undefined) {
+      return true;
+    }
+    return filter.datePublished !== undefined || filter.published === true;
   }
 
   /**
-   * Does the recordQuery filter explicitly for unpublished records.
-   * Checks that published is not explicitly set to true, and datePublished is explicitly undefined.
+   * Checks if the recordQuery filter supports returning unpublished records.
    */
   private static filtersForUnpublishedRecords(recordsQuery: RecordsQuery): boolean {
     const { filter } = recordsQuery.message.descriptor;
-    return filter.published !== true && filter.datePublished === undefined;
+    // When `published` and `datePublished` range are both undefined, unpublished records can be returned.
+    if (filter.datePublished === undefined && filter.published === undefined) {
+      return true;
+    }
+    return filter.published === false && filter.datePublished === undefined;
   }
 }
