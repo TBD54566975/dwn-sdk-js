@@ -234,7 +234,7 @@ export function testEventLog(): void {
           expectedEvents.push({ watermark, messageCid });
         }
 
-        const events = await eventLog.queryEvents(author.did, [{ filter: { schema: normalizeSchemaUrl('schema1') } }]);
+        const events = await eventLog.queryEvents(author.did, [{ schema: normalizeSchemaUrl('schema1') }]);
         expect(events.length).to.equal(expectedEvents.length);
 
         for (let i = 0; i < expectedEvents.length; i += 1) {
@@ -283,7 +283,7 @@ export function testEventLog(): void {
           expectedEvents.push({ watermark, messageCid });
         }
 
-        const events = await eventLog.queryEvents(author.did, [{ filter: { schema: normalizeSchemaUrl('schema1') }, cursor: testWatermark }]);
+        const events = await eventLog.queryEvents(author.did, [{ schema: normalizeSchemaUrl('schema1') }], testWatermark);
         expect(events.length).to.equal(expectedEvents.length);
 
         for (let i = 0; i < expectedEvents.length; i += 1) {

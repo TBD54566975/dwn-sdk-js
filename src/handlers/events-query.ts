@@ -31,9 +31,9 @@ export class EventsQueryHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }
 
-    const { filters } = eventsQuery.message.descriptor;
+    const { filters, watermark } = eventsQuery.message.descriptor;
     const logFilters = EventsQuery.convertFilters(filters);
-    const events = await this.eventLog.queryEvents(tenant, logFilters);
+    const events = await this.eventLog.queryEvents(tenant, logFilters, watermark);
 
     return {
       status: { code: 200, detail: 'OK' },
