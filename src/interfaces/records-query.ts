@@ -72,7 +72,7 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
     const authorizationSigner = options.authorizationSigner;
     let authorization;
     if (authorizationSigner) {
-      authorization = await Message.createAuthorizationAsAuthor(descriptor, authorizationSigner, { protocolRole: options.protocolRole });
+      authorization = await Message.createAuthorization(descriptor, authorizationSigner, { protocolRole: options.protocolRole });
     }
     const message = { descriptor, authorization };
 

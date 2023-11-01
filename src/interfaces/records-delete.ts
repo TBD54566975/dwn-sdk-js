@@ -44,7 +44,7 @@ export class RecordsDelete extends Message<RecordsDeleteMessage> {
       messageTimestamp : options.messageTimestamp ?? currentTime
     };
 
-    const authorization = await Message.createAuthorizationAsAuthor(
+    const authorization = await Message.createAuthorization(
       descriptor,
       options.authorizationSigner,
       { protocolRole: options.protocolRole },

@@ -169,7 +169,7 @@ export function testPermissionsGrantHandler(): void {
             schema    : 'some-schema',
             protocol  : 'some-protocol'
           };
-          schemaAndProtocolGrant.message.authorization = await Message.createAuthorizationAsAuthor(
+          schemaAndProtocolGrant.message.authorization = await Message.createAuthorization(
             schemaAndProtocolGrant.message.descriptor,
             Jws.createSigner(alice)
           );
@@ -187,7 +187,7 @@ export function testPermissionsGrantHandler(): void {
             schema    : 'some-schema',
             contextId : 'some-context-id'
           };
-          schemaAndContextIdGrant.message.authorization = await Message.createAuthorizationAsAuthor(
+          schemaAndContextIdGrant.message.authorization = await Message.createAuthorization(
             schemaAndContextIdGrant.message.descriptor,
             Jws.createSigner(alice)
           );
@@ -205,7 +205,7 @@ export function testPermissionsGrantHandler(): void {
             schema       : 'some-schema',
             protocolPath : 'some-protocol-path'
           };
-          schemaAndProtocolPathGrant.message.authorization = await Message.createAuthorizationAsAuthor(
+          schemaAndProtocolPathGrant.message.authorization = await Message.createAuthorization(
             schemaAndProtocolPathGrant.message.descriptor,
             Jws.createSigner(alice)
           );
@@ -237,7 +237,7 @@ export function testPermissionsGrantHandler(): void {
             contextId    : 'some-context-id',
             protocolPath : 'some-protocol-path',
           };
-          contextIdAndProtocolPathGrant.message.authorization = await Message.createAuthorizationAsAuthor(
+          contextIdAndProtocolPathGrant.message.authorization = await Message.createAuthorization(
             contextIdAndProtocolPathGrant.message.descriptor,
             Jws.createSigner(alice)
           );

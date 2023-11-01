@@ -35,7 +35,7 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       definition       : ProtocolsConfigure.normalizeDefinition(options.definition)
     };
 
-    const authorization = await Message.createAuthorizationAsAuthor(
+    const authorization = await Message.createAuthorization(
       descriptor,
       options.authorizationSigner,
       { permissionsGrantId: options.permissionsGrantId }
