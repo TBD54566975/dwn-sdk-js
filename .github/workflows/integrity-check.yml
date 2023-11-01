@@ -51,8 +51,8 @@ jobs:
       - run: npm run build
       # runs linter. Job will fail if there are any warnings or errors
       - run: npm run lint
-      # runs tests in node environment without attempting to generate code coverage badges
-      - run: npm run test:node:ci
+      # runs tests in node environment
+      - run: npm run test:node
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
