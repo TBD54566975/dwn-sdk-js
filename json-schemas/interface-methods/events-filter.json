@@ -68,9 +68,6 @@
           "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
         }
       }
-    },
-    "watermark": {
-      "type": "string"
     }
   }
 }

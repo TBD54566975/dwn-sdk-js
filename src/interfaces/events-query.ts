@@ -1,5 +1,4 @@
 import type { Filter } from '../index.js';
-import type { FilteredQuery } from '../types/event-log.js';
 import type { RangeFilter } from '../types/message-types.js';
 import type { Signer } from '../types/signer.js';
 import type { EventsFilter, EventsQueryDescriptor, EventsQueryMessage } from '../types/event-types.js';
@@ -14,6 +13,7 @@ import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
 export type EventsQueryOptions = {
   signer: Signer;
   filters: EventsFilter[];
+  watermark?: string;
   messageTimestamp?: string;
 };
 
@@ -31,7 +31,8 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
       interface        : DwnInterfaceName.Events,
       method           : DwnMethodName.Query,
       filters          : this.normalizeFilters(options.filters),
-      messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp()
+      messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
+      watermark        : options.watermark,
     };
 
     removeUndefinedProperties(descriptor);
@@ -68,13 +69,11 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
  * @param filters An EventQueryFilter
  * @returns {EventsLogFilter} a generic Filter able to be used with EventLog query.
  */
-  public static convertFilters(filters: EventsFilter[]): FilteredQuery[] {
-    const eventLogFilters: FilteredQuery[] = [];
+  public static convertFilters(filters: EventsFilter[]): Filter[] {
+    const eventLogFilters: Filter[] = [];
 
     for (const filter of filters) {
-      // remove watermark from the rest of the filter properties
-      const { watermark, ...filterCopy } = filter;
-      const { dateCreated } = filterCopy;
+      const { dateCreated } = filter;
 
       // set a range filter for dates
       let rangeFilter: RangeFilter | undefined = undefined;
@@ -96,11 +95,11 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
       }
 
       if (rangeFilter) {
-        (filterCopy as Filter).dateCreated = rangeFilter;
+        (filter as Filter).dateCreated = rangeFilter;
       }
 
       // add to event log filters array, sorted by the watermark property
-      eventLogFilters.push({ filter: filterCopy as Filter, cursor: watermark });
+      eventLogFilters.push(filter as Filter);
     }
 
     return eventLogFilters;

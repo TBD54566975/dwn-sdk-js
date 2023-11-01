@@ -9,11 +9,6 @@ export type GetEventsOptions = {
   gt: string
 };
 
-export type FilteredQuery = {
-  filter: Filter;
-  cursor?: string;
-};
-
 export interface EventLog {
  /**
   * opens a connection to the underlying store
@@ -46,7 +41,7 @@ export interface EventLog {
    *
    * If no watermark is provided, all events for a given tenant and filter combo will be returned.
    */
-  queryEvents(tenant: string, filters: FilteredQuery[]): Promise<Array<Event>>
+  queryEvents(tenant: string, filters: Filter[], cursor?: string): Promise<Array<Event>>
 
   /**
    * deletes any events that have any of the cids provided

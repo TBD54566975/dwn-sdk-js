@@ -377,7 +377,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
         const reply = await dwn.processMessage(alice.did, permissionsRevoke.message);
         expect(reply.status.code).to.equal(202);
 
-        events = await eventLog.queryEvents(alice.did, [{ filter: { schema: normalizeSchemaUrl('schema1') } }]);
+        events = await eventLog.queryEvents(alice.did, [{ schema: normalizeSchemaUrl('schema1') }]);
         expect(events.length).to.equal(2);
 
         // The revoke should be the second event

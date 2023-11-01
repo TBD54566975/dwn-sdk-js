@@ -251,6 +251,7 @@ export type GenerateEventsGetOutput = {
 export type GenerateEventsQueryInput = {
   author?: Persona;
   filters: EventsFilter[];
+  watermark?: string;
 };
 
 export type GenerateEventsQueryOutput = {
@@ -758,10 +759,11 @@ export class TestDataGenerator {
   }
 
   public static async generateEventsQuery(input: GenerateEventsQueryInput): Promise<GenerateEventsQueryOutput> {
+    const { filters, watermark } = input;
     const author = input.author ?? await TestDataGenerator.generatePersona();
     const signer = Jws.createSigner(author);
 
-    const options: EventsQueryOptions = { signer, filters: input.filters };
+    const options: EventsQueryOptions = { signer, filters, watermark };
 
     const eventsQuery = await EventsQuery.create(options);
 

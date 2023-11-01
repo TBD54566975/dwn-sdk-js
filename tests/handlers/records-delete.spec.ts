@@ -757,7 +757,7 @@ export function testRecordsDeleteHandler(): void {
           const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
           expect(deleteReply.status.code).to.equal(202);
 
-          const events = await eventLog.queryEvents(alice.did, [{ filter: { schema: normalizeSchemaUrl('schema1') } }]);
+          const events = await eventLog.queryEvents(alice.did, [{ schema: normalizeSchemaUrl('schema1') }]);
           expect(events.length).to.equal(2);
 
           const writeMessageCid = await Message.getCid(message);

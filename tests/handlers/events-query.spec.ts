@@ -127,8 +127,9 @@ export function testEventsQueryHandler(): void {
 
       //query messages beyond the watermark
       proto1EventsQuery = await TestDataGenerator.generateEventsQuery({
+        watermark,
         author  : alice,
-        filters : [{ protocol: proto1, watermark }]
+        filters : [{ protocol: proto1 }],
       });
       proto1EventsReply = await dwn.processMessage(alice.did, proto1EventsQuery.message);
       expect(proto1EventsReply.status.code).equals(200);
@@ -177,8 +178,9 @@ export function testEventsQueryHandler(): void {
 
       // using the watermark of the first message
       eventsQuery1 = await TestDataGenerator.generateEventsQuery({
-        author  : alice,
-        filters : [{ dateCreated: { from: lastDayOf2021 }, watermark: reply1.events![0].watermark }],
+        watermark : reply1.events![0].watermark,
+        author    : alice,
+        filters   : [{ dateCreated: { from: lastDayOf2021 } }],
       });
       reply1 = await dwn.processMessage(alice.did, eventsQuery1.message);
       expect(reply1.status.code).to.equal(200);
@@ -200,8 +202,9 @@ export function testEventsQueryHandler(): void {
 
       // using the watermark of the first message
       eventsQuery2 = await TestDataGenerator.generateEventsQuery({
-        author  : alice,
-        filters : [{ dateCreated: { to: lastDayOf2022 }, watermark: reply2.events![0].watermark }],
+        watermark : reply2.events![0].watermark,
+        author    : alice,
+        filters   : [{ dateCreated: { to: lastDayOf2022 } }],
       });
       reply2 = await dwn.processMessage(alice.did, eventsQuery2.message);
       expect(reply2.status.code).to.equal(200);
@@ -221,8 +224,9 @@ export function testEventsQueryHandler(): void {
 
       // using the watermark of the only message, should not return any results
       eventsQuery3 = await TestDataGenerator.generateEventsQuery({
-        author  : alice,
-        filters : [{ dateCreated: { from: lastDayOf2022, to: lastDayOf2023 }, watermark: reply3.events![0].watermark }],
+        watermark : reply3.events![0].watermark,
+        author    : alice,
+        filters   : [{ dateCreated: { from: lastDayOf2022, to: lastDayOf2023 } }],
       });
       reply3 = await dwn.processMessage(alice.did, eventsQuery3.message);
       expect(reply3.status.code).to.equal(200);
@@ -240,8 +244,9 @@ export function testEventsQueryHandler(): void {
 
       // testing edge case where value equals `from` and `to`
       eventsQuery4 = await TestDataGenerator.generateEventsQuery({
-        author  : alice,
-        filters : [{ dateCreated: { from: firstDayOf2022, to: firstDayOf2023 }, watermark: reply4.events![0].watermark }],
+        watermark : reply4.events![0].watermark,
+        author    : alice,
+        filters   : [{ dateCreated: { from: firstDayOf2022, to: firstDayOf2023 } }],
       });
       reply4 = await dwn.processMessage(alice.did, eventsQuery4.message);
       expect(reply4.status.code).to.equal(200);
