@@ -119,6 +119,13 @@ export class LevelWrapper<V> {
     }));
   }
 
+  sublevelBatchOperation(name: string, operation: LevelWrapperBatchOperation<V>): LevelWrapperBatchOperation<V> {
+    return { ...operation, sublevel: this.db.sublevel(name, {
+      keyEncoding   : 'utf8',
+      valueEncoding : this.config.valueEncoding
+    }) };
+  }
+
   async get(key: string, options?: LevelWrapperOptions): Promise<V|undefined>{
     options?.signal?.throwIfAborted();
 
