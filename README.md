@@ -101,7 +101,6 @@ DWN SDK includes a polyfilled distribution that can imported in a `module` scrip
       schema: 'yeeter/post',  // Specify a schema for the data.
       signer: Jws.createSigner(didKey) // Sign the data using the generated DID key.
     });
-    });
 
     // Create a readable stream from the data to be stored.
     const dataStream = DataStream.fromBytes(data);
