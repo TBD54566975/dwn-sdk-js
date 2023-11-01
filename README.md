@@ -99,7 +99,7 @@ DWN SDK includes a polyfilled distribution that can imported in a `module` scrip
       dataFormat: 'application/json',
       published: true,
       schema: 'yeeter/post',  // Specify a schema for the data.
-      authorizationSigner: Jws.createSigner(didKey) // Sign the data using the generated DID key.
+      signer: Jws.createSigner(didKey) // Sign the data using the generated DID key.
     });
     });
 
@@ -208,7 +208,7 @@ const recordsWrite = await RecordsWrite.create({
   dataFormat: 'application/json',
   published: true, // Mark the data as published.
   schema: 'yeeter/post', // Specify a schema for the data.
-  authorizationSigner: Jws.createSigner(didKey) // Sign the data using the generated DID key.
+  signer: Jws.createSigner(didKey) // Sign the data using the generated DID key.
 });
 
 // Create a readable stream from the data to be stored.
@@ -272,12 +272,12 @@ class CustomSigner implements Signer {
 }
 
 // Create an instance of the custom signer for authorization.
-const authorizationSigner = new CustomSigner();
+const signer = new CustomSigner();
 
 // Define options for creating a RecordsWrite message.
 const options: RecordsWriteOptions = {
   ...
-  authorizationSigner // Use the custom signer for authorization.
+  signer // Use the custom signer for authorization.
 };
 
 // Create a RecordsWrite message with the specified options.

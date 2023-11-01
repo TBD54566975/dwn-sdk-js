@@ -84,7 +84,7 @@ export function testRecordsReadHandler(): void {
           filter: {
             recordId: message.recordId,
           },
-          authorizationSigner: Jws.createSigner(alice)
+          signer: Jws.createSigner(alice)
         });
 
         const readReply = await dwn.processMessage(alice.did, recordsRead.message);
@@ -112,7 +112,7 @@ export function testRecordsReadHandler(): void {
           filter: {
             recordId: message.recordId,
           },
-          authorizationSigner: Jws.createSigner(bob)
+          signer: Jws.createSigner(bob)
         });
 
         const readReply = await dwn.processMessage(alice.did, recordsRead.message);
@@ -157,7 +157,7 @@ export function testRecordsReadHandler(): void {
           filter: {
             recordId: message.recordId,
           },
-          authorizationSigner: Jws.createSigner(bob)
+          signer: Jws.createSigner(bob)
         });
 
         const readReply = await dwn.processMessage(alice.did, recordsRead.message);
@@ -184,7 +184,7 @@ export function testRecordsReadHandler(): void {
           filter: {
             recordId: message.recordId,
           },
-          authorizationSigner: Jws.createSigner(bob)
+          signer: Jws.createSigner(bob)
         });
 
         const readReply = await dwn.processMessage(alice.did, recordsRead.message);
@@ -232,7 +232,7 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: imageRecordsWrite.message.recordId,
             },
-            authorizationSigner: Jws.createSigner(bob)
+            signer: Jws.createSigner(bob)
           });
           const imageReadReply = await dwn.processMessage(alice.did, imageRecordsRead.message);
           expect(imageReadReply.status.code).to.equal(200);
@@ -316,7 +316,7 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: emailRecordsWrite.message.recordId,
               },
-              authorizationSigner: Jws.createSigner(bob)
+              signer: Jws.createSigner(bob)
             });
             const bobReadReply = await dwn.processMessage(alice.did, bobRecordsRead.message);
             expect(bobReadReply.status.code).to.equal(200);
@@ -326,7 +326,7 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: emailRecordsWrite.message.recordId,
               },
-              authorizationSigner: Jws.createSigner(imposterBob)
+              signer: Jws.createSigner(imposterBob)
             });
             const imposterReadReply = await dwn.processMessage(alice.did, imposterRecordsRead.message);
             expect(imposterReadReply.status.code).to.equal(401);
@@ -371,7 +371,7 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: emailRecordsWrite.message.recordId,
               },
-              authorizationSigner: Jws.createSigner(bob)
+              signer: Jws.createSigner(bob)
             });
             const bobReadReply = await dwn.processMessage(alice.did, bobRecordsRead.message);
             expect(bobReadReply.status.code).to.equal(200);
@@ -381,7 +381,7 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: emailRecordsWrite.message.recordId,
               },
-              authorizationSigner: Jws.createSigner(imposterBob)
+              signer: Jws.createSigner(imposterBob)
             });
             const imposterReadReply = await dwn.processMessage(alice.did, imposterRecordsRead.message);
             expect(imposterReadReply.status.code).to.equal(401);
@@ -418,7 +418,7 @@ export function testRecordsReadHandler(): void {
                 protocol     : protocolDefinition.protocol,
                 protocolPath : 'foo',
               },
-              authorizationSigner: Jws.createSigner(alice),
+              signer: Jws.createSigner(alice),
             });
 
             const fooPathReply = await dwn.processMessage(alice.did, fooPathRead.message);
@@ -467,7 +467,7 @@ export function testRecordsReadHandler(): void {
                 protocol     : protocolDefinition.protocol,
                 protocolPath : 'foo',
               },
-              authorizationSigner: Jws.createSigner(alice),
+              signer: Jws.createSigner(alice),
             });
             const fooPathReply = await dwn.processMessage(alice.did, fooPathRead.message);
             expect(fooPathReply.status.code).to.equal(400);
@@ -516,8 +516,8 @@ export function testRecordsReadHandler(): void {
 
             // Bob reads Alice's chat record
             const readChatRecord = await RecordsRead.create({
-              authorizationSigner : Jws.createSigner(bob),
-              filter              : {
+              signer : Jws.createSigner(bob),
+              filter : {
                 recordId: chatRecord.message.recordId,
 
               },
@@ -556,8 +556,8 @@ export function testRecordsReadHandler(): void {
 
             // Bob tries to invoke a 'chat' role but 'chat' is not a role
             const readChatRecord = await RecordsRead.create({
-              authorizationSigner : Jws.createSigner(bob),
-              filter              : {
+              signer : Jws.createSigner(bob),
+              filter : {
                 recordId: chatRecord.message.recordId,
               },
               protocolRole: 'chat'
@@ -596,8 +596,8 @@ export function testRecordsReadHandler(): void {
 
             // Bob tries to invoke a 'friend' role but he is not a 'friend'
             const readChatRecord = await RecordsRead.create({
-              authorizationSigner : Jws.createSigner(bob),
-              filter              : {
+              signer : Jws.createSigner(bob),
+              filter : {
                 recordId: chatRecord.message.recordId,
               },
               protocolRole: 'friend',
@@ -659,8 +659,8 @@ export function testRecordsReadHandler(): void {
             // Bob is able to read his own 'participant' role
             // He doesn't need to invoke the role because recipients of a record are always authorized to read it
             const participantRead = await RecordsRead.create({
-              authorizationSigner : Jws.createSigner(bob),
-              filter              : {
+              signer : Jws.createSigner(bob),
+              filter : {
                 protocolPath : 'thread/participant',
                 recipient    : bob.did,
                 contextId    : threadRecord.message.contextId
@@ -671,8 +671,8 @@ export function testRecordsReadHandler(): void {
 
             // Bob is able to read the thread root record
             const threadRead = await RecordsRead.create({
-              authorizationSigner : Jws.createSigner(bob),
-              filter              : {
+              signer : Jws.createSigner(bob),
+              filter : {
                 recordId: participantReadReply.record!.descriptor.parentId,
               },
               protocolRole: 'thread/participant'
@@ -682,8 +682,8 @@ export function testRecordsReadHandler(): void {
 
             // Bob invokes his 'participant' role to read the chat message
             const chatRead = await RecordsRead.create({
-              authorizationSigner : Jws.createSigner(bob),
-              filter              : {
+              signer : Jws.createSigner(bob),
+              filter : {
                 recordId: chatRecord.message.recordId,
               },
               protocolRole: 'thread/participant'
@@ -753,8 +753,8 @@ export function testRecordsReadHandler(): void {
 
             // Bob invokes his 'participant' role to read the chat message
             const chatRead = await RecordsRead.create({
-              authorizationSigner : Jws.createSigner(bob),
-              filter              : {
+              signer : Jws.createSigner(bob),
+              filter : {
                 recordId: chatRecord.message.recordId,
               },
               protocolRole: 'thread/participant'
@@ -799,8 +799,8 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: recordsWrite.message.recordId,
             },
-            authorizationSigner : Jws.createSigner(bob),
-            permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+            signer             : Jws.createSigner(bob),
+            permissionsGrantId : await Message.getCid(permissionsGrant.message),
           });
           const recordsReadReply = await dwn.processMessage(alice.did, recordsRead.message);
           expect(recordsReadReply.status.code).to.equal(401);
@@ -841,8 +841,8 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: message.recordId,
             },
-            authorizationSigner : Jws.createSigner(bob),
-            permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+            signer             : Jws.createSigner(bob),
+            permissionsGrantId : await Message.getCid(permissionsGrant.message),
           });
           const readReply = await dwn.processMessage(alice.did, recordsRead.message);
           expect(readReply.status.code).to.equal(200);
@@ -895,7 +895,7 @@ export function testRecordsReadHandler(): void {
 
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner: Jws.createSigner(bob),
+              signer: Jws.createSigner(bob),
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
@@ -906,8 +906,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const recordsReadWithGrantReply = await dwn.processMessage(alice.did, recordsReadWithGrant.message);
             expect(recordsReadWithGrantReply.status.code).to.equal(200);
@@ -959,7 +959,7 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner: Jws.createSigner(bob),
+              signer: Jws.createSigner(bob),
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
@@ -970,8 +970,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const recordsReadWithGrantReply = await dwn.processMessage(alice.did, recordsReadWithGrant.message);
             expect(recordsReadWithGrantReply.status.code).to.equal(200);
@@ -1023,8 +1023,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
@@ -1077,8 +1077,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
@@ -1131,8 +1131,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(200);
@@ -1184,8 +1184,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
@@ -1238,8 +1238,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(200);
@@ -1291,8 +1291,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
@@ -1336,8 +1336,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const readReply = await dwn.processMessage(alice.did, recordsRead.message);
             expect(readReply.status.code).to.equal(200);
@@ -1380,8 +1380,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const readReply = await dwn.processMessage(alice.did, recordsRead.message);
             expect(readReply.status.code).to.equal(401);
@@ -1397,7 +1397,7 @@ export function testRecordsReadHandler(): void {
           filter: {
             recordId: `non-existent-record-id`,
           },
-          authorizationSigner: Jws.createSigner(alice)
+          signer: Jws.createSigner(alice)
         });
 
         const readReply = await dwn.processMessage(alice.did, recordsRead.message);
@@ -1424,8 +1424,8 @@ export function testRecordsReadHandler(): void {
 
         // RecordsDelete
         const recordsDelete = await RecordsDelete.create({
-          recordId            : message.recordId,
-          authorizationSigner : Jws.createSigner(alice)
+          recordId : message.recordId,
+          signer   : Jws.createSigner(alice)
         });
 
         const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
@@ -1436,7 +1436,7 @@ export function testRecordsReadHandler(): void {
           filter: {
             recordId: message.recordId,
           },
-          authorizationSigner: Jws.createSigner(alice)
+          signer: Jws.createSigner(alice)
         });
 
         const readReply = await dwn.processMessage(alice.did, recordsRead.message);
@@ -1461,7 +1461,7 @@ export function testRecordsReadHandler(): void {
           filter: {
             recordId: message.recordId,
           },
-          authorizationSigner: Jws.createSigner(alice)
+          signer: Jws.createSigner(alice)
         });
 
         const readReply = await dwn.processMessage(alice.did, recordsRead.message);
@@ -1485,7 +1485,7 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: message.recordId,
             },
-            authorizationSigner: Jws.createSigner(alice)
+            signer: Jws.createSigner(alice)
           });
 
           const dataStoreGet = sinon.spy(dataStore, 'get');
@@ -1516,7 +1516,7 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: message.recordId,
             },
-            authorizationSigner: Jws.createSigner(alice)
+            signer: Jws.createSigner(alice)
           });
 
           const dataStoreGet = sinon.spy(dataStore, 'get');
@@ -1600,7 +1600,7 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: message.recordId,
             },
-            authorizationSigner: Jws.createSigner(alice)
+            signer: Jws.createSigner(alice)
           });
 
           // test able to derive correct key using `schemas` scheme from root key to decrypt the message
@@ -1688,7 +1688,7 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: recordsWrite.message.recordId,
             },
-            authorizationSigner: Jws.createSigner(alice)
+            signer: Jws.createSigner(alice)
           });
 
 
@@ -1807,7 +1807,7 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: message.recordId,
             },
-            authorizationSigner: Jws.createSigner(alice)
+            signer: Jws.createSigner(alice)
           });
           const readReply = await dwn.processMessage(alice.did, recordsRead.message);
           expect(readReply.status.code).to.equal(200);
@@ -1851,7 +1851,7 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: recordsWriteToBob.message.recordId,
             },
-            authorizationSigner: Jws.createSigner(bob)
+            signer: Jws.createSigner(bob)
           });
           const readByBobReply = await dwn.processMessage(bob.did, recordsReadByBob.message);
           expect(readByBobReply.status.code).to.equal(200);
@@ -1942,7 +1942,7 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: message.recordId,
             },
-            authorizationSigner: Jws.createSigner(alice)
+            signer: Jws.createSigner(alice)
           });
           const readReply = await dwn.processMessage(alice.did, recordsRead.message);
           expect(readReply.status.code).to.equal(200);
@@ -2010,7 +2010,7 @@ export function testRecordsReadHandler(): void {
         filter: {
           recordId: 'any-id',
         },
-        authorizationSigner: Jws.createSigner(alice)
+        signer: Jws.createSigner(alice)
       });
 
       // setting up a stub did resolver & message store
@@ -2031,7 +2031,7 @@ export function testRecordsReadHandler(): void {
         filter: {
           recordId: 'any-id',
         },
-        authorizationSigner: Jws.createSigner(alice)
+        signer: Jws.createSigner(alice)
       });
 
       // setting up a stub method resolver & message store

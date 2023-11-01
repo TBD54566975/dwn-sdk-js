@@ -20,9 +20,9 @@ describe('ProtocolsConfigure', () => {
       const currentTime = getCurrentTimeInHighPrecision();
       const definition = { ...dexProtocolDefinition };
       const protocolsConfigure = await ProtocolsConfigure.create({
-        messageTimestamp    : currentTime,
+        messageTimestamp : currentTime,
         definition,
-        authorizationSigner : Jws.createSigner(alice),
+        signer           : Jws.createSigner(alice),
       });
 
       expect(protocolsConfigure.message.descriptor.messageTimestamp).to.equal(currentTime);
@@ -33,10 +33,10 @@ describe('ProtocolsConfigure', () => {
 
       const definition = { ...dexProtocolDefinition, protocol: 'example.com/' };
       const options = {
-        recipient           : alice.did,
-        data                : TestDataGenerator.randomBytes(10),
-        dataFormat          : 'application/json',
-        authorizationSigner : Jws.createSigner(alice),
+        recipient  : alice.did,
+        data       : TestDataGenerator.randomBytes(10),
+        dataFormat : 'application/json',
+        signer     : Jws.createSigner(alice),
         definition,
       };
       const protocolsConfig = await ProtocolsConfigure.create(options);
@@ -53,12 +53,12 @@ describe('ProtocolsConfigure', () => {
       nonnormalizedDexProtocol.types.ask.schema = 'ask';
 
       const options = {
-        recipient           : alice.did,
-        data                : TestDataGenerator.randomBytes(10),
-        dataFormat          : 'application/json',
-        authorizationSigner : Jws.createSigner(alice),
-        protocol            : 'example.com/',
-        definition          : nonnormalizedDexProtocol
+        recipient  : alice.did,
+        data       : TestDataGenerator.randomBytes(10),
+        dataFormat : 'application/json',
+        signer     : Jws.createSigner(alice),
+        protocol   : 'example.com/',
+        definition : nonnormalizedDexProtocol
       };
       const protocolsConfig = await ProtocolsConfigure.create(options);
 
@@ -98,7 +98,7 @@ describe('ProtocolsConfigure', () => {
         const alice = await TestDataGenerator.generatePersona();
 
         const protocolsConfigure = await ProtocolsConfigure.create({
-          authorizationSigner: Jws.createSigner(alice),
+          signer: Jws.createSigner(alice),
           definition
         });
 
@@ -132,7 +132,7 @@ describe('ProtocolsConfigure', () => {
         const alice = await TestDataGenerator.generatePersona();
 
         const protocolsConfigure = await ProtocolsConfigure.create({
-          authorizationSigner: Jws.createSigner(alice),
+          signer: Jws.createSigner(alice),
           definition
         });
 
@@ -160,7 +160,7 @@ describe('ProtocolsConfigure', () => {
         const alice = await TestDataGenerator.generatePersona();
 
         const createProtocolsConfigurePromise = ProtocolsConfigure.create({
-          authorizationSigner: Jws.createSigner(alice),
+          signer: Jws.createSigner(alice),
           definition
         });
 
@@ -188,8 +188,8 @@ describe('ProtocolsConfigure', () => {
         };
 
         const createProtocolsConfigurePromise = ProtocolsConfigure.create({
-          authorizationSigner : Jws.createSigner(alice),
-          definition          : definitionRootContextRole
+          signer     : Jws.createSigner(alice),
+          definition : definitionRootContextRole
         });
 
         await expect(createProtocolsConfigurePromise)
@@ -216,8 +216,8 @@ describe('ProtocolsConfigure', () => {
         };
 
         const createProtocolsConfigurePromise2 = ProtocolsConfigure.create({
-          authorizationSigner : Jws.createSigner(alice),
-          definition          : definitionTooNestedContextRole
+          signer     : Jws.createSigner(alice),
+          definition : definitionTooNestedContextRole
         });
 
         await expect(createProtocolsConfigurePromise2)
@@ -248,7 +248,7 @@ describe('ProtocolsConfigure', () => {
         const alice = await TestDataGenerator.generatePersona();
 
         const createProtocolsConfigurePromise = ProtocolsConfigure.create({
-          authorizationSigner: Jws.createSigner(alice),
+          signer: Jws.createSigner(alice),
           definition
         });
 
@@ -277,7 +277,7 @@ describe('ProtocolsConfigure', () => {
         const alice = await TestDataGenerator.generatePersona();
 
         const createProtocolsConfigurePromise = ProtocolsConfigure.create({
-          authorizationSigner: Jws.createSigner(alice),
+          signer: Jws.createSigner(alice),
           definition
         });
 
@@ -306,7 +306,7 @@ describe('ProtocolsConfigure', () => {
         const alice = await TestDataGenerator.generatePersona();
 
         const createProtocolsConfigurePromise = ProtocolsConfigure.create({
-          authorizationSigner: Jws.createSigner(alice),
+          signer: Jws.createSigner(alice),
           definition
         });
 
@@ -335,7 +335,7 @@ describe('ProtocolsConfigure', () => {
         const alice = await TestDataGenerator.generatePersona();
 
         const createProtocolsConfigurePromise = ProtocolsConfigure.create({
-          authorizationSigner: Jws.createSigner(alice),
+          signer: Jws.createSigner(alice),
           definition
         });
 

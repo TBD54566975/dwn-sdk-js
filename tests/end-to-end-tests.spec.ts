@@ -173,8 +173,8 @@ export function testEndToEndScenarios(): void {
       // Test that Bob is able to read his 'participant' role to obtain the context-derived private key for message decryption.
       // He doesn't need to invoke the role because recipients of a record are always authorized to read it
       const participantRead = await RecordsRead.create({
-        authorizationSigner : Jws.createSigner(bob),
-        filter              : {
+        signer : Jws.createSigner(bob),
+        filter : {
           protocolPath : 'thread/participant',
           recipient    : bob.did,
           contextId    : threadRecord.message.contextId
@@ -185,8 +185,8 @@ export function testEndToEndScenarios(): void {
 
       // Test that Bob is able to read the thread root record
       const threadRead = await RecordsRead.create({
-        authorizationSigner : Jws.createSigner(bob),
-        filter              : {
+        signer : Jws.createSigner(bob),
+        filter : {
           protocolPath : 'thread',
           contextId    : threadRecord.message.contextId
         },
@@ -199,8 +199,8 @@ export function testEndToEndScenarios(): void {
       // Test Bob can invoke his 'participant' role to read the chat message
       // TODO: #555 - We currently lack role-authorized RecordsQuery for a realistic scenario (https://github.com/TBD54566975/dwn-sdk-js/issues/555)
       const chatRead = await RecordsRead.create({
-        authorizationSigner : Jws.createSigner(bob),
-        filter              : {
+        signer : Jws.createSigner(bob),
+        filter : {
           protocolPath : 'thread/chat',
           contextId    : threadRecord.message.contextId
         },

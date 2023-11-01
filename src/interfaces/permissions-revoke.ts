@@ -9,7 +9,7 @@ import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.
 export type PermissionsRevokeOptions = {
   messageTimestamp?: string;
   permissionsGrantId: string;
-  authorizationSigner: Signer;
+  signer: Signer;
 };
 
 export class PermissionsRevoke extends Message<PermissionsRevokeMessage> {
@@ -28,7 +28,7 @@ export class PermissionsRevoke extends Message<PermissionsRevokeMessage> {
       permissionsGrantId : options.permissionsGrantId,
     };
 
-    const authorization = await Message.createAuthorization(descriptor, options.authorizationSigner);
+    const authorization = await Message.createAuthorization(descriptor, options.signer);
     const message: PermissionsRevokeMessage = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

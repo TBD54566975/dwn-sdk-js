@@ -15,7 +15,7 @@ export type RecordsDeleteOptions = {
   recordId: string;
   messageTimestamp?: string;
   protocolRole?: string;
-  authorizationSigner: Signer;
+  signer: Signer;
 };
 
 export class RecordsDelete extends Message<RecordsDeleteMessage> {
@@ -46,7 +46,7 @@ export class RecordsDelete extends Message<RecordsDeleteMessage> {
 
     const authorization = await Message.createAuthorization(
       descriptor,
-      options.authorizationSigner,
+      options.signer,
       { protocolRole: options.protocolRole },
     );
     const message: RecordsDeleteMessage = { descriptor, authorization };

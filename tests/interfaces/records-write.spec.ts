@@ -66,13 +66,13 @@ describe('RecordsWrite', () => {
 
       // testing `data` and `dataCid` both defined
       const options1 = {
-        recipient           : alice.did,
-        data                : TestDataGenerator.randomBytes(10),
-        dataCid             : await TestDataGenerator.randomCborSha256Cid(),
-        dataFormat          : 'application/json',
-        recordId            : await TestDataGenerator.randomCborSha256Cid(),
-        published           : true,
-        authorizationSigner : Jws.createSigner(alice)
+        recipient  : alice.did,
+        data       : TestDataGenerator.randomBytes(10),
+        dataCid    : await TestDataGenerator.randomCborSha256Cid(),
+        dataFormat : 'application/json',
+        recordId   : await TestDataGenerator.randomCborSha256Cid(),
+        published  : true,
+        signer     : Jws.createSigner(alice)
       };
       const createPromise1 = RecordsWrite.create(options1);
 
@@ -80,14 +80,14 @@ describe('RecordsWrite', () => {
 
       // testing `data` and `dataCid` both undefined
       const options2 = {
-        recipient           : alice.did,
+        recipient  : alice.did,
         // intentionally showing both `data` and `dataCid` are undefined
         // data                        : TestDataGenerator.randomBytes(10),
         // dataCid                     : await TestDataGenerator.randomCborSha256Cid(),
-        dataFormat          : 'application/json',
-        recordId            : await TestDataGenerator.randomCborSha256Cid(),
-        published           : true,
-        authorizationSigner : Jws.createSigner(alice)
+        dataFormat : 'application/json',
+        recordId   : await TestDataGenerator.randomCborSha256Cid(),
+        published  : true,
+        signer     : Jws.createSigner(alice)
       };
       const createPromise2 = RecordsWrite.create(options2);
 
@@ -98,27 +98,27 @@ describe('RecordsWrite', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options1 = {
-        recipient           : alice.did,
-        dataCid             : await TestDataGenerator.randomCborSha256Cid(),
+        recipient  : alice.did,
+        dataCid    : await TestDataGenerator.randomCborSha256Cid(),
         // dataSize                  : 123, // intentionally missing
-        dataFormat          : 'application/json',
-        recordId            : await TestDataGenerator.randomCborSha256Cid(),
-        published           : true,
-        authorizationSigner : Jws.createSigner(alice)
+        dataFormat : 'application/json',
+        recordId   : await TestDataGenerator.randomCborSha256Cid(),
+        published  : true,
+        signer     : Jws.createSigner(alice)
       };
       const createPromise1 = RecordsWrite.create(options1);
 
       await expect(createPromise1).to.be.rejectedWith('`dataCid` and `dataSize` must both be defined or undefined at the same time');
 
       const options2 = {
-        recipient           : alice.did,
-        data                : TestDataGenerator.randomBytes(10),
+        recipient  : alice.did,
+        data       : TestDataGenerator.randomBytes(10),
         // dataCid                   : await TestDataGenerator.randomCborSha256Cid(), // intentionally missing
-        dataSize            : 123,
-        dataFormat          : 'application/json',
-        recordId            : await TestDataGenerator.randomCborSha256Cid(),
-        published           : true,
-        authorizationSigner : Jws.createSigner(alice)
+        dataSize   : 123,
+        dataFormat : 'application/json',
+        recordId   : await TestDataGenerator.randomCborSha256Cid(),
+        published  : true,
+        signer     : Jws.createSigner(alice)
       };
       const createPromise2 = RecordsWrite.create(options2);
 
@@ -148,29 +148,29 @@ describe('RecordsWrite', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options1 = {
-        recipient           : alice.did,
-        protocol            : 'http://example.com',
+        recipient  : alice.did,
+        protocol   : 'http://example.com',
         // protocolPath                : 'foo/bar', // intentionally missing
-        dataCid             : await TestDataGenerator.randomCborSha256Cid(),
-        dataSize            : 123,
-        dataFormat          : 'application/json',
-        recordId            : await TestDataGenerator.randomCborSha256Cid(),
-        authorizationSigner : Jws.createSigner(alice)
+        dataCid    : await TestDataGenerator.randomCborSha256Cid(),
+        dataSize   : 123,
+        dataFormat : 'application/json',
+        recordId   : await TestDataGenerator.randomCborSha256Cid(),
+        signer     : Jws.createSigner(alice)
       };
       const createPromise1 = RecordsWrite.create(options1);
 
       await expect(createPromise1).to.be.rejectedWith('`protocol` and `protocolPath` must both be defined or undefined at the same time');
 
       const options2 = {
-        recipient           : alice.did,
+        recipient    : alice.did,
         // protocol                    : 'http://example.com', // intentionally missing
-        protocolPath        : 'foo/bar',
-        data                : TestDataGenerator.randomBytes(10),
-        dataCid             : await TestDataGenerator.randomCborSha256Cid(),
-        dataSize            : 123,
-        dataFormat          : 'application/json',
-        recordId            : await TestDataGenerator.randomCborSha256Cid(),
-        authorizationSigner : Jws.createSigner(alice)
+        protocolPath : 'foo/bar',
+        data         : TestDataGenerator.randomBytes(10),
+        dataCid      : await TestDataGenerator.randomCborSha256Cid(),
+        dataSize     : 123,
+        dataFormat   : 'application/json',
+        recordId     : await TestDataGenerator.randomCborSha256Cid(),
+        signer       : Jws.createSigner(alice)
       };
       const createPromise2 = RecordsWrite.create(options2);
 
@@ -287,14 +287,14 @@ describe('RecordsWrite', () => {
         method    : DwnMethodName.Write
       };
       const grantToBob = await PermissionsGrant.create({
-        delegated           : true, // this is a delegated grant
-        dateExpires         : createOffsetTimestamp({ seconds: 100 }),
-        description         : 'Allow to Bob write as me in chat protocol',
-        grantedBy           : alice.did,
-        grantedTo           : bob.did,
-        grantedFor          : alice.did,
+        delegated   : true, // this is a delegated grant
+        dateExpires : createOffsetTimestamp({ seconds: 100 }),
+        description : 'Allow to Bob write as me in chat protocol',
+        grantedBy   : alice.did,
+        grantedTo   : bob.did,
+        grantedFor  : alice.did,
         scope,
-        authorizationSigner : Jws.createSigner(alice)
+        signer      : Jws.createSigner(alice)
       });
 
       const createPromise = RecordsWrite.create({
@@ -333,14 +333,14 @@ describe('RecordsWrite', () => {
         method    : DwnMethodName.Write
       };
       const grantToBob = await PermissionsGrant.create({
-        delegated           : true, // this is a delegated grant
-        dateExpires         : createOffsetTimestamp({ seconds: 100 }),
-        description         : 'Allow to Bob write as me in chat protocol',
-        grantedBy           : alice.did,
-        grantedTo           : bob.did,
-        grantedFor          : alice.did,
+        delegated   : true, // this is a delegated grant
+        dateExpires : createOffsetTimestamp({ seconds: 100 }),
+        description : 'Allow to Bob write as me in chat protocol',
+        grantedBy   : alice.did,
+        grantedTo   : bob.did,
+        grantedFor  : alice.did,
         scope,
-        authorizationSigner : Jws.createSigner(alice)
+        signer      : Jws.createSigner(alice)
       });
 
       const recordsWrite = await RecordsWrite.create({
@@ -408,7 +408,7 @@ describe('RecordsWrite', () => {
       expect(recordsWrite.author).to.not.exist;
       expect(recordsWrite.signaturePayload).to.not.exist;
 
-      expect(() => recordsWrite.message).to.throw(DwnErrorCode.RecordsWriteMissingAuthorizationSigner);
+      expect(() => recordsWrite.message).to.throw(DwnErrorCode.RecordsWriteMissingSigner);
     });
   });
 });

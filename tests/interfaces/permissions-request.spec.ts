@@ -12,7 +12,7 @@ describe('PermissionsRequest', () => {
   describe('create', () => {
     it('creates a PermissionsRequest message', async () => {
       const { privateJwk } = await Secp256k1.generateKeyPair();
-      const authorizationSigner = new PrivateKeySigner({ privateJwk, keyId: 'did:jank:bob' });
+      const signer = new PrivateKeySigner({ privateJwk, keyId: 'did:jank:bob' });
 
       const { message } = await PermissionsRequest.create({
         description : 'drugs',
@@ -24,7 +24,7 @@ describe('PermissionsRequest', () => {
           method    : DwnMethodName.Write,
           protocol  : 'some-protocol',
         },
-        authorizationSigner
+        signer
       });
 
       expect(message.descriptor.grantedTo).to.equal('did:jank:alice');

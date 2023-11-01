@@ -15,7 +15,7 @@ import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.
 export type RecordsReadOptions = {
   filter: RecordsFilter;
   messageTimestamp?: string;
-  authorizationSigner?: Signer;
+  signer?: Signer;
   permissionsGrantId?: string;
   /**
    * Used when authorizing protocol records.
@@ -44,7 +44,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
    * @throws {DwnError} when a combination of required RecordsReadOptions are missing
    */
   public static async create(options: RecordsReadOptions): Promise<RecordsRead> {
-    const { filter, authorizationSigner, permissionsGrantId, protocolRole } = options;
+    const { filter, signer, permissionsGrantId, protocolRole } = options;
     const currentTime = getCurrentTimeInHighPrecision();
 
     const descriptor: RecordsReadDescriptor = {
@@ -58,8 +58,8 @@ export class RecordsRead extends Message<RecordsReadMessage> {
 
     // only generate the `authorization` property if signature input is given
     let authorization = undefined;
-    if (authorizationSigner !== undefined) {
-      authorization = await Message.createAuthorization(descriptor, authorizationSigner, { permissionsGrantId, protocolRole });
+    if (signer !== undefined) {
+      authorization = await Message.createAuthorization(descriptor, signer, { permissionsGrantId, protocolRole });
     }
     const message: RecordsReadMessage = { descriptor, authorization };
 

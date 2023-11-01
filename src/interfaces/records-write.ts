@@ -143,12 +143,12 @@ export class RecordsWrite {
   private _message: InternalRecordsWriteMessage;
   /**
    * Valid JSON message representing this RecordsWrite.
-   * @throws `DwnErrorCode.RecordsWriteMissingAuthorizationSigner` if the message is not signed yet.
+   * @throws `DwnErrorCode.RecordsWriteMissingSigner` if the message is not signed yet.
    */
   public get message(): RecordsWriteMessage {
     if (this._message.authorization === undefined) {
       throw new DwnError(
-        DwnErrorCode.RecordsWriteMissingAuthorizationSigner,
+        DwnErrorCode.RecordsWriteMissingSigner,
         'This RecordsWrite is not yet signed, JSON message cannot be generated from an incomplete state.'
       );
     }
