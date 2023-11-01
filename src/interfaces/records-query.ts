@@ -32,7 +32,7 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
   public static async parse(message: RecordsQueryMessage): Promise<RecordsQuery> {
     let authorizationPayload;
     if (message.authorization !== undefined) {
-      authorizationPayload = await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
+      authorizationPayload = await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     }
 
     if (authorizationPayload?.protocolRole !== undefined) {

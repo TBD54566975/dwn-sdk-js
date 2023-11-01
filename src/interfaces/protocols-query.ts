@@ -23,7 +23,7 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
 
   public static async parse(message: ProtocolsQueryMessage): Promise<ProtocolsQuery> {
     if (message.authorization !== undefined) {
-      await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
+      await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     }
 
     if (message.descriptor.filter !== undefined) {
@@ -79,12 +79,12 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
     // if author is the same as the target tenant, we can directly grant access
     if (this.author === tenant) {
       return;
-    } else if (this.author !== undefined && this.signerSignaturePayload!.permissionsGrantId) {
+    } else if (this.author !== undefined && this.signaturePayload!.permissionsGrantId) {
       await GrantAuthorization.authorizeGenericMessage(
         tenant,
         this,
         this.author,
-        this.signerSignaturePayload!.permissionsGrantId,
+        this.signaturePayload!.permissionsGrantId,
         messageStore
       );
     } else {

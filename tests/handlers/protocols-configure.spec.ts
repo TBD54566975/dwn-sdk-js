@@ -83,10 +83,10 @@ export function testProtocolsConfigureHandler(): void {
         const signer1 = Jws.createSigner(author);
         const signer2 = Jws.createSigner(extraRandomPersona);
 
-        const signerSignaturePayloadBytes = Encoder.objectToBytes(protocolsConfigure.signerSignaturePayload!);
+        const signaturePayloadBytes = Encoder.objectToBytes(protocolsConfigure.signaturePayload!);
 
-        const jwsBuilder = await GeneralJwsBuilder.create(signerSignaturePayloadBytes, [signer1, signer2]);
-        message.authorization = { authorSignature: jwsBuilder.getJws() };
+        const jwsBuilder = await GeneralJwsBuilder.create(signaturePayloadBytes, [signer1, signer2]);
+        message.authorization = { signature: jwsBuilder.getJws() };
 
         TestStubGenerator.stubDidResolver(didResolver, [author]);
 

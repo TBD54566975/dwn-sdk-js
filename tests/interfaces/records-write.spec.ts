@@ -223,7 +223,7 @@ describe('RecordsWrite', () => {
 
       const recordsWrite = await RecordsWrite.create(options);
 
-      expect(recordsWrite.message.authorization!.authorSignature.signatures[0].signature).to.equal(Encoder.bytesToBase64Url(hardCodedSignature));
+      expect(recordsWrite.message.authorization!.signature.signatures[0].signature).to.equal(Encoder.bytesToBase64Url(hardCodedSignature));
     });
 
     it('should throw if attempting to use `protocols` key derivation encryption scheme on non-protocol-based record', async () => {
@@ -324,7 +324,7 @@ describe('RecordsWrite', () => {
   });
 
   describe('parse()', () => {
-    it('should throw if signer signs over a delegated grant ID but the delegated grant is not given', async () => {
+    it('should throw if a delegate invokes a delegated grant (ID) but the delegated grant is not given', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const bob = await TestDataGenerator.generatePersona();
 
@@ -385,7 +385,7 @@ describe('RecordsWrite', () => {
       const recordsWrite = await RecordsWrite.create(options);
 
       expect(recordsWrite.author).to.not.exist;
-      expect(recordsWrite.signerSignaturePayload).to.not.exist;
+      expect(recordsWrite.signaturePayload).to.not.exist;
 
       const alice = await DidKeyResolver.generate();
       await expect(recordsWrite.signAsOwner(Jws.createSigner(alice))).to.rejectedWith(DwnErrorCode.RecordsWriteSignAsOwnerUnknownAuthor);
@@ -406,7 +406,7 @@ describe('RecordsWrite', () => {
       const recordsWrite = await RecordsWrite.create(options);
 
       expect(recordsWrite.author).to.not.exist;
-      expect(recordsWrite.signerSignaturePayload).to.not.exist;
+      expect(recordsWrite.signaturePayload).to.not.exist;
 
       expect(() => recordsWrite.message).to.throw(DwnErrorCode.RecordsWriteMissingAuthorizationSigner);
     });
