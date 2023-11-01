@@ -1,7 +1,6 @@
 <!-- @format -->
 # Decentralized Web Node (DWN) SDK <!-- omit in toc -->
 
-Code Coverage
 [![codecov](https://codecov.io/github/TBD54566975/dwn-sdk-js/graphs/badge.svg)](https://codecov.io/github/TBD54566975/dwn-sdk-js)
 
 - [Introduction](#introduction)
