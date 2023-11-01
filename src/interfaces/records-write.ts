@@ -167,12 +167,12 @@ export class RecordsWrite {
     return this._author;
   }
 
-  private _signerSignaturePayload: RecordsWriteSignaturePayload | undefined;
+  private _signaturePayload: RecordsWriteSignaturePayload | undefined;
   /**
-   * Decoded signer signature payload.
+   * Decoded payload of the signature of this message.
    */
-  public get signerSignaturePayload(): RecordsWriteSignaturePayload | undefined {
-    return this._signerSignaturePayload;
+  public get signaturePayload(): RecordsWriteSignaturePayload | undefined {
+    return this._signaturePayload;
   }
 
   private _owner: string | undefined;
@@ -205,7 +205,7 @@ export class RecordsWrite {
         this._author = Message.getSigner(message as GenericMessage);
       }
 
-      this._signerSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.authorSignature);
+      this._signaturePayload = Jws.decodePlainObjectPayload(message.authorization.signature);
 
       if (message.authorization.ownerSignature !== undefined) {
         this._owner = Jws.getSignerDid(message.authorization.ownerSignature.signatures[0]);
@@ -221,7 +221,7 @@ export class RecordsWrite {
   public static async parse(message: RecordsWriteMessage): Promise<RecordsWrite> {
     // asynchronous checks that are required by the constructor to initialize members properly
 
-    await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor, 'RecordsWriteSignaturePayload');
+    await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor, 'RecordsWriteSignaturePayload');
 
     if (message.authorization.ownerSignature !== undefined) {
       await validateMessageSignatureIntegrity(message.authorization.ownerSignature, message.descriptor);
@@ -422,7 +422,7 @@ export class RecordsWrite {
 
     // opportunity here to re-sign instead of remove
     delete this._message.authorization;
-    this._signerSignaturePayload = undefined;
+    this._signaturePayload = undefined;
     this._author = undefined;
   }
 
@@ -442,7 +442,7 @@ export class RecordsWrite {
     let authorDid;
     if (delegatedGrant !== undefined) {
       delegatedGrantId = await Message.getCid(delegatedGrant);
-      authorDid = Jws.getSignerDid(delegatedGrant.authorization.authorSignature.signatures[0]);
+      authorDid = Jws.getSignerDid(delegatedGrant.authorization.signature.signatures[0]);
     } else {
       authorDid = Jws.extractDid(signer.keyId);
     }
@@ -464,7 +464,7 @@ export class RecordsWrite {
       permissionsGrantId,
       protocolRole
     };
-    const signerSignature = await RecordsWrite.createSignerSignature(
+    const signature = await RecordsWrite.createSignerSignature(
       this._message.recordId,
       this._message.contextId,
       descriptorCid,
@@ -474,14 +474,14 @@ export class RecordsWrite {
       additionalPropertiesToSign
     );
 
-    this._message.authorization = { authorSignature: signerSignature };
+    this._message.authorization = { signature };
 
     if (delegatedGrant !== undefined) {
       this._message.authorization.authorDelegatedGrant = delegatedGrant;
     }
 
     // there is opportunity to optimize here as the payload is constructed within `createAuthorization(...)`
-    this._signerSignaturePayload = Jws.decodePlainObjectPayload(signerSignature);
+    this._signaturePayload = Jws.decodePlainObjectPayload(signature);
     this._author = authorDid;
   }
 
@@ -494,7 +494,7 @@ export class RecordsWrite {
     if (this._author === undefined) {
       throw new DwnError(
         DwnErrorCode.RecordsWriteSignAsOwnerUnknownAuthor,
-        'Unable to sign as owner if without signer signature because owner needs to sign over `recordId` which depends on author DID.');
+        'Unable to sign as owner if without message signature because owner needs to sign over `recordId` which depends on author DID.');
     }
 
     const descriptor = this._message.descriptor;
@@ -523,7 +523,7 @@ export class RecordsWrite {
     } else if (this.author === tenant) {
       // if author is the same as the target tenant, we can directly grant access
       return;
-    } else if (this.author !== undefined && this.signerSignaturePayload!.permissionsGrantId !== undefined) {
+    } else if (this.author !== undefined && this.signaturePayload!.permissionsGrantId !== undefined) {
       await RecordsGrantAuthorization.authorizeWrite(tenant, this, this.author, messageStore);
     } else if (this.message.descriptor.protocol !== undefined) {
       await ProtocolAuthorization.authorizeWrite(tenant, this, messageStore);
@@ -558,25 +558,25 @@ export class RecordsWrite {
       }
     }
 
-    // NOTE: validateMessageSignatureIntegrity() call earlier enforces the presence of `authorization` and thus `authorSignature` in RecordsWrite
-    const signerSignaturePayload = this.signerSignaturePayload!;
+    // NOTE: validateMessageSignatureIntegrity() call earlier enforces the presence of `authorization` and thus `signature` in RecordsWrite
+    const signaturePayload = this.signaturePayload!;
 
-    // make sure the `recordId` in message is the same as the `recordId` in signer signature payload
-    if (this.message.recordId !== signerSignaturePayload.recordId) {
+    // make sure the `recordId` in message is the same as the `recordId` in the payload of the message signature
+    if (this.message.recordId !== signaturePayload.recordId) {
       throw new Error(
-        `recordId in message ${this.message.recordId} does not match recordId in authorization: ${signerSignaturePayload.recordId}`
+        `recordId in message ${this.message.recordId} does not match recordId in authorization: ${signaturePayload.recordId}`
       );
     }
 
-    // if `contextId` is given in message, make sure the same `contextId` is in the signer signature payload
-    if (this.message.contextId !== signerSignaturePayload.contextId) {
+    // if `contextId` is given in message, make sure the same `contextId` is in the the payload of the message signature
+    if (this.message.contextId !== signaturePayload.contextId) {
       throw new Error(
-        `contextId in message ${this.message.contextId} does not match contextId in authorization: ${signerSignaturePayload.contextId}`
+        `contextId in message ${this.message.contextId} does not match contextId in authorization: ${signaturePayload.contextId}`
       );
     }
 
-    // `deletedGrantId` in the signer signature payload and `authorDelegatedGrant` in `authorization` must both exist or be both undefined
-    const delegatedGrantIdDefined = signerSignaturePayload.delegatedGrantId !== undefined;
+    // `deletedGrantId` in the payload of the message signature and `authorDelegatedGrant` in `authorization` must both exist or be both undefined
+    const delegatedGrantIdDefined = signaturePayload.delegatedGrantId !== undefined;
     const authorDelegatedGrantDefined = this.message.authorization!.authorDelegatedGrant !== undefined;
     if (delegatedGrantIdDefined !== authorDelegatedGrantDefined) {
       throw new DwnError(
@@ -598,10 +598,10 @@ export class RecordsWrite {
       }
     }
 
-    // if `attestation` is given in message, make sure the correct `attestationCid` is in the signer signature payload
-    if (signerSignaturePayload.attestationCid !== undefined) {
+    // if `attestation` is given in message, make sure the correct `attestationCid` is in the payload of the message signature
+    if (signaturePayload.attestationCid !== undefined) {
       const expectedAttestationCid = await Cid.computeCid(this.message.attestation);
-      const actualAttestationCid = signerSignaturePayload.attestationCid;
+      const actualAttestationCid = signaturePayload.attestationCid;
       if (actualAttestationCid !== expectedAttestationCid) {
         throw new Error(
           `CID ${expectedAttestationCid} of attestation property in message does not match attestationCid in authorization: ${actualAttestationCid}`
@@ -609,10 +609,10 @@ export class RecordsWrite {
       }
     }
 
-    // if `encryption` is given in message, make sure the correct `encryptionCid` is in the signer signature payload
-    if (signerSignaturePayload.encryptionCid !== undefined) {
+    // if `encryption` is given in message, make sure the correct `encryptionCid` is in the payload of the message signature
+    if (signaturePayload.encryptionCid !== undefined) {
       const expectedEncryptionCid = await Cid.computeCid(this.message.encryption);
-      const actualEncryptionCid = signerSignaturePayload.encryptionCid;
+      const actualEncryptionCid = signaturePayload.encryptionCid;
       if (actualEncryptionCid !== expectedEncryptionCid) {
         throw new DwnError(
           DwnErrorCode.RecordsWriteValidateIntegrityEncryptionCidMismatch,

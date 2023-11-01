@@ -28,7 +28,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
 
   public static async parse(message: RecordsReadMessage): Promise<RecordsRead> {
     if (message.authorization !== undefined) {
-      await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
+      await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     }
     validateTimestamp(message.descriptor.messageTimestamp);
 
@@ -80,7 +80,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
     } else if (this.author !== undefined && this.author === descriptor.recipient) {
       // The recipient of a message may always read it
       return;
-    } else if (this.author !== undefined && this.signerSignaturePayload!.permissionsGrantId !== undefined) {
+    } else if (this.author !== undefined && this.signaturePayload!.permissionsGrantId !== undefined) {
       await RecordsGrantAuthorization.authorizeRead(tenant, this, newestRecordsWrite, this.author, messageStore);
     } else if (descriptor.protocol !== undefined) {
       await ProtocolAuthorization.authorizeRead(tenant, this, newestRecordsWrite, messageStore);

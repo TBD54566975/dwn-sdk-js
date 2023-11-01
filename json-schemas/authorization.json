@@ -4,7 +4,7 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "authorSignature": {
+    "signature": {
       "$ref": "https://identity.foundation/dwn/json-schemas/general-jws.json"
     }
   }

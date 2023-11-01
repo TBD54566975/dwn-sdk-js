@@ -767,7 +767,7 @@ export class TestDataGenerator {
    */
   public static generateAuthorization(): AuthorizationModel {
     return {
-      authorSignature: TestDataGenerator.generateAuthorizationSignature()
+      signature: TestDataGenerator.generateAuthorizationSignature()
     };
   }
 
