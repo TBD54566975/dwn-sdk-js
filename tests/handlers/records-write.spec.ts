@@ -40,8 +40,8 @@ import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
+import { Time } from '../../src/utils/time.js';
 
-import { createOffsetTimestamp, getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { DwnConstant, KeyDerivationScheme, PermissionsGrant, RecordsDelete } from '../../src/index.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message.js';
 import { Encryption, EncryptionAlgorithm } from '../../src/utils/encryption.js';
@@ -156,7 +156,7 @@ export function testRecordsWriteHandler(): void {
         expect(originatingMessageWriteReply.status.code).to.equal(202);
 
         // generate two new RecordsWrite messages with the same `messageTimestamp` value
-        const dateModified = getCurrentTimeInHighPrecision();
+        const dateModified = Time.getCurrentTimestamp();
         const recordsWrite1 = await TestDataGenerator.generateFromRecordsWrite({
           author,
           existingWrite    : originatingMessageData.recordsWrite,
@@ -243,7 +243,7 @@ export function testRecordsWriteHandler(): void {
           author      : initialWriteData.author,
           recordId,
           schema,
-          dateCreated : getCurrentTimeInHighPrecision(), // should not be allowed to be modified
+          dateCreated : Time.getCurrentTimestamp(), // should not be allowed to be modified
           dataFormat  : initialWriteData.message.descriptor.dataFormat
         });
 
@@ -505,7 +505,7 @@ export function testRecordsWriteHandler(): void {
 
           const deviceXGrant = await PermissionsGrant.create({
             delegated   : true, // this is a delegated grant
-            dateExpires : createOffsetTimestamp({ seconds: 100 }),
+            dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
             description : 'Allow to write to message protocol',
             grantedBy   : alice.did,
             grantedTo   : deviceX.did,
@@ -516,7 +516,7 @@ export function testRecordsWriteHandler(): void {
 
           const deviceYGrant = await PermissionsGrant.create({
             delegated   : true, // this is a delegated grant
-            dateExpires : createOffsetTimestamp({ seconds: 100 }),
+            dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
             description : 'Allow to write to message protocol',
             grantedBy   : alice.did,
             grantedTo   : deviceY.did,
@@ -654,7 +654,7 @@ export function testRecordsWriteHandler(): void {
 
           const grantToBob = await PermissionsGrant.create({
             delegated   : true, // this is a delegated grant
-            dateExpires : createOffsetTimestamp({ seconds: 100 }),
+            dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
             description : 'Allow to Bob write as me in chat protocol',
             grantedBy   : alice.did,
             grantedTo   : bob.did,
@@ -1205,7 +1205,7 @@ export function testRecordsWriteHandler(): void {
         it('should return 400 if `dateCreated` and `messageTimestamp` are not the same in an initial write', async () => {
           const { author, message, dataStream } = await TestDataGenerator.generateRecordsWrite({
             dateCreated      : '2023-01-10T10:20:30.405060Z',
-            messageTimestamp : getCurrentTimeInHighPrecision() // this always generate a different timestamp
+            messageTimestamp : Time.getCurrentTimestamp() // this always generate a different timestamp
           });
           const tenant = author.did;
 

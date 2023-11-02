@@ -5,10 +5,10 @@ import type { ProtocolsConfigureMessage } from '../../src/index.js';
 
 import dexProtocolDefinition from '../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import { DwnErrorCode } from '../../src/index.js';
-import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { Jws } from '../../src/utils/jws.js';
 import { ProtocolsConfigure } from '../../src/interfaces/protocols-configure.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { Time } from '../../src/utils/time.js';
 
 chai.use(chaiAsPromised);
 
@@ -17,7 +17,7 @@ describe('ProtocolsConfigure', () => {
     it('should use `messageTimestamp` as is if given', async () => {
       const alice = await TestDataGenerator.generatePersona();
 
-      const currentTime = getCurrentTimeInHighPrecision();
+      const currentTime = Time.getCurrentTimestamp();
       const definition = { ...dexProtocolDefinition };
       const protocolsConfigure = await ProtocolsConfigure.create({
         messageTimestamp : currentTime,

@@ -2,14 +2,14 @@ import { expect } from 'chai';
 
 import type { CreateFromPermissionsRequestOverrides } from '../../src/interfaces/permissions-grant.js';
 import type { PermissionScope } from '../../src/index.js';
+import type { RecordsPermissionScope } from '../../src/types/permissions-types.js';
 
-import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { PermissionsConditionPublication } from '../../src/types/permissions-types.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
-import type { RecordsPermissionScope } from '../../src/types/permissions-types.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { Time } from '../../src/utils/time.js';
 import { DidKeyResolver, DwnErrorCode, Jws, PrivateKeySigner } from '../../src/index.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message.js';
 
@@ -20,7 +20,7 @@ describe('PermissionsGrant', () => {
       const signer = new PrivateKeySigner({ privateJwk, keyId: 'did:jank:bob' });
 
       const { message } = await PermissionsGrant.create({
-        dateExpires : getCurrentTimeInHighPrecision(),
+        dateExpires : Time.getCurrentTimestamp(),
         description : 'drugs',
         grantedBy   : 'did:jank:bob',
         grantedTo   : 'did:jank:alice',
@@ -48,7 +48,7 @@ describe('PermissionsGrant', () => {
         };
 
         const { message } = await PermissionsGrant.create({
-          dateExpires : getCurrentTimeInHighPrecision(),
+          dateExpires : Time.getCurrentTimestamp(),
           description : 'schema normalization test',
           grantedBy   : 'did:jank:bob',
           grantedTo   : 'did:jank:alice',
@@ -72,7 +72,7 @@ describe('PermissionsGrant', () => {
         };
 
         const { message } = await PermissionsGrant.create({
-          dateExpires : getCurrentTimeInHighPrecision(),
+          dateExpires : Time.getCurrentTimestamp(),
           description : 'protocol normalization test',
           grantedBy   : 'did:jank:bob',
           grantedTo   : 'did:jank:alice',
@@ -92,7 +92,7 @@ describe('PermissionsGrant', () => {
         const signer = new PrivateKeySigner({ privateJwk, keyId: 'did:jank:bob' });
 
         const permissionsGrantOptions = {
-          dateExpires : getCurrentTimeInHighPrecision(),
+          dateExpires : Time.getCurrentTimestamp(),
           grantedBy   : 'did:jank:bob',
           grantedTo   : 'did:jank:alice',
           grantedFor  : 'did:jank:bob',
@@ -135,7 +135,7 @@ describe('PermissionsGrant', () => {
         const signer = new PrivateKeySigner({ privateJwk, keyId: 'did:jank:bob' });
 
         const permissionsGrantOptions = {
-          dateExpires : getCurrentTimeInHighPrecision(),
+          dateExpires : Time.getCurrentTimestamp(),
           grantedBy   : 'did:jank:bob',
           grantedTo   : 'did:jank:alice',
           grantedFor  : 'did:jank:bob',
@@ -196,7 +196,7 @@ describe('PermissionsGrant', () => {
       const { permissionsRequest } = await TestDataGenerator.generatePermissionsRequest();
 
       const description = 'friendship';
-      const dateExpires = getCurrentTimeInHighPrecision();
+      const dateExpires = Time.getCurrentTimestamp();
       const overrides: CreateFromPermissionsRequestOverrides = {
         dateExpires,
         description,
@@ -230,7 +230,7 @@ describe('PermissionsGrant', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const { message } = await PermissionsGrant.create({
-        dateExpires : getCurrentTimeInHighPrecision(),
+        dateExpires : Time.getCurrentTimestamp(),
         grantedBy   : alice.did,
         grantedTo   : 'did:example:bob',
         grantedFor  : alice.did,

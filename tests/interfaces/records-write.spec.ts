@@ -9,8 +9,8 @@ import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { Time } from '../../src/utils/time.js';
 
-import { createOffsetTimestamp, getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { DidKeyResolver, DwnInterfaceName, DwnMethodName, Encoder, Jws, KeyDerivationScheme, PermissionsGrant } from '../../src/index.js';
 
 
@@ -287,7 +287,7 @@ describe('RecordsWrite', () => {
       };
       const grantToBob = await PermissionsGrant.create({
         delegated   : true, // this is a delegated grant
-        dateExpires : createOffsetTimestamp({ seconds: 100 }),
+        dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
         description : 'Allow to Bob write as me in chat protocol',
         grantedBy   : alice.did,
         grantedTo   : bob.did,
@@ -314,7 +314,7 @@ describe('RecordsWrite', () => {
 
       const write = await RecordsWrite.createFrom({
         recordsWriteMessage : recordsWrite.message,
-        datePublished       : getCurrentTimeInHighPrecision(),
+        datePublished       : Time.getCurrentTimestamp(),
         signer              : Jws.createSigner(author)
       });
 
@@ -333,7 +333,7 @@ describe('RecordsWrite', () => {
       };
       const grantToBob = await PermissionsGrant.create({
         delegated   : true, // this is a delegated grant
-        dateExpires : createOffsetTimestamp({ seconds: 100 }),
+        dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
         description : 'Allow to Bob write as me in chat protocol',
         grantedBy   : alice.did,
         grantedTo   : bob.did,

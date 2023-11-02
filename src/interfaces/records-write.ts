@@ -26,10 +26,10 @@ import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Secp256k1 } from '../utils/secp256k1.js';
+import { Time } from '../utils/time.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
-import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
 export type RecordsWriteOptions = {
@@ -273,7 +273,7 @@ export class RecordsWrite {
     const dataCid = options.dataCid ?? await Cid.computeDagPbCidFromBytes(options.data!);
     const dataSize = options.dataSize ?? options.data!.length;
 
-    const currentTime = getCurrentTimeInHighPrecision();
+    const currentTime = Time.getCurrentTimestamp();
 
     const descriptor: RecordsWriteDescriptor = {
       interface        : DwnInterfaceName.Records,
@@ -356,7 +356,7 @@ export class RecordsWrite {
    */
   public static async createFrom(options: CreateFromOptions): Promise<RecordsWrite> {
     const sourceMessage = options.recordsWriteMessage;
-    const currentTime = getCurrentTimeInHighPrecision();
+    const currentTime = Time.getCurrentTimestamp();
 
     // inherit published value from parent if neither published nor datePublished is specified
     const published = options.published ?? (options.datePublished ? true : sourceMessage.descriptor.published);
@@ -634,10 +634,10 @@ export class RecordsWrite {
       validateSchemaUrlNormalized(this.message.descriptor.schema);
     }
 
-    validateTimestamp(this.message.descriptor.messageTimestamp);
-    validateTimestamp(this.message.descriptor.dateCreated);
+    Time.validateTimestamp(this.message.descriptor.messageTimestamp);
+    Time.validateTimestamp(this.message.descriptor.dateCreated);
     if (this.message.descriptor.datePublished) {
-      validateTimestamp(this.message.descriptor.datePublished);
+      Time.validateTimestamp(this.message.descriptor.datePublished);
     }
   }
 

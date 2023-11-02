@@ -3,9 +3,9 @@ import type { PermissionConditions, PermissionScope } from '../types/permissions
 import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types/permissions-types.js';
 
 import { removeUndefinedProperties } from '../utils/object.js';
+import { Time } from '../utils/time.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
-import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.js';
 
 export type PermissionsRequestOptions = {
   messageTimestamp?: string;
@@ -22,7 +22,7 @@ export class PermissionsRequest extends Message<PermissionsRequestMessage> {
 
   public static async parse(message: PermissionsRequestMessage): Promise<PermissionsRequest> {
     await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
-    validateTimestamp(message.descriptor.messageTimestamp);
+    Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     return new PermissionsRequest(message);
   }
@@ -31,7 +31,7 @@ export class PermissionsRequest extends Message<PermissionsRequestMessage> {
     const descriptor: PermissionsRequestDescriptor = {
       interface        : DwnInterfaceName.Permissions,
       method           : DwnMethodName.Request,
-      messageTimestamp : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
       description      : options.description,
       grantedTo        : options.grantedTo,
       grantedBy        : options.grantedBy,
