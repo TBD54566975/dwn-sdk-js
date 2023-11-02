@@ -52,8 +52,8 @@ export async function authenticate(authorizationModel: AuthorizationModel | unde
     throw new DwnError(DwnErrorCode.AuthenticateJwsMissing, 'Missing JWS.');
   }
 
-  const authorSignatureVerifier = new GeneralJwsVerifier(authorizationModel.authorSignature);
-  await authorSignatureVerifier.verify(didResolver);
+  const signatureVerifier = new GeneralJwsVerifier(authorizationModel.signature);
+  await signatureVerifier.verify(didResolver);
 
   if (authorizationModel.ownerSignature !== undefined) {
     const ownerSignatureVerifier = new GeneralJwsVerifier(authorizationModel.ownerSignature);
@@ -61,10 +61,10 @@ export async function authenticate(authorizationModel: AuthorizationModel | unde
   }
 
   if (authorizationModel.authorDelegatedGrant !== undefined) {
-    // verify the signature of the author delegated grant
+    // verify the signature of the grantor of the delegated grant
     const authorDelegatedGrant = await PermissionsGrant.parse(authorizationModel.authorDelegatedGrant);
-    const grantedByAuthorSignatureVerifier = new GeneralJwsVerifier(authorDelegatedGrant.message.authorization.authorSignature);
-    await grantedByAuthorSignatureVerifier.verify(didResolver);
+    const grantedBySignatureVerifier = new GeneralJwsVerifier(authorDelegatedGrant.message.authorization.signature);
+    await grantedBySignatureVerifier.verify(didResolver);
   }
 }
 

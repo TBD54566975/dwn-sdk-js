@@ -9,7 +9,7 @@ import { DwnError, DwnErrorCode } from '../index.js';
 
 export type MessagesGetOptions = {
   messageCids: string[];
-  authorizationSigner: Signer;
+  signer: Signer;
   messageTimestamp?: string;
 };
 
@@ -18,7 +18,7 @@ export class MessagesGet extends Message<MessagesGetMessage> {
     Message.validateJsonSchema(message);
     this.validateMessageCids(message.descriptor.messageCids);
 
-    await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
+    await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     validateTimestamp(message.descriptor.messageTimestamp);
 
     return new MessagesGet(message);
@@ -32,7 +32,7 @@ export class MessagesGet extends Message<MessagesGetMessage> {
       messageTimestamp : options?.messageTimestamp ?? getCurrentTimeInHighPrecision(),
     };
 
-    const authorization = await Message.createAuthorizationAsAuthor(descriptor, options.authorizationSigner);
+    const authorization = await Message.createAuthorization(descriptor, options.signer);
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

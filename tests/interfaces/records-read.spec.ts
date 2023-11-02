@@ -21,8 +21,8 @@ describe('RecordsRead', () => {
         filter: {
           recordId: 'anything',
         },
-        authorizationSigner : Jws.createSigner(alice),
-        messageTimestamp    : currentTime
+        signer           : Jws.createSigner(alice),
+        messageTimestamp : currentTime
       });
 
       expect(recordsRead.message.descriptor.messageTimestamp).to.equal(currentTime);
@@ -32,12 +32,12 @@ describe('RecordsRead', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {
-        recipient           : alice.did,
-        data                : TestDataGenerator.randomBytes(10),
-        dataFormat          : 'application/json',
-        authorizationSigner : Jws.createSigner(alice),
-        filter              : { protocol: 'example.com/' },
-        definition          : dexProtocolDefinition
+        recipient  : alice.did,
+        data       : TestDataGenerator.randomBytes(10),
+        dataFormat : 'application/json',
+        signer     : Jws.createSigner(alice),
+        filter     : { protocol: 'example.com/' },
+        definition : dexProtocolDefinition
       };
       const recordsQuery = await RecordsRead.create(options);
 
@@ -50,12 +50,12 @@ describe('RecordsRead', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {
-        recipient           : alice.did,
-        data                : TestDataGenerator.randomBytes(10),
-        dataFormat          : 'application/json',
-        authorizationSigner : Jws.createSigner(alice),
-        filter              : { schema: 'example.com/' },
-        definition          : dexProtocolDefinition
+        recipient  : alice.did,
+        data       : TestDataGenerator.randomBytes(10),
+        dataFormat : 'application/json',
+        signer     : Jws.createSigner(alice),
+        filter     : { schema: 'example.com/' },
+        definition : dexProtocolDefinition
       };
       const recordsQuery = await RecordsRead.create(options);
 

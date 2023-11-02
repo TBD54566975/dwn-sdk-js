@@ -21,7 +21,7 @@ export class RecordsGrantAuthorization {
       tenant,
       incomingMessage,
       author,
-      incomingMessage.signerSignaturePayload!.permissionsGrantId!,
+      incomingMessage.signaturePayload!.permissionsGrantId!,
       messageStore
     );
 
@@ -44,7 +44,7 @@ export class RecordsGrantAuthorization {
       tenant,
       incomingMessage,
       author,
-      incomingMessage.signerSignaturePayload!.permissionsGrantId!,
+      incomingMessage.signaturePayload!.permissionsGrantId!,
       messageStore
     );
 

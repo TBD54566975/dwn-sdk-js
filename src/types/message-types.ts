@@ -13,10 +13,20 @@ export type GenericMessage = {
  * The data model for the `authorization` property in a DWN message.
  */
 export type AuthorizationModel = {
-  // NOTE: deferring the rename to signerSignature to a follow up PR to not pollute this PR with further distractions
-  // because it touches a lot of places!
-  authorSignature: GeneralJws;
+  /**
+   * The signature of the message signer.
+   * NOTE: the signer is not necessarily the logical author of the message (e.g. signer is a delegate).
+   */
+  signature: GeneralJws;
+
+  /**
+   * The optional signature of a DWN owner wishing store a message authored by another entity.
+   */
   ownerSignature?: GeneralJws;
+
+  /**
+   * The delegated grant invoked by a delegate, if the message is signed by a delegate.
+   */
   authorDelegatedGrant?: DelegatedGrantMessage;
 };
 

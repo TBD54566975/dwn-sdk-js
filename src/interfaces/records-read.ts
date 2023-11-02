@@ -16,7 +16,7 @@ import { DwnError, DwnErrorCode } from '../index.js';
 export type RecordsReadOptions = {
   filter: RecordsFilter;
   messageTimestamp?: string;
-  authorizationSigner?: Signer;
+  signer?: Signer;
   permissionsGrantId?: string;
   /**
    * Used when authorizing protocol records.
@@ -29,7 +29,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
 
   public static async parse(message: RecordsReadMessage): Promise<RecordsRead> {
     if (message.authorization !== undefined) {
-      await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
+      await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     }
     validateTimestamp(message.descriptor.messageTimestamp);
 
@@ -45,7 +45,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
    * @throws {DwnError} when a combination of required RecordsReadOptions are missing
    */
   public static async create(options: RecordsReadOptions): Promise<RecordsRead> {
-    const { filter, authorizationSigner, permissionsGrantId, protocolRole } = options;
+    const { filter, signer, permissionsGrantId, protocolRole } = options;
     const currentTime = getCurrentTimeInHighPrecision();
 
     const descriptor: RecordsReadDescriptor = {
@@ -59,8 +59,8 @@ export class RecordsRead extends Message<RecordsReadMessage> {
 
     // only generate the `authorization` property if signature input is given
     let authorization = undefined;
-    if (authorizationSigner !== undefined) {
-      authorization = await Message.createAuthorizationAsAuthor(descriptor, authorizationSigner, { permissionsGrantId, protocolRole });
+    if (signer !== undefined) {
+      authorization = await Message.createAuthorization(descriptor, signer, { permissionsGrantId, protocolRole });
     }
     const message: RecordsReadMessage = { descriptor, authorization };
 
@@ -81,7 +81,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
     } else if (this.author !== undefined && this.author === descriptor.recipient) {
       // The recipient of a message may always read it
       return;
-    } else if (this.author !== undefined && this.signerSignaturePayload!.permissionsGrantId !== undefined) {
+    } else if (this.author !== undefined && this.signaturePayload!.permissionsGrantId !== undefined) {
       await RecordsGrantAuthorization.authorizeRead(tenant, this, newestRecordsWrite, this.author, messageStore);
     } else if (descriptor.protocol !== undefined) {
       await ProtocolAuthorization.authorizeRead(tenant, this, newestRecordsWrite, messageStore);

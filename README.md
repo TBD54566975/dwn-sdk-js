@@ -1,53 +1,6 @@
 <!-- @format -->
-# :tada: **We're participating in Hacktoberfest 2023!** :tada:
-
-Want to contribute during Hacktoberfest? We'd love to have you! Dive in, and your contributions could earn you some exclusive rewards.
-
-The **first 20 contributors** to successfully merge a PR will secure exclusive swag of their choosing from our [TBD shop](https://www.tbd.shop/)— we're in the midst of uploading new swag! Keep an eye on our [leaderboard issue](https://github.com/TBD54566975/developer.tbd.website/issues/721) to see where you rank! :star:
-
-🚀 **Gear up for a month packed with exciting events!** :tada:
-
-- Mark your calendars for our **Hacktoberfest Launch event on [October 2nd on Discord](https://discord.com/events/937858703112155166/1154126364484583465)**.
-- Stay in the loop - keep an eye on our Discord calendar and pop into our [events-and-updates channel](https://discord.com/channels/937858703112155166/1151972299814215701) regularly! You won't want to miss out!
-
-## **Hacktoberfest Guidelines:**
-
-- Ensure your contribution is meaningful and fits within the scope of our project, by reading an open issue in its entirety before diving in.
-- Check out our `good-first-issue` and `hacktoberfest` labels in the issues section.
-- Join our Discord: Connect with the community, stay up to date with Hacktoberfest events/prizes, and discuss Hacktoberfest contributions on our Discord server. Click [to Join our Discord channel](https://discord.com/channels/937858703112155166/1151216855957123104).
-- Always be respectful and follow our [code of conduct](https://developer.tbd.website/open-source/code-of-conduct).
-- If in doubt about what to contribute, reach out to maintainers by raising a question in the relevant issue or specified discord channel.
-- **Other participating TBD Repos:**
-  - [developer.tbd.website](https://github.com/TBD54566975/developer.tbd.website/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
-  - [DWN-Server](https://github.com/TBD54566975/dwn-server/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
-  - [Web5-js](https://github.com/TBD54566975/web5-js/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
-
-## **What is Hacktoberfest?**
-
-Celebrate the 10th anniversary of Hacktoberfest this year! Hosted annually every October, Hacktoberfest is a month-long event sponsored by DigitalOcean, GitHub, and various other partners, championing open-source contributions. 
-
-> :star: If you're new to Hacktoberfest, you can learn more and register to participate [on the Hacktoberfest website](https://hacktoberfest.com/participation/). Registration is from **September 26th- October 31st**.
-
-## **New Contributor? Welcome!** :star2:
-
-We wholeheartedly embrace new contributors to our community. Remember, every expert was once a beginner, and we understand the initial hurdles you might feel. Here’s how you can dive in:
-
-- **Join Our Discord Channel**:
-  - Once inside, check out the [`Hacktoberfest`](https://discord.com/channels/937858703112155166/1151216855957123104) section. This has all you need: resources, guidelines, and a checklist to help you make your first hacktoberfest contribution.
-- **Feeling Anxious or Unsure? Find a Buddy!**:
-  - Head over to our [`hack-together`](https://discord.com/channels/937858703112155166/1151519449837482044) section on Discord. It's perfectly normal to feel a tad overwhelmed or even the impostor syndrome on your first go. In this space, you can partner with someone to collaborate, share thoughts, or jointly tackle an issue. You know what they say, two heads are better than one!
-- **Dive In**:
-  - Skim through our [open issues](https://github.com/TBD54566975/developer.tbd.website/edit/main/README.md#hacktoberfest-guidelines) and pick one you vibe with. And if you're on the fence about anything, don't hesitate to ask. Your new community is here to assist and walk with you every step of the way.
-  - Mark your calendars for our **Hacktoberfest Launch event on [October 2nd](https://discord.com/events/937858703112155166/1154126364484583465)**.
-  - Stay in the loop - keep an eye on our Discord calendar and pop into our [#events-and-updates channel](https://discord.com/channels/937858703112155166/1151972299814215701) regularly! You won't want to miss out!
-
-Your contribution, be it big or minuscule, carries immense value. We eagerly await to see the waves you'll make in our community! 🚀
-
-Here's to a thrilling Hacktoberfest voyage with us! :tada:
-
 # Decentralized Web Node (DWN) SDK <!-- omit in toc -->
 
-Code Coverage
 [![codecov](https://codecov.io/github/TBD54566975/dwn-sdk-js/graphs/badge.svg)](https://codecov.io/github/TBD54566975/dwn-sdk-js)
 
 - [Introduction](#introduction)
@@ -145,8 +98,7 @@ DWN SDK includes a polyfilled distribution that can imported in a `module` scrip
       dataFormat: 'application/json',
       published: true,
       schema: 'yeeter/post',  // Specify a schema for the data.
-      authorizationSigner: Jws.createSigner(didKey) // Sign the data using the generated DID key.
-    });
+      signer: Jws.createSigner(didKey) // Sign the data using the generated DID key.
     });
 
     // Create a readable stream from the data to be stored.
@@ -254,7 +206,7 @@ const recordsWrite = await RecordsWrite.create({
   dataFormat: 'application/json',
   published: true, // Mark the data as published.
   schema: 'yeeter/post', // Specify a schema for the data.
-  authorizationSigner: Jws.createSigner(didKey) // Sign the data using the generated DID key.
+  signer: Jws.createSigner(didKey) // Sign the data using the generated DID key.
 });
 
 // Create a readable stream from the data to be stored.
@@ -318,12 +270,12 @@ class CustomSigner implements Signer {
 }
 
 // Create an instance of the custom signer for authorization.
-const authorizationSigner = new CustomSigner();
+const signer = new CustomSigner();
 
 // Define options for creating a RecordsWrite message.
 const options: RecordsWriteOptions = {
   ...
-  authorizationSigner // Use the custom signer for authorization.
+  signer // Use the custom signer for authorization.
 };
 
 // Create a RecordsWrite message with the specified options.

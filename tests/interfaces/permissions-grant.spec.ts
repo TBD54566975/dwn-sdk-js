@@ -17,7 +17,7 @@ describe('PermissionsGrant', () => {
   describe('create()', async () => {
     it('creates a PermissionsGrant message', async () => {
       const { privateJwk } = await Secp256k1.generateKeyPair();
-      const authorizationSigner = new PrivateKeySigner({ privateJwk, keyId: 'did:jank:bob' });
+      const signer = new PrivateKeySigner({ privateJwk, keyId: 'did:jank:bob' });
 
       const { message } = await PermissionsGrant.create({
         dateExpires : getCurrentTimeInHighPrecision(),
@@ -26,7 +26,7 @@ describe('PermissionsGrant', () => {
         grantedTo   : 'did:jank:alice',
         grantedFor  : 'did:jank:bob',
         scope       : { interface: DwnInterfaceName.Records, method: DwnMethodName.Write },
-        authorizationSigner
+        signer
       });
 
       expect(message.descriptor.grantedTo).to.equal('did:jank:alice');
@@ -39,7 +39,7 @@ describe('PermissionsGrant', () => {
     describe('scope property normalizations', async () => {
       it('ensures that `schema` is normalized', async () => {
         const { privateJwk } = await Secp256k1.generateKeyPair();
-        const authorizationSigner = new PrivateKeySigner({ privateJwk, keyId: 'did:jank:bob' });
+        const signer = new PrivateKeySigner({ privateJwk, keyId: 'did:jank:bob' });
 
         const scope: PermissionScope = {
           interface : DwnInterfaceName.Records,
@@ -54,7 +54,7 @@ describe('PermissionsGrant', () => {
           grantedTo   : 'did:jank:alice',
           grantedFor  : 'did:jank:bob',
           scope       : scope,
-          authorizationSigner
+          signer
         });
 
 
@@ -63,7 +63,7 @@ describe('PermissionsGrant', () => {
 
       it('ensures that `protocol` is normalized', async () => {
         const { privateJwk } = await Secp256k1.generateKeyPair();
-        const authorizationSigner = new PrivateKeySigner({ privateJwk, keyId: 'did:jank:bob' });
+        const signer = new PrivateKeySigner({ privateJwk, keyId: 'did:jank:bob' });
 
         const scope: PermissionScope = {
           interface : DwnInterfaceName.Records,
@@ -78,7 +78,7 @@ describe('PermissionsGrant', () => {
           grantedTo   : 'did:jank:alice',
           grantedFor  : 'did:jank:bob',
           scope       : scope,
-          authorizationSigner
+          signer
         });
 
 
@@ -89,14 +89,14 @@ describe('PermissionsGrant', () => {
     describe('scope validations', () => {
       it('ensures that `schema` and protocol related fields `protocol`, `contextId` or `protocolPath`', async () => {
         const { privateJwk } = await Secp256k1.generateKeyPair();
-        const authorizationSigner = new PrivateKeySigner({ privateJwk, keyId: 'did:jank:bob' });
+        const signer = new PrivateKeySigner({ privateJwk, keyId: 'did:jank:bob' });
 
         const permissionsGrantOptions = {
           dateExpires : getCurrentTimeInHighPrecision(),
           grantedBy   : 'did:jank:bob',
           grantedTo   : 'did:jank:alice',
           grantedFor  : 'did:jank:bob',
-          authorizationSigner
+          signer
         };
 
         // Reject when `schema` and `protocol` are both present
@@ -132,14 +132,14 @@ describe('PermissionsGrant', () => {
 
       it('ensures that `contextId` and `protocolPath` are not both present', async () => {
         const { privateJwk } = await Secp256k1.generateKeyPair();
-        const authorizationSigner = new PrivateKeySigner({ privateJwk, keyId: 'did:jank:bob' });
+        const signer = new PrivateKeySigner({ privateJwk, keyId: 'did:jank:bob' });
 
         const permissionsGrantOptions = {
           dateExpires : getCurrentTimeInHighPrecision(),
           grantedBy   : 'did:jank:bob',
           grantedTo   : 'did:jank:alice',
           grantedFor  : 'did:jank:bob',
-          authorizationSigner
+          signer
         };
 
         // Allow when `context to be present ` and `protocol` are both present
@@ -162,7 +162,7 @@ describe('PermissionsGrant', () => {
       const bob = await TestDataGenerator.generatePersona();
 
       const { privateJwk } = await Secp256k1.generateKeyPair();
-      const authorizationSigner = new PrivateKeySigner({ privateJwk, keyId: alice.did });
+      const signer = new PrivateKeySigner({ privateJwk, keyId: alice.did });
 
       const { permissionsRequest } = await TestDataGenerator.generatePermissionsRequest({
         author      : bob,
@@ -173,7 +173,7 @@ describe('PermissionsGrant', () => {
       });
 
       const dateExpires = Temporal.Now.instant().add({ hours: 24 }).toString({ smallestUnit: 'microseconds' });
-      const permissionsGrant = await PermissionsGrant.createFromPermissionsRequest(permissionsRequest, authorizationSigner, { dateExpires });
+      const permissionsGrant = await PermissionsGrant.createFromPermissionsRequest(permissionsRequest, signer, { dateExpires });
 
       expect(permissionsGrant.author).to.eq(alice.did);
       expect(permissionsGrant.message.descriptor.description).to.eq(permissionsRequest.message.descriptor.description);
@@ -191,7 +191,7 @@ describe('PermissionsGrant', () => {
       const carol = await DidKeyResolver.generate();
 
       const { privateJwk } = await Secp256k1.generateKeyPair();
-      const authorizationSigner = new PrivateKeySigner({ privateJwk, keyId: `${alice.did}#key1` });
+      const signer = new PrivateKeySigner({ privateJwk, keyId: `${alice.did}#key1` });
 
       const { permissionsRequest } = await TestDataGenerator.generatePermissionsRequest();
 
@@ -212,7 +212,7 @@ describe('PermissionsGrant', () => {
         }
       };
 
-      const permissionsGrant = await PermissionsGrant.createFromPermissionsRequest(permissionsRequest, authorizationSigner, overrides);
+      const permissionsGrant = await PermissionsGrant.createFromPermissionsRequest(permissionsRequest, signer, overrides);
 
       expect(permissionsGrant.author).to.eq(alice.did);
       expect(permissionsGrant.message.descriptor.description).to.eq(description);
@@ -230,12 +230,12 @@ describe('PermissionsGrant', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const { message } = await PermissionsGrant.create({
-        dateExpires         : getCurrentTimeInHighPrecision(),
-        grantedBy           : alice.did,
-        grantedTo           : 'did:example:bob',
-        grantedFor          : alice.did,
-        scope               : { interface: DwnInterfaceName.Records, method: DwnMethodName.Write },
-        authorizationSigner : Jws.createSigner(alice)
+        dateExpires : getCurrentTimeInHighPrecision(),
+        grantedBy   : alice.did,
+        grantedTo   : 'did:example:bob',
+        grantedFor  : alice.did,
+        scope       : { interface: DwnInterfaceName.Records, method: DwnMethodName.Write },
+        signer      : Jws.createSigner(alice)
       });
 
       expect(() => PermissionsGrant.asDelegatedGrant(message)).to.throw(DwnErrorCode.PermissionsGrantNotADelegatedGrant);

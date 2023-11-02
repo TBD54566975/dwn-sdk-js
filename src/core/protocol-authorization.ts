@@ -427,7 +427,7 @@ export class ProtocolAuthorization {
     protocolDefinition: ProtocolDefinition,
     messageStore: MessageStore,
   ): Promise<void> {
-    const protocolRole = incomingMessage.signerSignaturePayload?.protocolRole;
+    const protocolRole = incomingMessage.signaturePayload?.protocolRole;
 
     // Only verify role if there is a role being invoked
     if (protocolRole === undefined) {
@@ -529,7 +529,7 @@ export class ProtocolAuthorization {
       throw new DwnError(DwnErrorCode.ProtocolAuthorizationActionNotAllowed, `no action rule defined for ${incomingMessageMethod}, ${author} is unauthorized`);
     }
 
-    const invokedRole = incomingMessage.signerSignaturePayload?.protocolRole;
+    const invokedRole = incomingMessage.signaturePayload?.protocolRole;
 
     for (const actionRule of actionRules) {
       if (!inboundMessageActions.includes(actionRule.can as ProtocolAction)) {

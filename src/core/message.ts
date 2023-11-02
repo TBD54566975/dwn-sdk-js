@@ -33,14 +33,14 @@ export enum DwnMethodName {
 
 export abstract class Message<M extends GenericMessage> {
   readonly message: M;
-  readonly signerSignaturePayload: GenericSignaturePayload | undefined;
+  readonly signaturePayload: GenericSignaturePayload | undefined;
   readonly author: string | undefined;
 
   constructor(message: M) {
     this.message = message;
 
     if (message.authorization !== undefined) {
-      this.signerSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.authorSignature);
+      this.signaturePayload = Jws.decodePlainObjectPayload(message.authorization.signature);
       this.author = Message.getSigner(message as GenericMessage);
     }
   }
@@ -73,7 +73,7 @@ export abstract class Message<M extends GenericMessage> {
       return undefined;
     }
 
-    const signer = Jws.getSignerDid(message.authorization.authorSignature.signatures[0]);
+    const signer = Jws.getSignerDid(message.authorization.signature.signatures[0]);
     return signer;
   }
 
@@ -108,18 +108,18 @@ export abstract class Message<M extends GenericMessage> {
   }
 
   /**
-   * Creates the `authorization` as the author to be used in a DWN message.
-   * @param signer Signer as the author
+   * Creates the `authorization` property to be included in a DWN message.
+   * @param signer Message signer.
    * @returns {AuthorizationModel} used as an `authorization` property.
    */
-  public static async createAuthorizationAsAuthor(
+  public static async createAuthorization(
     descriptor: Descriptor,
     signer: Signer,
     additionalPayloadProperties?: { permissionsGrantId?: string, protocolRole?: string }
   ): Promise<AuthorizationModel> {
-    const authorSignature = await Message.createSignature(descriptor, signer, additionalPayloadProperties);
+    const signature = await Message.createSignature(descriptor, signer, additionalPayloadProperties);
 
-    const authorization = { authorSignature };
+    const authorization = { signature };
     return authorization;
   }
 

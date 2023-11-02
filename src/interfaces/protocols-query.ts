@@ -15,7 +15,7 @@ import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 export type ProtocolsQueryOptions = {
   messageTimestamp?: string;
   filter?: ProtocolsQueryFilter,
-  authorizationSigner?: Signer;
+  signer?: Signer;
   permissionsGrantId?: string;
 };
 
@@ -23,7 +23,7 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
 
   public static async parse(message: ProtocolsQueryMessage): Promise<ProtocolsQuery> {
     if (message.authorization !== undefined) {
-      await validateMessageSignatureIntegrity(message.authorization.authorSignature, message.descriptor);
+      await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     }
 
     if (message.descriptor.filter !== undefined) {
@@ -48,10 +48,10 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
 
     // only generate the `authorization` property if signature input is given
     let authorization: AuthorizationModel | undefined;
-    if (options.authorizationSigner !== undefined) {
-      authorization = await Message.createAuthorizationAsAuthor(
+    if (options.signer !== undefined) {
+      authorization = await Message.createAuthorization(
         descriptor,
-        options.authorizationSigner,
+        options.signer,
         { permissionsGrantId: options.permissionsGrantId }
       );
     }
@@ -79,12 +79,12 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
     // if author is the same as the target tenant, we can directly grant access
     if (this.author === tenant) {
       return;
-    } else if (this.author !== undefined && this.signerSignaturePayload!.permissionsGrantId) {
+    } else if (this.author !== undefined && this.signaturePayload!.permissionsGrantId) {
       await GrantAuthorization.authorizeGenericMessage(
         tenant,
         this,
         this.author,
-        this.signerSignaturePayload!.permissionsGrantId,
+        this.signaturePayload!.permissionsGrantId,
         messageStore
       );
     } else {

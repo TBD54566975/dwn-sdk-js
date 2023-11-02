@@ -107,6 +107,7 @@ export enum DwnErrorCode {
   RecordsWriteGetInitialWriteNotFound = 'RecordsWriteGetInitialWriteNotFound',
   RecordsWriteImmutablePropertyChanged = 'RecordsWriteImmutablePropertyChanged',
   RecordsWriteMissingAuthorizationSigner = 'RecordsWriteMissingAuthorizationSigner',
+  RecordsWriteMissingSigner = 'RecordsWriteMissingSigner',
   RecordsWriteMissingDataInPrevious = 'RecordsWriteMissingDataInPrevious',
   RecordsWriteMissingDataAssociation = 'RecordsWriteMissingDataAssociation',
   RecordsWriteMissingDataStream = 'RecordsWriteMissingDataStream',
