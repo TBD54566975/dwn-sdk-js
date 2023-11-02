@@ -5,9 +5,9 @@ import type { ProtocolsQueryDescriptor, ProtocolsQueryFilter, ProtocolsQueryMess
 
 import { GrantAuthorization } from '../core/grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
+import { Time } from '../utils/time.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
-import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.js';
 import { normalizeProtocolUrl, validateProtocolUrlNormalized } from '../utils/url.js';
 
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
@@ -29,7 +29,7 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
     if (message.descriptor.filter !== undefined) {
       validateProtocolUrlNormalized(message.descriptor.filter.protocol);
     }
-    validateTimestamp(message.descriptor.messageTimestamp);
+    Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     return new ProtocolsQuery(message);
   }
@@ -38,7 +38,7 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
     const descriptor: ProtocolsQueryDescriptor = {
       interface        : DwnInterfaceName.Protocols,
       method           : DwnMethodName.Query,
-      messageTimestamp : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
       filter           : ProtocolsQuery.normalizeFilter(options.filter),
     };
 

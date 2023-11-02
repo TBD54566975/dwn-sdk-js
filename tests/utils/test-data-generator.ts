@@ -37,16 +37,14 @@ import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 
 import * as cbor from '@ipld/dag-cbor';
 import { CID } from 'multiformats/cid';
-import { createTimestamp } from '../../src/index.js';
 import { DataStream } from '../../src/utils/data-stream.js';
-import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions-request.js';
 import { PermissionsRevoke } from '../../src/interfaces/permissions-revoke.js';
 import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { sha256 } from 'multiformats/hashes/sha2';
-import { Temporal } from '@js-temporal/polyfill';
+import { Time } from '../../src/utils/time.js';
 
 import {
   DidKeyResolver,
@@ -565,7 +563,7 @@ export class TestDataGenerator {
    */
   public static async generateFromRecordsWrite(input: GenerateFromRecordsWriteInput): Promise<GenerateFromRecordsWriteOut> {
     const existingMessage = input.existingWrite.message;
-    const currentTime = getCurrentTimeInHighPrecision();
+    const currentTime = Time.getCurrentTimestamp();
 
     const published = input.published ?? existingMessage.descriptor.published ? false : true; // toggle from the parent value if not given explicitly
     const datePublished = input.datePublished ?? (published ? currentTime : undefined);
@@ -657,7 +655,7 @@ export class TestDataGenerator {
   public static async generatePermissionsRequest(input?: GeneratePermissionsRequestInput): Promise<GeneratePermissionsRequestOutput> {
     const author = input?.author ?? await TestDataGenerator.generatePersona();
     const permissionsRequest = await PermissionsRequest.create({
-      messageTimestamp : getCurrentTimeInHighPrecision(),
+      messageTimestamp : Time.getCurrentTimestamp(),
       description      : input?.description,
       grantedBy        : input?.grantedBy ?? 'did:jank:bob',
       grantedTo        : input?.grantedTo ?? 'did:jank:alice',
@@ -681,10 +679,10 @@ export class TestDataGenerator {
    * Generates a PermissionsGrant message for testing.
    */
   public static async generatePermissionsGrant(input?: GeneratePermissionsGrantInput): Promise<GeneratePermissionsGrantOutput> {
-    const dateExpires = input?.dateExpires ?? Temporal.Now.instant().add({ hours: 24 }).toString({ smallestUnit: 'microseconds' });
+    const dateExpires = input?.dateExpires ?? Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 });
     const author = input?.author ?? await TestDataGenerator.generatePersona();
     const permissionsGrant = await PermissionsGrant.create({
-      messageTimestamp     : input?.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      messageTimestamp     : input?.messageTimestamp ?? Time.getCurrentTimestamp(),
       dateExpires,
       description          : input?.description ?? 'drugs',
       grantedBy            : input?.grantedBy ?? author.did,
@@ -836,7 +834,7 @@ export class TestDataGenerator {
    * @returns random UTC ISO-8601 timestamp
    */
   public static randomTimestamp(): string {
-    return createTimestamp({
+    return Time.createTimestamp({
       year   : this.randomInt(2000, 2022),
       month  : this.randomInt(1, 12),
       day    : this.randomInt(1, 28),

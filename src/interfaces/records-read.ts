@@ -8,10 +8,10 @@ import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Records } from '../utils/records.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
+import { Time } from '../utils/time.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../index.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
-import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.js';
 
 export type RecordsReadOptions = {
   filter: RecordsFilter;
@@ -31,7 +31,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
     if (message.authorization !== undefined) {
       await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     }
-    validateTimestamp(message.descriptor.messageTimestamp);
+    Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     const recordsRead = new RecordsRead(message);
     return recordsRead;
@@ -46,7 +46,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
    */
   public static async create(options: RecordsReadOptions): Promise<RecordsRead> {
     const { filter, signer, permissionsGrantId, protocolRole } = options;
-    const currentTime = getCurrentTimeInHighPrecision();
+    const currentTime = Time.getCurrentTimestamp();
 
     const descriptor: RecordsReadDescriptor = {
       interface        : DwnInterfaceName.Records,

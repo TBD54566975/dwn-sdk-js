@@ -11,12 +11,12 @@ import { DidResolver } from '../../src/did/did-resolver.js';
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { expect } from 'chai';
-import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { Jws } from '../../src/index.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { PermissionsGrantHandler } from '../../src/handlers/permissions-grant.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
+import { Time } from '../../src/utils/time.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message.js';
 
 export function testPermissionsGrantHandler(): void {
@@ -149,7 +149,7 @@ export function testPermissionsGrantHandler(): void {
           // Options to create a grant with `schema` in its `scope`
           const permissionsGrantBaseOptions = {
             author      : alice,
-            dateExpires : getCurrentTimeInHighPrecision(),
+            dateExpires : Time.getCurrentTimestamp(),
             grantedBy   : 'did:jank:bob',
             grantedTo   : 'did:jank:alice',
             grantedFor  : 'did:jank:bob',
@@ -219,7 +219,7 @@ export function testPermissionsGrantHandler(): void {
 
           const contextIdAndProtocolPathGrant = await TestDataGenerator.generatePermissionsGrant({
             author      : alice,
-            dateExpires : getCurrentTimeInHighPrecision(),
+            dateExpires : Time.getCurrentTimestamp(),
             grantedBy   : 'did:jank:bob',
             grantedTo   : 'did:jank:alice',
             grantedFor  : 'did:jank:bob',

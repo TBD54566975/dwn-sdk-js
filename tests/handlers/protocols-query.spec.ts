@@ -14,9 +14,9 @@ import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
+import { Time } from '../../src/utils/time.js';
 import { DidResolver, Dwn, DwnErrorCode, Encoder, Jws, ProtocolsQuery } from '../../src/index.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message.js';
-import { getCurrentTimeInHighPrecision, sleep } from '../../src/utils/time.js';
 
 chai.use(chaiAsPromised);
 
@@ -238,8 +238,8 @@ export function testProtocolsQueryHandler(): void {
           const bob = await DidKeyResolver.generate();
 
           // Alice gives Bob a PermissionsGrant with scope ProtocolsConfigure and an expiry time
-          const dateGranted = getCurrentTimeInHighPrecision();
-          const dateExpires = getCurrentTimeInHighPrecision();
+          const dateGranted = Time.getCurrentTimestamp();
+          const dateExpires = Time.getCurrentTimestamp();
           const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
             author           : alice,
             messageTimestamp : dateGranted,
@@ -272,9 +272,9 @@ export function testProtocolsQueryHandler(): void {
           const bob = await DidKeyResolver.generate();
 
           // Set up timestamps
-          const protocolsQueryTimestamp = getCurrentTimeInHighPrecision();
-          await sleep(2);
-          const dateGranted = getCurrentTimeInHighPrecision();
+          const protocolsQueryTimestamp = Time.getCurrentTimestamp();
+          await Time.minimalSleep();
+          const dateGranted = Time.getCurrentTimestamp();
 
           // Alice gives Bob a PermissionsGrant with scope ProtocolsConfigure
           const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({

@@ -11,7 +11,7 @@ import { Message } from '../../src/core/message.js';
 import { MessageStoreLevel } from '../../src/store/message-store-level.js';
 import { PermissionsRevoke } from '../../src/interfaces/permissions-revoke.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { getCurrentTimeInHighPrecision, minimalSleep, sleep } from '../../src/utils/time.js';
+import { Time } from '../../src/utils/time.js';
 
 describe('PermissionsRevokeHandler.handle()', () => {
   let didResolver: DidResolver;
@@ -118,8 +118,8 @@ describe('PermissionsRevokeHandler.handle()', () => {
     it('should reject with 400 if the associated grant was issued after the revoke was created', async () => {
       const alice = await DidKeyResolver.generate();
 
-      const preGrantTimeStamp = getCurrentTimeInHighPrecision();
-      await sleep(10);
+      const preGrantTimeStamp = Time.getCurrentTimestamp();
+      await Time.sleep(10);
 
       // Create grant
       const { permissionsGrant } = await TestDataGenerator.generatePermissionsGrant({
@@ -205,7 +205,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
       expect(permissionsGrantReply.status.code).to.eq(202);
 
       // Create two revokes with same timestamp
-      const revokeTimestamp = getCurrentTimeInHighPrecision();
+      const revokeTimestamp = Time.getCurrentTimestamp();
       const { permissionsRevoke: revoke1 } = await TestDataGenerator.generatePermissionsRevoke({
         author             : alice,
         permissionsGrantId : await Message.getCid(permissionsGrant.message),
@@ -255,7 +255,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
         permissionsGrantId : await Message.getCid(permissionsGrant.message),
       });
 
-      await minimalSleep();
+      await Time.minimalSleep();
 
       // Revoke the grant using a later timestamp than the pre-created revoke
       const { permissionsRevoke: permissionsRevoke2 } = await TestDataGenerator.generatePermissionsRevoke({
@@ -323,7 +323,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
           permissionsGrantId : await Message.getCid(permissionsGrant.message),
         });
 
-        await sleep(10);
+        await Time.sleep(10);
 
         // Revoke the grant using a later timestamp than the pre-created revoke
         const { permissionsRevoke: permissionsRevoke2 } = await TestDataGenerator.generatePermissionsRevoke({

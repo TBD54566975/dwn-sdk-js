@@ -21,18 +21,12 @@ import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
-import { toTemporalInstant } from '@js-temporal/polyfill';
 import { constructRecordsWriteIndexes, RecordsWriteHandler } from '../../src/handlers/records-write.js';
 import { DateSort, RecordsQuery } from '../../src/interfaces/records-query.js';
-import { DidResolver, Dwn, RecordsWrite } from '../../src/index.js';
+import { DidResolver, Dwn, RecordsWrite, Time } from '../../src/index.js';
 import { DwnErrorCode, MessageStoreLevel } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
-
-function createDateString(d: Date): string {
-  return toTemporalInstant.call(d).toString({ smallestUnit: 'microseconds' });
-}
-
 
 export function testRecordsQueryHandler(): void {
   describe('RecordsQueryHandler.handle()', () => {
@@ -497,10 +491,11 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should be able to range query by `dateCreated`', async () => {
-      // scenario: 3 records authored by alice, created on first of 2021, 2022, and 2023 respectively, only the first 2 records share the same schema
-        const firstDayOf2021 = createDateString(new Date(2021, 1, 1));
-        const firstDayOf2022 = createDateString(new Date(2022, 1, 1));
-        const firstDayOf2023 = createDateString(new Date(2023, 1, 1));
+        // scenario: 3 records authored by alice, created on first of 2021, 2022, and 2023 respectively,
+        // only the first 2 records share the same schema
+        const firstDayOf2021 = Time.createTimestamp({ year: 2021, month: 1, day: 1 });
+        const firstDayOf2022 = Time.createTimestamp({ year: 2022, month: 1, day: 1 });
+        const firstDayOf2023 = Time.createTimestamp({ year: 2023, month: 1, day: 1 });
         const alice = await DidKeyResolver.generate();
         const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2021, messageTimestamp: firstDayOf2021 });
         const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2022, messageTimestamp: firstDayOf2022 });
@@ -515,7 +510,7 @@ export function testRecordsQueryHandler(): void {
         expect(writeReply3.status.code).to.equal(202);
 
         // testing `from` range
-        const lastDayOf2021 = createDateString(new Date(2021, 12, 31));
+        const lastDayOf2021 = Time.createTimestamp({ year: 2021, month: 12, day: 31 });
         const recordsQuery1 = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           filter   : { dateCreated: { from: lastDayOf2021 } },
@@ -527,7 +522,7 @@ export function testRecordsQueryHandler(): void {
         expect(reply1.entries![1].encodedData).to.equal(Encoder.bytesToBase64Url(write3.dataBytes!));
 
         // testing `to` range
-        const lastDayOf2022 = createDateString(new Date(2022, 12, 31));
+        const lastDayOf2022 = Time.createTimestamp({ year: 2022, month: 12, day: 31 });
         const recordsQuery2 = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           filter   : { dateCreated: { to: lastDayOf2022 } },
@@ -539,7 +534,7 @@ export function testRecordsQueryHandler(): void {
         expect(reply2.entries![1].encodedData).to.equal(Encoder.bytesToBase64Url(write2.dataBytes!));
 
         // testing `from` and `to` range
-        const lastDayOf2023 = createDateString(new Date(2023, 12, 31));
+        const lastDayOf2023 = Time.createTimestamp({ year: 2023, month: 12, day: 31 });
         const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           filter   : { dateCreated: { from: lastDayOf2022, to: lastDayOf2023 } },
@@ -561,13 +556,13 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should not return records that were published and then unpublished ', async () => {
-      // scenario: 3 records authored by alice, published on first of 2021, 2022, and 2023 respectively
-      // then the records are unpublished and tested to not return when filtering for published records
+        // scenario: 3 records authored by alice, published on first of 2021, 2022, and 2023 respectively
+        // then the records are unpublished and tested to not return when filtering for published records
 
-        const firstDayOf2020 = createDateString(new Date(2020, 1, 1));
-        const firstDayOf2021 = createDateString(new Date(2021, 1, 1));
-        const firstDayOf2022 = createDateString(new Date(2022, 1, 1));
-        const firstDayOf2023 = createDateString(new Date(2023, 1, 1));
+        const firstDayOf2020 = Time.createTimestamp({ year: 2020, month: 1, day: 1 });
+        const firstDayOf2021 = Time.createTimestamp({ year: 2021, month: 1, day: 1 });
+        const firstDayOf2022 = Time.createTimestamp({ year: 2022, month: 1, day: 1 });
+        const firstDayOf2023 = Time.createTimestamp({ year: 2023, month: 1, day: 1 });
         const alice = await DidKeyResolver.generate();
         const write1 = await TestDataGenerator.generateRecordsWrite({
           author: alice, published: true, dateCreated: firstDayOf2020, datePublished: firstDayOf2021, messageTimestamp: firstDayOf2020
@@ -588,7 +583,7 @@ export function testRecordsQueryHandler(): void {
         expect(writeReply3.status.code).to.equal(202);
 
         // confirm range before un-publishing.
-        const lastDayOf2021 = createDateString(new Date(2021, 12, 31));
+        const lastDayOf2021 = Time.createTimestamp({ year: 2021, month: 12, day: 31 });
         const ownerRangeQuery = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           filter   : { datePublished: { from: lastDayOf2021 } },
@@ -679,13 +674,13 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should be able to range query by `datePublished`', async () => {
-      // scenario: 3 records authored by alice, published on first of 2021, 2022, and 2023 respectively
-      // all 3 records are created on first of 2020
+        // scenario: 3 records authored by alice, published on first of 2021, 2022, and 2023 respectively
+        // all 3 records are created on first of 2020
 
-        const firstDayOf2020 = createDateString(new Date(2020, 1, 1));
-        const firstDayOf2021 = createDateString(new Date(2021, 1, 1));
-        const firstDayOf2022 = createDateString(new Date(2022, 1, 1));
-        const firstDayOf2023 = createDateString(new Date(2023, 1, 1));
+        const firstDayOf2020 = Time.createTimestamp({ year: 2020, month: 1, day: 1 });
+        const firstDayOf2021 = Time.createTimestamp({ year: 2021, month: 1, day: 1 });
+        const firstDayOf2022 = Time.createTimestamp({ year: 2022, month: 1, day: 1 });
+        const firstDayOf2023 = Time.createTimestamp({ year: 2023, month: 1, day: 1 });
         const alice = await DidKeyResolver.generate();
         const write1 = await TestDataGenerator.generateRecordsWrite({
           author: alice, published: true, dateCreated: firstDayOf2020, datePublished: firstDayOf2021, messageTimestamp: firstDayOf2020
@@ -706,7 +701,7 @@ export function testRecordsQueryHandler(): void {
         expect(writeReply3.status.code).to.equal(202);
 
         // testing `from` range
-        const lastDayOf2021 = createDateString(new Date(2021, 12, 31));
+        const lastDayOf2021 = Time.createTimestamp({ year: 2021, month: 12, day: 31 });
         const recordsQuery1 = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           filter   : { datePublished: { from: lastDayOf2021 } },
@@ -718,7 +713,7 @@ export function testRecordsQueryHandler(): void {
         expect(reply1RecordIds).to.have.members([ write2.message.recordId, write3.message.recordId ]);
 
         // testing `to` range
-        const lastDayOf2022 = createDateString(new Date(2022, 12, 31));
+        const lastDayOf2022 = Time.createTimestamp({ year: 2022, month: 12, day: 31 });
         const recordsQuery2 = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           filter   : { datePublished: { to: lastDayOf2022 } },
@@ -730,7 +725,7 @@ export function testRecordsQueryHandler(): void {
         expect(reply2RecordIds).to.have.members([ write1.message.recordId, write2.message.recordId ]);
 
         // testing `from` and `to` range
-        const lastDayOf2023 = createDateString(new Date(2023, 12, 31));
+        const lastDayOf2023 = Time.createTimestamp({ year: 2023, month: 12, day: 31 });
         const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           filter   : { datePublished: { from: lastDayOf2022, to: lastDayOf2023 } },
@@ -782,10 +777,10 @@ export function testRecordsQueryHandler(): void {
         // alice then updates these records to published on first of 2021, 2022, and 2023 respectively
         // this should update the messageTimestamp on the respective messages
 
-        const firstDayOf2020 = createDateString(new Date(2020, 1, 1));
-        const firstDayOf2021 = createDateString(new Date(2021, 1, 1));
-        const firstDayOf2022 = createDateString(new Date(2022, 1, 1));
-        const firstDayOf2023 = createDateString(new Date(2023, 1, 1));
+        const firstDayOf2020 = Time.createTimestamp({ year: 2020, month: 1, day: 1 });
+        const firstDayOf2021 = Time.createTimestamp({ year: 2021, month: 1, day: 1 });
+        const firstDayOf2022 = Time.createTimestamp({ year: 2022, month: 1, day: 1 });
+        const firstDayOf2023 = Time.createTimestamp({ year: 2023, month: 1, day: 1 });
         const alice = await DidKeyResolver.generate();
 
         const write1 = await TestDataGenerator.generateRecordsWrite({
@@ -838,7 +833,7 @@ export function testRecordsQueryHandler(): void {
         expect(writeReplyUpdate3.status.code).to.equal(202);
 
         // testing `from` range
-        const lastDayOf2021 = createDateString(new Date(2021, 12, 31));
+        const lastDayOf2021 = Time.createTimestamp({ year: 2021, month: 12, day: 31 });
         const recordsQuery1 = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           filter   : { dateUpdated: { from: lastDayOf2021 } },
@@ -850,7 +845,7 @@ export function testRecordsQueryHandler(): void {
         expect(reply1RecordIds).to.have.members([ write2.message.recordId, write3.message.recordId ]);
 
         // testing `to` range
-        const lastDayOf2022 = createDateString(new Date(2022, 12, 31));
+        const lastDayOf2022 = Time.createTimestamp({ year: 2022, month: 12, day: 31 });
         const recordsQuery2 = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           filter   : { dateUpdated: { to: lastDayOf2022 } },
@@ -862,7 +857,7 @@ export function testRecordsQueryHandler(): void {
         expect(reply2RecordIds).to.have.members([ write1.message.recordId, write2.message.recordId ]);
 
         // testing `from` and `to` range
-        const lastDayOf2023 = createDateString(new Date(2023, 12, 31));
+        const lastDayOf2023 = Time.createTimestamp({ year: 2023, month: 12, day: 31 });
         const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           filter   : { dateUpdated: { from: lastDayOf2022, to: lastDayOf2023 } },
@@ -884,10 +879,12 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should be able use range and exact match queries at the same time', async () => {
-      // scenario: 3 records authored by alice, created on first of 2021, 2022, and 2023 respectively, only the first 2 records share the same schema
-        const firstDayOf2021 = createDateString(new Date(2021, 1, 1));
-        const firstDayOf2022 = createDateString(new Date(2022, 1, 1));
-        const firstDayOf2023 = createDateString(new Date(2023, 1, 1));
+        // scenario: 3 records authored by alice, created on first of 2021, 2022, and 2023 respectively,
+        // only the first 2 records share the same schema
+
+        const firstDayOf2021 = Time.createTimestamp({ year: 2021, month: 1, day: 1 });
+        const firstDayOf2022 = Time.createTimestamp({ year: 2022, month: 1, day: 1 });
+        const firstDayOf2023 = Time.createTimestamp({ year: 2023, month: 1, day: 1 });
         const alice = await DidKeyResolver.generate();
         const schema = '2021And2022Schema';
         const write1 = await TestDataGenerator.generateRecordsWrite({
@@ -909,8 +906,8 @@ export function testRecordsQueryHandler(): void {
         expect(writeReply3.status.code).to.equal(202);
 
         // testing range criterion with another exact match
-        const lastDayOf2021 = createDateString(new Date(2021, 12, 31));
-        const lastDayOf2023 = createDateString(new Date(2023, 12, 31));
+        const lastDayOf2021 = Time.createTimestamp({ year: 2021, month: 12, day: 31 });
+        const lastDayOf2023 = Time.createTimestamp({ year: 2023, month: 12, day: 31 });
         const recordsQuery5 = await TestDataGenerator.generateRecordsQuery({
           author : alice,
           filter : {
@@ -1084,7 +1081,7 @@ export function testRecordsQueryHandler(): void {
 
       it('should tiebreak using `messageCid` when sorting encounters identical values', async () => {
         // setup: 3 messages with the same `dateCreated` value
-        const dateCreated = createDateString(new Date());
+        const dateCreated = Time.getCurrentTimestamp();
         const messageTimestamp = dateCreated;
         const alice = await DidKeyResolver.generate();
         const schema = 'aSchema';
@@ -1608,12 +1605,12 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should return 400 if published is set to false and a datePublished range is provided', async () => {
-        const firstDayOf2021 = createDateString(new Date(2021, 1, 1));
+        const fromDatePublished = Time.getCurrentTimestamp();
         const alice = await DidKeyResolver.generate();
         // set to true so create does not fail
         const recordQuery = await TestDataGenerator.generateRecordsQuery({
           author : alice,
-          filter : { datePublished: { from: firstDayOf2021 }, published: true }
+          filter : { datePublished: { from: fromDatePublished }, published: true }
         });
 
         // set to false

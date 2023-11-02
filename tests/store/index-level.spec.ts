@@ -6,8 +6,8 @@ import chai, { expect } from 'chai';
 import { ArrayUtility } from '../../src/utils/array.js';
 import { IndexLevel } from '../../src/store/index-level.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
-import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { Time } from '../../src/index.js';
 import { v4 as uuid } from 'uuid';
 
 chai.use(chaiAsPromised);
@@ -210,7 +210,7 @@ describe('Index Level', () => {
       for (let i = -5; i < 5; ++i) {
         const id = uuid();
         const doc = {
-          dateCreated: Temporal.PlainDateTime.from({ year: 2023, month: 1, day: 15 + i }).toString({ smallestUnit: 'microseconds' })
+          dateCreated: Time.createTimestamp({ year: 2023, month: 1, day: 15 + i })
         };
 
         await index.put(tenant, id, doc);
@@ -218,7 +218,7 @@ describe('Index Level', () => {
 
       const resp = await index.query(tenant, [{
         dateCreated: {
-          gte: Temporal.PlainDateTime.from({ year: 2023, month: 1, day: 15 }).toString({ smallestUnit: 'microseconds' })
+          gte: Time.createTimestamp({ year: 2023, month: 1, day: 15 })
         }
       }]);
 

@@ -4,10 +4,10 @@ import type { DelegatedGrantMessage, PermissionConditions, PermissionScope, Reco
 import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types/permissions-types.js';
 
 import { removeUndefinedProperties } from '../utils/object.js';
+import { Time } from '../utils/time.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
-import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
 
 export type PermissionsGrantOptions = {
@@ -39,8 +39,8 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
   public static async parse(message: PermissionsGrantMessage): Promise<PermissionsGrant> {
     await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     PermissionsGrant.validateScope(message);
-    validateTimestamp(message.descriptor.messageTimestamp);
-    validateTimestamp(message.descriptor.dateExpires);
+    Time.validateTimestamp(message.descriptor.messageTimestamp);
+    Time.validateTimestamp(message.descriptor.dateExpires);
 
     return new PermissionsGrant(message);
   }
@@ -53,7 +53,7 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
     const descriptor: PermissionsGrantDescriptor = {
       interface            : DwnInterfaceName.Permissions,
       method               : DwnMethodName.Grant,
-      messageTimestamp     : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      messageTimestamp     : options.messageTimestamp ?? Time.getCurrentTimestamp(),
       dateExpires          : options.dateExpires,
       description          : options.description,
       grantedTo            : options.grantedTo,
