@@ -7,7 +7,7 @@ import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.
 
 export type EventsGetOptions = {
   watermark?: string;
-  authorizationSigner: Signer;
+  signer: Signer;
   messageTimestamp?: string;
 };
 
@@ -32,7 +32,7 @@ export class EventsGet extends Message<EventsGetMessage> {
       descriptor.watermark = options.watermark;
     }
 
-    const authorization = await Message.createAuthorizationAsAuthor(descriptor, options.authorizationSigner);
+    const authorization = await Message.createAuthorization(descriptor, options.signer);
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

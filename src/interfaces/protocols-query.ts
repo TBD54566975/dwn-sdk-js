@@ -15,7 +15,7 @@ import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 export type ProtocolsQueryOptions = {
   messageTimestamp?: string;
   filter?: ProtocolsQueryFilter,
-  authorizationSigner?: Signer;
+  signer?: Signer;
   permissionsGrantId?: string;
 };
 
@@ -48,10 +48,10 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
 
     // only generate the `authorization` property if signature input is given
     let authorization: AuthorizationModel | undefined;
-    if (options.authorizationSigner !== undefined) {
-      authorization = await Message.createAuthorizationAsAuthor(
+    if (options.signer !== undefined) {
+      authorization = await Message.createAuthorization(
         descriptor,
-        options.authorizationSigner,
+        options.signer,
         { permissionsGrantId: options.permissionsGrantId }
       );
     }

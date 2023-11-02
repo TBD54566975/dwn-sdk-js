@@ -18,9 +18,9 @@ describe('ProtocolsQuery', () => {
 
       const currentTime = getCurrentTimeInHighPrecision();
       const protocolsQuery = await ProtocolsQuery.create({
-        filter              : { protocol: 'anyValue' },
-        messageTimestamp    : currentTime,
-        authorizationSigner : Jws.createSigner(alice),
+        filter           : { protocol: 'anyValue' },
+        messageTimestamp : currentTime,
+        signer           : Jws.createSigner(alice),
       });
 
       expect(protocolsQuery.message.descriptor.messageTimestamp).to.equal(currentTime);
@@ -31,12 +31,12 @@ describe('ProtocolsQuery', () => {
       const alice = await TestDataGenerator.generatePersona();
 
       const options = {
-        recipient           : alice.did,
-        data                : TestDataGenerator.randomBytes(10),
-        dataFormat          : 'application/json',
-        authorizationSigner : Jws.createSigner(alice),
-        filter              : { protocol: 'example.com/' },
-        definition          : dexProtocolDefinition
+        recipient  : alice.did,
+        data       : TestDataGenerator.randomBytes(10),
+        dataFormat : 'application/json',
+        signer     : Jws.createSigner(alice),
+        filter     : { protocol: 'example.com/' },
+        definition : dexProtocolDefinition
       };
       const protocolsConfig = await ProtocolsQuery.create(options);
 

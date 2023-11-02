@@ -328,8 +328,8 @@ export function testRecordsWriteHandler(): void {
 
           // Alice fetches the message from Bob's DWN
           const recordsRead = await RecordsRead.create({
-            filter              : { recordId: message.recordId },
-            authorizationSigner : Jws.createSigner(alice)
+            filter : { recordId: message.recordId },
+            signer : Jws.createSigner(alice)
           });
 
           const readReply = await dwn.processMessage(bob.did, recordsRead.message);
@@ -395,8 +395,8 @@ export function testRecordsWriteHandler(): void {
 
           // Test that Bob's message can be read from Alice's DWN
           const recordsRead = await RecordsRead.create({
-            filter              : { recordId: bobRecordsWrite.message.recordId },
-            authorizationSigner : Jws.createSigner(alice)
+            filter : { recordId: bobRecordsWrite.message.recordId },
+            signer : Jws.createSigner(alice)
           });
           const readReply = await dwn.processMessage(alice.did, recordsRead.message);
           expect(readReply.status.code).to.equal(200);
@@ -506,25 +506,25 @@ export function testRecordsWriteHandler(): void {
           };
 
           const deviceXGrant = await PermissionsGrant.create({
-            delegated           : true, // this is a delegated grant
-            dateExpires         : createOffsetTimestamp({ seconds: 100 }),
-            description         : 'Allow to write to message protocol',
-            grantedBy           : alice.did,
-            grantedTo           : deviceX.did,
-            grantedFor          : alice.did,
-            scope               : scope,
-            authorizationSigner : Jws.createSigner(alice)
+            delegated   : true, // this is a delegated grant
+            dateExpires : createOffsetTimestamp({ seconds: 100 }),
+            description : 'Allow to write to message protocol',
+            grantedBy   : alice.did,
+            grantedTo   : deviceX.did,
+            grantedFor  : alice.did,
+            scope       : scope,
+            signer      : Jws.createSigner(alice)
           });
 
           const deviceYGrant = await PermissionsGrant.create({
-            delegated           : true, // this is a delegated grant
-            dateExpires         : createOffsetTimestamp({ seconds: 100 }),
-            description         : 'Allow to write to message protocol',
-            grantedBy           : alice.did,
-            grantedTo           : deviceY.did,
-            grantedFor          : alice.did,
-            scope               : scope,
-            authorizationSigner : Jws.createSigner(alice)
+            delegated   : true, // this is a delegated grant
+            dateExpires : createOffsetTimestamp({ seconds: 100 }),
+            description : 'Allow to write to message protocol',
+            grantedBy   : alice.did,
+            grantedTo   : deviceY.did,
+            grantedFor  : alice.did,
+            scope       : scope,
+            signer      : Jws.createSigner(alice)
           });
 
           // generate a `RecordsWrite` message from device X and write to Bob's DWN
@@ -655,14 +655,14 @@ export function testRecordsWriteHandler(): void {
           };
 
           const grantToBob = await PermissionsGrant.create({
-            delegated           : true, // this is a delegated grant
-            dateExpires         : createOffsetTimestamp({ seconds: 100 }),
-            description         : 'Allow to Bob write as me in chat protocol',
-            grantedBy           : alice.did,
-            grantedTo           : bob.did,
-            grantedFor          : alice.did,
-            scope               : scope,
-            authorizationSigner : Jws.createSigner(alice)
+            delegated   : true, // this is a delegated grant
+            dateExpires : createOffsetTimestamp({ seconds: 100 }),
+            description : 'Allow to Bob write as me in chat protocol',
+            grantedBy   : alice.did,
+            grantedTo   : bob.did,
+            grantedFor  : alice.did,
+            scope       : scope,
+            signer      : Jws.createSigner(alice)
           });
 
           // Sanity check that Bob can write a chat message as Alice by invoking the delegated grant
@@ -815,7 +815,14 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const signer = Jws.createSigner(alice);
-          const signature = await RecordsWrite['createSignerSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, signer, undefined);
+          const signature = await RecordsWrite.createSignerSignature({
+            recordId,
+            contextId   : message.contextId,
+            descriptorCid,
+            attestation : message.attestation,
+            encryption  : message.encryption,
+            signer
+          });
           message.recordId = recordId;
           message.authorization = { signature };
 
@@ -836,7 +843,14 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const signer = Jws.createSigner(alice);
-          const signature = await RecordsWrite['createSignerSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, signer, undefined);
+          const signature = await RecordsWrite.createSignerSignature({
+            recordId,
+            contextId   : message.contextId,
+            descriptorCid,
+            attestation : message.attestation,
+            encryption  : message.encryption,
+            signer
+          });
           message.recordId = recordId;
           message.authorization = { signature };
 
@@ -857,7 +871,14 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const signer = Jws.createSigner(alice);
-          const signature = await RecordsWrite['createSignerSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, signer, undefined);
+          const signature = await RecordsWrite.createSignerSignature({
+            recordId,
+            contextId   : message.contextId,
+            descriptorCid,
+            attestation : message.attestation,
+            encryption  : message.encryption,
+            signer
+          });
           message.recordId = recordId;
           message.authorization = { signature };
 
@@ -877,7 +898,14 @@ export function testRecordsWriteHandler(): void {
           const descriptorCid = await Cid.computeCid(message.descriptor);
           const recordId = await RecordsWrite.getEntryId(alice.did, message.descriptor);
           const signer = Jws.createSigner(alice);
-          const signature = await RecordsWrite['createSignerSignature'](recordId, message.contextId, descriptorCid, message.attestation, message.encryption, signer, undefined);
+          const signature = await RecordsWrite.createSignerSignature({
+            recordId,
+            contextId   : message.contextId,
+            descriptorCid,
+            attestation : message.attestation,
+            encryption  : message.encryption,
+            signer
+          });
           message.recordId = recordId;
           message.authorization = { signature };
 
@@ -900,8 +928,8 @@ export function testRecordsWriteHandler(): void {
         expect(initialWriteReply.status.code).to.equal(202);
 
         const recordsDelete = await RecordsDelete.create({
-          recordId            : message.recordId,
-          authorizationSigner : Jws.createSigner(author),
+          recordId : message.recordId,
+          signer   : Jws.createSigner(author),
         });
         const deleteReply = await dwn.processMessage(tenant, recordsDelete.message);
         expect(deleteReply.status.code).to.equal(202);
@@ -932,8 +960,8 @@ export function testRecordsWriteHandler(): void {
         expect(initialWriteReply.status.code).to.equal(202);
 
         const recordsDelete = await RecordsDelete.create({
-          recordId            : message.recordId,
-          authorizationSigner : Jws.createSigner(author),
+          recordId : message.recordId,
+          signer   : Jws.createSigner(author),
         });
         const deleteReply = await dwn.processMessage(tenant, recordsDelete.message);
         expect(deleteReply.status.code).to.equal(202);
@@ -1067,7 +1095,7 @@ export function testRecordsWriteHandler(): void {
           filter: {
             recordId: write2.message.recordId,
           },
-          authorizationSigner: Jws.createSigner(alice)
+          signer: Jws.createSigner(alice)
         });
 
         const readReply = await dwn.processMessage(alice.did, read.message);
@@ -3108,15 +3136,14 @@ export function testRecordsWriteHandler(): void {
           // Re-create auth because we altered the descriptor after signing
           const descriptorCid = await Cid.computeCid(recordsWrite.message.descriptor);
           const attestation = await RecordsWrite.createAttestation(descriptorCid);
-          const signature = await RecordsWrite.createSignerSignature(
-            recordsWrite.message.recordId,
-            recordsWrite.message.contextId,
+          const signature = await RecordsWrite.createSignerSignature({
+            recordId   : recordsWrite.message.recordId,
+            contextId  : recordsWrite.message.contextId,
             descriptorCid,
             attestation,
-            recordsWrite.message.encryption,
-            Jws.createSigner(alice),
-            undefined
-          );
+            encryption : recordsWrite.message.encryption,
+            signer     : Jws.createSigner(alice)
+          });
           recordsWrite.message = {
             ...recordsWrite.message,
             attestation,
@@ -3179,7 +3206,7 @@ export function testRecordsWriteHandler(): void {
             filter: {
               recordId: imageRecordsWrite.message.recordId,
             },
-            authorizationSigner: Jws.createSigner(bob)
+            signer: Jws.createSigner(bob)
           });
 
           const bobRecordsReadReply = await dwn.processMessage(alice.did, bobRecordsReadData.message);

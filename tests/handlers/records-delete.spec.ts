@@ -87,8 +87,8 @@ export function testRecordsDeleteHandler(): void {
 
         // testing delete
         const recordsDelete = await RecordsDelete.create({
-          recordId            : message.recordId,
-          authorizationSigner : Jws.createSigner(alice)
+          recordId : message.recordId,
+          signer   : Jws.createSigner(alice)
         });
 
         const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
@@ -101,8 +101,8 @@ export function testRecordsDeleteHandler(): void {
 
         // testing deleting a deleted record
         const recordsDelete2 = await RecordsDelete.create({
-          recordId            : message.recordId,
-          authorizationSigner : Jws.createSigner(alice)
+          recordId : message.recordId,
+          signer   : Jws.createSigner(alice)
         });
 
         const recordsDelete2Reply = await dwn.processMessage(alice.did, recordsDelete2.message);
@@ -147,7 +147,7 @@ export function testRecordsDeleteHandler(): void {
           filter: {
             recordId: aliceAssociateData.message.recordId,
           },
-          authorizationSigner: Jws.createSigner(alice)
+          signer: Jws.createSigner(alice)
         });
 
         const aliceRead1Reply = await dwn.processMessage(alice.did, aliceRead1.message);
@@ -173,7 +173,7 @@ export function testRecordsDeleteHandler(): void {
           filter: {
             recordId: bobAssociateData.message.recordId,
           },
-          authorizationSigner: Jws.createSigner(bob)
+          signer: Jws.createSigner(bob)
         });
 
         const bobRead1Reply = await dwn.processMessage(bob.did, bobRead1.message);
@@ -188,8 +188,8 @@ export function testRecordsDeleteHandler(): void {
 
         // testing deleting a non-existent record
         const recordsDelete = await RecordsDelete.create({
-          recordId            : 'nonExistentRecordId',
-          authorizationSigner : Jws.createSigner(alice)
+          recordId : 'nonExistentRecordId',
+          signer   : Jws.createSigner(alice)
         });
 
         const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
@@ -207,8 +207,8 @@ export function testRecordsDeleteHandler(): void {
         // generate subsequent write and delete with the delete having an earlier timestamp
         // NOTE: creating RecordsDelete first ensures it has an earlier `messageTimestamp` time
         const recordsDelete = await RecordsDelete.create({
-          recordId            : initialWriteData.message.recordId,
-          authorizationSigner : Jws.createSigner(alice)
+          recordId : initialWriteData.message.recordId,
+          signer   : Jws.createSigner(alice)
         });
         await minimalSleep();
         const subsequentWriteData = await TestDataGenerator.generateFromRecordsWrite({
@@ -609,8 +609,8 @@ export function testRecordsDeleteHandler(): void {
           expect(writeReply.status.code).to.equal(202);
 
           const recordsDelete = await RecordsDelete.create({
-            recordId            : message.recordId,
-            authorizationSigner : Jws.createSigner(alice)
+            recordId : message.recordId,
+            signer   : Jws.createSigner(alice)
           });
 
           const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
@@ -647,8 +647,8 @@ export function testRecordsDeleteHandler(): void {
           expect(newWriteReply.status.code).to.equal(202);
 
           const recordsDelete = await RecordsDelete.create({
-            recordId            : message.recordId,
-            authorizationSigner : Jws.createSigner(author)
+            recordId : message.recordId,
+            signer   : Jws.createSigner(author)
           });
 
           const deleteReply = await dwn.processMessage(author.did, recordsDelete.message);

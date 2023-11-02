@@ -143,12 +143,12 @@ export class RecordsWrite {
   private _message: InternalRecordsWriteMessage;
   /**
    * Valid JSON message representing this RecordsWrite.
-   * @throws `DwnErrorCode.RecordsWriteMissingAuthorizationSigner` if the message is not signed yet.
+   * @throws `DwnErrorCode.RecordsWriteMissingSigner` if the message is not signed yet.
    */
   public get message(): RecordsWriteMessage {
     if (this._message.authorization === undefined) {
       throw new DwnError(
-        DwnErrorCode.RecordsWriteMissingAuthorizationSigner,
+        DwnErrorCode.RecordsWriteMissingSigner,
         'This RecordsWrite is not yet signed, JSON message cannot be generated from an incomplete state.'
       );
     }
@@ -458,21 +458,18 @@ export class RecordsWrite {
       this._message.contextId = await RecordsWrite.getEntryId(authorDid, descriptor);
     }
 
-    // `signerSignature` generation
-    const additionalPropertiesToSign = {
+    // `signature` generation
+    const signature = await RecordsWrite.createSignerSignature({
+      recordId    : this._message.recordId,
+      contextId   : this._message.contextId,
+      descriptorCid,
+      attestation : this._message.attestation,
+      encryption  : this._message.encryption,
+      signer,
       delegatedGrantId,
       permissionsGrantId,
       protocolRole
-    };
-    const signature = await RecordsWrite.createSignerSignature(
-      this._message.recordId,
-      this._message.contextId,
-      descriptorCid,
-      this._message.attestation,
-      this._message.encryption,
-      signer,
-      additionalPropertiesToSign
-    );
+    });
 
     this._message.authorization = { signature };
 
@@ -825,17 +822,21 @@ export class RecordsWrite {
   }
 
   /**
-   * Creates the `signerSignature` property in the `authorization` of a `RecordsWrite` message.
+   * Creates the `signature` property in the `authorization` of a `RecordsWrite` message.
    */
-  public static async createSignerSignature(
+  public static async createSignerSignature(input: {
     recordId: string,
     contextId: string | undefined,
     descriptorCid: string,
     attestation: GeneralJws | undefined,
     encryption: EncryptionProperty | undefined,
     signer: Signer,
-    additionalProperties?: { delegatedGrantId?: string, permissionsGrantId?: string, protocolRole?: string },
-  ): Promise<GeneralJws> {
+    delegatedGrantId?: string,
+    permissionsGrantId?: string,
+    protocolRole?: string
+  }): Promise<GeneralJws> {
+    const { recordId, contextId, descriptorCid, attestation, encryption, signer, delegatedGrantId, permissionsGrantId, protocolRole } = input;
+
     const attestationCid = attestation ? await Cid.computeCid(attestation) : undefined;
     const encryptionCid = encryption ? await Cid.computeCid(encryption) : undefined;
 
@@ -845,9 +846,9 @@ export class RecordsWrite {
       contextId,
       attestationCid,
       encryptionCid,
-      delegatedGrantId   : additionalProperties?.delegatedGrantId,
-      permissionsGrantId : additionalProperties?.permissionsGrantId,
-      protocolRole       : additionalProperties?.protocolRole
+      delegatedGrantId,
+      permissionsGrantId,
+      protocolRole
     };
     removeUndefinedProperties(signaturePayload);
 

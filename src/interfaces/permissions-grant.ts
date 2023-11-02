@@ -21,7 +21,7 @@ export type PermissionsGrantOptions = {
   permissionsRequestId?: string;
   scope: PermissionScope;
   conditions?: PermissionConditions;
-  authorizationSigner: Signer;
+  signer: Signer;
 };
 
 export type CreateFromPermissionsRequestOverrides = {
@@ -69,7 +69,7 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const authorization = await Message.createAuthorizationAsAuthor(descriptor, options.authorizationSigner);
+    const authorization = await Message.createAuthorization(descriptor, options.signer);
     const message: PermissionsGrantMessage = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
@@ -105,12 +105,12 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
   /**
    * generates a PermissionsGrant using the provided PermissionsRequest
    * @param permissionsRequest
-   * @param authorizationSigner - the private key and additional signature material of the grantor
+   * @param signer - the private key and additional signature material of the grantor
    * @param overrides - overrides that will be used instead of the properties in `permissionsRequest`
    */
   public static async createFromPermissionsRequest(
     permissionsRequest: PermissionsRequest,
-    authorizationSigner: Signer,
+    signer: Signer,
     overrides: CreateFromPermissionsRequestOverrides,
   ): Promise<PermissionsGrant> {
     const descriptor = permissionsRequest.message.descriptor;
@@ -123,7 +123,7 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
       permissionsRequestId : await Message.getCid(permissionsRequest.message),
       scope                : overrides.scope ?? descriptor.scope,
       conditions           : overrides.conditions ?? descriptor.conditions,
-      authorizationSigner,
+      signer,
     });
   }
 

@@ -82,7 +82,7 @@ export enum DwnErrorCode {
   RecordsWriteDataCidMismatch = 'RecordsWriteDataCidMismatch',
   RecordsWriteDataSizeMismatch = 'RecordsWriteDataSizeMismatch',
   RecordsWriteGetEntryIdUndefinedAuthor = 'RecordsWriteGetEntryIdUndefinedAuthor',
-  RecordsWriteMissingAuthorizationSigner = 'RecordsWriteMissingAuthorizationSigner',
+  RecordsWriteMissingSigner = 'RecordsWriteMissingSigner',
   RecordsWriteMissingDataInPrevious = 'RecordsWriteMissingDataInPrevious',
   RecordsWriteMissingDataAssociation = 'RecordsWriteMissingDataAssociation',
   RecordsWriteMissingDataStream = 'RecordsWriteMissingDataStream',

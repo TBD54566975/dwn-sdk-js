@@ -231,7 +231,7 @@ export function testProtocolsConfigureHandler(): void {
         protocolsConfig.message.descriptor.definition.protocol = 'example.com/';
 
         // Re-create auth because we altered the descriptor after signing
-        protocolsConfig.message.authorization = await Message.createAuthorizationAsAuthor(
+        protocolsConfig.message.authorization = await Message.createAuthorization(
           protocolsConfig.message.descriptor,
           Jws.createSigner(alice)
         );
@@ -255,7 +255,7 @@ export function testProtocolsConfigureHandler(): void {
         protocolsConfig.message.descriptor.definition.types.ask.schema = 'ask';
 
         // Re-create auth because we altered the descriptor after signing
-        protocolsConfig.message.authorization = await Message.createAuthorizationAsAuthor(
+        protocolsConfig.message.authorization = await Message.createAuthorization(
           protocolsConfig.message.descriptor,
           Jws.createSigner(alice)
         );

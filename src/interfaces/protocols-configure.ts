@@ -10,7 +10,7 @@ import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized
 export type ProtocolsConfigureOptions = {
   messageTimestamp?: string;
   definition: ProtocolDefinition;
-  authorizationSigner: Signer;
+  signer: Signer;
   permissionsGrantId?: string;
 };
 
@@ -35,9 +35,9 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       definition       : ProtocolsConfigure.normalizeDefinition(options.definition)
     };
 
-    const authorization = await Message.createAuthorizationAsAuthor(
+    const authorization = await Message.createAuthorization(
       descriptor,
-      options.authorizationSigner,
+      options.signer,
       { permissionsGrantId: options.permissionsGrantId }
     );
     const message = { descriptor, authorization };
