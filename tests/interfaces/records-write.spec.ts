@@ -1,5 +1,4 @@
 import type { MessageStore } from '../../src/types/message-store.js';
-import type { RecordsWriteMessage } from '../../src/types/records-types.js';
 import type { EncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
 import type { PermissionScope, Signer } from '../../src/index.js';
 

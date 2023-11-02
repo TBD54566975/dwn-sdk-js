@@ -1,8 +1,6 @@
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
 import type { GenerateFromRecordsWriteOut } from '../utils/test-data-generator.js';
 import type { ProtocolDefinition } from '../../src/types/protocols-types.js';
-import type { QueryResultEntry } from '../../src/types/message-types.js';
-import type { RecordsWriteMessage } from '../../src/types/records-types.js';
 import type { RecordsWriteMessageWithOptionalEncodedData } from '../../src/store/storage-controller.js';
 import type { DataStore, EventLog, MessageStore, PermissionScope } from '../../src/index.js';
 

@@ -1,5 +1,3 @@
-import type { RecordsReadMessage } from '../../src/types/records-types.js';
-
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 

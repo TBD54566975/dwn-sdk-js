@@ -1,8 +1,6 @@
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
-import type { RecordsQueryMessage } from '../../src/index.js';
-
 import dexProtocolDefinition from '../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { Jws } from '../../src/index.js';
