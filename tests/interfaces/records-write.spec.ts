@@ -32,7 +32,7 @@ describe('RecordsWrite', () => {
       };
       const recordsWrite = await RecordsWrite.create(options);
 
-      const message = recordsWrite.message as RecordsWriteMessage;
+      const message = recordsWrite.message;
 
       expect(message.authorization).to.exist;
       expect(message.descriptor.dataFormat).to.equal(options.dataFormat);
@@ -56,7 +56,7 @@ describe('RecordsWrite', () => {
       };
       const recordsWrite = await RecordsWrite.create(options);
 
-      const message = recordsWrite.message as RecordsWriteMessage;
+      const message = recordsWrite.message;
 
       expect(message.descriptor.datePublished).to.exist;
     });
@@ -139,7 +139,7 @@ describe('RecordsWrite', () => {
       };
       const recordsWrite = await RecordsWrite.create(options);
 
-      const message = recordsWrite.message as RecordsWriteMessage;
+      const message = recordsWrite.message;
 
       expect(message.descriptor.protocol).to.eq('http://example.com');
     });

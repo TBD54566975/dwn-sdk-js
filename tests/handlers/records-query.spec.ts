@@ -182,7 +182,7 @@ export function testRecordsQueryHandler(): void {
         const recordsQuery1 = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { attester: alice.did } });
         const reply1 = await dwn.processMessage(alice.did, recordsQuery1.message);
         expect(reply1.entries?.length).to.equal(1);
-        const reply1Attester = Jws.getSignerDid((reply1.entries![0] as RecordsWriteMessage).attestation!.signatures[0]);
+        const reply1Attester = Jws.getSignerDid(reply1.entries![0].attestation!.signatures[0]);
         expect(reply1Attester).to.equal(alice.did);
 
         // testing attester + another filter
@@ -192,7 +192,7 @@ export function testRecordsQueryHandler(): void {
         });
         const reply2 = await dwn.processMessage(alice.did, recordsQuery2.message);
         expect(reply2.entries?.length).to.equal(1);
-        const reply2Attester = Jws.getSignerDid((reply2.entries![0] as RecordsWriteMessage).attestation!.signatures[0]);
+        const reply2Attester = Jws.getSignerDid(reply2.entries![0].attestation!.signatures[0]);
         expect(reply2Attester).to.equal(bob.did);
 
         // testing attester filter that yields no results
@@ -1117,9 +1117,9 @@ export function testRecordsQueryHandler(): void {
         // verify that messages returned are sorted/tiebreak by `messageCid`
         expect(queryReply.status.code).to.equal(200);
         expect(queryReply.entries?.length).to.equal(3);
-        expect((queryReply.entries![0] as RecordsWriteMessage).recordId).to.equal(oldestWrite.message.recordId);
-        expect((queryReply.entries![1] as RecordsWriteMessage).recordId).to.equal(middleWrite.message.recordId);
-        expect((queryReply.entries![2] as RecordsWriteMessage).recordId).to.equal(newestWrite.message.recordId);
+        expect(queryReply.entries![0].recordId).to.equal(oldestWrite.message.recordId);
+        expect(queryReply.entries![1].recordId).to.equal(middleWrite.message.recordId);
+        expect(queryReply.entries![2].recordId).to.equal(newestWrite.message.recordId);
       });
 
       it('should paginate records if pagination is provided', async () => {
@@ -1660,8 +1660,8 @@ export function testRecordsQueryHandler(): void {
             author: alice,
             protocolDefinition
           });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-          expect(protocolWriteReply.status.code).to.equal(202);
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
 
           // Alice writes a 'thread' record
           const threadRecord = await TestDataGenerator.generateRecordsWrite({
@@ -1742,8 +1742,8 @@ export function testRecordsQueryHandler(): void {
             author: alice,
             protocolDefinition
           });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-          expect(protocolWriteReply.status.code).to.equal(202);
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
 
           // Alice writes a 'friend' $globalRole record with Bob as recipient
           const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
@@ -1815,8 +1815,8 @@ export function testRecordsQueryHandler(): void {
             author: alice,
             protocolDefinition
           });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-          expect(protocolWriteReply.status.code).to.equal(202);
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
 
           // Alice writes a 'thread' record
           const threadRecord = await TestDataGenerator.generateRecordsWrite({
@@ -1887,8 +1887,8 @@ export function testRecordsQueryHandler(): void {
             author: alice,
             protocolDefinition
           });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-          expect(protocolWriteReply.status.code).to.equal(202);
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
 
           // Alice writes a 'friend' $globalRole record with Bob as recipient
           const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
@@ -1943,8 +1943,8 @@ export function testRecordsQueryHandler(): void {
             author: alice,
             protocolDefinition
           });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-          expect(protocolWriteReply.status.code).to.equal(202);
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
 
           // Alice writes a 'thread' record
           const threadRecord = await TestDataGenerator.generateRecordsWrite({
@@ -2014,8 +2014,8 @@ export function testRecordsQueryHandler(): void {
             author: alice,
             protocolDefinition
           });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-          expect(protocolWriteReply.status.code).to.equal(202);
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
 
           // Alice writes three 'chat' records
           const chatRecordIds = [];
@@ -2058,8 +2058,8 @@ export function testRecordsQueryHandler(): void {
             author: alice,
             protocolDefinition
           });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-          expect(protocolWriteReply.status.code).to.equal(202);
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
 
           // Alice writes a 'thread' record
           const threadRecord = await TestDataGenerator.generateRecordsWrite({

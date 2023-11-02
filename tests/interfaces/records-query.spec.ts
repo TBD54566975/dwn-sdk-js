@@ -54,7 +54,7 @@ describe('RecordsQuery', () => {
       };
       const recordsQuery = await RecordsQuery.create(options);
 
-      const message = recordsQuery.message as RecordsQueryMessage;
+      const message = recordsQuery.message;
 
       expect(message.descriptor.filter!.protocol).to.eq('http://example.com');
     });
@@ -72,7 +72,7 @@ describe('RecordsQuery', () => {
       };
       const recordsQuery = await RecordsQuery.create(options);
 
-      const message = recordsQuery.message as RecordsQueryMessage;
+      const message = recordsQuery.message;
 
       expect(message.descriptor.filter!.schema).to.eq('http://example.com');
     });
