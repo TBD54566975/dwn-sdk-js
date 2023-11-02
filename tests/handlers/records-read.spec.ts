@@ -210,8 +210,8 @@ export function testRecordsReadHandler(): void {
             author: alice,
             protocolDefinition
           });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-          expect(protocolWriteReply.status.code).to.equal(202);
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
 
           // Alice writes image to her DWN
           const encodedImage = new TextEncoder().encode('cafe-aesthetic.jpg');
@@ -252,8 +252,8 @@ export function testRecordsReadHandler(): void {
             author: alice,
             protocolDefinition
           });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-          expect(protocolWriteReply.status.code).to.equal(202);
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
 
           // Alice writes a message to the minimal protocol
           const recordsWrite = await TestDataGenerator.generateRecordsWrite({
@@ -294,8 +294,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition,
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes an email with Bob as recipient
             const encodedEmail = new TextEncoder().encode('Dear Bob, hello!');
@@ -349,8 +349,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes an email with Bob as recipient
             const encodedEmail = new TextEncoder().encode('Dear Alice, hello!');
@@ -489,8 +489,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a 'friend' $globalRole record with Bob as recipient
             const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
@@ -540,8 +540,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a 'chat' record
             const chatRecord = await TestDataGenerator.generateRecordsWrite({
@@ -580,8 +580,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a 'chat' record
             const chatRecord = await TestDataGenerator.generateRecordsWrite({
@@ -620,8 +620,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice creates a thread
             const threadRecord = await TestDataGenerator.generateRecordsWrite({
@@ -705,8 +705,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice creates a thread
             const threadRecord1 = await TestDataGenerator.generateRecordsWrite({
@@ -863,8 +863,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
@@ -927,8 +927,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
@@ -991,8 +991,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
@@ -1045,8 +1045,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
@@ -1098,8 +1098,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
@@ -1151,8 +1151,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
@@ -1205,8 +1205,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
@@ -1258,8 +1258,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({

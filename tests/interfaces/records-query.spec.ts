@@ -1,8 +1,6 @@
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
-import type { RecordsQueryMessage } from '../../src/index.js';
-
 import dexProtocolDefinition from '../vectors/protocol-definitions/dex.json' assert { type: 'json' };
 import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { Jws } from '../../src/index.js';
@@ -54,7 +52,7 @@ describe('RecordsQuery', () => {
       };
       const recordsQuery = await RecordsQuery.create(options);
 
-      const message = recordsQuery.message as RecordsQueryMessage;
+      const message = recordsQuery.message;
 
       expect(message.descriptor.filter!.protocol).to.eq('http://example.com');
     });
@@ -72,7 +70,7 @@ describe('RecordsQuery', () => {
       };
       const recordsQuery = await RecordsQuery.create(options);
 
-      const message = recordsQuery.message as RecordsQueryMessage;
+      const message = recordsQuery.message;
 
       expect(message.descriptor.filter!.schema).to.eq('http://example.com');
     });

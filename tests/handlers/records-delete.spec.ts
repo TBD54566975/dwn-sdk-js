@@ -466,8 +466,8 @@ export function testRecordsDeleteHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice creates a thread
             const threadRecord = await TestDataGenerator.generateRecordsWrite({
@@ -535,8 +535,8 @@ export function testRecordsDeleteHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice adds Bob as a 'thread/admin' in that thread
             const participantRecord = await TestDataGenerator.generateRecordsWrite({

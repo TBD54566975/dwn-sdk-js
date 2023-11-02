@@ -1,5 +1,4 @@
 import type { MessageStore } from '../../src/types/message-store.js';
-import type { RecordsWriteMessage } from '../../src/types/records-types.js';
 import type { EncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
 import type { PermissionScope, Signer } from '../../src/index.js';
 
@@ -32,7 +31,7 @@ describe('RecordsWrite', () => {
       };
       const recordsWrite = await RecordsWrite.create(options);
 
-      const message = recordsWrite.message as RecordsWriteMessage;
+      const message = recordsWrite.message;
 
       expect(message.authorization).to.exist;
       expect(message.descriptor.dataFormat).to.equal(options.dataFormat);
@@ -56,7 +55,7 @@ describe('RecordsWrite', () => {
       };
       const recordsWrite = await RecordsWrite.create(options);
 
-      const message = recordsWrite.message as RecordsWriteMessage;
+      const message = recordsWrite.message;
 
       expect(message.descriptor.datePublished).to.exist;
     });
@@ -139,7 +138,7 @@ describe('RecordsWrite', () => {
       };
       const recordsWrite = await RecordsWrite.create(options);
 
-      const message = recordsWrite.message as RecordsWriteMessage;
+      const message = recordsWrite.message;
 
       expect(message.descriptor.protocol).to.eq('http://example.com');
     });

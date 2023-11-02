@@ -1,5 +1,3 @@
-import type { RecordsReadMessage } from '../../src/types/records-types.js';
-
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
@@ -41,7 +39,7 @@ describe('RecordsRead', () => {
       };
       const recordsQuery = await RecordsRead.create(options);
 
-      const message = recordsQuery.message as RecordsReadMessage;
+      const message = recordsQuery.message;
 
       expect(message.descriptor.filter!.protocol).to.eq('http://example.com');
     });
@@ -59,7 +57,7 @@ describe('RecordsRead', () => {
       };
       const recordsQuery = await RecordsRead.create(options);
 
-      const message = recordsQuery.message as RecordsReadMessage;
+      const message = recordsQuery.message;
 
       expect(message.descriptor.filter!.schema).to.eq('http://example.com');
     });

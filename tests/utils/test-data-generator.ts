@@ -408,7 +408,7 @@ export class TestDataGenerator {
     };
 
     const recordsWrite = await RecordsWrite.create(options);
-    const message = recordsWrite.message as RecordsWriteMessage;
+    const message = recordsWrite.message;
 
     return {
       author,
@@ -624,7 +624,7 @@ export class TestDataGenerator {
     removeUndefinedProperties(options);
 
     const recordsQuery = await RecordsQuery.create(options);
-    const message = recordsQuery.message as RecordsQueryMessage;
+    const message = recordsQuery.message;
 
     return {
       author,
