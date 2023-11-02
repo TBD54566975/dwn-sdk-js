@@ -1,4 +1,5 @@
 import { ArrayUtility } from '../../src/utils/array.js';
+import { createLevelDatabase } from '../../src/store/level-wrapper.js';
 import { IndexLevel } from '../../src/store/index-level.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { monotonicFactory } from 'ulidx';
@@ -6,7 +7,6 @@ import { SortDirection } from '../../src/index.js';
 import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { v4 as uuid } from 'uuid';
-import { createLevelDatabase, LevelWrapper } from '../../src/store/level-wrapper.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
@@ -15,30 +15,25 @@ chai.use(chaiAsPromised);
 
 
 describe('IndexLevel', () => {
-  let db: LevelWrapper<string>;
   let testIndex: IndexLevel<string>;
-  let partitionedDB: LevelWrapper<string>;
   const ulidFactory = monotonicFactory();
   const tenant = 'did:alice:index-test';
 
   describe('put', () => {
     before(async () => {
-      db = new LevelWrapper<string>({
+      testIndex = new IndexLevel({
         createLevelDatabase,
-        location      : 'TEST-INDEX',
-        valueEncoding : 'utf8'
+        location: 'TEST-INDEX',
       });
-      testIndex = new IndexLevel(db);
-      partitionedDB = await (await db.partition(tenant)).partition('index');
-      await db.open();
+      await testIndex.open();
     });
 
     beforeEach(async () => {
-      await db.clear();
+      await testIndex.clear();
     });
 
     after(async () => {
-      await db.close();
+      await testIndex.close();
     });
 
     it('fails to index with no sorting properties', async () => {
@@ -56,7 +51,7 @@ describe('IndexLevel', () => {
 
       await expect(failedIndex).to.eventually.be.rejectedWith('must include at least one sorted index');
 
-      const keys = await ArrayUtility.fromAsyncGenerator(partitionedDB.keys());
+      const keys = await ArrayUtility.fromAsyncGenerator(testIndex.db.keys());
       expect(keys.length).to.equal(0);
 
       failedIndex = testIndex.put(tenant, id, id, {
@@ -85,7 +80,7 @@ describe('IndexLevel', () => {
 
       await expect(failedIndex).to.eventually.be.rejectedWith('must include at least one indexable property');
 
-      const keys = await ArrayUtility.fromAsyncGenerator(partitionedDB.keys());
+      const keys = await ArrayUtility.fromAsyncGenerator(testIndex.db.keys());
       expect(keys.length).to.equal(0);
 
       failedIndex = testIndex.put(tenant, id, id, {
@@ -132,10 +127,10 @@ describe('IndexLevel', () => {
         dateCreated,
       }, { dateCreated });
 
-      let keys = await ArrayUtility.fromAsyncGenerator(partitionedDB.keys());
+      let keys = await ArrayUtility.fromAsyncGenerator(testIndex.db.keys());
       expect(keys.length).to.equal(2);
 
-      await partitionedDB.clear();
+      await testIndex.clear();
 
       const watermark = ulidFactory();
       await testIndex.put(tenant, id, id, {
@@ -144,7 +139,7 @@ describe('IndexLevel', () => {
         dateCreated,
       }, { dateCreated, watermark });
 
-      keys = await ArrayUtility.fromAsyncGenerator(partitionedDB.keys());
+      keys = await ArrayUtility.fromAsyncGenerator(testIndex.db.keys());
       expect(keys.length).to.equal(3);
     });
 
@@ -167,22 +162,19 @@ describe('IndexLevel', () => {
 
   describe('query', () => {
     before(async () => {
-      db = new LevelWrapper<string>({
+      testIndex = new IndexLevel({
         createLevelDatabase,
-        location      : 'TEST-INDEX',
-        valueEncoding : 'utf8'
+        location: 'TEST-INDEX',
       });
-      testIndex = new IndexLevel(db);
-      partitionedDB = await (await db.partition(tenant)).partition('index');
-      await db.open();
+      await testIndex.open();
     });
 
     beforeEach(async () => {
-      await db.clear();
+      await testIndex.clear();
     });
 
     after(async () => {
-      await db.close();
+      await testIndex.close();
     });
 
     it('works', async () =>{
@@ -215,6 +207,16 @@ describe('IndexLevel', () => {
 
       expect(result.length).to.equal(1);
       expect(result[0]).to.equal(id3);
+    });
+
+    it('should return all records if an empty filter array is passed', async () => {
+      const items = [ 'b', 'a', 'd', 'c' ];
+      for (const item of items) {
+        await testIndex.put(tenant, item, item, { letter: item }, { index: items.indexOf(item), letter: item });
+      }
+
+      const allResults = await testIndex.query(tenant, [],{ sortProperty: 'letter' });
+      expect(allResults).to.eql(['a', 'b', 'c', 'd']);
     });
 
     it('should not match values prefixed with the query', async () => {
@@ -486,22 +488,19 @@ describe('IndexLevel', () => {
 
   describe('delete', () => {
     before(async () => {
-      db = new LevelWrapper<string>({
+      testIndex = new IndexLevel({
         createLevelDatabase,
-        location      : 'TEST-INDEX',
-        valueEncoding : 'utf8'
+        location: 'TEST-INDEX',
       });
-      testIndex = new IndexLevel(db);
-      partitionedDB = await (await db.partition(tenant)).partition('index');
-      await db.open();
+      await testIndex.open();
     });
 
     beforeEach(async () => {
-      await db.clear();
+      await testIndex.clear();
     });
 
     after(async () => {
-      await db.close();
+      await testIndex.close();
     });
 
     it('purges indexes', async () => {
@@ -533,7 +532,7 @@ describe('IndexLevel', () => {
 
       await testIndex.delete(tenant, id2);
 
-      const allKeys = await ArrayUtility.fromAsyncGenerator(db.keys());
+      const allKeys = await ArrayUtility.fromAsyncGenerator(testIndex.db.keys());
       expect(allKeys.length).to.equal(0);
     });
 
@@ -581,22 +580,19 @@ describe('IndexLevel', () => {
 
   describe('sort, limit and cursor', () => {
     before(async () => {
-      db = new LevelWrapper<string>({
+      testIndex = new IndexLevel({
         createLevelDatabase,
-        location      : 'TEST-INDEX',
-        valueEncoding : 'utf8'
+        location: 'TEST-INDEX',
       });
-      testIndex = new IndexLevel(db);
-      partitionedDB = await (await db.partition(tenant)).partition('index');
-      await db.open();
+      await testIndex.open();
     });
 
     beforeEach(async () => {
-      await db.clear();
+      await testIndex.clear();
     });
 
     after(async () => {
-      await db.close();
+      await testIndex.close();
     });
 
     it('only returns the number of results specified by the limit property', async () => {

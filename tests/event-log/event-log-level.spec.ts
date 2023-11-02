@@ -33,7 +33,7 @@ describe('EventLogLevel Tests', () => {
 
       const numEventsDeleted = await eventLog.deleteEventsByCid(author.did, [ messageCid ]);
       expect(numEventsDeleted).to.equal(1);
-      const keysAfterDelete = await ArrayUtility.fromAsyncGenerator(eventLog.db.keys());
+      const keysAfterDelete = await ArrayUtility.fromAsyncGenerator(eventLog.index.db.keys());
       expect(keysAfterDelete.length).to.equal(0);
     });
   });
