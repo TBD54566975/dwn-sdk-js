@@ -1,11 +1,16 @@
-import type { LevelWrapper } from './level-wrapper.js';
 import type { Filter, OneOfFilter, RangeFilter } from '../types/message-types.js';
-import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions } from './level-wrapper.js';
+import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions, } from './level-wrapper.js';
 
 import { SortDirection } from '../types/message-types.js';
-import { flatten, removeUndefinedProperties } from '../utils/object.js';
+import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
+import { flatten, isEmptyObject, removeUndefinedProperties } from '../utils/object.js';
 
-type Index = { [key:string]: unknown };
+type Indexes = { [key:string]: unknown };
+
+type IndexLevelConfig = {
+  location?: string,
+  createLevelDatabase?: typeof createLevelDatabase
+};
 
 export type QueryOptions = {
   sortProperty: string;
@@ -24,7 +29,36 @@ export interface IndexLevelOptions {
  * A LevelDB implementation for indexing the messages and events stored in the DWN.
  */
 export class IndexLevel<T> {
-  constructor(private db: LevelWrapper<string>) {}
+  db: LevelWrapper<string>;
+  config: IndexLevelConfig;
+
+  constructor(config: IndexLevelConfig) {
+    this.config = {
+      createLevelDatabase,
+      ...config,
+    };
+
+    this.db = new LevelWrapper<string>({
+      location            : this.config.location!,
+      createLevelDatabase : this.config.createLevelDatabase,
+      keyEncoding         : 'utf8'
+    });
+  }
+
+  async open(): Promise<void> {
+    await this.db.open();
+  }
+
+  async close(): Promise<void> {
+    await this.db.close();
+  }
+
+  /**
+ * deletes everything in the underlying index db.
+ */
+  async clear(): Promise<void> {
+    await this.db.clear();
+  }
 
   /**
    * Put an item into the index using information that will allow it to be queried for.
@@ -40,15 +74,15 @@ export class IndexLevel<T> {
     tenant: string,
     itemId: string,
     value: T,
-    indexes: Index,
-    sortIndexes: Index,
+    indexes: Indexes,
+    sortIndexes: Indexes,
     options?: IndexLevelOptions
   ): Promise<void> {
     // ensure sorted indexes are flat and exist
     sortIndexes = flatten(sortIndexes);
     removeUndefinedProperties(sortIndexes);
 
-    if (!sortIndexes || Object.keys(sortIndexes).length === 0) {
+    if (isEmptyObject(sortIndexes)) {
       throw new Error('must include at least one sorted index');
     }
 
@@ -56,61 +90,67 @@ export class IndexLevel<T> {
     indexes = flatten(indexes);
     removeUndefinedProperties(indexes);
 
-    if (!indexes || Object.keys(indexes).length === 0) {
+    if (isEmptyObject(indexes)) {
       throw new Error('must include at least one indexable property');
     }
-    const indexOps: LevelWrapperBatchOperation<string>[] = [];
 
     const tenantPartition = await this.db.partition(tenant);
-    const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
 
-    // store the value and indexes for each of the sortedIndex
+    const indexOps: LevelWrapperBatchOperation<string>[] = [];
+    // store the value and indexes for each of the sorted properties
     for (const sortProperty in sortIndexes) {
       const sortValue = sortIndexes[sortProperty];
+      // each sortProperty is treated as it's own partition.
+      // This allows the LevelDB system to calculate a gt maxKey for each of the sort properties
+      // which facilitates iterating in reverse for descending order queries without starting at a different(gt) sort property than querying.
+      // the key is simply the sortValue followed by the itemId as a tie-breaker.
       const key = IndexLevel.keySegmentJoin(this.encodeValue(sortValue), itemId);
-      indexOps.push(indexPartition.sublevelBatchOperation(sortProperty, {
+
+      // we write the values into a sub-partition of indexPartition.
+      indexOps.push(tenantPartition.partitionOperation(`__${sortProperty}__sort`, {
         key,
         type  : 'put',
         value : JSON.stringify({ indexes, value })
       }));
     }
-    indexOps.push({ type: 'put', key: `__${itemId}__indexes`, value: JSON.stringify(sortIndexes) });
-    await indexPartition.batch(indexOps, options);
-  }
 
+    // create a reverse index for the sortedIndex values. This is used during deletion and cursor starting point lookup.
+    indexOps.push(tenantPartition.partitionOperation(INDEX_SUBLEVEL_NAME,
+      { type: 'put', key: itemId, value: JSON.stringify(sortIndexes) }
+    ));
+
+    await tenantPartition.batch(indexOps, options);
+  }
 
   async delete(tenant: string, itemId: string, options?: IndexLevelOptions): Promise<void> {
     const tenantPartition = await this.db.partition(tenant);
-    const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
-
     const indexOps: LevelWrapperBatchOperation<string>[] = [];
-    const indexKey = `__${itemId}__indexes`;
-    const serializedIndexes = await indexPartition.get(indexKey);
-    if (serializedIndexes === undefined) {
+
+    const sortIndexes = await this.getSortIndexes(tenant, itemId);
+    if (sortIndexes === undefined) {
       return;
     }
 
-    const sortIndexes = JSON.parse(serializedIndexes);
+    // delete the reverse lookup
+    indexOps.push(tenantPartition.partitionOperation(INDEX_SUBLEVEL_NAME,
+      { type: 'del', key: itemId }
+    ));
+
     for (const sortProperty in sortIndexes) {
       const sortValue = sortIndexes[sortProperty];
-      indexOps.push(indexPartition.sublevelBatchOperation(sortProperty, {
+      indexOps.push(tenantPartition.partitionOperation(`__${sortProperty}__sort`, {
         type : 'del',
         key  : IndexLevel.keySegmentJoin(this.encodeValue(sortValue), itemId),
       }));
     }
-    // delete the reverse lookup
-    indexOps.push({ type: 'del', key: indexKey });
 
-    await indexPartition.batch(indexOps, options);
+    await tenantPartition.batch(indexOps, options);
   }
 
   async query(tenant:string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<T[]> {
-    const { sortProperty, limit = 0, sortDirection = SortDirection.Ascending, cursor } = queryOptions;
-    const tenantPartition = await this.db.partition(tenant);
-    const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
-    const sortPartition = await indexPartition.partition(sortProperty);
+    const { sortProperty, limit, sortDirection = SortDirection.Ascending, cursor } = queryOptions;
 
-    const startKey = cursor ? await this.getSortValueIndex(indexPartition, cursor, sortProperty) : '';
+    const startKey = cursor ? await this.getStartingKeyForCursor(tenant, cursor, sortProperty) : '';
     if (startKey === undefined) {
       // this signifies an invalid cursor, we return an empty result set.
       return [];
@@ -129,12 +169,21 @@ export class IndexLevel<T> {
     }
 
     const matches: Array<T> = [];
+
+    const tenantPartition = await this.db.partition(tenant);
+    const sortPartition = await tenantPartition.partition(`__${sortProperty}__sort`);
     for await (const [ _, val ] of sortPartition.iterator(iteratorOptions, options)) {
-      if (matches.length > 0 && matches.length === limit) {
+      if (limit !== undefined && matches.length === limit) {
         return matches;
       }
 
       const { value, indexes } = JSON.parse(val);
+      // if there aren't any filters, return everything
+      if (filters.length === 0) {
+        matches.push(value);
+        continue; //next match
+      }
+
       for (const filter of filters) {
         if (this.matchQuery(indexes, filter)) {
           matches.push(value);
@@ -146,21 +195,36 @@ export class IndexLevel<T> {
     return matches;
   }
 
-  async getSortValueIndex(indexLevel: LevelWrapper<string>, cursor: string, sortProperty: string): Promise<string|undefined> {
-    const serializedIndexes = await indexLevel.get(`__${cursor}__indexes`);
+  private async getSortIndexes(tenant: string, itemId: string): Promise<Indexes|undefined> {
+    const tenantPartition = await this.db.partition(tenant);
+    const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
+    const serializedIndexes = await indexPartition.get(itemId);
     if (serializedIndexes === undefined) {
-      return undefined;
+      return;
     }
-    const sortIndexes = JSON.parse(serializedIndexes) as Index;
+
+    return JSON.parse(serializedIndexes) as Indexes;
+  }
+
+  /**
+   * Gets the sort property starting point for a LevelDB query given an itemId as a cursor.
+   * Used as (gt) for ascending queries, or (lt) for descending queries.
+   */
+  private async getStartingKeyForCursor(tenant: string, itemId: string, sortProperty: string): Promise<string|undefined> {
+    const sortIndexes = await this.getSortIndexes(tenant, itemId);
+    if (sortIndexes === undefined) {
+      return;
+    }
+
     const sortValue = sortIndexes[sortProperty];
     // invalid sort property
     if (sortValue === undefined) {
       return undefined;
     }
-    return IndexLevel.keySegmentJoin(this.encodeValue(sortValue), cursor);
+    return IndexLevel.keySegmentJoin(this.encodeValue(sortValue), itemId);
   }
 
-  matchOneOf(filter: OneOfFilter, itemValue: unknown): boolean {
+  private matchOneOf(filter: OneOfFilter, itemValue: unknown): boolean {
     for (const orFilterValue of new Set(filter)) {
       if (this.encodeValue(itemValue) === this.encodeValue(orFilterValue)) {
         return true;
@@ -169,14 +233,11 @@ export class IndexLevel<T> {
     return false;
   }
 
-  matchRange(rangeFilter: RangeFilter, itemValue: unknown): boolean {
+  private matchRange(rangeFilter: RangeFilter, itemValue: unknown): boolean {
     const filterConditions: Array<(value: string) => boolean> = [];
     for (const filterComparator in rangeFilter) {
       const comparatorName = filterComparator as keyof RangeFilter;
       const filterComparatorValue = rangeFilter[comparatorName];
-      if (!filterComparatorValue) {
-        continue;
-      }
       const encodedFilterValue = this.encodeValue(filterComparatorValue);
       switch (comparatorName) {
       case 'lt':
@@ -196,7 +257,7 @@ export class IndexLevel<T> {
     return filterConditions.every((c) => c(this.encodeValue(itemValue)));
   }
 
-  matchQuery(values: { [key:string]:unknown }, filter: Filter): boolean {
+  private matchQuery(values: { [key:string]:unknown }, filter: Filter): boolean {
     // set of unique query properties.
     // if count of missing property matches is 0, it means the data/object fully matches the filter
     const missingPropertyMatchesForId: Set<string> = new Set([ ...Object.keys(filter) ]);
@@ -243,13 +304,17 @@ export class IndexLevel<T> {
     return missingPropertyMatchesForId.size === 0;
   }
 
-  private constructIndexKeys(itemId: string, sortIndexes: { [key:string]:unknown }): Array<string> {
-    const keys:Array<string> = [];
-    for (const sortProperty in sortIndexes) {
-      const sortValue = sortIndexes[sortProperty];
-      keys.push(IndexLevel.keySegmentJoin(sortProperty, this.encodeValue(sortValue), itemId));
+  private encodeValue(value: unknown): string {
+    switch (typeof value) {
+    case 'string':
+      // We can't just `JSON.stringify` as that'll affect the sort order of strings.
+      // For example, `'\x00'` becomes `'\\u0000'`.
+      return `"${value}"`;
+    case 'number':
+      return IndexLevel.encodeNumberValue(value);
+    default:
+      return String(value);
     }
-    return keys;
   }
 
   /**
@@ -269,19 +334,6 @@ export class IndexLevel<T> {
     const prefix: string = value < 0 ? NEGATIVE_PREFIX : '';
     const offset: number = value < 0 ? NEGATIVE_OFFSET : 0;
     return prefix + String(value + offset).padStart(PADDING_LENGTH, '0');
-  }
-
-  private encodeValue(value: unknown): string {
-    switch (typeof value) {
-    case 'string':
-      // We can't just `JSON.stringify` as that'll affect the sort order of strings.
-      // For example, `'\x00'` becomes `'\\u0000'`.
-      return `"${value}"`;
-    case 'number':
-      return IndexLevel.encodeNumberValue(value);
-    default:
-      return String(value);
-    }
   }
 
   /**

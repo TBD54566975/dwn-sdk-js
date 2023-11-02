@@ -8,12 +8,12 @@ import * as cbor from '@ipld/dag-cbor';
 
 import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
+import { createLevelDatabase } from './level-wrapper.js';
 import { executeUnlessAborted } from '../utils/abort.js';
 import { IndexLevel } from './index-level.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { SortDirection } from '../types/message-types.js';
 import { Cid, Message } from '../index.js';
-import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 
 
 /**
@@ -24,8 +24,6 @@ export class MessageStoreLevel implements MessageStore {
   config: MessageStoreLevelConfig;
 
   blockstore: BlockstoreLevel;
-
-  indexDB: LevelWrapper<string>;
   index: IndexLevel<string>;
 
   /**
@@ -48,22 +46,20 @@ export class MessageStoreLevel implements MessageStore {
       createLevelDatabase : this.config.createLevelDatabase,
     });
 
-    this.indexDB = new LevelWrapper({
+    this.index = new IndexLevel({
       location            : this.config.indexLocation!,
       createLevelDatabase : this.config.createLevelDatabase,
     });
-
-    this.index = new IndexLevel(this.indexDB);
   }
 
   async open(): Promise<void> {
     await this.blockstore.open();
-    await this.indexDB.open();
+    await this.index.open();
   }
 
   async close(): Promise<void> {
     await this.blockstore.close();
-    await this.indexDB.close();
+    await this.index.close();
   }
 
   async get(tenant: string, cidString: string, options?: MessageStoreOptions): Promise<GenericMessage | undefined> {
@@ -212,7 +208,7 @@ export class MessageStoreLevel implements MessageStore {
    */
   async clear(): Promise<void> {
     await this.blockstore.clear();
-    await this.indexDB.clear();
+    await this.index.clear();
   }
 }
 

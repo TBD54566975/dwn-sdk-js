@@ -1,11 +1,12 @@
 import type { Filter } from '../types/message-types.js';
-import type { LevelWrapperBatchOperation } from '../store/level-wrapper.js';
 import type { ULIDFactory } from 'ulidx';
 import type { Event, EventLog, GetEventsOptions } from '../types/event-log.js';
+import type { LevelWrapper, LevelWrapperBatchOperation } from '../store/level-wrapper.js';
 
+import { createLevelDatabase } from '../store/level-wrapper.js';
 import { IndexLevel } from '../store/index-level.js';
 import { monotonicFactory } from 'ulidx';
-import { createLevelDatabase, LevelWrapper } from '../store/level-wrapper.js';
+import { SortDirection } from '../types/message-types.js';
 
 type EventLogLevelConfig = {
  /**
@@ -17,36 +18,37 @@ type EventLogLevelConfig = {
   createLevelDatabase?: typeof createLevelDatabase,
 };
 
-const WATERMARKS_SUBLEVEL_NAME = 'watermarks';
 const CIDS_SUBLEVEL_NAME = 'cids';
 
 export class EventLogLevel implements EventLog {
-  db: LevelWrapper<string>;
   ulidFactory: ULIDFactory;
   index: IndexLevel<Event>;
 
   constructor(config?: EventLogLevelConfig) {
-    const eventLogConfig = {
+    this.index = new IndexLevel({
       location: 'EVENTLOG',
       createLevelDatabase,
       ...config,
-    };
+    });
 
-    this.db = new LevelWrapper<string>({ ...eventLogConfig, valueEncoding: 'utf8' });
-    this.index = new IndexLevel(this.db);
     this.ulidFactory = monotonicFactory();
   }
 
   async open(): Promise<void> {
-    return this.db.open();
+    return this.index.open();
   }
 
   async close(): Promise<void> {
-    return this.db.close();
+    return this.index.close();
   }
 
   async clear(): Promise<void> {
-    return this.db.clear();
+    return this.index.clear();
+  }
+
+  private async messageCidPartition(tenant: string): Promise<LevelWrapper<string>> {
+    const tenantIndex = await this.index.db.partition(tenant);
+    return tenantIndex.partition(CIDS_SUBLEVEL_NAME);
   }
 
   /**
@@ -59,12 +61,11 @@ export class EventLogLevel implements EventLog {
    * @returns the ulid watermark generated during this operation.
    */
   async append(tenant: string, messageCid: string, indexes: { [key:string]: unknown }): Promise<string> {
-    const tenantEventLog = await this.db.partition(tenant);
-    const watermarkLog = await tenantEventLog.partition(WATERMARKS_SUBLEVEL_NAME);
-    const cidLog = await tenantEventLog.partition(CIDS_SUBLEVEL_NAME);
     const watermark = this.ulidFactory();
-    await watermarkLog.put(watermark, messageCid);
-    await cidLog.put(messageCid, watermark);
+    // a reverse lookup in order to delete by messageCid
+    const cidLogIndex = await this.messageCidPartition(tenant);
+    await cidLogIndex.put(messageCid, watermark);
+
     await this.index.put(tenant, watermark, { messageCid, watermark }, indexes, { watermark });
     return watermark;
   }
@@ -90,16 +91,7 @@ export class EventLogLevel implements EventLog {
    * @returns an array of Events for the given tenant, if a watermark is provided only Events appended after tha watermark will be returned.
    */
   async getEvents(tenant: string, options?: GetEventsOptions): Promise<Event[]> {
-    const tenantEventLog = await this.db.partition(tenant);
-    const watermarkLog = await tenantEventLog.partition(WATERMARKS_SUBLEVEL_NAME);
-    const events: Array<Event> = [];
-
-    for await (const [key, value] of watermarkLog.iterator(options)) {
-      const event = { watermark: key, messageCid: value };
-      events.push(event);
-    }
-
-    return events;
+    return await this.index.query(tenant, [], { sortProperty: 'watermark', sortDirection: SortDirection.Ascending, cursor: options?.gt });
   }
 
   /**
@@ -113,27 +105,21 @@ export class EventLogLevel implements EventLog {
       return 0;
     }
 
-    const tenantEventLog = await this.db.partition(tenant);
-    const cidLog = await tenantEventLog.partition(CIDS_SUBLEVEL_NAME);
-    const watermarkLog = await tenantEventLog.partition(WATERMARKS_SUBLEVEL_NAME);
-
-    const ops: LevelWrapperBatchOperation<string>[] = [];
+    const cidLog = await this.messageCidPartition(tenant);
     const cidOps: LevelWrapperBatchOperation<string>[] = [];
+    const indexDeletePromises: Promise<void>[] = [];
 
     let numEventsDeleted = 0;
-    const indexDeletePromises: Promise<void>[] = [];
     for (const messageCid of messageCids) {
       const watermark = await cidLog.get(messageCid);
       if (watermark === undefined) {
         continue;
       }
-      ops.push({ type: 'del', key: watermark });
       cidOps.push({ type: 'del', key: messageCid });
       indexDeletePromises.push(this.index.delete(tenant, watermark));
       numEventsDeleted += 1;
     }
 
-    await watermarkLog.batch(ops);
     await cidLog.batch(cidOps);
     await Promise.all(indexDeletePromises);
     return numEventsDeleted;

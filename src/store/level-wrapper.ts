@@ -119,13 +119,6 @@ export class LevelWrapper<V> {
     }));
   }
 
-  sublevelBatchOperation(name: string, operation: LevelWrapperBatchOperation<V>): LevelWrapperBatchOperation<V> {
-    return { ...operation, sublevel: this.db.sublevel(name, {
-      keyEncoding   : 'utf8',
-      valueEncoding : this.config.valueEncoding
-    }) };
-  }
-
   async get(key: string, options?: LevelWrapperOptions): Promise<V|undefined>{
     options?.signal?.throwIfAborted();
 
@@ -210,6 +203,16 @@ export class LevelWrapper<V> {
     await executeUnlessAborted(this.createLevelDatabase(), options?.signal);
 
     return executeUnlessAborted(this.db.batch(operations), options?.signal);
+  }
+
+  /**
+   * @returns the LevelWrapperBatchOperation for the specified partition name
+   */
+  partitionOperation(name: string, operation: LevelWrapperBatchOperation<V>): LevelWrapperBatchOperation<V> {
+    return { ...operation, sublevel: this.db.sublevel(name, {
+      keyEncoding   : 'utf8',
+      valueEncoding : this.config.valueEncoding
+    }) };
   }
 
   private async compactUnderlyingStorage(options?: LevelWrapperOptions): Promise<void> {
