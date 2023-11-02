@@ -1,7 +1,12 @@
 <!-- @format -->
 # Decentralized Web Node (DWN) SDK <!-- omit in toc -->
 
+[![NPM](https://img.shields.io/npm/v/@tbd54566975/dwn-sdk-js.svg?logo=npm)](https://www.npmjs.com/package/@tbd54566975/dwn-sdk-js)
 [![codecov](https://codecov.io/github/TBD54566975/dwn-sdk-js/graphs/badge.svg)](https://codecov.io/github/TBD54566975/dwn-sdk-js)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/TBD54566975/dwn-sdk-js/npm-publish-unstable.yml?branch=main&logo=github)](https://github.com/tbd54566975/dwn-sdk-js/actions/workflows/npm-publish-unstable.yml)
+[![License](https://img.shields.io/npm/l/@tbd54566975/dwn-sdk-js.svg?logo=apache)](https://github.com/tbd54566975/dwn-sdk-js/blob/main/LICENSE)
+[![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg?logo=discord)](https://discord.com/channels/937858703112155166/1068273971432280196)
+
 
 - [Introduction](#introduction)
 - [Installation](#installation)
