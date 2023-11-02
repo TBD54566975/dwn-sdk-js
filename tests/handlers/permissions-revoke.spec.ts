@@ -272,6 +272,42 @@ describe('PermissionsRevokeHandler.handle()', () => {
       expect(permissionsRevokeReply1.status.code).to.eq(202);
     });
 
+    it('should index additional properties from original PermissionsGrant', async () => {
+      const alice = await DidKeyResolver.generate();
+      const { permissionsGrant } = await TestDataGenerator.generatePermissionsGrant({
+        author    : alice,
+        grantedBy : alice.did,
+        scope     : {
+          interface : DwnInterfaceName.Records,
+          method    : DwnMethodName.Read,
+          schema    : normalizeSchemaUrl('schema1')
+        }
+      });
+
+      const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
+      expect(permissionsGrantReply.status.code).to.eq(202);
+      let events = await eventLog.getEvents(alice.did);
+      expect(events.length).to.equal(1);
+
+      // Revoke the grant, adding a second event
+      const { permissionsRevoke } = await TestDataGenerator.generatePermissionsRevoke({
+        author             : alice,
+        permissionsGrantId : await Message.getCid(permissionsGrant.message),
+      });
+      const revokeMessageCid = await Message.getCid(permissionsRevoke.message);
+
+      const reply = await dwn.processMessage(alice.did, permissionsRevoke.message);
+      expect(reply.status.code).to.equal(202);
+
+      events = await eventLog.queryEvents(alice.did, [{ schema: normalizeSchemaUrl('schema1'), method: DwnMethodName.Revoke }]);
+      expect(events.length).to.equal(1);
+      expect(events[0].messageCid).to.equal(revokeMessageCid);
+
+      const { messages } = await messageStore.query(alice.did, [{ schema: normalizeSchemaUrl('schema1'), method: DwnMethodName.Revoke }]);
+      expect(messages.length).to.equal(1);
+      expect(await Message.getCid(messages[0])).to.equal(revokeMessageCid);
+    });
+
     describe('event log', () => {
       it('should add event for PermissionsRevoke', async () => {
         const alice = await DidKeyResolver.generate();
@@ -350,39 +386,6 @@ describe('PermissionsRevokeHandler.handle()', () => {
         events = await eventLog.getEvents(alice.did);
         expect(events.length).to.equal(2);
         expect(events[1].messageCid).to.equal(permissionsRevokeCid1);
-      });
-
-      it('should index additional properties from original grant for event log querying', async () => {
-        const alice = await DidKeyResolver.generate();
-        const { permissionsGrant } = await TestDataGenerator.generatePermissionsGrant({
-          author    : alice,
-          grantedBy : alice.did,
-          scope     : {
-            interface : DwnInterfaceName.Records,
-            method    : DwnMethodName.Read,
-            schema    : normalizeSchemaUrl('schema1')
-          }
-        });
-
-        const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
-        expect(permissionsGrantReply.status.code).to.eq(202);
-        let events = await eventLog.getEvents(alice.did);
-        expect(events.length).to.equal(1);
-
-        // Revoke the grant, adding a second event
-        const { permissionsRevoke } = await TestDataGenerator.generatePermissionsRevoke({
-          author             : alice,
-          permissionsGrantId : await Message.getCid(permissionsGrant.message),
-        });
-        const reply = await dwn.processMessage(alice.did, permissionsRevoke.message);
-        expect(reply.status.code).to.equal(202);
-
-        events = await eventLog.queryEvents(alice.did, [{ schema: normalizeSchemaUrl('schema1') }]);
-        expect(events.length).to.equal(2);
-
-        // The revoke should be the second event
-        const messageCid = await Message.getCid(permissionsRevoke.message);
-        expect(events[1].messageCid).to.equal(messageCid);
       });
     });
   });

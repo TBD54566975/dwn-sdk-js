@@ -669,11 +669,15 @@ export function testRecordsDeleteHandler(): void {
         const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
         expect(deleteReply.status.code).to.equal(202);
 
+        // message store
         const { messages } = await messageStore.query(alice.did, [{ schema: normalizeSchemaUrl('testSchema'), method: DwnMethodName.Delete }]);
         expect(messages.length).to.equal(1);
-        const message = messages[0];
-        const compareMessageCid = await Message.getCid(message);
-        expect(deleteMessageCid).to.equal(compareMessageCid);
+        expect(await Message.getCid(messages[0])).to.equal(deleteMessageCid);
+
+        // event log
+        const events = await eventLog.queryEvents(alice.did, [{ schema: normalizeSchemaUrl('testSchema'), method: DwnMethodName.Delete }]);
+        expect(events.length).to.equal(1);
+        expect(events[0].messageCid).to.equal(deleteMessageCid);
       });
 
       describe('event log', () => {
@@ -740,35 +744,6 @@ export function testRecordsDeleteHandler(): void {
               expect.fail(`${messageCid} should not exist`);
             }
           }
-        });
-
-        it('should index additional properties from the original RecordsWrite for event log querying', async () => {
-          const alice = await DidKeyResolver.generate();
-
-          const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'schema1' });
-          const writeReply = await dwn.processMessage(alice.did, message, dataStream);
-          expect(writeReply.status.code).to.equal(202);
-
-          const recordsDelete = await RecordsDelete.create({
-            recordId : message.recordId,
-            signer   : Jws.createSigner(alice)
-          });
-
-          const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
-          expect(deleteReply.status.code).to.equal(202);
-
-          const events = await eventLog.queryEvents(alice.did, [{ schema: normalizeSchemaUrl('schema1') }]);
-          expect(events.length).to.equal(2);
-
-          const writeMessageCid = await Message.getCid(message);
-          const deleteMessageCid = await Message.getCid(recordsDelete.message);
-          const expectedMessageCids = new Set([writeMessageCid, deleteMessageCid]);
-
-          for (const { messageCid } of events) {
-            expectedMessageCids.delete(messageCid);
-          }
-
-          expect(expectedMessageCids.size).to.equal(0);
         });
       });
     });

@@ -90,6 +90,30 @@ export function testPermissionsGrantHandler(): void {
         expect(permissionsGrantReply.status.code).to.equal(202);
       });
 
+      it('should index additional scope properties', async () => {
+        const alice = await DidKeyResolver.generate();
+        const { message } = await TestDataGenerator.generatePermissionsGrant({
+          author    : alice,
+          grantedBy : alice.did,
+          scope     : {
+            interface : DwnInterfaceName.Records,
+            method    : DwnMethodName.Read,
+            schema    : normalizeSchemaUrl('schema1')
+          }
+        });
+        const messageCid = await Message.getCid(message);
+
+        const reply = await dwn.processMessage(alice.did, message);
+        expect(reply.status.code).to.equal(202);
+
+        const events = await eventLog.queryEvents(alice.did, [{ schema: normalizeSchemaUrl('schema1') }]);
+        expect(events.length).to.equal(1);
+        expect(events[0].messageCid).to.equal(messageCid);
+
+        const { messages } = await messageStore.query(alice.did, [{ schema: normalizeSchemaUrl('schema1') }]);
+        expect(await Message.getCid(messages[0])).to.equal(messageCid);
+      });
+
       it('should return 401 if authentication fails', async () => {
         const alice = await DidKeyResolver.generate();
         alice.keyId = 'wrongValue'; // to fail authentication
@@ -281,28 +305,6 @@ export function testPermissionsGrantHandler(): void {
           expect(reply.status.code).to.equal(202);
 
           const events = await eventLog.getEvents(alice.did);
-          expect(events.length).to.equal(1);
-
-          const messageCid = await Message.getCid(message);
-          expect(events[0].messageCid).to.equal(messageCid);
-        });
-
-        it('should index additional scope properties for event log querying', async () => {
-          const alice = await DidKeyResolver.generate();
-          const { message } = await TestDataGenerator.generatePermissionsGrant({
-            author    : alice,
-            grantedBy : alice.did,
-            scope     : {
-              interface : DwnInterfaceName.Records,
-              method    : DwnMethodName.Read,
-              schema    : normalizeSchemaUrl('schema1')
-            }
-          });
-
-          const reply = await dwn.processMessage(alice.did, message);
-          expect(reply.status.code).to.equal(202);
-
-          const events = await eventLog.queryEvents(alice.did, [{ schema: normalizeSchemaUrl('schema1') }]);
           expect(events.length).to.equal(1);
 
           const messageCid = await Message.getCid(message);

@@ -92,7 +92,21 @@ describe('IndexLevel', () => {
       await expect(failedIndex).to.eventually.not.be.rejected;
     });
 
-    xit('flattens nested indexes', async () => {
+    it('flattens nested indexes', async () => {
+      const id = uuid();
+
+      await testIndex.put(tenant, id, id, {
+        nested: {
+          data: true
+        }
+      }, { id });
+
+      const id2 = uuid();
+      await testIndex.put(tenant, id2, id2, { notNested: true }, { id: id2 });
+
+      const results = await testIndex.query(tenant, [{ 'nested.data': true }], { sortProperty: 'id' });
+      expect(results.length).to.equal(1);
+      expect(results[0]).to.equal(id);
     });
 
     it('ignores undefined indexes', async () => {
