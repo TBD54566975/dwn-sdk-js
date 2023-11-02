@@ -7,7 +7,6 @@ import type { RecordsPermissionScope } from '../../src/types/permissions-types.j
 import { PermissionsConditionPublication } from '../../src/types/permissions-types.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
-import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { Time } from '../../src/utils/time.js';
 import { DidKeyResolver, DwnErrorCode, Jws, PrivateKeySigner } from '../../src/index.js';
@@ -172,7 +171,7 @@ describe('PermissionsGrant', () => {
         grantedTo   : bob.did,
       });
 
-      const dateExpires = Temporal.Now.instant().add({ hours: 24 }).toString({ smallestUnit: 'microseconds' });
+      const dateExpires = Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 });
       const permissionsGrant = await PermissionsGrant.createFromPermissionsRequest(permissionsRequest, signer, { dateExpires });
 
       expect(permissionsGrant.author).to.eq(alice.did);

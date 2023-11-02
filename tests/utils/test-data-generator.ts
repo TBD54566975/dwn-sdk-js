@@ -44,7 +44,6 @@ import { PermissionsRevoke } from '../../src/interfaces/permissions-revoke.js';
 import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { sha256 } from 'multiformats/hashes/sha2';
-import { Temporal } from '@js-temporal/polyfill';
 import { Time } from '../../src/utils/time.js';
 
 import {
@@ -680,7 +679,7 @@ export class TestDataGenerator {
    * Generates a PermissionsGrant message for testing.
    */
   public static async generatePermissionsGrant(input?: GeneratePermissionsGrantInput): Promise<GeneratePermissionsGrantOutput> {
-    const dateExpires = input?.dateExpires ?? Temporal.Now.instant().add({ hours: 24 }).toString({ smallestUnit: 'microseconds' });
+    const dateExpires = input?.dateExpires ?? Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 });
     const author = input?.author ?? await TestDataGenerator.generatePersona();
     const permissionsGrant = await PermissionsGrant.create({
       messageTimestamp     : input?.messageTimestamp ?? Time.getCurrentTimestamp(),
