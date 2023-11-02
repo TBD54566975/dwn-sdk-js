@@ -256,10 +256,10 @@ export class ProtocolAuthorization {
       method    : DwnMethodName.Configure,
       protocol  : protocolUri
     };
-    const { messages: protocols } = await messageStore.query(tenant, [ query ]);
+    const { messages: protocols } = await messageStore.query(tenant, [query]);
 
     if (protocols.length === 0) {
-      throw new Error(`unable to find protocol definition for ${protocolUri}`);
+      throw new DwnError(DwnErrorCode.ProtocolAuthorizationProtocolNotFound, `unable to find protocol definition for ${protocolUri}`);
     }
 
     const protocolMessage = protocols[0] as ProtocolsConfigureMessage;
@@ -298,12 +298,12 @@ export class ProtocolAuthorization {
         contextId,
         recordId  : currentParentId
       };
-      const { messages: parentMessages } = await messageStore.query(tenant, [ query ]);
+      const { messages: parentMessages } = await messageStore.query(tenant, [query]);
 
       // We already check the immediate parent in `verifyProtocolPath`, so if it triggers,
       // it means a bug that caused an invalid message to be saved to the DWN.
       if (parentMessages.length === 0) {
-        throw new Error(`no parent found with ID ${currentParentId}`);
+        throw new DwnError(DwnErrorCode.ProtocolAuthorizationParentNotFound, `no parent found with ID ${currentParentId}`);
       }
 
       const parent = parentMessages[0] as RecordsWriteMessage;
@@ -360,7 +360,7 @@ export class ProtocolAuthorization {
         contextId,
         recordId  : parentId
       };
-      const { messages: parentMessages } = await messageStore.query(tenant, [ query ]);
+      const { messages: parentMessages } = await messageStore.query(tenant, [query]);
       const parentProtocolPath = (parentMessages as RecordsWriteMessage[])[0]?.descriptor?.protocolPath;
       const actualProtocolPath = `${parentProtocolPath}/${declaredTypeName}`;
       if (parentProtocolPath === undefined || actualProtocolPath !== declaredProtocolPath) {
@@ -503,7 +503,7 @@ export class ProtocolAuthorization {
         return [ProtocolAction.Update];
       }
 
-    // default:
+      // default:
       // not reachable in typescript
     }
   }
@@ -526,7 +526,10 @@ export class ProtocolAuthorization {
 
     // We have already checked that the message is not from tenant, owner, or permissionsGrant
     if (actionRules === undefined) {
-      throw new Error(`no action rule defined for ${incomingMessageMethod}, ${author} is unauthorized`);
+      throw new DwnError(
+        DwnErrorCode.ProtocolAuthorizationActionNotAllowed,
+        `no action rule defined for ${incomingMessageMethod}, ${author} is unauthorized`
+      );
     }
 
     const invokedRole = incomingMessage.signaturePayload?.protocolRole;

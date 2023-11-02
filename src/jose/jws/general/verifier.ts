@@ -76,7 +76,7 @@ export class GeneralJwsVerifier {
     }
 
     if (!verificationMethod) {
-      throw new Error('public key needed to verify signature not found in DID Document');
+      throw new DwnError(DwnErrorCode.VerifierValidPublicKeyNotFound, 'public key needed to verify signature not found in DID Document');
     }
 
     validateJsonSchema('JwkVerificationMethod', verificationMethod);

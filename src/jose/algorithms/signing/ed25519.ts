@@ -2,10 +2,11 @@ import * as Ed25519 from '@noble/ed25519';
 import type { PrivateJwk, PublicJwk, SignatureAlgorithm } from '../../../types/jose-types.js';
 
 import { Encoder } from '../../../utils/encoder.js';
+import { DwnError, DwnErrorCode } from '../../../index.js';
 
 function validateKey(jwk: PrivateJwk | PublicJwk): void {
   if (jwk.kty !== 'OKP' || jwk.crv !== 'Ed25519') {
-    throw new Error('invalid jwk. kty MUST be OKP. crv MUST be Ed25519');
+    throw new DwnError(DwnErrorCode.Ed25519InvalidJwk, 'invalid jwk. kty MUST be OKP. crv MUST be Ed25519');
   }
 }
 
