@@ -1605,12 +1605,12 @@ export function testRecordsQueryHandler(): void {
       });
 
       it('should return 400 if published is set to false and a datePublished range is provided', async () => {
-        const firstDayOf2021 = Time.getCurrentTimestamp();
+        const fromDatePublished = Time.getCurrentTimestamp();
         const alice = await DidKeyResolver.generate();
         // set to true so create does not fail
         const recordQuery = await TestDataGenerator.generateRecordsQuery({
           author : alice,
-          filter : { datePublished: { from: firstDayOf2021 }, published: true }
+          filter : { datePublished: { from: fromDatePublished }, published: true }
         });
 
         // set to false
