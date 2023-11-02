@@ -23,7 +23,7 @@ export async function validateMessageSignatureIntegrity(
 ): Promise<{ descriptorCid: CID, [key: string]: any }> {
 
   if (messageSignature.signatures.length !== 1) {
-    throw new DwnError(DwnErrorCode.AuthenticateMoreThanOneAuthoriation, 'expected no more than 1 signature for authorization purpose');
+    throw new DwnError(DwnErrorCode.AuthenticationMoreThanOneSignatureNotSupported, 'expected no more than 1 signature for authorization purpose');
   }
 
   // validate payload integrity
@@ -55,19 +55,16 @@ export async function authenticate(authorizationModel: AuthorizationModel | unde
     throw new DwnError(DwnErrorCode.AuthenticateJwsMissing, 'Missing JWS.');
   }
 
-  const signatureVerifier = new GeneralJwsVerifier(authorizationModel.signature);
-  await signatureVerifier.verify(didResolver);
+  await GeneralJwsVerifier.verifySignatures(authorizationModel.signature, didResolver);
 
   if (authorizationModel.ownerSignature !== undefined) {
-    const ownerSignatureVerifier = new GeneralJwsVerifier(authorizationModel.ownerSignature);
-    await ownerSignatureVerifier.verify(didResolver);
+    await GeneralJwsVerifier.verifySignatures(authorizationModel.ownerSignature, didResolver);
   }
 
   if (authorizationModel.authorDelegatedGrant !== undefined) {
     // verify the signature of the grantor of the delegated grant
     const authorDelegatedGrant = await PermissionsGrant.parse(authorizationModel.authorDelegatedGrant);
-    const grantedBySignatureVerifier = new GeneralJwsVerifier(authorDelegatedGrant.message.authorization.signature);
-    await grantedBySignatureVerifier.verify(didResolver);
+    await GeneralJwsVerifier.verifySignatures(authorDelegatedGrant.message.authorization.signature, didResolver);
   }
 }
 

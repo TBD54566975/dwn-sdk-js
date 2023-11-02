@@ -13,29 +13,53 @@ type VerificationResult = {
   signers: string[];
 };
 
+/**
+ * Verifies the signature(s) of a General JWS.
+ */
 export class GeneralJwsVerifier {
-  jws: GeneralJws;
+
+  private static _singleton: GeneralJwsVerifier;
+
   cache: Cache;
 
-  constructor(jws: GeneralJws, cache?: Cache) {
-    this.jws = jws;
+  private constructor(cache?: Cache) {
     this.cache = cache || new MemoryCache(600);
   }
 
-  async verify(didResolver: DidResolver): Promise<VerificationResult> {
+  private static get singleton(): GeneralJwsVerifier {
+    if (GeneralJwsVerifier._singleton === undefined) {
+      GeneralJwsVerifier._singleton = new GeneralJwsVerifier();
+    }
+
+    return GeneralJwsVerifier._singleton;
+  }
+
+  /**
+   * Verifies the signatures of the given General JWS.
+   * @returns the list of signers that have valid signatures.
+   */
+  public static async verifySignatures(jws: GeneralJws, didResolver: DidResolver): Promise<VerificationResult> {
+    return await GeneralJwsVerifier.singleton.verifySignatures(jws, didResolver);
+  }
+
+  /**
+   * Verifies the signatures of the given General JWS.
+   * @returns the list of signers that have valid signatures.
+   */
+  public async verifySignatures(jws: GeneralJws, didResolver: DidResolver): Promise<VerificationResult> {
     const signers: string[] = [];
 
-    for (const signatureEntry of this.jws.signatures) {
+    for (const signatureEntry of jws.signatures) {
       let isVerified: boolean;
-      const cacheKey = `${signatureEntry.protected}.${this.jws.payload}.${signatureEntry.signature}`;
       const kid = Jws.getKid(signatureEntry);
-      const publicJwk = await GeneralJwsVerifier.getPublicKey(kid, didResolver);
 
+      const cacheKey = `${signatureEntry.protected}.${jws.payload}.${signatureEntry.signature}`;
       const cachedValue = await this.cache.get(cacheKey);
 
-      // explicit strict equality check to avoid potential buggy cache implementation causing incorrect truthy compare e.g. "false"
+      // explicit `undefined` check to differentiate `false`
       if (cachedValue === undefined) {
-        isVerified = await Jws.verifySignature(this.jws.payload, signatureEntry, publicJwk);
+        const publicJwk = await GeneralJwsVerifier.getPublicKey(kid, didResolver);
+        isVerified = await Jws.verifySignature(jws.payload, signatureEntry, publicJwk);
         await this.cache.set(cacheKey, isVerified);
       } else {
         isVerified = cachedValue;
@@ -54,9 +78,9 @@ export class GeneralJwsVerifier {
   }
 
   /**
-   * Gets the public key given a fully qualified key ID (`kid`).
+   * Gets the public key given a fully qualified key ID (`kid`) by resolving the DID to its DID Document.
    */
-  public static async getPublicKey(kid: string, didResolver: DidResolver): Promise<PublicJwk> {
+  private static async getPublicKey(kid: string, didResolver: DidResolver): Promise<PublicJwk> {
     // `resolve` throws exception if DID is invalid, DID method is not supported,
     // or resolving DID fails
     const did = Jws.extractDid(kid);
@@ -65,18 +89,18 @@ export class GeneralJwsVerifier {
 
     let verificationMethod: VerificationMethod | undefined;
 
-    for (const vm of verificationMethods) {
+    for (const method of verificationMethods) {
       // consider optimizing using a set for O(1) lookups if needed
       // key ID in DID Document may or may not be fully qualified. e.g.
       // `did:ion:alice#key1` or `#key1`
-      if (kid.endsWith(vm.id)) {
-        verificationMethod = vm;
+      if (kid.endsWith(method.id)) {
+        verificationMethod = method;
         break;
       }
     }
 
     if (!verificationMethod) {
-      throw new DwnError(DwnErrorCode.VerifierValidPublicKeyNotFound, 'public key needed to verify signature not found in DID Document');
+      throw new DwnError(DwnErrorCode.GeneralJwsVerifierGetPublicKeyNotFound, 'public key needed to verify signature not found in DID Document');
     }
 
     validateJsonSchema('JwkVerificationMethod', verificationMethod);

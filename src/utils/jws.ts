@@ -8,7 +8,7 @@ import isPlainObject from 'lodash/isPlainObject.js';
 import { Encoder } from './encoder.js';
 import { PrivateKeySigner } from './private-key-signer.js';
 import { signatureAlgorithms } from '../jose/algorithms/signing/signature-algorithms.js';
-import { DwnError, DwnErrorCode } from '../index.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 
 /**

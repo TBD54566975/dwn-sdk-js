@@ -14,8 +14,8 @@ export class DwnError extends Error {
  */
 export enum DwnErrorCode {
   AuthenticateJwsMissing = 'AuthenticateJwsMissing',
-  AuthenticateMoreThanOneAuthoriation = 'AuthenticateMoreThanOneAuthoriation',
   AuthenticateDescriptorCidMismatch = 'AuthenticateDescriptorCidMismatch',
+  AuthenticationMoreThanOneSignatureNotSupported = 'AuthenticationMoreThanOneSignatureNotSupported',
   AuthorizationUnknownAuthor = 'AuthorizationUnknownAuthor',
   AuthorizationNotGrantedToAuthor = 'AuthorizationNotGrantedToAuthor',
   ComputeCidCodecNotSupported = 'ComputeCidCodecNotSupported',
@@ -25,6 +25,7 @@ export enum DwnErrorCode {
   DidNotValid = 'DidNotValid',
   DidResolutionFailed = 'DidResolutionFailed',
   Ed25519InvalidJwk = 'Ed25519InvalidJwk',
+  GeneralJwsVerifierGetPublicKeyNotFound = 'GeneralJwsVerifierGetPublicKeyNotFound',
   GeneralJwsVerifierInvalidSignature = 'GeneralJwsVerifierInvalidSignature',
   GrantAuthorizationGrantExpired = 'GrantAuthorizationGrantExpired',
   GrantAuthorizationGrantMissing = 'GrantAuthorizationGrantMissing',
@@ -76,7 +77,6 @@ export enum DwnErrorCode {
   ProtocolsQueryUnauthorized = 'ProtocolsQueryUnauthorized',
   RecordsDecryptNoMatchingKeyEncryptedFound = 'RecordsDecryptNoMatchingKeyEncryptedFound',
   RecordsDeleteAuthorizationFailed = 'RecordsDeleteAuthorizationFailed',
-
   RecordsGrantAuthorizationConditionPublicationProhibited = 'RecordsGrantAuthorizationConditionPublicationProhibited',
   RecordsGrantAuthorizationConditionPublicationRequired = 'RecordsGrantAuthorizationConditionPublicationRequired',
   RecordsGrantAuthorizationScopeContextIdMismatch = 'RecordsGrantAuthorizationScopeContextIdMismatch',
@@ -131,5 +131,4 @@ export enum DwnErrorCode {
   UrlProtocolNotNormalizable = 'UrlProtocolNotNormalizable',
   UrlSchemaNotNormalized = 'UrlSchemaNotNormalized',
   UrlSchemaNotNormalizable = 'UrlSchemaNotNormalizable',
-  VerifierValidPublicKeyNotFound = 'VerifierValidPublicKeyNotFound',
 };

@@ -46,10 +46,7 @@ describe('General JWS Sign/Verify', () => {
       resolve: sinon.stub().withArgs('did:jank:alice').resolves(mockResolutionResult)
     });
 
-    const verifier = new GeneralJwsVerifier(jws);
-
-    const verificationResult = await verifier.verify(resolverStub);
-
+    const verificationResult = await GeneralJwsVerifier.verifySignatures(jws, resolverStub);
     expect(verificationResult.signers.length).to.equal(1);
     expect(verificationResult.signers).to.include('did:jank:alice');
   });
@@ -80,12 +77,9 @@ describe('General JWS Sign/Verify', () => {
       resolve: sinon.stub().withArgs('did:jank:alice').resolves(mockResolutionResult)
     });
 
-    const verifier = new GeneralJwsVerifier(jws);
-
-    const verificatonResult = await verifier.verify(resolverStub);
-
-    expect(verificatonResult.signers.length).to.equal(1);
-    expect(verificatonResult.signers).to.include('did:jank:alice');
+    const verificationResult = await GeneralJwsVerifier.verifySignatures(jws, resolverStub);
+    expect(verificationResult.signers.length).to.equal(1);
+    expect(verificationResult.signers).to.include('did:jank:alice');
   });
 
   it('should support multiple signatures using different key types', async () => {
@@ -148,15 +142,16 @@ describe('General JWS Sign/Verify', () => {
       resolve: resolveStub
     });
 
-    const verifier = new GeneralJwsVerifier(jws);
-    const verificationResult = await verifier.verify(resolverStub);
-
+    const verificationResult = await GeneralJwsVerifier.verifySignatures(jws, resolverStub);
     expect(verificationResult.signers.length).to.equal(2);
     expect(verificationResult.signers).to.include(alice.did);
     expect(verificationResult.signers).to.include(bob.did);
   });
 
   it('should not verify the same signature more than once', async () => {
+    // scenario: include two signatures in the JWS,
+    // repeated calls to verifySignature should only verify each of the signature once,
+    // resulting total of 2 calls to `Jws.verifySignature()` and 2 calls to cache the results.
     const { privateJwk: privateJwkEd25519, publicJwk: publicJwkEd25519 } = await Ed25519.generateKeyPair();
     const { privateJwk: privateJwkSecp256k1, publicJwk: publicJwkSecp256k1 } = await secp256k1.generateKeyPair();
     const payloadBytes = new TextEncoder().encode('anyPayloadValue');
@@ -195,16 +190,16 @@ describe('General JWS Sign/Verify', () => {
       resolve: sinon.stub().withArgs('did:jank:alice').resolves(mockResolutionResult)
     });
 
-    const verifier = new GeneralJwsVerifier(jws);
-
     const verifySignatureSpy = sinon.spy(Jws, 'verifySignature');
-    const cacheSetSpy = sinon.spy(verifier.cache, 'set');
+    const cacheSetSpy = sinon.spy((GeneralJwsVerifier as any).singleton.cache, 'set');
 
-    await verifier.verify(resolverStub);
-    await verifier.verify(resolverStub);
+    // intentionally calling verifySignature twice on the same JWS
+    await GeneralJwsVerifier.verifySignatures(jws, resolverStub);
+    await GeneralJwsVerifier.verifySignatures(jws, resolverStub);
+    await GeneralJwsVerifier.verifySignatures(jws, resolverStub);
 
-    sinon.assert.calledTwice(cacheSetSpy);
     sinon.assert.calledTwice(verifySignatureSpy);
+    sinon.assert.calledTwice(cacheSetSpy);
   });
 
 });
