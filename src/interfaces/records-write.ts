@@ -248,17 +248,17 @@ export class RecordsWrite {
    */
   public static async create(options: RecordsWriteOptions): Promise<RecordsWrite> {
     if ((options.protocol === undefined && options.protocolPath !== undefined) ||
-        (options.protocol !== undefined && options.protocolPath === undefined)) {
+      (options.protocol !== undefined && options.protocolPath === undefined)) {
       throw new DwnError(DwnErrorCode.RecordsWriteCreateProtocolAndProtocolPathMutuallyInclusive, '`protocol` and `protocolPath` must both be defined or undefined at the same time');
     }
 
     if ((options.data === undefined && options.dataCid === undefined) ||
-        (options.data !== undefined && options.dataCid !== undefined)) {
+      (options.data !== undefined && options.dataCid !== undefined)) {
       throw new DwnError(DwnErrorCode.RecordsWriteCreateDataAndDataCidMutuallyExclusive, 'one and only one parameter between `data` and `dataCid` is allowed');
     }
 
     if ((options.dataCid === undefined && options.dataSize !== undefined) ||
-        (options.dataCid !== undefined && options.dataSize === undefined)) {
+      (options.dataCid !== undefined && options.dataSize === undefined)) {
       throw new DwnError(DwnErrorCode.RecordsWriteCreateDataCidAndDataSizeMutuallyInclusive, '`dataCid` and `dataSize` must both be defined or undefined at the same time');
     }
 
@@ -509,7 +509,7 @@ export class RecordsWrite {
     if (this.owner !== undefined && this.owner !== tenant) {
       throw new DwnError(
         DwnErrorCode.RecordsWriteOwnerAndTenantMismatch,
-        `Owner ${this.owner } must be the same as tenant ${tenant} when specified.`
+        `Owner ${this.owner} must be the same as tenant ${tenant} when specified.`
       );
     }
 
@@ -541,7 +541,10 @@ export class RecordsWrite {
       const dateRecordCreated = this.message.descriptor.dateCreated;
       const messageTimestamp = this.message.descriptor.messageTimestamp;
       if (messageTimestamp !== dateRecordCreated) {
-        throw new DwnError(DwnErrorCode.RecordsWriteValidateIntegrityDateCreatedMismatch, `messageTimestamp ${messageTimestamp} must match dateCreated ${dateRecordCreated} for the initial write`);
+        throw new DwnError(
+          DwnErrorCode.RecordsWriteValidateIntegrityDateCreatedMismatch,
+          `messageTimestamp ${messageTimestamp} must match dateCreated ${dateRecordCreated} for the initial write`
+        );
       }
 
       // if the message is also a protocol context root, the `contextId` must match the expected deterministic value
@@ -550,7 +553,10 @@ export class RecordsWrite {
         const expectedContextId = await this.getEntryId();
 
         if (this.message.contextId !== expectedContextId) {
-          throw new DwnError(DwnErrorCode.RecordsWriteValidateIntegrityContextIdMismatch, `contextId in message: ${this.message.contextId} does not match deterministic contextId: ${expectedContextId}`);
+          throw new DwnError(
+            DwnErrorCode.RecordsWriteValidateIntegrityContextIdMismatch,
+            `contextId in message: ${this.message.contextId} does not match deterministic contextId: ${expectedContextId}`
+          );
         }
       }
     }
@@ -630,7 +636,7 @@ export class RecordsWrite {
 
     validateTimestamp(this.message.descriptor.messageTimestamp);
     validateTimestamp(this.message.descriptor.dateCreated);
-    if (this.message.descriptor.datePublished){
+    if (this.message.descriptor.datePublished) {
       validateTimestamp(this.message.descriptor.datePublished);
     }
   }
@@ -646,7 +652,10 @@ export class RecordsWrite {
 
     // TODO: multi-attesters to be unblocked by #205 - Revisit database interfaces (https://github.com/TBD54566975/dwn-sdk-js/issues/205)
     if (message.attestation.signatures.length !== 1) {
-      throw new DwnError(DwnErrorCode.RecordsWriteAttestationIntegrityMoreThanOneSignature, `Currently implementation only supports 1 attester, but got ${message.attestation.signatures.length}`);
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteAttestationIntegrityMoreThanOneSignature,
+        `Currently implementation only supports 1 attester, but got ${message.attestation.signatures.length}`
+      );
     }
 
     const payloadJson = Jws.decodePlainObjectPayload(message.attestation);
@@ -655,13 +664,19 @@ export class RecordsWrite {
     // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
     const expectedDescriptorCid = await Cid.computeCid(message.descriptor);
     if (descriptorCid !== expectedDescriptorCid) {
-      throw new DwnError(DwnErrorCode.RecordsWriteAttestationIntegrityDescriptorCidMismatch, `descriptorCid ${descriptorCid} does not match expected descriptorCid ${expectedDescriptorCid}`);
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteAttestationIntegrityDescriptorCidMismatch,
+        `descriptorCid ${descriptorCid} does not match expected descriptorCid ${expectedDescriptorCid}`
+      );
     }
 
     // check to ensure that no other unexpected properties exist in payload.
     const propertyCount = Object.keys(payloadJson).length;
     if (propertyCount > 1) {
-      throw new DwnError(DwnErrorCode.RecordsWriteAttestationIntegrityInvalidPayloadProperty, `Only 'descriptorCid' is allowed in attestation payload, but got ${propertyCount} properties.`);
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteAttestationIntegrityInvalidPayloadProperty,
+        `Only 'descriptorCid' is allowed in attestation payload, but got ${propertyCount} properties.`
+      );
     }
   };
 
@@ -705,7 +720,7 @@ export class RecordsWrite {
     const query = {
       entryId: this.message.recordId
     };
-    const { messages: result } = await messageStore.query(tenant, [ query ]);
+    const { messages: result } = await messageStore.query(tenant, [query]);
 
     const initialRecordsWrite = await RecordsWrite.parse(result[0] as RecordsWriteMessage);
     return initialRecordsWrite.author === this.author;
@@ -717,7 +732,7 @@ export class RecordsWrite {
   public static async isInitialWrite(message: GenericMessage): Promise<boolean> {
     // can't be the initial write if the message is not a Records Write
     if (message.descriptor.interface !== DwnInterfaceName.Records ||
-        message.descriptor.method !== DwnMethodName.Write) {
+      message.descriptor.method !== DwnMethodName.Write) {
       return false;
     }
 
@@ -757,14 +772,14 @@ export class RecordsWrite {
     const keyEncryption: EncryptedKey[] = [];
     for (const keyEncryptionInput of encryptionInput.keyEncryptionInputs) {
 
-      if (keyEncryptionInput.derivationScheme ===  KeyDerivationScheme.ProtocolPath && descriptor.protocol === undefined) {
+      if (keyEncryptionInput.derivationScheme === KeyDerivationScheme.ProtocolPath && descriptor.protocol === undefined) {
         throw new DwnError(
           DwnErrorCode.RecordsWriteMissingProtocol,
           '`protocols` encryption scheme cannot be applied to record without the `protocol` property.'
         );
       }
 
-      if (keyEncryptionInput.derivationScheme ===  KeyDerivationScheme.Schemas && descriptor.schema === undefined) {
+      if (keyEncryptionInput.derivationScheme === KeyDerivationScheme.Schemas && descriptor.schema === undefined) {
         throw new DwnError(
           DwnErrorCode.RecordsWriteMissingSchema,
           '`schemas` encryption scheme cannot be applied to record without the `schema` property.'
@@ -793,7 +808,7 @@ export class RecordsWrite {
       // we need to attach the actual public key if derivation scheme is protocol-context,
       // so that the responder to this message is able to encrypt the message/symmetric key using the same protocol-context derived public key,
       // without needing the knowledge of the corresponding private key
-      if (keyEncryptionInput.derivationScheme ===  KeyDerivationScheme.ProtocolContext) {
+      if (keyEncryptionInput.derivationScheme === KeyDerivationScheme.ProtocolContext) {
         encryptedKeyData.derivedPublicKey = keyEncryptionInput.publicKey;
       }
 
@@ -866,7 +881,7 @@ export class RecordsWrite {
   /**
    * Gets the initial write from the given list or record write.
    */
-  public static async getInitialWrite(messages: GenericMessage[]): Promise<RecordsWriteMessage>{
+  public static async getInitialWrite(messages: GenericMessage[]): Promise<RecordsWriteMessage> {
     for (const message of messages) {
       if (await RecordsWrite.isInitialWrite(message)) {
         return message as RecordsWriteMessage;
@@ -896,7 +911,10 @@ export class RecordsWrite {
         const valueInExistingWrite = (existingWriteMessage.descriptor as any)[descriptorPropertyName];
         const valueInNewMessage = (newMessage.descriptor as any)[descriptorPropertyName];
         if (valueInNewMessage !== valueInExistingWrite) {
-          throw new DwnError(DwnErrorCode.RecordsWriteImmutablePropertyChanged, `${descriptorPropertyName} is an immutable property: cannot change '${valueInExistingWrite}' to '${valueInNewMessage}'`);
+          throw new DwnError(
+            DwnErrorCode.RecordsWriteImmutablePropertyChanged,
+            `${descriptorPropertyName} is an immutable property: cannot change '${valueInExistingWrite}' to '${valueInNewMessage}'`
+          );
         }
       }
     }

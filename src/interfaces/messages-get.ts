@@ -3,9 +3,9 @@ import type { MessagesGetDescriptor, MessagesGetMessage } from '../types/message
 
 import { Cid } from '../utils/cid.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
+import { DwnError, DwnErrorCode } from '../index.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.js';
-import { DwnError, DwnErrorCode } from '../index.js';
 
 export type MessagesGetOptions = {
   messageCids: string[];

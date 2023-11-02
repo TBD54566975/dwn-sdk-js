@@ -23,7 +23,7 @@ export async function validateMessageSignatureIntegrity(
 ): Promise<{ descriptorCid: CID, [key: string]: any }> {
 
   if (messageSignature.signatures.length !== 1) {
-    throw new DwnError(DwnErrorCode.AuthenticateMoreThanOneAuthoriation,'expected no more than 1 signature for authorization purpose');
+    throw new DwnError(DwnErrorCode.AuthenticateMoreThanOneAuthoriation, 'expected no more than 1 signature for authorization purpose');
   }
 
   // validate payload integrity
@@ -35,7 +35,10 @@ export async function validateMessageSignatureIntegrity(
   const { descriptorCid } = payloadJson;
   const expectedDescriptorCid = await Cid.computeCid(messageDescriptor);
   if (descriptorCid !== expectedDescriptorCid) {
-    throw new DwnError(DwnErrorCode.AuthenticateDescriptorCidMismatch, `provided descriptorCid ${descriptorCid} does not match expected CID ${expectedDescriptorCid}`);
+    throw new DwnError(
+      DwnErrorCode.AuthenticateDescriptorCidMismatch,
+      `provided descriptorCid ${descriptorCid} does not match expected CID ${expectedDescriptorCid}`
+    );
   }
 
   return payloadJson;

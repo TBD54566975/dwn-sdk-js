@@ -9,9 +9,9 @@ import { Records } from '../utils/records.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
+import { DwnError, DwnErrorCode } from '../index.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.js';
-import { DwnError, DwnErrorCode } from '../index.js';
 
 export type RecordsReadOptions = {
   filter: RecordsFilter;
