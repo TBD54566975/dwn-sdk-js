@@ -1,4 +1,5 @@
 import * as precompiledValidators from '../generated/precompiled-validators.js';
+import { DwnError, DwnErrorCode } from './index.js';
 
 /**
  * Validates the given payload using JSON schema keyed by the given schema name. Throws if the given payload fails validation.
@@ -11,7 +12,7 @@ export function validateJsonSchema(schemaName: string, payload: any): void {
   const validateFn = (precompiledValidators as any)[schemaName];
 
   if (!validateFn) {
-    throw new Error(`schema for ${schemaName} not found.`);
+    throw new DwnError(DwnErrorCode.SchemaValidatorSchemaNotFound, `schema for ${schemaName} not found.`);
   }
 
   validateFn(payload);
@@ -29,5 +30,5 @@ export function validateJsonSchema(schemaName: string, payload: any): void {
     instancePath = schemaName;
   }
 
-  throw new Error(`${instancePath}: ${message}`);
+  throw new DwnError(DwnErrorCode.SchemaValidationFailure, `${instancePath}: ${message}`);
 }

@@ -5,6 +5,7 @@ import { Cid } from '../utils/cid.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.js';
+import { DwnError, DwnErrorCode } from '../index.js';
 
 export type MessagesGetOptions = {
   messageCids: string[];
@@ -43,14 +44,14 @@ export class MessagesGet extends Message<MessagesGetMessage> {
   /**
    * validates the provided cids
    * @param messageCids - the cids in question
-   * @throws {Error} if an invalid cid is found.
+   * @throws {DwnError} if an invalid cid is found.
    */
   private static validateMessageCids(messageCids: string[]): void {
     for (const cid of messageCids) {
       try {
         Cid.parseCid(cid);
       } catch (_) {
-        throw new Error(`${cid} is not a valid CID`);
+        throw new DwnError(DwnErrorCode.MessageGetInvalidCid, `${cid} is not a valid CID`);
       }
     }
   }

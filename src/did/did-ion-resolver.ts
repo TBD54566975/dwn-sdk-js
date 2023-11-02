@@ -1,3 +1,4 @@
+import { DwnError, DwnErrorCode } from '../index.js';
 import type { DidMethodResolver, DidResolutionResult } from './did-resolver.js';
 
 import crossFetch from 'cross-fetch';
@@ -29,7 +30,7 @@ export class DidIonResolver implements DidMethodResolver {
     const response = await fetch(resolutionUrl);
 
     if (response.status !== 200) {
-      throw new Error(`unable to resolve ${did}, got http status ${response.status}`);
+      throw new DwnError(DwnErrorCode.DidResolutionFailed, `unable to resolve ${did}, got http status ${response.status}`);
     }
 
     const didResolutionResult = await response.json();

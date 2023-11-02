@@ -23,7 +23,7 @@ export async function validateMessageSignatureIntegrity(
 ): Promise<{ descriptorCid: CID, [key: string]: any }> {
 
   if (messageSignature.signatures.length !== 1) {
-    throw new Error('expected no more than 1 signature for authorization purpose');
+    throw new DwnError(DwnErrorCode.AuthenticateMoreThanOneAuthoriation,'expected no more than 1 signature for authorization purpose');
   }
 
   // validate payload integrity
@@ -35,7 +35,7 @@ export async function validateMessageSignatureIntegrity(
   const { descriptorCid } = payloadJson;
   const expectedDescriptorCid = await Cid.computeCid(messageDescriptor);
   if (descriptorCid !== expectedDescriptorCid) {
-    throw new Error(`provided descriptorCid ${descriptorCid} does not match expected CID ${expectedDescriptorCid}`);
+    throw new DwnError(DwnErrorCode.AuthenticateDescriptorCidMismatch, `provided descriptorCid ${descriptorCid} does not match expected CID ${expectedDescriptorCid}`);
   }
 
   return payloadJson;
@@ -77,6 +77,6 @@ export async function authorize(tenant: string, incomingMessage: { author: strin
   if (incomingMessage.author === tenant) {
     return;
   } else {
-    throw new Error('message failed authorization, permission grant check not yet implemented');
+    throw new DwnError(DwnErrorCode.AuthorizationUnknownAuthor, 'message failed authorization, permission grant check not yet implemented');
   }
 }

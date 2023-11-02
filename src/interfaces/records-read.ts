@@ -11,6 +11,7 @@ import { removeUndefinedProperties } from '../utils/object.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 import { getCurrentTimeInHighPrecision, validateTimestamp } from '../utils/time.js';
+import { DwnError, DwnErrorCode } from '../index.js';
 
 export type RecordsReadOptions = {
   filter: RecordsFilter;
@@ -85,7 +86,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
     } else if (descriptor.protocol !== undefined) {
       await ProtocolAuthorization.authorizeRead(tenant, this, newestRecordsWrite, messageStore);
     } else {
-      throw new Error('message failed authorization');
+      throw new DwnError(DwnErrorCode.RecordsReadAuthorizationFailed, 'message failed authorization');
     }
   }
 }

@@ -249,21 +249,21 @@ export class RecordsWrite {
   public static async create(options: RecordsWriteOptions): Promise<RecordsWrite> {
     if ((options.protocol === undefined && options.protocolPath !== undefined) ||
         (options.protocol !== undefined && options.protocolPath === undefined)) {
-      throw new Error('`protocol` and `protocolPath` must both be defined or undefined at the same time');
+      throw new DwnError(DwnErrorCode.RecordsWriteCreateProtocolAndProtocolPathMutuallyInclusive, '`protocol` and `protocolPath` must both be defined or undefined at the same time');
     }
 
     if ((options.data === undefined && options.dataCid === undefined) ||
         (options.data !== undefined && options.dataCid !== undefined)) {
-      throw new Error('one and only one parameter between `data` and `dataCid` is allowed');
+      throw new DwnError(DwnErrorCode.RecordsWriteCreateDataAndDataCidMutuallyExclusive, 'one and only one parameter between `data` and `dataCid` is allowed');
     }
 
     if ((options.dataCid === undefined && options.dataSize !== undefined) ||
         (options.dataCid !== undefined && options.dataSize === undefined)) {
-      throw new Error('`dataCid` and `dataSize` must both be defined or undefined at the same time');
+      throw new DwnError(DwnErrorCode.RecordsWriteCreateDataCidAndDataSizeMutuallyInclusive, '`dataCid` and `dataSize` must both be defined or undefined at the same time');
     }
 
     if (options.parentId !== undefined && options.contextId === undefined) {
-      throw new Error('`contextId` must also be given when `parentId` is specified');
+      throw new DwnError(DwnErrorCode.RecordsWriteCreateContextIdAndParentIdMutuallyInclusive, '`contextId` must also be given when `parentId` is specified');
     }
 
     if (options.signer === undefined && options.delegatedGrant !== undefined) {
@@ -528,7 +528,7 @@ export class RecordsWrite {
     } else if (this.message.descriptor.protocol !== undefined) {
       await ProtocolAuthorization.authorizeWrite(tenant, this, messageStore);
     } else {
-      throw new Error('message failed authorization');
+      throw new DwnError(DwnErrorCode.RecordsWriteAuthorizationFailed, 'message failed authorization');
     }
   }
 
@@ -544,7 +544,7 @@ export class RecordsWrite {
       const dateRecordCreated = this.message.descriptor.dateCreated;
       const messageTimestamp = this.message.descriptor.messageTimestamp;
       if (messageTimestamp !== dateRecordCreated) {
-        throw new Error(`messageTimestamp ${messageTimestamp} must match dateCreated ${dateRecordCreated} for the initial write`);
+        throw new DwnError(DwnErrorCode.RecordsWriteValidateIntegrityDateCreatedMismatch, `messageTimestamp ${messageTimestamp} must match dateCreated ${dateRecordCreated} for the initial write`);
       }
 
       // if the message is also a protocol context root, the `contextId` must match the expected deterministic value
@@ -553,7 +553,7 @@ export class RecordsWrite {
         const expectedContextId = await this.getEntryId();
 
         if (this.message.contextId !== expectedContextId) {
-          throw new Error(`contextId in message: ${this.message.contextId} does not match deterministic contextId: ${expectedContextId}`);
+          throw new DwnError(DwnErrorCode.RecordsWriteValidateIntegrityContextIdMismatch, `contextId in message: ${this.message.contextId} does not match deterministic contextId: ${expectedContextId}`);
         }
       }
     }
@@ -563,14 +563,16 @@ export class RecordsWrite {
 
     // make sure the `recordId` in message is the same as the `recordId` in signer signature payload
     if (this.message.recordId !== signerSignaturePayload.recordId) {
-      throw new Error(
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteValidateIntegrityRecordIdUnauthorized,
         `recordId in message ${this.message.recordId} does not match recordId in authorization: ${signerSignaturePayload.recordId}`
       );
     }
 
     // if `contextId` is given in message, make sure the same `contextId` is in the signer signature payload
     if (this.message.contextId !== signerSignaturePayload.contextId) {
-      throw new Error(
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteValidateIntegrityContextIdNotInSignerSignaturePayload,
         `contextId in message ${this.message.contextId} does not match contextId in authorization: ${signerSignaturePayload.contextId}`
       );
     }
@@ -603,7 +605,8 @@ export class RecordsWrite {
       const expectedAttestationCid = await Cid.computeCid(this.message.attestation);
       const actualAttestationCid = signerSignaturePayload.attestationCid;
       if (actualAttestationCid !== expectedAttestationCid) {
-        throw new Error(
+        throw new DwnError(
+          DwnErrorCode.RecordsWriteValidateIntegrityAttestationMismatch,
           `CID ${expectedAttestationCid} of attestation property in message does not match attestationCid in authorization: ${actualAttestationCid}`
         );
       }
@@ -646,7 +649,7 @@ export class RecordsWrite {
 
     // TODO: multi-attesters to be unblocked by #205 - Revisit database interfaces (https://github.com/TBD54566975/dwn-sdk-js/issues/205)
     if (message.attestation.signatures.length !== 1) {
-      throw new Error(`Currently implementation only supports 1 attester, but got ${message.attestation.signatures.length}`);
+      throw new DwnError(DwnErrorCode.RecordsWriteAttestationIntegrityMoreThanOneSignature, `Currently implementation only supports 1 attester, but got ${message.attestation.signatures.length}`);
     }
 
     const payloadJson = Jws.decodePlainObjectPayload(message.attestation);
@@ -655,13 +658,13 @@ export class RecordsWrite {
     // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
     const expectedDescriptorCid = await Cid.computeCid(message.descriptor);
     if (descriptorCid !== expectedDescriptorCid) {
-      throw new Error(`descriptorCid ${descriptorCid} does not match expected descriptorCid ${expectedDescriptorCid}`);
+      throw new DwnError(DwnErrorCode.RecordsWriteAttestationIntegrityDescriptorCidMismatch, `descriptorCid ${descriptorCid} does not match expected descriptorCid ${expectedDescriptorCid}`);
     }
 
     // check to ensure that no other unexpected properties exist in payload.
     const propertyCount = Object.keys(payloadJson).length;
     if (propertyCount > 1) {
-      throw new Error(`Only 'descriptorCid' is allowed in attestation payload, but got ${propertyCount} properties.`);
+      throw new DwnError(DwnErrorCode.RecordsWriteAttestationIntegrityInvalidPayloadProperty, `Only 'descriptorCid' is allowed in attestation payload, but got ${propertyCount} properties.`);
     }
   };
 
@@ -869,7 +872,7 @@ export class RecordsWrite {
       }
     }
 
-    throw new Error(`initial write is not found`);
+    throw new DwnError(DwnErrorCode.RecordsWriteGetInitialWriteNotFound, `initial write is not found`);
   }
 
   /**
@@ -892,7 +895,7 @@ export class RecordsWrite {
         const valueInExistingWrite = (existingWriteMessage.descriptor as any)[descriptorPropertyName];
         const valueInNewMessage = (newMessage.descriptor as any)[descriptorPropertyName];
         if (valueInNewMessage !== valueInExistingWrite) {
-          throw new Error(`${descriptorPropertyName} is an immutable property: cannot change '${valueInExistingWrite}' to '${valueInNewMessage}'`);
+          throw new DwnError(DwnErrorCode.RecordsWriteImmutablePropertyChanged, `${descriptorPropertyName} is an immutable property: cannot change '${valueInExistingWrite}' to '${valueInNewMessage}'`);
         }
       }
     }
