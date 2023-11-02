@@ -5,7 +5,7 @@ import { SortDirection } from '../types/message-types.js';
 import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 import { flatten, isEmptyObject, removeUndefinedProperties } from '../utils/object.js';
 
-type Indexes = { [key:string]: unknown };
+type Indexes = { [key: string]: unknown };
 
 type IndexLevelConfig = {
   location?: string,
@@ -122,12 +122,16 @@ export class IndexLevel<T> {
     await tenantPartition.batch(indexOps, options);
   }
 
+  /**
+   *  Deletes all of the index data associated with the item.
+   */
   async delete(tenant: string, itemId: string, options?: IndexLevelOptions): Promise<void> {
     const tenantPartition = await this.db.partition(tenant);
     const indexOps: LevelWrapperBatchOperation<string>[] = [];
 
     const sortIndexes = await this.getSortIndexes(tenant, itemId);
     if (sortIndexes === undefined) {
+      // invalid itemId
       return;
     }
 
@@ -136,6 +140,7 @@ export class IndexLevel<T> {
       { type: 'del', key: itemId }
     ));
 
+    // delete the keys for each sortIndex
     for (const sortProperty in sortIndexes) {
       const sortValue = sortIndexes[sortProperty];
       indexOps.push(tenantPartition.partitionOperation(`__${sortProperty}__sort`, {
@@ -147,12 +152,21 @@ export class IndexLevel<T> {
     await tenantPartition.batch(indexOps, options);
   }
 
+  /**
+   * Queries the index for items that match the filters. If no filters are provided, all records are returned.
+   *
+   * @param tenant
+   * @param filters Array of filters that are treated as an OR query.
+   * @param queryOptions query options for sort and pagination, requires at least `sortProperty`. The default sort direction is ascending.
+   * @param options IndexLevelOptions that include an AbortSignal.
+   */
   async query(tenant:string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<T[]> {
     const { sortProperty, limit, sortDirection = SortDirection.Ascending, cursor } = queryOptions;
 
+    // if there is a cursor we fetch the starting key given the sort property, otherwise we start from the beginning of the index.
     const startKey = cursor ? await this.getStartingKeyForCursor(tenant, cursor, sortProperty) : '';
     if (startKey === undefined) {
-      // this signifies an invalid cursor, we return an empty result set.
+      // getStartingKeyForCursor returns undefined if an invalid cursor is provided, we return an empty result set.
       return [];
     }
 
@@ -160,9 +174,11 @@ export class IndexLevel<T> {
       gt: startKey
     };
 
-    if (sortDirection !== SortDirection.Ascending) {
+    // if we are sorting in descending order we can iterate in reverse.
+    if (sortDirection === SortDirection.Descending) {
       iteratorOptions.reverse = true;
       if (cursor !== undefined) {
+        // if a cursor is provided and we are sorting in descending order, the startKey should be the upper bound.
         iteratorOptions.lt = startKey;
         delete iteratorOptions.gt;
       }
@@ -178,14 +194,15 @@ export class IndexLevel<T> {
       }
 
       const { value, indexes } = JSON.parse(val);
-      // if there aren't any filters, return everything
+      // if there aren't any filters present, we return any sorted item.
       if (filters.length === 0) {
         matches.push(value);
         continue; //next match
       }
 
       for (const filter of filters) {
-        if (this.matchQuery(indexes, filter)) {
+        // if any of the filters match the indexed values, it is a match and move on to the next.
+        if (this.matchFilter(indexes, filter)) {
           matches.push(value);
           break; // next match
         }
@@ -195,11 +212,15 @@ export class IndexLevel<T> {
     return matches;
   }
 
+  /**
+   * Gets the sort indexes given an itemId. This is a reverse lookup to construct starting keys, as well as deleting indexed items.
+   */
   private async getSortIndexes(tenant: string, itemId: string): Promise<Indexes|undefined> {
     const tenantPartition = await this.db.partition(tenant);
     const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
     const serializedIndexes = await indexPartition.get(itemId);
     if (serializedIndexes === undefined) {
+      // invalid itemId
       return;
     }
 
@@ -213,27 +234,42 @@ export class IndexLevel<T> {
   private async getStartingKeyForCursor(tenant: string, itemId: string, sortProperty: string): Promise<string|undefined> {
     const sortIndexes = await this.getSortIndexes(tenant, itemId);
     if (sortIndexes === undefined) {
+      // invalid itemId
       return;
     }
 
     const sortValue = sortIndexes[sortProperty];
-    // invalid sort property
     if (sortValue === undefined) {
+      // invalid sort property
       return undefined;
     }
     return IndexLevel.keySegmentJoin(this.encodeValue(sortValue), itemId);
   }
 
-  private matchOneOf(filter: OneOfFilter, itemValue: unknown): boolean {
+  /**
+   * Evaluates a OneOfFilter given an indexedValue extracted from the index.
+   *
+   * @param filter An array of EqualityFilters. Treated as an OR.
+   * @param indexedValue the indexed value being compared.
+   * @returns true if any of the given filters match the indexedValue
+   */
+  private matchOneOf(filter: OneOfFilter, indexedValue: unknown): boolean {
     for (const orFilterValue of new Set(filter)) {
-      if (this.encodeValue(itemValue) === this.encodeValue(orFilterValue)) {
+      if (this.encodeValue(indexedValue) === this.encodeValue(orFilterValue)) {
         return true;
       }
     }
     return false;
   }
 
-  private matchRange(rangeFilter: RangeFilter, itemValue: unknown): boolean {
+  /**
+   * Evaluates if the given indexedValue is within the range given by the RangeFilter.
+   *
+   * @param rangeFilter
+   * @param indexedValue
+   * @returns true if all of the range filter conditions are met.
+   */
+  private matchRange(rangeFilter: RangeFilter, indexedValue: unknown): boolean {
     const filterConditions: Array<(value: string) => boolean> = [];
     for (const filterComparator in rangeFilter) {
       const comparatorName = filterComparator as keyof RangeFilter;
@@ -254,18 +290,25 @@ export class IndexLevel<T> {
         break;
       }
     }
-    return filterConditions.every((c) => c(this.encodeValue(itemValue)));
+    return filterConditions.every((c) => c(this.encodeValue(indexedValue)));
   }
 
-  private matchQuery(values: { [key:string]:unknown }, filter: Filter): boolean {
+  /**
+   * Evaluates the given filter against the indexed values retrieved from the DB.
+   *
+   * @param indexedValues the indexed values for an item retrieved from teh database.
+   * @param filter
+   * @returns true if all of the filter properties match.
+   */
+  private matchFilter(indexedValues: Indexes, filter: Filter): boolean {
     // set of unique query properties.
     // if count of missing property matches is 0, it means the data/object fully matches the filter
     const missingPropertyMatchesForId: Set<string> = new Set([ ...Object.keys(filter) ]);
 
     for (const filterName in filter) {
       const filterValue = filter[filterName];
-      const itemValue = values[filterName];
-      if (itemValue === undefined) {
+      const indexedValue = indexedValues[filterName];
+      if (indexedValue === undefined) {
         return false;
       }
 
@@ -274,7 +317,7 @@ export class IndexLevel<T> {
           // `propertyFilter` is a OneOfFilter
           // if OneOfFilter, the cursor properties are a map of each individual EqualFilter and the associated cursor string
           // Support OR matches by querying for each values separately,
-          if (this.matchOneOf(filterValue, itemValue)) {
+          if (this.matchOneOf(filterValue, indexedValue)) {
             missingPropertyMatchesForId.delete(filterName);
             if (missingPropertyMatchesForId.size === 0) {
               return true;
@@ -283,7 +326,7 @@ export class IndexLevel<T> {
         } else {
           // `propertyFilter` is a `RangeFilter`
           // if RangeFilter use the string curser associated with the `propertyName`
-          if (this.matchRange(filterValue, itemValue)) {
+          if (this.matchRange(filterValue, indexedValue)) {
             missingPropertyMatchesForId.delete(filterName);
             if (missingPropertyMatchesForId.size === 0) {
               return true;
@@ -293,7 +336,7 @@ export class IndexLevel<T> {
       } else {
         // propertyFilter is an EqualFilter, meaning it is a non-object primitive type
         // if EqualFilter use the string cursor associated with the `propertyName`
-        if (this.encodeValue(itemValue) === this.encodeValue(filterValue)) {
+        if (this.encodeValue(indexedValue) === this.encodeValue(filterValue)) {
           missingPropertyMatchesForId.delete(filterName);
           if (missingPropertyMatchesForId.size === 0) {
             return true;

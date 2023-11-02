@@ -49,6 +49,14 @@ await index.query(tenant, [{
 const queryRangeEnd = Date.now();
 console.log('query - range', queryRangeEnd - queryRangeStart);
 
+const multipleRangeStart = Date.now();
+await index.query(tenant, [
+  { 'number': { lte: 0.1 } },
+  { 'number': { gte: 0.5 } }
+],{ sortProperty: 'id' });
+const multipleRangeEnd = Date.now();
+console.log('query - multiple range', multipleRangeEnd - multipleRangeStart);
+
 // clear - after
 
 const clearAfterStart = Date.now();

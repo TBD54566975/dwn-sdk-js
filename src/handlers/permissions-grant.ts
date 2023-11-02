@@ -11,7 +11,6 @@ import { DwnInterfaceName } from '../enums/dwn-interface-method.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { PermissionsGrant } from '../interfaces/permissions-grant.js';
-import { removeUndefinedProperties } from '../utils/object.js';
 
 export class PermissionsGrantHandler implements MethodHandler {
   constructor(private didResolver: DidResolver, private messageStore: MessageStore, private eventLog: EventLog) { }
@@ -34,15 +33,14 @@ export class PermissionsGrantHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }
 
-    const indexes = PermissionsGrantHandler.constructMessageStoreIndexes(permissionsGrant);
+    const indexes = PermissionsGrantHandler.constructIndexes(permissionsGrant);
 
     // If we have not seen this message before, store it
     const messageCid = await Message.getCid(message);
     const existingMessage = await this.messageStore.get(tenant, messageCid);
     if (existingMessage === undefined) {
       await this.messageStore.put(tenant, message, indexes);
-      const additionalIndexes = PermissionsGrantHandler.constructAdditionalEventLogIndexes(permissionsGrant);
-      await this.eventLog.append(tenant, messageCid, { ...indexes, ...additionalIndexes });
+      await this.eventLog.append(tenant, messageCid, indexes);
     }
 
     return {
@@ -50,40 +48,28 @@ export class PermissionsGrantHandler implements MethodHandler {
     };
   }
 
-  /**
-  * Indexed properties needed for MessageStore indexing.
-  */
-  static constructMessageStoreIndexes(
+  static constructIndexes(
     permissionsGrant: PermissionsGrant,
   ): Record<string, string> {
     const message = permissionsGrant.message;
     const { scope, conditions, ...propertiesToIndex } = message.descriptor;
-
-    const indexes: Record<string, any> = {
+    let indexes: Record<string, any> = {
       author: permissionsGrant.author!,
       ...propertiesToIndex,
     };
-    return indexes;
-  }
 
-  /**
-   * Additional indexes that are not needed within the MessageStore but are necessary within the EventLog.
-   */
-  static constructAdditionalEventLogIndexes(
-    permissionsGrant: PermissionsGrant
-  ): Record<string, string> {
-    let indexes: Record<string,any> = {};
-    const { scope } = permissionsGrant.message.descriptor;
+    // additional index information for Records permissions
     if (scope.interface === DwnInterfaceName.Records) {
       const { protocol, protocolPath, schema, contextId } = scope as RecordsPermissionScope;
       indexes = {
+        ...indexes,
         contextId,
         protocol,
         protocolPath,
         schema,
       };
     }
-    removeUndefinedProperties(indexes);
+
     return indexes;
   }
 }
