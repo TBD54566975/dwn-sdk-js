@@ -10,7 +10,6 @@ import { authenticate } from '../core/auth.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { PermissionsRevoke } from '../interfaces/permissions-revoke.js';
-import { removeUndefinedProperties } from '../utils/object.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export class PermissionsRevokeHandler implements MethodHandler {
@@ -86,12 +85,9 @@ export class PermissionsRevokeHandler implements MethodHandler {
     }
 
     // Store incoming PermissionsRevoke
-    const indexes = PermissionsRevokeHandler.constructMessageStoreIndexes(permissionsRevoke);
+    const indexes = PermissionsRevokeHandler.constructIndexes(permissionsRevoke, permissionsGrantMessage);
     await this.messageStore.put(tenant, message, indexes);
-
-    // get additional indexes for the associated grant message.
-    const additionalIndexes = await PermissionsRevokeHandler.constructAdditionalEventLogIndexes(permissionsGrantMessage);
-    await this.eventLog.append(tenant, await Message.getCid(message), { ...indexes, ...additionalIndexes });
+    await this.eventLog.append(tenant, await Message.getCid(message), indexes);
 
     // Delete existing revokes which are all newer than the incoming message
     const removedRevokeCids: string[] = [];
@@ -120,30 +116,21 @@ export class PermissionsRevokeHandler implements MethodHandler {
     };
   }
 
-  /**
-  * Indexed properties needed for MessageStore indexing.
-  */
-  static constructMessageStoreIndexes(
+
+  static constructIndexes(
     permissionsRevoke: PermissionsRevoke,
+    grant: PermissionsGrantMessage,
   ): Record<string, string> {
     const { descriptor } = permissionsRevoke.message;
 
-    return {
+    let indexes: Record<string, any> = {
       interface          : DwnInterfaceName.Permissions,
       method             : DwnMethodName.Revoke,
       messageTimestamp   : descriptor.messageTimestamp,
       permissionsGrantId : descriptor.permissionsGrantId,
     };
-  }
 
-  /**
-   * Additional indexed properties that are not needed within the MessageStore but are necessary within the EventLog.
-   */
-  static async constructAdditionalEventLogIndexes(
-    grant: PermissionsGrantMessage,
-  ): Promise<Record<string, string>> {
-    let indexes: Record<string, any> = {};
-    // additional indexing for RecordsWrite
+    // additional indexing for the revoked grant
     if (grant.descriptor.scope.interface === DwnInterfaceName.Records) {
       const scope = grant.descriptor.scope as RecordsPermissionScope;
       const { protocol, protocolPath, schema, contextId } = scope;
@@ -156,7 +143,6 @@ export class PermissionsRevokeHandler implements MethodHandler {
       };
     }
 
-    removeUndefinedProperties(indexes);
     return indexes;
-  };
+  }
 }
