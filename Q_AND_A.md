@@ -65,3 +65,11 @@
   (Last updated: 2023/05/23)
 
   No.
+
+- When making `RecordsQuery` by invoking a protocol role, why is `protocolPath` a required filter property? This means that one cannot filter records under a `protocol` or `contextId` irrespective of the `protocolPath`, thus is forced to make multiple queries (ie. one per `protocolPath`).
+
+  (Last update: 2023/11/03)
+
+  This design choice is primarily driven by performance considerations. If we were to make `protocolPath` optional, and it is not specified, we would need to search records across protocol paths. Since protocol rules (protocol rule set) are defined at the per protocol path level, this means we would need to parse the protocol rules for every protocol path in the protocol definition to determine which protocol path the invoked role has access to. Then, we would need to make a database query for each qualified protocol path, which could be quite costly. This is not to say that we should never consider it, but this is the current design choice.
+
+
