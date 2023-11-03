@@ -11,6 +11,7 @@ import { DwnInterfaceName } from '../enums/dwn-interface-method.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { PermissionsGrant } from '../interfaces/permissions-grant.js';
+import { removeUndefinedProperties } from '../utils/object.js';
 
 export class PermissionsGrantHandler implements MethodHandler {
   constructor(private didResolver: DidResolver, private messageStore: MessageStore, private eventLog: EventLog) { }
@@ -70,6 +71,7 @@ export class PermissionsGrantHandler implements MethodHandler {
       };
     }
 
+    removeUndefinedProperties(indexes);
     return indexes;
   }
 }
