@@ -47,7 +47,8 @@ const insertMessages = Array(items).fill().map((_,i) => {
 // create
 const createStart = Date.now();
 const messageStore = new MessageStoreLevel({
-  location: 'BENCHMARK-INDEX'
+  blockstoreLocation : 'BENCHMARK-BLOCK',
+  indexLocation      : 'BENCHMARK-INDEX',
 });
 await messageStore.open();
 const createEnd = Date.now();
@@ -74,6 +75,7 @@ const ascOrder = { messageTimestamp: SortDirection.Ascending };
 const descOrder = { messageTimestamp: SortDirection.Descending };
 
 // paginate 10 pages of 20 results for a specific schema
+// note: published: true is a smaller subset so will perform better if index optimizes for equality filter
 let page = 0;
 let paginationMessageCid = undefined;
 let messages = [];
@@ -81,24 +83,40 @@ const paginationStart = Date.now();
 while (page < 10) {
   page++;
   ({ messages, paginationMessageCid } = await messageStore.query(tenant, [
-    { schema: 'schema2', dateCreated: { gte: firstDayOf2023 } }
+    { published: true, schema: 'schema2', dateCreated: { gte: firstDayOf2023 } }
   ], ascOrder, { limit: 20, paginationMessageCid } ));
 }
 const paginationEnd = Date.now();
-console.log('\tpagination\t\t\t:', paginationEnd - paginationStart, 'ms');
+console.log('\tpagination small subset\t\t:', paginationEnd - paginationStart, 'ms');
 
+// descending order
 page = 0;
 paginationMessageCid = undefined;
 const paginationDescStart = Date.now();
 while (page < 10) {
   page++;
   ({ messages, paginationMessageCid } = await messageStore.query(tenant, [
-    { schema: 'schema2', dateCreated: { gte: firstDayOf2023 } }
+    { published: true, schema: 'schema2', dateCreated: { gte: firstDayOf2023 } }
   ], descOrder, { limit: 20, paginationMessageCid } ));
 }
 const paginationDescEnd = Date.now();
-console.log('\tpagination desc\t\t\t:', paginationDescEnd - paginationDescStart, 'ms');
+console.log('\tpagination small subset des\t:', paginationDescEnd - paginationDescStart, 'ms');
 
+// filter for a larger result set.
+page = 0;
+paginationMessageCid = undefined;
+const paginationLargeStart = Date.now();
+while (page < 10) {
+  page++;
+  ({ messages, paginationMessageCid } = await messageStore.query(tenant, [
+    { published: true, schema: 'schema1' },
+    { published: false, schema: 'schema2', dateCreated: { gte: firstDayOf2023 } }
+  ], ascOrder, { limit: 20, paginationMessageCid } ));
+}
+const paginationLargeEnd = Date.now();
+console.log('\tpagination large subset\t\t:', paginationLargeEnd - paginationLargeStart, 'ms');
+
+// ascending multiple filters. similar to non-owner query
 page = 0;
 paginationMessageCid = undefined;
 const paginationNonOwnerStart = Date.now();
@@ -113,6 +131,7 @@ while (page < 10) {
 const paginationNonOwnerEnd = Date.now();
 console.log('\tpagination non owner\t\t:', paginationNonOwnerEnd - paginationNonOwnerStart, 'ms');
 
+// descending multiple filters. similar to non-owner query
 page = 0;
 paginationMessageCid = undefined;
 const paginationDescNonOwnerStart = Date.now();
