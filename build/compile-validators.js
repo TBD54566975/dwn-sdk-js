@@ -18,6 +18,7 @@ import mkdirp from 'mkdirp';
 import standaloneCode from 'ajv/dist/standalone/index.js';
 
 import Authorization from '../json-schemas/authorization.json' assert { type: 'json' };
+import AuthorizationDelegatedGrant from '../json-schemas/authorization-delegated-grant.json' assert { type: 'json' };
 import AuthorizationOwner from '../json-schemas/authorization-owner.json' assert { type: 'json' };
 import Definitions from '../json-schemas/definitions.json' assert { type: 'json' };
 import EventsGet from '../json-schemas/events/events-get.json' assert { type: 'json' };
@@ -47,6 +48,7 @@ import RecordsWriteUnidentified from '../json-schemas/interface-methods/records-
 
 const schemas = {
   Authorization,
+  AuthorizationDelegatedGrant,
   AuthorizationOwner,
   RecordsDelete,
   RecordsQuery,

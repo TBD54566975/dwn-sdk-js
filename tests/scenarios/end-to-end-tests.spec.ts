@@ -1,21 +1,21 @@
-import type { DerivedPrivateJwk } from '../src/utils/hd-key.js';
-import type { DataStore, EventLog, MessageStore, ProtocolDefinition, ProtocolsConfigureMessage, RecordsReadReply } from '../src/index.js';
+import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
+import type { DataStore, EventLog, MessageStore, ProtocolDefinition, ProtocolsConfigureMessage, RecordsReadReply } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
-import threadRoleProtocolDefinition from './vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
+import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
 
-import { authenticate } from '../src/core/auth.js';
-import { DidKeyResolver } from '../src/did/did-key-resolver.js';
-import { Encoder } from '../src/index.js';
-import { HdKey } from '../src/utils/hd-key.js';
-import { KeyDerivationScheme } from '../src/utils/hd-key.js';
-import { TestDataGenerator } from './utils/test-data-generator.js';
-import { TestStores } from './test-stores.js';
-import { TestStubGenerator } from './utils/test-stub-generator.js';
+import { authenticate } from '../../src/core/auth.js';
+import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
+import { Encoder } from '../../src/index.js';
+import { HdKey } from '../../src/utils/hd-key.js';
+import { KeyDerivationScheme } from '../../src/utils/hd-key.js';
+import { TestDataGenerator } from '../utils/test-data-generator.js';
+import { TestStores } from '../test-stores.js';
+import { TestStubGenerator } from '../utils/test-stub-generator.js';
 
 import chai, { expect } from 'chai';
-import { DataStream, DidResolver, Dwn, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsRead } from '../src/index.js';
+import { DataStream, DidResolver, Dwn, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsRead } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 

@@ -139,6 +139,9 @@ export type CreateFromOptions = {
   protocolRole?: string;
 };
 
+/**
+ * A class representing a RecordsWrite DWN message.
+ */
 export class RecordsWrite {
   private _message: InternalRecordsWriteMessage;
   /**

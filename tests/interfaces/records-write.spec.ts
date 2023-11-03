@@ -288,7 +288,7 @@ describe('RecordsWrite', () => {
       const grantToBob = await PermissionsGrant.create({
         delegated   : true, // this is a delegated grant
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        description : 'Allow to Bob write as me in chat protocol',
+        description : 'Allow Bob to write as me in chat protocol',
         grantedBy   : alice.did,
         grantedTo   : bob.did,
         grantedFor  : alice.did,
@@ -334,7 +334,7 @@ describe('RecordsWrite', () => {
       const grantToBob = await PermissionsGrant.create({
         delegated   : true, // this is a delegated grant
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        description : 'Allow to Bob write as me in chat protocol',
+        description : 'Allow Bob to write as me in chat protocol',
         grantedBy   : alice.did,
         grantedTo   : bob.did,
         grantedFor  : alice.did,

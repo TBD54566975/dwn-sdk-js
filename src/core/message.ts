@@ -1,3 +1,4 @@
+import type { DelegatedGrantMessage } from '../types/permissions-types.js';
 import type { GeneralJws } from '../types/jws-types.js';
 import type { Signer } from '../types/signer.js';
 import type { AuthorizationModel, Descriptor, GenericMessage, GenericSignaturePayload } from '../types/message-types.js';
@@ -115,11 +116,25 @@ export abstract class Message<M extends GenericMessage> {
   public static async createAuthorization(
     descriptor: Descriptor,
     signer: Signer,
-    additionalPayloadProperties?: { permissionsGrantId?: string, protocolRole?: string }
+    additionalPayloadProperties?: { permissionsGrantId?: string, protocolRole?: string },
+    delegatedGrant?: DelegatedGrantMessage
   ): Promise<AuthorizationModel> {
-    const signature = await Message.createSignature(descriptor, signer, additionalPayloadProperties);
 
-    const authorization = { signature };
+    let delegatedGrantId;
+    if (delegatedGrant !== undefined) {
+      delegatedGrantId = await Message.getCid(delegatedGrant);
+    }
+
+    const signature = await Message.createSignature(descriptor, signer, { delegatedGrantId, ...additionalPayloadProperties });
+
+    const authorization: AuthorizationModel = {
+      signature
+    };
+
+    if (delegatedGrant !== undefined) {
+      authorization.authorDelegatedGrant = delegatedGrant;
+    }
+
     return authorization;
   }
 
@@ -130,7 +145,7 @@ export abstract class Message<M extends GenericMessage> {
   public static async createSignature(
     descriptor: Descriptor,
     signer: Signer,
-    additionalPayloadProperties?: { permissionsGrantId?: string, protocolRole?: string }
+    additionalPayloadProperties?: { delegatedGrantId?: string, permissionsGrantId?: string, protocolRole?: string }
   ): Promise<GeneralJws> {
     const descriptorCid = await Cid.computeCid(descriptor);
 
