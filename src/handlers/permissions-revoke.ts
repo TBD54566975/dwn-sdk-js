@@ -10,6 +10,7 @@ import { authenticate } from '../core/auth.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { PermissionsRevoke } from '../interfaces/permissions-revoke.js';
+import { removeUndefinedProperties } from '../utils/object.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export class PermissionsRevokeHandler implements MethodHandler {
@@ -143,6 +144,7 @@ export class PermissionsRevokeHandler implements MethodHandler {
       };
     }
 
+    removeUndefinedProperties(indexes);
     return indexes;
   }
 }
