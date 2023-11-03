@@ -193,7 +193,7 @@ describe('General JWS Sign/Verify', () => {
     const verifySignatureSpy = sinon.spy(Jws, 'verifySignature');
     const cacheSetSpy = sinon.spy((GeneralJwsVerifier as any).singleton.cache, 'set');
 
-    // intentionally calling verifySignature twice on the same JWS
+    // intentionally calling verifySignatures() multiple times on the same JWS
     await GeneralJwsVerifier.verifySignatures(jws, resolverStub);
     await GeneralJwsVerifier.verifySignatures(jws, resolverStub);
     await GeneralJwsVerifier.verifySignatures(jws, resolverStub);
