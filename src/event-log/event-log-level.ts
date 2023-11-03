@@ -46,11 +46,6 @@ export class EventLogLevel implements EventLog {
     return this.index.clear();
   }
 
-  private async messageCidPartition(tenant: string): Promise<LevelWrapper<string>> {
-    const tenantIndex = await this.index.db.partition(tenant);
-    return tenantIndex.partition(CIDS_SUBLEVEL_NAME);
-  }
-
   /**
    * Appends messageCids to the EventLog in the order they are appended using a ulid watermark.
    * optionally add indexable properties to allow for querying filtered events.
@@ -123,5 +118,13 @@ export class EventLogLevel implements EventLog {
     await cidLog.batch(cidOps);
     await Promise.all(indexDeletePromises);
     return numEventsDeleted;
+  }
+
+  /**
+   * Gets the LevelDB Sublevel for the messageCid reverse lookup.
+   */
+  private async messageCidPartition(tenant: string): Promise<LevelWrapper<string>> {
+    const tenantIndex = await this.index.db.partition(tenant);
+    return tenantIndex.partition(CIDS_SUBLEVEL_NAME);
   }
 }

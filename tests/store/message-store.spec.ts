@@ -148,6 +148,28 @@ export function testMessageStore(): void {
         expect(fetchedMessage).to.be.undefined;
       });
 
+      it('should not store anything if aborted beforehand', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        const { message } = await TestDataGenerator.generateRecordsWrite();
+        const { messageTimestamp } = message.descriptor;
+
+        const controller = new AbortController();
+        controller.signal.throwIfAborted = (): void => { }; // simulate aborting happening async
+        controller.abort('reason');
+
+        try {
+          await messageStore.put(alice.did, message, { messageTimestamp }, { signal: controller.signal });
+        } catch (e) {
+          expect(e).to.equal('reason');
+        }
+
+        const expectedCid = await Message.getCid(message);
+
+        const jsonMessage = await messageStore.get(alice.did, expectedCid);
+        expect(jsonMessage).to.equal(undefined);
+      });
+
       it('should not delete if aborted', async () => {
         const alice = await DidKeyResolver.generate();
 
