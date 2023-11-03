@@ -44,7 +44,7 @@ export class PermissionsRequest extends Message<PermissionsRequestMessage> {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const auth = await Message.createAuthorization(descriptor, options.signer);
+    const auth = await Message.createAuthorization({ descriptor, signer: options.signer });
     const message: PermissionsRequestMessage = { descriptor, authorization: auth };
 
     Message.validateJsonSchema(message);

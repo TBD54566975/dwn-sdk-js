@@ -124,7 +124,12 @@ export class RecordsQuery {
     const signer = options.signer;
     let authorization;
     if (signer) {
-      authorization = await Message.createAuthorization(descriptor, signer, { protocolRole: options.protocolRole }, options.delegatedGrant);
+      authorization = await Message.createAuthorization({
+        descriptor,
+        signer,
+        protocolRole   : options.protocolRole,
+        delegatedGrant : options.delegatedGrant
+      });
     }
     const message = { descriptor, authorization };
 

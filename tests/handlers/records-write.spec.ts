@@ -2,7 +2,7 @@ import type { EncryptionInput } from '../../src/interfaces/records-write.js';
 import type { GenerateFromRecordsWriteOut } from '../utils/test-data-generator.js';
 import type { ProtocolDefinition } from '../../src/types/protocols-types.js';
 import type { RecordsWriteMessageWithOptionalEncodedData } from '../../src/store/storage-controller.js';
-import type { DataStore, EventLog, MessageStore, PermissionScope } from '../../src/index.js';
+import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
 
 import anyoneCollaborateProtocolDefinition from '../vectors/protocol-definitions/anyone-collaborate.json' assert { type: 'json' };
 import authorCanProtocolDefinition from '../vectors/protocol-definitions/author-can.json' assert { type: 'json' };
@@ -18,7 +18,6 @@ import recipientCanProtocol from '../vectors/protocol-definitions/recipient-can.
 import sinon from 'sinon';
 import socialMediaProtocolDefinition from '../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
 import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
-
 import chai, { expect } from 'chai';
 
 import { ArrayUtility } from '../../src/utils/array.js';
@@ -42,7 +41,7 @@ import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DwnConstant, KeyDerivationScheme, PermissionsGrant, RecordsDelete } from '../../src/index.js';
+import { DwnConstant, KeyDerivationScheme, RecordsDelete } from '../../src/index.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message.js';
 import { Encryption, EncryptionAlgorithm } from '../../src/utils/encryption.js';
 

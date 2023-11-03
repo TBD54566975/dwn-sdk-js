@@ -1569,10 +1569,10 @@ export function testRecordsQueryHandler(): void {
         recordsQuery.message.descriptor.filter.protocol = 'example.com/';
 
         // Re-create auth because we altered the descriptor after signing
-        recordsQuery.message.authorization = await Message.createAuthorization(
-          recordsQuery.message.descriptor,
-          Jws.createSigner(alice)
-        );
+        recordsQuery.message.authorization = await Message.createAuthorization({
+          descriptor : recordsQuery.message.descriptor,
+          signer     : Jws.createSigner(alice)
+        });
 
         // Send records write message
         const reply = await dwn.processMessage(alice.did, recordsQuery.message);
@@ -1593,10 +1593,10 @@ export function testRecordsQueryHandler(): void {
         recordsQuery.message.descriptor.filter.schema = 'example.com/';
 
         // Re-create auth because we altered the descriptor after signing
-        recordsQuery.message.authorization = await Message.createAuthorization(
-          recordsQuery.message.descriptor,
-          Jws.createSigner(alice)
-        );
+        recordsQuery.message.authorization = await Message.createAuthorization({
+          descriptor : recordsQuery.message.descriptor,
+          signer     : Jws.createSigner(alice)
+        });
 
         // Send records write message
         const reply = await dwn.processMessage(alice.did, recordsQuery.message);

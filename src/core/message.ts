@@ -113,19 +113,21 @@ export abstract class Message<M extends GenericMessage> {
    * @param signer Message signer.
    * @returns {AuthorizationModel} used as an `authorization` property.
    */
-  public static async createAuthorization(
+  public static async createAuthorization(input: {
     descriptor: Descriptor,
     signer: Signer,
-    additionalPayloadProperties?: { permissionsGrantId?: string, protocolRole?: string },
-    delegatedGrant?: DelegatedGrantMessage
-  ): Promise<AuthorizationModel> {
+    delegatedGrant?: DelegatedGrantMessage,
+    permissionsGrantId?: string,
+    protocolRole?: string
+  }): Promise<AuthorizationModel> {
+    const { descriptor, signer, delegatedGrant, permissionsGrantId, protocolRole } = input;
 
     let delegatedGrantId;
     if (delegatedGrant !== undefined) {
       delegatedGrantId = await Message.getCid(delegatedGrant);
     }
 
-    const signature = await Message.createSignature(descriptor, signer, { delegatedGrantId, ...additionalPayloadProperties });
+    const signature = await Message.createSignature(descriptor, signer, { delegatedGrantId, permissionsGrantId, protocolRole });
 
     const authorization: AuthorizationModel = {
       signature

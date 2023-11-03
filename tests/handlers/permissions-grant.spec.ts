@@ -169,10 +169,10 @@ export function testPermissionsGrantHandler(): void {
             schema    : 'some-schema',
             protocol  : 'some-protocol'
           };
-          schemaAndProtocolGrant.message.authorization = await Message.createAuthorization(
-            schemaAndProtocolGrant.message.descriptor,
-            Jws.createSigner(alice)
-          );
+          schemaAndProtocolGrant.message.authorization = await Message.createAuthorization({
+            descriptor : schemaAndProtocolGrant.message.descriptor,
+            signer     : Jws.createSigner(alice)
+          });
           const schemaAndProtocolGrantReply = await dwn.processMessage(alice.did, schemaAndProtocolGrant.message);
           expect(schemaAndProtocolGrantReply.status.code).to.eq(400);
           expect(schemaAndProtocolGrantReply.status.detail).to.contain(DwnErrorCode.PermissionsGrantScopeSchemaProhibitedFields);
@@ -187,10 +187,10 @@ export function testPermissionsGrantHandler(): void {
             schema    : 'some-schema',
             contextId : 'some-context-id'
           };
-          schemaAndContextIdGrant.message.authorization = await Message.createAuthorization(
-            schemaAndContextIdGrant.message.descriptor,
-            Jws.createSigner(alice)
-          );
+          schemaAndContextIdGrant.message.authorization = await Message.createAuthorization({
+            descriptor : schemaAndContextIdGrant.message.descriptor,
+            signer     : Jws.createSigner(alice)
+          });
           const schemaAndContextIdGrantReply = await dwn.processMessage(alice.did, schemaAndProtocolGrant.message);
           expect(schemaAndContextIdGrantReply.status.code).to.eq(400);
           expect(schemaAndContextIdGrantReply.status.detail).to.contain(DwnErrorCode.PermissionsGrantScopeSchemaProhibitedFields);
@@ -205,10 +205,10 @@ export function testPermissionsGrantHandler(): void {
             schema       : 'some-schema',
             protocolPath : 'some-protocol-path'
           };
-          schemaAndProtocolPathGrant.message.authorization = await Message.createAuthorization(
-            schemaAndProtocolPathGrant.message.descriptor,
-            Jws.createSigner(alice)
-          );
+          schemaAndProtocolPathGrant.message.authorization = await Message.createAuthorization({
+            descriptor : schemaAndProtocolPathGrant.message.descriptor,
+            signer     : Jws.createSigner(alice)
+          });
           const schemaAndProtocolPathGrantReply = await dwn.processMessage(alice.did, schemaAndProtocolGrant.message);
           expect(schemaAndProtocolPathGrantReply.status.code).to.eq(400);
           expect(schemaAndProtocolPathGrantReply.status.detail).to.contain(DwnErrorCode.PermissionsGrantScopeSchemaProhibitedFields);
@@ -237,10 +237,10 @@ export function testPermissionsGrantHandler(): void {
             contextId    : 'some-context-id',
             protocolPath : 'some-protocol-path',
           };
-          contextIdAndProtocolPathGrant.message.authorization = await Message.createAuthorization(
-            contextIdAndProtocolPathGrant.message.descriptor,
-            Jws.createSigner(alice)
-          );
+          contextIdAndProtocolPathGrant.message.authorization = await Message.createAuthorization({
+            descriptor : contextIdAndProtocolPathGrant.message.descriptor,
+            signer     : Jws.createSigner(alice)
+          });
           const contextIdAndProtocolPathGrantReply = await dwn.processMessage(alice.did, contextIdAndProtocolPathGrant.message);
           expect(contextIdAndProtocolPathGrantReply.status.code).to.eq(400);
           expect(contextIdAndProtocolPathGrantReply.status.detail).to.contain(DwnErrorCode.PermissionsGrantScopeContextIdAndProtocolPath);
