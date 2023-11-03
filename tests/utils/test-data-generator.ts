@@ -829,7 +829,7 @@ export class TestDataGenerator {
   }
 
   /**
-   * Generates a random timestamp.
+   * Generates a random timestamp. Optionally allows you to set specific non-randomized values for the timestamp.
    *
    * @returns random UTC ISO-8601 timestamp
    */
