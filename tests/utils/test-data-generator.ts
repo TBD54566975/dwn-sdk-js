@@ -829,18 +829,23 @@ export class TestDataGenerator {
   }
 
   /**
-   * Generates a random timestamp.
+   * Generates a random timestamp. Optionally allows you to set specific non-randomized values for the timestamp.
    *
    * @returns random UTC ISO-8601 timestamp
    */
-  public static randomTimestamp(): string {
+  public static randomTimestamp(options?: {
+    year?: number, month?: number, day?: number, hour?: number, minute?: number, second?: number, millisecond?: number, microsecond?: number
+  }): string {
+    const { year, month, day, hour, minute, second, millisecond, microsecond } = options || {};
     return Time.createTimestamp({
-      year   : this.randomInt(2000, 2022),
-      month  : this.randomInt(1, 12),
-      day    : this.randomInt(1, 28),
-      hour   : this.randomInt(0, 23),
-      minute : this.randomInt(0, 59),
-      second : this.randomInt(0, 59),
+      year        : year || this.randomInt(2000, 2022),
+      month       : month || this.randomInt(1, 12),
+      day         : day || this.randomInt(1, 28),
+      hour        : hour || this.randomInt(0, 23),
+      minute      : minute || this.randomInt(0, 59),
+      second      : second || this.randomInt(0, 59),
+      millisecond : millisecond || this.randomInt(0, 1000),
+      microsecond : microsecond || this.randomInt(0, 1000)
     });
   }
 
