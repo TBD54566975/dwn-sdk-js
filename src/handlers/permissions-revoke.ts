@@ -117,7 +117,6 @@ export class PermissionsRevokeHandler implements MethodHandler {
     };
   }
 
-
   static constructIndexes(
     permissionsRevoke: PermissionsRevoke,
     grant: PermissionsGrantMessage,

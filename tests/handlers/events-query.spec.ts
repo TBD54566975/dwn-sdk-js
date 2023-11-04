@@ -173,7 +173,6 @@ export function testEventsQueryHandler(): void {
         filters   : [{ protocol: proto1 }],
       });
       proto1EventsReply = await dwn.processMessage(alice.did, proto1EventsQuery.message);
-      console.log('proto1EventsReply', proto1EventsReply);
       expect(proto1EventsReply.status.code).equals(200);
       expect(proto1EventsReply.events?.length).equals(2);
 
@@ -188,7 +187,6 @@ export function testEventsQueryHandler(): void {
         filters   : [{ protocol: proto2 }],
       });
       proto2EventsReply = await dwn.processMessage(alice.did, proto2EventsQuery.message);
-      console.log('proto2EventsReply', proto2EventsReply);
       expect(proto2EventsReply.status.code).equals(200);
       expect(proto2EventsReply.events?.length).equals(2);
 
