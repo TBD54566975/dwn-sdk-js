@@ -1229,7 +1229,7 @@ export function testRecordsQueryHandler(): void {
         expect((queryReply.entries![1]).recordId).to.equal(middleWrite.message.recordId);
         expect((queryReply.entries![2]).recordId).to.equal(newestWrite.message.recordId);
 
-        // sort descending should be the same order
+        // sort descending should be reversed
         const queryMessageDescending = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           filter   : { schema },

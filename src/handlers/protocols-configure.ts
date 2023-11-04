@@ -89,15 +89,14 @@ export class ProtocolsConfigureHandler implements MethodHandler {
 
   static constructIndexes(protocolsConfigure: ProtocolsConfigure): { [key: string]: string | boolean } {
     // strip out `definition` as it is not indexable
-    const { messageTimestamp, definition, ...propertiesToIndex } = protocolsConfigure.message.descriptor;
+    const { definition, ...propertiesToIndex } = protocolsConfigure.message.descriptor;
     const { author } = protocolsConfigure;
 
     const indexes: { [key: string]: string | boolean } = {
       ...propertiesToIndex,
-      messageTimestamp,
       author    : author!,
       protocol  : definition.protocol, // retain protocol url from `definition`,
-      published : definition.published
+      published : definition.published // retain published state from definition
     };
 
     return indexes;

@@ -1,10 +1,10 @@
 import type { Filter } from '../index.js';
-import type { RangeFilter } from '../types/message-types.js';
 import type { Signer } from '../types/signer.js';
 import type { EventsFilter, EventsQueryDescriptor, EventsQueryMessage } from '../types/event-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
+import { Records } from '../utils/records.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Time } from '../utils/time.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
@@ -64,44 +64,13 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
   }
 
   /**
- *  Converts an incoming RecordsFilter into a Filter usable by EventLog.
+ *  Converts an incoming EventsFilter into a Filter usable by EventLog.
  *
- * @param filters An EventQueryFilter
+ * @param filters An EventsFilter
  * @returns {EventsLogFilter} a generic Filter able to be used with EventLog query.
  */
   public static convertFilters(filters: EventsFilter[]): Filter[] {
-    const eventLogFilters: Filter[] = [];
-
-    for (const filter of filters) {
-      const { dateCreated } = filter;
-
-      // set a range filter for dates
-      let rangeFilter: RangeFilter | undefined = undefined;
-      if (dateCreated !== undefined) {
-        if (dateCreated.to !== undefined && dateCreated.from !== undefined) {
-          rangeFilter = {
-            gte : dateCreated.from,
-            lt  : dateCreated.to,
-          };
-        } else if (dateCreated.to !== undefined) {
-          rangeFilter = {
-            lt: dateCreated.to,
-          };
-        } else if (dateCreated.from !== undefined) {
-          rangeFilter = {
-            gte: dateCreated.from,
-          };
-        }
-      }
-
-      if (rangeFilter) {
-        (filter as Filter).dateCreated = rangeFilter;
-      }
-
-      // add to event log filters array, sorted by the watermark property
-      eventLogFilters.push(filter as Filter);
-    }
-
-    return eventLogFilters;
+    //currently only the range criterion for Records need to be converted
+    return filters.map(filter => Records.convertFilter(filter));
   }
 }
