@@ -90,9 +90,7 @@ export class MessageStoreLevel implements MessageStore {
     options?.signal?.throwIfAborted();
 
     const queryOptions = MessageStoreLevel.getQueryOptions(messageSort, pagination);
-    // note: injecting tenant into filters to allow querying with an "empty" filter.
-    // if there are no other filters present it will return all the messages the tenant.
-    const resultIds = await this.index.query(tenant, filters.map(filter => ({ ...filter, tenant })), queryOptions, options);
+    const resultIds = await this.index.query(tenant, filters, queryOptions, options);
 
     const messages: GenericMessage[] = [];
     let cursor: string | undefined;
@@ -150,26 +148,6 @@ export class MessageStoreLevel implements MessageStore {
     await this.index.delete(tenant, cidString, options);
   }
 
-  getSortIndexes(indexes: { [key: string]: string | boolean }):{ [key:string]: string } {
-    const sortIndexes: { [key:string]: string } = {};
-    if (indexes.messageTimestamp !== undefined
-      && typeof indexes.messageTimestamp === 'string') {
-      sortIndexes.messageTimestamp = indexes.messageTimestamp;
-    }
-
-    if (indexes.dateCreated !== undefined
-      && typeof indexes.dateCreated === 'string') {
-      sortIndexes.dateCreated = indexes.dateCreated;
-    }
-
-    if (indexes.datePublished !== undefined
-      && typeof indexes.datePublished === 'string') {
-      sortIndexes.datePublished = indexes.datePublished;
-    }
-
-    return sortIndexes;
-  }
-
   async put(
     tenant: string,
     message: GenericMessage,
@@ -201,6 +179,30 @@ export class MessageStoreLevel implements MessageStore {
       tenant,
     };
     await this.index.put(tenant, messageCidString, messageCidString, indexDocument, sortIndexes, options);
+  }
+
+
+  /**
+   * @returns a key, value pair of indexes used for sorting: messageTimestamp, dateCreated, datePublished.
+   */
+  getSortIndexes(indexes: { [key: string]: string | boolean }):{ [key:string]: string } {
+    const sortIndexes: { [key:string]: string } = {};
+    if (indexes.messageTimestamp !== undefined
+      && typeof indexes.messageTimestamp === 'string') {
+      sortIndexes.messageTimestamp = indexes.messageTimestamp;
+    }
+
+    if (indexes.dateCreated !== undefined
+      && typeof indexes.dateCreated === 'string') {
+      sortIndexes.dateCreated = indexes.dateCreated;
+    }
+
+    if (indexes.datePublished !== undefined
+      && typeof indexes.datePublished === 'string') {
+      sortIndexes.datePublished = indexes.datePublished;
+    }
+
+    return sortIndexes;
   }
 
   /**

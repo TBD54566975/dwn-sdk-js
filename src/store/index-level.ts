@@ -101,12 +101,14 @@ export class IndexLevel<T> {
     for (const sortProperty in sortIndexes) {
       const sortValue = sortIndexes[sortProperty];
       // each sortProperty is treated as it's own partition.
-      // This allows the LevelDB system to calculate a gt maxKey for each of the sort properties
-      // which facilitates iterating in reverse for descending order queries without starting at a different(gt) sort property than querying.
+      // This allows the LevelDB system to calculate a gt minKey and lt maxKey for each of the sort properties
+      // which facilitates iterating in reverse for descending order queries without iterating through different sort properties.
       // the key is simply the sortValue followed by the itemId as a tie-breaker.
+      // ex: '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
       const key = IndexLevel.keySegmentJoin(this.encodeValue(sortValue), itemId);
 
-      // we write the values into a sub-partition of indexPartition.
+      // we write the values into a sublevel-partition of tenantPartition.
+      // we wrap it in __${sortProperty}__sort so that it does not clash with other sublevels ie "index"
       indexOps.push(tenantPartition.partitionOperation(`__${sortProperty}__sort`, {
         key,
         type  : 'put',
