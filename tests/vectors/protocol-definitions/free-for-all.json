@@ -1,0 +1,30 @@
+{
+  "protocol": "http://free-for-all-protocol.xyz",
+  "published": true,
+  "types": {
+    "post": {
+      "schema": "eph",
+      "dataFormats": [
+        "application/json"
+      ]
+    }
+  },
+  "structure": {
+    "post": {
+      "$actions": [
+        {
+          "who": "anyone",
+          "can": "write"
+        },
+        {
+          "who": "anyone",
+          "can": "delete"
+        },
+        {
+          "who": "anyone",
+          "can": "read"
+        }
+      ]
+    }
+  }
+}

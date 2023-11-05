@@ -4,8 +4,9 @@ import type { GeneralJws } from './jws-types.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { KeyDerivationScheme } from '../utils/hd-key.js';
 import type { PublicJwk } from './jose-types.js';
+import type { RangeFilter } from './message-types.js';
 import type { Readable } from 'readable-stream';
-import type { AuthorizationModel, BaseAuthorizationPayload, GenericMessage, Pagination } from './message-types.js';
+import type { AuthorizationModel, GenericMessage, GenericSignaturePayload, Pagination } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type RecordsWriteDescriptor = {
@@ -25,6 +26,8 @@ export type RecordsWriteDescriptor = {
   dataFormat: string;
 };
 
+export type RecordsWriteReply = GenericMessageReply;
+
 /**
  * Internal RecordsWrite message representation that can be in an incomplete state.
  */
@@ -37,6 +40,7 @@ export type InternalRecordsWriteMessage = GenericMessage & {
 };
 
 export type RecordsWriteMessage = GenericMessage & {
+  authorization: AuthorizationModel; // overriding `GenericMessage` with `authorization` being required
   recordId: string,
   contextId?: string;
   descriptor: RecordsWriteDescriptor;
@@ -68,13 +72,6 @@ export type EncryptedKey = {
   encryptedKey: string;
 };
 
-export type UnsignedRecordsWriteMessage = {
-  recordId: string,
-  contextId?: string;
-  descriptor: RecordsWriteDescriptor;
-  encryption?: EncryptionProperty;
-};
-
 /**
  * Data structure returned in a `RecordsQuery` reply entry.
  * NOTE: the message structure is a modified version of the message received, the most notable differences are:
@@ -99,12 +96,17 @@ export type RecordsFilter = {
   recipient?: string;
   protocol?: string;
   protocolPath?: string;
+  published?: boolean;
   contextId?: string;
   schema?: string;
   recordId?: string;
   parentId?: string;
   dataFormat?: string;
+  dataSize?: RangeFilter;
+  dataCid?: string;
   dateCreated?: RangeCriterion;
+  datePublished?: RangeCriterion;
+  dateUpdated?: RangeCriterion;
 };
 
 export type RangeCriterion = {
@@ -123,7 +125,7 @@ export type RecordsWriteAttestationPayload = {
   descriptorCid: string;
 };
 
-export type RecordsWriteAuthorSignaturePayload = BaseAuthorizationPayload & {
+export type RecordsWriteSignaturePayload = GenericSignaturePayload & {
   recordId: string;
   contextId?: string;
   attestationCid?: string;
@@ -158,6 +160,7 @@ export type RecordsReadDescriptor = {
 };
 
 export type RecordsDeleteMessage = GenericMessage & {
+  authorization: AuthorizationModel; // overriding `GenericMessage` with `authorization` being required
   descriptor: RecordsDeleteDescriptor;
 };
 

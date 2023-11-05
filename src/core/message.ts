@@ -1,4 +1,9 @@
+import type { GeneralJws } from '../types/jws-types.js';
+import type { Signer } from '../types/signer.js';
+import type { AuthorizationModel, Descriptor, GenericMessage, GenericSignaturePayload } from '../types/message-types.js';
+
 import { Cid } from '../utils/cid.js';
+import { Encoder } from '../index.js';
 import { GeneralJwsBuilder } from '../jose/jws/general/builder.js';
 import { Jws } from '../utils/jws.js';
 import { lexicographicalCompare } from '../utils/string.js';
@@ -10,7 +15,6 @@ import type { AuthorizationModel, BaseAuthorizationPayload, Descriptor, GenericM
 
 export enum DwnInterfaceName {
   Events = 'Events',
-  Hooks = 'Hooks',
   Messages = 'Messages',
   Permissions = 'Permissions',
   Protocols = 'Protocols',
@@ -34,15 +38,15 @@ export enum DwnMethodName {
 
 export abstract class Message<M extends GenericMessage> {
   readonly message: M;
-  readonly authorizationPayload: BaseAuthorizationPayload | undefined;
+  readonly signaturePayload: GenericSignaturePayload | undefined;
   readonly author: string | undefined;
 
   constructor(message: M) {
     this.message = message;
 
     if (message.authorization !== undefined) {
-      this.authorizationPayload = Jws.decodePlainObjectPayload(message.authorization.author);
-      this.author = Message.getAuthor(message as GenericMessage);
+      this.signaturePayload = Jws.decodePlainObjectPayload(message.authorization.signature);
+      this.author = Message.getSigner(message as GenericMessage);
     }
   }
 
@@ -67,15 +71,15 @@ export abstract class Message<M extends GenericMessage> {
   };
 
   /**
-   * Gets the DID of the author of the given message, returned `undefined` if message is not signed.
+   * Gets the DID of the signer of the given message, returns `undefined` if message is not signed.
    */
-  public static getAuthor(message: GenericMessage): string | undefined {
+  public static getSigner(message: GenericMessage): string | undefined {
     if (message.authorization === undefined) {
       return undefined;
     }
 
-    const author = Jws.getSignerDid(message.authorization.author.signatures[0]);
-    return author;
+    const signer = Jws.getSignerDid(message.authorization.signature.signatures[0]);
+    return signer;
   }
 
   /**
@@ -109,50 +113,41 @@ export abstract class Message<M extends GenericMessage> {
   }
 
   /**
-   * Compares the CID of two messages.
-   * @returns `true` if `a` is newer than `b`; `false` otherwise
+   * Creates the `authorization` property to be included in a DWN message.
+   * @param signer Message signer.
+   * @returns {AuthorizationModel} used as an `authorization` property.
    */
-  public static async isCidLarger(a: GenericMessage, b: GenericMessage): Promise<boolean> {
-    const aIsLarger = (await Message.compareCid(a, b) > 0);
-    return aIsLarger;
-  }
-
-  /**
-   * @returns message with the largest CID in the array using lexicographical compare. `undefined` if given array is empty.
-   */
-  public static async getMessageWithLargestCid(messages: GenericMessage[]): Promise<GenericMessage | undefined> {
-    let currentNewestMessage: GenericMessage | undefined = undefined;
-    for (const message of messages) {
-      if (currentNewestMessage === undefined || await Message.isCidLarger(message, currentNewestMessage)) {
-        currentNewestMessage = message;
-      }
-    }
-
-    return currentNewestMessage;
-  }
-
-  /**
-   * Creates the `authorization` as the author to be used in a DWN message.
-   * @param signer Signer as the author
-   * @returns General JWS signature used as an `authorization` property.
-   */
-  public static async signAuthorizationAsAuthor(
+  public static async createAuthorization(
     descriptor: Descriptor,
     signer: Signer,
     additionalPayloadProperties?: { permissionsGrantId?: string, protocolRole?: string }
   ): Promise<AuthorizationModel> {
+    const signature = await Message.createSignature(descriptor, signer, additionalPayloadProperties);
+
+    const authorization = { signature };
+    return authorization;
+  }
+
+  /**
+   * Creates a generic signature from the given DWN message descriptor by including `descriptorCid` as the required property in the signature payload.
+   * NOTE: there is an opportunity to consolidate RecordsWrite.createSignerSignature() wth this method
+   */
+  public static async createSignature(
+    descriptor: Descriptor,
+    signer: Signer,
+    additionalPayloadProperties?: { permissionsGrantId?: string, protocolRole?: string }
+  ): Promise<GeneralJws> {
     const descriptorCid = await Cid.computeCid(descriptor);
 
-    const authPayload: BaseAuthorizationPayload = { descriptorCid, ...additionalPayloadProperties };
-    removeUndefinedProperties(authPayload);
-    const authPayloadStr = JSON.stringify(authPayload);
-    const authPayloadBytes = new TextEncoder().encode(authPayloadStr);
+    const signaturePayload: GenericSignaturePayload = { descriptorCid, ...additionalPayloadProperties };
+    removeUndefinedProperties(signaturePayload);
 
-    const builder = await GeneralJwsBuilder.create(authPayloadBytes, [signer]);
-    const authorJws = builder.getJws();
+    const signaturePayloadBytes = Encoder.objectToBytes(signaturePayload);
 
-    const authorization = { author: authorJws };
-    return authorization;
+    const builder = await GeneralJwsBuilder.create(signaturePayloadBytes, [signer]);
+    const signature = builder.getJws();
+
+    return signature;
   }
 
   /**

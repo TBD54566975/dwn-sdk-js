@@ -3,10 +3,10 @@ import type { MessageStore } from '../types/message-store.js';
 import type { Signer } from '../types/signer.js';
 import type { ProtocolsQueryDescriptor, ProtocolsQueryFilter, ProtocolsQueryMessage } from '../types/protocols-types.js';
 
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { GrantAuthorization } from '../core/grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { Time } from '../utils/time.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 import { normalizeProtocolUrl, validateProtocolUrlNormalized } from '../utils/url.js';
 
@@ -15,7 +15,7 @@ import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 export type ProtocolsQueryOptions = {
   messageTimestamp?: string;
   filter?: ProtocolsQueryFilter,
-  authorizationSigner?: Signer;
+  signer?: Signer;
   permissionsGrantId?: string;
 };
 
@@ -23,12 +23,13 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
 
   public static async parse(message: ProtocolsQueryMessage): Promise<ProtocolsQuery> {
     if (message.authorization !== undefined) {
-      await validateAuthorizationIntegrity(message);
+      await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     }
 
     if (message.descriptor.filter !== undefined) {
       validateProtocolUrlNormalized(message.descriptor.filter.protocol);
     }
+    Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     return new ProtocolsQuery(message);
   }
@@ -37,7 +38,7 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
     const descriptor: ProtocolsQueryDescriptor = {
       interface        : DwnInterfaceName.Protocols,
       method           : DwnMethodName.Query,
-      messageTimestamp : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
       filter           : ProtocolsQuery.normalizeFilter(options.filter),
     };
 
@@ -47,10 +48,10 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
 
     // only generate the `authorization` property if signature input is given
     let authorization: AuthorizationModel | undefined;
-    if (options.authorizationSigner !== undefined) {
-      authorization = await Message.signAuthorizationAsAuthor(
+    if (options.signer !== undefined) {
+      authorization = await Message.createAuthorization(
         descriptor,
-        options.authorizationSigner,
+        options.signer,
         { permissionsGrantId: options.permissionsGrantId }
       );
     }
@@ -78,8 +79,14 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
     // if author is the same as the target tenant, we can directly grant access
     if (this.author === tenant) {
       return;
-    } else if (this.authorizationPayload?.permissionsGrantId) {
-      await GrantAuthorization.authorizeGenericMessage(tenant, this, this.author!, messageStore);
+    } else if (this.author !== undefined && this.signaturePayload!.permissionsGrantId) {
+      await GrantAuthorization.authorizeGenericMessage(
+        tenant,
+        this,
+        this.author,
+        this.signaturePayload!.permissionsGrantId,
+        messageStore
+      );
     } else {
       throw new DwnError(
         DwnErrorCode.ProtocolsQueryUnauthorized,

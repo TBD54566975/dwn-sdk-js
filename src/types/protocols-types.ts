@@ -1,7 +1,7 @@
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { PublicJwk } from './jose-types.js';
+import type { AuthorizationModel, GenericMessage } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
-import type { GenericMessage, QueryResultEntry } from './message-types.js';
 
 export type ProtocolsConfigureDescriptor = {
   interface : DwnInterfaceName.Protocols;
@@ -38,7 +38,10 @@ export enum ProtocolActor {
 }
 
 export enum ProtocolAction {
+  Delete = 'delete',
+  Query = 'query',
   Read = 'read',
+  Update = 'update',
   Write = 'write'
 }
 
@@ -87,7 +90,8 @@ export type ProtocolActionRule = {
 
   /**
    * Action that the actor can perform.
-   * May be 'read' | 'write'
+   * May be 'query' | 'read' | 'write'
+   * 'query' is only supported for `role` rules.
    */
   can: string;
 };
@@ -111,14 +115,22 @@ export type ProtocolRuleSet = {
    * If true, this marks a record as a `role` that may be used across contexts. Only root records
    * may set $globalRole: true.
    * The recipient of a $globalRole record may invoke their role in RecordsRead or RecordsWrites
-   * by setting `asRole` property to the protocol path of the $globalRole record.
+   * by setting `protocolRole` property to the protocol path of the $globalRole record.
    */
   $globalRole?: boolean;
-  // JSON Schema verifies that properties other than `$actions` will actually have type ProtocolRuleSet
+  /**
+   * If true, this marks a record as a `role` that may used within a single context. Only
+   * second-level records may set $contextRole: true.
+   * The recipient of a $contextRole record may invoke their role in RecordsReads or RecordsWrites
+   * by setting `protocolRole` property to the protocol path of the $contextRole record.
+   */
+  $contextRole?: boolean;
+  // JSON Schema verifies that properties other than properties prefixed with $ will actually have type ProtocolRuleSet
   [key: string]: any;
 };
 
 export type ProtocolsConfigureMessage = GenericMessage & {
+  authorization: AuthorizationModel; // overriding `GenericMessage` with `authorization` being required
   descriptor: ProtocolsConfigureDescriptor;
 };
 
@@ -138,5 +150,5 @@ export type ProtocolsQueryMessage = GenericMessage & {
 };
 
 export type ProtocolsQueryReply = GenericMessageReply & {
-  entries?: QueryResultEntry[];
+  entries?: ProtocolsConfigureMessage[];
 };

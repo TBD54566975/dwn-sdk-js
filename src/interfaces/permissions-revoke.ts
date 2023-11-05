@@ -1,20 +1,21 @@
 import type { Signer } from '../types/signer.js';
 import type { PermissionsGrantMessage, PermissionsRevokeDescriptor, PermissionsRevokeMessage } from '../types/permissions-types.js';
 
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { Time } from '../utils/time.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 export type PermissionsRevokeOptions = {
   messageTimestamp?: string;
   permissionsGrantId: string;
-  authorizationSigner: Signer;
+  signer: Signer;
 };
 
 export class PermissionsRevoke extends Message<PermissionsRevokeMessage> {
   public static async parse(message: PermissionsRevokeMessage): Promise<PermissionsRevoke> {
-    await validateAuthorizationIntegrity(message);
+    await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+    Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     return new PermissionsRevoke(message);
   }
@@ -23,11 +24,11 @@ export class PermissionsRevoke extends Message<PermissionsRevokeMessage> {
     const descriptor: PermissionsRevokeDescriptor = {
       interface          : DwnInterfaceName.Permissions,
       method             : DwnMethodName.Revoke,
-      messageTimestamp   : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      messageTimestamp   : options.messageTimestamp ?? Time.getCurrentTimestamp(),
       permissionsGrantId : options.permissionsGrantId,
     };
 
-    const authorization = await Message.signAuthorizationAsAuthor(descriptor, options.authorizationSigner);
+    const authorization = await Message.createAuthorization(descriptor, options.signer);
     const message: PermissionsRevokeMessage = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

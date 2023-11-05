@@ -31,7 +31,7 @@ jobs:
           node-version: 18.16.0
       - run: npm audit
 
-  build:
+  test-with-node:
     runs-on: ubuntu-latest
     # read more about matrix strategies here: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstrategymatrix
     strategy:
@@ -51,10 +51,41 @@ jobs:
       - run: npm run build
       # runs linter. Job will fail if there are any warnings or errors
       - run: npm run lint
-      # runs tests in node environment without attempting to generate code coverage badges
-      - run: npm run test:node:ci
-      # runs code coverage badge generation, throws if README output differs to README to be checked in (thus detects if tests were not run)
-      - run: npm run make-coverage-badges:ci
+      # runs tests in node environment
+      - run: npm run test:node
 
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: true
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-      
+  test-with-browsers:
+    # Run browser tests using macOS so that WebKit tests don't fail under a Linux environment
+    runs-on: macos-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install latest npm
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Build all workspace packages
+        run: npm run build
+
+      - name: Run tests for all packages
+        run: npm run test:browser

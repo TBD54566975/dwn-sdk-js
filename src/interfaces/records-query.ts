@@ -2,11 +2,12 @@ import type { Pagination } from '../types/message-types.js';
 import type { Signer } from '../types/signer.js';
 import type { RecordsFilter, RecordsQueryDescriptor, RecordsQueryMessage } from '../types/records-types.js';
 
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Message } from '../core/message.js';
 import { Records } from '../utils/records.js';
 import { removeUndefinedProperties } from '../utils/object.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { Time } from '../utils/time.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 import { validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
@@ -22,22 +23,33 @@ export type RecordsQueryOptions = {
   filter: RecordsFilter;
   dateSort?: DateSort;
   pagination?: Pagination;
-  authorizationSigner?: Signer;
+  signer?: Signer;
+  protocolRole?: string;
 };
 
 export class RecordsQuery extends Message<RecordsQueryMessage> {
 
   public static async parse(message: RecordsQueryMessage): Promise<RecordsQuery> {
+    let authorizationPayload;
     if (message.authorization !== undefined) {
-      await validateAuthorizationIntegrity(message);
+      authorizationPayload = await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     }
 
+    if (authorizationPayload?.protocolRole !== undefined) {
+      if (message.descriptor.filter.protocolPath === undefined) {
+        throw new DwnError(
+          DwnErrorCode.RecordsQueryFilterMissingRequiredProperties,
+          'Role-authorized queries must include `protocolPath` in the filter'
+        );
+      }
+    }
     if (message.descriptor.filter.protocol !== undefined) {
       validateProtocolUrlNormalized(message.descriptor.filter.protocol);
     }
     if (message.descriptor.filter.schema !== undefined) {
       validateSchemaUrlNormalized(message.descriptor.filter.schema);
     }
+    Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     return new RecordsQuery(message);
   }
@@ -46,7 +58,7 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
     const descriptor: RecordsQueryDescriptor = {
       interface        : DwnInterfaceName.Records,
       method           : DwnMethodName.Query,
-      messageTimestamp : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
       filter           : Records.normalizeFilter(options.filter),
       dateSort         : options.dateSort,
       pagination       : options.pagination,
@@ -57,8 +69,11 @@ export class RecordsQuery extends Message<RecordsQueryMessage> {
     removeUndefinedProperties(descriptor);
 
     // only generate the `authorization` property if signature input is given
-    const authorizationSigner = options.authorizationSigner;
-    const authorization = authorizationSigner ? await Message.signAuthorizationAsAuthor(descriptor, authorizationSigner) : undefined;
+    const signer = options.signer;
+    let authorization;
+    if (signer) {
+      authorization = await Message.createAuthorization(descriptor, signer, { protocolRole: options.protocolRole });
+    }
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

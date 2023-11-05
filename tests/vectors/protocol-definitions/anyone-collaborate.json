@@ -1,0 +1,25 @@
+{
+  "protocol": "http://anyone-collaborate-protocol.xyz",
+  "published": true,
+  "types": {
+    "doc": {}
+  },
+  "structure": {
+    "doc": {
+      "$actions": [
+        {
+          "who": "anyone",
+          "can": "update"
+        },
+        {
+          "who": "anyone",
+          "can": "read"
+        },
+        {
+          "who": "anyone",
+          "can": "delete"
+        }
+      ]
+    }
+  }
+}

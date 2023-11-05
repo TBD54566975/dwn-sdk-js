@@ -34,6 +34,9 @@
         "description": {
           "type": "string"
         },
+        "delegated": {
+          "type": "boolean"
+        },
         "grantedTo": {
           "description": "DID of the grantee",
           "$ref": "https://identity.foundation/dwn/json-schemas/permissions/defs.json#/definitions/grantedTo"

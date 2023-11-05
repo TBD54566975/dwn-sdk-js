@@ -1,13 +1,14 @@
 import type { PermissionsRequest } from './permissions-request.js';
 import type { Signer } from '../types/signer.js';
-import type { PermissionConditions, PermissionScope, RecordsPermissionScope } from '../types/permissions-types.js';
+import type { DelegatedGrantMessage, PermissionConditions, PermissionScope, RecordsPermissionScope } from '../types/permissions-types.js';
 import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types/permissions-types.js';
 
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { removeUndefinedProperties } from '../utils/object.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { Time } from '../utils/time.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
 
 export type PermissionsGrantOptions = {
   messageTimestamp?: string;
@@ -16,10 +17,11 @@ export type PermissionsGrantOptions = {
   grantedTo: string;
   grantedBy: string;
   grantedFor: string;
+  delegated?: boolean;
   permissionsRequestId?: string;
   scope: PermissionScope;
   conditions?: PermissionConditions;
-  authorizationSigner: Signer;
+  signer: Signer;
 };
 
 export type CreateFromPermissionsRequestOverrides = {
@@ -35,24 +37,31 @@ export type CreateFromPermissionsRequestOverrides = {
 export class PermissionsGrant extends Message<PermissionsGrantMessage> {
 
   public static async parse(message: PermissionsGrantMessage): Promise<PermissionsGrant> {
-    await validateAuthorizationIntegrity(message);
+    await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     PermissionsGrant.validateScope(message);
+    Time.validateTimestamp(message.descriptor.messageTimestamp);
+    Time.validateTimestamp(message.descriptor.dateExpires);
 
     return new PermissionsGrant(message);
   }
 
   static async create(options: PermissionsGrantOptions): Promise<PermissionsGrant> {
+    const scope = { ...options.scope } as RecordsPermissionScope;
+    scope.protocol = scope.protocol !== undefined ? normalizeProtocolUrl(scope.protocol) : undefined;
+    scope.schema = scope.schema !== undefined ? normalizeSchemaUrl(scope.schema) : undefined;
+
     const descriptor: PermissionsGrantDescriptor = {
       interface            : DwnInterfaceName.Permissions,
       method               : DwnMethodName.Grant,
-      messageTimestamp     : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      messageTimestamp     : options.messageTimestamp ?? Time.getCurrentTimestamp(),
       dateExpires          : options.dateExpires,
       description          : options.description,
       grantedTo            : options.grantedTo,
       grantedBy            : options.grantedBy,
       grantedFor           : options.grantedFor,
+      delegated            : options.delegated,
       permissionsRequestId : options.permissionsRequestId,
-      scope                : options.scope,
+      scope                : scope,
       conditions           : options.conditions,
     };
 
@@ -60,7 +69,7 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const authorization = await Message.signAuthorizationAsAuthor(descriptor, options.authorizationSigner);
+    const authorization = await Message.createAuthorization(descriptor, options.signer);
     const message: PermissionsGrantMessage = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
@@ -70,14 +79,38 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
   }
 
   /**
+   * A convenience method for casting a PermissionsGrantMessage to a DelegatedGrantMessage if the `delegated` property is `true`.
+   * @throws {DwnError} if the `delegated` property is not `true`.
+   */
+  public asDelegatedGrant(): DelegatedGrantMessage {
+    return PermissionsGrant.asDelegatedGrant(this.message);
+  }
+
+  /**
+   * A convenience method for casting a PermissionsGrantMessage to a DelegatedGrantMessage if the `delegated` property is `true`.
+   * @throws {DwnError} if the `delegated` property is not `true`.
+   */
+  public static asDelegatedGrant(message: PermissionsGrantMessage): DelegatedGrantMessage {
+    if (!message.descriptor.delegated) {
+      throw new DwnError(
+        DwnErrorCode.PermissionsGrantNotADelegatedGrant,
+        `PermissionsGrant given is not a delegated grant. Descriptor: ${message.descriptor}`
+      );
+    }
+
+    return message as DelegatedGrantMessage;
+  }
+
+
+  /**
    * generates a PermissionsGrant using the provided PermissionsRequest
    * @param permissionsRequest
-   * @param authorizationSigner - the private key and additional signature material of the grantor
+   * @param signer - the private key and additional signature material of the grantor
    * @param overrides - overrides that will be used instead of the properties in `permissionsRequest`
    */
   public static async createFromPermissionsRequest(
     permissionsRequest: PermissionsRequest,
-    authorizationSigner: Signer,
+    signer: Signer,
     overrides: CreateFromPermissionsRequestOverrides,
   ): Promise<PermissionsGrant> {
     const descriptor = permissionsRequest.message.descriptor;
@@ -90,10 +123,13 @@ export class PermissionsGrant extends Message<PermissionsGrantMessage> {
       permissionsRequestId : await Message.getCid(permissionsRequest.message),
       scope                : overrides.scope ?? descriptor.scope,
       conditions           : overrides.conditions ?? descriptor.conditions,
-      authorizationSigner,
+      signer,
     });
   }
 
+  /**
+   * Current implementation only allows the DWN owner to store grants they created.
+   */
   public authorize(): void {
     const { grantedBy, grantedFor } = this.message.descriptor;
     if (this.author !== grantedBy) {

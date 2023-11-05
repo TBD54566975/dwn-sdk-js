@@ -1,13 +1,13 @@
 import type { Signer } from '../types/signer.js';
 import type { EventsGetDescriptor, EventsGetMessage } from '../types/event-types.js';
 
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { Time } from '../utils/time.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 export type EventsGetOptions = {
   watermark?: string;
-  authorizationSigner: Signer;
+  signer: Signer;
   messageTimestamp?: string;
 };
 
@@ -15,7 +15,8 @@ export class EventsGet extends Message<EventsGetMessage> {
 
   public static async parse(message: EventsGetMessage): Promise<EventsGet> {
     Message.validateJsonSchema(message);
-    await validateAuthorizationIntegrity(message);
+    await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+    Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     return new EventsGet(message);
   }
@@ -24,14 +25,14 @@ export class EventsGet extends Message<EventsGetMessage> {
     const descriptor: EventsGetDescriptor = {
       interface        : DwnInterfaceName.Events,
       method           : DwnMethodName.Get,
-      messageTimestamp : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
     };
 
     if (options.watermark) {
       descriptor.watermark = options.watermark;
     }
 
-    const authorization = await Message.signAuthorizationAsAuthor(descriptor, options.authorizationSigner);
+    const authorization = await Message.createAuthorization(descriptor, options.signer);
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

@@ -10,8 +10,8 @@ describe('EventsGet Message', () => {
     it('creates an EventsGet message', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const eventsGet = await EventsGet.create({
-        watermark           : 'yolo',
-        authorizationSigner : await Jws.createSigner(alice)
+        watermark : 'yolo',
+        signer    : await Jws.createSigner(alice)
       });
 
       const { message } = eventsGet;
@@ -20,10 +20,10 @@ describe('EventsGet Message', () => {
       expect(message.authorization).to.exist;
     });
 
-    it('doesnt require a watermark', async () => {
+    it('does not require a watermark', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const eventsGet = await EventsGet.create({
-        authorizationSigner: await Jws.createSigner(alice)
+        signer: await Jws.createSigner(alice)
       });
 
       const message = eventsGet.message;
@@ -37,8 +37,8 @@ describe('EventsGet Message', () => {
     it('parses a message into an EventsGet instance', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const eventsGet = await EventsGet.create({
-        watermark           : 'yolo',
-        authorizationSigner : await Jws.createSigner(alice)
+        watermark : 'yolo',
+        signer    : await Jws.createSigner(alice)
       });
 
       const parsed = await EventsGet.parse(eventsGet.message);
@@ -53,8 +53,8 @@ describe('EventsGet Message', () => {
     it('throws an exception if message is not a valid EventsGet message', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const eventsGet = await EventsGet.create({
-        watermark           : 'yolo',
-        authorizationSigner : await Jws.createSigner(alice)
+        watermark : 'yolo',
+        signer    : await Jws.createSigner(alice)
       });
 
       const { message } = eventsGet;

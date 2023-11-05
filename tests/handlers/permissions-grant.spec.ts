@@ -11,12 +11,12 @@ import { DidResolver } from '../../src/did/did-resolver.js';
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { expect } from 'chai';
-import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { Jws } from '../../src/index.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { PermissionsGrantHandler } from '../../src/handlers/permissions-grant.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
+import { Time } from '../../src/utils/time.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message.js';
 
 export function testPermissionsGrantHandler(): void {
@@ -149,7 +149,7 @@ export function testPermissionsGrantHandler(): void {
           // Options to create a grant with `schema` in its `scope`
           const permissionsGrantBaseOptions = {
             author      : alice,
-            dateExpires : getCurrentTimeInHighPrecision(),
+            dateExpires : Time.getCurrentTimestamp(),
             grantedBy   : 'did:jank:bob',
             grantedTo   : 'did:jank:alice',
             grantedFor  : 'did:jank:bob',
@@ -169,7 +169,7 @@ export function testPermissionsGrantHandler(): void {
             schema    : 'some-schema',
             protocol  : 'some-protocol'
           };
-          schemaAndProtocolGrant.message.authorization = await Message.signAuthorizationAsAuthor(
+          schemaAndProtocolGrant.message.authorization = await Message.createAuthorization(
             schemaAndProtocolGrant.message.descriptor,
             Jws.createSigner(alice)
           );
@@ -187,7 +187,7 @@ export function testPermissionsGrantHandler(): void {
             schema    : 'some-schema',
             contextId : 'some-context-id'
           };
-          schemaAndContextIdGrant.message.authorization = await Message.signAuthorizationAsAuthor(
+          schemaAndContextIdGrant.message.authorization = await Message.createAuthorization(
             schemaAndContextIdGrant.message.descriptor,
             Jws.createSigner(alice)
           );
@@ -205,7 +205,7 @@ export function testPermissionsGrantHandler(): void {
             schema       : 'some-schema',
             protocolPath : 'some-protocol-path'
           };
-          schemaAndProtocolPathGrant.message.authorization = await Message.signAuthorizationAsAuthor(
+          schemaAndProtocolPathGrant.message.authorization = await Message.createAuthorization(
             schemaAndProtocolPathGrant.message.descriptor,
             Jws.createSigner(alice)
           );
@@ -219,7 +219,7 @@ export function testPermissionsGrantHandler(): void {
 
           const contextIdAndProtocolPathGrant = await TestDataGenerator.generatePermissionsGrant({
             author      : alice,
-            dateExpires : getCurrentTimeInHighPrecision(),
+            dateExpires : Time.getCurrentTimestamp(),
             grantedBy   : 'did:jank:bob',
             grantedTo   : 'did:jank:alice',
             grantedFor  : 'did:jank:bob',
@@ -237,7 +237,7 @@ export function testPermissionsGrantHandler(): void {
             contextId    : 'some-context-id',
             protocolPath : 'some-protocol-path',
           };
-          contextIdAndProtocolPathGrant.message.authorization = await Message.signAuthorizationAsAuthor(
+          contextIdAndProtocolPathGrant.message.authorization = await Message.createAuthorization(
             contextIdAndProtocolPathGrant.message.descriptor,
             Jws.createSigner(alice)
           );

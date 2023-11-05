@@ -30,7 +30,7 @@ export class PermissionsGrantHandler implements MethodHandler {
     }
 
     const { scope, conditions, ...propertiesToIndex } = message.descriptor;
-    const indexes: { [key: string]: string } = {
+    const indexes: { [key: string]: string | boolean } = {
       author: permissionsGrant.author!,
       ...propertiesToIndex,
     };

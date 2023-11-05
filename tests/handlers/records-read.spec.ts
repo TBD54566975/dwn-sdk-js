@@ -13,6 +13,8 @@ import minimalProtocolDefinition from '../vectors/protocol-definitions/minimal.j
 import nestedProtocol from '../vectors/protocol-definitions/nested.json' assert { type: 'json' };
 import sinon from 'sinon';
 import socialMediaProtocolDefinition from '../vectors/protocol-definitions/social-media.json' assert { type: 'json' };
+import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
+
 import chai, { expect } from 'chai';
 
 import { ArrayUtility } from '../../src/utils/array.js';
@@ -82,10 +84,10 @@ export function testRecordsReadHandler(): void {
           filter: {
             recordId: message.recordId,
           },
-          authorizationSigner: Jws.createSigner(alice)
+          signer: Jws.createSigner(alice)
         });
 
-        const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+        const readReply = await dwn.processMessage(alice.did, recordsRead.message);
         expect(readReply.status.code).to.equal(200);
         expect(readReply.record).to.exist;
         expect(readReply.record?.authorization).to.deep.equal(message.authorization);
@@ -110,7 +112,7 @@ export function testRecordsReadHandler(): void {
           filter: {
             recordId: message.recordId,
           },
-          authorizationSigner: Jws.createSigner(bob)
+          signer: Jws.createSigner(bob)
         });
 
         const readReply = await dwn.processMessage(alice.did, recordsRead.message);
@@ -133,7 +135,7 @@ export function testRecordsReadHandler(): void {
         });
         expect(recordsRead.author).to.be.undefined; // making sure no author/authorization is created
 
-        const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+        const readReply = await dwn.processMessage(alice.did, recordsRead.message);
         expect(readReply.status.code).to.equal(200);
 
         const dataFetched = await DataStream.toBytes(readReply.record!.data!);
@@ -155,10 +157,10 @@ export function testRecordsReadHandler(): void {
           filter: {
             recordId: message.recordId,
           },
-          authorizationSigner: Jws.createSigner(bob)
+          signer: Jws.createSigner(bob)
         });
 
-        const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+        const readReply = await dwn.processMessage(alice.did, recordsRead.message);
         expect(readReply.status.code).to.equal(200);
 
         const dataFetched = await DataStream.toBytes(readReply.record!.data!);
@@ -182,10 +184,10 @@ export function testRecordsReadHandler(): void {
           filter: {
             recordId: message.recordId,
           },
-          authorizationSigner: Jws.createSigner(bob)
+          signer: Jws.createSigner(bob)
         });
 
-        const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+        const readReply = await dwn.processMessage(alice.did, recordsRead.message);
         expect(readReply.status.code).to.equal(200);
         expect(readReply.record).to.exist;
         expect(readReply.record?.descriptor).to.exist;
@@ -208,8 +210,8 @@ export function testRecordsReadHandler(): void {
             author: alice,
             protocolDefinition
           });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
-          expect(protocolWriteReply.status.code).to.equal(202);
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
 
           // Alice writes image to her DWN
           const encodedImage = new TextEncoder().encode('cafe-aesthetic.jpg');
@@ -230,7 +232,7 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: imageRecordsWrite.message.recordId,
             },
-            authorizationSigner: Jws.createSigner(bob)
+            signer: Jws.createSigner(bob)
           });
           const imageReadReply = await dwn.processMessage(alice.did, imageRecordsRead.message);
           expect(imageReadReply.status.code).to.equal(200);
@@ -250,8 +252,8 @@ export function testRecordsReadHandler(): void {
             author: alice,
             protocolDefinition
           });
-          const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
-          expect(protocolWriteReply.status.code).to.equal(202);
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
 
           // Alice writes a message to the minimal protocol
           const recordsWrite = await TestDataGenerator.generateRecordsWrite({
@@ -292,8 +294,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition,
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes an email with Bob as recipient
             const encodedEmail = new TextEncoder().encode('Dear Bob, hello!');
@@ -314,7 +316,7 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: emailRecordsWrite.message.recordId,
               },
-              authorizationSigner: Jws.createSigner(bob)
+              signer: Jws.createSigner(bob)
             });
             const bobReadReply = await dwn.processMessage(alice.did, bobRecordsRead.message);
             expect(bobReadReply.status.code).to.equal(200);
@@ -324,7 +326,7 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: emailRecordsWrite.message.recordId,
               },
-              authorizationSigner: Jws.createSigner(imposterBob)
+              signer: Jws.createSigner(imposterBob)
             });
             const imposterReadReply = await dwn.processMessage(alice.did, imposterRecordsRead.message);
             expect(imposterReadReply.status.code).to.equal(401);
@@ -347,8 +349,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes an email with Bob as recipient
             const encodedEmail = new TextEncoder().encode('Dear Alice, hello!');
@@ -369,7 +371,7 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: emailRecordsWrite.message.recordId,
               },
-              authorizationSigner: Jws.createSigner(bob)
+              signer: Jws.createSigner(bob)
             });
             const bobReadReply = await dwn.processMessage(alice.did, bobRecordsRead.message);
             expect(bobReadReply.status.code).to.equal(200);
@@ -379,7 +381,7 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: emailRecordsWrite.message.recordId,
               },
-              authorizationSigner: Jws.createSigner(imposterBob)
+              signer: Jws.createSigner(imposterBob)
             });
             const imposterReadReply = await dwn.processMessage(alice.did, imposterRecordsRead.message);
             expect(imposterReadReply.status.code).to.equal(401);
@@ -396,7 +398,7 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolConfigReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolConfigReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolConfigReply.status.code).to.equal(202);
 
             const foo1Write = await TestDataGenerator.generateRecordsWrite({
@@ -416,10 +418,10 @@ export function testRecordsReadHandler(): void {
                 protocol     : protocolDefinition.protocol,
                 protocolPath : 'foo',
               },
-              authorizationSigner: Jws.createSigner(alice),
+              signer: Jws.createSigner(alice),
             });
 
-            const fooPathReply = await dwn.handleRecordsRead(alice.did, fooPathRead.message);
+            const fooPathReply = await dwn.processMessage(alice.did, fooPathRead.message);
             expect(fooPathReply.status.code).to.equal(200);
             expect(fooPathReply.record!.recordId).to.equal(foo1Write.message.recordId);
           });
@@ -432,7 +434,7 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolConfigReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
+            const protocolConfigReply = await dwn.processMessage(alice.did, protocolsConfig.message);
             expect(protocolConfigReply.status.code).to.equal(202);
 
             const foo1Write = await TestDataGenerator.generateRecordsWrite({
@@ -465,16 +467,16 @@ export function testRecordsReadHandler(): void {
                 protocol     : protocolDefinition.protocol,
                 protocolPath : 'foo',
               },
-              authorizationSigner: Jws.createSigner(alice),
+              signer: Jws.createSigner(alice),
             });
-            const fooPathReply = await dwn.handleRecordsRead(alice.did, fooPathRead.message);
+            const fooPathReply = await dwn.processMessage(alice.did, fooPathRead.message);
             expect(fooPathReply.status.code).to.equal(400);
             expect(fooPathReply.status.detail).to.contain(DwnErrorCode.RecordsReadReturnedMultiple);
           });
         });
 
         describe('protocolRole based reads', () => {
-          it('uses a protocolRole to authorize a read', async () => {
+          it('uses a globalRole to authorize a read', async () => {
             // scenario: Alice writes a chat message writes a chat message. Bob invokes his
             //           friend role in order to read the chat message.
 
@@ -487,8 +489,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a 'friend' $globalRole record with Bob as recipient
             const friendRoleRecord = await TestDataGenerator.generateRecordsWrite({
@@ -514,8 +516,8 @@ export function testRecordsReadHandler(): void {
 
             // Bob reads Alice's chat record
             const readChatRecord = await RecordsRead.create({
-              authorizationSigner : Jws.createSigner(bob),
-              filter              : {
+              signer : Jws.createSigner(bob),
+              filter : {
                 recordId: chatRecord.message.recordId,
 
               },
@@ -525,7 +527,7 @@ export function testRecordsReadHandler(): void {
             expect(chatReadReply.status.code).to.equal(200);
           });
 
-          it('rejects role-authorized reads if the protocolRole is not a valid protocol path to a role record', async () => {
+          it('rejects globalRole-authorized reads if the protocolRole is not a valid protocol path to a role record', async () => {
             // scenario: Alice writes a chat message writes a chat message. Bob tries to invoke the 'chat' role,
             //           but 'chat' is not a role.
 
@@ -538,8 +540,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a 'chat' record
             const chatRecord = await TestDataGenerator.generateRecordsWrite({
@@ -554,8 +556,8 @@ export function testRecordsReadHandler(): void {
 
             // Bob tries to invoke a 'chat' role but 'chat' is not a role
             const readChatRecord = await RecordsRead.create({
-              authorizationSigner : Jws.createSigner(bob),
-              filter              : {
+              signer : Jws.createSigner(bob),
+              filter : {
                 recordId: chatRecord.message.recordId,
               },
               protocolRole: 'chat'
@@ -565,7 +567,7 @@ export function testRecordsReadHandler(): void {
             expect(chatReadReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationNotARole);
           });
 
-          it('rejects role-authorized reads if there is no active role for the recipient', async () => {
+          it('rejects globalRole-authorized reads if there is no active role for the recipient', async () => {
             // scenario: Alice writes a chat message writes a chat message. Bob tries to invoke a role,
             //           but he has not been given one.
 
@@ -578,8 +580,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a 'chat' record
             const chatRecord = await TestDataGenerator.generateRecordsWrite({
@@ -594,13 +596,170 @@ export function testRecordsReadHandler(): void {
 
             // Bob tries to invoke a 'friend' role but he is not a 'friend'
             const readChatRecord = await RecordsRead.create({
-              authorizationSigner : Jws.createSigner(bob),
-              filter              : {
+              signer : Jws.createSigner(bob),
+              filter : {
                 recordId: chatRecord.message.recordId,
               },
               protocolRole: 'friend',
             });
             const chatReadReply = await dwn.processMessage(alice.did, readChatRecord.message);
+            expect(chatReadReply.status.code).to.equal(401);
+            expect(chatReadReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
+          });
+
+          it('uses a contextRole to authorize a read', async () => {
+            // scenario: Alice creates a thread and adds Bob to the 'thread/participant' role. Alice writes a chat message.
+            //           Bob invokes the record to read in the chat message.
+
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+
+            const protocolDefinition = threadRoleProtocolDefinition;
+
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
+
+            // Alice creates a thread
+            const threadRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread'
+            });
+            const threadRecordReply = await dwn.processMessage(alice.did, threadRecord.message, threadRecord.dataStream);
+            expect(threadRecordReply.status.code).to.equal(202);
+
+            // Alice adds Bob as a 'thread/participant' in that thread
+            const participantRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/participant',
+              contextId    : threadRecord.message.contextId,
+              parentId     : threadRecord.message.recordId,
+            });
+            const participantRecordReply = await dwn.processMessage(alice.did, participantRecord.message, participantRecord.dataStream);
+            expect(participantRecordReply.status.code).to.equal(202);
+
+            // Alice writes a chat message in the thread
+            const chatRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/chat',
+              contextId    : threadRecord.message.contextId,
+              parentId     : threadRecord.message.recordId,
+            });
+            const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+            expect(chatRecordReply.status.code).to.equal(202);
+
+            // Bob is able to read his own 'participant' role
+            // He doesn't need to invoke the role because recipients of a record are always authorized to read it
+            const participantRead = await RecordsRead.create({
+              signer : Jws.createSigner(bob),
+              filter : {
+                protocolPath : 'thread/participant',
+                recipient    : bob.did,
+                contextId    : threadRecord.message.contextId
+              },
+            });
+            const participantReadReply = await dwn.processMessage(alice.did, participantRead.message);
+            expect(participantReadReply.status.code).to.equal(200);
+
+            // Bob is able to read the thread root record
+            const threadRead = await RecordsRead.create({
+              signer : Jws.createSigner(bob),
+              filter : {
+                recordId: participantReadReply.record!.descriptor.parentId,
+              },
+              protocolRole: 'thread/participant'
+            });
+            const threadReadReply = await dwn.processMessage(alice.did, threadRead.message);
+            expect(threadReadReply.status.code).to.equal(200);
+
+            // Bob invokes his 'participant' role to read the chat message
+            const chatRead = await RecordsRead.create({
+              signer : Jws.createSigner(bob),
+              filter : {
+                recordId: chatRecord.message.recordId,
+              },
+              protocolRole: 'thread/participant'
+            });
+            const chatReadReply = await dwn.processMessage(alice.did, chatRead.message);
+            expect(chatReadReply.status.code).to.equal(200);
+          });
+
+          it('rejects contextRole-authorized read if there is no active role in that context for the recipient', async () => {
+            // scenario: Alice creates a thread and adds Bob as a participant. ALice creates another thread. Bob tries and fails to invoke his
+            //           contextRole to write a chat in the second thread
+
+            const alice = await DidKeyResolver.generate();
+            const bob = await DidKeyResolver.generate();
+
+            const protocolDefinition = threadRoleProtocolDefinition;
+
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
+
+            // Alice creates a thread
+            const threadRecord1 = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread'
+            });
+            const threadRecordReply1 = await dwn.processMessage(alice.did, threadRecord1.message, threadRecord1.dataStream);
+            expect(threadRecordReply1.status.code).to.equal(202);
+
+            // Alice adds Bob as a 'thread/participant' in that thread
+            const participantRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/participant',
+              contextId    : threadRecord1.message.contextId,
+              parentId     : threadRecord1.message.recordId,
+            });
+            const participantRecordReply = await dwn.processMessage(alice.did, participantRecord.message, participantRecord.dataStream);
+            expect(participantRecordReply.status.code).to.equal(202);
+
+            // Alice creates a second thread
+            const threadRecord2 = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread'
+            });
+            const threadRecordReply2 = await dwn.processMessage(alice.did, threadRecord2.message, threadRecord2.dataStream);
+            expect(threadRecordReply2.status.code).to.equal(202);
+
+            // Alice writes a chat message in the thread
+            const chatRecord = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'thread/chat',
+              contextId    : threadRecord2.message.contextId,
+              parentId     : threadRecord2.message.recordId,
+            });
+            const chatRecordReply = await dwn.processMessage(alice.did, chatRecord.message, chatRecord.dataStream);
+            expect(chatRecordReply.status.code).to.equal(202);
+
+            // Bob invokes his 'participant' role to read the chat message
+            const chatRead = await RecordsRead.create({
+              signer : Jws.createSigner(bob),
+              filter : {
+                recordId: chatRecord.message.recordId,
+              },
+              protocolRole: 'thread/participant'
+            });
+            const chatReadReply = await dwn.processMessage(alice.did, chatRead.message);
             expect(chatReadReply.status.code).to.equal(401);
             expect(chatReadReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationMissingRole);
           });
@@ -640,8 +799,8 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: recordsWrite.message.recordId,
             },
-            authorizationSigner : Jws.createSigner(bob),
-            permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+            signer             : Jws.createSigner(bob),
+            permissionsGrantId : await Message.getCid(permissionsGrant.message),
           });
           const recordsReadReply = await dwn.processMessage(alice.did, recordsRead.message);
           expect(recordsReadReply.status.code).to.equal(401);
@@ -682,8 +841,8 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: message.recordId,
             },
-            authorizationSigner : Jws.createSigner(bob),
-            permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+            signer             : Jws.createSigner(bob),
+            permissionsGrantId : await Message.getCid(permissionsGrant.message),
           });
           const readReply = await dwn.processMessage(alice.did, recordsRead.message);
           expect(readReply.status.code).to.equal(200);
@@ -704,8 +863,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
@@ -736,7 +895,7 @@ export function testRecordsReadHandler(): void {
 
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner: Jws.createSigner(bob),
+              signer: Jws.createSigner(bob),
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
@@ -747,8 +906,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const recordsReadWithGrantReply = await dwn.processMessage(alice.did, recordsReadWithGrant.message);
             expect(recordsReadWithGrantReply.status.code).to.equal(200);
@@ -768,8 +927,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
@@ -800,7 +959,7 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner: Jws.createSigner(bob),
+              signer: Jws.createSigner(bob),
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
@@ -811,8 +970,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const recordsReadWithGrantReply = await dwn.processMessage(alice.did, recordsReadWithGrant.message);
             expect(recordsReadWithGrantReply.status.code).to.equal(200);
@@ -832,8 +991,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
@@ -864,8 +1023,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
@@ -886,8 +1045,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
@@ -918,8 +1077,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
@@ -939,8 +1098,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
@@ -972,8 +1131,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(200);
@@ -992,8 +1151,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
@@ -1025,8 +1184,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
@@ -1046,8 +1205,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
@@ -1079,8 +1238,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(200);
@@ -1099,8 +1258,8 @@ export function testRecordsReadHandler(): void {
               author: alice,
               protocolDefinition
             });
-            const protocolWriteReply = await dwn.processMessage(alice.did, protocolsConfig.message, protocolsConfig.dataStream);
-            expect(protocolWriteReply.status.code).to.equal(202);
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
 
             // Alice writes a record which Bob will later try to read
             const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
@@ -1132,8 +1291,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: recordsWrite.message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
@@ -1177,8 +1336,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const readReply = await dwn.processMessage(alice.did, recordsRead.message);
             expect(readReply.status.code).to.equal(200);
@@ -1221,8 +1380,8 @@ export function testRecordsReadHandler(): void {
               filter: {
                 recordId: message.recordId,
               },
-              authorizationSigner : Jws.createSigner(bob),
-              permissionsGrantId  : await Message.getCid(permissionsGrant.message),
+              signer             : Jws.createSigner(bob),
+              permissionsGrantId : await Message.getCid(permissionsGrant.message),
             });
             const readReply = await dwn.processMessage(alice.did, recordsRead.message);
             expect(readReply.status.code).to.equal(401);
@@ -1238,7 +1397,7 @@ export function testRecordsReadHandler(): void {
           filter: {
             recordId: `non-existent-record-id`,
           },
-          authorizationSigner: Jws.createSigner(alice)
+          signer: Jws.createSigner(alice)
         });
 
         const readReply = await dwn.processMessage(alice.did, recordsRead.message);
@@ -1265,8 +1424,8 @@ export function testRecordsReadHandler(): void {
 
         // RecordsDelete
         const recordsDelete = await RecordsDelete.create({
-          recordId            : message.recordId,
-          authorizationSigner : Jws.createSigner(alice)
+          recordId : message.recordId,
+          signer   : Jws.createSigner(alice)
         });
 
         const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
@@ -1277,7 +1436,7 @@ export function testRecordsReadHandler(): void {
           filter: {
             recordId: message.recordId,
           },
-          authorizationSigner: Jws.createSigner(alice)
+          signer: Jws.createSigner(alice)
         });
 
         const readReply = await dwn.processMessage(alice.did, recordsRead.message);
@@ -1302,7 +1461,7 @@ export function testRecordsReadHandler(): void {
           filter: {
             recordId: message.recordId,
           },
-          authorizationSigner: Jws.createSigner(alice)
+          signer: Jws.createSigner(alice)
         });
 
         const readReply = await dwn.processMessage(alice.did, recordsRead.message);
@@ -1326,12 +1485,12 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: message.recordId,
             },
-            authorizationSigner: Jws.createSigner(alice)
+            signer: Jws.createSigner(alice)
           });
 
           const dataStoreGet = sinon.spy(dataStore, 'get');
 
-          const recordsReadResponse = await dwn.handleRecordsRead(alice.did, recordRead.message);
+          const recordsReadResponse = await dwn.processMessage(alice.did, recordRead.message);
           expect(recordsReadResponse.status.code).to.equal(200);
           expect(recordsReadResponse.record).to.exist;
           expect(recordsReadResponse.record!.data).to.exist;
@@ -1357,12 +1516,12 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: message.recordId,
             },
-            authorizationSigner: Jws.createSigner(alice)
+            signer: Jws.createSigner(alice)
           });
 
           const dataStoreGet = sinon.spy(dataStore, 'get');
 
-          const recordsReadResponse = await dwn.handleRecordsRead(alice.did, recordRead.message);
+          const recordsReadResponse = await dwn.processMessage(alice.did, recordRead.message);
           expect(recordsReadResponse.status.code).to.equal(200);
           expect(recordsReadResponse.record).to.exist;
           expect(recordsReadResponse.record!.data).to.exist;
@@ -1441,32 +1600,32 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: message.recordId,
             },
-            authorizationSigner: Jws.createSigner(alice)
+            signer: Jws.createSigner(alice)
           });
 
           // test able to derive correct key using `schemas` scheme from root key to decrypt the message
-          const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+          const readReply = await dwn.processMessage(alice.did, recordsRead.message);
           expect(readReply.status.code).to.equal(200);
-          const unsignedRecordsWrite = readReply.record!;
+          const recordsWriteMessage = readReply.record!;
           const cipherStream = readReply.record!.data;
 
-          const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, schemaDerivedPrivateKey, cipherStream);
+          const plaintextDataStream = await Records.decrypt(recordsWriteMessage, schemaDerivedPrivateKey, cipherStream);
           const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
           expect(ArrayUtility.byteArraysEqual(plaintextBytes, originalData)).to.be.true;
 
 
           // test able to derive correct key using `dataFormat` scheme from root key to decrypt the message
-          const readReply2 = await dwn.handleRecordsRead(alice.did, recordsRead.message); // send the same read message to get a new cipher stream
+          const readReply2 = await dwn.processMessage(alice.did, recordsRead.message); // send the same read message to get a new cipher stream
           expect(readReply2.status.code).to.equal(200);
           const cipherStream2 = readReply2.record!.data;
 
-          const plaintextDataStream2 = await Records.decrypt(unsignedRecordsWrite, rootPrivateKeyWithDataFormatsScheme, cipherStream2);
+          const plaintextDataStream2 = await Records.decrypt(recordsWriteMessage, rootPrivateKeyWithDataFormatsScheme, cipherStream2);
           const plaintextBytes2 = await DataStream.toBytes(plaintextDataStream2);
           expect(ArrayUtility.byteArraysEqual(plaintextBytes2, originalData)).to.be.true;
 
 
           // test unable to decrypt the message if dataFormat-derived key is derived without taking `schema` as input to derivation path
-          const readReply3 = await dwn.handleRecordsRead(alice.did, recordsRead.message); // process the same read message to get a new cipher stream
+          const readReply3 = await dwn.processMessage(alice.did, recordsRead.message); // process the same read message to get a new cipher stream
           expect(readReply3.status.code).to.equal(200);
           const cipherStream3 = readReply3.record!.data;
 
@@ -1474,7 +1633,7 @@ export function testRecordsReadHandler(): void {
           const inValidDescendantPrivateKey: DerivedPrivateJwk
             = await HdKey.derivePrivateKey(rootPrivateKeyWithDataFormatsScheme, invalidDerivationPath);
 
-          await expect(Records.decrypt(unsignedRecordsWrite, inValidDescendantPrivateKey, cipherStream3)).to.be.rejectedWith(
+          await expect(Records.decrypt(recordsWriteMessage, inValidDescendantPrivateKey, cipherStream3)).to.be.rejectedWith(
             DwnErrorCode.RecordsInvalidAncestorKeyDerivationSegment
           );
         });
@@ -1515,9 +1674,9 @@ export function testRecordsReadHandler(): void {
           };
 
           const recordsWrite = await RecordsWrite.create({
-            authorizationSigner : Jws.createSigner(alice),
+            signer : Jws.createSigner(alice),
             dataFormat,
-            data                : encryptedDataBytes,
+            data   : encryptedDataBytes,
             encryptionInput
           });
 
@@ -1529,17 +1688,17 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: recordsWrite.message.recordId,
             },
-            authorizationSigner: Jws.createSigner(alice)
+            signer: Jws.createSigner(alice)
           });
 
 
           // test able to derive correct key using `dataFormat` scheme from root key to decrypt the message
-          const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message); // send the same read message to get a new cipher stream
+          const readReply = await dwn.processMessage(alice.did, recordsRead.message); // send the same read message to get a new cipher stream
           expect(readReply.status.code).to.equal(200);
           const cipherStream = readReply.record!.data;
-          const unsignedRecordsWrite = readReply.record!;
+          const recordsWriteMessage = readReply.record!;
 
-          const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, rootPrivateKeyWithDataFormatsScheme, cipherStream);
+          const plaintextDataStream = await Records.decrypt(recordsWriteMessage, rootPrivateKeyWithDataFormatsScheme, cipherStream);
           const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
           expect(ArrayUtility.byteArraysEqual(plaintextBytes, originalData)).to.be.true;
         });
@@ -1556,29 +1715,28 @@ export function testRecordsReadHandler(): void {
           // Alice configures chat protocol with encryption
           const protocolDefinition: ProtocolDefinition = chatProtocolDefinition as ProtocolDefinition;
 
-          const encryptedProtocolDefinitionForAlice
+          const protocolDefinitionForAlice
                       = await Protocols.deriveAndInjectPublicEncryptionKeys(protocolDefinition, alice.keyId, alice.keyPair.privateJwk);
           const protocolsConfigureForAlice = await TestDataGenerator.generateProtocolsConfigure({
             author             : alice,
-            protocolDefinition : encryptedProtocolDefinitionForAlice
+            protocolDefinition : protocolDefinitionForAlice
           });
 
           const protocolsConfigureForAliceReply = await dwn.processMessage(
             alice.did,
-            protocolsConfigureForAlice.message,
-            protocolsConfigureForAlice.dataStream
+            protocolsConfigureForAlice.message
           );
           expect(protocolsConfigureForAliceReply.status.code).to.equal(202);
 
           // Bob configures chat protocol with encryption
-          const encryptedProtocolDefinitionForBob
+          const protocolDefinitionForBob
           = await Protocols.deriveAndInjectPublicEncryptionKeys(protocolDefinition, bob.keyId, bob.keyPair.privateJwk);
           const protocolsConfigureForBob = await TestDataGenerator.generateProtocolsConfigure({
             author             : bob,
-            protocolDefinition : encryptedProtocolDefinitionForBob
+            protocolDefinition : protocolDefinitionForBob
           });
 
-          const protocolsConfigureReply = await dwn.processMessage(bob.did, protocolsConfigureForBob.message, protocolsConfigureForBob.dataStream);
+          const protocolsConfigureReply = await dwn.processMessage(bob.did, protocolsConfigureForBob.message);
           expect(protocolsConfigureReply.status.code).to.equal(202);
 
           // Bob queries for Alice's chat protocol definition
@@ -1597,10 +1755,12 @@ export function testRecordsReadHandler(): void {
           const plaintextMessageToAlice = TestDataGenerator.randomBytes(100);
           const { message, dataStream, recordsWrite, encryptedDataBytes, encryptionInput } =
           await TestDataGenerator.generateProtocolEncryptedRecordsWrite({
-            plaintextBytes           : plaintextMessageToAlice,
-            author                   : bob,
-            targetProtocolDefinition : protocolsConfigureForAlice.message.descriptor.definition,
-            protocolPath             : 'thread'
+            plaintextBytes                                   : plaintextMessageToAlice,
+            author                                           : bob,
+            protocolDefinition                               : protocolsConfigureForAlice.message.descriptor.definition,
+            protocolPath                                     : 'thread',
+            encryptSymmetricKeyWithProtocolPathDerivedKey    : true,
+            encryptSymmetricKeyWithProtocolContextDerivedKey : true
           });
 
           // Bob writes the encrypted chat thread to Alice's DWN
@@ -1610,8 +1770,8 @@ export function testRecordsReadHandler(): void {
           // Bob also needs to write the same encrypted chat thread to his own DWN
           // Opportunity here to create a much nicer utility method for this entire block
           const bobToBobRecordsWrite = await RecordsWrite.createFrom({
-            unsignedRecordsWriteMessage : recordsWrite.message,
-            messageTimestamp            : recordsWrite.message.descriptor.messageTimestamp
+            recordsWriteMessage : recordsWrite.message,
+            messageTimestamp    : recordsWrite.message.descriptor.messageTimestamp
           });
 
           const bobRootPrivateKey: DerivedPrivateJwk = {
@@ -1634,7 +1794,7 @@ export function testRecordsReadHandler(): void {
           encryptionInputForBobsDwn.keyEncryptionInputs[indexOfKeyEncryptionInputToReplace] = protocolPathDerivedKeyEncryptionInputForBobsDwn;
 
           await bobToBobRecordsWrite.encryptSymmetricEncryptionKey(encryptionInputForBobsDwn);
-          await bobToBobRecordsWrite.sign(Jws.createSigner(bob));
+          await bobToBobRecordsWrite.sign({ signer: Jws.createSigner(bob) });
 
           const dataStreamForBobsDwn = DataStream.fromBytes(encryptedDataBytes);
           const bobToBobWriteReply = await dwn.processMessage(bob.did, bobToBobRecordsWrite.message, dataStreamForBobsDwn);
@@ -1647,37 +1807,39 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: message.recordId,
             },
-            authorizationSigner: Jws.createSigner(alice)
+            signer: Jws.createSigner(alice)
           });
-          const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+          const readReply = await dwn.processMessage(alice.did, recordsRead.message);
           expect(readReply.status.code).to.equal(200);
 
-          const unsignedRecordsWrite = readReply.record!;
+          const fetchedRecordsWrite = readReply.record!;
           const cipherStream = readReply.record!.data;
 
-          const derivationPathFromReadContext = Records.constructKeyDerivationPathUsingProtocolContextScheme(unsignedRecordsWrite.contextId);
+          const derivationPathFromReadContext = Records.constructKeyDerivationPathUsingProtocolContextScheme(fetchedRecordsWrite.contextId);
           const protocolContextDerivedPrivateJwk = await HdKey.derivePrivateKey(bobRootPrivateKey, derivationPathFromReadContext);
-          const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, protocolContextDerivedPrivateJwk, cipherStream);
+          const plaintextDataStream = await Records.decrypt(fetchedRecordsWrite, protocolContextDerivedPrivateJwk, cipherStream);
           const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
           expect(ArrayUtility.byteArraysEqual(plaintextBytes, plaintextMessageToAlice)).to.be.true;
 
           // verify that Alice is able to send an encrypted message using the protocol-context derived public key and Bob is able to decrypt it
           // NOTE: we will skip verification of Bob's protocol configuration because we have test the such scenario above as well as in other tests
           const { derivedPublicKey: protocolContextDerivedPublicJwkReturned, rootKeyId: protocolContextDerivingRootKeyIdReturned }
-            = unsignedRecordsWrite.encryption!.keyEncryption.find(
+            = fetchedRecordsWrite.encryption!.keyEncryption.find(
               encryptedKey => encryptedKey.derivationScheme === KeyDerivationScheme.ProtocolContext
             )!;
 
           const plaintextMessageToBob = TestDataGenerator.randomBytes(100);
           const recordsWriteToBob = await TestDataGenerator.generateProtocolEncryptedRecordsWrite({
-            plaintextBytes                   : plaintextMessageToBob,
-            author                           : alice,
-            targetProtocolDefinition         : protocolsConfigureForBob.message.descriptor.definition,
-            protocolPath                     : 'thread/message',
-            protocolContextId                : unsignedRecordsWrite.contextId,
-            protocolContextDerivingRootKeyId : protocolContextDerivingRootKeyIdReturned,
-            protocolContextDerivedPublicJwk  : protocolContextDerivedPublicJwkReturned!,
-            protocolParentId                 : unsignedRecordsWrite.recordId
+            plaintextBytes                                   : plaintextMessageToBob,
+            author                                           : alice,
+            protocolDefinition                               : protocolsConfigureForBob.message.descriptor.definition,
+            protocolPath                                     : 'thread/message',
+            protocolContextId                                : fetchedRecordsWrite.contextId,
+            protocolContextDerivingRootKeyId                 : protocolContextDerivingRootKeyIdReturned,
+            protocolContextDerivedPublicJwk                  : protocolContextDerivedPublicJwkReturned!,
+            protocolParentId                                 : fetchedRecordsWrite.recordId,
+            encryptSymmetricKeyWithProtocolPathDerivedKey    : true,
+            encryptSymmetricKeyWithProtocolContextDerivedKey : true
           });
 
           // Alice sends the message to Bob
@@ -1689,15 +1851,15 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: recordsWriteToBob.message.recordId,
             },
-            authorizationSigner: Jws.createSigner(bob)
+            signer: Jws.createSigner(bob)
           });
-          const readByBobReply = await dwn.handleRecordsRead(bob.did, recordsReadByBob.message);
+          const readByBobReply = await dwn.processMessage(bob.did, recordsReadByBob.message);
           expect(readByBobReply.status.code).to.equal(200);
 
-          const unsignedRecordsWrite2 = readByBobReply.record!;
+          const fetchedRecordsWrite2 = readByBobReply.record!;
           const cipherStream2 = readByBobReply.record!.data;
 
-          const plaintextDataStream2 = await Records.decrypt(unsignedRecordsWrite2, protocolContextDerivedPrivateJwk, cipherStream2);
+          const plaintextDataStream2 = await Records.decrypt(fetchedRecordsWrite2, protocolContextDerivedPrivateJwk, cipherStream2);
           const plaintextBytes2 = await DataStream.toBytes(plaintextDataStream2);
           expect(ArrayUtility.byteArraysEqual(plaintextBytes2, plaintextMessageToBob)).to.be.true;
         });
@@ -1719,7 +1881,7 @@ export function testRecordsReadHandler(): void {
             protocolDefinition : encryptedProtocolDefinition
           });
 
-          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfigure.message, protocolsConfigure.dataStream);
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfigure.message);
           expect(protocolsConfigureReply.status.code).to.equal(202);
 
           // Bob queries for Alice's email protocol definition
@@ -1780,9 +1942,9 @@ export function testRecordsReadHandler(): void {
             filter: {
               recordId: message.recordId,
             },
-            authorizationSigner: Jws.createSigner(alice)
+            signer: Jws.createSigner(alice)
           });
-          const readReply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+          const readReply = await dwn.processMessage(alice.did, recordsRead.message);
           expect(readReply.status.code).to.equal(200);
 
           // test that Alice is able decrypt the encrypted email from Bob using the root key
@@ -1792,30 +1954,30 @@ export function testRecordsReadHandler(): void {
             derivedPrivateKey : alice.keyPair.privateJwk
           };
 
-          const unsignedRecordsWrite = readReply.record!;
+          const fetchedRecordsWrite = readReply.record!;
           const cipherStream = readReply.record!.data;
 
-          const plaintextDataStream = await Records.decrypt(unsignedRecordsWrite, rootPrivateKey, cipherStream);
+          const plaintextDataStream = await Records.decrypt(fetchedRecordsWrite, rootPrivateKey, cipherStream);
           const plaintextBytes = await DataStream.toBytes(plaintextDataStream);
           expect(ArrayUtility.byteArraysEqual(plaintextBytes, bobMessageBytes)).to.be.true;
 
           // test that a correct derived key is able decrypt the encrypted email from Bob
-          const readReply2 = await dwn.handleRecordsRead(alice.did, recordsRead.message);
+          const readReply2 = await dwn.processMessage(alice.did, recordsRead.message);
           expect(readReply2.status.code).to.equal(200);
 
-          const relativeDescendantDerivationPath = Records.constructKeyDerivationPath(KeyDerivationScheme.ProtocolPath, unsignedRecordsWrite);
+          const relativeDescendantDerivationPath = Records.constructKeyDerivationPath(KeyDerivationScheme.ProtocolPath, fetchedRecordsWrite);
           const derivedPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, relativeDescendantDerivationPath);
 
-          const unsignedRecordsWrite2 = readReply2.record!;
+          const fetchedRecordsWrite2 = readReply2.record!;
           const cipherStream2 = readReply2.record!.data;
-          const plaintextDataStream2 = await Records.decrypt(unsignedRecordsWrite2, derivedPrivateKey, cipherStream2);
+          const plaintextDataStream2 = await Records.decrypt(fetchedRecordsWrite2, derivedPrivateKey, cipherStream2);
           const plaintextBytes2 = await DataStream.toBytes(plaintextDataStream2);
           expect(ArrayUtility.byteArraysEqual(plaintextBytes2, bobMessageBytes)).to.be.true;
 
           // test unable to decrypt the message if derived key has an unexpected path
           const invalidDerivationPath = [KeyDerivationScheme.ProtocolPath, protocolDefinition.protocol, 'invalidContextId'];
           const inValidDescendantPrivateKey: DerivedPrivateJwk = await HdKey.derivePrivateKey(rootPrivateKey, invalidDerivationPath);
-          await expect(Records.decrypt(unsignedRecordsWrite, inValidDescendantPrivateKey, cipherStream)).to.be.rejectedWith(
+          await expect(Records.decrypt(fetchedRecordsWrite, inValidDescendantPrivateKey, cipherStream)).to.be.rejectedWith(
             DwnErrorCode.RecordsInvalidAncestorKeyDerivationSegment
           );
 
@@ -1825,7 +1987,7 @@ export function testRecordsReadHandler(): void {
             derivationScheme  : 'scheme-that-is-not-protocol-context' as any,
             derivedPrivateKey : alice.keyPair.privateJwk
           };
-          await expect(Records.decrypt(unsignedRecordsWrite, privateKeyWithMismatchingDerivationScheme, cipherStream)).to.be.rejectedWith(
+          await expect(Records.decrypt(fetchedRecordsWrite, privateKeyWithMismatchingDerivationScheme, cipherStream)).to.be.rejectedWith(
             DwnErrorCode.RecordsDecryptNoMatchingKeyEncryptedFound
           );
 
@@ -1835,7 +1997,7 @@ export function testRecordsReadHandler(): void {
             derivationScheme  : KeyDerivationScheme.ProtocolPath,
             derivedPrivateKey : alice.keyPair.privateJwk
           };
-          await expect(Records.decrypt(unsignedRecordsWrite, privateKeyWithMismatchingKeyId, cipherStream)).to.be.rejectedWith(
+          await expect(Records.decrypt(fetchedRecordsWrite, privateKeyWithMismatchingKeyId, cipherStream)).to.be.rejectedWith(
             DwnErrorCode.RecordsDecryptNoMatchingKeyEncryptedFound
           );
         });
@@ -1848,7 +2010,7 @@ export function testRecordsReadHandler(): void {
         filter: {
           recordId: 'any-id',
         },
-        authorizationSigner: Jws.createSigner(alice)
+        signer: Jws.createSigner(alice)
       });
 
       // setting up a stub did resolver & message store
@@ -1869,7 +2031,7 @@ export function testRecordsReadHandler(): void {
         filter: {
           recordId: 'any-id',
         },
-        authorizationSigner: Jws.createSigner(alice)
+        signer: Jws.createSigner(alice)
       });
 
       // setting up a stub method resolver & message store

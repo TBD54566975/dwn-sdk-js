@@ -1,73 +1,71 @@
 import type { CID } from 'multiformats';
 import type { DidResolver } from '../did/did-resolver.js';
-import type { Message } from './message.js';
-import type { AuthorizationModel, GenericMessage } from '../types/message-types.js';
+import type { GeneralJws } from '../types/jws-types.js';
+import type { AuthorizationModel, Descriptor } from '../types/message-types.js';
 
 import { Cid } from '../utils/cid.js';
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
 import { Jws } from '../utils/jws.js';
+import { PermissionsGrant } from '../interfaces/permissions-grant.js';
 import { validateJsonSchema } from '../schema-validator.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 
 /**
- * Authenticates then authorizes the given message using the "canonical" auth flow.
- * Some message auth require special handling such as `RecordsWrite` and `RecordsQuery`,
- * which would be incompatible with this auth flow.
- * @throws {Error} if auth fails
- */
-export async function canonicalAuth(
-  tenant: string,
-  incomingMessage: Message<GenericMessage>,
-  didResolver: DidResolver
-): Promise<void> {
-  await authenticate(incomingMessage.message.authorization, didResolver);
-  await authorize(tenant, incomingMessage);
-}
-
-/**
- * Validates the structural integrity of the `authorization` property.
+ * Validates the structural integrity of the message signature given.
  * NOTE: signature is not verified.
+ * @param payloadJsonSchemaKey The key to look up the JSON schema referenced in `compile-validators.js` and perform payload schema validation on.
  * @returns the parsed JSON payload object if validation succeeds.
  */
-export async function validateAuthorizationIntegrity(
-  message: GenericMessage,
-  jsonSchemaKey: string = 'BaseAuthorizationPayload',
+export async function validateMessageSignatureIntegrity(
+  messageSignature: GeneralJws,
+  messageDescriptor: Descriptor,
+  payloadJsonSchemaKey: string = 'GenericSignaturePayload',
 ): Promise<{ descriptorCid: CID, [key: string]: any }> {
-  if (message.authorization === undefined) {
-    throw new DwnError(DwnErrorCode.AuthorizationMissing, 'Property `authorization` is missing.');
-  }
 
-  if (message.authorization.author.signatures.length !== 1) {
-    throw new Error('expected no more than 1 signature for authorization');
+  if (messageSignature.signatures.length !== 1) {
+    throw new DwnError(DwnErrorCode.AuthenticationMoreThanOneSignatureNotSupported, 'expected no more than 1 signature for authorization purpose');
   }
 
   // validate payload integrity
-  const payloadJson = Jws.decodePlainObjectPayload(message.authorization.author);
+  const payloadJson = Jws.decodePlainObjectPayload(messageSignature);
 
-  validateJsonSchema(jsonSchemaKey, payloadJson);
-
+  validateJsonSchema(payloadJsonSchemaKey, payloadJson);
 
   // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
   const { descriptorCid } = payloadJson;
-  const expectedDescriptorCid = await Cid.computeCid(message.descriptor);
+  const expectedDescriptorCid = await Cid.computeCid(messageDescriptor);
   if (descriptorCid !== expectedDescriptorCid) {
-    throw new Error(`provided descriptorCid ${descriptorCid} does not match expected CID ${expectedDescriptorCid}`);
+    throw new DwnError(
+      DwnErrorCode.AuthenticateDescriptorCidMismatch,
+      `provided descriptorCid ${descriptorCid} does not match expected CID ${expectedDescriptorCid}`
+    );
   }
 
   return payloadJson;
 }
 
 /**
- * Validates the signature(s) of the given JWS.
+ * Verifies all the signature(s) within the authorization property.
+ *
  * @throws {Error} if fails authentication
  */
 export async function authenticate(authorizationModel: AuthorizationModel | undefined, didResolver: DidResolver): Promise<void> {
+
   if (authorizationModel === undefined) {
     throw new DwnError(DwnErrorCode.AuthenticateJwsMissing, 'Missing JWS.');
   }
 
-  const verifier = new GeneralJwsVerifier(authorizationModel.author);
-  await verifier.verify(didResolver);
+  await GeneralJwsVerifier.verifySignatures(authorizationModel.signature, didResolver);
+
+  if (authorizationModel.ownerSignature !== undefined) {
+    await GeneralJwsVerifier.verifySignatures(authorizationModel.ownerSignature, didResolver);
+  }
+
+  if (authorizationModel.authorDelegatedGrant !== undefined) {
+    // verify the signature of the grantor of the delegated grant
+    const authorDelegatedGrant = await PermissionsGrant.parse(authorizationModel.authorDelegatedGrant);
+    await GeneralJwsVerifier.verifySignatures(authorDelegatedGrant.message.authorization.signature, didResolver);
+  }
 }
 
 /**
@@ -79,6 +77,6 @@ export async function authorize(tenant: string, incomingMessage: { author: strin
   if (incomingMessage.author === tenant) {
     return;
   } else {
-    throw new Error('message failed authorization, permission grant check not yet implemented');
+    throw new DwnError(DwnErrorCode.AuthorizationUnknownAuthor, 'message failed authorization, permission grant check not yet implemented');
   }
 }

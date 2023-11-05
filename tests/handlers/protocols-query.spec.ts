@@ -14,9 +14,9 @@ import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
+import { Time } from '../../src/utils/time.js';
 import { DidResolver, Dwn, DwnErrorCode, Encoder, Jws, ProtocolsQuery } from '../../src/index.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message.js';
-import { getCurrentTimeInHighPrecision, sleep } from '../../src/utils/time.js';
 
 chai.use(chaiAsPromised);
 
@@ -67,9 +67,9 @@ export function testProtocolsQueryHandler(): void {
         const protocol2 = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
         const protocol3 = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
 
-        await dwn.processMessage(alice.did, protocol1.message, protocol1.dataStream);
-        await dwn.processMessage(alice.did, protocol2.message, protocol2.dataStream);
-        await dwn.processMessage(alice.did, protocol3.message, protocol3.dataStream);
+        await dwn.processMessage(alice.did, protocol1.message);
+        await dwn.processMessage(alice.did, protocol2.message);
+        await dwn.processMessage(alice.did, protocol3.message);
 
         // testing singular conditional query
         const queryMessageData = await TestDataGenerator.generateProtocolsQuery({
@@ -107,9 +107,9 @@ export function testProtocolsQueryHandler(): void {
         const protocol2 = await TestDataGenerator.generateProtocolsConfigure({ author: alice, published: true });
         const protocol3 = await TestDataGenerator.generateProtocolsConfigure({ author: alice, published: true });
 
-        await dwn.processMessage(alice.did, protocol1.message, protocol1.dataStream);
-        await dwn.processMessage(alice.did, protocol2.message, protocol2.dataStream);
-        await dwn.processMessage(alice.did, protocol3.message, protocol3.dataStream);
+        await dwn.processMessage(alice.did, protocol1.message);
+        await dwn.processMessage(alice.did, protocol2.message);
+        await dwn.processMessage(alice.did, protocol3.message);
 
         // testing unauthenticated conditional query
         const conditionalQuery = await ProtocolsQuery.create({
@@ -149,7 +149,7 @@ export function testProtocolsQueryHandler(): void {
       protocolsQuery.message.descriptor.filter!.protocol = 'example.com/';
 
       // Re-create auth because we altered the descriptor after signing
-      protocolsQuery.message.authorization = await Message.signAuthorizationAsAuthor(
+      protocolsQuery.message.authorization = await Message.createAuthorization(
         protocolsQuery.message.descriptor,
         Jws.createSigner(alice)
       );
@@ -160,18 +160,18 @@ export function testProtocolsQueryHandler(): void {
       expect(reply.status.detail).to.contain(DwnErrorCode.UrlProtocolNotNormalized);
       });
 
-      it('should fail with 400 if `authorization` is referencing a different message (`descriptorCid`)', async () => {
+      it('should fail with 400 if signature payload is referencing a different message (`descriptorCid`)', async () => {
         const { author, message, protocolsQuery } = await TestDataGenerator.generateProtocolsQuery();
         const tenant = author.did;
 
-        // replace `authorization` with incorrect `descriptorCid`, even though signature is still valid
+        // replace signature with incorrect `descriptorCid`, even though signature is still valid
         const incorrectDescriptorCid = await TestDataGenerator.randomCborSha256Cid();
-        const authorizationPayload = { ...protocolsQuery.authorizationPayload };
-        authorizationPayload.descriptorCid = incorrectDescriptorCid;
-        const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
+        const signaturePayload = { ...protocolsQuery.signaturePayload };
+        signaturePayload.descriptorCid = incorrectDescriptorCid;
+        const signaturePayloadBytes = Encoder.objectToBytes(signaturePayload);
         const signer = Jws.createSigner(author);
-        const jwsBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);
-        message.authorization = { author: jwsBuilder.getJws() };
+        const jwsBuilder = await GeneralJwsBuilder.create(signaturePayloadBytes, [signer]);
+        message.authorization = { signature: jwsBuilder.getJws() };
 
         const reply = await dwn.processMessage(tenant, message);
 
@@ -238,8 +238,8 @@ export function testProtocolsQueryHandler(): void {
           const bob = await DidKeyResolver.generate();
 
           // Alice gives Bob a PermissionsGrant with scope ProtocolsConfigure and an expiry time
-          const dateGranted = getCurrentTimeInHighPrecision();
-          const dateExpires = getCurrentTimeInHighPrecision();
+          const dateGranted = Time.getCurrentTimestamp();
+          const dateExpires = Time.getCurrentTimestamp();
           const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({
             author           : alice,
             messageTimestamp : dateGranted,
@@ -272,9 +272,9 @@ export function testProtocolsQueryHandler(): void {
           const bob = await DidKeyResolver.generate();
 
           // Set up timestamps
-          const protocolsQueryTimestamp = getCurrentTimeInHighPrecision();
-          await sleep(2);
-          const dateGranted = getCurrentTimeInHighPrecision();
+          const protocolsQueryTimestamp = Time.getCurrentTimestamp();
+          await Time.minimalSleep();
+          const dateGranted = Time.getCurrentTimestamp();
 
           // Alice gives Bob a PermissionsGrant with scope ProtocolsConfigure
           const permissionsGrant = await TestDataGenerator.generatePermissionsGrant({

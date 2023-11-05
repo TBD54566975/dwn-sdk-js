@@ -1,0 +1,32 @@
+{
+  "protocol": "http://author-can-protocol.xyz",
+  "published": true,
+  "types": {
+    "post": {},
+    "comment": {}
+  },
+  "structure": {
+    "post": {
+      "$actions": [
+        {
+          "who": "anyone",
+          "can": "write"
+        }
+      ],
+      "comment": {
+        "$actions": [
+          {
+            "who": "author",
+            "of": "post",
+            "can": "update"
+          },
+          {
+            "who": "author",
+            "of": "post",
+            "can": "delete"
+          }
+        ]
+      }
+    }
+  }
+}

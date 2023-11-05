@@ -1,42 +1,31 @@
 import type { Filter } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
+import type { RecordsDelete } from '../interfaces/records-delete.js';
+import type { RecordsQuery } from '../interfaces/records-query.js';
 import type { RecordsRead } from '../interfaces/records-read.js';
-import type { InternalRecordsWriteMessage, RecordsReadMessage, RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsWriteMessage } from '../types/records-types.js';
 import type { ProtocolActionRule, ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureMessage, ProtocolType, ProtocolTypes } from '../types/protocols-types.js';
 
-import { RecordsGrantAuthorization } from './records-grant-authorization.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
-import { DwnInterfaceName, DwnMethodName, Message } from './message.js';
+import { DwnInterfaceName, DwnMethodName } from './message.js';
 import { ProtocolAction, ProtocolActor } from '../types/protocols-types.js';
-
-const methodToAllowedActionMap: Record<string, ProtocolAction> = {
-  [DwnMethodName.Write] : ProtocolAction.Write,
-  [DwnMethodName.Read]  : ProtocolAction.Read,
-};
 
 export class ProtocolAuthorization {
 
   /**
-   * Performs protocol-based authorization against the given message.
-   * @param recordsWrite Either the incomingMessage itself if the incoming is a RecordsWrite,
-   *                     or the latest RecordsWrite associated with the recordId being read.
-   * @throws {Error} if authorization fails.
+   * Performs validation on the structure of RecordsWrite messages that use a protocol.
+   * @throws {Error} if validation fails.
    */
-  public static async authorize(
+  public static async validateReferentialIntegrity(
     tenant: string,
-    incomingMessage: RecordsRead | RecordsWrite,
-    recordsWrite: RecordsWrite,
+    incomingMessage: RecordsWrite,
     messageStore: MessageStore,
   ): Promise<void> {
-    // fetch ancestor message chain
-    const ancestorMessageChain: RecordsWriteMessage[] =
-      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, recordsWrite, messageStore);
-
     // fetch the protocol definition
     const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
       tenant,
-      recordsWrite,
+      incomingMessage.message.descriptor.protocol!,
       messageStore,
     );
 
@@ -47,34 +36,16 @@ export class ProtocolAuthorization {
     );
 
     // validate `protocolPath`
-    ProtocolAuthorization.verifyProtocolPath(
+    await ProtocolAuthorization.verifyProtocolPath(
+      tenant,
       incomingMessage,
-      ancestorMessageChain,
+      messageStore,
     );
 
     // get the rule set for the inbound message
     const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
-      recordsWrite,
+      incomingMessage.message.descriptor.protocolPath!,
       protocolDefinition,
-    );
-
-    // If the incoming message has `protocolRole` in the descriptor, validate the invoked role
-    await ProtocolAuthorization.verifyInvokedRole(
-      tenant,
-      incomingMessage,
-      recordsWrite,
-      protocolDefinition,
-      messageStore,
-    );
-
-    // verify method invoked against the allowed actions
-    await ProtocolAuthorization.verifyAllowedActions(
-      tenant,
-      incomingMessage,
-      recordsWrite,
-      inboundMessageRuleSet,
-      ancestorMessageChain,
-      messageStore,
     );
 
     // If the incoming message is writing a $globalRole record, validate that the recipient is unique
@@ -84,9 +55,191 @@ export class ProtocolAuthorization {
       inboundMessageRuleSet,
       messageStore,
     );
+  }
 
-    // verify allowed condition of incoming message
-    await ProtocolAuthorization.verifyActionCondition(tenant, incomingMessage, messageStore);
+  /**
+   * Performs protocol-based authorization against the incoming RecordsWrite message.
+   * @throws {Error} if authorization fails.
+   */
+  public static async authorizeWrite(
+    tenant: string,
+    incomingMessage: RecordsWrite,
+    messageStore: MessageStore,
+  ): Promise<void> {
+    // fetch ancestor message chain
+    const ancestorMessageChain: RecordsWriteMessage[] =
+      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, incomingMessage, messageStore);
+
+    // fetch the protocol definition
+    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
+      tenant,
+      incomingMessage.message.descriptor.protocol!,
+      messageStore,
+    );
+
+    // get the rule set for the inbound message
+    const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
+      incomingMessage.message.descriptor.protocolPath!,
+      protocolDefinition,
+    );
+
+    // If the incoming message has `protocolRole` in the descriptor, validate the invoked role
+    await ProtocolAuthorization.verifyInvokedRole(
+      tenant,
+      incomingMessage,
+      incomingMessage.message.descriptor.protocol!,
+      incomingMessage.message.contextId!,
+      protocolDefinition,
+      messageStore,
+    );
+
+    // verify method invoked against the allowed actions
+    await ProtocolAuthorization.verifyAllowedActions(
+      tenant,
+      incomingMessage,
+      inboundMessageRuleSet,
+      ancestorMessageChain,
+      messageStore,
+    );
+  }
+
+  /**
+   * Performs protocol-based authorization against the incoming RecordsRead  message.
+   * @param newestRecordsWrite Either the incomingMessage itself if the incoming is a RecordsWrite,
+   *                     or the latest RecordsWrite associated with the recordId being read.
+   * @throws {Error} if authorization fails.
+   */
+  public static async authorizeRead(
+    tenant: string,
+    incomingMessage: RecordsRead,
+    newestRecordsWrite: RecordsWrite,
+    messageStore: MessageStore,
+  ): Promise<void> {
+    // fetch ancestor message chain
+    const ancestorMessageChain: RecordsWriteMessage[] =
+      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, newestRecordsWrite, messageStore);
+
+    // fetch the protocol definition
+    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
+      tenant,
+      newestRecordsWrite.message.descriptor.protocol!,
+      messageStore,
+    );
+
+    // get the rule set for the inbound message
+    const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
+      newestRecordsWrite.message.descriptor.protocolPath!,
+      protocolDefinition,
+    );
+
+    // If the incoming message has `protocolRole` in the descriptor, validate the invoked role
+    await ProtocolAuthorization.verifyInvokedRole(
+      tenant,
+      incomingMessage,
+      newestRecordsWrite.message.descriptor.protocol!,
+      newestRecordsWrite.message.contextId!,
+      protocolDefinition,
+      messageStore,
+    );
+
+    // verify method invoked against the allowed actions
+    await ProtocolAuthorization.verifyAllowedActions(
+      tenant,
+      incomingMessage,
+      inboundMessageRuleSet,
+      ancestorMessageChain,
+      messageStore,
+    );
+  }
+
+  /**
+   * Performs protocol-based authorization against the incoming RecordsQuery message.
+   * @throws {Error} if authorization fails.
+   */
+  public static async authorizeQuery(
+    tenant: string,
+    incomingMessage: RecordsQuery,
+    messageStore: MessageStore,
+  ): Promise<void> {
+    // validate that required properties exist in query filter
+    const { protocol, protocolPath, contextId } = incomingMessage.message.descriptor.filter;
+
+    // fetch the protocol definition
+    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
+      tenant,
+      protocol!, // authorizeQuery` is only called if `protocol` is present
+      messageStore,
+    );
+
+    // get the rule set for the inbound message
+    const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
+      protocolPath!, // presence of `protocolPath` is verified in `parse()`
+      protocolDefinition,
+    );
+
+    // If the incoming message has `protocolRole` in the descriptor, validate the invoked role
+    await ProtocolAuthorization.verifyInvokedRole(
+      tenant,
+      incomingMessage,
+      protocol!,
+      contextId,
+      protocolDefinition,
+      messageStore,
+    );
+
+    // verify method invoked against the allowed actions
+    await ProtocolAuthorization.verifyAllowedActions(
+      tenant,
+      incomingMessage,
+      inboundMessageRuleSet,
+      [], // ancestor chain is not relevant to queries
+      messageStore,
+    );
+  }
+
+  public static async authorizeDelete(
+    tenant: string,
+    incomingMessage: RecordsDelete,
+    newestRecordsWrite: RecordsWrite,
+    messageStore: MessageStore,
+  ): Promise<void> {
+
+    // fetch ancestor message chain
+    const ancestorMessageChain: RecordsWriteMessage[] =
+      await ProtocolAuthorization.constructAncestorMessageChain(tenant, incomingMessage, newestRecordsWrite, messageStore);
+
+    // fetch the protocol definition
+    const protocolDefinition = await ProtocolAuthorization.fetchProtocolDefinition(
+      tenant,
+      newestRecordsWrite.message.descriptor.protocol!,
+      messageStore,
+    );
+
+    // get the rule set for the inbound message
+    const inboundMessageRuleSet = ProtocolAuthorization.getRuleSet(
+      newestRecordsWrite.message.descriptor.protocolPath!,
+      protocolDefinition,
+    );
+
+    // If the incoming message has `protocolRole` in the descriptor, validate the invoked role
+    await ProtocolAuthorization.verifyInvokedRole(
+      tenant,
+      incomingMessage,
+      newestRecordsWrite.message.descriptor.protocol!,
+      newestRecordsWrite.message.contextId!,
+      protocolDefinition,
+      messageStore,
+    );
+
+    // verify method invoked against the allowed actions
+    await ProtocolAuthorization.verifyAllowedActions(
+      tenant,
+      incomingMessage,
+      inboundMessageRuleSet,
+      ancestorMessageChain,
+      messageStore,
+    );
+
   }
 
   /**
@@ -94,21 +247,19 @@ export class ProtocolAuthorization {
    */
   private static async fetchProtocolDefinition(
     tenant: string,
-    recordsWrite: RecordsWrite,
+    protocolUri: string,
     messageStore: MessageStore
   ): Promise<ProtocolDefinition> {
-    const protocolUri = recordsWrite.message.descriptor.protocol!;
-
     // fetch the corresponding protocol definition
     const query: Filter = {
       interface : DwnInterfaceName.Protocols,
       method    : DwnMethodName.Configure,
       protocol  : protocolUri
     };
-    const { messages: protocols } = await messageStore.query(tenant, [ query ]);
+    const { messages: protocols } = await messageStore.query(tenant, [query]);
 
     if (protocols.length === 0) {
-      throw new Error(`unable to find protocol definition for ${protocolUri}`);
+      throw new DwnError(DwnErrorCode.ProtocolAuthorizationProtocolNotFound, `unable to find protocol definition for ${protocolUri}`);
     }
 
     const protocolMessage = protocols[0] as ProtocolsConfigureMessage;
@@ -121,7 +272,7 @@ export class ProtocolAuthorization {
    */
   private static async constructAncestorMessageChain(
     tenant: string,
-    incomingMessage: RecordsRead | RecordsWrite,
+    incomingMessage: RecordsDelete | RecordsRead | RecordsWrite,
     recordsWrite: RecordsWrite,
     messageStore: MessageStore
   )
@@ -147,10 +298,12 @@ export class ProtocolAuthorization {
         contextId,
         recordId  : currentParentId
       };
-      const { messages: parentMessages } = await messageStore.query(tenant, [ query ]);
+      const { messages: parentMessages } = await messageStore.query(tenant, [query]);
 
+      // We already check the immediate parent in `verifyProtocolPath`, so if it triggers,
+      // it means a bug that caused an invalid message to be saved to the DWN.
       if (parentMessages.length === 0) {
-        throw new Error(`no parent found with ID ${currentParentId}`);
+        throw new DwnError(DwnErrorCode.ProtocolAuthorizationParentNotFound, `no parent found with ID ${currentParentId}`);
       }
 
       const parent = parentMessages[0] as RecordsWriteMessage;
@@ -166,11 +319,9 @@ export class ProtocolAuthorization {
    * Gets the rule set corresponding to the given message chain.
    */
   private static getRuleSet(
-    recordsWrite: RecordsWrite,
+    protocolPath: string,
     protocolDefinition: ProtocolDefinition,
   ): ProtocolRuleSet {
-    const protocolPath = recordsWrite.message.descriptor.protocolPath!;
-
     const ruleSet = ProtocolAuthorization.getRuleSetAtProtocolPath(protocolPath, protocolDefinition);
     if (ruleSet === undefined) {
       throw new DwnError(DwnErrorCode.ProtocolAuthorizationMissingRuleSet,
@@ -183,32 +334,41 @@ export class ProtocolAuthorization {
    * Verifies the `protocolPath` declared in the given message (if it is a RecordsWrite) matches the path of actual ancestor chain.
    * @throws {DwnError} if fails verification.
    */
-  private static verifyProtocolPath(
-    inboundMessage: RecordsRead | RecordsWrite,
-    ancestorMessageChain: RecordsWriteMessage[],
-  ): void {
-    // skip verification if this is not a RecordsWrite
-    if (inboundMessage.message.descriptor.method !== DwnMethodName.Write) {
-      return;
-    }
-
-    const declaredProtocolPath = (inboundMessage as RecordsWrite).message.descriptor.protocolPath!;
+  private static async verifyProtocolPath(
+    tenant: string,
+    inboundMessage: RecordsWrite,
+    messageStore: MessageStore
+  ): Promise<void> {
+    const declaredProtocolPath = inboundMessage.message.descriptor.protocolPath!;
     const declaredTypeName = ProtocolAuthorization.getTypeName(declaredProtocolPath);
 
-    let ancestorProtocolPath: string = '';
-    for (const ancestor of ancestorMessageChain) {
-      const protocolPath = ancestor.descriptor.protocolPath!;
-      const ancestorTypeName = ProtocolAuthorization.getTypeName(protocolPath);
-      ancestorProtocolPath += `${ancestorTypeName}/`; // e.g. `foo/bar/`, notice the trailing slash
-    }
-
-    const actualProtocolPath = ancestorProtocolPath + declaredTypeName; // e.g. `foo/bar/baz`
-
-    if (declaredProtocolPath !== actualProtocolPath) {
-      throw new DwnError(
-        DwnErrorCode.ProtocolAuthorizationIncorrectProtocolPath,
-        `Declared protocol path '${declaredProtocolPath}' is not the same as actual protocol path '${actualProtocolPath}'.`
-      );
+    const parentId = inboundMessage.message.descriptor.parentId;
+    if (parentId === undefined) {
+      if (declaredProtocolPath !== declaredTypeName) {
+        throw new DwnError(
+          DwnErrorCode.ProtocolAuthorizationParentlessIncorrectProtocolPath,
+          `Declared protocol path '${declaredProtocolPath}' is not valid for records with no parentId'.`
+        );
+      }
+    } else {
+      const protocol = inboundMessage.message.descriptor.protocol!;
+      const contextId = inboundMessage.message.contextId!;
+      const query: Filter = {
+        interface : DwnInterfaceName.Records,
+        method    : DwnMethodName.Write,
+        protocol,
+        contextId,
+        recordId  : parentId
+      };
+      const { messages: parentMessages } = await messageStore.query(tenant, [query]);
+      const parentProtocolPath = (parentMessages as RecordsWriteMessage[])[0]?.descriptor?.protocolPath;
+      const actualProtocolPath = `${parentProtocolPath}/${declaredTypeName}`;
+      if (parentProtocolPath === undefined || actualProtocolPath !== declaredProtocolPath) {
+        throw new DwnError(
+          DwnErrorCode.ProtocolAuthorizationIncorrectProtocolPath,
+          `Could not find matching parent record to verify declared protocol path '${declaredProtocolPath}'.`
+        );
+      }
     }
   }
 
@@ -218,30 +378,25 @@ export class ProtocolAuthorization {
    * @throws {DwnError} if fails verification.
    */
   private static verifyType(
-    inboundMessage: RecordsReadMessage | InternalRecordsWriteMessage,
+    inboundMessage: RecordsWriteMessage,
     protocolTypes: ProtocolTypes,
   ): void {
-    // skip verification if this is not a RecordsWrite
-    if (inboundMessage.descriptor.method !== DwnMethodName.Write) {
-      return;
-    }
-    const recordsWriteMessage = inboundMessage as RecordsWriteMessage;
 
     const typeNames = Object.keys(protocolTypes);
-    const declaredProtocolPath = recordsWriteMessage.descriptor.protocolPath!;
+    const declaredProtocolPath = inboundMessage.descriptor.protocolPath!;
     const declaredTypeName = ProtocolAuthorization.getTypeName(declaredProtocolPath);
     if (!typeNames.includes(declaredTypeName)) {
       throw new DwnError(DwnErrorCode.ProtocolAuthorizationInvalidType,
         `record with type ${declaredTypeName} not allowed in protocol`);
     }
 
-    const protocolPath = recordsWriteMessage.descriptor.protocolPath!;
+    const protocolPath = inboundMessage.descriptor.protocolPath!;
     // existence of `protocolType` has already been verified
     const typeName = ProtocolAuthorization.getTypeName(protocolPath);
     const protocolType: ProtocolType = protocolTypes[typeName];
 
     // no `schema` specified in protocol definition means that any schema is allowed
-    const { schema } = recordsWriteMessage.descriptor;
+    const { schema } = inboundMessage.descriptor;
     if (protocolType.schema !== undefined && protocolType.schema !== schema) {
       throw new DwnError(
         DwnErrorCode.ProtocolAuthorizationInvalidSchema,
@@ -251,7 +406,7 @@ export class ProtocolAuthorization {
     }
 
     // no `dataFormats` specified in protocol definition means that all dataFormats are allowed
-    const { dataFormat } = recordsWriteMessage.descriptor;
+    const { dataFormat } = inboundMessage.descriptor;
     if (protocolType.dataFormats !== undefined && !protocolType.dataFormats.includes(dataFormat)) {
       throw new DwnError(
         DwnErrorCode.ProtocolAuthorizationIncorrectDataFormat,
@@ -266,17 +421,13 @@ export class ProtocolAuthorization {
    */
   private static async verifyInvokedRole(
     tenant: string,
-    incomingMessage: RecordsRead | RecordsWrite,
-    recordsWrite: RecordsWrite,
+    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsWrite,
+    protocolUri: string,
+    contextId: string | undefined,
     protocolDefinition: ProtocolDefinition,
     messageStore: MessageStore,
   ): Promise<void> {
-    // Currently only RecordsReads may invoke a role
-    if (incomingMessage.message.descriptor.method !== DwnMethodName.Read) {
-      return;
-    }
-
-    const protocolRole = (incomingMessage as RecordsRead).authorizationPayload?.protocolRole;
+    const protocolRole = incomingMessage.signaturePayload?.protocolRole;
 
     // Only verify role if there is a role being invoked
     if (protocolRole === undefined) {
@@ -284,21 +435,32 @@ export class ProtocolAuthorization {
     }
 
     const roleRuleSet = ProtocolAuthorization.getRuleSetAtProtocolPath(protocolRole, protocolDefinition);
-    if (roleRuleSet?.$globalRole === undefined) {
+    if (roleRuleSet === undefined || (!roleRuleSet.$globalRole && !roleRuleSet.$contextRole)) {
       throw new DwnError(
         DwnErrorCode.ProtocolAuthorizationNotARole,
         `Protocol path ${protocolRole} is not a valid protocolRole`
       );
     }
 
-    const roleRecordFilter = {
+    const roleRecordFilter: Filter = {
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
-      protocol          : recordsWrite.message.descriptor.protocol!,
+      protocol          : protocolUri,
       protocolPath      : protocolRole,
       recipient         : incomingMessage.author!,
       isLatestBaseState : true,
     };
+
+    if (roleRuleSet.$contextRole) {
+      if (contextId === undefined) {
+        throw new DwnError(
+          DwnErrorCode.ProtocolAuthorizationMissingContextId,
+          'Could not verify $contextRole because contextId is missing'
+        );
+      }
+      roleRecordFilter.contextId = contextId;
+    }
+
     const { messages: matchingMessages } = await messageStore.query(tenant, [roleRecordFilter]);
 
     if (matchingMessages.length === 0) {
@@ -310,50 +472,70 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Verifies the actions specified in the given message matches the allowed actions in the rule set.
+   * Returns a list of ProtocolAction(s) based on the incoming message, one of which must be allowed for the message to be authorized.
+   */
+  private static async getActionsSeekingARuleMatch(
+    tenant: string,
+    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsWrite,
+    messageStore: MessageStore,
+  ): Promise<ProtocolAction[]> {
+
+    switch (incomingMessage.message.descriptor.method) {
+    case DwnMethodName.Delete:
+      return [ProtocolAction.Delete];
+
+    case DwnMethodName.Query:
+      return [ProtocolAction.Query];
+
+    case DwnMethodName.Read:
+      return [ProtocolAction.Read];
+
+    case DwnMethodName.Write:
+      const incomingRecordsWrite = incomingMessage as RecordsWrite;
+      if (await incomingRecordsWrite.isInitialWrite()) {
+        // only 'write' allows initial RecordsWrites; 'update' only applies to subsequent RecordsWrites
+        return [ProtocolAction.Write];
+      } else if (await incomingRecordsWrite.isAuthoredByInitialRecordAuthor(tenant, messageStore)) {
+        // Both 'update' and 'write' authorize the incoming message
+        return [ProtocolAction.Write, ProtocolAction.Update];
+      } else {
+        // Actors other than the initial record author must be authorized to 'update' the message
+        return [ProtocolAction.Update];
+      }
+
+      // default:
+      // not reachable in typescript
+    }
+  }
+
+  /**
+   * Verifies the action (e.g. read/write) specified in the given message matches the allowed actions in the rule set.
    * @throws {Error} if action not allowed.
    */
   private static async verifyAllowedActions(
     tenant: string,
-    incomingMessage: RecordsRead | RecordsWrite,
-    recordsWrite: RecordsWrite,
+    incomingMessage: RecordsDelete | RecordsQuery | RecordsRead | RecordsWrite,
     inboundMessageRuleSet: ProtocolRuleSet,
     ancestorMessageChain: RecordsWriteMessage[],
     messageStore: MessageStore,
   ): Promise<void> {
-    const inboundMessageAction = methodToAllowedActionMap[incomingMessage.message.descriptor.method];
+    const incomingMessageMethod = incomingMessage.message.descriptor.method;
+    const inboundMessageActions = await ProtocolAuthorization.getActionsSeekingARuleMatch(tenant, incomingMessage, messageStore);
     const author = incomingMessage.author;
-
     const actionRules = inboundMessageRuleSet.$actions;
-    if (author === tenant) {
-      // tenant is always authorized
-      return;
-    } else if (incomingMessage.author !== undefined && incomingMessage.authorizationPayload?.permissionsGrantId !== undefined) {
-      // PermissionsGrant gives the author explicit access to this record
-      if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
-        await RecordsGrantAuthorization.authorizeWrite(tenant, incomingMessage as RecordsWrite, incomingMessage.author, messageStore);
-      } else {
-        await RecordsGrantAuthorization.authorizeRead(
-          tenant,
-          incomingMessage as RecordsRead,
-          recordsWrite,
-          incomingMessage.author,
-          messageStore
-        );
-      }
-      return;
-    } else if (actionRules === undefined) {
-      throw new Error(`no action rule defined for ${incomingMessage.message.descriptor.method}, ${author} is unauthorized`);
+
+    // We have already checked that the message is not from tenant, owner, or permissionsGrant
+    if (actionRules === undefined) {
+      throw new DwnError(
+        DwnErrorCode.ProtocolAuthorizationActionNotAllowed,
+        `no action rule defined for ${incomingMessageMethod}, ${author} is unauthorized`
+      );
     }
 
-    // Get role being invoked. Currently only Reads support role-based authorization
-    let invokedRole: string | undefined;
-    if (incomingMessage.message.descriptor.method === DwnMethodName.Read) {
-      invokedRole = (incomingMessage as RecordsRead).authorizationPayload?.protocolRole;
-    }
+    const invokedRole = incomingMessage.signaturePayload?.protocolRole;
 
     for (const actionRule of actionRules) {
-      if (actionRule.can !== inboundMessageAction) {
+      if (!inboundMessageActions.includes(actionRule.can as ProtocolAction)) {
         continue;
       }
 
@@ -371,39 +553,40 @@ export class ProtocolAuthorization {
         continue;
       }
 
-      const ancestorRuleSuccess: boolean = await ProtocolAuthorization.checkAncestorGroupActionRule(author, actionRule, ancestorMessageChain);
+      const ancestorRuleSuccess: boolean = await ProtocolAuthorization.checkActor(author, actionRule, ancestorMessageChain);
       if (ancestorRuleSuccess) {
         return;
       }
     }
 
     // No action rules were satisfied, author is not authorized
-    throw new DwnError(DwnErrorCode.ProtocolAuthorizationActionNotAllowed, `inbound message action ${inboundMessageAction} not allowed for author`);
+    throw new DwnError(DwnErrorCode.ProtocolAuthorizationActionNotAllowed, `inbound message action not allowed for author`);
   }
 
   /**
-   * Verifies that writes to a $globalRole record do not have the same recipient as an existing RecordsWrite
-   * to the same $globalRole.
+   * Verifies that writes to a $globalRole or $contextRole record do not have the same recipient as an existing RecordsWrite
+   * to the same $globalRole or the same $contextRole in the same context.
    */
   private static async verifyUniqueRoleRecipient(
     tenant: string,
-    incomingMessage: RecordsRead | RecordsWrite,
+    incomingMessage: RecordsWrite,
     inboundMessageRuleSet: ProtocolRuleSet,
     messageStore: MessageStore,
   ): Promise<void> {
-    if (incomingMessage.message.descriptor.method !== DwnMethodName.Write) {
-      return;
-    }
-
     const incomingRecordsWrite = incomingMessage as RecordsWrite;
-    if (!inboundMessageRuleSet.$globalRole) {
+    if (!inboundMessageRuleSet.$globalRole && !inboundMessageRuleSet.$contextRole) {
       return;
     }
 
-    // FIXME(diehuxx): do we enforce presence of recipient for protocol records? I thought we required it
-    const recipient = incomingRecordsWrite.message.descriptor.recipient!;
+    const recipient = incomingRecordsWrite.message.descriptor.recipient;
+    if (recipient === undefined) {
+      throw new DwnError(
+        DwnErrorCode.ProtocolAuthorizationRoleMissingRecipient,
+        'Role records must have a recipient'
+      );
+    }
     const protocolPath = incomingRecordsWrite.message.descriptor.protocolPath!;
-    const filter = {
+    const filter: Filter = {
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       isLatestBaseState : true,
@@ -411,43 +594,26 @@ export class ProtocolAuthorization {
       protocolPath,
       recipient,
     };
+    if (inboundMessageRuleSet.$contextRole) {
+      filter.contextId = incomingRecordsWrite.message.contextId!;
+    }
     const { messages: matchingMessages } = await messageStore.query(tenant, [filter]);
     const matchingRecords = matchingMessages as RecordsWriteMessage[];
     const matchingRecordsExceptIncomingRecordId = matchingRecords.filter((recordsWriteMessage) =>
       recordsWriteMessage.recordId !== incomingRecordsWrite.message.recordId
     );
     if (matchingRecordsExceptIncomingRecordId.length > 0) {
-      throw new DwnError(
-        DwnErrorCode.ProtocolAuthorizationDuplicateGlobalRoleRecipient,
-        `DID '${recipient}' is already recipient of a $globalRole record at protocol path '${protocolPath}`
-      );
-    }
-  }
-
-  /**
-   * Verifies if the desired action can be taken.
-   * Currently the only check is: if the write is not the initial write, the author must be the same as the initial write
-   * @throws {Error} if fails verification
-   */
-  private static async verifyActionCondition(tenant: string, incomingMessage: RecordsRead | RecordsWrite, messageStore: MessageStore): Promise<void> {
-    if (incomingMessage.message.descriptor.method === DwnMethodName.Read) {
-      // Currently no conditions for reads
-    } else if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
-      const recordsWrite = incomingMessage as RecordsWrite;
-      const isInitialWrite = await recordsWrite.isInitialWrite();
-      if (!isInitialWrite) {
-        // fetch the initialWrite
-        const query = {
-          entryId: recordsWrite.message.recordId
-        };
-        const { messages: result } = await messageStore.query(tenant, [ query ]);
-
-        // check the author of the initial write matches the author of the incoming message
-        const initialWrite = result[0] as RecordsWriteMessage;
-        const authorOfInitialWrite = Message.getAuthor(initialWrite);
-        if (recordsWrite.author !== authorOfInitialWrite) {
-          throw new Error(`author of incoming message '${recordsWrite.author}' must match to author of initial write '${authorOfInitialWrite}'`);
-        }
+      if (inboundMessageRuleSet.$globalRole) {
+        throw new DwnError(
+          DwnErrorCode.ProtocolAuthorizationDuplicateGlobalRoleRecipient,
+          `DID '${recipient}' is already recipient of a $globalRole record at protocol path '${protocolPath}`
+        );
+      } else {
+        // $contextRole
+        throw new DwnError(
+          DwnErrorCode.ProtocolAuthorizationDuplicateContextRoleRecipient,
+          `DID '${recipient}' is already recipient of a $contextRole record at protocol path '${protocolPath} in the same context`
+        );
       }
     }
   }
@@ -472,11 +638,10 @@ export class ProtocolAuthorization {
   }
 
   /**
-   * Checks if there is a RecordsWriteMessage in the ancestor chain that matches the protocolPath in given ProtocolActionRule.
-   * Assumes that the actionRule authorizes either recipient or author, but not 'anyone'.
-   * @returns true if there is an ancestorRecordsWrite that matches actionRule. false otherwise.
+   * Checks if there is a record in the ancestor chain matching the `who: 'author' | 'recipient'` action rule.
+   * @returns true if the action rule is satisfied. false otherwise
    */
-  private static async checkAncestorGroupActionRule(
+  private static async checkActor(
     author: string,
     actionRule: ProtocolActionRule,
     ancestorMessageChain: RecordsWriteMessage[],

@@ -1,12 +1,13 @@
 import type { EventLog } from '../types/event-log.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { RecordsDeleteMessage } from '../types/records-types.js';
 import type { DataStore, DidResolver, MessageStore } from '../index.js';
+import type { RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { RecordsDelete } from '../interfaces/records-delete.js';
+import { RecordsWrite } from '../index.js';
 import { StorageController } from '../store/storage-controller.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
@@ -26,10 +27,9 @@ export class RecordsDeleteHandler implements MethodHandler {
       return messageReplyFromError(e, 400);
     }
 
-    // authentication & authorization
+    // authentication
     try {
       await authenticate(message.authorization, this.didResolver);
-      await recordsDelete.authorize(tenant);
     } catch (e) {
       return messageReplyFromError(e, 401);
     }
@@ -64,6 +64,17 @@ export class RecordsDeleteHandler implements MethodHandler {
       return {
         status: { code: 404, detail: 'Not Found' }
       };
+    }
+
+    // authorization
+    try {
+      await recordsDelete.authorize(
+        tenant,
+        await RecordsWrite.parse(newestExistingMessage as RecordsWriteMessage),
+        this.messageStore
+      );
+    } catch (e) {
+      return messageReplyFromError(e, 401);
     }
 
     const indexes = await constructIndexes(tenant, recordsDelete);

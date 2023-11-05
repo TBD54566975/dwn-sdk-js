@@ -1,54 +1,13 @@
 <!-- @format -->
-# 🎉 **We're participating in Hacktoberfest 2023!** 🎉
-
-Want to contribute during Hacktoberfest? We'd love to have you! Dive in, and your contributions could earn you some exclusive rewards.
-
-The **first 10 contributors** to succesfully merge a PR will secure exclusive swag of their choosing from our [TBD shop](https://www.tbd.shop/)— we're in the midst of uploading new swag! Keep an eye on our [leaderboard issue](https://github.com/TBD54566975/developer.tbd.website/issues/721) to see where you rank! ⭐️
-
-🚀 **Gear up for a month packed with exciting events!** 🎉
-
-- Mark your calendars for our **Hacktoberfest Launch event on [October 2nd](https://discord.com/events/937858703112155166/1154126364484583465)**.
-- Stay in the loop - keep an eye on our Discord calendar and pop into our [events-and-updates channel](https://discord.com/channels/937858703112155166/1151972299814215701) regularly! You won't want to miss out!
-
-## **Hacktoberfest Guidelines:**
-
-- Ensure your contribution is meaningful and fits within the scope of our project, by reading an open issue in its entirety before diving in.
-- Check out our `good-first-issue` and `hacktoberfest` labels in the issues section.
-- Join our Discord: Connect with the community, stay up to date with Hacktoberfest events/prizes, and discuss Hacktoberfest contributions on our Discord server. Click [here](https://discord.com/channels/937858703112155166/1151216855957123104) to join.
-- Always be respectful and follow our [code of conduct](https://developer.tbd.website/open-source/code-of-conduct).
-- If in doubt about what to contribute, reach out to maintainers by raising a question in the relevant issue or specified discord channel.
-- **Other participating TBD Repos:**
-  - [developer.tbd.website](https://github.com/TBD54566975/developer.tbd.website/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
-  - [DWN-Server](https://github.com/TBD54566975/dwn-server/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
-  - [Web5-js](https://github.com/TBD54566975/web5-js/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)
-
-## **What is Hacktoberfest?**
-
-Celebrate the 10th anniversary of Hacktoberfest this year! Hosted annually every October, Hacktoberfest is a month-long event sponsored by DigitalOcean, GitHub, and various other partners, championing open-source contributions. 
-
-> ⭐️ If you're new to Hacktoberfest, you can learn more and register to participate [here](https://hacktoberfest.com/participation/). Registration is from **September 26th- October 31st**.
-
-## **New Contributor? Welcome!** 🌟
-
-We wholeheartedly embrace new contributors to our community. Remember, every expert was once a beginner, and we understand the initial hurdles you might feel. Here’s how you can dive in:
-
-- **Join Our Discord Channel**:
-  - Once inside, check out the [`Hacktoberfest`](https://discord.com/channels/937858703112155166/1151216855957123104) section. This has all you need: resources, guidelines, and a checklist to help you make your first hacktoberfest contribution.
-- **Feeling Anxious or Unsure? Find a Buddy!**:
-  - Head over to our [`hack-together`](https://discord.com/channels/937858703112155166/1151519449837482044) section on Discord. It's perfectly normal to feel a tad overwhelmed or even the imposter syndrome on your first go. In this space, you can partner with someone to collaborate, share thoughts, or jointly tackle an issue. You know what they say, two heads are better than one!
-- **Dive In**:
-  - Skim through our [open issues](https://github.com/TBD54566975/developer.tbd.website/edit/main/README.md#hacktoberfest-guidelines) and pick one you vibe with. And if you're on the fence about anything, don't hesitate to ask. Your new community is here to assist and walk with you every step of the way.
-  - Mark your calendars for our **Hacktoberfest Launch event on [October 2nd](https://discord.com/events/937858703112155166/1154126364484583465)**.
-  - Stay in the loop - keep an eye on our Discord calendar and pop into our [#events-and-updates channel](https://discord.com/channels/937858703112155166/1151972299814215701) regularly! You won't want to miss out!
-
-Your contribution, be it big or minuscule, carries immense value. We eagerly await to see the waves you'll make in our community! 🚀
-
-Here's to a thrilling Hacktoberfest voyage with us! 🎉
-
 # Decentralized Web Node (DWN) SDK <!-- omit in toc -->
 
 Code Coverage
 ![Statements](https://img.shields.io/badge/statements-96.86%25-brightgreen.svg?style=flat) ![Branches](https://img.shields.io/badge/branches-93.91%25-brightgreen.svg?style=flat) ![Functions](https://img.shields.io/badge/functions-93.38%25-brightgreen.svg?style=flat) ![Lines](https://img.shields.io/badge/lines-96.86%25-brightgreen.svg?style=flat)
+[![NPM](https://img.shields.io/npm/v/@tbd54566975/dwn-sdk-js.svg?logo=npm)](https://www.npmjs.com/package/@tbd54566975/dwn-sdk-js)
+[![codecov](https://codecov.io/github/TBD54566975/dwn-sdk-js/graphs/badge.svg)](https://codecov.io/github/TBD54566975/dwn-sdk-js)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/TBD54566975/dwn-sdk-js/npm-publish-unstable.yml?branch=main&logo=github)](https://github.com/tbd54566975/dwn-sdk-js/actions/workflows/npm-publish-unstable.yml)
+[![License](https://img.shields.io/npm/l/@tbd54566975/dwn-sdk-js.svg?logo=apache)](https://github.com/tbd54566975/dwn-sdk-js/blob/main/LICENSE)
+[![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg?logo=discord)](https://discord.com/channels/937858703112155166/1068273971432280196)
 
 - [Introduction](#introduction)
 - [Installation](#installation)
@@ -71,7 +30,7 @@ Code Coverage
 
 ## Introduction
 
-This repository contains a reference implementation of Decentralized Web Node (DWN) as per the [specification](https://identity.foundation/decentralized-web-node/spec/). This specification is in a draft state and very much so a WIP. For the foreseeable future, a lot of the work on DWN will be split across this repo and the repo that houses the specification, which you can find [here](https://github.com/decentralized-identity/decentralized-web-node). The current implementation does not include all interfaces described in the DWN spec, but is enough to begin building test applications.
+This repository contains a reference implementation of Decentralized Web Node (DWN) as per the [specification](https://identity.foundation/decentralized-web-node/spec/). This specification is in a draft state and very much so a WIP. For the foreseeable future, a lot of the work on DWN will be split across this repo and the [repo that houses the specification](https://github.com/decentralized-identity/decentralized-web-node). The current implementation does not include all interfaces described in the DWN spec, but is enough to begin building test applications.
 
 This project is used as a dependency by several other projects.
 
@@ -81,7 +40,7 @@ Proposals and issues for the specification itself should be submitted as pull re
 
 Interested in contributing instantly? You can make your updates directly without cloning in the running CodeSandbox environment.
 
-[![Edit in CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/github/TBD54566975/dwn-sdk-js/main)
+[![Button to click to edit code in CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/github/TBD54566975/dwn-sdk-js/main)
 
 ## Installation
 
@@ -107,7 +66,7 @@ if (!globalThis.crypto) globalThis.crypto = webcrypto;
 ```
 
 ### React Native
-Usage of DWN SDK in react native requires a bit of set up at the moment. To simplify, we've published an npm package that can be used to set everything up which you can find [here](https://www.npmjs.com/package/@tbd54566975/web5-react-native-polyfills). Follow the instructions there to get everything set up.
+Usage of DWN SDK in react native requires a bit of set up at the moment. To simplify, we've [published an npm package](https://www.npmjs.com/package/@tbd54566975/web5-react-native-polyfills) that can be used to set everything up. Follow the instructions to get started.
 
 ### Usage in Browser:
 
@@ -122,37 +81,42 @@ DWN SDK includes a polyfilled distribution that can imported in a `module` scrip
 <html lang="en">
 <body>
   <script type="module">
+     // Import necessary modules from external sources using ES6 modules.
     import { Dwn, DataStream, DidKeyResolver, Jws, RecordsWrite } from 'https://cdn.jsdelivr.net/npm/@tbd54566975/dwn-sdk-js@0.1.1/dist/bundles/dwn.js'
     import { MessageStoreLevel, DataStoreLevel, EventLogLevel } from 'https://cdn.jsdelivr.net/npm/@tbd54566975/dwn-sdk-js@0.1.1/dist/bundles/level-stores.js'
 
+    // Create instances of various components from the imported modules.
     const messageStore = new MessageStoreLevel();
     const dataStore = new DataStoreLevel();
     const eventLog = new EventLogLevel();
     const dwn = await Dwn.create({ messageStore, dataStore, eventLog });
 
-    // generate a did:key DID
+    // Generate a did:key DID (Decentralized Identifier).
     const didKey = await DidKeyResolver.generate();
 
-    // create some data
+    // Create some data to be stored.
     const encoder = new TextEncoder();
     const data = encoder.encode('Hello, World!');
 
-    // create a RecordsWrite message
+    // Create a RecordsWrite message to be stored in DWN.
     const recordsWrite = await RecordsWrite.create({
       data,
       dataFormat: 'application/json',
       published: true,
-      schema: 'yeeter/post',
-      authorizationSigner: Jws.createSigner(didKey)
+      schema: 'yeeter/post',  // Specify a schema for the data.
+      signer: Jws.createSigner(didKey) // Sign the data using the generated DID key.
     });
 
-    // get the DWN to process the RecordsWrite
+    // Create a readable stream from the data to be stored.
     const dataStream = DataStream.fromBytes(data);
+    // Process the RecordsWrite message using the DWN instance.
     const result = await dwn.processMessage(didKey.did, recordsWrite.message, dataStream);
 
+    // Log the processing result status and perform an assertion.
     console.log(result.status);
     console.assert(result.status.code === 202)
 
+    // Close the DWN instance, freeing up resources.
     await dwn.close()
 
   </script>
@@ -163,7 +127,7 @@ DWN SDK includes a polyfilled distribution that can imported in a `module` scrip
 
 #### Webpack >= 5
 
-add the following to the top level of your webpack config (`webpack.config.js`)
+Add the following to the top level of your webpack config (`webpack.config.js`)
 
 ```js
 resolve: {
@@ -175,7 +139,7 @@ resolve: {
 ```
 
 #### Vite
-add the following to the top level of your vite config (`vite.config.js`)
+Add the following to the top level of your vite config (`vite.config.js`)
 
 ```js
 define: {
@@ -190,7 +154,7 @@ resolve: {
 ```
 
 #### esbuild
-we recommend using `node-stdlib-browser` instead of `crypto-browserify` and `stream-browserify` individually. Example usage:
+We recommend using `node-stdlib-browser` instead of `crypto-browserify` and `stream-browserify` individually. Example usage:
 
 ```js
 import esbuild from 'esbuild'
@@ -201,14 +165,19 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 
+// Build the project using esbuild.
 esbuild.build({
   entryPoints: ['dwn-sdk-test.js'],
   platform: 'browser',
   bundle: true,
   format: 'esm',
   outfile: 'dist/dwn-sdk-test.js',
+
+  // Inject the specified shim for Node.js standard library browser compatibility.
   inject      : [require.resolve('node-stdlib-browser/helpers/esbuild/shim')],
+  // Use the polyfillProviderPlugin to provide polyfills for Node.js standard library.
   plugins     : [polyfillProviderPlugin(stdLibBrowser)],
+  // Define 'global' as 'globalThis' to ensure compatibility with global objects.
   define      : {
     'global': 'globalThis'
   }
@@ -224,30 +193,33 @@ esbuild.build({
 import { Dwn, DataStream, DidKeyResolver, Jws, RecordsWrite } from '@tbd54566975/dwn-sdk-js';
 import { DataStoreLevel, EventLogLevel, MessageStoreLevel } from '@tbd54566975/dwn-sdk-js/stores';
 
+// Initialize the required stores and components for the DWN SDK.
 const messageStore = new MessageStoreLevel();
 const dataStore = new DataStoreLevel();
 const eventLog = new EventLogLevel();
 const dwn = await Dwn.create({ messageStore, dataStore, eventLog });
 
-// generate a did:key DID
+// Generate a did:key DID (Decentralized Identifier).
 const didKey = await DidKeyResolver.generate();
 
-// create some data
+// Create some data to be stored.
 const encoder = new TextEncoder();
 const data = encoder.encode('Hello, World!');
 
-// create a RecordsWrite message
+// Create a RecordsWrite message to be stored in the DWN.
 const recordsWrite = await RecordsWrite.create({
   data,
   dataFormat: 'application/json',
-  published: true,
-  schema: 'yeeter/post',
-  authorizationSigner: Jws.createSigner(didKey)
+  published: true, // Mark the data as published.
+  schema: 'yeeter/post', // Specify a schema for the data.
+  signer: Jws.createSigner(didKey) // Sign the data using the generated DID key.
 });
 
-// get the DWN to process the RecordsWrite
+// Create a readable stream from the data to be stored.
 const dataStream = DataStream.fromBytes(data);
+// Process the RecordsWrite message using the DWN instance.
 const result = await dwn.processMessage(didKey.did, recordsWrite.message, dataStream);
+// Log the processing result status.
 console.log(result.status);
 
 ```
@@ -271,6 +243,7 @@ By default, all DIDs are allowed as tenants. A custom tenant gate implementation
 ```ts
 import { Dwn, TenantGate, DataStoreLevel, EventLogLevel, MessageStoreLevel } from '@tbd54566975/dwn-sdk-js';
 
+// Define a custom implementation of the TenantGate interface.
 class CustomTenantGate implements TenantGate {
   public async isTenant(did): Promise<void> {
     // Custom implementation
@@ -278,10 +251,13 @@ class CustomTenantGate implements TenantGate {
   }
 }
 
+// Initialize the required stores and components for the DWN SDK.
 const messageStore = new MessageStoreLevel();
 const dataStore = new DataStoreLevel();
 const eventLog = new EventLogLevel();
+// Create an instance of the custom TenantGate.
 const tenantGate = new CustomTenantGate();
+// Create a DWN instance with configured stores, logs, and the custom TenantGate.
 const dwn = await Dwn.create({ messageStore, dataStore, eventLog, tenantGate });
 ```
 
@@ -289,22 +265,26 @@ const dwn = await Dwn.create({ messageStore, dataStore, eventLog, tenantGate });
 If you have the private key readily available, it is recommended to use the built-in `PrivateKeySigner`. Otherwise, you can implement a customer signer to interface with external signing service, API, HSM, TPM etc and use it for signing your DWN messages:
 
 ```ts
-// create a custom signer
+// Create a custom signer implementing the Signer interface.
 class CustomSigner implements Signer {
-  public keyId = 'did:example:alice#key1';
-  public algorithm = 'EdDSA'; // use valid `alg` value published in https://www.iana.org/assignments/jose/jose.xhtml
+  public keyId = 'did:example:alice#key1'; // Specify the key ID.
+  public algorithm = 'EdDSA'; // Specify the signing algorithm (valid `alg` value published).
+  https://www.iana.org/assignments/jose/jose.xhtml
   public async sign (content: Uint8Array): Promise<Uint8Array> {
     ... // custom signing logic
   }
 }
 
-const authorizationSigner = new CustomSigner();
+// Create an instance of the custom signer for authorization.
+const signer = new CustomSigner();
 
+// Define options for creating a RecordsWrite message.
 const options: RecordsWriteOptions = {
   ...
-  authorizationSigner
+  signer // Use the custom signer for authorization.
 };
 
+// Create a RecordsWrite message with the specified options.
 const recordsWrite = await RecordsWrite.create(options);
 ```
 
@@ -346,7 +326,7 @@ An example version string:
 
 ## Architecture
 
-<img src="./images/dwn-architecture.png" alt="Architecture of DWN SDN" width="700">
+<img src="./images/dwn-architecture.png" alt="Architecture diagram of DWN SDN" width="700">
 
 > NOTE: The diagram is a conceptual view of the architecture, the actual component abstraction and names in source file may differ.
 

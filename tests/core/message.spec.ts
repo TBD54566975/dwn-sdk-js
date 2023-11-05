@@ -4,10 +4,10 @@ import { expect } from 'chai';
 import { Message } from '../../src/core/message.js';
 import { RecordsRead } from '../../src/index.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { getCurrentTimeInHighPrecision, minimalSleep } from '../../src/utils/time.js';
+import { Time } from '../../src/utils/time.js';
 
 describe('Message', () => {
-  describe('getAuthor()', () => {
+  describe('getSigner()', () => {
     it('should return `undefined` if message is not signed', async () => {
       const recordsRead = await RecordsRead.create({
         filter: {
@@ -15,7 +15,7 @@ describe('Message', () => {
         }
       });
 
-      const author = Message.getAuthor(recordsRead.message);
+      const author = Message.getSigner(recordsRead.message);
       expect(author).to.be.undefined;
     });
   });
@@ -37,7 +37,7 @@ describe('Message', () => {
 
   describe('compareMessageTimestamp', () => {
     it('should return 0 if age is same', async () => {
-      const dateModified = getCurrentTimeInHighPrecision();
+      const dateModified = Time.getCurrentTimestamp();
       const a = (await TestDataGenerator.generateRecordsWrite({ messageTimestamp: dateModified })).message;
       const b = JSON.parse(JSON.stringify(a)); // create a deep copy of `a`
 
@@ -49,9 +49,9 @@ describe('Message', () => {
   describe('getNewestMessage', () => {
     it('should return the newest message', async () => {
       const a = (await TestDataGenerator.generateRecordsWrite()).message;
-      await minimalSleep();
+      await Time.minimalSleep();
       const b = (await TestDataGenerator.generateRecordsWrite()).message;
-      await minimalSleep();
+      await Time.minimalSleep();
       const c = (await TestDataGenerator.generateRecordsWrite()).message; // c is the newest since its created last
 
       const newestMessage = await Message.getNewestMessage([b, c, a]);
@@ -62,9 +62,9 @@ describe('Message', () => {
   describe('getOldestMessage', () => {
     it('should return the newest message', async () => {
       const a = (await TestDataGenerator.generateRecordsWrite()).message;
-      await minimalSleep();
+      await Time.minimalSleep();
       const b = (await TestDataGenerator.generateRecordsWrite()).message;
-      await minimalSleep();
+      await Time.minimalSleep();
       const c = (await TestDataGenerator.generateRecordsWrite()).message; // c is the newest since its created last
 
       const newestMessage = await Message.getOldestMessage([b, c, a]);

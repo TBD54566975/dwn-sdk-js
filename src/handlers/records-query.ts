@@ -6,6 +6,7 @@ import type { RecordsQueryMessage, RecordsQueryReply } from '../types/records-ty
 
 import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
+import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Records } from '../utils/records.js';
 
 import { SortOrder } from '../types/message-types.js';
@@ -29,15 +30,20 @@ export class RecordsQueryHandler implements MethodHandler {
 
     let recordsWrites: RecordsWriteMessageWithOptionalEncodedData[];
     let paginationMessageCid: string|undefined;
-    // if this is an anonymous query, query only published records
-    if (recordsQuery.author === undefined) {
+    // if this is an anonymous query and the filter supports published records, query only published records
+    if (RecordsQueryHandler.filterIncludesPublishedRecords(recordsQuery) && recordsQuery.author === undefined) {
       const results = await this.fetchPublishedRecords(tenant, recordsQuery);
       recordsWrites = results.messages as RecordsWriteMessageWithOptionalEncodedData[];
       paginationMessageCid = results.paginationMessageCid;
     } else {
-      // authentication
+      // authentication and authorization
       try {
         await authenticate(message.authorization!, this.didResolver);
+
+        // Only run protocol authz if message deliberately invokes it
+        if (RecordsQueryHandler.shouldProtocolAuthorizeQuery(recordsQuery)) {
+          await ProtocolAuthorization.authorizeQuery(tenant, recordsQuery, this.messageStore);
+        }
       } catch (e) {
         return messageReplyFromError(e, 401);
       }
@@ -104,23 +110,45 @@ export class RecordsQueryHandler implements MethodHandler {
   }
 
   /**
-   * Fetches the records as a non-owner, return only:
-   * 1. published records; and
-   * 2. unpublished records intended for the query author (where `recipient` is the query author)
+   * Fetches the records as a non-owner.
+   *
+   * Filters can support returning both published and unpublished records,
+   * as well as explicitly only published or only unpublished records.
+   *
+   * A) BOTH published and unpublished:
+   *    1. published records; and
+   *    2. unpublished records intended for the query author (where `recipient` is the query author); and
+   *    3. unpublished records authorized by a protocol rule.
+   *
+   * B) PUBLISHED:
+   *    1. only published records;
+   *
+   * C) UNPUBLISHED:
+   *    1. unpublished records intended for the query author (where `recipient` is the query author); and
+   *    2. unpublished records authorized by a protocol rule.
+   *
    */
   private async fetchRecordsAsNonOwner(
     tenant: string, recordsQuery: RecordsQuery
   ): Promise<{ messages: GenericMessage[], paginationMessageCid?: string }> {
     const { dateSort, pagination } = recordsQuery.message.descriptor;
+    const filters = [];
 
-    const filters = [
-      RecordsQueryHandler.buildPublishedRecordsFilter(recordsQuery),
-      RecordsQueryHandler.buildUnpublishedRecordsByQueryAuthorFilter(recordsQuery),
-    ];
+    if (RecordsQueryHandler.filterIncludesPublishedRecords(recordsQuery)) {
+      filters.push(RecordsQueryHandler.buildPublishedRecordsFilter(recordsQuery));
+    }
 
-    const recipientFilter = recordsQuery.message.descriptor.filter.recipient;
-    if (recipientFilter === undefined || recipientFilter === recordsQuery.author) {
-      filters.push(RecordsQueryHandler.buildUnpublishedRecordsForQueryAuthorFilter(recordsQuery));
+    if (RecordsQueryHandler.filterIncludesUnpublishedRecords(recordsQuery)) {
+      filters.push(RecordsQueryHandler.buildUnpublishedRecordsByQueryAuthorFilter(recordsQuery));
+
+      const recipientFilter = recordsQuery.message.descriptor.filter.recipient;
+      if (recipientFilter === undefined || recipientFilter === recordsQuery.author) {
+        filters.push(RecordsQueryHandler.buildUnpublishedRecordsForQueryAuthorFilter(recordsQuery));
+      }
+
+      if (RecordsQueryHandler.shouldProtocolAuthorizeQuery(recordsQuery)) {
+        filters.push(RecordsQueryHandler.buildUnpublishedProtocolAuthorizedRecordsFilter(recordsQuery));
+      }
     }
 
     const messageSort = this.convertDateSort(dateSort);
@@ -166,6 +194,20 @@ export class RecordsQueryHandler implements MethodHandler {
   }
 
   /**
+   * Creates a filter for unpublished records that are within the specified protocol.
+   * Validation that `protocol` and other required protocol-related fields occurs before this method.
+   */
+  private static buildUnpublishedProtocolAuthorizedRecordsFilter(recordsQuery: RecordsQuery): Filter {
+    return {
+      ...Records.convertFilter(recordsQuery.message.descriptor.filter),
+      interface         : DwnInterfaceName.Records,
+      method            : DwnMethodName.Write,
+      isLatestBaseState : true,
+      published         : false
+    };
+  }
+
+  /**
    * Creates a filter for only unpublished records where the author is the same as the query author.
    */
   private static buildUnpublishedRecordsByQueryAuthorFilter(recordsQuery: RecordsQuery): Filter {
@@ -178,5 +220,33 @@ export class RecordsQueryHandler implements MethodHandler {
       isLatestBaseState : true,
       published         : false
     };
+  }
+
+  /**
+   * Determines if ProtocolAuthorization.authorizeQuery should be run and if the corresponding filter should be used.
+   */
+  private static shouldProtocolAuthorizeQuery(recordsQuery: RecordsQuery): boolean {
+    return recordsQuery.signaturePayload!.protocolRole !== undefined;
+  }
+
+  /**
+   * Checks if the recordQuery filter supports returning published records.
+   */
+  private static filterIncludesPublishedRecords(recordsQuery: RecordsQuery): boolean {
+    const { filter } = recordsQuery.message.descriptor;
+    // When `published` and `datePublished` range are both undefined, published records can be returned.
+    return filter.datePublished !== undefined || filter.published !== false;
+  }
+
+  /**
+   * Checks if the recordQuery filter supports returning unpublished records.
+   */
+  private static filterIncludesUnpublishedRecords(recordsQuery: RecordsQuery): boolean {
+    const { filter } = recordsQuery.message.descriptor;
+    // When `published` and `datePublished` range are both undefined, unpublished records can be returned.
+    if (filter.datePublished === undefined && filter.published === undefined) {
+      return true;
+    }
+    return filter.published === false;
   }
 }

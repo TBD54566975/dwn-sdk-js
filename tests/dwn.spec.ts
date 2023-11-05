@@ -12,7 +12,6 @@ import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from './utils/test-data-generator.js';
 import { TestStores } from './test-stores.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../src/core/message.js';
-import { Jws, RecordsRead } from '../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -143,78 +142,6 @@ export function testDwnClass(): void {
 
         expect(reply.status.code).to.equal(401);
         expect(reply.status.detail).to.contain('not a tenant');
-      });
-    });
-
-    describe('handleRecordsRead', () => {
-      it('should return error if preprocessing checks fail', async () => {
-        const alice = await DidKeyResolver.generate();
-
-        const recordsRead = await RecordsRead.create({
-          filter: {
-            recordId: 'recordId-doesnt-matter',
-          },
-          authorizationSigner: Jws.createSigner(alice)
-        });
-        (recordsRead.message as any).descriptor.method = 'Write'; // Will cause interface and method check to fail
-        const reply = await dwn.handleRecordsRead(alice.did, recordsRead.message);
-
-        expect(reply.status.code).to.not.equal(200);
-      });
-    });
-
-    describe('handleMessagesGet', () => {
-    // increases test coverage :)
-      it('runs successfully', async () => {
-        const did = await DidKeyResolver.generate();
-        const alice = await TestDataGenerator.generatePersona(did);
-        const messageCids: string[] = [];
-
-        const { recordsWrite, dataStream } = await TestDataGenerator.generateRecordsWrite({
-          author: alice
-        });
-
-        const messageCid = await Message.getCid(recordsWrite.message);
-        messageCids.push(messageCid);
-
-        const reply = await dwn.processMessage(alice.did, recordsWrite.toJSON(), dataStream);
-        expect(reply.status.code).to.equal(202);
-
-        const { messagesGet } = await TestDataGenerator.generateMessagesGet({
-          author: alice,
-          messageCids
-        });
-
-        const messagesGetReply = await dwn.handleMessagesGet(alice.did, messagesGet.message);
-        expect(messagesGetReply.status.code).to.equal(200);
-        expect(messagesGetReply.messages!.length).to.equal(messageCids.length);
-
-        for (const messageReply of messagesGetReply.messages!) {
-          expect(messageReply.messageCid).to.not.be.undefined;
-          expect(messageReply.message).to.not.be.undefined;
-          expect(messageCids).to.include(messageReply.messageCid);
-
-          const cid = await Message.getCid(messageReply.message!);
-          expect(messageReply.messageCid).to.equal(cid);
-        }
-      });
-
-      it('should return error if preprocessing checks fail', async () => {
-        const alice = await DidKeyResolver.generate();
-
-        const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({
-          author: alice
-        });
-
-        const messageCids = [await Message.getCid(recordsWrite.message)];
-        const { messagesGet } = await TestDataGenerator.generateMessagesGet({
-          author: alice,
-          messageCids
-        });
-        (messagesGet.message as any).descriptor.interface = 'Protocols'; // Will cause interface and method check to fail
-        const reply = await dwn.handleMessagesGet(alice.did, messagesGet.message);
-
-        expect(reply.status.code).to.not.equal(200);
       });
     });
 

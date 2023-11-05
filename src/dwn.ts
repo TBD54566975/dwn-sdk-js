@@ -1,3 +1,16 @@
+import type { DataStore } from './types/data-store.js';
+import type { EventLog } from './types/event-log.js';
+import type { GenericMessage } from './types/message-types.js';
+import type { MessageStore } from './types/message-store.js';
+import type { MethodHandler } from './types/method-handler.js';
+import type { Readable } from 'readable-stream';
+import type { RecordsWriteHandlerOptions } from './handlers/records-write.js';
+import type { TenantGate } from './core/tenant-gate.js';
+import type { EventsGetMessage, EventsGetReply, PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage, ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './index.js';
+import type { GenericMessageReply, UnionMessageReply } from './core/message-reply.js';
+import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
+import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from './types/records-types.js';
+
 import { AllowAllTenantGate } from './core/tenant-gate.js';
 import type { DataStore } from './types/data-store.js';
 import { DidResolver } from './did/did-resolver.js';
@@ -175,8 +188,23 @@ export class Dwn {
       await this.eventStream.close();
     }
   }
+  
+  public async processMessage(tenant: string, rawMessage: EventsGetMessage): Promise<EventsGetReply>;
+  public async processMessage(tenant: string, rawMessage: MessagesGetMessage): Promise<MessagesGetReply>;
+  public async processMessage(tenant: string, rawMessage: ProtocolsConfigureMessage): Promise<GenericMessageReply>;
+  public async processMessage(tenant: string, rawMessage: ProtocolsQueryMessage): Promise<ProtocolsQueryReply>;
+  public async processMessage(tenant: string, rawMessage: PermissionsRequestMessage): Promise<GenericMessageReply>;
+  public async processMessage(tenant: string, rawMessage: PermissionsGrantMessage): Promise<GenericMessageReply>;
+  public async processMessage(tenant: string, rawMessage: PermissionsRevokeMessage): Promise<GenericMessageReply>;
+  public async processMessage(tenant: string, rawMessage: RecordsDeleteMessage): Promise<GenericMessageReply>;
+  public async processMessage(tenant: string, rawMessage: RecordsQueryMessage): Promise<RecordsQueryReply>;
+  public async processMessage(tenant: string, rawMessage: RecordsReadMessage): Promise<RecordsReadReply>;
+  public async processMessage(tenant: string, rawMessage: RecordsWriteMessage, dataStream?: Readable): Promise<GenericMessageReply>;
+  public async processMessage(tenant: string, rawMessage: unknown, dataStream?: Readable): Promise<UnionMessageReply>;
+  public async processMessage(tenant: string, rawMessage: GenericMessage, dataStream?: Readable): Promise<UnionMessageReply> {
+  const errorMessageReply = await this.validateTenant(tenant) ?? await this.validateMessageIntegrity(rawMessage);
 
-  /**
+    /**
    * Processes the given DWN message and returns with a reply.
    * @param tenant The tenant DID to route the given message to.
    */
@@ -188,32 +216,32 @@ export class Dwn {
     const errorMessageReply =
       (await this.validateTenant(tenant)) ??
       (await this.validateMessageIntegrity(rawMessage));
-    if (errorMessageReply !== undefined) {
-      return errorMessageReply;
+      if (errorMessageReply !== undefined) {
+        return errorMessageReply;
+      }
+
+      const handlerKey =
+        rawMessage.descriptor.interface + rawMessage.descriptor.method;
+      const methodHandlerReply = await this.methodHandlers[handlerKey].handle({
+        tenant,
+        message: rawMessage as GenericMessage,
+        dataStream,
+      });
+
+      const eventMessage = await EventMessage.create({
+        descriptor: {
+          ...rawMessage.descriptor,
+          type: EventType.Operation,
+        },
+        message: rawMessage as GenericMessage, // add message
+      });
+
+      if (this.eventStream) {
+        this.eventStream.add(eventMessage);
+      }
+
+      return methodHandlerReply;
     }
-
-    const handlerKey =
-      rawMessage.descriptor.interface + rawMessage.descriptor.method;
-    const methodHandlerReply = await this.methodHandlers[handlerKey].handle({
-      tenant,
-      message: rawMessage as GenericMessage,
-      dataStream,
-    });
-
-    const eventMessage = await EventMessage.create({
-      descriptor: {
-        ...rawMessage.descriptor,
-        type: EventType.Operation,
-      },
-      message: rawMessage as GenericMessage, // add message
-    });
-
-    if (this.eventStream) {
-      this.eventStream.add(eventMessage);
-    }
-
-    return methodHandlerReply;
-  }
 
   /**
    * Handles a `RecordsRead` message.
@@ -320,6 +348,7 @@ export class Dwn {
   }
 
   /**
+
    * Privileged method for writing a pruned initial `RecordsWrite` to a DWN without needing to supply associated data.
    */
   public async synchronizePrunedInitialRecordsWrite(

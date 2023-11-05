@@ -1,4 +1,5 @@
 import type { DidResolutionResult } from '../../src/did/did-resolver.js';
+import type { GeneralJws } from '../../src/types/jws-types.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsFilter } from '../../src/types/records-types.js';
 import type { AuthorizationModel, Pagination } from '../../src/types/message-types.js';
@@ -10,8 +11,6 @@ import type {
   EncryptionInput,
   EventsGetMessage,
   EventsGetOptions,
-  HooksWriteMessage,
-  HooksWriteOptions,
   KeyEncryptionInput,
   MessagesGetMessage,
   MessagesGetOptions,
@@ -39,19 +38,17 @@ import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 import * as cbor from '@ipld/dag-cbor';
 import { CID } from 'multiformats/cid';
 import { DataStream } from '../../src/utils/data-stream.js';
-import { getCurrentTimeInHighPrecision } from '../../src/utils/time.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions-request.js';
 import { PermissionsRevoke } from '../../src/interfaces/permissions-revoke.js';
 import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { sha256 } from 'multiformats/hashes/sha2';
-import { Temporal } from '@js-temporal/polyfill';
+import { Time } from '../../src/utils/time.js';
 
 import {
   DidKeyResolver,
   EventsGet,
-  HooksWrite,
   Jws,
   MessagesGet,
   ProtocolsConfigure,
@@ -76,6 +73,10 @@ export type GenerateProtocolsConfigureInput = {
    * Only takes effect if `protocolDefinition` is not explicitly set. Defaults to false if not specified.
    */
   published?: boolean;
+
+  /**
+   * Author who will be signing the protocol config created.
+   */
   author?: Persona;
   messageTimestamp?: string;
   protocolDefinition?: ProtocolDefinition;
@@ -85,7 +86,6 @@ export type GenerateProtocolsConfigureInput = {
 export type GenerateProtocolsConfigureOutput = {
   author: Persona;
   message: ProtocolsConfigureMessage;
-  dataStream?: Readable;
   protocolsConfigure: ProtocolsConfigure;
 };
 
@@ -105,11 +105,13 @@ export type GenerateProtocolsQueryOutput = {
 };
 
 export type GenerateRecordsWriteInput = {
+  // Will refactor only when the PR is reviewed approved to avoid polluting the PR.
   author?: Persona;
   attesters?: Persona[];
   recipient?: string;
   protocol?: string;
   protocolPath?: string;
+  protocolRole?: string;
   contextId?: string;
   schema?: string;
   recordId?: string;
@@ -133,6 +135,7 @@ export type GenerateFromRecordsWriteInput = {
   published?: boolean;
   messageTimestamp?: string;
   datePublished?: string;
+  protocolRole?: string;
 };
 
 export type GenerateFromRecordsWriteOut = {
@@ -162,6 +165,7 @@ export type GenerateRecordsQueryInput = {
   filter?: RecordsFilter;
   dateSort?: DateSort;
   pagination?: Pagination;
+  protocolRole?: string;
 };
 
 export type GenerateRecordsQueryOutput = {
@@ -172,26 +176,13 @@ export type GenerateRecordsQueryOutput = {
 export type GenerateRecordsDeleteInput = {
   author?: Persona;
   recordId?: string;
+  protocolRole?: string;
 };
 
 export type GenerateRecordsDeleteOutput = {
   author: Persona;
   recordsDelete: RecordsDelete;
   message: RecordsDeleteMessage;
-};
-
-export type GenerateHooksWriteInput = {
-  author?: Persona;
-  messageTimestamp?: string;
-  filter?: {
-    method: string;
-  }
-  uri?: string;
-};
-
-export type GenerateHooksWriteOutput = {
-  author: Persona;
-  message: HooksWriteMessage;
 };
 
 export type GeneratePermissionsRequestInput = {
@@ -323,15 +314,12 @@ export class TestDataGenerator {
       definition.structure[generatedLabel] = {};
     }
 
-    // TODO: #451 - Remove reference and use of dataStream everywhere in tests - https://github.com/TBD54566975/dwn-sdk-js/issues/451
-    const dataStream = undefined;
-
-    const authorizationSigner = Jws.createSigner(author);
+    const signer = Jws.createSigner(author);
 
     const options: ProtocolsConfigureOptions = {
       messageTimestamp   : input?.messageTimestamp,
       definition,
-      authorizationSigner,
+      signer,
       permissionsGrantId : input?.permissionsGrantId
     };
 
@@ -340,7 +328,6 @@ export class TestDataGenerator {
     return {
       author,
       message: protocolsConfigure.message,
-      dataStream,
       protocolsConfigure
     };
   };
@@ -352,12 +339,12 @@ export class TestDataGenerator {
     // generate author persona if not given
     const author = input?.author ?? await TestDataGenerator.generatePersona();
 
-    const authorizationSigner = Jws.createSigner(author);
+    const signer = Jws.createSigner(author);
 
     const options: ProtocolsQueryOptions = {
       messageTimestamp   : input?.messageTimestamp,
       filter             : input?.filter,
-      authorizationSigner,
+      signer,
       permissionsGrantId : input?.permissionsGrantId,
     };
     removeUndefinedProperties(options);
@@ -377,13 +364,13 @@ export class TestDataGenerator {
    * @param input.attesters Attesters of the message. Will NOT be generated if not given.
    * @param input.data Data that belongs to the record. Generated when not given only if `dataCid` and `dataSize` are also not given.
    * @param input.dataFormat Format of the data. Defaults to 'application/json' if not given.
-   * @param input.author Author of the message. Generated if not given.
+   * @param input.signer Signer of the message. Generated if not given.
    * @param input.schema Schema of the message. Randomly generated if not given.
    */
   public static async generateRecordsWrite(input?: GenerateRecordsWriteInput): Promise<GenerateRecordsWriteOutput> {
     const author = input?.author ?? await TestDataGenerator.generatePersona();
 
-    const authorizationSigner = Jws.createSigner(author);
+    const signer = Jws.createSigner(author);
     const attestationSigners = Jws.createSigners(input?.attesters ?? []);
 
     const dataCid = input?.dataCid;
@@ -399,6 +386,7 @@ export class TestDataGenerator {
       recipient          : input?.recipient,
       protocol           : input?.protocol,
       protocolPath       : input?.protocolPath,
+      protocolRole       : input?.protocolRole,
       contextId          : input?.contextId,
       schema             : input?.schema ?? `http://${TestDataGenerator.randomString(20)}`,
       recordId           : input?.recordId,
@@ -411,14 +399,14 @@ export class TestDataGenerator {
       data               : dataBytes,
       dataCid,
       dataSize,
-      authorizationSigner,
+      signer,
       attestationSigners,
       encryptionInput    : input?.encryptionInput,
       permissionsGrantId : input?.permissionsGrantId,
     };
 
     const recordsWrite = await RecordsWrite.create(options);
-    const message = recordsWrite.message as RecordsWriteMessage;
+    const message = recordsWrite.message;
 
     return {
       author,
@@ -432,17 +420,30 @@ export class TestDataGenerator {
   };
 
   /**
-   * Generates a RecordsWrite message for testing.
+   * Generates a encrypted RecordsWrite message for testing.
+   *
+   * @param input.protocolDefinition Protocol definition used to generate the RecordsWrite.
+   *        Must be the RECIPIENT's protocol definition if `encryptSymmetricKeyWithProtocolPathDerivedKey` is true,
+   *        because the recipient's public keys will be needed to encrypt the symmetric key.
+   *
+   * @param input.encryptSymmetricKeyWithProtocolPathDerivedKey
+   *        Set to `true` to attach the symmetric key encrypted by the protocol path derived public key
+   *
+   * @param input.encryptSymmetricKeyWithProtocolContextDerivedKey
+   *        Set to `true` to attach the symmetric key encrypted by the protocol context derived public key
    */
   public static async generateProtocolEncryptedRecordsWrite(input: {
     plaintextBytes: Uint8Array,
     author: Persona,
-    targetProtocolDefinition: ProtocolDefinition,
+    recipient?: string,
+    protocolDefinition: ProtocolDefinition,
     protocolPath: string,
     protocolContextId?: string,
     protocolContextDerivingRootKeyId?: string,
     protocolContextDerivedPublicJwk?: PublicJwk,
-    protocolParentId?: string
+    protocolParentId?: string,
+    encryptSymmetricKeyWithProtocolPathDerivedKey: boolean,
+    encryptSymmetricKeyWithProtocolContextDerivedKey: boolean,
   }): Promise<{
     message: RecordsWriteMessage;
     dataStream: Readable;
@@ -453,7 +454,8 @@ export class TestDataGenerator {
     const {
       plaintextBytes,
       author,
-      targetProtocolDefinition,
+      recipient,
+      protocolDefinition,
       protocolPath,
       protocolContextId,
       protocolContextDerivingRootKeyId,
@@ -476,71 +478,80 @@ export class TestDataGenerator {
     const { message, dataStream, recordsWrite } = await TestDataGenerator.generateRecordsWrite(
       {
         author,
-        protocol   : targetProtocolDefinition.protocol,
+        recipient,
+        protocol   : protocolDefinition.protocol,
         protocolPath,
         contextId  : protocolContextId,
         parentId   : protocolParentId,
-        schema     : targetProtocolDefinition.types[recordType].schema,
-        dataFormat : targetProtocolDefinition.types[recordType].dataFormats![0],
+        schema     : protocolDefinition.types[recordType].schema,
+        dataFormat : protocolDefinition.types[recordType].dataFormats?.[0],
         data       : encryptedDataBytes
       }
     );
 
-    // Bob prepares the symmetric key encryption input for protocol-path derived public key
-    let protocolSegment = targetProtocolDefinition.structure;
-    for (const pathSegment of protocolPathSegments) {
-      protocolSegment = protocolSegment[pathSegment];
-    }
-
-    const protocolPathDerivedPublicJwk = protocolSegment.$encryption?.publicKeyJwk;
-    const protocolPathDerivationRootKeyId = protocolSegment.$encryption?.rootKeyId;
-    const protocolPathDerivedKeyEncryptionInput: KeyEncryptionInput = {
-      publicKeyId      : protocolPathDerivationRootKeyId,
-      publicKey        : protocolPathDerivedPublicJwk!,
-      derivationScheme : KeyDerivationScheme.ProtocolPath
-    };
-
-    // generate key encryption input to that will encrypt the symmetric encryption key using protocol-context derived public key
-    let protocolContextDerivedKeyEncryptionInput: KeyEncryptionInput;
-    if (protocolContextId === undefined) {
-      // author generates protocol-context derived public key for encrypting symmetric key
-      const authorRootPrivateKey: DerivedPrivateJwk = {
-        rootKeyId         : author.keyId,
-        derivationScheme  : KeyDerivationScheme.ProtocolContext,
-        derivedPrivateKey : author.keyPair.privateJwk
-      };
-
-      const contextId = await RecordsWrite.getEntryId(author.did, message.descriptor);
-      const contextDerivationPath = Records.constructKeyDerivationPathUsingProtocolContextScheme(contextId);
-      const authorGeneratedProtocolContextDerivedPublicJwk = await HdKey.derivePublicKey(authorRootPrivateKey, contextDerivationPath);
-
-      protocolContextDerivedKeyEncryptionInput = {
-        publicKeyId      : author.keyId,
-        publicKey        : authorGeneratedProtocolContextDerivedPublicJwk,
-        derivationScheme : KeyDerivationScheme.ProtocolContext
-      };
-    } else {
-      if (protocolContextDerivingRootKeyId === undefined ||
-          protocolContextDerivedPublicJwk === undefined) {
-        throw new Error ('`protocolContextDerivingRootKeyId` and `protocolContextDerivedPublicJwk` must both be defined if `protocolContextId` is given');
-      }
-
-      protocolContextDerivedKeyEncryptionInput = {
-        publicKeyId      : protocolContextDerivingRootKeyId!,
-        publicKey        : protocolContextDerivedPublicJwk!,
-        derivationScheme : KeyDerivationScheme.ProtocolContext
-      };
-    }
-
-    // final encryption input
+    // final encryption input (`keyEncryptionInputs` to be populated below)
     const encryptionInput: EncryptionInput = {
       initializationVector : dataEncryptionInitializationVector,
       key                  : dataEncryptionKey,
-      keyEncryptionInputs  : [protocolPathDerivedKeyEncryptionInput, protocolContextDerivedKeyEncryptionInput]
+      keyEncryptionInputs  : []
     };
 
+    if (input.encryptSymmetricKeyWithProtocolPathDerivedKey) {
+      // locate the rule set corresponding the protocol path of the message
+      let protocolRuleSetSegment = protocolDefinition.structure;
+      for (const pathSegment of protocolPathSegments) {
+        protocolRuleSetSegment = protocolRuleSetSegment[pathSegment];
+      }
+
+      const protocolPathDerivedPublicJwk = protocolRuleSetSegment.$encryption?.publicKeyJwk;
+      const protocolPathDerivationRootKeyId = protocolRuleSetSegment.$encryption?.rootKeyId;
+      const protocolPathDerivedKeyEncryptionInput: KeyEncryptionInput = {
+        publicKeyId      : protocolPathDerivationRootKeyId,
+        publicKey        : protocolPathDerivedPublicJwk!,
+        derivationScheme : KeyDerivationScheme.ProtocolPath
+      };
+
+      encryptionInput.keyEncryptionInputs.push(protocolPathDerivedKeyEncryptionInput);
+    }
+
+    if (input.encryptSymmetricKeyWithProtocolContextDerivedKey) {
+      // generate key encryption input to that will encrypt the symmetric encryption key using protocol-context derived public key
+      let protocolContextDerivedKeyEncryptionInput: KeyEncryptionInput;
+      if (protocolContextId === undefined) {
+      // author generates protocol-context derived public key for encrypting symmetric key
+        const authorRootPrivateKey: DerivedPrivateJwk = {
+          rootKeyId         : author.keyId,
+          derivationScheme  : KeyDerivationScheme.ProtocolContext,
+          derivedPrivateKey : author.keyPair.privateJwk
+        };
+
+        const contextId = await RecordsWrite.getEntryId(author.did, message.descriptor);
+        const contextDerivationPath = Records.constructKeyDerivationPathUsingProtocolContextScheme(contextId);
+        const authorGeneratedProtocolContextDerivedPublicJwk = await HdKey.derivePublicKey(authorRootPrivateKey, contextDerivationPath);
+
+        protocolContextDerivedKeyEncryptionInput = {
+          publicKeyId      : author.keyId,
+          publicKey        : authorGeneratedProtocolContextDerivedPublicJwk,
+          derivationScheme : KeyDerivationScheme.ProtocolContext
+        };
+      } else {
+        if (protocolContextDerivingRootKeyId === undefined ||
+          protocolContextDerivedPublicJwk === undefined) {
+          throw new Error ('`protocolContextDerivingRootKeyId` and `protocolContextDerivedPublicJwk` must both be defined if `protocolContextId` is given');
+        }
+
+        protocolContextDerivedKeyEncryptionInput = {
+          publicKeyId      : protocolContextDerivingRootKeyId!,
+          publicKey        : protocolContextDerivedPublicJwk!,
+          derivationScheme : KeyDerivationScheme.ProtocolContext
+        };
+      }
+
+      encryptionInput.keyEncryptionInputs.push(protocolContextDerivedKeyEncryptionInput);
+    }
+
     await recordsWrite.encryptSymmetricEncryptionKey(encryptionInput);
-    await recordsWrite.sign(Jws.createSigner(author));
+    await recordsWrite.sign({ signer: Jws.createSigner(author) });
 
     return { message, dataStream: dataStream!, recordsWrite, encryptedDataBytes, encryptionInput };
   }
@@ -552,7 +563,7 @@ export class TestDataGenerator {
    */
   public static async generateFromRecordsWrite(input: GenerateFromRecordsWriteInput): Promise<GenerateFromRecordsWriteOut> {
     const existingMessage = input.existingWrite.message;
-    const currentTime = getCurrentTimeInHighPrecision();
+    const currentTime = Time.getCurrentTimestamp();
 
     const published = input.published ?? existingMessage.descriptor.published ? false : true; // toggle from the parent value if not given explicitly
     const datePublished = input.datePublished ?? (published ? currentTime : undefined);
@@ -561,12 +572,13 @@ export class TestDataGenerator {
     const dataStream = DataStream.fromBytes(dataBytes);
 
     const options: CreateFromOptions = {
-      unsignedRecordsWriteMessage : input.existingWrite.message,
-      data                        : dataBytes,
+      recordsWriteMessage : input.existingWrite.message,
+      data                : dataBytes,
       published,
       datePublished,
-      messageTimestamp            : input.messageTimestamp,
-      authorizationSigner         : Jws.createSigner(input.author)
+      messageTimestamp    : input.messageTimestamp,
+      protocolRole        : input.protocolRole,
+      signer              : Jws.createSigner(input.author)
     };
 
     const recordsWrite = await RecordsWrite.createFrom(options);
@@ -594,22 +606,23 @@ export class TestDataGenerator {
       author = await TestDataGenerator.generatePersona();
     }
 
-    let authorizationSigner = undefined;
+    let signer = undefined;
     if (author !== undefined) {
-      authorizationSigner = Jws.createSigner(author);
+      signer = Jws.createSigner(author);
     }
 
     const options: RecordsQueryOptions = {
       messageTimestamp : input?.messageTimestamp,
-      authorizationSigner,
+      signer,
       filter           : input?.filter ?? { schema: TestDataGenerator.randomString(10) }, // must have one filter property if no filter is given
       dateSort         : input?.dateSort,
-      pagination       : input?.pagination
+      pagination       : input?.pagination,
+      protocolRole     : input?.protocolRole,
     };
     removeUndefinedProperties(options);
 
     const recordsQuery = await RecordsQuery.create(options);
-    const message = recordsQuery.message as RecordsQueryMessage;
+    const message = recordsQuery.message;
 
     return {
       author,
@@ -624,8 +637,9 @@ export class TestDataGenerator {
     const author = input?.author ?? await DidKeyResolver.generate();
 
     const recordsDelete = await RecordsDelete.create({
-      recordId            : input?.recordId ?? await TestDataGenerator.randomCborSha256Cid(),
-      authorizationSigner : Jws.createSigner(author)
+      recordId     : input?.recordId ?? await TestDataGenerator.randomCborSha256Cid(),
+      protocolRole : input?.protocolRole,
+      signer       : Jws.createSigner(author)
     });
 
     return {
@@ -636,35 +650,12 @@ export class TestDataGenerator {
   }
 
   /**
-   * Generates a HooksWrite message for testing.
-   */
-  public static async generateHooksWrite(input?: GenerateHooksWriteInput): Promise<GenerateHooksWriteOutput> {
-    const author = input?.author ?? await TestDataGenerator.generatePersona();
-
-    const authorizationSigner = Jws.createSigner(author);
-
-    const options: HooksWriteOptions = {
-      messageTimestamp : input?.messageTimestamp,
-      authorizationSigner,
-      filter           : input?.filter ?? { method: 'RecordsWrite' }, // hardcode to filter on `RecordsWrite` if no filter is given
-    };
-    removeUndefinedProperties(options);
-
-    const hooksWrite = await HooksWrite.create(options);
-
-    return {
-      author,
-      message: hooksWrite.message
-    };
-  };
-
-  /**
    * Generates a PermissionsRequest message for testing.
    */
   public static async generatePermissionsRequest(input?: GeneratePermissionsRequestInput): Promise<GeneratePermissionsRequestOutput> {
     const author = input?.author ?? await TestDataGenerator.generatePersona();
     const permissionsRequest = await PermissionsRequest.create({
-      messageTimestamp : getCurrentTimeInHighPrecision(),
+      messageTimestamp : Time.getCurrentTimestamp(),
       description      : input?.description,
       grantedBy        : input?.grantedBy ?? 'did:jank:bob',
       grantedTo        : input?.grantedTo ?? 'did:jank:alice',
@@ -673,8 +664,8 @@ export class TestDataGenerator {
         interface : DwnInterfaceName.Records,
         method    : DwnMethodName.Write
       },
-      conditions          : input?.conditions,
-      authorizationSigner : Jws.createSigner(author)
+      conditions : input?.conditions,
+      signer     : Jws.createSigner(author)
     });
 
     return {
@@ -688,10 +679,10 @@ export class TestDataGenerator {
    * Generates a PermissionsGrant message for testing.
    */
   public static async generatePermissionsGrant(input?: GeneratePermissionsGrantInput): Promise<GeneratePermissionsGrantOutput> {
-    const dateExpires = input?.dateExpires ?? Temporal.Now.instant().add({ hours: 24 }).toString({ smallestUnit: 'microseconds' });
+    const dateExpires = input?.dateExpires ?? Time.createOffsetTimestamp({ seconds: 60 * 60 * 24 });
     const author = input?.author ?? await TestDataGenerator.generatePersona();
     const permissionsGrant = await PermissionsGrant.create({
-      messageTimestamp     : input?.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      messageTimestamp     : input?.messageTimestamp ?? Time.getCurrentTimestamp(),
       dateExpires,
       description          : input?.description ?? 'drugs',
       grantedBy            : input?.grantedBy ?? author.did,
@@ -702,8 +693,8 @@ export class TestDataGenerator {
         interface : DwnInterfaceName.Records,
         method    : DwnMethodName.Write
       },
-      conditions          : input?.conditions,
-      authorizationSigner : Jws.createSigner(author)
+      conditions : input?.conditions,
+      signer     : Jws.createSigner(author)
     });
 
     return {
@@ -718,10 +709,10 @@ export class TestDataGenerator {
    */
   public static async generatePermissionsRevoke(input?: GeneratePermissionsRevokeInput): Promise<GeneratePermissionsRevokeOutput> {
     const author = input?.author ?? await TestDataGenerator.generatePersona();
-    const authorizationSigner = Jws.createSigner(author);
+    const signer = Jws.createSigner(author);
 
     const permissionsRevoke = await PermissionsRevoke.create({
-      authorizationSigner,
+      signer,
       permissionsGrantId : input?.permissionsGrantId ?? await TestDataGenerator.randomCborSha256Cid(),
       messageTimestamp   : input?.dateCreated
     });
@@ -735,9 +726,9 @@ export class TestDataGenerator {
 
   public static async generateEventsGet(input?: GenerateEventsGetInput): Promise<GenerateEventsGetOutput> {
     const author = input?.author ?? await TestDataGenerator.generatePersona();
-    const authorizationSigner = Jws.createSigner(author);
+    const signer = Jws.createSigner(author);
 
-    const options: EventsGetOptions = { authorizationSigner };
+    const options: EventsGetOptions = { signer };
     if (input?.watermark) {
       options.watermark = input.watermark;
     }
@@ -753,10 +744,10 @@ export class TestDataGenerator {
 
   public static async generateMessagesGet(input: GenerateMessagesGetInput): Promise<GenerateMessagesGetOutput> {
     const author = input?.author ?? await TestDataGenerator.generatePersona();
-    const authorizationSigner = Jws.createSigner(author);
+    const signer = Jws.createSigner(author);
 
     const options: MessagesGetOptions = {
-      authorizationSigner,
+      signer,
       messageCids: input.messageCids
     };
 
@@ -774,13 +765,20 @@ export class TestDataGenerator {
    */
   public static generateAuthorization(): AuthorizationModel {
     return {
-      author: {
-        payload    : 'anyPayload',
-        signatures : [{
-          protected : 'anyProtectedHeader',
-          signature : 'anySignature'
-        }]
-      }
+      signature: TestDataGenerator.generateAuthorizationSignature()
+    };
+  }
+
+  /**
+   * Generates a dummy `authorization` property for a DWN message that only conforms to schema validation.
+   */
+  public static generateAuthorizationSignature(): GeneralJws {
+    return {
+      payload    : 'anyPayload',
+      signatures : [{
+        protected : 'anyProtectedHeader',
+        signature : 'anySignature'
+      }]
     };
   }
 
@@ -831,20 +829,24 @@ export class TestDataGenerator {
   }
 
   /**
-   * Generates a random timestamp.
+   * Generates a random timestamp. Optionally allows you to set specific non-randomized values for the timestamp.
    *
    * @returns random UTC ISO-8601 timestamp
    */
-  public static randomTimestamp(): string {
-    return Temporal.ZonedDateTime.from({
-      timeZone : 'UTC',
-      year     : this.randomInt(2000, 2022),
-      month    : this.randomInt(1, 12),
-      day      : this.randomInt(1, 28),
-      hour     : this.randomInt(0, 23),
-      minute   : this.randomInt(0, 59),
-      second   : this.randomInt(0, 59),
-    }).toInstant().toString({ smallestUnit: 'microseconds' });
+  public static randomTimestamp(options?: {
+    year?: number, month?: number, day?: number, hour?: number, minute?: number, second?: number, millisecond?: number, microsecond?: number
+  }): string {
+    const { year, month, day, hour, minute, second, millisecond, microsecond } = options || {};
+    return Time.createTimestamp({
+      year        : year || this.randomInt(2000, 2022),
+      month       : month || this.randomInt(1, 12),
+      day         : day || this.randomInt(1, 28),
+      hour        : hour || this.randomInt(0, 23),
+      minute      : minute || this.randomInt(0, 59),
+      second      : second || this.randomInt(0, 59),
+      millisecond : millisecond || this.randomInt(0, 1000),
+      microsecond : microsecond || this.randomInt(0, 1000)
+    });
   }
 
   /**

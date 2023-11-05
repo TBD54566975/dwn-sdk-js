@@ -1,25 +1,24 @@
+import type { DelegatedGrantMessage } from '../types/permissions-types.js';
 import type { GeneralJws } from '../types/jws-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PublicJwk } from '../types/jose-types.js';
 import type { Signer } from '../types/signer.js';
-import type { AuthorizationModel, GenericMessage } from '../types/message-types.js';
 import type {
   EncryptedKey,
   EncryptionProperty,
   InternalRecordsWriteMessage,
   RecordsWriteAttestationPayload,
-  RecordsWriteAuthorSignaturePayload,
   RecordsWriteDescriptor,
   RecordsWriteMessage,
-  UnsignedRecordsWriteMessage
+  RecordsWriteSignaturePayload
 } from '../types/records-types.js';
+import type { GenericMessage, GenericSignaturePayload } from '../types/message-types.js';
 
 import { Cid } from '../utils/cid.js';
 import { Encoder } from '../utils/encoder.js';
 import { Encryption } from '../utils/encryption.js';
 import { EncryptionAlgorithm } from '../utils/encryption.js';
 import { GeneralJwsBuilder } from '../jose/jws/general/builder.js';
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Jws } from '../utils/jws.js';
 import { KeyDerivationScheme } from '../utils/hd-key.js';
 import { Message } from '../core/message.js';
@@ -27,7 +26,8 @@ import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Secp256k1 } from '../utils/secp256k1.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { Time } from '../utils/time.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
@@ -36,6 +36,7 @@ export type RecordsWriteOptions = {
   recipient?: string;
   protocol?: string;
   protocolPath?: string;
+  protocolRole?: string;
   contextId?: string;
   schema?: string;
   recordId?: string;
@@ -48,7 +49,17 @@ export type RecordsWriteOptions = {
   published?: boolean;
   datePublished?: string;
   dataFormat: string;
-  authorizationSigner?: Signer;
+
+  /**
+   * Signer of the message.
+   */
+  signer?: Signer;
+
+  /**
+   * The delegated grant to sign on behalf of the logical author, which is the grantor (`grantedBy`) of the delegated grant.
+   */
+  delegatedGrant?: DelegatedGrantMessage;
+
   attestationSigners?: Signer[];
   encryptionInput?: EncryptionInput;
   permissionsGrantId?: string;
@@ -107,26 +118,37 @@ export type KeyEncryptionInput = {
 };
 
 export type CreateFromOptions = {
-  unsignedRecordsWriteMessage: UnsignedRecordsWriteMessage,
+  recordsWriteMessage: RecordsWriteMessage,
   data?: Uint8Array;
   published?: boolean;
   messageTimestamp?: string;
   datePublished?: string;
-  authorizationSigner?: Signer;
+
+  /**
+   * Signer of the message.
+   */
+  signer?: Signer;
+
+  /**
+   * The delegated grant to sign on behalf of the logical author, which is the grantor (`grantedBy`) of the delegated grant.
+   */
+  delegatedGrant?: DelegatedGrantMessage;
+
   attestationSigners?: Signer[];
   encryptionInput?: EncryptionInput;
+  protocolRole?: string;
 };
 
 export class RecordsWrite {
   private _message: InternalRecordsWriteMessage;
   /**
    * Valid JSON message representing this RecordsWrite.
-   * @throws `DwnErrorCode.RecordsWriteMissingAuthorizationSigner` if the message is not signed yet.
+   * @throws `DwnErrorCode.RecordsWriteMissingSigner` if the message is not signed yet.
    */
   public get message(): RecordsWriteMessage {
     if (this._message.authorization === undefined) {
       throw new DwnError(
-        DwnErrorCode.RecordsWriteMissingAuthorizationSigner,
+        DwnErrorCode.RecordsWriteMissingSigner,
         'This RecordsWrite is not yet signed, JSON message cannot be generated from an incomplete state.'
       );
     }
@@ -136,18 +158,37 @@ export class RecordsWrite {
 
   private _author: string | undefined;
   /**
-   * DID of author of this message.
+   * DID of the logical author of this message.
+   * NOTE: we say "logical" author because a message can be signed by a delegate of the actual author,
+   * in which case the author DID would not be the same as the signer/delegate DID,
+   * but be the DID of the grantor (`grantedBy`) of the delegated grant presented.
    */
   public get author(): string | undefined {
     return this._author;
   }
 
-  private _authorSignaturePayload: RecordsWriteAuthorSignaturePayload | undefined;
+  private _signaturePayload: RecordsWriteSignaturePayload | undefined;
   /**
-   * Decoded authorization payload.
+   * Decoded payload of the signature of this message.
    */
-  public get authorizationPayload(): RecordsWriteAuthorSignaturePayload | undefined {
-    return this._authorSignaturePayload;
+  public get signaturePayload(): RecordsWriteSignaturePayload | undefined {
+    return this._signaturePayload;
+  }
+
+  private _owner: string | undefined;
+  /**
+   * DID of owner of this message.
+   */
+  public get owner(): string | undefined {
+    return this._owner;
+  }
+
+  private _ownerSignaturePayload: GenericSignaturePayload | undefined;
+  /**
+   * Decoded owner signature payload.
+   */
+  public get ownerSignaturePayload(): GenericSignaturePayload | undefined {
+    return this._ownerSignaturePayload;
   }
 
   readonly attesters: string[];
@@ -156,8 +197,20 @@ export class RecordsWrite {
     this._message = message;
 
     if (message.authorization !== undefined) {
-      this._authorSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.author);
-      this._author = Message.getAuthor(message as GenericMessage);
+      // if the message authorization contains author delegated grant, the author would be the grantor of the grant
+      // else the author would be the signer of the message
+      if (message.authorization.authorDelegatedGrant !== undefined) {
+        this._author = Message.getSigner(message.authorization.authorDelegatedGrant);
+      } else {
+        this._author = Message.getSigner(message as GenericMessage);
+      }
+
+      this._signaturePayload = Jws.decodePlainObjectPayload(message.authorization.signature);
+
+      if (message.authorization.ownerSignature !== undefined) {
+        this._owner = Jws.getSignerDid(message.authorization.ownerSignature.signatures[0]);
+        this._ownerSignaturePayload = Jws.decodePlainObjectPayload(message.authorization.ownerSignature);
+      }
     }
 
     this.attesters = RecordsWrite.getAttesters(message);
@@ -167,7 +220,13 @@ export class RecordsWrite {
 
   public static async parse(message: RecordsWriteMessage): Promise<RecordsWrite> {
     // asynchronous checks that are required by the constructor to initialize members properly
-    await validateAuthorizationIntegrity(message, 'RecordsWriteAuthorSignaturePayload');
+
+    await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor, 'RecordsWriteSignaturePayload');
+
+    if (message.authorization.ownerSignature !== undefined) {
+      await validateMessageSignatureIntegrity(message.authorization.ownerSignature, message.descriptor);
+    }
+
     await RecordsWrite.validateAttestationIntegrity(message);
 
     const recordsWrite = new RecordsWrite(message);
@@ -189,28 +248,32 @@ export class RecordsWrite {
    */
   public static async create(options: RecordsWriteOptions): Promise<RecordsWrite> {
     if ((options.protocol === undefined && options.protocolPath !== undefined) ||
-        (options.protocol !== undefined && options.protocolPath === undefined)) {
-      throw new Error('`protocol` and `protocolPath` must both be defined or undefined at the same time');
+      (options.protocol !== undefined && options.protocolPath === undefined)) {
+      throw new DwnError(DwnErrorCode.RecordsWriteCreateProtocolAndProtocolPathMutuallyInclusive, '`protocol` and `protocolPath` must both be defined or undefined at the same time');
     }
 
     if ((options.data === undefined && options.dataCid === undefined) ||
-        (options.data !== undefined && options.dataCid !== undefined)) {
-      throw new Error('one and only one parameter between `data` and `dataCid` is allowed');
+      (options.data !== undefined && options.dataCid !== undefined)) {
+      throw new DwnError(DwnErrorCode.RecordsWriteCreateDataAndDataCidMutuallyExclusive, 'one and only one parameter between `data` and `dataCid` is allowed');
     }
 
     if ((options.dataCid === undefined && options.dataSize !== undefined) ||
-        (options.dataCid !== undefined && options.dataSize === undefined)) {
-      throw new Error('`dataCid` and `dataSize` must both be defined or undefined at the same time');
+      (options.dataCid !== undefined && options.dataSize === undefined)) {
+      throw new DwnError(DwnErrorCode.RecordsWriteCreateDataCidAndDataSizeMutuallyInclusive, '`dataCid` and `dataSize` must both be defined or undefined at the same time');
     }
 
     if (options.parentId !== undefined && options.contextId === undefined) {
-      throw new Error('`contextId` must also be given when `parentId` is specified');
+      throw new DwnError(DwnErrorCode.RecordsWriteCreateContextIdAndParentIdMutuallyInclusive, '`contextId` must also be given when `parentId` is specified');
+    }
+
+    if (options.signer === undefined && options.delegatedGrant !== undefined) {
+      throw new DwnError(DwnErrorCode.RecordsWriteCreateMissingSigner, '`signer` must be given when `delegatedGrant` is given');
     }
 
     const dataCid = options.dataCid ?? await Cid.computeDagPbCidFromBytes(options.data!);
     const dataSize = options.dataSize ?? options.data!.length;
 
-    const currentTime = getCurrentTimeInHighPrecision();
+    const currentTime = Time.getCurrentTimestamp();
 
     const descriptor: RecordsWriteDescriptor = {
       interface        : DwnInterfaceName.Records,
@@ -262,12 +325,15 @@ export class RecordsWrite {
     if (attestation !== undefined) { message.attestation = attestation; }
     if (encryption !== undefined) { message.encryption = encryption; }
 
-    // validateJsonSchema('RecordsWriteUnauthorized', message);
-
     const recordsWrite = new RecordsWrite(message);
 
-    if (options.authorizationSigner !== undefined) {
-      await recordsWrite.sign(options.authorizationSigner, options.permissionsGrantId);
+    if (options.signer !== undefined) {
+      await recordsWrite.sign({
+        signer             : options.signer,
+        delegatedGrant     : options.delegatedGrant,
+        permissionsGrantId : options.permissionsGrantId,
+        protocolRole       : options.protocolRole
+      });
     }
 
     return recordsWrite;
@@ -275,10 +341,10 @@ export class RecordsWrite {
 
   /**
    * Convenience method that creates a message by:
-   * 1. Copying over immutable properties from the given unsigned message
-   * 2. Copying over mutable properties that are not overwritten from the given unsigned message
+   * 1. Copying over immutable properties from the given source message
+   * 2. Copying over mutable properties that are not overwritten from the given source message
    * 3. Replace the mutable properties that are given new value
-   * @param options.unsignedRecordsWriteMessage Unsigned message that the new RecordsWrite will be based from.
+   * @param options.recordsWriteMessage Message that the new RecordsWrite will be based from.
    * @param options.messageTimestamp The new date the record is modified. If not given, current time will be used .
    * @param options.data The new data or the record. If not given, data from given message will be used.
    * @param options.published The new published state. If not given, then will be set to `true` if {options.messageTimestamp} is given;
@@ -289,11 +355,11 @@ export class RecordsWrite {
    * - will be set to current time (because this is a toggle from unpublished to published)
    */
   public static async createFrom(options: CreateFromOptions): Promise<RecordsWrite> {
-    const unsignedMessage = options.unsignedRecordsWriteMessage;
-    const currentTime = getCurrentTimeInHighPrecision();
+    const sourceMessage = options.recordsWriteMessage;
+    const currentTime = Time.getCurrentTimestamp();
 
     // inherit published value from parent if neither published nor datePublished is specified
-    const published = options.published ?? (options.datePublished ? true : unsignedMessage.descriptor.published);
+    const published = options.published ?? (options.datePublished ? true : sourceMessage.descriptor.published);
     // use current time if published but no explicit time given
     let datePublished: string | undefined = undefined;
     // if given explicitly published dated
@@ -303,8 +369,8 @@ export class RecordsWrite {
       // if this RecordsWrite will publish the record
       if (published) {
         // the parent was already published, inherit the same published date
-        if (unsignedMessage.descriptor.published) {
-          datePublished = unsignedMessage.descriptor.datePublished;
+        if (sourceMessage.descriptor.published) {
+          datePublished = sourceMessage.descriptor.datePublished;
         } else {
           // this is a toggle from unpublished to published, use current time
           datePublished = currentTime;
@@ -314,25 +380,27 @@ export class RecordsWrite {
 
     const createOptions: RecordsWriteOptions = {
       // immutable properties below, just inherit from the message given
-      recipient           : unsignedMessage.descriptor.recipient,
-      recordId            : unsignedMessage.recordId,
-      dateCreated         : unsignedMessage.descriptor.dateCreated,
-      contextId           : unsignedMessage.contextId,
-      protocol            : unsignedMessage.descriptor.protocol,
-      protocolPath        : unsignedMessage.descriptor.protocolPath,
-      parentId            : unsignedMessage.descriptor.parentId,
-      schema              : unsignedMessage.descriptor.schema,
-      dataFormat          : unsignedMessage.descriptor.dataFormat,
+      recipient          : sourceMessage.descriptor.recipient,
+      recordId           : sourceMessage.recordId,
+      dateCreated        : sourceMessage.descriptor.dateCreated,
+      contextId          : sourceMessage.contextId,
+      protocol           : sourceMessage.descriptor.protocol,
+      protocolPath       : sourceMessage.descriptor.protocolPath,
+      parentId           : sourceMessage.descriptor.parentId,
+      schema             : sourceMessage.descriptor.schema,
+      dataFormat         : sourceMessage.descriptor.dataFormat,
       // mutable properties below
-      messageTimestamp    : options.messageTimestamp ?? currentTime,
+      messageTimestamp   : options.messageTimestamp ?? currentTime,
       published,
       datePublished,
-      data                : options.data,
-      dataCid             : options.data ? undefined : unsignedMessage.descriptor.dataCid, // if data not given, use base message dataCid
-      dataSize            : options.data ? undefined : unsignedMessage.descriptor.dataSize, // if data not given, use base message dataSize
+      data               : options.data,
+      dataCid            : options.data ? undefined : sourceMessage.descriptor.dataCid, // if data not given, use base message dataCid
+      dataSize           : options.data ? undefined : sourceMessage.descriptor.dataSize, // if data not given, use base message dataSize
+      protocolRole       : options.protocolRole,
+      delegatedGrant     : options.delegatedGrant,
       // finally still need signers
-      authorizationSigner : options.authorizationSigner,
-      attestationSigners  : options.attestationSigners
+      signer             : options.signer,
+      attestationSigners : options.attestationSigners
     };
 
     const recordsWrite = await RecordsWrite.create(createOptions);
@@ -354,55 +422,110 @@ export class RecordsWrite {
 
     // opportunity here to re-sign instead of remove
     delete this._message.authorization;
-    this._authorSignaturePayload = undefined;
+    this._signaturePayload = undefined;
     this._author = undefined;
   }
 
   /**
-   * Signs the RecordsWrite.
+   * Signs the RecordsWrite, commonly as author, but can also be a delegate.
    */
-  public async sign(signer: Signer, permissionsGrantId?: string): Promise<void> {
-    const author = Jws.extractDid(signer.keyId);
+  public async sign(options: {
+    signer: Signer,
+    delegatedGrant?: DelegatedGrantMessage,
+    permissionsGrantId?: string,
+    protocolRole?: string
+  }): Promise<void> {
+    const { signer, delegatedGrant, permissionsGrantId, protocolRole } = options;
+
+    // compute delegated grant ID and author if delegated grant is given
+    let delegatedGrantId;
+    let authorDid;
+    if (delegatedGrant !== undefined) {
+      delegatedGrantId = await Message.getCid(delegatedGrant);
+      authorDid = Jws.getSignerDid(delegatedGrant.authorization.signature.signatures[0]);
+    } else {
+      authorDid = Jws.extractDid(signer.keyId);
+    }
 
     const descriptor = this._message.descriptor;
     const descriptorCid = await Cid.computeCid(descriptor);
 
     // `recordId` computation if not given at construction time
-    this._message.recordId = this._message.recordId ?? await RecordsWrite.getEntryId(author, descriptor);
+    this._message.recordId = this._message.recordId ?? await RecordsWrite.getEntryId(authorDid, descriptor);
 
     // `contextId` computation if not given at construction time and this is a protocol-space record
     if (this._message.contextId === undefined && this._message.descriptor.protocol !== undefined) {
-      this._message.contextId = await RecordsWrite.getEntryId(author, descriptor);
+      this._message.contextId = await RecordsWrite.getEntryId(authorDid, descriptor);
     }
 
-    // `authorization` generation
-    const authorization = await RecordsWrite.createAuthorization(
-      this._message.recordId,
-      this._message.contextId,
+    // `signature` generation
+    const signature = await RecordsWrite.createSignerSignature({
+      recordId    : this._message.recordId,
+      contextId   : this._message.contextId,
       descriptorCid,
-      this._message.attestation,
-      this._message.encryption,
+      attestation : this._message.attestation,
+      encryption  : this._message.encryption,
       signer,
-      permissionsGrantId
-    );
+      delegatedGrantId,
+      permissionsGrantId,
+      protocolRole
+    });
 
-    this._message.authorization = authorization;
+    this._message.authorization = { signature };
+
+    if (delegatedGrant !== undefined) {
+      this._message.authorization.authorDelegatedGrant = delegatedGrant;
+    }
 
     // there is opportunity to optimize here as the payload is constructed within `createAuthorization(...)`
-    this._authorSignaturePayload = Jws.decodePlainObjectPayload(authorization.author);
-    this._author = author;
+    this._signaturePayload = Jws.decodePlainObjectPayload(signature);
+    this._author = authorDid;
+  }
+
+  /**
+   * Signs the `RecordsWrite` as the DWN owner.
+   * This is used when the DWN owner wants to retain a copy of a message that the owner did not author.
+   * NOTE: requires the `RecordsWrite` to already have the author's signature already.
+   */
+  public async signAsOwner(signer: Signer, permissionsGrantId?: string): Promise<void> {
+    if (this._author === undefined) {
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteSignAsOwnerUnknownAuthor,
+        'Unable to sign as owner if without message signature because owner needs to sign over `recordId` which depends on author DID.');
+    }
+
+    const descriptor = this._message.descriptor;
+    const ownerSignature = await Message.createSignature(descriptor, signer, { permissionsGrantId });
+
+    this._message.authorization!.ownerSignature = ownerSignature;
+
+    this._ownerSignaturePayload = Jws.decodePlainObjectPayload(ownerSignature);
+    this._owner = Jws.extractDid(signer.keyId);
+    ;
   }
 
   public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
-    if (this.message.descriptor.protocol !== undefined) {
-      // All protocol RecordsWrites must go through protocol auth, because protocolPath, contextId, and record type must be validated
-      await ProtocolAuthorization.authorize(tenant, this, this, messageStore);
+    // if owner DID is specified, it must be the same as the tenant DID
+    if (this.owner !== undefined && this.owner !== tenant) {
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteOwnerAndTenantMismatch,
+        `Owner ${this.owner} must be the same as tenant ${tenant} when specified.`
+      );
+    }
+
+    if (this.owner !== undefined) {
+      // if incoming message is a write retained by this tenant, we by-design always allow
+      // NOTE: the "owner === tenant" check is already done earlier in this method
+      return;
     } else if (this.author === tenant) {
       // if author is the same as the target tenant, we can directly grant access
-    } else if (this.author !== undefined && this.authorizationPayload?.permissionsGrantId !== undefined) {
+      return;
+    } else if (this.author !== undefined && this.signaturePayload!.permissionsGrantId !== undefined) {
       await RecordsGrantAuthorization.authorizeWrite(tenant, this, this.author, messageStore);
+    } else if (this.message.descriptor.protocol !== undefined) {
+      await ProtocolAuthorization.authorizeWrite(tenant, this, messageStore);
     } else {
-      throw new Error('message failed authorization');
+      throw new DwnError(DwnErrorCode.RecordsWriteAuthorizationFailed, 'message failed authorization');
     }
   }
 
@@ -411,16 +534,6 @@ export class RecordsWrite {
    * There is opportunity to integrate better with `validateSchema(...)`
    */
   private async validateIntegrity(): Promise<void> {
-    // validateAuthorizationIntegrity() enforces the presence of authorization for RecordsWrite
-    const authorizationPayload = this.authorizationPayload!;
-
-    // make sure the `recordId` in message is the same as the `recordId` in `authorization`
-    if (this.message.recordId !== authorizationPayload.recordId) {
-      throw new Error(
-        `recordId in message ${this.message.recordId} does not match recordId in authorization: ${authorizationPayload.recordId}`
-      );
-    }
-
     // if the new message is the initial write
     const isInitialWrite = await this.isInitialWrite();
     if (isInitialWrite) {
@@ -428,7 +541,10 @@ export class RecordsWrite {
       const dateRecordCreated = this.message.descriptor.dateCreated;
       const messageTimestamp = this.message.descriptor.messageTimestamp;
       if (messageTimestamp !== dateRecordCreated) {
-        throw new Error(`messageTimestamp ${messageTimestamp} must match dateCreated ${dateRecordCreated} for the initial write`);
+        throw new DwnError(
+          DwnErrorCode.RecordsWriteValidateIntegrityDateCreatedMismatch,
+          `messageTimestamp ${messageTimestamp} must match dateCreated ${dateRecordCreated} for the initial write`
+        );
       }
 
       // if the message is also a protocol context root, the `contextId` must match the expected deterministic value
@@ -437,33 +553,72 @@ export class RecordsWrite {
         const expectedContextId = await this.getEntryId();
 
         if (this.message.contextId !== expectedContextId) {
-          throw new Error(`contextId in message: ${this.message.contextId} does not match deterministic contextId: ${expectedContextId}`);
+          throw new DwnError(
+            DwnErrorCode.RecordsWriteValidateIntegrityContextIdMismatch,
+            `contextId in message: ${this.message.contextId} does not match deterministic contextId: ${expectedContextId}`
+          );
         }
       }
     }
 
-    // if `contextId` is given in message, make sure the same `contextId` is in the `authorization`
-    if (this.message.contextId !== authorizationPayload.contextId) {
-      throw new Error(
-        `contextId in message ${this.message.contextId} does not match contextId in authorization: ${authorizationPayload.contextId}`
+    // NOTE: validateMessageSignatureIntegrity() call earlier enforces the presence of `authorization` and thus `signature` in RecordsWrite
+    const signaturePayload = this.signaturePayload!;
+
+    // make sure the `recordId` in message is the same as the `recordId` in the payload of the message signature
+    if (this.message.recordId !== signaturePayload.recordId) {
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteValidateIntegrityRecordIdUnauthorized,
+        `recordId in message ${this.message.recordId} does not match recordId in authorization: ${signaturePayload.recordId}`
       );
     }
 
-    // if `attestation` is given in message, make sure the correct `attestationCid` is in the `authorization`
-    if (authorizationPayload.attestationCid !== undefined) {
+    // if `contextId` is given in message, make sure the same `contextId` is in the the payload of the message signature
+    if (this.message.contextId !== signaturePayload.contextId) {
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteValidateIntegrityContextIdNotInSignerSignaturePayload,
+        `contextId in message ${this.message.contextId} does not match contextId in authorization: ${signaturePayload.contextId}`
+      );
+    }
+
+    // `deletedGrantId` in the payload of the message signature and `authorDelegatedGrant` in `authorization` must both exist or be both undefined
+    const delegatedGrantIdDefined = signaturePayload.delegatedGrantId !== undefined;
+    const authorDelegatedGrantDefined = this.message.authorization!.authorDelegatedGrant !== undefined;
+    if (delegatedGrantIdDefined !== authorDelegatedGrantDefined) {
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteValidateIntegrityDelegatedGrantAndIdExistenceMismatch,
+        `delegatedGrantId and authorDelegatedGrant must both exist or be undefined. \
+         delegatedGrantId defined: ${delegatedGrantIdDefined}, authorDelegatedGrant defined: ${authorDelegatedGrantDefined}`
+      );
+    }
+
+    // when delegated grant exists, the grantee (grantedTo) must be the same as the signer of the message
+    if (authorDelegatedGrantDefined) {
+      const grantedTo = this.message.authorization!.authorDelegatedGrant!.descriptor.grantedTo;
+      const signer = Message.getSigner(this.message);
+      if (grantedTo !== signer) {
+        throw new DwnError(
+          DwnErrorCode.RecordsWriteValidateIntegrityGrantedToAndSignerMismatch,
+          `grantedTo ${grantedTo} must be the same as the signer ${signer} of the message`
+        );
+      }
+    }
+
+    // if `attestation` is given in message, make sure the correct `attestationCid` is in the payload of the message signature
+    if (signaturePayload.attestationCid !== undefined) {
       const expectedAttestationCid = await Cid.computeCid(this.message.attestation);
-      const actualAttestationCid = authorizationPayload.attestationCid;
+      const actualAttestationCid = signaturePayload.attestationCid;
       if (actualAttestationCid !== expectedAttestationCid) {
-        throw new Error(
+        throw new DwnError(
+          DwnErrorCode.RecordsWriteValidateIntegrityAttestationMismatch,
           `CID ${expectedAttestationCid} of attestation property in message does not match attestationCid in authorization: ${actualAttestationCid}`
         );
       }
     }
 
-    // if `encryption` is given in message, make sure the correct `encryptionCid` is in the `authorization`
-    if (authorizationPayload.encryptionCid !== undefined) {
+    // if `encryption` is given in message, make sure the correct `encryptionCid` is in the payload of the message signature
+    if (signaturePayload.encryptionCid !== undefined) {
       const expectedEncryptionCid = await Cid.computeCid(this.message.encryption);
-      const actualEncryptionCid = authorizationPayload.encryptionCid;
+      const actualEncryptionCid = signaturePayload.encryptionCid;
       if (actualEncryptionCid !== expectedEncryptionCid) {
         throw new DwnError(
           DwnErrorCode.RecordsWriteValidateIntegrityEncryptionCidMismatch,
@@ -478,6 +633,12 @@ export class RecordsWrite {
     if (this.message.descriptor.schema !== undefined) {
       validateSchemaUrlNormalized(this.message.descriptor.schema);
     }
+
+    Time.validateTimestamp(this.message.descriptor.messageTimestamp);
+    Time.validateTimestamp(this.message.descriptor.dateCreated);
+    if (this.message.descriptor.datePublished) {
+      Time.validateTimestamp(this.message.descriptor.datePublished);
+    }
   }
 
   /**
@@ -491,7 +652,10 @@ export class RecordsWrite {
 
     // TODO: multi-attesters to be unblocked by #205 - Revisit database interfaces (https://github.com/TBD54566975/dwn-sdk-js/issues/205)
     if (message.attestation.signatures.length !== 1) {
-      throw new Error(`Currently implementation only supports 1 attester, but got ${message.attestation.signatures.length}`);
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteAttestationIntegrityMoreThanOneSignature,
+        `Currently implementation only supports 1 attester, but got ${message.attestation.signatures.length}`
+      );
     }
 
     const payloadJson = Jws.decodePlainObjectPayload(message.attestation);
@@ -500,13 +664,19 @@ export class RecordsWrite {
     // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
     const expectedDescriptorCid = await Cid.computeCid(message.descriptor);
     if (descriptorCid !== expectedDescriptorCid) {
-      throw new Error(`descriptorCid ${descriptorCid} does not match expected descriptorCid ${expectedDescriptorCid}`);
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteAttestationIntegrityDescriptorCidMismatch,
+        `descriptorCid ${descriptorCid} does not match expected descriptorCid ${expectedDescriptorCid}`
+      );
     }
 
     // check to ensure that no other unexpected properties exist in payload.
     const propertyCount = Object.keys(payloadJson).length;
     if (propertyCount > 1) {
-      throw new Error(`Only 'descriptorCid' is allowed in attestation payload, but got ${propertyCount} properties.`);
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteAttestationIntegrityInvalidPayloadProperty,
+        `Only 'descriptorCid' is allowed in attestation payload, but got ${propertyCount} properties.`
+      );
     }
   };
 
@@ -522,7 +692,6 @@ export class RecordsWrite {
    * Computes the deterministic Entry ID of this message.
    */
   public static async getEntryId(author: string | undefined, descriptor: RecordsWriteDescriptor): Promise<string> {
-    // TODO: this paves the way to allow unsigned RecordsWrite as suggested in #206 (https://github.com/TBD54566975/dwn-sdk-js/issues/206)
     if (author === undefined) {
       throw new DwnError(DwnErrorCode.RecordsWriteGetEntryIdUndefinedAuthor, 'Property `author` is needed to compute entry ID.');
     }
@@ -543,19 +712,49 @@ export class RecordsWrite {
   }
 
   /**
+   * Checks if the author of the RecordsWrite is the same as the author of the initial RecordsWrite for the record.
+   * Returns true if `this` is the initial RecordsWrite.
+   */
+  public async isAuthoredByInitialRecordAuthor(tenant: string, messageStore: MessageStore): Promise<boolean> {
+    // fetch the initialWrite
+    const query = {
+      entryId: this.message.recordId
+    };
+    const { messages: result } = await messageStore.query(tenant, [query]);
+
+    const initialRecordsWrite = await RecordsWrite.parse(result[0] as RecordsWriteMessage);
+    return initialRecordsWrite.author === this.author;
+  }
+
+  /**
    * Checks if the given message is the initial entry of a record.
    */
   public static async isInitialWrite(message: GenericMessage): Promise<boolean> {
     // can't be the initial write if the message is not a Records Write
     if (message.descriptor.interface !== DwnInterfaceName.Records ||
-        message.descriptor.method !== DwnMethodName.Write) {
+      message.descriptor.method !== DwnMethodName.Write) {
       return false;
     }
 
     const recordsWriteMessage = message as RecordsWriteMessage;
-    const author = Message.getAuthor(message);
+    const author = RecordsWrite.getAuthor(recordsWriteMessage);
     const entryId = await RecordsWrite.getEntryId(author, recordsWriteMessage.descriptor);
     return (entryId === recordsWriteMessage.recordId);
+  }
+
+  /**
+   * Gets the DID of the author of the given message.
+   */
+  public static getAuthor(message: RecordsWriteMessage): string | undefined {
+    let author;
+
+    if (message.authorization.authorDelegatedGrant !== undefined) {
+      author = Message.getSigner(message.authorization.authorDelegatedGrant);
+    } else {
+      author = Message.getSigner(message);
+    }
+
+    return author;
   }
 
   /**
@@ -573,14 +772,14 @@ export class RecordsWrite {
     const keyEncryption: EncryptedKey[] = [];
     for (const keyEncryptionInput of encryptionInput.keyEncryptionInputs) {
 
-      if (keyEncryptionInput.derivationScheme ===  KeyDerivationScheme.ProtocolPath && descriptor.protocol === undefined) {
+      if (keyEncryptionInput.derivationScheme === KeyDerivationScheme.ProtocolPath && descriptor.protocol === undefined) {
         throw new DwnError(
           DwnErrorCode.RecordsWriteMissingProtocol,
           '`protocols` encryption scheme cannot be applied to record without the `protocol` property.'
         );
       }
 
-      if (keyEncryptionInput.derivationScheme ===  KeyDerivationScheme.Schemas && descriptor.schema === undefined) {
+      if (keyEncryptionInput.derivationScheme === KeyDerivationScheme.Schemas && descriptor.schema === undefined) {
         throw new DwnError(
           DwnErrorCode.RecordsWriteMissingSchema,
           '`schemas` encryption scheme cannot be applied to record without the `schema` property.'
@@ -609,7 +808,7 @@ export class RecordsWrite {
       // we need to attach the actual public key if derivation scheme is protocol-context,
       // so that the responder to this message is able to encrypt the message/symmetric key using the same protocol-context derived public key,
       // without needing the knowledge of the corresponding private key
-      if (keyEncryptionInput.derivationScheme ===  KeyDerivationScheme.ProtocolContext) {
+      if (keyEncryptionInput.derivationScheme === KeyDerivationScheme.ProtocolContext) {
         encryptedKeyData.derivedPublicKey = keyEncryptionInput.publicKey;
       }
 
@@ -641,53 +840,55 @@ export class RecordsWrite {
   }
 
   /**
-   * Creates the `authorization` property of a RecordsWrite message.
+   * Creates the `signature` property in the `authorization` of a `RecordsWrite` message.
    */
-  public static async createAuthorization(
+  public static async createSignerSignature(input: {
     recordId: string,
     contextId: string | undefined,
     descriptorCid: string,
     attestation: GeneralJws | undefined,
     encryption: EncryptionProperty | undefined,
     signer: Signer,
-    permissionsGrantId: string | undefined,
-  ): Promise<AuthorizationModel> {
-    const authorizationPayload: RecordsWriteAuthorSignaturePayload = {
-      recordId,
-      descriptorCid
-    };
+    delegatedGrantId?: string,
+    permissionsGrantId?: string,
+    protocolRole?: string
+  }): Promise<GeneralJws> {
+    const { recordId, contextId, descriptorCid, attestation, encryption, signer, delegatedGrantId, permissionsGrantId, protocolRole } = input;
 
     const attestationCid = attestation ? await Cid.computeCid(attestation) : undefined;
     const encryptionCid = encryption ? await Cid.computeCid(encryption) : undefined;
 
-    if (contextId !== undefined) { authorizationPayload.contextId = contextId; } // assign `contextId` only if it is defined
-    if (attestationCid !== undefined) { authorizationPayload.attestationCid = attestationCid; } // assign `attestationCid` only if it is defined
-    if (encryptionCid !== undefined) { authorizationPayload.encryptionCid = encryptionCid; } // assign `encryptionCid` only if it is defined
-    if (permissionsGrantId !== undefined) { authorizationPayload.permissionsGrantId = permissionsGrantId; }
-
-    const authorizationPayloadBytes = Encoder.objectToBytes(authorizationPayload);
-
-    const builder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer]);
-    const authorJws = builder.getJws();
-
-    const authorization = {
-      author: authorJws
+    const signaturePayload: RecordsWriteSignaturePayload = {
+      recordId,
+      descriptorCid,
+      contextId,
+      attestationCid,
+      encryptionCid,
+      delegatedGrantId,
+      permissionsGrantId,
+      protocolRole
     };
+    removeUndefinedProperties(signaturePayload);
 
-    return authorization;
+    const signaturePayloadBytes = Encoder.objectToBytes(signaturePayload);
+
+    const builder = await GeneralJwsBuilder.create(signaturePayloadBytes, [signer]);
+    const signature = builder.getJws();
+
+    return signature;
   }
 
   /**
    * Gets the initial write from the given list or record write.
    */
-  public static async getInitialWrite(messages: GenericMessage[]): Promise<RecordsWriteMessage>{
+  public static async getInitialWrite(messages: GenericMessage[]): Promise<RecordsWriteMessage> {
     for (const message of messages) {
       if (await RecordsWrite.isInitialWrite(message)) {
         return message as RecordsWriteMessage;
       }
     }
 
-    throw new Error(`initial write is not found`);
+    throw new DwnError(DwnErrorCode.RecordsWriteGetInitialWriteNotFound, `initial write is not found`);
   }
 
   /**
@@ -710,7 +911,10 @@ export class RecordsWrite {
         const valueInExistingWrite = (existingWriteMessage.descriptor as any)[descriptorPropertyName];
         const valueInNewMessage = (newMessage.descriptor as any)[descriptorPropertyName];
         if (valueInNewMessage !== valueInExistingWrite) {
-          throw new Error(`${descriptorPropertyName} is an immutable property: cannot change '${valueInExistingWrite}' to '${valueInNewMessage}'`);
+          throw new DwnError(
+            DwnErrorCode.RecordsWriteImmutablePropertyChanged,
+            `${descriptorPropertyName} is an immutable property: cannot change '${valueInExistingWrite}' to '${valueInNewMessage}'`
+          );
         }
       }
     }

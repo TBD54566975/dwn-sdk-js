@@ -16,10 +16,10 @@ import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
-import { minimalSleep } from '../../src/utils/time.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
+import { Time } from '../../src/utils/time.js';
 
 import { DidResolver, Dwn, DwnErrorCode, Encoder, Jws } from '../../src/index.js';
 
@@ -83,10 +83,10 @@ export function testProtocolsConfigureHandler(): void {
         const signer1 = Jws.createSigner(author);
         const signer2 = Jws.createSigner(extraRandomPersona);
 
-        const authorizationPayloadBytes = Encoder.objectToBytes(protocolsConfigure.authorizationPayload!);
+        const signaturePayloadBytes = Encoder.objectToBytes(protocolsConfigure.signaturePayload!);
 
-        const jwsBuilder = await GeneralJwsBuilder.create(authorizationPayloadBytes, [signer1, signer2]);
-        message.authorization = { author: jwsBuilder.getJws() };
+        const jwsBuilder = await GeneralJwsBuilder.create(signaturePayloadBytes, [signer1, signer2]);
+        message.authorization = { signature: jwsBuilder.getJws() };
 
         TestStubGenerator.stubDidResolver(didResolver, [author]);
 
@@ -115,18 +115,18 @@ export function testProtocolsConfigureHandler(): void {
           author: alice,
           protocolDefinition,
         });
-        await minimalSleep();
+        await Time.minimalSleep();
         const middleProtocolsConfigure = await TestDataGenerator.generateProtocolsConfigure({
           author: alice,
           protocolDefinition,
         });
 
         // first ProtocolsConfigure
-        const reply1 = await dwn.processMessage(alice.did, middleProtocolsConfigure.message, middleProtocolsConfigure.dataStream);
+        const reply1 = await dwn.processMessage(alice.did, middleProtocolsConfigure.message);
         expect(reply1.status.code).to.equal(202);
 
         // older messages will not overwrite the existing
-        const reply2 = await dwn.processMessage(alice.did, oldProtocolsConfigure.message, oldProtocolsConfigure.dataStream);
+        const reply2 = await dwn.processMessage(alice.did, oldProtocolsConfigure.message);
         expect(reply2.status.code).to.equal(409);
 
         // newer message can overwrite the existing message
@@ -134,7 +134,7 @@ export function testProtocolsConfigureHandler(): void {
           author: alice,
           protocolDefinition,
         });
-        const reply3 = await dwn.processMessage(alice.did, newProtocolsConfigure.message, newProtocolsConfigure.dataStream);
+        const reply3 = await dwn.processMessage(alice.did, newProtocolsConfigure.message);
         expect(reply3.status.code).to.equal(202);
 
         // only the newest protocol should remain
@@ -196,15 +196,15 @@ export function testProtocolsConfigureHandler(): void {
         = messageDataWithCid.sort((messageDataA, messageDataB) => { return lexicographicalCompare(messageDataA.cid, messageDataB.cid); });
 
         // write the protocol with the middle lexicographic value
-        const reply1 = await dwn.processMessage(alice.did, middleProtocolsConfigure.message, middleProtocolsConfigure.dataStream);
+        const reply1 = await dwn.processMessage(alice.did, middleProtocolsConfigure.message);
         expect(reply1.status.code).to.equal(202);
 
         // test that the protocol with the smallest lexicographic value cannot be written
-        const reply2 = await dwn.processMessage(alice.did, lowestProtocolsConfigure.message, lowestProtocolsConfigure.dataStream);
+        const reply2 = await dwn.processMessage(alice.did, lowestProtocolsConfigure.message);
         expect(reply2.status.code).to.equal(409);
 
         // test that the protocol with the largest lexicographic value can be written
-        const reply3 = await dwn.processMessage(alice.did, highestProtocolsConfigure.message, highestProtocolsConfigure.dataStream);
+        const reply3 = await dwn.processMessage(alice.did, highestProtocolsConfigure.message);
         expect(reply3.status.code).to.equal(202);
 
         // test that lower lexicographic protocol message is removed from DB and only the newer protocol message remains
@@ -231,7 +231,7 @@ export function testProtocolsConfigureHandler(): void {
         protocolsConfig.message.descriptor.definition.protocol = 'example.com/';
 
         // Re-create auth because we altered the descriptor after signing
-        protocolsConfig.message.authorization = await Message.signAuthorizationAsAuthor(
+        protocolsConfig.message.authorization = await Message.createAuthorization(
           protocolsConfig.message.descriptor,
           Jws.createSigner(alice)
         );
@@ -255,7 +255,7 @@ export function testProtocolsConfigureHandler(): void {
         protocolsConfig.message.descriptor.definition.types.ask.schema = 'ask';
 
         // Re-create auth because we altered the descriptor after signing
-        protocolsConfig.message.authorization = await Message.signAuthorizationAsAuthor(
+        protocolsConfig.message.authorization = await Message.createAuthorization(
           protocolsConfig.message.descriptor,
           Jws.createSigner(alice)
         );
@@ -284,9 +284,9 @@ export function testProtocolsConfigureHandler(): void {
       describe('event log', () => {
         it('should add event for ProtocolsConfigure', async () => {
           const alice = await DidKeyResolver.generate();
-          const { message, dataStream } = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
+          const { message } = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
 
-          const reply = await dwn.processMessage(alice.did, message, dataStream);
+          const reply = await dwn.processMessage(alice.did, message);
           expect(reply.status.code).to.equal(202);
 
           const events = await eventLog.getEvents(alice.did);
@@ -299,13 +299,13 @@ export function testProtocolsConfigureHandler(): void {
         it('should delete older ProtocolsConfigure events when one is overwritten', async () => {
           const alice = await DidKeyResolver.generate();
           const oldestWrite = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: minimalProtocolDefinition });
-          await minimalSleep();
+          await Time.minimalSleep();
           const newestWrite = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: minimalProtocolDefinition });
 
-          let reply = await dwn.processMessage(alice.did, oldestWrite.message, oldestWrite.dataStream);
+          let reply = await dwn.processMessage(alice.did, oldestWrite.message);
           expect(reply.status.code).to.equal(202);
 
-          reply = await dwn.processMessage(alice.did, newestWrite.message, newestWrite.dataStream);
+          reply = await dwn.processMessage(alice.did, newestWrite.message);
           expect(reply.status.code).to.equal(202);
 
           const events = await eventLog.getEvents(alice.did);

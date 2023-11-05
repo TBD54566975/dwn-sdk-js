@@ -3,14 +3,25 @@
   "published": false,
   "types": {
     "friend": {},
+    "admin": {},
     "chat": {}
   },
   "structure": {
+    "admin": {
+      "$globalRole": true
+    },
     "friend": {
+      "$globalRole": true
+    },
+    "fan": {
       "$globalRole": true
     },
     "chat": {
       "$actions": [
+        {
+          "role": "fan",
+          "can": "read"
+        },
         {
           "role": "friend",
           "can": "write"
@@ -18,6 +29,18 @@
         {
           "role": "friend",
           "can": "read"
+        },
+        {
+          "role": "friend",
+          "can": "query"
+        },
+        {
+          "role": "admin",
+          "can": "update"
+        },
+        {
+          "role": "admin",
+          "can": "delete"
         }
       ]
     }

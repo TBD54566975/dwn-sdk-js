@@ -2,9 +2,9 @@ import type { Signer } from '../types/signer.js';
 import type { PermissionConditions, PermissionScope } from '../types/permissions-types.js';
 import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types/permissions-types.js';
 
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { removeUndefinedProperties } from '../utils/object.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { Time } from '../utils/time.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 export type PermissionsRequestOptions = {
@@ -15,13 +15,14 @@ export type PermissionsRequestOptions = {
   grantedFor: string;
   scope: PermissionScope;
   conditions?: PermissionConditions;
-  authorizationSigner: Signer;
+  signer: Signer;
 };
 
 export class PermissionsRequest extends Message<PermissionsRequestMessage> {
 
   public static async parse(message: PermissionsRequestMessage): Promise<PermissionsRequest> {
-    await validateAuthorizationIntegrity(message);
+    await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+    Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     return new PermissionsRequest(message);
   }
@@ -30,7 +31,7 @@ export class PermissionsRequest extends Message<PermissionsRequestMessage> {
     const descriptor: PermissionsRequestDescriptor = {
       interface        : DwnInterfaceName.Permissions,
       method           : DwnMethodName.Request,
-      messageTimestamp : options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+      messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
       description      : options.description,
       grantedTo        : options.grantedTo,
       grantedBy        : options.grantedBy,
@@ -43,7 +44,7 @@ export class PermissionsRequest extends Message<PermissionsRequestMessage> {
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded
     removeUndefinedProperties(descriptor);
 
-    const auth = await Message.signAuthorizationAsAuthor(descriptor, options.authorizationSigner);
+    const auth = await Message.createAuthorization(descriptor, options.signer);
     const message: PermissionsRequestMessage = { descriptor, authorization: auth };
 
     Message.validateJsonSchema(message);

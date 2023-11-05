@@ -1,0 +1,60 @@
+{
+  "protocol": "http://thread-role.xyz",
+  "published": true,
+  "types": {
+    "thread": {},
+    "participant": {},
+    "admin": {},
+    "chat": {}
+  },
+  "structure": {
+    "thread": {
+      "$actions": [
+        {
+          "role": "thread/participant",
+          "can": "read"
+        }
+      ],
+      "admin": {
+        "$contextRole": true
+      },
+      "participant": {
+        "$contextRole": true,
+        "$actions": [
+          {
+            "role": "thread/participant",
+            "can": "read"
+          },
+          {
+            "role": "thread/participant",
+            "can": "write"
+          }
+        ]
+      },
+      "chat": {
+        "$actions": [
+          {
+            "role": "thread/participant",
+            "can": "read"
+          },
+          {
+            "role": "thread/participant",
+            "can": "write"
+          },
+          {
+            "role": "thread/participant",
+            "can": "query"
+          },
+          {
+            "role": "thread/admin",
+            "can": "update"
+          },
+          {
+            "role": "thread/admin",
+            "can": "delete"
+          }
+        ]
+      }
+    }
+  }
+}

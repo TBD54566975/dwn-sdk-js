@@ -5,6 +5,7 @@ import { Did } from './did.js';
 import { DidIonResolver } from './did-ion-resolver.js';
 import { DidKeyResolver } from './did-key-resolver.js';
 import { MemoryCache } from '../utils/memory-cache.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 /**
  * A DID resolver that by default supports `did:key` and `did:ion` DIDs.
@@ -49,7 +50,7 @@ export class DidResolver {
     const didResolver = this.didResolvers.get(didMethod);
 
     if (!didResolver) {
-      throw new Error(`${didMethod} DID method not supported`);
+      throw new DwnError(DwnErrorCode.DidMethodNotSupported, `${didMethod} DID method not supported`);
     }
 
     // use cached result if exists
@@ -66,7 +67,7 @@ export class DidResolver {
       let errMsg = `Failed to resolve DID ${did}.`;
       errMsg += error ? ` Error: ${error}` : '';
 
-      throw new Error(errMsg);
+      throw new DwnError(DwnErrorCode.DidResolutionFailed, errMsg);
     }
 
     return resolutionResult;

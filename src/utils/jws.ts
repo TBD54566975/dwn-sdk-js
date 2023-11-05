@@ -8,6 +8,7 @@ import isPlainObject from 'lodash/isPlainObject.js';
 import { Encoder } from './encoder.js';
 import { PrivateKeySigner } from './private-key-signer.js';
 import { signatureAlgorithms } from '../jose/algorithms/signing/signature-algorithms.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 
 /**
@@ -39,7 +40,7 @@ export class Jws {
     const signatureAlgorithm = signatureAlgorithms[jwkPublic.crv];
 
     if (!signatureAlgorithm) {
-      throw new Error(`unsupported crv. crv must be one of ${Object.keys(signatureAlgorithms)}`);
+      throw new DwnError(DwnErrorCode.JwsVerifySignatureUnsupportedCrv, `unsupported crv. crv must be one of ${Object.keys(signatureAlgorithms)}`);
     }
 
     const payload = Encoder.stringToBytes(`${signatureEntry.protected}.${base64UrlPayload}`);
@@ -56,11 +57,11 @@ export class Jws {
     try {
       payloadJson = Encoder.base64UrlToObject(jws.payload);
     } catch {
-      throw new Error('payload is not a JSON object');
+      throw new DwnError(DwnErrorCode.JwsDecodePlainObjectPayloadInvalid, 'payload is not a JSON object');
     }
 
     if (!isPlainObject(payloadJson)) {
-      throw new Error('signed payload must be a plain object');
+      throw new DwnError(DwnErrorCode.JwsDecodePlainObjectPayloadInvalid, 'signed payload must be a plain object');
     }
 
     return payloadJson;

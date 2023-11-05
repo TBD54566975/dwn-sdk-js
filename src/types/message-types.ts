@@ -1,3 +1,4 @@
+import type { DelegatedGrantMessage } from './permissions-types.js';
 import type { GeneralJws } from './jws-types.js';
 
 /**
@@ -12,15 +13,35 @@ export type GenericMessage = {
  * The data model for the `authorization` property in a DWN message.
  */
 export type AuthorizationModel = {
-  author: GeneralJws;
+  /**
+   * The signature of the message signer.
+   * NOTE: the signer is not necessarily the logical author of the message (e.g. signer is a delegate).
+   */
+  signature: GeneralJws;
+
+  /**
+   * The optional signature of a DWN owner wishing store a message authored by another entity.
+   */
+  ownerSignature?: GeneralJws;
+
+  /**
+   * The delegated grant invoked by a delegate, if the message is signed by a delegate.
+   */
+  authorDelegatedGrant?: DelegatedGrantMessage;
 };
 
 /**
  * Type of common decoded `authorization`property payload.
  */
-export type BaseAuthorizationPayload = {
+export type GenericSignaturePayload = {
   descriptorCid: string;
   permissionsGrantId?: string;
+
+  /**
+   * CID of a `PermissionsGrant` DWN message with `delegated` set to `true`.
+   */
+  delegatedGrantId?: string;
+
   /**
    * Used in the Records interface to authorize role-authorized actions for protocol records.
    */

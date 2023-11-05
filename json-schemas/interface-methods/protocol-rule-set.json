@@ -43,7 +43,9 @@
               "can": {
                 "type": "string",
                 "enum": [
+                  "delete",
                   "read",
+                  "update",
                   "write"
                 ]
               }
@@ -62,7 +64,10 @@
               "can": {
                 "type": "string",
                 "enum": [
+                  "delete",
+                  "query",
                   "read",
+                  "update",
                   "write"
                 ]
               }
@@ -73,6 +78,10 @@
     },
     "$globalRole": {
       "$comment": "When `true`, this turns a record into `role` that may be used across contexts",
+      "type": "boolean"
+    },
+    "$contextRole": {
+      "$comment": "When `true`, this turns a record into `role` that may be used within a context",
       "type": "boolean"
     }
   },

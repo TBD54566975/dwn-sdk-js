@@ -1,22 +1,22 @@
-import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { RecordsWrite } from './records-write.js';
 import type { Signer } from '../types/signer.js';
 import type { RecordsFilter , RecordsReadDescriptor, RecordsReadMessage } from '../types/records-types.js';
 
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Message } from '../core/message.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Records } from '../utils/records.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { Time } from '../utils/time.js';
+import { validateMessageSignatureIntegrity } from '../core/auth.js';
+import { DwnError, DwnErrorCode } from '../index.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type RecordsReadOptions = {
   filter: RecordsFilter;
-  date?: string;
-  authorizationSigner?: Signer;
+  messageTimestamp?: string;
+  signer?: Signer;
   permissionsGrantId?: string;
   /**
    * Used when authorizing protocol records.
@@ -29,8 +29,9 @@ export class RecordsRead extends Message<RecordsReadMessage> {
 
   public static async parse(message: RecordsReadMessage): Promise<RecordsRead> {
     if (message.authorization !== undefined) {
-      await validateAuthorizationIntegrity(message as GenericMessage);
+      await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     }
+    Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     const recordsRead = new RecordsRead(message);
     return recordsRead;
@@ -44,22 +45,22 @@ export class RecordsRead extends Message<RecordsReadMessage> {
    * @throws {DwnError} when a combination of required RecordsReadOptions are missing
    */
   public static async create(options: RecordsReadOptions): Promise<RecordsRead> {
-    const { filter, authorizationSigner, permissionsGrantId, protocolRole } = options;
-    const currentTime = getCurrentTimeInHighPrecision();
+    const { filter, signer, permissionsGrantId, protocolRole } = options;
+    const currentTime = Time.getCurrentTimestamp();
 
     const descriptor: RecordsReadDescriptor = {
       interface        : DwnInterfaceName.Records,
       method           : DwnMethodName.Read,
       filter           : Records.normalizeFilter(filter),
-      messageTimestamp : options.date ?? currentTime,
+      messageTimestamp : options.messageTimestamp ?? currentTime,
     };
 
     removeUndefinedProperties(descriptor);
 
     // only generate the `authorization` property if signature input is given
     let authorization = undefined;
-    if (authorizationSigner !== undefined) {
-      authorization = await Message.signAuthorizationAsAuthor(descriptor, authorizationSigner, { permissionsGrantId, protocolRole });
+    if (signer !== undefined) {
+      authorization = await Message.createAuthorization(descriptor, signer, { permissionsGrantId, protocolRole });
     }
     const message: RecordsReadMessage = { descriptor, authorization };
 
@@ -80,13 +81,12 @@ export class RecordsRead extends Message<RecordsReadMessage> {
     } else if (this.author !== undefined && this.author === descriptor.recipient) {
       // The recipient of a message may always read it
       return;
-    } else if (descriptor.protocol !== undefined) {
-      // All protocol RecordsWrites must go through protocol auth, because protocolPath, contextId, and record type must be validated
-      await ProtocolAuthorization.authorize(tenant, this, newestRecordsWrite, messageStore);
-    } else if (this.author !== undefined && this.authorizationPayload?.permissionsGrantId !== undefined) {
+    } else if (this.author !== undefined && this.signaturePayload!.permissionsGrantId !== undefined) {
       await RecordsGrantAuthorization.authorizeRead(tenant, this, newestRecordsWrite, this.author, messageStore);
+    } else if (descriptor.protocol !== undefined) {
+      await ProtocolAuthorization.authorizeRead(tenant, this, newestRecordsWrite, messageStore);
     } else {
-      throw new Error('message failed authorization');
+      throw new DwnError(DwnErrorCode.RecordsReadAuthorizationFailed, 'message failed authorization');
     }
   }
 }

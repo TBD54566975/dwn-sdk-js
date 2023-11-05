@@ -6,6 +6,7 @@ import { CID } from 'multiformats/cid';
 import { importer } from 'ipfs-unixfs-importer';
 import { MemoryBlockstore } from 'blockstore-core';
 import { sha256 } from 'multiformats/hashes/sha2';
+import { DwnError, DwnErrorCode } from '../index.js';
 
 // a map of all supported CID hashing algorithms. This map is used to select the appropriate hasher
 // when generating a CID to compare against a provided CID
@@ -40,12 +41,12 @@ export class Cid {
   ): Promise<string> {
     const codec = codecs[codecCode];
     if (!codec) {
-      throw new Error(`codec [${codecCode}] not supported`);
+      throw new DwnError(DwnErrorCode.ComputeCidCodecNotSupported, `codec [${codecCode}] not supported`);
     }
 
     const hasher = hashers[multihashCode];
     if (!hasher) {
-      throw new Error(`multihash code [${multihashCode}] not supported`);
+      throw new DwnError(DwnErrorCode.ComputeCidMultihashNotSupported, `multihash code [${multihashCode}] not supported`);
     }
 
     const payloadBytes = codec.encode(payload);
@@ -62,11 +63,11 @@ export class Cid {
     const cid: CID = CID.parse(str).toV1();
 
     if (!codecs[cid.code]) {
-      throw new Error(`codec [${cid.code}] not supported`);
+      throw new DwnError(DwnErrorCode.ParseCidCodecNotSupported, `codec [${cid.code}] not supported`);
     }
 
     if (!hashers[cid.multihash.code]) {
-      throw new Error(`multihash code [${cid.multihash.code}] not supported`);
+      throw new DwnError(DwnErrorCode.ParseCidMultihashNotSupported, `multihash code [${cid.multihash.code}] not supported`);
     }
 
     return cid;
