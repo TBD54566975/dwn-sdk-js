@@ -1,9 +1,6 @@
-import type { GeneralJws } from '../types/jws-types.js';
-import type { Signer } from '../types/signer.js';
-import type { AuthorizationModel, Descriptor, GenericMessage, GenericSignaturePayload } from '../types/message-types.js';
-
 import { Cid } from '../utils/cid.js';
 import { Encoder } from '../index.js';
+import type { GeneralJws } from '../types/jws-types.js';
 import { GeneralJwsBuilder } from '../jose/jws/general/builder.js';
 import { Jws } from '../utils/jws.js';
 import { lexicographicalCompare } from '../utils/string.js';
@@ -11,7 +8,7 @@ import { removeUndefinedProperties } from '../utils/object.js';
 import type { Signer } from '../types/signer.js';
 import { validateJsonSchema } from '../schema-validator.js';
 
-import type { AuthorizationModel, BaseAuthorizationPayload, Descriptor, GenericMessage } from '../types/message-types.js';
+import type { AuthorizationModel, Descriptor, GenericMessage, GenericSignaturePayload } from '../types/message-types.js';
 
 export enum DwnInterfaceName {
   Events = 'Events',

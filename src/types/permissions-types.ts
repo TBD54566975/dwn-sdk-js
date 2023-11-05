@@ -1,5 +1,5 @@
 import type { EventType } from './event-types.js';
-import type { GenericMessage } from './message-types.js';
+
 import type { AuthorizationModel, GenericMessage } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../index.js';
 

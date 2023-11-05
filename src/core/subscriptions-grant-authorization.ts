@@ -16,9 +16,12 @@ export class SubscriptionsGrantAuthorization {
     tenant: string,
     incomingMessage: SubscriptionRequest,
     author: string,
+    permissionGrantId: string,
     messageStore: MessageStore,
   ): Promise<void> {
-    const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, author, messageStore);
+    const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(
+      tenant, incomingMessage,
+      author, permissionGrantId, messageStore);
     SubscriptionsGrantAuthorization.verifyScope(incomingMessage, permissionsGrantMessage);
   }
 
@@ -32,13 +35,16 @@ export class SubscriptionsGrantAuthorization {
     tenant: string,
     incomingMessage: SubscriptionRequest,
     event: EventMessage,
+    permissionGrantId: string,
     messageStore: MessageStore,
     author: string,
   ): Promise<void> {
     // 1. Get Grant from initial Subscription Request. Check if it's still valid.
     // Problem : Needs to check NEW message time.
     incomingMessage.message.descriptor.messageTimestamp = event.message.descriptor.messageTimestamp; // HACK!
-    const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(tenant, incomingMessage, author, messageStore);
+    const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(
+      tenant, incomingMessage, author,
+      permissionGrantId, messageStore);
     // 2. Check When Grant Was Valid
     // 3. Check Event is Valid within Grant.
     // 4. Verify Scope
@@ -66,8 +72,8 @@ export class SubscriptionsGrantAuthorization {
   }
 
   /**
-      * @param subscriptionRequest The source of the record being authorized.
-      */
+    *  @param subscriptionRequest The source of the record being authorized.
+    */
   private static verifyScope(
     subscriptionRequest: SubscriptionRequest,
     permissionsGrantMessage: PermissionsGrantMessage,

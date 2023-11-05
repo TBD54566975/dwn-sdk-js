@@ -74,8 +74,7 @@ export function testSubscriptionRequestHandler(): void {
 
         const subscriptionReply = await dwn.handleSubscriptionRequest(
           alice.did,
-          subscriptionRequest.message
-        );
+          subscriptionRequest.message );
         expect(subscriptionReply.status.code).to.equal(
           200,
           subscriptionReply.status.detail
@@ -126,9 +125,7 @@ export function testSubscriptionRequestHandler(): void {
           },
         });
         const subscriptionReply = await dwn.handleSubscriptionRequest(
-          bob.did,
-          subscriptionRequest.message
-        );
+          bob.did, subscriptionRequest.message);
         expect(subscriptionReply.status.code).to.equal(
           401,
           subscriptionReply.status.detail
@@ -168,10 +165,7 @@ export function testSubscriptionRequestHandler(): void {
           permissionsGrantId : await Message.getCid(permissionsGrant.message),
         });
 
-        const subscriptionReply = await dwn.handleSubscriptionRequest(
-          alice.did,
-          subscriptionRequest.message
-        );
+        const subscriptionReply = await dwn.handleSubscriptionRequest(alice.did, subscriptionRequest.message);
         expect(subscriptionReply.status.code).to.equal(
           200,
           subscriptionReply.status.detail
@@ -240,10 +234,7 @@ export function testSubscriptionRequestHandler(): void {
           signer             : Jws.createSigner(bob),
           permissionsGrantId : await Message.getCid(permissionsGrant.message),
         });
-        const subscriptionReply = await dwn.handleSubscriptionRequest(
-          alice.did,
-          subscriptionRequest.message
-        );
+        const subscriptionReply = await dwn.handleSubscriptionRequest(alice.did,subscriptionRequest.message);
         expect(subscriptionReply.status.code).to.equal(
           200,
           subscriptionReply.status.detail

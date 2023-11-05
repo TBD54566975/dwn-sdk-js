@@ -1,13 +1,13 @@
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { removeUndefinedProperties } from '../utils/object.js';
-import type { GenericMessage, Signer } from '../index.js';
-
+import { Time } from '../utils/time.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+
 import type {
   EventDescriptor,
   EventMessageI,
   EventsCreateDescriptor,
 } from '../types/event-types.js';
+import { type GenericMessage, type Signer } from '../index.js';
 
 export type EventCreateOptions = {
   descriptor: EventDescriptor;
@@ -23,7 +23,7 @@ export class EventMessage extends Message<EventMessageI<any>> {
       interface : DwnInterfaceName.Events,
       method    : DwnMethodName.Create,
       messageTimestamp:
-        options.messageTimestamp ?? getCurrentTimeInHighPrecision(),
+        options.messageTimestamp ?? Time.getCurrentTimestamp(),
       messageId       : options.messageId,
       eventDescriptor : options.descriptor,
     };

@@ -19,10 +19,7 @@ export class GrantAuthorization {
     permissionsGrantId: string,
     messageStore: MessageStore,
   ): Promise<PermissionsGrantMessage> {
-    const permissionsGrantId: string = incomingMessage.authorizationPayload!.permissionsGrantId!;
-
     const incomingMessageDescriptor = incomingMessage.message.descriptor;
-
     // Fetch grant
     const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, permissionsGrantId);
 

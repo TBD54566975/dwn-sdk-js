@@ -1,11 +1,11 @@
+import { GrantAuthorization } from './grant-authorization.js';
 import type { MessageStore } from '../types/message-store.js';
+import { PermissionsConditionPublication } from '../types/permissions-types.js';
 import type { RecordsRead } from '../interfaces/records-read.js';
 import type { RecordsWrite } from '../interfaces/records-write.js';
-import type { PermissionsGrantMessage, RecordsPermissionScope } from '../types/permissions-types.js';
 
-import { GrantAuthorization } from './grant-authorization.js';
-import { PermissionsConditionPublication } from '../types/permissions-types.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
+import type { PermissionsGrantMessage, RecordsPermissionScope } from '../types/permissions-types.js';
 
 export class RecordsGrantAuthorization {
   /**

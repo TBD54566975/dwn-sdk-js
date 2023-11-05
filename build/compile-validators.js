@@ -9,17 +9,14 @@
  * - to reduce the start-up time - the validation and compilation of schemas will happen during build time.
  */
 
-import fs from "node:fs";
-import path from "node:path";
-import url from "node:url";
+import fs from 'node:fs';
+import path from 'node:path';
+import url from 'node:url';
 
-import Ajv from "ajv";
-import mkdirp from "mkdirp";
-import standaloneCode from "ajv/dist/standalone/index.js";
+import Ajv from 'ajv';
+import mkdirp from 'mkdirp';
+import standaloneCode from 'ajv/dist/standalone/index.js';
 
-import SnapshotsCreate from "../json-schemas/interface-methods/snapshots-create.json" assert { type: "json" };
-import SubscriptionsRequest from "../json-schemas/interface-methods/subscriptions-request.json" assert { type: "json" };
-import EventsCreate from "../json-schemas/interface-methods/events-create.json" assert { type: "json" };
 import Authorization from '../json-schemas/authorization.json' assert { type: 'json' };
 import AuthorizationOwner from '../json-schemas/authorization-owner.json' assert { type: 'json' };
 import Definitions from '../json-schemas/definitions.json' assert { type: 'json' };
@@ -47,6 +44,7 @@ import RecordsRead from '../json-schemas/interface-methods/records-read.json' as
 import RecordsWrite from '../json-schemas/interface-methods/records-write.json' assert { type: 'json' };
 import RecordsWriteSignaturePayload from '../json-schemas/signature-payloads/records-write-signature-payload.json' assert { type: 'json' };
 import RecordsWriteUnidentified from '../json-schemas/interface-methods/records-write-unidentified.json' assert { type: 'json' };
+import SubscriptionsRequest from '../json-schemas/interface-methods/subscriptions-request.json' assert { type: 'json' };
 
 const schemas = {
   Authorization,
@@ -56,7 +54,6 @@ const schemas = {
   RecordsWrite,
   RecordsWriteUnidentified,
   EventsGet,
-  EventsCreate,
   Definitions,
   GeneralJwk,
   GeneralJws,
@@ -74,12 +71,9 @@ const schemas = {
   ProtocolsQuery,
   RecordsRead,
   RecordsFilter,
-  SubscriptionsRequest,
   PublicJwk,
-  SnapshotsCreate,
-  BaseAuthorizationPayload,
-  RecordsWriteAuthorSignaturePayload,
   GenericSignaturePayload,
+  SubscriptionsRequest,
   RecordsWriteSignaturePayload
 };
 
@@ -91,10 +85,7 @@ for (const schemaName in schemas) {
 
 const moduleCode = standaloneCode(ajv);
 
-const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
+const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
-await mkdirp(path.join(__dirname, "../generated"));
-fs.writeFileSync(
-  path.join(__dirname, "../generated/precompiled-validators.js"),
-  moduleCode
-);
+await mkdirp(path.join(__dirname, '../generated'));
+fs.writeFileSync(path.join(__dirname, '../generated/precompiled-validators.js'), moduleCode);

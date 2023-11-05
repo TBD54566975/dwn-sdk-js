@@ -1,12 +1,10 @@
 import type { EventMessage } from './event-create.js';
 import type { EventMessageI } from '../types/event-types.js';
-import type { GenericMessage } from '../types/message-types.js';
-import { getCurrentTimeInHighPrecision } from '../utils/time.js';
 import { Message } from '../core/message.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Subscriptions } from '../utils/subscriptions.js';
 import { SubscriptionsGrantAuthorization } from '../core/subscriptions-grant-authorization.js';
-import { validateAuthorizationIntegrity } from '../core/auth.js';
+import { Time } from '../utils/time.js';
 
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 import type { MessageStore, Signer } from '../index.js';
@@ -28,7 +26,8 @@ export class SubscriptionRequest extends Message<SubscriptionRequestMessage> {
     message: SubscriptionRequestMessage
   ): Promise<SubscriptionRequest> {
     if (message.authorization !== undefined) {
-      await validateAuthorizationIntegrity(message as GenericMessage);
+      // Add below back in
+      // await validateAuthorizationIntegrity(message as GenericMessage);
     }
     const subscriptionRequest = new SubscriptionRequest(message);
     return subscriptionRequest;
@@ -42,8 +41,8 @@ export class SubscriptionRequest extends Message<SubscriptionRequestMessage> {
   public static async create(
     options: SubscriptionRequestOptions
   ): Promise<SubscriptionRequest> {
-    const { filter, permissionsGrantId } = options;
-    const currentTime = getCurrentTimeInHighPrecision();
+    const { filter } = options;
+    const currentTime = Time.getCurrentTimestamp();
 
     const descriptor: SubscriptionsRequestDescriptor = {
       interface        : DwnInterfaceName.Subscriptions,
@@ -55,13 +54,15 @@ export class SubscriptionRequest extends Message<SubscriptionRequestMessage> {
     removeUndefinedProperties(descriptor);
 
     // only generate the `authorization` property if signature input is given
-    let authorization = undefined;
+    // let authorization = undefined;
+
     if (options.signer !== undefined) {
-      authorization = await Message.signAuthorizationAsAuthor(
-        descriptor,
-        options.signer,
-        { permissionsGrantId }
-      );
+      // Need to fix this
+      //  authorization = await Message.(
+      //   descriptor,
+      //  options.signer,
+      // { permissionsGrantId }
+      //);
     }
     const message: SubscriptionRequestMessage = { descriptor, authorization };
     Message.validateJsonSchema(message);
@@ -78,12 +79,13 @@ export class SubscriptionRequest extends Message<SubscriptionRequestMessage> {
       return;
     } else if (
       this.author !== undefined &&
-      this.authorizationPayload?.permissionsGrantId !== undefined
+      this.signaturePayload?.permissionsGrantId !== undefined
     ) {
       await SubscriptionsGrantAuthorization.authorizeSubscribe(
         tenant,
         this,
         this.author,
+        this.signaturePayload?.permissionsGrantId,
         messageStore
       );
     } else {
@@ -100,12 +102,13 @@ export class SubscriptionRequest extends Message<SubscriptionRequestMessage> {
       return;
     } else if (
       this.author !== undefined &&
-      this.authorizationPayload?.permissionsGrantId !== undefined
+      this.signaturePayload?.permissionsGrantId !== undefined
     ) {
       await SubscriptionsGrantAuthorization.authorizeEvent(
         tenant,
         this,
         event,
+        this.signaturePayload?.permissionsGrantId,
         messageStore,
         this.author
       );
