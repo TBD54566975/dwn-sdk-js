@@ -82,12 +82,14 @@ export class RecordsQuery {
   }
 
   public static async parse(message: RecordsQueryMessage): Promise<RecordsQuery> {
-    let authorizationPayload;
+    let signaturePayload;
     if (message.authorization !== undefined) {
-      authorizationPayload = await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+      signaturePayload = await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     }
 
-    if (authorizationPayload?.protocolRole !== undefined) {
+    Records.validateDelegatedGrantReferentialIntegrity(message, signaturePayload);
+
+    if (signaturePayload?.protocolRole !== undefined) {
       if (message.descriptor.filter.protocolPath === undefined) {
         throw new DwnError(
           DwnErrorCode.RecordsQueryFilterMissingRequiredProperties,

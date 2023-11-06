@@ -352,7 +352,7 @@ describe('RecordsWrite', () => {
       delete recordsWrite.message.authorization!.authorDelegatedGrant; // intentionally remove `authorDelegatedGrant`
       const parsePromise = RecordsWrite.parse(recordsWrite.message);
 
-      await expect(parsePromise).to.be.rejectedWith(DwnErrorCode.RecordsWriteValidateIntegrityDelegatedGrantAndIdExistenceMismatch);
+      await expect(parsePromise).to.be.rejectedWith(DwnErrorCode.RecordsValidateIntegrityDelegatedGrantAndIdExistenceMismatch);
     });
   });
 
