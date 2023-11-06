@@ -61,7 +61,7 @@ export class EventLogLevel implements EventLog {
     const cidLogIndex = await this.messageCidPartition(tenant);
     await cidLogIndex.put(messageCid, watermark);
 
-    await this.index.put(tenant, watermark, { messageCid, watermark }, indexes, { watermark });
+    await this.index.put(tenant, watermark, { messageCid, watermark }, { ...indexes, watermark });
     return watermark;
   }
 
