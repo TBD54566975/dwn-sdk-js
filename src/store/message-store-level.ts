@@ -1,5 +1,5 @@
 
-import type { RecordsWriteMessage } from '../index.js';
+import type { RecordsWriteMessage } from '../types/records-types.js';
 import type { Filter, GenericMessage, MessageSort, Pagination } from '../types/message-types.js';
 import type { MessageStore, MessageStoreOptions } from '../types/message-store.js';
 
@@ -8,13 +8,14 @@ import * as cbor from '@ipld/dag-cbor';
 
 import { ArrayUtility } from '../utils/array.js';
 import { BlockstoreLevel } from './blockstore-level.js';
+import { Cid } from '../utils/cid.js';
 import { CID } from 'multiformats/cid';
 import { createLevelDatabase } from './level-wrapper.js';
 import { executeUnlessAborted } from '../utils/abort.js';
 import { IndexLevel } from './index-level.js';
+import { Message } from '../core/message.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { SortOrder } from '../types/message-types.js';
-import { Cid, Message } from '../index.js';
 
 
 /**

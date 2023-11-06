@@ -1,5 +1,5 @@
 import * as precompiledValidators from '../generated/precompiled-validators.js';
-import { DwnError, DwnErrorCode } from './index.js';
+import { DwnError, DwnErrorCode } from './core/dwn-error.js';
 
 /**
  * Validates the given payload using JSON schema keyed by the given schema name. Throws if the given payload fails validation.

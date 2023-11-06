@@ -1,4 +1,4 @@
-import type { MessageStore } from '../index.js';
+import type { MessageStore } from '../types//message-store.js';
 import type { RecordsWrite } from './records-write.js';
 import type { Signer } from '../types/signer.js';
 import type { RecordsDeleteDescriptor, RecordsDeleteMessage } from '../types/records-types.js';
@@ -8,7 +8,7 @@ import { Message } from '../core/message.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Time } from '../utils/time.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
-import { DwnError, DwnErrorCode } from '../index.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type RecordsDeleteOptions = {

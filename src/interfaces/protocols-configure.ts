@@ -3,7 +3,7 @@ import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureDescriptor,
 
 import { Time } from '../utils/time.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
-import { DwnError, DwnErrorCode } from '../index.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 

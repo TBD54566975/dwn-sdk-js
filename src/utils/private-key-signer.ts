@@ -2,7 +2,7 @@ import type { PrivateJwk } from '../types/jose-types.js';
 import type { Signer } from '../types/signer.js';
 
 import { signatureAlgorithms } from '../jose/algorithms/signing/signature-algorithms.js';
-import { DwnError, DwnErrorCode } from '../index.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 /**
  * Input to `PrivateKeySigner` constructor.

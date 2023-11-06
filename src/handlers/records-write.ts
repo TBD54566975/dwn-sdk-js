@@ -1,16 +1,21 @@
+import type { DataStore } from '../types/data-store.js';
+import type { DidResolver } from '../did/did-resolver.js';
 import type { EventLog } from '../types/event-log.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
+import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
-import type { DataStore, DidResolver, MessageStore } from '../index.js';
 import type { RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
+import { Cid } from '../utils/cid.js';
+import { DataStream } from '../utils/data-stream.js';
+import { DwnConstant } from '../core/dwn-constant.js';
+import { Encoder } from '../utils/encoder.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { StorageController } from '../store/storage-controller.js';
-import { Cid, DataStream, DwnConstant, Encoder } from '../index.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 

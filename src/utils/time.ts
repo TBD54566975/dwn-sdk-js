@@ -1,5 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
-import { DwnError, DwnErrorCode } from '../index.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 /**
  * Time related utilities.

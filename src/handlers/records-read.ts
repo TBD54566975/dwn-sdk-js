@@ -1,16 +1,21 @@
+import type { DataStore } from '../types/data-store.js';
+import type { DidResolver } from '../did/did-resolver.js';
+import type { Filter } from '../types/message-types.js';
+import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
-import type { DataStore, DidResolver, Filter, MessageStore } from '../index.js';
 import type { RecordsReadMessage, RecordsReadReply } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
+import { DataStream } from '../utils/data-stream.js';
 import { DwnInterfaceName } from '../core/message.js';
+import { Encoder } from '../utils/encoder.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { Records } from '../utils/records.js';
 import { RecordsRead } from '../interfaces/records-read.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
-import { DataStream, DwnError, DwnErrorCode, Encoder } from '../index.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 export class RecordsReadHandler implements MethodHandler {
 

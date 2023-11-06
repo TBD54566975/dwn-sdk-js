@@ -4,7 +4,7 @@ import type { MessagesGetDescriptor, MessagesGetMessage } from '../types/message
 import { Cid } from '../utils/cid.js';
 import { Time } from '../utils/time.js';
 import { validateMessageSignatureIntegrity } from '../core/auth.js';
-import { DwnError, DwnErrorCode } from '../index.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 
 export type MessagesGetOptions = {

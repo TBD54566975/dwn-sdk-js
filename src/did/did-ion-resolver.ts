@@ -1,5 +1,5 @@
 import type { DidMethodResolver, DidResolutionResult } from './did-resolver.js';
-import { DwnError, DwnErrorCode } from '../index.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 import crossFetch from 'cross-fetch';
 // supports fetch in: node, browsers, and browser extensions.

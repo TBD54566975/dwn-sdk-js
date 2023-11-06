@@ -4,7 +4,7 @@ import type { Signer } from '../types/signer.js';
 import type { AuthorizationModel, Descriptor, GenericMessage, GenericSignaturePayload } from '../types/message-types.js';
 
 import { Cid } from '../utils/cid.js';
-import { Encoder } from '../index.js';
+import { Encoder } from '../utils/encoder.js';
 import { GeneralJwsBuilder } from '../jose/jws/general/builder.js';
 import { Jws } from '../utils/jws.js';
 import { lexicographicalCompare } from '../utils/string.js';
