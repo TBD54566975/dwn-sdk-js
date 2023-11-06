@@ -2,7 +2,6 @@ import { ArrayUtility } from '../../src/utils/array.js';
 import { createLevelDatabase } from '../../src/store/level-wrapper.js';
 import { IndexLevel } from '../../src/store/index-level.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
-import { monotonicFactory } from 'ulidx';
 import { SortDirection } from '../../src/index.js';
 import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
@@ -16,7 +15,6 @@ chai.use(chaiAsPromised);
 
 describe('IndexLevel', () => {
   let testIndex: IndexLevel<string>;
-  const ulidFactory = monotonicFactory();
   const tenant = 'did:alice:index-test';
 
   describe('put', () => {
@@ -36,125 +34,98 @@ describe('IndexLevel', () => {
       await testIndex.close();
     });
 
-    it('fails to index with no sorting properties', async () => {
-      const id = uuid();
+    describe('fails to index with no indexable properties', () => {
+      it('ignores empty nested arrays', async () => {
+        const id = uuid();
+        const failedIndexPromise = testIndex.put(tenant, id, id, {
+          empty: [ [] ]
+        });
+        await expect(failedIndexPromise).to.eventually.be.rejectedWith('must include at least one indexable property');
+      });
 
-      let failedIndex = testIndex.put(tenant, id, id, {
-        foo: 'foo'
-      }, { nested: {} });
+      it('ignores empty index object', async () => {
+        const id = uuid();
 
-      await expect(failedIndex).to.eventually.be.rejectedWith('must include at least one sorted index');
+        let failedIndexPromise = testIndex.put(tenant, id, id, {});
+        await expect(failedIndexPromise).to.eventually.be.rejectedWith('must include at least one indexable property');
 
-      failedIndex = testIndex.put(tenant, id, id, {
-        foo: 'foo'
-      }, { sort: [ [] ] });
+        failedIndexPromise = testIndex.put(tenant, id, id, {
+          foo : {},
+          bar : {
+            baz: {},
+          }
+        });
+        await expect(failedIndexPromise).to.eventually.be.rejectedWith('must include at least one indexable property');
+      });
 
-      await expect(failedIndex).to.eventually.be.rejectedWith('must include at least one sorted index');
-
-      const keys = await ArrayUtility.fromAsyncGenerator(testIndex.db.keys());
-      expect(keys.length).to.equal(0);
-
-      failedIndex = testIndex.put(tenant, id, id, {
-        foo: 'foo'
-      }, { sort: id });
-      await expect(failedIndex).to.eventually.not.be.rejected;
+      it('ignores undefined indexes', async () => {
+        const id = uuid();
+        const failedIndexPromise = testIndex.put(tenant, id, id, {
+          some: {
+            undefined: {
+              value: undefined,
+            }
+          }
+        });
+        await expect(failedIndexPromise).to.eventually.be.rejectedWith('must include at least one indexable property');
+      });
     });
 
-    it('fails to index with no indexable properties ', async () => {
+    it('successfully indexes', async () => {
       const id = uuid();
-
-      let failedIndex = testIndex.put(tenant, id, id, {}, { id });
-      await expect(failedIndex).to.eventually.be.rejectedWith('must include at least one indexable property');
-
-      failedIndex = testIndex.put(tenant, id, id, {
-        empty: [ [] ]
-      }, { id });
-      await expect(failedIndex).to.eventually.be.rejectedWith('must include at least one indexable property');
-
-      failedIndex = testIndex.put(tenant, id, id, {
-        foo : {},
-        bar : {
-          baz: {},
-        }
-      }, { id });
-
-      await expect(failedIndex).to.eventually.be.rejectedWith('must include at least one indexable property');
-
-      const keys = await ArrayUtility.fromAsyncGenerator(testIndex.db.keys());
-      expect(keys.length).to.equal(0);
-
-      failedIndex = testIndex.put(tenant, id, id, {
+      const successfulIndex = testIndex.put(tenant, id, id, {
+        id,
         foo : 'foo',
         bar : {
           baz: 'baz'
         }
-      }, { id });
-      await expect(failedIndex).to.eventually.not.be.rejected;
+      });
+      await expect(successfulIndex).to.eventually.not.be.rejected;
+      const results = await testIndex.query(tenant, [{ id: id }], { sortProperty: 'id' });
+      expect(results[0]).to.equal(id);
     });
 
     it('flattens nested indexes', async () => {
       const id = uuid();
 
       await testIndex.put(tenant, id, id, {
+        id,
         nested: {
           data: true
         }
-      }, { id });
+      });
 
       const id2 = uuid();
-      await testIndex.put(tenant, id2, id2, { notNested: true }, { id: id2 });
+      await testIndex.put(tenant, id2, id2, { notNested: true, id });
 
       const results = await testIndex.query(tenant, [{ 'nested.data': true }], { sortProperty: 'id' });
       expect(results.length).to.equal(1);
       expect(results[0]).to.equal(id);
     });
 
-    it('ignores undefined indexes', async () => {
-      const id = uuid();
-      const index = {
-        some: {
-          undefined: {
-            value: undefined,
-          }
-        }
-      };
-      const failedIndex = testIndex.put(tenant, id, id, index, { id });
-      await expect(failedIndex).to.eventually.be.rejectedWith('must include at least one indexable property');
-    });
-
-    it('ignores undefined sort indexes', async () => {
-      const id = uuid();
-      const index = {
-        id: id,
-      };
-      const failedIndex = testIndex.put(tenant, id, id, index, { sort: undefined });
-      await expect(failedIndex).to.eventually.be.rejectedWith('must include at least one sorted index');
-    });
-
-    it('adds 1 key per sorted property, aside from id', async () => {
+    it('adds one index key per property, aside from id', async () => {
       const id = uuid();
       const dateCreated = new Date().toISOString();
 
       await testIndex.put(tenant, id, id, {
-        'a' : 'b',
-        'c' : 'd',
-        dateCreated,
-      }, { dateCreated });
+        'a' : 'b', // 1 key
+        'c' : 'd', // 1 key
+        dateCreated, // 1 key
+      });
 
       let keys = await ArrayUtility.fromAsyncGenerator(testIndex.db.keys());
-      expect(keys.length).to.equal(2);
+      expect(keys.length).to.equal(4);
 
       await testIndex.clear();
 
-      const watermark = ulidFactory();
       await testIndex.put(tenant, id, id, {
-        'a' : 'b',
-        'c' : 'd',
-        dateCreated,
-      }, { dateCreated, watermark });
-
+        'a' : 'b', // 1 key
+        'c' : 'd', // 1 ke
+        'e' : 'f', // 1 key
+        dateCreated, // 1 key
+      });
       keys = await ArrayUtility.fromAsyncGenerator(testIndex.db.keys());
-      expect(keys.length).to.equal(3);
+      expect(keys.length).to.equal(5);
     });
 
     it('should not put anything if aborted beforehand', async () => {
@@ -163,10 +134,11 @@ describe('IndexLevel', () => {
 
       const id = uuid();
       const index = {
+        id,
         foo: 'bar'
       };
 
-      const indexPromise = testIndex.put(tenant, id, id, index, { id }, { signal: controller.signal });
+      const indexPromise = testIndex.put(tenant, id, id, index, { signal: controller.signal });
       await expect(indexPromise).to.eventually.rejectedWith('reason');
 
       const result = await testIndex.query(tenant, [{ foo: 'bar' }], { sortProperty: 'id' });
@@ -194,25 +166,28 @@ describe('IndexLevel', () => {
     it('works', async () =>{
       const id1 = uuid();
       const doc1 = {
+        id  : id1,
         'a' : 'b',
         'c' : 'd'
       };
 
       const id2 = uuid();
       const doc2 = {
+        id  : id2,
         'a' : 'c',
         'c' : 'd'
       };
 
       const id3 = uuid();
       const doc3 = {
+        id  : id3,
         'a' : 'b',
         'c' : 'e'
       };
 
-      await testIndex.put(tenant, id1, id1, doc1, { id: id1 });
-      await testIndex.put(tenant, id2, id2, doc2, { id: id2 });
-      await testIndex.put(tenant, id3, id3, doc3, { id: id3 });
+      await testIndex.put(tenant, id1, id1, doc1);
+      await testIndex.put(tenant, id2, id2, doc2);
+      await testIndex.put(tenant, id3, id3, doc3);
 
       const result = await testIndex.query(tenant, [{
         'a' : 'b',
@@ -226,7 +201,7 @@ describe('IndexLevel', () => {
     it('should return all records if an empty filter array is passed', async () => {
       const items = [ 'b', 'a', 'd', 'c' ];
       for (const item of items) {
-        await testIndex.put(tenant, item, item, { letter: item }, { index: items.indexOf(item), letter: item });
+        await testIndex.put(tenant, item, item, { letter: item, index: items.indexOf(item) });
       }
 
       const allResults = await testIndex.query(tenant, [],{ sortProperty: 'letter' });
@@ -236,10 +211,11 @@ describe('IndexLevel', () => {
     it('should not match values prefixed with the query', async () => {
       const id = uuid();
       const doc = {
+        id,
         value: 'foobar'
       };
 
-      await testIndex.put(tenant, id, id, doc, { id });
+      await testIndex.put(tenant, id, id, doc);
 
       const resp = await testIndex.query(tenant, [{
         value: 'foo'
@@ -251,22 +227,25 @@ describe('IndexLevel', () => {
     it('supports OR queries', async () => {
       const id1 = uuid();
       const doc1 = {
-        'a': 'a'
+        id  : id1,
+        'a' : 'a'
       };
 
       const id2 = uuid();
       const doc2 = {
-        'a': 'b'
+        id  : id2,
+        'a' : 'b'
       };
 
       const id3 = uuid();
       const doc3 = {
-        'a': 'c'
+        id  : id3,
+        'a' : 'c'
       };
 
-      await testIndex.put(tenant, id1, id1, doc1, { id: id1 });
-      await testIndex.put(tenant, id2, id2, doc2, { id: id2 });
-      await testIndex.put(tenant, id3, id3, doc3, { id: id3 });
+      await testIndex.put(tenant, id1, id1, doc1);
+      await testIndex.put(tenant, id2, id2, doc2);
+      await testIndex.put(tenant, id3, id3, doc3);
 
       const resp = await testIndex.query(tenant, [{
         a: [ 'a', 'b' ]
@@ -281,10 +260,11 @@ describe('IndexLevel', () => {
       for (let i = -5; i < 5; ++i) {
         const id = uuid();
         const doc = {
+          id,
           dateCreated: Temporal.PlainDateTime.from({ year: 2023, month: 1, day: 15 + i }).toString({ smallestUnit: 'microseconds' })
         };
 
-        await testIndex.put(tenant, id, id, doc, { id });
+        await testIndex.put(tenant, id, id, doc);
       }
 
       const resp = await testIndex.query(tenant, [{
@@ -299,10 +279,11 @@ describe('IndexLevel', () => {
     it('supports prefixed range queries', async () => {
       const id = uuid();
       const doc = {
+        id,
         value: 'foobar'
       };
 
-      await testIndex.put(tenant, id, id, doc, { id });
+      await testIndex.put(tenant, id, id, doc);
 
       const resp = await testIndex.query(tenant, [{
         value: {
@@ -317,16 +298,18 @@ describe('IndexLevel', () => {
     it('supports suffixed range queries', async () => {
       const id1 = uuid();
       const doc1 = {
-        foo: 'bar'
+        id  : id1,
+        foo : 'bar'
       };
 
       const id2 = uuid();
       const doc2 = {
-        foo: 'barbaz'
+        id  : id2,
+        foo : 'barbaz'
       };
 
-      await testIndex.put(tenant, id1, id1, doc1, { id: id1 });
-      await testIndex.put(tenant, id2, id2, doc2, { id: id2 });
+      await testIndex.put(tenant, id1, id1, doc1);
+      await testIndex.put(tenant, id2, id2, doc2);
 
       const resp = await testIndex.query(tenant, [{
         foo: {
@@ -341,16 +324,18 @@ describe('IndexLevel', () => {
     it('treats strings differently', async () => {
       const id1 = uuid();
       const doc1 = {
-        foo: true
+        id  : id1,
+        foo : true
       };
 
       const id2 = uuid();
       const doc2 = {
-        foo: 'true'
+        id  : id2,
+        foo : 'true'
       };
 
-      await testIndex.put(tenant, id1, id1, doc1, { id: id1 });
-      await testIndex.put(tenant, id2, id2, doc2, { id: id2 });
+      await testIndex.put(tenant, id1, id1, doc1);
+      await testIndex.put(tenant, id2, id2, doc2);
 
       const resp = await testIndex.query(tenant, [{
         foo: true
@@ -371,7 +356,7 @@ describe('IndexLevel', () => {
         const index = Math.floor(Math.random() * testNumbers.length);
 
         for (const digit of testNumbers) {
-          await testIndex.put(tenant, digit.toString(), digit.toString(), { digit }, { digit });
+          await testIndex.put(tenant, digit.toString(), digit.toString(), { digit });
         }
 
         const resp = await testIndex.query(tenant, [{
@@ -385,7 +370,7 @@ describe('IndexLevel', () => {
       it ('should not return records that do not match provided number equality filter', async() => {
         // remove the potential (but unlikely) negative test result
         for (const digit of testNumbers.filter(n => n !== 1)) {
-          await testIndex.put(tenant, digit.toString(), digit.toString(), { digit }, { digit });
+          await testIndex.put(tenant, digit.toString(), digit.toString(), { digit });
         }
         const resp = await testIndex.query(tenant, [{
           digit: 1
@@ -396,7 +381,7 @@ describe('IndexLevel', () => {
 
       it('supports range queries with positive numbers inclusive', async () => {
         for (const digit of testNumbers) {
-          await testIndex.put(tenant, digit.toString(), digit.toString(), { digit }, { digit });
+          await testIndex.put(tenant, digit.toString(), digit.toString(), { digit });
         }
 
         const upperBound = positiveDigits.at(positiveDigits.length - 3)!;
@@ -414,7 +399,7 @@ describe('IndexLevel', () => {
 
       it('supports range queries with negative numbers inclusive', async () => {
         for (const digit of testNumbers) {
-          await testIndex.put(tenant, digit.toString(), digit.toString(), { digit }, { digit });
+          await testIndex.put(tenant, digit.toString(), digit.toString(), { digit });
         }
 
         const upperBound = negativeDigits.at(negativeDigits.length - 2)!;
@@ -432,7 +417,7 @@ describe('IndexLevel', () => {
 
       it('should return numbers gt a negative digit', async () => {
         for (const digit of testNumbers) {
-          await testIndex.put(tenant, digit.toString(), digit.toString(), { digit }, { digit });
+          await testIndex.put(tenant, digit.toString(), digit.toString(), { digit });
         }
 
         const lowerBound = negativeDigits.at(4)!;
@@ -449,7 +434,7 @@ describe('IndexLevel', () => {
 
       it('should return numbers gt a digit', async () => {
         for (const digit of testNumbers) {
-          await testIndex.put(tenant, digit.toString(), digit.toString(), { digit }, { digit });
+          await testIndex.put(tenant, digit.toString(), digit.toString(), { digit });
         }
 
         const lowerBound = positiveDigits.at(4)!;
@@ -466,7 +451,7 @@ describe('IndexLevel', () => {
 
       it('should return numbers lt a negative digit', async () => {
         for (const digit of testNumbers) {
-          await testIndex.put(tenant, digit.toString(), digit.toString(), { digit }, { digit });
+          await testIndex.put(tenant, digit.toString(), digit.toString(), { digit });
         }
 
         const upperBound = negativeDigits.at(4)!;
@@ -483,7 +468,7 @@ describe('IndexLevel', () => {
 
       it('should return numbers lt a digit', async () => {
         for (const digit of testNumbers) {
-          await testIndex.put(tenant, digit.toString(), digit.toString(), { digit }, { digit });
+          await testIndex.put(tenant, digit.toString(), digit.toString(), { digit });
         }
 
         const upperBound = positiveDigits.at(4)!;
@@ -520,18 +505,20 @@ describe('IndexLevel', () => {
     it('purges indexes', async () => {
       const id1 = uuid();
       const doc1 = {
+        id  : id1,
         'a' : 'b',
         'c' : 'd'
       };
 
       const id2 = uuid();
       const doc2 = {
+        id  : id2,
         'a' : 'b',
         'c' : 'd'
       };
 
-      await testIndex.put(tenant, id1, id1, doc1, { id: id1 });
-      await testIndex.put(tenant, id2, id2, doc2, { id: id2 });
+      await testIndex.put(tenant, id1, id1, doc1);
+      await testIndex.put(tenant, id2, id2, doc2);
 
       let result = await testIndex.query(tenant, [{ 'a': 'b', 'c': 'd' }], { sortProperty: 'id' });
 
@@ -556,10 +543,11 @@ describe('IndexLevel', () => {
 
       const id = uuid();
       const doc = {
-        foo: 'bar'
+        id  : id,
+        foo : 'bar'
       };
 
-      await testIndex.put(tenant, id, id, doc, { id });
+      await testIndex.put(tenant, id, id, doc);
 
       try {
         await testIndex.delete(tenant, id, { signal: controller.signal });
@@ -578,10 +566,11 @@ describe('IndexLevel', () => {
 
       const id = uuid();
       const doc = {
-        foo: 'bar'
+        id  : id,
+        foo : 'bar'
       };
 
-      await testIndex.put(tenant, id, id, doc, { id });
+      await testIndex.put(tenant, id, id, doc);
 
       // attempt purge an invalid id
       await testIndex.delete(tenant, 'invalid-id');
@@ -612,7 +601,7 @@ describe('IndexLevel', () => {
     it('only returns the number of results specified by the limit property', async () => {
       const testVals = [ 'b', 'a', 'd', 'c'];
       for (const val of testVals) {
-        await testIndex.put(tenant, val, val, { val, schema: 'schema' }, { val });
+        await testIndex.put(tenant, val, val, { val, schema: 'schema' });
       }
 
       // limit results without cursor
@@ -629,7 +618,7 @@ describe('IndexLevel', () => {
     it('invalid sort property returns no results', async () => {
       const testVals = ['b', 'd', 'c', 'a'];
       for (const val of testVals) {
-        await testIndex.put(tenant, val, val, { val, schema: 'schema' }, { val });
+        await testIndex.put(tenant, val, val, { val, schema: 'schema' });
       }
 
       // control test: return all results
@@ -647,14 +636,12 @@ describe('IndexLevel', () => {
       // invalid sort property with a valid cursor value
       invalidResults = await testIndex.query(tenant, [{ schema: 'schema' }], { sortProperty: 'invalid', cursor: 'a' });
       expect(invalidResults.length).to.equal(0);
-
-
     });
 
     it('invalid cursor returns no results', async () => {
       const testVals = ['b', 'd', 'c', 'a'];
       for (const val of testVals) {
-        await testIndex.put(tenant, val, val, { val, schema: 'schema' }, { val });
+        await testIndex.put(tenant, val, val, { val, schema: 'schema' });
       }
 
       // verify valid cursor
@@ -670,7 +657,7 @@ describe('IndexLevel', () => {
     it('can have multiple sort properties', async () => {
       const testVals = ['b', 'd', 'c', 'a'];
       for (const val of testVals) {
-        await testIndex.put(tenant, val, val, { val, schema: 'schema' }, { val, index: testVals.indexOf(val) });
+        await testIndex.put(tenant, val, val, { val, schema: 'schema', index: testVals.indexOf(val) });
       }
 
       // sort by value ascending
@@ -697,7 +684,7 @@ describe('IndexLevel', () => {
     it('sorts lexicographic with and without a cursor', async () => {
       const testVals = [ 'b', 'a', 'd', 'c'];
       for (const val of testVals) {
-        await testIndex.put(tenant, val, val, { val, schema: 'schema' }, { val });
+        await testIndex.put(tenant, val, val, { val, schema: 'schema' });
       }
 
       // sort ascending without a cursor
@@ -724,7 +711,7 @@ describe('IndexLevel', () => {
     it('sorts numeric with and without a cursor', async () => {
       const testVals = [ -2, -1, 0, 1, 2 , 3 , 4 ];
       for (const val of testVals) {
-        await testIndex.put(tenant, val.toString(), val.toString(), { val, schema: 'schema' }, { val });
+        await testIndex.put(tenant, val.toString(), val.toString(), { val, schema: 'schema' });
       }
 
       // sort ascending without a cursor
@@ -753,7 +740,7 @@ describe('IndexLevel', () => {
       const testItems = [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' ];
 
       for (const item of testItems) {
-        await testIndex.put(tenant, item, item, { letter: item }, { letter: item });
+        await testIndex.put(tenant, item, item, { letter: item });
       }
 
       // test both upper and lower bounds
@@ -833,7 +820,7 @@ describe('IndexLevel', () => {
     it('sorts range queries negative integers with or without a cursor', async () => {
       const testNumbers = [ -5, -4, -3 , -2, -1, 0, 1, 2, 3, 4, 5 ];
       for (const digit of testNumbers) {
-        await testIndex.put(tenant, digit.toString(), digit.toString(), { digit }, { digit });
+        await testIndex.put(tenant, digit.toString(), digit.toString(), { digit });
       }
 
       const upperBound = 3;
@@ -884,7 +871,7 @@ describe('IndexLevel', () => {
       }];
 
       for (const item of testItems) {
-        await testIndex.put(tenant, item.id, item.id, item, { sort: item.id });
+        await testIndex.put(tenant, item.id, item.id, item);
       }
 
       const lowerBound = 2;
@@ -898,7 +885,7 @@ describe('IndexLevel', () => {
           gte : lowerBound,
           lte : upperBound
         },
-      }], { sortProperty: 'sort', cursor: 'd' });
+      }], { sortProperty: 'id', cursor: 'd' });
 
       expect(response).to.eql([ 'e', 'f', 'g' ]);
 
@@ -909,7 +896,7 @@ describe('IndexLevel', () => {
         digit: {
           lte: upperBound
         },
-      }], { sortProperty: 'sort', cursor: 'd' });
+      }], { sortProperty: 'id', cursor: 'd' });
 
       expect(response).to.eql([ 'e', 'f', 'g']); // should only return two matching items
     });
@@ -917,12 +904,12 @@ describe('IndexLevel', () => {
     it('sorts OR queries with or without a cursor', async () => {
       const testValsSchema1 = ['a1', 'b1', 'c1', 'd1'];
       for (const val of testValsSchema1) {
-        await testIndex.put(tenant, val, val, { val, schema: 'schema1' }, { val });
+        await testIndex.put(tenant, val, val, { val, schema: 'schema1' });
       }
 
       const testValsSchema2 = ['a2', 'b2', 'c2', 'd2'];
       for (const val of testValsSchema2) {
-        await testIndex.put(tenant, val, val, { val, schema: 'schema2' }, { val });
+        await testIndex.put(tenant, val, val, { val, schema: 'schema2' });
       }
 
       // sort ascending without cursor
@@ -954,7 +941,7 @@ describe('IndexLevel', () => {
           i % 7 === 0 ? false : undefined;
 
         const item = { val: IndexLevel.encodeNumberValue(i), digit, property };
-        await testIndex.put(tenant, item.val, item.val, item, { val: item.val });
+        await testIndex.put(tenant, item.val, item.val, item);
         items.push(item);
       }
 
