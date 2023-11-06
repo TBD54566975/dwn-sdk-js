@@ -1,7 +1,6 @@
-import type { CID } from 'multiformats';
 import type { DidResolver } from '../did/did-resolver.js';
 import type { GeneralJws } from '../types/jws-types.js';
-import type { AuthorizationModel, Descriptor } from '../types/message-types.js';
+import type { AuthorizationModel, Descriptor, GenericSignaturePayload } from '../types/message-types.js';
 
 import { Cid } from '../utils/cid.js';
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
@@ -20,7 +19,7 @@ export async function validateMessageSignatureIntegrity(
   messageSignature: GeneralJws,
   messageDescriptor: Descriptor,
   payloadJsonSchemaKey: string = 'GenericSignaturePayload',
-): Promise<{ descriptorCid: CID, [key: string]: any }> {
+): Promise<GenericSignaturePayload> {
 
   if (messageSignature.signatures.length !== 1) {
     throw new DwnError(DwnErrorCode.AuthenticationMoreThanOneSignatureNotSupported, 'expected no more than 1 signature for authorization purpose');

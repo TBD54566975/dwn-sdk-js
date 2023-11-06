@@ -35,11 +35,11 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       definition       : ProtocolsConfigure.normalizeDefinition(options.definition)
     };
 
-    const authorization = await Message.createAuthorization(
+    const authorization = await Message.createAuthorization({
       descriptor,
-      options.signer,
-      { permissionsGrantId: options.permissionsGrantId }
-    );
+      signer             : options.signer,
+      permissionsGrantId : options.permissionsGrantId
+    });
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

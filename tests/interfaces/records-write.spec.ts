@@ -288,7 +288,7 @@ describe('RecordsWrite', () => {
       const grantToBob = await PermissionsGrant.create({
         delegated   : true, // this is a delegated grant
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        description : 'Allow to Bob write as me in chat protocol',
+        description : 'Allow Bob to write as me in chat protocol',
         grantedBy   : alice.did,
         grantedTo   : bob.did,
         grantedFor  : alice.did,
@@ -334,7 +334,7 @@ describe('RecordsWrite', () => {
       const grantToBob = await PermissionsGrant.create({
         delegated   : true, // this is a delegated grant
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        description : 'Allow to Bob write as me in chat protocol',
+        description : 'Allow Bob to write as me in chat protocol',
         grantedBy   : alice.did,
         grantedTo   : bob.did,
         grantedFor  : alice.did,
@@ -352,7 +352,7 @@ describe('RecordsWrite', () => {
       delete recordsWrite.message.authorization!.authorDelegatedGrant; // intentionally remove `authorDelegatedGrant`
       const parsePromise = RecordsWrite.parse(recordsWrite.message);
 
-      await expect(parsePromise).to.be.rejectedWith(DwnErrorCode.RecordsWriteValidateIntegrityDelegatedGrantAndIdExistenceMismatch);
+      await expect(parsePromise).to.be.rejectedWith(DwnErrorCode.RecordsValidateIntegrityDelegatedGrantAndIdExistenceMismatch);
     });
   });
 

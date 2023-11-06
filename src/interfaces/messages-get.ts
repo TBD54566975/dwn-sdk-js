@@ -32,7 +32,7 @@ export class MessagesGet extends Message<MessagesGetMessage> {
       messageTimestamp : options?.messageTimestamp ?? Time.getCurrentTimestamp(),
     };
 
-    const authorization = await Message.createAuthorization(descriptor, options.signer);
+    const authorization = await Message.createAuthorization({ descriptor, signer: options.signer });
     const message = { descriptor, authorization };
 
     Message.validateJsonSchema(message);

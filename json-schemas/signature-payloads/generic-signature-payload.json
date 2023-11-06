@@ -10,6 +10,9 @@
     "descriptorCid": {
       "type": "string"
     },
+    "delegatedGrantId": {
+      "type": "string"
+    },
     "permissionsGrantId": {
       "type": "string"
     },

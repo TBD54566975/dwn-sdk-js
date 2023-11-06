@@ -1,11 +1,12 @@
 import type { DerivedPrivateJwk } from './hd-key.js';
 import type { Readable } from 'readable-stream';
-import type { Filter, RangeFilter } from '../types/message-types.js';
-import type { RangeCriterion, RecordsFilter, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
+import type { Filter, GenericSignaturePayload, RangeFilter } from '../types/message-types.js';
+import type { RangeCriterion, RecordsFilter, RecordsQueryMessage, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
 
 import { Encoder } from './encoder.js';
 import { Encryption } from './encryption.js';
 import { KeyDerivationScheme } from './hd-key.js';
+import { Message } from '../index.js';
 import { Secp256k1 } from './secp256k1.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from './url.js';
@@ -287,5 +288,38 @@ export class Records {
       };
     }
     return rangeFilter;
+  }
+
+  /**
+   * Validates the referential integrity regarding delegated grant.
+   * @param signaturePayload Decoded payload of the signature of the message. `undefined` if message is not signed.
+   *                         Usage of this property is purely for performance optimization so we don't have to decode the signature payload again.
+   */
+  public static validateDelegatedGrantReferentialIntegrity(
+    message: RecordsQueryMessage | RecordsWriteMessage,
+    signaturePayload: GenericSignaturePayload | undefined
+  ): void {
+    // `deletedGrantId` in the payload of the message signature and `authorDelegatedGrant` in `authorization` must both exist or be both undefined
+    const delegatedGrantIdDefined = signaturePayload?.delegatedGrantId !== undefined;
+    const authorDelegatedGrantDefined = message.authorization?.authorDelegatedGrant !== undefined;
+    if (delegatedGrantIdDefined !== authorDelegatedGrantDefined) {
+      throw new DwnError(
+        DwnErrorCode.RecordsValidateIntegrityDelegatedGrantAndIdExistenceMismatch,
+        `delegatedGrantId and authorDelegatedGrant must both exist or be undefined. \
+           delegatedGrantId defined: ${delegatedGrantIdDefined}, authorDelegatedGrant defined: ${authorDelegatedGrantDefined}`
+      );
+    }
+
+    // when delegated grant exists, the grantee (grantedTo) must be the same as the signer of the message
+    if (authorDelegatedGrantDefined) {
+      const grantedTo = message.authorization!.authorDelegatedGrant!.descriptor.grantedTo;
+      const signer = Message.getSigner(message);
+      if (grantedTo !== signer) {
+        throw new DwnError(
+          DwnErrorCode.RecordsValidateIntegrityGrantedToAndSignerMismatch,
+          `grantedTo ${grantedTo} must be the same as the signer ${signer} of the message`
+        );
+      }
+    }
   }
 }

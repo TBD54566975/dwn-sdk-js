@@ -60,7 +60,12 @@ export class RecordsRead extends Message<RecordsReadMessage> {
     // only generate the `authorization` property if signature input is given
     let authorization = undefined;
     if (signer !== undefined) {
-      authorization = await Message.createAuthorization(descriptor, signer, { permissionsGrantId, protocolRole });
+      authorization = await Message.createAuthorization({
+        descriptor,
+        signer,
+        permissionsGrantId,
+        protocolRole
+      });
     }
     const message: RecordsReadMessage = { descriptor, authorization };
 

@@ -23,6 +23,7 @@ import { Jws } from '../utils/jws.js';
 import { KeyDerivationScheme } from '../utils/hd-key.js';
 import { Message } from '../core/message.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
+import { Records } from '../utils/records.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Secp256k1 } from '../utils/secp256k1.js';
@@ -139,6 +140,9 @@ export type CreateFromOptions = {
   protocolRole?: string;
 };
 
+/**
+ * A class representing a RecordsWrite DWN message.
+ */
 export class RecordsWrite {
   private _message: InternalRecordsWriteMessage;
   /**
@@ -580,28 +584,7 @@ export class RecordsWrite {
       );
     }
 
-    // `deletedGrantId` in the payload of the message signature and `authorDelegatedGrant` in `authorization` must both exist or be both undefined
-    const delegatedGrantIdDefined = signaturePayload.delegatedGrantId !== undefined;
-    const authorDelegatedGrantDefined = this.message.authorization!.authorDelegatedGrant !== undefined;
-    if (delegatedGrantIdDefined !== authorDelegatedGrantDefined) {
-      throw new DwnError(
-        DwnErrorCode.RecordsWriteValidateIntegrityDelegatedGrantAndIdExistenceMismatch,
-        `delegatedGrantId and authorDelegatedGrant must both exist or be undefined. \
-         delegatedGrantId defined: ${delegatedGrantIdDefined}, authorDelegatedGrant defined: ${authorDelegatedGrantDefined}`
-      );
-    }
-
-    // when delegated grant exists, the grantee (grantedTo) must be the same as the signer of the message
-    if (authorDelegatedGrantDefined) {
-      const grantedTo = this.message.authorization!.authorDelegatedGrant!.descriptor.grantedTo;
-      const signer = Message.getSigner(this.message);
-      if (grantedTo !== signer) {
-        throw new DwnError(
-          DwnErrorCode.RecordsWriteValidateIntegrityGrantedToAndSignerMismatch,
-          `grantedTo ${grantedTo} must be the same as the signer ${signer} of the message`
-        );
-      }
-    }
+    Records.validateDelegatedGrantReferentialIntegrity(this.message, signaturePayload);
 
     // if `attestation` is given in message, make sure the correct `attestationCid` is in the payload of the message signature
     if (signaturePayload.attestationCid !== undefined) {

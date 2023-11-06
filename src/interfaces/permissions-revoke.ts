@@ -28,7 +28,7 @@ export class PermissionsRevoke extends Message<PermissionsRevokeMessage> {
       permissionsGrantId : options.permissionsGrantId,
     };
 
-    const authorization = await Message.createAuthorization(descriptor, options.signer);
+    const authorization = await Message.createAuthorization({ descriptor, signer: options.signer });
     const message: PermissionsRevokeMessage = { descriptor, authorization };
 
     Message.validateJsonSchema(message);
