@@ -10,9 +10,20 @@ const items = 10_000;
 
 // pre-generate messages
 const insertMessages = Array(items).fill().map((_,i) => {
-  const mod = i % 3;
-  const schema = i % 2 === 0 ? 'schema1' : 'schema2';
+  // random schema from 1-5
+  const schemaId = Math.floor(Math.random() * 5) + 1;
+  const schema = `schema${schemaId}`;
+
+  //random protocol from 1-10
+  const protocolId = Math.floor(Math.random() * 10) + 1;
+  const protocol = `proto${protocolId}`;
+
+  const recipient = i % 25 === 0 ? 'bob' : 'carol';
+  const author = i % 50 === 0 ? 'bob' : 'alice';
+  const published = i % 100 === 0 ? true : false;
+
   let year;
+  const mod = i % 3;
   switch (mod) {
   case 0:
     year = 2022;
@@ -36,10 +47,11 @@ const insertMessages = Array(items).fill().map((_,i) => {
   const indexes = {
     ...message.descriptor,
     schema,
+    protocol,
     dateCreated,
-    recipient : i % Math.floor(items/(items/250)) === 0 ? 'bob' : 'carol',
-    author    : i % Math.floor(items/(items/50)) === 0 ? 'bob' : 'alice',
-    published : i % Math.floor(items/(items/100)) === 0 ? true : false
+    recipient,
+    author,
+    published,
   };
   return { message, indexes };
 });
@@ -67,7 +79,6 @@ await Promise.all(insertMessages.map(({ message, indexes }) => messageStore.put(
 const putEnd = Date.now();
 console.log('\tput\t\t\t\t:', putEnd - putStart, 'ms');
 
-const firstDayOf2023 = Time.createTimestamp({ year: 2023, month: 1, day: 1 });
 const firstDayOf2024 = Time.createTimestamp({ year: 2024, month: 1, day: 1 });
 
 // advanced query
@@ -79,72 +90,97 @@ const descOrder = { messageTimestamp: SortDirection.Descending };
 let page = 0;
 let paginationMessageCid = undefined;
 let messages = [];
+let results = [];
 const paginationStart = Date.now();
 while (page < 10) {
   page++;
   ({ messages, paginationMessageCid } = await messageStore.query(tenant, [
-    { published: true, schema: 'schema2', dateCreated: { gte: firstDayOf2023 } }
+    { published: true, schema: 'schema2', protocol: 'proto6' }
   ], ascOrder, { limit: 20, paginationMessageCid } ));
+  results.push(...messages);
+  if (paginationMessageCid === undefined) {
+    break;
+  }
 }
 const paginationEnd = Date.now();
-console.log('\tpagination small subset\t\t:', paginationEnd - paginationStart, 'ms');
+console.log('\tpagination small subset\t\t:', paginationEnd - paginationStart, 'ms', 'results ', results.length);
 
 // descending order
+results = [];
 page = 0;
 paginationMessageCid = undefined;
 const paginationDescStart = Date.now();
 while (page < 10) {
   page++;
   ({ messages, paginationMessageCid } = await messageStore.query(tenant, [
-    { published: true, schema: 'schema2', dateCreated: { gte: firstDayOf2023 } }
+    { published: true, schema: 'schema2', protocol: 'proto6' }
   ], descOrder, { limit: 20, paginationMessageCid } ));
+  results.push(...messages);
+  if (paginationMessageCid === undefined) {
+    break;
+  }
 }
 const paginationDescEnd = Date.now();
-console.log('\tpagination small subset des\t:', paginationDescEnd - paginationDescStart, 'ms');
+console.log('\tpagination small subset des\t:', paginationDescEnd - paginationDescStart, 'ms', ' results', results.length);
 
 // filter for a larger result set.
+results = [];
 page = 0;
 paginationMessageCid = undefined;
 const paginationLargeStart = Date.now();
 while (page < 10) {
   page++;
   ({ messages, paginationMessageCid } = await messageStore.query(tenant, [
-    { published: true, schema: 'schema1' },
-    { published: false, schema: 'schema2', dateCreated: { gte: firstDayOf2023 } }
+    { published: true, schema: 'schema2', protocol: 'proto6' },
+    { published: false, schema: 'schema2', protocol: 'proto6' }
   ], ascOrder, { limit: 20, paginationMessageCid } ));
+  results.push(...messages);
+  if (paginationMessageCid === undefined) {
+    break;
+  }
 }
 const paginationLargeEnd = Date.now();
-console.log('\tpagination large subset\t\t:', paginationLargeEnd - paginationLargeStart, 'ms');
+console.log('\tpagination large subset\t\t:', paginationLargeEnd - paginationLargeStart, 'ms', ' results', results.length);
 
 // ascending multiple filters. similar to non-owner query
+results = [];
 page = 0;
 paginationMessageCid = undefined;
 const paginationNonOwnerStart = Date.now();
 while (page < 10) {
   page++;
   ({ messages, paginationMessageCid } = await messageStore.query(tenant, [
-    { schema: 'schema2', published: false, author: 'bob', dateCreated: { gte: firstDayOf2023 } },
-    { schema: 'schema2', published: true, dateCreated: { gte: firstDayOf2023 } },
-    { schema: 'schema2', published: false, recipient: 'bob', dateCreated: { gte: firstDayOf2023 } },
+    { schema: 'schema2', published: false, author: 'bob', protocol: 'proto6' },
+    { schema: 'schema2', published: true, protocol: 'proto6' },
+    { schema: 'schema2', published: false, recipient: 'bob', protocol: 'proto6' },
   ], ascOrder, { limit: 20, paginationMessageCid } ));
+  results.push(...messages);
+  if (paginationMessageCid === undefined) {
+    break;
+  }
 }
 const paginationNonOwnerEnd = Date.now();
-console.log('\tpagination non owner\t\t:', paginationNonOwnerEnd - paginationNonOwnerStart, 'ms');
+console.log('\tpagination non owner\t\t:', paginationNonOwnerEnd - paginationNonOwnerStart, 'ms', ' results', results.length);
 
 // descending multiple filters. similar to non-owner query
+results = [];
 page = 0;
 paginationMessageCid = undefined;
 const paginationDescNonOwnerStart = Date.now();
 while (page < 10) {
   page++;
   ({ messages, paginationMessageCid } = await messageStore.query(tenant, [
-    { schema: 'schema2', published: false, author: 'bob', dateCreated: { gte: firstDayOf2023 } },
-    { schema: 'schema2', published: true, dateCreated: { gte: firstDayOf2023 } },
-    { schema: 'schema2', published: false, recipient: 'bob', dateCreated: { gte: firstDayOf2023 } },
+    { schema: 'schema2', published: false, author: 'bob', protocol: 'proto6' },
+    { schema: 'schema2', published: true, protocol: 'proto6' },
+    { schema: 'schema2', published: false, recipient: 'bob', protocol: 'proto6' },
   ], descOrder, { limit: 20, paginationMessageCid } ));
+  results.push(...messages);
+  if (paginationMessageCid === undefined) {
+    break;
+  }
 }
 const paginationDescNonOwnerEnd = Date.now();
-console.log('\tpagination desc non owner\t:', paginationDescNonOwnerEnd - paginationDescNonOwnerStart, 'ms');
+console.log('\tpagination desc non owner\t:', paginationDescNonOwnerEnd - paginationDescNonOwnerStart, 'ms', ' results', results.length);
 
 const smallResultSetStart = Date.now();
 ({ messages } = await messageStore.query(tenant, [{ published: true, recipient: 'bob' }]));
