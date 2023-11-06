@@ -178,15 +178,15 @@ export class MessageStoreLevel implements MessageStore {
       ...indexes,
       tenant,
     };
-    await this.index.put(tenant, messageCidString, messageCidString, indexDocument, sortIndexes, options);
+    await this.index.put(tenant, messageCidString, messageCidString, indexDocument, options);
   }
 
 
   /**
    * @returns a key, value pair of indexes used for sorting: messageTimestamp, dateCreated, datePublished.
    */
-  getSortIndexes(indexes: { [key: string]: string | boolean }):{ [key:string]: string } {
-    const sortIndexes: { [key:string]: string } = {};
+  getSortIndexes(indexes: { [key: string]: string | boolean }):{ [key:string]: unknown } {
+    const sortIndexes = { ...indexes };
     if (indexes.messageTimestamp !== undefined
       && typeof indexes.messageTimestamp === 'string') {
       sortIndexes.messageTimestamp = indexes.messageTimestamp;

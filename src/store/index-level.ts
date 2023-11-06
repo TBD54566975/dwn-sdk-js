@@ -7,6 +7,8 @@ import { flatten, isEmptyObject, removeUndefinedProperties } from '../utils/obje
 
 type Indexes = { [key: string]: unknown };
 
+type IndexedItem<T> = { key: string, value: T, indexes: Indexes };
+
 type IndexLevelConfig = {
   location?: string,
   createLevelDatabase?: typeof createLevelDatabase
@@ -75,17 +77,8 @@ export class IndexLevel<T> {
     itemId: string,
     value: T,
     indexes: Indexes,
-    sortIndexes: Indexes,
     options?: IndexLevelOptions
   ): Promise<void> {
-    // ensure sorted indexes are flat and exist
-    sortIndexes = flatten(sortIndexes);
-    removeUndefinedProperties(sortIndexes);
-
-    if (isEmptyObject(sortIndexes)) {
-      throw new Error('must include at least one sorted index');
-    }
-
     // ensure indexable properties exist
     indexes = flatten(indexes);
     removeUndefinedProperties(indexes);
@@ -98,27 +91,28 @@ export class IndexLevel<T> {
 
     const indexOps: LevelWrapperBatchOperation<string>[] = [];
     // store the value and indexes for each of the sorted properties
-    for (const sortProperty in sortIndexes) {
-      const sortValue = sortIndexes[sortProperty];
+    for (const sortProperty in indexes) {
+      const sortValue = indexes[sortProperty];
       // each sortProperty is treated as it's own partition.
       // This allows the LevelDB system to calculate a gt minKey and lt maxKey for each of the sort properties
       // which facilitates iterating in reverse for descending order queries without iterating through different sort properties.
       // the key is simply the sortValue followed by the itemId as a tie-breaker.
       // ex: '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
       const key = IndexLevel.keySegmentJoin(this.encodeValue(sortValue), itemId);
+      const itemValue: IndexedItem<T> = { key: itemId, indexes, value };
 
       // we write the values into a sublevel-partition of tenantPartition.
       // we wrap it in __${sortProperty}__sort so that it does not clash with other sublevels ie "index"
       indexOps.push(tenantPartition.partitionOperation(`__${sortProperty}__sort`, {
         key,
         type  : 'put',
-        value : JSON.stringify({ indexes, value })
+        value : JSON.stringify(itemValue)
       }));
     }
 
     // create a reverse index for the sortedIndex values. This is used during deletion and cursor starting point lookup.
     indexOps.push(tenantPartition.partitionOperation(INDEX_SUBLEVEL_NAME,
-      { type: 'put', key: itemId, value: JSON.stringify(sortIndexes) }
+      { type: 'put', key: itemId, value: JSON.stringify(indexes) }
     ));
 
     await tenantPartition.batch(indexOps, options);
