@@ -1,7 +1,7 @@
 import type { Filter, RangeFilter } from '../types/message-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions } from './level-wrapper.js';
 
-import { executeUnlessAborted } from '../index.js';
+import { executeUnlessAborted } from '../utils/abort.js';
 import { flatten } from '../utils/object.js';
 import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 

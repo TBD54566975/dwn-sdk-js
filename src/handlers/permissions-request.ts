@@ -1,7 +1,9 @@
+import type { DidResolver } from '../did/did-resolver.js';
+import type { EventLog } from '../types//event-log.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
+import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { PermissionsRequestMessage } from '../types/permissions-types.js';
-import type { DidResolver, EventLog, MessageStore } from '../index.js';
 
 import { authenticate } from '../core/auth.js';
 import { Message } from '../core/message.js';

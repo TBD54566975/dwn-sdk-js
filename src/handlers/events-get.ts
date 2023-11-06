@@ -1,4 +1,4 @@
-import type { DidResolver } from '../index.js';
+import type { DidResolver } from '../did/did-resolver.js';
 import type { EventLog } from '../types/event-log.js';
 import type { GetEventsOptions } from '../types/event-log.js';
 import type { MethodHandler } from '../types/method-handler.js';

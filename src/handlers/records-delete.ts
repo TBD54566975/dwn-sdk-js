@@ -1,13 +1,15 @@
+import type { DataStore } from '../types/data-store.js';
+import type { DidResolver } from '../did/did-resolver.js';
 import type { EventLog } from '../types/event-log.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
+import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { DataStore, DidResolver, MessageStore } from '../index.js';
 import type { RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { RecordsDelete } from '../interfaces/records-delete.js';
-import { RecordsWrite } from '../index.js';
+import { RecordsWrite } from '../interfaces/records-write.js';
 import { StorageController } from '../store/storage-controller.js';
 import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
 

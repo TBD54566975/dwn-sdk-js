@@ -6,7 +6,7 @@ import type { DidResolver, VerificationMethod } from '../../../did/did-resolver.
 import { Jws } from '../../../utils/jws.js';
 import { MemoryCache } from '../../../utils/memory-cache.js';
 import { validateJsonSchema } from '../../../schema-validator.js';
-import { DwnError, DwnErrorCode } from '../../../index.js';
+import { DwnError, DwnErrorCode } from '../../../core/dwn-error.js';
 
 type VerificationResult = {
   /** DIDs of all signers */

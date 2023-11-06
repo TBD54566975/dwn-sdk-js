@@ -6,7 +6,7 @@ import type { RangeCriterion, RecordsFilter, RecordsQueryMessage, RecordsWriteDe
 import { Encoder } from './encoder.js';
 import { Encryption } from './encryption.js';
 import { KeyDerivationScheme } from './hd-key.js';
-import { Message } from '../index.js';
+import { Message } from '../core/message.js';
 import { Secp256k1 } from './secp256k1.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from './url.js';

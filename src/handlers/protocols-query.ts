@@ -1,5 +1,7 @@
+import type { DataStore } from '../types/data-store.js';
+import type { DidResolver } from '../did/did-resolver.js';
+import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { DataStore, DidResolver, MessageStore } from '../index.js';
 import type { ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from '../types/protocols-types.js';
 
 import { authenticate } from '../core/auth.js';

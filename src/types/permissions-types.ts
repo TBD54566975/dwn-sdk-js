@@ -1,5 +1,5 @@
 import type { AuthorizationModel, GenericMessage } from './message-types.js';
-import type { DwnInterfaceName, DwnMethodName } from '../index.js';
+import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
 
 export type PermissionScope = {
   interface: DwnInterfaceName;

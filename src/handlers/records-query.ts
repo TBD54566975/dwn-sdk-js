@@ -1,6 +1,8 @@
+import type { DataStore } from '../types/data-store.js';
+import type { DidResolver } from '../did/did-resolver.js';
+import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
-import type { DataStore, DidResolver, MessageStore } from '../index.js';
 import type { Filter, GenericMessage, MessageSort } from '../types/message-types.js';
 import type { RecordsQueryMessage, RecordsQueryReply } from '../types/records-types.js';
 

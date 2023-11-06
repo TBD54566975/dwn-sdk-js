@@ -6,9 +6,11 @@ import type { MethodHandler } from './types/method-handler.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsWriteHandlerOptions } from './handlers/records-write.js';
 import type { TenantGate } from './core/tenant-gate.js';
-import type { EventsGetMessage, EventsGetReply, PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage, ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './index.js';
+import type { EventsGetMessage, EventsGetReply } from './types/event-types.js';
 import type { GenericMessageReply, UnionMessageReply } from './core/message-reply.js';
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
+import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from './types/permissions-types.js';
+import type { ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './types/protocols-types.js';
 import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsReadMessage, RecordsReadReply, RecordsWriteMessage } from './types/records-types.js';
 
 import { AllowAllTenantGate } from './core/tenant-gate.js';
