@@ -298,12 +298,6 @@ export class IndexLevel {
   private join(...values: unknown[]): string {
     return values.join(IndexLevel.delimiter);
   }
-
-  async dump(): Promise<void> {
-    console.group('db');
-    await this.db['dump']?.();
-    console.groupEnd();
-  }
 }
 
 type IndexLevelConfig = {
