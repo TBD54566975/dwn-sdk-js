@@ -90,16 +90,16 @@ export class MessageStoreLevel implements MessageStore {
     options?.signal?.throwIfAborted();
 
     const queryOptions = MessageStoreLevel.getQueryOptions(messageSort, pagination);
-    const resultIds = await this.index.query(tenant, filters, queryOptions, options);
+    const results = await this.index.query(tenant, filters, queryOptions, options);
 
     const messages: GenericMessage[] = [];
     let cursor: string | undefined;
-    for (let i = 0; i < resultIds.length; i++) {
-      const id = resultIds[i];
-      const message = await this.get(tenant, id, options);
+    for (let i = 0; i < results.length; i++) {
+      const messageCid = results[i];
+      const message = await this.get(tenant, messageCid, options);
       if (message) { messages.push(message); }
     }
-    const hasMoreResults = pagination?.limit !== undefined && pagination.limit < resultIds.length;
+    const hasMoreResults = pagination?.limit !== undefined && pagination.limit < results.length;
     if (hasMoreResults) {
       messages.splice(-1); // remove last element
       const lastMessage = messages.at(-1);

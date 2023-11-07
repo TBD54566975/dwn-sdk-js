@@ -8,7 +8,7 @@ import { flatten, isEmptyObject, removeUndefinedProperties } from '../utils/obje
 
 type Indexes = { [key: string]: unknown };
 
-type IndexedItem<T> = { itemId: string, value: T, indexes: Indexes };
+export type IndexedItem<T> = { itemId: string, value: T, indexes: Indexes };
 
 type IndexLevelConfig = {
   location?: string,
@@ -83,15 +83,14 @@ export class IndexLevel<T> {
     // ensure indexable properties exist
     indexes = flatten(indexes);
     removeUndefinedProperties(indexes);
-
     if (isEmptyObject(indexes)) {
       throw new Error('must include at least one indexable property');
     }
 
     const tenantPartition = await this.db.partition(tenant);
-
     const indexOps: LevelWrapperBatchOperation<string>[] = [];
-    // store the value and indexes for each of the sorted properties
+
+    // use each index as a sortable property
     for (const sortProperty in indexes) {
       const sortValue = indexes[sortProperty];
       // each sortProperty is treated as it's own partition.
@@ -167,13 +166,16 @@ export class IndexLevel<T> {
     return this.filteredIndexQuery(tenant, filters, queryOptions, options);
   }
 
+  /**
+   * Queries the filtered property index for items that match the filters. If no filters are provided, no records are returned.
+   */
   async filteredIndexQuery(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<T[]> {
     const matched:Map<string, IndexedItem<T>> = new Map();
     await Promise.all(filters.map(filter => this.executeSingleFilterQuery(tenant, filter, matched, options)));
 
     const matchedValues = [...matched.values()];
     const { sortProperty, sortDirection = SortDirection.Ascending, limit, cursor } = queryOptions;
-    if (matchedValues.length === 0 || matchedValues.at(0)?.indexes[sortProperty] === undefined) {
+    if (matchedValues.length === 0 || matchedValues.at(0)!.indexes[sortProperty] === undefined) {
       return [];
     }
 
@@ -188,75 +190,27 @@ export class IndexLevel<T> {
     return results.slice(start, end).map(item => item.value);
   }
 
-  private sortItems(itemA: IndexedItem<T>, itemB: IndexedItem<T>, sortProperty: string, direction: SortDirection): number {
-    const aValue = this.encodeValue(itemA.indexes[sortProperty]) + itemA.itemId;
-    const bValue = this.encodeValue(itemB.indexes[sortProperty]) + itemB.itemId;
-    return direction === SortDirection.Ascending ?
-      lexicographicalCompare(aValue, bValue) :
-      lexicographicalCompare(bValue, aValue);
-  }
-
   /**
-   * Queries the index for items that match the filters. If no filters are provided, all records are returned.
-   *
-   * @param tenant
-   * @param filters Array of filters that are treated as an OR query.
-   * @param queryOptions query options for sort and pagination, requires at least `sortProperty`. The default sort direction is ascending.
-   * @param options IndexLevelOptions that include an AbortSignal.
+   * Queries the sort property index for items that match the filters. If no filters are provided, all records are returned.
    */
   async sortedIndexQuery(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<T[]> {
-    const { sortProperty, limit, sortDirection = SortDirection.Ascending, cursor } = queryOptions;
-
-    // if there is a cursor we fetch the starting key given the sort property, otherwise we start from the beginning of the index.
-    const startKey = cursor ? await this.getStartingKeyForCursor(tenant, cursor, sortProperty, filters) : '';
-    if (startKey === undefined) {
-      // getStartingKeyForCursor returns undefined if an invalid cursor is provided, we return an empty result set.
-      return [];
-    }
-
-    const iteratorOptions: LevelWrapperIteratorOptions<string> = {
-      gt: startKey
-    };
-
-    // if we are sorting in descending order we can iterate in reverse.
-    if (sortDirection === SortDirection.Descending) {
-      iteratorOptions.reverse = true;
-      if (cursor !== undefined) {
-        // if a cursor is provided and we are sorting in descending order, the startKey should be the upper bound.
-        iteratorOptions.lt = startKey;
-        delete iteratorOptions.gt;
-      }
-    }
-
+    const { limit } = queryOptions;
     const matches: Array<T> = [];
-
-    const tenantPartition = await this.db.partition(tenant);
-    const sortPartition = await tenantPartition.partition(`__${sortProperty}__sort`);
-    for await (const [ _, val ] of sortPartition.iterator(iteratorOptions, options)) {
+    for await ( const item of this.sortedIndexIterator(tenant, filters, queryOptions, options)) {
       if (limit !== undefined && matches.length === limit) {
         return matches;
       }
-
-      const { value, indexes } = JSON.parse(val);
-      // if there aren't any filters present, we return any sorted item.
-      if (filters.length === 0) {
-        matches.push(value);
-        continue; //next match
-      }
-
-      for (const filter of filters) {
-        // if any of the filters match the indexed values, it is a match and move on to the next.
-        if (this.matchFilter(indexes, filter)) {
-          matches.push(value);
-          break; // next match
-        }
+      if (this.matchItem(item, filters)) {
+        matches.push(item.value);
       }
     }
-
     return matches;
   }
 
-  async executeSingleFilterQuery(
+  /**
+   * Execute a query against a single filter and return all results.
+   */
+  private async executeSingleFilterQuery(
     tenant: string, andFilter: Filter, matches: Map<string, IndexedItem<T>>, options?: IndexLevelOptions
   ): Promise<void> {
     // Note: We have an array of Promises in order to support OR (anyOf) matches when given a list of accepted values for a property
@@ -318,151 +272,6 @@ export class IndexLevel<T> {
     }
   }
 
-  /**
-   * Gets the sort indexes given an itemId. This is a reverse lookup to construct starting keys, as well as deleting indexed items.
-   */
-  private async getSortIndexes(tenant: string, itemId: string): Promise<Indexes|undefined> {
-    const tenantPartition = await this.db.partition(tenant);
-    const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
-    const serializedIndexes = await indexPartition.get(itemId);
-    if (serializedIndexes === undefined) {
-      // invalid itemId
-      return;
-    }
-
-    return JSON.parse(serializedIndexes) as Indexes;
-  }
-
-  /**
-   * Gets the sort property starting point for a LevelDB query given an itemId as a cursor.
-   * Used as (gt) for ascending queries, or (lt) for descending queries.
-   */
-  private async getStartingKeyForCursor(tenant: string, itemId: string, sortProperty: string, filters: Filter[]): Promise<string|undefined> {
-    const sortIndexes = await this.getSortIndexes(tenant, itemId);
-    if (sortIndexes === undefined) {
-      // invalid itemId
-      return;
-    }
-
-    const sortValue = sortIndexes[sortProperty];
-    if (sortValue === undefined) {
-      // invalid sort property
-      return undefined;
-    }
-
-    if (filters.length === 0) {
-      return IndexLevel.keySegmentJoin(this.encodeValue(sortValue), itemId);
-    }
-
-    for (const filter of filters) {
-      // make sure the cursor matches at least one of the given filters
-      if (this.matchFilter(sortIndexes, filter)) {
-        return IndexLevel.keySegmentJoin(this.encodeValue(sortValue), itemId);
-      }
-    }
-  }
-
-  /**
-   * Evaluates a OneOfFilter given an indexedValue extracted from the index.
-   *
-   * @param filter An array of EqualityFilters. Treated as an OR.
-   * @param indexedValue the indexed value being compared.
-   * @returns true if any of the given filters match the indexedValue
-   */
-  private matchOneOf(filter: OneOfFilter, indexedValue: unknown): boolean {
-    for (const orFilterValue of new Set(filter)) {
-      if (this.encodeValue(indexedValue) === this.encodeValue(orFilterValue)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * Evaluates if the given indexedValue is within the range given by the RangeFilter.
-   *
-   * @param rangeFilter
-   * @param indexedValue
-   * @returns true if all of the range filter conditions are met.
-   */
-  private matchRange(rangeFilter: RangeFilter, indexedValue: unknown): boolean {
-    const filterConditions: Array<(value: string) => boolean> = [];
-    for (const filterComparator in rangeFilter) {
-      const comparatorName = filterComparator as keyof RangeFilter;
-      const filterComparatorValue = rangeFilter[comparatorName];
-      const encodedFilterValue = this.encodeValue(filterComparatorValue);
-      switch (comparatorName) {
-      case 'lt':
-        filterConditions.push((v) => v < encodedFilterValue);
-        break;
-      case 'lte':
-        filterConditions.push((v) => v <= encodedFilterValue);
-        break;
-      case 'gt':
-        filterConditions.push((v) => v > encodedFilterValue);
-        break;
-      case 'gte':
-        filterConditions.push((v) => v >= encodedFilterValue);
-        break;
-      }
-    }
-    return filterConditions.every((c) => c(this.encodeValue(indexedValue)));
-  }
-
-  /**
-   * Evaluates the given filter against the indexed values retrieved from the DB.
-   *
-   * @param indexedValues the indexed values for an item retrieved from teh database.
-   * @param filter
-   * @returns true if all of the filter properties match.
-   */
-  private matchFilter(indexedValues: Indexes, filter: Filter): boolean {
-    // set of unique query properties.
-    // if count of missing property matches is 0, it means the data/object fully matches the filter
-    const missingPropertyMatchesForId: Set<string> = new Set([ ...Object.keys(filter) ]);
-
-    for (const filterName in filter) {
-      const filterValue = filter[filterName];
-      const indexedValue = indexedValues[filterName];
-      if (indexedValue === undefined) {
-        return false;
-      }
-
-      if (typeof filterValue === 'object') {
-        if (Array.isArray(filterValue)) {
-          // `propertyFilter` is a OneOfFilter
-          // if OneOfFilter, the cursor properties are a map of each individual EqualFilter and the associated cursor string
-          // Support OR matches by querying for each values separately,
-          if (this.matchOneOf(filterValue, indexedValue)) {
-            missingPropertyMatchesForId.delete(filterName);
-            if (missingPropertyMatchesForId.size === 0) {
-              return true;
-            }
-          }
-        } else {
-          // `propertyFilter` is a `RangeFilter`
-          // if RangeFilter use the string curser associated with the `propertyName`
-          if (this.matchRange(filterValue, indexedValue)) {
-            missingPropertyMatchesForId.delete(filterName);
-            if (missingPropertyMatchesForId.size === 0) {
-              return true;
-            }
-          }
-        }
-      } else {
-        // propertyFilter is an EqualFilter, meaning it is a non-object primitive type
-        // if EqualFilter use the string cursor associated with the `propertyName`
-        if (this.encodeValue(indexedValue) === this.encodeValue(filterValue)) {
-          missingPropertyMatchesForId.delete(filterName);
-          if (missingPropertyMatchesForId.size === 0) {
-            return true;
-          }
-        }
-      }
-    }
-    return missingPropertyMatchesForId.size === 0;
-  }
-
   private async filterExactMatches(
     tenant:string,
     propertyName: string,
@@ -514,7 +323,7 @@ export class IndexLevel<T> {
 
     for await (const [ key, value ] of filterPartition.iterator(iteratorOptions, options)) {
       // if "greater-than" is specified, skip all keys that contains the exact value given in the "greater-than" condition
-      if ('gt' in rangeFilter && this.extractValueFromKey(key) === this.encodeValue(rangeFilter.gt)) {
+      if ('gt' in rangeFilter && this.extractIndexValueFromKey(key) === this.encodeValue(rangeFilter.gt)) {
         continue;
       }
       matches.push(JSON.parse(value) as IndexedItem<T>);
@@ -532,6 +341,211 @@ export class IndexLevel<T> {
     }
 
     return matches;
+  }
+
+  /**
+   * Iterates through each sorted index item given a specific sortProperty.
+   * If a cursor is passed, the starting value (gt or lt) is derived from that.
+   */
+  private async * sortedIndexIterator(
+    tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions
+  ): AsyncGenerator<IndexedItem<T>> {
+    const { sortProperty, sortDirection = SortDirection.Ascending, cursor } = queryOptions;
+
+    // if there is a cursor we fetch the starting key given the sort property, otherwise we start from the beginning of the index.
+    const startKey = cursor ? await this.getStartingKeyForCursor(tenant, cursor, sortProperty, filters) : '';
+    if (startKey === undefined) {
+      // getStartingKeyForCursor returns undefined if an invalid cursor is provided, we return an empty result set.
+      return [];
+    }
+
+    const iteratorOptions: LevelWrapperIteratorOptions<string> = {
+      gt: startKey
+    };
+
+    // if we are sorting in descending order we can iterate in reverse.
+    if (sortDirection === SortDirection.Descending) {
+      iteratorOptions.reverse = true;
+      if (cursor !== undefined) {
+        // if a cursor is provided and we are sorting in descending order, the startKey should be the upper bound.
+        iteratorOptions.lt = startKey;
+        delete iteratorOptions.gt;
+      }
+    }
+
+    const tenantPartition = await this.db.partition(tenant);
+    const sortPartition = await tenantPartition.partition(`__${sortProperty}__sort`);
+    for await (const [ _, val ] of sortPartition.iterator(iteratorOptions, options)) {
+      const { value, indexes, itemId } = JSON.parse(val);
+      yield { value, indexes, itemId };
+    }
+  }
+
+  /**
+   * Gets the sort property starting point for a LevelDB query given an itemId as a cursor.
+   * Used as (gt) for ascending queries, or (lt) for descending queries.
+   */
+  private async getStartingKeyForCursor(tenant: string, itemId: string, sortProperty: string, filters: Filter[]): Promise<string|undefined> {
+    const sortIndexes = await this.getSortIndexes(tenant, itemId);
+    if (sortIndexes === undefined) {
+      // invalid itemId
+      return;
+    }
+
+    const sortValue = sortIndexes[sortProperty];
+    if (sortValue === undefined) {
+      // invalid sort property
+      return undefined;
+    }
+
+    if (filters.length === 0) {
+      return IndexLevel.keySegmentJoin(this.encodeValue(sortValue), itemId);
+    }
+
+    for (const filter of filters) {
+      // make sure the cursor matches at least one of the given filters
+      if (this.matchFilter(sortIndexes, filter)) {
+        return IndexLevel.keySegmentJoin(this.encodeValue(sortValue), itemId);
+      }
+    }
+  }
+
+  private sortItems(itemA: IndexedItem<T>, itemB: IndexedItem<T>, sortProperty: string, direction: SortDirection): number {
+    const aValue = this.encodeValue(itemA.indexes[sortProperty]) + itemA.itemId;
+    const bValue = this.encodeValue(itemB.indexes[sortProperty]) + itemB.itemId;
+    return direction === SortDirection.Ascending ?
+      lexicographicalCompare(aValue, bValue) :
+      lexicographicalCompare(bValue, aValue);
+  }
+
+  private matchItem(item: IndexedItem<T>, filters: Filter[]): boolean {
+    const { indexes } = item;
+    if (filters.length === 0) {
+      return true;
+    }
+
+    for (const filter of filters) {
+      // if any of the filters match the indexed values, it is a match and move on to the next.
+      if (this.matchFilter(indexes, filter)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Evaluates the given filter against the indexed values retrieved from the DB.
+   *
+   * @param indexedValues the indexed values for an item retrieved from teh database.
+   * @param filter
+   * @returns true if all of the filter properties match.
+   */
+  private matchFilter(indexedValues: Indexes, filter: Filter): boolean {
+    // set of unique query properties.
+    // if count of missing property matches is 0, it means the data/object fully matches the filter
+    const missingPropertyMatchesForId: Set<string> = new Set([ ...Object.keys(filter) ]);
+
+    for (const filterName in filter) {
+      if (missingPropertyMatchesForId.size === 0) {
+        return true;
+      }
+
+      const filterValue = filter[filterName];
+      const indexedValue = indexedValues[filterName];
+      if (indexedValue === undefined) {
+        return false;
+      }
+
+      if (typeof filterValue === 'object') {
+        if (Array.isArray(filterValue)) {
+          // `propertyFilter` is a OneOfFilter
+          // if OneOfFilter, the cursor properties are a map of each individual EqualFilter and the associated cursor string
+          // Support OR matches by querying for each values separately,
+          if (this.matchOneOf(filterValue, indexedValue)) {
+            missingPropertyMatchesForId.delete(filterName);
+            continue;
+          }
+        } else {
+          // `propertyFilter` is a `RangeFilter`
+          // if RangeFilter use the string curser associated with the `propertyName`
+          if (this.matchRange(filterValue, indexedValue)) {
+            missingPropertyMatchesForId.delete(filterName);
+            continue;
+          }
+        }
+      } else {
+        // propertyFilter is an EqualFilter, meaning it is a non-object primitive type
+        // if EqualFilter use the string cursor associated with the `propertyName`
+        if (this.encodeValue(indexedValue) === this.encodeValue(filterValue)) {
+          missingPropertyMatchesForId.delete(filterName);
+          continue;
+        }
+      }
+    }
+    return missingPropertyMatchesForId.size === 0;
+  }
+
+  /**
+   * Evaluates a OneOfFilter given an indexedValue extracted from the index.
+   *
+   * @param filter An array of EqualityFilters. Treated as an OR.
+   * @param indexedValue the indexed value being compared.
+   * @returns true if any of the given filters match the indexedValue
+   */
+  private matchOneOf(filter: OneOfFilter, indexedValue: unknown): boolean {
+    for (const orFilterValue of new Set(filter)) {
+      if (this.encodeValue(indexedValue) === this.encodeValue(orFilterValue)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Evaluates if the given indexedValue is within the range given by the RangeFilter.
+   *
+   * @param rangeFilter
+   * @param indexedValue
+   * @returns true if all of the range filter conditions are met.
+   */
+  private matchRange(rangeFilter: RangeFilter, indexedValue: unknown): boolean {
+    const filterConditions: Array<(value: string) => boolean> = [];
+    for (const filterComparator in rangeFilter) {
+      const comparatorName = filterComparator as keyof RangeFilter;
+      const filterComparatorValue = rangeFilter[comparatorName];
+      const encodedFilterValue = this.encodeValue(filterComparatorValue);
+      switch (comparatorName) {
+      case 'lt':
+        filterConditions.push((v) => v < encodedFilterValue);
+        break;
+      case 'lte':
+        filterConditions.push((v) => v <= encodedFilterValue);
+        break;
+      case 'gt':
+        filterConditions.push((v) => v > encodedFilterValue);
+        break;
+      case 'gte':
+        filterConditions.push((v) => v >= encodedFilterValue);
+        break;
+      }
+    }
+    return filterConditions.every((c) => c(this.encodeValue(indexedValue)));
+  }
+
+  /**
+   * Gets the sort indexes given an itemId. This is a reverse lookup to construct starting keys, as well as deleting indexed items.
+   */
+  private async getSortIndexes(tenant: string, itemId: string): Promise<Indexes|undefined> {
+    const tenantPartition = await this.db.partition(tenant);
+    const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
+    const serializedIndexes = await indexPartition.get(itemId);
+    if (serializedIndexes === undefined) {
+      // invalid itemId
+      return;
+    }
+
+    return JSON.parse(serializedIndexes) as Indexes;
   }
 
   private encodeValue(value: unknown): string {
@@ -566,7 +580,13 @@ export class IndexLevel<T> {
     return prefix + String(value + offset).padStart(PADDING_LENGTH, '0');
   }
 
-  private extractValueFromKey(key: string): string {
+  /**
+   * Given a key from an indexed partitioned property key.
+   *  ex:
+   *    key: '"2023-05-25T11:22:33.000000Z"\u0000bayfreigu....'
+   *    returns "2023-05-25T11:22:33.000000Z"
+   */
+  private extractIndexValueFromKey(key: string): string {
     const [value] = key.split(IndexLevel.delimiter);
     return value;
   }
