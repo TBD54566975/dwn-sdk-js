@@ -97,10 +97,9 @@ export class RecordsQueryHandler implements MethodHandler {
     recordsQuery: RecordsQuery
   ): Promise<{ messages: GenericMessage[], cursor?: string }> {
     const { dateSort, filter, pagination } = recordsQuery.message.descriptor;
-
     // fetch all published records matching the query
     const queryFilter = {
-      ...Records.convertFilter(filter),
+      ...Records.convertFilter(filter, dateSort),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       isLatestBaseState : true
@@ -134,7 +133,6 @@ export class RecordsQueryHandler implements MethodHandler {
   ): Promise<{ messages: GenericMessage[], cursor?: string }> {
     const { dateSort, pagination } = recordsQuery.message.descriptor;
     const filters = [];
-
     if (RecordsQueryHandler.filterIncludesPublishedRecords(recordsQuery)) {
       filters.push(RecordsQueryHandler.buildPublishedRecordsFilter(recordsQuery));
     }
@@ -169,9 +167,10 @@ export class RecordsQueryHandler implements MethodHandler {
   }
 
   private static buildPublishedRecordsFilter(recordsQuery: RecordsQuery): Filter {
+    const { dateSort, filter } = recordsQuery.message.descriptor;
     // fetch all published records matching the query
     return {
-      ...Records.convertFilter(recordsQuery.message.descriptor.filter),
+      ...Records.convertFilter(filter, dateSort),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       published         : true,
@@ -183,9 +182,10 @@ export class RecordsQueryHandler implements MethodHandler {
    * Creates a filter for unpublished records that are intended for the query author (where `recipient` is the author).
    */
   private static buildUnpublishedRecordsForQueryAuthorFilter(recordsQuery: RecordsQuery): Filter {
+    const { dateSort, filter } = recordsQuery.message.descriptor;
     // include records where recipient is query author
     return {
-      ...Records.convertFilter(recordsQuery.message.descriptor.filter),
+      ...Records.convertFilter(filter, dateSort),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       recipient         : recordsQuery.author!,
@@ -199,8 +199,9 @@ export class RecordsQueryHandler implements MethodHandler {
    * Validation that `protocol` and other required protocol-related fields occurs before this method.
    */
   private static buildUnpublishedProtocolAuthorizedRecordsFilter(recordsQuery: RecordsQuery): Filter {
+    const { dateSort, filter } = recordsQuery.message.descriptor;
     return {
-      ...Records.convertFilter(recordsQuery.message.descriptor.filter),
+      ...Records.convertFilter(filter, dateSort),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       isLatestBaseState : true,
@@ -212,9 +213,10 @@ export class RecordsQueryHandler implements MethodHandler {
    * Creates a filter for only unpublished records where the author is the same as the query author.
    */
   private static buildUnpublishedRecordsByQueryAuthorFilter(recordsQuery: RecordsQuery): Filter {
+    const { dateSort, filter } = recordsQuery.message.descriptor;
     // include records where author is the same as the query author
     return {
-      ...Records.convertFilter(recordsQuery.message.descriptor.filter),
+      ...Records.convertFilter(filter, dateSort),
       author            : recordsQuery.author!,
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
