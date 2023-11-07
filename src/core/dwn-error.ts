@@ -72,6 +72,7 @@ export enum DwnErrorCode {
   ProtocolsConfigureInvalidRole = 'ProtocolsConfigureInvalidRole',
   ProtocolsConfigureInvalidActionMissingOf = 'ProtocolsConfigureInvalidActionMissingOf',
   ProtocolsConfigureInvalidActionOfNotAllowed = 'ProtocolsConfigureInvalidActionOfNotAllowed',
+  ProtocolsConfigureInvalidRecipientOfAction = 'ProtocolsConfigureInvalidRecipientOfAction',
   ProtocolsConfigureQueryNotAllowed = 'ProtocolsConfigureQueryNotAllowed',
   ProtocolsConfigureUnauthorized = 'ProtocolsConfigureUnauthorized',
   ProtocolsQueryUnauthorized = 'ProtocolsQueryUnauthorized',

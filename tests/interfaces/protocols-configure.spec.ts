@@ -285,7 +285,35 @@ describe('ProtocolsConfigure', () => {
           .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidActionOfNotAllowed);
       });
 
-      it('rejects protocol definitions with actions that don\'t contain `of` and  `who` is `author` or `recipient`', async () => {
+      it('rejects protocol definitions with actions that have recipient-can rules with actions other than delete or update', async () => {
+        const definition = {
+          published : true,
+          protocol  : 'http://example.com',
+          types     : {
+            message: {},
+          },
+          structure: {
+            message: {
+              $actions: [{
+                who : 'recipient',
+                can : 'read' // not allowed, should be either delete or update
+              }]
+            }
+          }
+        };
+
+        const alice = await TestDataGenerator.generatePersona();
+
+        const createProtocolsConfigurePromise = ProtocolsConfigure.create({
+          signer: Jws.createSigner(alice),
+          definition
+        });
+
+        await expect(createProtocolsConfigurePromise)
+          .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidRecipientOfAction);
+      });
+
+      it('rejects protocol definitions with actions that don\'t contain `of` and  `who` is `author`', async () => {
         const definition = {
           published : true,
           protocol  : 'http://example.com',

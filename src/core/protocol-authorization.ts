@@ -549,6 +549,17 @@ export class ProtocolAuthorization {
         } else {
           continue;
         }
+      } else if (actionRule.who === ProtocolActor.Recipient && actionRule.of === undefined && author !== undefined) {
+        // Author must be recipient of the record being accessed
+        let recordsWriteMessage: RecordsWriteMessage;
+        if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
+          recordsWriteMessage = incomingMessage.message as RecordsWriteMessage;
+        } else {
+          recordsWriteMessage = ancestorMessageChain[ancestorMessageChain.length - 1];
+        }
+        if (recordsWriteMessage.descriptor.recipient === author) {
+          return;
+        }
       } else if (actionRule.who === ProtocolActor.Anyone) {
         return;
       } else if (author === undefined) {

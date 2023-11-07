@@ -388,6 +388,54 @@ export function testRecordsDeleteHandler(): void {
             const recordsDeleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
             expect(recordsDeleteReply.status.code).to.eq(202);
           });
+
+          it('should allow delete with direct recipient rule', async () => {
+            // scenario: Alice creates a 'post' with Bob as recipient. Bob is able to delete
+            //           the 'post' because he was recipient of it. Carol is not able to delete.
+
+            const protocolDefinition = recipientCanProtocolDefinition as ProtocolDefinition;
+            const alice = await TestDataGenerator.generatePersona();
+            const bob = await TestDataGenerator.generatePersona();
+            const carol = await TestDataGenerator.generatePersona();
+
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+
+            // setting up a stub DID resolver
+            TestStubGenerator.stubDidResolver(didResolver, [alice, bob, carol]);
+
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
+
+            // Alice creates a 'post' with Bob as recipient
+            const recordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'post',
+            });
+            const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+            expect(recordsWriteReply.status.code).to.eq(202);
+
+            // Carol is unable to delete the 'post'
+            const carolRecordsDelete = await TestDataGenerator.generateRecordsDelete({
+              author   : carol,
+              recordId : recordsWrite.message.recordId,
+            });
+            const carolRecordsDeleteReply = await dwn.processMessage(alice.did, carolRecordsDelete.message);
+            expect(carolRecordsDeleteReply.status.code).to.eq(401);
+            expect(carolRecordsDeleteReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+            // Bob is able to delete the post
+            const bobRecordsDelete = await TestDataGenerator.generateRecordsDelete({
+              author   : bob,
+              recordId : recordsWrite.message.recordId,
+            });
+            const bobRecordsDeleteReply = await dwn.processMessage(alice.did, bobRecordsDelete.message);
+            expect(bobRecordsDeleteReply.status.code).to.eq(202);
+          });
         });
 
         describe('author action rules', () => {

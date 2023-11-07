@@ -2,6 +2,7 @@ import type { Signer } from '../types/signer.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types/protocols-types.js';
 
 import { Message } from '../core/message.js';
+import { ProtocolActor } from '../types/protocols-types.js';
 import { Time } from '../utils/time.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
@@ -133,8 +134,19 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
         );
       }
 
-      // Validate that if `who` is not set to `anyone` then `of` is set
-      if (action.who !== undefined && ['author', 'recipient'].includes(action.who) && !action.of) {
+      // Validate that if `who === recipient` and `of === undefined`, then `can` is either `delete` or `update`
+      if (action.who === ProtocolActor.Recipient &&
+          action.of === undefined &&
+          !['update', 'delete'].includes(action.can)
+      ) {
+        throw new DwnError(
+          DwnErrorCode.ProtocolsConfigureInvalidRecipientOfAction,
+          'Rules for `recipient` without `of` property must have `can` === `delete` or `update`'
+        );
+      }
+
+      // Validate that if `who` is set to `author` then `of` is set
+      if (action.who === ProtocolActor.Author && !action.of) {
         throw new DwnError(
           DwnErrorCode.ProtocolsConfigureInvalidActionMissingOf,
           `'of' is required at protocol path (${protocolPath})`

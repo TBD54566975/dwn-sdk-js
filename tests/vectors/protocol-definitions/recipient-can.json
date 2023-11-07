@@ -7,6 +7,16 @@
   },
   "structure": {
     "post": {
+      "$actions": [
+        {
+          "who": "recipient",
+          "can": "update"
+        },
+        {
+          "who": "recipient",
+          "can": "delete"
+        }
+      ],
       "tag": {
         "$actions": [
           {
