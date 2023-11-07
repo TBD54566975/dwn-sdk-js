@@ -8,7 +8,7 @@ import type { ProtocolActionRule, ProtocolDefinition, ProtocolRuleSet, Protocols
 
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
-import { DwnInterfaceName, DwnMethodName } from './message.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import { ProtocolAction, ProtocolActor } from '../types/protocols-types.js';
 
 export class ProtocolAuthorization {

@@ -11,13 +11,13 @@ import { DidResolver } from '../../src/did/did-resolver.js';
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { expect } from 'chai';
-import { Jws } from '../../src/index.js';
+import { Message } from '../../src/core/message.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { PermissionsGrantHandler } from '../../src/handlers/permissions-grant.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
-import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message.js';
+import { DwnInterfaceName, DwnMethodName, Jws } from '../../src/index.js';
 
 export function testPermissionsGrantHandler(): void {
   describe('PermissionsGrantHandler.handle()', () => {

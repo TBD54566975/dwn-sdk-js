@@ -1,13 +1,14 @@
+import type { DelegatedGrantMessage } from '../types/permissions-types.js';
 import type { PermissionsRequest } from './permissions-request.js';
 import type { Signer } from '../types/signer.js';
-import type { DelegatedGrantMessage, PermissionConditions, PermissionScope, RecordsPermissionScope } from '../types/permissions-types.js';
+import type { PermissionConditions, PermissionScope, RecordsPermissionScope } from '../types/permissions-types.js';
 import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types/permissions-types.js';
 
+import { Message } from '../core/message.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Time } from '../utils/time.js';
-import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
-import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
 
 export type PermissionsGrantOptions = {
@@ -37,7 +38,7 @@ export type CreateFromPermissionsRequestOverrides = {
 export class PermissionsGrant extends Message<PermissionsGrantMessage> {
 
   public static async parse(message: PermissionsGrantMessage): Promise<PermissionsGrant> {
-    await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+    await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     PermissionsGrant.validateScope(message);
     Time.validateTimestamp(message.descriptor.messageTimestamp);
     Time.validateTimestamp(message.descriptor.dateExpires);

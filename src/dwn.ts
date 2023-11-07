@@ -16,6 +16,7 @@ import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, Reco
 import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DidResolver } from './did/did-resolver.js';
 import { EventsGetHandler } from './handlers/events-get.js';
+import { Message } from './core/message.js';
 import { messageReplyFromError } from './core/message-reply.js';
 import { MessagesGetHandler } from './handlers/messages-get.js';
 import { PermissionsGrantHandler } from './handlers/permissions-grant.js';
@@ -27,7 +28,7 @@ import { RecordsDeleteHandler } from './handlers/records-delete.js';
 import { RecordsQueryHandler } from './handlers/records-query.js';
 import { RecordsReadHandler } from './handlers/records-read.js';
 import { RecordsWriteHandler } from './handlers/records-write.js';
-import { DwnInterfaceName, DwnMethodName, Message } from './core/message.js';
+import { DwnInterfaceName, DwnMethodName } from './enums/dwn-interface-method.js';
 
 export class Dwn {
   private methodHandlers: { [key:string]: MethodHandler };

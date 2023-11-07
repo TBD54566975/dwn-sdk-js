@@ -7,7 +7,7 @@ import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessageWithOptio
 
 import { authenticate } from '../core/auth.js';
 import { DataStream } from '../utils/data-stream.js';
-import { DwnInterfaceName } from '../core/message.js';
+import { DwnInterfaceName } from '../enums/dwn-interface-method.js';
 import { Encoder } from '../utils/encoder.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';

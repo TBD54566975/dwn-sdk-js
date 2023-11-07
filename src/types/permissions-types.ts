@@ -1,5 +1,6 @@
+import type { GeneralJws } from './jws-types.js';
 import type { AuthorizationModel, GenericMessage } from './message-types.js';
-import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
+import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export type PermissionScope = {
   interface: DwnInterfaceName;
@@ -104,10 +105,15 @@ export type PermissionsGrantMessage = GenericMessage & {
   descriptor: PermissionsGrantDescriptor;
 };
 
+export type DelegatedGrantMessage = GenericMessage & {
+  authorization: {
+    /**
+     * The signature of the message signer.
+     */
+    signature: GeneralJws;
+  };
 
-export type DelegatedGrantMessage = PermissionsGrantMessage & {
-  // overriding `PermissionsGrantMessage` with `delegated` being required to be true
-  descriptor: {
+  descriptor: PermissionsGrantDescriptor & {
     delegated: true;
   };
 };

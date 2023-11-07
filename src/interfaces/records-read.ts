@@ -9,9 +9,8 @@ import { Records } from '../utils/records.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Time } from '../utils/time.js';
-import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
-import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export type RecordsReadOptions = {
   filter: RecordsFilter;
@@ -29,7 +28,7 @@ export class RecordsRead extends Message<RecordsReadMessage> {
 
   public static async parse(message: RecordsReadMessage): Promise<RecordsRead> {
     if (message.authorization !== undefined) {
-      await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+      await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     }
     Time.validateTimestamp(message.descriptor.messageTimestamp);
 

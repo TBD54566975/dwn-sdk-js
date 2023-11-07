@@ -1,47 +1,9 @@
+import type { AuthorizationModel } from '../types/message-types.js';
 import type { DidResolver } from '../did/did-resolver.js';
-import type { GeneralJws } from '../types/jws-types.js';
-import type { AuthorizationModel, Descriptor, GenericSignaturePayload } from '../types/message-types.js';
 
-import { Cid } from '../utils/cid.js';
 import { GeneralJwsVerifier } from '../jose/jws/general/verifier.js';
-import { Jws } from '../utils/jws.js';
 import { PermissionsGrant } from '../interfaces/permissions-grant.js';
-import { validateJsonSchema } from '../schema-validator.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
-
-/**
- * Validates the structural integrity of the message signature given.
- * NOTE: signature is not verified.
- * @param payloadJsonSchemaKey The key to look up the JSON schema referenced in `compile-validators.js` and perform payload schema validation on.
- * @returns the parsed JSON payload object if validation succeeds.
- */
-export async function validateMessageSignatureIntegrity(
-  messageSignature: GeneralJws,
-  messageDescriptor: Descriptor,
-  payloadJsonSchemaKey: string = 'GenericSignaturePayload',
-): Promise<GenericSignaturePayload> {
-
-  if (messageSignature.signatures.length !== 1) {
-    throw new DwnError(DwnErrorCode.AuthenticationMoreThanOneSignatureNotSupported, 'expected no more than 1 signature for authorization purpose');
-  }
-
-  // validate payload integrity
-  const payloadJson = Jws.decodePlainObjectPayload(messageSignature);
-
-  validateJsonSchema(payloadJsonSchemaKey, payloadJson);
-
-  // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
-  const { descriptorCid } = payloadJson;
-  const expectedDescriptorCid = await Cid.computeCid(messageDescriptor);
-  if (descriptorCid !== expectedDescriptorCid) {
-    throw new DwnError(
-      DwnErrorCode.AuthenticateDescriptorCidMismatch,
-      `provided descriptorCid ${descriptorCid} does not match expected CID ${expectedDescriptorCid}`
-    );
-  }
-
-  return payloadJson;
-}
 
 /**
  * Verifies all the signature(s) within the authorization property.

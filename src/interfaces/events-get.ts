@@ -1,9 +1,9 @@
 import type { Signer } from '../types/signer.js';
 import type { EventsGetDescriptor, EventsGetMessage } from '../types/event-types.js';
 
+import { Message } from '../core/message.js';
 import { Time } from '../utils/time.js';
-import { validateMessageSignatureIntegrity } from '../core/auth.js';
-import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export type EventsGetOptions = {
   watermark?: string;
@@ -15,7 +15,7 @@ export class EventsGet extends Message<EventsGetMessage> {
 
   public static async parse(message: EventsGetMessage): Promise<EventsGet> {
     Message.validateJsonSchema(message);
-    await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+    await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     return new EventsGet(message);

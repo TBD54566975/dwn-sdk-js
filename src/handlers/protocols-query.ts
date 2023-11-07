@@ -9,7 +9,7 @@ import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolsQuery } from '../interfaces/protocols-query.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 
-import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export class ProtocolsQueryHandler implements MethodHandler {
 

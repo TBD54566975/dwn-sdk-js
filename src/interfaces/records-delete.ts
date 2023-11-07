@@ -7,9 +7,8 @@ import { Message } from '../core/message.js';
 
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Time } from '../utils/time.js';
-import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
-import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export type RecordsDeleteOptions = {
   recordId: string;
@@ -21,7 +20,7 @@ export type RecordsDeleteOptions = {
 export class RecordsDelete extends Message<RecordsDeleteMessage> {
 
   public static async parse(message: RecordsDeleteMessage): Promise<RecordsDelete> {
-    await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+    await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     const recordsDelete = new RecordsDelete(message);

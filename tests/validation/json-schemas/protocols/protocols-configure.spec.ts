@@ -1,9 +1,10 @@
 import type { ProtocolDefinition, ProtocolsConfigureMessage } from '../../../../src/types/protocols-types.js';
 
 import { expect } from 'chai';
+import { Message } from '../../../../src/core/message.js';
 import { TestDataGenerator } from '../../../utils/test-data-generator.js';
 import { validateJsonSchema } from '../../../../src/schema-validator.js';
-import { DwnInterfaceName, DwnMethodName, Message } from '../../../../src/core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../../../../src/index.js';
 
 describe('ProtocolsConfigure schema definition', () => {
   it('should throw if unknown actor is encountered in action rule', async () => {

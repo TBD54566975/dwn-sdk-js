@@ -19,8 +19,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DwnInterfaceName, DwnMethodName } from '../../src/core/message.js';
-import { PermissionsGrant, RecordsQuery } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName, PermissionsGrant, RecordsQuery } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 

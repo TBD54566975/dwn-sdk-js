@@ -8,9 +8,8 @@ import { Message } from '../core/message.js';
 import { Records } from '../utils/records.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Time } from '../utils/time.js';
-import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
-import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import { validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
 export enum DateSort {
@@ -84,7 +83,7 @@ export class RecordsQuery {
   public static async parse(message: RecordsQueryMessage): Promise<RecordsQuery> {
     let signaturePayload;
     if (message.authorization !== undefined) {
-      signaturePayload = await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+      signaturePayload = await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     }
 
     Records.validateDelegatedGrantReferentialIntegrity(message, signaturePayload);

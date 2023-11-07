@@ -21,7 +21,7 @@ export { DidResolver } from './did/did-resolver.js';
 export { Dwn } from './dwn.js';
 export { DwnConstant } from './core/dwn-constant.js';
 export { DwnError, DwnErrorCode } from './core/dwn-error.js';
-export { DwnInterfaceName, DwnMethodName } from './core/message.js';
+export { DwnInterfaceName, DwnMethodName } from './enums/dwn-interface-method.js';
 export { Encoder } from './utils/encoder.js';
 export { EventsGet, EventsGetOptions } from './interfaces/events-get.js';
 export { Encryption, EncryptionAlgorithm } from './utils/encryption.js';

@@ -28,9 +28,8 @@ import { RecordsGrantAuthorization } from '../core/records-grant-authorization.j
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Secp256k1 } from '../utils/secp256k1.js';
 import { Time } from '../utils/time.js';
-import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
-import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
 export type RecordsWriteOptions = {
@@ -225,10 +224,10 @@ export class RecordsWrite {
   public static async parse(message: RecordsWriteMessage): Promise<RecordsWrite> {
     // asynchronous checks that are required by the constructor to initialize members properly
 
-    await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor, 'RecordsWriteSignaturePayload');
+    await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor, 'RecordsWriteSignaturePayload');
 
     if (message.authorization.ownerSignature !== undefined) {
-      await validateMessageSignatureIntegrity(message.authorization.ownerSignature, message.descriptor);
+      await Message.validateMessageSignatureIntegrity(message.authorization.ownerSignature, message.descriptor);
     }
 
     await RecordsWrite.validateAttestationIntegrity(message);

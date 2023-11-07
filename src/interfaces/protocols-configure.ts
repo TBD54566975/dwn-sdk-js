@@ -1,10 +1,10 @@
 import type { Signer } from '../types/signer.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types/protocols-types.js';
 
+import { Message } from '../core/message.js';
 import { Time } from '../utils/time.js';
-import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
-import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
 export type ProtocolsConfigureOptions = {
@@ -21,7 +21,7 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
   public static async parse(message: ProtocolsConfigureMessage): Promise<ProtocolsConfigure> {
     Message.validateJsonSchema(message);
     ProtocolsConfigure.validateProtocolDefinition(message.descriptor.definition);
-    await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+    await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     return new ProtocolsConfigure(message);

@@ -8,7 +8,7 @@ import type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from
 import { messageReplyFromError } from '../core/message-reply.js';
 import { MessagesGet } from '../interfaces/messages-get.js';
 import { authenticate, authorize } from '../core/auth.js';
-import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 type HandleArgs = { tenant: string, message: MessagesGetMessage };
 

@@ -12,7 +12,7 @@ import { Records } from '../utils/records.js';
 
 import { SortOrder } from '../types/message-types.js';
 import { DateSort, RecordsQuery } from '../interfaces/records-query.js';
-import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export class RecordsQueryHandler implements MethodHandler {
 

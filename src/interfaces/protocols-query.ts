@@ -4,10 +4,10 @@ import type { Signer } from '../types/signer.js';
 import type { ProtocolsQueryDescriptor, ProtocolsQueryFilter, ProtocolsQueryMessage } from '../types/protocols-types.js';
 
 import { GrantAuthorization } from '../core/grant-authorization.js';
+import { Message } from '../core/message.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Time } from '../utils/time.js';
-import { validateMessageSignatureIntegrity } from '../core/auth.js';
-import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import { normalizeProtocolUrl, validateProtocolUrlNormalized } from '../utils/url.js';
 
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
@@ -23,7 +23,7 @@ export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
 
   public static async parse(message: ProtocolsQueryMessage): Promise<ProtocolsQuery> {
     if (message.authorization !== undefined) {
-      await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+      await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     }
 
     if (message.descriptor.filter !== undefined) {

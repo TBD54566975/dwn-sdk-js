@@ -5,8 +5,9 @@ import type { MessageStore } from '../types/message-store.js';
 import type { RecordsWriteMessage, RecordsWriteMessageWithOptionalEncodedData } from '../types/records-types.js';
 
 import { DwnConstant } from '../core/dwn-constant.js';
+import { DwnMethodName } from '../enums/dwn-interface-method.js';
+import { Message } from '../core/message.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
-import { DwnMethodName, Message } from '../core/message.js';
 
 /**
  * A class that provides an abstraction for the usage of MessageStore, DataStore, and EventLog.

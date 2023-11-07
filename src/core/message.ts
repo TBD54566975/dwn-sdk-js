@@ -10,27 +10,7 @@ import { Jws } from '../utils/jws.js';
 import { lexicographicalCompare } from '../utils/string.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { validateJsonSchema } from '../schema-validator.js';
-
-export enum DwnInterfaceName {
-  Events = 'Events',
-  Messages = 'Messages',
-  Permissions = 'Permissions',
-  Protocols = 'Protocols',
-  Records = 'Records'
-}
-
-export enum DwnMethodName {
-  Configure = 'Configure',
-  Create = 'Create',
-  Get = 'Get',
-  Grant = 'Grant',
-  Query = 'Query',
-  Read = 'Read',
-  Request = 'Request',
-  Revoke = 'Revoke',
-  Write = 'Write',
-  Delete = 'Delete'
-}
+import { DwnError, DwnErrorCode } from './dwn-error.js';
 
 export abstract class Message<M extends GenericMessage> {
   readonly message: M;
@@ -222,5 +202,40 @@ export abstract class Message<M extends GenericMessage> {
     // else `messageTimestamp` is the same between a and b
     // compare the `dataCid` instead, the < and > operators compare strings in lexicographical order
     return Message.compareCid(a, b);
+  }
+
+
+  /**
+   * Validates the structural integrity of the message signature given.
+   * NOTE: signature is not verified.
+   * @param payloadJsonSchemaKey The key to look up the JSON schema referenced in `compile-validators.js` and perform payload schema validation on.
+   * @returns the parsed JSON payload object if validation succeeds.
+   */
+  public static async validateMessageSignatureIntegrity(
+    messageSignature: GeneralJws,
+    messageDescriptor: Descriptor,
+    payloadJsonSchemaKey: string = 'GenericSignaturePayload',
+  ): Promise<GenericSignaturePayload> {
+
+    if (messageSignature.signatures.length !== 1) {
+      throw new DwnError(DwnErrorCode.AuthenticationMoreThanOneSignatureNotSupported, 'expected no more than 1 signature for authorization purpose');
+    }
+
+    // validate payload integrity
+    const payloadJson = Jws.decodePlainObjectPayload(messageSignature);
+
+    validateJsonSchema(payloadJsonSchemaKey, payloadJson);
+
+    // `descriptorCid` validation - ensure that the provided descriptorCid matches the CID of the actual message
+    const { descriptorCid } = payloadJson;
+    const expectedDescriptorCid = await Cid.computeCid(messageDescriptor);
+    if (descriptorCid !== expectedDescriptorCid) {
+      throw new DwnError(
+        DwnErrorCode.AuthenticateDescriptorCidMismatch,
+        `provided descriptorCid ${descriptorCid} does not match expected CID ${expectedDescriptorCid}`
+      );
+    }
+
+    return payloadJson;
   }
 }
