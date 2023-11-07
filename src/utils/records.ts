@@ -3,6 +3,7 @@ import type { Readable } from 'readable-stream';
 import type { Filter, GenericSignaturePayload, RangeFilter } from '../types/message-types.js';
 import type { RangeCriterion, RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsReadMessage, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
 
+import { DateSort } from '../interfaces/records-query.js';
 import { Encoder } from './encoder.js';
 import { Encryption } from './encryption.js';
 import { KeyDerivationScheme } from './hd-key.js';
@@ -247,7 +248,7 @@ export class Records {
    * @param filter A RecordsFilter
    * @returns {Filter} a generic Filter able to be used with MessageStore.
    */
-  public static convertFilter(filter: RecordsFilter): Filter {
+  public static convertFilter(filter: RecordsFilter, dateSort?: DateSort): Filter {
     const filterCopy = { ...filter } as Filter;
 
     const { dateCreated, datePublished, dateUpdated } = filter;
@@ -261,6 +262,11 @@ export class Records {
       // only return published records when filtering with a datePublished range.
       filterCopy.published = true;
       filterCopy.datePublished = datePublishedFilter;
+    }
+
+    //if sorting by published, results must filter for published
+    if (dateSort === DateSort.PublishedAscending || dateSort === DateSort.PublishedDescending) {
+      filterCopy.published = true;
     }
 
     const messageTimestampFilter = dateUpdated ? this.convertRangeCriterion(dateUpdated) : undefined;
