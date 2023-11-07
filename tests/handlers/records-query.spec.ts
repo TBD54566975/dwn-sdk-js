@@ -1534,32 +1534,32 @@ export function testRecordsQueryHandler(): void {
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'alice page 1');
         const page1PaginationLastMessage = await Message.getCid(sortedMessages.at(9)!); // get messageCid from message with authorization.
-        expect(results.paginationMessageCid).to.equal(page1PaginationLastMessage, 'alice page 1');
+        expect(results.cursor).to.equal(page1PaginationLastMessage, 'alice page 1');
 
         // page2 alice
         const aliceQueryMessageDataPage2 = await TestDataGenerator.generateRecordsQuery({
           author     : alice,
           filter     : { schema },
           dateSort   : DateSort.CreatedAscending,
-          pagination : { limit: 10, messageCid: results.paginationMessageCid },
+          pagination : { limit: 10, cursor: results.cursor },
         });
         results = await dwn.processMessage(alice.did, aliceQueryMessageDataPage2.message) ;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'alice page 2');
         const page2PaginationLastMessage = await Message.getCid(sortedMessages.at(19)!); // get messageCid from message with authorization.
-        expect(results.paginationMessageCid).to.equal(page2PaginationLastMessage, 'alice page 2');
+        expect(results.cursor).to.equal(page2PaginationLastMessage, 'alice page 2');
 
         // page3 alice
         const aliceQueryMessageDataPage3 = await TestDataGenerator.generateRecordsQuery({
           author     : alice,
           filter     : { schema },
           dateSort   : DateSort.CreatedAscending,
-          pagination : { limit: 10, messageCid: results.paginationMessageCid },
+          pagination : { limit: 10, cursor: results.cursor },
         });
         results = await dwn.processMessage(alice.did, aliceQueryMessageDataPage3.message) ;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(5, 'alice page 3');
-        expect(results.paginationMessageCid).to.not.exist;
+        expect(results.cursor).to.not.exist;
 
         const bobs = (m: RecordsWriteMessage): boolean => {
           return m.descriptor.recipient === bob.did || m.descriptor.published === true || Message.getSigner(m) === bob.did;
@@ -1581,19 +1581,19 @@ export function testRecordsQueryHandler(): void {
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'bob page 1');
         const page1BobPaginationLastMessage = await Message.getCid(bobSorted.at(9)!);
-        expect(results.paginationMessageCid).to.equal(page1BobPaginationLastMessage, 'bob page last message 1');
+        expect(results.cursor).to.equal(page1BobPaginationLastMessage, 'bob page last message 1');
         bobRetrieved.push(...results.entries!);
 
         const bobQueryMessagePage2 = await TestDataGenerator.generateRecordsQuery({
           author     : bob,
           filter     : { schema },
           dateSort   : DateSort.CreatedAscending,
-          pagination : { limit: 10, messageCid: results.paginationMessageCid },
+          pagination : { limit: 10, cursor: results.cursor },
         });
         results = await dwn.processMessage(alice.did, bobQueryMessagePage2.message) ;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'bob page 2');
-        expect(results.paginationMessageCid).to.not.exist;
+        expect(results.cursor).to.not.exist;
         bobRetrieved.push(...results.entries!);
 
         const compareRecordId = (a: GenericMessage, b:GenericMessage): boolean => {

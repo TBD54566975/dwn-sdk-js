@@ -3,7 +3,7 @@ import type { Readable } from 'readable-stream';
 import type { Filter, GenericSignaturePayload, RangeFilter } from '../types/message-types.js';
 import type { RangeCriterion, RecordsFilter, RecordsQueryMessage, RecordsReadMessage, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
 
-import { DateSort } from '../interfaces/records-query.js';
+import { DateSort } from '../types/records-types.js';
 import { Encoder } from './encoder.js';
 import { Encryption } from './encryption.js';
 import { KeyDerivationScheme } from './hd-key.js';
