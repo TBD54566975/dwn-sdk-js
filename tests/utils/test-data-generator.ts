@@ -31,7 +31,8 @@ import {
   KeyDerivationScheme,
   Records
 } from '../../src/index.js';
-import type { PermissionConditions, PermissionScope, PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from '../../src/types/permissions-types.js';
+import type { PermissionConditions, PermissionScope } from '../../src/types/permissions-grant-descriptor.js';
+import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from '../../src/types/permissions-types.js';
 import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 
 

@@ -1,4 +1,4 @@
-import type { DelegatedGrantMessage } from '../types/permissions-types.js';
+import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { GeneralJws } from '../types/jws-types.js';
 import type { Signer } from '../types/signer.js';
 import type { AuthorizationModel, Descriptor, GenericMessage, GenericSignaturePayload } from '../types/message-types.js';

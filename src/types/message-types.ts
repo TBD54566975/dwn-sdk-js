@@ -1,4 +1,4 @@
-import type { DelegatedGrantMessage } from '../types/permissions-types.js';
+import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { GeneralJws } from './jws-types.js';
 
 /**

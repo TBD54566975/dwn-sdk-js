@@ -32,7 +32,7 @@ import { Encoder } from '../../src/utils/encoder.js';
 import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
 import { Jws } from '../../src/utils/jws.js';
 import { Message } from '../../src/core/message.js';
-import { PermissionsConditionPublication } from '../../src/types/permissions-types.js';
+import { PermissionsConditionPublication } from '../../src/types/permissions-grant-descriptor.js';
 import { RecordsRead } from '../../src/interfaces/records-read.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { RecordsWriteHandler } from '../../src/handlers/records-write.js';

@@ -1,8 +1,8 @@
-import type { DelegatedGrantMessage } from '../types/permissions-types.js';
+import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
+import type { PermissionsGrantMessage } from '../types/permissions-types.js';
 import type { PermissionsRequest } from './permissions-request.js';
 import type { Signer } from '../types/signer.js';
-import type { PermissionConditions, PermissionScope, RecordsPermissionScope } from '../types/permissions-types.js';
-import type { PermissionsGrantDescriptor, PermissionsGrantMessage } from '../types/permissions-types.js';
+import type { PermissionConditions, PermissionScope, PermissionsGrantDescriptor, RecordsPermissionScope } from '../types/permissions-grant-descriptor.js';
 
 import { Message } from '../core/message.js';
 import { removeUndefinedProperties } from '../utils/object.js';

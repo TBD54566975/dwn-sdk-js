@@ -2,10 +2,10 @@ import { expect } from 'chai';
 
 import type { CreateFromPermissionsRequestOverrides } from '../../src/interfaces/permissions-grant.js';
 import type { PermissionScope } from '../../src/index.js';
-import type { RecordsPermissionScope } from '../../src/types/permissions-types.js';
+import type { RecordsPermissionScope } from '../../src/types/permissions-grant-descriptor.js';
 
 import { Message } from '../../src/core/message.js';
-import { PermissionsConditionPublication } from '../../src/types/permissions-types.js';
+import { PermissionsConditionPublication } from '../../src/types/permissions-grant-descriptor.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';

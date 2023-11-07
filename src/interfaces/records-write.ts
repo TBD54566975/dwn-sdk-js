@@ -1,4 +1,4 @@
-import type { DelegatedGrantMessage } from '../types/permissions-types.js';
+import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { GeneralJws } from '../types/jws-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PublicJwk } from '../types/jose-types.js';
