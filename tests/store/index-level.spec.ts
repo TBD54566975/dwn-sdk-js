@@ -960,7 +960,7 @@ describe('IndexLevel', () => {
           { digit: { gte: lowerBounds, lte: upperBounds } },
           { property: true }
         ], { sortProperty: 'val' });
-
+      console.log('results 1');
       expect(results).to.eql([...compareResults], 'results ascending');
 
       const compareResultsAfterCursor = new Set([
@@ -975,6 +975,7 @@ describe('IndexLevel', () => {
         { property: true },
       ], { sortProperty: 'val', cursor: IndexLevel.encodeNumberValue(4) });
 
+      console.log('results 2');
       expect(resultsWithCursor).to.eql([...compareResultsAfterCursor], 'results after cursor ascending');
 
       const descResults = await testIndex.query(tenant,
@@ -983,6 +984,7 @@ describe('IndexLevel', () => {
           { property: true }
         ], { sortProperty: 'val', sortDirection: SortDirection.Descending });
 
+      console.log('results 3');
       expect(descResults).to.eql([...compareResults].reverse(), 'results descending');
 
       const descResultsAfterCursor = await testIndex.query(tenant,
@@ -997,6 +999,7 @@ describe('IndexLevel', () => {
       ].sort((a,b) => lexicographicalCompare(b.val, a.val))
         .map(i => i.val));
 
+      console.log('results 4');
       expect(descResultsAfterCursor).to.eql([...compareResultsAfterCursorDesc], 'results after cursor descending');
     });
   });
