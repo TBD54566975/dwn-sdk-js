@@ -709,6 +709,32 @@ export class RecordsWrite {
     return initialRecordsWrite.author === this.author;
   }
 
+
+  public async constructRecordsWriteIndexes(
+    isLatestBaseState: boolean
+  ): Promise<Record<string, string>> {
+    const message = this.message;
+    const descriptor = { ...message.descriptor };
+    delete descriptor.published; // handle `published` specifically further down
+
+    const indexes: Record<string, any> = {
+      ...descriptor,
+      isLatestBaseState,
+      published : !!message.descriptor.published,
+      author    : this.author,
+      recordId  : message.recordId,
+      entryId   : await RecordsWrite.getEntryId(this.author, this.message.descriptor)
+    };
+
+    // add additional indexes to optional values if given
+    // TODO: index multi-attesters to be unblocked by #205 - Revisit database interfaces (https://github.com/TBD54566975/dwn-sdk-js/issues/205)
+    if (this.attesters.length > 0) { indexes.attester = this.attesters[0]; }
+    if (message.contextId !== undefined) { indexes.contextId = message.contextId; }
+
+    return indexes;
+  }
+
+
   /**
    * Checks if the given message is the initial entry of a record.
    */

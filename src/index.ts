@@ -1,6 +1,6 @@
 // export everything that we want to be consumable
 export type { DwnConfig } from './dwn.js';
-export type { DwnServiceEndpoint, ServiceEndpoint, DidDocument, DidResolutionResult, DidResolutionMetadata, DidDocumentMetadata, VerificationMethod } from './did/did-resolver.js';
+export type { DidMethodResolver, DwnServiceEndpoint, ServiceEndpoint, DidDocument, DidResolutionResult, DidResolutionMetadata, DidDocumentMetadata, VerificationMethod } from './types/did-types.js';
 export type { EventLog, Event, GetEventsOptions } from './types/event-log.js';
 export type { EventsGetMessage, EventsGetReply } from './types/event-types.js';
 export type { Filter, GenericMessage, MessageSort, Pagination } from './types/message-types.js';
@@ -17,7 +17,7 @@ export { DataStream } from './utils/data-stream.js';
 export { DerivedPrivateJwk, HdKey, KeyDerivationScheme } from './utils/hd-key.js';
 export { DidKeyResolver } from './did/did-key-resolver.js';
 export { DidIonResolver } from './did/did-ion-resolver.js';
-export { DidResolver, DidMethodResolver } from './did/did-resolver.js';
+export { DidResolver } from './did/did-resolver.js';
 export { Dwn } from './dwn.js';
 export { DwnConstant } from './core/dwn-constant.js';
 export { DwnError, DwnErrorCode } from './core/dwn-error.js';

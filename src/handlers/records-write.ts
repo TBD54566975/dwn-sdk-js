@@ -4,8 +4,7 @@ import type { EventLog } from '../types/event-log.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
-import type { RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsDeleteMessage, RecordsWriteMessage, RecordsWriteMessageWithOptionalEncodedData } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { Cid } from '../utils/cid.js';
@@ -91,7 +90,7 @@ export class RecordsWriteHandler implements MethodHandler {
     }
 
     const isLatestBaseState = true;
-    const indexes = await constructRecordsWriteIndexes(recordsWrite, isLatestBaseState);
+    const indexes = await recordsWrite.constructRecordsWriteIndexes(isLatestBaseState);
 
     // if data is below a certain threshold, we embed the data directly into the message for storage in MessageStore.
     let messageWithOptionalEncodedData: RecordsWriteMessageWithOptionalEncodedData = message;
@@ -249,30 +248,4 @@ export class RecordsWriteHandler implements MethodHandler {
       );
     }
   }
-
-}
-
-export async function constructRecordsWriteIndexes(
-  recordsWrite: RecordsWrite,
-  isLatestBaseState: boolean
-): Promise<Record<string, string>> {
-  const message = recordsWrite.message;
-  const descriptor = { ...message.descriptor };
-  delete descriptor.published; // handle `published` specifically further down
-
-  const indexes: Record<string, any> = {
-    ...descriptor,
-    isLatestBaseState,
-    published : !!message.descriptor.published,
-    author    : recordsWrite.author,
-    recordId  : message.recordId,
-    entryId   : await RecordsWrite.getEntryId(recordsWrite.author, recordsWrite.message.descriptor)
-  };
-
-  // add additional indexes to optional values if given
-  // TODO: index multi-attesters to be unblocked by #205 - Revisit database interfaces (https://github.com/TBD54566975/dwn-sdk-js/issues/205)
-  if (recordsWrite.attesters.length > 0) { indexes.attester = recordsWrite.attesters[0]; }
-  if (message.contextId !== undefined) { indexes.contextId = message.contextId; }
-
-  return indexes;
 }

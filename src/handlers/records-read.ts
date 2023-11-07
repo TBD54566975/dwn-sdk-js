@@ -3,8 +3,7 @@ import type { DidResolver } from '../did/did-resolver.js';
 import type { Filter } from '../types/message-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
-import type { RecordsReadMessage, RecordsReadReply } from '../types/records-types.js';
+import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessageWithOptionalEncodedData } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { DataStream } from '../utils/data-stream.js';

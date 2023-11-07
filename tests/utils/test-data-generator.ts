@@ -1,4 +1,4 @@
-import type { DidResolutionResult } from '../../src/did/did-resolver.js';
+import type { DidResolutionResult } from '../../src/types/did-types.js';
 import type { GeneralJws } from '../../src/types/jws-types.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsFilter } from '../../src/types/records-types.js';

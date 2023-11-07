@@ -2,7 +2,7 @@ import type { DataStore } from '../types/data-store.js';
 import type { DidResolver } from '../did/did-resolver.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
+import type { RecordsWriteMessageWithOptionalEncodedData } from '../types/records-types.js';
 import type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from '../types/messages-types.js';
 
 import { messageReplyFromError } from '../core/message-reply.js';
