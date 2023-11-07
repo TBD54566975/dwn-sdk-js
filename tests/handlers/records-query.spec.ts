@@ -986,25 +986,23 @@ export function testRecordsQueryHandler(): void {
         expect(publishedWriteReply.status.code).to.equal(202);
         expect(unpublishedWriteReply.status.code).to.equal(202);
 
-        // test published date ascending sort does not include any records that is not published
+        // test published date ascending sort does not include any records that are not published
         const publishedAscendingQueryData = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           dateSort : DateSort.PublishedAscending,
           filter   : { schema }
         });
         const publishedAscendingQueryReply = await dwn.processMessage(alice.did, publishedAscendingQueryData.message);
-
         expect(publishedAscendingQueryReply.entries?.length).to.equal(1);
         expect(publishedAscendingQueryReply.entries![0].recordId).to.equal(publishedWriteData.message.recordId);
 
-        // test published date scending sort does not include any records that is not published
+        // test published date scending sort does not include any records that are not published
         const publishedDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           dateSort : DateSort.PublishedDescending,
           filter   : { schema }
         });
         const publishedDescendingQueryReply = await dwn.processMessage(alice.did, publishedDescendingQueryData.message);
-
         expect(publishedDescendingQueryReply.entries?.length).to.equal(1);
         expect(publishedDescendingQueryReply.entries![0].recordId).to.equal(publishedWriteData.message.recordId);
       });

@@ -164,7 +164,6 @@ export class IndexLevel<T> {
       return this.sortedIndexQuery(tenant, filters, queryOptions, options);
     }
 
-    // return this.sortedIndexQuery(tenant, filters, queryOptions, options);
     return this.filteredIndexQuery(tenant, filters, queryOptions, options);
   }
 
@@ -183,6 +182,7 @@ export class IndexLevel<T> {
     if (cursorIndex === -1) {
       return [];
     }
+
     const start = cursorIndex !== undefined ? cursorIndex + 1 : 0;
     const end = limit ? limit + start : undefined;
     return results.slice(start, end).map(item => item.value);
@@ -208,7 +208,7 @@ export class IndexLevel<T> {
     const { sortProperty, limit, sortDirection = SortDirection.Ascending, cursor } = queryOptions;
 
     // if there is a cursor we fetch the starting key given the sort property, otherwise we start from the beginning of the index.
-    const startKey = cursor ? await this.getStartingKeyForCursor(tenant, cursor, sortProperty) : '';
+    const startKey = cursor ? await this.getStartingKeyForCursor(tenant, cursor, sortProperty, filters) : '';
     if (startKey === undefined) {
       // getStartingKeyForCursor returns undefined if an invalid cursor is provided, we return an empty result set.
       return [];
@@ -337,7 +337,7 @@ export class IndexLevel<T> {
    * Gets the sort property starting point for a LevelDB query given an itemId as a cursor.
    * Used as (gt) for ascending queries, or (lt) for descending queries.
    */
-  private async getStartingKeyForCursor(tenant: string, itemId: string, sortProperty: string): Promise<string|undefined> {
+  private async getStartingKeyForCursor(tenant: string, itemId: string, sortProperty: string, filters: Filter[]): Promise<string|undefined> {
     const sortIndexes = await this.getSortIndexes(tenant, itemId);
     if (sortIndexes === undefined) {
       // invalid itemId
@@ -349,7 +349,17 @@ export class IndexLevel<T> {
       // invalid sort property
       return undefined;
     }
-    return IndexLevel.keySegmentJoin(this.encodeValue(sortValue), itemId);
+
+    if (filters.length === 0) {
+      return IndexLevel.keySegmentJoin(this.encodeValue(sortValue), itemId);
+    }
+
+    for (const filter of filters) {
+      // make sure the cursor matches at least one of the given filters
+      if (this.matchFilter(sortIndexes, filter)) {
+        return IndexLevel.keySegmentJoin(this.encodeValue(sortValue), itemId);
+      }
+    }
   }
 
   /**
