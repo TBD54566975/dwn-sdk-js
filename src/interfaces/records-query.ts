@@ -1,7 +1,7 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { Signer } from '../types/signer.js';
+import type { DateSort, RecordsFilter, RecordsQueryDescriptor, RecordsQueryMessage } from '../types/records-types.js';
 import type { GenericMessage, GenericSignaturePayload, Pagination } from '../types/message-types.js';
-import type { RecordsFilter, RecordsQueryDescriptor, RecordsQueryMessage } from '../types/records-types.js';
 
 import { Jws } from '../utils/jws.js';
 import { Message } from '../core/message.js';
@@ -11,13 +11,6 @@ import { Time } from '../utils/time.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import { validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
-
-export enum DateSort {
-  CreatedAscending = 'createdAscending',
-  CreatedDescending = 'createdDescending',
-  PublishedAscending = 'publishedAscending',
-  PublishedDescending = 'publishedDescending'
-}
 
 export type RecordsQueryOptions = {
   messageTimestamp?: string;

@@ -10,11 +10,13 @@ import friendRoleProtocolDefinition from '../vectors/protocol-definitions/friend
 import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
 
 import { ArrayUtility } from '../../src/utils/array.js';
+import { DateSort } from '../../src/types/records-types.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { DwnConstant } from '../../src/core/dwn-constant.js';
 import { Encoder } from '../../src/utils/encoder.js';
 import { Jws } from '../../src/utils/jws.js';
 import { Message } from '../../src/core/message.js';
+import { RecordsQuery } from '../../src/interfaces/records-query.js';
 import { RecordsQueryHandler } from '../../src/handlers/records-query.js';
 import { RecordsWriteHandler } from '../../src/handlers/records-write.js';
 import { SortOrder } from '../../src/types/message-types.js';
@@ -22,7 +24,6 @@ import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
-import { DateSort, RecordsQuery } from '../../src/interfaces/records-query.js';
 import { DidResolver, Dwn, RecordsWrite, Time } from '../../src/index.js';
 import { DwnErrorCode, MessageStoreLevel } from '../../src/index.js';
 
