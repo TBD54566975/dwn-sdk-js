@@ -1,15 +1,10 @@
-import type { MessageStore } from '../types/message-store.js';
-import type { RecordsWrite } from './records-write.js';
 import type { Signer } from '../types/signer.js';
 import type { RecordsFilter , RecordsReadDescriptor, RecordsReadMessage } from '../types/records-types.js';
 
 import { Message } from '../core/message.js';
-import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Records } from '../utils/records.js';
-import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Time } from '../utils/time.js';
-import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export type RecordsReadOptions = {
@@ -71,26 +66,5 @@ export class RecordsRead extends Message<RecordsReadMessage> {
     Message.validateJsonSchema(message);
 
     return new RecordsRead(message);
-  }
-
-  public async authorize(tenant: string, newestRecordsWrite: RecordsWrite, messageStore: MessageStore): Promise<void> {
-    const { descriptor } = newestRecordsWrite.message;
-
-    // if author is the same as the target tenant, we can directly grant access
-    if (this.author === tenant) {
-      return;
-    } else if (descriptor.published === true) {
-      // authentication is not required for published data
-      return;
-    } else if (this.author !== undefined && this.author === descriptor.recipient) {
-      // The recipient of a message may always read it
-      return;
-    } else if (this.author !== undefined && this.signaturePayload!.permissionsGrantId !== undefined) {
-      await RecordsGrantAuthorization.authorizeRead(tenant, this, newestRecordsWrite, this.author, messageStore);
-    } else if (descriptor.protocol !== undefined) {
-      await ProtocolAuthorization.authorizeRead(tenant, this, newestRecordsWrite, messageStore);
-    } else {
-      throw new DwnError(DwnErrorCode.RecordsReadAuthorizationFailed, 'message failed authorization');
-    }
   }
 }

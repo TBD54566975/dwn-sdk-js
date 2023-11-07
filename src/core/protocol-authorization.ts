@@ -268,12 +268,14 @@ export class ProtocolAuthorization {
 
   /**
    * Constructs a chain of ancestor messages
+   * @param newestRecordsWrite The newest RecordsWrite associated with the recordId being written.
+   *                           This will be the incoming RecordsWrite itself if the incoming message is a RecordsWrite.
    * @returns the ancestor chain of messages where the first element is the root of the chain; returns empty array if no parent is specified.
    */
   private static async constructAncestorMessageChain(
     tenant: string,
     incomingMessage: RecordsDelete | RecordsRead | RecordsWrite,
-    recordsWrite: RecordsWrite,
+    newestRecordsWrite: RecordsWrite,
     messageStore: MessageStore
   )
     : Promise<RecordsWriteMessage[]> {
@@ -281,14 +283,14 @@ export class ProtocolAuthorization {
 
     if (incomingMessage.message.descriptor.method !== DwnMethodName.Write) {
       // Unless inboundMessage is a Write, recordsWrite is also an ancestor message
-      ancestorMessageChain.push(recordsWrite.message);
+      ancestorMessageChain.push(newestRecordsWrite.message);
     }
 
-    const protocol = recordsWrite.message.descriptor.protocol!;
-    const contextId = recordsWrite.message.contextId!;
+    const protocol = newestRecordsWrite.message.descriptor.protocol!;
+    const contextId = newestRecordsWrite.message.contextId!;
 
     // keep walking up the chain from the inbound message's parent, until there is no more parent
-    let currentParentId = recordsWrite.message.descriptor.parentId;
+    let currentParentId = newestRecordsWrite.message.descriptor.parentId;
     while (currentParentId !== undefined) {
       // fetch parent
       const query: Filter = {

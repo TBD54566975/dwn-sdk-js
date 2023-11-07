@@ -14,6 +14,7 @@ import { Encoder } from '../utils/encoder.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
+import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { StorageController } from '../store/storage-controller.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
@@ -50,7 +51,7 @@ export class RecordsWriteHandler implements MethodHandler {
     // authentication & authorization
     try {
       await authenticate(message.authorization, this.didResolver);
-      await recordsWrite.authorize(tenant, this.messageStore);
+      await RecordsWriteHandler.authorizeRecordsWrite(tenant, recordsWrite, this.messageStore);
     } catch (e) {
       return messageReplyFromError(e, 401);
     }
@@ -247,6 +248,31 @@ export class RecordsWriteHandler implements MethodHandler {
         DwnErrorCode.RecordsWriteDataSizeMismatch,
         `actual data size ${actualDataSize} bytes does not match dataSize in descriptor: ${expectedDataSize}`
       );
+    }
+  }
+
+  private static async authorizeRecordsWrite(tenant: string, recordsWrite: RecordsWrite, messageStore: MessageStore): Promise<void> {
+    // if owner DID is specified, it must be the same as the tenant DID
+    if (recordsWrite.owner !== undefined && recordsWrite.owner !== tenant) {
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteOwnerAndTenantMismatch,
+        `Owner ${recordsWrite.owner} must be the same as tenant ${tenant} when specified.`
+      );
+    }
+
+    if (recordsWrite.owner !== undefined) {
+      // if incoming message is a write retained by this tenant, we by-design always allow
+      // NOTE: the "owner === tenant" check is already done earlier in this method
+      return;
+    } else if (recordsWrite.author === tenant) {
+      // if author is the same as the target tenant, we can directly grant access
+      return;
+    } else if (recordsWrite.author !== undefined && recordsWrite.signaturePayload!.permissionsGrantId !== undefined) {
+      await RecordsGrantAuthorization.authorizeWrite(tenant, recordsWrite, recordsWrite.author, messageStore);
+    } else if (recordsWrite.message.descriptor.protocol !== undefined) {
+      await ProtocolAuthorization.authorizeWrite(tenant, recordsWrite, messageStore);
+    } else {
+      throw new DwnError(DwnErrorCode.RecordsWriteAuthorizationFailed, 'message failed authorization');
     }
   }
 }

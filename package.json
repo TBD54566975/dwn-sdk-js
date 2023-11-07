@@ -155,7 +155,7 @@
     "lint": "eslint . --ext .ts --max-warnings 0",
     "lint:fix": "eslint . --ext .ts --fix",
     "madge": "madge --circular ./src/index.ts",
-    "test:node": "npm run compile-validators && tsc && c8 mocha \"dist/esm/tests/**/*.spec.js\"",
+    "test:node": "npm run madge && npm run compile-validators && tsc && c8 mocha \"dist/esm/tests/**/*.spec.js\"",
     "test:browser": "npm run compile-validators && cross-env karma start karma.conf.cjs",
     "test:browser-debug": "npm run compile-validators && cross-env karma start karma.conf.debug.cjs",
     "license-check": "license-report --only=prod > license-report.json && node ./build/license-check.cjs",

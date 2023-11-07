@@ -22,9 +22,7 @@ import { GeneralJwsBuilder } from '../jose/jws/general/builder.js';
 import { Jws } from '../utils/jws.js';
 import { KeyDerivationScheme } from '../utils/hd-key.js';
 import { Message } from '../core/message.js';
-import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Records } from '../utils/records.js';
-import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Secp256k1 } from '../utils/secp256k1.js';
 import { Time } from '../utils/time.js';
@@ -505,31 +503,6 @@ export class RecordsWrite {
     this._ownerSignaturePayload = Jws.decodePlainObjectPayload(ownerSignature);
     this._owner = Jws.extractDid(signer.keyId);
     ;
-  }
-
-  public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
-    // if owner DID is specified, it must be the same as the tenant DID
-    if (this.owner !== undefined && this.owner !== tenant) {
-      throw new DwnError(
-        DwnErrorCode.RecordsWriteOwnerAndTenantMismatch,
-        `Owner ${this.owner} must be the same as tenant ${tenant} when specified.`
-      );
-    }
-
-    if (this.owner !== undefined) {
-      // if incoming message is a write retained by this tenant, we by-design always allow
-      // NOTE: the "owner === tenant" check is already done earlier in this method
-      return;
-    } else if (this.author === tenant) {
-      // if author is the same as the target tenant, we can directly grant access
-      return;
-    } else if (this.author !== undefined && this.signaturePayload!.permissionsGrantId !== undefined) {
-      await RecordsGrantAuthorization.authorizeWrite(tenant, this, this.author, messageStore);
-    } else if (this.message.descriptor.protocol !== undefined) {
-      await ProtocolAuthorization.authorizeWrite(tenant, this, messageStore);
-    } else {
-      throw new DwnError(DwnErrorCode.RecordsWriteAuthorizationFailed, 'message failed authorization');
-    }
   }
 
   /**

@@ -11,7 +11,9 @@ import { DwnInterfaceName } from '../enums/dwn-interface-method.js';
 import { Encoder } from '../utils/encoder.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
+import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Records } from '../utils/records.js';
+import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { RecordsRead } from '../interfaces/records-read.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
@@ -62,7 +64,7 @@ export class RecordsReadHandler implements MethodHandler {
 
     const newestRecordsWrite = existingMessages[0] as RecordsWriteMessageWithOptionalEncodedData;
     try {
-      await recordsRead.authorize(tenant, await RecordsWrite.parse(newestRecordsWrite), this.messageStore);
+      await RecordsReadHandler.authorizeRecordsRead(tenant, recordsRead, await RecordsWrite.parse(newestRecordsWrite), this.messageStore);
     } catch (error) {
       return messageReplyFromError(error, 401);
     }
@@ -92,4 +94,30 @@ export class RecordsReadHandler implements MethodHandler {
     };
     return messageReply;
   };
+
+  private static async authorizeRecordsRead(
+    tenant: string,
+    recordsRead: RecordsRead,
+    newestRecordsWrite: RecordsWrite,
+    messageStore: MessageStore
+  ): Promise<void> {
+    const { descriptor } = newestRecordsWrite.message;
+
+    // if author is the same as the target tenant, we can directly grant access
+    if (recordsRead.author === tenant) {
+      return;
+    } else if (descriptor.published === true) {
+      // authentication is not required for published data
+      return;
+    } else if (recordsRead.author !== undefined && recordsRead.author === descriptor.recipient) {
+      // The recipient of a message may always read it
+      return;
+    } else if (recordsRead.author !== undefined && recordsRead.signaturePayload!.permissionsGrantId !== undefined) {
+      await RecordsGrantAuthorization.authorizeRead(tenant, recordsRead, newestRecordsWrite, recordsRead.author, messageStore);
+    } else if (descriptor.protocol !== undefined) {
+      await ProtocolAuthorization.authorizeRead(tenant, recordsRead, newestRecordsWrite, messageStore);
+    } else {
+      throw new DwnError(DwnErrorCode.RecordsReadAuthorizationFailed, 'message failed authorization');
+    }
+  }
 }

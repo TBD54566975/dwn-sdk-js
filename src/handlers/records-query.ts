@@ -10,7 +10,6 @@ import { DateSort } from '../types/records-types.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Records } from '../utils/records.js';
-
 import { RecordsQuery } from '../interfaces/records-query.js';
 import { SortOrder } from '../types/message-types.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';

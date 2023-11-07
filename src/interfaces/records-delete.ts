@@ -1,13 +1,9 @@
-import type { MessageStore } from '../types//message-store.js';
-import type { RecordsWrite } from './records-write.js';
 import type { Signer } from '../types/signer.js';
 import type { RecordsDeleteDescriptor, RecordsDeleteMessage } from '../types/records-types.js';
 
 import { Message } from '../core/message.js';
 
-import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Time } from '../utils/time.js';
-import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export type RecordsDeleteOptions = {
@@ -53,18 +49,5 @@ export class RecordsDelete extends Message<RecordsDeleteMessage> {
     Message.validateJsonSchema(message);
 
     return new RecordsDelete(message);
-  }
-
-  public async authorize(tenant: string, newestRecordsWrite: RecordsWrite, messageStore: MessageStore): Promise<void> {
-    if (this.author === tenant) {
-      return;
-    } else if (newestRecordsWrite.message.descriptor.protocol !== undefined) {
-      await ProtocolAuthorization.authorizeDelete(tenant, this, newestRecordsWrite, messageStore);
-    } else {
-      throw new DwnError(
-        DwnErrorCode.RecordsDeleteAuthorizationFailed,
-        'RecordsDelete message failed authorization'
-      );
-    }
   }
 }

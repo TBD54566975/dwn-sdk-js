@@ -9,9 +9,11 @@ import type { RecordsDeleteMessage, RecordsWriteMessage } from '../types/records
 import { authenticate } from '../core/auth.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
+import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { RecordsDelete } from '../interfaces/records-delete.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { StorageController } from '../store/storage-controller.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export class RecordsDeleteHandler implements MethodHandler {
@@ -71,8 +73,9 @@ export class RecordsDeleteHandler implements MethodHandler {
 
     // authorization
     try {
-      await recordsDelete.authorize(
+      await RecordsDeleteHandler.authorizeRecordsDelete(
         tenant,
+        recordsDelete,
         await RecordsWrite.parse(newestExistingMessage as RecordsWriteMessage),
         this.messageStore
       );
@@ -96,6 +99,24 @@ export class RecordsDeleteHandler implements MethodHandler {
     };
     return messageReply;
   };
+
+  private static async authorizeRecordsDelete(
+    tenant: string, recordsDelete:
+     RecordsDelete, newestRecordsWrite:
+     RecordsWrite, messageStore: MessageStore
+  ): Promise<void> {
+
+    if (recordsDelete.author === tenant) {
+      return;
+    } else if (newestRecordsWrite.message.descriptor.protocol !== undefined) {
+      await ProtocolAuthorization.authorizeDelete(tenant, recordsDelete, newestRecordsWrite, messageStore);
+    } else {
+      throw new DwnError(
+        DwnErrorCode.RecordsDeleteAuthorizationFailed,
+        'RecordsDelete message failed authorization'
+      );
+    }
+  }
 }
 
 export async function constructIndexes(tenant: string, recordsDelete: RecordsDelete): Promise<Record<string, string>> {

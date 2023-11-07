@@ -7,6 +7,7 @@ import chai, { expect } from 'chai';
 
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
+import { RecordsWriteHandler } from '../../src/handlers/records-write.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { Time } from '../../src/utils/time.js';
@@ -40,7 +41,7 @@ describe('RecordsWrite', () => {
 
       const messageStoreStub = stubInterface<MessageStore>();
 
-      await recordsWrite.authorize(alice.did, messageStoreStub);
+      await RecordsWriteHandler['authorizeRecordsWrite'](alice.did, recordsWrite, messageStoreStub);
     });
 
     it('should be able to auto-fill `datePublished` when `published` set to `true` but `datePublished` not given', async () => {
