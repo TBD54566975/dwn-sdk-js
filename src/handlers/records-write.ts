@@ -4,20 +4,21 @@ import type { EventLog } from '../types/event-log.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { RecordsWriteMessageWithOptionalEncodedData } from '../store/storage-controller.js';
-import type { RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsDeleteMessage, RecordsWriteMessage, RecordsWriteMessageWithOptionalEncodedData } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { Cid } from '../utils/cid.js';
 import { DataStream } from '../utils/data-stream.js';
 import { DwnConstant } from '../core/dwn-constant.js';
 import { Encoder } from '../utils/encoder.js';
+import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
+import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { StorageController } from '../store/storage-controller.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
-import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export type RecordsWriteHandlerOptions = {
   skipDataStorage?: boolean; // used for DWN sync
@@ -50,7 +51,7 @@ export class RecordsWriteHandler implements MethodHandler {
     // authentication & authorization
     try {
       await authenticate(message.authorization, this.didResolver);
-      await recordsWrite.authorize(tenant, this.messageStore);
+      await RecordsWriteHandler.authorizeRecordsWrite(tenant, recordsWrite, this.messageStore);
     } catch (e) {
       return messageReplyFromError(e, 401);
     }
@@ -91,7 +92,7 @@ export class RecordsWriteHandler implements MethodHandler {
     }
 
     const isLatestBaseState = true;
-    const indexes = await constructRecordsWriteIndexes(recordsWrite, isLatestBaseState);
+    const indexes = await recordsWrite.constructRecordsWriteIndexes(isLatestBaseState);
 
     // if data is below a certain threshold, we embed the data directly into the message for storage in MessageStore.
     let messageWithOptionalEncodedData: RecordsWriteMessageWithOptionalEncodedData = message;
@@ -250,29 +251,28 @@ export class RecordsWriteHandler implements MethodHandler {
     }
   }
 
-}
+  private static async authorizeRecordsWrite(tenant: string, recordsWrite: RecordsWrite, messageStore: MessageStore): Promise<void> {
+    // if owner DID is specified, it must be the same as the tenant DID
+    if (recordsWrite.owner !== undefined && recordsWrite.owner !== tenant) {
+      throw new DwnError(
+        DwnErrorCode.RecordsWriteOwnerAndTenantMismatch,
+        `Owner ${recordsWrite.owner} must be the same as tenant ${tenant} when specified.`
+      );
+    }
 
-export async function constructRecordsWriteIndexes(
-  recordsWrite: RecordsWrite,
-  isLatestBaseState: boolean
-): Promise<Record<string, string>> {
-  const message = recordsWrite.message;
-  const descriptor = { ...message.descriptor };
-  delete descriptor.published; // handle `published` specifically further down
-
-  const indexes: Record<string, any> = {
-    ...descriptor,
-    isLatestBaseState,
-    published : !!message.descriptor.published,
-    author    : recordsWrite.author,
-    recordId  : message.recordId,
-    entryId   : await RecordsWrite.getEntryId(recordsWrite.author, recordsWrite.message.descriptor)
-  };
-
-  // add additional indexes to optional values if given
-  // TODO: index multi-attesters to be unblocked by #205 - Revisit database interfaces (https://github.com/TBD54566975/dwn-sdk-js/issues/205)
-  if (recordsWrite.attesters.length > 0) { indexes.attester = recordsWrite.attesters[0]; }
-  if (message.contextId !== undefined) { indexes.contextId = message.contextId; }
-
-  return indexes;
+    if (recordsWrite.owner !== undefined) {
+      // if incoming message is a write retained by this tenant, we by-design always allow
+      // NOTE: the "owner === tenant" check is already done earlier in this method
+      return;
+    } else if (recordsWrite.author === tenant) {
+      // if author is the same as the target tenant, we can directly grant access
+      return;
+    } else if (recordsWrite.author !== undefined && recordsWrite.signaturePayload!.permissionsGrantId !== undefined) {
+      await RecordsGrantAuthorization.authorizeWrite(tenant, recordsWrite, recordsWrite.author, messageStore);
+    } else if (recordsWrite.message.descriptor.protocol !== undefined) {
+      await ProtocolAuthorization.authorizeWrite(tenant, recordsWrite, messageStore);
+    } else {
+      throw new DwnError(DwnErrorCode.RecordsWriteAuthorizationFailed, 'message failed authorization');
+    }
+  }
 }

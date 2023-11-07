@@ -2,10 +2,10 @@ import type { Signer } from '../types/signer.js';
 import type { MessagesGetDescriptor, MessagesGetMessage } from '../types/messages-types.js';
 
 import { Cid } from '../utils/cid.js';
+import { Message } from '../core/message.js';
 import { Time } from '../utils/time.js';
-import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
-import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export type MessagesGetOptions = {
   messageCids: string[];
@@ -18,7 +18,7 @@ export class MessagesGet extends Message<MessagesGetMessage> {
     Message.validateJsonSchema(message);
     this.validateMessageCids(message.descriptor.messageCids);
 
-    await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+    await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     return new MessagesGet(message);

@@ -1,11 +1,11 @@
 import type { Signer } from '../types/signer.js';
-import type { PermissionConditions, PermissionScope } from '../types/permissions-types.js';
+import type { PermissionConditions, PermissionScope } from '../types/permissions-grant-descriptor.js';
 import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types/permissions-types.js';
 
+import { Message } from '../core/message.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Time } from '../utils/time.js';
-import { validateMessageSignatureIntegrity } from '../core/auth.js';
-import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export type PermissionsRequestOptions = {
   messageTimestamp?: string;
@@ -21,7 +21,7 @@ export type PermissionsRequestOptions = {
 export class PermissionsRequest extends Message<PermissionsRequestMessage> {
 
   public static async parse(message: PermissionsRequestMessage): Promise<PermissionsRequest> {
-    await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+    await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     return new PermissionsRequest(message);

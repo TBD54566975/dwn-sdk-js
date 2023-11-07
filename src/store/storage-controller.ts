@@ -2,12 +2,12 @@ import type { DataStore } from '../types/data-store.js';
 import type { EventLog } from '../types/event-log.js';
 import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
-import type { RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsWriteMessage, RecordsWriteMessageWithOptionalEncodedData } from '../types/records-types.js';
 
-import { constructRecordsWriteIndexes } from '../handlers/records-write.js';
 import { DwnConstant } from '../core/dwn-constant.js';
+import { DwnMethodName } from '../enums/dwn-interface-method.js';
+import { Message } from '../core/message.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
-import { DwnMethodName, Message } from '../core/message.js';
 
 /**
  * A class that provides an abstraction for the usage of MessageStore, DataStore, and EventLog.
@@ -64,7 +64,7 @@ export class StorageController {
         if (existingMessageIsInitialWrite) {
           const existingRecordsWrite = await RecordsWrite.parse(message as RecordsWriteMessage);
           const isLatestBaseState = false;
-          const indexes = await constructRecordsWriteIndexes(existingRecordsWrite, isLatestBaseState);
+          const indexes = await existingRecordsWrite.constructRecordsWriteIndexes(isLatestBaseState);
           const writeMessage = message as RecordsWriteMessageWithOptionalEncodedData;
           delete writeMessage.encodedData;
           await messageStore.put(tenant, writeMessage, indexes);
@@ -78,6 +78,3 @@ export class StorageController {
     }
   }
 }
-
-// records with a data size below a threshold are stored within MessageStore with their data embedded
-export type RecordsWriteMessageWithOptionalEncodedData = RecordsWriteMessage & { encodedData?: string };

@@ -7,11 +7,11 @@ import chai, { expect } from 'chai';
 
 import { DidKeyResolver } from '../src/did/did-key-resolver.js';
 import { Dwn } from '../src/dwn.js';
-import { Encoder } from '../src/index.js';
+import { Message } from '../src/core/message.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from './utils/test-data-generator.js';
 import { TestStores } from './test-stores.js';
-import { DwnInterfaceName, DwnMethodName, Message } from '../src/core/message.js';
+import { DwnInterfaceName, DwnMethodName, Encoder } from '../src/index.js';
 
 chai.use(chaiAsPromised);
 

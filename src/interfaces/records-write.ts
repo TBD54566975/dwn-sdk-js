@@ -1,4 +1,4 @@
-import type { DelegatedGrantMessage } from '../types/permissions-types.js';
+import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { GeneralJws } from '../types/jws-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PublicJwk } from '../types/jose-types.js';
@@ -22,15 +22,12 @@ import { GeneralJwsBuilder } from '../jose/jws/general/builder.js';
 import { Jws } from '../utils/jws.js';
 import { KeyDerivationScheme } from '../utils/hd-key.js';
 import { Message } from '../core/message.js';
-import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Records } from '../utils/records.js';
-import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Secp256k1 } from '../utils/secp256k1.js';
 import { Time } from '../utils/time.js';
-import { validateMessageSignatureIntegrity } from '../core/auth.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
-import { DwnInterfaceName, DwnMethodName } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
 export type RecordsWriteOptions = {
@@ -225,10 +222,10 @@ export class RecordsWrite {
   public static async parse(message: RecordsWriteMessage): Promise<RecordsWrite> {
     // asynchronous checks that are required by the constructor to initialize members properly
 
-    await validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor, 'RecordsWriteSignaturePayload');
+    await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor, 'RecordsWriteSignaturePayload');
 
     if (message.authorization.ownerSignature !== undefined) {
-      await validateMessageSignatureIntegrity(message.authorization.ownerSignature, message.descriptor);
+      await Message.validateMessageSignatureIntegrity(message.authorization.ownerSignature, message.descriptor);
     }
 
     await RecordsWrite.validateAttestationIntegrity(message);
@@ -508,31 +505,6 @@ export class RecordsWrite {
     ;
   }
 
-  public async authorize(tenant: string, messageStore: MessageStore): Promise<void> {
-    // if owner DID is specified, it must be the same as the tenant DID
-    if (this.owner !== undefined && this.owner !== tenant) {
-      throw new DwnError(
-        DwnErrorCode.RecordsWriteOwnerAndTenantMismatch,
-        `Owner ${this.owner} must be the same as tenant ${tenant} when specified.`
-      );
-    }
-
-    if (this.owner !== undefined) {
-      // if incoming message is a write retained by this tenant, we by-design always allow
-      // NOTE: the "owner === tenant" check is already done earlier in this method
-      return;
-    } else if (this.author === tenant) {
-      // if author is the same as the target tenant, we can directly grant access
-      return;
-    } else if (this.author !== undefined && this.signaturePayload!.permissionsGrantId !== undefined) {
-      await RecordsGrantAuthorization.authorizeWrite(tenant, this, this.author, messageStore);
-    } else if (this.message.descriptor.protocol !== undefined) {
-      await ProtocolAuthorization.authorizeWrite(tenant, this, messageStore);
-    } else {
-      throw new DwnError(DwnErrorCode.RecordsWriteAuthorizationFailed, 'message failed authorization');
-    }
-  }
-
   /**
    * Validates the integrity of the RecordsWrite message assuming the message passed basic schema validation.
    * There is opportunity to integrate better with `validateSchema(...)`
@@ -708,6 +680,32 @@ export class RecordsWrite {
     const initialRecordsWrite = await RecordsWrite.parse(result[0] as RecordsWriteMessage);
     return initialRecordsWrite.author === this.author;
   }
+
+
+  public async constructRecordsWriteIndexes(
+    isLatestBaseState: boolean
+  ): Promise<Record<string, string>> {
+    const message = this.message;
+    const descriptor = { ...message.descriptor };
+    delete descriptor.published; // handle `published` specifically further down
+
+    const indexes: Record<string, any> = {
+      ...descriptor,
+      isLatestBaseState,
+      published : !!message.descriptor.published,
+      author    : this.author,
+      recordId  : message.recordId,
+      entryId   : await RecordsWrite.getEntryId(this.author, this.message.descriptor)
+    };
+
+    // add additional indexes to optional values if given
+    // TODO: index multi-attesters to be unblocked by #205 - Revisit database interfaces (https://github.com/TBD54566975/dwn-sdk-js/issues/205)
+    if (this.attesters.length > 0) { indexes.attester = this.attesters[0]; }
+    if (message.contextId !== undefined) { indexes.contextId = message.contextId; }
+
+    return indexes;
+  }
+
 
   /**
    * Checks if the given message is the initial entry of a record.

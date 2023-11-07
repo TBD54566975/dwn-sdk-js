@@ -1,4 +1,4 @@
-import type { DidMethodResolver, DidResolutionResult } from './did-resolver.js';
+import type { DidMethodResolver, DidResolutionResult } from '../types/did-types.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 import crossFetch from 'cross-fetch';

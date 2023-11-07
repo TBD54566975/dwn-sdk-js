@@ -6,9 +6,10 @@ import type { MethodHandler } from '../types/method-handler.js';
 import type { PermissionsGrantMessage, PermissionsRevokeMessage } from '../types/permissions-types.js';
 
 import { authenticate } from '../core/auth.js';
+import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { PermissionsRevoke } from '../interfaces/permissions-revoke.js';
-import { DwnInterfaceName, DwnMethodName, Message } from '../core/message.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export class PermissionsRevokeHandler implements MethodHandler {
   constructor(private didResolver: DidResolver, private messageStore: MessageStore, private eventLog: EventLog) { }

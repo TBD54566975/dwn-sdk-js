@@ -11,12 +11,12 @@ import chai, { expect } from 'chai';
 
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { GeneralJwsBuilder } from '../../src/jose/jws/general/builder.js';
+import { Message } from '../../src/core/message.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
-import { DidResolver, Dwn, DwnErrorCode, Encoder, Jws, ProtocolsQuery } from '../../src/index.js';
-import { DwnInterfaceName, DwnMethodName, Message } from '../../src/core/message.js';
+import { DidResolver, Dwn, DwnErrorCode, DwnInterfaceName, DwnMethodName, Encoder, Jws, ProtocolsQuery } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 

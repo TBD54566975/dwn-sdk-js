@@ -1,4 +1,4 @@
-import type { RecordsWriteMessageWithOptionalEncodedData } from '../../src/store/storage-controller.js';
+import type { RecordsWriteMessageWithOptionalEncodedData } from '../../src/types/records-types.js';
 
 import { expect } from 'chai';
 import { Message } from '../../src/core/message.js';

@@ -1,4 +1,3 @@
-import type { DateSort } from '../interfaces/records-query.js';
 import type { EncryptionAlgorithm } from '../utils/encryption.js';
 import type { GeneralJws } from './jws-types.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
@@ -7,7 +6,14 @@ import type { PublicJwk } from './jose-types.js';
 import type { RangeFilter } from './message-types.js';
 import type { Readable } from 'readable-stream';
 import type { AuthorizationModel, GenericMessage, GenericSignaturePayload, Pagination } from './message-types.js';
-import type { DwnInterfaceName, DwnMethodName } from '../core/message.js';
+import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
+
+export enum DateSort {
+  CreatedAscending = 'createdAscending',
+  CreatedDescending = 'createdDescending',
+  PublishedAscending = 'publishedAscending',
+  PublishedDescending = 'publishedDescending'
+}
 
 export type RecordsWriteDescriptor = {
   interface: DwnInterfaceName.Records;
@@ -47,6 +53,11 @@ export type RecordsWriteMessage = GenericMessage & {
   attestation?: GeneralJws;
   encryption?: EncryptionProperty;
 };
+
+/**
+ * records with a data size below a threshold are stored within MessageStore with their data embedded
+ */
+export type RecordsWriteMessageWithOptionalEncodedData = RecordsWriteMessage & { encodedData?: string };
 
 export type EncryptionProperty = {
   algorithm: EncryptionAlgorithm;

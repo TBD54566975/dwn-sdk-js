@@ -1,4 +1,4 @@
-import type { DidResolutionResult } from '../../src/did/did-resolver.js';
+import type { DidResolutionResult } from '../../src/types/did-types.js';
 import type { Persona } from './test-data-generator.js';
 
 import sinon from 'sinon';
