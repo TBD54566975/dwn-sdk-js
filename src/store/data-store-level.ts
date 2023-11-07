@@ -159,12 +159,6 @@ export class DataStoreLevel implements DataStore {
     await this.blockstore.clear();
   }
 
-  async dump() : Promise<void> {
-    console.group('blockstore');
-    await this.blockstore['dump']?.();
-    console.groupEnd();
-  }
-
   /**
    * Gets the blockstore used for reference counting purposes for the given `dataCid` in the given `tenant`.
    */

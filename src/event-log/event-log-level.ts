@@ -112,10 +112,4 @@ export class EventLogLevel implements EventLog {
 
     return numEventsDeleted;
   }
-
-  async dump(): Promise<void> {
-    console.group('db');
-    await this.db['dump']?.();
-    console.groupEnd();
-  }
 }

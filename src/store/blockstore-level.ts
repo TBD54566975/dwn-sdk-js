@@ -105,12 +105,6 @@ export class BlockstoreLevel implements Blockstore {
   async clear(): Promise<void> {
     return this.db.clear();
   }
-
-  async dump(): Promise<void> {
-    console.group('db');
-    await this.db['dump']?.();
-    console.groupEnd();
-  }
 }
 
 type BlockstoreLevelConfig = {
