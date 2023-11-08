@@ -1123,6 +1123,58 @@ export function testRecordsWriteHandler(): void {
         });
 
         describe('recipient rules', () => {
+          it.only('cant update', async () => {
+            const definition = {
+              published : true,
+              protocol  : 'http://example.com',
+              types     : {
+                post: {},
+              },
+              structure: {
+                post: {
+                  $actions: [{
+                    who : 'recipient',
+                    of  : 'post', // won't work. `of` should be an ancestor protocolPath
+                    can : 'update'
+                  }]
+                }
+              }
+            };
+
+            const alice = await TestDataGenerator.generatePersona();
+            const bob = await TestDataGenerator.generatePersona();
+
+            // setting up a stub DID resolver
+            TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
+
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition: definition,
+            });
+
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
+
+            // alice writes a record with recipient bob
+            const postRecord = await TestDataGenerator.generateRecordsWrite({
+              author: alice,
+              recipient: bob.did,
+              protocol: definition.protocol,
+              protocolPath: 'post',
+            });
+            const postReply = await dwn.processMessage(alice.did, postRecord.message, postRecord.dataStream);
+            expect(postReply.status.code).to.eq(202);
+
+            // bob is not able to update his received record
+            const postUpdate = await TestDataGenerator.generateFromRecordsWrite({
+              author: bob,
+              existingWrite: postRecord.recordsWrite,
+            });
+            const postUpdateReply = await dwn.processMessage(alice.did, postUpdate.message, postUpdate.dataStream);
+            expect(postUpdateReply.status.code).to.eq(401);
+            expect(postUpdateReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+          });
+
           it('should allow write with ancestor recipient rule', async () => {
             // scenario: VC issuer writes into Alice's DWN an asynchronous credential response upon receiving Alice's credential application
             //           Carol tries to write a credential response but is rejected
