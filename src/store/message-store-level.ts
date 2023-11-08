@@ -114,7 +114,8 @@ export class MessageStoreLevel implements MessageStore {
     const { dateCreated, datePublished, messageTimestamp } = messageSort;
 
     let sortDirection = SortDirection.Ascending; // default
-    let sortProperty: keyof MessageSort | undefined; // `keyof MessageSort` = name of all properties of `MessageSort`
+    // `keyof MessageSort` = name of all properties of `MessageSort` defaults to messageTimestamp
+    let sortProperty: keyof MessageSort = 'messageTimestamp';
 
     if (dateCreated !== undefined) {
       sortProperty = 'dateCreated';
@@ -126,8 +127,6 @@ export class MessageStoreLevel implements MessageStore {
 
     if (sortProperty !== undefined && messageSort[sortProperty] !== undefined) {
       sortDirection = messageSort[sortProperty]!;
-    } else {
-      sortProperty = 'messageTimestamp';
     }
 
     // we add one more to the limit to return a pagination cursor

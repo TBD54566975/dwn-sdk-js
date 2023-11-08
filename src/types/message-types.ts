@@ -93,6 +93,9 @@ export type Filter = {
   [property: string]: EqualFilter | OneOfFilter | RangeFilter
 };
 
+export type Indexes = { [key: string]: unknown };
+export type IndexedItem<T> = { itemId: string, value: T, indexes: Indexes };
+
 /**
  * Pagination Options for querying messages.
  *

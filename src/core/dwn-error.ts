@@ -37,6 +37,7 @@ export enum DwnErrorCode {
   GrantAuthorizationGrantNotYetActive = 'GrantAuthorizationGrantNotYetActive',
   HdKeyDerivationPathInvalid = 'HdKeyDerivationPathInvalid',
   JwsVerifySignatureUnsupportedCrv = 'JwsVerifySignatureUnsupportedCrv',
+  IndexInvalidSortProperty = 'IndexInvalidSortProperty',
   JwsDecodePlainObjectPayloadInvalid = 'JwsDecodePlainObjectPayloadInvalid',
   MessageGetInvalidCid = 'MessageGetInvalidCid',
   ParseCidCodecNotSupported = 'ParseCidCodecNotSupported',

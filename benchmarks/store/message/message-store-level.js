@@ -15,11 +15,12 @@ const insertMessages = Array(items).fill().map((_,i) => {
   const schema = `schema${schemaId}`;
 
   //random protocol from 1-10
-  const protocolId = Math.floor(Math.random() * 10) + 1;
+  const protocolId = Math.floor(Math.random() * 9);
   const protocol = `proto${protocolId}`;
 
-  const recipient = i % 25 === 0 ? 'bob' : 'carol';
-  const author = i % 50 === 0 ? 'bob' : 'alice';
+  const bobId = i % 25;
+  const recipient = `bob${bobId + 1}`;
+  const author = i % 50 === 0 ? 'bob1' : 'alice';
   const published = i % 100 === 0 ? true : false;
 
   let year;
@@ -150,9 +151,9 @@ const paginationNonOwnerStart = Date.now();
 while (page < 10) {
   page++;
   ({ messages, paginationMessageCid } = await messageStore.query(tenant, [
-    { schema: 'schema2', published: false, author: 'bob', protocol: 'proto6' },
+    { schema: 'schema2', published: false, author: 'bob1', protocol: 'proto6' },
     { schema: 'schema2', published: true, protocol: 'proto6' },
-    { schema: 'schema2', published: false, recipient: 'bob', protocol: 'proto6' },
+    { schema: 'schema2', published: false, recipient: 'bob1', protocol: 'proto6' },
   ], ascOrder, { limit: 20, paginationMessageCid } ));
   results.push(...messages);
   if (paginationMessageCid === undefined) {
@@ -170,9 +171,9 @@ const paginationDescNonOwnerStart = Date.now();
 while (page < 10) {
   page++;
   ({ messages, paginationMessageCid } = await messageStore.query(tenant, [
-    { schema: 'schema2', published: false, author: 'bob', protocol: 'proto6' },
+    { schema: 'schema2', published: false, author: 'bob1', protocol: 'proto6' },
     { schema: 'schema2', published: true, protocol: 'proto6' },
-    { schema: 'schema2', published: false, recipient: 'bob', protocol: 'proto6' },
+    { schema: 'schema2', published: false, recipient: 'bob1', protocol: 'proto6' },
   ], descOrder, { limit: 20, paginationMessageCid } ));
   results.push(...messages);
   if (paginationMessageCid === undefined) {
@@ -183,7 +184,7 @@ const paginationDescNonOwnerEnd = Date.now();
 console.log('\tpagination desc non owner\t:', paginationDescNonOwnerEnd - paginationDescNonOwnerStart, 'ms', ' results', results.length);
 
 const smallResultSetStart = Date.now();
-({ messages } = await messageStore.query(tenant, [{ published: true, recipient: 'bob' }]));
+({ messages } = await messageStore.query(tenant, [{ published: true, recipient: 'bob1' }]));
 const smallResultSetEnd = Date.now();
 console.log('\tquery asc - small set equal\t:', smallResultSetEnd - smallResultSetStart, 'ms');
 console.log('\t\tresults count\t\t:', messages.length);
