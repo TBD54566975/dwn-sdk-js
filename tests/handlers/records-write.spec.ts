@@ -1298,7 +1298,7 @@ export function testRecordsWriteHandler(): void {
             expect(carolRecordsWriteReply.status.code).to.eq(401);
             expect(carolRecordsWriteReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
 
-            // Bob is able to delete the post
+            // Bob is able to update the post
             const bobRecordsWrite = await TestDataGenerator.generateFromRecordsWrite({
               author        : bob,
               existingWrite : recordsWrite.recordsWrite,
