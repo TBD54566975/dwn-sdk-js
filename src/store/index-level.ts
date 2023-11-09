@@ -4,7 +4,7 @@ import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions, } from '.
 import { lexicographicalCompare } from '../utils/string.js';
 import { SortDirection } from '../types/message-types.js';
 import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
-import { DwnError, DwnErrorCode } from '../index.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { flatten, isEmptyObject, removeUndefinedProperties } from '../utils/object.js';
 
 type IndexLevelConfig = {

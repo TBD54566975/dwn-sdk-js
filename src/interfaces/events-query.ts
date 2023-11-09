@@ -1,4 +1,4 @@
-import type { Filter } from '../index.js';
+import type { Filter } from '../types/message-types.js';
 import type { Signer } from '../types/signer.js';
 import type { EventsFilter, EventsQueryDescriptor, EventsQueryMessage } from '../types/event-types.js';
 
