@@ -1362,6 +1362,9 @@ describe('IndexLevel', () => {
         expect(invalidResults.length).to.equal(0);
       });
 
+      xit('valid cursor for only one of the filters should still return results beyond the cursor logically to the result', async () =>{
+      });
+
       it('can sort by any indexed property', async () => {
         const testVals = ['b', 'd', 'c', 'a'];
         for (const val of testVals) {
@@ -1707,6 +1710,7 @@ describe('IndexLevel', () => {
       });
     });
   });
+
   describe('delete', () => {
     before(async () => {
       testIndex = new IndexLevel({
