@@ -555,7 +555,7 @@ export class ProtocolAuthorization {
         if (incomingMessage.message.descriptor.method === DwnMethodName.Write) {
           recordsWriteMessage = incomingMessage.message as RecordsWriteMessage;
         } else {
-          // else the incoming message must be a RecordsDelete because only `update` and `delete` are allowed recipient actions 
+          // else the incoming message must be a RecordsDelete because only `update` and `delete` are allowed recipient actions
           recordsWriteMessage = ancestorMessageChain[ancestorMessageChain.length - 1];
         }
         if (recordsWriteMessage.descriptor.recipient === author) {
