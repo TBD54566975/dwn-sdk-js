@@ -149,7 +149,7 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       if (action.who === ProtocolActor.Author && !action.of) {
         throw new DwnError(
           DwnErrorCode.ProtocolsConfigureInvalidActionMissingOf,
-          `'of' is required at protocol path (${protocolPath})`
+          `'of' is required when 'author' is specified as 'who'`
         );
       }
     }
