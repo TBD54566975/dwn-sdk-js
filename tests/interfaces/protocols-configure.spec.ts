@@ -285,7 +285,7 @@ describe('ProtocolsConfigure', () => {
           .to.be.rejectedWith(DwnErrorCode.ProtocolsConfigureInvalidActionOfNotAllowed);
       });
 
-      it('rejects protocol definitions with actions that have recipient-can rules with actions other than delete or update', async () => {
+      it('rejects protocol definitions with actions that have direct-recipient-can rules with actions other than delete or update', async () => {
         const definition = {
           published : true,
           protocol  : 'http://example.com',
