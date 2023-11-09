@@ -8,12 +8,13 @@ import * as cbor from '@ipld/dag-cbor';
 
 import { BlockstoreLevel } from './blockstore-level.js';
 import { CID } from 'multiformats/cid';
+import { Cid } from '../utils/cid.js';
 import { createLevelDatabase } from './level-wrapper.js';
 import { executeUnlessAborted } from '../utils/abort.js';
 import { IndexLevel } from './index-level.js';
+import { Message } from '../core/message.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { SortDirection } from '../types/message-types.js';
-import { Cid, Message } from '../index.js';
 
 
 /**
