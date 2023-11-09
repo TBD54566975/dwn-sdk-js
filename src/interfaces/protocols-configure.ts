@@ -135,6 +135,11 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
       }
 
       // Validate that if `who === recipient` and `of === undefined`, then `can` is either `delete` or `update`
+      // We will not use direct recipient for `read`, `write`, or `query` because:
+      // - Recipients are always allowed to `read`.
+      // - `write` entails ability to create and update, whereas `update` only allows for updates.
+      //    There is no 'recipient' until the record has been created, so it makes no sense to allow recipient to write.
+      // - At this time, `query` is only authorized using roles, so allowing direct recipients to query is outside the scope of this PR.
       if (action.who === ProtocolActor.Recipient &&
           action.of === undefined &&
           !['update', 'delete'].includes(action.can)
