@@ -1289,7 +1289,7 @@ export function testRecordsWriteHandler(): void {
             const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
             expect(recordsWriteReply.status.code).to.eq(202);
 
-            // Carol is unable to delete the 'post'
+            // Carol is unable to update the 'post'
             const carolRecordsWrite = await TestDataGenerator.generateFromRecordsWrite({
               author        : carol,
               existingWrite : recordsWrite.recordsWrite
