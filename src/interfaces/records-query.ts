@@ -1,9 +1,8 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
+import type { Pagination } from '../types/message-types.js';
 import type { Signer } from '../types/signer.js';
 import type { DateSort, RecordsFilter, RecordsQueryDescriptor, RecordsQueryMessage } from '../types/records-types.js';
-import type { GenericMessage, GenericSignaturePayload, Pagination } from '../types/message-types.js';
 
-import { Jws } from '../utils/jws.js';
 import { Message } from '../core/message.js';
 import { Records } from '../utils/records.js';
 import { removeUndefinedProperties } from '../utils/object.js';
