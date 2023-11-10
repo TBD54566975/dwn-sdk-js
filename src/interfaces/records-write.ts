@@ -2,6 +2,7 @@ import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js'
 import type { GeneralJws } from '../types/jws-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PublicJwk } from '../types/jose-types.js';
+import type { RecordsMethod } from '../types/records-method.js';
 import type { Signer } from '../types/signer.js';
 import type {
   EncryptedKey,
@@ -140,7 +141,7 @@ export type CreateFromOptions = {
 /**
  * A class representing a RecordsWrite DWN message.
  */
-export class RecordsWrite {
+export class RecordsWrite implements RecordsMethod<RecordsWriteMessage> {
   private _message: InternalRecordsWriteMessage;
   /**
    * Valid JSON message representing this RecordsWrite.
@@ -158,28 +159,16 @@ export class RecordsWrite {
   }
 
   private _author: string | undefined;
-  /**
-   * DID of the logical author of this message.
-   * NOTE: we say "logical" author because a message can be signed by a delegate of the actual author,
-   * in which case the author DID would not be the same as the signer/delegate DID,
-   * but be the DID of the grantor (`grantedBy`) of the delegated grant presented.
-   */
   public get author(): string | undefined {
     return this._author;
   }
 
   private _signaturePayload: RecordsWriteSignaturePayload | undefined;
-  /**
-   * Decoded payload of the signature of this message.
-   */
   public get signaturePayload(): RecordsWriteSignaturePayload | undefined {
     return this._signaturePayload;
   }
 
   private _owner: string | undefined;
-  /**
-   * DID of owner of this message.
-   */
   public get owner(): string | undefined {
     return this._owner;
   }

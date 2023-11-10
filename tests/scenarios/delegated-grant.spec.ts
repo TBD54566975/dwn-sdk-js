@@ -19,7 +19,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DwnInterfaceName, DwnMethodName, PermissionsGrant, RecordsQuery } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName, PermissionsGrant, RecordsQuery, RecordsRead } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -30,7 +30,6 @@ export function testDelegatedGrantScenarios(): void {
     let dataStore: DataStore;
     let eventLog: EventLog;
     let dwn: Dwn;
-
 
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
     // so that different test suites can reuse the same backend store for testing
@@ -165,7 +164,7 @@ export function testDelegatedGrantScenarios(): void {
     xit('should allow entity invoking a valid delegated grant to read', async () => {
     });
 
-    it('should allow entity invoking a valid delegated grant to query', async () => {
+    it.only('should allow entity invoking a valid delegated grant to query', async () => {
       // scenario:
       // 1. Alice creates a delegated grant for device X,
       // 2. Bob starts a chat thread with Alice on his DWN
@@ -235,7 +234,7 @@ export function testDelegatedGrantScenarios(): void {
         signer      : Jws.createSigner(alice)
       });
 
-      // sanity verify Bob himself is able to read the chat thread from Bob's DWN
+      // sanity verify Bob himself is able to query for the chat thread from Bob's DWN
       const recordsQueryByBob = await TestDataGenerator.generateRecordsQuery({
         author : bob,
         filter : { protocol }
@@ -244,7 +243,7 @@ export function testDelegatedGrantScenarios(): void {
       expect(bobRecordsQueryReply.status.code).to.equal(200);
       expect(bobRecordsQueryReply.entries?.length).to.equal(3);
 
-      // sanity verify Alice herself is able to read the chat message from Bob's DWN
+      // sanity verify Alice herself is able to query for the chat message from Bob's DWN
       const recordsQueryByAlice = await RecordsQuery.create({
         signer       : Jws.createSigner(alice),
         protocolRole : 'thread/participant',
@@ -258,7 +257,7 @@ export function testDelegatedGrantScenarios(): void {
       expect(aliceRecordsQueryReply.status.code).to.equal(200);
       expect(aliceRecordsQueryReply.entries?.length).to.equal(1);
 
-      // verify device X is able to read the chat message from Bob's DWN
+      // verify device X is able to query for the chat message from Bob's DWN
       const recordsQueryByDeviceX = await RecordsQuery.create({
         signer         : Jws.createSigner(deviceX),
         delegatedGrant : grantToDeviceX.asDelegatedGrant(),
@@ -272,6 +271,19 @@ export function testDelegatedGrantScenarios(): void {
       const deviceXRecordsQueryReply = await dwn.processMessage(bob.did, recordsQueryByDeviceX.message);
       expect(deviceXRecordsQueryReply.status.code).to.equal(200);
       expect(deviceXRecordsQueryReply.entries?.length).to.equal(1);
+
+      // verify device X is able to read the chat message from Bob's DWN
+      const recordsReadByDeviceX = await RecordsRead.create({
+        signer         : Jws.createSigner(deviceX),
+        delegatedGrant : grantToDeviceX.asDelegatedGrant(),
+        protocolRole   : 'thread/participant',
+        filter         : {
+          recordId: chatRecord.message.recordId
+        }
+      });
+      const deviceXRecordsReadReply = await dwn.processMessage(bob.did, recordsReadByDeviceX.message);
+      expect(deviceXRecordsReadReply.status.code).to.equal(200);
+      expect(deviceXRecordsReadReply.record?.recordId).to.equal(chatRecord.message.recordId);
     });
 
     xit('should allow entity invoking a valid delegated grant to delete', async () => {
@@ -391,7 +403,7 @@ export function testDelegatedGrantScenarios(): void {
     xit('should fail if invoking a delegated grant that is issued to a different entity to read', async () => {
     });
 
-    it('should fail if invoking a delegated grant that is issued to a different entity to query', async () => {
+    it.only('should fail if invoking a delegated grant that is issued to a different entity to query', async () => {
       // scenario:
       // 1. Alice creates a delegated grant for device X,
       // 2. Bob starts a chat thread with Alice on his DWN
@@ -477,7 +489,7 @@ export function testDelegatedGrantScenarios(): void {
       expect(deviceXRecordsQueryReply.status.code).to.equal(200);
       expect(deviceXRecordsQueryReply.entries?.length).to.equal(1);
 
-      // Verify that Daniel cannot write a chat message as Alice by invoking the delegated grant granted to Bob
+      // Verify that Carol cannot query as Alice by invoking the delegated grant granted to Device X
       const recordsQueryByCarol = await RecordsQuery.create({
         signer         : Jws.createSigner(carol),
         delegatedGrant : grantToDeviceX.asDelegatedGrant(),
@@ -490,6 +502,19 @@ export function testDelegatedGrantScenarios(): void {
       });
       const recordsQueryByCarolReply = await dwn.processMessage(bob.did, recordsQueryByCarol.message);
       expect(recordsQueryByCarolReply.status.code).to.equal(400);
+      expect(recordsQueryByCarolReply.status.detail).to.contain(DwnErrorCode.RecordsValidateIntegrityGrantedToAndSignerMismatch);
+
+      // Verify that Carol cannot read as Alice by invoking the delegated grant granted to Device X
+      const recordsReadByCarol = await RecordsRead.create({
+        signer         : Jws.createSigner(carol),
+        delegatedGrant : grantToDeviceX.asDelegatedGrant(),
+        protocolRole   : 'thread/participant',
+        filter         : {
+          recordId: chatRecord.message.recordId
+        }
+      });
+      const recordsReadByCarolReply = await dwn.processMessage(bob.did, recordsReadByCarol.message);
+      expect(recordsReadByCarolReply.status.code).to.equal(400);
       expect(recordsQueryByCarolReply.status.detail).to.contain(DwnErrorCode.RecordsValidateIntegrityGrantedToAndSignerMismatch);
     });
 

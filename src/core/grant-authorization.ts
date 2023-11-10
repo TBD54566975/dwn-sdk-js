@@ -1,6 +1,7 @@
 import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PermissionsGrantMessage } from '../types/permissions-types.js';
+import type { RecordsMethod } from '../types/records-method.js';
 
 import { Message } from './message.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
@@ -15,7 +16,7 @@ export class GrantAuthorization {
    */
   public static async authorizeGenericMessage(
     tenant: string,
-    incomingMessage: Message<GenericMessage>,
+    incomingMessage: RecordsMethod<GenericMessage>,
     author: string,
     permissionsGrantId: string,
     messageStore: MessageStore,

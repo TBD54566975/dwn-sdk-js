@@ -52,6 +52,7 @@ export enum DwnErrorCode {
   PrivateKeySignerUnableToDeduceKeyId = 'PrivateKeySignerUnableToDeduceKeyId',
   PrivateKeySignerUnsupportedCurve = 'PrivateKeySignerUnsupportedCurve',
   ProtocolAuthorizationActionNotAllowed = 'ProtocolAuthorizationActionNotAllowed',
+  ProtocolAuthorizationActionRulesNotFound = 'ProtocolAuthorizationActionRulesNotFound',
   ProtocolAuthorizationDuplicateContextRoleRecipient = 'ProtocolAuthorizationDuplicateContextRoleRecipient',
   ProtocolAuthorizationDuplicateGlobalRoleRecipient = 'ProtocolAuthorizationDuplicateGlobalRoleRecipient',
   ProtocolAuthorizationIncorrectDataFormat = 'ProtocolAuthorizationIncorrectDataFormat',

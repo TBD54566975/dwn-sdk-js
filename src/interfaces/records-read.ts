@@ -1,3 +1,4 @@
+import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { Signer } from '../types/signer.js';
 import type { RecordsFilter , RecordsReadDescriptor, RecordsReadMessage } from '../types/records-types.js';
 
@@ -17,14 +18,23 @@ export type RecordsReadOptions = {
    * The protocol path to a $globalRole record whose recipient is the author of this RecordsRead
    */
   protocolRole?: string;
+
+  /**
+   * The delegated grant to sign on behalf of the logical author, which is the grantor (`grantedBy`) of the delegated grant.
+   */
+  delegatedGrant?: DelegatedGrantMessage;
 };
 
 export class RecordsRead extends Message<RecordsReadMessage> {
 
   public static async parse(message: RecordsReadMessage): Promise<RecordsRead> {
+    let signaturePayload;
     if (message.authorization !== undefined) {
-      await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+      signaturePayload = await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     }
+
+    Records.validateDelegatedGrantReferentialIntegrity(message, signaturePayload);
+
     Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     const recordsRead = new RecordsRead(message);
@@ -58,7 +68,8 @@ export class RecordsRead extends Message<RecordsReadMessage> {
         descriptor,
         signer,
         permissionsGrantId,
-        protocolRole
+        protocolRole,
+        delegatedGrant: options.delegatedGrant
       });
     }
     const message: RecordsReadMessage = { descriptor, authorization };

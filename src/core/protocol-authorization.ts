@@ -475,6 +475,9 @@ export class ProtocolAuthorization {
 
   /**
    * Returns a list of ProtocolAction(s) based on the incoming message, one of which must be allowed for the message to be authorized.
+   * NOTE: the reason why there could be multiple actions is because in case of an "update" RecordsWrite by the original record author,
+   * the RecordsWrite can either be authorized by a `write` or `update` allow rule. It is important to recognize that the `write` access that allowed
+   * the original record author to create the record maybe revoked (e.g. by role revocation) by the time an "update" by the same author is attempted.
    */
   private static async getActionsSeekingARuleMatch(
     tenant: string,
@@ -529,7 +532,7 @@ export class ProtocolAuthorization {
     // We have already checked that the message is not from tenant, owner, or permissionsGrant
     if (actionRules === undefined) {
       throw new DwnError(
-        DwnErrorCode.ProtocolAuthorizationActionNotAllowed,
+        DwnErrorCode.ProtocolAuthorizationActionRulesNotFound,
         `no action rule defined for ${incomingMessageMethod}, ${author} is unauthorized`
       );
     }

@@ -15,9 +15,6 @@ export type ProtocolsConfigureOptions = {
 };
 
 export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
-  // JSON Schema guarantees presence of `authorization` which contains author DID
-  readonly author!: string;
-
   public static async parse(message: ProtocolsConfigureMessage): Promise<ProtocolsConfigure> {
     Message.validateJsonSchema(message);
     ProtocolsConfigure.validateProtocolDefinition(message.descriptor.definition);

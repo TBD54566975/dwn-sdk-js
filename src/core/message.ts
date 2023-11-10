@@ -1,5 +1,6 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { GeneralJws } from '../types/jws-types.js';
+import type { RecordsMethod } from '../types/records-method.js';
 import type { Signer } from '../types/signer.js';
 import type { AuthorizationModel, Descriptor, GenericMessage, GenericSignaturePayload } from '../types/message-types.js';
 
@@ -12,17 +13,35 @@ import { removeUndefinedProperties } from '../utils/object.js';
 import { validateJsonSchema } from '../schema-validator.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 
-export abstract class Message<M extends GenericMessage> {
-  readonly message: M;
-  readonly signaturePayload: GenericSignaturePayload | undefined;
-  readonly author: string | undefined;
+export abstract class Message<M extends GenericMessage> implements RecordsMethod<M> {
+  private _message: M;
+  public get message(): M {
+    return this._message as M;
+  }
 
-  constructor(message: M) {
-    this.message = message;
+  private _author: string | undefined;
+  public get author(): string | undefined {
+    return this._author;
+  }
+
+  private _signaturePayload: GenericSignaturePayload | undefined;
+  public get signaturePayload(): GenericSignaturePayload | undefined {
+    return this._signaturePayload;
+  }
+
+  protected constructor(message: M) {
+    this._message = message;
 
     if (message.authorization !== undefined) {
-      this.signaturePayload = Jws.decodePlainObjectPayload(message.authorization.signature);
-      this.author = Message.getSigner(message as GenericMessage);
+      // if the message authorization contains author delegated grant, the author would be the grantor of the grant
+      // else the author would be the signer of the message
+      if (message.authorization.authorDelegatedGrant !== undefined) {
+        this._author = Message.getSigner(message.authorization.authorDelegatedGrant);
+      } else {
+        this._author = Message.getSigner(message as GenericMessage);
+      }
+
+      this._signaturePayload = Jws.decodePlainObjectPayload(message.authorization.signature);
     }
   }
 
