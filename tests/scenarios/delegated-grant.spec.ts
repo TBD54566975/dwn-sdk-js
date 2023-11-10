@@ -161,10 +161,7 @@ export function testDelegatedGrantScenarios(): void {
       expect(fetchedDeviceYWrite.author).to.equal(alice.did);
     });
 
-    xit('should allow entity invoking a valid delegated grant to read', async () => {
-    });
-
-    it.only('should allow entity invoking a valid delegated grant to query', async () => {
+    it('should allow entity invoking a valid delegated grant to read or query', async () => {
       // scenario:
       // 1. Alice creates a delegated grant for device X,
       // 2. Bob starts a chat thread with Alice on his DWN
@@ -400,10 +397,7 @@ export function testDelegatedGrantScenarios(): void {
       expect(danielWriteReply.status.detail).to.contain(DwnErrorCode.RecordsValidateIntegrityGrantedToAndSignerMismatch);
     });
 
-    xit('should fail if invoking a delegated grant that is issued to a different entity to read', async () => {
-    });
-
-    it.only('should fail if invoking a delegated grant that is issued to a different entity to query', async () => {
+    it('should fail if invoking a delegated grant that is issued to a different entity to read or query', async () => {
       // scenario:
       // 1. Alice creates a delegated grant for device X,
       // 2. Bob starts a chat thread with Alice on his DWN
