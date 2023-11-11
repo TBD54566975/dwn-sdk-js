@@ -1,6 +1,7 @@
 import type { Signer } from '../types/signer.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types/protocols-types.js';
 
+import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
 import { Time } from '../utils/time.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
@@ -14,7 +15,7 @@ export type ProtocolsConfigureOptions = {
   permissionsGrantId?: string;
 };
 
-export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
+export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessage> {
   public static async parse(message: ProtocolsConfigureMessage): Promise<ProtocolsConfigure> {
     Message.validateJsonSchema(message);
     ProtocolsConfigure.validateProtocolDefinition(message.descriptor.definition);

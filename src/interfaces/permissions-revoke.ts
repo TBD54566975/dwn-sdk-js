@@ -1,6 +1,7 @@
 import type { Signer } from '../types/signer.js';
 import type { PermissionsGrantMessage, PermissionsRevokeDescriptor, PermissionsRevokeMessage } from '../types/permissions-types.js';
 
+import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
 import { Time } from '../utils/time.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
@@ -12,7 +13,7 @@ export type PermissionsRevokeOptions = {
   signer: Signer;
 };
 
-export class PermissionsRevoke extends Message<PermissionsRevokeMessage> {
+export class PermissionsRevoke extends AbstractMessage<PermissionsRevokeMessage> {
   public static async parse(message: PermissionsRevokeMessage): Promise<PermissionsRevoke> {
     await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
     Time.validateTimestamp(message.descriptor.messageTimestamp);

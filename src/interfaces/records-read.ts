@@ -2,6 +2,7 @@ import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js'
 import type { Signer } from '../types/signer.js';
 import type { RecordsFilter , RecordsReadDescriptor, RecordsReadMessage } from '../types/records-types.js';
 
+import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
 import { Records } from '../utils/records.js';
 import { removeUndefinedProperties } from '../utils/object.js';
@@ -25,7 +26,7 @@ export type RecordsReadOptions = {
   delegatedGrant?: DelegatedGrantMessage;
 };
 
-export class RecordsRead extends Message<RecordsReadMessage> {
+export class RecordsRead extends AbstractMessage<RecordsReadMessage> {
 
   public static async parse(message: RecordsReadMessage): Promise<RecordsRead> {
     let signaturePayload;

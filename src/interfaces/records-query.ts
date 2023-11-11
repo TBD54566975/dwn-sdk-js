@@ -3,6 +3,7 @@ import type { Pagination } from '../types/message-types.js';
 import type { Signer } from '../types/signer.js';
 import type { DateSort, RecordsFilter, RecordsQueryDescriptor, RecordsQueryMessage } from '../types/records-types.js';
 
+import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
 import { Records } from '../utils/records.js';
 import { removeUndefinedProperties } from '../utils/object.js';
@@ -28,7 +29,7 @@ export type RecordsQueryOptions = {
 /**
  * A class representing a RecordsQuery DWN message.
  */
-export class RecordsQuery extends Message<RecordsQueryMessage> {
+export class RecordsQuery extends AbstractMessage<RecordsQueryMessage> {
 
   public static async parse(message: RecordsQueryMessage): Promise<RecordsQuery> {
     let signaturePayload;

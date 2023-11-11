@@ -1,6 +1,7 @@
 import type { Signer } from '../types/signer.js';
 import type { EventsGetDescriptor, EventsGetMessage } from '../types/event-types.js';
 
+import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
 import { Time } from '../utils/time.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
@@ -11,7 +12,7 @@ export type EventsGetOptions = {
   messageTimestamp?: string;
 };
 
-export class EventsGet extends Message<EventsGetMessage> {
+export class EventsGet extends AbstractMessage<EventsGetMessage> {
 
   public static async parse(message: EventsGetMessage): Promise<EventsGet> {
     Message.validateJsonSchema(message);

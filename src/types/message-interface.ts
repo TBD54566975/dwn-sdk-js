@@ -1,11 +1,11 @@
-import type { GenericMessage, GenericSignaturePayload } from '../types/message-types.js';
+import type { GenericMessage, GenericSignaturePayload } from './message-types.js';
 
 /**
- * A signer that is capable of generating a digital signature over any given bytes.
+ * An generic interface that represents a DWN message and convenience methods for working with it.
  */
-export interface RecordsMethod<M extends GenericMessage> {
+export interface MessageInterface<M extends GenericMessage> {
   /**
-   * Valid JSON message representing this RecordsQuery.
+   * Valid JSON message representing this DWN message.
    */
   get message(): M;
 

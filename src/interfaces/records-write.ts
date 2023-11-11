@@ -1,8 +1,8 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { GeneralJws } from '../types/jws-types.js';
+import type { MessageInterface } from '../types/message-interface.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PublicJwk } from '../types/jose-types.js';
-import type { RecordsMethod } from '../types/records-method.js';
 import type { Signer } from '../types/signer.js';
 import type {
   EncryptedKey,
@@ -141,7 +141,7 @@ export type CreateFromOptions = {
 /**
  * A class representing a RecordsWrite DWN message.
  */
-export class RecordsWrite implements RecordsMethod<RecordsWriteMessage> {
+export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   private _message: InternalRecordsWriteMessage;
   /**
    * Valid JSON message representing this RecordsWrite.

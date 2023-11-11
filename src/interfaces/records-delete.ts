@@ -1,8 +1,8 @@
 import type { Signer } from '../types/signer.js';
 import type { RecordsDeleteDescriptor, RecordsDeleteMessage } from '../types/records-types.js';
 
+import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
-
 import { Time } from '../utils/time.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
@@ -13,7 +13,7 @@ export type RecordsDeleteOptions = {
   signer: Signer;
 };
 
-export class RecordsDelete extends Message<RecordsDeleteMessage> {
+export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
 
   public static async parse(message: RecordsDeleteMessage): Promise<RecordsDelete> {
     await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
