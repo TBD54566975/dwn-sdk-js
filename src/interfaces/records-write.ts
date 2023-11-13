@@ -140,6 +140,7 @@ export type CreateFromOptions = {
 
 /**
  * A class representing a RecordsWrite DWN message.
+ * NOTE: Unable to extend `AbstractMessage` directly because the incompatible `_message` type, which is not just a generic `<M>` type.
  */
 export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   private _message: InternalRecordsWriteMessage;
