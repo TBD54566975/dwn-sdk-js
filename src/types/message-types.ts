@@ -89,8 +89,10 @@ export type LT = ({ lt: RangeValue } & { lte?: never }) | ({ lt?: never } & { lt
  */
 export type RangeFilter = (GT | LT) & Partial<GT> & Partial<LT>;
 
+export type FilterValue = EqualFilter | OneOfFilter | RangeFilter;
+
 export type Filter = {
-  [property: string]: EqualFilter | OneOfFilter | RangeFilter
+  [property: string]: FilterValue;
 };
 
 export type Indexes = { [key: string]: unknown };
