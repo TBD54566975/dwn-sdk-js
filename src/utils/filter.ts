@@ -3,7 +3,7 @@ import type { EqualFilter, Filter, FilterValue, OneOfFilter, RangeFilter } from 
 /**
  * A Utility class to help match indexes against filters.
  */
-export class Index {
+export class FilterUtility {
   static matchItem(indexes: { [key:string]:unknown }, filters: Filter[]): boolean {
     if (filters.length === 0) {
       return true;
@@ -63,7 +63,7 @@ export class Index {
       } else {
         // propertyFilter is an EqualFilter, meaning it is a non-object primitive type
         // if EqualFilter use the string cursor associated with the `propertyName`
-        if (Index.encodeValue(indexedValue) === Index.encodeValue(filterValue)) {
+        if (FilterUtility.encodeValue(indexedValue) === FilterUtility.encodeValue(filterValue)) {
           missingPropertyMatchesForId.delete(filterName);
           continue;
         }
@@ -81,7 +81,7 @@ export class Index {
    */
   private static matchOneOf(filter: OneOfFilter, indexedValue: unknown): boolean {
     for (const orFilterValue of new Set(filter)) {
-      if (Index.encodeValue(indexedValue) === Index.encodeValue(orFilterValue)) {
+      if (FilterUtility.encodeValue(indexedValue) === FilterUtility.encodeValue(orFilterValue)) {
         return true;
       }
     }
@@ -100,7 +100,7 @@ export class Index {
     for (const filterComparator in rangeFilter) {
       const comparatorName = filterComparator as keyof RangeFilter;
       const filterComparatorValue = rangeFilter[comparatorName]!;
-      const encodedFilterValue = Index.encodeValue(filterComparatorValue);
+      const encodedFilterValue = FilterUtility.encodeValue(filterComparatorValue);
       switch (comparatorName) {
       case 'lt':
         filterConditions.push((v) => v < encodedFilterValue);
@@ -116,9 +116,12 @@ export class Index {
         break;
       }
     }
-    return filterConditions.every((c) => c(Index.encodeValue(indexedValue)));
+    return filterConditions.every((c) => c(FilterUtility.encodeValue(indexedValue)));
   }
 
+  /**
+   * Encodes an indexed value to a string
+   */
   static encodeValue(value: unknown): string {
     switch (typeof value) {
     case 'string':
