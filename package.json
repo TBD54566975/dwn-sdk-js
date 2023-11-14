@@ -59,10 +59,7 @@
       "types": "./dist/types/tests/test-suite.d.ts"
     }
   },
-  "@comment react-native": [
-    "directive for metro (react native build tool)."
-  ],
-  "react-native": "./dist/cjs/index.js",
+  "react-native": "./dist/esm/src/index.js",
   "dependencies": {
     "@ipld/dag-cbor": "9.0.3",
     "@js-temporal/polyfill": "0.4.4",
