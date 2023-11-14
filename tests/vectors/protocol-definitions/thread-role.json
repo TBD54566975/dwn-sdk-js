@@ -5,9 +5,13 @@
     "thread": {},
     "participant": {},
     "admin": {},
+    "globalAdmin": {},
     "chat": {}
   },
   "structure": {
+    "globalAdmin": {
+      "$globalRole": true
+    },
     "thread": {
       "$actions": [
         {
@@ -51,6 +55,10 @@
           },
           {
             "role": "thread/admin",
+            "can": "delete"
+          },
+          {
+            "role": "globalAdmin",
             "can": "delete"
           }
         ]

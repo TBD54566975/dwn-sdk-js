@@ -1,8 +1,10 @@
+import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { Signer } from '../types/signer.js';
 import type { RecordsDeleteDescriptor, RecordsDeleteMessage } from '../types/records-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
+import { Records } from '../utils/records.js';
 import { Time } from '../utils/time.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
@@ -11,12 +13,23 @@ export type RecordsDeleteOptions = {
   messageTimestamp?: string;
   protocolRole?: string;
   signer: Signer;
+
+  /**
+   * The delegated grant to sign on behalf of the logical author, which is the grantor (`grantedBy`) of the delegated grant.
+   */
+  delegatedGrant?: DelegatedGrantMessage;
 };
 
 export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
 
   public static async parse(message: RecordsDeleteMessage): Promise<RecordsDelete> {
-    await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+    let signaturePayload;
+    if (message.authorization !== undefined) {
+      signaturePayload = await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+    }
+
+    Records.validateDelegatedGrantReferentialIntegrity(message, signaturePayload);
+
     Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     const recordsDelete = new RecordsDelete(message);
@@ -41,8 +54,9 @@ export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
 
     const authorization = await Message.createAuthorization({
       descriptor,
-      signer       : options.signer,
-      protocolRole : options.protocolRole,
+      signer         : options.signer,
+      protocolRole   : options.protocolRole,
+      delegatedGrant : options.delegatedGrant
     });
     const message: RecordsDeleteMessage = { descriptor, authorization };
 

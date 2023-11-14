@@ -468,7 +468,7 @@ export class ProtocolAuthorization {
     if (matchingMessages.length === 0) {
       throw new DwnError(
         DwnErrorCode.ProtocolAuthorizationMissingRole,
-        `No role record found for protocol path ${protocolRole}`
+        `No matching role record found for protocol path ${protocolRole}`
       );
     }
   }
