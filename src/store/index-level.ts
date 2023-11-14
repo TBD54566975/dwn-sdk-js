@@ -1,7 +1,7 @@
 import type { EqualFilter, Filter, IndexedItem, Indexes, RangeFilter } from '../types/message-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions, } from './level-wrapper.js';
 
-import { DwnInterfaceName } from '../index.js';
+import { DwnInterfaceName } from '../enums/dwn-interface-method.js';
 import { Index } from '../utils/index.js';
 import { lexicographicalCompare } from '../utils/string.js';
 import { SortDirection } from '../types/message-types.js';
