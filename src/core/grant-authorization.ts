@@ -1,4 +1,5 @@
 import type { GenericMessage } from '../types/message-types.js';
+import type { MessageInterface } from '../types/message-interface.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PermissionsGrantMessage } from '../types/permissions-types.js';
 
@@ -15,7 +16,7 @@ export class GrantAuthorization {
    */
   public static async authorizeGenericMessage(
     tenant: string,
-    incomingMessage: Message<GenericMessage>,
+    incomingMessage: MessageInterface<GenericMessage>,
     author: string,
     permissionsGrantId: string,
     messageStore: MessageStore,

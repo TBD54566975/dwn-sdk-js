@@ -2717,7 +2717,7 @@ export function testRecordsWriteHandler(): void {
 
           reply = await dwn.processMessage(alice.did, bobWriteMessageData.message, bobWriteMessageData.dataStream);
           expect(reply.status.code).to.equal(401);
-          expect(reply.status.detail).to.contain(`no action rule defined for Write`);
+          expect(reply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionRulesNotFound);
         });
 
         it('should look up recipient path with ancestor depth of 2+ (excluding self) in action rule correctly', async () => {

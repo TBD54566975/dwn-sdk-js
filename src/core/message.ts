@@ -12,27 +12,10 @@ import { removeUndefinedProperties } from '../utils/object.js';
 import { validateJsonSchema } from '../schema-validator.js';
 import { DwnError, DwnErrorCode } from './dwn-error.js';
 
-export abstract class Message<M extends GenericMessage> {
-  readonly message: M;
-  readonly signaturePayload: GenericSignaturePayload | undefined;
-  readonly author: string | undefined;
-
-  constructor(message: M) {
-    this.message = message;
-
-    if (message.authorization !== undefined) {
-      this.signaturePayload = Jws.decodePlainObjectPayload(message.authorization.signature);
-      this.author = Message.getSigner(message as GenericMessage);
-    }
-  }
-
-  /**
-   * Called by `JSON.stringify(...)` automatically.
-   */
-  toJSON(): GenericMessage {
-    return this.message;
-  }
-
+/**
+ * A class containing utility methods for working with DWN messages.
+ */
+export class Message {
   /**
    * Validates the given message against the corresponding JSON schema.
    * @throws {Error} if fails validation.

@@ -2,6 +2,7 @@ import type { Signer } from '../types/signer.js';
 import type { PermissionConditions, PermissionScope } from '../types/permissions-grant-descriptor.js';
 import type { PermissionsRequestDescriptor, PermissionsRequestMessage } from '../types/permissions-types.js';
 
+import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Time } from '../utils/time.js';
@@ -18,7 +19,7 @@ export type PermissionsRequestOptions = {
   signer: Signer;
 };
 
-export class PermissionsRequest extends Message<PermissionsRequestMessage> {
+export class PermissionsRequest extends AbstractMessage<PermissionsRequestMessage> {
 
   public static async parse(message: PermissionsRequestMessage): Promise<PermissionsRequest> {
     await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);

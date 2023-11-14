@@ -899,7 +899,7 @@ export function testRecordsReadHandler(): void {
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
-            expect(recordsReadWithoutGrantReply.status.detail).to.contain('no action rule defined for Read');
+            expect(recordsReadWithoutGrantReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionRulesNotFound);
 
             // Bob is able to read the record when he uses the PermissionsGrant
             const recordsReadWithGrant = await RecordsRead.create({
@@ -963,7 +963,7 @@ export function testRecordsReadHandler(): void {
             });
             const recordsReadWithoutGrantReply = await dwn.processMessage(alice.did, recordsReadWithoutGrant.message);
             expect(recordsReadWithoutGrantReply.status.code).to.equal(401);
-            expect(recordsReadWithoutGrantReply.status.detail).to.contain('no action rule defined for Read');
+            expect(recordsReadWithoutGrantReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionRulesNotFound);
 
             // Bob is able to read the record when he uses the PermissionsGrant
             const recordsReadWithGrant = await RecordsRead.create({

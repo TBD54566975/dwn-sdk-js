@@ -4,6 +4,7 @@ import type { PermissionsRequest } from './permissions-request.js';
 import type { Signer } from '../types/signer.js';
 import type { PermissionConditions, PermissionScope, PermissionsGrantDescriptor, RecordsPermissionScope } from '../types/permissions-grant-descriptor.js';
 
+import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Time } from '../utils/time.js';
@@ -35,7 +36,7 @@ export type CreateFromPermissionsRequestOverrides = {
   conditions?: PermissionConditions;
 };
 
-export class PermissionsGrant extends Message<PermissionsGrantMessage> {
+export class PermissionsGrant extends AbstractMessage<PermissionsGrantMessage> {
 
   public static async parse(message: PermissionsGrantMessage): Promise<PermissionsGrant> {
     await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);

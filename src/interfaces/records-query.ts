@@ -1,9 +1,9 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
+import type { Pagination } from '../types/message-types.js';
 import type { Signer } from '../types/signer.js';
 import type { DateSort, RecordsFilter, RecordsQueryDescriptor, RecordsQueryMessage } from '../types/records-types.js';
-import type { GenericMessage, GenericSignaturePayload, Pagination } from '../types/message-types.js';
 
-import { Jws } from '../utils/jws.js';
+import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
 import { Records } from '../utils/records.js';
 import { removeUndefinedProperties } from '../utils/object.js';
@@ -29,49 +29,7 @@ export type RecordsQueryOptions = {
 /**
  * A class representing a RecordsQuery DWN message.
  */
-export class RecordsQuery {
-  private _message: RecordsQueryMessage;
-  /**
-   * Valid JSON message representing this RecordsQuery.
-   */
-  public get message(): RecordsQueryMessage {
-    return this._message as RecordsQueryMessage;
-  }
-
-  private _author: string | undefined;
-  /**
-   * DID of the logical author of this message.
-   * NOTE: we say "logical" author because a message can be signed by a delegate of the actual author,
-   * in which case the author DID would not be the same as the signer/delegate DID,
-   * but be the DID of the grantor (`grantedBy`) of the delegated grant presented.
-   */
-  public get author(): string | undefined {
-    return this._author;
-  }
-
-  private _signaturePayload: GenericSignaturePayload | undefined;
-  /**
-   * Decoded payload of the signature of this message.
-   */
-  public get signaturePayload(): GenericSignaturePayload | undefined {
-    return this._signaturePayload;
-  }
-
-  private constructor(message: RecordsQueryMessage) {
-    this._message = message;
-
-    if (message.authorization !== undefined) {
-      // if the message authorization contains author delegated grant, the author would be the grantor of the grant
-      // else the author would be the signer of the message
-      if (message.authorization.authorDelegatedGrant !== undefined) {
-        this._author = Message.getSigner(message.authorization.authorDelegatedGrant);
-      } else {
-        this._author = Message.getSigner(message as GenericMessage);
-      }
-
-      this._signaturePayload = Jws.decodePlainObjectPayload(message.authorization.signature);
-    }
-  }
+export class RecordsQuery extends AbstractMessage<RecordsQueryMessage> {
 
   public static async parse(message: RecordsQueryMessage): Promise<RecordsQuery> {
     let signaturePayload;
@@ -95,6 +53,7 @@ export class RecordsQuery {
     if (message.descriptor.filter.schema !== undefined) {
       validateSchemaUrlNormalized(message.descriptor.filter.schema);
     }
+
     Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     return new RecordsQuery(message);

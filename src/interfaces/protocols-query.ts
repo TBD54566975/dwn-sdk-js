@@ -3,6 +3,7 @@ import type { MessageStore } from '../types/message-store.js';
 import type { Signer } from '../types/signer.js';
 import type { ProtocolsQueryDescriptor, ProtocolsQueryFilter, ProtocolsQueryMessage } from '../types/protocols-types.js';
 
+import { AbstractMessage } from '../core/abstract-message.js';
 import { GrantAuthorization } from '../core/grant-authorization.js';
 import { Message } from '../core/message.js';
 import { removeUndefinedProperties } from '../utils/object.js';
@@ -19,7 +20,7 @@ export type ProtocolsQueryOptions = {
   permissionsGrantId?: string;
 };
 
-export class ProtocolsQuery extends Message<ProtocolsQueryMessage> {
+export class ProtocolsQuery extends AbstractMessage<ProtocolsQueryMessage> {
 
   public static async parse(message: ProtocolsQueryMessage): Promise<ProtocolsQuery> {
     if (message.authorization !== undefined) {

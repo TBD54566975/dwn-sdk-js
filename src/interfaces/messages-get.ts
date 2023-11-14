@@ -1,6 +1,7 @@
 import type { Signer } from '../types/signer.js';
 import type { MessagesGetDescriptor, MessagesGetMessage } from '../types/messages-types.js';
 
+import { AbstractMessage } from '../core/abstract-message.js';
 import { Cid } from '../utils/cid.js';
 import { Message } from '../core/message.js';
 import { Time } from '../utils/time.js';
@@ -13,7 +14,7 @@ export type MessagesGetOptions = {
   messageTimestamp?: string;
 };
 
-export class MessagesGet extends Message<MessagesGetMessage> {
+export class MessagesGet extends AbstractMessage<MessagesGetMessage> {
   public static async parse(message: MessagesGetMessage): Promise<MessagesGet> {
     Message.validateJsonSchema(message);
     this.validateMessageCids(message.descriptor.messageCids);
