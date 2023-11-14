@@ -2,7 +2,7 @@ import type { Filter } from '../../src/types/message-types.js';
 
 import { ArrayUtility } from '../../src/utils/array.js';
 import { createLevelDatabase } from '../../src/store/level-wrapper.js';
-import { Index } from '../../src/utils/index.js';
+import { FilterUtility } from '../../src/utils/filter.js';
 import { IndexLevel } from '../../src/store/index-level.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { SortDirection } from '../../src/types/message-types.js';
@@ -214,6 +214,33 @@ describe('IndexLevel', () => {
       // empty filter
       allResults = await testIndex.query(tenant, [{}],{ sortProperty: 'letter' });
       expect(allResults).to.eql(['a', 'b', 'c', 'd']);
+    });
+
+    describe('sortedIndexQuery', () => {
+      it('invalid sort property returns no results', async () => {
+        const testVals = ['b', 'd', 'c', 'a'];
+        for (const val of testVals) {
+          await testIndex.put(tenant, val, val, { val, schema: 'schema' });
+        }
+
+        const filters = [{ schema: 'schema' }];
+
+        // control test: return all results
+        let validResults = await testIndex.sortedIndexQuery(tenant, filters, { sortProperty: 'val' });
+        expect(validResults.length).to.equal(4);
+
+        // sort by invalid property returns no results
+        let invalidResults = await testIndex.sortedIndexQuery(tenant, filters, { sortProperty: 'invalid' });
+        expect(invalidResults.length).to.equal(0);
+
+        // control test: returns after cursor
+        validResults = await testIndex.sortedIndexQuery(tenant, filters, { sortProperty: 'val', cursor: 'a' });
+        expect(validResults.length).to.equal(3);
+
+        // invalid sort property with a valid cursor value
+        invalidResults = await testIndex.sortedIndexQuery(tenant, filters, { sortProperty: 'invalid', cursor: 'a' });
+        expect(invalidResults.length).to.equal(0);
+      });
     });
 
     describe('query()', () => {
@@ -926,7 +953,7 @@ describe('IndexLevel', () => {
             const property = i % 5 === 0 ? true :
               i % 7 === 0 ? false : undefined;
 
-            const item = { val: Index.encodeNumberValue(i), digit, property };
+            const item = { val: FilterUtility.encodeNumberValue(i), digit, property };
             await testIndex.put(tenant, item.val, item.val, item);
             items.push(item);
           }
@@ -1073,7 +1100,7 @@ describe('IndexLevel', () => {
   describe('encodeNumberValue', () => {
     it('should encode positive digits and pad with leading zeros', () => {
       const expectedLength = String(Number.MAX_SAFE_INTEGER).length; //16
-      const encoded = Index.encodeNumberValue(100);
+      const encoded = FilterUtility.encodeNumberValue(100);
       expect(encoded.length).to.equal(expectedLength);
       expect(encoded).to.equal('0000000000000100');
     });
@@ -1082,7 +1109,7 @@ describe('IndexLevel', () => {
       const expectedPrefix = '!';
       // expected length is maximum padding + the prefix.
       const expectedLength = (expectedPrefix + String(Number.MAX_SAFE_INTEGER)).length; //17
-      const encoded = Index.encodeNumberValue(-100);
+      const encoded = FilterUtility.encodeNumberValue(-100);
       expect(encoded.length).to.equal(String(Number.MIN_SAFE_INTEGER).length);
       expect(encoded.length).to.equal(expectedLength);
       expect(encoded).to.equal('!9007199254740891');
@@ -1090,10 +1117,10 @@ describe('IndexLevel', () => {
 
     it('should encode digits to sort using lexicographical comparison', () => {
       const digits = [ -1000, -100, -10, 10, 100, 1000 ].sort((a,b) => a - b);
-      const encodedDigits = digits.map(d => Index.encodeNumberValue(d))
+      const encodedDigits = digits.map(d => FilterUtility.encodeNumberValue(d))
         .sort((a,b) => lexicographicalCompare(a, b));
 
-      digits.forEach((n,i) => expect(encodedDigits.at(i)).to.equal(Index.encodeNumberValue(n)));
+      digits.forEach((n,i) => expect(encodedDigits.at(i)).to.equal(FilterUtility.encodeNumberValue(n)));
     });
   });
 });
