@@ -46,7 +46,7 @@
               "type": "number",
               "minimum": 1
             },
-            "messageCid": {
+            "cursor": {
               "type": "string"
             }
           }

@@ -389,11 +389,11 @@ export function testMessageStore(): void {
 
           // get all of the records
           const allRecords = await messageStore.query(alice.did, [{}], {}, { limit: 10 });
-          expect(allRecords.paginationMessageCid).to.not.exist;
+          expect(allRecords.cursor).to.not.exist;
 
           // get only partial records
           const partialRecords = await messageStore.query(alice.did, [{}], {}, { limit: 5 });
-          expect(partialRecords.paginationMessageCid).to.exist.and.to.not.be.undefined;
+          expect(partialRecords.cursor).to.exist.and.to.not.be.undefined;
         });
 
         it('should return all records from the cursor onwards when no limit is provided', async () => {
@@ -411,7 +411,7 @@ export function testMessageStore(): void {
           const offset = 5;
           const cursor = await Message.getCid(sortedRecords[offset - 1].message);
 
-          const { messages: limitQuery } = await messageStore.query(alice.did, [{}], {}, { messageCid: cursor });
+          const { messages: limitQuery } = await messageStore.query(alice.did, [{}], {}, { cursor });
           expect(limitQuery.length).to.equal(sortedRecords.slice(offset).length);
           for (let i = 0; i < limitQuery.length; i++) {
             const offsetIndex = i + offset;
@@ -435,7 +435,7 @@ export function testMessageStore(): void {
           const cursor = await Message.getCid(sortedRecords[offset - 1].message);
           const limit = 3;
 
-          const { messages: limitQuery } = await messageStore.query(alice.did, [{}], {}, { messageCid: cursor, limit });
+          const { messages: limitQuery } = await messageStore.query(alice.did, [{}], {}, { cursor, limit });
           expect(limitQuery.length).to.equal(limit);
           for (let i = 0; i < limitQuery.length; i++) {
             const offsetIndex = i + offset;
@@ -456,10 +456,10 @@ export function testMessageStore(): void {
           const results = [];
           let cursor: string | undefined;
           while (true) {
-            const { messages: limitQuery, paginationMessageCid } = await messageStore.query(alice.did, [{}], {}, { messageCid: cursor, limit });
+            const { messages: limitQuery, cursor: queryCursor } = await messageStore.query(alice.did, [{}], {}, { cursor, limit });
             expect(limitQuery.length).to.be.lessThanOrEqual(limit);
             results.push(...limitQuery);
-            cursor = paginationMessageCid;
+            cursor = queryCursor;
             if (cursor === undefined) {
               break;
             }
@@ -482,7 +482,7 @@ export function testMessageStore(): void {
           }
 
           const limit = 4;
-          const { messages: limitQuery } = await messageStore.query(alice.did, [{}], {}, { messageCid: 'some-cursor', limit });
+          const { messages: limitQuery } = await messageStore.query(alice.did, [{}], {}, { cursor: 'some-cursor', limit });
           expect(limitQuery.length).to.be.equal(0);
         });
       });

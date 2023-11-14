@@ -149,7 +149,7 @@ export type RecordsQueryMessage = GenericMessage & {
 
 export type RecordsQueryReply = GenericMessageReply & {
   entries?: RecordsQueryReplyEntry[];
-  paginationMessageCid?: string;
+  cursor?: string;
 };
 
 export type RecordsReadMessage = {

@@ -1134,7 +1134,7 @@ export function testRecordsQueryHandler(): void {
 
         const limit = 5;
         const results: RecordsQueryReplyEntry[] = [];
-        let messageCid;
+        let cursor;
         while (true) {
           const pageQuery = await TestDataGenerator.generateRecordsQuery({
             author : alice,
@@ -1143,16 +1143,16 @@ export function testRecordsQueryHandler(): void {
             },
             pagination: {
               limit: limit,
-              messageCid,
+              cursor,
             },
           });
 
           const pageReply = await dwn.processMessage(alice.did, pageQuery.message);
           expect(pageReply.status.code).to.equal(200);
-          messageCid = pageReply.paginationMessageCid;
+          cursor = pageReply.cursor;
           expect(pageReply.entries?.length).to.be.lte(limit);
           results.push(...pageReply.entries!);
-          if (messageCid === undefined) {
+          if (cursor === undefined) {
             break;
           }
         }
@@ -1160,7 +1160,7 @@ export function testRecordsQueryHandler(): void {
         expect(messages.every(({ message }) => results.map(e => (e as RecordsWriteMessage).recordId).includes(message.recordId)));
       });
 
-      it('paginationMessageCid should match the messageCid of the last entry in the returned query', async () => {
+      it('cursor should match the messageCid of the last entry in the returned query', async () => {
         const alice = await DidKeyResolver.generate();
 
         const messages = await Promise.all(Array(6).fill({}).map(_ => TestDataGenerator.generateRecordsWrite({
@@ -1186,10 +1186,10 @@ export function testRecordsQueryHandler(): void {
         const pageReply = await dwn.processMessage(alice.did, pageQuery.message);
         expect(pageReply.status.code).to.equal(200);
         expect(pageReply.entries?.length).to.be.lte(limit);
-        expect(pageReply.paginationMessageCid).to.exist;
+        expect(pageReply.cursor).to.exist;
         const lastMessageWithAuthorization = messages.find(m => m.message.recordId === pageReply.entries?.at(-1)!.recordId)!;
         const messageCid = await Message.getCid(lastMessageWithAuthorization.message);
-        expect(pageReply.paginationMessageCid).to.equal(messageCid);
+        expect(pageReply.cursor).to.equal(messageCid);
       });
 
       it('should allow an anonymous unauthenticated query to return published records', async () => {
@@ -1420,32 +1420,32 @@ export function testRecordsQueryHandler(): void {
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'alice page 1');
         const page1PaginationLastMessage = await Message.getCid(sortedMessages.at(9)!); // get messageCid from message with authorization.
-        expect(results.paginationMessageCid).to.equal(page1PaginationLastMessage, 'alice page 1');
+        expect(results.cursor).to.equal(page1PaginationLastMessage, 'alice page 1');
 
         // page2 alice
         const aliceQueryMessageDataPage2 = await TestDataGenerator.generateRecordsQuery({
           author     : alice,
           filter     : { schema },
           dateSort   : DateSort.CreatedAscending,
-          pagination : { limit: 10, messageCid: results.paginationMessageCid },
+          pagination : { limit: 10, cursor: results.cursor },
         });
         results = await dwn.processMessage(alice.did, aliceQueryMessageDataPage2.message) ;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'alice page 2');
         const page2PaginationLastMessage = await Message.getCid(sortedMessages.at(19)!); // get messageCid from message with authorization.
-        expect(results.paginationMessageCid).to.equal(page2PaginationLastMessage, 'alice page 2');
+        expect(results.cursor).to.equal(page2PaginationLastMessage, 'alice page 2');
 
         // page3 alice
         const aliceQueryMessageDataPage3 = await TestDataGenerator.generateRecordsQuery({
           author     : alice,
           filter     : { schema },
           dateSort   : DateSort.CreatedAscending,
-          pagination : { limit: 10, messageCid: results.paginationMessageCid },
+          pagination : { limit: 10, cursor: results.cursor },
         });
         results = await dwn.processMessage(alice.did, aliceQueryMessageDataPage3.message) ;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(5, 'alice page 3');
-        expect(results.paginationMessageCid).to.not.exist;
+        expect(results.cursor).to.not.exist;
 
         const bobs = (m: RecordsWriteMessage): boolean => {
           return m.descriptor.recipient === bob.did || m.descriptor.published === true || Message.getSigner(m) === bob.did;
@@ -1467,19 +1467,19 @@ export function testRecordsQueryHandler(): void {
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'bob page 1');
         const page1BobPaginationLastMessage = await Message.getCid(bobSorted.at(9)!);
-        expect(results.paginationMessageCid).to.equal(page1BobPaginationLastMessage, 'bob page 1');
+        expect(results.cursor).to.equal(page1BobPaginationLastMessage, 'bob page 1');
         bobRetrieved.push(...results.entries!);
 
         const bobQueryMessagePage2 = await TestDataGenerator.generateRecordsQuery({
           author     : bob,
           filter     : { schema },
           dateSort   : DateSort.CreatedAscending,
-          pagination : { limit: 10, messageCid: results.paginationMessageCid },
+          pagination : { limit: 10, cursor: results.cursor },
         });
         results = await dwn.processMessage(alice.did, bobQueryMessagePage2.message) ;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'bob page 2');
-        expect(results.paginationMessageCid).to.not.exist;
+        expect(results.cursor).to.not.exist;
         bobRetrieved.push(...results.entries!);
 
         const compareRecordId = (a: GenericMessage, b:GenericMessage): boolean => {
