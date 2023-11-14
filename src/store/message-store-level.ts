@@ -7,8 +7,8 @@ import * as block from 'multiformats/block';
 import * as cbor from '@ipld/dag-cbor';
 
 import { BlockstoreLevel } from './blockstore-level.js';
-import { CID } from 'multiformats/cid';
 import { Cid } from '../utils/cid.js';
+import { CID } from 'multiformats/cid';
 import { createLevelDatabase } from './level-wrapper.js';
 import { executeUnlessAborted } from '../utils/abort.js';
 import { IndexLevel } from './index-level.js';
@@ -90,20 +90,25 @@ export class MessageStoreLevel implements MessageStore {
   ): Promise<{ messages: GenericMessage[], cursor?: string }> {
     options?.signal?.throwIfAborted();
 
+    // creates the query options including sorting and pagination.
+    // this adds 1 to the limit if provided, that way we can check to see if there are additional results and provide a return cursor.
     const queryOptions = MessageStoreLevel.getQueryOptions(messageSort, pagination);
     const results = await this.index.query(tenant, filters, queryOptions, options);
 
     const messages: GenericMessage[] = [];
-    let cursor: string | undefined;
     for (let i = 0; i < results.length; i++) {
       const messageCid = results[i];
       const message = await this.get(tenant, messageCid, options);
       if (message) { messages.push(message); }
     }
+
+    // checks to see if the returned results are greater than the limit, which would indicate additional results.
     const hasMoreResults = pagination?.limit !== undefined && pagination.limit < results.length;
+    let cursor: string | undefined;
     if (hasMoreResults) {
+      // if there are additional results, we remove the extra result we queried for.
       messages.splice(-1); // remove last element
-      const lastMessage = messages.at(-1);
+      const lastMessage = messages.at(-1); // we choose the last remaining result as a cursor point.
       cursor = await Message.getCid(lastMessage!);
     }
 
@@ -118,6 +123,7 @@ export class MessageStoreLevel implements MessageStore {
     // `keyof MessageSort` = name of all properties of `MessageSort` defaults to messageTimestamp
     let sortProperty: keyof MessageSort = 'messageTimestamp';
 
+    // set the sort property
     if (dateCreated !== undefined) {
       sortProperty = 'dateCreated';
     } else if (datePublished !== undefined) {
@@ -130,7 +136,7 @@ export class MessageStoreLevel implements MessageStore {
       sortDirection = messageSort[sortProperty]!;
     }
 
-    // we add one more to the limit to return a pagination cursor
+    // we add one more to the limit to determine whether there are additional results and to return a cursor.
     if (limit && limit > 0) {
       limit = limit + 1;
     }
@@ -171,14 +177,7 @@ export class MessageStoreLevel implements MessageStore {
 
     const messageCidString = messageCid.toString();
 
-    // note: leaving the additional tenant indexing to allow for querying with an "empty" filter.
-    // when querying, we also inject a filter for the specific tenant.
-    // if there are no other filters present it will return all the messages for that tenant.
-    const indexDocument = {
-      ...indexes,
-      tenant,
-    };
-    await this.index.put(tenant, messageCidString, messageCidString, indexDocument, options);
+    await this.index.put(tenant, messageCidString, messageCidString, indexes, options);
   }
 
 

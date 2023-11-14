@@ -47,8 +47,8 @@ export class EventLogLevel implements EventLog {
   }
 
   /**
-   * Appends messageCids to the EventLog in the order they are appended using a ulid watermark.
-   * optionally add indexable properties to allow for querying filtered events.
+   * Appends Events to the EventLog in the order they are appended using a ulid watermark.
+   * The indexes are used to query the event-log for specific events.
    *
    * @param tenant
    * @param messageCid the messageCid of the message that is being appended to the log.
@@ -57,18 +57,19 @@ export class EventLogLevel implements EventLog {
    */
   async append(tenant: string, messageCid: string, indexes: { [key:string]: unknown }): Promise<string> {
     const watermark = this.ulidFactory();
-    // a reverse lookup in order to delete by messageCid
+    // A reverse lookup in order to delete by messageCid
+    // We are using the watermark as the key for this index.
+    // When deleting by messageCid we need to look up the watermark.
     const cidLogIndex = await this.messageCidPartition(tenant);
     await cidLogIndex.put(messageCid, watermark);
 
-    await this.index.put(tenant, watermark, { messageCid, watermark }, { ...indexes, watermark });
+    const event:Event = { messageCid, watermark };
+    await this.index.put(tenant, watermark, event, { ...indexes, watermark });
     return watermark;
   }
 
   /**
    * Queries Events for a given tenant using the filters provided.
-   * Each filter has it's own watermark, this is to prevent returning already fetched data
-   * if adding a new filter to a subsequent request.
    *
    * @param tenant
    * @param filters an array of filters that designates which event properties are being queried.
