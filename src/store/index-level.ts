@@ -1,7 +1,7 @@
 import type { EqualFilter, Filter, IndexedItem, Indexes, RangeFilter } from '../types/message-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions, } from './level-wrapper.js';
 
-import { DwnInterfaceName } from '../enums/dwn-interface-method.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 import { Index } from '../utils/index.js';
 import { lexicographicalCompare } from '../utils/string.js';
 import { SortDirection } from '../types/message-types.js';
@@ -158,11 +158,10 @@ export class IndexLevel<T> {
   * @param options IndexLevelOptions that include an AbortSignal.
   */
   async query(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<T[]> {
-    const { cursor } = queryOptions;
 
     // returns an array of which search filters we need to perform a full search on.
     // if there are no search filters returned, we do a full scan on the sorted index.
-    const searchFilters = await this.searchFilterSelector(filters, cursor !== undefined);
+    const searchFilters = await this.searchFilterSelector(filters, queryOptions);
     if (searchFilters.length === 0) {
       return this.sortedIndexQuery(tenant, filters, queryOptions, options);
     }
@@ -177,14 +176,11 @@ export class IndexLevel<T> {
    * @param hasCursor whether or not the incoming query has a cursor.
    * @returns an array of filters to query using. If an empty array is returned, query using the sort property index.
    */
-  private async searchFilterSelector(filters: Filter[], hasCursor: boolean = false): Promise<Filter[]> {
+  private async searchFilterSelector(filters: Filter[], queryOptions: QueryOptions): Promise<Filter[]> {
+    const { cursor, sortProperty } = queryOptions;
 
-    // first we check if a cursor point exists and if we are querying for Events in any of the filters.
-    // if both are true we return an empty array, which will trigger a sortedIndexQuery.
-    if (hasCursor && filters.findIndex(({ interface: interfaceName }) => {
-      return (Index.isEqualFilter(interfaceName) && interfaceName === DwnInterfaceName.Events) ||
-        (Index.isOneOfFilter(interfaceName) && interfaceName.includes(DwnInterfaceName.Events));
-    }) > -1) {
+    // if we have a cursor and this is an EventsQuery (the only query that sorts by watermark), we want to trigger the sortedIndexQuery
+    if (cursor !== undefined && sortProperty === 'watermark') {
       return [];
     }
 
