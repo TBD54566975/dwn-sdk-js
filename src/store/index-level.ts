@@ -1,8 +1,7 @@
 import type { EqualFilter, Filter, IndexedItem, Indexes, RangeFilter } from '../types/message-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions, } from './level-wrapper.js';
 
-import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
-import { Index } from '../utils/index.js';
+import { FilterUtility } from '../utils/filter.js';
 import { lexicographicalCompare } from '../utils/string.js';
 import { SortDirection } from '../types/message-types.js';
 import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
@@ -96,7 +95,7 @@ export class IndexLevel<T> {
       // for example if the property is messageTimestamp the key would look like:
       //  '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
       //
-      const key = IndexLevel.keySegmentJoin(Index.encodeValue(sortValue), itemId);
+      const key = IndexLevel.keySegmentJoin(FilterUtility.encodeValue(sortValue), itemId);
       const itemValue: IndexedItem<T> = { itemId: itemId, indexes, value };
 
       // we write the values into a sublevel-partition of tenantPartition.
@@ -142,7 +141,7 @@ export class IndexLevel<T> {
       const sortValue = sortIndexes[sortProperty];
       indexOps.push(tenantPartition.partitionOperation(`__${sortProperty}__`, {
         type : 'del',
-        key  : IndexLevel.keySegmentJoin(Index.encodeValue(sortValue), itemId),
+        key  : IndexLevel.keySegmentJoin(FilterUtility.encodeValue(sortValue), itemId),
       }));
     }
 
@@ -158,110 +157,14 @@ export class IndexLevel<T> {
   * @param options IndexLevelOptions that include an AbortSignal.
   */
   async query(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<T[]> {
-
     // returns an array of which search filters we need to perform a full search on.
     // if there are no search filters returned, we do a full scan on the sorted index.
-    const searchFilters = await this.searchFilterSelector(filters, queryOptions);
+    const searchFilters = FilterSelector.select(filters, queryOptions);
     if (searchFilters.length === 0) {
       return this.sortedIndexQuery(tenant, filters, queryOptions, options);
     }
 
     return this.filteredIndexQuery(tenant, filters, searchFilters, queryOptions, options);
-  }
-
-  /**
-   * Helps select which filter properties are needed to build a filtered query for the LevelDB indexes.
-   *
-   * @param filters the array of filters from an incoming query.
-   * @param hasCursor whether or not the incoming query has a cursor.
-   * @returns an array of filters to query using. If an empty array is returned, query using the sort property index.
-   */
-  private async searchFilterSelector(filters: Filter[], queryOptions: QueryOptions): Promise<Filter[]> {
-    const { cursor, sortProperty } = queryOptions;
-
-    // if we have a cursor and this is an EventsQuery (the only query that sorts by watermark), we want to trigger the sortedIndexQuery
-    if (cursor !== undefined && sortProperty === 'watermark') {
-      return [];
-    }
-
-    const searchFilters: Filter[] = [];
-    // next we determine if any of the filters contain a specific identifier such as recordId or permissionsGrantId
-    // if that's the case it's always the only property for the specific filter it's a member of
-    for (const filter of filters) {
-      const { recordId, permissionsGrantId } = filter;
-      // we don't use range filters with these, so either Equality or OneOf filters should be used
-      if (recordId !== undefined && (Index.isEqualFilter(recordId) || Index.isOneOfFilter(recordId))) {
-        searchFilters.push({ recordId });
-      }
-
-      if (permissionsGrantId !== undefined && (Index.isEqualFilter(permissionsGrantId) || Index.isOneOfFilter(permissionsGrantId))) {
-        searchFilters.push({ permissionsGrantId });
-      }
-    }
-
-    // we remove the filters that had recordId filters, as those filters will only use the recordId for a match
-    const remainingFilters = filters.filter(filter => filter.recordId === undefined);
-
-    // now we determine if the remaining filters array has any common filters.
-    // If there is a match, it's likely best to run a single query against that filter.
-    const { schema, contextId, protocol, protocolPath } = IndexLevel.commonFilters(remainingFilters);
-    if (contextId !== undefined && Index.isEqualFilter(contextId)) {
-      // a common contextId exists between all filters
-      // we return this first, as it will likely produce the smallest match set.
-      searchFilters.push({ contextId });
-      return searchFilters;
-    } else if ( schema !== undefined && Index.isEqualFilter(schema)) {
-      // a common schema exists between all filters
-      // we return this second, as it will likely produce a sufficiently small match set.
-      searchFilters.push({ schema });
-      return searchFilters;
-    } else if (protocolPath !== undefined && Index.isEqualFilter(protocolPath)) {
-      // a common protocol exists between all filters
-      // we return this third, as it will likely produce a sufficiently small match set.
-      searchFilters.push({ protocolPath });
-      return searchFilters;
-    } else if (protocol !== undefined && Index.isEqualFilter(protocol)) {
-      // a common protocol exists between all filters
-      // we return this third, as it will likely produce a sufficiently small match set.
-      searchFilters.push({ protocol });
-      return searchFilters;
-    };
-
-
-    // if we found no common filters, we will attempt to find context, schema, or protocol of each filter
-    const finalFilters: Filter[] = remainingFilters.map(({ contextId, schema, protocol, protocolPath }) => {
-      // if check for single equality filters first in order of most likely to have a smaller set
-      if (contextId !== undefined && Index.isEqualFilter(contextId)) {
-        return { contextId } as Filter;
-      } else if (schema !== undefined && Index.isEqualFilter(schema)) {
-        return { schema } as Filter;
-      } else if (protocolPath !== undefined && Index.isEqualFilter(protocolPath)) {
-        return { protocolPath } as Filter;
-      } else if (protocol !== undefined && Index.isEqualFilter(protocol)) {
-        return { protocol } as Filter;
-      }
-
-      // check for OneOf filters next
-      if (contextId !== undefined && Index.isOneOfFilter(contextId)) {
-        return { contextId } as Filter;
-      } else if (schema !== undefined && Index.isOneOfFilter(schema)) {
-        return { schema } as Filter;
-      } else if (protocolPath !== undefined && Index.isOneOfFilter(protocolPath)) {
-        return { protocol } as Filter;
-      } else if (protocol !== undefined && Index.isOneOfFilter(protocol)) {
-        return { protocolPath } as Filter;
-      }
-
-      // we return an empty filter and check for it to
-      return { };
-    });
-
-    // if we have an empty filter, we will query based on the sort property, so we return an empty set of filters.
-    if (finalFilters.findIndex(filter => isEmptyObject(filter)) > -1) {
-      return [];
-    }
-
-    return [ ...finalFilters, ...searchFilters];
   }
 
   /**
@@ -284,7 +187,7 @@ export class IndexLevel<T> {
       if (limit !== undefined && matches.length === limit) {
         return matches;
       }
-      if (Index.matchItem(item.indexes, filters)) {
+      if (FilterUtility.matchItem(item.indexes, filters)) {
         matches.push(item.value);
       }
     }
@@ -342,8 +245,8 @@ export class IndexLevel<T> {
 
     // cursor indexes must match the provided filters in order to be valid.
     // ie: if someone passes a valid messageCid for a cursor that's not part of the filter.
-    if (Index.matchItem(sortIndexes, filters)) {
-      return IndexLevel.keySegmentJoin(Index.encodeValue(sortValue), itemId);
+    if (FilterUtility.matchItem(sortIndexes, filters)) {
+      return IndexLevel.keySegmentJoin(FilterUtility.encodeValue(sortValue), itemId);
     }
   }
 
@@ -409,11 +312,11 @@ export class IndexLevel<T> {
     for (const propertyName in searchFilter) {
       const propertyFilter = searchFilter[propertyName];
       // We will find the union of these many individual queries later.
-      if (Index.isEqualFilter(propertyFilter)) {
+      if (FilterUtility.isEqualFilter(propertyFilter)) {
         // propertyFilter is an EqualFilter, meaning it is a non-object primitive type
         const exactMatchesPromise = this.filterExactMatches(tenant, propertyName, propertyFilter, levelOptions);
         filterPromises.push(exactMatchesPromise);
-      } else if (Index.isOneOfFilter(propertyFilter)) {
+      } else if (FilterUtility.isOneOfFilter(propertyFilter)) {
         // `propertyFilter` is a OneOfFilter
         // Support OR matches by querying for each values separately,
         // then adding them to the promises associated with `propertyName`
@@ -421,7 +324,7 @@ export class IndexLevel<T> {
           const exactMatchesPromise = this.filterExactMatches(tenant, propertyName, propertyValue, levelOptions);
           filterPromises.push(exactMatchesPromise);
         }
-      } else if (Index.isRangeFilter(propertyFilter)) {
+      } else if (FilterUtility.isRangeFilter(propertyFilter)) {
         // `propertyFilter` is a `RangeFilter`
         const rangeMatchesPromise = this.filterRangeMatches(tenant, propertyName, propertyFilter, levelOptions);
         filterPromises.push(rangeMatchesPromise);
@@ -435,7 +338,7 @@ export class IndexLevel<T> {
         // short circuit: if a data is already included to the final matched key set (by a different `Filter`),
         // no need to evaluate if the data satisfies this current filter being evaluated
         // otherwise check that the item is a match.
-        if (matches.has(indexedItem.itemId) || !Index.matchItem(indexedItem.indexes, matchFilters)) {
+        if (matches.has(indexedItem.itemId) || !FilterUtility.matchItem(indexedItem.indexes, matchFilters)) {
           continue;
         }
 
@@ -459,7 +362,7 @@ export class IndexLevel<T> {
     options?: IndexLevelOptions
   ): Promise<IndexedItem<T>[]> {
 
-    const matchPrefix = IndexLevel.keySegmentJoin(Index.encodeValue(propertyValue));
+    const matchPrefix = IndexLevel.keySegmentJoin(FilterUtility.encodeValue(propertyValue));
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {
       gt: matchPrefix
     };
@@ -489,7 +392,7 @@ export class IndexLevel<T> {
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {};
     for (const comparator in rangeFilter) {
       const comparatorName = comparator as keyof RangeFilter;
-      iteratorOptions[comparatorName] = Index.encodeValue(rangeFilter[comparatorName]!);
+      iteratorOptions[comparatorName] = FilterUtility.encodeValue(rangeFilter[comparatorName]!);
     }
 
     // if there is no lower bound specified (`gt` or `gte`), we need to iterate from the upper bound,
@@ -504,7 +407,7 @@ export class IndexLevel<T> {
 
     for await (const [ key, value ] of filterPartition.iterator(iteratorOptions, options)) {
       // if "greater-than" is specified, skip all keys that contains the exact value given in the "greater-than" condition
-      if ('gt' in rangeFilter && this.extractIndexValueFromKey(key) === Index.encodeValue(rangeFilter.gt!)) {
+      if ('gt' in rangeFilter && this.extractIndexValueFromKey(key) === FilterUtility.encodeValue(rangeFilter.gt!)) {
         continue;
       }
       matches.push(JSON.parse(value) as IndexedItem<T>);
@@ -524,35 +427,13 @@ export class IndexLevel<T> {
     return matches;
   }
 
-
-  /**
-   * Given an array of filters, it returns a single filter with common property/values amongst all the filters.
-   * If there are no common filters, the filter is empty.
-   */
-  private static commonFilters(filters: Filter[]): Filter {
-    if (filters.length === 0) {
-      return { };
-    }
-    return filters.reduce((prev, current) => {
-      const filterCopy = { ...prev };
-      for (const property in filterCopy) {
-        const filterValue = filterCopy[property];
-        const compareValue = current[property];
-        if (Index.encodeValue(compareValue) !== Index.encodeValue(filterValue)) {
-          delete filterCopy[property];
-        }
-      }
-      return filterCopy;
-    });
-  }
-
   /**
    * Sorts Items lexicographically in ascending or descending order given a specific sortProperty, using the itemId as a tie breaker.
    * We know the indexes include the sortProperty here because they have already been checked within executeSingleFilterQuery.
    */
   private sortItems(itemA: IndexedItem<T>, itemB: IndexedItem<T>, sortProperty: string, direction: SortDirection): number {
-    const aValue = Index.encodeValue(itemA.indexes[sortProperty]) + itemA.itemId;
-    const bValue = Index.encodeValue(itemB.indexes[sortProperty]) + itemB.itemId;
+    const aValue = FilterUtility.encodeValue(itemA.indexes[sortProperty]) + itemA.itemId;
+    const bValue = FilterUtility.encodeValue(itemB.indexes[sortProperty]) + itemB.itemId;
     return direction === SortDirection.Ascending ?
       lexicographicalCompare(aValue, bValue) :
       lexicographicalCompare(bValue, aValue);
@@ -590,5 +471,154 @@ export class IndexLevel<T> {
   private static delimiter = `\x00`;
   private static keySegmentJoin(...values: unknown[]): string {
     return values.join(IndexLevel.delimiter);
+  }
+}
+
+class FilterSelector {
+
+  private static hasCursorAndSortProperty(filters: Filter[], queryOptions: QueryOptions):boolean {
+    const { cursor, sortProperty } = queryOptions;
+    return cursor !== undefined &&
+      (sortProperty === 'watermark' || filters.findIndex(filter => Object.keys(filter).map(property => property === sortProperty)) > -1);
+  }
+
+  private static checkRangeFilters(filters: Filter[]): Filter[] {
+    return filters.filter(filter => Object.values(filter).findIndex(filterValue => FilterUtility.isRangeFilter(filterValue)) > -1);
+  }
+
+  private static checkForIdSearches(filters: Filter[]): { searchFilters: Filter[], remainingFilters: Filter[] } {
+    const searchFilters: Filter[] = [];
+    const remainingFilters: Filter[] = [];
+    // next we determine if any of the filters contain a specific identifier such as recordId or permissionsGrantId
+    // if that's the case it's always the only property for the specific filter it's a member of
+    for (const filter of filters) {
+      const { recordId, permissionsGrantId } = filter;
+      // we don't use range filters with these, so either Equality or OneOf filters should be used
+      if (recordId !== undefined && (FilterUtility.isEqualFilter(recordId) || FilterUtility.isOneOfFilter(recordId))) {
+        searchFilters.push({ recordId });
+        continue;
+      }
+
+      if (permissionsGrantId !== undefined && (FilterUtility.isEqualFilter(permissionsGrantId) || FilterUtility.isOneOfFilter(permissionsGrantId))) {
+        searchFilters.push({ permissionsGrantId });
+        continue;
+      }
+
+      remainingFilters.push(filter);
+    }
+
+    return { searchFilters, remainingFilters };
+  }
+
+  private static checkCommonFilters(filters: Filter[]): Filter | undefined {
+    const { schema, contextId, protocol, protocolPath } = this.commonFilters(filters);
+
+    // if we match any of these, we add them to our search filters and return immediately
+    if (contextId !== undefined && FilterUtility.isEqualFilter(contextId)) {
+      // a common contextId exists between all filters
+      // we return this first, as it will likely produce the smallest match set.
+      return { contextId };
+    } else if ( schema !== undefined && FilterUtility.isEqualFilter(schema)) {
+      // a common schema exists between all filters
+      // we return this second, as it will likely produce a sufficiently small match set.
+      return { schema };
+    } else if (protocolPath !== undefined && FilterUtility.isEqualFilter(protocolPath)) {
+      // a common protocol exists between all filters
+      // we return this third, as it will likely produce a sufficiently small match set.
+      return { protocolPath };
+    } else if (protocol !== undefined && FilterUtility.isEqualFilter(protocol)) {
+      // a common protocol exists between all filters
+      // we return this third, as it will likely produce a sufficiently small match set.
+      return { protocol };
+    };
+  }
+
+  /**
+   * Helps select which filter properties are needed to build a filtered query for the LevelDB indexes.
+   *
+   * @param filters the array of filters from an incoming query.
+   * @param queryOptions options associated with the incoming query.
+   * @returns an array of filters to query using. If an empty array is returned, query using the sort property index.
+   */
+  static select(filters: Filter[], queryOptions: QueryOptions): Filter[] {
+
+    // if we have a cursor and this is an EventsQuery (the only query that sorts by watermark), we want to trigger the sortedIndexQuery
+    // we also trigger a sortedIndexQuery if we have a cursor and one of the filters is the same as the sortProperty
+    if (this.hasCursorAndSortProperty(filters, queryOptions)) {
+      return [];
+    }
+
+    // if the number of range filters that exist are equal to the number of filters in the query, we return the range filters.
+    const rangeFilters = this.checkRangeFilters(filters);
+    if (rangeFilters.length === filters.length) {
+      return rangeFilters;
+    }
+
+    const { searchFilters, remainingFilters } = this.checkForIdSearches(filters);
+    // now we determine if the remaining filters array has any common filters.
+    // If there is a match, it's likely best to run a single query against that filter.
+    const commonFilter = this.checkCommonFilters(remainingFilters);
+    if (commonFilter !== undefined) {
+      // the commonFilter was built from the remainingFilters from the checkForIdsSearch function
+      // so we add the returned idFilters array, which could be empty, as well as the remaining common filter.
+      return [ ...searchFilters, commonFilter ];
+    }
+
+    // if we found no common filters, we will attempt to find context, schema, or protocol of each filter
+    const finalFilters: Filter[] = remainingFilters.map(({ contextId, schema, protocol, protocolPath }) => {
+      // if check for single equality filters first in order of most likely to have a smaller set
+      if (contextId !== undefined && FilterUtility.isEqualFilter(contextId)) {
+        return { contextId } as Filter;
+      } else if (schema !== undefined && FilterUtility.isEqualFilter(schema)) {
+        return { schema } as Filter;
+      } else if (protocolPath !== undefined && FilterUtility.isEqualFilter(protocolPath)) {
+        return { protocolPath } as Filter;
+      } else if (protocol !== undefined && FilterUtility.isEqualFilter(protocol)) {
+        return { protocol } as Filter;
+      }
+
+      // check for OneOf filters next
+      if (contextId !== undefined && FilterUtility.isOneOfFilter(contextId)) {
+        return { contextId } as Filter;
+      } else if (schema !== undefined && FilterUtility.isOneOfFilter(schema)) {
+        return { schema } as Filter;
+      } else if (protocolPath !== undefined && FilterUtility.isOneOfFilter(protocolPath)) {
+        return { protocol } as Filter;
+      } else if (protocol !== undefined && FilterUtility.isOneOfFilter(protocol)) {
+        return { protocolPath } as Filter;
+      }
+
+      // we return an empty filter and check for it to
+      return { };
+    });
+
+    // if we have an empty filter, we will query based on the sort property, so we return an empty set of filters.
+    if (finalFilters.findIndex(filter => isEmptyObject(filter)) > -1) {
+      return [];
+    }
+
+    return [ ...finalFilters, ...searchFilters];
+  }
+
+
+  /**
+   * Given an array of filters, it returns a single filter with common property/values amongst all the filters.
+   * If there are no common filters, the filter is empty.
+   */
+  private static commonFilters(filters: Filter[]): Filter {
+    if (filters.length === 0) {
+      return { };
+    }
+    return filters.reduce((prev, current) => {
+      const filterCopy = { ...prev };
+      for (const property in filterCopy) {
+        const filterValue = filterCopy[property];
+        const compareValue = current[property];
+        if (FilterUtility.encodeValue(compareValue) !== FilterUtility.encodeValue(filterValue)) {
+          delete filterCopy[property];
+        }
+      }
+      return filterCopy;
+    });
   }
 }
