@@ -2,6 +2,7 @@ import type { Signer } from '../types/signer.js';
 import type { ProtocolDefinition, ProtocolRuleSet, ProtocolsConfigureDescriptor, ProtocolsConfigureMessage } from '../types/protocols-types.js';
 
 import { Message } from '../core/message.js';
+import { ProtocolActor } from '../types/protocols-types.js';
 import { Time } from '../utils/time.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
@@ -133,11 +134,27 @@ export class ProtocolsConfigure extends Message<ProtocolsConfigureMessage> {
         );
       }
 
-      // Validate that if `who` is not set to `anyone` then `of` is set
-      if (action.who !== undefined && ['author', 'recipient'].includes(action.who) && !action.of) {
+      // Validate that if `who === recipient` and `of === undefined`, then `can` is either `delete` or `update`
+      // We will not use direct recipient for `read`, `write`, or `query` because:
+      // - Recipients are always allowed to `read`.
+      // - `write` entails ability to create and update, whereas `update` only allows for updates.
+      //    There is no 'recipient' until the record has been created, so it makes no sense to allow recipient to write.
+      // - At this time, `query` is only authorized using roles, so allowing direct recipients to query is outside the scope of this PR.
+      if (action.who === ProtocolActor.Recipient &&
+          action.of === undefined &&
+          !['update', 'delete'].includes(action.can)
+      ) {
+        throw new DwnError(
+          DwnErrorCode.ProtocolsConfigureInvalidRecipientOfAction,
+          'Rules for `recipient` without `of` property must have `can` === `delete` or `update`'
+        );
+      }
+
+      // Validate that if `who` is set to `author` then `of` is set
+      if (action.who === ProtocolActor.Author && !action.of) {
         throw new DwnError(
           DwnErrorCode.ProtocolsConfigureInvalidActionMissingOf,
-          `'of' is required at protocol path (${protocolPath})`
+          `'of' is required when 'author' is specified as 'who'`
         );
       }
     }

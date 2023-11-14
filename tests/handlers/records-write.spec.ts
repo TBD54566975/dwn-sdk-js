@@ -1258,6 +1258,54 @@ export function testRecordsWriteHandler(): void {
             expect(bobTagRecordsReply.status.code).to.equal(401);
             expect(bobTagRecordsReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
           });
+
+          it('should allowed update with direct recipient rule', async () => {
+            // scenario: Alice creates a 'post' with Bob as recipient. Bob is able to update
+            //           the 'post' because he was recipient of it. Carol is not able to update it.
+
+            const protocolDefinition = recipientCanProtocol as ProtocolDefinition;
+            const alice = await TestDataGenerator.generatePersona();
+            const bob = await TestDataGenerator.generatePersona();
+            const carol = await TestDataGenerator.generatePersona();
+
+            const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+              author: alice,
+              protocolDefinition
+            });
+
+            // setting up a stub DID resolver
+            TestStubGenerator.stubDidResolver(didResolver, [alice, bob, carol]);
+
+            const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+            expect(protocolsConfigureReply.status.code).to.equal(202);
+
+            // Alice creates a 'post' with Bob as recipient
+            const recordsWrite = await TestDataGenerator.generateRecordsWrite({
+              author       : alice,
+              recipient    : bob.did,
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'post',
+            });
+            const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message, recordsWrite.dataStream);
+            expect(recordsWriteReply.status.code).to.eq(202);
+
+            // Carol is unable to update the 'post'
+            const carolRecordsWrite = await TestDataGenerator.generateFromRecordsWrite({
+              author        : carol,
+              existingWrite : recordsWrite.recordsWrite
+            });
+            const carolRecordsWriteReply = await dwn.processMessage(alice.did, carolRecordsWrite.message);
+            expect(carolRecordsWriteReply.status.code).to.eq(401);
+            expect(carolRecordsWriteReply.status.detail).to.contain(DwnErrorCode.ProtocolAuthorizationActionNotAllowed);
+
+            // Bob is able to update the post
+            const bobRecordsWrite = await TestDataGenerator.generateFromRecordsWrite({
+              author        : bob,
+              existingWrite : recordsWrite.recordsWrite,
+            });
+            const bobRecordsWriteReply = await dwn.processMessage(alice.did, bobRecordsWrite.message, bobRecordsWrite.dataStream);
+            expect(bobRecordsWriteReply.status.code).to.eq(202);
+          });
         });
 
         describe('author action rules', () => {
