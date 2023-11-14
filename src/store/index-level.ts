@@ -179,11 +179,11 @@ export class IndexLevel<T> {
    */
   private async searchFilterSelector(filters: Filter[], hasCursor: boolean = false): Promise<Filter[]> {
 
-    // first we check if a cursor point exists and are querying for Events in any of the filters,
-    // we want to do a sorted index query by the watermark so we return no search filters
+    // first we check if a cursor point exists and if we are querying for Events in any of the filters.
+    // if both are true we return an empty array, which will trigger a sortedIndexQuery.
     if (hasCursor && filters.findIndex(({ interface: interfaceName }) => {
-      return Index.isEqualFilter(interfaceName) && interfaceName === DwnInterfaceName.Events ||
-      Index.isOneOfFilter(interfaceName) && interfaceName.includes(DwnInterfaceName.Events);
+      return (Index.isEqualFilter(interfaceName) && interfaceName === DwnInterfaceName.Events) ||
+        (Index.isOneOfFilter(interfaceName) && interfaceName.includes(DwnInterfaceName.Events));
     }) > -1) {
       return [];
     }
@@ -357,7 +357,7 @@ export class IndexLevel<T> {
    * @param matchFilters the filters passed to the parent query.
    * @param searchFilters the modified filters used for the LevelDB query to search for a subset of items to match against.
    */
-  private async filteredIndexQuery(
+  async filteredIndexQuery(
     tenant: string,
     matchFilters: Filter[],
     searchFilters:Filter[],
@@ -369,15 +369,27 @@ export class IndexLevel<T> {
     // we create a matches map so that we can short-circuit matched items within the async single query below.
     const matches:Map<string, IndexedItem<T>> = new Map();
 
-    await Promise.all(searchFilters.map(filter => {
-      return this.executeSingleFilterQuery(tenant, filter, matchFilters, sortProperty, matches, options );
-    }));
+    try {
+      await Promise.all(searchFilters.map(filter => {
+        return this.executeSingleFilterQuery(tenant, filter, matchFilters, sortProperty, matches, options );
+      }));
+    } catch (error) {
+      if ((error as DwnError).code === DwnErrorCode.IndexInvalidSortProperty) {
+        // return empty results if the sort property is invalid.
+        return [];
+      }
+    }
 
     const sortedValues = [...matches.values()].sort((a,b) => this.sortItems(a,b, sortProperty, sortDirection));
 
     // we find the cursor point and only return the result starting there + the limit.
     // if there is no cursor index, we just start in the beginning.
     const cursorIndex = cursor ? sortedValues.findIndex(match => match.itemId === cursor) : -1;
+    if (cursor !== undefined && cursorIndex === -1) {
+      // if a cursor is provided but we cannot find it, we return an empty result set
+      return [];
+    }
+
     const start = cursorIndex > -1 ? cursorIndex + 1 : 0;
     const end = limit !== undefined ? start + limit : undefined;
 
