@@ -89,7 +89,7 @@ export class MessageStoreLevel implements MessageStore {
     messageSort?: MessageSort,
     pagination?: Pagination,
     options?: MessageStoreOptions
-  ): Promise<{ messages: GenericMessage[], paginationMessageCid?: string }> {
+  ): Promise<{ messages: GenericMessage[], cursor?: string }> {
     options?.signal?.throwIfAborted();
 
     const messages: GenericMessage[] = [];
@@ -97,18 +97,18 @@ export class MessageStoreLevel implements MessageStore {
     // if there are no other filters present it will return all the messages the tenant.
     const resultIds = await this.index.query(tenant, filters.map(f => ({ ...f, tenant })), options);
 
-    // as an optimization for large data sets, we are finding the message object which matches the paginationMessageCid here.
+    // as an optimization for large data sets, we are finding the message object which matches the cursor here.
     // we can use this within the pagination function after sorting to determine the starting point of the array in a more efficient way.
     let paginationMessage: GenericMessage | undefined;
     for (const id of resultIds) {
       const message = await this.get(tenant, id, options);
       if (message) { messages.push(message); }
-      if (pagination?.messageCid && pagination.messageCid === id) {
+      if (pagination?.cursor && pagination.cursor === id) {
         paginationMessage = message;
       }
     }
 
-    if (pagination?.messageCid !== undefined && paginationMessage === undefined) {
+    if (pagination?.cursor !== undefined && paginationMessage === undefined) {
       return { messages: [] }; //if paginationMessage is not found, do not return any results
     }
 
@@ -120,7 +120,7 @@ export class MessageStoreLevel implements MessageStore {
     messages: GenericMessage[],
     paginationMessage?: GenericMessage,
     pagination: Pagination = { }
-  ): Promise<{ messages: GenericMessage[], paginationMessageCid?: string } > {
+  ): Promise<{ messages: GenericMessage[], cursor?: string } > {
     const { limit } = pagination;
     if (paginationMessage === undefined && limit === undefined) {
       return { messages }; // return all without pagination pointer.
@@ -136,16 +136,16 @@ export class MessageStoreLevel implements MessageStore {
     const end = limit === undefined ? undefined : start + limit;
     const results = messages.slice(start, end);
 
-    // we only return a paginationMessageCid cursor if there are more results
+    // we only return a cursor cursor if there are more results
     const hasMoreResults = end !== undefined && end < messages.length;
-    let paginationMessageCid: string|undefined;
+    let cursor: string|undefined;
     if (hasMoreResults) {
       // we extract the cid of the last message in the result set.
       const lastMessage = results.at(-1);
-      paginationMessageCid = await Message.getCid(lastMessage!);
+      cursor = await Message.getCid(lastMessage!);
     }
 
-    return { messages: results, paginationMessageCid };
+    return { messages: results, cursor };
   }
 
   /**

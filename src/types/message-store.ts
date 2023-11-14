@@ -42,7 +42,7 @@ export interface MessageStore {
     messageSort?: MessageSort,
     pagination?: Pagination,
     options?: MessageStoreOptions
-  ): Promise<{ messages: GenericMessage[], paginationMessageCid?: string }>;
+  ): Promise<{ messages: GenericMessage[], cursor?: string }>;
 
   /**
    * Deletes the message associated with the id provided.

@@ -30,12 +30,12 @@ export class RecordsQueryHandler implements MethodHandler {
     }
 
     let recordsWrites: RecordsWriteMessageWithOptionalEncodedData[];
-    let paginationMessageCid: string|undefined;
+    let cursor: string|undefined;
     // if this is an anonymous query and the filter supports published records, query only published records
     if (RecordsQueryHandler.filterIncludesPublishedRecords(recordsQuery) && recordsQuery.author === undefined) {
       const results = await this.fetchPublishedRecords(tenant, recordsQuery);
       recordsWrites = results.messages as RecordsWriteMessageWithOptionalEncodedData[];
-      paginationMessageCid = results.paginationMessageCid;
+      cursor = results.cursor;
     } else {
       // authentication and authorization
       try {
@@ -52,18 +52,18 @@ export class RecordsQueryHandler implements MethodHandler {
       if (recordsQuery.author === tenant) {
         const results = await this.fetchRecordsAsOwner(tenant, recordsQuery);
         recordsWrites = results.messages as RecordsWriteMessageWithOptionalEncodedData[];
-        paginationMessageCid = results.paginationMessageCid;
+        cursor = results.cursor;
       } else {
         const results = await this.fetchRecordsAsNonOwner(tenant, recordsQuery);
         recordsWrites = results.messages as RecordsWriteMessageWithOptionalEncodedData[];
-        paginationMessageCid = results.paginationMessageCid;
+        cursor = results.cursor;
       }
     }
 
     return {
       status  : { code: 200, detail: 'OK' },
       entries : recordsWrites,
-      paginationMessageCid
+      cursor
     };
   }
 
@@ -95,7 +95,7 @@ export class RecordsQueryHandler implements MethodHandler {
   private async fetchRecordsAsOwner(
     tenant: string,
     recordsQuery: RecordsQuery
-  ): Promise<{ messages: GenericMessage[], paginationMessageCid?: string }> {
+  ): Promise<{ messages: GenericMessage[], cursor?: string }> {
     const { dateSort, filter, pagination } = recordsQuery.message.descriptor;
 
     // fetch all published records matching the query
@@ -131,7 +131,7 @@ export class RecordsQueryHandler implements MethodHandler {
    */
   private async fetchRecordsAsNonOwner(
     tenant: string, recordsQuery: RecordsQuery
-  ): Promise<{ messages: GenericMessage[], paginationMessageCid?: string }> {
+  ): Promise<{ messages: GenericMessage[], cursor?: string }> {
     const { dateSort, pagination } = recordsQuery.message.descriptor;
     const filters = [];
 
@@ -161,7 +161,7 @@ export class RecordsQueryHandler implements MethodHandler {
    */
   private async fetchPublishedRecords(
     tenant: string, recordsQuery: RecordsQuery
-  ): Promise<{ messages: GenericMessage[], paginationMessageCid?: string }> {
+  ): Promise<{ messages: GenericMessage[], cursor?: string }> {
     const { dateSort, pagination } = recordsQuery.message.descriptor;
     const filter = RecordsQueryHandler.buildPublishedRecordsFilter(recordsQuery);
     const messageSort = this.convertDateSort(dateSort);

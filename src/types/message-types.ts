@@ -93,9 +93,14 @@ export type Filter = {
   [property: string]: EqualFilter | OneOfFilter | RangeFilter
 };
 
+/**
+ * Pagination Options for querying messages.
+ *
+ * The cursor is the messageCid of the message you would like to pagination from.
+ */
 export type Pagination = {
-  messageCid?: string
-  limit?: number
+  cursor?: string;
+  limit?: number;
 };
 
 export enum SortOrder {
