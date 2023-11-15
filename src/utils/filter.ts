@@ -30,16 +30,12 @@ export class FilterUtility {
   private static matchFilter(indexedValues: { [key:string]:unknown }, filter: Filter): boolean {
     // set of unique query properties.
     // if count of missing property matches is 0, it means the data/object fully matches the filter
-    const missingPropertyMatchesForId: Set<string> = new Set([ ...Object.keys(filter) ]);
+    const missingPropertyMatchesForIndex: Set<string> = new Set([ ...Object.keys(filter) ]);
 
-    for (const filterName in filter) {
-      if (missingPropertyMatchesForId.size === 0) {
-        return true;
-      }
-
-      const filterValue = filter[filterName];
-      const indexedValue = indexedValues[filterName];
-      if (indexedValue === undefined) {
+    for (const filterProperty in filter) {
+      const filterValue = filter[filterProperty];
+      const indexValue = indexedValues[filterProperty];
+      if (indexValue === undefined) {
         return false;
       }
 
@@ -48,28 +44,31 @@ export class FilterUtility {
           // `propertyFilter` is a OneOfFilter
           // if OneOfFilter, the cursor properties are a map of each individual EqualFilter and the associated cursor string
           // Support OR matches by querying for each values separately,
-          if (this.matchOneOf(filterValue, indexedValue)) {
-            missingPropertyMatchesForId.delete(filterName);
-            continue;
+          if (!this.matchOneOf(filterValue, indexValue)) {
+            return false;
           }
+          missingPropertyMatchesForIndex.delete(filterProperty);
+          continue;
         } else {
           // `propertyFilter` is a `RangeFilter`
           // if RangeFilter use the string curser associated with the `propertyName`
-          if (this.matchRange(filterValue, indexedValue)) {
-            missingPropertyMatchesForId.delete(filterName);
-            continue;
+          if (!this.matchRange(filterValue, indexValue)) {
+            return false;
           }
+          missingPropertyMatchesForIndex.delete(filterProperty);
+          continue;
         }
       } else {
         // propertyFilter is an EqualFilter, meaning it is a non-object primitive type
         // if EqualFilter use the string cursor associated with the `propertyName`
-        if (FilterUtility.encodeValue(indexedValue) === FilterUtility.encodeValue(filterValue)) {
-          missingPropertyMatchesForId.delete(filterName);
-          continue;
+        if (FilterUtility.encodeValue(indexValue) !== FilterUtility.encodeValue(filterValue)) {
+          return false;
         }
+        missingPropertyMatchesForIndex.delete(filterProperty);
+        continue;
       }
     }
-    return missingPropertyMatchesForId.size === 0;
+    return missingPropertyMatchesForIndex.size === 0;
   }
 
   /**
@@ -121,6 +120,10 @@ export class FilterUtility {
 
   /**
    * Encodes an indexed value to a string
+   *
+   * NOTE: we currently only use this for strings, numbers and booleans.
+   * Objects are returned as "[object Object]".
+   * Although this never happens maybe we should consider making this function, and those which call it, typed better.
    */
   static encodeValue(value: unknown): string {
     switch (typeof value) {
@@ -163,7 +166,7 @@ export class FilterUtility {
 
   static isRangeFilter(filter: FilterValue): filter is RangeFilter {
     if (typeof filter === 'object' && !Array.isArray(filter)) {
-      return true;
+      return 'gt' in filter || 'lt' in filter || 'lte' in filter || 'gte' in filter;
     };
     return false;
   }
