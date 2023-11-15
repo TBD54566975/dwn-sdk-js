@@ -1,4 +1,4 @@
-import type { Filter } from './message-types.js';
+import type { Filter } from './index-types.js';
 
 export type Event = {
   watermark: string,

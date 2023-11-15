@@ -1,4 +1,4 @@
-import type { Filter } from '../types/message-types.js';
+import type { Filter } from '../types/index-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { RecordsDelete } from '../interfaces/records-delete.js';
 import type { RecordsQuery } from '../interfaces/records-query.js';

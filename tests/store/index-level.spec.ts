@@ -1,11 +1,11 @@
-import type { Filter } from '../../src/types/message-types.js';
+import type { Filter } from '../../src/types/index-types.js';
 
 import { ArrayUtility } from '../../src/utils/array.js';
 import { createLevelDatabase } from '../../src/store/level-wrapper.js';
 import { FilterUtility } from '../../src/utils/filter.js';
 import { IndexLevel } from '../../src/store/index-level.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
-import { SortDirection } from '../../src/types/message-types.js';
+import { SortDirection } from '../../src/types/index-types.js';
 import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { v4 as uuid } from 'uuid';
