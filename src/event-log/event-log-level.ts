@@ -1,4 +1,4 @@
-import type { Filter } from '../types/message-types.js';
+import type { Filter } from '../types/index-types.js';
 import type { ULIDFactory } from 'ulidx';
 import type { Event, EventLog, GetEventsOptions } from '../types/event-log.js';
 import type { LevelWrapper, LevelWrapperBatchOperation } from '../store/level-wrapper.js';
@@ -6,7 +6,7 @@ import type { LevelWrapper, LevelWrapperBatchOperation } from '../store/level-wr
 import { createLevelDatabase } from '../store/level-wrapper.js';
 import { IndexLevel } from '../store/index-level.js';
 import { monotonicFactory } from 'ulidx';
-import { SortDirection } from '../types/message-types.js';
+import { SortDirection } from '../types/index-types.js';
 
 type EventLogLevelConfig = {
  /**

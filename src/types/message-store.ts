@@ -1,4 +1,5 @@
-import type { Filter, GenericMessage, MessageSort, Pagination } from './message-types.js';
+import type { Filter } from './index-types.js';
+import type { GenericMessage, MessageSort, Pagination } from './message-types.js';
 
 export interface MessageStoreOptions {
   signal?: AbortSignal;

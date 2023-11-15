@@ -1,8 +1,9 @@
 import type { DataStore } from '../types/data-store.js';
 import type { DidResolver } from '../did/did-resolver.js';
+import type { Filter } from '../types/index-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { Filter, GenericMessage, MessageSort } from '../types/message-types.js';
+import type { GenericMessage, MessageSort } from '../types/message-types.js';
 import type { RecordsQueryMessage, RecordsQueryReply, RecordsWriteMessageWithOptionalEncodedData } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
@@ -11,7 +12,7 @@ import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Records } from '../utils/records.js';
 import { RecordsQuery } from '../interfaces/records-query.js';
-import { SortDirection } from '../types/message-types.js';
+import { SortDirection } from '../types/index-types.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export class RecordsQueryHandler implements MethodHandler {

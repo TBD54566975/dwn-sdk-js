@@ -1,6 +1,7 @@
 import type { DerivedPrivateJwk } from './hd-key.js';
+import type { GenericSignaturePayload } from '../types/message-types.js';
 import type { Readable } from 'readable-stream';
-import type { Filter, GenericSignaturePayload, RangeFilter } from '../types/message-types.js';
+import type { Filter, RangeFilter } from '../types/index-types.js';
 import type { RangeCriterion, RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsReadMessage, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
 
 import { DateSort } from '../types/records-types.js';

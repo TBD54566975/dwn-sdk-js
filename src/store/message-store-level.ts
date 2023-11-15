@@ -1,6 +1,6 @@
 
-import type { QueryOptions } from './index-level.js';
-import type { Filter, GenericMessage, MessageSort, Pagination } from '../types/message-types.js';
+import type { Filter, QueryOptions } from '../types/index-types.js';
+import type { GenericMessage, MessageSort, Pagination } from '../types/message-types.js';
 import type { MessageStore, MessageStoreOptions } from '../types/message-store.js';
 
 import * as block from 'multiformats/block';
@@ -14,7 +14,7 @@ import { executeUnlessAborted } from '../utils/abort.js';
 import { IndexLevel } from './index-level.js';
 import { Message } from '../core/message.js';
 import { sha256 } from 'multiformats/hashes/sha2';
-import { SortDirection } from '../types/message-types.js';
+import { SortDirection } from '../types/index-types.js';
 
 
 /**
