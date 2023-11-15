@@ -1,8 +1,8 @@
-import type { EqualFilter, Filter, IndexedItem, Indexes, RangeFilter } from '../types/message-types.js';
+import type { EqualFilter, Filter, IndexedItem, Indexes, QueryOptions, RangeFilter } from '../types/index-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions, } from './level-wrapper.js';
 
 import { lexicographicalCompare } from '../utils/string.js';
-import { SortDirection } from '../types/message-types.js';
+import { SortDirection } from '../types/index-types.js';
 import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { FilterSelector, FilterUtility } from '../utils/filter.js';
@@ -11,13 +11,6 @@ import { flatten, isEmptyObject, removeUndefinedProperties } from '../utils/obje
 type IndexLevelConfig = {
   location?: string,
   createLevelDatabase?: typeof createLevelDatabase
-};
-
-export type QueryOptions = {
-  sortProperty: string;
-  sortDirection?: SortDirection;
-  limit?: number;
-  cursor?: string;
 };
 
 const INDEX_SUBLEVEL_NAME = 'index';

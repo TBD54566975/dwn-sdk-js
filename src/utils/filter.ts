@@ -1,5 +1,4 @@
-import type { QueryOptions } from '../store/index-level.js';
-import type { EqualFilter, Filter, FilterValue, OneOfFilter, RangeFilter } from '../types/message-types.js';
+import type { EqualFilter, Filter, FilterValue, OneOfFilter, QueryOptions, RangeFilter } from '../types/index-types.js';
 
 import { isEmptyObject } from './object.js';
 
