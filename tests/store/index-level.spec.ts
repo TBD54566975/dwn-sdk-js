@@ -216,7 +216,7 @@ describe('IndexLevel', () => {
       expect(allResults).to.eql(['a', 'b', 'c', 'd']);
     });
 
-    describe('sortedIndexQuery', () => {
+    describe('sortedIndexQuery()', () => {
       it('invalid sort property returns no results', async () => {
         const testVals = ['b', 'd', 'c', 'a'];
         for (const val of testVals) {
@@ -239,6 +239,83 @@ describe('IndexLevel', () => {
 
         // invalid sort property with a valid cursor value
         invalidResults = await testIndex.sortedIndexQuery(tenant, filters, { sortProperty: 'invalid', cursor: 'a' });
+        expect(invalidResults.length).to.equal(0);
+      });
+
+      it('invalid cursor returns no results', async () => {
+        const testVals = ['e', 'b', 'd', 'c'];
+        for (const val of testVals) {
+          await testIndex.put(tenant, val, val, { val, schema: 'schema' });
+        }
+
+        //insert 'a' as a valid cursor, but not valid match by assigning it to schema2
+        await testIndex.put(tenant, 'a', 'a', { val: 'a', schema: 'schema2' });
+
+        const filters = [{ schema: 'schema' }];
+
+        // control test: return all results
+        const validResults = await testIndex.sortedIndexQuery(tenant, filters, { sortProperty: 'val', cursor: 'b' });
+        expect(validResults.length).to.equal(3);
+        expect(validResults).to.eql([ 'c', 'd', 'e' ]);
+
+        // pass invalid cursor returns no results
+        let invalidResults = await testIndex.sortedIndexQuery(tenant, filters, { sortProperty: 'val', cursor: 'invalid' });
+        expect(invalidResults.length).to.equal(0);
+
+        // pass valid cursor that isn't part of the query/matches
+        invalidResults = await testIndex.sortedIndexQuery(tenant, filters, { sortProperty: 'val', cursor: 'a' });
+        expect(invalidResults.length).to.equal(0);
+      });
+    });
+
+    describe('filteredIndexQuery()', () => {
+      it('invalid sort property returns no results', async () => {
+        const testVals = ['b', 'd', 'c', 'a'];
+        for (const val of testVals) {
+          await testIndex.put(tenant, val, val, { val, schema: 'schema' });
+        }
+
+        const filters = [{ schema: 'schema' }];
+
+        // control test: return all results
+        let validResults = await testIndex.filteredIndexQuery(tenant, filters, filters, { sortProperty: 'val' });
+        expect(validResults.length).to.equal(4);
+
+        // sort by invalid property returns no results
+        let invalidResults = await testIndex.filteredIndexQuery(tenant, filters, filters, { sortProperty: 'invalid' });
+        expect(invalidResults.length).to.equal(0);
+
+        // control test: returns after cursor
+        validResults = await testIndex.filteredIndexQuery(tenant, filters, filters, { sortProperty: 'val', cursor: 'a' });
+        expect(validResults.length).to.equal(3);
+
+        // invalid sort property with a valid cursor value
+        invalidResults = await testIndex.filteredIndexQuery(tenant, filters, filters, { sortProperty: 'invalid', cursor: 'a' });
+        expect(invalidResults.length).to.equal(0);
+      });
+
+      it('invalid cursor returns no results', async () => {
+        const testVals = ['e', 'b', 'd', 'c'];
+        for (const val of testVals) {
+          await testIndex.put(tenant, val, val, { val, schema: 'schema' });
+        }
+
+        //insert 'a' as a valid cursor, but not valid match by assigning it to schema2
+        await testIndex.put(tenant, 'a', 'a', { val: 'a', schema: 'schema2' });
+
+        const filters = [{ schema: 'schema' }];
+
+        // control test: return all results
+        const validResults = await testIndex.filteredIndexQuery(tenant, filters, filters, { sortProperty: 'val', cursor: 'b' });
+        expect(validResults.length).to.equal(3);
+        expect(validResults).to.eql([ 'c', 'd', 'e' ]);
+
+        // pass invalid cursor returns no results
+        let invalidResults = await testIndex.filteredIndexQuery(tenant, filters, filters, { sortProperty: 'val', cursor: 'invalid' });
+        expect(invalidResults.length).to.equal(0);
+
+        // pass valid cursor that isn't part of the query/matches
+        invalidResults = await testIndex.filteredIndexQuery(tenant, filters, filters, { sortProperty: 'val', cursor: 'a' });
         expect(invalidResults.length).to.equal(0);
       });
     });
@@ -597,67 +674,6 @@ describe('IndexLevel', () => {
           expect(ascResults).to.eql(['c', 'd']);
         });
 
-        it('invalid sort property returns no results', async () => {
-          const testVals = ['b', 'd', 'c', 'a'];
-          for (const val of testVals) {
-            await testIndex.put(tenant, val, val, { val, schema: 'schema' });
-          }
-
-          const filters = [{ schema: 'schema' }];
-
-          // control test: return all results
-          let validResults = await testIndex.query(tenant, filters, { sortProperty: 'val' });
-          expect(validResults.length).to.equal(4);
-
-          // sort by invalid property returns no results
-          let invalidResults = await testIndex.query(tenant, filters, { sortProperty: 'invalid' });
-          expect(invalidResults.length).to.equal(0);
-
-          // control test: returns after cursor
-          validResults = await testIndex.query(tenant, filters, { sortProperty: 'val', cursor: 'a' });
-          expect(validResults.length).to.equal(3);
-
-          // invalid sort property with a valid cursor value
-          invalidResults = await testIndex.query(tenant, filters, { sortProperty: 'invalid', cursor: 'a' });
-          expect(invalidResults.length).to.equal(0);
-        });
-
-        it('invalid cursor returns no results', async () => {
-          const testVals = ['b', 'd', 'c', 'a'];
-          for (const val of testVals) {
-            await testIndex.put(tenant, val, val, { val, schema: 'schema' });
-          }
-
-          const filters = [{ schema: 'schema' }];
-
-          // verify valid cursor
-          const validResults = await testIndex.query(tenant, filters, { sortProperty: 'val', cursor: 'a' });
-          expect(validResults.length).to.equal(3);
-          expect(validResults).to.eql(['b', 'c', 'd']);
-
-          // invalid cursor
-          const invalidResults = await testIndex.query(tenant, filters, { sortProperty: 'val', cursor: 'invalid' });
-          expect(invalidResults.length).to.equal(0);
-        });
-
-        it('valid cursor must be within the filtered results', async () => {
-          const testVals = ['b', 'e', 'd', 'c', 'a'];
-          for (const val of testVals) {
-            await testIndex.put(tenant, val, val, { val });
-          }
-
-          const filters = [{ val: { gt: 'b' } }];
-
-          // verify valid cursor within range
-          const validResults = await testIndex.query(tenant, filters, { sortProperty: 'val', cursor: 'c' });
-          expect(validResults.length).to.equal(2);
-          expect(validResults).to.eql(['d', 'e']);
-
-          // cursor outside of range
-          const invalidResults = await testIndex.query(tenant, filters, { sortProperty: 'val', cursor: 'a' });
-          expect(invalidResults.length).to.equal(0);
-        });
-
         it('can sort by any indexed property', async () => {
           const testVals = ['b', 'd', 'c', 'a'];
           for (const val of testVals) {
@@ -999,8 +1015,8 @@ describe('IndexLevel', () => {
         });
       });
     });
-
   });
+
   describe('delete', () => {
     before(async () => {
       testIndex = new IndexLevel({
