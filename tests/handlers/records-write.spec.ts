@@ -42,7 +42,7 @@ import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DwnConstant, DwnInterfaceName, DwnMethodName, KeyDerivationScheme, RecordsDelete } from '../../src/index.js';
+import { DwnConstant, DwnInterfaceName, DwnMethodName, KeyDerivationScheme, RecordsDelete, RecordsQuery } from '../../src/index.js';
 import { Encryption, EncryptionAlgorithm } from '../../src/utils/encryption.js';
 
 chai.use(chaiAsPromised);
@@ -1029,7 +1029,7 @@ export function testRecordsWriteHandler(): void {
 
       describe('protocol based writes', () => {
         it('should allow write with allow-anyone rule', async () => {
-        // scenario, Bob writes into Alice's DWN given Alice's "email" protocol allow-anyone rule
+          // scenario: Bob writes into Alice's DWN given Alice's "email" protocol allow-anyone rule
 
           // write a protocol definition with an allow-anyone rule
           const protocolDefinition = emailProtocolDefinition as ProtocolDefinition;
@@ -3001,8 +3001,8 @@ export function testRecordsWriteHandler(): void {
           expect(bobRecordsReadReply.status.code).to.equal(404);
         });
 
-        it('should allow protocol RecordsWrite without a schema', async () => {
-          // scenario, Bob writes into Alice's DWN given Alice's "email" protocol allow-anyone rule
+        it('should allow record with or without schema if protocol does not require schema for a record type', async () => {
+          // scenario: Alice's DWN has a protocol that allows anyone to write a record without schema
 
           // write a protocol definition that has a record type without schema
           const protocolDefinition = anyoneCollaborateProtocolDefinition as ProtocolDefinition;
@@ -3016,7 +3016,7 @@ export function testRecordsWriteHandler(): void {
           const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
           expect(protocolsConfigureReply.status.code).to.equal(202);
 
-          // generate a `RecordsWrite` message without schema
+          // write a `RecordsWrite` message without schema
           const data = TestDataGenerator.randomBytes(100);
           const dataStream = DataStream.fromBytes(data);
           const docWrite = await RecordsWrite.create(
@@ -3032,14 +3032,31 @@ export function testRecordsWriteHandler(): void {
           const writeReply = await dwn.processMessage(alice.did, docWrite.message, dataStream);
           expect(writeReply.status.code).to.equal(202);
 
-          // verify message got written to the DB
-          const recordsRead = await RecordsRead.create({
-            filter : { recordId: docWrite.message.recordId },
+          // write a `RecordsWrite` message with schema
+          const data2 = TestDataGenerator.randomBytes(100);
+          const data2Stream = DataStream.fromBytes(data2);
+          const doc2Write = await RecordsWrite.create(
+            {
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'doc',
+              schema       : TestDataGenerator.randomString(10),
+              dataFormat   : 'application/octet-stream',
+              data         : data2,
+              signer       : Jws.createSigner(alice)
+            }
+          );
+
+          const write2Reply = await dwn.processMessage(alice.did, doc2Write.message, data2Stream);
+          expect(write2Reply.status.code).to.equal(202);
+
+          // verify messages got written to the DB
+          const recordsQuery = await RecordsQuery.create({
+            filter : { protocolPath: 'doc' },
             signer : Jws.createSigner(alice)
           });
-          const recordsReadReply = await dwn.processMessage(alice.did, recordsRead.message);
+          const recordsReadReply = await dwn.processMessage(alice.did, recordsQuery.message);
           expect(recordsReadReply.status.code).to.equal(200);
-          expect(recordsReadReply.record).to.exist;
+          expect(recordsReadReply.entries?.length).to.equal(2);
         });
       });
 
