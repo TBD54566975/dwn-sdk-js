@@ -1,7 +1,7 @@
 import type { DerivedPrivateJwk } from './hd-key.js';
 import type { Readable } from 'readable-stream';
 import type { Filter, GenericSignaturePayload, RangeFilter } from '../types/message-types.js';
-import type { RangeCriterion, RecordsFilter, RecordsQueryMessage, RecordsReadMessage, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
+import type { RangeCriterion, RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsReadMessage, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
 
 import { Encoder } from './encoder.js';
 import { Encryption } from './encryption.js';
@@ -296,7 +296,7 @@ export class Records {
    *                         Usage of this property is purely for performance optimization so we don't have to decode the signature payload again.
    */
   public static validateDelegatedGrantReferentialIntegrity(
-    message: RecordsReadMessage | RecordsQueryMessage | RecordsWriteMessage,
+    message: RecordsReadMessage | RecordsQueryMessage | RecordsWriteMessage | RecordsDeleteMessage,
     signaturePayload: GenericSignaturePayload | undefined
   ): void {
     // `deletedGrantId` in the payload of the message signature and `authorDelegatedGrant` in `authorization` must both exist or be both undefined

@@ -19,7 +19,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DwnInterfaceName, DwnMethodName, PermissionsGrant, RecordsQuery, RecordsRead } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName, PermissionsGrant, RecordsDelete, RecordsQuery, RecordsRead } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -57,14 +57,17 @@ export function testDelegatedGrantScenarios(): void {
       await dwn.close();
     });
 
-    it('should allow entity invoking a valid delegated grant to write', async () => {
-      // scenario: Alice creates a delegated grant for device X and device Y,
-      // device X and Y can both use their grants to write a message to Bob's DWN as Alice
-      // all party should treat messages written by device X and Y as if they were written by Alice
+    it('should only allow entity invoking a valid delegated grant to write', async () => {
+      // scenario:
+      // 1. Alice creates a delegated grant for Device X and Device Y,
+      // 2. Device X and Y can both use their grants to write a message to Bob's DWN as Alice
+      // 3. Messages written by device X and Y should be considered to have been authored by Alice
+      // 4. Carol should not be able to write a message as Alice using Device X's delegated grant
       const alice = await DidKeyResolver.generate();
       const deviceX = await DidKeyResolver.generate();
       const deviceY = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
+      const carol = await DidKeyResolver.generate();
 
       // Bob has the email protocol installed
       const protocolDefinition = emailProtocolDefinition;
@@ -159,16 +162,34 @@ export function testDelegatedGrantScenarios(): void {
 
       const fetchedDeviceYWrite = await RecordsWrite.parse(fetchedDeviceYWriteEntry);
       expect(fetchedDeviceYWrite.author).to.equal(alice.did);
+
+      // Verify that Carol cannot write a chat message as Alice by invoking the Device X's grant
+      const messageByCarolAsAlice = new TextEncoder().encode('Message from Carol pretending to be Alice');
+      const writeByCarolAsAlice = await RecordsWrite.create({
+        signer         : Jws.createSigner(carol),
+        delegatedGrant : deviceXGrant.asDelegatedGrant(),
+        protocol,
+        protocolPath   : 'email', // this comes from `types` in protocol definition
+        schema         : protocolDefinition.types.email.schema,
+        dataFormat     : protocolDefinition.types.email.dataFormats[0],
+        data           : messageByCarolAsAlice
+      });
+
+      const carolWriteReply = await dwn.processMessage(carol.did, writeByCarolAsAlice.message, DataStream.fromBytes(messageByCarolAsAlice));
+      expect(carolWriteReply.status.code).to.equal(400);
+      expect(carolWriteReply.status.detail).to.contain(DwnErrorCode.RecordsValidateIntegrityGrantedToAndSignerMismatch);
     });
 
-    it('should allow entity invoking a valid delegated grant to read or query', async () => {
+    it('should only allow entity invoking a valid delegated grant to read or query', async () => {
       // scenario:
       // 1. Alice creates a delegated grant for device X,
       // 2. Bob starts a chat thread with Alice on his DWN
       // 3. device X should be able to read the chat thread
+      // 4. Carol should not be able to read the chat thread using device X's delegated grant
       const alice = await DidKeyResolver.generate();
       const deviceX = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
+      const carol = await DidKeyResolver.generate();
 
       // Bob has the chat protocol installed
       const protocolDefinition = threadRoleProtocolDefinition;
@@ -281,207 +302,6 @@ export function testDelegatedGrantScenarios(): void {
       const deviceXRecordsReadReply = await dwn.processMessage(bob.did, recordsReadByDeviceX.message);
       expect(deviceXRecordsReadReply.status.code).to.equal(200);
       expect(deviceXRecordsReadReply.record?.recordId).to.equal(chatRecord.message.recordId);
-    });
-
-    xit('should allow entity invoking a valid delegated grant to delete', async () => {
-    });
-
-    xit('should not allow entity using a non-delegated grant as a delegated grant to invoke write', async () => {
-    });
-
-    xit('should not allow entity using a non-delegated grant as a delegated grant to invoke read', async () => {
-    });
-
-    xit('should not allow entity using a non-delegated grant as a delegated grant to invoke query', async () => {
-    });
-
-    xit('should not allow entity using a non-delegated grant as a delegated grant to invoke delete', async () => {
-    });
-
-    it('should fail if invoking a delegated grant that is issued to a different entity to write', async () => {
-      // scenario:
-      // 1. Alice creates a delegated grant for Bob to act as Alice
-      // 2. Carol starts a chat thread with Alice
-      // 3. Daniel stole Bob's delegated grant and attempts to write to Carol's DWN
-      // 4. Daniel's attempt should fail
-      const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
-      const carol = await DidKeyResolver.generate();
-      const daniel = await DidKeyResolver.generate();
-
-      // Carol has the chat protocol installed
-      const protocolDefinition = threadRoleProtocolDefinition;
-      const protocol = threadRoleProtocolDefinition.protocol;
-      const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-        author: carol,
-        protocolDefinition
-      });
-      const protocolsConfigureReply = await dwn.processMessage(carol.did, protocolsConfig.message);
-      expect(protocolsConfigureReply.status.code).to.equal(202);
-
-      // Carol starts a chat thread
-      const threadRecord = await TestDataGenerator.generateRecordsWrite({
-        author       : carol,
-        protocol     : protocolDefinition.protocol,
-        protocolPath : 'thread',
-      });
-      const threadRoleReply = await dwn.processMessage(carol.did, threadRecord.message, threadRecord.dataStream);
-      expect(threadRoleReply.status.code).to.equal(202);
-
-      // Carol adds Alice as a participant in the thread
-      const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
-        author       : carol,
-        recipient    : alice.did,
-        protocol     : protocolDefinition.protocol,
-        protocolPath : 'thread/participant',
-        contextId    : threadRecord.message.contextId,
-        parentId     : threadRecord.message.recordId,
-        data         : new TextEncoder().encode('Alice is my friend'),
-      });
-      const participantRoleReply = await dwn.processMessage(carol.did, participantRoleRecord.message, participantRoleRecord.dataStream);
-      expect(participantRoleReply.status.code).to.equal(202);
-
-      // Alice creates a delegated grant for Bob to act as Alice.
-      const scope: PermissionScope = {
-        interface : DwnInterfaceName.Records,
-        method    : DwnMethodName.Write,
-        protocol
-      };
-
-      const grantToBob = await PermissionsGrant.create({
-        delegated   : true, // this is a delegated grant
-        dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        description : 'Allow Bob to write as me in chat protocol',
-        grantedBy   : alice.did,
-        grantedTo   : bob.did,
-        grantedFor  : alice.did,
-        scope       : scope,
-        signer      : Jws.createSigner(alice)
-      });
-
-      // Sanity check that Bob can write a chat message as Alice by invoking the delegated grant
-      const messageByBobAsAlice = new TextEncoder().encode('Message from Bob as Alice');
-      const writeByBobAsAlice = await RecordsWrite.create({
-        signer         : Jws.createSigner(bob),
-        delegatedGrant : grantToBob.asDelegatedGrant(),
-        protocolRole   : 'thread/participant',
-        protocol,
-        protocolPath   : 'thread/chat', // this comes from `types` in protocol definition
-        schema         : 'unused',
-        dataFormat     : 'unused',
-        contextId      : threadRecord.message.contextId,
-        parentId       : threadRecord.message.recordId,
-        data           : messageByBobAsAlice
-      });
-
-      const bobWriteReply = await dwn.processMessage(carol.did, writeByBobAsAlice.message, DataStream.fromBytes(messageByBobAsAlice));
-      expect(bobWriteReply.status.code).to.equal(202);
-
-      // Verify that Daniel cannot write a chat message as Alice by invoking the delegated grant granted to Bob
-      const messageByDanielAsAlice = new TextEncoder().encode('Message from Daniel as Alice');
-      const writeByDanielAsAlice = await RecordsWrite.create({
-        signer         : Jws.createSigner(daniel),
-        delegatedGrant : grantToBob.asDelegatedGrant(),
-        protocolRole   : 'thread/participant',
-        protocol,
-        protocolPath   : 'thread/chat', // this comes from `types` in protocol definition
-        schema         : 'unused',
-        dataFormat     : 'unused',
-        contextId      : threadRecord.message.contextId,
-        parentId       : threadRecord.message.recordId,
-        data           : messageByDanielAsAlice
-      });
-
-      const danielWriteReply = await dwn.processMessage(carol.did, writeByDanielAsAlice.message, DataStream.fromBytes(messageByDanielAsAlice));
-      expect(danielWriteReply.status.code).to.equal(400);
-      expect(danielWriteReply.status.detail).to.contain(DwnErrorCode.RecordsValidateIntegrityGrantedToAndSignerMismatch);
-    });
-
-    it('should fail if invoking a delegated grant that is issued to a different entity to read or query', async () => {
-      // scenario:
-      // 1. Alice creates a delegated grant for device X,
-      // 2. Bob starts a chat thread with Alice on his DWN
-      // 3. Carol pretends to be device X and attempts to read the chat message and fails
-      const alice = await DidKeyResolver.generate();
-      const deviceX = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
-      const carol = await DidKeyResolver.generate();
-
-      // Bob has the chat protocol installed
-      const protocolDefinition = threadRoleProtocolDefinition;
-      const protocol = threadRoleProtocolDefinition.protocol;
-      const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
-        author: bob,
-        protocolDefinition
-      });
-      const protocolsConfigureReply = await dwn.processMessage(bob.did, protocolsConfig.message);
-      expect(protocolsConfigureReply.status.code).to.equal(202);
-
-      // Bob starts a chat thread
-      const threadRecord = await TestDataGenerator.generateRecordsWrite({
-        author       : bob,
-        protocol     : protocolDefinition.protocol,
-        protocolPath : 'thread',
-      });
-      const threadRoleReply = await dwn.processMessage(bob.did, threadRecord.message, threadRecord.dataStream);
-      expect(threadRoleReply.status.code).to.equal(202);
-
-      // Bob adds Alice as a participant in the thread
-      const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
-        author       : bob,
-        recipient    : alice.did,
-        protocol     : protocolDefinition.protocol,
-        protocolPath : 'thread/participant',
-        contextId    : threadRecord.message.contextId,
-        parentId     : threadRecord.message.recordId,
-        data         : new TextEncoder().encode('Alice is my friend'),
-      });
-      const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, participantRoleRecord.dataStream);
-      expect(participantRoleReply.status.code).to.equal(202);
-
-      // Bob writes a chat message in the thread
-      const chatRecord = await TestDataGenerator.generateRecordsWrite({
-        author       : bob,
-        protocol     : protocolDefinition.protocol,
-        protocolPath : 'thread/chat',
-        contextId    : threadRecord.message.contextId,
-        parentId     : threadRecord.message.recordId,
-      });
-      const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, chatRecord.dataStream);
-      expect(chatRecordReply.status.code).to.equal(202);
-
-      // Alice creates a delegated grant for device X to act as Alice.
-      const scope: PermissionScope = {
-        interface : DwnInterfaceName.Records,
-        method    : DwnMethodName.Write,
-        protocol
-      };
-
-      const grantToDeviceX = await PermissionsGrant.create({
-        delegated   : true, // this is a delegated grant
-        dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        description : 'Allow device X to write as me in chat protocol',
-        grantedBy   : alice.did,
-        grantedTo   : deviceX.did,
-        grantedFor  : alice.did,
-        scope       : scope,
-        signer      : Jws.createSigner(alice)
-      });
-
-      // verify device X is able to read the chat message from Bob's DWN
-      const recordsQueryByDeviceX = await RecordsQuery.create({
-        signer         : Jws.createSigner(deviceX),
-        delegatedGrant : grantToDeviceX.asDelegatedGrant(),
-        protocolRole   : 'thread/participant',
-        filter         : {
-          protocol,
-          contextId    : threadRecord.message.contextId,
-          protocolPath : 'thread/chat'
-        }
-      });
-      const deviceXRecordsQueryReply = await dwn.processMessage(bob.did, recordsQueryByDeviceX.message);
-      expect(deviceXRecordsQueryReply.status.code).to.equal(200);
-      expect(deviceXRecordsQueryReply.entries?.length).to.equal(1);
 
       // Verify that Carol cannot query as Alice by invoking the delegated grant granted to Device X
       const recordsQueryByCarol = await RecordsQuery.create({
@@ -512,7 +332,136 @@ export function testDelegatedGrantScenarios(): void {
       expect(recordsQueryByCarolReply.status.detail).to.contain(DwnErrorCode.RecordsValidateIntegrityGrantedToAndSignerMismatch);
     });
 
-    xit('should fail if invoking a delegated grant that is issued to a different entity to delete', async () => {
+    it('should only allow entity invoking a valid delegated grant to delete', async () => {
+      // scenario:
+      // 1. Bob installs the chat protocol on his DWN and makes Alice an admin
+      // 2. Bob starts a chat thread with Carol on his DWN
+      // 3. Alice creates a delegated grant for Device X to act as her
+      // 4. Carol should not be able to delete a chat message as Alice using Device X's delegated grant
+      // 5. Device X should be able to delete a chat message as Alice
+      const alice = await DidKeyResolver.generate();
+      const deviceX = await DidKeyResolver.generate();
+      const bob = await DidKeyResolver.generate();
+      const carol = await DidKeyResolver.generate();
+
+      // Bob has the chat protocol installed
+      const protocolDefinition = threadRoleProtocolDefinition;
+      const protocol = threadRoleProtocolDefinition.protocol;
+      const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+        author: bob,
+        protocolDefinition
+      });
+      const protocolsConfigureReply = await dwn.processMessage(bob.did, protocolsConfig.message);
+      expect(protocolsConfigureReply.status.code).to.equal(202);
+
+      // Bob adds Alice as an admin
+      const globalAdminRecord = await TestDataGenerator.generateRecordsWrite({
+        author       : bob,
+        recipient    : alice.did,
+        protocol     : protocolDefinition.protocol,
+        protocolPath : 'globalAdmin',
+        data         : new TextEncoder().encode('I trust Alice to manage my chat thread'),
+      });
+      const globalAdminRecordReply = await dwn.processMessage(bob.did, globalAdminRecord.message, globalAdminRecord.dataStream);
+      expect(globalAdminRecordReply.status.code).to.equal(202);
+
+      // Bob starts a chat thread
+      const threadRecord = await TestDataGenerator.generateRecordsWrite({
+        author       : bob,
+        protocol     : protocolDefinition.protocol,
+        protocolPath : 'thread',
+      });
+      const threadRoleReply = await dwn.processMessage(bob.did, threadRecord.message, threadRecord.dataStream);
+      expect(threadRoleReply.status.code).to.equal(202);
+
+      // Bob adds Carol as a participant in the thread
+      const participantRoleRecord = await TestDataGenerator.generateRecordsWrite({
+        author       : bob,
+        recipient    : carol.did,
+        protocol     : protocolDefinition.protocol,
+        protocolPath : 'thread/participant',
+        contextId    : threadRecord.message.contextId,
+        parentId     : threadRecord.message.recordId
+      });
+      const participantRoleReply = await dwn.processMessage(bob.did, participantRoleRecord.message, participantRoleRecord.dataStream);
+      expect(participantRoleReply.status.code).to.equal(202);
+
+      // Carol writes a chat message in the thread
+      const chatRecord = await TestDataGenerator.generateRecordsWrite({
+        author       : carol,
+        protocolRole : 'thread/participant',
+        protocol     : protocolDefinition.protocol,
+        protocolPath : 'thread/chat',
+        contextId    : threadRecord.message.contextId,
+        parentId     : threadRecord.message.recordId,
+        data         : new TextEncoder().encode('A rude message'),
+      });
+      const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, chatRecord.dataStream);
+      expect(chatRecordReply.status.code).to.equal(202);
+
+      // Alice creates a delegated grant for device X to act as Alice.
+      const scope: PermissionScope = {
+        interface : DwnInterfaceName.Records,
+        method    : DwnMethodName.Write,
+        protocol
+      };
+
+      const grantToDeviceX = await PermissionsGrant.create({
+        delegated   : true, // this is a delegated grant
+        dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+        description : 'Allow device X to write as me in chat protocol',
+        grantedBy   : alice.did,
+        grantedTo   : deviceX.did,
+        grantedFor  : alice.did,
+        scope       : scope,
+        signer      : Jws.createSigner(alice)
+      });
+
+      // verify Carol is not able to delete Carol's chat message from Bob's DWN
+      const recordsDeleteByCarol = await RecordsDelete.create({
+        signer         : Jws.createSigner(carol),
+        delegatedGrant : grantToDeviceX.asDelegatedGrant(),
+        protocolRole   : 'thread/participant',
+        recordId       : chatRecord.message.recordId
+      });
+      const carolRecordsDeleteReply = await dwn.processMessage(bob.did, recordsDeleteByCarol.message);
+      expect(carolRecordsDeleteReply.status.code).to.equal(400);
+
+      // sanity verify the chat message is still in Bob's DWN
+      const recordsQueryByBob = await TestDataGenerator.generateRecordsQuery({
+        author : bob,
+        filter : { protocolPath: 'thread/chat' }
+      });
+      const bobRecordsQueryReply = await dwn.processMessage(bob.did, recordsQueryByBob.message);
+      expect(bobRecordsQueryReply.status.code).to.equal(200);
+      expect(bobRecordsQueryReply.entries?.length).to.equal(1);
+
+      // verify device X is able to delete Carol's chat message from Bob's DWN
+      const recordsDeleteByDeviceX = await RecordsDelete.create({
+        signer         : Jws.createSigner(deviceX),
+        delegatedGrant : grantToDeviceX.asDelegatedGrant(),
+        protocolRole   : 'globalAdmin',
+        recordId       : chatRecord.message.recordId
+      });
+      const deviceXRecordsDeleteReply = await dwn.processMessage(bob.did, recordsDeleteByDeviceX.message);
+      expect(deviceXRecordsDeleteReply.status.code).to.equal(202);
+
+      // sanity verify the chat message is no longer queryable from Bob's DWN
+      const bobRecordsQueryReply2 = await dwn.processMessage(bob.did, recordsQueryByBob.message);
+      expect(bobRecordsQueryReply2.status.code).to.equal(200);
+      expect(bobRecordsQueryReply2.entries?.length).to.equal(0);
+    });
+
+    xit('should not allow entity using a non-delegated grant as a delegated grant to invoke write', async () => {
+    });
+
+    xit('should not allow entity using a non-delegated grant as a delegated grant to invoke read', async () => {
+    });
+
+    xit('should not allow entity using a non-delegated grant as a delegated grant to invoke query', async () => {
+    });
+
+    xit('should not allow entity using a non-delegated grant as a delegated grant to invoke delete', async () => {
     });
 
     xit('should evaluate scoping correctly when invoking a delegated grant to write', async () => {
