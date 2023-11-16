@@ -3000,6 +3000,47 @@ export function testRecordsWriteHandler(): void {
           const bobRecordsReadReply = await dwn.processMessage(alice.did, bobRecordsReadData.message);
           expect(bobRecordsReadReply.status.code).to.equal(404);
         });
+
+        it('should allow protocol RecordsWrite without a schema', async () => {
+          // scenario, Bob writes into Alice's DWN given Alice's "email" protocol allow-anyone rule
+
+          // write a protocol definition that has a record type without schema
+          const protocolDefinition = anyoneCollaborateProtocolDefinition as ProtocolDefinition;
+          const alice = await DidKeyResolver.generate();
+
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
+
+          // generate a `RecordsWrite` message without schema
+          const data = TestDataGenerator.randomBytes(100);
+          const dataStream = DataStream.fromBytes(data);
+          const docWrite = await RecordsWrite.create(
+            {
+              protocol     : protocolDefinition.protocol,
+              protocolPath : 'doc',
+              dataFormat   : 'application/octet-stream',
+              data,
+              signer       : Jws.createSigner(alice)
+            }
+          );
+
+          const writeReply = await dwn.processMessage(alice.did, docWrite.message, dataStream);
+          expect(writeReply.status.code).to.equal(202);
+
+          // verify message got written to the DB
+          const recordsRead = await RecordsRead.create({
+            filter : { recordId: docWrite.message.recordId },
+            signer : Jws.createSigner(alice)
+          });
+          const recordsReadReply = await dwn.processMessage(alice.did, recordsRead.message);
+          expect(recordsReadReply.status.code).to.equal(200);
+          expect(recordsReadReply.record).to.exist;
+        });
       });
 
       describe('grant based writes', () => {

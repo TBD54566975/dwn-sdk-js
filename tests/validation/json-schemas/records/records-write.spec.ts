@@ -276,30 +276,6 @@ describe('RecordsWrite schema definition', () => {
     }).throws('descriptor: must have required property \'protocol\'');
   });
 
-  it('should throw if `protocol` is defined but `schema` is missing', () => {
-    const invalidMessage = {
-      recordId   : 'anyRecordId',
-      contextId  : 'anyContextId', // required by protocol-based message
-      descriptor : {
-        interface        : 'Records',
-        method           : 'Write',
-        protocol         : 'http://foo.bar',
-        protocolPath     : 'foo/bar',
-        // schema       : 'http://foo.bar/schema', // intentionally missing
-        dataCid          : 'anyCid',
-        dataFormat       : 'application/json',
-        dataSize         : 123,
-        dateCreated      : '2022-12-19T10:20:30.123456Z',
-        messageTimestamp : '2022-12-19T10:20:30.123456Z'
-      },
-      authorization: TestDataGenerator.generateAuthorization()
-    };
-
-    expect(() => {
-      Message.validateJsonSchema(invalidMessage);
-    }).throws('descriptor: must have required property \'schema\'');
-  });
-
   it('should throw if `protocol` is undefined but `recipient` is defined', () => {
     const invalidMessage = {
       recordId   : 'anyRecordId',
