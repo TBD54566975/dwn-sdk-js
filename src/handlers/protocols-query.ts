@@ -5,12 +5,12 @@ import type { MethodHandler } from '../types/method-handler.js';
 import type { ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from '../types/protocols-types.js';
 
 import { authenticate } from '../core/auth.js';
+import { DwnErrorCode } from '../core/dwn-error.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolsQuery } from '../interfaces/protocols-query.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
-import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 export class ProtocolsQueryHandler implements MethodHandler {
 
