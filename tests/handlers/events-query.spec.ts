@@ -122,9 +122,9 @@ export function testEventsQueryHandler(): void {
       expect(proto1EventsReply.events?.length).equals(3);
 
       // check order of events returned.
-      expect(proto1EventsReply.events![0].messageCid).to.equal(await Message.getCid(protoConf1.message));
-      expect(proto1EventsReply.events![1].messageCid).to.equal(await Message.getCid(write1proto1.message));
-      expect(proto1EventsReply.events![2].messageCid).to.equal(await Message.getCid(grant1Proto1.message));
+      expect(proto1EventsReply.events![0]).to.equal(await Message.getCid(protoConf1.message));
+      expect(proto1EventsReply.events![1]).to.equal(await Message.getCid(write1proto1.message));
+      expect(proto1EventsReply.events![2]).to.equal(await Message.getCid(grant1Proto1.message));
 
       // filter for proto2
       let proto2EventsQuery = await TestDataGenerator.generateEventsQuery({
@@ -136,13 +136,13 @@ export function testEventsQueryHandler(): void {
       expect(proto2EventsReply.events?.length).equals(3);
 
       // check order of events returned.
-      expect(proto2EventsReply.events![0].messageCid).to.equal(await Message.getCid(protoConf2.message));
-      expect(proto2EventsReply.events![1].messageCid).to.equal(await Message.getCid(write1proto2.message));
-      expect(proto2EventsReply.events![2].messageCid).to.equal(await Message.getCid(grant1Proto2.message));
+      expect(proto2EventsReply.events![0]).to.equal(await Message.getCid(protoConf2.message));
+      expect(proto2EventsReply.events![1]).to.equal(await Message.getCid(write1proto2.message));
+      expect(proto2EventsReply.events![2]).to.equal(await Message.getCid(grant1Proto2.message));
 
       // get watermark of the last event and add more events to query afterwards
-      const proto1watermark = proto1EventsReply.events![2].watermark;
-      const proto2watermark = proto2EventsReply.events![2].watermark;
+      const proto1watermark = proto1EventsReply.events![2];
+      const proto2watermark = proto2EventsReply.events![2];
 
       // revoke grant proto 1
       const grant1proto1Id = await Message.getCid(grant1Proto1.message);
@@ -177,8 +177,8 @@ export function testEventsQueryHandler(): void {
       expect(proto1EventsReply.events?.length).equals(2);
 
       // check order of events returned
-      expect(proto1EventsReply.events![0].messageCid).to.equal(await Message.getCid(revokeForGrantProto1.message));
-      expect(proto1EventsReply.events![1].messageCid).to.equal(await Message.getCid(deleteProto1Message.message));
+      expect(proto1EventsReply.events![0]).to.equal(await Message.getCid(revokeForGrantProto1.message));
+      expect(proto1EventsReply.events![1]).to.equal(await Message.getCid(deleteProto1Message.message));
 
       //query messages beyond the watermark
       proto2EventsQuery = await TestDataGenerator.generateEventsQuery({
@@ -191,8 +191,8 @@ export function testEventsQueryHandler(): void {
       expect(proto2EventsReply.events?.length).equals(2);
 
       // check order of events returned
-      expect(proto2EventsReply.events![0].messageCid).to.equal(await Message.getCid(revokeForGrantProto2.message));
-      expect(proto2EventsReply.events![1].messageCid).to.equal(await Message.getCid(deleteProto2Message.message));
+      expect(proto2EventsReply.events![0]).to.equal(await Message.getCid(revokeForGrantProto2.message));
+      expect(proto2EventsReply.events![1]).to.equal(await Message.getCid(deleteProto2Message.message));
     });
 
     it('returns events filtered by a date range', async () => {
@@ -227,21 +227,21 @@ export function testEventsQueryHandler(): void {
       let reply1 = await dwn.processMessage(alice.did, eventsQuery1.message);
       expect(reply1.status.code).to.equal(200);
       expect(reply1.events?.length).to.equal(3);
-      expect(reply1.events![0].messageCid).to.equal(await Message.getCid(write2.message!));
-      expect(reply1.events![1].messageCid).to.equal(await Message.getCid(write3.message!));
-      expect(reply1.events![2].messageCid).to.equal(await Message.getCid(write4.message!));
+      expect(reply1.events![0]).to.equal(await Message.getCid(write2.message!));
+      expect(reply1.events![1]).to.equal(await Message.getCid(write3.message!));
+      expect(reply1.events![2]).to.equal(await Message.getCid(write4.message!));
 
       // using the watermark of the first message
       eventsQuery1 = await TestDataGenerator.generateEventsQuery({
-        watermark : reply1.events![0].watermark,
+        watermark : reply1.events![0],
         author    : alice,
         filters   : [{ dateCreated: { from: lastDayOf2021 } }],
       });
       reply1 = await dwn.processMessage(alice.did, eventsQuery1.message);
       expect(reply1.status.code).to.equal(200);
       expect(reply1.events?.length).to.equal(2);
-      expect(reply1.events![0].messageCid).to.equal(await Message.getCid(write3.message!));
-      expect(reply1.events![1].messageCid).to.equal(await Message.getCid(write4.message!));
+      expect(reply1.events![0]).to.equal(await Message.getCid(write3.message!));
+      expect(reply1.events![1]).to.equal(await Message.getCid(write4.message!));
 
       // testing `to` range
       const lastDayOf2022 = Time.createTimestamp({ year: 2022, month: 12, day: 31 });
@@ -252,19 +252,19 @@ export function testEventsQueryHandler(): void {
       let reply2 = await dwn.processMessage(alice.did, eventsQuery2.message);
       expect(reply2.status.code).to.equal(200);
       expect(reply2.events?.length).to.equal(2);
-      expect(reply2.events![0].messageCid).to.equal(await Message.getCid(write1.message!));
-      expect(reply2.events![1].messageCid).to.equal(await Message.getCid(write2.message!));
+      expect(reply2.events![0]).to.equal(await Message.getCid(write1.message!));
+      expect(reply2.events![1]).to.equal(await Message.getCid(write2.message!));
 
       // using the watermark of the first message
       eventsQuery2 = await TestDataGenerator.generateEventsQuery({
-        watermark : reply2.events![0].watermark,
+        watermark : reply2.events![0],
         author    : alice,
         filters   : [{ dateCreated: { to: lastDayOf2022 } }],
       });
       reply2 = await dwn.processMessage(alice.did, eventsQuery2.message);
       expect(reply2.status.code).to.equal(200);
       expect(reply2.events?.length).to.equal(1);
-      expect(reply2.events![0].messageCid).to.equal(await Message.getCid(write2.message!));
+      expect(reply2.events![0]).to.equal(await Message.getCid(write2.message!));
 
       // testing `from` and `to` range
       const lastDayOf2023 = Time.createTimestamp({ year: 2023, month: 12, day: 31 });
@@ -275,11 +275,11 @@ export function testEventsQueryHandler(): void {
       let reply3 = await dwn.processMessage(alice.did, eventsQuery3.message);
       expect(reply3.status.code).to.equal(200);
       expect(reply3.events?.length).to.equal(1);
-      expect(reply3.events![0].messageCid).to.equal(await Message.getCid(write3.message!));
+      expect(reply3.events![0]).to.equal(await Message.getCid(write3.message!));
 
       // using the watermark of the only message, should not return any results
       eventsQuery3 = await TestDataGenerator.generateEventsQuery({
-        watermark : reply3.events![0].watermark,
+        watermark : reply3.events![0],
         author    : alice,
         filters   : [{ dateCreated: { from: lastDayOf2022, to: lastDayOf2023 } }],
       });
@@ -295,11 +295,11 @@ export function testEventsQueryHandler(): void {
       let reply4 = await dwn.processMessage(alice.did, eventsQuery4.message);
       expect(reply4.status.code).to.equal(200);
       expect(reply4.events?.length).to.equal(1);
-      expect(reply4.events![0].messageCid).to.equal(await Message.getCid(write2.message!));
+      expect(reply4.events![0]).to.equal(await Message.getCid(write2.message!));
 
       // testing edge case where value equals `from` and `to`
       eventsQuery4 = await TestDataGenerator.generateEventsQuery({
-        watermark : reply4.events![0].watermark,
+        watermark : reply4.events![0],
         author    : alice,
         filters   : [{ dateCreated: { from: firstDayOf2022, to: firstDayOf2023 } }],
       });

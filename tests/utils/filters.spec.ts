@@ -1,4 +1,4 @@
-import type { Filter } from '../../src/types/index-types.js';
+import type { Filter } from '../../src/types/query-types.js';
 
 import { FilterUtility } from '../../src/utils/filter.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';

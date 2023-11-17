@@ -1,4 +1,4 @@
-import type { EqualFilter, Filter, FilterValue, OneOfFilter, QueryOptions, RangeFilter } from '../types/index-types.js';
+import type { EqualFilter, Filter, FilterValue, OneOfFilter, QueryOptions, RangeFilter } from '../types/query-types.js';
 
 import { isEmptyObject } from './object.js';
 

@@ -293,7 +293,7 @@ export function testProtocolsConfigureHandler(): void {
           expect(events.length).to.equal(1);
 
           const messageCid = await Message.getCid(message);
-          expect(events[0].messageCid).to.equal(messageCid);
+          expect(events[0]).to.equal(messageCid);
         });
 
         it('should delete older ProtocolsConfigure events when one is overwritten', async () => {
@@ -312,7 +312,7 @@ export function testProtocolsConfigureHandler(): void {
           expect(events.length).to.equal(1);
 
           const newestMessageCid = await Message.getCid(newestWrite.message);
-          expect(events[0].messageCid).to.equal(newestMessageCid);
+          expect(events[0]).to.equal(newestMessageCid);
         });
       });
     });

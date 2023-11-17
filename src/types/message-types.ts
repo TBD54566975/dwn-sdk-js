@@ -1,6 +1,6 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { GeneralJws } from './jws-types.js';
-import type { SortDirection } from './index-types.js';
+import type { SortDirection } from './query-types.js';
 
 /**
  * Intersection type for all concrete message types.
