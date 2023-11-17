@@ -1,8 +1,8 @@
-import type { EqualFilter, Filter, IndexedItem, Indexes, QueryOptions, RangeFilter } from '../types/index-types.js';
+import type { EqualFilter, Filter, QueryOptions, RangeFilter } from '../types/query-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions, } from './level-wrapper.js';
 
 import { lexicographicalCompare } from '../utils/string.js';
-import { SortDirection } from '../types/index-types.js';
+import { SortDirection } from '../types/query-types.js';
 import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { FilterSelector, FilterUtility } from '../utils/filter.js';
@@ -13,6 +13,9 @@ type IndexLevelConfig = {
   createLevelDatabase?: typeof createLevelDatabase
 };
 
+type Indexes = { [key: string]: unknown };
+type IndexedItem = { itemId: string, indexes: Indexes };
+
 const INDEX_SUBLEVEL_NAME = 'index';
 
 export interface IndexLevelOptions {
@@ -22,7 +25,7 @@ export interface IndexLevelOptions {
 /**
  * A LevelDB implementation for indexing the messages and events stored in the DWN.
  */
-export class IndexLevel<T> {
+export class IndexLevel {
   db: LevelWrapper<string>;
   config: IndexLevelConfig;
 
@@ -59,14 +62,12 @@ export class IndexLevel<T> {
    *
    * @param tenant
    * @param itemId a unique ID that represents the item being indexed, this is also used as the cursor value in a query.
-   * @param value the object being indexed, this is what is returned with a query.
    * @param indexes - (key-value pairs) to be included as part of indexing this item. Must include at least one indexing property.
    * @param options IndexLevelOptions that include an AbortSignal.
    */
   async put(
     tenant: string,
     itemId: string,
-    value: T,
     indexes: Indexes,
     options?: IndexLevelOptions
   ): Promise<void> {
@@ -89,7 +90,7 @@ export class IndexLevel<T> {
       //  '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
       //
       const key = IndexLevel.keySegmentJoin(FilterUtility.encodeValue(sortValue), itemId);
-      const itemValue: IndexedItem<T> = { itemId: itemId, indexes, value };
+      const item: IndexedItem = { itemId, indexes };
 
       // we write the values into a sublevel-partition of tenantPartition.
       // putting each property within a sublevel allows the levelDB system to calculate a gt minKey and lt maxKey for each of the properties
@@ -99,7 +100,7 @@ export class IndexLevel<T> {
       indexOps.push(tenantPartition.partitionOperation(`__${sortProperty}__`, {
         key,
         type  : 'put',
-        value : JSON.stringify(itemValue)
+        value : JSON.stringify(item)
       }));
     }
 
@@ -148,8 +149,9 @@ export class IndexLevel<T> {
   * @param filters Array of filters that are treated as an OR query.
   * @param queryOptions query options for sort and pagination, requires at least `sortProperty`. The default sort direction is ascending.
   * @param options IndexLevelOptions that include an AbortSignal.
+  * @returns {string[]} an array of itemIds that match the given filters.
   */
-  async query(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<T[]> {
+  async query(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<string[]> {
     // returns an array of which search filters we need to perform a full search on.
     // if there are no search filters returned, we do a full scan on the sorted index.
     const searchFilters = FilterSelector.select(filters, queryOptions);
@@ -165,9 +167,9 @@ export class IndexLevel<T> {
    * This query is a linear iterator over the sorted index, checking each item for a match.
    * If a cursor is provided it starts the iteration at the cursor point.
    */
-  async sortedIndexQuery(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<T[]> {
+  async sortedIndexQuery(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<string[]> {
     const { limit, cursor , sortProperty } = queryOptions;
-    const matches: Array<T> = [];
+    const matches: string[] = [];
 
     // if there is a cursor we fetch the starting key given the sort property, otherwise we start from the beginning of the index.
     const startKey = cursor ? await this.getStartingKeyForCursor(tenant, cursor, sortProperty, filters) : '';
@@ -180,8 +182,9 @@ export class IndexLevel<T> {
       if (limit !== undefined && matches.length === limit) {
         return matches;
       }
-      if (FilterUtility.matchItem(item.indexes, filters)) {
-        matches.push(item.value);
+      const { itemId, indexes } = item;
+      if (FilterUtility.matchItem(indexes, filters)) {
+        matches.push(itemId);
       }
     }
     return matches;
@@ -193,7 +196,7 @@ export class IndexLevel<T> {
    */
   private async * sortedIndexIterator(
     tenant: string, startKey:string, queryOptions: QueryOptions, options?: IndexLevelOptions
-  ): AsyncGenerator<IndexedItem<T>> {
+  ): AsyncGenerator<IndexedItem> {
     const { sortProperty, sortDirection = SortDirection.Ascending, cursor } = queryOptions;
 
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {
@@ -214,8 +217,8 @@ export class IndexLevel<T> {
     const tenantPartition = await this.db.partition(tenant);
     const sortPartition = await tenantPartition.partition(`__${sortProperty}__`);
     for await (const [ _, val ] of sortPartition.iterator(iteratorOptions, options)) {
-      const { value, indexes, itemId } = JSON.parse(val);
-      yield { value, indexes, itemId };
+      const { indexes, itemId } = JSON.parse(val);
+      yield { indexes, itemId };
     }
   }
 
@@ -255,11 +258,11 @@ export class IndexLevel<T> {
     searchFilters:Filter[],
     queryOptions: QueryOptions,
     options?: IndexLevelOptions
-  ): Promise<T[]> {
+  ): Promise<string[]> {
     const { sortProperty, sortDirection = SortDirection.Ascending, cursor, limit } = queryOptions;
 
     // we create a matches map so that we can short-circuit matched items within the async single query below.
-    const matches:Map<string, IndexedItem<T>> = new Map();
+    const matches:Map<string, IndexedItem> = new Map();
 
     try {
       await Promise.all(searchFilters.map(filter => {
@@ -285,7 +288,7 @@ export class IndexLevel<T> {
     const start = cursorIndex > -1 ? cursorIndex + 1 : 0;
     const end = limit !== undefined ? start + limit : undefined;
 
-    return sortedValues.slice(start, end).map(match => match.value);
+    return sortedValues.slice(start, end).map(match => match.itemId);
   }
 
   /**
@@ -296,11 +299,11 @@ export class IndexLevel<T> {
     searchFilter: Filter,
     matchFilters: Filter[],
     sortProperty: string,
-    matches: Map<string, IndexedItem<T>>,
+    matches: Map<string, IndexedItem>,
     levelOptions?: IndexLevelOptions
   ): Promise<void> {
     // Note: We have an array of Promises in order to support OR (anyOf) matches when given a list of accepted values for a property
-    const filterPromises: Promise<IndexedItem<T>[]>[] = [];
+    const filterPromises: Promise<IndexedItem[]>[] = [];
 
     for (const propertyName in searchFilter) {
       const propertyFilter = searchFilter[propertyName];
@@ -353,7 +356,7 @@ export class IndexLevel<T> {
     propertyName: string,
     propertyValue: EqualFilter,
     options?: IndexLevelOptions
-  ): Promise<IndexedItem<T>[]> {
+  ): Promise<IndexedItem[]> {
 
     const matchPrefix = IndexLevel.keySegmentJoin(FilterUtility.encodeValue(propertyValue));
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {
@@ -362,13 +365,13 @@ export class IndexLevel<T> {
 
     const tenantPartition = await this.db.partition(tenant);
     const filterPartition = await tenantPartition.partition(`__${propertyName}__`);
-    const matches: IndexedItem<T>[] = [];
+    const matches: IndexedItem[] = [];
     for await (const [ key, value ] of filterPartition.iterator(iteratorOptions, options)) {
       // immediately stop if we arrive at an index that contains a different property value
       if (!key.startsWith(matchPrefix)) {
         break;
       }
-      matches.push(JSON.parse(value) as IndexedItem<T>);
+      matches.push(JSON.parse(value) as IndexedItem);
     }
     return matches;
   }
@@ -381,7 +384,7 @@ export class IndexLevel<T> {
     propertyName: string,
     rangeFilter: RangeFilter,
     options?: IndexLevelOptions
-  ): Promise<IndexedItem<T>[]> {
+  ): Promise<IndexedItem[]> {
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {};
     for (const comparator in rangeFilter) {
       const comparatorName = comparator as keyof RangeFilter;
@@ -394,7 +397,7 @@ export class IndexLevel<T> {
       iteratorOptions.reverse = true;
     }
 
-    const matches: IndexedItem<T>[] = [];
+    const matches: IndexedItem[] = [];
     const tenantPartition = await this.db.partition(tenant);
     const filterPartition = await tenantPartition.partition(`__${propertyName}__`);
 
@@ -403,7 +406,7 @@ export class IndexLevel<T> {
       if ('gt' in rangeFilter && this.extractIndexValueFromKey(key) === FilterUtility.encodeValue(rangeFilter.gt!)) {
         continue;
       }
-      matches.push(JSON.parse(value) as IndexedItem<T>);
+      matches.push(JSON.parse(value) as IndexedItem);
     }
 
     if ('lte' in rangeFilter) {
@@ -424,7 +427,7 @@ export class IndexLevel<T> {
    * Sorts Items lexicographically in ascending or descending order given a specific sortProperty, using the itemId as a tie breaker.
    * We know the indexes include the sortProperty here because they have already been checked within executeSingleFilterQuery.
    */
-  private sortItems(itemA: IndexedItem<T>, itemB: IndexedItem<T>, sortProperty: string, direction: SortDirection): number {
+  private sortItems(itemA: IndexedItem, itemB: IndexedItem, sortProperty: string, direction: SortDirection): number {
     const aValue = FilterUtility.encodeValue(itemA.indexes[sortProperty]) + itemA.itemId;
     const bValue = FilterUtility.encodeValue(itemB.indexes[sortProperty]) + itemB.itemId;
     return direction === SortDirection.Ascending ?

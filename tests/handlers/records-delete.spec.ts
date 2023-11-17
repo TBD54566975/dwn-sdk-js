@@ -677,7 +677,7 @@ export function testRecordsDeleteHandler(): void {
         // event log
         const events = await eventLog.queryEvents(alice.did, [{ schema: normalizeSchemaUrl('testSchema'), method: DwnMethodName.Delete }]);
         expect(events.length).to.equal(1);
-        expect(events[0].messageCid).to.equal(deleteMessageCid);
+        expect(events[0]).to.equal(deleteMessageCid);
       });
 
       describe('event log', () => {
@@ -703,7 +703,7 @@ export function testRecordsDeleteHandler(): void {
           const deleteMessageCid = await Message.getCid(recordsDelete.message);
           const expectedMessageCids = new Set([writeMessageCid, deleteMessageCid]);
 
-          for (const { messageCid } of events) {
+          for (const messageCid of events) {
             expectedMessageCids.delete(messageCid);
           }
 
@@ -739,7 +739,7 @@ export function testRecordsDeleteHandler(): void {
 
           const deletedMessageCid = await Message.getCid(newWrite.message);
 
-          for (const { messageCid } of events) {
+          for (const messageCid of events) {
             if (messageCid === deletedMessageCid ) {
               expect.fail(`${messageCid} should not exist`);
             }

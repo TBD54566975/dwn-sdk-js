@@ -1,19 +1,14 @@
-import type { Event } from './event-log.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { RecordsFilter } from './records-types.js';
 import type { AuthorizationModel, GenericMessage } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
-/**
- * @param method optional array of methods to filter.
- * @param interface optional array of interfaces to filter.
- * @param author optional author to filter.
- *
- * @param watermark optional watermark of the last message received from this filter.
- */
 export type EventsFilter = RecordsFilter & {
+  /** optional array of methods to filter */
   method?: string[];
+  /** optional array of interfaces to filter */
   interface?: string[];
+  /** optional author to filter. */
   author?: string;
 };
 
@@ -30,7 +25,7 @@ export type EventsGetMessage = GenericMessage & {
 };
 
 export type EventsGetReply = GenericMessageReply & {
-  events?: Event[];
+  events?: string[];
 };
 
 export type EventsQueryDescriptor = {
@@ -47,5 +42,5 @@ export type EventsQueryMessage = GenericMessage & {
 };
 
 export type EventsQueryReply = GenericMessageReply & {
-  events?: Event[];
+  events?: string[];
 };
