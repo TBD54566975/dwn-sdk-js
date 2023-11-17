@@ -6,7 +6,7 @@ import { expect } from 'chai';
 import { DidKeyResolver } from '../../src/index.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
-import { SortDirection } from '../../src/types/index-types.js';
+import { SortDirection } from '../../src/types/query-types.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 

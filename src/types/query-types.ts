@@ -36,6 +36,3 @@ export type FilterValue = EqualFilter | OneOfFilter | RangeFilter;
 export type Filter = {
   [property: string]: FilterValue;
 };
-
-export type Indexes = { [key: string]: unknown };
-export type IndexedItem<T> = { itemId: string, value: T, indexes: Indexes };

@@ -4,6 +4,7 @@ import { Message } from '../../src/core/message.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 
 import chaiAsPromised from 'chai-as-promised';
+import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
 chai.use(chaiAsPromised);
@@ -31,8 +32,11 @@ describe('EventLogLevel Tests', () => {
       const index = await recordsWrite.constructRecordsWriteIndexes(true);
       await eventLog.append(author.did, messageCid, index);
 
-      const numEventsDeleted = await eventLog.deleteEventsByCid(author.did, [ messageCid ]);
-      expect(numEventsDeleted).to.equal(1);
+      const indexLevelDeleteSpy = sinon.spy(eventLog.index, 'delete');
+
+      await eventLog.deleteEventsByCid(author.did, [ messageCid ]);
+      expect(indexLevelDeleteSpy.callCount).to.equal(1);
+
       const keysAfterDelete = await ArrayUtility.fromAsyncGenerator(eventLog.index.db.keys());
       expect(keysAfterDelete.length).to.equal(0);
     });

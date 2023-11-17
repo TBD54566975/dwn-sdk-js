@@ -1,4 +1,4 @@
-import type { Filter } from './index-types.js';
+import type { Filter } from './query-types.js';
 import type { GenericMessage, MessageSort, Pagination } from './message-types.js';
 
 export interface MessageStoreOptions {

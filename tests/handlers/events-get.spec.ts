@@ -95,7 +95,7 @@ export function testEventsGetHandler(): void {
       expect(reply.events?.length).to.equal(expectedCids.length);
 
       for (let i = 0; i < reply.events!.length; i += 1) {
-        expect(reply.events![i].messageCid).to.equal(expectedCids[i]);
+        expect(reply.events![i]).to.equal(expectedCids[i]);
       }
     });
 
@@ -114,7 +114,7 @@ export function testEventsGetHandler(): void {
 
       expect(reply.status.code).to.equal(200);
 
-      const watermark = reply.events![reply.events!.length - 1].watermark;
+      const watermark = reply.events![reply.events!.length - 1];
       const expectedCids: string[] = [];
 
       for (let i = 0; i < 3; i += 1) {
@@ -134,7 +134,7 @@ export function testEventsGetHandler(): void {
       expect(reply.events!.length).to.equal(expectedCids.length);
 
       for (let i = 0; i < reply.events!.length; i += 1) {
-        expect(reply.events![i].messageCid).to.equal(expectedCids[i]);
+        expect(reply.events![i]).to.equal(expectedCids[i]);
       }
     });
   });

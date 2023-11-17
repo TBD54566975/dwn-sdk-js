@@ -985,7 +985,7 @@ export function testRecordsWriteHandler(): void {
             expect(events.length).to.equal(1);
 
             const messageCid = await Message.getCid(message);
-            expect(events[0].messageCid).to.equal(messageCid);
+            expect(events[0]).to.equal(messageCid);
           });
 
           it('should only keep first write and latest write when subsequent writes happen', async () => {
@@ -1018,7 +1018,7 @@ export function testRecordsWriteHandler(): void {
 
             const deletedMessageCid = await Message.getCid(newWrite.message);
 
-            for (const { messageCid } of events) {
+            for (const messageCid of events) {
               if (messageCid === deletedMessageCid ) {
                 expect.fail(`${messageCid} should not exist`);
               }

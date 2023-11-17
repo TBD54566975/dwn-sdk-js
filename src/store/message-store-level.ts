@@ -1,5 +1,5 @@
 
-import type { Filter, QueryOptions } from '../types/index-types.js';
+import type { Filter, QueryOptions } from '../types/query-types.js';
 import type { GenericMessage, MessageSort, Pagination } from '../types/message-types.js';
 import type { MessageStore, MessageStoreOptions } from '../types/message-store.js';
 
@@ -14,7 +14,7 @@ import { executeUnlessAborted } from '../utils/abort.js';
 import { IndexLevel } from './index-level.js';
 import { Message } from '../core/message.js';
 import { sha256 } from 'multiformats/hashes/sha2';
-import { SortDirection } from '../types/index-types.js';
+import { SortDirection } from '../types/query-types.js';
 
 
 /**
@@ -25,7 +25,7 @@ export class MessageStoreLevel implements MessageStore {
   config: MessageStoreLevelConfig;
 
   blockstore: BlockstoreLevel;
-  index: IndexLevel<string>;
+  index: IndexLevel;
 
   /**
    * @param {MessageStoreLevelConfig} config
@@ -177,7 +177,7 @@ export class MessageStoreLevel implements MessageStore {
 
     const messageCidString = messageCid.toString();
 
-    await this.index.put(tenant, messageCidString, messageCidString, indexes, options);
+    await this.index.put(tenant, messageCidString, indexes, options);
   }
 
 
