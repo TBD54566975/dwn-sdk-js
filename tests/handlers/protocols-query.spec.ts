@@ -126,7 +126,7 @@ export function testProtocolsQueryHandler(): void {
         const protocolConfigured = conditionalQueryReply.entries![0] as ProtocolsConfigureMessage;
         expect(protocolConfigured).to.deep.equal(protocol2.message);
 
-        // testing authenticated but unauthorized (to private ProtocolsConfigures) conditional query
+        // testing authenticated but unauthorized conditional query, it should return only matching published ProtocolsConfigures
         const signedConditionalQuery = await ProtocolsQuery.create({
           filter : { protocol: protocol2.message.descriptor.definition.protocol },
           signer : Jws.createSigner(bob)
@@ -149,7 +149,7 @@ export function testProtocolsQueryHandler(): void {
         expect(fetchAllQueryReply.entries).to.deep.include(protocol2.message);
         expect(fetchAllQueryReply.entries).to.deep.include(protocol3.message);
 
-        // testing authenticated but authorized (to private ProtocolsConfigures) fetch-all query without filter
+        // testing authenticated but unauthorized fetch-all query without filter, it should return all matching published ProtocolsConfigures
         const signedFetchAllQuery = await ProtocolsQuery.create({
           signer: Jws.createSigner(bob)
         });
