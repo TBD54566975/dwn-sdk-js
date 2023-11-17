@@ -2454,7 +2454,7 @@ export function testRecordsWriteHandler(): void {
           expect(reply.status.detail).to.contain('unable to find protocol definition');
         });
 
-        it('should fail authorization if record schema is not an allowed type for protocol-based RecordsWrite', async () => {
+        it('should fail authorization if record schema is incorrect for a protocol-based RecordsWrite', async () => {
           const alice = await DidKeyResolver.generate();
 
           const protocolDefinition = credentialIssuanceProtocolDefinition;
