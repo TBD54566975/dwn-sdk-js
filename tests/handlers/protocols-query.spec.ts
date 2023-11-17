@@ -94,13 +94,16 @@ export function testProtocolsQueryHandler(): void {
       });
 
 
-      it('should return published protocols matching the query if query is unauthenticated', async () => {
-        // scenario: alice has 3 protocols installed: 1 private + 2 published
+      it('should return published protocols matching the query if query is unauthenticated or unauthorized', async () => {
+        // scenario:
+        // 1. Alice has 3 protocols installed: 1 private + 2 published
+        // 2. Unauthenticated ProtocolsQuery should return published ProtocolsConfigure
+        // 3. Authenticated ProtocolsQuery by Bob but unauthorized to private ProtocolsConfigures should return published ProtocolsConfigure
 
         const alice = await TestDataGenerator.generatePersona();
+        const bob = await TestDataGenerator.generatePersona();
 
-        // setting up a stub method resolver
-        TestStubGenerator.stubDidResolver(didResolver, [alice]);
+        TestStubGenerator.stubDidResolver(didResolver, [alice, bob]);
 
         // insert three messages into DB, two with matching protocol
         const protocol1 = await TestDataGenerator.generateProtocolsConfigure({ author: alice, published: false });
@@ -117,23 +120,45 @@ export function testProtocolsQueryHandler(): void {
         });
 
         const conditionalQueryReply = await dwn.processMessage(alice.did, conditionalQuery.message);
-
         expect(conditionalQueryReply.status.code).to.equal(200);
         expect(conditionalQueryReply.entries?.length).to.equal(1); // only 1 entry should match the query on protocol
 
         const protocolConfigured = conditionalQueryReply.entries![0] as ProtocolsConfigureMessage;
         expect(protocolConfigured).to.deep.equal(protocol2.message);
 
-        // testing fetch-all query without filter
+        // testing authenticated but unauthorized conditional query, it should return only matching published ProtocolsConfigures
+        const signedConditionalQuery = await ProtocolsQuery.create({
+          filter : { protocol: protocol2.message.descriptor.definition.protocol },
+          signer : Jws.createSigner(bob)
+        });
+
+        const signedConditionalQueryReply = await dwn.processMessage(alice.did, signedConditionalQuery.message);
+        expect(signedConditionalQueryReply.status.code).to.equal(200);
+        expect(signedConditionalQueryReply.entries?.length).to.equal(1); // only 1 entry should match the query on protocol
+
+        const protocolConfigured2 = conditionalQueryReply.entries![0] as ProtocolsConfigureMessage;
+        expect(protocolConfigured2).to.deep.equal(protocol2.message);
+
+        // testing unauthenticated fetch-all query without filter
         const fetchAllQuery = await ProtocolsQuery.create({
         });
 
         const fetchAllQueryReply = await dwn.processMessage(alice.did, fetchAllQuery.message);
-
         expect(fetchAllQueryReply.status.code).to.equal(200);
         expect(fetchAllQueryReply.entries?.length).to.equal(2);
         expect(fetchAllQueryReply.entries).to.deep.include(protocol2.message);
         expect(fetchAllQueryReply.entries).to.deep.include(protocol3.message);
+
+        // testing authenticated but unauthorized fetch-all query without filter, it should return all matching published ProtocolsConfigures
+        const signedFetchAllQuery = await ProtocolsQuery.create({
+          signer: Jws.createSigner(bob)
+        });
+
+        const signedFetchAllQueryReply = await dwn.processMessage(alice.did, signedFetchAllQuery.message);
+        expect(signedFetchAllQueryReply.status.code).to.equal(200);
+        expect(signedFetchAllQueryReply.entries?.length).to.equal(2);
+        expect(signedFetchAllQueryReply.entries).to.deep.include(protocol2.message);
+        expect(signedFetchAllQueryReply.entries).to.deep.include(protocol3.message);
       });
 
       it('should return 400 if protocol is not normalized', async () => {
@@ -188,19 +213,6 @@ export function testProtocolsQueryHandler(): void {
 
         expect(reply.status.code).to.equal(401);
         expect(reply.status.detail).to.contain('not a valid DID');
-      });
-
-      it('rejects authenticated non-tenant non-granted ProtocolsConfigures with 401', async () => {
-        // Bob tries to ProtocolsConfigure to Alice's DWN without a PermissionsGrant
-        const alice = await DidKeyResolver.generate();
-        const bob = await DidKeyResolver.generate();
-
-        const protocolsQuery = await TestDataGenerator.generateProtocolsQuery({
-          author: bob,
-        });
-        const protocolsQueryReply = await dwn.processMessage(alice.did, protocolsQuery.message);
-        expect(protocolsQueryReply.status.code).to.equal(401);
-        expect(protocolsQueryReply.status.detail).to.contain(DwnErrorCode.ProtocolsQueryUnauthorized);
       });
 
       describe('Grant authorization', () => {
