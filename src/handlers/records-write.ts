@@ -19,6 +19,7 @@ import { RecordsWrite } from '../interfaces/records-write.js';
 import { StorageController } from '../store/storage-controller.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
+import { GrantAuthorization } from '../core/grant-authorization.js';
 
 export type RecordsWriteHandlerOptions = {
   skipDataStorage?: boolean; // used for DWN sync
@@ -258,6 +259,38 @@ export class RecordsWriteHandler implements MethodHandler {
         DwnErrorCode.RecordsWriteOwnerAndTenantMismatch,
         `Owner ${recordsWrite.owner} must be the same as tenant ${tenant} when specified.`
       );
+    }
+
+    if (recordsWrite.isSignedByDelegatee) {
+      // NEED TO consolidate RecordsGrantAuthorization.authorizeWrite, authorizeGenericMessage()
+
+      const grantedTo = recordsWrite.signer!;
+      const grantedFor = recordsWrite.author!;
+      const delegatedGrant = recordsWrite.message.authorization.authorDelegatedGrant!;
+      GrantAuthorization.verifyGrantedToAndGrantedFor(grantedTo, grantedFor, delegatedGrant);
+
+      // verify that grant is active during incomingMessage's timestamp
+      const incomingMessageDescriptor = recordsWrite.message.descriptor;
+      const delegatedGrantId = await Message.getCid(delegatedGrant);
+      await GrantAuthorization.verifyGrantActive(
+        tenant,
+        incomingMessageDescriptor.messageTimestamp,
+        delegatedGrant,
+        delegatedGrantId,
+        messageStore
+      );
+
+      // Check grant scope for interface and method
+      await GrantAuthorization.verifyGrantScopeInterfaceAndMethod(
+        incomingMessageDescriptor.interface,
+        incomingMessageDescriptor.method,
+        delegatedGrant,
+        delegatedGrantId
+      );
+
+      RecordsGrantAuthorization.verifyScope(recordsWrite, delegatedGrant);
+
+      RecordsGrantAuthorization.verifyConditions(recordsWrite, delegatedGrant);
     }
 
     if (recordsWrite.owner !== undefined) {

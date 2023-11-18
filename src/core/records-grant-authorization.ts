@@ -18,7 +18,7 @@ export class RecordsGrantAuthorization {
     author: string,
     messageStore: MessageStore,
   ): Promise<void> {
-    const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(
+    const permissionsGrantMessage = await GrantAuthorization.fetchPermissionsGrantAndAuthorizeGenericMessage(
       tenant,
       incomingMessage,
       author,
@@ -41,7 +41,7 @@ export class RecordsGrantAuthorization {
     author: string,
     messageStore: MessageStore,
   ): Promise<void> {
-    const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(
+    const permissionsGrantMessage = await GrantAuthorization.fetchPermissionsGrantAndAuthorizeGenericMessage(
       tenant,
       incomingMessage,
       author,
@@ -56,7 +56,7 @@ export class RecordsGrantAuthorization {
    * @param recordsWrite The source of the record being authorized. If the incoming message is a write,
    *                     then this is the incoming RecordsWrite. Otherwise, it is the newest existing RecordsWrite.
    */
-  private static verifyScope(
+  public static verifyScope(
     recordsWrite: RecordsWrite,
     permissionsGrantMessage: PermissionsGrantMessage,
   ): void {
@@ -134,7 +134,7 @@ export class RecordsGrantAuthorization {
    * Verifies grant `conditions`.
    * Currently the only condition is `published` which only applies to RecordsWrites
    */
-  private static verifyConditions(incomingMessage: RecordsWrite, permissionsGrantMessage: PermissionsGrantMessage): void {
+  public static verifyConditions(incomingMessage: RecordsWrite, permissionsGrantMessage: PermissionsGrantMessage): void {
     const conditions = permissionsGrantMessage.descriptor.conditions;
 
     // If conditions require publication, RecordsWrite must have `published` === true

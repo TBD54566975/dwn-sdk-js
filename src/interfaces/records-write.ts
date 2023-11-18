@@ -182,6 +182,21 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     return this._ownerSignaturePayload;
   }
 
+  /**
+   * If this message is signed by a delegated entity.
+   */
+  public get isSignedByDelegatee(): boolean {
+    return this._message.authorization?.authorDelegatedGrant !== undefined;
+  }
+
+  /**
+   * Gets the signer of this message.
+   * This is not to be confused with the logical author of the message.
+   */
+  public get signer(): string | undefined {
+    return Message.getSigner(this._message);
+  }
+
   readonly attesters: string[];
 
   private constructor(message: InternalRecordsWriteMessage) {

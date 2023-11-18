@@ -81,7 +81,7 @@ export class ProtocolsQuery extends AbstractMessage<ProtocolsQueryMessage> {
     if (this.author === tenant) {
       return;
     } else if (this.author !== undefined && this.signaturePayload!.permissionsGrantId) {
-      await GrantAuthorization.authorizeGenericMessage(
+      await GrantAuthorization.fetchPermissionsGrantAndAuthorizeGenericMessage(
         tenant,
         this,
         this.author,

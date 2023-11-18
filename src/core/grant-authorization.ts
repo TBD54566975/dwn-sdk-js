@@ -12,9 +12,9 @@ export class GrantAuthorization {
   /**
    * Performs PermissionsGrant-based authorization against the given message
    * Does not validate grant `conditions` or `scope` beyond `interface` and `method`
-   * @throws {Error} if authorization fails
+   * @throws {DwnError} if authorization fails
    */
-  public static async authorizeGenericMessage(
+  public static async fetchPermissionsGrantAndAuthorizeGenericMessage(
     tenant: string,
     incomingMessage: MessageInterface<GenericMessage>,
     author: string,
@@ -22,10 +22,35 @@ export class GrantAuthorization {
     messageStore: MessageStore,
   ): Promise<PermissionsGrantMessage> {
 
-    const incomingMessageDescriptor = incomingMessage.message.descriptor;
-
     // Fetch grant
     const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, permissionsGrantId);
+
+    await GrantAuthorization.authorizeGenericMessage(
+      tenant,
+      incomingMessage,
+      author, // TODO: rename to `grantedTo` or grantee?!
+      permissionsGrantMessage,
+      messageStore
+    );
+
+    return permissionsGrantMessage;
+  }
+
+  /**
+   * Performs PermissionsGrant-based authorization against the given message
+   * Does not validate grant `conditions` or `scope` beyond `interface` and `method`
+   * @throws {DwnError} if authorization fails
+   */
+  public static async authorizeGenericMessage(
+    tenant: string,
+    incomingMessage: MessageInterface<GenericMessage>,
+    author: string,
+    permissionsGrantMessage: PermissionsGrantMessage,
+    messageStore: MessageStore,
+  ): Promise<void> {
+
+    const incomingMessageDescriptor = incomingMessage.message.descriptor;
+    const permissionsGrantId = await Message.getCid(permissionsGrantMessage);
 
     GrantAuthorization.verifyGrantedToAndGrantedFor(author, tenant, permissionsGrantMessage);
 
@@ -45,8 +70,6 @@ export class GrantAuthorization {
       permissionsGrantMessage,
       permissionsGrantId
     );
-
-    return permissionsGrantMessage;
   }
 
   /**
@@ -77,7 +100,7 @@ export class GrantAuthorization {
   /**
    * Verifies the given `grantedTo` and `grantedFor` values against the given permissions grant and throws error if there is a mismatch.
    */
-  private static verifyGrantedToAndGrantedFor(grantedTo: string, grantedFor: string, permissionsGrantMessage: PermissionsGrantMessage): void {
+  public static verifyGrantedToAndGrantedFor(grantedTo: string, grantedFor: string, permissionsGrantMessage: PermissionsGrantMessage): void {
     // Validate `grantedTo`
     const expectedGrantedTo = permissionsGrantMessage.descriptor.grantedTo;
     if (expectedGrantedTo !== grantedTo) {
@@ -101,9 +124,9 @@ export class GrantAuthorization {
    * Verify that the incoming message is within the allowed time frame of the grant,
    * and the grant has not been revoked.
    * @param permissionsGrantId Purely being passed as an optimization. Technically can be computed from `permissionsGrantMessage`.
-   * @throws {Error} if incomingMessage has timestamp for a time in which the grant is not active.
+   * @throws {DwnError} if incomingMessage has timestamp for a time in which the grant is not active.
    */
-  private static async verifyGrantActive(
+  public static async verifyGrantActive(
     tenant: string,
     incomingMessageTimestamp: string,
     permissionsGrantMessage: PermissionsGrantMessage,
@@ -144,9 +167,10 @@ export class GrantAuthorization {
 
   /**
    * Verify that the `interface` and `method` grant scopes match the incoming message
-   * @throws {Error} if the `interface` and `method` of the incoming message do not match the scope of the PermissionsGrant
+   * @param permissionsGrantId Purely being passed for logging purposes.
+   * @throws {DwnError} if the `interface` and `method` of the incoming message do not match the scope of the PermissionsGrant
    */
-  private static async verifyGrantScopeInterfaceAndMethod(
+  public static async verifyGrantScopeInterfaceAndMethod(
     dwnInterface: string,
     dwnMethod: string,
     permissionsGrantMessage: PermissionsGrantMessage,
