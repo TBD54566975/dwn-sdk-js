@@ -223,8 +223,7 @@
           "type": "object",
           "required": [
             "protocol",
-            "protocolPath",
-            "schema"
+            "protocolPath"
           ]
         }
       },
