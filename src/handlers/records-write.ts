@@ -11,6 +11,7 @@ import { Cid } from '../utils/cid.js';
 import { DataStream } from '../utils/data-stream.js';
 import { DwnConstant } from '../core/dwn-constant.js';
 import { Encoder } from '../utils/encoder.js';
+import { GrantAuthorization } from '../core/grant-authorization.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
@@ -19,7 +20,6 @@ import { RecordsWrite } from '../interfaces/records-write.js';
 import { StorageController } from '../store/storage-controller.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
-import { GrantAuthorization } from '../core/grant-authorization.js';
 
 export type RecordsWriteHandlerOptions = {
   skipDataStorage?: boolean; // used for DWN sync
@@ -262,35 +262,10 @@ export class RecordsWriteHandler implements MethodHandler {
     }
 
     if (recordsWrite.isSignedByDelegatee) {
-      // NEED TO consolidate RecordsGrantAuthorization.authorizeWrite, authorizeGenericMessage()
-
       const grantedTo = recordsWrite.signer!;
       const grantedFor = recordsWrite.author!;
       const delegatedGrant = recordsWrite.message.authorization.authorDelegatedGrant!;
-      GrantAuthorization.verifyGrantedToAndGrantedFor(grantedTo, grantedFor, delegatedGrant);
-
-      // verify that grant is active during incomingMessage's timestamp
-      const incomingMessageDescriptor = recordsWrite.message.descriptor;
-      const delegatedGrantId = await Message.getCid(delegatedGrant);
-      await GrantAuthorization.verifyGrantActive(
-        tenant,
-        incomingMessageDescriptor.messageTimestamp,
-        delegatedGrant,
-        delegatedGrantId,
-        messageStore
-      );
-
-      // Check grant scope for interface and method
-      await GrantAuthorization.verifyGrantScopeInterfaceAndMethod(
-        incomingMessageDescriptor.interface,
-        incomingMessageDescriptor.method,
-        delegatedGrant,
-        delegatedGrantId
-      );
-
-      RecordsGrantAuthorization.verifyScope(recordsWrite, delegatedGrant);
-
-      RecordsGrantAuthorization.verifyConditions(recordsWrite, delegatedGrant);
+      await RecordsGrantAuthorization.authorizeWrite(grantedFor, recordsWrite, grantedTo, delegatedGrant, messageStore);
     }
 
     if (recordsWrite.owner !== undefined) {
@@ -301,7 +276,8 @@ export class RecordsWriteHandler implements MethodHandler {
       // if author is the same as the target tenant, we can directly grant access
       return;
     } else if (recordsWrite.author !== undefined && recordsWrite.signaturePayload!.permissionsGrantId !== undefined) {
-      await RecordsGrantAuthorization.authorizeWrite(tenant, recordsWrite, recordsWrite.author, messageStore);
+      const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, recordsWrite.signaturePayload!.permissionsGrantId);
+      await RecordsGrantAuthorization.authorizeWrite(tenant, recordsWrite, recordsWrite.author, permissionsGrantMessage, messageStore);
     } else if (recordsWrite.message.descriptor.protocol !== undefined) {
       await ProtocolAuthorization.authorizeWrite(tenant, recordsWrite, messageStore);
     } else {

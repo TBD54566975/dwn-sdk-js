@@ -537,5 +537,8 @@ export function testDelegatedGrantScenarios(): void {
 
     xit('should fail if presented with a delegated grant with mismatching grant ID in the payload of the message signature', async () => {
     });
+
+    xit('should fail if presented with a revoked delegated grant', async () => {
+    });
   });
 }

@@ -16,13 +16,14 @@ export class RecordsGrantAuthorization {
     tenant: string,
     incomingMessage: RecordsWrite,
     author: string,
+    permissionsGrantMessage: PermissionsGrantMessage,
     messageStore: MessageStore,
   ): Promise<void> {
-    const permissionsGrantMessage = await GrantAuthorization.fetchPermissionsGrantAndAuthorizeGenericMessage(
+    await GrantAuthorization.authorizeGenericMessage(
       tenant,
       incomingMessage,
       author,
-      incomingMessage.signaturePayload!.permissionsGrantId!,
+      permissionsGrantMessage,
       messageStore
     );
 
@@ -39,13 +40,14 @@ export class RecordsGrantAuthorization {
     incomingMessage: RecordsRead,
     newestRecordsWrite: RecordsWrite,
     author: string,
+    permissionsGrantMessage: PermissionsGrantMessage,
     messageStore: MessageStore,
   ): Promise<void> {
-    const permissionsGrantMessage = await GrantAuthorization.fetchPermissionsGrantAndAuthorizeGenericMessage(
+    await GrantAuthorization.authorizeGenericMessage(
       tenant,
       incomingMessage,
       author,
-      incomingMessage.signaturePayload!.permissionsGrantId!,
+      permissionsGrantMessage,
       messageStore
     );
 

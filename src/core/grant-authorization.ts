@@ -14,33 +14,6 @@ export class GrantAuthorization {
    * Does not validate grant `conditions` or `scope` beyond `interface` and `method`
    * @throws {DwnError} if authorization fails
    */
-  public static async fetchPermissionsGrantAndAuthorizeGenericMessage(
-    tenant: string,
-    incomingMessage: MessageInterface<GenericMessage>,
-    author: string,
-    permissionsGrantId: string,
-    messageStore: MessageStore,
-  ): Promise<PermissionsGrantMessage> {
-
-    // Fetch grant
-    const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, permissionsGrantId);
-
-    await GrantAuthorization.authorizeGenericMessage(
-      tenant,
-      incomingMessage,
-      author, // TODO: rename to `grantedTo` or grantee?!
-      permissionsGrantMessage,
-      messageStore
-    );
-
-    return permissionsGrantMessage;
-  }
-
-  /**
-   * Performs PermissionsGrant-based authorization against the given message
-   * Does not validate grant `conditions` or `scope` beyond `interface` and `method`
-   * @throws {DwnError} if authorization fails
-   */
   public static async authorizeGenericMessage(
     tenant: string,
     incomingMessage: MessageInterface<GenericMessage>,
@@ -77,7 +50,7 @@ export class GrantAuthorization {
    * @returns the PermissionsGrantMessage with CID `permissionsGrantId` if message exists
    * @throws {Error} if PermissionsGrantMessage with CID `permissionsGrantId` does not exist
    */
-  private static async fetchGrant(
+  public static async fetchGrant(
     tenant: string,
     messageStore: MessageStore,
     permissionsGrantId: string,
