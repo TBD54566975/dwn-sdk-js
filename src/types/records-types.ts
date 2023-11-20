@@ -103,6 +103,8 @@ export type RecordsQueryDescriptor = {
 };
 
 export type RecordsFilter = {
+  /**the logical author of the record */
+  author?: string;
   attester?: string;
   recipient?: string;
   protocol?: string;
