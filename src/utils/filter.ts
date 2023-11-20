@@ -190,9 +190,19 @@ export class FilterSelector {
   }
 
   private static checkRangeFilters(filters: Filter[]): Filter[] {
-    return filters.filter(filter => Object.values(filter).findIndex(filterValue => FilterUtility.isRangeFilter(filterValue)) > -1);
+    return filters
+      .filter(filter => Object.values(filter).findIndex(filterValue => FilterUtility.isRangeFilter(filterValue)) > -1)
+      .map(filter => {
+        const filterProperties = Object.keys(filter);
+        const rangeFilterIndex = filterProperties.findIndex(propertyName => FilterUtility.isRangeFilter(filter[propertyName]));
+        const propertyName = filterProperties[rangeFilterIndex];
+        const rangeFilter:Filter = {};
+        rangeFilter[propertyName] = filter[propertyName];
+        return rangeFilter;
+      });
   }
 
+  //TODO: return a single filter, this may have to change where/how this method is used.
   private static checkForIdSearches(filters: Filter[]): { searchFilters: Filter[], remainingFilters: Filter[] } {
     const searchFilters: Filter[] = [];
     const remainingFilters: Filter[] = [];
@@ -290,12 +300,12 @@ export class FilterSelector {
       } else if (schema !== undefined && FilterUtility.isOneOfFilter(schema)) {
         return { schema } as Filter;
       } else if (protocolPath !== undefined && FilterUtility.isOneOfFilter(protocolPath)) {
-        return { protocol } as Filter;
-      } else if (protocol !== undefined && FilterUtility.isOneOfFilter(protocol)) {
         return { protocolPath } as Filter;
+      } else if (protocol !== undefined && FilterUtility.isOneOfFilter(protocol)) {
+        return { protocol } as Filter;
       }
 
-      // we return an empty filter and check for it to
+      // we return an empty filter and check for it later
       return { };
     });
 
