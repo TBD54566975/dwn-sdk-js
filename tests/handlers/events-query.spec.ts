@@ -308,6 +308,111 @@ export function testEventsQueryHandler(): void {
       expect(reply4.events?.length).to.equal(0);
     });
 
+    it('returns events filtered by a given author', async () => {
+      // scenario: alice and bob both write messages to alice's DWN
+      //           alice is able to filter for events by author across different message types
+
+      const alice = await DidKeyResolver.generate();
+      const bob = await DidKeyResolver.generate();
+
+      // create a proto1
+      const protoConf = await TestDataGenerator.generateProtocolsConfigure({
+        author             : alice,
+        protocolDefinition : { ...contributionReward, protocol: 'proto1' }
+      });
+      const protoConfResponse = await dwn.processMessage(alice.did, protoConf.message);
+      expect(protoConfResponse.status.code).equals(202);
+
+      // alice writes a message
+      const aliceWrite1 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'contribution', protocol: 'proto1', protocolPath: 'contribution' });
+      const aliceWrite1Response = await dwn.processMessage(alice.did, aliceWrite1.message, aliceWrite1.dataStream);
+      expect(aliceWrite1Response.status.code).equals(202);
+
+      // bob writes messages
+      const bobWrite1 = await TestDataGenerator.generateRecordsWrite({ author: bob, schema: 'contribution', protocol: 'proto1', protocolPath: 'contribution' });
+      const bobWrite1Response = await dwn.processMessage(alice.did, bobWrite1.message, bobWrite1.dataStream);
+      expect(bobWrite1Response.status.code).equals(202);
+
+      const bobWrite2 = await TestDataGenerator.generateRecordsWrite({ author: bob, schema: 'contribution', protocol: 'proto1', protocolPath: 'contribution' });
+      const bobWrite2Response = await dwn.processMessage(alice.did, bobWrite2.message, bobWrite2.dataStream);
+      expect(bobWrite2Response.status.code).equals(202);
+
+      // alice writes another message
+      const aliceWrite2 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'contribution', protocol: 'proto1', protocolPath: 'contribution' });
+      const aliceWrite2Response = await dwn.processMessage(alice.did, aliceWrite2.message, aliceWrite2.dataStream);
+      expect(aliceWrite2Response.status.code).equals(202);
+
+      // alice queries for events authored by alice
+      let aliceEvents = await TestDataGenerator.generateEventsQuery({
+        author  : alice,
+        filters : [{ author: alice.did }],
+      });
+      let aliceEventsReply = await dwn.processMessage(alice.did, aliceEvents.message);
+      expect(aliceEventsReply.status.code).to.equal(200);
+      expect(aliceEventsReply.events?.length).to.equal(3);
+      const aliceProtocolCid = await Message.getCid(protoConf.message);
+      const aliceWrite1Cid = await Message.getCid(aliceWrite1.message);
+      const aliceWrite2Cid = await Message.getCid(aliceWrite2.message);
+      expect(aliceEventsReply.events).to.eql([ aliceProtocolCid, aliceWrite1Cid, aliceWrite2Cid ]);
+
+      // alice queries for events authored by bob
+      const bobsEvents = await TestDataGenerator.generateEventsQuery({
+        author  : alice,
+        filters : [{ author: bob.did }],
+      });
+      const bobsEventsReply = await dwn.processMessage(alice.did, bobsEvents.message);
+      expect(bobsEventsReply.status.code).to.equal(200);
+      expect(bobsEventsReply.events?.length).to.equal(2);
+      const bobWrite1Cid = await Message.getCid(bobWrite1.message);
+      const bobWrite2Cid = await Message.getCid(bobWrite2.message);
+      expect(bobsEventsReply.events).to.eql([ bobWrite1Cid, bobWrite2Cid ]);
+
+      // alice writes another message
+      const aliceWrite3 = await TestDataGenerator.generateRecordsWrite({ author: alice, schema: 'contribution', protocol: 'proto1', protocolPath: 'contribution' });
+      const aliceWrite3Response = await dwn.processMessage(alice.did, aliceWrite3.message, aliceWrite3.dataStream);
+      expect(aliceWrite3Response.status.code).equals(202);
+
+      // bob writes another message
+      const bobWrite3 = await TestDataGenerator.generateRecordsWrite({ author: bob, schema: 'contribution', protocol: 'proto1', protocolPath: 'contribution' });
+      const bobWrite3Response = await dwn.processMessage(alice.did, bobWrite3.message, bobWrite3.dataStream);
+      expect(bobWrite3Response.status.code).equals(202);
+
+      // alice issues a grant
+      const grant = await TestDataGenerator.generatePermissionsGrant({ author: alice });
+      const grantResponse = await dwn.processMessage(alice.did, grant.message);
+      const grantId = await Message.getCid(grant.message);
+      expect(grantResponse.status.code).to.equal(202);
+
+      // alice revokes grant
+      const grantRevoke = await TestDataGenerator.generatePermissionsRevoke({ author: alice, permissionsGrantId: grantId });
+      const grantRevokeResponse = await dwn.processMessage(alice.did, grantRevoke.message);
+      expect(grantRevokeResponse.status.code).to.equal(202);
+
+      // alice configures another protocol
+      const protoConf2 = await TestDataGenerator.generateProtocolsConfigure({
+        author             : alice,
+        protocolDefinition : { ...contributionReward, protocol: 'proto2' }
+      });
+      const protoConf2Response = await dwn.processMessage(alice.did, protoConf2.message);
+      expect(protoConf2Response.status.code).equals(202);
+
+      // query events after cursor
+      aliceEvents = await TestDataGenerator.generateEventsQuery({
+        watermark : aliceWrite2Cid,
+        author    : alice,
+        filters   : [{ author: alice.did }],
+      });
+      aliceEventsReply = await dwn.processMessage(alice.did, aliceEvents.message);
+      expect(aliceEventsReply.status.code).to.equal(200);
+      expect(aliceEventsReply.events?.length).to.equal(4);
+      expect(aliceEventsReply.events).to.eql([
+        await Message.getCid(aliceWrite3.message),
+        grantId,
+        await Message.getCid(grantRevoke.message),
+        await Message.getCid(protoConf2.message),
+      ]);
+    });
+
     it('returns a 401 if tenant is not author', async () => {
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
