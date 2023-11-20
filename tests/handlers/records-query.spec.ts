@@ -6,6 +6,7 @@ import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
 
+import freeForAll from '../vectors/protocol-definitions/free-for-all.json' assert { type: 'json' };
 import friendRoleProtocolDefinition from '../vectors/protocol-definitions/friend-role.json' assert { type: 'json' };
 import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
 
@@ -195,6 +196,72 @@ export function testRecordsQueryHandler(): void {
         const recordsQuery3 = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { attester: carol.did } });
         const reply3 = await dwn.processMessage(alice.did, recordsQuery3.message);
         expect(reply3.entries?.length).to.equal(0);
+      });
+
+      it('should be able to query by author', async () => {
+        // scenario alice and bob both author records into alice's DWN.
+        // alice is able to filter for records authored by bob.
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+
+        const protocolDefinition = freeForAll;
+
+        const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+          author: alice,
+          protocolDefinition
+        });
+        const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+        expect(protocolsConfigureReply.status.code).to.equal(202);
+
+        const aliceAuthorWrite = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          protocol     : protocolDefinition.protocol,
+          schema       : protocolDefinition.types.post.schema,
+          dataFormat   : protocolDefinition.types.post.dataFormats[0],
+          protocolPath : 'post'
+        });
+        const aliceAuthorReply = await dwn.processMessage(alice.did, aliceAuthorWrite.message, aliceAuthorWrite.dataStream);
+        expect(aliceAuthorReply.status.code).to.equal(202);
+
+        const bobAuthorWrite = await TestDataGenerator.generateRecordsWrite({
+          author       : bob,
+          protocol     : protocolDefinition.protocol,
+          schema       : protocolDefinition.types.post.schema,
+          dataFormat   : protocolDefinition.types.post.dataFormats[0],
+          protocolPath : 'post'
+        });
+        const bobAuthorReply = await dwn.processMessage(alice.did, bobAuthorWrite.message, bobAuthorWrite.dataStream);
+        expect(bobAuthorReply.status.code).to.equal(202);
+
+        // alice queries with an empty filter, gets both
+        let recordsQuery = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            protocol     : protocolDefinition.protocol,
+            schema       : protocolDefinition.types.post.schema,
+            dataFormat   : protocolDefinition.types.post.dataFormats[0],
+            protocolPath : 'post'
+          }
+        });
+        let queryReply = await dwn.processMessage(alice.did, recordsQuery.message);
+        expect(queryReply.status.code).to.equal(200);
+        expect(queryReply.entries?.length).to.equal(2);
+
+        // filter for bob as author
+        recordsQuery = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            author       : bob.did,
+            protocol     : protocolDefinition.protocol,
+            schema       : protocolDefinition.types.post.schema,
+            dataFormat   : protocolDefinition.types.post.dataFormats[0],
+            protocolPath : 'post'
+          }
+        });
+        queryReply = await dwn.processMessage(alice.did, recordsQuery.message);
+        expect(queryReply.status.code).to.equal(200);
+        expect(queryReply.entries?.length).to.equal(1);
+        expect(queryReply.entries![0].recordId).to.equal(bobAuthorWrite.message.recordId);
       });
 
       it('should be able to query for published records', async () => {
