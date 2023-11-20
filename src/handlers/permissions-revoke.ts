@@ -126,6 +126,7 @@ export class PermissionsRevokeHandler implements MethodHandler {
     let indexes: Record<string, any> = {
       interface          : DwnInterfaceName.Permissions,
       method             : DwnMethodName.Revoke,
+      author             : permissionsRevoke.author!,
       messageTimestamp   : descriptor.messageTimestamp,
       permissionsGrantId : descriptor.permissionsGrantId,
     };
