@@ -35,6 +35,9 @@
     "protocolPath": {
       "type": "string"
     },
+    "author": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
+    },
     "attester": {
       "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
     },
