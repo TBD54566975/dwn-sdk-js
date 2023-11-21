@@ -8,7 +8,6 @@ import { Records } from '../utils/records.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Time } from '../utils/time.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
-import { normalizeProtocolUrl, normalizeSchemaUrl } from '../utils/url.js';
 
 export type EventsQueryOptions = {
   signer: Signer;
@@ -46,29 +45,16 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
   }
 
   private static normalizeFilters(filters: EventsFilter[]): EventsFilter[] {
-    return filters.map(filter => {
-      const normalizedFilter = {
-        ...filter,
-      };
-
-      if (filter.protocol !== undefined) {
-        normalizedFilter.protocol = normalizeProtocolUrl(filter.protocol);
-      }
-
-      if (filter.schema !== undefined) {
-        normalizedFilter.schema = normalizeSchemaUrl(filter.schema);
-      }
-
-      return normalizedFilter;
-    });
+    // currently all normalization filters are shared with `Records`.
+    return filters.map(filter => Records.normalizeFilter(filter));
   }
 
   /**
- *  Converts an incoming EventsFilter into a Filter usable by EventLog.
- *
- * @param filters An EventsFilter
- * @returns {EventsLogFilter} a generic Filter able to be used with EventLog query.
- */
+  *  Converts an incoming EventsFilter into a Filter usable by EventLog.
+  *
+  * @param filters An array of EventsFilter
+  * @returns {EventsLogFilter} a generic Filter able to be used with EventLog query.
+  */
   public static convertFilters(filters: EventsFilter[]): Filter[] {
     //currently only the range criterion for Records need to be converted
     return filters.map(filter => Records.convertFilter(filter));

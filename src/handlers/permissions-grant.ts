@@ -55,7 +55,7 @@ export class PermissionsGrantHandler implements MethodHandler {
     const message = permissionsGrant.message;
     const { scope, conditions, ...propertiesToIndex } = message.descriptor;
     let indexes: Record<string, any> = {
-      author: permissionsGrant.author!,
+      author: permissionsGrant.author,
       ...propertiesToIndex,
     };
 
