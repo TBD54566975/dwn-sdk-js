@@ -52,14 +52,14 @@ describe('filters util', () => {
     describe('matchFilter', () => {
       it('should match with EqualFilter', async () => {
         const filters = [{ foo: 'bar' }];
-        expect(FilterUtility.matchItem({ foo: 'bar' }, filters)).to.be.true;
-        expect(FilterUtility.matchItem({ foo: 'bar', bar: 'baz' }, filters)).to.be.true;
-        expect(FilterUtility.matchItem({ bar: 'baz' }, filters)).to.be.false;
+        expect(FilterUtility.matchItemIndexes({ foo: 'bar' }, filters)).to.be.true;
+        expect(FilterUtility.matchItemIndexes({ foo: 'bar', bar: 'baz' }, filters)).to.be.true;
+        expect(FilterUtility.matchItemIndexes({ bar: 'baz' }, filters)).to.be.false;
       });
 
       it('should not match partial values with an EqualFilter', async () => {
         const filters = [{ foo: 'bar' }];
-        expect(FilterUtility.matchItem({ foo: 'barbaz' }, filters)).to.be.false;
+        expect(FilterUtility.matchItemIndexes({ foo: 'barbaz' }, filters)).to.be.false;
       });
 
       it('should match with OneOfFilter', async () => {
@@ -67,9 +67,9 @@ describe('filters util', () => {
           a: [ 'a', 'b' ]
         }];
 
-        expect(FilterUtility.matchItem({ 'a': 'a' }, filters)).to.be.true;
-        expect(FilterUtility.matchItem({ 'a': 'b' }, filters)).to.be.true;
-        expect(FilterUtility.matchItem({ 'a': 'c' }, filters)).to.be.false;
+        expect(FilterUtility.matchItemIndexes({ 'a': 'a' }, filters)).to.be.true;
+        expect(FilterUtility.matchItemIndexes({ 'a': 'b' }, filters)).to.be.true;
+        expect(FilterUtility.matchItemIndexes({ 'a': 'c' }, filters)).to.be.false;
       });
 
       it('should match string within a RangeFilter', async () => {
@@ -80,17 +80,17 @@ describe('filters util', () => {
         }];
 
         // test the equal to the desired range.
-        expect(FilterUtility.matchItem({
+        expect(FilterUtility.matchItemIndexes({
           dateCreated: Time.createTimestamp({ year: 2023, month: 1, day: 15 })
         }, gteFilter)).to.be.true;
 
         // test greater than the desired range.
-        expect(FilterUtility.matchItem({
+        expect(FilterUtility.matchItemIndexes({
           dateCreated: Time.createTimestamp({ year: 2023, month: 1, day: 16 })
         }, gteFilter)).to.be.true;
 
         // test less than desired range.
-        expect(FilterUtility.matchItem({
+        expect(FilterUtility.matchItemIndexes({
           dateCreated: Time.createTimestamp({ year: 2023, month: 1, day: 10 })
         }, gteFilter)).to.be.false;
 
@@ -100,12 +100,12 @@ describe('filters util', () => {
           }
         }];
         // test the equal to
-        expect(FilterUtility.matchItem({
+        expect(FilterUtility.matchItemIndexes({
           dateCreated: Time.createTimestamp({ year: 2023, month: 1, day: 15 })
         }, gtFilter)).to.be.false;
 
         // test greater than.
-        expect(FilterUtility.matchItem({
+        expect(FilterUtility.matchItemIndexes({
           dateCreated: Time.createTimestamp({ year: 2023, month: 1, day: 16 })
         }, gtFilter)).to.be.true;
 
@@ -116,17 +116,17 @@ describe('filters util', () => {
         }];
 
         // test the equal to the desired range.
-        expect(FilterUtility.matchItem({
+        expect(FilterUtility.matchItemIndexes({
           dateCreated: Time.createTimestamp({ year: 2023, month: 1, day: 15 })
         }, lteFilter)).to.be.true;
 
         // test less than desired range.
-        expect(FilterUtility.matchItem({
+        expect(FilterUtility.matchItemIndexes({
           dateCreated: Time.createTimestamp({ year: 2023, month: 1, day: 13 })
         }, lteFilter)).to.be.true;
 
         // test greater than desired range.
-        expect(FilterUtility.matchItem({
+        expect(FilterUtility.matchItemIndexes({
           dateCreated: Time.createTimestamp({ year: 2023, month: 1, day: 16 })
         }, lteFilter)).to.be.false;
 
@@ -137,12 +137,12 @@ describe('filters util', () => {
         }];
 
         // checks less than
-        expect(FilterUtility.matchItem({
+        expect(FilterUtility.matchItemIndexes({
           dateCreated: Time.createTimestamp({ year: 2023, month: 1, day: 14 })
         }, ltFilter)).to.be.true;
 
         // checks equal to
-        expect(FilterUtility.matchItem({
+        expect(FilterUtility.matchItemIndexes({
           dateCreated: Time.createTimestamp({ year: 2023, month: 1, day: 15 })
         }, ltFilter)).to.be.false;
       });
@@ -154,7 +154,7 @@ describe('filters util', () => {
           }
         }];
 
-        expect(FilterUtility.matchItem({ value: 'foobar' }, filters)).to.be.true;
+        expect(FilterUtility.matchItemIndexes({ value: 'foobar' }, filters)).to.be.true;
       });
 
       it('should match suffixed RangeFilter', async () => {
@@ -164,8 +164,8 @@ describe('filters util', () => {
           }
         }];
 
-        expect(FilterUtility.matchItem({ foo: 'bar' }, filters)).to.be.true;
-        expect(FilterUtility.matchItem({ foo: 'barbaz' }, filters)).to.be.false;
+        expect(FilterUtility.matchItemIndexes({ foo: 'bar' }, filters)).to.be.true;
+        expect(FilterUtility.matchItemIndexes({ foo: 'barbaz' }, filters)).to.be.false;
       });
 
       it('should match multiple properties', async () => {
@@ -173,8 +173,8 @@ describe('filters util', () => {
           foo : 'bar',
           bar : 'baz'
         }];
-        expect(FilterUtility.matchItem({ foo: 'bar', bar: 'baz' }, filters)).to.be.true;
-        expect(FilterUtility.matchItem({ foo: 'baz', bar: 'baz' }, filters)).to.be.false;
+        expect(FilterUtility.matchItemIndexes({ foo: 'bar', bar: 'baz' }, filters)).to.be.true;
+        expect(FilterUtility.matchItemIndexes({ foo: 'baz', bar: 'baz' }, filters)).to.be.false;
       });
 
       it('should match with multiple filters', async () => {
@@ -186,16 +186,16 @@ describe('filters util', () => {
         }];
 
         // match first filter
-        expect(FilterUtility.matchItem({ foo: 'bar', bar: 'baz' }, filters)).to.be.true;
+        expect(FilterUtility.matchItemIndexes({ foo: 'bar', bar: 'baz' }, filters)).to.be.true;
         // match second filter
-        expect(FilterUtility.matchItem({ foobar: 'baz', foo: 'bar' }, filters)).to.be.true;
+        expect(FilterUtility.matchItemIndexes({ foobar: 'baz', foo: 'bar' }, filters)).to.be.true;
         // control no match
-        expect(FilterUtility.matchItem({ foo: 'bar' }, filters)).to.be.false;
+        expect(FilterUtility.matchItemIndexes({ foo: 'bar' }, filters)).to.be.false;
       });
 
       it('should match anything if an empty array or empty filters are provided', async () => {
-        expect(FilterUtility.matchItem({ foo: 'bar', bar: 'baz' }, [])).to.be.true;
-        expect(FilterUtility.matchItem({ foobar: 'baz', foo: 'bar' }, [{}])).to.be.true;
+        expect(FilterUtility.matchItemIndexes({ foo: 'bar', bar: 'baz' }, [])).to.be.true;
+        expect(FilterUtility.matchItemIndexes({ foobar: 'baz', foo: 'bar' }, [{}])).to.be.true;
       });
 
       describe('booleans', () => {
@@ -205,8 +205,8 @@ describe('filters util', () => {
             foo: true
           }];
 
-          expect(FilterUtility.matchItem({ foo: true }, filters)).to.be.true;
-          expect(FilterUtility.matchItem({ foo: 'true' }, filters)).to.be.false;
+          expect(FilterUtility.matchItemIndexes({ foo: true }, filters)).to.be.true;
+          expect(FilterUtility.matchItemIndexes({ foo: 'true' }, filters)).to.be.false;
         });
 
         it('should return records that match provided boolean equality filter', async () => {
@@ -221,10 +221,10 @@ describe('filters util', () => {
           };
 
           // control
-          expect(FilterUtility.matchItem(boolTrueItem, [{ published: true }])).to.be.true;
-          expect(FilterUtility.matchItem(boolTrueItem, [{ published: false }])).to.be.false;
-          expect(FilterUtility.matchItem(boolFalseItem, [{ published: false }])).to.be.true;
-          expect(FilterUtility.matchItem(boolFalseItem, [{ published: true }])).to.be.false;
+          expect(FilterUtility.matchItemIndexes(boolTrueItem, [{ published: true }])).to.be.true;
+          expect(FilterUtility.matchItemIndexes(boolTrueItem, [{ published: false }])).to.be.false;
+          expect(FilterUtility.matchItemIndexes(boolFalseItem, [{ published: false }])).to.be.true;
+          expect(FilterUtility.matchItemIndexes(boolFalseItem, [{ published: true }])).to.be.false;
         });
       });
 

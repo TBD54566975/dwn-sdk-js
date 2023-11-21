@@ -6,14 +6,20 @@ import { isEmptyObject } from './object.js';
  * A Utility class to help match indexes against filters.
  */
 export class FilterUtility {
-  static matchItem(indexes: { [key:string]:unknown }, filters: Filter[]): boolean {
+  /**
+   * Matches the given indexed values against an array of filters, if any of the filters match, returns true.
+   *
+   * @param indexedValues the indexed values for an item.
+   * @returns true if any of the filters match.
+   */
+  static matchItemIndexes(indexedValues: { [key:string]:unknown }, filters: Filter[]): boolean {
     if (filters.length === 0) {
       return true;
     }
 
     for (const filter of filters) {
       // if any of the filters match the indexed values, we return true as it's a match
-      if (this.matchFilter(indexes, filter)) {
+      if (this.matchFilter(indexedValues, filter)) {
         return true;
       }
     }
@@ -22,9 +28,9 @@ export class FilterUtility {
   }
 
   /**
-   * Evaluates the given filter against the indexed values retrieved from the DB.
+   * Evaluates the given filter against the indexed values.
    *
-   * @param indexedValues the indexed values for an item retrieved from teh database.
+   * @param indexedValues the indexed values for an item.
    * @param filter
    * @returns true if all of the filter properties match.
    */
