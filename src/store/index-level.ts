@@ -183,7 +183,7 @@ export class IndexLevel {
         return matches;
       }
       const { itemId, indexes } = item;
-      if (FilterUtility.matchItem(indexes, filters)) {
+      if (FilterUtility.matchItemIndexes(indexes, filters)) {
         matches.push(itemId);
       }
     }
@@ -241,7 +241,7 @@ export class IndexLevel {
 
     // cursor indexes must match the provided filters in order to be valid.
     // ie: if someone passes a valid messageCid for a cursor that's not part of the filter.
-    if (FilterUtility.matchItem(sortIndexes, filters)) {
+    if (FilterUtility.matchItemIndexes(sortIndexes, filters)) {
       return IndexLevel.keySegmentJoin(FilterUtility.encodeValue(sortValue), itemId);
     }
   }
@@ -334,7 +334,7 @@ export class IndexLevel {
         // short circuit: if a data is already included to the final matched key set (by a different `Filter`),
         // no need to evaluate if the data satisfies this current filter being evaluated
         // otherwise check that the item is a match.
-        if (matches.has(indexedItem.itemId) || !FilterUtility.matchItem(indexedItem.indexes, matchFilters)) {
+        if (matches.has(indexedItem.itemId) || !FilterUtility.matchItemIndexes(indexedItem.indexes, matchFilters)) {
           continue;
         }
 
