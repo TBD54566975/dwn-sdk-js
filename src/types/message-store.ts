@@ -1,4 +1,4 @@
-import type { Filter, FilterIndex } from './query-types.js';
+import type { Filter, KeyValues } from './query-types.js';
 import type { GenericMessage, MessageSort, Pagination } from './message-types.js';
 
 export interface MessageStoreOptions {
@@ -23,7 +23,7 @@ export interface MessageStore {
   put(
     tenant: string,
     message: GenericMessage,
-    indexes: { [key: string]: FilterIndex },
+    indexes: KeyValues,
     options?: MessageStoreOptions
   ): Promise<void>;
 

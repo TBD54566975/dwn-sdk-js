@@ -1,4 +1,4 @@
-import type { EqualFilter, Filter, FilterIndex, QueryOptions, RangeFilter } from '../types/query-types.js';
+import type { EqualFilter, Filter, KeyValues, QueryOptions, RangeFilter } from '../types/query-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions, } from './level-wrapper.js';
 
 import { lexicographicalCompare } from '../utils/string.js';
@@ -13,8 +13,7 @@ type IndexLevelConfig = {
   createLevelDatabase?: typeof createLevelDatabase
 };
 
-type Indexes = { [key: string]: FilterIndex };
-type IndexedItem = { itemId: string, indexes: Indexes };
+type IndexedItem = { itemId: string, indexes: KeyValues };
 
 const INDEX_SUBLEVEL_NAME = 'index';
 
@@ -68,7 +67,7 @@ export class IndexLevel {
   async put(
     tenant: string,
     itemId: string,
-    indexes: Indexes,
+    indexes: KeyValues,
     options?: IndexLevelOptions
   ): Promise<void> {
 
@@ -438,7 +437,7 @@ export class IndexLevel {
   /**
    * Gets the indexes given an itemId. This is a reverse lookup to construct starting keys, as well as deleting indexed items.
    */
-  private async getIndexes(tenant: string, itemId: string): Promise<Indexes|undefined> {
+  private async getIndexes(tenant: string, itemId: string): Promise<KeyValues|undefined> {
     const tenantPartition = await this.db.partition(tenant);
     const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
     const serializedIndexes = await indexPartition.get(itemId);
@@ -447,7 +446,7 @@ export class IndexLevel {
       return;
     }
 
-    return JSON.parse(serializedIndexes) as Indexes;
+    return JSON.parse(serializedIndexes) as KeyValues;
   }
 
   /**
@@ -493,7 +492,7 @@ export class IndexLevel {
    *
    * NOTE: we currently only use this for strings, numbers and booleans.
    */
-  static encodeValue(value: FilterIndex): string {
+  static encodeValue(value: string | number | boolean): string {
     switch (typeof value) {
     case 'string':
       // We can't just `JSON.stringify` as that'll affect the sort order of strings.

@@ -1,4 +1,4 @@
-import type { EqualFilter, Filter, FilterIndex, FilterValue, OneOfFilter, QueryOptions, RangeFilter } from '../types/query-types.js';
+import type { EqualFilter, Filter, FilterValue, KeyValues, OneOfFilter, QueryOptions, RangeFilter } from '../types/query-types.js';
 
 import { isEmptyObject } from './object.js';
 
@@ -12,7 +12,7 @@ export class FilterUtility {
    * @param indexedValues the indexed values for an item.
    * @returns true if any of the filters match.
    */
-  static matchItemIndexes(indexedValues: { [key:string]:FilterIndex }, filters: Filter[]): boolean {
+  static matchItemIndexes(indexedValues: KeyValues, filters: Filter[]): boolean {
     if (filters.length === 0) {
       return true;
     }
@@ -34,7 +34,7 @@ export class FilterUtility {
    * @param filter
    * @returns true if all of the filter properties match.
    */
-  private static matchFilter(indexedValues: { [key:string]: FilterIndex }, filter: Filter): boolean {
+  private static matchFilter(indexedValues: KeyValues, filter: Filter): boolean {
     // set of unique query properties.
     // if count of missing property matches is 0, it means the data/object fully matches the filter
     const missingPropertyMatches: Set<string> = new Set([ ...Object.keys(filter) ]);
@@ -86,7 +86,7 @@ export class FilterUtility {
    * @param indexedValue the indexed value being compared.
    * @returns true if any of the given filters match the indexedValue
    */
-  private static matchOneOf(filter: OneOfFilter, indexedValue: FilterIndex): boolean {
+  private static matchOneOf(filter: OneOfFilter, indexedValue: string | number | boolean): boolean {
     for (const orFilterValue of filter) {
       if (indexedValue === orFilterValue) {
         return true;

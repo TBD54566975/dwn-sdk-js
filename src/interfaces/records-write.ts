@@ -1,6 +1,6 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
-import type { FilterIndex } from '../types/query-types.js';
 import type { GeneralJws } from '../types/jws-types.js';
+import type { KeyValues } from '../types/query-types.js';
 import type { MessageInterface } from '../types/message-interface.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PublicJwk } from '../types/jose-types.js';
@@ -675,12 +675,12 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
 
   public async constructRecordsWriteIndexes(
     isLatestBaseState: boolean
-  ): Promise<Record<string, FilterIndex>> {
+  ): Promise<KeyValues> {
     const message = this.message;
     const descriptor = { ...message.descriptor };
     delete descriptor.published; // handle `published` specifically further down
 
-    const indexes: Record<string, FilterIndex> = {
+    const indexes: KeyValues = {
       ...descriptor,
       isLatestBaseState,
       published : !!message.descriptor.published,

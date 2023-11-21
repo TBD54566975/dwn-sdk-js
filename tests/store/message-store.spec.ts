@@ -3,12 +3,12 @@ import type { RecordsWriteMessage } from '../../src/types/records-types.js';
 
 import { expect } from 'chai';
 
-import { DidKeyResolver, DwnErrorCode } from '../../src/index.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
 import { SortDirection } from '../../src/types/query-types.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
+import { DidKeyResolver, DwnErrorCode } from '../../src/index.js';
 
 let messageStore: MessageStore;
 
