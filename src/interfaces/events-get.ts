@@ -7,7 +7,7 @@ import { Time } from '../utils/time.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export type EventsGetOptions = {
-  watermark?: string;
+  cursor?: string;
   signer: Signer;
   messageTimestamp?: string;
 };
@@ -29,8 +29,8 @@ export class EventsGet extends AbstractMessage<EventsGetMessage> {
       messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
     };
 
-    if (options.watermark) {
-      descriptor.watermark = options.watermark;
+    if (options.cursor) {
+      descriptor.cursor = options.cursor;
     }
 
     const authorization = await Message.createAuthorization({ descriptor, signer: options.signer });

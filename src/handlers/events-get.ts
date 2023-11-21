@@ -29,11 +29,11 @@ export class EventsGetHandler implements MethodHandler {
       return messageReplyFromError(e, 401);
     }
 
-    // if watermark was provided in message, get all events _after_ the watermark.
+    // if a cursor was provided in message, get all events _after_ the cursor.
     // Otherwise, get all events.
     let options: GetEventsOptions | undefined;
-    if (message.descriptor.watermark) {
-      options = { gt: message.descriptor.watermark };
+    if (message.descriptor.cursor) {
+      options = { gt: message.descriptor.cursor };
     }
 
     const events = await this.eventLog.getEvents(tenant, options);

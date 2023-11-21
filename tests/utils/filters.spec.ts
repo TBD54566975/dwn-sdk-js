@@ -279,7 +279,7 @@ describe('filters util', () => {
 
   describe('FilterSelector', () => {
     describe('select', () => {
-      it('should return an empty array if a cursor exists and sorting by the field watermark', async () => {
+      it('should return an empty array if a cursor exists and sorting by the field cursor', async () => {
         // scenario: If we are filtering using a the 'watermark' field as our sort property and pass a cursor
         //           it should return an empty array of filters, signaling a sorted index query.
         const inputFilters:Filter[] = [{
