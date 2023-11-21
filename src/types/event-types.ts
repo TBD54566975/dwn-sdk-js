@@ -13,7 +13,7 @@ export type EventsFilter = RecordsFilter & {
 export type EventsGetDescriptor = {
   interface : DwnInterfaceName.Events;
   method: DwnMethodName.Get;
-  watermark?: string;
+  cursor?: string;
   messageTimestamp: string;
 };
 
@@ -31,7 +31,7 @@ export type EventsQueryDescriptor = {
   method: DwnMethodName.Query;
   messageTimestamp: string;
   filters: EventsFilter[];
-  watermark?: string;
+  cursor?: string;
 };
 
 export type EventsQueryMessage = GenericMessage & {

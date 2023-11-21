@@ -57,7 +57,7 @@ export function testEventsQueryHandler(): void {
       // alice creates (3) different message types all related to "proto1" (Configure, RecordsWrite, Grant)
       // alice creates (3) different message types all related to "proto2" (Configure, RecordsWrite, Grant)
       // when issuing an EventsQuery for the specific protocol, only Events related to it should be returned.
-      // alice then creates additional records to query after a watermark
+      // alice then creates additional records to query after a cursor
 
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
@@ -140,9 +140,9 @@ export function testEventsQueryHandler(): void {
       expect(proto2EventsReply.events![1]).to.equal(await Message.getCid(write1proto2.message));
       expect(proto2EventsReply.events![2]).to.equal(await Message.getCid(grant1Proto2.message));
 
-      // get watermark of the last event and add more events to query afterwards
-      const proto1watermark = proto1EventsReply.events![2];
-      const proto2watermark = proto2EventsReply.events![2];
+      // get cursor of the last event and add more events to query afterwards
+      const proto1Cursor = proto1EventsReply.events![2];
+      const proto2Cursor = proto2EventsReply.events![2];
 
       // revoke grant proto 1
       const grant1proto1Id = await Message.getCid(grant1Proto1.message);
@@ -166,11 +166,11 @@ export function testEventsQueryHandler(): void {
       const deleteProto2MessageReply = await dwn.processMessage(alice.did, deleteProto2Message.message);
       expect(deleteProto2MessageReply.status.code).to.equal(202);
 
-      //query messages beyond the watermark
+      //query messages beyond the cursor
       proto1EventsQuery = await TestDataGenerator.generateEventsQuery({
-        watermark : proto1watermark,
-        author    : alice,
-        filters   : [{ protocol: proto1 }],
+        cursor  : proto1Cursor,
+        author  : alice,
+        filters : [{ protocol: proto1 }],
       });
       proto1EventsReply = await dwn.processMessage(alice.did, proto1EventsQuery.message);
       expect(proto1EventsReply.status.code).equals(200);
@@ -180,11 +180,11 @@ export function testEventsQueryHandler(): void {
       expect(proto1EventsReply.events![0]).to.equal(await Message.getCid(revokeForGrantProto1.message));
       expect(proto1EventsReply.events![1]).to.equal(await Message.getCid(deleteProto1Message.message));
 
-      //query messages beyond the watermark
+      //query messages beyond the cursor
       proto2EventsQuery = await TestDataGenerator.generateEventsQuery({
-        watermark : proto2watermark,
-        author    : alice,
-        filters   : [{ protocol: proto2 }],
+        cursor  : proto2Cursor,
+        author  : alice,
+        filters : [{ protocol: proto2 }],
       });
       proto2EventsReply = await dwn.processMessage(alice.did, proto2EventsQuery.message);
       expect(proto2EventsReply.status.code).equals(200);
@@ -231,11 +231,11 @@ export function testEventsQueryHandler(): void {
       expect(reply1.events![1]).to.equal(await Message.getCid(write3.message!));
       expect(reply1.events![2]).to.equal(await Message.getCid(write4.message!));
 
-      // using the watermark of the first message
+      // using the cursor of the first message
       eventsQuery1 = await TestDataGenerator.generateEventsQuery({
-        watermark : reply1.events![0],
-        author    : alice,
-        filters   : [{ dateCreated: { from: lastDayOf2021 } }],
+        cursor  : reply1.events![0],
+        author  : alice,
+        filters : [{ dateCreated: { from: lastDayOf2021 } }],
       });
       reply1 = await dwn.processMessage(alice.did, eventsQuery1.message);
       expect(reply1.status.code).to.equal(200);
@@ -255,11 +255,11 @@ export function testEventsQueryHandler(): void {
       expect(reply2.events![0]).to.equal(await Message.getCid(write1.message!));
       expect(reply2.events![1]).to.equal(await Message.getCid(write2.message!));
 
-      // using the watermark of the first message
+      // using the cursor of the first message
       eventsQuery2 = await TestDataGenerator.generateEventsQuery({
-        watermark : reply2.events![0],
-        author    : alice,
-        filters   : [{ dateCreated: { to: lastDayOf2022 } }],
+        cursor  : reply2.events![0],
+        author  : alice,
+        filters : [{ dateCreated: { to: lastDayOf2022 } }],
       });
       reply2 = await dwn.processMessage(alice.did, eventsQuery2.message);
       expect(reply2.status.code).to.equal(200);
@@ -277,11 +277,11 @@ export function testEventsQueryHandler(): void {
       expect(reply3.events?.length).to.equal(1);
       expect(reply3.events![0]).to.equal(await Message.getCid(write3.message!));
 
-      // using the watermark of the only message, should not return any results
+      // using the cursor of the only message, should not return any results
       eventsQuery3 = await TestDataGenerator.generateEventsQuery({
-        watermark : reply3.events![0],
-        author    : alice,
-        filters   : [{ dateCreated: { from: lastDayOf2022, to: lastDayOf2023 } }],
+        cursor  : reply3.events![0],
+        author  : alice,
+        filters : [{ dateCreated: { from: lastDayOf2022, to: lastDayOf2023 } }],
       });
       reply3 = await dwn.processMessage(alice.did, eventsQuery3.message);
       expect(reply3.status.code).to.equal(200);
@@ -299,9 +299,9 @@ export function testEventsQueryHandler(): void {
 
       // testing edge case where value equals `from` and `to`
       eventsQuery4 = await TestDataGenerator.generateEventsQuery({
-        watermark : reply4.events![0],
-        author    : alice,
-        filters   : [{ dateCreated: { from: firstDayOf2022, to: firstDayOf2023 } }],
+        cursor  : reply4.events![0],
+        author  : alice,
+        filters : [{ dateCreated: { from: firstDayOf2022, to: firstDayOf2023 } }],
       });
       reply4 = await dwn.processMessage(alice.did, eventsQuery4.message);
       expect(reply4.status.code).to.equal(200);
@@ -398,9 +398,9 @@ export function testEventsQueryHandler(): void {
 
       // query events after cursor
       aliceEvents = await TestDataGenerator.generateEventsQuery({
-        watermark : aliceWrite2Cid,
-        author    : alice,
-        filters   : [{ author: alice.did }],
+        cursor  : aliceWrite2Cid,
+        author  : alice,
+        filters : [{ author: alice.did }],
       });
       aliceEventsReply = await dwn.processMessage(alice.did, aliceEvents.message);
       expect(aliceEventsReply.status.code).to.equal(200);
