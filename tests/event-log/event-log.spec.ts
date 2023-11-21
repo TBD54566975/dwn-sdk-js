@@ -230,9 +230,9 @@ export function testEventLog(): void {
         }
       });
 
-      it('returns filtered events after watermark', async () => {
+      it('returns filtered events after cursor', async () => {
         const expectedEvents: Array<string> = [];
-        let testWatermark;
+        let testCursor;
 
         const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ schema: 'schema1' });
         const messageCid = await Message.getCid(message);
@@ -246,7 +246,7 @@ export function testEventLog(): void {
           await eventLog.append(author.did, messageCid, indexes);
 
           if (i === 3) {
-            testWatermark = messageCid;
+            testCursor = messageCid;
           }
 
           if (i > 3) {
@@ -270,7 +270,7 @@ export function testEventLog(): void {
           expectedEvents.push(messageCid);
         }
 
-        const events = await eventLog.queryEvents(author.did, [{ schema: normalizeSchemaUrl('schema1') }], testWatermark);
+        const events = await eventLog.queryEvents(author.did, [{ schema: normalizeSchemaUrl('schema1') }], testCursor);
         expect(events.length).to.equal(expectedEvents.length);
 
         for (let i = 0; i < expectedEvents.length; i += 1) {
