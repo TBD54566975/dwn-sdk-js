@@ -11,9 +11,8 @@ export class FilterUtility {
       return true;
     }
 
-    // todo: turn this into an async function?
     for (const filter of filters) {
-      // if any of the filters match the indexed values, it is a match and move on to the next.
+      // if any of the filters match the indexed values, we return true as it's a match
       if (this.matchFilter(indexes, filter)) {
         return true;
       }
@@ -32,7 +31,7 @@ export class FilterUtility {
   private static matchFilter(indexedValues: { [key:string]:unknown }, filter: Filter): boolean {
     // set of unique query properties.
     // if count of missing property matches is 0, it means the data/object fully matches the filter
-    const missingPropertyMatchesForIndex: Set<string> = new Set([ ...Object.keys(filter) ]);
+    const missingPropertyMatches: Set<string> = new Set([ ...Object.keys(filter) ]);
 
     for (const filterProperty in filter) {
       const filterValue = filter[filterProperty];
@@ -43,45 +42,42 @@ export class FilterUtility {
 
       if (typeof filterValue === 'object') {
         if (Array.isArray(filterValue)) {
-          // `propertyFilter` is a OneOfFilter
-          // if OneOfFilter, the cursor properties are a map of each individual EqualFilter and the associated cursor string
+          // if `filterValue` is an array, it is a OneOfFilter
           // Support OR matches by querying for each values separately,
           if (!this.matchOneOf(filterValue, indexValue)) {
             return false;
           }
-          missingPropertyMatchesForIndex.delete(filterProperty);
+          missingPropertyMatches.delete(filterProperty);
           continue;
         } else {
-          // `propertyFilter` is a `RangeFilter`
-          // if RangeFilter use the string curser associated with the `propertyName`
+          // `filterValue` is a `RangeFilter`
           if (!this.matchRange(filterValue, indexValue)) {
             return false;
           }
-          missingPropertyMatchesForIndex.delete(filterProperty);
+          missingPropertyMatches.delete(filterProperty);
           continue;
         }
       } else {
-        // propertyFilter is an EqualFilter, meaning it is a non-object primitive type
-        // if EqualFilter use the string cursor associated with the `propertyName`
+        // filterValue is an EqualFilter, meaning it is a non-object primitive type
         if (FilterUtility.encodeValue(indexValue) !== FilterUtility.encodeValue(filterValue)) {
           return false;
         }
-        missingPropertyMatchesForIndex.delete(filterProperty);
+        missingPropertyMatches.delete(filterProperty);
         continue;
       }
     }
-    return missingPropertyMatchesForIndex.size === 0;
+    return missingPropertyMatches.size === 0;
   }
 
   /**
    * Evaluates a OneOfFilter given an indexedValue extracted from the index.
    *
-   * @param filter An array of EqualityFilters. Treated as an OR.
+   * @param filter An array of EqualFilters. Treated as an OR.
    * @param indexedValue the indexed value being compared.
    * @returns true if any of the given filters match the indexedValue
    */
   private static matchOneOf(filter: OneOfFilter, indexedValue: unknown): boolean {
-    for (const orFilterValue of new Set(filter)) {
+    for (const orFilterValue of filter) {
       if (FilterUtility.encodeValue(indexedValue) === FilterUtility.encodeValue(orFilterValue)) {
         return true;
       }
@@ -92,8 +88,6 @@ export class FilterUtility {
   /**
    * Evaluates if the given indexedValue is within the range given by the RangeFilter.
    *
-   * @param rangeFilter
-   * @param indexedValue
    * @returns true if all of the range filter conditions are met.
    */
   private static matchRange(rangeFilter: RangeFilter, indexedValue: unknown): boolean {
