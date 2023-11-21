@@ -70,7 +70,6 @@
     "blockstore-core": "4.2.0",
     "cross-fetch": "4.0.0",
     "eciesjs": "0.4.5",
-    "flat": "5.0.2",
     "interface-blockstore": "5.2.3",
     "interface-store": "5.1.2",
     "ipfs-unixfs-exporter": "13.1.5",

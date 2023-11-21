@@ -3,12 +3,12 @@ import type { RecordsWriteMessage } from '../../src/types/records-types.js';
 
 import { expect } from 'chai';
 
-import { DidKeyResolver } from '../../src/index.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
 import { SortDirection } from '../../src/types/query-types.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
+import { DidKeyResolver, DwnErrorCode } from '../../src/index.js';
 
 let messageStore: MessageStore;
 
@@ -38,7 +38,7 @@ export function testMessageStore(): void {
         const { message } = await TestDataGenerator.generatePermissionsRequest();
 
         const messagePutPromise = messageStore.put(alice.did, message, { });
-        expect(messagePutPromise).to.eventually.be.rejectedWith('must include messageTimestamp index');
+        await expect(messagePutPromise).to.eventually.be.rejectedWith(DwnErrorCode.MessageStoreMissingTimestamp);
       });
 
       it('stores messages as cbor/sha256 encoded blocks with CID as key', async () => {

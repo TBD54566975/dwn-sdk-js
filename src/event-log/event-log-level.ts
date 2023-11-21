@@ -1,6 +1,6 @@
-import type { Filter } from '../types/query-types.js';
 import type { ULIDFactory } from 'ulidx';
 import type { EventLog, GetEventsOptions } from '../types/event-log.js';
+import type { Filter, KeyValues } from '../types/query-types.js';
 
 import { createLevelDatabase } from '../store/level-wrapper.js';
 import { IndexLevel } from '../store/index-level.js';
@@ -43,7 +43,7 @@ export class EventLogLevel implements EventLog {
     return this.index.clear();
   }
 
-  async append(tenant: string, messageCid: string, indexes: { [key:string]: unknown }): Promise<void> {
+  async append(tenant: string, messageCid: string, indexes: KeyValues): Promise<void> {
     const watermark = this.ulidFactory();
     await this.index.put(tenant, messageCid, { ...indexes, watermark });
   }
