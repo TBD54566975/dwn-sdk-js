@@ -1,4 +1,4 @@
-import type { EqualFilter, Filter, FilterValue, OneOfFilter, QueryOptions, RangeFilter } from '../types/query-types.js';
+import type { EqualFilter, Filter, FilterIndex, FilterValue, OneOfFilter, QueryOptions, RangeFilter } from '../types/query-types.js';
 
 import { isEmptyObject } from './object.js';
 
@@ -12,7 +12,7 @@ export class FilterUtility {
    * @param indexedValues the indexed values for an item.
    * @returns true if any of the filters match.
    */
-  static matchItemIndexes(indexedValues: { [key:string]:unknown }, filters: Filter[]): boolean {
+  static matchItemIndexes(indexedValues: { [key:string]:FilterIndex }, filters: Filter[]): boolean {
     if (filters.length === 0) {
       return true;
     }
@@ -34,7 +34,7 @@ export class FilterUtility {
    * @param filter
    * @returns true if all of the filter properties match.
    */
-  private static matchFilter(indexedValues: { [key:string]:unknown }, filter: Filter): boolean {
+  private static matchFilter(indexedValues: { [key:string]: FilterIndex }, filter: Filter): boolean {
     // set of unique query properties.
     // if count of missing property matches is 0, it means the data/object fully matches the filter
     const missingPropertyMatches: Set<string> = new Set([ ...Object.keys(filter) ]);
@@ -82,7 +82,7 @@ export class FilterUtility {
    * @param indexedValue the indexed value being compared.
    * @returns true if any of the given filters match the indexedValue
    */
-  private static matchOneOf(filter: OneOfFilter, indexedValue: unknown): boolean {
+  private static matchOneOf(filter: OneOfFilter, indexedValue: FilterIndex): boolean {
     for (const orFilterValue of filter) {
       if (FilterUtility.encodeValue(indexedValue) === FilterUtility.encodeValue(orFilterValue)) {
         return true;
@@ -96,7 +96,7 @@ export class FilterUtility {
    *
    * @returns true if all of the range filter conditions are met.
    */
-  private static matchRange(rangeFilter: RangeFilter, indexedValue: unknown): boolean {
+  private static matchRange(rangeFilter: RangeFilter, indexedValue: FilterIndex): boolean {
     const filterConditions: Array<(value: string) => boolean> = [];
     for (const filterComparator in rangeFilter) {
       const comparatorName = filterComparator as keyof RangeFilter;
@@ -124,10 +124,8 @@ export class FilterUtility {
    * Encodes an indexed value to a string
    *
    * NOTE: we currently only use this for strings, numbers and booleans.
-   * Objects are returned as "[object Object]".
-   * Although this never happens maybe we should consider making this function, and those which call it, typed better.
    */
-  static encodeValue(value: unknown): string {
+  static encodeValue(value: FilterIndex): string {
     switch (typeof value) {
     case 'string':
       // We can't just `JSON.stringify` as that'll affect the sort order of strings.
@@ -228,7 +226,7 @@ export class FilterSelector {
   }
 
   private static checkCommonFilters(filters: Filter[]): Filter | undefined {
-    const { schema, contextId, protocol, protocolPath } = this.commonFilters(filters);
+    const { schema, contextId, protocol, protocolPath } = this.commonEqualFilters(filters);
 
     // if we match any of these, we add them to our search filters and return immediately
     if (contextId !== undefined && FilterUtility.isEqualFilter(contextId)) {
@@ -319,10 +317,10 @@ export class FilterSelector {
 
 
   /**
-   * Given an array of filters, it returns a single filter with common property/values amongst all the filters.
-   * If there are no common filters, the filter is empty.
+   * Given an array of filters, it returns a single filter with common EqualFilter per property.
+   * If there are no common filters, the returned filter is empty.
    */
-  private static commonFilters(filters: Filter[]): Filter {
+  private static commonEqualFilters(filters: Filter[]): Filter {
     if (filters.length === 0) {
       return { };
     }
@@ -330,8 +328,14 @@ export class FilterSelector {
       const filterCopy = { ...prev };
       for (const property in filterCopy) {
         const filterValue = filterCopy[property];
-        const compareValue = current[property];
-        if (FilterUtility.encodeValue(compareValue) !== FilterUtility.encodeValue(filterValue)) {
+        if (typeof filterValue !== 'object' && !Array.isArray(filterValue)) {
+          const compareValue = current[property];
+          if ( typeof compareValue !== 'object' && !Array.isArray(compareValue)) {
+            if (FilterUtility.encodeValue(compareValue) !== FilterUtility.encodeValue(filterValue)) {
+              delete filterCopy[property];
+            }
+          }
+        } else {
           delete filterCopy[property];
         }
       }

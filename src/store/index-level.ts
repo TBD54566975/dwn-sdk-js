@@ -465,7 +465,7 @@ export class IndexLevel {
    * Joins the given values using the `\x00` (\u0000) character.
    */
   private static delimiter = `\x00`;
-  private static keySegmentJoin(...values: unknown[]): string {
+  private static keySegmentJoin(...values: string[]): string {
     return values.join(IndexLevel.delimiter);
   }
 }

@@ -244,8 +244,6 @@ describe('filters util', () => {
       it('should return stringified boolean', () => {
         expect(FilterUtility.encodeValue(true)).to.equal('true');
         expect(FilterUtility.encodeValue(false)).to.equal('false');
-        const object = { some: 'object', number: 1, bool: true, nested: { object: 'here' } };
-        expect(FilterUtility.encodeValue(object)).to.equal('[object Object]');
       });
     });
 
