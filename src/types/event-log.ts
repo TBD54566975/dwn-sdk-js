@@ -1,7 +1,7 @@
 import type { Filter } from './query-types.js';
 
 export type GetEventsOptions = {
-  gt: string
+  cursor: string
 };
 
 export interface EventLog {

@@ -53,7 +53,7 @@ export class EventLogLevel implements EventLog {
   }
 
   async getEvents(tenant: string, options?: GetEventsOptions): Promise<string[]> {
-    return await this.index.query(tenant, [], { sortProperty: 'watermark', sortDirection: SortDirection.Ascending, cursor: options?.gt });
+    return await this.index.query(tenant, [], { sortProperty: 'watermark', sortDirection: SortDirection.Ascending, cursor: options?.cursor });
   }
 
   async deleteEventsByCid(tenant: string, messageCids: Array<string>): Promise<void> {
