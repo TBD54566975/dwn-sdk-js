@@ -10,7 +10,9 @@ export enum SortDirection {
   Ascending = 1
 }
 
-export type EqualFilter = string | number | boolean;
+export type FilterIndex = string | number | boolean;
+
+export type EqualFilter = FilterIndex;
 
 export type OneOfFilter = EqualFilter[];
 

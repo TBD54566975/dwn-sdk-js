@@ -1,4 +1,4 @@
-import type { Filter } from './query-types.js';
+import type { Filter, FilterIndex } from './query-types.js';
 
 export type GetEventsOptions = {
   gt: string
@@ -21,7 +21,7 @@ export interface EventLog {
    * @param messageCid - the CID of the message
    * @param indexes - (key-value pairs) to be included as part of indexing this event.
    */
-  append(tenant: string, messageCid: string, indexes: { [key:string]: string|boolean }): Promise<void>
+  append(tenant: string, messageCid: string, indexes: { [key:string]: FilterIndex }): Promise<void>
 
   /**
    * Retrieves all of a tenant's events that occurred after the cursor provided.

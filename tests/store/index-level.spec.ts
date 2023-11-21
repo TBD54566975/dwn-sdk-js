@@ -2,6 +2,7 @@ import type { Filter } from '../../src/types/query-types.js';
 
 import { ArrayUtility } from '../../src/utils/array.js';
 import { createLevelDatabase } from '../../src/store/level-wrapper.js';
+import { DwnErrorCode } from '../../src/index.js';
 import { FilterUtility } from '../../src/utils/filter.js';
 import { IndexLevel } from '../../src/store/index-level.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
@@ -38,39 +39,18 @@ describe('IndexLevel', () => {
     });
 
     describe('fails to index with no indexable properties', () => {
-      it('ignores empty nested arrays', async () => {
+      it('fails on empty indexes', async () => {
         const id = uuid();
-        const failedIndexPromise = testIndex.put(tenant, id, {
-          empty: [ [] ]
-        });
-        await expect(failedIndexPromise).to.eventually.be.rejectedWith('must include at least one indexable property');
+        const failedIndexPromise = testIndex.put(tenant, id, {});
+        await expect(failedIndexPromise).to.eventually.be.rejectedWith(DwnErrorCode.IndexMissingIndexableProperty);
       });
 
-      it('ignores empty index object', async () => {
-        const id = uuid();
-
-        let failedIndexPromise = testIndex.put(tenant, id, {});
-        await expect(failedIndexPromise).to.eventually.be.rejectedWith('must include at least one indexable property');
-
-        failedIndexPromise = testIndex.put(tenant, id, {
-          foo : {},
-          bar : {
-            baz: {},
-          }
-        });
-        await expect(failedIndexPromise).to.eventually.be.rejectedWith('must include at least one indexable property');
-      });
-
-      it('ignores undefined indexes', async () => {
+      it('ignores empty string indexes', async () => {
         const id = uuid();
         const failedIndexPromise = testIndex.put(tenant, id, {
-          some: {
-            undefined: {
-              value: undefined,
-            }
-          }
+          some: ''
         });
-        await expect(failedIndexPromise).to.eventually.be.rejectedWith('must include at least one indexable property');
+        await expect(failedIndexPromise).to.eventually.be.rejectedWith(DwnErrorCode.IndexMissingIndexableProperty);
       });
     });
 
@@ -78,31 +58,10 @@ describe('IndexLevel', () => {
       const id = uuid();
       const successfulIndex = testIndex.put(tenant, id, {
         id,
-        foo : 'foo',
-        bar : {
-          baz: 'baz'
-        }
+        foo: 'foo',
       });
       await expect(successfulIndex).to.eventually.not.be.rejected;
       const results = await testIndex.query(tenant, [{ id: id }], { sortProperty: 'id' });
-      expect(results[0]).to.equal(id);
-    });
-
-    it('flattens nested indexes', async () => {
-      const id = uuid();
-
-      await testIndex.put(tenant, id, {
-        id,
-        nested: {
-          data: true
-        }
-      });
-
-      const id2 = uuid();
-      await testIndex.put(tenant, id2, { notNested: true, id });
-
-      const results = await testIndex.query(tenant, [{ 'nested.data': true }], { sortProperty: 'id' });
-      expect(results.length).to.equal(1);
       expect(results[0]).to.equal(id);
     });
 
@@ -948,7 +907,7 @@ describe('IndexLevel', () => {
         });
 
         it('supports multiple filtered queries', async () => {
-          const items:Array<{ val: string, digit: number, property?: boolean }> = [];
+          const items:Array<{ val: string, digit: number, property: boolean }> = [];
 
           const lowerBounds = -2;
           const upperBounds = 3;
@@ -956,7 +915,7 @@ describe('IndexLevel', () => {
           // create 30 records with random digits between 1-9
           // every 3rd record should be a negative number
           // every 5th record a property should be set to true
-          // every 7th record a property should bes set to false
+          // every property not set to true should be set to false
 
           // we artificially use index #4 to be within the bounds of our query to be used as a cursor point.
           for (let i = 0; i < 30; i++) {
@@ -966,8 +925,7 @@ describe('IndexLevel', () => {
                 TestDataGenerator.randomInt(1,9) * -1:
                 TestDataGenerator.randomInt(1,9);
 
-            const property = i % 5 === 0 ? true :
-              i % 7 === 0 ? false : undefined;
+            const property = i % 5 === 0 ? true : false;
 
             const item = { val: FilterUtility.encodeNumberValue(i), digit, property };
             await testIndex.put(tenant, item.val, item);

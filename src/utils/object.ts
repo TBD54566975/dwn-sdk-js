@@ -42,6 +42,19 @@ export function removeEmptyObjects(obj: Record<string, unknown>): void {
 }
 
 /**
+ * Recursively removes all properties with an empty string as its value from the given object.
+ */
+export function removeEmptyStrings(obj: Record<string, unknown>): void {
+  Object.keys(obj).forEach(key => {
+    if (typeof obj[key] === 'string' && obj[key] === '') {
+      delete obj[key];
+    } else if (typeof obj[key] === 'object') {
+      removeEmptyStrings(obj[key] as Record<string, unknown>); // recursive remove empty string properties in nested objects
+    }
+  });
+}
+
+/**
  * Recursively removes all properties with `undefined` as its value from the given object.
  */
 export function removeUndefinedProperties(obj: Record<string, unknown>): void {

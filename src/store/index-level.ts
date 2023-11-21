@@ -1,4 +1,4 @@
-import type { EqualFilter, Filter, QueryOptions, RangeFilter } from '../types/query-types.js';
+import type { EqualFilter, Filter, FilterIndex, QueryOptions, RangeFilter } from '../types/query-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions, } from './level-wrapper.js';
 
 import { lexicographicalCompare } from '../utils/string.js';
@@ -6,14 +6,14 @@ import { SortDirection } from '../types/query-types.js';
 import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { FilterSelector, FilterUtility } from '../utils/filter.js';
-import { flatten, isEmptyObject, removeUndefinedProperties } from '../utils/object.js';
+import { isEmptyObject, removeEmptyStrings } from '../utils/object.js';
 
 type IndexLevelConfig = {
   location?: string,
   createLevelDatabase?: typeof createLevelDatabase
 };
 
-type Indexes = { [key: string]: unknown };
+type Indexes = { [key: string]: FilterIndex };
 type IndexedItem = { itemId: string, indexes: Indexes };
 
 const INDEX_SUBLEVEL_NAME = 'index';
@@ -71,11 +71,11 @@ export class IndexLevel {
     indexes: Indexes,
     options?: IndexLevelOptions
   ): Promise<void> {
-    // flatten any indexable properties remove undefined and make sure indexable properties exist.
-    indexes = flatten(indexes) as Indexes;
-    removeUndefinedProperties(indexes);
+
+    // ensure we have something valid to index, remove any empty strings from index properties
+    removeEmptyStrings(indexes);
     if (isEmptyObject(indexes)) {
-      throw new Error('must include at least one indexable property');
+      throw new DwnError(DwnErrorCode.IndexMissingIndexableProperty, 'Index must include at least one valid indexable property');
     }
 
     const tenantPartition = await this.db.partition(tenant);
