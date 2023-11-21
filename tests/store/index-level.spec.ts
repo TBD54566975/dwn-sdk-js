@@ -3,7 +3,6 @@ import type { Filter } from '../../src/types/query-types.js';
 import { ArrayUtility } from '../../src/utils/array.js';
 import { createLevelDatabase } from '../../src/store/level-wrapper.js';
 import { DwnErrorCode } from '../../src/index.js';
-import { FilterUtility } from '../../src/utils/filter.js';
 import { IndexLevel } from '../../src/store/index-level.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { SortDirection } from '../../src/types/query-types.js';
@@ -927,7 +926,7 @@ describe('IndexLevel', () => {
 
             const property = i % 5 === 0 ? true : false;
 
-            const item = { val: FilterUtility.encodeNumberValue(i), digit, property };
+            const item = { val: IndexLevel.encodeNumberValue(i), digit, property };
             await testIndex.put(tenant, item.val, item);
             items.push(item);
           }

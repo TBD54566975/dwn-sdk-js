@@ -69,7 +69,7 @@ export class FilterUtility {
         }
       } else {
         // filterValue is an EqualFilter, meaning it is a non-object primitive type
-        if (FilterUtility.encodeValue(indexValue) !== FilterUtility.encodeValue(filterValue)) {
+        if (indexValue !== filterValue) {
           return false;
         }
         missingPropertyMatches.delete(filterProperty);
@@ -88,7 +88,7 @@ export class FilterUtility {
    */
   private static matchOneOf(filter: OneOfFilter, indexedValue: FilterIndex): boolean {
     for (const orFilterValue of filter) {
-      if (FilterUtility.encodeValue(indexedValue) === FilterUtility.encodeValue(orFilterValue)) {
+      if (indexedValue === orFilterValue) {
         return true;
       }
     }
@@ -114,43 +114,6 @@ export class FilterUtility {
       return false;
     }
     return true;
-  }
-
-  /**
-   * Encodes an indexed value to a string
-   *
-   * NOTE: we currently only use this for strings, numbers and booleans.
-   */
-  static encodeValue(value: FilterIndex): string {
-    switch (typeof value) {
-    case 'string':
-      // We can't just `JSON.stringify` as that'll affect the sort order of strings.
-      // For example, `'\x00'` becomes `'\\u0000'`.
-      return `"${value}"`;
-    case 'number':
-      return this.encodeNumberValue(value);
-    default:
-      return String(value);
-    }
-  }
-
-  /**
-   *  Encodes a numerical value as a string for lexicographical comparison.
-   *  If the number is positive it simply pads it with leading zeros.
-   *  ex.: input:  1024 => "0000000000001024"
-   *       input: -1024 => "!9007199254739967"
-   *
-   * @param value the number to encode.
-   * @returns a string representation of the number.
-   */
-  static encodeNumberValue(value: number): string {
-    const NEGATIVE_OFFSET = Number.MAX_SAFE_INTEGER;
-    const NEGATIVE_PREFIX = '!'; // this will be sorted below positive numbers lexicographically
-    const PADDING_LENGTH = String(Number.MAX_SAFE_INTEGER).length;
-
-    const prefix: string = value < 0 ? NEGATIVE_PREFIX : '';
-    const offset: number = value < 0 ? NEGATIVE_OFFSET : 0;
-    return prefix + String(value + offset).padStart(PADDING_LENGTH, '0');
   }
 
   static isEqualFilter(filter: FilterValue): filter is EqualFilter {
@@ -327,7 +290,7 @@ export class FilterSelector {
         if (typeof filterValue !== 'object' && !Array.isArray(filterValue)) {
           const compareValue = current[property];
           if ( typeof compareValue !== 'object' && !Array.isArray(compareValue)) {
-            if (FilterUtility.encodeValue(compareValue) !== FilterUtility.encodeValue(filterValue)) {
+            if (compareValue !== filterValue) {
               delete filterCopy[property];
             }
           }
