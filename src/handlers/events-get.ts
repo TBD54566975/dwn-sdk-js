@@ -33,7 +33,7 @@ export class EventsGetHandler implements MethodHandler {
     // Otherwise, get all events.
     let options: GetEventsOptions | undefined;
     if (message.descriptor.cursor) {
-      options = { gt: message.descriptor.cursor };
+      options = { cursor: message.descriptor.cursor };
     }
 
     const events = await this.eventLog.getEvents(tenant, options);

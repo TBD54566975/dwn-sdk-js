@@ -50,11 +50,11 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
   }
 
   /**
-  *  Converts an incoming EventsFilter into a Filter usable by EventLog.
-  *
-  * @param filters An array of EventsFilter
-  * @returns {EventsLogFilter} a generic Filter able to be used with EventLog query.
-  */
+   *  Converts an incoming EventsFilter into a Filter usable by EventLog.
+   *
+   * @param filters An array of EventsFilter
+   * @returns {Filter} an array of generic Filter able to be used when querying.
+   */
   public static convertFilters(filters: EventsFilter[]): Filter[] {
     //currently only the range criterion for Records need to be converted
     return filters.map(filter => Records.convertFilter(filter));
