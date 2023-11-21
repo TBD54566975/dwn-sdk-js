@@ -8,8 +8,6 @@ export type EventsFilter = RecordsFilter & {
   method?: string[];
   /** optional array of interfaces to filter */
   interface?: string[];
-  /** optional author to filter. */
-  author?: string;
 };
 
 export type EventsGetDescriptor = {
