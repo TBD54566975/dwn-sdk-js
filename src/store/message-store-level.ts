@@ -164,7 +164,7 @@ export class MessageStoreLevel implements MessageStore {
     options?.signal?.throwIfAborted();
 
     if (indexes.messageTimestamp === undefined) {
-      throw new DwnError(DwnErrorCode.MessageStoreMissingTimestamp, 'MessageStore indexes are required to include a messageTimestamp');
+      throw new DwnError(DwnErrorCode.MessageStoreMissingTimestamp, 'MessageStore indexes are required to include a messageTimestamp property');
     }
 
     const partition = await executeUnlessAborted(this.blockstore.partition(tenant), options?.signal);
