@@ -125,7 +125,7 @@ export function testEventLog(): void {
           }
         }
 
-        const events = await eventLog.getEvents(author.did, { gt: cursor });
+        const events = await eventLog.getEvents(author.did, { cursor: cursor });
         expect(events.length).to.equal(4);
 
         for (let i = 0; i < events.length; i += 1) {
