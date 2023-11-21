@@ -1,4 +1,4 @@
-import type { EqualFilter, Filter, QueryOptions, RangeFilter } from '../types/query-types.js';
+import type { EqualFilter, Filter, KeyValues, QueryOptions, RangeFilter } from '../types/query-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions, } from './level-wrapper.js';
 
 import { lexicographicalCompare } from '../utils/string.js';
@@ -6,15 +6,14 @@ import { SortDirection } from '../types/query-types.js';
 import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { FilterSelector, FilterUtility } from '../utils/filter.js';
-import { flatten, isEmptyObject, removeUndefinedProperties } from '../utils/object.js';
+import { isEmptyObject, removeEmptyStrings } from '../utils/object.js';
 
 type IndexLevelConfig = {
   location?: string,
   createLevelDatabase?: typeof createLevelDatabase
 };
 
-type Indexes = { [key: string]: unknown };
-type IndexedItem = { itemId: string, indexes: Indexes };
+type IndexedItem = { itemId: string, indexes: KeyValues };
 
 const INDEX_SUBLEVEL_NAME = 'index';
 
@@ -68,14 +67,14 @@ export class IndexLevel {
   async put(
     tenant: string,
     itemId: string,
-    indexes: Indexes,
+    indexes: KeyValues,
     options?: IndexLevelOptions
   ): Promise<void> {
-    // flatten any indexable properties remove undefined and make sure indexable properties exist.
-    indexes = flatten(indexes) as Indexes;
-    removeUndefinedProperties(indexes);
+
+    // ensure we have something valid to index, remove any empty strings from index properties
+    removeEmptyStrings(indexes);
     if (isEmptyObject(indexes)) {
-      throw new Error('must include at least one indexable property');
+      throw new DwnError(DwnErrorCode.IndexMissingIndexableProperty, 'Index must include at least one valid indexable property');
     }
 
     const tenantPartition = await this.db.partition(tenant);
@@ -89,7 +88,7 @@ export class IndexLevel {
       // for example if the property is messageTimestamp the key would look like:
       //  '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
       //
-      const key = IndexLevel.keySegmentJoin(FilterUtility.encodeValue(sortValue), itemId);
+      const key = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), itemId);
       const item: IndexedItem = { itemId, indexes };
 
       // we write the values into a sublevel-partition of tenantPartition.
@@ -135,7 +134,7 @@ export class IndexLevel {
       const sortValue = sortIndexes[sortProperty];
       indexOps.push(tenantPartition.partitionOperation(`__${sortProperty}__`, {
         type : 'del',
-        key  : IndexLevel.keySegmentJoin(FilterUtility.encodeValue(sortValue), itemId),
+        key  : IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), itemId),
       }));
     }
 
@@ -242,7 +241,7 @@ export class IndexLevel {
     // cursor indexes must match the provided filters in order to be valid.
     // ie: if someone passes a valid messageCid for a cursor that's not part of the filter.
     if (FilterUtility.matchItemIndexes(sortIndexes, filters)) {
-      return IndexLevel.keySegmentJoin(FilterUtility.encodeValue(sortValue), itemId);
+      return IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), itemId);
     }
   }
 
@@ -358,7 +357,7 @@ export class IndexLevel {
     options?: IndexLevelOptions
   ): Promise<IndexedItem[]> {
 
-    const matchPrefix = IndexLevel.keySegmentJoin(FilterUtility.encodeValue(propertyValue));
+    const matchPrefix = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(propertyValue));
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {
       gt: matchPrefix
     };
@@ -388,7 +387,7 @@ export class IndexLevel {
     const iteratorOptions: LevelWrapperIteratorOptions<string> = {};
     for (const comparator in rangeFilter) {
       const comparatorName = comparator as keyof RangeFilter;
-      iteratorOptions[comparatorName] = FilterUtility.encodeValue(rangeFilter[comparatorName]!);
+      iteratorOptions[comparatorName] = IndexLevel.encodeValue(rangeFilter[comparatorName]!);
     }
 
     // if there is no lower bound specified (`gt` or `gte`), we need to iterate from the upper bound,
@@ -403,7 +402,7 @@ export class IndexLevel {
 
     for await (const [ key, value ] of filterPartition.iterator(iteratorOptions, options)) {
       // if "greater-than" is specified, skip all keys that contains the exact value given in the "greater-than" condition
-      if ('gt' in rangeFilter && this.extractIndexValueFromKey(key) === FilterUtility.encodeValue(rangeFilter.gt!)) {
+      if ('gt' in rangeFilter && this.extractIndexValueFromKey(key) === IndexLevel.encodeValue(rangeFilter.gt!)) {
         continue;
       }
       matches.push(JSON.parse(value) as IndexedItem);
@@ -428,8 +427,8 @@ export class IndexLevel {
    * We know the indexes include the sortProperty here because they have already been checked within executeSingleFilterQuery.
    */
   private sortItems(itemA: IndexedItem, itemB: IndexedItem, sortProperty: string, direction: SortDirection): number {
-    const aValue = FilterUtility.encodeValue(itemA.indexes[sortProperty]) + itemA.itemId;
-    const bValue = FilterUtility.encodeValue(itemB.indexes[sortProperty]) + itemB.itemId;
+    const aValue = IndexLevel.encodeValue(itemA.indexes[sortProperty]) + itemA.itemId;
+    const bValue = IndexLevel.encodeValue(itemB.indexes[sortProperty]) + itemB.itemId;
     return direction === SortDirection.Ascending ?
       lexicographicalCompare(aValue, bValue) :
       lexicographicalCompare(bValue, aValue);
@@ -438,7 +437,7 @@ export class IndexLevel {
   /**
    * Gets the indexes given an itemId. This is a reverse lookup to construct starting keys, as well as deleting indexed items.
    */
-  private async getIndexes(tenant: string, itemId: string): Promise<Indexes|undefined> {
+  private async getIndexes(tenant: string, itemId: string): Promise<KeyValues|undefined> {
     const tenantPartition = await this.db.partition(tenant);
     const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
     const serializedIndexes = await indexPartition.get(itemId);
@@ -447,7 +446,7 @@ export class IndexLevel {
       return;
     }
 
-    return JSON.parse(serializedIndexes) as Indexes;
+    return JSON.parse(serializedIndexes) as KeyValues;
   }
 
   /**
@@ -465,7 +464,44 @@ export class IndexLevel {
    * Joins the given values using the `\x00` (\u0000) character.
    */
   private static delimiter = `\x00`;
-  private static keySegmentJoin(...values: unknown[]): string {
+  private static keySegmentJoin(...values: string[]): string {
     return values.join(IndexLevel.delimiter);
+  }
+
+  /**
+   *  Encodes a numerical value as a string for lexicographical comparison.
+   *  If the number is positive it simply pads it with leading zeros.
+   *  ex.: input:  1024 => "0000000000001024"
+   *       input: -1024 => "!9007199254739967"
+   *
+   * @param value the number to encode.
+   * @returns a string representation of the number.
+   */
+  static encodeNumberValue(value: number): string {
+    const NEGATIVE_OFFSET = Number.MAX_SAFE_INTEGER;
+    const NEGATIVE_PREFIX = '!'; // this will be sorted below positive numbers lexicographically
+    const PADDING_LENGTH = String(Number.MAX_SAFE_INTEGER).length;
+
+    const prefix: string = value < 0 ? NEGATIVE_PREFIX : '';
+    const offset: number = value < 0 ? NEGATIVE_OFFSET : 0;
+    return prefix + String(value + offset).padStart(PADDING_LENGTH, '0');
+  }
+
+  /**
+   * Encodes an indexed value to a string
+   *
+   * NOTE: we currently only use this for strings, numbers and booleans.
+   */
+  static encodeValue(value: string | number | boolean): string {
+    switch (typeof value) {
+    case 'string':
+      // We can't just `JSON.stringify` as that'll affect the sort order of strings.
+      // For example, `'\x00'` becomes `'\\u0000'`.
+      return `"${value}"`;
+    case 'number':
+      return this.encodeNumberValue(value);
+    default:
+      return String(value);
+    }
   }
 }

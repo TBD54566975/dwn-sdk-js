@@ -1,5 +1,5 @@
 
-import type { Filter, QueryOptions } from '../types/query-types.js';
+import type { Filter, KeyValues, QueryOptions } from '../types/query-types.js';
 import type { GenericMessage, MessageSort, Pagination } from '../types/message-types.js';
 import type { MessageStore, MessageStoreOptions } from '../types/message-store.js';
 
@@ -15,6 +15,7 @@ import { IndexLevel } from './index-level.js';
 import { Message } from '../core/message.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { SortDirection } from '../types/query-types.js';
+import { DwnError, DwnErrorCode } from '../index.js';
 
 
 /**
@@ -157,14 +158,13 @@ export class MessageStoreLevel implements MessageStore {
   async put(
     tenant: string,
     message: GenericMessage,
-    indexes: { [key: string]: string | boolean },
+    indexes: KeyValues,
     options?: MessageStoreOptions
   ): Promise<void> {
     options?.signal?.throwIfAborted();
 
-    const sortIndexes = this.getSortIndexes(indexes);
-    if (sortIndexes.messageTimestamp === undefined) {
-      throw new Error('must include messageTimestamp index');
+    if (indexes.messageTimestamp === undefined) {
+      throw new DwnError(DwnErrorCode.MessageStoreMissingTimestamp, 'MessageStore indexes are required to include a messageTimestamp property');
     }
 
     const partition = await executeUnlessAborted(this.blockstore.partition(tenant), options?.signal);
@@ -180,29 +180,6 @@ export class MessageStoreLevel implements MessageStore {
     await this.index.put(tenant, messageCidString, indexes, options);
   }
 
-
-  /**
-   * @returns a key, value pair of indexes used for sorting: messageTimestamp, dateCreated, datePublished.
-   */
-  getSortIndexes(indexes: { [key: string]: string | boolean }):{ [key:string]: unknown } {
-    const sortIndexes = { ...indexes };
-    if (indexes.messageTimestamp !== undefined
-      && typeof indexes.messageTimestamp === 'string') {
-      sortIndexes.messageTimestamp = indexes.messageTimestamp;
-    }
-
-    if (indexes.dateCreated !== undefined
-      && typeof indexes.dateCreated === 'string') {
-      sortIndexes.dateCreated = indexes.dateCreated;
-    }
-
-    if (indexes.datePublished !== undefined
-      && typeof indexes.datePublished === 'string') {
-      sortIndexes.datePublished = indexes.datePublished;
-    }
-
-    return sortIndexes;
-  }
 
   /**
    * deletes everything in the underlying blockstore and indices.

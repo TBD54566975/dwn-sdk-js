@@ -1,5 +1,6 @@
 import type { Filter } from '../../src/types/query-types.js';
 
+import { IndexLevel } from '../../src/store/index-level.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Time } from '../../src/utils/time.js';
 import { FilterSelector, FilterUtility } from '../../src/utils/filter.js';
@@ -234,25 +235,23 @@ describe('filters util', () => {
 
     describe('encodeValue', () => {
       it('should wrap string in quotes', async () => {
-        expect(FilterUtility.encodeValue('test')).to.equal(`"test"`);
+        expect(IndexLevel.encodeValue('test')).to.equal(`"test"`);
       });
 
       it('should return string encoded number using encodeNumberValue()', async () => {
-        expect(FilterUtility.encodeValue(10)).to.equal(FilterUtility.encodeNumberValue(10));
+        expect(IndexLevel.encodeValue(10)).to.equal(IndexLevel.encodeNumberValue(10));
       });
 
       it('should return stringified boolean', () => {
-        expect(FilterUtility.encodeValue(true)).to.equal('true');
-        expect(FilterUtility.encodeValue(false)).to.equal('false');
-        const object = { some: 'object', number: 1, bool: true, nested: { object: 'here' } };
-        expect(FilterUtility.encodeValue(object)).to.equal('[object Object]');
+        expect(IndexLevel.encodeValue(true)).to.equal('true');
+        expect(IndexLevel.encodeValue(false)).to.equal('false');
       });
     });
 
     describe('encodeNumberValue', () => {
       it('should encode positive digits and pad with leading zeros', () => {
         const expectedLength = String(Number.MAX_SAFE_INTEGER).length; //16
-        const encoded = FilterUtility.encodeNumberValue(100);
+        const encoded = IndexLevel.encodeNumberValue(100);
         expect(encoded.length).to.equal(expectedLength);
         expect(encoded).to.equal('0000000000000100');
       });
@@ -261,7 +260,7 @@ describe('filters util', () => {
         const expectedPrefix = '!';
         // expected length is maximum padding + the prefix.
         const expectedLength = (expectedPrefix + String(Number.MAX_SAFE_INTEGER)).length; //17
-        const encoded = FilterUtility.encodeNumberValue(-100);
+        const encoded = IndexLevel.encodeNumberValue(-100);
         expect(encoded.length).to.equal(String(Number.MIN_SAFE_INTEGER).length);
         expect(encoded.length).to.equal(expectedLength);
         expect(encoded).to.equal('!9007199254740891');
@@ -269,10 +268,10 @@ describe('filters util', () => {
 
       it('should encode digits to sort using lexicographical comparison', () => {
         const digits = [ -1000, -100, -10, 10, 100, 1000 ].sort((a,b) => a - b);
-        const encodedDigits = digits.map(d => FilterUtility.encodeNumberValue(d))
+        const encodedDigits = digits.map(d => IndexLevel.encodeNumberValue(d))
           .sort((a,b) => lexicographicalCompare(a, b));
 
-        digits.forEach((n,i) => expect(encodedDigits.at(i)).to.equal(FilterUtility.encodeNumberValue(n)));
+        digits.forEach((n,i) => expect(encodedDigits.at(i)).to.equal(IndexLevel.encodeNumberValue(n)));
       });
     });
   });

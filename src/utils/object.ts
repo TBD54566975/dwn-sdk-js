@@ -1,15 +1,3 @@
-import flat from 'flat';
-
-/**
- * Flattens the given object.
- * e.g. `{ a: { b: { c: 42 } } }` becomes `{ 'a.b.c': 42 }`
- */
-export function flatten(obj: unknown): Record<string, unknown> {
-  const flattened = flat.flatten<unknown, Record<string, unknown>>(obj);
-  removeEmptyObjects(flattened);
-  return flattened;
-}
-
 /**
  * Checks whether the given object has any properties.
  */
@@ -37,6 +25,19 @@ export function removeEmptyObjects(obj: Record<string, unknown>): void {
 
     if (isEmptyObject(obj[key])) {
       delete obj[key];
+    }
+  });
+}
+
+/**
+ * Recursively removes all properties with an empty string as its value from the given object.
+ */
+export function removeEmptyStrings(obj: Record<string, unknown>): void {
+  Object.keys(obj).forEach(key => {
+    if (typeof obj[key] === 'string' && obj[key] === '') {
+      delete obj[key];
+    } else if (typeof obj[key] === 'object') {
+      removeEmptyStrings(obj[key] as Record<string, unknown>); // recursive remove empty string properties in nested objects
     }
   });
 }
