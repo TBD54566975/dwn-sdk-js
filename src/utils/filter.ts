@@ -57,6 +57,10 @@ export class FilterUtility {
           continue;
         } else {
           // `filterValue` is a `RangeFilter`
+          // range filters cannot range over booleans
+          if (typeof indexValue === 'boolean') {
+            return false;
+          }
           if (!this.matchRange(filterValue, indexValue)) {
             return false;
           }
@@ -96,28 +100,20 @@ export class FilterUtility {
    *
    * @returns true if all of the range filter conditions are met.
    */
-  private static matchRange(rangeFilter: RangeFilter, indexedValue: FilterIndex): boolean {
-    const filterConditions: Array<(value: string) => boolean> = [];
-    for (const filterComparator in rangeFilter) {
-      const comparatorName = filterComparator as keyof RangeFilter;
-      const filterComparatorValue = rangeFilter[comparatorName]!;
-      const encodedFilterValue = FilterUtility.encodeValue(filterComparatorValue);
-      switch (comparatorName) {
-      case 'lt':
-        filterConditions.push((v) => v < encodedFilterValue);
-        break;
-      case 'lte':
-        filterConditions.push((v) => v <= encodedFilterValue);
-        break;
-      case 'gt':
-        filterConditions.push((v) => v > encodedFilterValue);
-        break;
-      case 'gte':
-        filterConditions.push((v) => v >= encodedFilterValue);
-        break;
-      }
+  private static matchRange(rangeFilter: RangeFilter, indexedValue: string | number): boolean {
+    if (rangeFilter.lt !== undefined && indexedValue >= rangeFilter.lt) {
+      return false;
     }
-    return filterConditions.every((c) => c(FilterUtility.encodeValue(indexedValue)));
+    if (rangeFilter.lte !== undefined && indexedValue > rangeFilter.lte) {
+      return false;
+    }
+    if (rangeFilter.gt !== undefined && indexedValue <= rangeFilter.gt) {
+      return false;
+    }
+    if (rangeFilter.gte !== undefined && indexedValue < rangeFilter.gte) {
+      return false;
+    }
+    return true;
   }
 
   /**
