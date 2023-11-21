@@ -12,7 +12,7 @@ import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.j
 export type EventsQueryOptions = {
   signer: Signer;
   filters: EventsFilter[];
-  watermark?: string;
+  cursor?: string;
   messageTimestamp?: string;
 };
 
@@ -31,7 +31,7 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
       method           : DwnMethodName.Query,
       filters          : this.normalizeFilters(options.filters),
       messageTimestamp : options.messageTimestamp ?? Time.getCurrentTimestamp(),
-      watermark        : options.watermark,
+      cursor           : options.cursor,
     };
 
     removeUndefinedProperties(descriptor);

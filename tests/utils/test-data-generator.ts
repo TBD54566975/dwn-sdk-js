@@ -239,7 +239,7 @@ export type GeneratePermissionsRevokeOutput = {
 
 export type GenerateEventsGetInput = {
   author?: Persona;
-  watermark?: string;
+  cursor?: string;
 };
 
 export type GenerateEventsGetOutput = {
@@ -251,7 +251,7 @@ export type GenerateEventsGetOutput = {
 export type GenerateEventsQueryInput = {
   author?: Persona;
   filters: EventsFilter[];
-  watermark?: string;
+  cursor?: string;
 };
 
 export type GenerateEventsQueryOutput = {
@@ -745,8 +745,8 @@ export class TestDataGenerator {
     const signer = Jws.createSigner(author);
 
     const options: EventsGetOptions = { signer };
-    if (input?.watermark) {
-      options.watermark = input.watermark;
+    if (input?.cursor) {
+      options.cursor = input.cursor;
     }
 
     const eventsGet = await EventsGet.create(options);
@@ -759,11 +759,11 @@ export class TestDataGenerator {
   }
 
   public static async generateEventsQuery(input: GenerateEventsQueryInput): Promise<GenerateEventsQueryOutput> {
-    const { filters, watermark } = input;
+    const { filters, cursor } = input;
     const author = input.author ?? await TestDataGenerator.generatePersona();
     const signer = Jws.createSigner(author);
 
-    const options: EventsQueryOptions = { signer, filters, watermark };
+    const options: EventsQueryOptions = { signer, filters, cursor };
 
     const eventsQuery = await EventsQuery.create(options);
 

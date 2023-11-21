@@ -10,17 +10,17 @@ describe('EventsGet Message', () => {
     it('creates an EventsGet message', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const eventsGet = await EventsGet.create({
-        watermark : 'yolo',
-        signer    : await Jws.createSigner(alice)
+        cursor : 'yolo',
+        signer : await Jws.createSigner(alice)
       });
 
       const { message } = eventsGet;
       expect(message.descriptor).to.exist;
-      expect(message.descriptor.watermark).to.equal('yolo');
+      expect(message.descriptor.cursor).to.equal('yolo');
       expect(message.authorization).to.exist;
     });
 
-    it('does not require a watermark', async () => {
+    it('does not require a cursor', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const eventsGet = await EventsGet.create({
         signer: await Jws.createSigner(alice)
@@ -28,7 +28,7 @@ describe('EventsGet Message', () => {
 
       const message = eventsGet.message;
       expect(message.descriptor).to.exist;
-      expect(message.descriptor.watermark).to.not.exist;
+      expect(message.descriptor.cursor).to.not.exist;
       expect(message.authorization).to.exist;
     });
   });
@@ -37,8 +37,8 @@ describe('EventsGet Message', () => {
     it('parses a message into an EventsGet instance', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const eventsGet = await EventsGet.create({
-        watermark : 'yolo',
-        signer    : await Jws.createSigner(alice)
+        cursor : 'yolo',
+        signer : await Jws.createSigner(alice)
       });
 
       const parsed = await EventsGet.parse(eventsGet.message);
@@ -53,8 +53,8 @@ describe('EventsGet Message', () => {
     it('throws an exception if message is not a valid EventsGet message', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const eventsGet = await EventsGet.create({
-        watermark : 'yolo',
-        signer    : await Jws.createSigner(alice)
+        cursor : 'yolo',
+        signer : await Jws.createSigner(alice)
       });
 
       const { message } = eventsGet;
