@@ -7,19 +7,18 @@ import { isEmptyObject } from './object.js';
  */
 export class FilterUtility {
   /**
-   * Matches the given indexed values against an array of filters, if any of the filters match, returns true.
+   * Matches the given key values against an array of filters, if any of the filters match, returns true.
    *
-   * @param indexedValues the indexed values for an item.
    * @returns true if any of the filters match.
    */
-  static matchItemIndexes(indexedValues: KeyValues, filters: Filter[]): boolean {
-    if (filters.length === 0) {
+  static matchAnyFilter(keyValues: KeyValues, orFilters: Filter[]): boolean {
+    if (orFilters.length === 0) {
       return true;
     }
 
-    for (const filter of filters) {
+    for (const filter of orFilters) {
       // if any of the filters match the indexed values, we return true as it's a match
-      if (this.matchFilter(indexedValues, filter)) {
+      if (this.matchFilter(keyValues, filter)) {
         return true;
       }
     }
@@ -216,8 +215,8 @@ export class FilterSelector {
    */
   static select(filters: Filter[], queryOptions: QueryOptions): Filter[] {
 
-    // if we have a cursor and this is an EventsQuery (the only query that sorts by watermark), we want to trigger the sortedIndexQuery
-    // we also trigger a sortedIndexQuery if we have a cursor and one of the filters is the same as the sortProperty
+    // if we have a cursor and this is an EventsQuery (the only query that sorts by watermark), we want to trigger the queryWithIteratorPaging
+    // we also trigger a queryWithIteratorPaging if we have a cursor and one of the filters is the same as the sortProperty
     if (this.hasCursorAndSortProperty(filters, queryOptions)) {
       return [];
     }

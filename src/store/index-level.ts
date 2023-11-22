@@ -199,20 +199,19 @@ export class IndexLevel {
     // if there are no search filters returned, we do a full scan on the sorted index.
     const searchFilters = FilterSelector.select(filters, queryOptions);
     if (searchFilters.length === 0) {
-      return this.sortedIndexQuery(tenant, filters, queryOptions, options);
+      return this.queryWithIteratorPaging(tenant, filters, queryOptions, options);
     }
 
-    return this.filteredIndexQuery(tenant, filters, searchFilters, queryOptions, options);
+    return this.queryWithInMemoryPaging(tenant, filters, searchFilters, queryOptions, options);
   }
 
   /**
    * Queries the sort property index for items that match the filters. If no filters are provided, all items are returned.
    * This query is a linear iterator over the sorted index, checking each item for a match.
-   * If a cursor is provided it starts the iteration at the cursor point.
+   * If a cursor is provided it starts the iteration from the cursor point.
    */
-  async sortedIndexQuery(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<string[]> {
+  async queryWithIteratorPaging(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<string[]> {
     const { limit, cursor , sortProperty } = queryOptions;
-    const matches: string[] = [];
 
     // if there is a cursor we fetch the starting key given the sort property, otherwise we start from the beginning of the index.
     const startKey = cursor ? await this.getStartingKeyForCursor(tenant, cursor, sortProperty, filters) : '';
@@ -221,12 +220,13 @@ export class IndexLevel {
       return [];
     }
 
-    for await ( const item of this.sortedIndexIterator(tenant, startKey, queryOptions, options)) {
+    const matches: string[] = [];
+    for await ( const item of this.getIndexIterator(tenant, startKey, queryOptions, options)) {
       if (limit !== undefined && matches.length === limit) {
         return matches;
       }
       const { itemId, indexes } = item;
-      if (FilterUtility.matchItemIndexes(indexes, filters)) {
+      if (FilterUtility.matchAnyFilter(indexes, filters)) {
         matches.push(itemId);
       }
     }
@@ -237,7 +237,7 @@ export class IndexLevel {
    * Creates an AsyncGenerator that returns each sorted index item given a specific sortProperty.
    * If a cursor is passed, the starting value (gt or lt) is derived from that.
    */
-  private async * sortedIndexIterator(
+  private async * getIndexIterator(
     tenant: string, startKey:string, queryOptions: QueryOptions, options?: IndexLevelOptions
   ): AsyncGenerator<IndexedItem> {
     const { sortProperty, sortDirection = SortDirection.Ascending, cursor } = queryOptions;
@@ -269,13 +269,13 @@ export class IndexLevel {
    * Used as (gt) for ascending queries, or (lt) for descending queries.
    */
   private async getStartingKeyForCursor(tenant: string, itemId: string, property: string, filters: Filter[]): Promise<string|undefined> {
-    const sortIndexes = await this.getIndexes(tenant, itemId);
-    if (sortIndexes === undefined) {
+    const indexes = await this.getIndexes(tenant, itemId);
+    if (indexes === undefined) {
       // invalid itemId
       return;
     }
 
-    const sortValue = sortIndexes[property];
+    const sortValue = indexes[property];
     if (sortValue === undefined) {
       // invalid sort property
       return;
@@ -283,7 +283,7 @@ export class IndexLevel {
 
     // cursor indexes must match the provided filters in order to be valid.
     // ie: if someone passes a valid messageCid for a cursor that's not part of the filter.
-    if (FilterUtility.matchItemIndexes(sortIndexes, filters)) {
+    if (FilterUtility.matchAnyFilter(indexes, filters)) {
       return IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), itemId);
     }
   }
@@ -294,7 +294,7 @@ export class IndexLevel {
    * @param matchFilters the filters passed to the parent query.
    * @param searchFilters the modified filters used for the LevelDB query to search for a subset of items to match against.
    */
-  async filteredIndexQuery(
+  async queryWithInMemoryPaging(
     tenant: string,
     matchFilters: Filter[],
     searchFilters:Filter[],
@@ -376,7 +376,7 @@ export class IndexLevel {
         // short circuit: if a data is already included to the final matched key set (by a different `Filter`),
         // no need to evaluate if the data satisfies this current filter being evaluated
         // otherwise check that the item is a match.
-        if (matches.has(indexedItem.itemId) || !FilterUtility.matchItemIndexes(indexedItem.indexes, matchFilters)) {
+        if (matches.has(indexedItem.itemId) || !FilterUtility.matchAnyFilter(indexedItem.indexes, matchFilters)) {
           continue;
         }
 
@@ -453,7 +453,7 @@ export class IndexLevel {
       // When `lte` is used, we must also query the exact match explicitly because the exact match will not be included in the iterator above.
       // This is due to the extra data appended to the (property + value) key prefix, e.g.
       // the key '"2023-05-25T11:22:33.000000Z"\u0000bayfreigu....'
-      // would be considered greater than { lte: '"2023-05-25T11:22:33.000000Z"` } used in the iterator options,
+      // would be considered greater than `lte` value in { lte: '"2023-05-25T11:22:33.000000Z"' } iterator options,
       // thus would not be included in the iterator even though we'd like it to be.
       for (const item of await this.filterExactMatches(tenant, propertyName, rangeFilter.lte as EqualFilter, options)) {
         matches.push(item);
