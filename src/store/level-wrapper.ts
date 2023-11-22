@@ -206,10 +206,10 @@ export class LevelWrapper<V> {
   }
 
   /**
-   * @returns a LevelWrapperBatchOperation for the specified partition name
+   * Wraps the given LevelWrapperBatchOperation as an operation for the specified partition.
    */
-  partitionOperation(name: string, operation: LevelWrapperBatchOperation<V>): LevelWrapperBatchOperation<V> {
-    return { ...operation, sublevel: this.db.sublevel(name, {
+  createPartitionOperation(partitionName: string, operation: LevelWrapperBatchOperation<V>): LevelWrapperBatchOperation<V> {
+    return { ...operation, sublevel: this.db.sublevel(partitionName, {
       keyEncoding   : 'utf8',
       valueEncoding : this.config.valueEncoding
     }) };
