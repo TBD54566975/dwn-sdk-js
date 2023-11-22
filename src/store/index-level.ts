@@ -50,8 +50,8 @@ export class IndexLevel {
   }
 
   /**
- * deletes everything in the underlying index db.
- */
+   * deletes everything in the underlying index db.
+   */
   async clear(): Promise<void> {
     await this.db.clear();
   }
@@ -77,37 +77,34 @@ export class IndexLevel {
       throw new DwnError(DwnErrorCode.IndexMissingIndexableProperty, 'Index must include at least one valid indexable property');
     }
 
-    const tenantPartition = await this.db.partition(tenant);
     const indexOps: LevelWrapperBatchOperation<string>[] = [];
 
-    // create an index entry for each property
+    // create an index entry for each property index
     // these indexes are all sortable lexicographically.
-    for (const sortProperty in indexes) {
-      const sortValue = indexes[sortProperty];
-      // the key is sortValue followed by the itemId as a tie-breaker.
+    for (const indexName in indexes) {
+      const indexValue = indexes[indexName];
+      // the key is indexValue followed by the itemId as a tie-breaker.
       // for example if the property is messageTimestamp the key would look like:
-      //  '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
-      //
-      const key = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), itemId);
+      // '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+      const key = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(indexValue), itemId);
       const item: IndexedItem = { itemId, indexes };
 
-      // we write the values into a sublevel-partition of tenantPartition.
-      // putting each property within a sublevel allows the levelDB system to calculate a gt minKey and lt maxKey for each of the properties
-      // this prevents them from clashing, especially when iterating in reverse without iterating through other properties.
-      //
-      // we wrap it in __${sortProperty}__ so that it does not clash with other sublevels that are created aside from properties.
-      indexOps.push(tenantPartition.partitionOperation(`__${sortProperty}__`, {
-        key,
-        type  : 'put',
-        value : JSON.stringify(item)
-      }));
+      const partitionOperation = await this.createOperationForIndexPartition(
+        tenant,
+        indexName,
+        { type: 'put', key, value: JSON.stringify(item) }
+      );
+      indexOps.push(partitionOperation);
     }
 
     // create a reverse lookup for the sortedIndex values. This is used during deletion and cursor starting point lookup.
-    indexOps.push(tenantPartition.partitionOperation(INDEX_SUBLEVEL_NAME,
+    const partitionOperation = await this.createOperationForIndexesLookupPartition(
+      tenant,
       { type: 'put', key: itemId, value: JSON.stringify(indexes) }
-    ));
+    );
+    indexOps.push(partitionOperation);
 
+    const tenantPartition = await this.db.partition(tenant);
     await tenantPartition.batch(indexOps, options);
   }
 
@@ -115,41 +112,88 @@ export class IndexLevel {
    *  Deletes all of the index data associated with the item.
    */
   async delete(tenant: string, itemId: string, options?: IndexLevelOptions): Promise<void> {
-    const tenantPartition = await this.db.partition(tenant);
     const indexOps: LevelWrapperBatchOperation<string>[] = [];
 
-    const sortIndexes = await this.getIndexes(tenant, itemId);
-    if (sortIndexes === undefined) {
+    const indexes = await this.getIndexes(tenant, itemId);
+    if (indexes === undefined) {
       // invalid itemId
       return;
     }
 
     // delete the reverse lookup
-    indexOps.push(tenantPartition.partitionOperation(INDEX_SUBLEVEL_NAME,
-      { type: 'del', key: itemId }
-    ));
+    const partitionOperation = await this.createOperationForIndexesLookupPartition(tenant, { type: 'del', key: itemId });
+    indexOps.push(partitionOperation);
 
     // delete the keys for each sortIndex
-    for (const sortProperty in sortIndexes) {
-      const sortValue = sortIndexes[sortProperty];
-      indexOps.push(tenantPartition.partitionOperation(`__${sortProperty}__`, {
-        type : 'del',
-        key  : IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), itemId),
-      }));
+    for (const indexName in indexes) {
+      const sortValue = indexes[indexName];
+      const partitionOperation = await this.createOperationForIndexPartition(
+        tenant,
+        indexName,
+        {
+          type : 'del',
+          key  : IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), itemId)
+        }
+      );
+      indexOps.push(partitionOperation);
     }
 
+    const tenantPartition = await this.db.partition(tenant);
     await tenantPartition.batch(indexOps, options);
   }
 
   /**
-  * Queries the index for items that match the filters. If no filters are provided, all items are returned.
-  *
-  * @param tenant
-  * @param filters Array of filters that are treated as an OR query.
-  * @param queryOptions query options for sort and pagination, requires at least `sortProperty`. The default sort direction is ascending.
-  * @param options IndexLevelOptions that include an AbortSignal.
-  * @returns {string[]} an array of itemIds that match the given filters.
-  */
+   * Wraps the given operation as an operation for the specified index partition.
+   */
+  private async createOperationForIndexPartition(tenant: string, indexName: string, operation: LevelWrapperBatchOperation<string>)
+    : Promise<LevelWrapperBatchOperation<string>> {
+    // we write the index entry into a sublevel-partition of tenantPartition.
+    // putting each index entry within a sublevel allows the levelDB system to calculate a gt minKey and lt maxKey for each of the properties
+    // this prevents them from clashing, especially when iterating in reverse without iterating through other properties.
+    const tenantPartition = await this.db.partition(tenant);
+    const indexPartitionName = IndexLevel.getIndexPartitionName(indexName);
+    const partitionOperation = tenantPartition.createPartitionOperation(indexPartitionName, operation);
+    return partitionOperation;
+  }
+
+  /**
+   * Wraps the given operation as an operation for the itemId to indexes lookup partition.
+   */
+  private async createOperationForIndexesLookupPartition(tenant: string, operation: LevelWrapperBatchOperation<string>)
+    : Promise<LevelWrapperBatchOperation<string>> {
+    const tenantPartition = await this.db.partition(tenant);
+    const partitionOperation = tenantPartition.createPartitionOperation(INDEX_SUBLEVEL_NAME, operation);
+    return partitionOperation;
+  }
+
+  private static getIndexPartitionName(indexName: string): string {
+    // we create index partition names in __${indexName}__ wrapping so they do not clash with other sublevels that are created for other purposes.
+    return `__${indexName}__`;
+  }
+
+  /**
+   * Gets the index partition of the given indexName.
+   */
+  private async getIndexPartition(tenant: string, indexName: string): Promise<LevelWrapper<string>> {
+    const indexPartitionName = IndexLevel.getIndexPartitionName(indexName);
+    return (await this.db.partition(tenant)).partition(indexPartitionName);
+  }
+
+  /**
+   * Gets the itemId to indexes lookup partition.
+   */
+  private async getIndexesLookupPartition(tenant: string): Promise<LevelWrapper<string>> {
+    return (await this.db.partition(tenant)).partition(INDEX_SUBLEVEL_NAME);
+  }
+
+  /**
+   * Queries the index for items that match the filters. If no filters are provided, all items are returned.
+   *
+   * @param filters Array of filters that are treated as an OR query.
+   * @param queryOptions query options for sort and pagination, requires at least `sortProperty`. The default sort direction is ascending.
+   * @param options IndexLevelOptions that include an AbortSignal.
+   * @returns {string[]} an array of itemIds that match the given filters.
+   */
   async query(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<string[]> {
     // returns an array of which search filters we need to perform a full search on.
     // if there are no search filters returned, we do a full scan on the sorted index.
@@ -213,8 +257,7 @@ export class IndexLevel {
       }
     }
 
-    const tenantPartition = await this.db.partition(tenant);
-    const sortPartition = await tenantPartition.partition(`__${sortProperty}__`);
+    const sortPartition = await this.getIndexPartition(tenant, sortProperty);
     for await (const [ _, val ] of sortPartition.iterator(iteratorOptions, options)) {
       const { indexes, itemId } = JSON.parse(val);
       yield { indexes, itemId };
@@ -362,8 +405,7 @@ export class IndexLevel {
       gt: matchPrefix
     };
 
-    const tenantPartition = await this.db.partition(tenant);
-    const filterPartition = await tenantPartition.partition(`__${propertyName}__`);
+    const filterPartition = await this.getIndexPartition(tenant, propertyName);
     const matches: IndexedItem[] = [];
     for await (const [ key, value ] of filterPartition.iterator(iteratorOptions, options)) {
       // immediately stop if we arrive at an index that contains a different property value
@@ -397,8 +439,7 @@ export class IndexLevel {
     }
 
     const matches: IndexedItem[] = [];
-    const tenantPartition = await this.db.partition(tenant);
-    const filterPartition = await tenantPartition.partition(`__${propertyName}__`);
+    const filterPartition = await this.getIndexPartition(tenant, propertyName);
 
     for await (const [ key, value ] of filterPartition.iterator(iteratorOptions, options)) {
       // if "greater-than" is specified, skip all keys that contains the exact value given in the "greater-than" condition
@@ -423,12 +464,12 @@ export class IndexLevel {
   }
 
   /**
-   * Sorts Items lexicographically in ascending or descending order given a specific sortProperty, using the itemId as a tie breaker.
-   * We know the indexes include the sortProperty here because they have already been checked within executeSingleFilterQuery.
+   * Sorts Items lexicographically in ascending or descending order given a specific indexName, using the itemId as a tie breaker.
+   * We know the indexes include the indexName here because they have already been checked within executeSingleFilterQuery.
    */
-  private sortItems(itemA: IndexedItem, itemB: IndexedItem, sortProperty: string, direction: SortDirection): number {
-    const aValue = IndexLevel.encodeValue(itemA.indexes[sortProperty]) + itemA.itemId;
-    const bValue = IndexLevel.encodeValue(itemB.indexes[sortProperty]) + itemB.itemId;
+  private sortItems(itemA: IndexedItem, itemB: IndexedItem, indexName: string, direction: SortDirection): number {
+    const aValue = IndexLevel.encodeValue(itemA.indexes[indexName]) + itemA.itemId;
+    const bValue = IndexLevel.encodeValue(itemB.indexes[indexName]) + itemB.itemId;
     return direction === SortDirection.Ascending ?
       lexicographicalCompare(aValue, bValue) :
       lexicographicalCompare(bValue, aValue);
@@ -438,9 +479,8 @@ export class IndexLevel {
    * Gets the indexes given an itemId. This is a reverse lookup to construct starting keys, as well as deleting indexed items.
    */
   private async getIndexes(tenant: string, itemId: string): Promise<KeyValues|undefined> {
-    const tenantPartition = await this.db.partition(tenant);
-    const indexPartition = await tenantPartition.partition(INDEX_SUBLEVEL_NAME);
-    const serializedIndexes = await indexPartition.get(itemId);
+    const indexesLookupPartition = await this.getIndexesLookupPartition(tenant);
+    const serializedIndexes = await indexesLookupPartition.get(itemId);
     if (serializedIndexes === undefined) {
       // invalid itemId
       return;
