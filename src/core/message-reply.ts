@@ -30,7 +30,13 @@ export type UnionMessageReply = GenericMessageReply & {
 
   /**
    * Data corresponding to the message received if applicable (e.g. RecordsRead).
-   * Mutually exclusive with `entries`.
+   * Mutually exclusive with `entries` and `cursor`.
    */
   data?: Readable;
+
+  /**
+   * A cursor for pagination if applicable (e.g. RecordsQuery).
+   * Mutually exclusive with `data`.
+   */
+  cursor?: string;
 };
