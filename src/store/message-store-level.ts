@@ -15,7 +15,7 @@ import { IndexLevel } from './index-level.js';
 import { Message } from '../core/message.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { SortDirection } from '../types/query-types.js';
-import { DwnError, DwnErrorCode } from '../index.js';
+import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 
 /**
