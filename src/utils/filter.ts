@@ -1,4 +1,4 @@
-import type { EqualFilter, Filter, FilterValue, KeyValues, OneOfFilter, QueryOptions, RangeCriterion, RangeFilter } from '../types/query-types.js';
+import type { EqualFilter, Filter, FilterValue, KeyValues, OneOfFilter, QueryOptions, RangeCriterion, RangeFilter, RangeValue } from '../types/query-types.js';
 
 import { isEmptyObject } from './object.js';
 
@@ -57,10 +57,7 @@ export class FilterUtility {
         } else {
           // `filterValue` is a `RangeFilter`
           // range filters cannot range over booleans
-          if (typeof indexValue === 'boolean') {
-            return false;
-          }
-          if (!this.matchRange(filterValue, indexValue)) {
+          if (!this.matchRange(filterValue, indexValue as RangeValue)) {
             return false;
           }
           missingPropertyMatches.delete(filterProperty);

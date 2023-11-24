@@ -6,40 +6,28 @@
   "minProperties": 1,
   "properties": {
     "interface": {
-      "type": "array",
-      "items": {
-        "enum": [
-          "Permissions",
-          "Protocols",
-          "Records"
-        ],
-        "type": "string"
-      }
+      "enum": [
+        "Permissions",
+        "Protocols",
+        "Records"
+      ],
+      "type": "string"
     },
     "method":{
-      "type": "array",
-      "items": {
-        "enum": [
-          "Configure",
-          "Delete",
-          "Grant",
-          "Revoke",
-          "Write"
-        ],
-        "type": "string"
-      }
+      "enum": [
+        "Configure",
+        "Delete",
+        "Grant",
+        "Revoke",
+        "Write"
+      ],
+      "type": "string"
     },
     "protocol": {
       "type": "string"
     },
     "protocolPath": {
       "type": "string"
-    },
-    "author": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
-    },
-    "attester": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
     },
     "recipient": {
       "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
@@ -56,16 +44,7 @@
     "parentId": {
       "type": "string"
     },
-    "published": {
-      "type": "boolean"
-    },
     "dataFormat": {
-      "type": "string"
-    },
-    "dataSize": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/number-range-filter.json"
-    },
-    "dataCid": {
       "type": "string"
     },
     "dateCreated": {

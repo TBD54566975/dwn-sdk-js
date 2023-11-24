@@ -94,12 +94,12 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
   private static convertFilter(filter: EventsFilter): Filter {
     const filterCopy = { ...filter } as Filter;
 
-    const { messageTimestamp } = filter;
-    const messageTimestampFilter = messageTimestamp ? FilterUtility.convertRangeCriterion(messageTimestamp) : undefined;
+    const { dateUpdated } = filter;
+    const messageTimestampFilter = dateUpdated ? FilterUtility.convertRangeCriterion(dateUpdated) : undefined;
     if (messageTimestampFilter) {
       filterCopy.messageTimestamp = messageTimestampFilter;
+      delete filterCopy.dateUpdated;
     }
-
     return filterCopy as Filter;
   }
 

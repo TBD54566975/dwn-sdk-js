@@ -13,6 +13,7 @@ import {
   DidKeyResolver,
   DidResolver,
   Dwn,
+  DwnInterfaceName,
   Message,
   Time
 } from '../../src/index.js';
@@ -50,7 +51,7 @@ export function testEventsQueryHandler(): void {
       await dwn.close();
     });
 
-    it('filter for events matching a protocol across all message types', async () => {
+    it('filter for events matching a protocol across different message types', async () => {
       // scenario:
       // alice creates (2) different message types all related to "proto1" (Configure, RecordsWrite)
       // alice creates (2) different message types all related to "proto2" (Configure, RecordsWrite )
@@ -152,6 +153,88 @@ export function testEventsQueryHandler(): void {
 
       // check order of events returned
       expect(proto2EventsReply.events![0]).to.equal(await Message.getCid(deleteProto2Message.message));
+    });
+
+    it('return events filtered by a dateUpdated range', async () => {
+      const firstDayOf2021 = Time.createTimestamp({ year: 2021, month: 1, day: 1 });
+      const firstDayOf2022 = Time.createTimestamp({ year: 2022, month: 1, day: 1 });
+      const firstDayOf2023 = Time.createTimestamp({ year: 2023, month: 1, day: 1 });
+
+      const alice = await DidKeyResolver.generate();
+      const write1 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2021, messageTimestamp: firstDayOf2021 });
+      const write2 = await TestDataGenerator.generatePermissionsGrant({ author: alice, messageTimestamp: firstDayOf2022 });
+      const write3 = await TestDataGenerator.generateProtocolsConfigure({ author: alice, messageTimestamp: firstDayOf2023 });
+
+      // insert data
+      const writeReply1 = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
+      const writeReply2 = await dwn.processMessage(alice.did, write2.message);
+      const writeReply3 = await dwn.processMessage(alice.did, write3.message);
+      expect(writeReply1.status.code).to.equal(202, 'RecordsWrite');
+      expect(writeReply2.status.code).to.equal(202, 'PermissionsGrant');
+      expect(writeReply3.status.code).to.equal(202, 'ProtocolConfigure');
+
+      const lastDayOf2021 = Time.createTimestamp({ year: 2021, month: 12, day: 31 });
+      let eventsQuery1 = await TestDataGenerator.generateEventsQuery({
+        author  : alice,
+        filters : [{ dateUpdated: { from: lastDayOf2021 } }],
+      });
+      let reply1 = await dwn.processMessage(alice.did, eventsQuery1.message);
+      expect(reply1.status.code).to.equal(200);
+      expect(reply1.events?.length).to.equal(2);
+      expect(reply1.events![0]).to.equal(await Message.getCid(write2.message!));
+      expect(reply1.events![1]).to.equal(await Message.getCid(write3.message!));
+
+      eventsQuery1 = await TestDataGenerator.generateEventsQuery({
+        cursor  : reply1.events![0],
+        author  : alice,
+        filters : [{ dateUpdated: { from: lastDayOf2021 } }],
+      });
+      reply1 = await dwn.processMessage(alice.did, eventsQuery1.message);
+      expect(reply1.status.code).to.equal(200);
+      expect(reply1.events?.length).to.equal(1);
+      expect(reply1.events![0]).to.equal(await Message.getCid(write3.message!));
+    });
+
+    it('returns events filtered by interface type', async () => {
+      const alice = await DidKeyResolver.generate();
+      const record = await TestDataGenerator.generateRecordsWrite({ author: alice });
+      const grant = await TestDataGenerator.generatePermissionsGrant({ author: alice });
+      const protocol = await TestDataGenerator.generateProtocolsConfigure({ author: alice });
+
+      // insert data
+      const writeReply1 = await dwn.processMessage(alice.did, record.message, record.dataStream);
+      const writeReply2 = await dwn.processMessage(alice.did, grant.message);
+      const writeReply3 = await dwn.processMessage(alice.did, protocol.message);
+      expect(writeReply1.status.code).to.equal(202, 'RecordsWrite');
+      expect(writeReply2.status.code).to.equal(202, 'PermissionsGrant');
+      expect(writeReply3.status.code).to.equal(202, 'ProtocolConfigure');
+
+      const eventsQueryRecords = await TestDataGenerator.generateEventsQuery({
+        author  : alice,
+        filters : [{ interface: DwnInterfaceName.Records }],
+      });
+      const recordsReply = await dwn.processMessage(alice.did, eventsQueryRecords.message);
+      expect(recordsReply.status.code).to.equal(200);
+      expect(recordsReply.events?.length).to.equal(1);
+      expect(recordsReply.events![0]).to.equal(await Message.getCid(record.message!));
+
+      const eventsQueryGrants = await TestDataGenerator.generateEventsQuery({
+        author  : alice,
+        filters : [{ interface: DwnInterfaceName.Permissions }],
+      });
+      const grantsReply = await dwn.processMessage(alice.did, eventsQueryGrants.message);
+      expect(grantsReply.status.code).to.equal(200);
+      expect(grantsReply.events?.length).to.equal(1);
+      expect(grantsReply.events![0]).to.equal(await Message.getCid(grant.message!));
+
+      const eventsQueryProtocols = await TestDataGenerator.generateEventsQuery({
+        author  : alice,
+        filters : [{ interface: DwnInterfaceName.Protocols }],
+      });
+      const protocolReply = await dwn.processMessage(alice.did, eventsQueryProtocols.message);
+      expect(protocolReply.status.code).to.equal(200);
+      expect(protocolReply.events?.length).to.equal(1);
+      expect(protocolReply.events![0]).to.equal(await Message.getCid(protocol.message!));
     });
 
     it('returns events filtered by a date range', async () => {

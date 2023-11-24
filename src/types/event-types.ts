@@ -8,7 +8,7 @@ import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-met
 export type EventsFilter = {
   method?: string;
   interface?: string;
-  messageTimestamp?: RangeCriterion;
+  dateUpdated?: RangeCriterion;
 };
 
 // We only allow filtering for events by immutable properties, the omitted properties could be different per subsequent writes.

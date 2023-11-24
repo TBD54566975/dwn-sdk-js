@@ -33,6 +33,16 @@ export type RecordsQueryOptions = {
 export class RecordsQuery extends AbstractMessage<RecordsQueryMessage> {
 
   public static async parse(message: RecordsQueryMessage): Promise<RecordsQuery> {
+
+    if (message.descriptor.filter.published === false) {
+      if (message.descriptor.dateSort === DateSort.PublishedAscending || message.descriptor.dateSort === DateSort.PublishedDescending) {
+        throw new DwnError(
+          DwnErrorCode.RecordsQueryParseFilterPublishedSortInvalid,
+          `queries must not filter for \`published:false\` and sort by ${message.descriptor.dateSort}`
+        );
+      }
+    }
+
     let signaturePayload;
     if (message.authorization !== undefined) {
       signaturePayload = await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
@@ -45,15 +55,6 @@ export class RecordsQuery extends AbstractMessage<RecordsQueryMessage> {
         throw new DwnError(
           DwnErrorCode.RecordsQueryFilterMissingRequiredProperties,
           'Role-authorized queries must include `protocolPath` in the filter'
-        );
-      }
-    }
-
-    if (message.descriptor.filter.published === false) {
-      if (message.descriptor.dateSort === DateSort.PublishedAscending || message.descriptor.dateSort === DateSort.PublishedDescending) {
-        throw new DwnError(
-          DwnErrorCode.RecordsQueryParseFilterPublishedSortInvalid,
-          `queries must not filter for \`published:false\` and sort by ${message.descriptor.dateSort}`
         );
       }
     }
