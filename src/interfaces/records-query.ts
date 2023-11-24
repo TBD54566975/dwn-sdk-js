@@ -1,9 +1,10 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { Pagination } from '../types/message-types.js';
 import type { Signer } from '../types/signer.js';
-import type { DateSort, RecordsFilter, RecordsQueryDescriptor, RecordsQueryMessage } from '../types/records-types.js';
+import type { RecordsFilter, RecordsQueryDescriptor, RecordsQueryMessage } from '../types/records-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';
+import { DateSort } from '../types/records-types.js';
 import { Message } from '../core/message.js';
 import { Records } from '../utils/records.js';
 import { removeUndefinedProperties } from '../utils/object.js';
@@ -47,6 +48,16 @@ export class RecordsQuery extends AbstractMessage<RecordsQueryMessage> {
         );
       }
     }
+
+    if (message.descriptor.filter.published === false) {
+      if (message.descriptor.dateSort === DateSort.PublishedAscending || message.descriptor.dateSort === DateSort.PublishedDescending) {
+        throw new DwnError(
+          DwnErrorCode.RecordsFilterPublishedSortInvalid,
+          `queries must not filter for \`published:false\` and sort by ${message.descriptor.dateSort}`
+        );
+      }
+    }
+
     if (message.descriptor.filter.protocol !== undefined) {
       validateProtocolUrlNormalized(message.descriptor.filter.protocol);
     }

@@ -293,6 +293,8 @@ export class IndexLevel {
    *
    * @param matchFilters the filters passed to the parent query.
    * @param searchFilters the modified filters used for the LevelDB query to search for a subset of items to match against.
+   *
+   * @throws {DwnErrorCode.IndexLevelInMemoryInvalidSortProperty} if an invalid sort property is provided.
    */
   async queryWithInMemoryPaging(
     tenant: string,

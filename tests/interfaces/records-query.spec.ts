@@ -26,6 +26,9 @@ describe('RecordsQuery', () => {
       await expect(recordQueryRejected).to.eventually.be.rejectedWith('descriptor/filter/published: must be equal to one of the allowed values');
     });
 
+    xit('should not allow published to be set to false with a dateSort set to sorting by `PublishedAscending` or `PublishedDescending`', async () => {
+    });
+
     it('should use `messageTimestamp` as is if given', async () => {
       const alice = await TestDataGenerator.generatePersona();
 

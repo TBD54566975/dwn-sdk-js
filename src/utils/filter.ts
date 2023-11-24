@@ -1,4 +1,4 @@
-import type { EqualFilter, Filter, FilterValue, KeyValues, OneOfFilter, QueryOptions, RangeFilter } from '../types/query-types.js';
+import type { EqualFilter, Filter, FilterValue, KeyValues, OneOfFilter, QueryOptions, RangeCriterion, RangeFilter } from '../types/query-types.js';
 
 import { isEmptyObject } from './object.js';
 
@@ -135,6 +135,26 @@ export class FilterUtility {
     };
     return false;
   }
+
+  static convertRangeCriterion(inputFilter: RangeCriterion): RangeFilter | undefined {
+    let rangeFilter: RangeFilter | undefined;
+    if (inputFilter.to !== undefined && inputFilter.from !== undefined) {
+      rangeFilter = {
+        gte : inputFilter.from,
+        lt  : inputFilter.to,
+      };
+    } else if (inputFilter.to !== undefined) {
+      rangeFilter = {
+        lt: inputFilter.to,
+      };
+    } else if (inputFilter.from !== undefined) {
+      rangeFilter = {
+        gte: inputFilter.from,
+      };
+    }
+    return rangeFilter;
+  }
+
 }
 
 export class FilterSelector {
@@ -158,7 +178,6 @@ export class FilterSelector {
       });
   }
 
-  //TODO: return a single filter, this may have to change where/how this method is used.
   private static checkForIdSearches(filters: Filter[]): { searchFilters: Filter[], remainingFilters: Filter[] } {
     const searchFilters: Filter[] = [];
     const remainingFilters: Filter[] = [];

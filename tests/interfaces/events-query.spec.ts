@@ -1,4 +1,6 @@
 import type { EventsQueryMessage } from '../../src/types/event-types.js';
+import type { ProtocolsQueryFilter } from '../../src/types/protocols-types.js';
+import type { RecordsFilter } from '../../src/types/records-types.js';
 
 import { EventsQuery } from '../../src/interfaces/events-query.js';
 import { Jws } from '../../src/utils/jws.js';
@@ -38,7 +40,7 @@ describe('EventsQuery Message', () => {
 
       const message = eventsQuery.message as EventsQueryMessage;
       expect(message.descriptor.filters.length).to.equal(1);
-      expect(message.descriptor.filters[0].protocol).to.eq('http://example.com');
+      expect((message.descriptor.filters[0] as ProtocolsQueryFilter).protocol).to.eq('http://example.com');
     });
 
     it('should auto-normalize schema URL', async () => {
@@ -54,7 +56,7 @@ describe('EventsQuery Message', () => {
       const message = eventsQuery.message as EventsQueryMessage;
 
       expect(message.descriptor.filters.length).to.equal(1);
-      expect(message.descriptor.filters[0].schema).to.eq('http://example.com');
+      expect((message.descriptor.filters[0] as RecordsFilter).schema).to.eq('http://example.com');
     });
 
     it('throws an exception if message has no filters', async () => {

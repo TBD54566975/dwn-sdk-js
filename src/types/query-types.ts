@@ -38,3 +38,15 @@ export type FilterValue = EqualFilter | OneOfFilter | RangeFilter;
 export type Filter = {
   [property: string]: FilterValue;
 };
+
+export type RangeCriterion = {
+  /**
+   * Inclusive starting date-time.
+   */
+  from?: string;
+
+  /**
+   * Inclusive end date-time.
+   */
+  to?: string;
+};
