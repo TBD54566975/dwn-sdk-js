@@ -65,6 +65,27 @@ export function testRecordsQueryHandler(): void {
         await dwn.close();
       });
 
+      it('should reject when published is set to false with a dateSort set to sorting by `PublishedAscending` or `PublishedDescending`', async () => {
+        const alice = await TestDataGenerator.generatePersona();
+        TestStubGenerator.stubDidResolver(didResolver, [alice]);
+
+        const query = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { published: false } });
+
+        //control
+        let reply = await dwn.processMessage(alice.did, query.message);
+        expect(reply.status.code).to.equal(200);
+
+        // modify dateSort to publishedAscending
+        query.message.descriptor.dateSort = DateSort.PublishedAscending;
+        reply = await dwn.processMessage(alice.did, query.message);
+        expect(reply.status.code).to.equal(400);
+
+        // modify dateSort to publishedDescending
+        query.message.descriptor.dateSort = DateSort.PublishedDescending;
+        reply = await dwn.processMessage(alice.did, query.message);
+        expect(reply.status.code).to.equal(400);
+      });
+
       it('should return recordId, descriptor, authorization and attestation', async () => {
         const alice = await TestDataGenerator.generatePersona();
         const bob = await TestDataGenerator.generatePersona();

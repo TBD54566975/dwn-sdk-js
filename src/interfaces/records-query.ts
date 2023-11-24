@@ -52,7 +52,7 @@ export class RecordsQuery extends AbstractMessage<RecordsQueryMessage> {
     if (message.descriptor.filter.published === false) {
       if (message.descriptor.dateSort === DateSort.PublishedAscending || message.descriptor.dateSort === DateSort.PublishedDescending) {
         throw new DwnError(
-          DwnErrorCode.RecordsFilterPublishedSortInvalid,
+          DwnErrorCode.RecordsQueryParseFilterPublishedSortInvalid,
           `queries must not filter for \`published:false\` and sort by ${message.descriptor.dateSort}`
         );
       }
@@ -79,6 +79,15 @@ export class RecordsQuery extends AbstractMessage<RecordsQueryMessage> {
       dateSort         : options.dateSort,
       pagination       : options.pagination,
     };
+
+    if (options.filter.published === false) {
+      if (options.dateSort === DateSort.PublishedAscending || options.dateSort === DateSort.PublishedDescending) {
+        throw new DwnError(
+          DwnErrorCode.RecordsQueryCreateFilterPublishedSortInvalid,
+          `queries must not filter for \`published:false\` and sort by ${options.dateSort}`
+        );
+      }
+    }
 
     // delete all descriptor properties that are `undefined` else the code will encounter the following IPLD issue when attempting to generate CID:
     // Error: `undefined` is not supported by the IPLD Data Model and cannot be encoded

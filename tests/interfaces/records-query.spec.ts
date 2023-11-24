@@ -2,10 +2,10 @@ import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
 
 import dexProtocolDefinition from '../vectors/protocol-definitions/dex.json' assert { type: 'json' };
-import { Jws } from '../../src/index.js';
 import { RecordsQuery } from '../../src/interfaces/records-query.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { Time } from '../../src/utils/time.js';
+import { DateSort, DwnErrorCode, Jws } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -26,7 +26,20 @@ describe('RecordsQuery', () => {
       await expect(recordQueryRejected).to.eventually.be.rejectedWith('descriptor/filter/published: must be equal to one of the allowed values');
     });
 
-    xit('should not allow published to be set to false with a dateSort set to sorting by `PublishedAscending` or `PublishedDescending`', async () => {
+    it('should not allow published to be set to false with a dateSort set to sorting by `PublishedAscending` or `PublishedDescending`', async () => {
+      // test control
+      const recordQueryControl = TestDataGenerator.generateRecordsQuery({
+        filter   : { published: true },
+        dateSort : DateSort.PublishedAscending,
+      });
+
+      await expect(recordQueryControl).to.eventually.not.be.rejected;
+
+      const recordQueryRejected = TestDataGenerator.generateRecordsQuery({
+        filter   : { published: false },
+        dateSort : DateSort.PublishedAscending,
+      });
+      await expect(recordQueryRejected).to.eventually.be.rejectedWith(DwnErrorCode.RecordsQueryCreateFilterPublishedSortInvalid);
     });
 
     it('should use `messageTimestamp` as is if given', async () => {
