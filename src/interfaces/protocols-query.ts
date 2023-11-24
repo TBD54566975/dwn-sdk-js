@@ -84,7 +84,7 @@ export class ProtocolsQuery extends AbstractMessage<ProtocolsQueryMessage> {
       const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, this.signaturePayload!.permissionsGrantId);
       await GrantAuthorization.authorizeGenericMessage(
         tenant,
-        this,
+        this.message,
         this.author,
         permissionsGrantMessage,
         messageStore

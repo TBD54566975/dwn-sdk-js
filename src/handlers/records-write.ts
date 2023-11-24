@@ -262,10 +262,7 @@ export class RecordsWriteHandler implements MethodHandler {
     }
 
     if (recordsWrite.isSignedByDelegatee) {
-      const grantedTo = recordsWrite.signer!;
-      const grantedFor = recordsWrite.author!;
-      const delegatedGrant = recordsWrite.message.authorization.authorDelegatedGrant!;
-      await RecordsGrantAuthorization.authorizeWrite(grantedFor, recordsWrite, grantedTo, delegatedGrant, messageStore);
+      await recordsWrite.authorizeDelegatee(messageStore);
     }
 
     if (recordsWrite.owner !== undefined) {
@@ -277,7 +274,7 @@ export class RecordsWriteHandler implements MethodHandler {
       return;
     } else if (recordsWrite.author !== undefined && recordsWrite.signaturePayload!.permissionsGrantId !== undefined) {
       const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, recordsWrite.signaturePayload!.permissionsGrantId);
-      await RecordsGrantAuthorization.authorizeWrite(tenant, recordsWrite, recordsWrite.author, permissionsGrantMessage, messageStore);
+      await RecordsGrantAuthorization.authorizeWrite(tenant, recordsWrite.message, recordsWrite.author, permissionsGrantMessage, messageStore);
     } else if (recordsWrite.message.descriptor.protocol !== undefined) {
       await ProtocolAuthorization.authorizeWrite(tenant, recordsWrite, messageStore);
     } else {
