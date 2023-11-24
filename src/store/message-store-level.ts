@@ -93,7 +93,7 @@ export class MessageStoreLevel implements MessageStore {
 
     // creates the query options including sorting and pagination.
     // this adds 1 to the limit if provided, that way we can check to see if there are additional results and provide a return cursor.
-    const queryOptions = MessageStoreLevel.getQueryOptions(messageSort, pagination);
+    const queryOptions = MessageStoreLevel.buildQueryOptions(messageSort, pagination);
     const results = await this.index.query(tenant, filters, queryOptions, options);
 
     const messages: GenericMessage[] = [];
@@ -116,7 +116,10 @@ export class MessageStoreLevel implements MessageStore {
     return { messages, cursor };
   }
 
-  static getQueryOptions(messageSort: MessageSort = {}, pagination: Pagination = {}): QueryOptions {
+  /**
+   * Builds the IndexLevel QueryOptions object given MessageStore sort and pagination parameters.
+   */
+  static buildQueryOptions(messageSort: MessageSort = {}, pagination: Pagination = {}): QueryOptions {
     let { limit, cursor } = pagination;
     const { dateCreated, datePublished, messageTimestamp } = messageSort;
 
@@ -133,7 +136,7 @@ export class MessageStoreLevel implements MessageStore {
       sortProperty = 'messageTimestamp';
     }
 
-    if (sortProperty !== undefined && messageSort[sortProperty] !== undefined) {
+    if (messageSort[sortProperty] !== undefined) {
       sortDirection = messageSort[sortProperty]!;
     }
 

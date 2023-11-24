@@ -356,8 +356,7 @@ export class IndexLevel {
         filterPromises.push(exactMatchesPromise);
       } else if (FilterUtility.isOneOfFilter(propertyFilter)) {
         // `propertyFilter` is a OneOfFilter
-        // Support OR matches by querying for each values separately,
-        // then adding them to the promises associated with `propertyName`
+        // Support OR matches by querying for each values separately, then adding them to the promises array.
         for (const propertyValue of new Set(propertyFilter)) {
           const exactMatchesPromise = this.filterExactMatches(tenant, propertyName, propertyValue, levelOptions);
           filterPromises.push(exactMatchesPromise);
@@ -534,14 +533,10 @@ export class IndexLevel {
    */
   static encodeValue(value: string | number | boolean): string {
     switch (typeof value) {
-    case 'string':
-      // We can't just `JSON.stringify` as that'll affect the sort order of strings.
-      // For example, `'\x00'` becomes `'\\u0000'`.
-      return `"${value}"`;
     case 'number':
       return this.encodeNumberValue(value);
     default:
-      return String(value);
+      return JSON.stringify(value);
     }
   }
 }
