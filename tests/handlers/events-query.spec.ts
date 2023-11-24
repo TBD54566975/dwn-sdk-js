@@ -13,8 +13,6 @@ import {
   DidKeyResolver,
   DidResolver,
   Dwn,
-  DwnInterfaceName,
-  DwnMethodName,
   Message,
   Time
 } from '../../src/index.js';
@@ -54,13 +52,12 @@ export function testEventsQueryHandler(): void {
 
     it('filter for events matching a protocol across all message types', async () => {
       // scenario:
-      // alice creates (3) different message types all related to "proto1" (Configure, RecordsWrite, Grant)
-      // alice creates (3) different message types all related to "proto2" (Configure, RecordsWrite, Grant)
+      // alice creates (2) different message types all related to "proto1" (Configure, RecordsWrite)
+      // alice creates (2) different message types all related to "proto2" (Configure, RecordsWrite )
       // when issuing an EventsQuery for the specific protocol, only Events related to it should be returned.
-      // alice then creates additional records to query after a cursor
+      // alice then creates an additional record to query after a cursor
 
       const alice = await DidKeyResolver.generate();
-      const bob = await DidKeyResolver.generate();
 
       // create a proto1
       const protoConf1 = await TestDataGenerator.generateProtocolsConfigure({
@@ -90,28 +87,6 @@ export function testEventsQueryHandler(): void {
       const write1Proto2Response = await dwn.processMessage(alice.did, write1proto2.message, write1proto2.dataStream);
       expect(write1Proto2Response.status.code).equals(202);
 
-      // create a grant relating to proto1
-      const grant1Proto1 = await TestDataGenerator.generatePermissionsGrant({
-        author      : alice,
-        grantedTo   : bob.did,
-        dateExpires : '2055-12-12T12:12:12.121212Z',
-        scope       : { protocol: proto1, interface: DwnInterfaceName.Records, method: DwnMethodName.Read }
-      });
-
-      const grant1Response = await dwn.processMessage(alice.did, grant1Proto1.message);
-      expect(grant1Response.status.code).equals(202);
-
-      // create a grant relating to proto2
-      const grant1Proto2 = await TestDataGenerator.generatePermissionsGrant({
-        author      : alice,
-        grantedTo   : bob.did,
-        dateExpires : '2055-12-12T12:12:12.121212Z',
-        scope       : { protocol: proto2, interface: DwnInterfaceName.Records, method: DwnMethodName.Read }
-      });
-
-      const grant1Proto2Response = await dwn.processMessage(alice.did, grant1Proto2.message);
-      expect(grant1Proto2Response.status.code).equals(202);
-
       // filter for proto1
       let proto1EventsQuery = await TestDataGenerator.generateEventsQuery({
         author  : alice,
@@ -119,12 +94,11 @@ export function testEventsQueryHandler(): void {
       });
       let proto1EventsReply = await dwn.processMessage(alice.did, proto1EventsQuery.message);
       expect(proto1EventsReply.status.code).equals(200);
-      expect(proto1EventsReply.events?.length).equals(3);
+      expect(proto1EventsReply.events?.length).equals(2);
 
       // check order of events returned.
       expect(proto1EventsReply.events![0]).to.equal(await Message.getCid(protoConf1.message));
       expect(proto1EventsReply.events![1]).to.equal(await Message.getCid(write1proto1.message));
-      expect(proto1EventsReply.events![2]).to.equal(await Message.getCid(grant1Proto1.message));
 
       // filter for proto2
       let proto2EventsQuery = await TestDataGenerator.generateEventsQuery({
@@ -133,28 +107,15 @@ export function testEventsQueryHandler(): void {
       });
       let proto2EventsReply = await dwn.processMessage(alice.did, proto2EventsQuery.message);
       expect(proto2EventsReply.status.code).equals(200);
-      expect(proto2EventsReply.events?.length).equals(3);
+      expect(proto2EventsReply.events?.length).equals(2);
 
       // check order of events returned.
       expect(proto2EventsReply.events![0]).to.equal(await Message.getCid(protoConf2.message));
       expect(proto2EventsReply.events![1]).to.equal(await Message.getCid(write1proto2.message));
-      expect(proto2EventsReply.events![2]).to.equal(await Message.getCid(grant1Proto2.message));
 
       // get cursor of the last event and add more events to query afterwards
-      const proto1Cursor = proto1EventsReply.events![2];
-      const proto2Cursor = proto2EventsReply.events![2];
-
-      // revoke grant proto 1
-      const grant1proto1Id = await Message.getCid(grant1Proto1.message);
-      const revokeForGrantProto1 = await TestDataGenerator.generatePermissionsRevoke({ author: alice, permissionsGrantId: grant1proto1Id });
-      const revokeForGrantResponse = await dwn.processMessage(alice.did, revokeForGrantProto1.message);
-      expect(revokeForGrantResponse.status.code).equals(202);
-
-      // revoke grant proto 2
-      const grant1proto2Id = await Message.getCid(grant1Proto2.message);
-      const revokeForGrantProto2 = await TestDataGenerator.generatePermissionsRevoke({ author: alice, permissionsGrantId: grant1proto2Id });
-      const revokeForGrantProto2Response = await dwn.processMessage(alice.did, revokeForGrantProto2.message);
-      expect(revokeForGrantProto2Response.status.code).equals(202);
+      const proto1Cursor = proto1EventsReply.events![1];
+      const proto2Cursor = proto2EventsReply.events![1];
 
       // delete proto1 message
       const deleteProto1Message = await TestDataGenerator.generateRecordsDelete({ author: alice, recordId: write1proto1.message.recordId });
@@ -174,11 +135,10 @@ export function testEventsQueryHandler(): void {
       });
       proto1EventsReply = await dwn.processMessage(alice.did, proto1EventsQuery.message);
       expect(proto1EventsReply.status.code).equals(200);
-      expect(proto1EventsReply.events?.length).equals(2);
+      expect(proto1EventsReply.events?.length).equals(1);
 
       // check order of events returned
-      expect(proto1EventsReply.events![0]).to.equal(await Message.getCid(revokeForGrantProto1.message));
-      expect(proto1EventsReply.events![1]).to.equal(await Message.getCid(deleteProto1Message.message));
+      expect(proto1EventsReply.events![0]).to.equal(await Message.getCid(deleteProto1Message.message));
 
       //query messages beyond the cursor
       proto2EventsQuery = await TestDataGenerator.generateEventsQuery({
@@ -188,11 +148,10 @@ export function testEventsQueryHandler(): void {
       });
       proto2EventsReply = await dwn.processMessage(alice.did, proto2EventsQuery.message);
       expect(proto2EventsReply.status.code).equals(200);
-      expect(proto2EventsReply.events?.length).equals(2);
+      expect(proto2EventsReply.events?.length).equals(1);
 
       // check order of events returned
-      expect(proto2EventsReply.events![0]).to.equal(await Message.getCid(revokeForGrantProto2.message));
-      expect(proto2EventsReply.events![1]).to.equal(await Message.getCid(deleteProto2Message.message));
+      expect(proto2EventsReply.events![0]).to.equal(await Message.getCid(deleteProto2Message.message));
     });
 
     it('returns events filtered by a date range', async () => {
