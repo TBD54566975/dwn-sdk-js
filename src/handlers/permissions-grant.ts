@@ -1,13 +1,12 @@
 import type { DidResolver } from '../did/did-resolver.js';
 import type { EventLog } from '../types//event-log.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
+import type { KeyValues } from '../types/query-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { PermissionsGrantMessage } from '../types/permissions-types.js';
-import type { RecordsPermissionScope } from '../types/permissions-grant-descriptor.js';
 
 import { authenticate } from '../core/auth.js';
-import { DwnInterfaceName } from '../enums/dwn-interface-method.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { PermissionsGrant } from '../interfaces/permissions-grant.js';
@@ -51,25 +50,13 @@ export class PermissionsGrantHandler implements MethodHandler {
 
   static constructIndexes(
     permissionsGrant: PermissionsGrant,
-  ): Record<string, string> {
+  ): KeyValues {
     const message = permissionsGrant.message;
     const { scope, conditions, ...propertiesToIndex } = message.descriptor;
-    let indexes: Record<string, any> = {
-      author: permissionsGrant.author,
+    const indexes: KeyValues = {
+      author: permissionsGrant.author!,
       ...propertiesToIndex,
     };
-
-    // additional index information for Records permissions
-    if (scope.interface === DwnInterfaceName.Records) {
-      const { protocol, protocolPath, schema, contextId } = scope as RecordsPermissionScope;
-      indexes = {
-        ...indexes,
-        contextId,
-        protocol,
-        protocolPath,
-        schema,
-      };
-    }
 
     removeUndefinedProperties(indexes);
     return indexes;

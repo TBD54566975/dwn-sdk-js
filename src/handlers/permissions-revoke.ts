@@ -1,6 +1,7 @@
 import type { DidResolver } from '../did/did-resolver.js';
 import type { EventLog } from '../types/event-log.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
+import type { KeyValues } from '../types/query-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { RecordsPermissionScope } from '../types/permissions-grant-descriptor.js';
@@ -120,10 +121,11 @@ export class PermissionsRevokeHandler implements MethodHandler {
   static constructIndexes(
     permissionsRevoke: PermissionsRevoke,
     grant: PermissionsGrantMessage,
-  ): Record<string, string> {
+  ): KeyValues {
     const { descriptor } = permissionsRevoke.message;
 
-    let indexes: Record<string, any> = {
+    // undefined properties before returning
+    let indexes: { [key:string]: string | undefined } = {
       interface          : DwnInterfaceName.Permissions,
       method             : DwnMethodName.Revoke,
       author             : permissionsRevoke.author!,
@@ -145,6 +147,6 @@ export class PermissionsRevokeHandler implements MethodHandler {
     }
 
     removeUndefinedProperties(indexes);
-    return indexes;
+    return indexes as KeyValues;
   }
 }

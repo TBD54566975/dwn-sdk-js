@@ -2,6 +2,7 @@ import type { DataStore } from '../types/data-store.js';
 import type { DidResolver } from '../did/did-resolver.js';
 import type { EventLog } from '../types/event-log.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
+import type { KeyValues } from '../types/query-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { RecordsDeleteMessage, RecordsWriteMessage } from '../types/records-types.js';
@@ -123,7 +124,7 @@ export class RecordsDeleteHandler implements MethodHandler {
   /**
   * Indexed properties needed for MessageStore indexing.
   */
-  static constructIndexes(recordsDelete: RecordsDelete, recordsWrite: RecordsWriteMessage): Record<string, string> {
+  static constructIndexes(recordsDelete: RecordsDelete, recordsWrite: RecordsWriteMessage): KeyValues {
     const message = recordsDelete.message;
     const descriptor = { ...message.descriptor };
 
@@ -134,7 +135,7 @@ export class RecordsDeleteHandler implements MethodHandler {
     // we intentionally not add index for `isLatestBaseState` at all, this means that upon a successful delete,
     // no messages with the record ID will match any query because queries by design filter by `isLatestBaseState = true`,
     // `isLatestBaseState` for the initial delete would have been toggled to `false`
-    const indexes: Record<string, any> = {
+    const indexes: { [key:string]: string | undefined } = {
       // isLatestBaseState : "true", // intentionally showing that this index is omitted
       protocol, protocolPath, recipient, schema, parentId, dataFormat, dateCreated,
       contextId : recordsWrite.contextId,
@@ -143,6 +144,6 @@ export class RecordsDeleteHandler implements MethodHandler {
     };
     removeUndefinedProperties(indexes);
 
-    return indexes;
+    return indexes as KeyValues;
   }
 };
