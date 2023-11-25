@@ -58,7 +58,7 @@ export class RecordsGrantAuthorization {
    * @param recordsWrite The source of the record being authorized. If the incoming message is a write,
    *                     then this is the incoming RecordsWrite. Otherwise, it is the newest existing RecordsWrite.
    */
-  public static verifyScope(
+  private static verifyScope(
     recordsWriteMessage: RecordsWriteMessage,
     permissionsGrantMessage: PermissionsGrantMessage,
   ): void {
@@ -136,7 +136,7 @@ export class RecordsGrantAuthorization {
    * Verifies grant `conditions`.
    * Currently the only condition is `published` which only applies to RecordsWrites
    */
-  public static verifyConditions(recordsWriteMessage: RecordsWriteMessage, permissionsGrantMessage: PermissionsGrantMessage): void {
+  private static verifyConditions(recordsWriteMessage: RecordsWriteMessage, permissionsGrantMessage: PermissionsGrantMessage): void {
     const conditions = permissionsGrantMessage.descriptor.conditions;
 
     // If conditions require publication, RecordsWrite must have `published` === true

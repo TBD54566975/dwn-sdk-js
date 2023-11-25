@@ -72,7 +72,7 @@ export class GrantAuthorization {
   /**
    * Verifies the given `grantedTo` and `grantedFor` values against the given permissions grant and throws error if there is a mismatch.
    */
-  public static verifyGrantedToAndGrantedFor(grantedTo: string, grantedFor: string, permissionsGrantMessage: PermissionsGrantMessage): void {
+  private static verifyGrantedToAndGrantedFor(grantedTo: string, grantedFor: string, permissionsGrantMessage: PermissionsGrantMessage): void {
     // Validate `grantedTo`
     const expectedGrantedTo = permissionsGrantMessage.descriptor.grantedTo;
     if (expectedGrantedTo !== grantedTo) {
@@ -98,7 +98,7 @@ export class GrantAuthorization {
    * @param permissionsGrantId Purely being passed as an optimization. Technically can be computed from `permissionsGrantMessage`.
    * @throws {DwnError} if incomingMessage has timestamp for a time in which the grant is not active.
    */
-  public static async verifyGrantActive(
+  private static async verifyGrantActive(
     tenant: string,
     incomingMessageTimestamp: string,
     permissionsGrantMessage: PermissionsGrantMessage,
@@ -142,7 +142,7 @@ export class GrantAuthorization {
    * @param permissionsGrantId Purely being passed for logging purposes.
    * @throws {DwnError} if the `interface` and `method` of the incoming message do not match the scope of the PermissionsGrant
    */
-  public static async verifyGrantScopeInterfaceAndMethod(
+  private static async verifyGrantScopeInterfaceAndMethod(
     dwnInterface: string,
     dwnMethod: string,
     permissionsGrantMessage: PermissionsGrantMessage,
