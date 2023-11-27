@@ -1,12 +1,12 @@
 import { MessageStoreLevel } from '../../../dist/esm/src/store/message-store-level.js';
-import { SortDirection } from '../../../dist/esm/src/types/message-types.js';
+import { SortDirection } from '../../../dist/esm/src/types/query-types.js';
 import { TestDataGenerator } from '../../../dist/esm/tests/utils/test-data-generator.js';
 import { Time } from '../../../dist/esm/src/utils/time.js';
 
 const tenant = 'did:xyz:alice';
 console.log('message store benchmarks');
 
-const items = 70_000;
+const items = 10_000;
 
 // pre-generate messages
 const insertMessages = Array(items).fill().map((_,i) => {
