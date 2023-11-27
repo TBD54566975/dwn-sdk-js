@@ -194,14 +194,12 @@ export class IndexLevel {
    * @returns {string[]} an array of itemIds that match the given filters.
    */
   async query(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<string[]> {
-    // returns an array of which search filters we need to perform a full search on.
-    // if there are no search filters returned, we do a full scan on the sorted index.
-    const searchFilters = FilterSelector.select(filters, queryOptions);
-    if (searchFilters.length === 0) {
-      return this.queryWithIteratorPaging(tenant, filters, queryOptions, options);
-    }
 
-    return this.queryWithInMemoryPaging(tenant, filters, searchFilters, queryOptions, options);
+    // check if we should query using in-memory paging or iterator paging
+    if (IndexLevel.queryWithInMemoryPaging(filters, queryOptions)) {
+      return this.queryWithInMemoryPaging(tenant, filters, queryOptions, options);
+    }
+    return this.queryWithIteratorPaging(tenant, filters, queryOptions, options);
   }
 
   /**
@@ -290,15 +288,14 @@ export class IndexLevel {
   /**
    * Queries the provided searchFilters asynchronously, returning results that match the matchFilters.
    *
-   * @param matchFilters the filters passed to the parent query.
+   * @param filters the filters passed to the parent query.
    * @param searchFilters the modified filters used for the LevelDB query to search for a subset of items to match against.
    *
    * @throws {DwnErrorCode.IndexLevelInMemoryInvalidSortProperty} if an invalid sort property is provided.
    */
   async queryWithInMemoryPaging(
     tenant: string,
-    matchFilters: Filter[],
-    searchFilters:Filter[],
+    filters: Filter[],
     queryOptions: QueryOptions,
     options?: IndexLevelOptions
   ): Promise<string[]> {
@@ -307,9 +304,11 @@ export class IndexLevel {
     // we create a matches map so that we can short-circuit matched items within the async single query below.
     const matches:Map<string, IndexedItem> = new Map();
 
+    // select the searchFilters
+    const searchFilters = FilterSelector.reduceFilters(filters);
     try {
-      await Promise.all(searchFilters.map(filter => {
-        return this.executeSingleFilterQuery(tenant, filter, matchFilters, sortProperty, matches, options );
+      await Promise.all(searchFilters.map(searchFilter => {
+        return this.executeSingleFilterQuery(tenant, searchFilter, filters, sortProperty, matches, options );
       }));
     } catch (error) {
       if ((error as DwnError).code === DwnErrorCode.IndexInvalidSortProperty) {
@@ -539,5 +538,30 @@ export class IndexLevel {
     default:
       return JSON.stringify(value);
     }
+  }
+
+
+  private static queryWithInMemoryPaging(filters: Filter[], queryOptions: QueryOptions): boolean {
+    // if there is a specific recordId in any of the filters, return true immediately.
+    if (filters.find(({ recordId }) => recordId !== undefined) !== undefined) {
+      return true;
+    }
+
+    // unless a recordId is present, if there is a cursor we never use in memory paging
+    if (queryOptions.cursor !== undefined) {
+      return false;
+    }
+
+    // if contextId, protocolPath or schema are specified in any of the filter properties and no cursor exists, we use in-memory paging
+    if (filters.find(({ contextId, protocol, protocolPath, schema }) => {
+      return contextId !== undefined ||
+        protocol !== undefined ||
+        protocolPath !== undefined ||
+        schema !== undefined;
+    }) !== undefined) {
+      return true;
+    }
+
+    return false;
   }
 }

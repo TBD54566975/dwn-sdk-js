@@ -228,19 +228,19 @@ describe('IndexLevel', () => {
         const filters = [{ schema: 'schema' }];
 
         // control test: return all results
-        let validResults = await testIndex.queryWithInMemoryPaging(tenant, filters, filters, { sortProperty: 'val' });
+        let validResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val' });
         expect(validResults.length).to.equal(4);
 
         // sort by invalid property returns no results
-        let invalidResults = await testIndex.queryWithInMemoryPaging(tenant, filters, filters, { sortProperty: 'invalid' });
+        let invalidResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'invalid' });
         expect(invalidResults.length).to.equal(0);
 
         // control test: returns after cursor
-        validResults = await testIndex.queryWithInMemoryPaging(tenant, filters, filters, { sortProperty: 'val', cursor: 'a' });
+        validResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: 'a' });
         expect(validResults.length).to.equal(3);
 
         // invalid sort property with a valid cursor value
-        invalidResults = await testIndex.queryWithInMemoryPaging(tenant, filters, filters, { sortProperty: 'invalid', cursor: 'a' });
+        invalidResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'invalid', cursor: 'a' });
         expect(invalidResults.length).to.equal(0);
       });
 
@@ -256,16 +256,16 @@ describe('IndexLevel', () => {
         const filters = [{ schema: 'schema' }];
 
         // control test: return all results
-        const validResults = await testIndex.queryWithInMemoryPaging(tenant, filters, filters, { sortProperty: 'val', cursor: 'b' });
+        const validResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: 'b' });
         expect(validResults.length).to.equal(3);
         expect(validResults).to.eql([ 'c', 'd', 'e' ]);
 
         // pass invalid cursor returns no results
-        let invalidResults = await testIndex.queryWithInMemoryPaging(tenant, filters, filters, { sortProperty: 'val', cursor: 'invalid' });
+        let invalidResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: 'invalid' });
         expect(invalidResults.length).to.equal(0);
 
         // pass valid cursor that isn't part of the query/matches
-        invalidResults = await testIndex.queryWithInMemoryPaging(tenant, filters, filters, { sortProperty: 'val', cursor: 'a' });
+        invalidResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: 'a' });
         expect(invalidResults.length).to.equal(0);
       });
     });

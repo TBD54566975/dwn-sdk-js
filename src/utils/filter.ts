@@ -1,6 +1,4 @@
-import type { EqualFilter, Filter, FilterValue, KeyValues, OneOfFilter, QueryOptions, RangeCriterion, RangeFilter, RangeValue } from '../types/query-types.js';
-
-import { isEmptyObject } from './object.js';
+import type { EqualFilter, Filter, FilterValue, KeyValues, OneOfFilter, RangeCriterion, RangeFilter, RangeValue } from '../types/query-types.js';
 
 /**
  * A Utility class to help match indexes against filters.
@@ -156,50 +154,112 @@ export class FilterUtility {
 
 export class FilterSelector {
 
-  private static hasCursorAndSortProperty(filters: Filter[], queryOptions: QueryOptions):boolean {
-    const { cursor, sortProperty } = queryOptions;
-    return cursor !== undefined &&
-      (sortProperty === 'watermark' || filters.findIndex(filter => Object.keys(filter).map(property => property === sortProperty)) > -1);
-  }
+  /**
+   * Reduces an array of incoming Filters into an array of more efficient filters
+   * The length of the returned Filters array is always less than or equal to that of the input filters array.
+   */
+  static reduceFilters(filters: Filter[]): Filter[] {
 
-  private static checkRangeFilters(filters: Filter[]): Filter[] {
-    return filters
-      .filter(filter => Object.values(filter).findIndex(filterValue => FilterUtility.isRangeFilter(filterValue)) > -1)
-      .map(filter => {
+    // we extract any recordId filters and the remaining filters which do not have a recordId property
+    const { idFilters, remainingFilters } = this.extractIdFilters(filters);
+    // if there are no remaining filters, we only query by the idFilters
+    if (remainingFilters.length === 0) {
+      return idFilters;
+    }
+
+    const commonFilter = this.extractCommonFilter(remainingFilters);
+    if (commonFilter !== undefined) {
+      return [ ...idFilters, commonFilter ];
+    }
+
+    // extract any range filters from the remaining filters
+    const { rangeFilters, remainingFilters: remainingAfterRange } = this.extractRangeFilters(remainingFilters);
+    // if all of there are no remaining filters we return the RangeFilters along with any idFilters.
+    if (remainingAfterRange.length === 0) {
+      return [ ...idFilters, ...rangeFilters ];
+    }
+
+    const commonAfterRange = this.extractCommonFilter(remainingAfterRange);
+    if (commonAfterRange !== undefined){
+      return [ ...idFilters, ...rangeFilters, commonAfterRange ];
+    }
+
+    const finalRemaining = remainingAfterRange.map(filter => {
+
+      const { contextId, schema, protocol, protocolPath, author } = filter;
+      if (contextId !== undefined && FilterUtility.isEqualFilter(contextId)) {
+        return { contextId };
+      } else if (schema !== undefined && FilterUtility.isEqualFilter(schema)) {
+        return { schema };
+      } else if (protocolPath !== undefined && FilterUtility.isEqualFilter(protocolPath)) {
+        return { protocolPath };
+      } else if (protocol !== undefined && FilterUtility.isEqualFilter(protocol)) {
+        return { protocol };
+      } else if (author !== undefined && FilterUtility.isEqualFilter(author)) {
+        return { author };
+      } else {
+        // get the first filter property that isn't a boolean value
         const filterProperties = Object.keys(filter);
-        const rangeFilterIndex = filterProperties.findIndex(propertyName => FilterUtility.isRangeFilter(filter[propertyName]));
-        const propertyName = filterProperties[rangeFilterIndex];
-        const rangeFilter:Filter = {};
-        rangeFilter[propertyName] = filter[propertyName];
-        return rangeFilter;
-      });
+        const firstProperty = filterProperties.find(filterProperty => {
+          const filterValue = filter[filterProperty];
+          return filterValue !== undefined && FilterUtility.isEqualFilter(filterValue) && typeof filterValue !== 'boolean';
+        });
+
+        if (firstProperty !== undefined) {
+          const singlePropertyFilter:Filter = {};
+          singlePropertyFilter[firstProperty] = filter[firstProperty];
+          return singlePropertyFilter;
+        }
+
+        // fall back tot he entire filter
+        return { ...filter };
+      }
+    });
+
+    return [ ...idFilters, ...rangeFilters, ...finalRemaining ];
   }
 
-  private static checkForIdSearches(filters: Filter[]): { searchFilters: Filter[], remainingFilters: Filter[] } {
-    const searchFilters: Filter[] = [];
+  /**
+   * Extracts a single range filter from each of the input filters to return.
+   * Naively chooses the first range filter it finds, this could be improved.
+   *
+   * @returns an array of Filters with each filter containing a single RangeFilter property.
+   */
+  private static extractRangeFilters(filters: Filter[]): { rangeFilters: Filter[], remainingFilters: Filter[] } {
+    const rangeFilters: Filter[] = [];
     const remainingFilters: Filter[] = [];
-    // next we determine if any of the filters contain a specific identifier such as recordId or permissionsGrantId
-    // if that's the case it's always the only property for the specific filter it's a member of
     for (const filter of filters) {
-      const { recordId, permissionsGrantId } = filter;
+      const filterKeys = Object.keys(filter);
+      const rangeFilterKey = filterKeys.find(filterProperty => FilterUtility.isRangeFilter(filter[filterProperty]));
+      if (rangeFilterKey === undefined) {
+        remainingFilters.push(filter);
+        continue;
+      }
+      const rangeFilter:Filter = {};
+      rangeFilter[rangeFilterKey] = filter[rangeFilterKey];
+      rangeFilters.push(rangeFilter);
+    }
+    return { rangeFilters, remainingFilters };
+  }
+
+  private static extractIdFilters(filters: Filter[]): { idFilters: Filter[], remainingFilters: Filter[] } {
+    const idFilters: Filter[] = [];
+    const remainingFilters: Filter[] = [];
+    for (const filter of filters) {
+      const { recordId } = filter;
+      // we determine if any of the filters contain a recordId property;
       // we don't use range filters with these, so either Equality or OneOf filters should be used
       if (recordId !== undefined && (FilterUtility.isEqualFilter(recordId) || FilterUtility.isOneOfFilter(recordId))) {
-        searchFilters.push({ recordId });
+        idFilters.push({ recordId });
         continue;
       }
-
-      if (permissionsGrantId !== undefined && (FilterUtility.isEqualFilter(permissionsGrantId) || FilterUtility.isOneOfFilter(permissionsGrantId))) {
-        searchFilters.push({ permissionsGrantId });
-        continue;
-      }
-
       remainingFilters.push(filter);
     }
 
-    return { searchFilters, remainingFilters };
+    return { idFilters: idFilters, remainingFilters };
   }
 
-  private static checkCommonFilters(filters: Filter[]): Filter | undefined {
+  private static extractCommonFilter(filters: Filter[]): Filter | undefined {
     const { schema, contextId, protocol, protocolPath } = this.commonEqualFilters(filters);
 
     // if we match any of these, we add them to our search filters and return immediately
@@ -223,93 +283,16 @@ export class FilterSelector {
   }
 
   /**
-   * Helps select which filter properties are needed to build a filtered query for the LevelDB indexes.
-   *
-   * @param filters the array of filters from an incoming query.
-   * @param queryOptions options associated with the incoming query.
-   * @returns an array of filters to query using. If an empty array is returned, query using the sort property index.
-   */
-  static select(filters: Filter[], queryOptions: QueryOptions): Filter[] {
-
-    // if we have a cursor and this is an EventsQuery (the only query that sorts by watermark), we want to trigger the queryWithIteratorPaging
-    // we also trigger a queryWithIteratorPaging if we have a cursor and one of the filters is the same as the sortProperty
-    if (this.hasCursorAndSortProperty(filters, queryOptions)) {
-      return [];
-    }
-
-    // if the number of range filters that exist are equal to the number of filters in the query, we return the range filters.
-    const rangeFilters = this.checkRangeFilters(filters);
-    if (rangeFilters.length === filters.length) {
-      return rangeFilters;
-    }
-
-    const { searchFilters, remainingFilters } = this.checkForIdSearches(filters);
-    // now we determine if the remaining filters array has any common filters.
-    // If there is a match, it's likely best to run a single query against that filter.
-    const commonFilter = this.checkCommonFilters(remainingFilters);
-    if (commonFilter !== undefined) {
-      // the commonFilter was built from the remainingFilters from the checkForIdsSearch function
-      // so we add the returned idFilters array, which could be empty, as well as the remaining common filter.
-      return [ ...searchFilters, commonFilter ];
-    }
-
-    // if we found no common filters, we will attempt to find context, schema, or protocol of each filter
-    const finalFilters: Filter[] = remainingFilters.map(({ contextId, schema, protocol, protocolPath }) => {
-      // if check for single equality filters first in order of most likely to have a smaller set
-      if (contextId !== undefined && FilterUtility.isEqualFilter(contextId)) {
-        return { contextId } as Filter;
-      } else if (schema !== undefined && FilterUtility.isEqualFilter(schema)) {
-        return { schema } as Filter;
-      } else if (protocolPath !== undefined && FilterUtility.isEqualFilter(protocolPath)) {
-        return { protocolPath } as Filter;
-      } else if (protocol !== undefined && FilterUtility.isEqualFilter(protocol)) {
-        return { protocol } as Filter;
-      }
-
-      // check for OneOf filters next
-      if (contextId !== undefined && FilterUtility.isOneOfFilter(contextId)) {
-        return { contextId } as Filter;
-      } else if (schema !== undefined && FilterUtility.isOneOfFilter(schema)) {
-        return { schema } as Filter;
-      } else if (protocolPath !== undefined && FilterUtility.isOneOfFilter(protocolPath)) {
-        return { protocolPath } as Filter;
-      } else if (protocol !== undefined && FilterUtility.isOneOfFilter(protocol)) {
-        return { protocol } as Filter;
-      }
-
-      // we return an empty filter and check for it later
-      return { };
-    });
-
-    // if we have an empty filter, we will query based on the sort property, so we return an empty set of filters.
-    if (finalFilters.findIndex(filter => isEmptyObject(filter)) > -1) {
-      return [];
-    }
-
-    return [ ...finalFilters, ...searchFilters];
-  }
-
-
-  /**
    * Given an array of filters, it returns a single filter with common EqualFilter per property.
    * If there are no common filters, the returned filter is empty.
    */
   private static commonEqualFilters(filters: Filter[]): Filter {
-    if (filters.length === 0) {
-      return { };
-    }
     return filters.reduce((prev, current) => {
       const filterCopy = { ...prev };
       for (const property in filterCopy) {
         const filterValue = filterCopy[property];
-        if (typeof filterValue !== 'object' && !Array.isArray(filterValue)) {
-          const compareValue = current[property];
-          if ( typeof compareValue !== 'object' && !Array.isArray(compareValue)) {
-            if (compareValue !== filterValue) {
-              delete filterCopy[property];
-            }
-          }
-        } else {
+        const compareValue = current[property];
+        if (!FilterUtility.isEqualFilter(filterValue) || !FilterUtility.isEqualFilter(compareValue) || filterValue !== compareValue) {
           delete filterCopy[property];
         }
       }

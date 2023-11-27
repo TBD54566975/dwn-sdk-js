@@ -277,36 +277,7 @@ describe('filters util', () => {
   });
 
   describe('FilterSelector', () => {
-    describe('select', () => {
-      it('should return an empty array if a cursor exists and sorting by the field cursor', async () => {
-        // scenario: If we are filtering using a the 'watermark' field as our sort property and pass a cursor
-        //           it should return an empty array of filters, signaling a sorted index query.
-        const inputFilters:Filter[] = [{
-          protocol : 'some-protocol',
-          schema   : 'some-schema'
-        },{
-          protocol : 'some-protocol2',
-          schema   : 'some-schema2'
-        }];
-
-        expect(FilterSelector.select(inputFilters, { sortProperty: 'watermark', cursor: 'some-cursor' } ).length).to.equal(0);
-      });
-
-      it('should return an empty array if a cursor exists and sorting by one of the filter properties', async () => {
-        // scenario: If one of the filters contains a filter that is also the sort property and passes a cursor,
-        //           it should return an empty array of filters, signaling a sorted index query.
-        const inputFilters:Filter[] = [{
-          protocol : 'some-protocol',
-          schema   : 'some-schema',
-        },{
-          protocol         : 'some-protocol2',
-          schema           : 'some-schema2',
-          messageTimestamp : { gte: '2023-11-20T00:00:00.000000Z' },
-        }];
-
-        expect(FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp', cursor: 'some-cursor' } ).length).to.equal(0);
-      });
-
+    describe('reduce()', () => {
       it('should return a single rangeFilter per input filter if a range filter exists in all of the filters', async () => {
         // scenario: there are two filters that both have range filters
         // it should return two filters that each only has the range filter.
@@ -320,7 +291,7 @@ describe('filters util', () => {
           dateCreated : { gte: '2023-11-20T00:00:00.000000Z' },
         }];
 
-        const filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
+        const filters = FilterSelector.reduceFilters(inputFilters);
         expect(filters.length).to.equal(2);
         const returnFilters = filters.map(filter => Object.values(filter));
         //expect each filter to only have a single filter value and for it to be a range filter
@@ -340,7 +311,7 @@ describe('filters util', () => {
               contextId : 'some-context-id' // common
             }];
 
-            const filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
+            const filters = FilterSelector.reduceFilters(inputFilters);
             expect(filters.length).to.equal(1);
             expect(filters[0].contextId).to.not.be.undefined;
             expect(Object.keys(filters[0]).length).to.equal(1);
@@ -356,7 +327,7 @@ describe('filters util', () => {
               schema   : 'some-schema', //common
             }];
 
-            const filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
+            const filters = FilterSelector.reduceFilters(inputFilters);
             expect(filters.length).to.equal(1);
             expect(filters[0].schema).to.not.be.undefined;
             expect(Object.keys(filters[0]).length).to.equal(1);
@@ -374,7 +345,7 @@ describe('filters util', () => {
               schema       : 'some-schema-2',
             }];
 
-            const filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
+            const filters = FilterSelector.reduceFilters(inputFilters);
             expect(filters.length).to.equal(1);
             expect(filters[0].protocolPath).to.not.be.undefined;
             expect(Object.keys(filters[0]).length).to.equal(1);
@@ -390,7 +361,7 @@ describe('filters util', () => {
               schema   : 'some-schema-2',
             }];
 
-            const filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
+            const filters = FilterSelector.reduceFilters(inputFilters);
             expect(filters.length).to.equal(1);
             expect(filters[0].protocol).to.not.be.undefined;
             expect(Object.keys(filters[0]).length).to.equal(1);
@@ -409,7 +380,7 @@ describe('filters util', () => {
             schema     : 'some-schema-2',
           }];
 
-          const filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
+          const filters = FilterSelector.reduceFilters(inputFilters);
           expect(filters.length).to.equal(2);
         });
 
@@ -427,7 +398,7 @@ describe('filters util', () => {
             contextId    : 'some-context-id'
           }];
 
-          const filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
+          const filters = FilterSelector.reduceFilters(inputFilters);
           expect(filters.length).to.equal(1);
           expect(filters[0].contextId).to.not.be.undefined;
           expect(Object.keys(filters[0]).length).to.equal(1);
@@ -446,7 +417,7 @@ describe('filters util', () => {
             protocolPath : 'some-protocol-path',
           }];
 
-          const filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
+          const filters = FilterSelector.reduceFilters(inputFilters);
           expect(filters.length).to.equal(1);
           expect(filters[0].schema).to.not.be.undefined;
           expect(Object.keys(filters[0]).length).to.equal(1);
@@ -463,11 +434,76 @@ describe('filters util', () => {
             protocolPath : 'some-protocol-path',
           }];
 
-          const filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
+          const filters = FilterSelector.reduceFilters(inputFilters);
           expect(filters.length).to.equal(1);
           expect(filters[0].protocolPath).to.not.be.undefined;
           expect(Object.keys(filters[0]).length).to.equal(1);
           expect(filters[0].protocolPath).to.equal('some-protocol-path');
+        });
+      });
+
+      describe('range filters', () => {
+        it('should return range filters', async () => {
+          const inputFilters:Filter[] = [
+            { schema: 'some-schema-1', messageTimestamp: { gt: 'gt-some-message-timestamp' } },
+            { schema: 'some-schema-2', messageTimestamp: { gte: 'gte-some-message-timestamp' } },
+            { schema: 'some-schema-3', messageTimestamp: { lt: 'lt-some-message-timestamp' } },
+            { schema: 'some-schema-4', messageTimestamp: { lte: 'lte-some-message-timestamp' } },
+          ];
+
+          const filters = FilterSelector.reduceFilters(inputFilters);
+          expect(filters.length).to.equal(4);
+          expect(filters[0].messageTimestamp).to.not.be.undefined;
+          expect(Object.keys(filters[0]).length).to.equal(1);
+          expect(filters[0].messageTimestamp).to.deep.equal({ gt: 'gt-some-message-timestamp' });
+          expect(filters[1].messageTimestamp).to.not.be.undefined;
+          expect(Object.keys(filters[1]).length).to.equal(1);
+          expect(filters[1].messageTimestamp).to.deep.equal({ gte: 'gte-some-message-timestamp' });
+          expect(filters[2].messageTimestamp).to.not.be.undefined;
+          expect(Object.keys(filters[2]).length).to.equal(1);
+          expect(filters[2].messageTimestamp).to.deep.equal({ lt: 'lt-some-message-timestamp' });
+          expect(filters[3].messageTimestamp).to.not.be.undefined;
+          expect(Object.keys(filters[3]).length).to.equal(1);
+          expect(filters[3].messageTimestamp).to.deep.equal({ lte: 'lte-some-message-timestamp' });
+        });
+
+        it('should only return range filters without recordIds ', async () => {
+          const inputFilters:Filter[] = [
+            { recordId: 'some-record-id', schema: 'some-schema-1', messageTimestamp: { gt: 'gt-some-message-timestamp' } },
+            { recordId: 'some-record-id-2', schema: 'some-schema-2', messageTimestamp: { gte: 'gte-some-message-timestamp' } },
+            { schema: 'some-schema-3', messageTimestamp: { lt: 'lt-some-message-timestamp' } },
+            { schema: 'some-schema-4', messageTimestamp: { lte: 'lte-some-message-timestamp' } },
+          ];
+
+          const filters = FilterSelector.reduceFilters(inputFilters);
+          expect(filters.length).to.equal(4);
+          expect(filters[0].messageTimestamp).to.be.undefined;
+          expect(filters[1].messageTimestamp).to.be.undefined;
+          expect(filters[2].messageTimestamp).to.not.be.undefined;
+          expect(Object.keys(filters[2]).length).to.equal(1);
+          expect(filters[2].messageTimestamp).to.deep.equal({ lt: 'lt-some-message-timestamp' });
+          expect(filters[3].messageTimestamp).to.not.be.undefined;
+          expect(Object.keys(filters[3]).length).to.equal(1);
+          expect(filters[3].messageTimestamp).to.deep.equal({ lte: 'lte-some-message-timestamp' });
+        });
+
+        it('should return combined common filter after range has been reduced', async () => {
+          const inputFilters:Filter[] = [
+            { schema: 'some-schema-1', messageTimestamp: { gt: 'gt-some-message-timestamp' } },
+            { schema: 'some-schema-2', messageTimestamp: { gte: 'gte-some-message-timestamp' } },
+            { schema: 'some-schema-3' },
+            { schema: 'some-schema-3' },
+          ];
+
+          const filters = FilterSelector.reduceFilters(inputFilters);
+          expect(filters.length).to.equal(3);
+          expect(filters[0].messageTimestamp).to.not.be.undefined;
+          expect(Object.keys(filters[0]).length).to.equal(1);
+          expect(filters[0].messageTimestamp).to.deep.equal({ gt: 'gt-some-message-timestamp' });
+          expect(filters[1].messageTimestamp).to.not.be.undefined;
+          expect(Object.keys(filters[1]).length).to.equal(1);
+          expect(filters[1].messageTimestamp).to.deep.equal({ gte: 'gte-some-message-timestamp' });
+          expect(filters[2].messageTimestamp).to.be.undefined; // the last filter does not have messageTimestamp as a filter
         });
       });
 
@@ -485,7 +521,7 @@ describe('filters util', () => {
             recordId : 'some-record-id'
           }];
 
-          let filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
+          let filters = FilterSelector.reduceFilters(inputFilters);
           expect(filters.length).to.equal(2);
           const recordIdFilter = filters.find(filter => filter.recordId !== undefined);
           expect(recordIdFilter).to.not.be.undefined;
@@ -506,7 +542,7 @@ describe('filters util', () => {
             recordId : 'some-record-id-2'
           }];
 
-          filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
+          filters = FilterSelector.reduceFilters(inputFilters);
           expect(filters.length).to.equal(2);
           expect(filters.every(filter => filter.recordId !== undefined && Object.keys(filter).length === 1)).to.be.true;
           expect(inputFilters[0].recordId).to.equal(filters[0].recordId);
@@ -522,61 +558,10 @@ describe('filters util', () => {
             recordId : ['some-record-id-1', 'some-record-id-2']
           }];
 
-          filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
+          filters = FilterSelector.reduceFilters(inputFilters);
           expect(filters.length).to.equal(1);
           expect(filters[0].recordId).to.not.be.undefined;
           expect(filters[0].recordId).to.have.members(['some-record-id-1', 'some-record-id-2']);
-        });
-
-        it('should always return filters that filter for permissionsGrantId', async () => {
-          // scenario 1: one of the filters looks for a specific permissionsGrantId
-          //             the returned filters must include a filter for the permissionsGrantId.
-          //             it can only have one filter property
-          let inputFilters:Filter[] = [{
-            schema: 'some-schema',
-          },{
-            schema             : 'some-schema2',
-            permissionsGrantId : 'some-grant-id'
-          }];
-
-          let filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
-          expect(filters.length).to.equal(2);
-          const grantIdFilter = filters.find(filter => filter.permissionsGrantId !== undefined);
-          expect(grantIdFilter).to.not.be.undefined;
-          expect(Object.keys(grantIdFilter!).length).to.equal(1);
-          expect(grantIdFilter!.permissionsGrantId).to.equal('some-grant-id');
-
-          // scenario 2: both of the filters look for permissionsGrantId,
-          //             both of the returned filters must include a filter for the respective permissionsGrantId.
-          //             it can only have one filter property
-
-          inputFilters = [{
-            schema             : 'some-schema',
-            permissionsGrantId : 'some-grant-id'
-          },{
-            schema             : 'some-schema2',
-            permissionsGrantId : 'some-grant-id'
-          }];
-
-          filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
-          expect(filters.length).to.equal(2);
-          expect(filters.every(filter => filter.permissionsGrantId !== undefined && Object.keys(filter).length === 1)).to.be.true;
-          expect(inputFilters[0].permissionsGrantId).to.equal(filters[0].permissionsGrantId);
-          expect(inputFilters[1].permissionsGrantId).to.equal(filters[1].permissionsGrantId);
-
-          // scenario 3: a filter containing an array of permissionsGrantId.
-          //             the returned filter will have an array of permissionsGrantId
-          //             it can only have one filter property
-
-          inputFilters = [{
-            schema             : 'some-schema',
-            permissionsGrantId : ['some-grant-id-1', 'some-grant-id-2']
-          }];
-
-          filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
-          expect(filters.length).to.equal(1);
-          expect(filters[0].permissionsGrantId).to.not.be.undefined;
-          expect(filters[0].permissionsGrantId).to.have.members(['some-grant-id-1', 'some-grant-id-2']);
         });
 
         it('returns remaining filters without Ids', async () => {
@@ -584,156 +569,25 @@ describe('filters util', () => {
             schema   : 'schema-1',
             recordId : 'some-record-id'
           },{
-            schema             : 'schema-2',
-            permissionsGrantId : 'some-grant-id'
+            schema   : 'schema-2',
+            recordId : 'some-record-id-2'
           },{
             schema: 'schema-3', // remaining
           },{
             schema: 'schema-4' //remaining
           }];
 
-          const filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
-          const idFilters = filters.filter(filter => filter.recordId !== undefined || filter.permissionsGrantId !== undefined);
-          const remainingFilters = filters.filter(filter => filter.recordId === undefined && filter.permissionsGrantId === undefined);
+          const filters = FilterSelector.reduceFilters(inputFilters);
+          const idFilters = filters.filter(filter => filter.recordId !== undefined);
+          const remainingFilters = filters.filter(filter => filter.recordId === undefined);
           expect(idFilters.length).to.equal(2);
           expect(idFilters[0].recordId).to.equal('some-record-id');
-          expect(idFilters[1].permissionsGrantId).to.equal('some-grant-id');
+          expect(Object.keys(idFilters[0]!).length).to.equal(1); // ensure there is only one filter property
+          expect(idFilters[1].recordId).to.equal('some-record-id-2');
+          expect(Object.keys(idFilters[1]!).length).to.equal(1); // ensure there is only one filter property
           expect(remainingFilters.length).to.equal(2);
           expect(remainingFilters[0].schema).to.equal('schema-3');
           expect(remainingFilters[1].schema).to.equal('schema-4');
-        });
-
-        it('gives contextId priority when returning remaining filters', async () => {
-          // scenario: all 4 fields common properties are in use but different between filters
-          //           contextId will be returned for both filters.
-          const inputFilters:Filter[] = [{
-            protocol     : 'some-protocol-1',
-            schema       : 'some-schema-1',
-            protocolPath : 'some-protocol-path-1',
-            contextId    : 'some-context-id-1'
-          },{
-            protocol     : 'some-protocol-2',
-            schema       : 'some-schema-2',
-            protocolPath : 'some-protocol-path-2',
-            contextId    : 'some-context-id-2'
-          }];
-
-          const filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
-          expect(filters.length).to.equal(2);
-          expect(filters.every(filter => filter.contextId !== undefined)).to.be.true;
-          expect(filters.every(filter => Object.keys(filter).length === 1)).to.be.true;
-          expect(filters[0].contextId).to.equal('some-context-id-1');
-          expect(filters[1].contextId).to.equal('some-context-id-2');
-        });
-
-        it('gives schema priority over protocolPath and protocol when returning remaining filters', async () => {
-          // scenario: 3 common properties are in use between different filters
-          //           schema will be returned for both filters.
-          const inputFilters:Filter[] = [{
-            protocol     : 'some-protocol-1',
-            schema       : 'some-schema-1',
-            protocolPath : 'some-protocol-path-1',
-          },{
-            protocol     : 'some-protocol-2',
-            schema       : 'some-schema-2',
-            protocolPath : 'some-protocol-path-2',
-          }];
-
-          const filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
-          expect(filters.length).to.equal(2);
-          expect(filters.every(filter => filter.schema !== undefined)).to.be.true;
-          expect(filters.every(filter => Object.keys(filter).length === 1)).to.be.true;
-          expect(filters[0].schema).to.equal('some-schema-1');
-          expect(filters[1].schema).to.equal('some-schema-2');
-        });
-
-        it('gives protocolPath priority over protocol when returning remaining filters', async () => {
-          // scenario: 3 common properties are in use between different filters
-          //           schema will be returned for both filters.
-          const inputFilters:Filter[] = [{
-            protocol     : 'some-protocol-1',
-            protocolPath : 'some-protocol-path-1',
-          },{
-            protocol     : 'some-protocol-2',
-            protocolPath : 'some-protocol-path-2',
-          }];
-
-          const filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
-          expect(filters.length).to.equal(2);
-          expect(filters.every(filter => filter.protocolPath !== undefined)).to.be.true;
-          expect(filters.every(filter => Object.keys(filter).length === 1)).to.be.true;
-          expect(filters[0].protocolPath).to.equal('some-protocol-path-1');
-          expect(filters[1].protocolPath).to.equal('some-protocol-path-2');
-        });
-
-        it('returns common filters over unknown filters', async () => {
-          // quality filters
-          let inputFilters:Filter[] = [{
-            someOther : 'filter',
-            protocol  : 'some-protocol-1',
-          },{
-            someOther    : 'filter',
-            protocolPath : 'some-protocol-path-1',
-          },{
-            someOther : 'filter',
-            schema    : 'some-schema-1',
-          },{
-            someOther : 'filter',
-            contextId : 'some-context-id-1'
-          }];
-
-          let filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
-          expect(filters.length).to.equal(4);
-          expect(filters.every(filter => Object.keys(filter).length === 1)).to.be.true;
-          expect(filters[0].protocol).to.equal('some-protocol-1');
-          expect(filters[1].protocolPath).to.equal('some-protocol-path-1');
-          expect(filters[2].schema).to.equal('some-schema-1');
-          expect(filters[3].contextId).to.equal('some-context-id-1');
-
-          // one of filters
-          inputFilters = [{
-            someOther : 'filter',
-            protocol  : ['some-protocol-1', 'some-protocol-2'],
-          },{
-            someOther    : 'filter',
-            protocolPath : ['some-protocol-path-1', 'some-protocol-path-2'],
-          },{
-            someOther : 'filter',
-            schema    : ['some-schema-1', 'some-schema-2'],
-          },{
-            someOther : 'filter',
-            contextId : ['some-context-id-1', 'some-context-id-2']
-          }];
-
-          filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
-          expect(filters.length).to.equal(4);
-          expect(filters.every(filter => Object.keys(filter).length === 1)).to.be.true;
-          expect(filters[0].protocol).to.have.members(['some-protocol-1', 'some-protocol-2'], 'protocol');
-          expect(filters[1].protocolPath).to.have.members(['some-protocol-path-1', 'some-protocol-path-2'], 'protocol-path');
-          expect(filters[2].schema).to.have.members(['some-schema-1', 'some-schema-2'], 'schema');
-          expect(filters[3].contextId).to.have.members(['some-context-id-1', 'some-context-id-2'], 'context-id');
-        });
-
-        it('returns empty filters if there are no common filters in one of the filters', async () => {
-          // quality filters
-          const inputFilters:Filter[] = [{
-            someOther : 'filter',
-            protocol  : 'some-protocol-1',
-          },{
-            someOther    : 'filter',
-            protocolPath : 'some-protocol-path-1',
-          },{
-            someOther : 'filter',
-            schema    : 'some-schema-1',
-          },{
-            someOther : 'filter',
-            contextId : 'some-context-id-1'
-          },{
-            someOther: 'filter',
-          }];
-
-          const filters = FilterSelector.select(inputFilters, { sortProperty: 'messageTimestamp' });
-          expect(filters.length).to.equal(0);
         });
       });
     });
