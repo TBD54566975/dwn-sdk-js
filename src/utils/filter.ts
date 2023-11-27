@@ -186,7 +186,7 @@ export class FilterSelector {
 
     const finalRemaining = remainingAfterRange.map(filter => {
 
-      const { contextId, schema, protocol, protocolPath, author } = filter;
+      const { contextId, schema, protocol, protocolPath, author, ...remaining } = filter;
       if (contextId !== undefined && FilterUtility.isEqualFilter(contextId)) {
         return { contextId };
       } else if (schema !== undefined && FilterUtility.isEqualFilter(schema)) {
@@ -198,21 +198,8 @@ export class FilterSelector {
       } else if (author !== undefined && FilterUtility.isEqualFilter(author)) {
         return { author };
       } else {
-        // get the first filter property that isn't a boolean value
-        const filterProperties = Object.keys(filter);
-        const firstProperty = filterProperties.find(filterProperty => {
-          const filterValue = filter[filterProperty];
-          return filterValue !== undefined && FilterUtility.isEqualFilter(filterValue) && typeof filterValue !== 'boolean';
-        });
 
-        if (firstProperty !== undefined) {
-          const singlePropertyFilter:Filter = {};
-          singlePropertyFilter[firstProperty] = filter[firstProperty];
-          return singlePropertyFilter;
-        }
-
-        // fall back tot he entire filter
-        return { ...filter };
+        return this.getFirstFilterPropertyThatIsNotABooleanEqualFilter(filter) || remaining;
       }
     });
 
@@ -260,26 +247,48 @@ export class FilterSelector {
   }
 
   private static extractCommonFilter(filters: Filter[]): Filter | undefined {
-    const { schema, contextId, protocol, protocolPath } = this.commonEqualFilters(filters);
+    const { schema, contextId, protocol, protocolPath, author, ...remaining } = this.commonEqualFilters(filters);
 
     // if we match any of these, we add them to our search filters and return immediately
+    // the order we are checking/returning is the order of priority
     if (contextId !== undefined && FilterUtility.isEqualFilter(contextId)) {
       // a common contextId exists between all filters
-      // we return this first, as it will likely produce the smallest match set.
       return { contextId };
     } else if ( schema !== undefined && FilterUtility.isEqualFilter(schema)) {
       // a common schema exists between all filters
-      // we return this second, as it will likely produce a sufficiently small match set.
       return { schema };
     } else if (protocolPath !== undefined && FilterUtility.isEqualFilter(protocolPath)) {
       // a common protocol exists between all filters
-      // we return this third, as it will likely produce a sufficiently small match set.
       return { protocolPath };
     } else if (protocol !== undefined && FilterUtility.isEqualFilter(protocol)) {
       // a common protocol exists between all filters
-      // we return this third, as it will likely produce a sufficiently small match set.
       return { protocol };
-    };
+    } else if (author !== undefined && FilterUtility.isEqualFilter(author)) {
+      // a common author exists between all filters
+      return { author };
+    }
+
+    // return the first common filter that isn't listed in priority with a boolean common filter being last priority.
+    return this.getFirstFilterPropertyThatIsNotABooleanEqualFilter(remaining);
+  }
+
+  private static getFirstFilterPropertyThatIsNotABooleanEqualFilter(filter: Filter): Filter | undefined {
+    const filterProperties = Object.keys(filter);
+
+    // find the first EqualFilter that is not a boolean
+    const firstProperty = filterProperties.find(filterProperty => {
+      const filterValue = filter[filterProperty];
+      return filterValue !== undefined && FilterUtility.isEqualFilter(filterValue) && typeof filterValue !== 'boolean';
+    });
+
+    // if a non boolean filter exists, set it as the only filter property and return
+    if (firstProperty !== undefined) {
+      const singlePropertyFilter:Filter = {};
+      singlePropertyFilter[firstProperty] = filter[firstProperty];
+      return singlePropertyFilter;
+    }
+
+    return;
   }
 
   /**
