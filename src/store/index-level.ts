@@ -1,12 +1,12 @@
 import type { EqualFilter, Filter, KeyValues, QueryOptions, RangeFilter } from '../types/query-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions, } from './level-wrapper.js';
 
+import { isEmptyObject } from '../utils/object.js';
 import { lexicographicalCompare } from '../utils/string.js';
 import { SortDirection } from '../types/query-types.js';
 import { createLevelDatabase, LevelWrapper } from './level-wrapper.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { FilterSelector, FilterUtility } from '../utils/filter.js';
-import { isEmptyObject, removeEmptyStrings } from '../utils/object.js';
 
 type IndexLevelConfig = {
   location?: string,
@@ -71,8 +71,7 @@ export class IndexLevel {
     options?: IndexLevelOptions
   ): Promise<void> {
 
-    // ensure we have something valid to index, remove any empty strings from index properties
-    removeEmptyStrings(indexes);
+    // ensure we have something valid to index
     if (isEmptyObject(indexes)) {
       throw new DwnError(DwnErrorCode.IndexMissingIndexableProperty, 'Index must include at least one valid indexable property');
     }

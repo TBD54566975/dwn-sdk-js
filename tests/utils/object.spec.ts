@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { removeEmptyObjects, removeEmptyStrings, removeUndefinedProperties } from '../../src/utils/object.js';
+import { removeEmptyObjects, removeUndefinedProperties } from '../../src/utils/object.js';
 
 describe('Object', () => {
   describe('removeUndefinedProperties', () => {
@@ -35,18 +35,6 @@ describe('Object', () => {
       removeEmptyObjects(obj);
 
       expect(obj).to.deep.equal({ buzz: 'hello' });
-    });
-  });
-
-  describe('removeEmptyStrings', () => {
-    it('should remove all empty strings', () => {
-      const obj = {
-        foo  : '',
-        bar  : { baz: '' },
-        buzz : 'hello'
-      };
-      removeEmptyStrings(obj);
-      expect(obj).to.deep.equal({ bar: {}, buzz: 'hello' });
     });
   });
 });

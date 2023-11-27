@@ -43,14 +43,6 @@ describe('IndexLevel', () => {
         const failedIndexPromise = testIndex.put(tenant, id, {});
         await expect(failedIndexPromise).to.eventually.be.rejectedWith(DwnErrorCode.IndexMissingIndexableProperty);
       });
-
-      it('ignores empty string indexes', async () => {
-        const id = uuid();
-        const failedIndexPromise = testIndex.put(tenant, id, {
-          some: ''
-        });
-        await expect(failedIndexPromise).to.eventually.be.rejectedWith(DwnErrorCode.IndexMissingIndexableProperty);
-      });
     });
 
     it('successfully indexes', async () => {
