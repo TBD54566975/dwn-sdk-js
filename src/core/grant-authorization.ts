@@ -1,5 +1,4 @@
 import type { GenericMessage } from '../types/message-types.js';
-import type { MessageInterface } from '../types/message-interface.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { PermissionsGrantMessage } from '../types/permissions-types.js';
 
@@ -12,20 +11,18 @@ export class GrantAuthorization {
   /**
    * Performs PermissionsGrant-based authorization against the given message
    * Does not validate grant `conditions` or `scope` beyond `interface` and `method`
-   * @throws {Error} if authorization fails
+   * @throws {DwnError} if authorization fails
    */
   public static async authorizeGenericMessage(
     tenant: string,
-    incomingMessage: MessageInterface<GenericMessage>,
+    incomingMessage: GenericMessage,
     author: string,
-    permissionsGrantId: string,
+    permissionsGrantMessage: PermissionsGrantMessage,
     messageStore: MessageStore,
-  ): Promise<PermissionsGrantMessage> {
+  ): Promise<void> {
 
-    const incomingMessageDescriptor = incomingMessage.message.descriptor;
-
-    // Fetch grant
-    const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, permissionsGrantId);
+    const incomingMessageDescriptor = incomingMessage.descriptor;
+    const permissionsGrantId = await Message.getCid(permissionsGrantMessage);
 
     GrantAuthorization.verifyGrantedToAndGrantedFor(author, tenant, permissionsGrantMessage);
 
@@ -45,8 +42,6 @@ export class GrantAuthorization {
       permissionsGrantMessage,
       permissionsGrantId
     );
-
-    return permissionsGrantMessage;
   }
 
   /**
@@ -54,7 +49,7 @@ export class GrantAuthorization {
    * @returns the PermissionsGrantMessage with CID `permissionsGrantId` if message exists
    * @throws {Error} if PermissionsGrantMessage with CID `permissionsGrantId` does not exist
    */
-  private static async fetchGrant(
+  public static async fetchGrant(
     tenant: string,
     messageStore: MessageStore,
     permissionsGrantId: string,
@@ -101,7 +96,7 @@ export class GrantAuthorization {
    * Verify that the incoming message is within the allowed time frame of the grant,
    * and the grant has not been revoked.
    * @param permissionsGrantId Purely being passed as an optimization. Technically can be computed from `permissionsGrantMessage`.
-   * @throws {Error} if incomingMessage has timestamp for a time in which the grant is not active.
+   * @throws {DwnError} if incomingMessage has timestamp for a time in which the grant is not active.
    */
   private static async verifyGrantActive(
     tenant: string,
@@ -144,7 +139,8 @@ export class GrantAuthorization {
 
   /**
    * Verify that the `interface` and `method` grant scopes match the incoming message
-   * @throws {Error} if the `interface` and `method` of the incoming message do not match the scope of the PermissionsGrant
+   * @param permissionsGrantId Purely being passed for logging purposes.
+   * @throws {DwnError} if the `interface` and `method` of the incoming message do not match the scope of the PermissionsGrant
    */
   private static async verifyGrantScopeInterfaceAndMethod(
     dwnInterface: string,

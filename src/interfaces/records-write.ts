@@ -24,6 +24,7 @@ import { Jws } from '../utils/jws.js';
 import { KeyDerivationScheme } from '../utils/hd-key.js';
 import { Message } from '../core/message.js';
 import { Records } from '../utils/records.js';
+import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Secp256k1 } from '../utils/secp256k1.js';
 import { Time } from '../utils/time.js';
@@ -180,6 +181,21 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
    */
   public get ownerSignaturePayload(): GenericSignaturePayload | undefined {
     return this._ownerSignaturePayload;
+  }
+
+  /**
+   * If this message is signed by a delegated entity.
+   */
+  public get isSignedByDelegatee(): boolean {
+    return this._message.authorization?.authorDelegatedGrant !== undefined;
+  }
+
+  /**
+   * Gets the signer of this message.
+   * This is not to be confused with the logical author of the message.
+   */
+  public get signer(): string | undefined {
+    return Message.getSigner(this._message);
   }
 
   readonly attesters: string[];
@@ -694,6 +710,13 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     if (message.contextId !== undefined) { indexes.contextId = message.contextId; }
 
     return indexes;
+  }
+
+  public async authorizeDelegatee(messageStore: MessageStore): Promise<void> {
+    const grantedTo = this.signer!;
+    const grantedFor = this.author!;
+    const delegatedGrant = this.message.authorization.authorDelegatedGrant!;
+    await RecordsGrantAuthorization.authorizeWrite(grantedFor, this.message, grantedTo, delegatedGrant, messageStore);
   }
 
 

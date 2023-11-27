@@ -2,7 +2,7 @@ import type { MessageStore } from '../types/message-store.js';
 import type { PermissionsGrantMessage } from '../types/permissions-types.js';
 import type { RecordsPermissionScope } from '../types/permissions-grant-descriptor.js';
 import type { RecordsRead } from '../interfaces/records-read.js';
-import type { RecordsWrite } from '../interfaces/records-write.js';
+import type { RecordsWriteMessage } from '../types/records-types.js';
 
 import { GrantAuthorization } from './grant-authorization.js';
 import { PermissionsConditionPublication } from '../types/permissions-grant-descriptor.js';
@@ -14,15 +14,16 @@ export class RecordsGrantAuthorization {
    */
   public static async authorizeWrite(
     tenant: string,
-    incomingMessage: RecordsWrite,
+    incomingMessage: RecordsWriteMessage,
     author: string,
+    permissionsGrantMessage: PermissionsGrantMessage,
     messageStore: MessageStore,
   ): Promise<void> {
-    const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(
+    await GrantAuthorization.authorizeGenericMessage(
       tenant,
       incomingMessage,
       author,
-      incomingMessage.signaturePayload!.permissionsGrantId!,
+      permissionsGrantMessage,
       messageStore
     );
 
@@ -37,19 +38,20 @@ export class RecordsGrantAuthorization {
   public static async authorizeRead(
     tenant: string,
     incomingMessage: RecordsRead,
-    newestRecordsWrite: RecordsWrite,
+    newestRecordsWriteMessage: RecordsWriteMessage,
     author: string,
+    permissionsGrantMessage: PermissionsGrantMessage,
     messageStore: MessageStore,
   ): Promise<void> {
-    const permissionsGrantMessage = await GrantAuthorization.authorizeGenericMessage(
+    await GrantAuthorization.authorizeGenericMessage(
       tenant,
-      incomingMessage,
+      incomingMessage.message,
       author,
-      incomingMessage.signaturePayload!.permissionsGrantId!,
+      permissionsGrantMessage,
       messageStore
     );
 
-    RecordsGrantAuthorization.verifyScope(newestRecordsWrite, permissionsGrantMessage);
+    RecordsGrantAuthorization.verifyScope(newestRecordsWriteMessage, permissionsGrantMessage);
   }
 
   /**
@@ -57,7 +59,7 @@ export class RecordsGrantAuthorization {
    *                     then this is the incoming RecordsWrite. Otherwise, it is the newest existing RecordsWrite.
    */
   private static verifyScope(
-    recordsWrite: RecordsWrite,
+    recordsWriteMessage: RecordsWriteMessage,
     permissionsGrantMessage: PermissionsGrantMessage,
   ): void {
     const grantScope = permissionsGrantMessage.descriptor.scope as RecordsPermissionScope;
@@ -65,11 +67,11 @@ export class RecordsGrantAuthorization {
     if (RecordsGrantAuthorization.isUnrestrictedScope(grantScope)) {
       // scope has no restrictions beyond interface and method. Message is authorized to access any record.
       return;
-    } else if (recordsWrite.message.descriptor.protocol !== undefined) {
+    } else if (recordsWriteMessage.descriptor.protocol !== undefined) {
       // authorization of protocol records must have grants that explicitly include the protocol
-      RecordsGrantAuthorization.authorizeProtocolRecord(recordsWrite, grantScope);
+      RecordsGrantAuthorization.authorizeProtocolRecord(recordsWriteMessage, grantScope);
     } else {
-      RecordsGrantAuthorization.authorizeFlatRecord(recordsWrite, grantScope);
+      RecordsGrantAuthorization.authorizeFlatRecord(recordsWriteMessage, grantScope);
     }
   }
 
@@ -77,7 +79,7 @@ export class RecordsGrantAuthorization {
    * Authorizes a grant scope for a protocol record
    */
   private static authorizeProtocolRecord(
-    recordsWrite: RecordsWrite,
+    recordsWriteMessage: RecordsWriteMessage,
     grantScope: RecordsPermissionScope
   ): void {
     // Protocol records must have grants specifying the protocol
@@ -89,7 +91,7 @@ export class RecordsGrantAuthorization {
     }
 
     // The record's protocol must match the protocol specified in the record
-    if (grantScope.protocol !== recordsWrite.message.descriptor.protocol) {
+    if (grantScope.protocol !== recordsWriteMessage.descriptor.protocol) {
       throw new DwnError(
         DwnErrorCode.RecordsGrantAuthorizationScopeProtocolMismatch,
         `Grant scope specifies different protocol than what appears in the record`
@@ -97,7 +99,7 @@ export class RecordsGrantAuthorization {
     }
 
     // If grant specifies either contextId, check that record is that context
-    if (grantScope.contextId !== undefined && grantScope.contextId !== recordsWrite.message.contextId) {
+    if (grantScope.contextId !== undefined && grantScope.contextId !== recordsWriteMessage.contextId) {
       throw new DwnError(
         DwnErrorCode.RecordsGrantAuthorizationScopeContextIdMismatch,
         `Grant scope specifies different contextId than what appears in the record`
@@ -105,7 +107,7 @@ export class RecordsGrantAuthorization {
     }
 
     // If grant specifies protocolPath, check that record is at that protocolPath
-    if (grantScope.protocolPath !== undefined && grantScope.protocolPath !== recordsWrite.message.descriptor.protocolPath) {
+    if (grantScope.protocolPath !== undefined && grantScope.protocolPath !== recordsWriteMessage.descriptor.protocolPath) {
       throw new DwnError(
         DwnErrorCode.RecordsGrantAuthorizationScopeProtocolPathMismatch,
         `Grant scope specifies different protocolPath than what appears in the record`
@@ -117,11 +119,11 @@ export class RecordsGrantAuthorization {
    * Authorizes a grant scope for a non-protocol record
    */
   private static authorizeFlatRecord(
-    recordsWrite: RecordsWrite,
+    recordsWriteMessage: RecordsWriteMessage,
     grantScope: RecordsPermissionScope
   ): void {
     if (grantScope.schema !== undefined) {
-      if (grantScope.schema !== recordsWrite.message.descriptor.schema) {
+      if (grantScope.schema !== recordsWriteMessage.descriptor.schema) {
         throw new DwnError(
           DwnErrorCode.RecordsGrantAuthorizationScopeSchema,
           `Record does not have schema in PermissionsGrant scope with schema '${grantScope.schema}'`
@@ -134,11 +136,11 @@ export class RecordsGrantAuthorization {
    * Verifies grant `conditions`.
    * Currently the only condition is `published` which only applies to RecordsWrites
    */
-  private static verifyConditions(incomingMessage: RecordsWrite, permissionsGrantMessage: PermissionsGrantMessage): void {
+  private static verifyConditions(recordsWriteMessage: RecordsWriteMessage, permissionsGrantMessage: PermissionsGrantMessage): void {
     const conditions = permissionsGrantMessage.descriptor.conditions;
 
     // If conditions require publication, RecordsWrite must have `published` === true
-    if (conditions?.publication === PermissionsConditionPublication.Required && !incomingMessage.message.descriptor.published) {
+    if (conditions?.publication === PermissionsConditionPublication.Required && !recordsWriteMessage.descriptor.published) {
       throw new DwnError(
         DwnErrorCode.RecordsGrantAuthorizationConditionPublicationRequired,
         'PermissionsGrant requires message to be published'
@@ -146,7 +148,7 @@ export class RecordsGrantAuthorization {
     }
 
     // if conditions prohibit publication, RecordsWrite must have published === false or undefined
-    if (conditions?.publication === PermissionsConditionPublication.Prohibited && incomingMessage.message.descriptor.published) {
+    if (conditions?.publication === PermissionsConditionPublication.Prohibited && recordsWriteMessage.descriptor.published) {
       throw new DwnError(
         DwnErrorCode.RecordsGrantAuthorizationConditionPublicationProhibited,
         'PermissionsGrant prohibits message from being published'

@@ -11,6 +11,7 @@ import { Cid } from '../utils/cid.js';
 import { DataStream } from '../utils/data-stream.js';
 import { DwnConstant } from '../core/dwn-constant.js';
 import { Encoder } from '../utils/encoder.js';
+import { GrantAuthorization } from '../core/grant-authorization.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
@@ -260,6 +261,10 @@ export class RecordsWriteHandler implements MethodHandler {
       );
     }
 
+    if (recordsWrite.isSignedByDelegatee) {
+      await recordsWrite.authorizeDelegatee(messageStore);
+    }
+
     if (recordsWrite.owner !== undefined) {
       // if incoming message is a write retained by this tenant, we by-design always allow
       // NOTE: the "owner === tenant" check is already done earlier in this method
@@ -268,7 +273,8 @@ export class RecordsWriteHandler implements MethodHandler {
       // if author is the same as the target tenant, we can directly grant access
       return;
     } else if (recordsWrite.author !== undefined && recordsWrite.signaturePayload!.permissionsGrantId !== undefined) {
-      await RecordsGrantAuthorization.authorizeWrite(tenant, recordsWrite, recordsWrite.author, messageStore);
+      const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, recordsWrite.signaturePayload!.permissionsGrantId);
+      await RecordsGrantAuthorization.authorizeWrite(tenant, recordsWrite.message, recordsWrite.author, permissionsGrantMessage, messageStore);
     } else if (recordsWrite.message.descriptor.protocol !== undefined) {
       await ProtocolAuthorization.authorizeWrite(tenant, recordsWrite, messageStore);
     } else {

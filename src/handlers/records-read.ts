@@ -9,6 +9,7 @@ import { authenticate } from '../core/auth.js';
 import { DataStream } from '../utils/data-stream.js';
 import { DwnInterfaceName } from '../enums/dwn-interface-method.js';
 import { Encoder } from '../utils/encoder.js';
+import { GrantAuthorization } from '../core/grant-authorization.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
@@ -113,7 +114,10 @@ export class RecordsReadHandler implements MethodHandler {
       // The recipient of a message may always read it
       return;
     } else if (recordsRead.author !== undefined && recordsRead.signaturePayload!.permissionsGrantId !== undefined) {
-      await RecordsGrantAuthorization.authorizeRead(tenant, recordsRead, newestRecordsWrite, recordsRead.author, messageStore);
+      const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, recordsRead.signaturePayload!.permissionsGrantId);
+      await RecordsGrantAuthorization.authorizeRead(
+        tenant, recordsRead, newestRecordsWrite.message, recordsRead.author, permissionsGrantMessage, messageStore
+      );
     } else if (descriptor.protocol !== undefined) {
       await ProtocolAuthorization.authorizeRead(tenant, recordsRead, newestRecordsWrite, messageStore);
     } else {

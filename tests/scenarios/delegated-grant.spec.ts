@@ -57,7 +57,7 @@ export function testDelegatedGrantScenarios(): void {
       await dwn.close();
     });
 
-    it('should only allow entity invoking a valid delegated grant to write', async () => {
+    it('should only allow correct entity invoking a delegated grant to write', async () => {
       // scenario:
       // 1. Alice creates a delegated grant for Device X and Device Y,
       // 2. Device X and Y can both use their grants to write a message to Bob's DWN as Alice
@@ -180,7 +180,7 @@ export function testDelegatedGrantScenarios(): void {
       expect(carolWriteReply.status.detail).to.contain(DwnErrorCode.RecordsValidateIntegrityGrantedToAndSignerMismatch);
     });
 
-    it('should only allow entity invoking a valid delegated grant to read or query', async () => {
+    it('should only allow correct entity invoking a delegated grant to read or query', async () => {
       // scenario:
       // 1. Alice creates a delegated grant for device X,
       // 2. Bob starts a chat thread with Alice on his DWN
@@ -332,7 +332,7 @@ export function testDelegatedGrantScenarios(): void {
       expect(recordsQueryByCarolReply.status.detail).to.contain(DwnErrorCode.RecordsValidateIntegrityGrantedToAndSignerMismatch);
     });
 
-    it('should only allow entity invoking a valid delegated grant to delete', async () => {
+    it('should only allow entity invoking a delegated grant to delete', async () => {
       // scenario:
       // 1. Bob installs the chat protocol on his DWN and makes Alice an admin
       // 2. Bob starts a chat thread with Carol on his DWN
@@ -464,7 +464,60 @@ export function testDelegatedGrantScenarios(): void {
     xit('should not allow entity using a non-delegated grant as a delegated grant to invoke delete', async () => {
     });
 
-    xit('should evaluate scoping correctly when invoking a delegated grant to write', async () => {
+    it('should fail if delegated grant has a mismatching protocol scope - write', async () => {
+      // scenario:
+      // 1. Alice creates a delegated grant for device X to act as her for a protocol that is NOT email protocol
+      // 2. Bob has email protocol configured for his DWN that allows anyone to write an email to him
+      // 3. Device X attempts to use the delegated grant to write an email to Bob as Alice
+      // 4. Bob's DWN should reject Device X's message
+      const alice = await DidKeyResolver.generate();
+      const deviceX = await DidKeyResolver.generate();
+      const bob = await DidKeyResolver.generate();
+
+      // 1. Alice creates a delegated grant for device X to act as her for a protocol that is NOT email protocol
+      const scope: PermissionScope = {
+        interface : DwnInterfaceName.Records,
+        method    : DwnMethodName.Write,
+        protocol  : 'random-protocol'
+      };
+
+      const deviceXGrant = await PermissionsGrant.create({
+        delegated   : true, // this is a delegated grant
+        dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
+        description : 'Allow to write to some random protocol',
+        grantedBy   : alice.did,
+        grantedTo   : deviceX.did,
+        grantedFor  : alice.did,
+        scope       : scope,
+        signer      : Jws.createSigner(alice)
+      });
+
+      // 2. Bob has email protocol configured for his DWN that allows anyone to write an email to him
+      const protocolDefinition = emailProtocolDefinition;
+      const protocol = protocolDefinition.protocol;
+      const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+        author: bob,
+        protocolDefinition
+      });
+      const protocolConfigureReply = await dwn.processMessage(bob.did, protocolsConfig.message);
+      expect(protocolConfigureReply.status.code).to.equal(202);
+
+      // 3. Device X attempts to use the delegated grant to write an email to Bob as Alice
+      const deviceXData = new TextEncoder().encode('message from device X');
+      const deviceXDataStream = DataStream.fromBytes(deviceXData);
+      const messageByDeviceX = await RecordsWrite.create({
+        signer         : Jws.createSigner(deviceX),
+        delegatedGrant : deviceXGrant.asDelegatedGrant(),
+        protocol,
+        protocolPath   : 'email', // this comes from `types` in protocol definition
+        schema         : protocolDefinition.types.email.schema,
+        dataFormat     : protocolDefinition.types.email.dataFormats[0],
+        data           : deviceXData
+      });
+
+      const deviceXWriteReply = await dwn.processMessage(bob.did, messageByDeviceX.message, deviceXDataStream);
+      expect(deviceXWriteReply.status.code).to.equal(401);
+      expect(deviceXWriteReply.status.detail).to.contain(DwnErrorCode.RecordsGrantAuthorizationScopeProtocolMismatch);
     });
 
     xit('should evaluate scoping correctly when invoking a delegated grant to read', async () => {
@@ -483,6 +536,9 @@ export function testDelegatedGrantScenarios(): void {
     });
 
     xit('should fail if presented with a delegated grant with mismatching grant ID in the payload of the message signature', async () => {
+    });
+
+    xit('should fail if presented with a revoked delegated grant', async () => {
     });
   });
 }

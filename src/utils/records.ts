@@ -312,7 +312,8 @@ export class Records {
 
     // when delegated grant exists, the grantee (grantedTo) must be the same as the signer of the message
     if (authorDelegatedGrantDefined) {
-      const grantedTo = message.authorization!.authorDelegatedGrant!.descriptor.grantedTo;
+      const delegatedGrant = message.authorization!.authorDelegatedGrant!;
+      const grantedTo = delegatedGrant.descriptor.grantedTo;
       const signer = Message.getSigner(message);
       if (grantedTo !== signer) {
         throw new DwnError(

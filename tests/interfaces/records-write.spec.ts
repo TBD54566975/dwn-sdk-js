@@ -357,6 +357,21 @@ describe('RecordsWrite', () => {
     });
   });
 
+  describe('isSignedByDelegatee()', () => {
+    it('should return false if the given RecordsWrite is not signed at all', async () => {
+      const data = new TextEncoder().encode('any data');
+      const recordsWrite = await RecordsWrite.create({
+        protocol     : 'unused',
+        protocolPath : 'unused',
+        schema       : 'unused',
+        dataFormat   : 'unused',
+        data
+      });
+
+      const isSignedByDelegatee = recordsWrite.isSignedByDelegatee;
+      expect(isSignedByDelegatee).to.be.false;
+    });
+  });
 
   describe('isInitialWrite()', () => {
     it('should return false if given message is not a RecordsWrite', async () => {
