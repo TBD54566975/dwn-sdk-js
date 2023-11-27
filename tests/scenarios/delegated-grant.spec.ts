@@ -467,7 +467,7 @@ export function testDelegatedGrantScenarios(): void {
     it('should fail if delegated grant has a mismatching protocol scope - write', async () => {
       // scenario:
       // 1. Alice creates a delegated grant for device X to act as her for a protocol that is NOT email protocol
-      // 2. Bob has email protocol configured for his DWN
+      // 2. Bob has email protocol configured for his DWN that allows anyone to write an email to him
       // 3. Device X attempts to use the delegated grant to write an email to Bob as Alice
       // 4. Bob's DWN should reject Device X's message
       const alice = await DidKeyResolver.generate();
@@ -492,7 +492,7 @@ export function testDelegatedGrantScenarios(): void {
         signer      : Jws.createSigner(alice)
       });
 
-      // 2. Bob has email protocol configured for his DWN
+      // 2. Bob has email protocol configured for his DWN that allows anyone to write an email to him
       const protocolDefinition = emailProtocolDefinition;
       const protocol = protocolDefinition.protocol;
       const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
