@@ -383,7 +383,7 @@ export function testRecordsWriteHandler(): void {
           data          : newDataBytes
         });
 
-        // do not send the new data over
+        // records write should be rejected.
         const newRecordsWriteReply = await dwn.processMessage(alice.did, newRecordsWrite.message);
         expect(newRecordsWriteReply.status.code).to.equal(400);
         expect(newRecordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsWriteDataCidMismatch);
@@ -3092,7 +3092,7 @@ export function testRecordsWriteHandler(): void {
           expect(bobRecordsQueryRecordIdReply.status.code).to.equal(200);
           expect(bobRecordsQueryRecordIdReply.entries?.length).to.equal(0);
 
-          // attempt update recordsWrite without data
+          // attempt update recordsWrite without data, this will reject
           const updateRecord = await RecordsWrite.createFrom({
             recordsWriteMessage : imageRecordsWrite.message,
             signer              : Jws.createSigner(bob),
