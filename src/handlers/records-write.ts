@@ -21,11 +21,7 @@ import { StorageController } from '../store/storage-controller.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
-export type RecordsWriteHandlerOptions = {
-  skipDataStorage?: boolean; // used for DWN sync
-};
-
-type HandlerArgs = { tenant: string, message: RecordsWriteMessage, options?: RecordsWriteHandlerOptions, dataStream?: _Readable.Readable};
+type HandlerArgs = { tenant: string, message: RecordsWriteMessage, dataStream?: _Readable.Readable};
 
 export class RecordsWriteHandler implements MethodHandler {
 
@@ -34,7 +30,6 @@ export class RecordsWriteHandler implements MethodHandler {
   public async handle({
     tenant,
     message,
-    options,
     dataStream
   }: HandlerArgs): Promise<GenericMessageReply> {
     let recordsWrite: RecordsWrite;
@@ -97,14 +92,25 @@ export class RecordsWriteHandler implements MethodHandler {
 
     // if data is below a certain threshold, we embed the data directly into the message for storage in MessageStore.
     let messageWithOptionalEncodedData: RecordsWriteMessageWithOptionalEncodedData = message;
-
-    // try to store data, unless options explicitly say to skip storage
-    if (options === undefined || !options.skipDataStorage) {
-      if (dataStream === undefined && newestExistingMessage?.descriptor.method === DwnMethodName.Delete) {
-        return messageReplyFromError(new DwnError(DwnErrorCode.RecordsWriteMissingDataStream, 'No data stream was provided with the previous message being a delete'), 400);
-      }
+    if (dataStream === undefined && newestExistingMessage?.descriptor.method === DwnMethodName.Delete) {
+      return messageReplyFromError(new DwnError(DwnErrorCode.RecordsWriteMissingDataStream, 'No data stream was provided with the previous message being a delete'), 400);
+    } else if (newMessageIsInitialWrite && dataStream === undefined) {
+      // we allow pruned writing of the initial RecordsWrite message in cases where we do not have the original data,
+      // however this is not the latest base state of the record and should not be queryable/readable until a subsequent write with appropriate data.
+      indexes.isLatestBaseState = false;
+    } else {
 
       try {
+        if (dataStream === undefined) {
+          const newestRecordsWriteMessage = newestExistingMessage as RecordsWriteMessage;
+          // if no data stream exists and this is not the initial message, check data integrity against the newest message.
+          RecordsWriteHandler.validateDataIntegrity(
+            newestRecordsWriteMessage?.descriptor.dataCid,
+            newestRecordsWriteMessage.descriptor.dataSize,
+            message.descriptor.dataCid,
+            message.descriptor.dataSize,
+          );
+        }
         // if data is below the threshold, we store it within MessageStore
         if (message.descriptor.dataSize <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
           // processes and sets `encodedData` with appropriate data.
