@@ -41,7 +41,6 @@ export enum DwnErrorCode {
   IndexMissingIndexableProperty = 'IndexMissingIndexableProperty',
   JwsDecodePlainObjectPayloadInvalid = 'JwsDecodePlainObjectPayloadInvalid',
   MessageGetInvalidCid = 'MessageGetInvalidCid',
-  MessageStoreMissingTimestamp = 'MessageStoreMissingTimestamp',
   ParseCidCodecNotSupported = 'ParseCidCodecNotSupported',
   ParseCidMultihashNotSupported = 'ParseCidMultihashNotSupported',
   PermissionsGrantGrantedByMismatch = 'PermissionsGrantGrantedByMismatch',

@@ -736,7 +736,7 @@ describe('filters util', () => {
       });
 
       describe('OneOfFilter', () => {
-        it('does not optimize OneOfFilter', async () => {
+        it('passes OneOfFilter through if no other matching filters exist', async () => {
           const inputFilters:Filter[] = [{
             schema: [ 'schema1', 'schema2' ]
           }, {

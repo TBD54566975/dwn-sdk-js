@@ -9,11 +9,9 @@ import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { EventLogLevel } from '../../src/event-log/event-log-level.js';
 import { Message } from '../../src/core/message.js';
 import { MessageStoreLevel } from '../../src/store/message-store-level.js';
-import { normalizeSchemaUrl } from '../../src/utils/url.js';
 import { PermissionsRevoke } from '../../src/interfaces/permissions-revoke.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { Time } from '../../src/utils/time.js';
-import { DwnInterfaceName, DwnMethodName } from '../../src/enums/dwn-interface-method.js';
 
 describe('PermissionsRevokeHandler.handle()', () => {
   let didResolver: DidResolver;
@@ -270,42 +268,6 @@ describe('PermissionsRevokeHandler.handle()', () => {
       // Process the pre-created Revoke
       const permissionsRevokeReply1 = await dwn.processMessage(alice.did, permissionsRevoke1.message);
       expect(permissionsRevokeReply1.status.code).to.eq(202);
-    });
-
-    it('should index additional properties from original PermissionsGrant', async () => {
-      const alice = await DidKeyResolver.generate();
-      const { permissionsGrant } = await TestDataGenerator.generatePermissionsGrant({
-        author    : alice,
-        grantedBy : alice.did,
-        scope     : {
-          interface : DwnInterfaceName.Records,
-          method    : DwnMethodName.Read,
-          schema    : normalizeSchemaUrl('schema1')
-        }
-      });
-
-      const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
-      expect(permissionsGrantReply.status.code).to.eq(202);
-      let events = await eventLog.getEvents(alice.did);
-      expect(events.length).to.equal(1);
-
-      // Revoke the grant, adding a second event
-      const { permissionsRevoke } = await TestDataGenerator.generatePermissionsRevoke({
-        author             : alice,
-        permissionsGrantId : await Message.getCid(permissionsGrant.message),
-      });
-      const revokeMessageCid = await Message.getCid(permissionsRevoke.message);
-
-      const reply = await dwn.processMessage(alice.did, permissionsRevoke.message);
-      expect(reply.status.code).to.equal(202);
-
-      events = await eventLog.queryEvents(alice.did, [{ schema: normalizeSchemaUrl('schema1'), method: DwnMethodName.Revoke }]);
-      expect(events.length).to.equal(1);
-      expect(events[0]).to.equal(revokeMessageCid);
-
-      const { messages } = await messageStore.query(alice.did, [{ schema: normalizeSchemaUrl('schema1'), method: DwnMethodName.Revoke }]);
-      expect(messages.length).to.equal(1);
-      expect(await Message.getCid(messages[0])).to.equal(revokeMessageCid);
     });
 
     describe('event log', () => {

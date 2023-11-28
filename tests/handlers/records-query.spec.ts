@@ -17,7 +17,6 @@ import { DwnConstant } from '../../src/core/dwn-constant.js';
 import { DwnErrorCode } from '../../src/index.js';
 import { Encoder } from '../../src/utils/encoder.js';
 import { Jws } from '../../src/utils/jws.js';
-import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
 import { RecordsQuery } from '../../src/interfaces/records-query.js';
 import { RecordsQueryHandler } from '../../src/handlers/records-query.js';
@@ -1589,26 +1588,9 @@ export function testRecordsQueryHandler(): void {
           messages.push(processedMessage);
         }
 
-        // helper function for sorting
-        const messageCompare =
-          async (messageA: RecordsWriteMessage, messageB: RecordsWriteMessage, compareProperty: keyof RecordsWriteDescriptor): Promise<number> => {
-            const messageIdA = await Message.getCid(messageA);
-            const messageIdB = await Message.getCid(messageB);
-            const compareA = messageA.descriptor[compareProperty] as string;
-            const compareB = messageB.descriptor[compareProperty] as string;
-
-            if (compareA > compareB) {
-              return 1;
-            } else if (compareA < compareB) {
-              return -1;
-            } else {
-              return lexicographicalCompare(messageIdA, messageIdB);
-            }
-          };
-
         const sortedMessages = await ArrayUtility.asyncSort(
           messages as RecordsWriteMessage[],
-          async (a,b) => messageCompare(a, b, 'dateCreated')
+          async (a,b) => Message.compareMessageTimestamp(a,b)
         );
 
         // fetch all from alice for sanity, alice should get all of the records

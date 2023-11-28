@@ -4,14 +4,12 @@ import type { GenericMessageReply } from '../core/message-reply.js';
 import type { KeyValues } from '../types/query-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { RecordsPermissionScope } from '../types/permissions-grant-descriptor.js';
 import type { PermissionsGrantMessage, PermissionsRevokeMessage } from '../types/permissions-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { PermissionsRevoke } from '../interfaces/permissions-revoke.js';
-import { removeUndefinedProperties } from '../utils/object.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export class PermissionsRevokeHandler implements MethodHandler {
@@ -87,7 +85,7 @@ export class PermissionsRevokeHandler implements MethodHandler {
     }
 
     // Store incoming PermissionsRevoke
-    const indexes = PermissionsRevokeHandler.constructIndexes(permissionsRevoke, permissionsGrantMessage);
+    const indexes = PermissionsRevokeHandler.constructIndexes(permissionsRevoke);
     await this.messageStore.put(tenant, message, indexes);
     await this.eventLog.append(tenant, await Message.getCid(message), indexes);
 
@@ -120,33 +118,15 @@ export class PermissionsRevokeHandler implements MethodHandler {
 
   static constructIndexes(
     permissionsRevoke: PermissionsRevoke,
-    grant: PermissionsGrantMessage,
   ): KeyValues {
     const { descriptor } = permissionsRevoke.message;
 
-    // undefined properties before returning
-    let indexes: { [key:string]: string | undefined } = {
+    return {
       interface          : DwnInterfaceName.Permissions,
       method             : DwnMethodName.Revoke,
       author             : permissionsRevoke.author!,
       messageTimestamp   : descriptor.messageTimestamp,
       permissionsGrantId : descriptor.permissionsGrantId,
     };
-
-    // additional indexing for the revoked grant
-    if (grant.descriptor.scope.interface === DwnInterfaceName.Records) {
-      const scope = grant.descriptor.scope as RecordsPermissionScope;
-      const { protocol, protocolPath, schema, contextId } = scope;
-      indexes = {
-        ...indexes,
-        contextId,
-        protocol,
-        protocolPath,
-        schema,
-      };
-    }
-
-    removeUndefinedProperties(indexes);
-    return indexes as KeyValues;
   }
 }

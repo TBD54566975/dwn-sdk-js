@@ -15,7 +15,6 @@ import { IndexLevel } from './index-level.js';
 import { Message } from '../core/message.js';
 import { sha256 } from 'multiformats/hashes/sha2';
 import { SortDirection } from '../types/query-types.js';
-import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 
 
 /**
@@ -165,10 +164,6 @@ export class MessageStoreLevel implements MessageStore {
     options?: MessageStoreOptions
   ): Promise<void> {
     options?.signal?.throwIfAborted();
-
-    if (indexes.messageTimestamp === undefined) {
-      throw new DwnError(DwnErrorCode.MessageStoreMissingTimestamp, 'MessageStore indexes are required to include a messageTimestamp property');
-    }
 
     const partition = await executeUnlessAborted(this.blockstore.partition(tenant), options?.signal);
 

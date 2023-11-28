@@ -1,7 +1,7 @@
 import type { Filter } from '../types/query-types.js';
-import type { ProtocolsQueryFilter } from '../types/protocols-types.js';
+import type { ProtocolsQueryFilter } from '../index.js';
 import type { Signer } from '../types/signer.js';
-import type { EventsFilter, EventsQueryDescriptor, EventsQueryFilter, EventsQueryMessage, EventsRecordsFilter } from '../types/event-types.js';
+import type { EventsMessageFilter, EventsQueryDescriptor, EventsQueryFilter, EventsQueryMessage, EventsRecordsFilter } from '../types/event-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';
 import { FilterUtility } from '../utils/filter.js';
@@ -53,13 +53,13 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
 
     // normalize each filter individually by the type of filter it is.
     for (const filter of filters) {
-      if (this.isRecordsFilter(filter)) {
+      if (this.isMessagesFilter(filter)) {
+        eventsQueryFilters.push(filter);
+      } else if (this.isRecordsFilter(filter)) {
         eventsQueryFilters.push(Records.normalizeFilter(filter));
-      } else if (this.isProtocolsFilter(filter)) {
+      } else if (this.isProtocolFilter(filter)) {
         const protocolFilter = ProtocolsQuery.normalizeFilter(filter);
         eventsQueryFilters.push(protocolFilter!);
-      } else {
-        eventsQueryFilters.push(filter as EventsFilter);
       }
     }
 
@@ -68,7 +68,7 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
 
 
   /**
-   *  Converts an incoming array of EventsFilter into a Filter usable by EventLog.
+   *  Converts an incoming array of EventsFilter into an array of Filter usable by EventLog.
    *
    * @param filters An array of EventsFilter
    * @returns {Filter[]} an array of generic Filter able to be used when querying.
@@ -79,19 +79,19 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
 
     // normalize each filter individually by the type of filter it is.
     for (const filter of filters) {
-      if (this.isRecordsFilter(filter)) {
-        eventsQueryFilters.push(Records.convertFilter(filter));
-      } else if (this.isProtocolsFilter(filter)) {
-        eventsQueryFilters.push({ ...filter });
-      } else {
+      if (this.isMessagesFilter(filter)) {
         eventsQueryFilters.push(this.convertFilter(filter));
+      } else if (this.isRecordsFilter(filter)) {
+        eventsQueryFilters.push(Records.convertFilter(filter));
+      } else if (this.isProtocolFilter(filter)) {
+        eventsQueryFilters.push(filter);
       }
     }
 
     return eventsQueryFilters;
   }
 
-  private static convertFilter(filter: EventsFilter): Filter {
+  private static convertFilter(filter: EventsMessageFilter): Filter {
     const filterCopy = { ...filter } as Filter;
 
     const { dateUpdated } = filter;
@@ -103,8 +103,8 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
     return filterCopy as Filter;
   }
 
-  private static isProtocolsFilter(filter: EventsQueryFilter): filter is ProtocolsQueryFilter {
-    return 'protocol' in filter;
+  private static isMessagesFilter(filter: EventsQueryFilter): filter is EventsMessageFilter {
+    return 'method' in filter || 'interface' in filter || 'dateUpdated' in filter || 'author' in filter;
   }
 
   private static isRecordsFilter(filter: EventsQueryFilter): filter is EventsRecordsFilter {
@@ -113,8 +113,11 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
       'parentId' in filter ||
       'recordId' in filter ||
       'schema' in filter ||
-      'protocolPath' in filter || // explicitly ignore `protocol` as it will be handled by the protocol filter
+      ('protocolPath' in filter && 'protocol' in filter) ||
       'recipient' in filter;
   }
 
+  private static isProtocolFilter(filter: EventsQueryFilter): filter is ProtocolsQueryFilter {
+    return 'protocol' in filter;
+  }
 }
