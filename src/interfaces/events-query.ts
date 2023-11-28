@@ -1,5 +1,5 @@
 import type { Filter } from '../types/query-types.js';
-import type { ProtocolsQueryFilter } from '../index.js';
+import type { ProtocolsQueryFilter } from '../types/protocols-types.js';
 import type { Signer } from '../types/signer.js';
 import type { EventsMessageFilter, EventsQueryDescriptor, EventsQueryFilter, EventsQueryMessage, EventsRecordsFilter } from '../types/event-types.js';
 
