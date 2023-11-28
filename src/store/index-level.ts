@@ -196,7 +196,7 @@ export class IndexLevel {
   async query(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<string[]> {
 
     // check if we should query using in-memory paging or iterator paging
-    if (IndexLevel.queryWithInMemoryPaging(filters, queryOptions)) {
+    if (IndexLevel.shouldQueryWithInMemoryPaging(filters, queryOptions)) {
       return this.queryWithInMemoryPaging(tenant, filters, queryOptions, options);
     }
     return this.queryWithIteratorPaging(tenant, filters, queryOptions, options);
@@ -541,7 +541,7 @@ export class IndexLevel {
   }
 
 
-  private static queryWithInMemoryPaging(filters: Filter[], queryOptions: QueryOptions): boolean {
+  private static shouldQueryWithInMemoryPaging(filters: Filter[], queryOptions: QueryOptions): boolean {
     // if there is a specific recordId in any of the filters, return true immediately.
     if (filters.find(({ recordId }) => recordId !== undefined) !== undefined) {
       return true;
