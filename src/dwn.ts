@@ -4,7 +4,6 @@ import type { GenericMessage } from './types/message-types.js';
 import type { MessageStore } from './types/message-store.js';
 import type { MethodHandler } from './types/method-handler.js';
 import type { Readable } from 'readable-stream';
-import type { RecordsWriteHandlerOptions } from './handlers/records-write.js';
 import type { TenantGate } from './core/tenant-gate.js';
 import type { EventsGetMessage, EventsGetReply } from './types/event-types.js';
 import type { GenericMessageReply, UnionMessageReply } from './core/message-reply.js';
@@ -119,26 +118,6 @@ export class Dwn {
       dataStream
     });
 
-    return methodHandlerReply;
-  }
-
-  /**
-   * Privileged method for writing a pruned initial `RecordsWrite` to a DWN without needing to supply associated data.
-   */
-  public async synchronizePrunedInitialRecordsWrite(tenant: string, message: RecordsWriteMessage): Promise<GenericMessageReply> {
-    const errorMessageReply =
-      await this.validateTenant(tenant) ??
-      await this.validateMessageIntegrity(message, DwnInterfaceName.Records, DwnMethodName.Write);
-    if (errorMessageReply !== undefined) {
-      return errorMessageReply;
-    }
-
-    const options: RecordsWriteHandlerOptions = {
-      skipDataStorage: true,
-    };
-
-    const handler = new RecordsWriteHandler(this.didResolver, this.messageStore, this.dataStore, this.eventLog);
-    const methodHandlerReply = await handler.handle({ tenant, message, options });
     return methodHandlerReply;
   }
 

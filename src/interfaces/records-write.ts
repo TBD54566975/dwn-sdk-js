@@ -690,7 +690,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
 
   public async constructRecordsWriteIndexes(
     isLatestBaseState: boolean
-  ): Promise<Record<string, string>> {
+  ): Promise<Record<string, string | boolean>> {
     const message = this.message;
     const descriptor = { ...message.descriptor };
     delete descriptor.published; // handle `published` specifically further down

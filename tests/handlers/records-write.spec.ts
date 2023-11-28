@@ -312,6 +312,91 @@ export function testRecordsWriteHandler(): void {
         expect(data).to.eql(dataBytes);
       });
 
+      it('should allow an initial `RecordsWrite` to be written without supplying data', async () => {
+        //scenario:  you have an initial write without the data and a subsequent write with data to be able to write.
+        // the DWN should accept an initial write without data, however prevent the user from querying for it until it's updated.
+
+        const alice = await DidKeyResolver.generate();
+
+        const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author: alice });
+
+        // simulate synchronize of pruned initial `RecordsWrite`
+        const reply = await dwn.processMessage(alice.did, recordsWrite.message);
+        expect(reply.status.code).to.equal(202);
+
+        // verify `RecordsWrite` inserted is not returned with a query
+        const recordsQueryMessageData = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : { recordId: recordsWrite.message.recordId }
+        });
+        const recordsQueryReply = await dwn.processMessage(alice.did, recordsQueryMessageData.message);
+
+        expect(recordsQueryReply.status.code).to.equal(200);
+        expect(recordsQueryReply.entries?.length).to.equal(0);
+
+        // generate and write a new `RecordsWrite` to overwrite the existing record
+        const newDataBytes = Encoder.stringToBytes('new data');
+        const newDataEncoded = Encoder.bytesToBase64Url(newDataBytes);
+        const newRecordsWrite = await TestDataGenerator.generateFromRecordsWrite({
+          author        : alice,
+          existingWrite : recordsWrite,
+          data          : newDataBytes
+        });
+
+        const newRecordsWriteReply = await dwn.processMessage(alice.did, newRecordsWrite.message, newRecordsWrite.dataStream);
+        expect(newRecordsWriteReply.status.code).to.equal(202);
+
+        // verify new `RecordsWrite` has overwritten the existing record with new data
+        const newRecordsQueryReply = await dwn.processMessage(alice.did, recordsQueryMessageData.message);
+
+        expect(newRecordsQueryReply.status.code).to.equal(200);
+        expect(newRecordsQueryReply.entries?.length).to.equal(1);
+        expect(newRecordsQueryReply.entries![0].encodedData).to.equal(newDataEncoded);
+      });
+
+      it('should not allow non-initial writes to be written without supplying data', async () => {
+        //scenario:  you have an initial write without the data and a subsequent write with data to be able to write.
+        // the DWN should accept an initial write without data, however prevent the user from querying for it until it's updated.
+
+        const alice = await DidKeyResolver.generate();
+
+        // write a record into the dwn
+        const { recordsWrite, dataStream, dataBytes } = await TestDataGenerator.generateRecordsWrite({ author: alice });
+        const reply = await dwn.processMessage(alice.did, recordsWrite.message, dataStream);
+        expect(reply.status.code).to.equal(202);
+
+        // verify `RecordsWrite` inserted can be queried
+        const recordsQueryMessageData = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : { recordId: recordsWrite.message.recordId }
+        });
+        const recordsQueryReply = await dwn.processMessage(alice.did, recordsQueryMessageData.message);
+
+        expect(recordsQueryReply.status.code).to.equal(200);
+        expect(recordsQueryReply.entries?.length).to.equal(1);
+
+        // generate and write a new `RecordsWrite` to overwrite the existing record
+        const newDataBytes = Encoder.stringToBytes('new data');
+        const newRecordsWrite = await TestDataGenerator.generateFromRecordsWrite({
+          author        : alice,
+          existingWrite : recordsWrite,
+          data          : newDataBytes
+        });
+
+        // do not send the new data over
+        const newRecordsWriteReply = await dwn.processMessage(alice.did, newRecordsWrite.message);
+        expect(newRecordsWriteReply.status.code).to.equal(400);
+        expect(newRecordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsWriteDataCidMismatch);
+
+        // verify the original `RecordsWrite` and data are still available
+        const newRecordsQueryReply = await dwn.processMessage(alice.did, recordsQueryMessageData.message);
+
+        expect(newRecordsQueryReply.status.code).to.equal(200);
+        expect(newRecordsQueryReply.entries?.length).to.equal(1);
+        const originalEncodedData = Encoder.bytesToBase64Url(dataBytes!);
+        expect(newRecordsQueryReply.entries![0].encodedData).to.equal(originalEncodedData);
+      });
+
       describe('owner signature tests', () => {
         it('should use `ownerSignature` for authorization when it is given - flat-space', async () => {
           // scenario: Alice fetch a message authored by Bob from Bob's DWN and retains (writes) it in her DWN
@@ -774,19 +859,6 @@ export function testRecordsWriteHandler(): void {
         const reply = await dwn.processMessage(alice.did, message, dataStream);
         expect(reply.status.code).to.equal(400);
         expect(reply.status.detail).to.contain(DwnErrorCode.RecordsWriteDataCidMismatch);
-      });
-
-      it('should return 400 if attempting to write a record without data stream or data in a previous write', async () => {
-        const alice = await DidKeyResolver.generate();
-
-        const { message } = await TestDataGenerator.generateRecordsWrite({
-          author: alice,
-        });
-
-        const reply = await dwn.processMessage(alice.did, message);
-
-        expect(reply.status.code).to.equal(400);
-        expect(reply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataInPrevious);
       });
 
       it('#359 - should not allow access of data by referencing a different`dataCid` in "modify" `RecordsWrite`', async () => {
@@ -2986,19 +3058,54 @@ export function testRecordsWriteHandler(): void {
             recipient    : alice.did
           });
           const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
-          expect(imageReply.status.code).to.equal(400); // should be disallowed
-          expect(imageReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataInPrevious);
+          expect(imageReply.status.code).to.equal(202); // allows write but is not readable or queryable
 
-          // further sanity test to make sure record is never written
+          // verify the record is not able to be read
           const bobRecordsReadData = await RecordsRead.create({
             filter: {
               recordId: imageRecordsWrite.message.recordId,
             },
             signer: Jws.createSigner(bob)
           });
-
           const bobRecordsReadReply = await dwn.processMessage(alice.did, bobRecordsReadData.message);
           expect(bobRecordsReadReply.status.code).to.equal(404);
+
+          // verify the record is not part of a query
+          const bobRecordsQuery= await RecordsQuery.create({
+            filter: {
+              schema: protocolDefinition.types.image.schema,
+            },
+            signer: Jws.createSigner(bob)
+          });
+          const bobRecordsQueryReply = await dwn.processMessage(alice.did, bobRecordsQuery.message);
+          expect(bobRecordsQueryReply.status.code).to.equal(200);
+          expect(bobRecordsQueryReply.entries?.length).to.equal(0);
+
+          //further sanity query for specific recordId
+          const bobRecordsQueryReordId = await RecordsQuery.create({
+            filter: {
+              recordId: imageRecordsWrite.message.recordId,
+            },
+            signer: Jws.createSigner(bob)
+          });
+          const bobRecordsQueryRecordIdReply = await dwn.processMessage(alice.did, bobRecordsQueryReordId.message);
+          expect(bobRecordsQueryRecordIdReply.status.code).to.equal(200);
+          expect(bobRecordsQueryRecordIdReply.entries?.length).to.equal(0);
+
+          // attempt update recordsWrite without data
+          const updateRecord = await RecordsWrite.createFrom({
+            recordsWriteMessage : imageRecordsWrite.message,
+            signer              : Jws.createSigner(bob),
+            published           : true,
+          });
+          const updateRecordReply = await dwn.processMessage(alice.did, updateRecord.message);
+          expect(updateRecordReply.status.code).to.equal(400);
+          expect(updateRecordReply.status.detail).to.include(DwnErrorCode.RecordsWriteMissingDataInPrevious);
+
+          // sanity still can't query
+          const bobRecordsQueryReply2 = await dwn.processMessage(alice.did, bobRecordsQuery.message);
+          expect(bobRecordsQueryReply2.status.code).to.equal(200);
+          expect(bobRecordsQueryReply2.entries?.length).to.equal(0);
         });
 
         it('should allow record with or without schema if protocol does not require schema for a record type', async () => {
@@ -3692,7 +3799,8 @@ export function testRecordsWriteHandler(): void {
           published : false,
           data,
         });
-        const prunedRecordsWriteReply = await dwn.synchronizePrunedInitialRecordsWrite(alice.did, prunedRecordsWrite.message);
+        const prunedRecordsWriteReply = await dwn.processMessage(alice.did, prunedRecordsWrite.message);
+        console.log('pruned response', prunedRecordsWriteReply);
         expect(prunedRecordsWriteReply.status.code).to.equal(202);
 
         // Update record to published, omitting dataStream
@@ -3739,8 +3847,7 @@ export function testRecordsWriteHandler(): void {
             dataSize : 4
           });
           const bobAssociateReply = await dwn.processMessage(bob.did, bobAssociateData.message, bobAssociateData.dataStream);
-          expect(bobAssociateReply.status.code).to.equal(400); // expecting an error
-          expect(bobAssociateReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataInPrevious);
+          expect(bobAssociateReply.status.code).to.equal(202); // allows write but does not allow read or query
 
           const aliceQueryWriteAfterBobAssociateData = await TestDataGenerator.generateRecordsQuery({
             author : alice,
