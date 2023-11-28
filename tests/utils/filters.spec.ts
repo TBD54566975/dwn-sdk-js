@@ -734,6 +734,21 @@ describe('filters util', () => {
           expect(remainingFilters[1].schema).to.equal('schema-4');
         });
       });
+
+      describe('OneOfFilter', () => {
+        it('does not optimize OneOfFilter', async () => {
+          const inputFilters:Filter[] = [{
+            schema: [ 'schema1', 'schema2' ]
+          }, {
+            schema: ['schema2', 'schema3' ]
+          }];
+
+          const filters = FilterSelector.reduceFilters(inputFilters);
+          expect(filters.length).to.equal(2);
+          expect(filters[0].schema).to.deep.equal(['schema1', 'schema2']);
+          expect(filters[1].schema).to.deep.equal(['schema2', 'schema3']);
+        });
+      });
     });
   });
 });

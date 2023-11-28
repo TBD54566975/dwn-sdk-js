@@ -199,7 +199,7 @@ export class FilterSelector {
         return { author };
       } else {
 
-        return this.getFirstFilterPropertyThatIsNotABooleanEqualFilter(filter) || remaining;
+        return this.getFirstFilterPropertyThatIsNotABooleanEqualFilter(remaining) || filter;
       }
     });
 
@@ -280,7 +280,6 @@ export class FilterSelector {
       const filterValue = filter[filterProperty];
       return filterValue !== undefined && FilterUtility.isEqualFilter(filterValue) && typeof filterValue !== 'boolean';
     });
-
     // if a non boolean filter exists, set it as the only filter property and return
     if (firstProperty !== undefined) {
       const singlePropertyFilter:Filter = {};
