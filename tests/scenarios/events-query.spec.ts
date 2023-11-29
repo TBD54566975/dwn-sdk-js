@@ -5,6 +5,7 @@ import type {
 } from '../../src/index.js';
 
 import freeForAll from '../vectors/protocol-definitions/free-for-all.json' assert { type: 'json' };
+import threadProtocol from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
 
 import { TestStores } from '../test-stores.js';
 import { DidKeyResolver, DidResolver, Dwn, DwnInterfaceName, DwnMethodName, Message, Time } from '../../src/index.js';
@@ -282,6 +283,297 @@ export function testEventsQueryScenarios(): void {
         expect(reply1.status.code).to.equal(200);
         expect(reply1.events?.length).to.equal(1);
         expect(reply1.events![0]).to.equal(await Message.getCid(delete1.message!));
+      });
+
+      it('filters by protocol', async () => {
+        // scenario: get all messages across a protocol
+        // alice installs two protocols and creates a thread in each.
+        // alice adds bob as a participant to protocol1
+        // alice and bob both create messages for protocol1
+        // alice creates messages for protocol2
+        // filter for each protocol to get their respective messages
+        // add more messages to protocol1 and query after the cursor for protocol1
+        // query after a cursor for protocol2 for no results as expected
+
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+
+        // create a thread protocol1
+        const protocol1Configure = await TestDataGenerator.generateProtocolsConfigure({
+          author             : alice,
+          protocolDefinition : { ...threadProtocol }
+        });
+        const protocol1Reply = await dwn.processMessage(alice.did, protocol1Configure.message);
+        expect(protocol1Reply.status.code).to.equal(202);
+        const protocol1 = protocol1Configure.message.descriptor.definition.protocol;
+
+        // create a thread protocol2
+        const protocol2Configure = await TestDataGenerator.generateProtocolsConfigure({
+          author             : alice,
+          protocolDefinition : { ...threadProtocol, protocol: 'proto-2' }
+        });
+        const protocol2ConfigureReply = await dwn.processMessage(alice.did, protocol2Configure.message);
+        expect(protocol2ConfigureReply.status.code).to.equal(202);
+        const protocol2 = protocol2Configure.message.descriptor.definition.protocol;
+
+        // alice creates thread in the protocol1
+        const thread = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          protocol     : protocol1,
+          protocolPath : 'thread'
+        });
+        const threadReply = await dwn.processMessage(alice.did, thread.message, thread.dataStream);
+        expect(threadReply.status.code).to.equal(202);
+
+        // alice creates thread in the protocol2
+        const threadProto2 = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          protocol     : protocol2,
+          protocolPath : 'thread'
+        });
+        const threadProto2Reply = await dwn.processMessage(alice.did, threadProto2.message, threadProto2.dataStream);
+        expect(threadProto2Reply.status.code).to.equal(202);
+
+        // add bob as participant to protocol1
+        const bobParticipant = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          recipient    : bob.did,
+          parentId     : thread.message.recordId,
+          contextId    : thread.message.contextId,
+          protocol     : protocol1,
+          protocolPath : 'thread/participant'
+        });
+        const bobParticipantReply = await dwn.processMessage(alice.did, bobParticipant.message, bobParticipant.dataStream);
+        expect(bobParticipantReply.status.code).to.equal(202);
+
+        // bob creates a message for protocol1
+        const bobMessage1 = await TestDataGenerator.generateRecordsWrite({
+          author       : bob,
+          recipient    : alice.did,
+          parentId     : thread.message.recordId,
+          contextId    : thread.message.contextId,
+          protocol     : protocol1,
+          protocolPath : 'thread/chat',
+          protocolRole : 'thread/participant',
+        });
+        const bobMessage1Reply = await dwn.processMessage(alice.did, bobMessage1.message, bobMessage1.dataStream);
+        expect(bobMessage1Reply.status.code).to.equal(202);
+
+        // alice creates a message for protocol1
+        const aliceMessage1 = await TestDataGenerator.generateRecordsWrite({
+          author       : bob,
+          recipient    : alice.did,
+          parentId     : thread.message.recordId,
+          contextId    : thread.message.contextId,
+          protocol     : protocol1,
+          protocolPath : 'thread/chat',
+          protocolRole : 'thread/participant',
+        });
+        const aliceMessage1Reply = await dwn.processMessage(alice.did, aliceMessage1.message, aliceMessage1.dataStream);
+        expect(aliceMessage1Reply.status.code).to.equal(202);
+
+        // query for protocol1 events
+        let protocolEventsQuery = await TestDataGenerator.generateEventsQuery({
+          author  : alice,
+          filters : [{ protocol: protocol1 }],
+        });
+        let protocolEventsQueryReply = await dwn.processMessage(alice.did, protocolEventsQuery.message);
+        expect(protocolEventsQueryReply.status.code).to.equal(200);
+        expect(protocolEventsQueryReply.events?.length).to.equal(5);
+        // in the order they were written
+        expect(protocolEventsQueryReply.events![0]).to.equal(await Message.getCid(protocol1Configure.message));
+        expect(protocolEventsQueryReply.events![1]).to.equal(await Message.getCid(thread.message));
+        expect(protocolEventsQueryReply.events![2]).to.equal(await Message.getCid(bobParticipant.message));
+        expect(protocolEventsQueryReply.events![3]).to.equal(await Message.getCid(bobMessage1.message));
+        expect(protocolEventsQueryReply.events![4]).to.equal(await Message.getCid(aliceMessage1.message));
+
+        // query for protocol2 events
+        let protocol2EventsQuery = await TestDataGenerator.generateEventsQuery({
+          author  : alice,
+          filters : [{ protocol: protocol2 }],
+        });
+        let protocol2EventsQueryReply = await dwn.processMessage(alice.did, protocol2EventsQuery.message);
+        expect(protocol2EventsQueryReply.status.code).to.equal(200);
+        expect(protocol2EventsQueryReply.events?.length).to.equal(2);
+        expect(protocol2EventsQueryReply.events![0]).to.equal(await Message.getCid(protocol2Configure.message));
+        expect(protocol2EventsQueryReply.events![1]).to.equal(await Message.getCid(threadProto2.message));
+
+        // alice adds another message to protocol1
+        const aliceMessage2 = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          recipient    : bob.did,
+          parentId     : thread.message.recordId,
+          contextId    : thread.message.contextId,
+          protocol     : protocol1,
+          protocolPath : 'thread/chat',
+          protocolRole : 'thread/participant',
+        });
+        const aliceMessage2Reply = await dwn.processMessage(alice.did, aliceMessage2.message, aliceMessage2.dataStream);
+        expect(aliceMessage2Reply.status.code).to.equal(202);
+
+        // bob adds another message to protocol1
+        const bobMessage3 = await TestDataGenerator.generateRecordsWrite({
+          author       : bob,
+          recipient    : alice.did,
+          parentId     : thread.message.recordId,
+          contextId    : thread.message.contextId,
+          protocol     : protocol1,
+          protocolPath : 'thread/chat',
+          protocolRole : 'thread/participant',
+        });
+        const bobMessage3Reply = await dwn.processMessage(alice.did, bobMessage3.message, bobMessage3.dataStream);
+        expect(bobMessage3Reply.status.code).to.equal(202);
+
+        // query protocol1 after cursor
+        const protocolCursor = protocolEventsQueryReply.events![4];
+        protocolEventsQuery = await TestDataGenerator.generateEventsQuery({
+          author  : alice,
+          filters : [{ protocol: protocol1 }],
+          cursor  : protocolCursor,
+        });
+        protocolEventsQueryReply = await dwn.processMessage(alice.did, protocolEventsQuery.message);
+        expect(protocolEventsQueryReply.status.code).to.equal(200);
+        expect(protocolEventsQueryReply.events?.length).to.equal(2);
+        expect(protocolEventsQueryReply.events![0]).to.equal(await Message.getCid(aliceMessage2.message));
+        expect(protocolEventsQueryReply.events![1]).to.equal(await Message.getCid(bobMessage3.message));
+
+        // query protocol2 after cursor (should return no events)
+        const protocol2Cursor = protocol2EventsQueryReply.events![1];
+        protocol2EventsQuery = await TestDataGenerator.generateEventsQuery({
+          author  : alice,
+          filters : [{ protocol: protocol2 }],
+          cursor  : protocol2Cursor,
+        });
+        protocol2EventsQueryReply = await dwn.processMessage(alice.did, protocol2EventsQuery.message);
+        expect(protocol2EventsQueryReply.status.code).to.equal(200);
+        expect(protocol2EventsQueryReply.events?.length).to.equal(0);
+
+      });
+
+      it('filters by protocol, protocolPath & parentId', async () => {
+        // scenario: get all messages across a protocol & protocolPath combo
+        //    alice installs a protocol and creates a thread
+        //    alice adds bob and carol as participants
+        //    alice, bob, and carol all create messages
+        //    alice filter for 'thread', 'thread/participants' and 'thread/messages'
+        //    alice deletes carol participant message
+        //    alice filters for 'thread/participant' after a cursor
+
+        const alice = await DidKeyResolver.generate();
+        const bob = await DidKeyResolver.generate();
+        const carol = await DidKeyResolver.generate();
+
+        // create protocol
+        const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+          author             : alice,
+          protocolDefinition : { ...threadProtocol }
+        });
+        const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+        expect(protocolConfigureReply.status.code).to.equal(202);
+        const protocol = protocolConfigure.message.descriptor.definition.protocol;
+
+        // alice creates thread
+        const thread = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          protocol     : protocol,
+          protocolPath : 'thread'
+        });
+        const threadReply = await dwn.processMessage(alice.did, thread.message, thread.dataStream);
+        expect(threadReply.status.code).to.equal(202);
+
+        // add bob as participant
+        const bobParticipant = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          recipient    : bob.did,
+          parentId     : thread.message.recordId,
+          contextId    : thread.message.contextId,
+          protocol     : protocol,
+          protocolPath : 'thread/participant'
+        });
+        const bobParticipantReply = await dwn.processMessage(alice.did, bobParticipant.message, bobParticipant.dataStream);
+        expect(bobParticipantReply.status.code).to.equal(202);
+
+        // add carol as participant
+        const carolParticipant = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          recipient    : carol.did,
+          parentId     : thread.message.recordId,
+          contextId    : thread.message.contextId,
+          protocol     : protocol,
+          protocolPath : 'thread/participant'
+        });
+        const carolParticipantReply = await dwn.processMessage(alice.did, carolParticipant.message, carolParticipant.dataStream);
+        expect(carolParticipantReply.status.code).to.equal(202);
+
+        // add a message to protocol1
+        const message1 = await TestDataGenerator.generateRecordsWrite({
+          author       : bob,
+          recipient    : alice.did,
+          parentId     : thread.message.recordId,
+          contextId    : thread.message.contextId,
+          protocol     : protocol,
+          protocolPath : 'thread/chat',
+          protocolRole : 'thread/participant',
+        });
+        const message1Reply = await dwn.processMessage(alice.did, message1.message, message1.dataStream);
+        expect(message1Reply.status.code).to.equal(202);
+
+        const message2 = await TestDataGenerator.generateRecordsWrite({
+          author       : bob,
+          recipient    : alice.did,
+          parentId     : thread.message.recordId,
+          contextId    : thread.message.contextId,
+          protocol     : protocol,
+          protocolPath : 'thread/chat',
+          protocolRole : 'thread/participant',
+        });
+        const message2Reply = await dwn.processMessage(alice.did, message2.message, message2.dataStream);
+        expect(message2Reply.status.code).to.equal(202);
+
+        const message3 = await TestDataGenerator.generateRecordsWrite({
+          author       : carol,
+          recipient    : alice.did,
+          parentId     : thread.message.recordId,
+          contextId    : thread.message.contextId,
+          protocol     : protocol,
+          protocolPath : 'thread/chat',
+          protocolRole : 'thread/participant',
+        });
+        const message3Reply = await dwn.processMessage(alice.did, message3.message, message3.dataStream);
+        expect(message3Reply.status.code).to.equal(202);
+
+        // query for thread
+        const threadQuery = await TestDataGenerator.generateEventsQuery({
+          author  : alice,
+          filters : [{ protocol: protocol, protocolPath: 'thread' }],
+        });
+        const threadQueryReply = await dwn.processMessage(alice.did, threadQuery.message);
+        expect(threadQueryReply.status.code).to.equal(200);
+        expect(threadQueryReply.events?.length).to.equal(1);
+        expect(threadQueryReply.events![0]).to.equal(await Message.getCid(thread.message));
+
+        // query for participants
+        const participantsQuery = await TestDataGenerator.generateEventsQuery({
+          author  : alice,
+          filters : [{ protocol: protocol, protocolPath: 'thread/participant', parentId: thread.message.recordId }],
+        });
+        const participantsQueryReply = await dwn.processMessage(alice.did, participantsQuery.message);
+        expect(participantsQueryReply.status.code).to.equal(200);
+        expect(participantsQueryReply.events?.length).to.equal(2);
+        expect(participantsQueryReply.events![0]).to.equal(await Message.getCid(bobParticipant.message));
+        expect(participantsQueryReply.events![1]).to.equal(await Message.getCid(carolParticipant.message));
+
+        // query for chats
+        const chatQuery = await TestDataGenerator.generateEventsQuery({
+          author  : alice,
+          filters : [{ protocol: protocol, protocolPath: 'thread/chat', parentId: thread.message.recordId }],
+        });
+        const chatQueryReply = await dwn.processMessage(alice.did, chatQuery.message);
+        expect(chatQueryReply.status.code).to.equal(200);
+        expect(chatQueryReply.events?.length).to.equal(3);
+        expect(chatQueryReply.events![0]).to.equal(await Message.getCid(message1.message));
+        expect(chatQueryReply.events![1]).to.equal(await Message.getCid(message2.message));
+        expect(chatQueryReply.events![2]).to.equal(await Message.getCid(message3.message));
       });
     });
 
