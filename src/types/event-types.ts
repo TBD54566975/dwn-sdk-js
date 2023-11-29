@@ -5,7 +5,6 @@ import type { AuthorizationModel, GenericMessage } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export type EventsMessageFilter = {
-  author?: string;
   interface?: string;
   method?: string;
   dateUpdated?: RangeCriterion;
@@ -23,7 +22,6 @@ export type EventsRecordsFilter = {
   dataFormat?: string;
   dateCreated?: RangeCriterion;
 };
-
 
 export type EventsQueryFilter = EventsMessageFilter | EventsRecordsFilter | ProtocolsQueryFilter;
 

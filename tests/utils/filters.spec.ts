@@ -1,9 +1,9 @@
 import type { Filter } from '../../src/types/query-types.js';
 
+import { FilterUtility } from '../../src/utils/filter.js';
 import { IndexLevel } from '../../src/store/index-level.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Time } from '../../src/utils/time.js';
-import { FilterSelector, FilterUtility } from '../../src/utils/filter.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
