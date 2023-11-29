@@ -188,11 +188,6 @@ export class FilterSelector {
       return { contextId };
     }
 
-    // assumes author is not the tenant
-    if (author !== undefined) {
-      return { author };
-    }
-
     if (protocolPath !== undefined) {
       return { protocolPath };
     }

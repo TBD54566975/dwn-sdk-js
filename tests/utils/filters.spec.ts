@@ -1,9 +1,9 @@
 import type { Filter } from '../../src/types/query-types.js';
 
-import { FilterUtility } from '../../src/utils/filter.js';
 import { IndexLevel } from '../../src/store/index-level.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Time } from '../../src/utils/time.js';
+import { FilterSelector, FilterUtility } from '../../src/utils/filter.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
@@ -230,6 +230,62 @@ describe('filters util', () => {
       });
 
       describe('numbers', () => {
+      });
+    });
+
+    describe('reduceFilter', () => {
+      it('returns incoming filter if it only has one or no properties', async () => {
+        expect(FilterSelector.reduceFilter({ some: 'property' })).to.deep.equal({ some: 'property' });
+        expect(FilterSelector.reduceFilter({})).to.deep.equal({});
+      });
+
+      it('prioritizes known properties', async () => {
+        // recordId
+        const inputFilter:Filter = {
+          recordId     : 'some-record-id',
+          attester     : 'some-attester',
+          parentId     : 'some-parent-id',
+          recipient    : 'some-recipient',
+          contextId    : 'some-context-id',
+          protocolPath : 'some-protocol-path',
+          schema       : 'some-schema',
+          protocol     : 'some-protocol',
+          some         : 'property'
+        };
+
+        // go through in order of priority deleting the property after checking for it
+        expect(FilterSelector.reduceFilter(inputFilter)).to.deep.equal({ recordId: 'some-record-id' });
+        delete inputFilter.recordId;
+
+        expect(FilterSelector.reduceFilter(inputFilter)).to.deep.equal({ attester: 'some-attester' });
+        delete inputFilter.attester;
+
+        expect(FilterSelector.reduceFilter(inputFilter)).to.deep.equal({ parentId: 'some-parent-id' });
+        delete inputFilter.parentId;
+
+        expect(FilterSelector.reduceFilter(inputFilter)).to.deep.equal({ recipient: 'some-recipient' });
+        delete inputFilter.recipient;
+
+        expect(FilterSelector.reduceFilter(inputFilter)).to.deep.equal({ contextId: 'some-context-id' });
+        delete inputFilter.contextId;
+
+        expect(FilterSelector.reduceFilter(inputFilter)).to.deep.equal({ protocolPath: 'some-protocol-path' });
+        delete inputFilter.protocolPath;
+
+        expect(FilterSelector.reduceFilter(inputFilter)).to.deep.equal({ schema: 'some-schema' });
+        delete inputFilter.schema;
+
+        expect(FilterSelector.reduceFilter(inputFilter)).to.deep.equal({ protocol: 'some-protocol' });
+      });
+
+      it('returns first filter if no known filters exist', async () => {
+        const inputFilter = {
+          foo : 'bar',
+          bar : 'baz',
+          baz : 'buzz'
+        };
+
+        expect(FilterSelector.reduceFilter(inputFilter)).to.deep.equal({ foo: 'bar' });
       });
     });
 
