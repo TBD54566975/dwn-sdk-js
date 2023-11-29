@@ -31,7 +31,7 @@ export class FilterUtility {
    * @param filter
    * @returns true if all of the filter properties match.
    */
-  private static matchFilter(indexedValues: KeyValues, filter: Filter): boolean {
+  public static matchFilter(indexedValues: KeyValues, filter: Filter): boolean {
     // set of unique query properties.
     // if count of missing property matches is 0, it means the data/object fully matches the filter
     const missingPropertyMatches: Set<string> = new Set([ ...Object.keys(filter) ]);
@@ -155,156 +155,61 @@ export class FilterUtility {
 export class FilterSelector {
 
   /**
-   * Reduces an array of incoming Filters into an array of more efficient filters
-   * The length of the returned Filters array is always less than or equal to that of the input filters array.
+   * Reduce Filter so that it is a filter that can be quickly executed against the DB.
    */
-  static reduceFilters(filters: Filter[]): Filter[] {
-
-    // we extract any recordId filters and the remaining filters which do not have a recordId property
-    const { idFilters, remainingFilters } = this.extractIdFilters(filters);
-    // if there are no remaining filters, we only query by the idFilters
-    if (remainingFilters.length === 0) {
-      return idFilters;
+  static reduceFilter(filter: Filter): Filter {
+    // if there is only one or no property, we have no way to reduce it further
+    const filterProperties = Object.keys(filter);
+    if (filterProperties.length <= 1) {
+      return filter;
     }
 
-    const commonFilter = this.extractCommonFilter(remainingFilters);
-    if (commonFilter !== undefined) {
-      return [ ...idFilters, commonFilter ];
+    // else there is are least 2 filter properties, since zero property is not allowed
+
+    const { recordId, attester, parentId, recipient, contextId, author, protocolPath, schema, protocol, ...remainingProperties } = filter;
+
+    if (recordId !== undefined) {
+      return { recordId };
     }
 
-    // extract any range filters from the remaining filters
-    const { rangeFilters, remainingFilters: remainingAfterRange } = this.extractRangeFilters(remainingFilters);
-    // if all of there are no remaining filters we return the RangeFilters along with any idFilters.
-    if (remainingAfterRange.length === 0) {
-      return [ ...idFilters, ...rangeFilters ];
+    if (attester !== undefined) {
+      return { attester };
     }
 
-    const commonAfterRange = this.extractCommonFilter(remainingAfterRange);
-    if (commonAfterRange !== undefined){
-      return [ ...idFilters, ...rangeFilters, commonAfterRange ];
+    if (parentId !== undefined) {
+      return { parentId };
     }
 
-    const finalRemaining = remainingAfterRange.map(filter => {
-
-      const { contextId, schema, protocol, protocolPath, author, ...remaining } = filter;
-      if (contextId !== undefined && FilterUtility.isEqualFilter(contextId)) {
-        return { contextId };
-      } else if (schema !== undefined && FilterUtility.isEqualFilter(schema)) {
-        return { schema };
-      } else if (protocolPath !== undefined && FilterUtility.isEqualFilter(protocolPath)) {
-        return { protocolPath };
-      } else if (protocol !== undefined && FilterUtility.isEqualFilter(protocol)) {
-        return { protocol };
-      } else if (author !== undefined && FilterUtility.isEqualFilter(author)) {
-        return { author };
-      } else {
-
-        return this.getFirstFilterPropertyThatIsNotABooleanEqualFilter(remaining) || filter;
-      }
-    });
-
-    return [ ...idFilters, ...rangeFilters, ...finalRemaining ];
-  }
-
-  /**
-   * Extracts a single range filter from each of the input filters to return.
-   * Naively chooses the first range filter it finds, this could be improved.
-   *
-   * @returns an array of Filters with each filter containing a single RangeFilter property.
-   */
-  private static extractRangeFilters(filters: Filter[]): { rangeFilters: Filter[], remainingFilters: Filter[] } {
-    const rangeFilters: Filter[] = [];
-    const remainingFilters: Filter[] = [];
-    for (const filter of filters) {
-      const filterKeys = Object.keys(filter);
-      const rangeFilterKey = filterKeys.find(filterProperty => FilterUtility.isRangeFilter(filter[filterProperty]));
-      if (rangeFilterKey === undefined) {
-        remainingFilters.push(filter);
-        continue;
-      }
-      const rangeFilter:Filter = {};
-      rangeFilter[rangeFilterKey] = filter[rangeFilterKey];
-      rangeFilters.push(rangeFilter);
-    }
-    return { rangeFilters, remainingFilters };
-  }
-
-  private static extractIdFilters(filters: Filter[]): { idFilters: Filter[], remainingFilters: Filter[] } {
-    const idFilters: Filter[] = [];
-    const remainingFilters: Filter[] = [];
-    for (const filter of filters) {
-      const { recordId } = filter;
-      // we determine if any of the filters contain a recordId property;
-      // we don't use range filters with these, so either Equality or OneOf filters should be used
-      if (recordId !== undefined && (FilterUtility.isEqualFilter(recordId) || FilterUtility.isOneOfFilter(recordId))) {
-        idFilters.push({ recordId });
-        continue;
-      }
-      remainingFilters.push(filter);
+    if (recipient !== undefined) {
+      return { recipient };
     }
 
-    return { idFilters: idFilters, remainingFilters };
-  }
-
-  private static extractCommonFilter(filters: Filter[]): Filter | undefined {
-    const { schema, contextId, protocol, protocolPath, author, ...remaining } = this.commonEqualFilters(filters);
-
-    // if we match any of these, we add them to our search filters and return immediately
-    // the order we are checking/returning is the order of priority
-    if (contextId !== undefined && FilterUtility.isEqualFilter(contextId)) {
-      // a common contextId exists between all filters
+    if (contextId !== undefined) {
       return { contextId };
-    } else if ( schema !== undefined && FilterUtility.isEqualFilter(schema)) {
-      // a common schema exists between all filters
-      return { schema };
-    } else if (protocolPath !== undefined && FilterUtility.isEqualFilter(protocolPath)) {
-      // a common protocol exists between all filters
-      return { protocolPath };
-    } else if (protocol !== undefined && FilterUtility.isEqualFilter(protocol)) {
-      // a common protocol exists between all filters
-      return { protocol };
-    } else if (author !== undefined && FilterUtility.isEqualFilter(author)) {
-      // a common author exists between all filters
+    }
+
+    // assumes author is not the tenant
+    if (author !== undefined) {
       return { author };
     }
 
-    // return the first common filter that isn't listed in priority with a boolean common filter being last priority.
-    return this.getFirstFilterPropertyThatIsNotABooleanEqualFilter(remaining);
-  }
-
-  private static getFirstFilterPropertyThatIsNotABooleanEqualFilter(filter: Filter): Filter | undefined {
-    const filterProperties = Object.keys(filter);
-
-    // find the first EqualFilter that is not a boolean
-    const firstProperty = filterProperties.find(filterProperty => {
-      const filterValue = filter[filterProperty];
-      return filterValue !== undefined && FilterUtility.isEqualFilter(filterValue) && typeof filterValue !== 'boolean';
-    });
-    // if a non boolean filter exists, set it as the only filter property and return
-    if (firstProperty !== undefined) {
-      const singlePropertyFilter:Filter = {};
-      singlePropertyFilter[firstProperty] = filter[firstProperty];
-      return singlePropertyFilter;
+    if (protocolPath !== undefined) {
+      return { protocolPath };
     }
 
-    return;
-  }
+    if (schema !== undefined) {
+      return { schema };
+    }
 
-  /**
-   * Given an array of filters, it returns a single filter with common EqualFilter per property.
-   * If there are no common filters, the returned filter is empty.
-   */
-  private static commonEqualFilters(filters: Filter[]): Filter {
-    return filters.reduce((prev, current) => {
-      const filterCopy = { ...prev };
-      for (const property in filterCopy) {
-        const filterValue = filterCopy[property];
-        const compareValue = current[property];
-        if (!FilterUtility.isEqualFilter(filterValue) || !FilterUtility.isEqualFilter(compareValue) || filterValue !== compareValue) {
-          delete filterCopy[property];
-        }
-      }
-      return filterCopy;
-    });
+    if (protocol !== undefined) {
+      return { protocol };
+    }
+
+    // else just return whatever property, we can optimize further later
+    const remainingPropertyNames = Object.keys(remainingProperties);
+    const firstRemainingProperty = remainingPropertyNames[0];
+    const singlePropertyFilter: Filter = {};
+    singlePropertyFilter[firstRemainingProperty] = filter[firstRemainingProperty];
+    return singlePropertyFilter;
   }
 }
