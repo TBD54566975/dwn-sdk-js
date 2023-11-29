@@ -304,11 +304,15 @@ export class IndexLevel {
     // we create a matches map so that we can short-circuit matched items within the async single query below.
     const matches:Map<string, IndexedItem> = new Map();
 
-    // select the searchFilters
-    const searchFilters = FilterSelector.reduceFilters(filters);
+    // If the filter is empty, we just give it an empty filter so that we can iterate over all the items later in executeSingleFilterQuery().
+    // We could do the iteration here, but it would be duplicating the same logic, so decided to just setup the data structure here.
+    if (filters.length === 0) {
+      filters = [{}];
+    }
+
     try {
-      await Promise.all(searchFilters.map(searchFilter => {
-        return this.executeSingleFilterQuery(tenant, searchFilter, filters, sortProperty, matches, options );
+      await Promise.all(filters.map(filter => {
+        return this.executeSingleFilterQuery(tenant, filter, sortProperty, matches, options );
       }));
     } catch (error) {
       if ((error as DwnError).code === DwnErrorCode.IndexInvalidSortProperty) {
@@ -338,15 +342,23 @@ export class IndexLevel {
    */
   private async executeSingleFilterQuery(
     tenant: string,
-    searchFilter: Filter,
-    matchFilters: Filter[],
+    filter: Filter,
     sortProperty: string,
     matches: Map<string, IndexedItem>,
     levelOptions?: IndexLevelOptions
   ): Promise<void> {
+
     // Note: We have an array of Promises in order to support OR (anyOf) matches when given a list of accepted values for a property
     const filterPromises: Promise<IndexedItem[]>[] = [];
 
+    // If the filter is empty, then we just iterate over one of the indexes that contains all the records and return all items.
+    if (isEmptyObject(filter)) {
+      const getAllItemsPromise = this.getAllItems(tenant, sortProperty);
+      filterPromises.push(getAllItemsPromise);
+    }
+
+    // else the filter is not empty
+    const searchFilter = FilterSelector.reduceFilter(filter);
     for (const propertyName in searchFilter) {
       const propertyFilter = searchFilter[propertyName];
       // We will find the union of these many individual queries later.
@@ -370,12 +382,13 @@ export class IndexLevel {
 
     // acting as an OR match for the property, any of the promises returning a match will be treated as a property match
     for (const promise of filterPromises) {
+      const indexItems = await promise;
       // reminder: the promise returns a list of IndexedItem satisfying a particular property match
-      for (const indexedItem of await promise) {
+      for (const indexedItem of indexItems) {
         // short circuit: if a data is already included to the final matched key set (by a different `Filter`),
         // no need to evaluate if the data satisfies this current filter being evaluated
         // otherwise check that the item is a match.
-        if (matches.has(indexedItem.itemId) || !FilterUtility.matchAnyFilter(indexedItem.indexes, matchFilters)) {
+        if (matches.has(indexedItem.itemId) || !FilterUtility.matchFilter(indexedItem.indexes, filter)) {
           continue;
         }
 
@@ -387,6 +400,15 @@ export class IndexLevel {
         matches.set(indexedItem.itemId, indexedItem);
       }
     }
+  }
+
+  private async getAllItems(tenant: string, sortProperty: string): Promise<IndexedItem[]> {
+    const filterPartition = await this.getIndexPartition(tenant, sortProperty);
+    const items: IndexedItem[] = [];
+    for await (const [ _key, value ] of filterPartition.iterator()) {
+      items.push(JSON.parse(value) as IndexedItem);
+    }
+    return items;
   }
 
   /**
@@ -540,10 +562,21 @@ export class IndexLevel {
     }
   }
 
-
   private static shouldQueryWithInMemoryPaging(filters: Filter[], queryOptions: QueryOptions): boolean {
-    // if there is a specific recordId in any of the filters, return true immediately.
-    if (filters.find(({ recordId }) => recordId !== undefined) !== undefined) {
+    for (const filter of filters) {
+      if (!IndexLevel.isFilterConcise(filter, queryOptions)) {
+        return false;
+      }
+    }
+
+    // only use in-memory paging if all filters are concise
+    return true;
+  }
+
+
+  private static isFilterConcise(filter: Filter, queryOptions: QueryOptions): boolean {
+    // if there is a specific recordId in the filter, return true immediately.
+    if (filter.recordId !== undefined) {
       return true;
     }
 
@@ -552,16 +585,25 @@ export class IndexLevel {
       return false;
     }
 
-    // if contextId, protocolPath or schema are specified in any of the filter properties and no cursor exists, we use in-memory paging
-    if (filters.find(({ contextId, protocol, protocolPath, schema }) => {
-      return contextId !== undefined ||
-        protocol !== undefined ||
-        protocolPath !== undefined ||
-        schema !== undefined;
-    }) !== undefined) {
+    // NOTE: remaining conditions will have cursor
+
+    if (filter.contextId !== undefined) {
       return true;
     }
 
+    if (filter.protocol !== undefined || filter.protocolPath !== undefined) {
+      return true;
+    }
+
+    if (filter.protocol !== undefined || filter.parentId === undefined) {
+      return true;
+    }
+
+    if (filter.protocol === undefined && filter.schema !== undefined) {
+      return true;
+    }
+
+    // all else
     return false;
   }
 }

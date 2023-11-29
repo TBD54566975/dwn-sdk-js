@@ -31,7 +31,7 @@ export class FilterUtility {
    * @param filter
    * @returns true if all of the filter properties match.
    */
-  private static matchFilter(indexedValues: KeyValues, filter: Filter): boolean {
+  public static matchFilter(indexedValues: KeyValues, filter: Filter): boolean {
     // set of unique query properties.
     // if count of missing property matches is 0, it means the data/object fully matches the filter
     const missingPropertyMatches: Set<string> = new Set([ ...Object.keys(filter) ]);
@@ -153,6 +153,65 @@ export class FilterUtility {
 }
 
 export class FilterSelector {
+
+  /**
+   * Reduce Filter so that it is a filter that can be quickly executed against the DB.
+   */
+  static reduceFilter(filter: Filter): Filter {
+    // if there is only one or no property, we have no way to reduce it further
+    const filterProperties = Object.keys(filter);
+    if (filterProperties.length <= 1) {
+      return filter;
+    }
+
+    // else there is are least 2 filter properties, since zero property is not allowed
+
+    const { recordId, attester, parentId, recipient, contextId, author, protocolPath, schema, protocol, ...remainingProperties } = filter;
+
+    if (recordId !== undefined) {
+      return { recordId };
+    }
+
+    if (attester !== undefined) {
+      return { attester };
+    }
+
+    if (parentId !== undefined) {
+      return { parentId };
+    }
+
+    if (recipient !== undefined) {
+      return { recipient };
+    }
+
+    if (contextId !== undefined) {
+      return { contextId };
+    }
+
+    // assumes author is not the tenant
+    if (author !== undefined) {
+      return { author };
+    }
+
+    if (protocolPath !== undefined) {
+      return { protocolPath };
+    }
+
+    if (schema !== undefined) {
+      return { schema };
+    }
+
+    if (protocol !== undefined) {
+      return { protocol };
+    }
+
+    // else just return whatever property, we can optimize further later
+    const remainingPropertyNames = Object.keys(remainingProperties);
+    const firstRemainingProperty = remainingPropertyNames[0];
+    const singlePropertyFilter: Filter = {};
+    singlePropertyFilter[firstRemainingProperty] = filter[firstRemainingProperty];
+    return singlePropertyFilter;
+  }
 
   /**
    * Reduces an array of incoming Filters into an array of more efficient filters
