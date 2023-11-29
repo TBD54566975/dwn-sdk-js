@@ -1,7 +1,5 @@
 import type { Filter } from '../../src/types/query-types.js';
 
-import { IndexLevel } from '../../src/store/index-level.js';
-import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Time } from '../../src/utils/time.js';
 import { FilterSelector, FilterUtility } from '../../src/utils/filter.js';
 
@@ -233,6 +231,30 @@ describe('filters util', () => {
       });
     });
 
+    describe('convertRangeCriterion',() => {
+      it('converts `from` to `gte`', async () => {
+        const inputFilter = {
+          from: 'from-value',
+        };
+        expect(FilterUtility.convertRangeCriterion(inputFilter)).to.deep.equal({ gte: 'from-value' });
+      });
+
+      it('converts `to` to `lt` ', async () => {
+        const inputFilter = {
+          to: 'to-value',
+        };
+        expect(FilterUtility.convertRangeCriterion(inputFilter)).to.deep.equal({ lt: 'to-value' });
+      });
+
+      it('converts `from` and `to` to `gte` and `lt`, respectively', async () => {
+        const inputFilter = {
+          from : 'from-value',
+          to   : 'to-value'
+        };
+        expect(FilterUtility.convertRangeCriterion(inputFilter)).to.deep.equal({ gte: 'from-value', lt: 'to-value' });
+      });
+    });
+
     describe('reduceFilter', () => {
       it('returns incoming filter if it only has one or no properties', async () => {
         expect(FilterSelector.reduceFilter({ some: 'property' })).to.deep.equal({ some: 'property' });
@@ -286,48 +308,6 @@ describe('filters util', () => {
         };
 
         expect(FilterSelector.reduceFilter(inputFilter)).to.deep.equal({ foo: 'bar' });
-      });
-    });
-
-    describe('encodeValue', () => {
-      it('should wrap string in quotes', async () => {
-        expect(IndexLevel.encodeValue('test')).to.equal(`"test"`);
-      });
-
-      it('should return string encoded number using encodeNumberValue()', async () => {
-        expect(IndexLevel.encodeValue(10)).to.equal(IndexLevel.encodeNumberValue(10));
-      });
-
-      it('should return stringified boolean', () => {
-        expect(IndexLevel.encodeValue(true)).to.equal('true');
-        expect(IndexLevel.encodeValue(false)).to.equal('false');
-      });
-    });
-
-    describe('encodeNumberValue', () => {
-      it('should encode positive digits and pad with leading zeros', () => {
-        const expectedLength = String(Number.MAX_SAFE_INTEGER).length; //16
-        const encoded = IndexLevel.encodeNumberValue(100);
-        expect(encoded.length).to.equal(expectedLength);
-        expect(encoded).to.equal('0000000000000100');
-      });
-
-      it('should encode negative digits as an offset with a prefix', () => {
-        const expectedPrefix = '!';
-        // expected length is maximum padding + the prefix.
-        const expectedLength = (expectedPrefix + String(Number.MAX_SAFE_INTEGER)).length; //17
-        const encoded = IndexLevel.encodeNumberValue(-100);
-        expect(encoded.length).to.equal(String(Number.MIN_SAFE_INTEGER).length);
-        expect(encoded.length).to.equal(expectedLength);
-        expect(encoded).to.equal('!9007199254740891');
-      });
-
-      it('should encode digits to sort using lexicographical comparison', () => {
-        const digits = [ -1000, -100, -10, 10, 100, 1000 ].sort((a,b) => a - b);
-        const encodedDigits = digits.map(d => IndexLevel.encodeNumberValue(d))
-          .sort((a,b) => lexicographicalCompare(a, b));
-
-        digits.forEach((n,i) => expect(encodedDigits.at(i)).to.equal(IndexLevel.encodeNumberValue(n)));
       });
     });
   });
