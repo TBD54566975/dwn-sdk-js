@@ -574,7 +574,7 @@ export class IndexLevel {
   }
 
 
-  private static isFilterConcise(filter: Filter, queryOptions: QueryOptions): boolean {
+  public static isFilterConcise(filter: Filter, queryOptions: QueryOptions): boolean {
     // if there is a specific recordId in the filter, return true immediately.
     if (filter.recordId !== undefined) {
       return true;
@@ -586,7 +586,6 @@ export class IndexLevel {
     }
     // NOTE: remaining conditions will not have cursor
     if (
-      filter.protocol !== undefined ||
       filter.protocolPath !== undefined ||
       filter.contextId !== undefined ||
       filter.parentId !== undefined ||

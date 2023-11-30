@@ -1150,4 +1150,50 @@ describe('IndexLevel', () => {
       digits.forEach((n,i) => expect(encodedDigits.at(i)).to.equal(IndexLevel.encodeNumberValue(n)));
     });
   });
+
+  describe('isFilterConcise', () => {
+    const queryOptionsWithCursor = { sortProperty: 'sort', cursor: 'cursor' };
+    const queryOptionsWithoutCursor = { sortProperty: 'sort' };
+
+    it('recordId is always concise', async () => {
+      expect(IndexLevel.isFilterConcise({ recordId: 'record-id' }, queryOptionsWithCursor)).to.equal(true);
+      expect(IndexLevel.isFilterConcise({ recordId: 'record-id' }, queryOptionsWithoutCursor)).to.equal(true);
+    });
+
+    it('other than if `recordId` exists, if a cursor exists it is never concise', async () => {
+      expect(IndexLevel.isFilterConcise({ schema: 'schema', contextId: 'contextId', parentId: 'parentId' }, queryOptionsWithCursor)).to.equal(false);
+
+      // control
+      expect(IndexLevel.isFilterConcise({ schema: 'schema', contextId: 'contextId', parentId: 'parentId' }, queryOptionsWithoutCursor)).to.equal(true);
+      expect(IndexLevel.isFilterConcise({ recordId: 'record-id' }, queryOptionsWithCursor)).to.equal(true);
+    });
+
+    it('if there is no cursor -  protocolPath, contextId, parentId, or schema return a concise filter', async () => {
+      expect(IndexLevel.isFilterConcise({ protocolPath: 'protocolPath' }, queryOptionsWithoutCursor)).to.equal(true);
+      expect(IndexLevel.isFilterConcise({ protocolPath: 'protocolPath' }, queryOptionsWithCursor)).to.equal(false); // control
+
+      expect(IndexLevel.isFilterConcise({ contextId: 'contextId' }, queryOptionsWithoutCursor)).to.equal(true);
+      expect(IndexLevel.isFilterConcise({ contextId: 'contextId' }, queryOptionsWithCursor)).to.equal(false); // control
+
+      expect(IndexLevel.isFilterConcise({ contextId: 'parentId' }, queryOptionsWithoutCursor)).to.equal(true);
+      expect(IndexLevel.isFilterConcise({ contextId: 'parentId' }, queryOptionsWithCursor)).to.equal(false); // control
+
+      expect(IndexLevel.isFilterConcise({ contextId: 'schema' }, queryOptionsWithoutCursor)).to.equal(true);
+      expect(IndexLevel.isFilterConcise({ contextId: 'schema' }, queryOptionsWithCursor)).to.equal(false); // control
+    });
+
+    it('if there is no cursor, and it is not one of the conditions, return not concise', async () => {
+      expect(IndexLevel.isFilterConcise({ dataSize: { gt: 123 } }, queryOptionsWithoutCursor)).to.equal(false);
+
+      // control
+      expect(IndexLevel.isFilterConcise({ schema: 'schema', contextId: 'contextId', parentId: 'parentId' }, queryOptionsWithoutCursor)).to.equal(true);
+    });
+
+    it('if protocol filter exists by itself it is not a concise filter', async () => {
+      expect(IndexLevel.isFilterConcise({ protocol: 'protocol' }, queryOptionsWithoutCursor)).to.equal(false);
+
+      // control
+      expect(IndexLevel.isFilterConcise({ protocol: 'protocol', protocolPath: 'path/to' }, queryOptionsWithoutCursor)).to.equal(true);
+    });
+  });
 });
