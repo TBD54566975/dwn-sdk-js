@@ -584,7 +584,6 @@ export class IndexLevel {
     if (queryOptions.cursor !== undefined) {
       return false;
     }
-
     // NOTE: remaining conditions will not have cursor
     if (
       filter.protocol !== undefined ||

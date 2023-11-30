@@ -631,6 +631,11 @@ export function testEventsQueryScenarios(): void {
     });
 
     it('filters by recipient', async () => {
+      // scenario: alice installs a free-for-all protocol and makes posts with both bob and carol as recipients
+      // carol and bob also make posts with alice as a recipient
+      // alice queries for events meant for specific recipients
+      // alice then makes another message to query for using the pervious as a cursor
+
       const alice = await DidKeyResolver.generate();
       const bob = await DidKeyResolver.generate();
       const carol = await DidKeyResolver.generate();
@@ -847,8 +852,10 @@ export function testEventsQueryScenarios(): void {
     });
 
     it('filters by dataFormat', async () => {
-      // scenario: alice uses her DWN as a file storage with many different data formats
-      // alice also has another DWN that wants only messages with the image/jpeg format
+      // scenario: alice stores different file types and needs events relating to `image/jpeg`
+      //  alice creates 3 files, one of them `image/jpeg`
+      //  alice queries for `image/jpeg` retrieving the one message
+      //  alice adds another image to query for using the prior image as a cursor
 
       const alice = await DidKeyResolver.generate();
 
@@ -885,6 +892,7 @@ export function testEventsQueryScenarios(): void {
       expect(imageQueryReply.events?.length).to.equal(1);
       expect(imageQueryReply.events![0]).to.equal(await Message.getCid(imageData.message));
 
+      // add another image
       const imageData2 = await TestDataGenerator.generateRecordsWrite({
         author     : alice,
         dataFormat : 'image/jpeg'
@@ -963,6 +971,156 @@ export function testEventsQueryScenarios(): void {
       expect(largeSizeQueryReply.events![0]).to.equal(await Message.getCid(largeSize2.message));
     });
 
-    xit('filters by contextId');
+    it('filters by contextId', async () => {
+      // scenario:
+      //    alice configures a chat protocols and creates 2 chat threads
+      //    alice invites bob as participant in thread1 and carol in thread2
+      //    alice writes messages to both bob and carol in their respective threads
+      //    alice queries for events related to thread1 (gets the configure, bob participant, and chats to bob)
+      //    alice writes more messages to both bob and carol in their respective threads
+      //    alice queries for events beyond the latest from the last query, retrieving the additional messages to bob
+
+      const alice = await DidKeyResolver.generate();
+      const bob = await DidKeyResolver.generate();
+      const carol = await DidKeyResolver.generate();
+
+      const protocolConfigure = await TestDataGenerator.generateProtocolsConfigure({
+        author             : alice,
+        protocolDefinition : { ...threadProtocol }
+      });
+      const protocolConfigureReply = await dwn.processMessage(alice.did, protocolConfigure.message);
+      expect(protocolConfigureReply.status.code).to.equal(202);
+      const protocol = protocolConfigure.message.descriptor.definition.protocol;
+
+      // alice creates 2 threads
+      const thread1 = await TestDataGenerator.generateRecordsWrite({
+        author       : alice,
+        protocol     : protocol,
+        protocolPath : 'thread',
+      });
+      const thread1Reply = await dwn.processMessage(alice.did, thread1.message, thread1.dataStream);
+      expect(thread1Reply.status.code).to.equal(202);
+
+      const thread2 = await TestDataGenerator.generateRecordsWrite({
+        author       : alice,
+        protocol     : protocol,
+        protocolPath : 'thread',
+      });
+      const thread2Reply = await dwn.processMessage(alice.did, thread2.message, thread2.dataStream);
+      expect(thread2Reply.status.code).to.equal(202);
+
+      // alice adds bob as a participant to thread 1
+      const bobParticipant = await TestDataGenerator.generateRecordsWrite({
+        author       : alice,
+        recipient    : bob.did,
+        parentId     : thread1.message.recordId,
+        contextId    : thread1.message.contextId,
+        protocol     : protocol,
+        protocolPath : 'thread/participant'
+      });
+      const bobParticipantReply = await dwn.processMessage(alice.did, bobParticipant.message, bobParticipant.dataStream);
+      expect(bobParticipantReply.status.code).to.equal(202);
+
+      // alice adds carol as a participant to thread 1
+      const carolParticipant = await TestDataGenerator.generateRecordsWrite({
+        author       : alice,
+        recipient    : carol.did,
+        parentId     : thread2.message.recordId,
+        contextId    : thread2.message.contextId,
+        protocol     : protocol,
+        protocolPath : 'thread/participant'
+      });
+      const carolParticipantReply = await dwn.processMessage(alice.did, carolParticipant.message, carolParticipant.dataStream);
+      expect(carolParticipantReply.status.code).to.equal(202);
+
+      // alice writes a message to bob on thread 1
+      const thread1Chat1 = await TestDataGenerator.generateRecordsWrite({
+        author       : alice,
+        recipient    : bob.did,
+        parentId     : thread1.message.recordId,
+        contextId    : thread1.message.contextId,
+        protocol     : protocol,
+        protocolPath : 'thread/chat',
+      });
+      const thread1Chat1Reply = await dwn.processMessage(alice.did, thread1Chat1.message, thread1Chat1.dataStream);
+      expect(thread1Chat1Reply.status.code).to.equal(202);
+
+      // alice writes a message to carol on thread 2
+      const thread2Chat1 = await TestDataGenerator.generateRecordsWrite({
+        author       : alice,
+        recipient    : carol.did,
+        parentId     : thread2.message.recordId,
+        contextId    : thread2.message.contextId,
+        protocol     : protocol,
+        protocolPath : 'thread/chat',
+      });
+      const thread2Chat1Reply = await dwn.processMessage(alice.did, thread2Chat1.message, thread2Chat1.dataStream);
+      expect(thread2Chat1Reply.status.code).to.equal(202);
+
+      // alice writes another message to bob on thread 1
+      const thread1Chat2 = await TestDataGenerator.generateRecordsWrite({
+        author       : alice,
+        recipient    : bob.did,
+        parentId     : thread1.message.recordId,
+        contextId    : thread1.message.contextId,
+        protocol     : protocol,
+        protocolPath : 'thread/chat',
+      });
+      const chatMessage2Reply = await dwn.processMessage(alice.did, thread1Chat2.message, thread1Chat2.dataStream);
+      expect(chatMessage2Reply.status.code).to.equal(202);
+
+      // alice queries events for thread1
+      let threadContextQuery = await TestDataGenerator.generateEventsQuery({
+        author  : alice,
+        filters : [{
+          protocol  : protocol,
+          contextId : thread1.message.contextId,
+        }],
+      });
+      let threadContextQueryReply = await dwn.processMessage(alice.did, threadContextQuery.message);
+      expect(threadContextQueryReply.status.code).to.equal(200);
+      expect(threadContextQueryReply.events?.length).to.equal(4);
+      expect(threadContextQueryReply.events![0]).to.equal(await Message.getCid(thread1.message));
+      expect(threadContextQueryReply.events![1]).to.equal(await Message.getCid(bobParticipant.message));
+      expect(threadContextQueryReply.events![2]).to.equal(await Message.getCid(thread1Chat1.message));
+      expect(threadContextQueryReply.events![3]).to.equal(await Message.getCid(thread1Chat2.message));
+
+      // alice adds more chats to both threads
+      const thread1Chat3 = await TestDataGenerator.generateRecordsWrite({
+        author       : alice,
+        recipient    : bob.did,
+        parentId     : thread1.message.recordId,
+        contextId    : thread1.message.contextId,
+        protocol     : protocol,
+        protocolPath : 'thread/chat',
+      });
+      const thread1Chat3Reply = await dwn.processMessage(alice.did, thread1Chat3.message, thread1Chat3.dataStream);
+      expect(thread1Chat3Reply.status.code).to.equal(202);
+
+      const thread2Chat2 = await TestDataGenerator.generateRecordsWrite({
+        author       : alice,
+        recipient    : carol.did,
+        parentId     : thread2.message.recordId,
+        contextId    : thread2.message.contextId,
+        protocol     : protocol,
+        protocolPath : 'thread/chat',
+      });
+      const thread2Chat2Reply = await dwn.processMessage(alice.did, thread2Chat2.message, thread2Chat2.dataStream);
+      expect(thread2Chat2Reply.status.code).to.equal(202);
+
+      // query beyond a cursor
+      threadContextQuery = await TestDataGenerator.generateEventsQuery({
+        author  : alice,
+        filters : [{
+          protocol  : protocol,
+          contextId : thread1.message.contextId,
+        }],
+        cursor: threadContextQueryReply.events![3]
+      });
+      threadContextQueryReply = await dwn.processMessage(alice.did, threadContextQuery.message);
+      expect(threadContextQueryReply.status.code).to.equal(200);
+      expect(threadContextQueryReply.events?.length).to.equal(1);
+      expect(threadContextQueryReply.events![0]).to.equal(await Message.getCid(thread1Chat3.message));
+    });
   });
 };
