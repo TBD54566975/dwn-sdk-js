@@ -88,9 +88,8 @@ export class RecordsWriteHandler implements MethodHandler {
     }
 
     try {
-      // we set latestBaseState initially to false, as we allow `RecordsWrite` without a data stream in some cases
-      // depending on validation rules within `processMessageWithDataStream` and `processMessageWithoutDataStream`
-      // if it has been associated data and should show up in reads/queries
+      // we set latestBaseState initially to false, due to the fact that we allow `RecordsWrite` without a data stream in some cases.
+      // depending on rules within `processMessageWithDataStream` or `processMessageWithoutDataStream` it will be set to true to allow for query/reads
       let isLatestBaseState = false;
       let messageWithOptionalEncodedData = message as RecordsWriteMessageWithOptionalEncodedData;
 
@@ -136,6 +135,15 @@ export class RecordsWriteHandler implements MethodHandler {
 
     return messageReply;
   };
+
+  /**
+   * Returns a `RecordsWriteMessageWithOptionalEncodedData` with a copy of the incoming message and the incoming data encoded to `Base64URL`.
+   */
+  public async encodeAndSetData(message: RecordsWriteMessage, dataBytes: Uint8Array):Promise<RecordsWriteMessageWithOptionalEncodedData> {
+    const recordsWrite: RecordsWriteMessageWithOptionalEncodedData = { ...message };
+    recordsWrite.encodedData = Encoder.bytesToBase64Url(dataBytes);
+    return recordsWrite;
+  }
 
   private async processMessageWithDataStream(
     tenant: string,
@@ -219,15 +227,6 @@ export class RecordsWriteHandler implements MethodHandler {
   }
 
   /**
-   * Returns a `RecordsWriteMessageWithOptionalEncodedData` with a copy of the incoming message and the incoming data encoded to `Base64URL`.
-   */
-  public async encodeAndSetData(message: RecordsWriteMessage, dataBytes: Uint8Array):Promise<RecordsWriteMessageWithOptionalEncodedData> {
-    const recordsWrite: RecordsWriteMessageWithOptionalEncodedData = { ...message };
-    recordsWrite.encodedData = Encoder.bytesToBase64Url(dataBytes);
-    return recordsWrite;
-  }
-
-  /**
    * Validates the data integrity after either putting the data or associating it with a new message.
    * Upon failure deletes the association, and subsequently the data if there are no other associations.
    */
@@ -256,7 +255,7 @@ export class RecordsWriteHandler implements MethodHandler {
    * @throws {DwnError} with `DwnErrorCode.RecordsWriteDataSizeMismatch`
    *                    if `dataSize` in `descriptor` given mismatches the actual data size
    */
-  static validateDataIntegrity(
+  private static validateDataIntegrity(
     expectedDataCid: string,
     expectedDataSize: number,
     actualDataCid: string,
