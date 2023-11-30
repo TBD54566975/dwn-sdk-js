@@ -50,3 +50,8 @@ export type RangeCriterion = {
    */
   to?: string;
 };
+
+export type PaginatedEntries<T> = {
+  entries: T[];
+  cursor?: string;
+};

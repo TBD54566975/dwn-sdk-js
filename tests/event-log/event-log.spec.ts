@@ -39,12 +39,12 @@ export function testEventLog(): void {
       await eventLog.append(author2.did, messageCid2, message2Index);
 
       let events = await eventLog.getEvents(author.did);
-      expect(events.length).to.equal(1);
-      expect(events[0]).to.equal(messageCid);
+      expect(events.entries.length).to.equal(1);
+      expect(events.entries[0]).to.equal(messageCid);
 
       events = await eventLog.getEvents(author2.did);
-      expect(events.length).to.equal(1);
-      expect(events[0]).to.equal(messageCid2);
+      expect(events.entries.length).to.equal(1);
+      expect(events.entries[0]).to.equal(messageCid2);
     });
 
     it('returns events in the order that they were appended', async () => {
@@ -66,7 +66,7 @@ export function testEventLog(): void {
         expectedMessages.push(messageCid);
       }
 
-      const events = await eventLog.getEvents(author.did);
+      const { entries:events } = await eventLog.getEvents(author.did);
       expect(events.length).to.equal(expectedMessages.length);
 
       for (let i = 0; i < 10; i += 1) {
@@ -93,7 +93,7 @@ export function testEventLog(): void {
           expectedMessages.push(messageCid);
         }
 
-        const events = await eventLog.getEvents(author.did);
+        const { entries: events } = await eventLog.getEvents(author.did);
         expect(events.length).to.equal(10);
 
         for (let i = 0; i < events.length; i += 1) {
@@ -125,7 +125,7 @@ export function testEventLog(): void {
           }
         }
 
-        const events = await eventLog.getEvents(author.did, { cursor: cursor });
+        const { entries: events } = await eventLog.getEvents(author.did, { cursor: cursor });
         expect(events.length).to.equal(4);
 
         for (let i = 0; i < events.length; i += 1) {
@@ -155,7 +155,7 @@ export function testEventLog(): void {
         }
 
         await eventLog.deleteEventsByCid(author.did, deleteMessages);
-        const remainingEvents = await eventLog.getEvents(author.did);
+        const { entries: remainingEvents } = await eventLog.getEvents(author.did);
         expect(remainingEvents.length).to.equal(10 - deleteMessages.length);
         expect(remainingEvents).to.not.include.members(deleteMessages);
       });
@@ -181,7 +181,7 @@ export function testEventLog(): void {
         // does not error and deletes all messages
         await eventLog.deleteEventsByCid(author.did, [...cids, 'someInvalidCid' ]);
 
-        const remainingEvents = await eventLog.getEvents(author.did);
+        const { entries: remainingEvents } = await eventLog.getEvents(author.did);
         expect(remainingEvents.length).to.equal(0);
       });
     });
@@ -222,7 +222,7 @@ export function testEventLog(): void {
           expectedMessages.push(messageCid);
         }
 
-        const events = await eventLog.queryEvents(author.did, [{ schema: normalizeSchemaUrl('schema1') }]);
+        const { entries: events } = await eventLog.queryEvents(author.did, [{ schema: normalizeSchemaUrl('schema1') }]);
         expect(events.length).to.equal(expectedMessages.length);
 
         for (let i = 0; i < expectedMessages.length; i += 1) {
@@ -270,7 +270,7 @@ export function testEventLog(): void {
           expectedEvents.push(messageCid);
         }
 
-        const events = await eventLog.queryEvents(author.did, [{ schema: normalizeSchemaUrl('schema1') }], testCursor);
+        const { entries: events } = await eventLog.queryEvents(author.did, [{ schema: normalizeSchemaUrl('schema1') }], testCursor);
         expect(events.length).to.equal(expectedEvents.length);
 
         for (let i = 0; i < expectedEvents.length; i += 1) {

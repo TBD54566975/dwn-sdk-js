@@ -289,7 +289,7 @@ export function testProtocolsConfigureHandler(): void {
           const reply = await dwn.processMessage(alice.did, message);
           expect(reply.status.code).to.equal(202);
 
-          const events = await eventLog.getEvents(alice.did);
+          const { entries: events } = await eventLog.getEvents(alice.did);
           expect(events.length).to.equal(1);
 
           const messageCid = await Message.getCid(message);
@@ -308,7 +308,7 @@ export function testProtocolsConfigureHandler(): void {
           reply = await dwn.processMessage(alice.did, newestWrite.message);
           expect(reply.status.code).to.equal(202);
 
-          const events = await eventLog.getEvents(alice.did);
+          const { entries: events } = await eventLog.getEvents(alice.did);
           expect(events.length).to.equal(1);
 
           const newestMessageCid = await Message.getCid(newestWrite.message);

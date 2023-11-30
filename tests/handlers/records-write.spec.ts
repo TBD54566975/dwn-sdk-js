@@ -1140,7 +1140,7 @@ export function testRecordsWriteHandler(): void {
             const reply = await dwn.processMessage(author.did, message, { dataStream });
             expect(reply.status.code).to.equal(202);
 
-            const events = await eventLog.getEvents(author.did);
+            const { entries: events } = await eventLog.getEvents(author.did);
             expect(events.length).to.equal(1);
 
             const messageCid = await Message.getCid(message);
@@ -1172,7 +1172,7 @@ export function testRecordsWriteHandler(): void {
             const newestWriteReply = await dwn.processMessage(author.did, newestWrite.message);
             expect(newestWriteReply.status.code).to.equal(202);
 
-            const events = await eventLog.getEvents(author.did);
+            const { entries: events } = await eventLog.getEvents(author.did);
             expect(events.length).to.equal(2);
 
             const deletedMessageCid = await Message.getCid(newWrite.message);

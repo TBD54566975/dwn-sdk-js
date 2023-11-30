@@ -118,10 +118,10 @@ export function testPermissionsRequestHandler(): void {
           expect(reply.status.code).to.equal(202);
 
           const events = await eventLog.getEvents(alice.did);
-          expect(events.length).to.equal(1);
+          expect(events.entries.length).to.equal(1);
 
           const messageCid = await Message.getCid(message);
-          expect(events[0]).to.equal(messageCid);
+          expect(events.entries[0]).to.equal(messageCid);
         });
 
         it('should not add a new event if we have already stored this PermissionsRequest', async () => {
@@ -141,10 +141,10 @@ export function testPermissionsRequestHandler(): void {
           expect(reply.status.code).to.equal(202);
 
           const events = await eventLog.getEvents(alice.did);
-          expect(events.length).to.equal(1);
+          expect(events.entries.length).to.equal(1);
 
           const messageCid = await Message.getCid(message);
-          expect(events[0]).to.equal(messageCid);
+          expect(events.entries[0]).to.equal(messageCid);
         });
       });
     });
