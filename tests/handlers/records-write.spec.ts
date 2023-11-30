@@ -2,7 +2,7 @@ import type { EncryptionInput } from '../../src/interfaces/records-write.js';
 import type { GenerateFromRecordsWriteOut } from '../utils/test-data-generator.js';
 import type { ProtocolDefinition } from '../../src/types/protocols-types.js';
 import type { RecordsWriteMessageWithOptionalEncodedData } from '../../src/types/records-types.js';
-import type { DataStore, EventLog, MessageStore } from '../../src/index.js';
+import type { DataStore, EventLog, GetResult, MessageStore } from '../../src/index.js';
 
 import anyoneCollaborateProtocolDefinition from '../vectors/protocol-definitions/anyone-collaborate.json' assert { type: 'json' };
 import authorCanProtocolDefinition from '../vectors/protocol-definitions/author-can.json' assert { type: 'json' };
@@ -395,6 +395,33 @@ export function testRecordsWriteHandler(): void {
         expect(newRecordsQueryReply.entries?.length).to.equal(1);
         const originalEncodedData = Encoder.bytesToBase64Url(dataBytes!);
         expect(newRecordsQueryReply.entries![0].encodedData).to.equal(originalEncodedData);
+      });
+
+      it('should throw if associate returns undefined', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        // write a record into the dwn
+        const { recordsWrite } = await TestDataGenerator.generateRecordsWrite({
+          author : alice,
+          data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)
+        });
+        const reply = await dwn.processMessage(alice.did, recordsWrite.message);
+        expect(reply.status.code).to.equal(202);
+
+        const write2 = await RecordsWrite.createFrom({
+          recordsWriteMessage : recordsWrite.message,
+          published           : true,
+          signer              : Jws.createSigner(alice)
+        });
+
+        const prevMessageCid = await Message.getCid(recordsWrite.message);
+        const dataCid = recordsWrite.message.descriptor.dataCid;
+        const dataSize = recordsWrite.message.descriptor.dataSize;
+        sinon.stub(dataStore, 'get').withArgs(alice.did, prevMessageCid, dataCid).resolves({ dataCid, dataSize } as GetResult);
+
+        const write2Reply = await dwn.processMessage(alice.did, write2.message);
+        expect(write2Reply.status.code).to.equal(400);
+        expect(write2Reply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataAssociation);
       });
 
       describe('owner signature tests', () => {
@@ -865,7 +892,7 @@ export function testRecordsWriteHandler(): void {
         const alice = await DidKeyResolver.generate();
 
         // alice writes a record
-        const dataString = 'private data';
+        const dataString = TestDataGenerator.randomString(DwnConstant.maxDataSizeAllowedToBeEncoded + 1);
         const dataSize = dataString.length;
         const data = Encoder.stringToBytes(dataString);
         const dataCid = await Cid.computeDagPbCidFromBytes(data);
@@ -3021,7 +3048,99 @@ export function testRecordsWriteHandler(): void {
           const bob = await DidKeyResolver.generate();
 
           // alice writes a private record
-          const dataString = 'private data';
+          const dataString = TestDataGenerator.randomString(DwnConstant.maxDataSizeAllowedToBeEncoded);
+          const dataSize = dataString.length;
+          const data = Encoder.stringToBytes(dataString);
+          const dataCid = await Cid.computeDagPbCidFromBytes(data);
+
+          const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({
+            author: alice,
+            data,
+          });
+
+          const reply = await dwn.processMessage(alice.did, message, dataStream);
+          expect(reply.status.code).to.equal(202);
+
+          const protocolDefinition = socialMediaProtocolDefinition;
+          const protocol = protocolDefinition.protocol;
+
+          // alice has a social media protocol that allows anyone to write and read images
+          const protocolsConfig = await TestDataGenerator.generateProtocolsConfigure({
+            author: alice,
+            protocolDefinition
+          });
+          const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
+          expect(protocolsConfigureReply.status.code).to.equal(202);
+
+          // bob learns of metadata (ie. dataCid) of alice's secret data,
+          // attempts to gain unauthorized access by writing to alice's DWN through open protocol referencing the dataCid without supplying the data
+          const imageRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+            author       : bob,
+            protocol,
+            protocolPath : 'image',
+            schema       : protocolDefinition.types.image.schema,
+            dataFormat   : 'image/jpeg',
+            dataCid, // bob learns of, and references alice's secrete data's CID
+            dataSize,
+            recipient    : alice.did
+          });
+          const imageReply = await dwn.processMessage(alice.did, imageRecordsWrite.message, imageRecordsWrite.dataStream);
+          expect(imageReply.status.code).to.equal(202); // allows write but is not readable or queryable
+
+          // verify the record is not able to be read
+          const bobRecordsReadData = await RecordsRead.create({
+            filter: {
+              recordId: imageRecordsWrite.message.recordId,
+            },
+            signer: Jws.createSigner(bob)
+          });
+          const bobRecordsReadReply = await dwn.processMessage(alice.did, bobRecordsReadData.message);
+          expect(bobRecordsReadReply.status.code).to.equal(404);
+
+          // verify the record is not part of a query
+          const bobRecordsQuery= await RecordsQuery.create({
+            filter: {
+              schema: protocolDefinition.types.image.schema,
+            },
+            signer: Jws.createSigner(bob)
+          });
+          const bobRecordsQueryReply = await dwn.processMessage(alice.did, bobRecordsQuery.message);
+          expect(bobRecordsQueryReply.status.code).to.equal(200);
+          expect(bobRecordsQueryReply.entries?.length).to.equal(0);
+
+          //further sanity query for specific recordId
+          const bobRecordsQueryReordId = await RecordsQuery.create({
+            filter: {
+              recordId: imageRecordsWrite.message.recordId,
+            },
+            signer: Jws.createSigner(bob)
+          });
+          const bobRecordsQueryRecordIdReply = await dwn.processMessage(alice.did, bobRecordsQueryReordId.message);
+          expect(bobRecordsQueryRecordIdReply.status.code).to.equal(200);
+          expect(bobRecordsQueryRecordIdReply.entries?.length).to.equal(0);
+
+          // attempt update recordsWrite without data, this will reject
+          const updateRecord = await RecordsWrite.createFrom({
+            recordsWriteMessage : imageRecordsWrite.message,
+            signer              : Jws.createSigner(bob),
+            published           : true,
+          });
+          const updateRecordReply = await dwn.processMessage(alice.did, updateRecord.message);
+          expect(updateRecordReply.status.code).to.equal(400);
+          expect(updateRecordReply.status.detail).to.include(DwnErrorCode.RecordsWriteMissingEncodedDataInPrevious);
+
+          // sanity still can't query
+          const bobRecordsQueryReply2 = await dwn.processMessage(alice.did, bobRecordsQuery.message);
+          expect(bobRecordsQueryReply2.status.code).to.equal(200);
+          expect(bobRecordsQueryReply2.entries?.length).to.equal(0);
+        });
+
+        it('#359 - should not allow access of data by referencing `dataCid` in protocol authorized `RecordsWrite` with large data', async () => {
+          const alice = await DidKeyResolver.generate();
+          const bob = await DidKeyResolver.generate();
+
+          // alice writes a private record
+          const dataString = TestDataGenerator.randomString(DwnConstant.maxDataSizeAllowedToBeEncoded + 1);
           const dataSize = dataString.length;
           const data = Encoder.stringToBytes(dataString);
           const dataCid = await Cid.computeDagPbCidFromBytes(data);
@@ -3800,7 +3919,6 @@ export function testRecordsWriteHandler(): void {
           data,
         });
         const prunedRecordsWriteReply = await dwn.processMessage(alice.did, prunedRecordsWrite.message);
-        console.log('pruned response', prunedRecordsWriteReply);
         expect(prunedRecordsWriteReply.status.code).to.equal(202);
 
         // Update record to published, omitting dataStream
@@ -3812,7 +3930,34 @@ export function testRecordsWriteHandler(): void {
         });
         const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message);
         expect(recordsWriteReply.status.code).to.equal(400);
-        expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataAssociation);
+        expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingDataInPrevious);
+      });
+
+      it('should 400 if dataStream is not provided and previous message does not contain encodedData', async () => {
+        // scenario: A sync writes a pruned initial RecordsWrite, without a `dataStream`. Alice does another regular
+        // RecordsWrite for the same record, referencing the same `dataCid` but omitting the `dataStream`.
+        // Pruned RecordsWrite
+        // Data large enough to use the DataStore
+        const alice = await DidKeyResolver.generate();
+        const data = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
+        const prunedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
+          author    : alice,
+          published : false,
+          data,
+        });
+        const prunedRecordsWriteReply = await dwn.processMessage(alice.did, prunedRecordsWrite.message);
+        expect(prunedRecordsWriteReply.status.code).to.equal(202);
+
+        // Update record to published, omitting dataStream
+        const recordsWrite = await TestDataGenerator.generateFromRecordsWrite({
+          author        : alice,
+          existingWrite : prunedRecordsWrite.recordsWrite,
+          published     : true,
+          data,
+        });
+        const recordsWriteReply = await dwn.processMessage(alice.did, recordsWrite.message);
+        expect(recordsWriteReply.status.code).to.equal(400);
+        expect(recordsWriteReply.status.detail).to.contain(DwnErrorCode.RecordsWriteMissingEncodedDataInPrevious);
       });
 
       describe('reference counting tests', () => {
@@ -3870,30 +4015,30 @@ export function testRecordsWriteHandler(): void {
       });
 
       describe('encodedData threshold', async () => {
-        it('should call processEncodedData and not putData if dataSize is less than or equal to the threshold', async () => {
+        it('should call encodeAndSetData and not validateDataStoreIntegrity if dataSize is less than or equal to the threshold', async () => {
           const alice = await DidKeyResolver.generate();
           const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
-          const processEncoded = sinon.spy(RecordsWriteHandler.prototype, 'processEncodedData');
-          const putData = sinon.spy(RecordsWriteHandler.prototype, 'putData');
+          const processEncoded = sinon.spy(RecordsWriteHandler.prototype as any, 'encodeAndSetData');
+          const validateStore = sinon.spy(RecordsWriteHandler.prototype as any, 'validateDataStoreIntegrity');
 
           const writeMessage = await dwn.processMessage(alice.did, message, dataStream);
           expect(writeMessage.status.code).to.equal(202);
           sinon.assert.calledOnce(processEncoded);
-          sinon.assert.notCalled(putData);
+          sinon.assert.notCalled(validateStore);
         });
 
-        it('should call putData and not processEncodedData if dataSize is greater than the threshold', async () => {
+        it('should call validateDataStoreIntegrity and not encodeAndSetData if dataSize is greater than the threshold', async () => {
           const alice = await DidKeyResolver.generate();
           const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1);
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
-          const processEncoded = sinon.spy(RecordsWriteHandler.prototype, 'processEncodedData');
-          const putData = sinon.spy(RecordsWriteHandler.prototype, 'putData');
+          const processEncoded = sinon.spy(RecordsWriteHandler.prototype as any, 'encodeAndSetData');
+          const validateStore = sinon.spy(RecordsWriteHandler.prototype as any, 'validateDataStoreIntegrity');
 
           const writeMessage = await dwn.processMessage(alice.did, message, dataStream);
           expect(writeMessage.status.code).to.equal(202);
           sinon.assert.notCalled(processEncoded);
-          sinon.assert.calledOnce(putData);
+          sinon.assert.calledOnce(validateStore);
         });
 
         it('should have encodedData field if dataSize is less than or equal to the threshold', async () => {
@@ -4115,28 +4260,29 @@ export function testRecordsWriteHandler(): void {
       });
     });
 
-    it('should throw if `recordsWriteHandler.putData()` throws unknown error', async () => {
-
-      // must generate a large enough data payload for putData to be triggered
-      const { author, message, dataStream } = await TestDataGenerator.generateRecordsWrite({
-        data: TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)
-      });
+    it('should throw if `recordsWriteHandler.processMessageWithoutDataStream()` throws unknown error', async () => {
+      // simulate an initial write to test non-data path, as initial writes without data are always accepted (bot not readable)
+      // https://github.com/TBD54566975/dwn-sdk-js/issues/628
+      const { author, message: initialWriteMessage, recordsWrite: initialWrite } = await TestDataGenerator.generateRecordsWrite();
+      const { message, dataStream } = await TestDataGenerator.generateFromRecordsWrite({ author, existingWrite: initialWrite });
       const tenant = author.did;
 
       const didResolverStub = TestStubGenerator.createDidResolverStub(author);
 
       const messageStoreStub = stubInterface<MessageStore>();
-      messageStoreStub.query.resolves({ messages: [] });
+      messageStoreStub.query.resolves({ messages: [ initialWriteMessage ] });
 
       const dataStoreStub = stubInterface<DataStore>();
-
       const recordsWriteHandler = new RecordsWriteHandler(didResolverStub, messageStoreStub, dataStoreStub, eventLog);
-
       // simulate throwing unexpected error
-      sinon.stub(recordsWriteHandler, 'putData').throws(new Error('an unknown error in messageStore.put()'));
+      sinon.stub(recordsWriteHandler as any, 'processMessageWithoutDataStream').throws(new Error('an unknown error in recordsWriteHandler.processMessageWithoutDataStream()'));
+      sinon.stub(recordsWriteHandler as any, 'processMessageWithDataStream').throws(new Error('an unknown error in recordsWriteHandler.processMessageWithDataStream()'));
 
-      const handlerPromise = recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
-      await expect(handlerPromise).to.be.rejectedWith('an unknown error in messageStore.put()');
+      let handlerPromise = recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! }); // with data stream
+      await expect(handlerPromise).to.be.rejectedWith('an unknown error in recordsWriteHandler.processMessageWithDataStream()');
+
+      handlerPromise = recordsWriteHandler.handle({ tenant, message }); // without data stream
+      await expect(handlerPromise).to.be.rejectedWith('an unknown error in recordsWriteHandler.processMessageWithoutDataStream()');
     });
   });
 }
