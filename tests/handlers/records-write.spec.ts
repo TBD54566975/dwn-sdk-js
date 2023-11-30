@@ -4073,11 +4073,11 @@ export function testRecordsWriteHandler(): void {
       });
 
       describe('encodedData threshold', async () => {
-        it('should call encodeAndSetData and not validateDataStoreIntegrity if dataSize is less than or equal to the threshold', async () => {
+        it('should call cloneAndAddEncodedData and not validateDataStoreIntegrity if dataSize is less than or equal to the threshold', async () => {
           const alice = await DidKeyResolver.generate();
           const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
-          const processEncoded = sinon.spy(RecordsWriteHandler.prototype as any, 'encodeAndSetData');
+          const processEncoded = sinon.spy(RecordsWriteHandler.prototype as any, 'cloneAndAddEncodedData');
           const validateStore = sinon.spy(RecordsWriteHandler.prototype as any, 'validateDataStoreIntegrity');
 
           const writeMessage = await dwn.processMessage(alice.did, message, dataStream);
@@ -4086,11 +4086,11 @@ export function testRecordsWriteHandler(): void {
           sinon.assert.notCalled(validateStore);
         });
 
-        it('should call validateDataStoreIntegrity and not encodeAndSetData if dataSize is greater than the threshold', async () => {
+        it('should call validateDataStoreIntegrity and not cloneAndAddEncodedData if dataSize is greater than the threshold', async () => {
           const alice = await DidKeyResolver.generate();
           const dataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1);
           const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, data: dataBytes });
-          const processEncoded = sinon.spy(RecordsWriteHandler.prototype as any, 'encodeAndSetData');
+          const processEncoded = sinon.spy(RecordsWriteHandler.prototype as any, 'cloneAndAddEncodedData');
           const validateStore = sinon.spy(RecordsWriteHandler.prototype as any, 'validateDataStoreIntegrity');
 
           const writeMessage = await dwn.processMessage(alice.did, message, dataStream);
