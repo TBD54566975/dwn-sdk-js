@@ -1451,6 +1451,7 @@ export function testRecordsQueryHandler(): void {
           { author: alice, schema, data: Encoder.stringToBytes('5'), published: true, recipient: carol.did }
         );
 
+        // directly inserting data to datastore so that we don't have to setup to grant Bob permission to write to Alice's DWN
         const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
 
         const additionalIndexes1 = await record1Data.recordsWrite.constructRecordsWriteIndexes(true);

@@ -3993,8 +3993,9 @@ export function testRecordsWriteHandler(): void {
       it('should 400 if dataStream is not provided and previous message does not contain encodedData', async () => {
         // scenario: A sync writes a pruned initial RecordsWrite, without a `dataStream`. Alice does another regular
         // RecordsWrite for the same record, referencing the same `dataCid` but omitting the `dataStream`.
+
         // Pruned RecordsWrite
-        // Data large enough to use the DataStore
+        // Data that would be encoded within the message
         const alice = await DidKeyResolver.generate();
         const data = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
         const prunedRecordsWrite = await TestDataGenerator.generateRecordsWrite({
