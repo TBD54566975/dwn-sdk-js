@@ -1065,7 +1065,7 @@ describe('IndexLevel', () => {
       expect(result.length).to.equal(0);
 
       const allKeys = await ArrayUtility.fromAsyncGenerator(testIndex.db.keys());
-      expect(allKeys.length).to.equal(8); // all keys still exist
+      expect(allKeys.length).to.equal(2); // only keeps 1 index per deleted item
     });
 
     it('purges indexes', async () => {
@@ -1126,7 +1126,7 @@ describe('IndexLevel', () => {
       expect(result).to.contain(id);
     });
 
-    it('does nothing when attempting to purge key that does not exist', async () => {
+    it('does nothing when attempting to delete a key that does not exist', async () => {
       const controller = new AbortController();
       controller.abort('reason');
 
@@ -1140,6 +1140,26 @@ describe('IndexLevel', () => {
 
       // attempt purge an invalid id
       await testIndex.delete(tenant, 'invalid-id');
+
+      const result = await testIndex.query(tenant, [{ foo: 'bar' }], { sortProperty: 'id' });
+      expect(result.length).to.equal(1);
+      expect(result).to.contain(id);
+    });
+
+    it('does nothing when attempting to purge a key that does not exist', async () => {
+      const controller = new AbortController();
+      controller.abort('reason');
+
+      const id = uuid();
+      const doc = {
+        id  : id,
+        foo : 'bar'
+      };
+
+      await testIndex.put(tenant, id, doc);
+
+      // attempt purge an invalid id
+      await testIndex.purge(tenant, 'invalid-id');
 
       const result = await testIndex.query(tenant, [{ foo: 'bar' }], { sortProperty: 'id' });
       expect(result.length).to.equal(1);

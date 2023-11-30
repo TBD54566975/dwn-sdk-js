@@ -13,7 +13,7 @@ type IndexLevelConfig = {
   createLevelDatabase?: typeof createLevelDatabase
 };
 
-type IndexedItem = { itemId: string, indexes: KeyValues, active: boolean };
+type IndexedItem = { itemId: string, indexes: KeyValues };
 
 const INDEX_SUBLEVEL_NAME = 'index';
 
@@ -86,7 +86,7 @@ export class IndexLevel {
       // for example if the property is messageTimestamp the key would look like:
       // '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
       const key = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(indexValue), itemId);
-      const item: IndexedItem = { itemId, indexes, active: true };
+      const item: IndexedItem = { itemId, indexes };
 
       const partitionOperation = await this.createOperationForIndexPartition(
         tenant,
@@ -149,22 +149,16 @@ export class IndexLevel {
       // invalid itemId
       return;
     }
-
-    // delete the reverse lookup
-    const inactiveItem:IndexedItem = { itemId, indexes, active: false };
-    const partitionOperation = await this.createOperationForIndexesLookupPartition(tenant, { type: 'put', key: itemId, value: JSON.stringify(inactiveItem) });
-    indexOps.push(partitionOperation);
-
-    // delete the keys for each sortIndex
+    // we keep the indexes reverse lookup around unless it's a purge
+    // however, we delete the keys for each sortIndex
     for (const indexName in indexes) {
       const sortValue = indexes[indexName];
       const partitionOperation = await this.createOperationForIndexPartition(
         tenant,
         indexName,
         {
-          type  : 'put',
-          key   : IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), itemId),
-          value : JSON.stringify(inactiveItem)
+          type : 'del',
+          key  : IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), itemId),
         }
       );
       indexOps.push(partitionOperation);
@@ -289,8 +283,8 @@ export class IndexLevel {
 
     const sortPartition = await this.getIndexPartition(tenant, sortProperty);
     for await (const [ _, val ] of sortPartition.iterator(iteratorOptions, options)) {
-      const { indexes, itemId, active } = JSON.parse(val);
-      yield { indexes, itemId, active };
+      const { indexes, itemId } = JSON.parse(val);
+      yield { indexes, itemId };
     }
   }
 
@@ -343,9 +337,18 @@ export class IndexLevel {
       filters = [{}];
     }
 
+    // the cursor item might be deleted, so we preemptively get the indexes and add the IndexedItem to the matches
+    const cursorIndexes = cursor ? await this.getIndexes(tenant, cursor) : undefined;
+    if (cursorIndexes !== undefined && FilterUtility.matchAnyFilter(cursorIndexes, filters)) {
+      matches.set(cursor!, {
+        itemId  : cursor!,
+        indexes : cursorIndexes,
+      });
+    }
+
     try {
       await Promise.all(filters.map(filter => {
-        return this.executeSingleFilterQuery(tenant, filter, sortProperty, matches, cursor, options );
+        return this.executeSingleFilterQuery(tenant, filter, sortProperty, matches, options );
       }));
     } catch (error) {
       if ((error as DwnError).code === DwnErrorCode.IndexInvalidSortProperty) {
@@ -378,7 +381,6 @@ export class IndexLevel {
     filter: Filter,
     sortProperty: string,
     matches: Map<string, IndexedItem>,
-    cursor?: string,
     levelOptions?: IndexLevelOptions
   ): Promise<void> {
 
@@ -422,8 +424,7 @@ export class IndexLevel {
         // short circuit: if a data is already included to the final matched key set (by a different `Filter`),
         // no need to evaluate if the data satisfies this current filter being evaluated
         // otherwise check that the item is a match.
-        const { itemId, indexes, active } = indexedItem;
-        if (matches.has(itemId) || !FilterUtility.matchFilter(indexes, filter) || (!active && itemId !== cursor)) {
+        if (matches.has(indexedItem.itemId) || !FilterUtility.matchFilter(indexedItem.indexes, filter)) {
           continue;
         }
 

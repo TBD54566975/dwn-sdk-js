@@ -1343,6 +1343,78 @@ export function testRecordsQueryHandler(): void {
         expect(messages.every(({ message }) => results.map(e => (e as RecordsWriteMessage).recordId).includes(message.recordId)));
       });
 
+      it('should be able to paginate even after deleting the message that represents the cursor', async () => {
+        // scenario:
+        //    alice issues a paginated RecordsQuery message which has additional results
+        //    alice happens to delete the result that is also the pagination cursor
+        //    a subsequent query with the cursor should still continue from the same place
+
+        const alice = await DidKeyResolver.generate();
+
+        // create some initial records
+        const messages = await Promise.all(Array(4).fill({}).map(_ => TestDataGenerator.generateRecordsWrite({
+          author : alice,
+          schema : 'https://schema'
+        })));
+
+        for (const message of messages) {
+          const result = await dwn.processMessage(alice.did, message.message, message.dataStream);
+          expect(result.status.code).to.equal(202);
+        }
+
+        // create a record to issue an update so that the message is not an initial write (those are always tombstoned in the message store)
+        const cursorMessage = await TestDataGenerator.generateRecordsWrite({
+          author : alice,
+          schema : 'https://schema'
+        });
+        const cursorMessageReply = await dwn.processMessage(alice.did, cursorMessage.message, cursorMessage.dataStream);
+        expect(cursorMessageReply.status.code).to.equal(202);
+
+        const cursorMessageUpate = await TestDataGenerator.generateFromRecordsWrite({
+          author        : alice,
+          existingWrite : cursorMessage.recordsWrite
+        });
+        const cursorMessageUpdateReply = await dwn.processMessage(alice.did, cursorMessageUpate.message, cursorMessageUpate.dataStream);
+        expect(cursorMessageUpdateReply.status.code).to.equal(202);
+
+        // create some additional records
+        const additionalMessage = await TestDataGenerator.generateRecordsWrite({
+          author : alice,
+          schema : 'https://schema'
+        });
+        const additionalMesssageReply = await dwn.processMessage(alice.did, additionalMessage.message, additionalMessage.dataStream);
+        expect(additionalMesssageReply.status.code).to.equal(202);
+
+        const page1Query = await TestDataGenerator.generateRecordsQuery({
+          author     : alice,
+          filter     : { schema: 'https://schema' },
+          pagination : { limit: 5 }
+        });
+        const page1QueryReply = await dwn.processMessage(alice.did, page1Query.message);
+        expect(page1QueryReply.status.code).to.equal(200);
+        expect(page1QueryReply.entries?.length).to.equal(5);
+        expect(page1QueryReply.cursor).to.equal(await Message.getCid(cursorMessageUpate.message));
+        expect(page1QueryReply.entries?.map(e => e.recordId)).to.not.include(additionalMessage.message.recordId);
+
+        // delete message
+        const deleteCursorMessage = await TestDataGenerator.generateRecordsDelete({
+          author   : alice,
+          recordId : cursorMessageUpate.message.recordId,
+        });
+        const deleteCursorMessageReply = await dwn.processMessage(alice.did, deleteCursorMessage.message);
+        expect(deleteCursorMessageReply.status.code).to.equal(202);
+
+        const page2Query = await TestDataGenerator.generateRecordsQuery({
+          author     : alice,
+          filter     : { schema: 'https://schema' },
+          pagination : { limit: 5, cursor: page1QueryReply.cursor }
+        });
+        const page2QueryReply = await dwn.processMessage(alice.did, page2Query.message);
+        expect(page2QueryReply.status.code).to.equal(200);
+        expect(page2QueryReply.entries?.length).to.equal(1);
+        expect(page2QueryReply.entries![0].recordId).to.equal(additionalMessage.message.recordId);
+      });
+
       it('cursor should match the messageCid of the last entry in the returned query', async () => {
         const alice = await DidKeyResolver.generate();
 

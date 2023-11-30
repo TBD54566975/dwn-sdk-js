@@ -46,12 +46,12 @@ describe('EventLogLevel Tests', () => {
       expect(result.length).to.equal(0);
 
       const keysAfterDelete = await ArrayUtility.fromAsyncGenerator(eventLog.index.db.keys());
-      expect(keysAfterDelete.length).to.equal(15);
+      expect(keysAfterDelete.length).to.equal(1);
     });
   });
 
   describe('purgeEventsByCid', () => {
-    it('deletes all index related data', async () => {
+    it('purges all index related data', async () => {
       const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await Message.getCid(message);
       const index = await recordsWrite.constructRecordsWriteIndexes(true);
