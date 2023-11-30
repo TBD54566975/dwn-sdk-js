@@ -798,7 +798,8 @@ export function testEventsQueryScenarios(): void {
       expect(schema2QueryReply.events?.length).to.equal(0);
     });
 
-    xit('filters by recordId', async () => {
+    it('filters by recordId', async () => {
+
       const alice = await DidKeyResolver.generate();
 
       // a write as a control, will not show up in query

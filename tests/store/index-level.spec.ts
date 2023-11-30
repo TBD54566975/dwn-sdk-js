@@ -1030,7 +1030,7 @@ describe('IndexLevel', () => {
       await testIndex.close();
     });
 
-    it('purges indexes', async () => {
+    it('delete keeps indexes but does not return results', async () => {
       const id1 = uuid();
       const doc1 = {
         id  : id1,
@@ -1060,6 +1060,44 @@ describe('IndexLevel', () => {
       expect(result.length).to.equal(1);
 
       await testIndex.delete(tenant, id2);
+
+      result = await testIndex.query(tenant, [{ 'a': 'b', 'c': 'd' }], { sortProperty: 'id' });
+      expect(result.length).to.equal(0);
+
+      const allKeys = await ArrayUtility.fromAsyncGenerator(testIndex.db.keys());
+      expect(allKeys.length).to.equal(8); // all keys still exist
+    });
+
+    it('purges indexes', async () => {
+      const id1 = uuid();
+      const doc1 = {
+        id  : id1,
+        'a' : 'b',
+        'c' : 'd'
+      };
+
+      const id2 = uuid();
+      const doc2 = {
+        id  : id2,
+        'a' : 'b',
+        'c' : 'd'
+      };
+
+      await testIndex.put(tenant, id1, doc1);
+      await testIndex.put(tenant, id2, doc2);
+
+      let result = await testIndex.query(tenant, [{ 'a': 'b', 'c': 'd' }], { sortProperty: 'id' });
+
+      expect(result.length).to.equal(2);
+      expect(result).to.contain(id1);
+
+      await testIndex.purge(tenant, id1);
+
+      result = await testIndex.query(tenant, [{ 'a': 'b', 'c': 'd' }], { sortProperty: 'id' });
+
+      expect(result.length).to.equal(1);
+
+      await testIndex.purge(tenant, id2);
 
       const allKeys = await ArrayUtility.fromAsyncGenerator(testIndex.db.keys());
       expect(allKeys.length).to.equal(0);
