@@ -8,7 +8,7 @@ import freeForAll from '../vectors/protocol-definitions/free-for-all.json' asser
 import threadProtocol from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
 
 import { TestStores } from '../test-stores.js';
-import { DidKeyResolver, DidResolver, Dwn, DwnInterfaceName, DwnMethodName, Message, Time } from '../../src/index.js';
+import { DidKeyResolver, DidResolver, Dwn, DwnConstant, DwnInterfaceName, DwnMethodName, Message, Time } from '../../src/index.js';
 
 import { expect } from 'chai';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
@@ -794,7 +794,6 @@ export function testEventsQueryScenarios(): void {
     });
 
     xit('filters by recordId', async () => {
-
       const alice = await DidKeyResolver.generate();
 
       // a write as a control, will not show up in query
@@ -847,7 +846,123 @@ export function testEventsQueryScenarios(): void {
       expect(recordQueryReply.events![0]).to.equal(await Message.getCid(deleteRecord.message));
     });
 
+    it('filters by dataFormat', async () => {
+      // scenario: alice uses her DWN as a file storage with many different data formats
+      // alice also has another DWN that wants only messages with the image/jpeg format
+
+      const alice = await DidKeyResolver.generate();
+
+      const textFile = await TestDataGenerator.generateRecordsWrite({
+        author     : alice,
+        dataFormat : 'application/text'
+      });
+      const textFileReply = await dwn.processMessage(alice.did, textFile.message, textFile.dataStream);
+      expect(textFileReply.status.code).to.equal(202);
+
+      const jsonData = await TestDataGenerator.generateRecordsWrite({
+        author     : alice,
+        dataFormat : 'application/json'
+      });
+      const jsonDataReply = await dwn.processMessage(alice.did, jsonData.message, jsonData.dataStream);
+      expect(jsonDataReply.status.code).to.equal(202);
+
+      const imageData = await TestDataGenerator.generateRecordsWrite({
+        author     : alice,
+        dataFormat : 'image/jpeg'
+      });
+      const imageDataReply = await dwn.processMessage(alice.did, imageData.message, imageData.dataStream);
+      expect(imageDataReply.status.code).to.equal(202);
+
+      //get image data
+      let imageQuery = await TestDataGenerator.generateEventsQuery({
+        author  : alice,
+        filters : [{
+          dataFormat: 'image/jpeg'
+        }]
+      });
+      let imageQueryReply = await dwn.processMessage(alice.did, imageQuery.message);
+      expect(imageQueryReply.status.code).to.equal(200);
+      expect(imageQueryReply.events?.length).to.equal(1);
+      expect(imageQueryReply.events![0]).to.equal(await Message.getCid(imageData.message));
+
+      const imageData2 = await TestDataGenerator.generateRecordsWrite({
+        author     : alice,
+        dataFormat : 'image/jpeg'
+      });
+      const imageData2Reply = await dwn.processMessage(alice.did, imageData2.message, imageData2.dataStream);
+      expect(imageData2Reply.status.code).to.equal(202);
+
+      imageQuery = await TestDataGenerator.generateEventsQuery({
+        author  : alice,
+        filters : [{
+          dataFormat: 'image/jpeg'
+        }],
+        cursor: imageQueryReply.events![0]
+      });
+      imageQueryReply = await dwn.processMessage(alice.did, imageQuery.message);
+      expect(imageQueryReply.status.code).to.equal(200);
+      expect(imageQueryReply.events?.length).to.equal(1);
+      expect(imageQueryReply.events![0]).to.equal(await Message.getCid(imageData2.message));
+    });;
+
+    it('filters by dataSize', async () => {
+      // scenario:
+      //    alice inserts both small and large data
+      //    alice requests events for messages with data size under a threshold
+
+      const alice = await DidKeyResolver.generate();
+
+      const smallSize1 = await TestDataGenerator.generateRecordsWrite({
+        author: alice,
+      });
+      const smallSize1Reply = await dwn.processMessage(alice.did, smallSize1.message, smallSize1.dataStream);
+      expect(smallSize1Reply.status.code).to.equal(202);
+
+      const largeSize = await TestDataGenerator.generateRecordsWrite({
+        author : alice,
+        data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)
+      });
+      const largeSizeReply = await dwn.processMessage(alice.did, largeSize.message, largeSize.dataStream);
+      expect(largeSizeReply.status.code).to.equal(202);
+
+      const smallSize2 = await TestDataGenerator.generateRecordsWrite({
+        author: alice,
+      });
+      const smallSize2Reply = await dwn.processMessage(alice.did, smallSize2.message, smallSize2.dataStream);
+      expect(smallSize2Reply.status.code).to.equal(202);
+
+      //get large sizes
+      let largeSizeQuery = await TestDataGenerator.generateEventsQuery({
+        author  : alice,
+        filters : [{
+          dataSize: { gte: DwnConstant.maxDataSizeAllowedToBeEncoded + 1 }
+        }]
+      });
+      let largeSizeQueryReply = await dwn.processMessage(alice.did, largeSizeQuery.message);
+      expect(largeSizeQueryReply.status.code).to.equal(200);
+      expect(largeSizeQueryReply.events?.length).to.equal(1);
+      expect(largeSizeQueryReply.events![0]).to.equal(await Message.getCid(largeSize.message));
+
+      const largeSize2 = await TestDataGenerator.generateRecordsWrite({
+        author : alice,
+        data   : TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded + 1)
+      });
+      const largeSize2Reply = await dwn.processMessage(alice.did, largeSize2.message, largeSize2.dataStream);
+      expect(largeSize2Reply.status.code).to.equal(202);
+
+      largeSizeQuery = await TestDataGenerator.generateEventsQuery({
+        author  : alice,
+        filters : [{
+          dataSize: { gte: DwnConstant.maxDataSizeAllowedToBeEncoded + 1 }
+        }],
+        cursor: largeSizeQueryReply.events![0]
+      });
+      largeSizeQueryReply = await dwn.processMessage(alice.did, largeSizeQuery.message);
+      expect(largeSizeQueryReply.status.code).to.equal(200);
+      expect(largeSizeQueryReply.events?.length).to.equal(1);
+      expect(largeSizeQueryReply.events![0]).to.equal(await Message.getCid(largeSize2.message));
+    });
+
     xit('filters by contextId');
-    xit('filters by dataFormat');
   });
 };

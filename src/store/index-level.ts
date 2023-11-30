@@ -585,21 +585,14 @@ export class IndexLevel {
       return false;
     }
 
-    // NOTE: remaining conditions will have cursor
-
-    if (filter.contextId !== undefined) {
-      return true;
-    }
-
-    if (filter.protocol !== undefined || filter.protocolPath !== undefined) {
-      return true;
-    }
-
-    if (filter.protocol !== undefined || filter.parentId === undefined) {
-      return true;
-    }
-
-    if (filter.protocol === undefined && filter.schema !== undefined) {
+    // NOTE: remaining conditions will not have cursor
+    if (
+      filter.protocol !== undefined ||
+      filter.protocolPath !== undefined ||
+      filter.contextId !== undefined ||
+      filter.parentId !== undefined ||
+      filter.schema !== undefined
+    ) {
       return true;
     }
 

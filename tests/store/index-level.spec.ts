@@ -268,6 +268,53 @@ describe('IndexLevel', () => {
         invalidResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: 'a' });
         expect(invalidResults.length).to.equal(0);
       });
+
+      it('supports range queries', async () => {
+        const id = uuid();
+        const doc1 = {
+          id,
+          value: 'foo'
+        };
+        await testIndex.put(tenant, id, doc1);
+
+        const id2 = uuid();
+        const doc2 = {
+          id    : id2,
+          value : 'foobar'
+        };
+        await testIndex.put(tenant, id2, doc2);
+
+        const id3 = uuid();
+        const doc3 = {
+          id    : id3,
+          value : 'foobaz'
+        };
+        await testIndex.put(tenant, id3, doc3);
+
+        const filters = [{
+          value: {
+            gt  : 'foo',
+            lte : 'foobaz'
+          }
+        }];
+
+        const resp = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'id' });
+
+        expect(resp.length).to.equal(2);
+        expect(resp).to.have.members([id2, id3]);
+
+        // only upper bounds
+        const lteFilter = [{
+          value: {
+            lte: 'foobaz'
+          }
+        }];
+        const lteReply = await testIndex.queryWithInMemoryPaging(tenant, lteFilter, { sortProperty: 'id' });
+
+        expect(lteReply.length).to.equal(3);
+        expect(lteReply).to.have.members([id, id2, id3]);
+
+      });
     });
 
     describe('query()', () => {

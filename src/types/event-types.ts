@@ -1,8 +1,8 @@
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { ProtocolsQueryFilter } from './protocols-types.js';
-import type { RangeCriterion } from './query-types.js';
 import type { AuthorizationModel, GenericMessage } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
+import type { RangeCriterion, RangeFilter } from './query-types.js';
 
 export type EventsMessageFilter = {
   interface?: string;
@@ -20,6 +20,7 @@ export type EventsRecordsFilter = {
   recordId?: string;
   parentId?: string;
   dataFormat?: string;
+  dataSize?: RangeFilter;
   dateCreated?: RangeCriterion;
 };
 

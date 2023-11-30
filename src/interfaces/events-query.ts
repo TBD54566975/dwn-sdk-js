@@ -110,6 +110,7 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
   private static isRecordsFilter(filter: EventsQueryFilter): filter is EventsRecordsFilter {
     return 'dateCreated' in filter ||
       'dataFormat' in filter ||
+      'dataSize' in filter ||
       'parentId' in filter ||
       'recordId' in filter ||
       'schema' in filter ||

@@ -23,9 +23,6 @@
       ],
       "type": "string"
     },
-    "author": {
-      "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/did"
-    },
     "protocol": {
       "type": "string"
     },
@@ -49,6 +46,9 @@
     },
     "dataFormat": {
       "type": "string"
+    },
+    "dataSize": {
+      "$ref": "https://identity.foundation/dwn/json-schemas/number-range-filter.json"
     },
     "dateCreated": {
       "type": "object",
