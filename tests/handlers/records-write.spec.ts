@@ -888,11 +888,68 @@ export function testRecordsWriteHandler(): void {
         expect(reply.status.detail).to.contain(DwnErrorCode.RecordsWriteDataCidMismatch);
       });
 
-      it('#359 - should not allow access of data by referencing a different`dataCid` in "modify" `RecordsWrite`', async () => {
+      it('#359 - should not allow access of data by referencing a different`dataCid` in "modify" `RecordsWrite` with large data', async () => {
         const alice = await DidKeyResolver.generate();
 
         // alice writes a record
         const dataString = TestDataGenerator.randomString(DwnConstant.maxDataSizeAllowedToBeEncoded + 1);
+        const dataSize = dataString.length;
+        const data = Encoder.stringToBytes(dataString);
+        const dataCid = await Cid.computeDagPbCidFromBytes(data);
+
+        const write1 = await TestDataGenerator.generateRecordsWrite({
+          author: alice,
+          data,
+        });
+
+        const write1Reply = await dwn.processMessage(alice.did, write1.message, write1.dataStream);
+        expect(write1Reply.status.code).to.equal(202);
+
+        // alice writes another record (which will be modified later)
+        const write2 = await TestDataGenerator.generateRecordsWrite({ author: alice });
+        const write2Reply = await dwn.processMessage(alice.did, write2.message, write2.dataStream);
+        expect(write2Reply.status.code).to.equal(202);
+
+        // modify write2 by referencing the `dataCid` in write1 (which should not be allowed)
+        const write2Change = await TestDataGenerator.generateRecordsWrite({
+          author       : alice,
+          // immutable properties just inherit from the message given
+          recipient    : write2.message.descriptor.recipient,
+          recordId     : write2.message.recordId,
+          dateCreated  : write2.message.descriptor.dateCreated,
+          contextId    : write2.message.contextId,
+          protocolPath : write2.message.descriptor.protocolPath,
+          parentId     : write2.message.descriptor.parentId,
+          schema       : write2.message.descriptor.schema,
+          dataFormat   : write2.message.descriptor.dataFormat,
+          // unauthorized reference to data in write1
+          dataCid,
+          dataSize
+        });
+        const write2ChangeReply = await dwn.processMessage(alice.did, write2Change.message);
+        expect(write2ChangeReply.status.code).to.equal(400); // should be disallowed
+        expect(write2ChangeReply.status.detail).to.contain(DwnErrorCode.RecordsWriteDataCidMismatch);
+
+        // further sanity test to make sure the change is not written, ie. write2 still has the original data
+        const read = await RecordsRead.create({
+          filter: {
+            recordId: write2.message.recordId,
+          },
+          signer: Jws.createSigner(alice)
+        });
+
+        const readReply = await dwn.processMessage(alice.did, read.message);
+        expect(readReply.status.code).to.equal(200);
+
+        const readDataBytes = await DataStream.toBytes(readReply.record!.data!);
+        expect(ArrayUtility.byteArraysEqual(readDataBytes, write2.dataBytes!)).to.be.true;
+      });
+
+      it('#359 - should not allow access of data by referencing a different`dataCid` in "modify" `RecordsWrite`', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        // alice writes a record
+        const dataString = TestDataGenerator.randomString(DwnConstant.maxDataSizeAllowedToBeEncoded);
         const dataSize = dataString.length;
         const data = Encoder.stringToBytes(dataString);
         const dataCid = await Cid.computeDagPbCidFromBytes(data);
