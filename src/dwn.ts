@@ -6,7 +6,7 @@ import type { MethodHandler } from './types/method-handler.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsWriteHandlerOptions } from './handlers/records-write.js';
 import type { TenantGate } from './core/tenant-gate.js';
-import type { EventsGetMessage, EventsGetReply } from './types/event-types.js';
+import type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply } from './types/event-types.js';
 import type { GenericMessageReply, UnionMessageReply } from './core/message-reply.js';
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
 import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from './types/permissions-types.js';
@@ -16,6 +16,7 @@ import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, Reco
 import { AllowAllTenantGate } from './core/tenant-gate.js';
 import { DidResolver } from './did/did-resolver.js';
 import { EventsGetHandler } from './handlers/events-get.js';
+import { EventsQueryHandler } from './handlers/events-query.js';
 import { Message } from './core/message.js';
 import { messageReplyFromError } from './core/message-reply.js';
 import { MessagesGetHandler } from './handlers/messages-get.js';
@@ -47,6 +48,7 @@ export class Dwn {
 
     this.methodHandlers = {
       [DwnInterfaceName.Events + DwnMethodName.Get]        : new EventsGetHandler(this.didResolver, this.eventLog),
+      [DwnInterfaceName.Events + DwnMethodName.Query]      : new EventsQueryHandler(this.didResolver, this.eventLog),
       [DwnInterfaceName.Messages + DwnMethodName.Get]      : new MessagesGetHandler(this.didResolver, this.messageStore, this.dataStore),
       [DwnInterfaceName.Permissions + DwnMethodName.Grant] : new PermissionsGrantHandler(
         this.didResolver, this.messageStore, this.eventLog),
@@ -95,6 +97,7 @@ export class Dwn {
    * @param tenant The tenant DID to route the given message to.
    */
   public async processMessage(tenant: string, rawMessage: EventsGetMessage): Promise<EventsGetReply>;
+  public async processMessage(tenant: string, rawMessage: EventsQueryMessage): Promise<EventsQueryReply>;
   public async processMessage(tenant: string, rawMessage: MessagesGetMessage): Promise<MessagesGetReply>;
   public async processMessage(tenant: string, rawMessage: ProtocolsConfigureMessage): Promise<GenericMessageReply>;
   public async processMessage(tenant: string, rawMessage: ProtocolsQueryMessage): Promise<ProtocolsQueryReply>;

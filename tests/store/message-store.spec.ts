@@ -6,7 +6,7 @@ import { expect } from 'chai';
 import { DidKeyResolver } from '../../src/index.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
-import { SortOrder } from '../../src/types/message-types.js';
+import { SortDirection } from '../../src/types/query-types.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 
@@ -36,8 +36,9 @@ export function testMessageStore(): void {
         const alice = await DidKeyResolver.generate();
 
         const { message } = await TestDataGenerator.generatePermissionsRequest();
+        const { messageTimestamp } = message.descriptor;
 
-        await messageStore.put(alice.did, message, {});
+        await messageStore.put(alice.did, message, { messageTimestamp });
 
         const expectedCid = await Message.getCid(message);
 
@@ -52,9 +53,10 @@ export function testMessageStore(): void {
         const alice = await DidKeyResolver.generate();
 
         const { message } = await TestDataGenerator.generateRecordsWrite();
+        const { messageTimestamp } = message.descriptor;
 
         // inserting the message indicating it is the 'latest' in the index
-        await messageStore.put(alice.did, message, { latest: 'true' });
+        await messageStore.put(alice.did, message, { latest: 'true', messageTimestamp });
 
         const { messages: results1 } = await messageStore.query(alice.did, [{ latest: 'true' }]);
         expect(results1.length).to.equal(1);
@@ -65,7 +67,7 @@ export function testMessageStore(): void {
         // deleting the existing indexes and replacing it indicating it is no longer the 'latest'
         const cid = await Message.getCid(message);
         await messageStore.delete(alice.did, cid);
-        await messageStore.put(alice.did, message, { latest: 'false' });
+        await messageStore.put(alice.did, message, { latest: 'false', messageTimestamp });
 
         const { messages: results3 } = await messageStore.query(alice.did, [{ latest: 'true' }]);
         expect(results3.length).to.equal(0);
@@ -79,8 +81,9 @@ export function testMessageStore(): void {
 
         const schema = 'http://my-awesome-schema/awesomeness_schema';
         const { message } = await TestDataGenerator.generateRecordsWrite({ schema });
+        const { messageTimestamp } = message.descriptor;
 
-        await messageStore.put(alice.did, message, { schema });
+        await messageStore.put(alice.did, message, { schema, messageTimestamp });
 
         const { messages: results } = await messageStore.query(alice.did, [{ schema }]);
         expect((results[0] as RecordsWriteMessage).descriptor.schema).to.equal(schema);
@@ -90,13 +93,14 @@ export function testMessageStore(): void {
         const alice = await DidKeyResolver.generate();
 
         const { message } = await TestDataGenerator.generateRecordsWrite();
+        const { messageTimestamp } = message.descriptor;
 
         const controller = new AbortController();
         controller.signal.throwIfAborted = (): void => { }; // simulate aborting happening async
         controller.abort('reason');
 
         try {
-          await messageStore.put(alice.did, message, {}, { signal: controller.signal });
+          await messageStore.put(alice.did, message, { messageTimestamp }, { signal: controller.signal });
         } catch (e) {
           expect(e).to.equal('reason');
         }
@@ -112,6 +116,7 @@ export function testMessageStore(): void {
 
         const schema = 'http://my-awesome-schema/awesomeness_schema#awesome-1?id=awesome_1';
         const { message } = await TestDataGenerator.generateRecordsWrite({ schema });
+        const { messageTimestamp } = message.descriptor;
 
         const controller = new AbortController();
         queueMicrotask(() => {
@@ -119,7 +124,7 @@ export function testMessageStore(): void {
         });
 
         try {
-          await messageStore.put(alice.did, message, { schema }, { signal: controller.signal });
+          await messageStore.put(alice.did, message, { schema, messageTimestamp }, { signal: controller.signal });
         } catch (e) {
           expect(e).to.equal('reason');
         }
@@ -134,11 +139,34 @@ export function testMessageStore(): void {
         expect(fetchedMessage).to.be.undefined;
       });
 
+      it('should not store anything if aborted beforehand', async () => {
+        const alice = await DidKeyResolver.generate();
+
+        const { message } = await TestDataGenerator.generateRecordsWrite();
+        const { messageTimestamp } = message.descriptor;
+
+        const controller = new AbortController();
+        controller.signal.throwIfAborted = (): void => { }; // simulate aborting happening async
+        controller.abort('reason');
+
+        try {
+          await messageStore.put(alice.did, message, { messageTimestamp }, { signal: controller.signal });
+        } catch (e) {
+          expect(e).to.equal('reason');
+        }
+
+        const expectedCid = await Message.getCid(message);
+
+        const jsonMessage = await messageStore.get(alice.did, expectedCid);
+        expect(jsonMessage).to.equal(undefined);
+      });
+
       it('should not delete if aborted', async () => {
         const alice = await DidKeyResolver.generate();
 
         const { message } = await TestDataGenerator.generateRecordsWrite();
-        await messageStore.put(alice.did, message, { latest: 'true' });
+        const { messageTimestamp } = message.descriptor;
+        await messageStore.put(alice.did, message, { latest: 'true', messageTimestamp });
 
         const messageCid = await Message.getCid(message);
         const resultsAlice1 = await messageStore.get(alice.did, messageCid);
@@ -158,8 +186,9 @@ export function testMessageStore(): void {
         const bob = await DidKeyResolver.generate();
 
         const { message } = await TestDataGenerator.generateRecordsWrite();
-        await messageStore.put(alice.did, message, { latest: 'true' });
-        await messageStore.put(bob.did, message, { latest: 'true' });
+        const { messageTimestamp } = message.descriptor;
+        await messageStore.put(alice.did, message, { latest: 'true', messageTimestamp });
+        await messageStore.put(bob.did, message, { latest: 'true', messageTimestamp });
 
         const messageCid = await Message.getCid(message);
         const resultsAlice1 = await messageStore.get(alice.did, messageCid);
@@ -182,8 +211,10 @@ export function testMessageStore(): void {
         const bob = await DidKeyResolver.generate();
 
         const { message } = await TestDataGenerator.generateRecordsWrite();
-        await messageStore.put(alice.did, message, { latest: 'true' });
-        await messageStore.put(bob.did, message, { latest: 'true' });
+        const { messageTimestamp } = message.descriptor;
+
+        await messageStore.put(alice.did, message, { latest: 'true', messageTimestamp });
+        await messageStore.put(bob.did, message, { latest: 'true', messageTimestamp });
 
         const messageCid = await Message.getCid(message);
         const resultsAlice1 = await messageStore.query(alice.did, [{ latest: 'true' }]);
@@ -250,7 +281,7 @@ export function testMessageStore(): void {
           for (const message of messages) {
             await messageStore.put(alice.did, message.message, await message.recordsWrite.constructRecordsWriteIndexes(true));
           }
-          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { messageTimestamp: SortOrder.Ascending });
+          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { messageTimestamp: SortDirection.Ascending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
@@ -269,7 +300,7 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await message.recordsWrite.constructRecordsWriteIndexes(true));
           }
 
-          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { dateCreated: SortOrder.Ascending });
+          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { dateCreated: SortDirection.Ascending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
@@ -289,7 +320,7 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await message.recordsWrite.constructRecordsWriteIndexes(true));
           }
 
-          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { dateCreated: SortOrder.Descending });
+          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { dateCreated: SortDirection.Descending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
@@ -310,7 +341,7 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await message.recordsWrite.constructRecordsWriteIndexes(true));
           }
 
-          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { datePublished: SortOrder.Ascending });
+          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { datePublished: SortDirection.Ascending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>
@@ -331,7 +362,7 @@ export function testMessageStore(): void {
             await messageStore.put(alice.did, message.message, await message.recordsWrite.constructRecordsWriteIndexes(true));
           }
 
-          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { datePublished: SortOrder.Descending });
+          const { messages: messageQuery } = await messageStore.query(alice.did, [{}], { datePublished: SortDirection.Descending });
           expect(messageQuery.length).to.equal(messages.length);
 
           const sortedRecords = messages.sort((a,b) =>

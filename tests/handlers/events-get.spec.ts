@@ -5,6 +5,7 @@ import type {
   MessageStore
 } from '../../src/index.js';
 
+import { EventsGetHandler } from '../../src/handlers/events-get.js';
 import { expect } from 'chai';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import {
@@ -53,9 +54,11 @@ export function testEventsGetHandler(): void {
       const bob = await DidKeyResolver.generate();
 
       const { message } = await TestDataGenerator.generateEventsGet({ author: alice });
-      const reply = await dwn.processMessage(bob.did, message);
+      const eventsGetHandler = new EventsGetHandler(didResolver, eventLog);
+      const reply = await eventsGetHandler.handle({ tenant: bob.did, message });
 
       expect(reply.status.code).to.equal(401);
+      expect(reply.events).to.not.exist;
     });
 
     it('returns a 400 if message is invalid', async () => {
@@ -63,13 +66,14 @@ export function testEventsGetHandler(): void {
 
       const { message } = await TestDataGenerator.generateEventsGet({ author: alice });
       (message['descriptor'] as any)['troll'] = 'hehe';
-
-      const reply = await dwn.processMessage(alice.did, message);
+      const eventsGetHandler = new EventsGetHandler(didResolver, eventLog);
+      const reply = await eventsGetHandler.handle({ tenant: alice.did, message });
 
       expect(reply.status.code).to.equal(400);
+      expect(reply.events).to.not.exist;
     });
 
-    it('returns all events for a tenant if watermark is not provided', async () => {
+    it('returns all events for a tenant if cursor is not provided', async () => {
       const alice = await DidKeyResolver.generate();
       const expectedCids: string[] = [];
 
@@ -91,11 +95,11 @@ export function testEventsGetHandler(): void {
       expect(reply.events?.length).to.equal(expectedCids.length);
 
       for (let i = 0; i < reply.events!.length; i += 1) {
-        expect(reply.events![i].messageCid).to.equal(expectedCids[i]);
+        expect(reply.events![i]).to.equal(expectedCids[i]);
       }
     });
 
-    it('returns all events after watermark if watermark is provided', async () => {
+    it('returns all events after cursor if provided', async () => {
       const alice = await DidKeyResolver.generate();
 
       for (let i = 0; i < 5; i += 1) {
@@ -110,7 +114,7 @@ export function testEventsGetHandler(): void {
 
       expect(reply.status.code).to.equal(200);
 
-      const watermark = reply.events![reply.events!.length - 1].watermark;
+      const cursor = reply.events![reply.events!.length - 1];
       const expectedCids: string[] = [];
 
       for (let i = 0; i < 3; i += 1) {
@@ -122,7 +126,7 @@ export function testEventsGetHandler(): void {
         expectedCids.push(messageCid);
       }
 
-      const { message: m } = await TestDataGenerator.generateEventsGet({ author: alice, watermark });
+      const { message: m } = await TestDataGenerator.generateEventsGet({ author: alice, cursor });
       reply = await dwn.processMessage(alice.did, m);
 
       expect(reply.status.code).to.equal(200);
@@ -130,7 +134,7 @@ export function testEventsGetHandler(): void {
       expect(reply.events!.length).to.equal(expectedCids.length);
 
       for (let i = 0; i < reply.events!.length; i += 1) {
-        expect(reply.events![i].messageCid).to.equal(expectedCids[i]);
+        expect(reply.events![i]).to.equal(expectedCids[i]);
       }
     });
   });

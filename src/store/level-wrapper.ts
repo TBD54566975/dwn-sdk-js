@@ -205,6 +205,16 @@ export class LevelWrapper<V> {
     return executeUnlessAborted(this.db.batch(operations), options?.signal);
   }
 
+  /**
+   * Wraps the given LevelWrapperBatchOperation as an operation for the specified partition.
+   */
+  createPartitionOperation(partitionName: string, operation: LevelWrapperBatchOperation<V>): LevelWrapperBatchOperation<V> {
+    return { ...operation, sublevel: this.db.sublevel(partitionName, {
+      keyEncoding   : 'utf8',
+      valueEncoding : this.config.valueEncoding
+    }) };
+  }
+
   private async compactUnderlyingStorage(options?: LevelWrapperOptions): Promise<void> {
     options?.signal?.throwIfAborted();
 

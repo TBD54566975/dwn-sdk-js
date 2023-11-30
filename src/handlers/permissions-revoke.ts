@@ -1,6 +1,7 @@
 import type { DidResolver } from '../did/did-resolver.js';
 import type { EventLog } from '../types/event-log.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
+import type { KeyValues } from '../types/query-types.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { PermissionsGrantMessage, PermissionsRevokeMessage } from '../types/permissions-types.js';
@@ -84,13 +85,9 @@ export class PermissionsRevokeHandler implements MethodHandler {
     }
 
     // Store incoming PermissionsRevoke
-    const indexes: { [key: string]: string } = {
-      interface          : DwnInterfaceName.Permissions,
-      method             : DwnMethodName.Revoke,
-      permissionsGrantId : message.descriptor.permissionsGrantId,
-    };
+    const indexes = PermissionsRevokeHandler.constructIndexes(permissionsRevoke);
     await this.messageStore.put(tenant, message, indexes);
-    await this.eventLog.append(tenant, await Message.getCid(message));
+    await this.eventLog.append(tenant, await Message.getCid(message), indexes);
 
     // Delete existing revokes which are all newer than the incoming message
     const removedRevokeCids: string[] = [];
@@ -116,6 +113,20 @@ export class PermissionsRevokeHandler implements MethodHandler {
 
     return {
       status: { code: 202, detail: 'Accepted' }
+    };
+  }
+
+  static constructIndexes(
+    permissionsRevoke: PermissionsRevoke,
+  ): KeyValues {
+    const { descriptor } = permissionsRevoke.message;
+
+    return {
+      interface          : DwnInterfaceName.Permissions,
+      method             : DwnMethodName.Revoke,
+      author             : permissionsRevoke.author!,
+      messageTimestamp   : descriptor.messageTimestamp,
+      permissionsGrantId : descriptor.permissionsGrantId,
     };
   }
 }

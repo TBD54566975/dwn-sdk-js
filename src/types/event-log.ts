@@ -1,11 +1,7 @@
-export type Event = {
-  watermark: string,
-  messageCid: string
-};
-
+import type { Filter, KeyValues } from './query-types.js';
 
 export type GetEventsOptions = {
-  gt: string
+  cursor: string
 };
 
 export interface EventLog {
@@ -23,21 +19,35 @@ export interface EventLog {
    * adds an event to a tenant's event log
    * @param tenant - the tenant's DID
    * @param messageCid - the CID of the message
-   * @returns {Promise<string>} watermark
+   * @param indexes - (key-value pairs) to be included as part of indexing this event.
    */
-  append(tenant: string, messageCid: string): Promise<string>
+  append(tenant: string, messageCid: string, indexes: KeyValues): Promise<void>
 
   /**
-   * retrieves all of a tenant's events that occurred after the watermark provided.
-   * If no watermark is provided, all events for a given tenant will be returned.
+   * Retrieves all of a tenant's events that occurred after the cursor provided.
+   * If no cursor is provided, all events for a given tenant will be returned.
+   *
+   * The cursor is a messageCid.
+   *
+   * Returns an array of messageCids that represent the events.
    */
-  getEvents(tenant: string, options?: GetEventsOptions): Promise<Array<Event>>
+  getEvents(tenant: string, options?: GetEventsOptions): Promise<string[]>
 
   /**
-   * deletes any events that have any of the cids provided
+   * retrieves a filtered set of events that occurred after a the cursor provided, accepts multiple filters.
+   *
+   * If no cursor is provided, all events for a given tenant and filter combo will be returned.
+   * The cursor is a messageCid.
+   *
+   * Returns an array of messageCids that represent the events.
+   */
+  queryEvents(tenant: string, filters: Filter[], cursor?: string): Promise<string[]>
+
+  /**
+   * deletes any events that have any of the messageCids provided
    * @returns {Promise<number>} the number of events deleted
    */
-  deleteEventsByCid(tenant: string, cids: Array<string>): Promise<number>
+  deleteEventsByCid(tenant: string, messageCids: Array<string>): Promise<void>
 
   /**
    * Clears the entire store. Mainly used for cleaning up in test environment.

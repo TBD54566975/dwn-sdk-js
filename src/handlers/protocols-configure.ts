@@ -56,11 +56,11 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     // write the incoming message to DB if incoming message is newest
     let messageReply: GenericMessageReply;
     if (incomingMessageIsNewest) {
-      const indexes = ProtocolsConfigureHandler.constructProtocolsConfigureIndexes(protocolsConfigure);
+      const indexes = ProtocolsConfigureHandler.constructIndexes(protocolsConfigure);
 
       const messageCid = await Message.getCid(message);
       await this.messageStore.put(tenant, message, indexes);
-      await this.eventLog.append(tenant, messageCid);
+      await this.eventLog.append(tenant, messageCid, indexes);
 
       messageReply = {
         status: { code: 202, detail: 'Accepted' }
@@ -87,7 +87,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     return messageReply;
   };
 
-  private static constructProtocolsConfigureIndexes(protocolsConfigure: ProtocolsConfigure): { [key: string]: string | boolean } {
+  static constructIndexes(protocolsConfigure: ProtocolsConfigure): { [key: string]: string | boolean } {
     // strip out `definition` as it is not indexable
     const { definition, ...propertiesToIndex } = protocolsConfigure.message.descriptor;
     const { author } = protocolsConfigure;
@@ -96,7 +96,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
       ...propertiesToIndex,
       author    : author!,
       protocol  : definition.protocol, // retain protocol url from `definition`,
-      published : definition.published
+      published : definition.published // retain published state from definition
     };
 
     return indexes;

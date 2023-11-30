@@ -1,12 +1,16 @@
 import type { DerivedPrivateJwk } from './hd-key.js';
+import type { Filter } from '../types/query-types.js';
+import type { GenericSignaturePayload } from '../types/message-types.js';
 import type { Readable } from 'readable-stream';
-import type { Filter, GenericSignaturePayload, RangeFilter } from '../types/message-types.js';
-import type { RangeCriterion, RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsReadMessage, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsReadMessage, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
 
+import { DateSort } from '../types/records-types.js';
 import { Encoder } from './encoder.js';
 import { Encryption } from './encryption.js';
+import { FilterUtility } from './filter.js';
 import { KeyDerivationScheme } from './hd-key.js';
 import { Message } from '../core/message.js';
+import { removeUndefinedProperties } from './object.js';
 import { Secp256k1 } from './secp256k1.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from './url.js';
@@ -234,11 +238,14 @@ export class Records {
       schema = normalizeSchemaUrl(filter.schema);
     }
 
-    return {
+    const filterCopy = {
       ...filter,
       protocol,
       schema,
     };
+
+    removeUndefinedProperties(filterCopy);
+    return filterCopy;
   }
 
   /**
@@ -247,47 +254,33 @@ export class Records {
    * @param filter A RecordsFilter
    * @returns {Filter} a generic Filter able to be used with MessageStore.
    */
-  public static convertFilter(filter: RecordsFilter): Filter {
+  public static convertFilter(filter: RecordsFilter, dateSort?: DateSort): Filter {
     const filterCopy = { ...filter } as Filter;
 
     const { dateCreated, datePublished, dateUpdated } = filter;
-    const dateCreatedFilter = dateCreated ? this.convertRangeCriterion(dateCreated) : undefined;
+    const dateCreatedFilter = dateCreated ? FilterUtility.convertRangeCriterion(dateCreated) : undefined;
     if (dateCreatedFilter) {
       filterCopy.dateCreated = dateCreatedFilter;
     }
 
-    const datePublishedFilter = datePublished ? this.convertRangeCriterion(datePublished): undefined;
+    const datePublishedFilter = datePublished ? FilterUtility.convertRangeCriterion(datePublished): undefined;
     if (datePublishedFilter) {
       // only return published records when filtering with a datePublished range.
       filterCopy.published = true;
       filterCopy.datePublished = datePublishedFilter;
     }
 
-    const messageTimestampFilter = dateUpdated ? this.convertRangeCriterion(dateUpdated) : undefined;
+    // if we sort by `PublishedAscending` or `PublishedDescending` we must filter for only published records.
+    if (filterCopy.published !== true && (dateSort === DateSort.PublishedAscending || dateSort === DateSort.PublishedDescending)) {
+      filterCopy.published = true;
+    }
+
+    const messageTimestampFilter = dateUpdated ? FilterUtility.convertRangeCriterion(dateUpdated) : undefined;
     if (messageTimestampFilter) {
       filterCopy.messageTimestamp = messageTimestampFilter;
       delete filterCopy.dateUpdated;
     }
     return filterCopy as Filter;
-  }
-
-  private static convertRangeCriterion(inputFilter: RangeCriterion): RangeFilter | undefined {
-    let rangeFilter: RangeFilter | undefined;
-    if (inputFilter.to !== undefined && inputFilter.from !== undefined) {
-      rangeFilter = {
-        gte : inputFilter.from,
-        lt  : inputFilter.to,
-      };
-    } else if (inputFilter.to !== undefined) {
-      rangeFilter = {
-        lt: inputFilter.to,
-      };
-    } else if (inputFilter.from !== undefined) {
-      rangeFilter = {
-        gte: inputFilter.from,
-      };
-    }
-    return rangeFilter;
   }
 
   /**

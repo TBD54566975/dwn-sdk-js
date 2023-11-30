@@ -46,6 +46,17 @@ await index.QUERY({ AND: [ {
 const queryRangeEnd = Date.now();
 console.log('query - range', queryRangeEnd - queryRangeStart);
 
+const multipleRangeStart = Date.now();
+await index.QUERY({ AND: [ {
+  FIELD : 'number',
+  VALUE : { LTE: '0.1' }
+},{
+  FIELD : 'number',
+  VALUE : { GTE: '0.5' }
+} ] });
+const multipleRangeEnd = Date.now();
+console.log('query - multiple range', multipleRangeEnd - multipleRangeStart);
+
 // clear - after
 
 const clearAfterStart = Date.now();

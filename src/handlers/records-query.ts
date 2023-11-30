@@ -1,8 +1,9 @@
 import type { DataStore } from '../types/data-store.js';
 import type { DidResolver } from '../did/did-resolver.js';
+import type { Filter } from '../types/query-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { Filter, GenericMessage, MessageSort } from '../types/message-types.js';
+import type { GenericMessage, MessageSort } from '../types/message-types.js';
 import type { RecordsQueryMessage, RecordsQueryReply, RecordsWriteMessageWithOptionalEncodedData } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
@@ -11,7 +12,7 @@ import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Records } from '../utils/records.js';
 import { RecordsQuery } from '../interfaces/records-query.js';
-import { SortOrder } from '../types/message-types.js';
+import { SortDirection } from '../types/query-types.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export class RecordsQueryHandler implements MethodHandler {
@@ -77,15 +78,15 @@ export class RecordsQueryHandler implements MethodHandler {
   private convertDateSort(dateSort?: DateSort): MessageSort {
     switch (dateSort) {
     case DateSort.CreatedAscending:
-      return { dateCreated: SortOrder.Ascending };
+      return { dateCreated: SortDirection.Ascending };
     case DateSort.CreatedDescending:
-      return { dateCreated: SortOrder.Descending };
+      return { dateCreated: SortDirection.Descending };
     case DateSort.PublishedAscending:
-      return { datePublished: SortOrder.Ascending };
+      return { datePublished: SortDirection.Ascending };
     case DateSort.PublishedDescending:
-      return { datePublished: SortOrder.Descending };
+      return { datePublished: SortDirection.Descending };
     default:
-      return { dateCreated: SortOrder.Ascending };
+      return { dateCreated: SortDirection.Ascending };
     }
   }
 
@@ -97,10 +98,9 @@ export class RecordsQueryHandler implements MethodHandler {
     recordsQuery: RecordsQuery
   ): Promise<{ messages: GenericMessage[], cursor?: string }> {
     const { dateSort, filter, pagination } = recordsQuery.message.descriptor;
-
     // fetch all published records matching the query
     const queryFilter = {
-      ...Records.convertFilter(filter),
+      ...Records.convertFilter(filter, dateSort),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       isLatestBaseState : true
@@ -134,7 +134,6 @@ export class RecordsQueryHandler implements MethodHandler {
   ): Promise<{ messages: GenericMessage[], cursor?: string }> {
     const { dateSort, pagination } = recordsQuery.message.descriptor;
     const filters = [];
-
     if (RecordsQueryHandler.filterIncludesPublishedRecords(recordsQuery)) {
       filters.push(RecordsQueryHandler.buildPublishedRecordsFilter(recordsQuery));
     }
@@ -169,9 +168,10 @@ export class RecordsQueryHandler implements MethodHandler {
   }
 
   private static buildPublishedRecordsFilter(recordsQuery: RecordsQuery): Filter {
+    const { dateSort, filter } = recordsQuery.message.descriptor;
     // fetch all published records matching the query
     return {
-      ...Records.convertFilter(recordsQuery.message.descriptor.filter),
+      ...Records.convertFilter(filter, dateSort),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       published         : true,
@@ -183,9 +183,10 @@ export class RecordsQueryHandler implements MethodHandler {
    * Creates a filter for unpublished records that are intended for the query author (where `recipient` is the author).
    */
   private static buildUnpublishedRecordsForQueryAuthorFilter(recordsQuery: RecordsQuery): Filter {
+    const { dateSort, filter } = recordsQuery.message.descriptor;
     // include records where recipient is query author
     return {
-      ...Records.convertFilter(recordsQuery.message.descriptor.filter),
+      ...Records.convertFilter(filter, dateSort),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       recipient         : recordsQuery.author!,
@@ -199,8 +200,9 @@ export class RecordsQueryHandler implements MethodHandler {
    * Validation that `protocol` and other required protocol-related fields occurs before this method.
    */
   private static buildUnpublishedProtocolAuthorizedRecordsFilter(recordsQuery: RecordsQuery): Filter {
+    const { dateSort, filter } = recordsQuery.message.descriptor;
     return {
-      ...Records.convertFilter(recordsQuery.message.descriptor.filter),
+      ...Records.convertFilter(filter, dateSort),
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,
       isLatestBaseState : true,
@@ -212,9 +214,10 @@ export class RecordsQueryHandler implements MethodHandler {
    * Creates a filter for only unpublished records where the author is the same as the query author.
    */
   private static buildUnpublishedRecordsByQueryAuthorFilter(recordsQuery: RecordsQuery): Filter {
+    const { dateSort, filter } = recordsQuery.message.descriptor;
     // include records where author is the same as the query author
     return {
-      ...Records.convertFilter(recordsQuery.message.descriptor.filter),
+      ...Records.convertFilter(filter, dateSort),
       author            : recordsQuery.author!,
       interface         : DwnInterfaceName.Records,
       method            : DwnMethodName.Write,

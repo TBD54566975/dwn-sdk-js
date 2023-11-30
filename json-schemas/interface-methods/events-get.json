@@ -35,7 +35,7 @@
         "messageTimestamp": {
           "type": "string"
         },
-        "watermark": {
+        "cursor": {
           "type": "string"
         }
       }

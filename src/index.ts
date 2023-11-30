@@ -1,9 +1,10 @@
 // export everything that we want to be consumable
 export type { DwnConfig } from './dwn.js';
 export type { DidMethodResolver, DwnServiceEndpoint, ServiceEndpoint, DidDocument, DidResolutionResult, DidResolutionMetadata, DidDocumentMetadata, VerificationMethod } from './types/did-types.js';
-export type { EventLog, Event, GetEventsOptions } from './types/event-log.js';
-export type { EventsGetMessage, EventsGetReply } from './types/event-types.js';
-export type { Filter, GenericMessage, MessageSort, Pagination } from './types/message-types.js';
+export type { EventLog, GetEventsOptions } from './types/event-log.js';
+export type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply } from './types/event-types.js';
+export type { Filter } from './types/query-types.js';
+export type { GenericMessage, MessageSort, Pagination } from './types/message-types.js';
 export type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
 export type { PermissionConditions, PermissionScope, PermissionsGrantDescriptor } from './types/permissions-grant-descriptor.js';
 export type { PermissionsGrantMessage, PermissionsRequestDescriptor, PermissionsRequestMessage, PermissionsRevokeDescriptor, PermissionsRevokeMessage } from './types/permissions-types.js';
@@ -47,7 +48,7 @@ export { RecordsDelete, RecordsDeleteOptions } from './interfaces/records-delete
 export { RecordsRead, RecordsReadOptions } from './interfaces/records-read.js';
 export { Secp256k1 } from './utils/secp256k1.js';
 export { Signer } from './types/signer.js';
-export { SortOrder } from './types/message-types.js';
+export { SortDirection } from './types/query-types.js';
 export { Time } from './utils/time.js';
 
 // store interfaces

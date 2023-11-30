@@ -1,5 +1,6 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { GeneralJws } from './jws-types.js';
+import type { SortDirection } from './query-types.js';
 
 /**
  * Intersection type for all concrete message types.
@@ -68,31 +69,6 @@ export type QueryResultEntry = {
   encodedData?: string;
 };
 
-export type EqualFilter = string | number | boolean;
-
-export type OneOfFilter = EqualFilter[];
-
-export type RangeValue = string | number;
-
-/**
- * "greater than" or "greater than or equal to" range condition. `gt` and `gte` are mutually exclusive.
- */
-export type GT = ({ gt: RangeValue } & { gte?: never }) | ({ gt?: never } & { gte: RangeValue });
-
-/**
- * "less than" or "less than or equal to" range condition. `lt`, `lte` are mutually exclusive.
- */
-export type LT = ({ lt: RangeValue } & { lte?: never }) | ({ lt?: never } & { lte: RangeValue });
-
-/**
- * Ranger filter. 1 condition is required.
- */
-export type RangeFilter = (GT | LT) & Partial<GT> & Partial<LT>;
-
-export type Filter = {
-  [property: string]: EqualFilter | OneOfFilter | RangeFilter
-};
-
 /**
  * Pagination Options for querying messages.
  *
@@ -103,13 +79,10 @@ export type Pagination = {
   limit?: number;
 };
 
-export enum SortOrder {
-  Descending = -1,
-  Ascending = 1
-}
+
 
 export type MessageSort = {
-  dateCreated?: SortOrder;
-  datePublished?: SortOrder;
-  messageTimestamp?: SortOrder;
+  dateCreated?: SortDirection;
+  datePublished?: SortDirection;
+  messageTimestamp?: SortDirection;
 };

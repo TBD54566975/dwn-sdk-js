@@ -1,8 +1,10 @@
 import type { DidResolutionResult } from '../../src/types/did-types.js';
+import type { EventsQueryOptions } from '../../src/interfaces/events-query.js';
 import type { GeneralJws } from '../../src/types/jws-types.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsFilter } from '../../src/types/records-types.js';
 import type { AuthorizationModel, Pagination } from '../../src/types/message-types.js';
+import type { EventsQueryFilter, EventsQueryMessage } from '../../src/types/event-types.js';
 
 import type {
   CreateFromOptions,
@@ -39,6 +41,7 @@ import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 import * as cbor from '@ipld/dag-cbor';
 import { CID } from 'multiformats/cid';
 import { DataStream } from '../../src/utils/data-stream.js';
+import { EventsQuery } from '../../src/interfaces/events-query.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { PermissionsRequest } from '../../src/interfaces/permissions-request.js';
 import { PermissionsRevoke } from '../../src/interfaces/permissions-revoke.js';
@@ -236,13 +239,25 @@ export type GeneratePermissionsRevokeOutput = {
 
 export type GenerateEventsGetInput = {
   author?: Persona;
-  watermark?: string;
+  cursor?: string;
 };
 
 export type GenerateEventsGetOutput = {
   author: Persona;
   eventsGet: EventsGet;
   message: EventsGetMessage;
+};
+
+export type GenerateEventsQueryInput = {
+  author?: Persona;
+  filters: EventsQueryFilter[];
+  cursor?: string;
+};
+
+export type GenerateEventsQueryOutput = {
+  author: Persona;
+  eventsQuery: EventsQuery;
+  message: EventsQueryMessage;
 };
 
 export type GenerateMessagesGetInput = {
@@ -730,8 +745,8 @@ export class TestDataGenerator {
     const signer = Jws.createSigner(author);
 
     const options: EventsGetOptions = { signer };
-    if (input?.watermark) {
-      options.watermark = input.watermark;
+    if (input?.cursor) {
+      options.cursor = input.cursor;
     }
 
     const eventsGet = await EventsGet.create(options);
@@ -740,6 +755,22 @@ export class TestDataGenerator {
       author,
       eventsGet,
       message: eventsGet.message
+    };
+  }
+
+  public static async generateEventsQuery(input: GenerateEventsQueryInput): Promise<GenerateEventsQueryOutput> {
+    const { filters, cursor } = input;
+    const author = input.author ?? await TestDataGenerator.generatePersona();
+    const signer = Jws.createSigner(author);
+
+    const options: EventsQueryOptions = { signer, filters, cursor };
+
+    const eventsQuery = await EventsQuery.create(options);
+
+    return {
+      author,
+      eventsQuery,
+      message: eventsQuery.message
     };
   }
 

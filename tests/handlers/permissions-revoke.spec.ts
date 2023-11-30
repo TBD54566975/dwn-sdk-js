@@ -298,7 +298,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
 
         // The revoke should be the second event
         const messageCid = await Message.getCid(permissionsRevoke.message);
-        expect(events[1].messageCid).to.equal(messageCid);
+        expect(events[1]).to.equal(messageCid);
       });
 
       it('should remove events for existing PermissionsRevoke messages with timestamp after the incoming message', async () => {
@@ -337,7 +337,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
         const permissionsRevokeCid2 = await Message.getCid(permissionsRevoke2.message);
         events = await eventLog.getEvents(alice.did);
         expect(events.length).to.equal(2);
-        expect(events[1].messageCid).to.equal(permissionsRevokeCid2);
+        expect(events[1]).to.equal(permissionsRevokeCid2);
 
         // Process the pre-created Revoke
         const permissionsRevokeReply1 = await dwn.processMessage(alice.did, permissionsRevoke1.message);
@@ -347,7 +347,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
         const permissionsRevokeCid1 = await Message.getCid(permissionsRevoke1.message);
         events = await eventLog.getEvents(alice.did);
         expect(events.length).to.equal(2);
-        expect(events[1].messageCid).to.equal(permissionsRevokeCid1);
+        expect(events[1]).to.equal(permissionsRevokeCid1);
       });
     });
   });

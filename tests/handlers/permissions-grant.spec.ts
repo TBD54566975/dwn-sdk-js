@@ -11,13 +11,14 @@ import { DidResolver } from '../../src/did/did-resolver.js';
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { expect } from 'chai';
+import { Jws } from '../../src/index.js';
 import { Message } from '../../src/core/message.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
 import { PermissionsGrantHandler } from '../../src/handlers/permissions-grant.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
-import { DwnInterfaceName, DwnMethodName, Jws } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName } from '../../src/enums/dwn-interface-method.js';
 
 export function testPermissionsGrantHandler(): void {
   describe('PermissionsGrantHandler.handle()', () => {
@@ -262,7 +263,7 @@ export function testPermissionsGrantHandler(): void {
           expect(events.length).to.equal(1);
 
           const messageCid = await Message.getCid(message);
-          expect(events[0].messageCid).to.equal(messageCid);
+          expect(events[0]).to.equal(messageCid);
         });
 
         it('should not add a new event if we have already stored this PermissionsRequest', async () => {
@@ -282,7 +283,7 @@ export function testPermissionsGrantHandler(): void {
           expect(events.length).to.equal(1);
 
           const messageCid = await Message.getCid(message);
-          expect(events[0].messageCid).to.equal(messageCid);
+          expect(events[0]).to.equal(messageCid);
         });
       });
     });

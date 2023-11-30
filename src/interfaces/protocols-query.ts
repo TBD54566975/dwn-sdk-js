@@ -65,7 +65,7 @@ export class ProtocolsQuery extends AbstractMessage<ProtocolsQueryMessage> {
     return protocolsQuery;
   }
 
-  private static normalizeFilter(filter: ProtocolsQueryFilter | undefined): ProtocolsQueryFilter | undefined {
+  static normalizeFilter(filter: ProtocolsQueryFilter | undefined): ProtocolsQueryFilter | undefined {
     if (filter === undefined) {
       return undefined;
     }

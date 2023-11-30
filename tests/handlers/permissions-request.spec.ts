@@ -121,7 +121,7 @@ export function testPermissionsRequestHandler(): void {
           expect(events.length).to.equal(1);
 
           const messageCid = await Message.getCid(message);
-          expect(events[0].messageCid).to.equal(messageCid);
+          expect(events[0]).to.equal(messageCid);
         });
 
         it('should not add a new event if we have already stored this PermissionsRequest', async () => {
@@ -144,7 +144,7 @@ export function testPermissionsRequestHandler(): void {
           expect(events.length).to.equal(1);
 
           const messageCid = await Message.getCid(message);
-          expect(events[0].messageCid).to.equal(messageCid);
+          expect(events[0]).to.equal(messageCid);
         });
       });
     });
