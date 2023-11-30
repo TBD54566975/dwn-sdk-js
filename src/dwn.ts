@@ -148,8 +148,6 @@ export class Dwn {
    */
   public async validateMessageIntegrity(
     rawMessage: any,
-    expectedInterface?: DwnInterfaceName,
-    expectedMethod?: DwnMethodName,
   ): Promise<GenericMessageReply | undefined> {
     // Verify interface and method
     const dwnInterface = rawMessage?.descriptor?.interface;
@@ -157,17 +155,6 @@ export class Dwn {
     if (dwnInterface === undefined || dwnMethod === undefined) {
       return {
         status: { code: 400, detail: `Both interface and method must be present, interface: ${dwnInterface}, method: ${dwnMethod}` }
-      };
-    }
-
-    if (expectedInterface !== undefined && expectedInterface !== dwnInterface) {
-      return {
-        status: { code: 400, detail: `Expected interface ${expectedInterface}, received ${dwnInterface}` }
-      };
-    }
-    if (expectedMethod !== undefined && expectedMethod !== dwnMethod) {
-      return {
-        status: { code: 400, detail: `Expected method ${expectedInterface}${expectedMethod}, received ${dwnInterface}${dwnMethod}` }
       };
     }
 
