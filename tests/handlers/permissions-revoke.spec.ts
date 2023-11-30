@@ -283,7 +283,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
         const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
         expect(permissionsGrantReply.status.code).to.eq(202);
         let events = await eventLog.getEvents(alice.did);
-        expect(events.length).to.equal(1);
+        expect(events.entries.length).to.equal(1);
 
         // Revoke the grant, adding a second event
         const { permissionsRevoke } = await TestDataGenerator.generatePermissionsRevoke({
@@ -294,11 +294,11 @@ describe('PermissionsRevokeHandler.handle()', () => {
         expect(reply.status.code).to.equal(202);
 
         events = await eventLog.getEvents(alice.did);
-        expect(events.length).to.equal(2);
+        expect(events.entries.length).to.equal(2);
 
         // The revoke should be the second event
         const messageCid = await Message.getCid(permissionsRevoke.message);
-        expect(events[1]).to.equal(messageCid);
+        expect(events.entries[1]).to.equal(messageCid);
       });
 
       it('should remove events for existing PermissionsRevoke messages with timestamp after the incoming message', async () => {
@@ -315,7 +315,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
         const permissionsGrantReply = await dwn.processMessage(alice.did, permissionsGrant.message);
         expect(permissionsGrantReply.status.code).to.eq(202);
         let events = await eventLog.getEvents(alice.did);
-        expect(events.length).to.equal(1);
+        expect(events.entries.length).to.equal(1);
 
         // Pre-create a Revoke message with earlier timestamp, to be processed later
         const { permissionsRevoke: permissionsRevoke1 } = await TestDataGenerator.generatePermissionsRevoke({
@@ -336,8 +336,8 @@ describe('PermissionsRevokeHandler.handle()', () => {
         // An event is added for the revoke
         const permissionsRevokeCid2 = await Message.getCid(permissionsRevoke2.message);
         events = await eventLog.getEvents(alice.did);
-        expect(events.length).to.equal(2);
-        expect(events[1]).to.equal(permissionsRevokeCid2);
+        expect(events.entries.length).to.equal(2);
+        expect(events.entries[1]).to.equal(permissionsRevokeCid2);
 
         // Process the pre-created Revoke
         const permissionsRevokeReply1 = await dwn.processMessage(alice.did, permissionsRevoke1.message);
@@ -346,8 +346,8 @@ describe('PermissionsRevokeHandler.handle()', () => {
         // The existing Revoke event is purged from the eventLog. The pre-created Revoke is added to the eventLog
         const permissionsRevokeCid1 = await Message.getCid(permissionsRevoke1.message);
         events = await eventLog.getEvents(alice.did);
-        expect(events.length).to.equal(2);
-        expect(events[1]).to.equal(permissionsRevokeCid1);
+        expect(events.entries.length).to.equal(2);
+        expect(events.entries[1]).to.equal(permissionsRevokeCid1);
       });
     });
   });

@@ -1,4 +1,4 @@
-import type { EqualFilter, Filter, KeyValues, QueryOptions, RangeFilter } from '../types/query-types.js';
+import type { EqualFilter, Filter, KeyValues, PaginatedEntries, QueryOptions, RangeFilter } from '../types/query-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions, } from './level-wrapper.js';
 
 import { isEmptyObject } from '../utils/object.js';
@@ -193,7 +193,7 @@ export class IndexLevel {
    * @param options IndexLevelOptions that include an AbortSignal.
    * @returns {string[]} an array of itemIds that match the given filters.
    */
-  async query(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<string[]> {
+  async query(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<PaginatedEntries<string>> {
 
     // check if we should query using in-memory paging or iterator paging
     if (IndexLevel.shouldQueryWithInMemoryPaging(filters, queryOptions)) {
@@ -207,27 +207,37 @@ export class IndexLevel {
    * This query is a linear iterator over the sorted index, checking each item for a match.
    * If a cursor is provided it starts the iteration from the cursor point.
    */
-  async queryWithIteratorPaging(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<string[]> {
+  async queryWithIteratorPaging(
+    tenant: string,
+    filters: Filter[],
+    queryOptions: QueryOptions,
+    options?: IndexLevelOptions
+  ): Promise<PaginatedEntries<string>> {
     const { limit, cursor , sortProperty } = queryOptions;
 
     // if there is a cursor we fetch the starting key given the sort property, otherwise we start from the beginning of the index.
     const startKey = cursor ? await this.getStartingKeyForCursor(tenant, cursor, sortProperty, filters) : '';
     if (startKey === undefined) {
       // getStartingKeyForCursor returns undefined if an invalid cursor is provided, we return an empty result set.
-      return [];
+      return { entries: [] };
     }
 
+    let lastItem: IndexedItem | undefined;
     const matches: string[] = [];
     for await ( const item of this.getIndexIterator(tenant, startKey, queryOptions, options)) {
       if (limit !== undefined && matches.length === limit) {
-        return matches;
+        const cursorKey = lastItem ? this.constructCursorFromItem(lastItem, sortProperty) : undefined;
+        return { entries: matches, cursor: cursorKey };
       }
       const { itemId, indexes } = item;
       if (FilterUtility.matchAnyFilter(indexes, filters)) {
+        lastItem = item;
         matches.push(itemId);
       }
     }
-    return matches;
+
+    const cursorKey = lastItem ? this.constructCursorFromItem(lastItem, sortProperty) : undefined;
+    return { entries: matches, cursor: cursorKey };
   }
 
   /**
@@ -285,6 +295,16 @@ export class IndexLevel {
     }
   }
 
+  private constructCursorFromItem(item: IndexedItem, sortProperty: string): string | undefined {
+    const { indexes, itemId } = item;
+    const sortPropertyValue = indexes[sortProperty];
+    if (sortPropertyValue === undefined) {
+      return;
+    }
+
+    return IndexLevel.keySegmentJoin(sortProperty, IndexLevel.encodeValue(sortPropertyValue), itemId);
+  }
+
   /**
    * Queries the provided searchFilters asynchronously, returning results that match the matchFilters.
    *
@@ -298,7 +318,7 @@ export class IndexLevel {
     filters: Filter[],
     queryOptions: QueryOptions,
     options?: IndexLevelOptions
-  ): Promise<string[]> {
+  ): Promise<PaginatedEntries<string>> {
     const { sortProperty, sortDirection = SortDirection.Ascending, cursor, limit } = queryOptions;
 
     // we create a matches map so that we can short-circuit matched items within the async single query below.
@@ -317,7 +337,7 @@ export class IndexLevel {
     } catch (error) {
       if ((error as DwnError).code === DwnErrorCode.IndexInvalidSortProperty) {
         // return empty results if the sort property is invalid.
-        return [];
+        return { entries: [] };
       }
     }
 
@@ -328,13 +348,15 @@ export class IndexLevel {
     const cursorIndex = cursor ? sortedValues.findIndex(match => match.itemId === cursor) : -1;
     if (cursor !== undefined && cursorIndex === -1) {
       // if a cursor is provided but we cannot find it, we return an empty result set
-      return [];
+      return { entries: [] };
     }
 
     const start = cursorIndex > -1 ? cursorIndex + 1 : 0;
     const end = limit !== undefined ? start + limit : undefined;
+    const cursorItem = end ? sortedValues.at(end) : sortedValues.at(-1);
+    const cursorKey = cursorItem ? this.constructCursorFromItem(cursorItem, sortProperty) : undefined;
 
-    return sortedValues.slice(start, end).map(match => match.itemId);
+    return { entries: sortedValues.slice(start, end).map(match => match.itemId), cursor: cursorKey };
   }
 
   /**

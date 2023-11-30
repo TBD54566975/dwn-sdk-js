@@ -36,7 +36,7 @@ export class EventsGetHandler implements MethodHandler {
       options = { cursor: message.descriptor.cursor };
     }
 
-    const events = await this.eventLog.getEvents(tenant, options);
+    const { entries: events } = await this.eventLog.getEvents(tenant, options);
 
     return {
       status: { code: 200, detail: 'OK' },

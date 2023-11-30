@@ -93,7 +93,7 @@ export class MessageStoreLevel implements MessageStore {
     // creates the query options including sorting and pagination.
     // this adds 1 to the limit if provided, that way we can check to see if there are additional results and provide a return cursor.
     const queryOptions = MessageStoreLevel.buildQueryOptions(messageSort, pagination);
-    const results = await this.index.query(tenant, filters, queryOptions, options);
+    const { entries: results } = await this.index.query(tenant, filters, queryOptions, options);
 
     const messages: GenericMessage[] = [];
     for (let i = 0; i < results.length; i++) {
