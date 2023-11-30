@@ -213,7 +213,7 @@ export class IndexLevel {
     queryOptions: QueryOptions,
     options?: IndexLevelOptions
   ): Promise<PaginatedEntries<string>> {
-    const { limit, cursor , sortProperty } = queryOptions;
+    const { cursor , sortProperty, strictCursor } = queryOptions;
 
     // if there is a cursor we fetch the starting key given the sort property, otherwise we start from the beginning of the index.
     const startKey = cursor ? await this.getStartingKeyForCursor(tenant, cursor, sortProperty, filters) : '';
@@ -222,22 +222,24 @@ export class IndexLevel {
       return { entries: [] };
     }
 
-    let lastItem: IndexedItem | undefined;
     const matches: string[] = [];
+    let cursorKey: string | undefined;
     for await ( const item of this.getIndexIterator(tenant, startKey, queryOptions, options)) {
-      if (limit !== undefined && matches.length === limit) {
-        const cursorKey = lastItem ? this.constructCursorFromItem(lastItem, sortProperty) : undefined;
+      if (queryOptions.limit !== undefined && queryOptions.limit === matches.length) {
+        // if we've made it here there are additional items beyond the provided limit
+        // if strictCursor is set we return here along with the cursor.
         return { entries: matches, cursor: cursorKey };
       }
       const { itemId, indexes } = item;
       if (FilterUtility.matchAnyFilter(indexes, filters)) {
-        lastItem = item;
         matches.push(itemId);
+        cursorKey = this.constructCursorFromItem(item, sortProperty);
       }
     }
 
-    const cursorKey = lastItem ? this.constructCursorFromItem(lastItem, sortProperty) : undefined;
-    return { entries: matches, cursor: cursorKey };
+    // if we've reached here it is the end of the results and there are none beyond the limit
+    // if strictCursor is set to true, we not return a cursor, otherwise we always return a cursor.
+    return { entries: matches, cursor: strictCursor !== true ? cursorKey : undefined };
   }
 
   /**
@@ -319,7 +321,7 @@ export class IndexLevel {
     queryOptions: QueryOptions,
     options?: IndexLevelOptions
   ): Promise<PaginatedEntries<string>> {
-    const { sortProperty, sortDirection = SortDirection.Ascending, cursor, limit } = queryOptions;
+    const { sortProperty, sortDirection = SortDirection.Ascending, cursor } = queryOptions;
 
     // we create a matches map so that we can short-circuit matched items within the async single query below.
     const matches:Map<string, IndexedItem> = new Map();
@@ -352,9 +354,18 @@ export class IndexLevel {
     }
 
     const start = cursorIndex > -1 ? cursorIndex + 1 : 0;
-    const end = limit !== undefined ? start + limit : undefined;
-    const cursorItem = end ? sortedValues.at(end) : sortedValues.at(-1);
-    const cursorKey = cursorItem ? this.constructCursorFromItem(cursorItem, sortProperty) : undefined;
+    const end = queryOptions.limit !== undefined ? start + queryOptions.limit : undefined;
+    let cursorKey: string | undefined;
+    if (queryOptions.strictCursor && queryOptions.limit !== undefined) {
+      const hasMoreResults = end != undefined && end < sortedValues.length;
+      if (hasMoreResults) {
+        const cursorItem = sortedValues.at(end);
+        cursorKey = cursorItem ? this.constructCursorFromItem(cursorItem, sortProperty) : undefined;
+      }
+    } else {
+      const cursorItem = end ? sortedValues.at(end) : sortedValues.at(-1);
+      cursorKey = cursorItem ? this.constructCursorFromItem(cursorItem, sortProperty) : undefined;
+    }
 
     return { entries: sortedValues.slice(start, end).map(match => match.itemId), cursor: cursorKey };
   }
