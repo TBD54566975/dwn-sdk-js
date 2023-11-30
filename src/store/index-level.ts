@@ -107,6 +107,11 @@ export class IndexLevel {
     await tenantPartition.batch(indexOps, options);
   }
 
+  /**
+   *  Purges all of the index data associated with this item.
+   *
+   *  Note: Any query using this item as a cursor would return an empty result.
+   */
   async purge(tenant: string, itemId: string, options?: IndexLevelOptions): Promise<void> {
     const indexOps: LevelWrapperBatchOperation<string>[] = [];
 
@@ -139,7 +144,10 @@ export class IndexLevel {
   }
 
   /**
-   *  Deletes all of the index data associated with the item.
+   *  Deletes the property indexes so that the item is not returned within a query.
+   *  The reverse lookup is kept in case it is used as a pagination cursor.
+   *
+   *  Note: Use the `purge` method to truly purge all index data.
    */
   async delete(tenant: string, itemId: string, options?: IndexLevelOptions): Promise<void> {
     const indexOps: LevelWrapperBatchOperation<string>[] = [];
@@ -149,8 +157,11 @@ export class IndexLevel {
       // invalid itemId
       return;
     }
-    // we keep the indexes reverse lookup around unless it's a purge
-    // however, we delete the keys for each sortIndex
+
+    // note: during a delete we keep the indexes reverse lookup
+    // this is done so that we can look up a pagination cursor in the future
+    // however, we still delete the keys for each sortIndex
+    // we can use `purge` to truly purge the item.
     for (const indexName in indexes) {
       const sortValue = indexes[indexName];
       const partitionOperation = await this.createOperationForIndexPartition(
@@ -337,7 +348,7 @@ export class IndexLevel {
       filters = [{}];
     }
 
-    // the cursor item might be deleted, so we preemptively get the indexes and add the IndexedItem to the matches
+    // the cursor item may have been deleted, we preemptively get the indexes and add the IndexedItem to the matches
     const cursorIndexes = cursor ? await this.getIndexes(tenant, cursor) : undefined;
     if (cursorIndexes !== undefined && FilterUtility.matchAnyFilter(cursorIndexes, filters)) {
       matches.set(cursor!, {

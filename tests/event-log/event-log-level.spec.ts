@@ -49,24 +49,4 @@ describe('EventLogLevel Tests', () => {
       expect(keysAfterDelete.length).to.equal(1);
     });
   });
-
-  describe('purgeEventsByCid', () => {
-    it('purges all index related data', async () => {
-      const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
-      const messageCid = await Message.getCid(message);
-      const index = await recordsWrite.constructRecordsWriteIndexes(true);
-      await eventLog.append(author.did, messageCid, index);
-
-      let keysAfterDelete = await ArrayUtility.fromAsyncGenerator(eventLog.index.db.keys());
-      expect(keysAfterDelete.length).to.equal(15);
-
-      const indexLevelPurgeSpy = sinon.spy(eventLog.index, 'purge');
-      await eventLog.purgeEventsByCid(author.did, [ messageCid ]);
-      indexLevelPurgeSpy.restore();
-      expect(indexLevelPurgeSpy.callCount).to.equal(1);
-
-      keysAfterDelete = await ArrayUtility.fromAsyncGenerator(eventLog.index.db.keys());
-      expect(keysAfterDelete.length).to.equal(0);
-    });
-  });
 });

@@ -1347,7 +1347,8 @@ export function testRecordsQueryHandler(): void {
         // scenario:
         //    alice issues a paginated RecordsQuery message which has additional results
         //    alice happens to delete the result that is also the pagination cursor
-        //    a subsequent query with the cursor should still continue from the same place
+        //    this message should be an update message as we always keep an initial write during a delete (tombstone)
+        //    a subsequent query with the cursor should still continue from the same place even after delete
 
         const alice = await DidKeyResolver.generate();
 

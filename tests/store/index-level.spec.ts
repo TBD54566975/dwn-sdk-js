@@ -1030,7 +1030,7 @@ describe('IndexLevel', () => {
       await testIndex.close();
     });
 
-    it('delete keeps indexes but does not return results', async () => {
+    it('delete keeps reverse indexes lookup but does not return results', async () => {
       const id1 = uuid();
       const doc1 = {
         id  : id1,

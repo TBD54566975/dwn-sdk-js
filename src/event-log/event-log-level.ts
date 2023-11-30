@@ -64,13 +64,4 @@ export class EventLogLevel implements EventLog {
 
     await Promise.all(indexDeletePromises);
   }
-
-  async purgeEventsByCid(tenant: string, messageCids: Array<string>): Promise<void> {
-    const indexDeletePromises: Promise<void>[] = [];
-    for (const messageCid of messageCids) {
-      indexDeletePromises.push(this.index.purge(tenant, messageCid));
-    }
-
-    await Promise.all(indexDeletePromises);
-  }
 }
