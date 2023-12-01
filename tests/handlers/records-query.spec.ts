@@ -183,6 +183,29 @@ export function testRecordsQueryHandler(): void {
         expect(reply.entries![0].encodedData).to.be.undefined;
       });
 
+      it('should include `initialWrite` property if RecordsWrite is not initial write', async () => {
+        const alice = await DidKeyResolver.generate();
+        const write = await TestDataGenerator.generateRecordsWrite({ author: alice, published: false });
+
+        const writeReply = await dwn.processMessage(alice.did, write.message, write.dataStream);
+        expect(writeReply.status.code).to.equal(202);
+
+        // write an update to the record
+        const write2 = await RecordsWrite.createFrom({ recordsWriteMessage: write.message, published: true, signer: Jws.createSigner(alice) });
+        const write2Reply = await dwn.processMessage(alice.did, write2.message);
+        expect(write2Reply.status.code).to.equal(202);
+
+        // make sure result returned now has `initialWrite` property
+        const messageData = await TestDataGenerator.generateRecordsQuery({ author: alice, filter: { recordId: write.message.recordId } });
+        const reply = await dwn.processMessage(alice.did, messageData.message);
+
+        expect(reply.status.code).to.equal(200);
+        expect(reply.entries?.length).to.equal(1);
+        expect(reply.entries![0].initialWrite).to.exist;
+        expect(reply.entries![0].initialWrite?.recordId).to.equal(write.message.recordId);
+
+      });
+
       it('should be able to query by attester', async () => {
       // scenario: 2 records authored by alice, 1st attested by alice, 2nd attested by bob
         const alice = await DidKeyResolver.generate();

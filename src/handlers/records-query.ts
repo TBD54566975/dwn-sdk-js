@@ -12,6 +12,7 @@ import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Records } from '../utils/records.js';
 import { RecordsQuery } from '../interfaces/records-query.js';
+import { RecordsWrite } from '../interfaces/records-write.js';
 import { SortDirection } from '../types/query-types.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
@@ -58,6 +59,19 @@ export class RecordsQueryHandler implements MethodHandler {
         const results = await this.fetchRecordsAsNonOwner(tenant, recordsQuery);
         recordsWrites = results.messages as RecordsWriteMessageWithOptionalEncodedData[];
         cursor = results.cursor;
+      }
+    }
+
+    // attach initial write if returned RecordsWrite is not initial write
+    for (const recordsWrite of recordsWrites) {
+      if (!await RecordsWrite.isInitialWrite(recordsWrite)) {
+        const initialWriteQueryResult = await this.messageStore.query(
+          tenant,
+          [{ recordId: recordsWrite.recordId, isLatestBaseState: false, method: DwnMethodName.Write }]
+        );
+        const initialWrite = initialWriteQueryResult.messages[0] as RecordsWriteMessageWithOptionalEncodedData;
+        delete initialWrite.encodedData;
+        recordsWrite.initialWrite = initialWrite;
       }
     }
 

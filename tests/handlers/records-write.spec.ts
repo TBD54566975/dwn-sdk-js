@@ -2333,7 +2333,7 @@ export function testRecordsWriteHandler(): void {
           });
         });
 
-        it('should allow overwriting records by the same author', async () => {
+        it('should allow updating records by the initial author', async () => {
         // scenario: Bob writes into Alice's DWN given Alice's "message" protocol allow-anyone rule, then modifies the message
 
           // write a protocol definition with an allow-anyone rule
