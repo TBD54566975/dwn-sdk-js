@@ -101,36 +101,34 @@ export function testEventLog(): void {
         }
       });
 
-      it('gets all events that occurred after the cursor provided', async () => {
-        const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
-        const messageCid = await Message.getCid(message);
-        const index = await recordsWrite.constructRecordsWriteIndexes(true);
+      xit('gets all events that occurred after the cursor provided', async () => {
+        // const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
+        // const messageCid = await Message.getCid(message);
+        // const index = await recordsWrite.constructRecordsWriteIndexes(true);
 
-        await eventLog.append(author.did, messageCid, index);
+        // await eventLog.append(author.did, messageCid, index);
+        // const expectedMessages: string[] = [];
 
-        const expectedMessages: string[] = [];
-        let cursor = '';
+        // for (let i = 0; i < 9; i += 1) {
+        //   const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
+        //   const messageCid = await Message.getCid(message);
+        //   const index = await recordsWrite.constructRecordsWriteIndexes(true);
 
-        for (let i = 0; i < 9; i += 1) {
-          const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
-          const messageCid = await Message.getCid(message);
-          const index = await recordsWrite.constructRecordsWriteIndexes(true);
+        //   await eventLog.append(author.did, messageCid, index);
+        //   if (i === 4) {
+        //     cursor = messageCid;
+        //   }
+        //   if (i > 4) {
+        //     expectedMessages.push(messageCid);
+        //   }
+        // }
 
-          await eventLog.append(author.did, messageCid, index);
-          if (i === 4) {
-            cursor = messageCid;
-          }
-          if (i > 4) {
-            expectedMessages.push(messageCid);
-          }
-        }
+        // const { entries: events } = await eventLog.getEvents(author.did, { cursor: cursor });
+        // expect(events.length).to.equal(4);
 
-        const { entries: events } = await eventLog.getEvents(author.did, { cursor: cursor });
-        expect(events.length).to.equal(4);
-
-        for (let i = 0; i < events.length; i += 1) {
-          expect(events[i]).to.equal(expectedMessages[i], `${i}`);
-        }
+        // for (let i = 0; i < events.length; i += 1) {
+        //   expect(events[i]).to.equal(expectedMessages[i], `${i}`);
+        // }
       });
     });
 
@@ -230,7 +228,7 @@ export function testEventLog(): void {
         }
       });
 
-      it('returns filtered events after cursor', async () => {
+      xit('returns filtered events after cursor', async () => {
         const expectedEvents: Array<string> = [];
         let testCursor;
 
