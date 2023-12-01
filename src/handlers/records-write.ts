@@ -88,22 +88,36 @@ export class RecordsWriteHandler implements MethodHandler {
     }
 
     try {
-      // we set latestBaseState initially to false, due to the fact that we allow `RecordsWrite` without a data stream in some cases.
-      // depending on rules within `processMessageWithDataStream` or `processMessageWithoutDataStream` it will be set to true to allow for query/reads
+      // NOTE: We allow isLatestBaseState to be true ONLY if the incoming message comes with data, or if the incoming message is NOT an initial write
+      // This would allow an initial write to be written to the DB without data, but having it not queryable,
+      // because query implementation filters on `isLatestBaseState` being `true`
+      // thus preventing a user's attempt to gain authorized access to data by referencing the dataCid of a private data in their initial writes,
+      // See: https://github.com/TBD54566975/dwn-sdk-js/issues/359 for more info
       let isLatestBaseState = false;
       let messageWithOptionalEncodedData = message as RecordsWriteMessageWithOptionalEncodedData;
 
       if (dataStream !== undefined) {
-        ({ isLatestBaseState, messageWithOptionalEncodedData } = await this.processMessageWithDataStream(tenant, message, dataStream));
-      } else if (newestExistingMessage?.descriptor.method === DwnMethodName.Delete) {
-        throw new DwnError(
-          DwnErrorCode.RecordsWriteMissingDataStream,
-          'No data stream was provided with the previous message being a delete'
-        );
-      } else if (!newMessageIsInitialWrite) {
+        messageWithOptionalEncodedData = await this.processMessageWithDataStream(tenant, message, dataStream);
+        isLatestBaseState = true;
+      } else {
+        // else data stream is NOT provided
+
+        if (newestExistingMessage?.descriptor.method === DwnMethodName.Delete) {
+          throw new DwnError(
+            DwnErrorCode.RecordsWriteMissingDataStream,
+            'No data stream was provided with the previous message being a delete'
+          );
+        }
+
         // at this point we know that newestExistingMessage exists is not a Delete
-        const newestExistingWrite = newestExistingMessage as RecordsWriteMessageWithOptionalEncodedData;
-        ({ isLatestBaseState, messageWithOptionalEncodedData } = await this.processMessageWithoutDataStream(tenant, message, newestExistingWrite ));
+
+        // if the incoming message is not an initial write, and no dataStream is provided, we would allow it provided it passes validation
+        // processMessageWithoutDataStream() abstracts that logic
+        if (!newMessageIsInitialWrite) {
+          const newestExistingWrite = newestExistingMessage as RecordsWriteMessageWithOptionalEncodedData;
+          messageWithOptionalEncodedData = await this.processMessageWithoutDataStream(tenant, message, newestExistingWrite );
+          isLatestBaseState = true;
+        }
       }
 
       const indexes = await recordsWrite.constructRecordsWriteIndexes(isLatestBaseState);
@@ -139,7 +153,7 @@ export class RecordsWriteHandler implements MethodHandler {
   /**
    * Returns a `RecordsWriteMessageWithOptionalEncodedData` with a copy of the incoming message and the incoming data encoded to `Base64URL`.
    */
-  public async encodeAndSetData(message: RecordsWriteMessage, dataBytes: Uint8Array):Promise<RecordsWriteMessageWithOptionalEncodedData> {
+  public async cloneAndAddEncodedData(message: RecordsWriteMessage, dataBytes: Uint8Array):Promise<RecordsWriteMessageWithOptionalEncodedData> {
     const recordsWrite: RecordsWriteMessageWithOptionalEncodedData = { ...message };
     recordsWrite.encodedData = Encoder.bytesToBase64Url(dataBytes);
     return recordsWrite;
@@ -149,11 +163,7 @@ export class RecordsWriteHandler implements MethodHandler {
     tenant: string,
     message: RecordsWriteMessage,
     dataStream: _Readable.Readable,
-  ):Promise<{
-    isLatestBaseState: boolean
-    messageWithOptionalEncodedData: RecordsWriteMessageWithOptionalEncodedData
-  }> {
-    let isLatestBaseState = false;
+  ):Promise<RecordsWriteMessageWithOptionalEncodedData> {
     let messageWithOptionalEncodedData: RecordsWriteMessageWithOptionalEncodedData = message;
 
     // if data is below the threshold, we store it within MessageStore
@@ -162,37 +172,34 @@ export class RecordsWriteHandler implements MethodHandler {
       const dataCid = await Cid.computeDagPbCidFromBytes(dataBytes);
       // validate data integrity before setting.
       RecordsWriteHandler.validateDataIntegrity(message.descriptor.dataCid, message.descriptor.dataSize, dataCid, dataBytes.length);
-      messageWithOptionalEncodedData = await this.encodeAndSetData(message, dataBytes);
-      isLatestBaseState = true;
+      messageWithOptionalEncodedData = await this.cloneAndAddEncodedData(message, dataBytes);
     } else {
       const messageCid = await Message.getCid(message);
       const result = await this.dataStore.put(tenant, messageCid, message.descriptor.dataCid, dataStream);
       await this.validateDataStoreIntegrity(tenant, message, result.dataCid, result.dataSize);
-      isLatestBaseState = true;
     }
 
-    return { isLatestBaseState, messageWithOptionalEncodedData };
+    return messageWithOptionalEncodedData;
   }
 
   private async processMessageWithoutDataStream(
     tenant: string,
     message: RecordsWriteMessage,
     newestExistingWrite: RecordsWriteMessageWithOptionalEncodedData,
-  ):Promise<{
-    isLatestBaseState: boolean
-    messageWithOptionalEncodedData: RecordsWriteMessageWithOptionalEncodedData
-  }> {
-    let isLatestBaseState = false;
-    let messageWithOptionalEncodedData: RecordsWriteMessageWithOptionalEncodedData = message;
+  ):Promise<RecordsWriteMessageWithOptionalEncodedData> {
+    const messageWithOptionalEncodedData: RecordsWriteMessageWithOptionalEncodedData = { ...message }; // clone
     const { dataCid, dataSize } = message.descriptor;
-    // if the incoming message is not an initial write, and no dataStream is provided, first check integrity against newest existing write.
+
+    // Since incoming message is not an initial write, and no dataStream is provided, we first check integrity against newest existing write.
+    // we preform the dataCid check in case a user attempts to gain access to data by referencing a different known dataCid,
+    // so we insure that the data is already associated with the existing newest message
+    // See: https://github.com/TBD54566975/dwn-sdk-js/issues/359 for more info
     RecordsWriteHandler.validateDataIntegrity(dataCid, dataSize, newestExistingWrite.descriptor.dataCid, newestExistingWrite.descriptor.dataSize);
+
     if (dataSize <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
       // we encode the data from the original write if it is smaller than the data-store threshold
       if (newestExistingWrite.encodedData !== undefined) {
-        const dataBytes = Encoder.base64UrlToBytes(newestExistingWrite.encodedData);
-        messageWithOptionalEncodedData = await this.encodeAndSetData(message, dataBytes);
-        isLatestBaseState = true; // will show up in reads/queries
+        messageWithOptionalEncodedData.encodedData = newestExistingWrite.encodedData;
       } else {
         throw new DwnError(
           DwnErrorCode.RecordsWriteMissingEncodedDataInPrevious,
@@ -200,18 +207,18 @@ export class RecordsWriteHandler implements MethodHandler {
         );
       }
     } else {
+      // attempt to retrieve the data from the previous message
       const previousWriteMessageCid = await Message.getCid(newestExistingWrite);
-      // attempt to retrieve the data from the previous message, if it does not exist we have no previous data to associate.
-      // we preform this check in case a user attempts to gain access to data by knowing the dataCid,
-      // https://github.com/TBD54566975/dwn-sdk-js/issues/359
-      // so we insure that the data is already associated with the existing newest message
       const dataResults = await this.dataStore.get(tenant, previousWriteMessageCid, message.descriptor.dataCid);
+
+      // if it does not exist we have no previous data to associate.
       if (dataResults === undefined) {
         throw new DwnError(
           DwnErrorCode.RecordsWriteMissingDataInPrevious,
           `No dataStream was provided and unable to get data from previous message`
         );
       }
+
       const result = await this.dataStore.associate(tenant, await Message.getCid(message), message.descriptor.dataCid);
       if (result === undefined) {
         throw new DwnError(
@@ -220,10 +227,9 @@ export class RecordsWriteHandler implements MethodHandler {
         );
       }
       await this.validateDataStoreIntegrity(tenant, message, result.dataCid, result.dataSize);
-      isLatestBaseState = true; // will show up in reads/queries
     }
 
-    return { isLatestBaseState, messageWithOptionalEncodedData };
+    return messageWithOptionalEncodedData;
   }
 
   /**
