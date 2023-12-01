@@ -4,7 +4,6 @@ import type { GenericMessage } from './types/message-types.js';
 import type { MessageStore } from './types/message-store.js';
 import type { MethodHandler } from './types/method-handler.js';
 import type { Readable } from 'readable-stream';
-import type { RecordsWriteHandlerOptions } from './handlers/records-write.js';
 import type { TenantGate } from './core/tenant-gate.js';
 import type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply } from './types/event-types.js';
 import type { GenericMessageReply, UnionMessageReply } from './core/message-reply.js';
@@ -126,26 +125,6 @@ export class Dwn {
   }
 
   /**
-   * Privileged method for writing a pruned initial `RecordsWrite` to a DWN without needing to supply associated data.
-   */
-  public async synchronizePrunedInitialRecordsWrite(tenant: string, message: RecordsWriteMessage): Promise<GenericMessageReply> {
-    const errorMessageReply =
-      await this.validateTenant(tenant) ??
-      await this.validateMessageIntegrity(message, DwnInterfaceName.Records, DwnMethodName.Write);
-    if (errorMessageReply !== undefined) {
-      return errorMessageReply;
-    }
-
-    const options: RecordsWriteHandlerOptions = {
-      skipDataStorage: true,
-    };
-
-    const handler = new RecordsWriteHandler(this.didResolver, this.messageStore, this.dataStore, this.eventLog);
-    const methodHandlerReply = await handler.handle({ tenant, message, options });
-    return methodHandlerReply;
-  }
-
-  /**
    * Checks tenant gate to see if tenant is allowed.
    * @param tenant The tenant DID to route the given message to.
    * @returns GenericMessageReply if the message has an integrity error, otherwise undefined.
@@ -169,8 +148,6 @@ export class Dwn {
    */
   public async validateMessageIntegrity(
     rawMessage: any,
-    expectedInterface?: DwnInterfaceName,
-    expectedMethod?: DwnMethodName,
   ): Promise<GenericMessageReply | undefined> {
     // Verify interface and method
     const dwnInterface = rawMessage?.descriptor?.interface;
@@ -178,17 +155,6 @@ export class Dwn {
     if (dwnInterface === undefined || dwnMethod === undefined) {
       return {
         status: { code: 400, detail: `Both interface and method must be present, interface: ${dwnInterface}, method: ${dwnMethod}` }
-      };
-    }
-
-    if (expectedInterface !== undefined && expectedInterface !== dwnInterface) {
-      return {
-        status: { code: 400, detail: `Expected interface ${expectedInterface}, received ${dwnInterface}` }
-      };
-    }
-    if (expectedMethod !== undefined && expectedMethod !== dwnMethod) {
-      return {
-        status: { code: 400, detail: `Expected method ${expectedInterface}${expectedMethod}, received ${dwnInterface}${dwnMethod}` }
       };
     }
 

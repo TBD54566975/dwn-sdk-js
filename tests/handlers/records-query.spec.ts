@@ -1454,30 +1454,30 @@ export function testRecordsQueryHandler(): void {
         // directly inserting data to datastore so that we don't have to setup to grant Bob permission to write to Alice's DWN
         const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
 
-        const recordIndexes1 = await record1Data.recordsWrite.constructRecordsWriteIndexes(true);
-        record1Data.message = await recordsWriteHandler.processEncodedData(record1Data.message, record1Data.dataStream);
-        await messageStore.put(alice.did, record1Data.message, recordIndexes1);
-        await eventLog.append(alice.did, await Message.getCid(record1Data.message), recordIndexes1);
+        const additionalIndexes1 = await record1Data.recordsWrite.constructRecordsWriteIndexes(true);
+        record1Data.message = await recordsWriteHandler.cloneAndAddEncodedData(record1Data.message, record1Data.dataBytes!);
+        await messageStore.put(alice.did, record1Data.message, additionalIndexes1);
+        await eventLog.append(alice.did, await Message.getCid(record1Data.message), additionalIndexes1);
 
-        const recordIndexes2 = await record2Data.recordsWrite.constructRecordsWriteIndexes(true);
-        record2Data.message = await recordsWriteHandler.processEncodedData(record2Data.message, record2Data.dataStream);
-        await messageStore.put(alice.did, record2Data.message, recordIndexes2);
-        await eventLog.append(alice.did, await Message.getCid(record2Data.message), recordIndexes2);
+        const additionalIndexes2 = await record2Data.recordsWrite.constructRecordsWriteIndexes(true);
+        record2Data.message = await recordsWriteHandler.cloneAndAddEncodedData(record2Data.message,record2Data.dataBytes!);
+        await messageStore.put(alice.did, record2Data.message, additionalIndexes2);
+        await eventLog.append(alice.did, await Message.getCid(record2Data.message), additionalIndexes1);
 
-        const recordIndexes3 = await record3Data.recordsWrite.constructRecordsWriteIndexes(true);
-        record3Data.message = await recordsWriteHandler.processEncodedData(record3Data.message, record3Data.dataStream);
-        await messageStore.put(alice.did, record3Data.message, recordIndexes3);
-        await eventLog.append(alice.did, await Message.getCid(record3Data.message), recordIndexes3);
+        const additionalIndexes3 = await record3Data.recordsWrite.constructRecordsWriteIndexes(true);
+        record3Data.message = await recordsWriteHandler.cloneAndAddEncodedData(record3Data.message, record3Data.dataBytes!);
+        await messageStore.put(alice.did, record3Data.message, additionalIndexes3);
+        await eventLog.append(alice.did, await Message.getCid(record3Data.message), additionalIndexes1);
 
-        const recordIndexes4 = await record4Data.recordsWrite.constructRecordsWriteIndexes(true);
-        record4Data.message = await recordsWriteHandler.processEncodedData(record4Data.message, record4Data.dataStream);
-        await messageStore.put(alice.did, record4Data.message, recordIndexes4);
-        await eventLog.append(alice.did, await Message.getCid(record4Data.message), recordIndexes4);
+        const additionalIndexes4 = await record4Data.recordsWrite.constructRecordsWriteIndexes(true);
+        record4Data.message = await recordsWriteHandler.cloneAndAddEncodedData(record4Data.message, record4Data.dataBytes!);
+        await messageStore.put(alice.did, record4Data.message, additionalIndexes4);
+        await eventLog.append(alice.did, await Message.getCid(record4Data.message), additionalIndexes1);
 
-        const recordIndexes5 = await record5Data.recordsWrite.constructRecordsWriteIndexes(true);
-        record5Data.message = await recordsWriteHandler.processEncodedData(record5Data.message, record5Data.dataStream);
-        await messageStore.put(alice.did, record5Data.message, recordIndexes5);
-        await eventLog.append(alice.did, await Message.getCid(record5Data.message), recordIndexes5);
+        const additionalIndexes5 = await record5Data.recordsWrite.constructRecordsWriteIndexes(true);
+        record5Data.message = await recordsWriteHandler.cloneAndAddEncodedData(record5Data.message, record5Data.dataBytes!);
+        await messageStore.put(alice.did, record5Data.message, additionalIndexes5);
+        await eventLog.append(alice.did, await Message.getCid(record5Data.message), additionalIndexes1);
 
         // test correctness for Bob's query
         const bobQueryMessageData = await TestDataGenerator.generateRecordsQuery({
@@ -1580,9 +1580,9 @@ export function testRecordsQueryHandler(): void {
         const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
 
         const messages: GenericMessage[] = [];
-        for await (const { recordsWrite, message, dataStream } of messagePromises) {
+        for await (const { recordsWrite, message, dataBytes } of messagePromises) {
           const indexes = await recordsWrite.constructRecordsWriteIndexes(true);
-          const processedMessage = await recordsWriteHandler.processEncodedData(message, dataStream);
+          const processedMessage = await recordsWriteHandler.cloneAndAddEncodedData(message, dataBytes!);
           await messageStore.put(alice.did, processedMessage, indexes);
           await eventLog.append(alice.did, await Message.getCid(processedMessage), indexes);
           messages.push(processedMessage);
