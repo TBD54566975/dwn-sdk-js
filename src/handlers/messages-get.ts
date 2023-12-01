@@ -2,7 +2,7 @@ import type { DataStore } from '../types/data-store.js';
 import type { DidResolver } from '../did/did-resolver.js';
 import type { MessageStore } from '../types/message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { RecordsWriteMessageWithOptionalEncodedData } from '../types/records-types.js';
+import type { RecordsQueryReplyEntry } from '../types/records-types.js';
 import type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from '../types/messages-types.js';
 
 import { messageReplyFromError } from '../core/message-reply.js';
@@ -65,7 +65,7 @@ export class MessagesGetHandler implements MethodHandler {
 
       // RecordsWrite specific handling, if MessageStore has embedded `encodedData` return it with the entry.
       // we store `encodedData` along with the message if the data is below a certain threshold.
-      const recordsWrite = message as RecordsWriteMessageWithOptionalEncodedData;
+      const recordsWrite = message as RecordsQueryReplyEntry;
       if (recordsWrite.encodedData !== undefined) {
         entry.encodedData = recordsWrite.encodedData;
         delete recordsWrite.encodedData;

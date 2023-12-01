@@ -54,14 +54,6 @@ export type RecordsWriteMessage = GenericMessage & {
   encryption?: EncryptionProperty;
 };
 
-/**
- * records with a data size below a threshold are stored within MessageStore with their data embedded
- */
-export type RecordsWriteMessageWithOptionalEncodedData = RecordsWriteMessage & {
-  encodedData?: string;
-  initialWrite?: RecordsWriteMessage;
-};
-
 export type EncryptionProperty = {
   algorithm: EncryptionAlgorithm;
   initializationVector: string;
@@ -89,14 +81,18 @@ export type EncryptedKey = {
 /**
  * Data structure returned in a `RecordsQuery` reply entry.
  * NOTE: the message structure is a modified version of the message received, the most notable differences are:
- * 1. does not contain `authorization`
- * 2. may include encoded data
+ * 1. May include an initial RecordsWrite message
+ * 2. May include encoded data
  */
 export type RecordsQueryReplyEntry = RecordsWriteMessage & {
   /**
    * The initial write of the record if the returned RecordsWrite message itself is not the initial write.
    */
   initialWrite?: RecordsWriteMessage;
+
+  /**
+   * The encoded data of the record if the data associated with the record is equal or smaller than `DwnConstant.maxDataSizeAllowedToBeEncoded`.
+   */
   encodedData?: string;
 };
 

@@ -4,7 +4,7 @@ import type { EventLog } from '../types/event-log.js';
 import type { GenericMessageReply } from '../core/message-reply.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { RecordsWriteMessage, RecordsWriteMessageWithOptionalEncodedData } from '../types/records-types.js';
+import type { RecordsQueryReplyEntry, RecordsWriteMessage } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { Cid } from '../utils/cid.js';
@@ -94,7 +94,7 @@ export class RecordsWriteHandler implements MethodHandler {
       // thus preventing a user's attempt to gain authorized access to data by referencing the dataCid of a private data in their initial writes,
       // See: https://github.com/TBD54566975/dwn-sdk-js/issues/359 for more info
       let isLatestBaseState = false;
-      let messageWithOptionalEncodedData = message as RecordsWriteMessageWithOptionalEncodedData;
+      let messageWithOptionalEncodedData = message as RecordsQueryReplyEntry;
 
       if (dataStream !== undefined) {
         messageWithOptionalEncodedData = await this.processMessageWithDataStream(tenant, message, dataStream);
@@ -114,7 +114,7 @@ export class RecordsWriteHandler implements MethodHandler {
         // if the incoming message is not an initial write, and no dataStream is provided, we would allow it provided it passes validation
         // processMessageWithoutDataStream() abstracts that logic
         if (!newMessageIsInitialWrite) {
-          const newestExistingWrite = newestExistingMessage as RecordsWriteMessageWithOptionalEncodedData;
+          const newestExistingWrite = newestExistingMessage as RecordsQueryReplyEntry;
           messageWithOptionalEncodedData = await this.processMessageWithoutDataStream(tenant, message, newestExistingWrite );
           isLatestBaseState = true;
         }
@@ -151,10 +151,10 @@ export class RecordsWriteHandler implements MethodHandler {
   };
 
   /**
-   * Returns a `RecordsWriteMessageWithOptionalEncodedData` with a copy of the incoming message and the incoming data encoded to `Base64URL`.
+   * Returns a `RecordsQueryReplyEntry` with a copy of the incoming message and the incoming data encoded to `Base64URL`.
    */
-  public async cloneAndAddEncodedData(message: RecordsWriteMessage, dataBytes: Uint8Array):Promise<RecordsWriteMessageWithOptionalEncodedData> {
-    const recordsWrite: RecordsWriteMessageWithOptionalEncodedData = { ...message };
+  public async cloneAndAddEncodedData(message: RecordsWriteMessage, dataBytes: Uint8Array):Promise<RecordsQueryReplyEntry> {
+    const recordsWrite: RecordsQueryReplyEntry = { ...message };
     recordsWrite.encodedData = Encoder.bytesToBase64Url(dataBytes);
     return recordsWrite;
   }
@@ -163,8 +163,8 @@ export class RecordsWriteHandler implements MethodHandler {
     tenant: string,
     message: RecordsWriteMessage,
     dataStream: _Readable.Readable,
-  ):Promise<RecordsWriteMessageWithOptionalEncodedData> {
-    let messageWithOptionalEncodedData: RecordsWriteMessageWithOptionalEncodedData = message;
+  ):Promise<RecordsQueryReplyEntry> {
+    let messageWithOptionalEncodedData: RecordsQueryReplyEntry = message;
 
     // if data is below the threshold, we store it within MessageStore
     if (message.descriptor.dataSize <= DwnConstant.maxDataSizeAllowedToBeEncoded) {
@@ -185,9 +185,9 @@ export class RecordsWriteHandler implements MethodHandler {
   private async processMessageWithoutDataStream(
     tenant: string,
     message: RecordsWriteMessage,
-    newestExistingWrite: RecordsWriteMessageWithOptionalEncodedData,
-  ):Promise<RecordsWriteMessageWithOptionalEncodedData> {
-    const messageWithOptionalEncodedData: RecordsWriteMessageWithOptionalEncodedData = { ...message }; // clone
+    newestExistingWrite: RecordsQueryReplyEntry,
+  ):Promise<RecordsQueryReplyEntry> {
+    const messageWithOptionalEncodedData: RecordsQueryReplyEntry = { ...message }; // clone
     const { dataCid, dataSize } = message.descriptor;
 
     // Since incoming message is not an initial write, and no dataStream is provided, we first check integrity against newest existing write.

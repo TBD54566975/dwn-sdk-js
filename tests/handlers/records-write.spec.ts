@@ -1,7 +1,7 @@
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
 import type { GenerateFromRecordsWriteOut } from '../utils/test-data-generator.js';
 import type { ProtocolDefinition } from '../../src/types/protocols-types.js';
-import type { RecordsWriteMessageWithOptionalEncodedData } from '../../src/types/records-types.js';
+import type { RecordsQueryReplyEntry } from '../../src/types/records-types.js';
 import type { DataStore, EventLog, GetResult, MessageStore } from '../../src/index.js';
 
 import anyoneCollaborateProtocolDefinition from '../vectors/protocol-definitions/anyone-collaborate.json' assert { type: 'json' };
@@ -4109,7 +4109,7 @@ export function testRecordsWriteHandler(): void {
           const messageCid = await Message.getCid(message);
 
           const storedMessage = await messageStore.get(alice.did, messageCid);
-          expect((storedMessage as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.exist.and.not.be.undefined;
+          expect((storedMessage as RecordsQueryReplyEntry).encodedData).to.exist.and.not.be.undefined;
         });
 
         it('should not have encodedData field if dataSize greater than threshold', async () => {
@@ -4122,7 +4122,7 @@ export function testRecordsWriteHandler(): void {
           const messageCid = await Message.getCid(message);
 
           const storedMessage = await messageStore.get(alice.did, messageCid);
-          expect((storedMessage as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.not.exist;
+          expect((storedMessage as RecordsQueryReplyEntry).encodedData).to.not.exist;
         });
 
         it('should retain original RecordsWrite message but without the encodedData if data is under threshold', async () => {
@@ -4135,7 +4135,7 @@ export function testRecordsWriteHandler(): void {
           const messageCid = await Message.getCid(message);
 
           const storedMessage = await messageStore.get(alice.did, messageCid);
-          expect((storedMessage as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.exist.and.not.be.undefined;
+          expect((storedMessage as RecordsQueryReplyEntry).encodedData).to.exist.and.not.be.undefined;
 
           const updatedDataBytes = TestDataGenerator.randomBytes(DwnConstant.maxDataSizeAllowedToBeEncoded);
           const newWrite = await RecordsWrite.createFrom({
@@ -4151,10 +4151,10 @@ export function testRecordsWriteHandler(): void {
           expect(writeMessage2.status.code).to.equal(202);
 
           const originalWrite = await messageStore.get(alice.did, messageCid);
-          expect((originalWrite as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.not.exist;
+          expect((originalWrite as RecordsQueryReplyEntry).encodedData).to.not.exist;
 
           const newestWrite = await messageStore.get(alice.did, await Message.getCid(newWrite.message));
-          expect((newestWrite as RecordsWriteMessageWithOptionalEncodedData).encodedData).to.exist.and.not.be.undefined;
+          expect((newestWrite as RecordsQueryReplyEntry).encodedData).to.exist.and.not.be.undefined;
         });
       });
     });

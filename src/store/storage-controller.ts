@@ -2,7 +2,7 @@ import type { DataStore } from '../types/data-store.js';
 import type { EventLog } from '../types/event-log.js';
 import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
-import type { RecordsWriteMessage, RecordsWriteMessageWithOptionalEncodedData } from '../types/records-types.js';
+import type { RecordsQueryReplyEntry, RecordsWriteMessage } from '../types/records-types.js';
 
 import { DwnConstant } from '../core/dwn-constant.js';
 import { DwnMethodName } from '../enums/dwn-interface-method.js';
@@ -65,7 +65,7 @@ export class StorageController {
           const existingRecordsWrite = await RecordsWrite.parse(message as RecordsWriteMessage);
           const isLatestBaseState = false;
           const indexes = await existingRecordsWrite.constructRecordsWriteIndexes(isLatestBaseState);
-          const writeMessage = message as RecordsWriteMessageWithOptionalEncodedData;
+          const writeMessage = message as RecordsQueryReplyEntry;
           delete writeMessage.encodedData;
           await messageStore.put(tenant, writeMessage, indexes);
         } else {
