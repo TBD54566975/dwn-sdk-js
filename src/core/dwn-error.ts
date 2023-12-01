@@ -38,6 +38,8 @@ export enum DwnErrorCode {
   HdKeyDerivationPathInvalid = 'HdKeyDerivationPathInvalid',
   JwsVerifySignatureUnsupportedCrv = 'JwsVerifySignatureUnsupportedCrv',
   IndexInvalidSortProperty = 'IndexInvalidSortProperty',
+  IndexInvalidCursorFormat = 'IndexInvalidCursorFormat',
+  IndexMismatchedCursorProperty = 'IndexMismatchedCursorProperty',
   IndexMissingIndexableProperty = 'IndexMissingIndexableProperty',
   JwsDecodePlainObjectPayloadInvalid = 'JwsDecodePlainObjectPayloadInvalid',
   MessageGetInvalidCid = 'MessageGetInvalidCid',

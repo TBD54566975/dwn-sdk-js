@@ -1143,94 +1143,137 @@ export function testRecordsQueryHandler(): void {
         expect(writeReply3.status.code).to.equal(202);
 
         // createdAscending test
-        const createdAscendingQueryData = await TestDataGenerator.generateRecordsQuery({
+        let createdAscendingQueryData = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           dateSort : DateSort.CreatedAscending,
           filter   : { schema }
         });
-        const createdAscendingQueryReply = await dwn.processMessage(alice.did, createdAscendingQueryData.message);
+        let createdAscendingQueryReply = await dwn.processMessage(alice.did, createdAscendingQueryData.message);
         expect(createdAscendingQueryReply.entries!.length).to.equal(3);
         expect(createdAscendingQueryReply.entries?.[0].recordId).to.equal(write1Data.message.recordId);
         expect(createdAscendingQueryReply.entries?.[1].recordId).to.equal(write2Data.message.recordId);
         expect(createdAscendingQueryReply.entries?.[2].recordId).to.equal(write3Data.message.recordId);
 
-        const createdAscendingWithCursor = await TestDataGenerator.generateRecordsQuery({
+        // to test with a cursor we first get a single record
+        createdAscendingQueryData = await TestDataGenerator.generateRecordsQuery({
           author     : alice,
           dateSort   : DateSort.CreatedAscending,
           filter     : { schema },
-          pagination : { cursor: await Message.getCid(write1Data.message) }
+          pagination : { limit: 1 }
         });
-        const createdAscendingWithCursorReply = await dwn.processMessage(alice.did, createdAscendingWithCursor.message);
-        expect(createdAscendingWithCursorReply.entries!.length).to.equal(2);
-        expect(createdAscendingWithCursorReply.entries![0].recordId).to.equal(write2Data.message.recordId);
-        expect(createdAscendingWithCursorReply.entries![1].recordId).to.equal(write3Data.message.recordId);
+        createdAscendingQueryReply = await dwn.processMessage(alice.did, createdAscendingQueryData.message);
+        expect(createdAscendingQueryReply.entries!.length).to.equal(1);
+
+        // we then use the single record query's cursor to get the rest of the records
+        createdAscendingQueryData = await TestDataGenerator.generateRecordsQuery({
+          author     : alice,
+          dateSort   : DateSort.CreatedAscending,
+          filter     : { schema },
+          pagination : { cursor: createdAscendingQueryReply.cursor }
+        });
+        createdAscendingQueryReply = await dwn.processMessage(alice.did, createdAscendingQueryData.message);
+        expect(createdAscendingQueryReply.entries!.length).to.equal(2);
+        expect(createdAscendingQueryReply.entries![0].recordId).to.equal(write2Data.message.recordId);
+        expect(createdAscendingQueryReply.entries![1].recordId).to.equal(write3Data.message.recordId);
 
         // createdDescending test
-        const createdDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
+        let createdDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           dateSort : DateSort.CreatedDescending,
           filter   : { schema }
         });
-        const createdDescendingQueryReply = await dwn.processMessage(alice.did, createdDescendingQueryData.message);
+        let createdDescendingQueryReply = await dwn.processMessage(alice.did, createdDescendingQueryData.message);
         expect(createdDescendingQueryReply.entries!.length).to.equal(3);
         expect(createdDescendingQueryReply.entries?.[0].recordId).to.equal(write3Data.message.recordId);
         expect(createdDescendingQueryReply.entries?.[1].recordId).to.equal(write2Data.message.recordId);
         expect(createdDescendingQueryReply.entries?.[2].recordId).to.equal(write1Data.message.recordId);
 
-        const createdDescendingWithCursor = await TestDataGenerator.generateRecordsQuery({
+        // to test with a cursor we first get a single record
+        createdDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
           author     : alice,
           dateSort   : DateSort.CreatedDescending,
           filter     : { schema },
-          pagination : { cursor: await Message.getCid(write2Data.message) }
+          pagination : { limit: 1 }
         });
-        const createdDescendingWithCursorReply = await dwn.processMessage(alice.did, createdDescendingWithCursor.message);
-        expect(createdDescendingWithCursorReply.entries!.length).to.equal(1);
-        expect(createdDescendingWithCursorReply.entries![0].recordId).to.equal(write1Data.message.recordId);
+        createdDescendingQueryReply = await dwn.processMessage(alice.did, createdDescendingQueryData.message);
+        expect(createdDescendingQueryReply.entries!.length).to.equal(1);
+
+        // we then use the single record query's cursor to get the rest of the records
+        createdDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
+          author     : alice,
+          dateSort   : DateSort.CreatedDescending,
+          filter     : { schema },
+          pagination : { cursor: createdDescendingQueryReply.cursor }
+        });
+        createdDescendingQueryReply = await dwn.processMessage(alice.did, createdDescendingQueryData.message);
+        expect(createdDescendingQueryReply.entries!.length).to.equal(2);
+        expect(createdDescendingQueryReply.entries![0].recordId).to.equal(write2Data.message.recordId);
+        expect(createdDescendingQueryReply.entries![1].recordId).to.equal(write1Data.message.recordId);
 
         // publishedAscending test
-        const publishedAscendingQueryData = await TestDataGenerator.generateRecordsQuery({
+        let publishedAscendingQueryData = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           dateSort : DateSort.PublishedAscending,
           filter   : { schema }
         });
-        const publishedAscendingQueryReply = await dwn.processMessage(alice.did, publishedAscendingQueryData.message);
+        let publishedAscendingQueryReply = await dwn.processMessage(alice.did, publishedAscendingQueryData.message);
         expect(publishedAscendingQueryReply.entries!.length).to.equal(3);
         expect(publishedAscendingQueryReply.entries?.[0].recordId).to.equal(write1Data.message.recordId);
         expect(publishedAscendingQueryReply.entries?.[1].recordId).to.equal(write2Data.message.recordId);
         expect(publishedAscendingQueryReply.entries?.[2].recordId).to.equal(write3Data.message.recordId);
 
-        const publishedAscendingWithCursor = await TestDataGenerator.generateRecordsQuery({
+        // to test with a cursor we first get a single record
+        publishedAscendingQueryData = await TestDataGenerator.generateRecordsQuery({
           author     : alice,
           dateSort   : DateSort.PublishedAscending,
           filter     : { schema },
-          pagination : { cursor: await Message.getCid(write1Data.message) }
+          pagination : { limit: 1 }
         });
-        const publishedAscendingWithCursorReply = await dwn.processMessage(alice.did, publishedAscendingWithCursor.message);
-        expect(publishedAscendingWithCursorReply.entries!.length).to.equal(2);
-        expect(publishedAscendingWithCursorReply.entries![0].recordId).to.equal(write2Data.message.recordId);
-        expect(publishedAscendingWithCursorReply.entries![1].recordId).to.equal(write3Data.message.recordId);
+        publishedAscendingQueryReply = await dwn.processMessage(alice.did, publishedAscendingQueryData.message);
+        expect(publishedAscendingQueryReply.entries!.length).to.equal(1);
+
+        publishedAscendingQueryData = await TestDataGenerator.generateRecordsQuery({
+          author     : alice,
+          dateSort   : DateSort.PublishedAscending,
+          filter     : { schema },
+          pagination : { cursor: publishedAscendingQueryReply.cursor }
+        });
+        publishedAscendingQueryReply = await dwn.processMessage(alice.did, publishedAscendingQueryData.message);
+        expect(publishedAscendingQueryReply.entries!.length).to.equal(2);
+        expect(publishedAscendingQueryReply.entries![0].recordId).to.equal(write2Data.message.recordId);
+        expect(publishedAscendingQueryReply.entries![1].recordId).to.equal(write3Data.message.recordId);
 
         // publishedDescending test
-        const publishedDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
+        let publishedDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
           author   : alice,
           dateSort : DateSort.PublishedDescending,
           filter   : { schema }
         });
-        const publishedDescendingQueryReply = await dwn.processMessage(alice.did, publishedDescendingQueryData.message);
+        let publishedDescendingQueryReply = await dwn.processMessage(alice.did, publishedDescendingQueryData.message);
         expect(publishedDescendingQueryReply.entries!.length).to.equal(3);
         expect(publishedDescendingQueryReply.entries?.[0].recordId).to.equal(write3Data.message.recordId);
         expect(publishedDescendingQueryReply.entries?.[1].recordId).to.equal(write2Data.message.recordId);
         expect(publishedDescendingQueryReply.entries?.[2].recordId).to.equal(write1Data.message.recordId);
 
-        const publishedDescendingWithCursor = await TestDataGenerator.generateRecordsQuery({
+        publishedDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
           author     : alice,
-          dateSort   : DateSort.CreatedDescending,
+          dateSort   : DateSort.PublishedDescending,
           filter     : { schema },
-          pagination : { cursor: await Message.getCid(write2Data.message) }
+          pagination : { limit: 1 }
         });
-        const publishedDescendingWithCursorReply = await dwn.processMessage(alice.did, publishedDescendingWithCursor.message);
-        expect(publishedDescendingWithCursorReply.entries!.length).to.equal(1);
-        expect(publishedDescendingWithCursorReply.entries![0].recordId).to.equal(write1Data.message.recordId);
+        publishedDescendingQueryReply = await dwn.processMessage(alice.did, publishedDescendingQueryData.message);
+        expect(publishedDescendingQueryReply.entries!.length).to.equal(1);
+
+        publishedDescendingQueryData = await TestDataGenerator.generateRecordsQuery({
+          author     : alice,
+          dateSort   : DateSort.PublishedDescending,
+          filter     : { schema },
+          pagination : { cursor: publishedDescendingQueryReply.cursor }
+        });
+        publishedDescendingQueryReply = await dwn.processMessage(alice.did, publishedDescendingQueryData.message);
+        expect(publishedDescendingQueryReply.entries!.length).to.equal(2);
+        expect(publishedDescendingQueryReply.entries![0].recordId).to.equal(write2Data.message.recordId);
+        expect(publishedDescendingQueryReply.entries![1].recordId).to.equal(write1Data.message.recordId);
       });
 
       it('should tiebreak using `messageCid` when sorting encounters identical values', async () => {
@@ -1364,38 +1407,6 @@ export function testRecordsQueryHandler(): void {
         }
         expect(results.length).to.equal(messages.length);
         expect(messages.every(({ message }) => results.map(e => (e as RecordsWriteMessage).recordId).includes(message.recordId)));
-      });
-
-      it('cursor should match the messageCid of the last entry in the returned query', async () => {
-        const alice = await DidKeyResolver.generate();
-
-        const messages = await Promise.all(Array(6).fill({}).map(_ => TestDataGenerator.generateRecordsWrite({
-          author : alice,
-          schema : 'https://schema'
-        })));
-        for (const message of messages) {
-          const result = await dwn.processMessage(alice.did, message.message, message.dataStream);
-          expect(result.status.code).to.equal(202);
-        }
-
-        const limit = 5;
-        const pageQuery = await TestDataGenerator.generateRecordsQuery({
-          author : alice,
-          filter : {
-            schema: 'https://schema'
-          },
-          pagination: {
-            limit: limit,
-          },
-        });
-
-        const pageReply = await dwn.processMessage(alice.did, pageQuery.message);
-        expect(pageReply.status.code).to.equal(200);
-        expect(pageReply.entries?.length).to.be.lte(limit);
-        expect(pageReply.cursor).to.exist;
-        const lastMessageWithAuthorization = messages.find(m => m.message.recordId === pageReply.entries?.at(-1)!.recordId)!;
-        const messageCid = await Message.getCid(lastMessageWithAuthorization.message);
-        expect(pageReply.cursor).to.equal(messageCid);
       });
 
       it('should allow an anonymous unauthenticated query to return published records', async () => {
@@ -1616,6 +1627,8 @@ export function testRecordsQueryHandler(): void {
           async (a,b) => Message.compareMessageTimestamp(a,b)
         );
 
+        const aliceRetrieved: GenericMessage[] = [];
+
         // fetch all from alice for sanity, alice should get all of the records
         // page1 alice
         const aliceQueryMessageDataPage1 = await TestDataGenerator.generateRecordsQuery({
@@ -1628,8 +1641,8 @@ export function testRecordsQueryHandler(): void {
         let results = await dwn.processMessage(alice.did, aliceQueryMessageDataPage1.message) ;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'alice page 1');
-        const page1PaginationLastMessage = await Message.getCid(sortedMessages.at(9)!); // get messageCid from message with authorization.
-        expect(results.cursor).to.equal(page1PaginationLastMessage, 'alice page 1');
+        expect(results.cursor).to.not.be.undefined;
+        aliceRetrieved.push(...results.entries!);
 
         // page2 alice
         const aliceQueryMessageDataPage2 = await TestDataGenerator.generateRecordsQuery({
@@ -1641,8 +1654,8 @@ export function testRecordsQueryHandler(): void {
         results = await dwn.processMessage(alice.did, aliceQueryMessageDataPage2.message) ;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'alice page 2');
-        const page2PaginationLastMessage = await Message.getCid(sortedMessages.at(19)!); // get messageCid from message with authorization.
-        expect(results.cursor).to.equal(page2PaginationLastMessage, 'alice page 2');
+        expect(results.cursor).to.not.be.undefined;
+        aliceRetrieved.push(...results.entries!);
 
         // page3 alice
         const aliceQueryMessageDataPage3 = await TestDataGenerator.generateRecordsQuery({
@@ -1655,6 +1668,12 @@ export function testRecordsQueryHandler(): void {
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(5, 'alice page 3');
         expect(results.cursor).to.not.exist;
+        aliceRetrieved.push(...results.entries!);
+
+        const compareRecordId = (a: GenericMessage, b:GenericMessage): boolean => {
+          return (a as RecordsWriteMessage).recordId === (b as RecordsWriteMessage).recordId;
+        };
+        expect(sortedMessages.every((m, i) => compareRecordId(aliceRetrieved.at(i)!, m)));
 
         const bobs = (m: RecordsWriteMessage): boolean => {
           return m.descriptor.recipient === bob.did || m.descriptor.published === true || Message.getSigner(m) === bob.did;
@@ -1675,8 +1694,7 @@ export function testRecordsQueryHandler(): void {
         results = await dwn.processMessage(alice.did, bobQueryMessagePage1.message) ;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'bob page 1');
-        const page1BobPaginationLastMessage = await Message.getCid(bobSorted.at(9)!);
-        expect(results.cursor).to.equal(page1BobPaginationLastMessage, 'bob page last message 1');
+        expect(results.cursor).to.not.be.undefined;
         bobRetrieved.push(...results.entries!);
 
         const bobQueryMessagePage2 = await TestDataGenerator.generateRecordsQuery({
@@ -1691,9 +1709,7 @@ export function testRecordsQueryHandler(): void {
         expect(results.cursor).to.not.exist;
         bobRetrieved.push(...results.entries!);
 
-        const compareRecordId = (a: GenericMessage, b:GenericMessage): boolean => {
-          return (a as RecordsWriteMessage).recordId === (b as RecordsWriteMessage).recordId;
-        };
+     
 
         expect(bobSorted.every((m, i) => compareRecordId(bobRetrieved.at(i)!, m)));
       });

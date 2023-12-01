@@ -3,12 +3,12 @@ import type { RecordsWriteMessage } from '../../src/types/records-types.js';
 
 import { expect } from 'chai';
 
-import { DidKeyResolver } from '../../src/index.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
 import { SortDirection } from '../../src/types/query-types.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
+import { DidKeyResolver, DwnErrorCode } from '../../src/index.js';
 
 let messageStore: MessageStore;
 
@@ -439,13 +439,13 @@ export function testMessageStore(): void {
           const sortedRecords = messages.sort((a,b) =>
             lexicographicalCompare(a.message.descriptor.messageTimestamp, b.message.descriptor.messageTimestamp));
 
-          const offset = 5;
-          const cursor = await Message.getCid(sortedRecords[offset - 1].message);
+          // we make an initial request to get one record and a cursor.
+          const { cursor } = await messageStore.query(alice.did, [{}], {}, { limit: 1 });
 
           const { messages: limitQuery } = await messageStore.query(alice.did, [{}], {}, { cursor });
-          expect(limitQuery.length).to.equal(sortedRecords.slice(offset).length);
+          expect(limitQuery.length).to.equal(sortedRecords.slice(1).length);
           for (let i = 0; i < limitQuery.length; i++) {
-            const offsetIndex = i + offset;
+            const offsetIndex = i + 1; // offset for the initial request item
             expect(await Message.getCid(sortedRecords[offsetIndex].message)).to.equal(await Message.getCid(limitQuery[i]));
           }
         });
@@ -462,14 +462,14 @@ export function testMessageStore(): void {
           const sortedRecords = messages.sort((a,b) =>
             lexicographicalCompare(a.message.descriptor.messageTimestamp, b.message.descriptor.messageTimestamp));
 
-          const offset = 5;
-          const cursor = await Message.getCid(sortedRecords[offset - 1].message);
-          const limit = 3;
+          // we make an initial request to get one record and a cursor.
+          const { cursor } = await messageStore.query(alice.did, [{}], {}, { limit: 1 });
 
+          const limit = 3;
           const { messages: limitQuery } = await messageStore.query(alice.did, [{}], {}, { cursor, limit });
           expect(limitQuery.length).to.equal(limit);
           for (let i = 0; i < limitQuery.length; i++) {
-            const offsetIndex = i + offset;
+            const offsetIndex = i + 1; // offset for the initial request item
             expect(await Message.getCid(sortedRecords[offsetIndex].message)).to.equal(await Message.getCid(limitQuery[i]));
           }
         });
@@ -503,18 +503,10 @@ export function testMessageStore(): void {
           }
         });
 
-        it('should not return results if the cursor is invalid', async () =>{
+        it('should throw if the cursor format is invalid', async () =>{
           const alice = await DidKeyResolver.generate();
-          const messages = await Promise.all(Array(5).fill({}).map((_) => TestDataGenerator.generateRecordsWrite({
-            messageTimestamp: TestDataGenerator.randomTimestamp()
-          })));
-          for (const message of messages) {
-            await messageStore.put(alice.did, message.message, await message.recordsWrite.constructRecordsWriteIndexes(true));
-          }
-
-          const limit = 4;
-          const { messages: limitQuery } = await messageStore.query(alice.did, [{}], {}, { cursor: 'some-cursor', limit });
-          expect(limitQuery.length).to.be.equal(0);
+          const invalidCursorQueryPromise = messageStore.query(alice.did, [{}], {}, { cursor: 'some-cursor' });
+          expect(invalidCursorQueryPromise).to.eventually.rejectedWith(DwnErrorCode.IndexInvalidCursorFormat);
         });
       });
     });

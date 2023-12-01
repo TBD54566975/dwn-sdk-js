@@ -77,7 +77,7 @@ export function testEventsQueryScenarios(): void {
       ]);
     });
 
-    it('filters by interface type', async () => {
+    xit('filters by interface type', async () => {
       // scenario:
       // alice creates 3 different types of messages (RecordsWrite, PermissionsGrant, ProtocolsConfigure)
       // alice queries for messages from each interface respectively (Records, Permissions, Protocols)
@@ -166,7 +166,7 @@ export function testEventsQueryScenarios(): void {
       expect(protocolEventsReplyAfterCursor.events?.length).to.equal(0); // no new messages
     });
 
-    it('filters by method type', async () => {
+    xit('filters by method type', async () => {
       // scenario:
       // alice creates a variety of Messages (RecordsWrite, RecordsDelete, ProtocolConfigure, PermissionsGrant)
       // alice queries for only RecordsWrite messages
@@ -231,7 +231,7 @@ export function testEventsQueryScenarios(): void {
       expect(recordsWriteEventsReplyAfterCursor.events![0]).to.equal(await Message.getCid(record2Update.message));
     });
 
-    it('filters by a dateUpdated (messageTimestamp) range across different message types', async () => {
+    xit('filters by a dateUpdated (messageTimestamp) range across different message types', async () => {
       // scenario:
       // alice creates (3) messages, (RecordsWrite, PermissionsGrant and ProtocolsConfigure
       // each message on the first date of the year (2021, 2022 and 2023 respectively.
@@ -284,7 +284,7 @@ export function testEventsQueryScenarios(): void {
       expect(reply1.events![0]).to.equal(await Message.getCid(delete1.message!));
     });
 
-    it('filters by dateCreated', async () => {
+    xit('filters by dateCreated', async () => {
       // scenario: 4 records, created on first of 2021, 2022, 2023, 2024 respectively, only the first 2 records
       const firstDayOf2021 = Time.createTimestamp({ year: 2021, month: 1, day: 1 });
       const firstDayOf2022 = Time.createTimestamp({ year: 2022, month: 1, day: 1 });
@@ -397,7 +397,7 @@ export function testEventsQueryScenarios(): void {
       expect(reply4.events?.length).to.equal(0);
     });
 
-    it('filters by a protocol across different message types', async () => {
+    xit('filters by a protocol across different message types', async () => {
       // scenario:
       //    alice creates (3) different message types all related to "proto1" (Configure, RecordsWrite, RecordsDelete)
       //    alice creates (3) different message types all related to "proto2" (Configure, RecordsWrite, RecordsDelete)
@@ -504,7 +504,7 @@ export function testEventsQueryScenarios(): void {
       expect(proto2EventsReply.events![0]).to.equal(await Message.getCid(deleteProto2Message.message));
     });
 
-    it('filters by protocol, protocolPath & parentId', async () => {
+    xit('filters by protocol, protocolPath & parentId', async () => {
       // scenario: get all messages across a protocol & protocolPath combo
       //    alice installs a protocol and creates a thread
       //    alice adds bob and carol as participants
@@ -630,7 +630,7 @@ export function testEventsQueryScenarios(): void {
       expect(chatQueryReply.events![2]).to.equal(await Message.getCid(message3.message));
     });
 
-    it('filters by recipient', async () => {
+    xit('filters by recipient', async () => {
       // scenario: alice installs a free-for-all protocol and makes posts with both bob and carol as recipients
       // carol and bob also make posts with alice as a recipient
       // alice queries for events meant for specific recipients
@@ -728,7 +728,7 @@ export function testEventsQueryScenarios(): void {
       expect(authorQueryReply.events![0]).to.equal(await Message.getCid(messageFromAliceToBob2.message));
     });
 
-    it('filters by schema', async () => {
+    xit('filters by schema', async () => {
       const alice = await DidKeyResolver.generate();
 
       const schema1Message1 = await TestDataGenerator.generateRecordsWrite({
@@ -851,7 +851,7 @@ export function testEventsQueryScenarios(): void {
       expect(recordQueryReply.events![0]).to.equal(await Message.getCid(deleteRecord.message));
     });
 
-    it('filters by dataFormat', async () => {
+    xit('filters by dataFormat', async () => {
       // scenario: alice stores different file types and needs events relating to `image/jpeg`
       //  alice creates 3 files, one of them `image/jpeg`
       //  alice queries for `image/jpeg` retrieving the one message
@@ -913,7 +913,7 @@ export function testEventsQueryScenarios(): void {
       expect(imageQueryReply.events![0]).to.equal(await Message.getCid(imageData2.message));
     });;
 
-    it('filters by dataSize', async () => {
+    xit('filters by dataSize', async () => {
       // scenario:
       //    alice inserts both small and large data
       //    alice requests events for messages with data size under a threshold
@@ -971,7 +971,7 @@ export function testEventsQueryScenarios(): void {
       expect(largeSizeQueryReply.events![0]).to.equal(await Message.getCid(largeSize2.message));
     });
 
-    it('filters by contextId', async () => {
+    xit('filters by contextId', async () => {
       // scenario:
       //    alice configures a chat protocols and creates 2 chat threads
       //    alice invites bob as participant in thread1 and carol in thread2

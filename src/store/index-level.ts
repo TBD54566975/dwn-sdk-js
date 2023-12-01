@@ -216,7 +216,7 @@ export class IndexLevel {
     const { cursor , sortProperty, strictCursor } = queryOptions;
 
     // if there is a cursor we fetch the starting key given the sort property, otherwise we start from the beginning of the index.
-    const startKey = cursor ? await this.getStartingKeyForCursor(tenant, cursor, sortProperty, filters) : '';
+    const startKey = cursor ? await this.getStartingKeyForCursor(cursor, sortProperty) : '';
     if (startKey === undefined) {
       // getStartingKeyForCursor returns undefined if an invalid cursor is provided, we return an empty result set.
       return { entries: [] };
@@ -277,24 +277,23 @@ export class IndexLevel {
    * Gets the starting point for a LevelDB query given an itemId as a cursor and the indexed property.
    * Used as (gt) for ascending queries, or (lt) for descending queries.
    */
-  private async getStartingKeyForCursor(tenant: string, itemId: string, property: string, filters: Filter[]): Promise<string|undefined> {
-    const indexes = await this.getIndexes(tenant, itemId);
-    if (indexes === undefined) {
-      // invalid itemId
-      return;
+  private async getStartingKeyForCursor(cursor: string, sortProperty: string): Promise<string|undefined> {
+    const [ property, sortValue, itemId ] = cursor.split(IndexLevel.delimiter);
+    if (property === undefined || sortValue === undefined || itemId === undefined) {
+      throw new DwnError(
+        DwnErrorCode.IndexInvalidCursorFormat,
+        `The cursor provided ${cursor}, is invalid.`,
+      );
     }
 
-    const sortValue = indexes[property];
-    if (sortValue === undefined) {
-      // invalid sort property
-      return;
+    if (property !== sortProperty) {
+      throw new DwnError(
+        DwnErrorCode.IndexMismatchedCursorProperty,
+        `The cursor property ${property}, does not match the expected property ${sortProperty}.`,
+      );
     }
 
-    // cursor indexes must match the provided filters in order to be valid.
-    // ie: if someone passes a valid messageCid for a cursor that's not part of the filter.
-    if (FilterUtility.matchAnyFilter(indexes, filters)) {
-      return IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), itemId);
-    }
+    return IndexLevel.keySegmentJoin(sortValue, itemId);
   }
 
   private constructCursorFromItem(item: IndexedItem, sortProperty: string): string | undefined {
@@ -343,6 +342,28 @@ export class IndexLevel {
       }
     }
 
+    // insert a simulated cursor to matches
+    if (cursor !== undefined) {
+      const [ property, sortValue, itemId ] = cursor.split(IndexLevel.delimiter);
+      if (property === undefined || sortValue === undefined || itemId === undefined) {
+        throw new Error('invalid cursor in memory');
+      }
+      if (!matches.has(itemId)) {
+        if (property !== sortProperty) {
+          throw new Error('invalid sort property in memory');
+        }
+
+        const decodedValue = IndexLevel.decodeValue(sortValue);
+        if (decodedValue !== undefined) {
+          const indexes:KeyValues = {};
+          indexes[sortProperty] = decodedValue;
+          matches.set(itemId, { itemId, indexes });
+        } else {
+          throw new Error('invalid sort value');
+        }
+      }
+    }
+
     const sortedValues = [...matches.values()].sort((a,b) => this.sortItems(a,b, sortProperty, sortDirection));
 
     // we find the cursor point and only return the result starting there + the limit.
@@ -355,19 +376,12 @@ export class IndexLevel {
 
     const start = cursorIndex > -1 ? cursorIndex + 1 : 0;
     const end = queryOptions.limit !== undefined ? start + queryOptions.limit : undefined;
-    let cursorKey: string | undefined;
-    if (queryOptions.strictCursor && queryOptions.limit !== undefined) {
-      const hasMoreResults = end != undefined && end < sortedValues.length;
-      if (hasMoreResults) {
-        const cursorItem = sortedValues.at(end);
-        cursorKey = cursorItem ? this.constructCursorFromItem(cursorItem, sortProperty) : undefined;
-      }
-    } else {
-      const cursorItem = end ? sortedValues.at(end) : sortedValues.at(-1);
-      cursorKey = cursorItem ? this.constructCursorFromItem(cursorItem, sortProperty) : undefined;
-    }
+    const resultSet = sortedValues.slice(start, end);
+    const hasMoreRecords = end !== undefined && end < sortedValues.length;
+    const cursorItem = resultSet.at(-1);
+    const cursorKey = cursorItem ? this.constructCursorFromItem(cursorItem, sortProperty) : undefined;
 
-    return { entries: sortedValues.slice(start, end).map(match => match.itemId), cursor: cursorKey };
+    return { entries: resultSet.map(match => match.itemId), cursor: queryOptions.strictCursor === true && !hasMoreRecords ? undefined : cursorKey };
   }
 
   /**
@@ -581,6 +595,26 @@ export class IndexLevel {
     return prefix + String(value + offset).padStart(PADDING_LENGTH, '0');
   }
 
+
+  static decodeToNumberValue(input: string): number | undefined {
+    // check if the first character is a NEGATIVE_PREFIX
+    if (input.at(0) === '!') {
+      // remove the negative number indicator
+      input = input.slice(1);
+      const inputNumberWithNegativeOffset = parseInt(input);
+      if (isNaN(inputNumberWithNegativeOffset)) {
+        return;
+      }
+      return inputNumberWithNegativeOffset - Number.MAX_SAFE_INTEGER;
+    }
+    const inputNumber = parseInt(input);
+    if (isNaN(inputNumber)) {
+      return;
+    }
+
+    return inputNumber;
+  }
+
   /**
    * Encodes an indexed value to a string
    *
@@ -592,6 +626,21 @@ export class IndexLevel {
       return this.encodeNumberValue(value);
     default:
       return JSON.stringify(value);
+    }
+  }
+
+  static decodeValue(input: string): string | number | boolean | undefined {
+    // try number first
+    const number = this.decodeToNumberValue(input);
+    if (number) {
+      return number;
+    }
+
+    const decoded = JSON.parse(input);
+    if (typeof decoded === 'boolean') {
+      return decoded;
+    } else if (typeof decoded === 'string') {
+      return decoded;
     }
   }
 

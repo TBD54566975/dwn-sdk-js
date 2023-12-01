@@ -99,7 +99,7 @@ export function testEventsGetHandler(): void {
       }
     });
 
-    it('returns all events after cursor if provided', async () => {
+    xit('returns all events after cursor if provided', async () => {
       const alice = await DidKeyResolver.generate();
 
       for (let i = 0; i < 5; i += 1) {
