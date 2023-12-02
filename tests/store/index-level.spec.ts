@@ -814,7 +814,7 @@ describe('IndexLevel', () => {
           expect(results.entries).to.eql(['2', '3']);
         });
 
-        xit('sorts range queries with remaining results in lte after cursor', async () => {
+        it('sorts range queries with remaining results in lte after cursor', async () => {
           // create an array with unique IDs but multiple items representing the same digit.
           const testItems = [{
             id    : 'a',
@@ -850,16 +850,31 @@ describe('IndexLevel', () => {
           const upperBound = 4;
 
           // with both lower and upper bounds
-          // ascending with a cursor
-          // this cursor should ony return results from the 'lte' part of the filter
+          // first issue with a limit
           let response = await testIndex.query(tenant, [{
             digit: {
               gte : lowerBound,
               lte : upperBound
             },
-          }], { sortProperty: 'id', limit: 1 });
+          }], { sortProperty: 'id', limit: 3 });
+          expect(response.entries).to.eql([ 'b', 'c', 'd' ]);
 
+          // this cursor should ony return results from the 'lte' part of the filter
+          response = await testIndex.query(tenant, [{
+            digit: {
+              gte : lowerBound,
+              lte : upperBound
+            },
+          }], { sortProperty: 'id', cursor: response.cursor });
           expect(response.entries).to.eql([ 'e', 'f', 'g' ]);
+
+          // issue a range with no lower bounds but a limit
+          response = await testIndex.query(tenant, [{
+            digit: {
+              lte: upperBound
+            },
+          }], { sortProperty: 'id', limit: 4 });
+          expect(response.entries).to.eql([ 'a', 'b', 'c', 'd' ]);
 
           // with no lower bounds
           // ascending with a cursor
@@ -868,9 +883,9 @@ describe('IndexLevel', () => {
             digit: {
               lte: upperBound
             },
-          }], { sortProperty: 'id', cursor: 'd' });
+          }], { sortProperty: 'id', cursor: response.cursor });
 
-          expect(response.entries).to.eql([ 'e', 'f', 'g']); // should only return two matching items
+          expect(response.entries).to.eql([ 'e', 'f', 'g']); // should only return three matching items
         });
 
         it('sorts OR queries with or without a cursor', async () => {

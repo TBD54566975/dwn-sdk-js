@@ -77,7 +77,7 @@ export function testEventsQueryScenarios(): void {
       ]);
     });
 
-    xit('filters by interface type', async () => {
+    it('filters by interface type', async () => {
       // scenario:
       // alice creates 3 different types of messages (RecordsWrite, PermissionsGrant, ProtocolsConfigure)
       // alice queries for messages from each interface respectively (Records, Permissions, Protocols)
@@ -137,9 +137,9 @@ export function testEventsQueryScenarios(): void {
 
       // query after cursor
       eventsQueryRecords = await TestDataGenerator.generateEventsQuery({
-        cursor  : recordEventsReply.entries![0], // the message returned from prior query
         author  : alice,
         filters : [{ interface: DwnInterfaceName.Records }],
+        cursor  : recordEventsReply.cursor, // the cursor from the prior query
       });
       const recordEventsReplyAfterCursor = await dwn.processMessage(alice.did, eventsQueryRecords.message);
       expect(recordEventsReplyAfterCursor.status.code).to.equal(200);
@@ -147,9 +147,9 @@ export function testEventsQueryScenarios(): void {
       expect(recordEventsReplyAfterCursor.entries![0]).to.equal(await Message.getCid(recordDelete.message!));
 
       eventsQueryGrants = await TestDataGenerator.generateEventsQuery({
-        cursor  : grantEventsReply.entries![0], // the message returned from prior query
         author  : alice,
         filters : [{ interface: DwnInterfaceName.Permissions }],
+        cursor  : grantEventsReply.cursor, // the cursor from the prior query
       });
       const grantEventsReplyAfterCursor = await dwn.processMessage(alice.did, eventsQueryGrants.message);
       expect(grantEventsReplyAfterCursor.status.code).to.equal(200);
@@ -157,16 +157,16 @@ export function testEventsQueryScenarios(): void {
       expect(grantEventsReplyAfterCursor.entries![0]).to.equal(await Message.getCid(revokeGrant.message!));
 
       eventsQueryProtocols = await TestDataGenerator.generateEventsQuery({
-        cursor  : protocolEventsReply.entries![0], // the message returned from prior query
         author  : alice,
         filters : [{ interface: DwnInterfaceName.Protocols }],
+        cursor  : protocolEventsReply.cursor, // the cursor from the prior query
       });
       const protocolEventsReplyAfterCursor = await dwn.processMessage(alice.did, eventsQueryProtocols.message);
       expect(protocolEventsReplyAfterCursor.status.code).to.equal(200);
       expect(protocolEventsReplyAfterCursor.entries?.length).to.equal(0); // no new messages
     });
 
-    xit('filters by method type', async () => {
+    it('filters by method type', async () => {
       // scenario:
       // alice creates a variety of Messages (RecordsWrite, RecordsDelete, ProtocolConfigure, PermissionsGrant)
       // alice queries for only RecordsWrite messages
@@ -220,9 +220,9 @@ export function testEventsQueryScenarios(): void {
       expect(revokeGrantReply.status.code).to.equal(202, 'PermissionsRevoke');
 
       recordsWriteEvents = await TestDataGenerator.generateEventsQuery({
-        cursor  : recordsWriteEventsReply.entries![1],
         author  : alice,
-        filters : [{ interface: DwnInterfaceName.Records, method: DwnMethodName.Write }]
+        filters : [{ interface: DwnInterfaceName.Records, method: DwnMethodName.Write }],
+        cursor  : recordsWriteEventsReply.cursor,
       });
 
       const recordsWriteEventsReplyAfterCursor = await dwn.processMessage(alice.did, recordsWriteEvents.message);
@@ -231,7 +231,7 @@ export function testEventsQueryScenarios(): void {
       expect(recordsWriteEventsReplyAfterCursor.entries![0]).to.equal(await Message.getCid(record2Update.message));
     });
 
-    xit('filters by a dateUpdated (messageTimestamp) range across different message types', async () => {
+    it('filters by a dateUpdated (messageTimestamp) range across different message types', async () => {
       // scenario:
       // alice creates (3) messages, (RecordsWrite, PermissionsGrant and ProtocolsConfigure
       // each message on the first date of the year (2021, 2022 and 2023 respectively.
@@ -274,9 +274,9 @@ export function testEventsQueryScenarios(): void {
       expect(delete1Reply.status.code).to.equal(202);
 
       eventsQuery1 = await TestDataGenerator.generateEventsQuery({
-        cursor  : reply1.entries![1], // use the last messageCid from the prior query as a cursor
         author  : alice,
         filters : [{ dateUpdated: { from: lastDayOf2021 } }],
+        cursor  : reply1.cursor
       });
       reply1 = await dwn.processMessage(alice.did, eventsQuery1.message);
       expect(reply1.status.code).to.equal(200);
@@ -284,7 +284,7 @@ export function testEventsQueryScenarios(): void {
       expect(reply1.entries![0]).to.equal(await Message.getCid(delete1.message!));
     });
 
-    xit('filters by dateCreated', async () => {
+    it('filters by dateCreated', async () => {
       // scenario: 4 records, created on first of 2021, 2022, 2023, 2024 respectively, only the first 2 records
       const firstDayOf2021 = Time.createTimestamp({ year: 2021, month: 1, day: 1 });
       const firstDayOf2022 = Time.createTimestamp({ year: 2022, month: 1, day: 1 });
@@ -307,97 +307,103 @@ export function testEventsQueryScenarios(): void {
       expect(writeReply3.status.code).to.equal(202);
       expect(writeReply4.status.code).to.equal(202);
 
-      // testing `from` range
+      // testing `from` range with a limit
       const lastDayOf2021 = Time.createTimestamp({ year: 2021, month: 12, day: 31 });
-      let eventsQuery1 = await TestDataGenerator.generateEventsQuery({
+      let fromLastDayOf2021 = await TestDataGenerator.generateEventsQuery({
         author  : alice,
         filters : [{ dateCreated: { from: lastDayOf2021 } }],
       });
-      let reply1 = await dwn.processMessage(alice.did, eventsQuery1.message);
-      expect(reply1.status.code).to.equal(200);
-      expect(reply1.entries?.length).to.equal(3);
-      expect(reply1.entries![0]).to.equal(await Message.getCid(write2.message!));
-      expect(reply1.entries![1]).to.equal(await Message.getCid(write3.message!));
-      expect(reply1.entries![2]).to.equal(await Message.getCid(write4.message!));
-
-      // using the cursor of the first message
-      eventsQuery1 = await TestDataGenerator.generateEventsQuery({
-        cursor  : reply1.entries![0],
-        author  : alice,
-        filters : [{ dateCreated: { from: lastDayOf2021 } }],
-      });
-      reply1 = await dwn.processMessage(alice.did, eventsQuery1.message);
-      expect(reply1.status.code).to.equal(200);
-      expect(reply1.entries?.length).to.equal(2);
-      expect(reply1.entries![0]).to.equal(await Message.getCid(write3.message!));
-      expect(reply1.entries![1]).to.equal(await Message.getCid(write4.message!));
+      let fromLastDayOf2021Reply = await dwn.processMessage(alice.did, fromLastDayOf2021.message);
+      expect(fromLastDayOf2021Reply.status.code).to.equal(200);
+      expect(fromLastDayOf2021Reply.entries?.length).to.equal(3);
+      expect(fromLastDayOf2021Reply.entries![0]).to.equal(await Message.getCid(write2.message!));
+      expect(fromLastDayOf2021Reply.entries![1]).to.equal(await Message.getCid(write3.message!));
+      expect(fromLastDayOf2021Reply.entries![2]).to.equal(await Message.getCid(write4.message!));
 
       // testing `to` range
       const lastDayOf2022 = Time.createTimestamp({ year: 2022, month: 12, day: 31 });
-      let eventsQuery2 = await TestDataGenerator.generateEventsQuery({
+      let toLastDayOf2022 = await TestDataGenerator.generateEventsQuery({
         author  : alice,
         filters : [{ dateCreated: { to: lastDayOf2022 } }],
       });
-      let reply2 = await dwn.processMessage(alice.did, eventsQuery2.message);
-      expect(reply2.status.code).to.equal(200);
-      expect(reply2.entries?.length).to.equal(2);
-      expect(reply2.entries![0]).to.equal(await Message.getCid(write1.message!));
-      expect(reply2.entries![1]).to.equal(await Message.getCid(write2.message!));
-
-      // using the cursor of the first message
-      eventsQuery2 = await TestDataGenerator.generateEventsQuery({
-        cursor  : reply2.entries![0],
-        author  : alice,
-        filters : [{ dateCreated: { to: lastDayOf2022 } }],
-      });
-      reply2 = await dwn.processMessage(alice.did, eventsQuery2.message);
-      expect(reply2.status.code).to.equal(200);
-      expect(reply2.entries?.length).to.equal(1);
-      expect(reply2.entries![0]).to.equal(await Message.getCid(write2.message!));
+      let toLastDayOf2022Reply = await dwn.processMessage(alice.did, toLastDayOf2022.message);
+      expect(toLastDayOf2022Reply.status.code).to.equal(200);
+      expect(toLastDayOf2022Reply.entries?.length).to.equal(2);
+      expect(toLastDayOf2022Reply.entries![0]).to.equal(await Message.getCid(write1.message!));
+      expect(toLastDayOf2022Reply.entries![1]).to.equal(await Message.getCid(write2.message!));
 
       // testing `from` and `to` range
       const lastDayOf2023 = Time.createTimestamp({ year: 2023, month: 12, day: 31 });
-      let eventsQuery3 = await TestDataGenerator.generateEventsQuery({
+      let fromLastDay2022ToLastDay2023 = await TestDataGenerator.generateEventsQuery({
         author  : alice,
         filters : [{ dateCreated: { from: lastDayOf2022, to: lastDayOf2023 } }],
       });
-      let reply3 = await dwn.processMessage(alice.did, eventsQuery3.message);
-      expect(reply3.status.code).to.equal(200);
-      expect(reply3.entries?.length).to.equal(1);
-      expect(reply3.entries![0]).to.equal(await Message.getCid(write3.message!));
+      let fromLastDayOf2022ToLastDay2023Reply = await dwn.processMessage(alice.did, fromLastDay2022ToLastDay2023.message);
+      expect(fromLastDayOf2022ToLastDay2023Reply.status.code).to.equal(200);
+      expect(fromLastDayOf2022ToLastDay2023Reply.entries?.length).to.equal(1);
+      expect(fromLastDayOf2022ToLastDay2023Reply.entries![0]).to.equal(await Message.getCid(write3.message!));
 
-      // using the cursor of the only message, should not return any results
-      eventsQuery3 = await TestDataGenerator.generateEventsQuery({
-        cursor  : reply3.entries![0],
+      // testing edge case where value equals `from` and `to`
+      let fromFirstDay2022ToFirstDay2023 = await TestDataGenerator.generateEventsQuery({
+        author  : alice,
+        filters : [{ dateCreated: { from: firstDayOf2022, to: firstDayOf2023 } }],
+      });
+      let fromFirstDay2022ToFirstDay2023Reply = await dwn.processMessage(alice.did, fromFirstDay2022ToFirstDay2023.message);
+      expect(fromFirstDay2022ToFirstDay2023Reply.status.code).to.equal(200);
+      expect(fromFirstDay2022ToFirstDay2023Reply.entries?.length).to.equal(1);
+      expect(fromFirstDay2022ToFirstDay2023Reply.entries![0]).to.equal(await Message.getCid(write2.message!));
+
+      // add an additional records to match against the previous queries
+      const write5 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: lastDayOf2022, messageTimestamp: lastDayOf2022 });
+      const writeReply5 = await dwn.processMessage(alice.did, write5.message, write5.dataStream);
+      expect(writeReply5.status.code).to.equal(202);
+      const write6 = await TestDataGenerator.generateRecordsWrite({ author: alice, dateCreated: firstDayOf2021, messageTimestamp: firstDayOf2021 });
+      const writeReply6 = await dwn.processMessage(alice.did, write6.message, write6.dataStream);
+      expect(writeReply6.status.code).to.equal(202);
+
+      fromLastDayOf2021 = await TestDataGenerator.generateEventsQuery({
+        author  : alice,
+        filters : [{ dateCreated: { from: lastDayOf2021 } }],
+        cursor  : fromLastDayOf2021Reply.cursor
+      });
+      fromLastDayOf2021Reply = await dwn.processMessage(alice.did, fromLastDayOf2021.message);
+      expect(fromLastDayOf2021Reply.status.code).to.equal(200);
+      expect(fromLastDayOf2021Reply.entries?.length).to.equal(1);
+      expect(fromLastDayOf2021Reply.entries![0]).to.equal(await Message.getCid(write5.message!));
+
+      toLastDayOf2022 = await TestDataGenerator.generateEventsQuery({
+        author  : alice,
+        filters : [{ dateCreated: { to: lastDayOf2022 } }],
+        cursor  : toLastDayOf2022Reply.cursor,
+      });
+      toLastDayOf2022Reply = await dwn.processMessage(alice.did, toLastDayOf2022.message);
+      expect(toLastDayOf2022Reply.status.code).to.equal(200);
+      expect(toLastDayOf2022Reply.entries?.length).to.equal(1);
+      expect(toLastDayOf2022Reply.entries![0]).to.equal(await Message.getCid(write6.message!));
+
+      fromLastDay2022ToLastDay2023 = await TestDataGenerator.generateEventsQuery({
         author  : alice,
         filters : [{ dateCreated: { from: lastDayOf2022, to: lastDayOf2023 } }],
+        cursor  : fromLastDayOf2022ToLastDay2023Reply.cursor,
       });
-      reply3 = await dwn.processMessage(alice.did, eventsQuery3.message);
-      expect(reply3.status.code).to.equal(200);
-      expect(reply3.entries?.length).to.equal(0);
+      fromLastDayOf2022ToLastDay2023Reply = await dwn.processMessage(alice.did, fromLastDay2022ToLastDay2023.message);
+      expect(fromLastDayOf2022ToLastDay2023Reply.status.code).to.equal(200);
+      expect(fromLastDayOf2022ToLastDay2023Reply.entries?.length).to.equal(1);
+      expect(fromLastDayOf2021Reply.entries![0]).to.equal(await Message.getCid(write5.message!));
 
       // testing edge case where value equals `from` and `to`
-      let eventsQuery4 = await TestDataGenerator.generateEventsQuery({
+      fromFirstDay2022ToFirstDay2023 = await TestDataGenerator.generateEventsQuery({
         author  : alice,
         filters : [{ dateCreated: { from: firstDayOf2022, to: firstDayOf2023 } }],
+        cursor  : fromFirstDay2022ToFirstDay2023Reply.cursor,
       });
-      let reply4 = await dwn.processMessage(alice.did, eventsQuery4.message);
-      expect(reply4.status.code).to.equal(200);
-      expect(reply4.entries?.length).to.equal(1);
-      expect(reply4.entries![0]).to.equal(await Message.getCid(write2.message!));
-
-      // testing edge case where value equals `from` and `to`
-      eventsQuery4 = await TestDataGenerator.generateEventsQuery({
-        cursor  : reply4.entries![0],
-        author  : alice,
-        filters : [{ dateCreated: { from: firstDayOf2022, to: firstDayOf2023 } }],
-      });
-      reply4 = await dwn.processMessage(alice.did, eventsQuery4.message);
-      expect(reply4.status.code).to.equal(200);
-      expect(reply4.entries?.length).to.equal(0);
+      fromFirstDay2022ToFirstDay2023Reply = await dwn.processMessage(alice.did, fromFirstDay2022ToFirstDay2023.message);
+      expect(fromFirstDay2022ToFirstDay2023Reply.status.code).to.equal(200);
+      expect(fromFirstDay2022ToFirstDay2023Reply.entries?.length).to.equal(1);
+      expect(fromLastDayOf2021Reply.entries![0]).to.equal(await Message.getCid(write5.message!));
     });
 
-    xit('filters by a protocol across different message types', async () => {
+    it('filters by a protocol across different message types', async () => {
       // scenario:
       //    alice creates (3) different message types all related to "proto1" (Configure, RecordsWrite, RecordsDelete)
       //    alice creates (3) different message types all related to "proto2" (Configure, RecordsWrite, RecordsDelete)
@@ -467,10 +473,6 @@ export function testEventsQueryScenarios(): void {
       expect(proto2EventsReply.entries![0]).to.equal(await Message.getCid(protoConf2.message));
       expect(proto2EventsReply.entries![1]).to.equal(await Message.getCid(write1proto2.message));
 
-      // get cursor of the last event and add more events to query afterwards
-      const proto1Cursor = proto1EventsReply.entries![1];
-      const proto2Cursor = proto2EventsReply.entries![1];
-
       // delete proto1 message
       const deleteProto1Message = await TestDataGenerator.generateRecordsDelete({ author: alice, recordId: write1proto1.message.recordId });
       const deleteProto1MessageReply = await dwn.processMessage(alice.did, deleteProto1Message.message);
@@ -483,9 +485,9 @@ export function testEventsQueryScenarios(): void {
 
       //query messages beyond the cursor
       proto1EventsQuery = await TestDataGenerator.generateEventsQuery({
-        cursor  : proto1Cursor,
         author  : alice,
         filters : [{ protocol: proto1 }],
+        cursor  : proto1EventsReply.cursor,
       });
       proto1EventsReply = await dwn.processMessage(alice.did, proto1EventsQuery.message);
       expect(proto1EventsReply.status.code).equals(200);
@@ -494,9 +496,9 @@ export function testEventsQueryScenarios(): void {
 
       //query messages beyond the cursor
       proto2EventsQuery = await TestDataGenerator.generateEventsQuery({
-        cursor  : proto2Cursor,
         author  : alice,
         filters : [{ protocol: proto2 }],
+        cursor  : proto2EventsReply.cursor,
       });
       proto2EventsReply = await dwn.processMessage(alice.did, proto2EventsQuery.message);
       expect(proto2EventsReply.status.code).equals(200);
@@ -504,7 +506,7 @@ export function testEventsQueryScenarios(): void {
       expect(proto2EventsReply.entries![0]).to.equal(await Message.getCid(deleteProto2Message.message));
     });
 
-    xit('filters by protocol, protocolPath & parentId', async () => {
+    it('filters by protocol, protocolPath & parentId', async () => {
       // scenario: get all messages across a protocol & protocolPath combo
       //    alice installs a protocol and creates a thread
       //    alice adds bob and carol as participants
@@ -607,30 +609,59 @@ export function testEventsQueryScenarios(): void {
       expect(threadQueryReply.entries![0]).to.equal(await Message.getCid(thread.message));
 
       // query for participants
-      const participantsQuery = await TestDataGenerator.generateEventsQuery({
+      let participantsQuery = await TestDataGenerator.generateEventsQuery({
         author  : alice,
         filters : [{ protocol: protocol, protocolPath: 'thread/participant', parentId: thread.message.recordId }],
       });
-      const participantsQueryReply = await dwn.processMessage(alice.did, participantsQuery.message);
+      let participantsQueryReply = await dwn.processMessage(alice.did, participantsQuery.message);
       expect(participantsQueryReply.status.code).to.equal(200);
       expect(participantsQueryReply.entries?.length).to.equal(2);
       expect(participantsQueryReply.entries![0]).to.equal(await Message.getCid(bobParticipant.message));
       expect(participantsQueryReply.entries![1]).to.equal(await Message.getCid(carolParticipant.message));
 
       // query for chats
-      const chatQuery = await TestDataGenerator.generateEventsQuery({
+      let chatQuery = await TestDataGenerator.generateEventsQuery({
         author  : alice,
         filters : [{ protocol: protocol, protocolPath: 'thread/chat', parentId: thread.message.recordId }],
       });
-      const chatQueryReply = await dwn.processMessage(alice.did, chatQuery.message);
+      let chatQueryReply = await dwn.processMessage(alice.did, chatQuery.message);
       expect(chatQueryReply.status.code).to.equal(200);
       expect(chatQueryReply.entries?.length).to.equal(3);
       expect(chatQueryReply.entries![0]).to.equal(await Message.getCid(message1.message));
       expect(chatQueryReply.entries![1]).to.equal(await Message.getCid(message2.message));
       expect(chatQueryReply.entries![2]).to.equal(await Message.getCid(message3.message));
+
+      // delete carol participant
+      const deleteCarol = await TestDataGenerator.generateRecordsDelete({
+        author   : alice,
+        recordId : carolParticipant.message.recordId
+      });
+      const deleteCarolReply = await dwn.processMessage(alice.did, deleteCarol.message);
+      expect(deleteCarolReply.status.code).to.equal(202);
+
+      // query for participants past the cursor
+      participantsQuery = await TestDataGenerator.generateEventsQuery({
+        author  : alice,
+        filters : [{ protocol: protocol, protocolPath: 'thread/participant', parentId: thread.message.recordId }],
+        cursor  : participantsQueryReply.cursor
+      });
+      participantsQueryReply = await dwn.processMessage(alice.did, participantsQuery.message);
+      expect(participantsQueryReply.status.code).to.equal(200);
+      expect(participantsQueryReply.entries?.length).to.equal(1);
+      expect(participantsQueryReply.entries![0]).to.equal(await Message.getCid(deleteCarol.message));
+
+      // query for chats beyond the cursor as a control, should have none.
+      chatQuery = await TestDataGenerator.generateEventsQuery({
+        author  : alice,
+        filters : [{ protocol: protocol, protocolPath: 'thread/chat', parentId: thread.message.recordId }],
+        cursor  : chatQueryReply.cursor
+      });
+      chatQueryReply = await dwn.processMessage(alice.did, chatQuery.message);
+      expect(chatQueryReply.status.code).to.equal(200);
+      expect(chatQueryReply.entries?.length).to.equal(0);
     });
 
-    xit('filters by recipient', async () => {
+    it('filters by recipient', async () => {
       // scenario: alice installs a free-for-all protocol and makes posts with both bob and carol as recipients
       // carol and bob also make posts with alice as a recipient
       // alice queries for events meant for specific recipients
@@ -724,7 +755,7 @@ export function testEventsQueryScenarios(): void {
       authorQuery = await TestDataGenerator.generateEventsQuery({
         author  : alice,
         filters : [{ recipient: bob.did }],
-        cursor  : authorQueryReply.entries![0]
+        cursor  : authorQueryReply.cursor,
       });
 
       authorQueryReply = await dwn.processMessage(alice.did, authorQuery.message);
@@ -733,7 +764,7 @@ export function testEventsQueryScenarios(): void {
       expect(authorQueryReply.entries![0]).to.equal(await Message.getCid(messageFromAliceToBob2.message));
     });
 
-    xit('filters by schema', async () => {
+    it('filters by schema', async () => {
       const alice = await DidKeyResolver.generate();
 
       const schema1Message1 = await TestDataGenerator.generateRecordsWrite({
@@ -786,7 +817,7 @@ export function testEventsQueryScenarios(): void {
       schema1Query = await TestDataGenerator.generateEventsQuery({
         author  : alice,
         filters : [{ schema: 'schema1' }],
-        cursor  : schema1QueryReply.entries![0]
+        cursor  : schema1QueryReply.cursor,
       });
       schema1QueryReply = await dwn.processMessage(alice.did, schema1Query.message);
       expect(schema1QueryReply.status.code).to.equal(200);
@@ -796,14 +827,14 @@ export function testEventsQueryScenarios(): void {
       schema2Query = await TestDataGenerator.generateEventsQuery({
         author  : alice,
         filters : [{ schema: 'schema2' }],
-        cursor  : schema2QueryReply.entries![1]
+        cursor  : schema2QueryReply.cursor,
       });
       schema2QueryReply = await dwn.processMessage(alice.did, schema2Query.message);
       expect(schema2QueryReply.status.code).to.equal(200);
       expect(schema2QueryReply.entries?.length).to.equal(0);
     });
 
-    xit('filters by recordId', async () => {
+    it('filters by recordId', async () => {
       const alice = await DidKeyResolver.generate();
 
       // a write as a control, will not show up in query
@@ -848,7 +879,7 @@ export function testEventsQueryScenarios(): void {
       recordQuery = await TestDataGenerator.generateEventsQuery({
         author  : alice,
         filters : [{ recordId: write.message.recordId }],
-        cursor  : recordQueryReply.entries![1]
+        cursor  : recordQueryReply.cursor,
       });
       recordQueryReply = await dwn.processMessage(alice.did, recordQuery.message);
       expect(recordQueryReply.status.code).to.equal(200);
@@ -856,7 +887,7 @@ export function testEventsQueryScenarios(): void {
       expect(recordQueryReply.entries![0]).to.equal(await Message.getCid(deleteRecord.message));
     });
 
-    xit('filters by dataFormat', async () => {
+    it('filters by dataFormat', async () => {
       // scenario: alice stores different file types and needs events relating to `image/jpeg`
       //  alice creates 3 files, one of them `image/jpeg`
       //  alice queries for `image/jpeg` retrieving the one message
@@ -910,7 +941,7 @@ export function testEventsQueryScenarios(): void {
         filters : [{
           dataFormat: 'image/jpeg'
         }],
-        cursor: imageQueryReply.entries![0]
+        cursor: imageQueryReply.cursor,
       });
       imageQueryReply = await dwn.processMessage(alice.did, imageQuery.message);
       expect(imageQueryReply.status.code).to.equal(200);
@@ -918,7 +949,7 @@ export function testEventsQueryScenarios(): void {
       expect(imageQueryReply.entries![0]).to.equal(await Message.getCid(imageData2.message));
     });;
 
-    xit('filters by dataSize', async () => {
+    it('filters by dataSize', async () => {
       // scenario:
       //    alice inserts both small and large data
       //    alice requests events for messages with data size under a threshold
@@ -968,7 +999,7 @@ export function testEventsQueryScenarios(): void {
         filters : [{
           dataSize: { gte: DwnConstant.maxDataSizeAllowedToBeEncoded + 1 }
         }],
-        cursor: largeSizeQueryReply.entries![0]
+        cursor: largeSizeQueryReply.cursor,
       });
       largeSizeQueryReply = await dwn.processMessage(alice.did, largeSizeQuery.message);
       expect(largeSizeQueryReply.status.code).to.equal(200);
@@ -976,7 +1007,7 @@ export function testEventsQueryScenarios(): void {
       expect(largeSizeQueryReply.entries![0]).to.equal(await Message.getCid(largeSize2.message));
     });
 
-    xit('filters by contextId', async () => {
+    it('filters by contextId', async () => {
       // scenario:
       //    alice configures a chat protocols and creates 2 chat threads
       //    alice invites bob as participant in thread1 and carol in thread2
@@ -1120,7 +1151,7 @@ export function testEventsQueryScenarios(): void {
           protocol  : protocol,
           contextId : thread1.message.contextId,
         }],
-        cursor: threadContextQueryReply.entries![3]
+        cursor: threadContextQueryReply.cursor,
       });
       threadContextQueryReply = await dwn.processMessage(alice.did, threadContextQuery.message);
       expect(threadContextQueryReply.status.code).to.equal(200);
