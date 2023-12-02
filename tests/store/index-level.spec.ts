@@ -1082,27 +1082,6 @@ describe('IndexLevel', () => {
     });
   });
 
-  describe('decodeValue', () => {
-    it('should decode JSON string (wrapped in quotes)', async () => {
-      expect(IndexLevel.decodeValue(`"test"`)).to.equal('test');
-      expect(IndexLevel.decodeValue(JSON.stringify('test'))).to.equal('test');
-    });
-
-    it('should decode number that was encoded using encodeNumberValue()', async () => {
-      expect(IndexLevel.decodeValue(IndexLevel.encodeNumberValue(100))).to.equal(100); // positive
-      expect(IndexLevel.decodeValue(IndexLevel.encodeNumberValue(-100))).to.equal(-100); // negative
-    });
-
-    it('should return stringified boolean', () => {
-      expect(IndexLevel.decodeValue('true')).to.equal(true);
-      expect(IndexLevel.decodeValue('false')).to.equal(false);
-
-      // negative test against string representation
-      expect(IndexLevel.decodeValue(JSON.stringify('true'))).to.equal('true');
-      expect(IndexLevel.decodeValue(JSON.stringify('false'))).to.equal('false');
-    });
-  });
-
   describe('encodeNumberValue', () => {
     it('should encode positive digits and pad with leading zeros', () => {
       const expectedLength = String(Number.MAX_SAFE_INTEGER).length; //16
@@ -1127,20 +1106,6 @@ describe('IndexLevel', () => {
         .sort((a,b) => lexicographicalCompare(a, b));
 
       digits.forEach((n,i) => expect(encodedDigits.at(i)).to.equal(IndexLevel.encodeNumberValue(n)));
-    });
-  });
-
-  describe('decodeNumberValue', () => {
-    it('should decode to positive digits', () => {
-      const inputTest = '0000000000000100';
-      const decoded = IndexLevel.decodeToNumberValue(inputTest);
-      expect(decoded).to.equal(100);
-    });
-
-    it('should decode to negative digits', () => {
-      const inputTest = '!9007199254740891';
-      const decoded = IndexLevel.decodeToNumberValue(inputTest);
-      expect(decoded).to.equal(-100);
     });
   });
 
