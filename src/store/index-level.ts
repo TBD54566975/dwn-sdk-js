@@ -330,7 +330,7 @@ export class IndexLevel {
     queryOptions: QueryOptions,
     options?: IndexLevelOptions
   ): Promise<PaginatedEntries<string>> {
-    const { sortProperty, sortDirection = SortDirection.Ascending, cursor: queryCursor } = queryOptions;
+    const { sortProperty, sortDirection = SortDirection.Ascending, cursor, limit, strictCursor } = queryOptions;
     // we create a matches map so that we can short-circuit matched items within the async single query below.
     const matches:Map<string, IndexedItem> = new Map();
 
@@ -351,42 +351,24 @@ export class IndexLevel {
       }
     }
 
-    // insert a simulated cursor to matches
-    const incomingCursorData = queryCursor ? IndexLevel.decodeCursor(queryCursor) : undefined;
-    if (incomingCursorData && incomingCursorData.sortProperty !== sortProperty) {
-      throw new Error('invalid sort property in memory');
-    }
-
-    let queryCursorId = incomingCursorData?.itemId;
-    if (incomingCursorData && !matches.has(incomingCursorData.itemId)) {
-      const { sortValue, itemId } = incomingCursorData;
-      queryCursorId = itemId;
-      // the cursor item is not a part of the matched set, this could be because it was deleted
-      // insert a representative item to be sorted and later iterated from
-      const indexes:KeyValues = {};
-      indexes[sortProperty] = sortValue;
-      matches.set(itemId, { indexes, itemId });
-    }
-
     const sortedValues = [...matches.values()].sort((a,b) => this.sortItems(a,b, sortProperty, sortDirection));
 
-    const queryCursorIndex = queryCursorId ? sortedValues.findIndex(match => match.itemId === queryCursorId) : -1;
-    if (queryCursor !== undefined && queryCursorIndex === -1) {
-      // if a cursor is provided but we cannot find it, we return an empty result set
-      throw new Error('invalid cursor in memory');
+    const start = this.findStartingIndex(sortedValues, sortDirection, cursor);
+    if (start < 0) {
+      throw new Error('invalid starting cursor in memory');
     }
 
-    // we find the cursor point and only return the result starting there + the limit.
-    // if there is no cursor index, we just start in the beginning.
-    const start = queryCursorIndex > -1 ? queryCursorIndex + 1 : 0;
-    const end = queryOptions.limit !== undefined ? start + queryOptions.limit : undefined;
-    const resultSet = sortedValues.slice(start, end);
-    const cursorItem = resultSet.at(-1);
-    const cursorKey = cursorItem ? IndexLevel.encodeCursorFromItem(cursorItem, sortProperty) : undefined;
-    const hasMoreRecords = end !== undefined && end < sortedValues.length;
-    const cursor = queryOptions.strictCursor === true && !hasMoreRecords ? undefined : cursorKey;
+    const end = limit !== undefined ? start + limit: undefined;
+    const paginatedSet = sortedValues.slice(start, end);
+    const hasMoreRecords = limit !== undefined && start + limit < sortedValues.length;
 
-    return { entries: resultSet.map(match => match.itemId), cursor };
+    const lastItem = paginatedSet.at(-1);
+    const cursorKey = lastItem ? IndexLevel.encodeCursorFromItem(lastItem, sortProperty) : undefined;
+
+    return {
+      entries : paginatedSet.map(({ itemId }) => itemId),
+      cursor  : strictCursor === true && !hasMoreRecords ? undefined : cursorKey
+    };
   }
 
   /**
@@ -546,6 +528,27 @@ export class IndexLevel {
     return direction === SortDirection.Ascending ?
       lexicographicalCompare(aValue, bValue) :
       lexicographicalCompare(bValue, aValue);
+  }
+
+  private findStartingIndex(items: IndexedItem[], sortDirection: SortDirection, cursor?: string): number {
+    if (cursor === undefined) {
+      return 0;
+    }
+
+    const { itemId: cursorItemId, sortValue: cursorSortValue, sortProperty } = IndexLevel.decodeCursor(cursor);
+    const cursorCompareValue = IndexLevel.encodeValue(cursorSortValue) + cursorItemId;
+
+    const compareItem = (item: IndexedItem): boolean => {
+      const { itemId, indexes } = item;
+      const sortValue = indexes[sortProperty];
+      const itemCompareValue = IndexLevel.encodeValue(sortValue) + itemId;
+
+      return sortDirection === SortDirection.Ascending ?
+        itemCompareValue > cursorCompareValue :
+        itemCompareValue < cursorCompareValue;
+    };
+
+    return items.findIndex(compareItem);
   }
 
   /**
