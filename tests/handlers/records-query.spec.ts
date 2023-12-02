@@ -1641,7 +1641,7 @@ export function testRecordsQueryHandler(): void {
         let results = await dwn.processMessage(alice.did, aliceQueryMessageDataPage1.message) ;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'alice page 1');
-        expect(results.cursor).to.not.be.undefined;
+        expect(results.cursor, 'alice page 1 cursor').to.not.be.undefined;
         aliceRetrieved.push(...results.entries!);
 
         // page2 alice
@@ -1654,7 +1654,7 @@ export function testRecordsQueryHandler(): void {
         results = await dwn.processMessage(alice.did, aliceQueryMessageDataPage2.message) ;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'alice page 2');
-        expect(results.cursor).to.not.be.undefined;
+        expect(results.cursor, 'alice page 2 cursor').to.not.be.undefined;
         aliceRetrieved.push(...results.entries!);
 
         // page3 alice
@@ -1667,7 +1667,7 @@ export function testRecordsQueryHandler(): void {
         results = await dwn.processMessage(alice.did, aliceQueryMessageDataPage3.message) ;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(5, 'alice page 3');
-        expect(results.cursor).to.not.exist;
+        expect(results.cursor, 'alice page 3 cursor').to.not.exist;
         aliceRetrieved.push(...results.entries!);
 
         const compareRecordId = (a: GenericMessage, b:GenericMessage): boolean => {
@@ -1694,7 +1694,7 @@ export function testRecordsQueryHandler(): void {
         results = await dwn.processMessage(alice.did, bobQueryMessagePage1.message) ;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'bob page 1');
-        expect(results.cursor).to.not.be.undefined;
+        expect(results.cursor, 'bob page 1 cursor').to.not.be.undefined;
         bobRetrieved.push(...results.entries!);
 
         const bobQueryMessagePage2 = await TestDataGenerator.generateRecordsQuery({
@@ -1706,7 +1706,7 @@ export function testRecordsQueryHandler(): void {
         results = await dwn.processMessage(alice.did, bobQueryMessagePage2.message) ;
         expect(results.status.code).to.equal(200);
         expect(results.entries?.length).to.equal(10, 'bob page 2');
-        expect(results.cursor).to.not.exist;
+        expect(results.cursor, 'bob page 2 cursor').to.not.exist;
         bobRetrieved.push(...results.entries!);
 
         expect(bobSorted.every((m, i) => compareRecordId(bobRetrieved.at(i)!, m)));

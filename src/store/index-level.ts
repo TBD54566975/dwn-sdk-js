@@ -216,11 +216,7 @@ export class IndexLevel {
     const { cursor , sortProperty, strictCursor } = queryOptions;
 
     // if there is a cursor we fetch the starting key given the sort property, otherwise we start from the beginning of the index.
-    const startKey = cursor ? await this.getStartingKeyForCursor(cursor, sortProperty) : '';
-    if (startKey === undefined) {
-      // getStartingKeyForCursor returns undefined if an invalid cursor is provided, we return an empty result set.
-      return { entries: [] };
-    }
+    const startKey = cursor ? this.getStartingKeyForCursor(cursor, sortProperty) : '';
 
     const matches: string[] = [];
     let cursorKey: string | undefined;
@@ -233,7 +229,7 @@ export class IndexLevel {
       const { itemId, indexes } = item;
       if (FilterUtility.matchAnyFilter(indexes, filters)) {
         matches.push(itemId);
-        cursorKey = this.constructCursorFromItem(item, sortProperty);
+        cursorKey = IndexLevel.encodeCursorFromItem(item, sortProperty);
       }
     }
 
@@ -277,15 +273,8 @@ export class IndexLevel {
    * Gets the starting point for a LevelDB query given an itemId as a cursor and the indexed property.
    * Used as (gt) for ascending queries, or (lt) for descending queries.
    */
-  private async getStartingKeyForCursor(cursor: string, sortProperty: string): Promise<string|undefined> {
-    const [ property, sortValue, itemId ] = cursor.split(IndexLevel.delimiter);
-    if (property === undefined || sortValue === undefined || itemId === undefined) {
-      throw new DwnError(
-        DwnErrorCode.IndexInvalidCursorFormat,
-        `The cursor provided ${cursor}, is invalid.`,
-      );
-    }
-
+  private getStartingKeyForCursor(cursor: string, sortProperty: string): string {
+    const { itemId, sortValue, sortProperty: property } = IndexLevel.decodeCursor(cursor);
     if (property !== sortProperty) {
       throw new DwnError(
         DwnErrorCode.IndexMismatchedCursorProperty,
@@ -293,17 +282,38 @@ export class IndexLevel {
       );
     }
 
-    return IndexLevel.keySegmentJoin(sortValue, itemId);
+    return IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue) , itemId);
   }
 
-  private constructCursorFromItem(item: IndexedItem, sortProperty: string): string | undefined {
-    const { indexes, itemId } = item;
-    const sortPropertyValue = indexes[sortProperty];
-    if (sortPropertyValue === undefined) {
-      return;
+  private static encodeCursorFromItem(item: IndexedItem, sortProperty: string): string | undefined {
+    const { itemId, indexes } = item;
+    const sortValue = indexes[sortProperty];
+    if (sortValue !== undefined) {
+      return this.encodeCursor(itemId, sortValue, sortProperty);
     }
+  }
 
-    return IndexLevel.keySegmentJoin(sortProperty, IndexLevel.encodeValue(sortPropertyValue), itemId);
+  public static encodeCursor(itemId: string, sortValue: string | number | boolean, sortProperty: string): string {
+    return IndexLevel.keySegmentJoin(sortProperty, JSON.stringify(sortValue), itemId);
+  }
+
+  public static decodeCursor(cursor: string):{ itemId: string, sortValue: string | number | boolean, sortProperty: string } {
+    const [ sortProperty, cursorSortValue, itemId ] = cursor.split(this.delimiter);
+    if (sortProperty === undefined || sortProperty === undefined || itemId === undefined) {
+      throw new DwnError(
+        DwnErrorCode.IndexInvalidCursorFormat,
+        `The cursor provided ${cursor}, is invalid.`,
+      );
+    }
+    const sortValue = JSON.parse(cursorSortValue);
+    switch (typeof sortValue) {
+    case 'boolean':
+    case 'number':
+    case 'string':
+      return { itemId, sortProperty, sortValue };
+    default:
+      throw new Error('unknown sort value type');
+    }
   }
 
   /**
@@ -320,7 +330,7 @@ export class IndexLevel {
     queryOptions: QueryOptions,
     options?: IndexLevelOptions
   ): Promise<PaginatedEntries<string>> {
-    const { sortProperty, sortDirection = SortDirection.Ascending, cursor } = queryOptions;
+    const { sortProperty, sortDirection = SortDirection.Ascending, cursor: queryCursor } = queryOptions;
     // we create a matches map so that we can short-circuit matched items within the async single query below.
     const matches:Map<string, IndexedItem> = new Map();
 
@@ -342,46 +352,41 @@ export class IndexLevel {
     }
 
     // insert a simulated cursor to matches
-    let cursorItemId:string | undefined;
-    if (cursor !== undefined) {
-      const [ property, sortValue, itemId ] = cursor.split(IndexLevel.delimiter);
-      if (property === undefined || sortValue === undefined || itemId === undefined) {
-        throw new Error('invalid cursor in memory');
-      }
-      cursorItemId = itemId;
-      if (!matches.has(itemId)) {
-        if (property !== sortProperty) {
-          throw new Error('invalid sort property in memory');
-        }
-        const decodedValue = IndexLevel.decodeValue(sortValue);
-        if (decodedValue !== undefined) {
-          const indexes:KeyValues = {};
-          indexes[sortProperty] = decodedValue;
-          matches.set(itemId, { itemId, indexes });
-        } else {
-          throw new Error('invalid sort value');
-        }
-      }
+    const incomingCursorData = queryCursor ? IndexLevel.decodeCursor(queryCursor) : undefined;
+    if (incomingCursorData && incomingCursorData.sortProperty !== sortProperty) {
+      throw new Error('invalid sort property in memory');
+    }
+
+    let queryCursorId = incomingCursorData?.itemId;
+    if (incomingCursorData && !matches.has(incomingCursorData.itemId)) {
+      const { sortValue, itemId } = incomingCursorData;
+      queryCursorId = itemId;
+      // the cursor item is not a part of the matched set, this could be because it was deleted
+      // insert a representative item to be sorted and later iterated from
+      const indexes:KeyValues = {};
+      indexes[sortProperty] = sortValue;
+      matches.set(itemId, { indexes, itemId });
     }
 
     const sortedValues = [...matches.values()].sort((a,b) => this.sortItems(a,b, sortProperty, sortDirection));
 
-    // we find the cursor point and only return the result starting there + the limit.
-    // if there is no cursor index, we just start in the beginning.
-    const cursorIndex = cursorItemId ? sortedValues.findIndex(match => match.itemId === cursorItemId) : -1;
-    if (cursor !== undefined && cursorIndex === -1) {
+    const queryCursorIndex = queryCursorId ? sortedValues.findIndex(match => match.itemId === queryCursorId) : -1;
+    if (queryCursor !== undefined && queryCursorIndex === -1) {
       // if a cursor is provided but we cannot find it, we return an empty result set
-      return { entries: [] };
+      throw new Error('invalid cursor in memory');
     }
 
-    const start = cursorIndex > -1 ? cursorIndex + 1 : 0;
+    // we find the cursor point and only return the result starting there + the limit.
+    // if there is no cursor index, we just start in the beginning.
+    const start = queryCursorIndex > -1 ? queryCursorIndex + 1 : 0;
     const end = queryOptions.limit !== undefined ? start + queryOptions.limit : undefined;
     const resultSet = sortedValues.slice(start, end);
-    const hasMoreRecords = end !== undefined && end < sortedValues.length;
     const cursorItem = resultSet.at(-1);
-    const cursorKey = cursorItem ? this.constructCursorFromItem(cursorItem, sortProperty) : undefined;
+    const cursorKey = cursorItem ? IndexLevel.encodeCursorFromItem(cursorItem, sortProperty) : undefined;
+    const hasMoreRecords = end !== undefined && end < sortedValues.length;
+    const cursor = queryOptions.strictCursor === true && !hasMoreRecords ? undefined : cursorKey;
 
-    return { entries: resultSet.map(match => match.itemId), cursor: queryOptions.strictCursor === true && !hasMoreRecords ? undefined : cursorKey };
+    return { entries: resultSet.map(match => match.itemId), cursor };
   }
 
   /**
@@ -511,7 +516,7 @@ export class IndexLevel {
 
     for await (const [ key, value ] of filterPartition.iterator(iteratorOptions, options)) {
       // if "greater-than" is specified, skip all keys that contains the exact value given in the "greater-than" condition
-      if ('gt' in rangeFilter && this.extractIndexValueFromKey(key) === IndexLevel.encodeValue(rangeFilter.gt!)) {
+      if ('gt' in rangeFilter && IndexLevel.extractIndexValueFromKey(key) === IndexLevel.encodeValue(rangeFilter.gt!)) {
         continue;
       }
       matches.push(JSON.parse(value) as IndexedItem);
@@ -563,7 +568,7 @@ export class IndexLevel {
    *    key: '"2023-05-25T11:22:33.000000Z"\u0000bayfreigu....'
    *    returns "2023-05-25T11:22:33.000000Z"
    */
-  private extractIndexValueFromKey(key: string): string {
+  private static extractIndexValueFromKey(key: string): string {
     const [value] = key.split(IndexLevel.delimiter);
     return value;
   }
@@ -595,26 +600,6 @@ export class IndexLevel {
     return prefix + String(value + offset).padStart(PADDING_LENGTH, '0');
   }
 
-
-  static decodeToNumberValue(input: string): number | undefined {
-    // check if the first character is a NEGATIVE_PREFIX
-    if (input.at(0) === '!') {
-      // remove the negative number indicator
-      input = input.slice(1);
-      const inputNumberWithNegativeOffset = parseInt(input);
-      if (isNaN(inputNumberWithNegativeOffset)) {
-        return;
-      }
-      return inputNumberWithNegativeOffset - Number.MAX_SAFE_INTEGER;
-    }
-    const inputNumber = parseInt(input);
-    if (isNaN(inputNumber)) {
-      return;
-    }
-
-    return inputNumber;
-  }
-
   /**
    * Encodes an indexed value to a string
    *
@@ -629,26 +614,7 @@ export class IndexLevel {
     }
   }
 
-  static decodeValue(input: string): string | number | boolean | undefined {
-    // try number first
-    const number = this.decodeToNumberValue(input);
-    if (number) {
-      return number;
-    }
-
-    const decoded = JSON.parse(input);
-    if (typeof decoded === 'boolean') {
-      return decoded;
-    } else if (typeof decoded === 'string') {
-      return decoded;
-    }
-  }
-
   private static shouldQueryWithInMemoryPaging(filters: Filter[], queryOptions: QueryOptions): boolean {
-    // if (filters.length === 0) {
-    //   return false;
-    // }
-
     for (const filter of filters) {
       if (!IndexLevel.isFilterConcise(filter, queryOptions)) {
         return false;
@@ -658,7 +624,6 @@ export class IndexLevel {
     // only use in-memory paging if all filters are concise
     return true;
   }
-
 
   public static isFilterConcise(filter: Filter, queryOptions: QueryOptions): boolean {
     // if there is a specific recordId in the filter, return true immediately.
