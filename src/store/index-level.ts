@@ -227,7 +227,7 @@ export class IndexLevel {
     for await ( const item of this.getIndexIterator(tenant, startKey, queryOptions, options)) {
       if (queryOptions.limit !== undefined && queryOptions.limit === matches.length) {
         // if we've made it here there are additional items beyond the provided limit
-        // if strictCursor is set we return here along with the cursor.
+        // whether or not strictCursor is set we always return a cursor when there are more results.
         return { entries: matches, cursor: cursorKey };
       }
       const { itemId, indexes } = item;
@@ -321,7 +321,6 @@ export class IndexLevel {
     options?: IndexLevelOptions
   ): Promise<PaginatedEntries<string>> {
     const { sortProperty, sortDirection = SortDirection.Ascending, cursor } = queryOptions;
-
     // we create a matches map so that we can short-circuit matched items within the async single query below.
     const matches:Map<string, IndexedItem> = new Map();
 
@@ -343,16 +342,17 @@ export class IndexLevel {
     }
 
     // insert a simulated cursor to matches
+    let cursorItemId:string | undefined;
     if (cursor !== undefined) {
       const [ property, sortValue, itemId ] = cursor.split(IndexLevel.delimiter);
       if (property === undefined || sortValue === undefined || itemId === undefined) {
         throw new Error('invalid cursor in memory');
       }
+      cursorItemId = itemId;
       if (!matches.has(itemId)) {
         if (property !== sortProperty) {
           throw new Error('invalid sort property in memory');
         }
-
         const decodedValue = IndexLevel.decodeValue(sortValue);
         if (decodedValue !== undefined) {
           const indexes:KeyValues = {};
@@ -368,7 +368,7 @@ export class IndexLevel {
 
     // we find the cursor point and only return the result starting there + the limit.
     // if there is no cursor index, we just start in the beginning.
-    const cursorIndex = cursor ? sortedValues.findIndex(match => match.itemId === cursor) : -1;
+    const cursorIndex = cursorItemId ? sortedValues.findIndex(match => match.itemId === cursorItemId) : -1;
     if (cursor !== undefined && cursorIndex === -1) {
       // if a cursor is provided but we cannot find it, we return an empty result set
       return { entries: [] };
@@ -645,6 +645,10 @@ export class IndexLevel {
   }
 
   private static shouldQueryWithInMemoryPaging(filters: Filter[], queryOptions: QueryOptions): boolean {
+    // if (filters.length === 0) {
+    //   return false;
+    // }
+
     for (const filter of filters) {
       if (!IndexLevel.isFilterConcise(filter, queryOptions)) {
         return false;

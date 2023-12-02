@@ -1709,8 +1709,6 @@ export function testRecordsQueryHandler(): void {
         expect(results.cursor).to.not.exist;
         bobRetrieved.push(...results.entries!);
 
-     
-
         expect(bobSorted.every((m, i) => compareRecordId(bobRetrieved.at(i)!, m)));
       });
 
