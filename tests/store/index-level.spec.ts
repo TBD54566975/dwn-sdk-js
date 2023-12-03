@@ -257,16 +257,16 @@ describe('IndexLevel', () => {
       it('cursor is valid but out of range of matched results', async () => {
         const testVals = ['b', 'd', 'c']; // a is missing
         for (const val of testVals) {
-          await testIndex.put(tenant, val, { val, schema: 'schema' });
+          await testIndex.put(tenant, `${val}-id`, { val, schema: 'schema' });
         }
 
         const filters = [{ schema: 'schema' }];
-        const cursorA = IndexLevel.encodeCursor('a', 'val', 'a'); // before results
+        const cursorA = IndexLevel.encodeCursor('a-id', 'a'); // before results
 
         const allResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: cursorA });
-        expect(allResults.entries).to.eql(['b', 'c', 'd']);
+        expect(allResults.entries).to.eql(['b-id', 'c-id', 'd-id']);
 
-        const cursorE = IndexLevel.encodeCursor('e', 'val', 'e'); // after results
+        const cursorE = IndexLevel.encodeCursor('e-id', 'e'); // after results
         const noResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: cursorE });
         expect(noResults.entries.length).to.eql(0);
         expect(noResults.cursor).to.equal(cursorE); // retains original cursor
@@ -380,12 +380,12 @@ describe('IndexLevel', () => {
         }
 
         const filters = [{ schema: 'schema' }];
-        const cursorA = IndexLevel.encodeCursor('a', 'val', 'a'); // before results
+        const cursorA = IndexLevel.encodeCursor('a', 'a'); // before results
 
         const allResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: cursorA });
         expect(allResults.entries).to.eql(['b', 'c', 'd']);
 
-        const cursorE = IndexLevel.encodeCursor('e', 'val', 'e'); // after results
+        const cursorE = IndexLevel.encodeCursor('e', 'e'); // after results
         const noResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: cursorE });
         expect(noResults.entries.length).to.eql(0);
         expect(noResults.cursor).to.equal(cursorE); // retains original cursor
@@ -1270,51 +1270,42 @@ describe('IndexLevel', () => {
 
   describe('encodeCursor', () => {
     it('encodes numbers strings and booleans', async () => {
-      let cursor = IndexLevel.encodeCursor('itemId', 'sortProperty', 123); //number
-      expect(cursor).of.equal(IndexLevel.keySegmentJoin('sortProperty', '123', 'itemId'));
+      let cursor = IndexLevel.encodeCursor('itemId', 123); //number
+      expect(cursor).of.equal(IndexLevel.keySegmentJoin('123', 'itemId'));
 
-      cursor = IndexLevel.encodeCursor('itemId', 'sortProperty', -123); //negative number
-      expect(cursor).of.equal(IndexLevel.keySegmentJoin('sortProperty', '-123', 'itemId'));
+      cursor = IndexLevel.encodeCursor('itemId', -123); //negative number
+      expect(cursor).of.equal(IndexLevel.keySegmentJoin('-123', 'itemId'));
 
-      cursor = IndexLevel.encodeCursor('itemId', 'sortProperty', 'string'); //string
-      expect(cursor).of.equal(IndexLevel.keySegmentJoin('sortProperty', '"string"', 'itemId'));
+      cursor = IndexLevel.encodeCursor('itemId', 'string'); //string
+      expect(cursor).of.equal(IndexLevel.keySegmentJoin('"string"', 'itemId'));
 
-      cursor = IndexLevel.encodeCursor('itemId', 'sortProperty', true); // boolean
-      expect(cursor).of.equal(IndexLevel.keySegmentJoin('sortProperty', 'true', 'itemId'));
+      cursor = IndexLevel.encodeCursor('itemId', true); // boolean
+      expect(cursor).of.equal(IndexLevel.keySegmentJoin('true', 'itemId'));
     });
   });
 
   describe('decodeCursor', () => {
     it('decodes numbers strings and booleans', async () => {
-      let cursor = IndexLevel.decodeCursor(IndexLevel.keySegmentJoin('sortProperty', '123', 'itemId'), 'sortProperty'); //number
+      let cursor = IndexLevel.decodeCursor(IndexLevel.keySegmentJoin('123', 'itemId')); //number
       expect(cursor.itemId).to.equal('itemId');
       expect(cursor.sortValue).to.equal(123);
-      expect(cursor.sortProperty).to.equal('sortProperty');
 
-      cursor = IndexLevel.decodeCursor(IndexLevel.keySegmentJoin('sortProperty', '-123', 'itemId'), 'sortProperty'); // negative number
+      cursor = IndexLevel.decodeCursor(IndexLevel.keySegmentJoin('-123', 'itemId')); // negative number
       expect(cursor.itemId).to.equal('itemId');
       expect(cursor.sortValue).to.equal(-123);
-      expect(cursor.sortProperty).to.equal('sortProperty');
 
-      cursor = IndexLevel.decodeCursor(IndexLevel.keySegmentJoin('sortProperty', '"string"', 'itemId'), 'sortProperty'); // string
+      cursor = IndexLevel.decodeCursor(IndexLevel.keySegmentJoin('"string"', 'itemId')); // string
       expect(cursor.itemId).to.equal('itemId');
       expect(cursor.sortValue).to.equal('string');
-      expect(cursor.sortProperty).to.equal('sortProperty');
 
-      cursor = IndexLevel.decodeCursor(IndexLevel.keySegmentJoin('sortProperty', 'true', 'itemId'), 'sortProperty'); // boolean
+      cursor = IndexLevel.decodeCursor(IndexLevel.keySegmentJoin('true', 'itemId')); // boolean
       expect(cursor.itemId).to.equal('itemId');
       expect(cursor.sortValue).to.equal(true);
-      expect(cursor.sortProperty).to.equal('sortProperty');
     });
     it('throws for unknown types', async () => {
-      expect(IndexLevel.decodeCursor.bind(IndexLevel, IndexLevel.keySegmentJoin('sortProperty', '{}', 'itemId'), 'sortProperty')).to.throw(DwnErrorCode.IndexInvalidCursorValueType); // object
-      expect(IndexLevel.decodeCursor.bind(IndexLevel, IndexLevel.keySegmentJoin('sortProperty', '[]', 'itemId'), 'sortProperty')).to.throw(DwnErrorCode.IndexInvalidCursorValueType); // array
-      expect(IndexLevel.decodeCursor.bind(IndexLevel, IndexLevel.keySegmentJoin('sortProperty', 'null', 'itemId'), 'sortProperty')).to.throw(DwnErrorCode.IndexInvalidCursorValueType); // null
-    });
-
-    it('throws for mismatched sort and cursor properties', async () => {
-      expect(IndexLevel.decodeCursor.bind(IndexLevel, IndexLevel.keySegmentJoin('sortProperty', '"test"', 'itemId'), 'mismatch')).to.throw(DwnErrorCode.IndexMismatchedCursorSortProperty);
-      expect(IndexLevel.decodeCursor.bind(IndexLevel, IndexLevel.keySegmentJoin('mismatch', '"test"', 'itemId'), 'sortProperty')).to.throw(DwnErrorCode.IndexMismatchedCursorSortProperty);
+      expect(IndexLevel.decodeCursor.bind(IndexLevel, IndexLevel.keySegmentJoin('{}', 'itemId'))).to.throw(DwnErrorCode.IndexInvalidCursorValueType); // object
+      expect(IndexLevel.decodeCursor.bind(IndexLevel, IndexLevel.keySegmentJoin('[]', 'itemId'))).to.throw(DwnErrorCode.IndexInvalidCursorValueType); // array
+      expect(IndexLevel.decodeCursor.bind(IndexLevel, IndexLevel.keySegmentJoin('null', 'itemId'))).to.throw(DwnErrorCode.IndexInvalidCursorValueType); // null
     });
   });
 
