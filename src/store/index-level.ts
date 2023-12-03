@@ -1,6 +1,7 @@
 import type { EqualFilter, Filter, KeyValues, PaginatedEntries, QueryOptions, RangeFilter } from '../types/query-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions, } from './level-wrapper.js';
 
+import { Encoder } from '../utils/encoder.js';
 import { isEmptyObject } from '../utils/object.js';
 import { lexicographicalCompare } from '../utils/string.js';
 import { SortDirection } from '../types/query-types.js';
@@ -219,30 +220,30 @@ export class IndexLevel {
     const startKey = cursor ? this.getStartingKeyForCursor(cursor) : '';
 
     const matches: string[] = [];
-    let cursorKey: string | undefined;
+    let returnCursor: string | undefined;
     for await ( const item of this.getIndexIterator(tenant, startKey, queryOptions, options)) {
       if (queryOptions.limit !== undefined && queryOptions.limit === matches.length) {
         // if we've made it here there are additional items beyond the provided limit
         // whether or not strictCursor is set we always return a cursor when there are more results.
-        return { entries: matches, cursor: cursorKey };
+        return { entries: matches, cursor: returnCursor };
       }
 
       const { itemId, indexes } = item;
       if (FilterUtility.matchAnyFilter(indexes, filters)) {
         matches.push(itemId);
-        cursorKey = IndexLevel.encodeCursorFromItem(item, sortProperty);
+        returnCursor = IndexLevel.encodeCursorFromItem(item, sortProperty);
       }
     }
 
     // in the case in which we have no results, therefore no cursorKey to return, but we provided a cursor
     //  we will set the returning cursor key to the original incoming cursor
-    if (cursorKey === undefined && cursor !== undefined) {
-      cursorKey = cursor;
+    if (returnCursor === undefined && cursor !== undefined) {
+      returnCursor = cursor;
     }
 
     // if we've reached here it is the end of the results and there are none beyond the limit
     // if strictCursor is set to true, we not return a cursor, otherwise we always return a cursor.
-    return { entries: matches, cursor: strictCursor !== true ? cursorKey : undefined };
+    return { entries: matches, cursor: strictCursor !== true ? returnCursor : undefined };
   }
 
   /**
@@ -294,11 +295,12 @@ export class IndexLevel {
   }
 
   public static encodeCursor(itemId: string, value: string | number | boolean): string {
-    return IndexLevel.keySegmentJoin(JSON.stringify(value), itemId);
+    return Encoder.stringToBase64Url(IndexLevel.keySegmentJoin(JSON.stringify(value), itemId));
   }
 
   public static decodeCursor(cursor: string):{ itemId: string, sortValue: string | number | boolean } {
-    const [ cursorValue, itemId ] = cursor.split(this.delimiter);
+    const decoded = Encoder.base64UrlToString(cursor);
+    const [ cursorValue, itemId ] = decoded.split(this.delimiter);
     if (cursorValue === undefined || itemId === undefined) {
       throw new DwnError(
         DwnErrorCode.IndexInvalidCursorFormat,
@@ -306,7 +308,13 @@ export class IndexLevel {
       );
     }
 
-    const sortValue = JSON.parse(cursorValue);
+    let sortValue: any;
+    try {
+      sortValue = JSON.parse(cursorValue);
+    } catch (error) {
+      // do nothing if cannot parse will fail below
+    }
+
     switch (typeof sortValue) {
     case 'boolean':
     case 'number':
@@ -334,10 +342,10 @@ export class IndexLevel {
     queryOptions: QueryOptions,
     options?: IndexLevelOptions
   ): Promise<PaginatedEntries<string>> {
-    const { sortProperty, sortDirection = SortDirection.Ascending, cursor, limit, strictCursor } = queryOptions;
+    const { sortProperty, sortDirection = SortDirection.Ascending, cursor: queryCursor, limit, strictCursor } = queryOptions;
 
     // we get the cursor start key here so that we match the failing behavior of `queryWithIteratorPaging`
-    const cursorStartingKey = cursor ? this.getStartingKeyForCursor(cursor) : undefined;
+    const cursorStartingKey = queryCursor ? this.getStartingKeyForCursor(queryCursor) : undefined;
 
     // we create a matches map so that we can short-circuit matched items within the async single query below.
     const matches:Map<string, IndexedItem> = new Map();
@@ -355,29 +363,29 @@ export class IndexLevel {
     } catch (error) {
       if ((error as DwnError).code === DwnErrorCode.IndexInvalidSortPropertyInMemory) {
         // return empty results if the sort property is invalid.
-        return { entries: [], cursor: strictCursor === true ? undefined : cursor };
+        return { entries: [], cursor: strictCursor === true ? undefined : queryCursor };
       }
     }
 
     const sortedValues = [...matches.values()].sort((a,b) => this.sortItems(a,b, sortProperty, sortDirection));
 
-    const start = cursorStartingKey === undefined ? 0 :
-      this.findSortedValuesStartingIndex(sortedValues, sortDirection, sortProperty, cursorStartingKey);
+    const start = cursorStartingKey !== undefined ? this.findCursorStartingIndex(sortedValues, sortDirection, sortProperty, cursorStartingKey) : 0;
     if (start < 0) {
       // if the provided cursor does not come before any of the results, we return no results
-      return { entries: [], cursor: strictCursor === true ? undefined : cursor };
+      return { entries: [], cursor: strictCursor === true ? undefined : queryCursor };
     }
 
     const end = limit !== undefined ? start + limit: undefined;
     const paginatedSet = sortedValues.slice(start, end);
     const hasMoreRecords = limit !== undefined && start + limit < sortedValues.length;
 
+    // get the last item to set a cursor
     const lastItem = paginatedSet.at(-1);
-    const cursorKey = lastItem ? IndexLevel.encodeCursorFromItem(lastItem, sortProperty) : undefined;
+    const cursor = lastItem ? IndexLevel.encodeCursorFromItem(lastItem, sortProperty) : undefined;
 
     return {
       entries : paginatedSet.map(({ itemId }) => itemId),
-      cursor  : strictCursor === true && !hasMoreRecords ? undefined : cursorKey
+      cursor  : strictCursor === true && !hasMoreRecords ? undefined : cursor,
     };
   }
 
@@ -540,9 +548,13 @@ export class IndexLevel {
       lexicographicalCompare(bValue, aValue);
   }
 
-  private findSortedValuesStartingIndex(items: IndexedItem[], sortDirection: SortDirection, sortProperty: string, cursorStartingKey: string): number {
+  /**
+   * Find the starting position for pagination within the IndexedItem array.
+   * Returns the index of the first item found which is either greater than or less than the given cursor, depending on sort order.
+   */
+  private findCursorStartingIndex(items: IndexedItem[], sortDirection: SortDirection, sortProperty: string, cursorStartingKey: string): number {
 
-    const compareItem = (item: IndexedItem): boolean => {
+    const firstItemAfterCursor = (item: IndexedItem): boolean => {
       const { itemId, indexes } = item;
       const sortValue = indexes[sortProperty];
       const itemCompareValue = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), itemId);
@@ -552,7 +564,7 @@ export class IndexLevel {
         itemCompareValue < cursorStartingKey;
     };
 
-    return items.findIndex(compareItem);
+    return items.findIndex(firstItemAfterCursor);
   }
 
   /**

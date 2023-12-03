@@ -2,13 +2,13 @@ import type { Filter } from '../../src/types/query-types.js';
 
 import { ArrayUtility } from '../../src/utils/array.js';
 import { createLevelDatabase } from '../../src/store/level-wrapper.js';
-import { DwnErrorCode } from '../../src/index.js';
 import { IndexLevel } from '../../src/store/index-level.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { SortDirection } from '../../src/types/query-types.js';
 import { Temporal } from '@js-temporal/polyfill';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { v4 as uuid } from 'uuid';
+import { DwnErrorCode, Encoder } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
 import chai, { expect } from 'chai';
@@ -279,8 +279,8 @@ describe('IndexLevel', () => {
 
       it('throws with an invalid cursor', async () => {
         const filters = [{ schema: 'schema' }];
-
-        const invalidResultsPromise = testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: 'invalid' });
+        const someBase64String = Encoder.bytesToBase64Url(TestDataGenerator.randomBytes(10));
+        const invalidResultsPromise = testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: someBase64String });
         await expect(invalidResultsPromise).to.eventually.be.rejectedWith(DwnErrorCode.IndexInvalidCursorFormat);
       });
     });
@@ -398,8 +398,8 @@ describe('IndexLevel', () => {
 
       it('throws with an invalid cursor', async () => {
         const filters = [{ schema: 'schema' }];
-
-        const invalidResultsPromise = testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: 'invalid' });
+        const someBase64String = Encoder.bytesToBase64Url(TestDataGenerator.randomBytes(10));
+        const invalidResultsPromise = testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: someBase64String });
         await expect(invalidResultsPromise).to.eventually.be.rejectedWith(DwnErrorCode.IndexInvalidCursorFormat);
       });
 
@@ -1271,41 +1271,51 @@ describe('IndexLevel', () => {
   describe('encodeCursor', () => {
     it('encodes numbers strings and booleans', async () => {
       let cursor = IndexLevel.encodeCursor('itemId', 123); //number
-      expect(cursor).of.equal(IndexLevel.keySegmentJoin('123', 'itemId'));
+      let expected = Encoder.stringToBase64Url(IndexLevel.keySegmentJoin('123', 'itemId'));
+      expect(cursor).of.equal(expected);
 
       cursor = IndexLevel.encodeCursor('itemId', -123); //negative number
-      expect(cursor).of.equal(IndexLevel.keySegmentJoin('-123', 'itemId'));
+      expected = Encoder.stringToBase64Url(IndexLevel.keySegmentJoin('-123', 'itemId'));
+      expect(cursor).of.equal(expected);
 
       cursor = IndexLevel.encodeCursor('itemId', 'string'); //string
-      expect(cursor).of.equal(IndexLevel.keySegmentJoin('"string"', 'itemId'));
+      expected = Encoder.stringToBase64Url(IndexLevel.keySegmentJoin('"string"', 'itemId'));
+      expect(cursor).of.equal(expected);
 
       cursor = IndexLevel.encodeCursor('itemId', true); // boolean
-      expect(cursor).of.equal(IndexLevel.keySegmentJoin('true', 'itemId'));
+      expected = Encoder.stringToBase64Url(IndexLevel.keySegmentJoin('true', 'itemId'));
+      expect(cursor).of.equal(expected);
     });
   });
 
   describe('decodeCursor', () => {
     it('decodes numbers strings and booleans', async () => {
-      let cursor = IndexLevel.decodeCursor(IndexLevel.keySegmentJoin('123', 'itemId')); //number
+      let cursor = IndexLevel.decodeCursor(Encoder.stringToBase64Url(IndexLevel.keySegmentJoin('123', 'itemId'))); //number
       expect(cursor.itemId).to.equal('itemId');
       expect(cursor.sortValue).to.equal(123);
 
-      cursor = IndexLevel.decodeCursor(IndexLevel.keySegmentJoin('-123', 'itemId')); // negative number
+      cursor = IndexLevel.decodeCursor(Encoder.stringToBase64Url(IndexLevel.keySegmentJoin('-123', 'itemId'))); // negative number
       expect(cursor.itemId).to.equal('itemId');
       expect(cursor.sortValue).to.equal(-123);
 
-      cursor = IndexLevel.decodeCursor(IndexLevel.keySegmentJoin('"string"', 'itemId')); // string
+      cursor = IndexLevel.decodeCursor(Encoder.stringToBase64Url(IndexLevel.keySegmentJoin('"string"', 'itemId'))); // string
       expect(cursor.itemId).to.equal('itemId');
       expect(cursor.sortValue).to.equal('string');
 
-      cursor = IndexLevel.decodeCursor(IndexLevel.keySegmentJoin('true', 'itemId')); // boolean
+      cursor = IndexLevel.decodeCursor(Encoder.stringToBase64Url(IndexLevel.keySegmentJoin('true', 'itemId'))); // boolean
       expect(cursor.itemId).to.equal('itemId');
       expect(cursor.sortValue).to.equal(true);
     });
     it('throws for unknown types', async () => {
-      expect(IndexLevel.decodeCursor.bind(IndexLevel, IndexLevel.keySegmentJoin('{}', 'itemId'))).to.throw(DwnErrorCode.IndexInvalidCursorValueType); // object
-      expect(IndexLevel.decodeCursor.bind(IndexLevel, IndexLevel.keySegmentJoin('[]', 'itemId'))).to.throw(DwnErrorCode.IndexInvalidCursorValueType); // array
-      expect(IndexLevel.decodeCursor.bind(IndexLevel, IndexLevel.keySegmentJoin('null', 'itemId'))).to.throw(DwnErrorCode.IndexInvalidCursorValueType); // null
+      expect(IndexLevel.decodeCursor.bind(IndexLevel,
+        Encoder.stringToBase64Url(IndexLevel.keySegmentJoin('{}', 'itemId')))
+      ).to.throw(DwnErrorCode.IndexInvalidCursorValueType); // object
+      expect(IndexLevel.decodeCursor.bind(IndexLevel,
+        Encoder.stringToBase64Url(IndexLevel.keySegmentJoin('[]', 'itemId')))
+      ).to.throw(DwnErrorCode.IndexInvalidCursorValueType); // array
+      expect(IndexLevel.decodeCursor.bind(IndexLevel,
+        Encoder.stringToBase64Url(IndexLevel.keySegmentJoin('null', 'itemId')))
+      ).to.throw(DwnErrorCode.IndexInvalidCursorValueType); // null
     });
   });
 
