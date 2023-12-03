@@ -226,15 +226,18 @@ export class IndexLevel {
         // whether or not strictCursor is set we always return a cursor when there are more results.
         return { entries: matches, cursor: cursorKey };
       }
-      const { itemId, indexes } = item;
-      if (item.indexes[sortProperty] === undefined) {
-        throw new DwnError(DwnErrorCode.IndexInvalidSortProperty, `invalid sort property ${sortProperty}`);
-      }
 
+      const { itemId, indexes } = item;
       if (FilterUtility.matchAnyFilter(indexes, filters)) {
         matches.push(itemId);
         cursorKey = IndexLevel.encodeCursorFromItem(item, sortProperty);
       }
+    }
+
+    // in the case in which we have no results, therefore no cursorKey to return, but we provided a cursor
+    //  we will set the returning cursor key to the original incoming cursor
+    if (cursorKey === undefined && cursor !== undefined) {
+      cursorKey = cursor;
     }
 
     // if we've reached here it is the end of the results and there are none beyond the limit
@@ -286,11 +289,11 @@ export class IndexLevel {
     const { itemId, indexes } = item;
     const sortValue = indexes[sortProperty];
     if (sortValue !== undefined) {
-      return this.encodeCursor(itemId, sortValue, sortProperty);
+      return this.encodeCursor(itemId, sortProperty, sortValue);
     }
   }
 
-  public static encodeCursor(itemId: string, sortValue: string | number | boolean, sortProperty: string): string {
+  public static encodeCursor(itemId: string, sortProperty: string, sortValue: string | number | boolean): string {
     return IndexLevel.keySegmentJoin(sortProperty, JSON.stringify(sortValue), itemId);
   }
 
@@ -317,7 +320,10 @@ export class IndexLevel {
     case 'string':
       return { itemId, sortProperty, sortValue };
     default:
-      throw new Error('unknown sort value type');
+      throw new DwnError(
+        DwnErrorCode.IndexInvalidCursorValueType,
+        `${typeof sortValue} is not supported as a cursor value`
+      );
     }
   }
 
@@ -356,7 +362,7 @@ export class IndexLevel {
     } catch (error) {
       if ((error as DwnError).code === DwnErrorCode.IndexInvalidSortPropertyInMemory) {
         // return empty results if the sort property is invalid.
-        return { entries: [] };
+        return { entries: [], cursor: strictCursor === true ? undefined : cursor };
       }
     }
 
@@ -365,7 +371,8 @@ export class IndexLevel {
     const start = cursorStartingKey === undefined ? 0 :
       this.findSortedValuesStartingIndex(sortedValues, sortDirection, sortProperty, cursorStartingKey);
     if (start < 0) {
-      throw new Error('invalid starting cursor in memory');
+      // if the provided cursor does not come before any of the results, we return no results
+      return { entries: [], cursor: strictCursor === true ? undefined : cursor };
     }
 
     const end = limit !== undefined ? start + limit: undefined;
@@ -584,7 +591,7 @@ export class IndexLevel {
    * Joins the given values using the `\x00` (\u0000) character.
    */
   private static delimiter = `\x00`;
-  private static keySegmentJoin(...values: string[]): string {
+  public static keySegmentJoin(...values: string[]): string {
     return values.join(IndexLevel.delimiter);
   }
 
