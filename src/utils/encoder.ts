@@ -13,6 +13,12 @@ export class Encoder {
     return content;
   }
 
+  public static base64UrlToString(base64urlString: string): string {
+    const decodedBytes = base64url.baseDecode(base64urlString);
+    const decodedText = textDecoder.decode(decodedBytes);
+    return decodedText;
+  }
+
   public static base64UrlToObject(base64urlString: string): any {
     const payloadBytes = base64url.baseDecode(base64urlString);
     const payloadObject = Encoder.bytesToObject(payloadBytes);
