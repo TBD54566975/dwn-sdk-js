@@ -216,7 +216,7 @@ export class IndexLevel {
     const { cursor , sortProperty, strictCursor } = queryOptions;
 
     // if there is a cursor we fetch the starting key given the sort property, otherwise we start from the beginning of the index.
-    const startKey = cursor ? this.getStartingKeyForCursor(cursor, sortProperty) : '';
+    const startKey = cursor ? this.getStartingKeyForCursor(cursor) : '';
 
     const matches: string[] = [];
     let cursorKey: string | undefined;
@@ -280,8 +280,8 @@ export class IndexLevel {
    * Gets the starting point for a LevelDB query given an itemId as a cursor and the indexed property.
    * Used as (gt) for ascending queries, or (lt) for descending queries.
    */
-  private getStartingKeyForCursor(cursor: string, sortProperty: string): string {
-    const { itemId, sortValue } = IndexLevel.decodeCursor(cursor, sortProperty);
+  private getStartingKeyForCursor(cursor: string): string {
+    const { itemId, sortValue } = IndexLevel.decodeCursor(cursor);
     return IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue) , itemId);
   }
 
@@ -289,36 +289,29 @@ export class IndexLevel {
     const { itemId, indexes } = item;
     const sortValue = indexes[sortProperty];
     if (sortValue !== undefined) {
-      return this.encodeCursor(itemId, sortProperty, sortValue);
+      return this.encodeCursor(itemId, sortValue);
     }
   }
 
-  public static encodeCursor(itemId: string, sortProperty: string, sortValue: string | number | boolean): string {
-    return IndexLevel.keySegmentJoin(sortProperty, JSON.stringify(sortValue), itemId);
+  public static encodeCursor(itemId: string, value: string | number | boolean): string {
+    return IndexLevel.keySegmentJoin(JSON.stringify(value), itemId);
   }
 
-  public static decodeCursor(cursor: string, sortProperty: string):{ itemId: string, sortValue: string | number | boolean, sortProperty: string } {
-    const [ cursorProperty, cursorSortValue, itemId ] = cursor.split(this.delimiter);
-    if (cursorProperty === undefined || sortProperty === undefined || itemId === undefined) {
+  public static decodeCursor(cursor: string):{ itemId: string, sortValue: string | number | boolean } {
+    const [ cursorValue, itemId ] = cursor.split(this.delimiter);
+    if (cursorValue === undefined || itemId === undefined) {
       throw new DwnError(
         DwnErrorCode.IndexInvalidCursorFormat,
         `The cursor provided ${cursor}, is invalid.`,
       );
     }
 
-    if (cursorProperty !== sortProperty) {
-      throw new DwnError(
-        DwnErrorCode.IndexMismatchedCursorSortProperty,
-        `The cursor property ${cursorProperty}, does not match the expected sort property ${sortProperty}.`,
-      );
-    }
-
-    const sortValue = JSON.parse(cursorSortValue);
+    const sortValue = JSON.parse(cursorValue);
     switch (typeof sortValue) {
     case 'boolean':
     case 'number':
     case 'string':
-      return { itemId, sortProperty, sortValue };
+      return { itemId, sortValue };
     default:
       throw new DwnError(
         DwnErrorCode.IndexInvalidCursorValueType,
@@ -344,7 +337,7 @@ export class IndexLevel {
     const { sortProperty, sortDirection = SortDirection.Ascending, cursor, limit, strictCursor } = queryOptions;
 
     // we get the cursor start key here so that we match the failing behavior of `queryWithIteratorPaging`
-    const cursorStartingKey = cursor ? this.getStartingKeyForCursor(cursor, sortProperty) : undefined;
+    const cursorStartingKey = cursor ? this.getStartingKeyForCursor(cursor) : undefined;
 
     // we create a matches map so that we can short-circuit matched items within the async single query below.
     const matches:Map<string, IndexedItem> = new Map();
