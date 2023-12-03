@@ -279,7 +279,7 @@ describe('IndexLevel', () => {
 
       it('throws with an invalid cursor', async () => {
         const filters = [{ schema: 'schema' }];
-        const someBase64String = Encoder.bytesToBase64Url(TestDataGenerator.randomBytes(10));
+        const someBase64String = Encoder.stringToBase64Url(TestDataGenerator.randomString(10));
         const invalidResultsPromise = testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: someBase64String });
         await expect(invalidResultsPromise).to.eventually.be.rejectedWith(DwnErrorCode.IndexInvalidCursorFormat);
       });
@@ -398,7 +398,7 @@ describe('IndexLevel', () => {
 
       it('throws with an invalid cursor', async () => {
         const filters = [{ schema: 'schema' }];
-        const someBase64String = Encoder.bytesToBase64Url(TestDataGenerator.randomBytes(10));
+        const someBase64String = Encoder.stringToBase64Url(TestDataGenerator.randomString(10));
         const invalidResultsPromise = testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: someBase64String });
         await expect(invalidResultsPromise).to.eventually.be.rejectedWith(DwnErrorCode.IndexInvalidCursorFormat);
       });
