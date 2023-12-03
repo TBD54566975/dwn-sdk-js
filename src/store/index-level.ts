@@ -227,6 +227,10 @@ export class IndexLevel {
         return { entries: matches, cursor: cursorKey };
       }
       const { itemId, indexes } = item;
+      if (item.indexes[sortProperty] === undefined) {
+        throw new DwnError(DwnErrorCode.IndexInvalidSortProperty, `invalid sort property ${sortProperty}`);
+      }
+
       if (FilterUtility.matchAnyFilter(indexes, filters)) {
         matches.push(itemId);
         cursorKey = IndexLevel.encodeCursorFromItem(item, sortProperty);
@@ -274,14 +278,7 @@ export class IndexLevel {
    * Used as (gt) for ascending queries, or (lt) for descending queries.
    */
   private getStartingKeyForCursor(cursor: string, sortProperty: string): string {
-    const { itemId, sortValue, sortProperty: property } = IndexLevel.decodeCursor(cursor);
-    if (property !== sortProperty) {
-      throw new DwnError(
-        DwnErrorCode.IndexMismatchedCursorProperty,
-        `The cursor property ${property}, does not match the expected property ${sortProperty}.`,
-      );
-    }
-
+    const { itemId, sortValue } = IndexLevel.decodeCursor(cursor, sortProperty);
     return IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue) , itemId);
   }
 
@@ -297,14 +294,22 @@ export class IndexLevel {
     return IndexLevel.keySegmentJoin(sortProperty, JSON.stringify(sortValue), itemId);
   }
 
-  public static decodeCursor(cursor: string):{ itemId: string, sortValue: string | number | boolean, sortProperty: string } {
-    const [ sortProperty, cursorSortValue, itemId ] = cursor.split(this.delimiter);
-    if (sortProperty === undefined || sortProperty === undefined || itemId === undefined) {
+  public static decodeCursor(cursor: string, sortProperty: string):{ itemId: string, sortValue: string | number | boolean, sortProperty: string } {
+    const [ cursorProperty, cursorSortValue, itemId ] = cursor.split(this.delimiter);
+    if (cursorProperty === undefined || sortProperty === undefined || itemId === undefined) {
       throw new DwnError(
         DwnErrorCode.IndexInvalidCursorFormat,
         `The cursor provided ${cursor}, is invalid.`,
       );
     }
+
+    if (cursorProperty !== sortProperty) {
+      throw new DwnError(
+        DwnErrorCode.IndexMismatchedCursorSortProperty,
+        `The cursor property ${cursorProperty}, does not match the expected sort property ${sortProperty}.`,
+      );
+    }
+
     const sortValue = JSON.parse(cursorSortValue);
     switch (typeof sortValue) {
     case 'boolean':
@@ -331,6 +336,10 @@ export class IndexLevel {
     options?: IndexLevelOptions
   ): Promise<PaginatedEntries<string>> {
     const { sortProperty, sortDirection = SortDirection.Ascending, cursor, limit, strictCursor } = queryOptions;
+
+    // we get the cursor start key here so that we match the failing behavior of `queryWithIteratorPaging`
+    const cursorStartingKey = cursor ? this.getStartingKeyForCursor(cursor, sortProperty) : undefined;
+
     // we create a matches map so that we can short-circuit matched items within the async single query below.
     const matches:Map<string, IndexedItem> = new Map();
 
@@ -345,7 +354,7 @@ export class IndexLevel {
         return this.executeSingleFilterQuery(tenant, filter, sortProperty, matches, options );
       }));
     } catch (error) {
-      if ((error as DwnError).code === DwnErrorCode.IndexInvalidSortProperty) {
+      if ((error as DwnError).code === DwnErrorCode.IndexInvalidSortPropertyInMemory) {
         // return empty results if the sort property is invalid.
         return { entries: [] };
       }
@@ -353,7 +362,8 @@ export class IndexLevel {
 
     const sortedValues = [...matches.values()].sort((a,b) => this.sortItems(a,b, sortProperty, sortDirection));
 
-    const start = this.findStartingIndex(sortedValues, sortDirection, cursor);
+    const start = cursorStartingKey === undefined ? 0 :
+      this.findSortedValuesStartingIndex(sortedValues, sortDirection, sortProperty, cursorStartingKey);
     if (start < 0) {
       throw new Error('invalid starting cursor in memory');
     }
@@ -428,7 +438,7 @@ export class IndexLevel {
 
         // ensure that each matched item has the sortProperty, otherwise fail the entire query.
         if (indexedItem.indexes[sortProperty] === undefined) {
-          throw new DwnError(DwnErrorCode.IndexInvalidSortProperty, `invalid sort property ${sortProperty}`);
+          throw new DwnError(DwnErrorCode.IndexInvalidSortPropertyInMemory, `invalid sort property ${sortProperty}`);
         }
 
         matches.set(indexedItem.itemId, indexedItem);
@@ -530,22 +540,16 @@ export class IndexLevel {
       lexicographicalCompare(bValue, aValue);
   }
 
-  private findStartingIndex(items: IndexedItem[], sortDirection: SortDirection, cursor?: string): number {
-    if (cursor === undefined) {
-      return 0;
-    }
-
-    const { itemId: cursorItemId, sortValue: cursorSortValue, sortProperty } = IndexLevel.decodeCursor(cursor);
-    const cursorCompareValue = IndexLevel.encodeValue(cursorSortValue) + cursorItemId;
+  private findSortedValuesStartingIndex(items: IndexedItem[], sortDirection: SortDirection, sortProperty: string, cursorStartingKey: string): number {
 
     const compareItem = (item: IndexedItem): boolean => {
       const { itemId, indexes } = item;
       const sortValue = indexes[sortProperty];
-      const itemCompareValue = IndexLevel.encodeValue(sortValue) + itemId;
+      const itemCompareValue = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), itemId);
 
       return sortDirection === SortDirection.Ascending ?
-        itemCompareValue > cursorCompareValue :
-        itemCompareValue < cursorCompareValue;
+        itemCompareValue > cursorStartingKey :
+        itemCompareValue < cursorStartingKey;
     };
 
     return items.findIndex(compareItem);
