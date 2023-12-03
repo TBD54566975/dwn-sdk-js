@@ -214,36 +214,40 @@ export class IndexLevel {
     queryOptions: QueryOptions,
     options?: IndexLevelOptions
   ): Promise<PaginatedEntries<string>> {
-    const { cursor , sortProperty, strictCursor } = queryOptions;
+    const { cursor: queryCursor , sortProperty, strictCursor, limit } = queryOptions;
 
     // if there is a cursor we fetch the starting key given the sort property, otherwise we start from the beginning of the index.
-    const startKey = cursor ? this.getStartingKeyForCursor(cursor) : '';
+    const startKey = queryCursor ? this.getStartingKeyForCursor(queryCursor) : '';
 
     const matches: string[] = [];
-    let returnCursor: string | undefined;
+    let cursor: string | undefined;
     for await ( const item of this.getIndexIterator(tenant, startKey, queryOptions, options)) {
-      if (queryOptions.limit !== undefined && queryOptions.limit === matches.length) {
-        // if we've made it here there are additional items beyond the provided limit
-        // whether or not strictCursor is set we always return a cursor when there are more results.
-        return { entries: matches, cursor: returnCursor };
+      const { itemId, indexes } = item;
+
+      if (limit !== undefined && limit === matches.length) {
+        // strictCursor means that we must only return a cursor if there are additional values.
+        // we continue to attempt and find an additional match before returning.
+        if (strictCursor === true && !FilterUtility.matchAnyFilter(indexes, filters)) {
+          continue;
+        }
+        return { entries: matches, cursor };
       }
 
-      const { itemId, indexes } = item;
       if (FilterUtility.matchAnyFilter(indexes, filters)) {
         matches.push(itemId);
-        returnCursor = IndexLevel.encodeCursorFromItem(item, sortProperty);
+        cursor = IndexLevel.encodeCursorFromItem(item, sortProperty);
       }
     }
 
-    // in the case in which we have no results, therefore no cursorKey to return, but we provided a cursor
-    //  we will set the returning cursor key to the original incoming cursor
-    if (returnCursor === undefined && cursor !== undefined) {
-      returnCursor = cursor;
+    // in the case in which we have no results but provided a queryCursor
+    // we will set the returning cursor key to the original incoming cursor
+    if (cursor === undefined && queryCursor !== undefined) {
+      cursor = queryCursor;
     }
 
     // if we've reached here it is the end of the results and there are none beyond the limit
     // if strictCursor is set to true, we not return a cursor, otherwise we always return a cursor.
-    return { entries: matches, cursor: strictCursor !== true ? returnCursor : undefined };
+    return { entries: matches, cursor: strictCursor === true ? undefined : cursor };
   }
 
   /**
