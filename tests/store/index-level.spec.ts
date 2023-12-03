@@ -167,6 +167,73 @@ describe('IndexLevel', () => {
     });
 
     describe('queryWithIteratorPaging()', () => {
+      it('only return a cursor if there are additional results when `strictCursor` is set to true', async () => {
+        const testVals = ['b', 'd', 'c', 'a'];
+        for (const val of testVals) {
+          await testIndex.put(tenant, val, { val, schema: 'schema' });
+        }
+        const filters = [{ schema: 'schema' }];
+
+        // control test: return a cursor even though all results have been returned
+        let notStrictCursor = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val' });
+        expect(notStrictCursor.entries.length).to.equal(4);
+        expect(notStrictCursor.cursor).to.not.be.undefined; // cursor is defined
+
+        // control test: return a cursor even though all results have been returned with strict set to false explicitly
+        notStrictCursor = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', strictCursor: false });
+        expect(notStrictCursor.entries.length).to.equal(4);
+        expect(notStrictCursor.cursor).to.not.be.undefined; // cursor is defined
+
+        let strictCursor = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', strictCursor: true });
+        expect(strictCursor.entries.length).to.equal(4);
+        expect(strictCursor.cursor).to.be.undefined; // cursor undefined
+
+        strictCursor = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', strictCursor: true, limit: 3 });
+        expect(strictCursor.entries.length).to.equal(3);
+        expect(strictCursor.cursor).to.not.be.undefined; // cursor is defined because there is another result
+      });
+
+      it('paginates using cursor', async () => {
+        const testVals = ['b', 'd', 'c', 'a'];
+        for (const val of testVals) {
+          await testIndex.put(tenant, val, { val, schema: 'schema' });
+        }
+        const filters = [{ schema: 'schema' }];
+
+        // query with limit, default (ascending)
+        const results = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', limit: 2 });
+        expect(results.entries.length).to.equal(2);
+        expect(results.entries).to.eql(['a', 'b']);
+        expect(results.cursor).to.not.be.undefined;
+
+        // query with cursor, default (ascending)
+        const resultsAfterCursor = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: results.cursor });
+        expect(resultsAfterCursor.entries.length).to.equal(2);
+        expect(resultsAfterCursor.entries).to.eql(['c', 'd']);
+
+        // query with limit, explicit ascending
+        const ascResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', limit: 2 });
+        expect(ascResults.entries.length).to.equal(2);
+        expect(ascResults.entries).to.eql(['a', 'b']);
+        expect(ascResults.cursor).to.not.be.undefined;
+
+        // query with cursor, explicit ascending
+        const ascResultsAfterCursor = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: ascResults.cursor });
+        expect(ascResultsAfterCursor.entries.length).to.equal(2);
+        expect(ascResultsAfterCursor.entries).to.eql(['c', 'd']);
+
+        // query with limit, descending
+        const descResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortDirection: SortDirection.Descending, sortProperty: 'val', limit: 2 });
+        expect(descResults.entries.length).to.equal(2);
+        expect(descResults.entries).to.eql(['d', 'c']);
+        expect(descResults.cursor).to.not.be.undefined;
+
+        // query with cursor, descending
+        const descResultsAfterCursor = await testIndex.queryWithIteratorPaging(tenant, filters, { sortDirection: SortDirection.Descending, sortProperty: 'val', cursor: descResults.cursor });
+        expect(descResultsAfterCursor.entries.length).to.equal(2);
+        expect(descResultsAfterCursor.entries).to.eql(['b', 'a']);
+      });
+
       it('returns empty array if sort property is invalid', async () => {
         const testVals = ['b', 'd', 'c', 'a'];
         for (const val of testVals) {
@@ -176,23 +243,116 @@ describe('IndexLevel', () => {
         const filters = [{ schema: 'schema' }];
 
         // control test: return all results
-        const validResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', limit: 3 });
-        expect(validResults.entries.length).to.equal(3);
+        const validResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val' });
+        expect(validResults.entries.length).to.equal(4);
 
         // sort by invalid property returns no results
         const invalidResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'invalid' });
         expect(invalidResults.entries.length).to.equal(0);
+
+        const invalidResultsStrict = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'invalid', strictCursor: true });
+        expect(invalidResultsStrict.entries.length).to.equal(0);
       });
 
-      it('throws with mismatched cursor and sort property', async () => {
+      it('cursor is valid but out of range of matched results', async () => {
+        const testVals = ['b', 'd', 'c']; // a is missing
+        for (const val of testVals) {
+          await testIndex.put(tenant, val, { val, schema: 'schema' });
+        }
+
+        const filters = [{ schema: 'schema' }];
+        const cursorA = IndexLevel.encodeCursor('a', 'val', 'a'); // before results
+
+        const allResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: cursorA });
+        expect(allResults.entries).to.eql(['b', 'c', 'd']);
+
+        const cursorE = IndexLevel.encodeCursor('e', 'val', 'e'); // after results
+        const noResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: cursorE });
+        expect(noResults.entries.length).to.eql(0);
+        expect(noResults.cursor).to.equal(cursorE); // retains original cursor
+
+        // check strict cursor
+        const noResultsStrict = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: cursorE, strictCursor: true });
+        expect(noResultsStrict.entries.length).to.eql(0);
+        expect(noResultsStrict.cursor).to.be.undefined;
+      });
+
+      it('throws with an invalid cursor', async () => {
         const filters = [{ schema: 'schema' }];
 
         const invalidResultsPromise = testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: 'invalid' });
-        expect(invalidResultsPromise).to.eventually.be.rejectedWith(DwnErrorCode.IndexInvalidCursorFormat);
+        await expect(invalidResultsPromise).to.eventually.be.rejectedWith(DwnErrorCode.IndexInvalidCursorFormat);
       });
     });
 
     describe('queryWithInMemoryPaging()', () => {
+      it('only return a cursor if there are additional results when `strictCursor` is set to true', async () => {
+        const testVals = ['b', 'd', 'c', 'a'];
+        for (const val of testVals) {
+          await testIndex.put(tenant, val, { val, schema: 'schema' });
+        }
+        const filters = [{ schema: 'schema' }];
+
+        // control test: return a cursor even though all results have been returned
+        let notStrictCursor = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val' });
+        expect(notStrictCursor.entries.length).to.equal(4);
+        expect(notStrictCursor.cursor).to.not.be.undefined; // cursor is defined
+
+        // control test: return a cursor even though all results have been returned with strict set to false explicitly
+        notStrictCursor = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', strictCursor: false });
+        expect(notStrictCursor.entries.length).to.equal(4);
+        expect(notStrictCursor.cursor).to.not.be.undefined; // cursor is defined
+
+        let strictCursor = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', strictCursor: true });
+        expect(strictCursor.entries.length).to.equal(4);
+        expect(strictCursor.cursor).to.be.undefined; // cursor undefined
+
+        strictCursor = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', strictCursor: true, limit: 3 });
+        expect(strictCursor.entries.length).to.equal(3);
+        expect(strictCursor.cursor).to.not.be.undefined; // cursor is defined because there is another result
+      });
+
+      it('paginates using cursor', async () => {
+        const testVals = ['b', 'd', 'c', 'a'];
+        for (const val of testVals) {
+          await testIndex.put(tenant, val, { val, schema: 'schema' });
+        }
+        const filters = [{ schema: 'schema' }];
+
+        // query with limit, default (ascending)
+        const results = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', limit: 2 });
+        expect(results.entries.length).to.equal(2);
+        expect(results.entries).to.eql(['a', 'b']);
+        expect(results.cursor).to.not.be.undefined;
+
+        // query with cursor, default (ascending)
+        const resultsAfterCursor = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: results.cursor });
+        expect(resultsAfterCursor.entries.length).to.equal(2);
+        expect(resultsAfterCursor.entries).to.eql(['c', 'd']);
+
+        // query with limit, explicit ascending
+        const ascResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', limit: 2 });
+        expect(ascResults.entries.length).to.equal(2);
+        expect(ascResults.entries).to.eql(['a', 'b']);
+        expect(ascResults.cursor).to.not.be.undefined;
+
+        // query with cursor, explicit ascending
+        const ascResultsAfterCursor = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: ascResults.cursor });
+        expect(ascResultsAfterCursor.entries.length).to.equal(2);
+        expect(ascResultsAfterCursor.entries).to.eql(['c', 'd']);
+
+        // query with limit, descending
+        const descResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortDirection: SortDirection.Descending, sortProperty: 'val', limit: 2 });
+        expect(descResults.entries.length).to.equal(2);
+        expect(descResults.entries).to.eql(['d', 'c']);
+        expect(descResults.cursor).to.not.be.undefined;
+
+        // query with cursor, descending
+        const descResultsAfterCursor = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortDirection: SortDirection.Descending , sortProperty: 'val', cursor: descResults.cursor });
+        expect(descResultsAfterCursor.entries.length).to.equal(2);
+        expect(descResultsAfterCursor.entries).to.eql(['b', 'a']);
+      });
+
       it('returns empty array if sort property is invalid', async () => {
         const testVals = ['b', 'd', 'c', 'a'];
         for (const val of testVals) {
@@ -208,13 +368,39 @@ describe('IndexLevel', () => {
         // sort by invalid property returns no results
         const invalidResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'invalid' });
         expect(invalidResults.entries.length).to.equal(0);
+
+        const invalidResultsStrict = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'invalid', strictCursor: true });
+        expect(invalidResultsStrict.entries.length).to.equal(0);
       });
 
-      it('throws with mismatched cursor and sort property', async () => {
+      it('cursor is valid but out of range of matched results', async () => {
+        const testVals = ['b', 'd', 'c']; // a is missing
+        for (const val of testVals) {
+          await testIndex.put(tenant, val, { val, schema: 'schema' });
+        }
+
+        const filters = [{ schema: 'schema' }];
+        const cursorA = IndexLevel.encodeCursor('a', 'val', 'a'); // before results
+
+        const allResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: cursorA });
+        expect(allResults.entries).to.eql(['b', 'c', 'd']);
+
+        const cursorE = IndexLevel.encodeCursor('e', 'val', 'e'); // after results
+        const noResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: cursorE });
+        expect(noResults.entries.length).to.eql(0);
+        expect(noResults.cursor).to.equal(cursorE); // retains original cursor
+
+        // check strict cursor
+        const noResultsStrict = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: cursorE, strictCursor: true });
+        expect(noResultsStrict.entries.length).to.eql(0);
+        expect(noResultsStrict.cursor).to.be.undefined;
+      });
+
+      it('throws with an invalid cursor', async () => {
         const filters = [{ schema: 'schema' }];
 
         const invalidResultsPromise = testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: 'invalid' });
-        expect(invalidResultsPromise).to.eventually.be.rejectedWith(DwnErrorCode.IndexInvalidCursorFormat);
+        await expect(invalidResultsPromise).to.eventually.be.rejectedWith(DwnErrorCode.IndexInvalidCursorFormat);
       });
 
       it('supports range queries', async () => {
@@ -1079,6 +1265,56 @@ describe('IndexLevel', () => {
         .sort((a,b) => lexicographicalCompare(a, b));
 
       digits.forEach((n,i) => expect(encodedDigits.at(i)).to.equal(IndexLevel.encodeNumberValue(n)));
+    });
+  });
+
+  describe('encodeCursor', () => {
+    it('encodes numbers strings and booleans', async () => {
+      let cursor = IndexLevel.encodeCursor('itemId', 'sortProperty', 123); //number
+      expect(cursor).of.equal(IndexLevel.keySegmentJoin('sortProperty', '123', 'itemId'));
+
+      cursor = IndexLevel.encodeCursor('itemId', 'sortProperty', -123); //negative number
+      expect(cursor).of.equal(IndexLevel.keySegmentJoin('sortProperty', '-123', 'itemId'));
+
+      cursor = IndexLevel.encodeCursor('itemId', 'sortProperty', 'string'); //string
+      expect(cursor).of.equal(IndexLevel.keySegmentJoin('sortProperty', '"string"', 'itemId'));
+
+      cursor = IndexLevel.encodeCursor('itemId', 'sortProperty', true); // boolean
+      expect(cursor).of.equal(IndexLevel.keySegmentJoin('sortProperty', 'true', 'itemId'));
+    });
+  });
+
+  describe('decodeCursor', () => {
+    it('decodes numbers strings and booleans', async () => {
+      let cursor = IndexLevel.decodeCursor(IndexLevel.keySegmentJoin('sortProperty', '123', 'itemId'), 'sortProperty'); //number
+      expect(cursor.itemId).to.equal('itemId');
+      expect(cursor.sortValue).to.equal(123);
+      expect(cursor.sortProperty).to.equal('sortProperty');
+
+      cursor = IndexLevel.decodeCursor(IndexLevel.keySegmentJoin('sortProperty', '-123', 'itemId'), 'sortProperty'); // negative number
+      expect(cursor.itemId).to.equal('itemId');
+      expect(cursor.sortValue).to.equal(-123);
+      expect(cursor.sortProperty).to.equal('sortProperty');
+
+      cursor = IndexLevel.decodeCursor(IndexLevel.keySegmentJoin('sortProperty', '"string"', 'itemId'), 'sortProperty'); // string
+      expect(cursor.itemId).to.equal('itemId');
+      expect(cursor.sortValue).to.equal('string');
+      expect(cursor.sortProperty).to.equal('sortProperty');
+
+      cursor = IndexLevel.decodeCursor(IndexLevel.keySegmentJoin('sortProperty', 'true', 'itemId'), 'sortProperty'); // boolean
+      expect(cursor.itemId).to.equal('itemId');
+      expect(cursor.sortValue).to.equal(true);
+      expect(cursor.sortProperty).to.equal('sortProperty');
+    });
+    it('throws for unknown types', async () => {
+      expect(IndexLevel.decodeCursor.bind(IndexLevel, IndexLevel.keySegmentJoin('sortProperty', '{}', 'itemId'), 'sortProperty')).to.throw(DwnErrorCode.IndexInvalidCursorValueType); // object
+      expect(IndexLevel.decodeCursor.bind(IndexLevel, IndexLevel.keySegmentJoin('sortProperty', '[]', 'itemId'), 'sortProperty')).to.throw(DwnErrorCode.IndexInvalidCursorValueType); // array
+      expect(IndexLevel.decodeCursor.bind(IndexLevel, IndexLevel.keySegmentJoin('sortProperty', 'null', 'itemId'), 'sortProperty')).to.throw(DwnErrorCode.IndexInvalidCursorValueType); // null
+    });
+
+    it('throws for mismatched sort and cursor properties', async () => {
+      expect(IndexLevel.decodeCursor.bind(IndexLevel, IndexLevel.keySegmentJoin('sortProperty', '"test"', 'itemId'), 'mismatch')).to.throw(DwnErrorCode.IndexMismatchedCursorSortProperty);
+      expect(IndexLevel.decodeCursor.bind(IndexLevel, IndexLevel.keySegmentJoin('mismatch', '"test"', 'itemId'), 'sortProperty')).to.throw(DwnErrorCode.IndexMismatchedCursorSortProperty);
     });
   });
 
