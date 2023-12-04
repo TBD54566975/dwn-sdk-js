@@ -170,9 +170,16 @@ describe('IndexLevel', () => {
       it('only return a cursor if there are additional results when `strictCursor` is set to true', async () => {
         const testVals = ['b', 'd', 'c', 'a'];
         for (const val of testVals) {
-          await testIndex.put(tenant, val, { val, schema: 'schema' });
+          await testIndex.put(tenant, val, { val, schema: 'schema', published: true });
         }
-        const filters = [{ schema: 'schema' }];
+
+        // insert other records to be filtered out
+        for (const val of testVals) {
+          const otherVal = val + val;
+          await testIndex.put(tenant, otherVal, { val: otherVal, schema: 'schema', published: false });
+        }
+
+        const filters = [{ schema: 'schema', published: true }];
 
         // control test: return a cursor even though all results have been returned
         let notStrictCursor = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val' });
@@ -196,9 +203,16 @@ describe('IndexLevel', () => {
       it('paginates using cursor', async () => {
         const testVals = ['b', 'd', 'c', 'a'];
         for (const val of testVals) {
-          await testIndex.put(tenant, val, { val, schema: 'schema' });
+          await testIndex.put(tenant, val, { val, schema: 'schema', published: true });
         }
-        const filters = [{ schema: 'schema' }];
+
+        // insert other records to be filtered out
+        for (const val of testVals) {
+          const otherVal = val + val;
+          await testIndex.put(tenant, otherVal, { val: otherVal, schema: 'schema', published: false });
+        }
+
+        const filters = [{ schema: 'schema', published: true }];
 
         // query with limit, default (ascending)
         const results = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', limit: 2 });
@@ -237,10 +251,16 @@ describe('IndexLevel', () => {
       it('returns empty array if sort property is invalid', async () => {
         const testVals = ['b', 'd', 'c', 'a'];
         for (const val of testVals) {
-          await testIndex.put(tenant, val, { val, schema: 'schema' });
+          await testIndex.put(tenant, val, { val, schema: 'schema', published: true });
         }
 
-        const filters = [{ schema: 'schema' }];
+        // insert other records to be filtered out
+        for (const val of testVals) {
+          const otherVal = val + val;
+          await testIndex.put(tenant, otherVal, { val: otherVal, schema: 'schema', published: false });
+        }
+
+        const filters = [{ schema: 'schema', published: true }];
 
         // control test: return all results
         const validResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val' });
@@ -257,10 +277,15 @@ describe('IndexLevel', () => {
       it('cursor is valid but out of range of matched results', async () => {
         const testVals = ['b', 'd', 'c']; // a is missing
         for (const val of testVals) {
-          await testIndex.put(tenant, `${val}-id`, { val, schema: 'schema' });
+          await testIndex.put(tenant, `${val}-id`, { val, schema: 'schema', published: true });
+        }
+        // insert other records to be filtered out
+        for (const val of testVals) {
+          const otherVal = val + val;
+          await testIndex.put(tenant, `${val}-id`, { val: otherVal, schema: 'schema', published: false });
         }
 
-        const filters = [{ schema: 'schema' }];
+        const filters = [{ schema: 'schema', published: true }];
         const cursorA = IndexLevel.encodeCursor('a-id', 'a'); // before results
 
         const allResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: cursorA });
@@ -278,7 +303,7 @@ describe('IndexLevel', () => {
       });
 
       it('throws with an invalid cursor', async () => {
-        const filters = [{ schema: 'schema' }];
+        const filters = [{ schema: 'schema', published: true }];
         const someBase64String = Encoder.stringToBase64Url(TestDataGenerator.randomString(10));
         const invalidResultsPromise = testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: someBase64String });
         await expect(invalidResultsPromise).to.eventually.be.rejectedWith(DwnErrorCode.IndexInvalidCursorFormat);
@@ -289,9 +314,16 @@ describe('IndexLevel', () => {
       it('only return a cursor if there are additional results when `strictCursor` is set to true', async () => {
         const testVals = ['b', 'd', 'c', 'a'];
         for (const val of testVals) {
-          await testIndex.put(tenant, val, { val, schema: 'schema' });
+          await testIndex.put(tenant, val, { val, schema: 'schema', published: true });
         }
-        const filters = [{ schema: 'schema' }];
+
+        // insert other records to be filtered out
+        for (const val of testVals) {
+          const otherVal = val + val;
+          await testIndex.put(tenant, otherVal, { val: otherVal, schema: 'schema', published: false });
+        }
+
+        const filters = [{ schema: 'schema', published: true }];
 
         // control test: return a cursor even though all results have been returned
         let notStrictCursor = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val' });
@@ -315,9 +347,16 @@ describe('IndexLevel', () => {
       it('paginates using cursor', async () => {
         const testVals = ['b', 'd', 'c', 'a'];
         for (const val of testVals) {
-          await testIndex.put(tenant, val, { val, schema: 'schema' });
+          await testIndex.put(tenant, val, { val, schema: 'schema', published: true });
         }
-        const filters = [{ schema: 'schema' }];
+
+        // insert other records to be filtered out
+        for (const val of testVals) {
+          const otherVal = val + val;
+          await testIndex.put(tenant, otherVal, { val: otherVal, schema: 'schema', published: false });
+        }
+
+        const filters = [{ schema: 'schema', published: true }];
 
         // query with limit, default (ascending)
         const results = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', limit: 2 });
@@ -356,10 +395,16 @@ describe('IndexLevel', () => {
       it('returns empty array if sort property is invalid', async () => {
         const testVals = ['b', 'd', 'c', 'a'];
         for (const val of testVals) {
-          await testIndex.put(tenant, val, { val, schema: 'schema' });
+          await testIndex.put(tenant, val, { val, schema: 'schema', published: true });
         }
 
-        const filters = [{ schema: 'schema' }];
+        // insert other records to be filtered out
+        for (const val of testVals) {
+          const otherVal = val + val;
+          await testIndex.put(tenant, otherVal, { val: otherVal, schema: 'schema', published: false });
+        }
+
+        const filters = [{ schema: 'schema', published: true }];
 
         // control test: return all results
         const validResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', limit: 3 });
@@ -374,12 +419,18 @@ describe('IndexLevel', () => {
       });
 
       it('cursor is valid but out of range of matched results', async () => {
-        const testVals = ['b', 'd', 'c']; // a is missing
+        const testVals = ['b', 'd', 'c', 'a'];
         for (const val of testVals) {
-          await testIndex.put(tenant, val, { val, schema: 'schema' });
+          await testIndex.put(tenant, val, { val, schema: 'schema', published: true });
         }
 
-        const filters = [{ schema: 'schema' }];
+        // insert other records to be filtered out
+        for (const val of testVals) {
+          const otherVal = val + val;
+          await testIndex.put(tenant, otherVal, { val: otherVal, schema: 'schema', published: false });
+        }
+
+        const filters = [{ schema: 'schema', published: true }];
         const cursorA = IndexLevel.encodeCursor('a', 'a'); // before results
 
         const allResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: cursorA });
@@ -1306,6 +1357,7 @@ describe('IndexLevel', () => {
       expect(cursor.itemId).to.equal('itemId');
       expect(cursor.sortValue).to.equal(true);
     });
+
     it('throws for unknown types', async () => {
       expect(IndexLevel.decodeCursor.bind(IndexLevel,
         Encoder.stringToBase64Url(IndexLevel.keySegmentJoin('{}', 'itemId')))
@@ -1316,6 +1368,9 @@ describe('IndexLevel', () => {
       expect(IndexLevel.decodeCursor.bind(IndexLevel,
         Encoder.stringToBase64Url(IndexLevel.keySegmentJoin('null', 'itemId')))
       ).to.throw(DwnErrorCode.IndexInvalidCursorValueType); // null
+      expect(IndexLevel.decodeCursor.bind(IndexLevel,
+        Encoder.stringToBase64Url(IndexLevel.keySegmentJoin('-', 'itemId')))
+      ).to.throw(DwnErrorCode.IndexInvalidCursorValueType); // invalid json
     });
   });
 
