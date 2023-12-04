@@ -98,7 +98,7 @@ export class RecordsReadHandler implements MethodHandler {
         [{ recordId: record.recordId, isLatestBaseState: false, method: DwnMethodName.Write }]
       );
       const initialWrite = initialWriteQueryResult.messages[0] as RecordsQueryReplyEntry;
-      delete initialWrite.encodedData;
+      delete initialWrite.encodedData; // defensive measure but technically optional because we do this when an update RecordsWrite takes place
       record.initialWrite = initialWrite;
     }
 
