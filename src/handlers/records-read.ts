@@ -3,11 +3,10 @@ import type { DidResolver } from '../did/did-resolver.js';
 import type { Filter } from '../types/query-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { RecordsReadMessage, RecordsReadReply, RecordsWriteMessageWithOptionalEncodedData } from '../types/records-types.js';
+import type { RecordsQueryReplyEntry, RecordsReadMessage, RecordsReadReply } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { DataStream } from '../utils/data-stream.js';
-import { DwnInterfaceName } from '../enums/dwn-interface-method.js';
 import { Encoder } from '../utils/encoder.js';
 import { GrantAuthorization } from '../core/grant-authorization.js';
 import { Message } from '../core/message.js';
@@ -18,6 +17,7 @@ import { RecordsGrantAuthorization } from '../core/records-grant-authorization.j
 import { RecordsRead } from '../interfaces/records-read.js';
 import { RecordsWrite } from '../interfaces/records-write.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
+import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export class RecordsReadHandler implements MethodHandler {
 
@@ -63,7 +63,7 @@ export class RecordsReadHandler implements MethodHandler {
       ), 400);
     }
 
-    const newestRecordsWrite = existingMessages[0] as RecordsWriteMessageWithOptionalEncodedData;
+    const newestRecordsWrite = existingMessages[0] as RecordsQueryReplyEntry;
     try {
       await RecordsReadHandler.authorizeRecordsRead(tenant, recordsRead, await RecordsWrite.parse(newestRecordsWrite), this.messageStore);
     } catch (error) {
@@ -86,12 +86,25 @@ export class RecordsReadHandler implements MethodHandler {
       data = result.dataStream;
     }
 
+    const record = {
+      ...newestRecordsWrite,
+      data
+    };
+
+    // attach initial write if returned RecordsWrite is not initial write
+    if (!await RecordsWrite.isInitialWrite(record)) {
+      const initialWriteQueryResult = await this.messageStore.query(
+        tenant,
+        [{ recordId: record.recordId, isLatestBaseState: false, method: DwnMethodName.Write }]
+      );
+      const initialWrite = initialWriteQueryResult.messages[0] as RecordsQueryReplyEntry;
+      delete initialWrite.encodedData;
+      record.initialWrite = initialWrite;
+    }
+
     const messageReply: RecordsReadReply = {
-      status : { code: 200, detail: 'OK' },
-      record : {
-        ...newestRecordsWrite,
-        data,
-      }
+      status: { code: 200, detail: 'OK' },
+      record
     };
     return messageReply;
   };

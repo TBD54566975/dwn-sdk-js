@@ -1,4 +1,4 @@
-import type { RecordsWriteMessageWithOptionalEncodedData } from '../../src/types/records-types.js';
+import type { RecordsQueryReplyEntry } from '../../src/types/records-types.js';
 
 import { expect } from 'chai';
 import { Message } from '../../src/core/message.js';
@@ -77,7 +77,7 @@ describe('Message', () => {
       const { message } = await TestDataGenerator.generateRecordsWrite();
       const cid1 = await Message.getCid(message);
 
-      const messageWithData: RecordsWriteMessageWithOptionalEncodedData = message;
+      const messageWithData: RecordsQueryReplyEntry = message;
       messageWithData.encodedData = TestDataGenerator.randomString(25);
 
       const cid2 = await Message.getCid(messageWithData);

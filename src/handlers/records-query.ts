@@ -4,7 +4,7 @@ import type { Filter } from '../types/query-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
 import type { GenericMessage, MessageSort } from '../types/message-types.js';
-import type { RecordsQueryMessage, RecordsQueryReply, RecordsWriteMessageWithOptionalEncodedData } from '../types/records-types.js';
+import type { RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry } from '../types/records-types.js';
 
 import { authenticate } from '../core/auth.js';
 import { DateSort } from '../types/records-types.js';
@@ -12,6 +12,7 @@ import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Records } from '../utils/records.js';
 import { RecordsQuery } from '../interfaces/records-query.js';
+import { RecordsWrite } from '../interfaces/records-write.js';
 import { SortDirection } from '../types/query-types.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
@@ -30,12 +31,12 @@ export class RecordsQueryHandler implements MethodHandler {
       return messageReplyFromError(e, 400);
     }
 
-    let recordsWrites: RecordsWriteMessageWithOptionalEncodedData[];
+    let recordsWrites: RecordsQueryReplyEntry[];
     let cursor: string|undefined;
     // if this is an anonymous query and the filter supports published records, query only published records
     if (RecordsQueryHandler.filterIncludesPublishedRecords(recordsQuery) && recordsQuery.author === undefined) {
       const results = await this.fetchPublishedRecords(tenant, recordsQuery);
-      recordsWrites = results.messages as RecordsWriteMessageWithOptionalEncodedData[];
+      recordsWrites = results.messages as RecordsQueryReplyEntry[];
       cursor = results.cursor;
     } else {
       // authentication and authorization
@@ -52,12 +53,25 @@ export class RecordsQueryHandler implements MethodHandler {
 
       if (recordsQuery.author === tenant) {
         const results = await this.fetchRecordsAsOwner(tenant, recordsQuery);
-        recordsWrites = results.messages as RecordsWriteMessageWithOptionalEncodedData[];
+        recordsWrites = results.messages as RecordsQueryReplyEntry[];
         cursor = results.cursor;
       } else {
         const results = await this.fetchRecordsAsNonOwner(tenant, recordsQuery);
-        recordsWrites = results.messages as RecordsWriteMessageWithOptionalEncodedData[];
+        recordsWrites = results.messages as RecordsQueryReplyEntry[];
         cursor = results.cursor;
+      }
+    }
+
+    // attach initial write if returned RecordsWrite is not initial write
+    for (const recordsWrite of recordsWrites) {
+      if (!await RecordsWrite.isInitialWrite(recordsWrite)) {
+        const initialWriteQueryResult = await this.messageStore.query(
+          tenant,
+          [{ recordId: recordsWrite.recordId, isLatestBaseState: false, method: DwnMethodName.Write }]
+        );
+        const initialWrite = initialWriteQueryResult.messages[0] as RecordsQueryReplyEntry;
+        delete initialWrite.encodedData;
+        recordsWrite.initialWrite = initialWrite;
       }
     }
 

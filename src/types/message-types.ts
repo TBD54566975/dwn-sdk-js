@@ -61,11 +61,9 @@ export type Descriptor = {
 /**
  * Message returned in a query result.
  * NOTE: the message structure is a modified version of the message received, the most notable differences are:
- * 1. does not contain `authorization`
- * 2. may include encoded data
+ * 1. May include encoded data
  */
-export type QueryResultEntry = {
-  descriptor: Descriptor;
+export type QueryResultEntry = GenericMessage & {
   encodedData?: string;
 };
 
