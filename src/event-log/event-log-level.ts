@@ -5,7 +5,6 @@ import type { Filter, KeyValues, PaginatedEntries, PaginationCursor } from '../t
 import { createLevelDatabase } from '../store/level-wrapper.js';
 import { IndexLevel } from '../store/index-level.js';
 import { monotonicFactory } from 'ulidx';
-import { SortDirection } from '../types/query-types.js';
 
 type EventLogLevelConfig = {
  /**
@@ -49,11 +48,16 @@ export class EventLogLevel implements EventLog {
   }
 
   async queryEvents(tenant: string, filters: Filter[], cursor?: PaginationCursor): Promise<PaginatedEntries<string>> {
-    return await this.index.query(tenant, filters, { sortProperty: 'watermark', cursor });
+    const results = await this.index.query(tenant, filters, { sortProperty: 'watermark', cursor });
+    const resultCursor = results.at(-1);
+    return {
+      entries : results.map(({ itemId }) => itemId),
+      cursor  : resultCursor,
+    };
   }
 
   async getEvents(tenant: string, cursor?: PaginationCursor): Promise<PaginatedEntries<string>> {
-    return await this.index.query(tenant, [], { sortProperty: 'watermark', sortDirection: SortDirection.Ascending, cursor });
+    return this.queryEvents(tenant, [], cursor);
   }
 
   async deleteEventsByCid(tenant: string, messageCids: Array<string>): Promise<void> {

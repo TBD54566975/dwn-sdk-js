@@ -3,8 +3,6 @@ export type QueryOptions = {
   sortDirection?: SortDirection;
   limit?: number;
   cursor?: PaginationCursor;
-  /** only returns a cursor if there are additional results available at the time of the query  */
-  strictCursor?: boolean;
 };
 
 export enum SortDirection {

@@ -1,14 +1,15 @@
 import type { MessageStore } from '../../src/index.js';
+import type { PaginationCursor } from '../../src/types/query-types.js';
 import type { RecordsWriteMessage } from '../../src/types/records-types.js';
 
 import { expect } from 'chai';
 
+import { DidKeyResolver } from '../../src/index.js';
 import { lexicographicalCompare } from '../../src/utils/string.js';
 import { Message } from '../../src/core/message.js';
+import { SortDirection } from '../../src/types/query-types.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
-import { PaginationCursor, SortDirection } from '../../src/types/query-types.js';
 import { TestStores } from '../test-stores.js';
-import { DidKeyResolver } from '../../src/index.js';
 
 let messageStore: MessageStore;
 
@@ -501,12 +502,6 @@ export function testMessageStore(): void {
           for (const recordId of messageMessageIds) {
             expect(resultMessageIds.includes(recordId)).to.be.true;
           }
-        });
-
-        xit('should throw if the cursor format is invalid', async () =>{
-          // const alice = await DidKeyResolver.generate();
-          // const invalidCursorQueryPromise = messageStore.query(alice.did, [{}], {}, { cursor: 'some-cursor' });
-          // expect(invalidCursorQueryPromise).to.eventually.rejectedWith(DwnErrorCode.IndexInvalidCursorFormat);
         });
       });
     });
