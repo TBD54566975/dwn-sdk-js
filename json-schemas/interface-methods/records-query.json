@@ -47,7 +47,7 @@
               "minimum": 1
             },
             "cursor": {
-              "type": "string"
+              "$ref": "https://identity.foundation/dwn/json-schemas/pagination-cursor.json"
             }
           }
         },

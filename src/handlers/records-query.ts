@@ -1,8 +1,8 @@
 import type { DataStore } from '../types/data-store.js';
 import type { DidResolver } from '../did/did-resolver.js';
-import type { Filter } from '../types/query-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';
+import type { Filter, PaginationCursor } from '../types/query-types.js';
 import type { GenericMessage, MessageSort } from '../types/message-types.js';
 import type { RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry } from '../types/records-types.js';
 
@@ -33,7 +33,7 @@ export class RecordsQueryHandler implements MethodHandler {
     }
 
     let recordsWrites: RecordsQueryReplyEntry[];
-    let cursor: string|undefined;
+    let cursor: PaginationCursor | undefined;
     // if this is an anonymous query and the filter supports published records, query only published records
     if (RecordsQueryHandler.filterIncludesPublishedRecords(recordsQuery) && recordsQuery.author === undefined) {
       const results = await this.fetchPublishedRecords(tenant, recordsQuery);
@@ -108,7 +108,7 @@ export class RecordsQueryHandler implements MethodHandler {
   private async fetchRecordsAsOwner(
     tenant: string,
     recordsQuery: RecordsQuery
-  ): Promise<{ messages: GenericMessage[], cursor?: string }> {
+  ): Promise<{ messages: GenericMessage[], cursor?: PaginationCursor }> {
     const { dateSort, filter, pagination } = recordsQuery.message.descriptor;
     // fetch all published records matching the query
     const queryFilter = {
@@ -143,7 +143,7 @@ export class RecordsQueryHandler implements MethodHandler {
    */
   private async fetchRecordsAsNonOwner(
     tenant: string, recordsQuery: RecordsQuery
-  ): Promise<{ messages: GenericMessage[], cursor?: string }> {
+  ): Promise<{ messages: GenericMessage[], cursor?: PaginationCursor }> {
     const { dateSort, pagination } = recordsQuery.message.descriptor;
     const filters = [];
     if (RecordsQueryHandler.filterIncludesPublishedRecords(recordsQuery)) {
@@ -172,7 +172,7 @@ export class RecordsQueryHandler implements MethodHandler {
    */
   private async fetchPublishedRecords(
     tenant: string, recordsQuery: RecordsQuery
-  ): Promise<{ messages: GenericMessage[], cursor?: string }> {
+  ): Promise<{ messages: GenericMessage[], cursor?: PaginationCursor }> {
     const { dateSort, pagination } = recordsQuery.message.descriptor;
     const filter = RecordsQueryHandler.buildPublishedRecordsFilter(recordsQuery);
     const messageSort = this.convertDateSort(dateSort);

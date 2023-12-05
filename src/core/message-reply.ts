@@ -1,3 +1,4 @@
+import type { PaginationCursor } from '../types/query-types.js';
 import type { QueryResultEntry } from '../types/message-types.js';
 import type { Readable } from 'readable-stream';
 
@@ -38,5 +39,5 @@ export type UnionMessageReply = GenericMessageReply & {
    * A cursor for pagination if applicable (e.g. RecordsQuery).
    * Mutually exclusive with `data`.
    */
-  cursor?: string;
+  cursor?: PaginationCursor;
 };

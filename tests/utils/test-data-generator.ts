@@ -1,6 +1,7 @@
 import type { DidResolutionResult } from '../../src/types/did-types.js';
 import type { EventsQueryOptions } from '../../src/interfaces/events-query.js';
 import type { GeneralJws } from '../../src/types/jws-types.js';
+import type { PaginationCursor } from '../../src/types/query-types.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsFilter } from '../../src/types/records-types.js';
 import type { AuthorizationModel, Pagination } from '../../src/types/message-types.js';
@@ -239,7 +240,7 @@ export type GeneratePermissionsRevokeOutput = {
 
 export type GenerateEventsGetInput = {
   author?: Persona;
-  cursor?: string;
+  cursor?: PaginationCursor;
 };
 
 export type GenerateEventsGetOutput = {
@@ -251,7 +252,7 @@ export type GenerateEventsGetOutput = {
 export type GenerateEventsQueryInput = {
   author?: Persona;
   filters: EventsQueryFilter[];
-  cursor?: string;
+  cursor?: PaginationCursor;
 };
 
 export type GenerateEventsQueryOutput = {

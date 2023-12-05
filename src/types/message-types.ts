@@ -1,6 +1,6 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
 import type { GeneralJws } from './jws-types.js';
-import type { SortDirection } from './query-types.js';
+import type { PaginationCursor, SortDirection } from './query-types.js';
 
 /**
  * Intersection type for all concrete message types.
@@ -73,7 +73,7 @@ export type QueryResultEntry = GenericMessage & {
  * The cursor is the messageCid of the message you would like to pagination from.
  */
 export type Pagination = {
-  cursor?: string;
+  cursor?: PaginationCursor;
   limit?: number;
 };
 

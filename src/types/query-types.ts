@@ -2,7 +2,7 @@ export type QueryOptions = {
   sortProperty: string;
   sortDirection?: SortDirection;
   limit?: number;
-  cursor?: string;
+  cursor?: PaginationCursor;
   /** only returns a cursor if there are additional results available at the time of the query  */
   strictCursor?: boolean;
 };
@@ -53,7 +53,12 @@ export type RangeCriterion = {
   to?: string;
 };
 
+export type PaginationCursor = {
+  itemId: string;
+  value: string | number;
+};
+
 export type PaginatedEntries<T> = {
   entries: T[];
-  cursor?: string;
+  cursor?: PaginationCursor;
 };
