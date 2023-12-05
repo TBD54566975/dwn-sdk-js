@@ -10,13 +10,16 @@ describe('EventsGet Message', () => {
     it('creates an EventsGet message', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const eventsGet = await EventsGet.create({
-        cursor : 'yolo',
-        signer : await Jws.createSigner(alice)
+        cursor: {
+          itemId : 'itemId',
+          value  : 'value'
+        },
+        signer: Jws.createSigner(alice)
       });
 
       const { message } = eventsGet;
       expect(message.descriptor).to.exist;
-      expect(message.descriptor.cursor).to.equal('yolo');
+      expect(message.descriptor.cursor).to.eql({ itemId: 'itemId', value: 'value' });
       expect(message.authorization).to.exist;
     });
 
@@ -37,8 +40,11 @@ describe('EventsGet Message', () => {
     it('parses a message into an EventsGet instance', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const eventsGet = await EventsGet.create({
-        cursor : 'yolo',
-        signer : await Jws.createSigner(alice)
+        cursor: {
+          itemId : 'itemId',
+          value  : 'value'
+        },
+        signer: Jws.createSigner(alice)
       });
 
       const parsed = await EventsGet.parse(eventsGet.message);
@@ -53,8 +59,11 @@ describe('EventsGet Message', () => {
     it('throws an exception if message is not a valid EventsGet message', async () => {
       const alice = await TestDataGenerator.generatePersona();
       const eventsGet = await EventsGet.create({
-        cursor : 'yolo',
-        signer : await Jws.createSigner(alice)
+        cursor: {
+          itemId : 'itemId',
+          value  : 'value'
+        },
+        signer: Jws.createSigner(alice)
       });
 
       const { message } = eventsGet;

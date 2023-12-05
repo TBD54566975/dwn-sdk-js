@@ -5,7 +5,7 @@ import type { PublicJwk } from './jose-types.js';
 import type { Readable } from 'readable-stream';
 import type { AuthorizationModel, GenericMessage, GenericMessageReply, GenericSignaturePayload, Pagination } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
-import type { RangeCriterion, RangeFilter } from './query-types.js';
+import type { PaginationCursor, RangeCriterion, RangeFilter } from './query-types.js';
 
 export enum DateSort {
   CreatedAscending = 'createdAscending',
@@ -143,7 +143,7 @@ export type RecordsQueryMessage = GenericMessage & {
 
 export type RecordsQueryReply = GenericMessageReply & {
   entries?: RecordsQueryReplyEntry[];
-  cursor?: string;
+  cursor?: PaginationCursor;
 };
 
 export type RecordsReadMessage = {

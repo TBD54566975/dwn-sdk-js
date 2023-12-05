@@ -1,3 +1,4 @@
+import type { PaginationCursor } from '../types/query-types.js';
 import type { Signer } from '../types/signer.js';
 import type { EventsGetDescriptor, EventsGetMessage } from '../types/event-types.js';
 
@@ -7,7 +8,7 @@ import { Time } from '../utils/time.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export type EventsGetOptions = {
-  cursor?: string;
+  cursor?: PaginationCursor;
   signer: Signer;
   messageTimestamp?: string;
 };

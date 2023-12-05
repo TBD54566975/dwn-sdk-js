@@ -1,7 +1,6 @@
-import type { EqualFilter, Filter, KeyValues, PaginatedEntries, QueryOptions, RangeFilter } from '../types/query-types.js';
+import type { EqualFilter, Filter, KeyValues, PaginatedEntries, PaginationCursor, QueryOptions, RangeFilter } from '../types/query-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions, } from './level-wrapper.js';
 
-import { Encoder } from '../utils/encoder.js';
 import { isEmptyObject } from '../utils/object.js';
 import { lexicographicalCompare } from '../utils/string.js';
 import { SortDirection } from '../types/query-types.js';
@@ -220,7 +219,7 @@ export class IndexLevel {
     const startKey = queryCursor ? this.getStartingKeyForCursor(queryCursor) : '';
 
     const matches: string[] = [];
-    let cursor: string | undefined;
+    let cursor: PaginationCursor | undefined;
     for await ( const item of this.getIndexIterator(tenant, startKey, queryOptions, options)) {
       const { itemId, indexes } = item;
 
@@ -285,50 +284,16 @@ export class IndexLevel {
    * Gets the starting point for a LevelDB query given an itemId as a cursor and the indexed property.
    * Used as (gt) for ascending queries, or (lt) for descending queries.
    */
-  private getStartingKeyForCursor(cursor: string): string {
-    const { itemId, sortValue } = IndexLevel.decodeCursor(cursor);
-    return IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue) , itemId);
+  private getStartingKeyForCursor(cursor: PaginationCursor): string {
+    const { itemId, value } = cursor;
+    return IndexLevel.keySegmentJoin(IndexLevel.encodeValue(value), itemId);
   }
 
-  private static encodeCursorFromItem(item: IndexedItem, sortProperty: string): string | undefined {
+  private static encodeCursorFromItem(item: IndexedItem, sortProperty: string): { itemId: string, value: string | number } | undefined {
     const { itemId, indexes } = item;
-    const sortValue = indexes[sortProperty];
-    if (sortValue !== undefined) {
-      return this.encodeCursor(itemId, sortValue);
-    }
-  }
-
-  public static encodeCursor(itemId: string, value: string | number | boolean): string {
-    return Encoder.stringToBase64Url(IndexLevel.keySegmentJoin(JSON.stringify(value), itemId));
-  }
-
-  public static decodeCursor(cursor: string):{ itemId: string, sortValue: string | number | boolean } {
-    const decoded = Encoder.base64UrlToString(cursor);
-    const [ cursorValue, itemId ] = decoded.split(this.delimiter);
-    if (cursorValue === undefined || itemId === undefined) {
-      throw new DwnError(
-        DwnErrorCode.IndexInvalidCursorFormat,
-        `The cursor provided ${cursor}, is invalid.`,
-      );
-    }
-
-    let sortValue: any;
-    try {
-      sortValue = JSON.parse(cursorValue);
-    } catch (error) {
-      // do nothing if cannot parse will fail below
-    }
-
-    switch (typeof sortValue) {
-    case 'boolean':
-    case 'number':
-    case 'string':
-      return { itemId, sortValue };
-    default:
-      throw new DwnError(
-        DwnErrorCode.IndexInvalidCursorValueType,
-        `${typeof sortValue} is not supported as a cursor value`
-      );
+    const value = indexes[sortProperty];
+    if ( value !== undefined && typeof value !== 'boolean') {
+      return { itemId, value };
     }
   }
 

@@ -1,5 +1,5 @@
 
-import type { Filter, KeyValues, QueryOptions } from '../types/query-types.js';
+import type { Filter, KeyValues, PaginationCursor, QueryOptions } from '../types/query-types.js';
 import type { GenericMessage, MessageSort, Pagination } from '../types/message-types.js';
 import type { MessageStore, MessageStoreOptions } from '../types/message-store.js';
 
@@ -87,7 +87,7 @@ export class MessageStoreLevel implements MessageStore {
     messageSort?: MessageSort,
     pagination?: Pagination,
     options?: MessageStoreOptions
-  ): Promise<{ messages: GenericMessage[], cursor?: string }> {
+  ): Promise<{ messages: GenericMessage[], cursor?: PaginationCursor}> {
     options?.signal?.throwIfAborted();
 
     // creates the query options including sorting and pagination.

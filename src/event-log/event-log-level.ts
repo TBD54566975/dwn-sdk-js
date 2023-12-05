@@ -1,6 +1,6 @@
+import type { EventLog } from '../types/event-log.js';
 import type { ULIDFactory } from 'ulidx';
-import type { EventLog, GetEventsOptions } from '../types/event-log.js';
-import type { Filter, KeyValues, PaginatedEntries } from '../types/query-types.js';
+import type { Filter, KeyValues, PaginatedEntries, PaginationCursor } from '../types/query-types.js';
 
 import { createLevelDatabase } from '../store/level-wrapper.js';
 import { IndexLevel } from '../store/index-level.js';
@@ -48,12 +48,12 @@ export class EventLogLevel implements EventLog {
     await this.index.put(tenant, messageCid, { ...indexes, watermark });
   }
 
-  async queryEvents(tenant: string, filters: Filter[], watermark?: string): Promise<PaginatedEntries<string>> {
-    return await this.index.query(tenant, filters, { sortProperty: 'watermark', cursor: watermark });
+  async queryEvents(tenant: string, filters: Filter[], cursor?: PaginationCursor): Promise<PaginatedEntries<string>> {
+    return await this.index.query(tenant, filters, { sortProperty: 'watermark', cursor });
   }
 
-  async getEvents(tenant: string, options?: GetEventsOptions): Promise<PaginatedEntries<string>> {
-    return await this.index.query(tenant, [], { sortProperty: 'watermark', sortDirection: SortDirection.Ascending, cursor: options?.cursor });
+  async getEvents(tenant: string, cursor?: PaginationCursor): Promise<PaginatedEntries<string>> {
+    return await this.index.query(tenant, [], { sortProperty: 'watermark', sortDirection: SortDirection.Ascending, cursor });
   }
 
   async deleteEventsByCid(tenant: string, messageCids: Array<string>): Promise<void> {

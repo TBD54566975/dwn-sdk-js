@@ -125,7 +125,7 @@ export function testEventLog(): void {
           expectedMessages.push(messageCid);
         }
 
-        const { entries: events } = await eventLog.getEvents(author.did, { cursor: cursor! });
+        const { entries: events } = await eventLog.getEvents(author.did, cursor);
         expect(events.length).to.equal(5);
 
         for (let i = 0; i < events.length; i += 1) {
