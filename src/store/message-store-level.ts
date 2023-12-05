@@ -93,12 +93,21 @@ export class MessageStoreLevel implements MessageStore {
     // creates the query options including sorting and pagination.
     // this adds 1 to the limit if provided, that way we can check to see if there are additional results and provide a return cursor.
     const queryOptions = MessageStoreLevel.buildQueryOptions(messageSort, pagination);
-    const { entries: results, cursor } = await this.index.query(tenant, filters, queryOptions, options);
+    const results = await this.index.query(tenant, filters, queryOptions, options);
+
+    let cursor: PaginationCursor | undefined;
+    if (pagination?.limit !== undefined && pagination.limit < results.length) {
+      // has additional records, remove last record and set cursor
+      results.splice(-1);
+
+      // set cursor to the last result
+      cursor = results.at(-1);
+    }
 
     const messages: GenericMessage[] = [];
     for (let i = 0; i < results.length; i++) {
-      const messageCid = results[i];
-      const message = await this.get(tenant, messageCid, options);
+      const { itemId } = results[i];
+      const message = await this.get(tenant, itemId, options);
       if (message) { messages.push(message); }
     }
 
@@ -109,7 +118,7 @@ export class MessageStoreLevel implements MessageStore {
    * Builds the IndexLevel QueryOptions object given MessageStore sort and pagination parameters.
    */
   static buildQueryOptions(messageSort: MessageSort = {}, pagination: Pagination = {}): QueryOptions {
-    const { limit, cursor } = pagination;
+    let { limit, cursor } = pagination;
     const { dateCreated, datePublished, messageTimestamp } = messageSort;
 
     let sortDirection = SortDirection.Ascending; // default
@@ -129,7 +138,11 @@ export class MessageStoreLevel implements MessageStore {
       sortDirection = messageSort[sortProperty]!;
     }
 
-    return { sortDirection, sortProperty, limit, cursor, strictCursor: true };
+    if (limit !== undefined && limit > 0) {
+      limit = limit + 1;
+    }
+
+    return { sortDirection, sortProperty, limit, cursor };
   }
 
   async delete(tenant: string, cidString: string, options?: MessageStoreOptions): Promise<void> {

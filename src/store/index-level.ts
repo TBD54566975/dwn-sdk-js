@@ -1,4 +1,4 @@
-import type { EqualFilter, Filter, KeyValues, PaginatedEntries, PaginationCursor, QueryOptions, RangeFilter } from '../types/query-types.js';
+import type { EqualFilter, Filter, KeyValues, PaginationCursor, QueryOptions, RangeFilter } from '../types/query-types.js';
 import type { LevelWrapperBatchOperation, LevelWrapperIteratorOptions, } from './level-wrapper.js';
 
 import { isEmptyObject } from '../utils/object.js';
@@ -14,6 +14,8 @@ type IndexLevelConfig = {
 };
 
 type IndexedItem = { itemId: string, indexes: KeyValues };
+
+interface ItemCursor { itemId: string, value: string | number };
 
 const INDEX_SUBLEVEL_NAME = 'index';
 
@@ -193,7 +195,7 @@ export class IndexLevel {
    * @param options IndexLevelOptions that include an AbortSignal.
    * @returns {string[]} an array of itemIds that match the given filters.
    */
-  async query(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<PaginatedEntries<string>> {
+  async query(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<ItemCursor[]> {
 
     // check if we should query using in-memory paging or iterator paging
     if (IndexLevel.shouldQueryWithInMemoryPaging(filters, queryOptions)) {
@@ -212,41 +214,28 @@ export class IndexLevel {
     filters: Filter[],
     queryOptions: QueryOptions,
     options?: IndexLevelOptions
-  ): Promise<PaginatedEntries<string>> {
-    const { cursor: queryCursor , sortProperty, strictCursor, limit } = queryOptions;
+  ): Promise<ItemCursor[]> {
+    const { cursor: queryCursor , sortProperty, limit } = queryOptions;
 
     // if there is a cursor we fetch the starting key given the sort property, otherwise we start from the beginning of the index.
     const startKey = queryCursor ? this.getStartingKeyForCursor(queryCursor) : '';
 
-    const matches: string[] = [];
-    let cursor: PaginationCursor | undefined;
+    const matches: ItemCursor[] = [];
     for await ( const item of this.getIndexIterator(tenant, startKey, queryOptions, options)) {
-      const { itemId, indexes } = item;
-
       if (limit !== undefined && limit === matches.length) {
-        // strictCursor means that we must only return a cursor if there are additional values.
-        // we continue to attempt and find an additional match before returning.
-        if (strictCursor === true && !FilterUtility.matchAnyFilter(indexes, filters)) {
-          continue;
-        }
-        return { entries: matches, cursor };
+        break;
       }
 
+      const { indexes } = item;
       if (FilterUtility.matchAnyFilter(indexes, filters)) {
-        matches.push(itemId);
-        cursor = IndexLevel.encodeCursorFromItem(item, sortProperty);
+        const itemCursor = IndexLevel.encodeCursorFromItem(item, sortProperty);
+        if (itemCursor) {
+          matches.push(itemCursor);
+        }
       }
     }
 
-    // in the case in which we have no results but provided a queryCursor
-    // we will set the returning cursor key to the original incoming cursor
-    if (cursor === undefined && queryCursor !== undefined) {
-      cursor = queryCursor;
-    }
-
-    // if we've reached here it is the end of the results and there are none beyond the limit
-    // if strictCursor is set to true, we not return a cursor, otherwise we always return a cursor.
-    return { entries: matches, cursor: strictCursor === true ? undefined : cursor };
+    return matches;
   }
 
   /**
@@ -289,7 +278,7 @@ export class IndexLevel {
     return IndexLevel.keySegmentJoin(IndexLevel.encodeValue(value), itemId);
   }
 
-  private static encodeCursorFromItem(item: IndexedItem, sortProperty: string): { itemId: string, value: string | number } | undefined {
+  static encodeCursorFromItem(item: IndexedItem, sortProperty: string): { itemId: string, value: string | number } | undefined {
     const { itemId, indexes } = item;
     const value = indexes[sortProperty];
     if ( value !== undefined && typeof value !== 'boolean') {
@@ -310,8 +299,8 @@ export class IndexLevel {
     filters: Filter[],
     queryOptions: QueryOptions,
     options?: IndexLevelOptions
-  ): Promise<PaginatedEntries<string>> {
-    const { sortProperty, sortDirection = SortDirection.Ascending, cursor: queryCursor, limit, strictCursor } = queryOptions;
+  ): Promise<ItemCursor[]> {
+    const { sortProperty, sortDirection = SortDirection.Ascending, cursor: queryCursor, limit } = queryOptions;
 
     // we get the cursor start key here so that we match the failing behavior of `queryWithIteratorPaging`
     const cursorStartingKey = queryCursor ? this.getStartingKeyForCursor(queryCursor) : undefined;
@@ -332,7 +321,7 @@ export class IndexLevel {
     } catch (error) {
       if ((error as DwnError).code === DwnErrorCode.IndexInvalidSortPropertyInMemory) {
         // return empty results if the sort property is invalid.
-        return { entries: [], cursor: strictCursor === true ? undefined : queryCursor };
+        return [];
       }
     }
 
@@ -341,21 +330,11 @@ export class IndexLevel {
     const start = cursorStartingKey !== undefined ? this.findCursorStartingIndex(sortedValues, sortDirection, sortProperty, cursorStartingKey) : 0;
     if (start < 0) {
       // if the provided cursor does not come before any of the results, we return no results
-      return { entries: [], cursor: strictCursor === true ? undefined : queryCursor };
+      return [];
     }
 
     const end = limit !== undefined ? start + limit: undefined;
-    const paginatedSet = sortedValues.slice(start, end);
-    const hasMoreRecords = limit !== undefined && start + limit < sortedValues.length;
-
-    // get the last item to set a cursor
-    const lastItem = paginatedSet.at(-1);
-    const cursor = lastItem ? IndexLevel.encodeCursorFromItem(lastItem, sortProperty) : undefined;
-
-    return {
-      entries : paginatedSet.map(({ itemId }) => itemId),
-      cursor  : strictCursor === true && !hasMoreRecords ? undefined : cursor,
-    };
+    return sortedValues.slice(start, end).map(item => IndexLevel.encodeCursorFromItem(item, sortProperty)!);
   }
 
   /**
