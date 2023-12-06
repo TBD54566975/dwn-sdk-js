@@ -27,11 +27,9 @@ export const ed25519: SignatureAlgorithm = {
   sign: async (content: Uint8Array, privateJwk: PrivateJwk): Promise<Uint8Array> => {
     validateKey(privateJwk);
 
-    const contentHex = Ed25519.etc.bytesToHex(content);
     const privateKeyBytes = Encoder.base64UrlToBytes(privateJwk.d);
-    const privateKeyHex = Ed25519.etc.bytesToHex(privateKeyBytes);
 
-    return Ed25519.signAsync(contentHex, privateKeyHex);
+    return Ed25519.signAsync(content, privateKeyBytes);
   },
 
   verify: async (content: Uint8Array, signature: Uint8Array, publicJwk: PublicJwk): Promise<boolean> => {
@@ -44,8 +42,7 @@ export const ed25519: SignatureAlgorithm = {
 
   generateKeyPair: async (): Promise<{publicJwk: PublicJwk, privateJwk: PrivateJwk}> => {
     const privateKeyBytes = Ed25519.utils.randomPrivateKey();
-    const privateKeyHex = Ed25519.etc.bytesToHex(privateKeyBytes);
-    const publicKeyBytes = await Ed25519.getPublicKeyAsync(privateKeyHex);
+    const publicKeyBytes = await Ed25519.getPublicKeyAsync(privateKeyBytes);
 
     const d = Encoder.bytesToBase64Url(privateKeyBytes);
 
