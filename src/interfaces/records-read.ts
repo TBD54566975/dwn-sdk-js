@@ -1,10 +1,12 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
+import type { MessageStore } from '../types//message-store.js';
 import type { Signer } from '../types/signer.js';
-import type { RecordsFilter , RecordsReadDescriptor, RecordsReadMessage } from '../types/records-types.js';
+import type { RecordsFilter , RecordsReadDescriptor, RecordsReadMessage, RecordsWriteMessage } from '../types/records-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
 import { Records } from '../utils/records.js';
+import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Time } from '../utils/time.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
@@ -78,5 +80,16 @@ export class RecordsRead extends AbstractMessage<RecordsReadMessage> {
     Message.validateJsonSchema(message);
 
     return new RecordsRead(message);
+  }
+
+  /**
+   * Authorizes the delegate who signed the message.
+   * @param messageStore Used to check if the grant has been revoked.
+   */
+  public async authorizeDelegate(matchedRecordsWrite: RecordsWriteMessage, messageStore: MessageStore): Promise<void> {
+    const grantedTo = this.signer!;
+    const grantedFor = this.author!;
+    const delegatedGrant = this.message.authorization!.authorDelegatedGrant!;
+    await RecordsGrantAuthorization.authorizeRead(grantedFor, this.message, matchedRecordsWrite, grantedTo, delegatedGrant, messageStore);
   }
 }

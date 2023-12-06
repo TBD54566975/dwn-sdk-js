@@ -290,8 +290,8 @@ export class RecordsWriteHandler implements MethodHandler {
       );
     }
 
-    if (recordsWrite.isSignedByDelegatee) {
-      await recordsWrite.authorizeDelegatee(messageStore);
+    if (recordsWrite.isSignedByDelegate) {
+      await recordsWrite.authorizeDelegate(messageStore);
     }
 
     if (recordsWrite.owner !== undefined) {

@@ -85,6 +85,24 @@
           "type": "string"
         }
       }
+    },
+    "records-query-scope": {
+      "type": "object",
+      "required": [
+        "interface",
+        "method"
+      ],
+      "properties": {
+        "interface": {
+          "const": "Records"
+        },
+        "method": {
+          "const": "Query"
+        },
+        "protocol": {
+          "type": "string"
+        }
+      }
     }
   }
 }

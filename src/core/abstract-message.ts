@@ -13,6 +13,11 @@ export abstract class AbstractMessage<M extends GenericMessage> implements Messa
     return this._message as M;
   }
 
+  private _signer: string | undefined;
+  public get signer(): string | undefined {
+    return this._signer;
+  }
+
   private _author: string | undefined;
   public get author(): string | undefined {
     return this._author;
@@ -27,12 +32,14 @@ export abstract class AbstractMessage<M extends GenericMessage> implements Messa
     this._message = message;
 
     if (message.authorization !== undefined) {
+      this._signer = Message.getSigner(message);
+
       // if the message authorization contains author delegated grant, the author would be the grantor of the grant
       // else the author would be the signer of the message
       if (message.authorization.authorDelegatedGrant !== undefined) {
         this._author = Message.getSigner(message.authorization.authorDelegatedGrant);
       } else {
-        this._author = Message.getSigner(message as GenericMessage);
+        this._author = this._signer;
       }
 
       this._signaturePayload = Jws.decodePlainObjectPayload(message.authorization.signature);

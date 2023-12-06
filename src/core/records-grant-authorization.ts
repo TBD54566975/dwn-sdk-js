@@ -1,8 +1,7 @@
 import type { MessageStore } from '../types/message-store.js';
 import type { PermissionsGrantMessage } from '../types/permissions-types.js';
 import type { RecordsPermissionScope } from '../types/permissions-grant-descriptor.js';
-import type { RecordsRead } from '../interfaces/records-read.js';
-import type { RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsQueryMessage, RecordsReadMessage, RecordsWriteMessage } from '../types/records-types.js';
 
 import { GrantAuthorization } from './grant-authorization.js';
 import { PermissionsConditionPublication } from '../types/permissions-grant-descriptor.js';
@@ -19,13 +18,13 @@ export class RecordsGrantAuthorization {
     permissionsGrantMessage: PermissionsGrantMessage,
     messageStore: MessageStore,
   ): Promise<void> {
-    await GrantAuthorization.authorizeGenericMessage(
+    await GrantAuthorization.authorizeGenericMessage({
       tenant,
       incomingMessage,
       author,
       permissionsGrantMessage,
       messageStore
-    );
+    });
 
     RecordsGrantAuthorization.verifyScope(incomingMessage, permissionsGrantMessage);
 
@@ -34,24 +33,55 @@ export class RecordsGrantAuthorization {
 
   /**
    * Authorizes the scope of a PermissionsGrant for RecordsRead.
+   * @param messageStore Used to check if the grant has been revoked.
    */
   public static async authorizeRead(
     tenant: string,
-    incomingMessage: RecordsRead,
+    incomingMessage: RecordsReadMessage,
     newestRecordsWriteMessage: RecordsWriteMessage,
     author: string,
     permissionsGrantMessage: PermissionsGrantMessage,
     messageStore: MessageStore,
   ): Promise<void> {
-    await GrantAuthorization.authorizeGenericMessage(
+    await GrantAuthorization.authorizeGenericMessage({
       tenant,
-      incomingMessage.message,
+      incomingMessage,
       author,
       permissionsGrantMessage,
       messageStore
-    );
+    });
 
     RecordsGrantAuthorization.verifyScope(newestRecordsWriteMessage, permissionsGrantMessage);
+  }
+
+  /**
+   * Authorizes the scope of a PermissionsGrant for RecordsQuery.
+   * @param messageStore Used to check if the grant has been revoked.
+   */
+  public static async authorizeQuery(
+    tenant: string,
+    incomingMessage: RecordsQueryMessage,
+    author: string,
+    permissionsGrantMessage: PermissionsGrantMessage,
+    messageStore: MessageStore,
+  ): Promise<void> {
+    await GrantAuthorization.authorizeGenericMessage({
+      tenant,
+      incomingMessage,
+      author,
+      permissionsGrantMessage,
+      messageStore
+    });
+
+    // If the grant specifies a protocol, the query must specify the same protocol.
+    const protocolInGrant = (permissionsGrantMessage.descriptor.scope as RecordsPermissionScope).protocol;
+    const protocolInQuery = incomingMessage.descriptor.filter.protocol;
+    if (protocolInGrant !== undefined && protocolInQuery !== protocolInGrant) {
+      throw new DwnError(
+        DwnErrorCode.RecordsGrantAuthorizationQueryProtocolScopeMismatch,
+        `Grant protocol scope ${protocolInGrant} does not match protocol in query ${protocolInQuery}`
+      );
+    }
   }
 
   /**

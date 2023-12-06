@@ -82,13 +82,13 @@ export class ProtocolsQuery extends AbstractMessage<ProtocolsQueryMessage> {
       return;
     } else if (this.author !== undefined && this.signaturePayload!.permissionsGrantId) {
       const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, this.signaturePayload!.permissionsGrantId);
-      await GrantAuthorization.authorizeGenericMessage(
+      await GrantAuthorization.authorizeGenericMessage({
         tenant,
-        this.message,
-        this.author,
+        incomingMessage : this.message,
+        author          : this.author,
         permissionsGrantMessage,
         messageStore
-      );
+      });
     } else {
       throw new DwnError(
         DwnErrorCode.ProtocolsQueryUnauthorized,

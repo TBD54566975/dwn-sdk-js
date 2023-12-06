@@ -172,6 +172,13 @@ export class Message {
   }
 
   /**
+   * See if the given message is signed by a delegate
+   */
+  public static isSignedByDelegate(message: GenericMessage): boolean {
+    return message.authorization?.authorDelegatedGrant !== undefined;
+  }
+
+  /**
    * Compares the `messageTimestamp` of the given messages with a fallback to message CID according to the spec.
    * @returns 1 if `a` is larger/newer than `b`; -1 if `a` is smaller/older than `b`; 0 otherwise (same age)
    */
