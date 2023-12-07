@@ -27,6 +27,9 @@
         "method": {
           "const": "Delete"
         },
+        "protocol": {
+          "type": "string"
+        },
         "schema": {
           "type": "string"
         }

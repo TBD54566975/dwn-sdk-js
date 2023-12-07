@@ -104,15 +104,20 @@ export class RecordsDeleteHandler implements MethodHandler {
   };
 
   private static async authorizeRecordsDelete(
-    tenant: string, recordsDelete:
-     RecordsDelete, newestRecordsWrite:
-     RecordsWrite, messageStore: MessageStore
+    tenant: string,
+    recordsDelete: RecordsDelete,
+    recordsWriteToDelete: RecordsWrite,
+    messageStore: MessageStore
   ): Promise<void> {
+
+    if (Message.isSignedByDelegate(recordsDelete.message)) {
+      await recordsDelete.authorizeDelegate(recordsWriteToDelete.message, messageStore);
+    }
 
     if (recordsDelete.author === tenant) {
       return;
-    } else if (newestRecordsWrite.message.descriptor.protocol !== undefined) {
-      await ProtocolAuthorization.authorizeDelete(tenant, recordsDelete, newestRecordsWrite, messageStore);
+    } else if (recordsWriteToDelete.message.descriptor.protocol !== undefined) {
+      await ProtocolAuthorization.authorizeDelete(tenant, recordsDelete, recordsWriteToDelete, messageStore);
     } else {
       throw new DwnError(
         DwnErrorCode.RecordsDeleteAuthorizationFailed,

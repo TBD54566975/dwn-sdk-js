@@ -85,6 +85,7 @@ export enum DwnErrorCode {
   RecordsQueryParseFilterPublishedSortInvalid = 'RecordsQueryParseFilterPublishedSortInvalid',
   RecordsGrantAuthorizationConditionPublicationProhibited = 'RecordsGrantAuthorizationConditionPublicationProhibited',
   RecordsGrantAuthorizationConditionPublicationRequired = 'RecordsGrantAuthorizationConditionPublicationRequired',
+  RecordsGrantAuthorizationDeleteProtocolScopeMismatch = 'RecordsGrantAuthorizationDeleteProtocolScopeMismatch',
   RecordsGrantAuthorizationQueryProtocolScopeMismatch = 'RecordsGrantAuthorizationQueryProtocolScopeMismatch',
   RecordsGrantAuthorizationScopeContextIdMismatch = 'RecordsGrantAuthorizationScopeContextIdMismatch',
   RecordsGrantAuthorizationScopeNotProtocol = 'RecordsGrantAuthorizationScopeNotProtocol',

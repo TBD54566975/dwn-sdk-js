@@ -1,7 +1,7 @@
 import type { MessageStore } from '../types/message-store.js';
 import type { PermissionsGrantMessage } from '../types/permissions-types.js';
 import type { RecordsPermissionScope } from '../types/permissions-grant-descriptor.js';
-import type { RecordsQueryMessage, RecordsReadMessage, RecordsWriteMessage } from '../types/records-types.js';
+import type { RecordsDeleteMessage, RecordsQueryMessage, RecordsReadMessage, RecordsWriteMessage } from '../types/records-types.js';
 
 import { GrantAuthorization } from './grant-authorization.js';
 import { PermissionsConditionPublication } from '../types/permissions-grant-descriptor.js';
@@ -80,6 +80,37 @@ export class RecordsGrantAuthorization {
       throw new DwnError(
         DwnErrorCode.RecordsGrantAuthorizationQueryProtocolScopeMismatch,
         `Grant protocol scope ${protocolInGrant} does not match protocol in query ${protocolInQuery}`
+      );
+    }
+  }
+
+  /**
+   * Authorizes the scope of a PermissionsGrant for RecordsDelete.
+   * @param messageStore Used to check if the grant has been revoked.
+   */
+  public static async authorizeDelete(
+    tenant: string,
+    incomingDeleteMessage: RecordsDeleteMessage,
+    recordsWriteToDelete: RecordsWriteMessage,
+    author: string,
+    permissionsGrantMessage: PermissionsGrantMessage,
+    messageStore: MessageStore,
+  ): Promise<void> {
+    await GrantAuthorization.authorizeGenericMessage({
+      tenant,
+      incomingMessage: incomingDeleteMessage,
+      author,
+      permissionsGrantMessage,
+      messageStore
+    });
+
+    // If the grant specifies a protocol, the query must specify the same protocol.
+    const protocolInGrant = (permissionsGrantMessage.descriptor.scope as RecordsPermissionScope).protocol;
+    const protocolOfRecordToDelete = recordsWriteToDelete.descriptor.protocol;
+    if (protocolInGrant !== undefined && protocolOfRecordToDelete !== protocolInGrant) {
+      throw new DwnError(
+        DwnErrorCode.RecordsGrantAuthorizationDeleteProtocolScopeMismatch,
+        `Grant protocol scope ${protocolInGrant} does not match protocol in record to delete ${protocolOfRecordToDelete}`
       );
     }
   }
