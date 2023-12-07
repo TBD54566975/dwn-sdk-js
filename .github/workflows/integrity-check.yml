@@ -59,10 +59,10 @@ jobs:
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         with:
-          continue-on-error: true
           verbose: true
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        continue-on-error: true
 
   test-with-browsers:
     # Run browser tests using macOS so that WebKit tests don't fail under a Linux environment
