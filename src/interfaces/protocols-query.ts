@@ -24,7 +24,7 @@ export class ProtocolsQuery extends AbstractMessage<ProtocolsQueryMessage> {
 
   public static async parse(message: ProtocolsQueryMessage): Promise<ProtocolsQuery> {
     if (message.authorization !== undefined) {
-      await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+      await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
     }
 
     if (message.descriptor.filter !== undefined) {
@@ -82,10 +82,10 @@ export class ProtocolsQuery extends AbstractMessage<ProtocolsQueryMessage> {
       return;
     } else if (this.author !== undefined && this.signaturePayload!.permissionsGrantId) {
       const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, this.signaturePayload!.permissionsGrantId);
-      await GrantAuthorization.authorizeGenericMessage({
-        tenant,
-        incomingMessage : this.message,
-        author          : this.author,
+      await GrantAuthorization.performBaseValidation({
+        incomingMessage           : this.message,
+        expectedGrantedToInGrant  : this.author,
+        expectedGrantedForInGrant : tenant,
         permissionsGrantMessage,
         messageStore
       });

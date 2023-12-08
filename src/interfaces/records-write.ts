@@ -229,10 +229,10 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   public static async parse(message: RecordsWriteMessage): Promise<RecordsWrite> {
     // asynchronous checks that are required by the constructor to initialize members properly
 
-    await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor, 'RecordsWriteSignaturePayload');
+    await Message.validateSignatureStructure(message.authorization.signature, message.descriptor, 'RecordsWriteSignaturePayload');
 
     if (message.authorization.ownerSignature !== undefined) {
-      await Message.validateMessageSignatureIntegrity(message.authorization.ownerSignature, message.descriptor);
+      await Message.validateSignatureStructure(message.authorization.ownerSignature, message.descriptor);
     }
 
     await RecordsWrite.validateAttestationIntegrity(message);
@@ -544,7 +544,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       }
     }
 
-    // NOTE: validateMessageSignatureIntegrity() call earlier enforces the presence of `authorization` and thus `signature` in RecordsWrite
+    // NOTE: validateSignatureStructure() call earlier enforces the presence of `authorization` and thus `signature` in RecordsWrite
     const signaturePayload = this.signaturePayload!;
 
     // make sure the `recordId` in message is the same as the `recordId` in the payload of the message signature
@@ -713,11 +713,19 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     return indexes;
   }
 
+  /**
+   * Authorizes the delegate who signed this message.
+   * @param messageStore Used to check if the grant has been revoked.
+   */
   public async authorizeDelegate(messageStore: MessageStore): Promise<void> {
-    const grantedTo = this.signer!;
-    const grantedFor = this.author!;
     const delegatedGrant = this.message.authorization.authorDelegatedGrant!;
-    await RecordsGrantAuthorization.authorizeWrite(grantedFor, this.message, grantedTo, delegatedGrant, messageStore);
+    await RecordsGrantAuthorization.authorizeWrite({
+      recordsWriteMessage       : this.message,
+      expectedGrantedToInGrant  : this.signer!,
+      expectedGrantedForInGrant : this.author!,
+      permissionsGrantMessage   : delegatedGrant,
+      messageStore
+    });
   }
 
   /**

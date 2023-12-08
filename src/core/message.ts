@@ -196,12 +196,15 @@ export class Message {
 
 
   /**
-   * Validates the structural integrity of the message signature given.
-   * NOTE: signature is not verified.
+   * Validates the structural integrity of the message signature given:
+   * 1. The message signature must contain exactly 1 signature
+   * 2. Passes JSON schema validation
+   * 3. The `descriptorCid` property matches the CID of the message descriptor
+   * NOTE: signature is NOT verified.
    * @param payloadJsonSchemaKey The key to look up the JSON schema referenced in `compile-validators.js` and perform payload schema validation on.
    * @returns the parsed JSON payload object if validation succeeds.
    */
-  public static async validateMessageSignatureIntegrity(
+  public static async validateSignatureStructure(
     messageSignature: GeneralJws,
     messageDescriptor: Descriptor,
     payloadJsonSchemaKey: string = 'GenericSignaturePayload',

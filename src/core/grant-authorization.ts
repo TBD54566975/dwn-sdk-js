@@ -9,30 +9,34 @@ import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.j
 export class GrantAuthorization {
 
   /**
-   * Performs PermissionsGrant-based authorization against the given message
-   * Does not validate grant `conditions` or `scope` beyond `interface` and `method`
+   * Performs base PermissionsGrant-based authorization against the given message:
+   * 1. Validates the `expectedGrantedToInGrant` and `expectedGrantedForInGrant` values against the actual values in given permissions grant.
+   * 2. Verifies that the incoming message is within the allowed time frame of the grant, and the grant has not been revoked.
+   * 3. Verifies that the `interface` and `method` grant scopes match the incoming message.
+   *
+   * NOTE: Does not validate grant `conditions` or `scope` beyond `interface` and `method`
+   *
    * @param messageStore Used to check if the grant has been revoked.
-   * @throws {DwnError} if authorization fails
+   * @throws {DwnError} if validation fails
    */
-  public static async authorizeGenericMessage(input: {
-    tenant: string,
+  public static async performBaseValidation(input: {
     incomingMessage: GenericMessage,
-    author: string,
+    expectedGrantedToInGrant: string,
+    expectedGrantedForInGrant: string,
     permissionsGrantMessage: PermissionsGrantMessage,
     messageStore: MessageStore,
     }): Promise<void> {
-    const { tenant, incomingMessage, author, permissionsGrantMessage, messageStore } = input;
+    const { expectedGrantedForInGrant, incomingMessage, expectedGrantedToInGrant, permissionsGrantMessage, messageStore } = input;
 
     const incomingMessageDescriptor = incomingMessage.descriptor;
     const permissionsGrantId = await Message.getCid(permissionsGrantMessage);
 
-    const expectedGrantedToInGrant = author;
-    const expectedGrantedForInGrant = tenant;
     GrantAuthorization.verifyExpectedGrantedToAndGrantedFor(expectedGrantedToInGrant, expectedGrantedForInGrant, permissionsGrantMessage);
 
     // verify that grant is active during incomingMessage's timestamp
+    const grantedFor = expectedGrantedForInGrant; // renaming for better readability
     await GrantAuthorization.verifyGrantActive(
-      tenant,
+      grantedFor,
       incomingMessageDescriptor.messageTimestamp,
       permissionsGrantMessage,
       permissionsGrantId,
@@ -111,7 +115,7 @@ export class GrantAuthorization {
    * @throws {DwnError} if incomingMessage has timestamp for a time in which the grant is not active.
    */
   private static async verifyGrantActive(
-    tenant: string,
+    grantedFor: string,
     incomingMessageTimestamp: string,
     permissionsGrantMessage: PermissionsGrantMessage,
     permissionsGrantId: string,
@@ -138,7 +142,7 @@ export class GrantAuthorization {
       method    : DwnMethodName.Revoke,
       permissionsGrantId,
     };
-    const { messages: revokes } = await messageStore.query(tenant, [query]);
+    const { messages: revokes } = await messageStore.query(grantedFor, [query]);
     const oldestExistingRevoke = await Message.getOldestMessage(revokes);
 
     if (oldestExistingRevoke !== undefined && oldestExistingRevoke.descriptor.messageTimestamp <= incomingMessageTimestamp) {

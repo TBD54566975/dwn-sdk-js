@@ -278,7 +278,7 @@ export function testProtocolsConfigureHandler(): void {
         });
         const protocolsConfigureReply = await dwn.processMessage(alice.did, protocolsConfig.message);
         expect(protocolsConfigureReply.status.code).to.equal(401);
-        expect(protocolsConfigureReply.status.detail).to.contain('message failed authorization');
+        expect(protocolsConfigureReply.status.detail).to.contain(DwnErrorCode.AuthorizationAuthorNotOwner);
       });
 
       describe('event log', () => {

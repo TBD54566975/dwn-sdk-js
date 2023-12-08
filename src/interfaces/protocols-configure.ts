@@ -20,7 +20,7 @@ export class ProtocolsConfigure extends AbstractMessage<ProtocolsConfigureMessag
   public static async parse(message: ProtocolsConfigureMessage): Promise<ProtocolsConfigure> {
     Message.validateJsonSchema(message);
     ProtocolsConfigure.validateProtocolDefinition(message.descriptor.definition);
-    await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+    await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
     Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     return new ProtocolsConfigure(message);
