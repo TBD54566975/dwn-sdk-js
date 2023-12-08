@@ -89,7 +89,6 @@ export function testDelegatedGrantScenarios(): void {
       const deviceXGrant = await PermissionsGrant.create({
         delegated   : true, // this is a delegated grant
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        description : 'Allow to write to message protocol',
         grantedBy   : alice.did,
         grantedTo   : deviceX.did,
         grantedFor  : alice.did,
@@ -100,7 +99,6 @@ export function testDelegatedGrantScenarios(): void {
       const deviceYGrant = await PermissionsGrant.create({
         delegated   : true, // this is a delegated grant
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        description : 'Allow to write to message protocol',
         grantedBy   : alice.did,
         grantedTo   : deviceY.did,
         grantedFor  : alice.did,
@@ -234,11 +232,10 @@ export function testDelegatedGrantScenarios(): void {
       const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, chatRecord.dataStream);
       expect(chatRecordReply.status.code).to.equal(202);
 
-      // Alice creates a delegated grant for device X to act as Alice.
+      // Alice creates a delegated query grant for device X to act as Alice.
       const queryGrantForDeviceX = await PermissionsGrant.create({
         delegated   : true, // this is a delegated grant
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        description : 'Allow device X to write as me in chat protocol',
         grantedBy   : alice.did,
         grantedTo   : deviceX.did,
         grantedFor  : alice.did,
@@ -250,11 +247,10 @@ export function testDelegatedGrantScenarios(): void {
         signer: Jws.createSigner(alice)
       });
 
-      // Alice creates a delegated grant for device X to act as Alice.
+      // Alice creates a delegated read grant for device X to act as Alice.
       const readGrantForDeviceX = await PermissionsGrant.create({
         delegated   : true, // this is a delegated grant
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        description : 'Allow device X to write as me in chat protocol',
         grantedBy   : alice.did,
         grantedTo   : deviceX.did,
         grantedFor  : alice.did,
@@ -413,11 +409,10 @@ export function testDelegatedGrantScenarios(): void {
       const chatRecordReply = await dwn.processMessage(bob.did, chatRecord.message, chatRecord.dataStream);
       expect(chatRecordReply.status.code).to.equal(202);
 
-      // Alice creates a delegated grant for device X to act as Alice.
+      // Alice creates a delegated delete grant for device X to act as Alice.
       const deleteGrantForDeviceX = await PermissionsGrant.create({
         delegated   : true, // this is a delegated grant
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        description : 'Allow device X to write as me in chat protocol',
         grantedBy   : alice.did,
         grantedTo   : deviceX.did,
         grantedFor  : alice.did,
@@ -496,7 +491,6 @@ export function testDelegatedGrantScenarios(): void {
       const deviceXGrant = await PermissionsGrant.create({
         delegated   : true, // this is a delegated grant
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        description : 'Allow to write to some random protocol',
         grantedBy   : alice.did,
         grantedTo   : deviceX.did,
         grantedFor  : alice.did,
@@ -590,7 +584,6 @@ export function testDelegatedGrantScenarios(): void {
       const queryGrantForDeviceX = await PermissionsGrant.create({
         delegated   : true, // this is a delegated grant
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        description : 'Allow device X to query as me in some-protocol that is not chat',
         grantedBy   : alice.did,
         grantedTo   : deviceX.did,
         grantedFor  : alice.did,
@@ -606,7 +599,6 @@ export function testDelegatedGrantScenarios(): void {
       const readGrantForDeviceX = await PermissionsGrant.create({
         delegated   : true, // this is a delegated grant
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        description : 'Allow device X to read as me in some-protocol that is not chat',
         grantedBy   : alice.did,
         grantedTo   : deviceX.did,
         grantedFor  : alice.did,
@@ -717,7 +709,6 @@ export function testDelegatedGrantScenarios(): void {
       const delegatedGrantForDeviceX = await PermissionsGrant.create({
         delegated   : true, // this is a delegated grant
         dateExpires : Time.createOffsetTimestamp({ seconds: 100 }),
-        description : 'Allow device X to write as me in chat protocol',
         grantedBy   : alice.did,
         grantedTo   : deviceX.did,
         grantedFor  : alice.did,

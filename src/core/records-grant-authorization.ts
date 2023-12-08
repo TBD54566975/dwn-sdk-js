@@ -104,7 +104,7 @@ export class RecordsGrantAuthorization {
       messageStore
     });
 
-    // If the grant specifies a protocol, the query must specify the same protocol.
+    // If the grant specifies a protocol, the delete must be deleting a record with the same protocol.
     const protocolInGrant = (permissionsGrantMessage.descriptor.scope as RecordsPermissionScope).protocol;
     const protocolOfRecordToDelete = recordsWriteToDelete.descriptor.protocol;
     if (protocolInGrant !== undefined && protocolOfRecordToDelete !== protocolInGrant) {
