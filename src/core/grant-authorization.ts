@@ -11,20 +11,24 @@ export class GrantAuthorization {
   /**
    * Performs PermissionsGrant-based authorization against the given message
    * Does not validate grant `conditions` or `scope` beyond `interface` and `method`
+   * @param messageStore Used to check if the grant has been revoked.
    * @throws {DwnError} if authorization fails
    */
-  public static async authorizeGenericMessage(
+  public static async authorizeGenericMessage(input: {
     tenant: string,
     incomingMessage: GenericMessage,
     author: string,
     permissionsGrantMessage: PermissionsGrantMessage,
     messageStore: MessageStore,
-  ): Promise<void> {
+    }): Promise<void> {
+    const { tenant, incomingMessage, author, permissionsGrantMessage, messageStore } = input;
 
     const incomingMessageDescriptor = incomingMessage.descriptor;
     const permissionsGrantId = await Message.getCid(permissionsGrantMessage);
 
-    GrantAuthorization.verifyGrantedToAndGrantedFor(author, tenant, permissionsGrantMessage);
+    const expectedGrantedToInGrant = author;
+    const expectedGrantedForInGrant = tenant;
+    GrantAuthorization.verifyExpectedGrantedToAndGrantedFor(expectedGrantedToInGrant, expectedGrantedForInGrant, permissionsGrantMessage);
 
     // verify that grant is active during incomingMessage's timestamp
     await GrantAuthorization.verifyGrantActive(
@@ -70,24 +74,31 @@ export class GrantAuthorization {
   }
 
   /**
-   * Verifies the given `grantedTo` and `grantedFor` values against the given permissions grant and throws error if there is a mismatch.
+   * Verifies the given `expectedGrantedToInGrant` and `expectedGrantedForInGrant` values against
+   * the actual `expectedGrantedToInGrant` and `expectedGrantedForInGrant` in given permissions grant.
+   * @throws {DwnError} if `expectedGrantedToInGrant` or `expectedGrantedForInGrant` do not match the actual values in the grant.
    */
-  private static verifyGrantedToAndGrantedFor(grantedTo: string, grantedFor: string, permissionsGrantMessage: PermissionsGrantMessage): void {
-    // Validate `grantedTo`
-    const expectedGrantedTo = permissionsGrantMessage.descriptor.grantedTo;
-    if (expectedGrantedTo !== grantedTo) {
+  private static verifyExpectedGrantedToAndGrantedFor(
+    expectedGrantedToInGrant: string,
+    expectedGrantedForInGrant: string,
+    permissionsGrantMessage: PermissionsGrantMessage
+  ): void {
+
+    // Validate `expectedGrantedToInGrant`
+    const actualGrantedTo = permissionsGrantMessage.descriptor.grantedTo;
+    if (expectedGrantedToInGrant !== actualGrantedTo) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationNotGrantedToAuthor,
-        `PermissionsGrant has grantedTo ${expectedGrantedTo}, but given ${grantedTo}`
+        `PermissionsGrant has grantedTo ${actualGrantedTo}, but need to be granted to ${expectedGrantedToInGrant}`
       );
     }
 
-    // Validate `grantedFor`
-    const expectedGrantedFor = permissionsGrantMessage.descriptor.grantedFor;
-    if (expectedGrantedFor !== grantedFor) {
+    // Validate `expectedGrantedForInGrant`
+    const actualGrantedFor = permissionsGrantMessage.descriptor.grantedFor;
+    if (expectedGrantedForInGrant !== actualGrantedFor) {
       throw new DwnError(
         DwnErrorCode.GrantAuthorizationNotGrantedForTenant,
-        `PermissionsGrant has grantedFor ${expectedGrantedFor}, but given ${grantedFor}`
+        `PermissionsGrant has grantedFor ${actualGrantedFor}, but need to be granted for ${expectedGrantedForInGrant}`
       );
     }
   }
@@ -96,6 +107,7 @@ export class GrantAuthorization {
    * Verify that the incoming message is within the allowed time frame of the grant,
    * and the grant has not been revoked.
    * @param permissionsGrantId Purely being passed as an optimization. Technically can be computed from `permissionsGrantMessage`.
+   * @param messageStore Used to check if the grant has been revoked.
    * @throws {DwnError} if incomingMessage has timestamp for a time in which the grant is not active.
    */
   private static async verifyGrantActive(

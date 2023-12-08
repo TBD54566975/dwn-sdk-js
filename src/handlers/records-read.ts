@@ -63,21 +63,21 @@ export class RecordsReadHandler implements MethodHandler {
       ), 400);
     }
 
-    const newestRecordsWrite = existingMessages[0] as RecordsQueryReplyEntry;
+    const matchedRecordsWrite = existingMessages[0] as RecordsQueryReplyEntry;
     try {
-      await RecordsReadHandler.authorizeRecordsRead(tenant, recordsRead, await RecordsWrite.parse(newestRecordsWrite), this.messageStore);
+      await RecordsReadHandler.authorizeRecordsRead(tenant, recordsRead, await RecordsWrite.parse(matchedRecordsWrite), this.messageStore);
     } catch (error) {
       return messageReplyFromError(error, 401);
     }
 
     let data;
-    if (newestRecordsWrite.encodedData !== undefined) {
-      const dataBytes = Encoder.base64UrlToBytes(newestRecordsWrite.encodedData);
+    if (matchedRecordsWrite.encodedData !== undefined) {
+      const dataBytes = Encoder.base64UrlToBytes(matchedRecordsWrite.encodedData);
       data = DataStream.fromBytes(dataBytes);
-      delete newestRecordsWrite.encodedData;
+      delete matchedRecordsWrite.encodedData;
     } else {
-      const messageCid = await Message.getCid(newestRecordsWrite);
-      const result = await this.dataStore.get(tenant, messageCid, newestRecordsWrite.descriptor.dataCid);
+      const messageCid = await Message.getCid(matchedRecordsWrite);
+      const result = await this.dataStore.get(tenant, messageCid, matchedRecordsWrite.descriptor.dataCid);
       if (result?.dataStream === undefined) {
         return {
           status: { code: 404, detail: 'Not Found' }
@@ -87,7 +87,7 @@ export class RecordsReadHandler implements MethodHandler {
     }
 
     const record = {
-      ...newestRecordsWrite,
+      ...matchedRecordsWrite,
       data
     };
 
@@ -109,13 +109,20 @@ export class RecordsReadHandler implements MethodHandler {
     return messageReply;
   };
 
+  /**
+   * @param messageStore Used to check if the grant has been revoked.
+   */
   private static async authorizeRecordsRead(
     tenant: string,
     recordsRead: RecordsRead,
-    newestRecordsWrite: RecordsWrite,
+    matchedRecordsWrite: RecordsWrite,
     messageStore: MessageStore
   ): Promise<void> {
-    const { descriptor } = newestRecordsWrite.message;
+    if (Message.isSignedByDelegate(recordsRead.message)) {
+      await recordsRead.authorizeDelegate(matchedRecordsWrite.message, messageStore);
+    }
+
+    const { descriptor } = matchedRecordsWrite.message;
 
     // if author is the same as the target tenant, we can directly grant access
     if (recordsRead.author === tenant) {
@@ -129,10 +136,10 @@ export class RecordsReadHandler implements MethodHandler {
     } else if (recordsRead.author !== undefined && recordsRead.signaturePayload!.permissionsGrantId !== undefined) {
       const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, recordsRead.signaturePayload!.permissionsGrantId);
       await RecordsGrantAuthorization.authorizeRead(
-        tenant, recordsRead, newestRecordsWrite.message, recordsRead.author, permissionsGrantMessage, messageStore
+        tenant, recordsRead.message, matchedRecordsWrite.message, recordsRead.author, permissionsGrantMessage, messageStore
       );
     } else if (descriptor.protocol !== undefined) {
-      await ProtocolAuthorization.authorizeRead(tenant, recordsRead, newestRecordsWrite, messageStore);
+      await ProtocolAuthorization.authorizeRead(tenant, recordsRead, matchedRecordsWrite, messageStore);
     } else {
       throw new DwnError(DwnErrorCode.RecordsReadAuthorizationFailed, 'message failed authorization');
     }

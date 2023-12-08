@@ -1,4 +1,5 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
+import type { MessageStore } from '../types//message-store.js';
 import type { Pagination } from '../types/message-types.js';
 import type { Signer } from '../types/signer.js';
 import type { RecordsFilter, RecordsQueryDescriptor, RecordsQueryMessage } from '../types/records-types.js';
@@ -7,6 +8,7 @@ import { AbstractMessage } from '../core/abstract-message.js';
 import { DateSort } from '../types/records-types.js';
 import { Message } from '../core/message.js';
 import { Records } from '../utils/records.js';
+import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
 import { removeUndefinedProperties } from '../utils/object.js';
 import { Time } from '../utils/time.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
@@ -110,5 +112,16 @@ export class RecordsQuery extends AbstractMessage<RecordsQueryMessage> {
     Message.validateJsonSchema(message);
 
     return new RecordsQuery(message);
+  }
+
+  /**
+   * Authorizes the delegate who signed the message.
+   * @param messageStore Used to check if the grant has been revoked.
+   */
+  public async authorizeDelegate(messageStore: MessageStore): Promise<void> {
+    const grantedTo = this.signer!;
+    const grantedFor = this.author!;
+    const delegatedGrant = this.message.authorization!.authorDelegatedGrant!;
+    await RecordsGrantAuthorization.authorizeQuery(grantedFor, this.message, grantedTo, delegatedGrant, messageStore);
   }
 }

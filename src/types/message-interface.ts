@@ -10,6 +10,12 @@ export interface MessageInterface<M extends GenericMessage> {
   get message(): M;
 
   /**
+   * Gets the signer of this message.
+   * This is not to be confused with the logical author of the message.
+   */
+  get signer(): string | undefined;
+
+  /**
    * DID of the logical author of this message.
    * NOTE: we say "logical" author because a message can be signed by a delegate of the actual author,
    * in which case the author DID would not be the same as the signer/delegate DID,

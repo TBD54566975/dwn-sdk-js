@@ -8,6 +8,7 @@ import type { RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry } f
 
 import { authenticate } from '../core/auth.js';
 import { DateSort } from '../types/records-types.js';
+import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolAuthorization } from '../core/protocol-authorization.js';
 import { Records } from '../utils/records.js';
@@ -43,10 +44,7 @@ export class RecordsQueryHandler implements MethodHandler {
       try {
         await authenticate(message.authorization!, this.didResolver);
 
-        // Only run protocol authz if message deliberately invokes it
-        if (RecordsQueryHandler.shouldProtocolAuthorizeQuery(recordsQuery)) {
-          await ProtocolAuthorization.authorizeQuery(tenant, recordsQuery, this.messageStore);
-        }
+        await RecordsQueryHandler.authorizeRecordsQuery(tenant, recordsQuery, this.messageStore);
       } catch (e) {
         return messageReplyFromError(e, 401);
       }
@@ -266,5 +264,24 @@ export class RecordsQueryHandler implements MethodHandler {
       return true;
     }
     return filter.published === false;
+  }
+
+  /**
+   * @param messageStore Used to check if the grant has been revoked.
+   */
+  private static async authorizeRecordsQuery(
+    tenant: string,
+    recordsQuery: RecordsQuery,
+    messageStore: MessageStore
+  ): Promise<void> {
+
+    if (Message.isSignedByDelegate(recordsQuery.message)) {
+      await recordsQuery.authorizeDelegate(messageStore);
+    }
+
+    // Only run protocol authz if message deliberately invokes it
+    if (RecordsQueryHandler.shouldProtocolAuthorizeQuery(recordsQuery)) {
+      await ProtocolAuthorization.authorizeQuery(tenant, recordsQuery, messageStore);
+    }
   }
 }

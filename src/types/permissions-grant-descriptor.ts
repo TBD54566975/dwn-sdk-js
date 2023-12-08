@@ -53,7 +53,7 @@ export type PermissionScope = {
 // Method-specific scopes
 export type RecordsPermissionScope = {
   interface: DwnInterfaceName.Records;
-  method: DwnMethodName.Read | DwnMethodName.Write;
+  method: DwnMethodName.Read | DwnMethodName.Write | DwnMethodName.Query | DwnMethodName.Delete;
   /** May only be present when `schema` is undefined */
   protocol?: string;
   /** May only be present when `protocol` is defined and `protocolPath` is undefined */

@@ -185,10 +185,10 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   }
 
   /**
-   * If this message is signed by a delegated entity.
+   * If this message is signed by a delegate.
    */
-  public get isSignedByDelegatee(): boolean {
-    return this._message.authorization?.authorDelegatedGrant !== undefined;
+  public get isSignedByDelegate(): boolean {
+    return Message.isSignedByDelegate(this._message);
   }
 
   /**
@@ -713,13 +713,12 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     return indexes;
   }
 
-  public async authorizeDelegatee(messageStore: MessageStore): Promise<void> {
+  public async authorizeDelegate(messageStore: MessageStore): Promise<void> {
     const grantedTo = this.signer!;
     const grantedFor = this.author!;
     const delegatedGrant = this.message.authorization.authorDelegatedGrant!;
     await RecordsGrantAuthorization.authorizeWrite(grantedFor, this.message, grantedTo, delegatedGrant, messageStore);
   }
-
 
   /**
    * Checks if the given message is the initial entry of a record.

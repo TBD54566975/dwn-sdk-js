@@ -357,7 +357,7 @@ describe('RecordsWrite', () => {
     });
   });
 
-  describe('isSignedByDelegatee()', () => {
+  describe('isSignedByDelegate()', () => {
     it('should return false if the given RecordsWrite is not signed at all', async () => {
       const data = new TextEncoder().encode('any data');
       const recordsWrite = await RecordsWrite.create({
@@ -368,8 +368,8 @@ describe('RecordsWrite', () => {
         data
       });
 
-      const isSignedByDelegatee = recordsWrite.isSignedByDelegatee;
-      expect(isSignedByDelegatee).to.be.false;
+      const isSignedByDelegate = recordsWrite.isSignedByDelegate;
+      expect(isSignedByDelegate).to.be.false;
     });
   });
 
