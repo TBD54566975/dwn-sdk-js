@@ -4318,29 +4318,38 @@ export function testRecordsWriteHandler(): void {
       });
     });
 
-    it('should throw if `recordsWriteHandler.processMessageWithoutDataStream()` throws unknown error', async () => {
-      // simulate an initial write to test non-data path, as initial writes without data are always accepted (bot not readable)
-      // https://github.com/TBD54566975/dwn-sdk-js/issues/628
-      const { author, message: initialWriteMessage, recordsWrite: initialWrite } = await TestDataGenerator.generateRecordsWrite();
-      const { message, dataStream } = await TestDataGenerator.generateFromRecordsWrite({ author, existingWrite: initialWrite });
-      const tenant = author.did;
+    describe('unknown error', () => {
+      beforeEach(() => {
+        sinon.restore(); // wipe all previous stubs/spies/mocks/fakes
+      });
 
-      const didResolverStub = TestStubGenerator.createDidResolverStub(author);
+      it('should throw if `recordsWriteHandler.processMessageWithoutDataStream()` throws unknown error', async () => {
+        // simulate an initial write to test non-data path, as initial writes without data are always accepted (bot not readable)
+        // https://github.com/TBD54566975/dwn-sdk-js/issues/628
+        const { author, message: initialWriteMessage, recordsWrite: initialWrite } = await TestDataGenerator.generateRecordsWrite();
+        await Time.minimalSleep();
 
-      const messageStoreStub = stubInterface<MessageStore>();
-      messageStoreStub.query.resolves({ messages: [ initialWriteMessage ] });
+        const { message, dataStream } = await TestDataGenerator.generateFromRecordsWrite({ author, existingWrite: initialWrite });
+        const tenant = author.did;
 
-      const dataStoreStub = stubInterface<DataStore>();
-      const recordsWriteHandler = new RecordsWriteHandler(didResolverStub, messageStoreStub, dataStoreStub, eventLog);
-      // simulate throwing unexpected error
-      sinon.stub(recordsWriteHandler as any, 'processMessageWithoutDataStream').throws(new Error('an unknown error in recordsWriteHandler.processMessageWithoutDataStream()'));
-      sinon.stub(recordsWriteHandler as any, 'processMessageWithDataStream').throws(new Error('an unknown error in recordsWriteHandler.processMessageWithDataStream()'));
+        const didResolverStub = TestStubGenerator.createDidResolverStub(author);
 
-      let handlerPromise = recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! }); // with data stream
-      await expect(handlerPromise).to.be.rejectedWith('an unknown error in recordsWriteHandler.processMessageWithDataStream()');
+        const messageStoreStub = stubInterface<MessageStore>();
+        messageStoreStub.query.resolves({ messages: [ initialWriteMessage ] });
 
-      handlerPromise = recordsWriteHandler.handle({ tenant, message }); // without data stream
-      await expect(handlerPromise).to.be.rejectedWith('an unknown error in recordsWriteHandler.processMessageWithoutDataStream()');
+        const dataStoreStub = stubInterface<DataStore>();
+        const recordsWriteHandler = new RecordsWriteHandler(didResolverStub, messageStoreStub, dataStoreStub, eventLog);
+        // simulate throwing unexpected error
+        sinon.stub(recordsWriteHandler as any, 'processMessageWithoutDataStream').throws(new Error('an unknown error in recordsWriteHandler.processMessageWithoutDataStream()'));
+        sinon.stub(recordsWriteHandler as any, 'processMessageWithDataStream').throws(new Error('an unknown error in recordsWriteHandler.processMessageWithDataStream()'));
+
+        let handlerPromise = recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! }); // with data stream
+        await expect(handlerPromise).to.be.rejectedWith('an unknown error in recordsWriteHandler.processMessageWithDataStream()');
+
+        handlerPromise = recordsWriteHandler.handle({ tenant, message }); // without data stream
+        await expect(handlerPromise).to.be.rejectedWith('an unknown error in recordsWriteHandler.processMessageWithoutDataStream()');
+      });
+
     });
   });
 }
