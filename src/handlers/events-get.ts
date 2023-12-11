@@ -31,7 +31,7 @@ export class EventsGetHandler implements MethodHandler {
     // if a cursor was provided in message, get all events _after_ the cursor.
     // Otherwise, get all events.
     const { cursor: queryCursor } = message.descriptor;
-    const { entries: events, cursor } = await this.eventLog.getEvents(tenant, queryCursor);
+    const { events, cursor } = await this.eventLog.getEvents(tenant, queryCursor);
 
     return {
       status  : { code: 200, detail: 'OK' },
