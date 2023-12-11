@@ -5,8 +5,6 @@ import type {
   ProtocolDefinition
 } from '../../src/index.js';
 
-
-
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 import chai, { expect } from 'chai';
@@ -675,7 +673,7 @@ export function testRecordsDeleteHandler(): void {
         expect(await Message.getCid(messages[0])).to.equal(deleteMessageCid);
 
         // event log
-        const { entries: events } = await eventLog.queryEvents(alice.did, [{ schema: normalizeSchemaUrl('testSchema'), method: DwnMethodName.Delete }]);
+        const { events } = await eventLog.queryEvents(alice.did, [{ schema: normalizeSchemaUrl('testSchema'), method: DwnMethodName.Delete }]);
         expect(events.length).to.equal(1);
         expect(events[0]).to.equal(deleteMessageCid);
       });
@@ -696,7 +694,7 @@ export function testRecordsDeleteHandler(): void {
           const deleteReply = await dwn.processMessage(alice.did, recordsDelete.message);
           expect(deleteReply.status.code).to.equal(202);
 
-          const { entries: events } = await eventLog.getEvents(alice.did);
+          const { events } = await eventLog.getEvents(alice.did);
           expect(events.length).to.equal(2);
 
           const writeMessageCid = await Message.getCid(message);
@@ -734,7 +732,7 @@ export function testRecordsDeleteHandler(): void {
           const deleteReply = await dwn.processMessage(author.did, recordsDelete.message);
           expect(deleteReply.status.code).to.equal(202);
 
-          const { entries: events } = await eventLog.getEvents(author.did);
+          const { events } = await eventLog.getEvents(author.did);
           expect(events.length).to.equal(2);
 
           const deletedMessageCid = await Message.getCid(newWrite.message);

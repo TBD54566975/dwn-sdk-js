@@ -39,13 +39,13 @@ export function testEventLog(): void {
       const messageCid2 = await Message.getCid(message2);
       await eventLog.append(author2.did, messageCid2, message2Index);
 
-      let events = await eventLog.getEvents(author.did);
-      expect(events.entries.length).to.equal(1);
-      expect(events.entries[0]).to.equal(messageCid);
+      let { events } = await eventLog.getEvents(author.did);
+      expect(events.length).to.equal(1);
+      expect(events[0]).to.equal(messageCid);
 
-      events = await eventLog.getEvents(author2.did);
-      expect(events.entries.length).to.equal(1);
-      expect(events.entries[0]).to.equal(messageCid2);
+      ({ events } = await eventLog.getEvents(author2.did));
+      expect(events.length).to.equal(1);
+      expect(events[0]).to.equal(messageCid2);
     });
 
     it('returns events in the order that they were appended', async () => {
@@ -67,7 +67,7 @@ export function testEventLog(): void {
         expectedMessages.push(messageCid);
       }
 
-      const { entries:events } = await eventLog.getEvents(author.did);
+      const { events } = await eventLog.getEvents(author.did);
       expect(events.length).to.equal(expectedMessages.length);
 
       for (let i = 0; i < 10; i += 1) {
@@ -94,7 +94,7 @@ export function testEventLog(): void {
           expectedMessages.push(messageCid);
         }
 
-        const { entries: events } = await eventLog.getEvents(author.did);
+        const { events } = await eventLog.getEvents(author.did);
         expect(events.length).to.equal(10);
 
         for (let i = 0; i < events.length; i += 1) {
@@ -110,10 +110,10 @@ export function testEventLog(): void {
         const messageCid = await Message.getCid(message);
         const index = await recordsWrite.constructRecordsWriteIndexes(true);
         await eventLog.append(author.did, messageCid, index);
-        const { cursor, entries } = await eventLog.getEvents(author.did);
-        expect(entries.length).to.equal(1);
+        const { events: cursorEvents, cursor } = await eventLog.getEvents(author.did);
+        expect(cursorEvents.length).to.equal(1);
         expect(cursor).to.not.be.undefined;
-        expect(entries[0]).to.equal(messageCid);
+        expect(cursorEvents[0]).to.equal(messageCid);
 
         // add more messages
         const expectedMessages: string[] = [];
@@ -125,7 +125,7 @@ export function testEventLog(): void {
           expectedMessages.push(messageCid);
         }
 
-        const { entries: events } = await eventLog.getEvents(author.did, cursor);
+        const { events } = await eventLog.getEvents(author.did, cursor);
         expect(events.length).to.equal(5);
 
         for (let i = 0; i < events.length; i += 1) {
@@ -155,7 +155,7 @@ export function testEventLog(): void {
         }
 
         await eventLog.deleteEventsByCid(author.did, deleteMessages);
-        const { entries: remainingEvents } = await eventLog.getEvents(author.did);
+        const { events: remainingEvents } = await eventLog.getEvents(author.did);
         expect(remainingEvents.length).to.equal(10 - deleteMessages.length);
         expect(remainingEvents).to.not.include.members(deleteMessages);
       });
@@ -181,7 +181,7 @@ export function testEventLog(): void {
         // does not error and deletes all messages
         await eventLog.deleteEventsByCid(author.did, [...cids, 'someInvalidCid' ]);
 
-        const { entries: remainingEvents } = await eventLog.getEvents(author.did);
+        const { events: remainingEvents } = await eventLog.getEvents(author.did);
         expect(remainingEvents.length).to.equal(0);
       });
     });
@@ -222,7 +222,7 @@ export function testEventLog(): void {
           expectedMessages.push(messageCid);
         }
 
-        const { entries: events } = await eventLog.queryEvents(author.did, [{ schema: normalizeSchemaUrl('schema1') }]);
+        const { events } = await eventLog.queryEvents(author.did, [{ schema: normalizeSchemaUrl('schema1') }]);
         expect(events.length).to.equal(expectedMessages.length);
 
         for (let i = 0; i < expectedMessages.length; i += 1) {
@@ -259,7 +259,7 @@ export function testEventLog(): void {
         await eventLog.append(author.did, nonSchemaMessage1Cid, nonSchemaMessage1Indexes);
 
         // make initial query
-        let { entries: events, cursor } = await eventLog.queryEvents(author.did, [{ schema: normalizeSchemaUrl('schema1') }]);
+        let { events, cursor } = await eventLog.queryEvents(author.did, [{ schema: normalizeSchemaUrl('schema1') }]);
         expect(events.length).to.equal(3);
         expect(events[0]).to.equal(await Message.getCid(message));
         expect(events[1]).to.equal(await Message.getCid(message2));
@@ -277,7 +277,7 @@ export function testEventLog(): void {
         const nonSchemaMessage2Indexes = await nonSchemaMessage2Write.constructRecordsWriteIndexes(true);
         await eventLog.append(author.did, nonSchemaMessage2Cid, nonSchemaMessage2Indexes);
 
-        ({ entries: events } = await eventLog.queryEvents(author.did, [{ schema: normalizeSchemaUrl('schema1') }], cursor));
+        ({ events } = await eventLog.queryEvents(author.did, [{ schema: normalizeSchemaUrl('schema1') }], cursor));
         expect(events.length).to.equal(1);
         expect(events[0]).to.equal(await Message.getCid(message4));
       });

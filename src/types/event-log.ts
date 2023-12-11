@@ -1,8 +1,4 @@
-import type { Filter, KeyValues, PaginatedEntries, PaginationCursor } from './query-types.js';
-
-export type GetEventsOptions = {
-  cursor: string
-};
+import type { Filter, KeyValues, PaginationCursor } from './query-types.js';
 
 export interface EventLog {
  /**
@@ -31,7 +27,7 @@ export interface EventLog {
    *
    * Returns an array of messageCids that represent the events.
    */
-  getEvents(tenant: string, cursor?: PaginationCursor): Promise<PaginatedEntries<string>>
+  getEvents(tenant: string, cursor?: PaginationCursor): Promise<{ events: string[], cursor?: PaginationCursor }>
 
   /**
    * retrieves a filtered set of events that occurred after a the cursor provided, accepts multiple filters.
@@ -41,7 +37,7 @@ export interface EventLog {
    *
    * Returns an array of messageCids that represent the events.
    */
-  queryEvents(tenant: string, filters: Filter[], cursor?: PaginationCursor): Promise<PaginatedEntries<string>>
+  queryEvents(tenant: string, filters: Filter[], cursor?: PaginationCursor): Promise<{ events: string[], cursor?: PaginationCursor }>
 
   /**
    * deletes any events that have any of the messageCids provided

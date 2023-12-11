@@ -55,8 +55,3 @@ export type PaginationCursor = {
   itemId: string;
   value: string | number;
 };
-
-export type PaginatedEntries<T> = {
-  entries: T[];
-  cursor?: PaginationCursor;
-};

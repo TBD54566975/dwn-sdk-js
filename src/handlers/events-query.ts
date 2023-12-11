@@ -32,7 +32,7 @@ export class EventsQueryHandler implements MethodHandler {
     }
 
     const logFilters = EventsQuery.convertFilters(message.descriptor.filters);
-    const { entries: events, cursor } = await this.eventLog.queryEvents(tenant, logFilters, message.descriptor.cursor);
+    const { events, cursor } = await this.eventLog.queryEvents(tenant, logFilters, message.descriptor.cursor);
 
     return {
       status: { code: 200, detail: 'OK' },
