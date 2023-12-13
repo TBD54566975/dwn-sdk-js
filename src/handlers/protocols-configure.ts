@@ -9,7 +9,7 @@ import type { ProtocolsConfigureMessage } from '../types/protocols-types.js';
 import { Message } from '../core/message.js';
 import { messageReplyFromError } from '../core/message-reply.js';
 import { ProtocolsConfigure } from '../interfaces/protocols-configure.js';
-import { authenticate, authorize } from '../core/auth.js';
+import { authenticate, authorizeOwner } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export class ProtocolsConfigureHandler implements MethodHandler {
@@ -32,7 +32,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     // authentication & authorization
     try {
       await authenticate(message.authorization, this.didResolver);
-      await authorize(tenant, protocolsConfigure);
+      await authorizeOwner(tenant, protocolsConfigure);
     } catch (e) {
       return messageReplyFromError(e, 401);
     }

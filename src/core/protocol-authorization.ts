@@ -590,7 +590,7 @@ export class ProtocolAuthorization {
     inboundMessageRuleSet: ProtocolRuleSet,
     messageStore: MessageStore,
   ): Promise<void> {
-    const incomingRecordsWrite = incomingMessage as RecordsWrite;
+    const incomingRecordsWrite = incomingMessage;
     if (!inboundMessageRuleSet.$globalRole && !inboundMessageRuleSet.$contextRole) {
       return;
     }

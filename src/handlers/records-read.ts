@@ -135,9 +135,14 @@ export class RecordsReadHandler implements MethodHandler {
       return;
     } else if (recordsRead.author !== undefined && recordsRead.signaturePayload!.permissionsGrantId !== undefined) {
       const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, recordsRead.signaturePayload!.permissionsGrantId);
-      await RecordsGrantAuthorization.authorizeRead(
-        tenant, recordsRead.message, matchedRecordsWrite.message, recordsRead.author, permissionsGrantMessage, messageStore
-      );
+      await RecordsGrantAuthorization.authorizeRead({
+        recordsReadMessage          : recordsRead.message,
+        recordsWriteMessageToBeRead : matchedRecordsWrite.message,
+        expectedGrantedToInGrant    : recordsRead.author,
+        expectedGrantedForInGrant   : tenant,
+        permissionsGrantMessage,
+        messageStore
+      });
     } else if (descriptor.protocol !== undefined) {
       await ProtocolAuthorization.authorizeRead(tenant, recordsRead, matchedRecordsWrite, messageStore);
     } else {

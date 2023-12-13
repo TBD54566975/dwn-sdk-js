@@ -1,6 +1,6 @@
 import type { AuthorizationModel, GenericMessage } from './message-types.js';
 import type { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
-import type { PermissionConditions, PermissionScope, PermissionsGrantDescriptor } from './permissions-grant-descriptor.js';
+import type { PermissionConditions, PermissionScope, PermissionsGrantDescriptor, RecordsPermissionScope } from './permissions-grant-descriptor.js';
 
 export type PermissionsRequestDescriptor = {
   interface: DwnInterfaceName.Permissions;
@@ -26,6 +26,12 @@ export type PermissionsRequestMessage = GenericMessage & {
 export type PermissionsGrantMessage = GenericMessage & {
   authorization: AuthorizationModel; // overriding `GenericMessage` with `authorization` being required
   descriptor: PermissionsGrantDescriptor;
+};
+
+export type RecordsPermissionsGrantMessage = PermissionsGrantMessage & {
+  descriptor: {
+    scope: RecordsPermissionScope;
+  };
 };
 
 export type PermissionsRevokeDescriptor = {

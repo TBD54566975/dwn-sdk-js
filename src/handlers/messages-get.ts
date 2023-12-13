@@ -7,7 +7,7 @@ import type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from
 
 import { messageReplyFromError } from '../core/message-reply.js';
 import { MessagesGet } from '../interfaces/messages-get.js';
-import { authenticate, authorize } from '../core/auth.js';
+import { authenticate, authorizeOwner } from '../core/auth.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 type HandleArgs = { tenant: string, message: MessagesGetMessage };
@@ -26,7 +26,7 @@ export class MessagesGetHandler implements MethodHandler {
 
     try {
       await authenticate(message.authorization, this.didResolver);
-      await authorize(tenant, messagesGet);
+      await authorizeOwner(tenant, messagesGet);
     } catch (e) {
       return messageReplyFromError(e, 401);
     }

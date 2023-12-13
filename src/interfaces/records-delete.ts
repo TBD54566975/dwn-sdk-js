@@ -27,7 +27,7 @@ export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
   public static async parse(message: RecordsDeleteMessage): Promise<RecordsDelete> {
     let signaturePayload;
     if (message.authorization !== undefined) {
-      signaturePayload = await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+      signaturePayload = await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
     }
 
     Records.validateDelegatedGrantReferentialIntegrity(message, signaturePayload);
@@ -68,13 +68,18 @@ export class RecordsDelete extends AbstractMessage<RecordsDeleteMessage> {
   }
 
   /**
-   * Authorizes the delegate who signed the message.
+   * Authorizes the delegate who signed this message.
    * @param messageStore Used to check if the grant has been revoked.
    */
   public async authorizeDelegate(recordsWriteToDelete: RecordsWriteMessage, messageStore: MessageStore): Promise<void> {
-    const grantedTo = this.signer!;
-    const grantedFor = this.author!;
-    const delegatedGrant = this.message.authorization!.authorDelegatedGrant!;
-    await RecordsGrantAuthorization.authorizeDelete(grantedFor, this.message, recordsWriteToDelete, grantedTo, delegatedGrant, messageStore);
+    const delegatedGrantMessage = this.message.authorization!.authorDelegatedGrant!;
+    await RecordsGrantAuthorization.authorizeDelete({
+      recordsDeleteMessage      : this.message,
+      recordsWriteToDelete,
+      expectedGrantedToInGrant  : this.signer!,
+      expectedGrantedForInGrant : this.author!,
+      permissionsGrantMessage   : delegatedGrantMessage,
+      messageStore
+    });
   }
 }

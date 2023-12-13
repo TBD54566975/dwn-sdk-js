@@ -15,7 +15,7 @@ export type PermissionsRevokeOptions = {
 
 export class PermissionsRevoke extends AbstractMessage<PermissionsRevokeMessage> {
   public static async parse(message: PermissionsRevokeMessage): Promise<PermissionsRevoke> {
-    await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+    await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
     Time.validateTimestamp(message.descriptor.messageTimestamp);
 
     return new PermissionsRevoke(message);

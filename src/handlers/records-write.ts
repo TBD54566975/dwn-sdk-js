@@ -303,7 +303,13 @@ export class RecordsWriteHandler implements MethodHandler {
       return;
     } else if (recordsWrite.author !== undefined && recordsWrite.signaturePayload!.permissionsGrantId !== undefined) {
       const permissionsGrantMessage = await GrantAuthorization.fetchGrant(tenant, messageStore, recordsWrite.signaturePayload!.permissionsGrantId);
-      await RecordsGrantAuthorization.authorizeWrite(tenant, recordsWrite.message, recordsWrite.author, permissionsGrantMessage, messageStore);
+      await RecordsGrantAuthorization.authorizeWrite({
+        recordsWriteMessage       : recordsWrite.message,
+        expectedGrantedToInGrant  : recordsWrite.author,
+        expectedGrantedForInGrant : tenant,
+        permissionsGrantMessage,
+        messageStore
+      });
     } else if (recordsWrite.message.descriptor.protocol !== undefined) {
       await ProtocolAuthorization.authorizeWrite(tenant, recordsWrite, messageStore);
     } else {

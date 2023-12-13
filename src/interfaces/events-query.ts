@@ -23,7 +23,7 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
 
   public static async parse(message: EventsQueryMessage): Promise<EventsQuery> {
     Message.validateJsonSchema(message);
-    await Message.validateMessageSignatureIntegrity(message.authorization.signature, message.descriptor);
+    await Message.validateSignatureStructure(message.authorization.signature, message.descriptor);
 
     return new EventsQuery(message);
   }
