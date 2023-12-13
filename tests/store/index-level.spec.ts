@@ -247,12 +247,14 @@ describe('IndexLevel', () => {
         }
 
         const filters = [{ schema: 'schema', published: true }];
-        const cursorA = { itemId: 'a-id', value: 'a' }; // before results
+        // cursor `a-id` doesn't actually exist, but the value `a` is sorted prior to the result set.
+        const cursorA = { itemId: 'a-id', value: 'a' };
 
         const allResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: cursorA });
         expect(allResults.map(({ itemId }) => itemId)).to.eql(['b-id', 'c-id', 'd-id']);
 
-        const cursorE = { itemId: 'e-id', value: 'e' }; // after results
+        // cursor `e-id` doesn't actually exist, but the value `e` is sorted after to the result set.
+        const cursorE = { itemId: 'e-id', value: 'e' };
         const noResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: cursorE });
         expect(noResults.length).to.eql(0);
       });
