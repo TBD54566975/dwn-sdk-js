@@ -96,6 +96,7 @@ export class MessageStoreLevel implements MessageStore {
     const results = await this.index.query(tenant, filters, queryOptions, options);
 
     let cursor: PaginationCursor | undefined;
+    // checks to see if the returned results are greater than the limit, which would indicate additional results.
     if (pagination?.limit !== undefined && pagination.limit < results.length) {
       // has additional records, remove last record and set cursor
       results.splice(-1);
@@ -138,6 +139,7 @@ export class MessageStoreLevel implements MessageStore {
       sortDirection = messageSort[sortProperty]!;
     }
 
+    // we add one more to the limit to determine whether there are additional results and to return a cursor.
     if (limit !== undefined && limit > 0) {
       limit = limit + 1;
     }
