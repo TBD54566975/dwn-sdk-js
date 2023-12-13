@@ -100,8 +100,8 @@ export class MessageStoreLevel implements MessageStore {
       // has additional records, remove last record and set cursor
       results.splice(-1);
 
-      // set cursor to the last result
-      cursor = results.at(-1);
+      // set cursor to the last item remaining after the spliced result.
+      cursor = IndexLevel.getCursorFromArray(results, queryOptions.sortProperty);
     }
 
     const messages: GenericMessage[] = [];

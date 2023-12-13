@@ -13,9 +13,7 @@ type IndexLevelConfig = {
   createLevelDatabase?: typeof createLevelDatabase
 };
 
-type IndexedItem = { itemId: string, indexes: KeyValues };
-
-interface ItemCursor { itemId: string, value: string | number };
+export type IndexedItem = { itemId: string, indexes: KeyValues };
 
 const INDEX_SUBLEVEL_NAME = 'index';
 
@@ -195,7 +193,7 @@ export class IndexLevel {
    * @param options IndexLevelOptions that include an AbortSignal.
    * @returns {string[]} an array of itemIds that match the given filters.
    */
-  async query(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<ItemCursor[]> {
+  async query(tenant: string, filters: Filter[], queryOptions: QueryOptions, options?: IndexLevelOptions): Promise<IndexedItem[]> {
 
     // check if we should query using in-memory paging or iterator paging
     if (IndexLevel.shouldQueryWithInMemoryPaging(filters, queryOptions)) {
@@ -214,13 +212,13 @@ export class IndexLevel {
     filters: Filter[],
     queryOptions: QueryOptions,
     options?: IndexLevelOptions
-  ): Promise<ItemCursor[]> {
-    const { cursor: queryCursor , sortProperty, limit } = queryOptions;
+  ): Promise<IndexedItem[]> {
+    const { cursor: queryCursor , limit } = queryOptions;
 
     // if there is a cursor we fetch the starting key given the sort property, otherwise we start from the beginning of the index.
     const startKey = queryCursor ? this.getStartingKeyForCursor(queryCursor) : '';
 
-    const matches: ItemCursor[] = [];
+    const matches: IndexedItem[] = [];
     for await ( const item of this.getIndexIterator(tenant, startKey, queryOptions, options)) {
       if (limit !== undefined && limit === matches.length) {
         break;
@@ -228,10 +226,7 @@ export class IndexLevel {
 
       const { indexes } = item;
       if (FilterUtility.matchAnyFilter(indexes, filters)) {
-        const itemCursor = IndexLevel.encodeCursorFromItem(item, sortProperty);
-        if (itemCursor) {
-          matches.push(itemCursor);
-        }
+        matches.push(item);
       }
     }
 
@@ -278,12 +273,37 @@ export class IndexLevel {
     return IndexLevel.keySegmentJoin(IndexLevel.encodeValue(value), itemId);
   }
 
-  static encodeCursorFromItem(item: IndexedItem, sortProperty: string): { itemId: string, value: string | number } | undefined {
+  /**
+   * Returns a PaginationCursor for the last item of a given array of IndexedItems.
+   * If the given array is empty, undefined is returned.
+   *
+   * @throws {DwnError} if the sort property or cursor value is invalid.
+   */
+  static getCursorFromArray(items: IndexedItem[], sortProperty: string): PaginationCursor | undefined {
+    if (items.length > 0) {
+      return this.encodeCursorFromItem(items.at(-1)!, sortProperty);
+    }
+  }
+
+  /**
+   * Encodes a PaginationCursor from a given IndexedItem and sortProperty.
+   *
+   * @throws {DwnError} if the sort property or cursor value is invalid.
+   */
+  static encodeCursorFromItem(item: IndexedItem, sortProperty: string): PaginationCursor {
     const { itemId, indexes } = item;
     const value = indexes[sortProperty];
-    if ( value !== undefined && typeof value !== 'boolean') {
-      return { itemId, value };
+
+    if (value === undefined) {
+      throw new DwnError(DwnErrorCode.IndexInvalidCursorSortProperty, `the sort property '${sortProperty}' is not defined within the given item.`);
     }
+
+    // we only support cursors for string or number types
+    if (typeof value === 'boolean') {
+      throw new DwnError(DwnErrorCode.IndexInvalidCursorValueType, 'only string or number values are supported for cursors, a boolean was given.');
+    }
+
+    return { itemId, value };
   }
 
   /**
@@ -299,7 +319,7 @@ export class IndexLevel {
     filters: Filter[],
     queryOptions: QueryOptions,
     options?: IndexLevelOptions
-  ): Promise<ItemCursor[]> {
+  ): Promise<IndexedItem[]> {
     const { sortProperty, sortDirection = SortDirection.Ascending, cursor: queryCursor, limit } = queryOptions;
 
     // we get the cursor start key here so that we match the failing behavior of `queryWithIteratorPaging`
@@ -334,7 +354,7 @@ export class IndexLevel {
     }
 
     const end = limit !== undefined ? start + limit: undefined;
-    return sortedValues.slice(start, end).map(item => IndexLevel.encodeCursorFromItem(item, sortProperty)!);
+    return sortedValues.slice(start, end);
   }
 
   /**
@@ -464,7 +484,7 @@ export class IndexLevel {
 
     for await (const [ key, value ] of filterPartition.iterator(iteratorOptions, options)) {
       // if "greater-than" is specified, skip all keys that contains the exact value given in the "greater-than" condition
-      if ('gt' in rangeFilter && IndexLevel.extractIndexValueFromKey(key) === IndexLevel.encodeValue(rangeFilter.gt!)) {
+      if ('gt' in rangeFilter && this.extractIndexValueFromKey(key) === IndexLevel.encodeValue(rangeFilter.gt!)) {
         continue;
       }
       matches.push(JSON.parse(value) as IndexedItem);
@@ -535,7 +555,7 @@ export class IndexLevel {
    *    key: '"2023-05-25T11:22:33.000000Z"\u0000bayfreigu....'
    *    returns "2023-05-25T11:22:33.000000Z"
    */
-  private static extractIndexValueFromKey(key: string): string {
+  private extractIndexValueFromKey(key: string): string {
     const [value] = key.split(IndexLevel.delimiter);
     return value;
   }
@@ -544,7 +564,7 @@ export class IndexLevel {
    * Joins the given values using the `\x00` (\u0000) character.
    */
   private static delimiter = `\x00`;
-  public static keySegmentJoin(...values: string[]): string {
+  private static keySegmentJoin(...values: string[]): string {
     return values.join(IndexLevel.delimiter);
   }
 
