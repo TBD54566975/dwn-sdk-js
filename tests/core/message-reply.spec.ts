@@ -1,4 +1,4 @@
-import type { GenericMessageReply } from '../../src/core/message-reply.js';
+import type { GenericMessageReply } from '../../src/types/message-types.js';
 
 import { expect } from 'chai';
 import { messageReplyFromError } from '../../src/core/message-reply.js';

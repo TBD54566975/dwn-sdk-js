@@ -39,8 +39,8 @@ export class EventsGetHandler implements MethodHandler {
     const events = await this.eventLog.getEvents(tenant, options);
 
     return {
-      status: { code: 200, detail: 'OK' },
-      entries: events
+      status  : { code: 200, detail: 'OK' },
+      entries : events
     };
   }
 }

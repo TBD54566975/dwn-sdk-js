@@ -1,6 +1,6 @@
 import type { DidResolver } from '../did/did-resolver.js';
 import type { EventLog } from '../types//event-log.js';
-import type { GenericMessageReply } from '../core/message-reply.js';
+import type { GenericMessageReply } from '../types/message-types.js';
 import type { KeyValues } from '../types/query-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';

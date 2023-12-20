@@ -1,15 +1,6 @@
 import type { MessagesGetReplyEntry } from '../types/messages-types.js';
-import type { QueryResultEntry } from '../types/message-types.js';
 import type { RecordsWriteReply } from '../types/records-types.js';
-
-type Status = {
-  code: number
-  detail: string
-};
-
-export type GenericMessageReply = {
-  status: Status;
-};
+import type { GenericMessageReply, QueryResultEntry } from '../types/message-types.js';
 
 export function messageReplyFromError(e: unknown, code: number): GenericMessageReply {
 
