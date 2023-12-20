@@ -24,8 +24,8 @@ export function messageReplyFromError(e: unknown, code: number): GenericMessageR
 export type UnionMessageReply = GenericMessageReply & {
   /**
    * Resulting message entries or events returned from the invocation of the corresponding message.
-   * e.g. the resulting messages from a RecordsQuery
-   * Mutually exclusive with `data`.
+   * e.g. the resulting messages from a RecordsQuery, or array of messageCid strings for EventsGet or EventsQuery
+   * Mutually exclusive with `record`.
    */
   entries?: QueryResultEntry[] | MessagesGetReplyEntry[] | string[];
 
@@ -37,7 +37,7 @@ export type UnionMessageReply = GenericMessageReply & {
 
   /**
    * A cursor for pagination if applicable (e.g. RecordsQuery).
-   * Mutually exclusive with `data`.
+   * Mutually exclusive with `record`.
    */
   cursor?: string;
 };
