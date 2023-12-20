@@ -39,7 +39,7 @@ export type EventsGetMessage = GenericMessage & {
 };
 
 export type EventsGetReply = GenericMessageReply & {
-  events?: string[];
+  entries?: string[];
 };
 
 export type EventsQueryDescriptor = {
@@ -56,5 +56,5 @@ export type EventsQueryMessage = GenericMessage & {
 };
 
 export type EventsQueryReply = GenericMessageReply & {
-  events?: string[];
+  entries?: string[];
 };

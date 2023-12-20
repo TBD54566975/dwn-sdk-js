@@ -22,5 +22,5 @@ export type MessagesGetReplyEntry = {
 };
 
 export type MessagesGetReply = GenericMessageReply & {
-  messages?: MessagesGetReplyEntry[];
+  entries?: MessagesGetReplyEntry[];
 };

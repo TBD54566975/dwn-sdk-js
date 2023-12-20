@@ -95,7 +95,7 @@ export function testMessagesGetHandler(): void {
 
       expect(reply.status.code).to.equal(400);
       expect(reply.status.detail).to.include('is not a valid CID');
-      expect(reply.messages).to.be.undefined;
+      expect(reply.entries).to.be.undefined;
     });
 
     it('returns all requested messages', async () => {
@@ -134,16 +134,16 @@ export function testMessagesGetHandler(): void {
       reply = await dwn.processMessage(alice.did, protocolsConfigure.toJSON());
       expect(reply.status.code).to.equal(202);
 
-      const { messagesGet } = await TestDataGenerator.generateMessagesGet({
+      const { message } = await TestDataGenerator.generateMessagesGet({
         author: alice,
         messageCids
       });
 
-      const messagesGetReply: MessagesGetReply = await dwn.processMessage(alice.did, messagesGet.toJSON());
+      const messagesGetReply = await dwn.processMessage(alice.did, message);
       expect(messagesGetReply.status.code).to.equal(200);
-      expect(messagesGetReply.messages!.length).to.equal(messageCids.length);
+      expect(messagesGetReply.entries!.length).to.equal(messageCids.length);
 
-      for (const messageReply of messagesGetReply.messages!) {
+      for (const messageReply of messagesGetReply.entries!) {
         expect(messageReply.messageCid).to.not.be.undefined;
         expect(messageReply.message).to.not.be.undefined;
         expect(messageCids).to.include(messageReply.messageCid);
@@ -166,9 +166,9 @@ export function testMessagesGetHandler(): void {
       // 0 messages expected because the RecordsWrite created above was never stored
       const reply: MessagesGetReply = await dwn.processMessage(alice.did, message);
       expect(reply.status.code).to.equal(200);
-      expect(reply.messages!.length).to.equal(1);
+      expect(reply.entries!.length).to.equal(1);
 
-      for (const messageReply of reply.messages!) {
+      for (const messageReply of reply.entries!) {
         expect(messageReply.messageCid).to.equal(recordsWriteMessageCid);
         expect(messageReply.message).to.be.undefined;
       }
@@ -197,10 +197,10 @@ export function testMessagesGetHandler(): void {
       expect(messageStore.get.called).to.be.true;
 
       expect(reply.status.code).to.equal(200);
-      expect(reply.messages!.length).to.equal(1);
-      expect(reply.messages![0].error).to.exist;
-      expect(reply.messages![0].error).to.include(`Failed to get message ${recordsWriteMessageCid}`);
-      expect(reply.messages![0].message).to.be.undefined;
+      expect(reply.entries!.length).to.equal(1);
+      expect(reply.entries![0].error).to.exist;
+      expect(reply.entries![0].error).to.include(`Failed to get message ${recordsWriteMessageCid}`);
+      expect(reply.entries![0].message).to.be.undefined;
     });
 
     it('includes encodedData in reply entry if the data is available and dataSize < threshold', async () => {
@@ -222,9 +222,9 @@ export function testMessagesGetHandler(): void {
 
       const messagesGetReply: MessagesGetReply = await dwn.processMessage(alice.did, message);
       expect(messagesGetReply.status.code).to.equal(200);
-      expect(messagesGetReply.messages!.length).to.equal(1);
+      expect(messagesGetReply.entries!.length).to.equal(1);
 
-      for (const messageReply of messagesGetReply.messages!) {
+      for (const messageReply of messagesGetReply.entries!) {
         expect(messageReply.messageCid).to.exist;
         expect(messageReply.messageCid).to.equal(recordsWriteMessageCid);
 
@@ -253,9 +253,9 @@ export function testMessagesGetHandler(): void {
       // 0 messages expected because the RecordsWrite created above is not bob's
       const messagesGetReply: MessagesGetReply = await dwn.processMessage(bob.did, message);
       expect(messagesGetReply.status.code).to.equal(200);
-      expect(messagesGetReply.messages!.length).to.equal(1);
+      expect(messagesGetReply.entries!.length).to.equal(1);
 
-      for (const messageReply of messagesGetReply.messages!) {
+      for (const messageReply of messagesGetReply.entries!) {
         expect(messageReply.messageCid).to.equal(recordsWriteMessageCid);
         expect(messageReply.message).to.be.undefined;
       }

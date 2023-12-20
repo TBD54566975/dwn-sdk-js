@@ -32,7 +32,13 @@ export type RecordsWriteDescriptor = {
   dataFormat: string;
 };
 
-export type RecordsWriteReply = GenericMessageReply;
+export type RecordsWriteReply = RecordsWriteMessage & {
+  /**
+   * The initial write of the record if the returned RecordsWrite message itself is not the initial write.
+   */
+  initialWrite?: RecordsWriteMessage;
+  data: Readable;
+};
 
 /**
  * Internal RecordsWrite message representation that can be in an incomplete state.
@@ -151,13 +157,7 @@ export type RecordsReadMessage = {
 };
 
 export type RecordsReadReply = GenericMessageReply & {
-  record?: RecordsWriteMessage & {
-    /**
-     * The initial write of the record if the returned RecordsWrite message itself is not the initial write.
-     */
-    initialWrite?: RecordsWriteMessage;
-    data: Readable;
-  }
+  record?: RecordsWriteReply
 };
 
 export type RecordsReadDescriptor = {

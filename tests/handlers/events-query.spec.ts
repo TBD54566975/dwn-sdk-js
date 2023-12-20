@@ -59,7 +59,7 @@ export function testEventsQueryHandler(): void {
       const reply = await eventsQueryHandler.handle({ tenant: bob.did, message });
 
       expect(reply.status.code).to.equal(401);
-      expect(reply.events).to.not.exist;
+      expect(reply.entries).to.not.exist;
     });
 
     it('returns a 400 if message is invalid', async () => {
@@ -75,7 +75,7 @@ export function testEventsQueryHandler(): void {
       const reply = await eventsQueryHandler.handle({ tenant: alice.did, message });
 
       expect(reply.status.code).to.equal(400);
-      expect(reply.events).to.not.exist;
+      expect(reply.entries).to.not.exist;
     });
 
     it('returns 400 if no filters are provided', async () => {
@@ -90,7 +90,7 @@ export function testEventsQueryHandler(): void {
       const reply = await eventsQueryHandler.handle({ tenant: alice.did, message });
 
       expect(reply.status.code).to.equal(400);
-      expect(reply.events).to.not.exist;
+      expect(reply.entries).to.not.exist;
     });
 
     it('returns 400 if an empty filter without properties is provided', async () => {
@@ -105,7 +105,7 @@ export function testEventsQueryHandler(): void {
       const reply = await eventsQueryHandler.handle({ tenant: alice.did, message });
 
       expect(reply.status.code).to.equal(400);
-      expect(reply.events).to.not.exist;
+      expect(reply.entries).to.not.exist;
     });
   });
 }

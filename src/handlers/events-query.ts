@@ -37,7 +37,7 @@ export class EventsQueryHandler implements MethodHandler {
 
     return {
       status: { code: 200, detail: 'OK' },
-      events
+      entries: events
     };
   }
 }

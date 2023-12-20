@@ -58,7 +58,7 @@ export function testEventsGetHandler(): void {
       const reply = await eventsGetHandler.handle({ tenant: bob.did, message });
 
       expect(reply.status.code).to.equal(401);
-      expect(reply.events).to.not.exist;
+      expect(reply.entries).to.not.exist;
     });
 
     it('returns a 400 if message is invalid', async () => {
@@ -70,7 +70,7 @@ export function testEventsGetHandler(): void {
       const reply = await eventsGetHandler.handle({ tenant: alice.did, message });
 
       expect(reply.status.code).to.equal(400);
-      expect(reply.events).to.not.exist;
+      expect(reply.entries).to.not.exist;
     });
 
     it('returns all events for a tenant if cursor is not provided', async () => {
@@ -92,10 +92,10 @@ export function testEventsGetHandler(): void {
 
       expect(reply.status.code).to.equal(200);
       expect((reply as any).data).to.not.exist;
-      expect(reply.events?.length).to.equal(expectedCids.length);
+      expect(reply.entries?.length).to.equal(expectedCids.length);
 
-      for (let i = 0; i < reply.events!.length; i += 1) {
-        expect(reply.events![i]).to.equal(expectedCids[i]);
+      for (let i = 0; i < reply.entries!.length; i += 1) {
+        expect(reply.entries![i]).to.equal(expectedCids[i]);
       }
     });
 
@@ -114,7 +114,7 @@ export function testEventsGetHandler(): void {
 
       expect(reply.status.code).to.equal(200);
 
-      const cursor = reply.events![reply.events!.length - 1];
+      const cursor = reply.entries![reply.entries!.length - 1];
       const expectedCids: string[] = [];
 
       for (let i = 0; i < 3; i += 1) {
@@ -131,10 +131,10 @@ export function testEventsGetHandler(): void {
 
       expect(reply.status.code).to.equal(200);
       expect((reply as any).data).to.not.exist;
-      expect(reply.events!.length).to.equal(expectedCids.length);
+      expect(reply.entries!.length).to.equal(expectedCids.length);
 
-      for (let i = 0; i < reply.events!.length; i += 1) {
-        expect(reply.events![i]).to.equal(expectedCids[i]);
+      for (let i = 0; i < reply.entries!.length; i += 1) {
+        expect(reply.entries![i]).to.equal(expectedCids[i]);
       }
     });
   });

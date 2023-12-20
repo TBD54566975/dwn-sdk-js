@@ -1,5 +1,6 @@
+import type { MessagesGetReplyEntry } from '../types/messages-types.js';
 import type { QueryResultEntry } from '../types/message-types.js';
-import type { Readable } from 'readable-stream';
+import type { RecordsWriteReply } from '../types/records-types.js';
 
 type Status = {
   code: number
@@ -26,13 +27,13 @@ export type UnionMessageReply = GenericMessageReply & {
    * e.g. the resulting messages from a RecordsQuery
    * Mutually exclusive with `data`.
    */
-  entries?: QueryResultEntry[];
+  entries?: QueryResultEntry[] | MessagesGetReplyEntry[] | string[];
 
   /**
-   * Data corresponding to the message received if applicable (e.g. RecordsRead).
+   * Record corresponding to the message received if applicable (e.g. RecordsRead).
    * Mutually exclusive with `entries` and `cursor`.
    */
-  data?: Readable;
+  record?: RecordsWriteReply;
 
   /**
    * A cursor for pagination if applicable (e.g. RecordsQuery).
