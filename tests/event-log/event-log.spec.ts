@@ -29,12 +29,12 @@ export function testEventLog(): void {
 
     it('separates events by tenant', async () => {
       const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
-      const message1Index = await recordsWrite.constructRecordsWriteIndexes(true);
+      const message1Index = await recordsWrite.constructIndexes(true);
       const messageCid = await Message.getCid(message);
       await eventLog.append(author.did, messageCid, message1Index);
 
       const { author: author2, message: message2, recordsWrite: recordsWrite2 } = await TestDataGenerator.generateRecordsWrite();
-      const message2Index = await recordsWrite2.constructRecordsWriteIndexes(true);
+      const message2Index = await recordsWrite2.constructIndexes(true);
       const messageCid2 = await Message.getCid(message2);
       await eventLog.append(author2.did, messageCid2, message2Index);
 
@@ -52,7 +52,7 @@ export function testEventLog(): void {
 
       const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await Message.getCid(message);
-      const messageIndex = await recordsWrite.constructRecordsWriteIndexes(true);
+      const messageIndex = await recordsWrite.constructIndexes(true);
       await eventLog.append(author.did, messageCid, messageIndex);
 
       expectedMessages.push(messageCid);
@@ -60,7 +60,7 @@ export function testEventLog(): void {
       for (let i = 0; i < 9; i += 1) {
         const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
         const messageCid = await Message.getCid(message);
-        const index = await recordsWrite.constructRecordsWriteIndexes(true);
+        const index = await recordsWrite.constructIndexes(true);
         await eventLog.append(author.did, messageCid, index);
 
         expectedMessages.push(messageCid);
@@ -80,14 +80,14 @@ export function testEventLog(): void {
 
         const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
         const messageCid = await Message.getCid(message);
-        const messageIndex = await recordsWrite.constructRecordsWriteIndexes(true);
+        const messageIndex = await recordsWrite.constructIndexes(true);
         await eventLog.append(author.did, messageCid, messageIndex);
         expectedMessages.push(messageCid);
 
         for (let i = 0; i < 9; i += 1) {
           const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
           const messageCid = await Message.getCid(message);
-          const index = await recordsWrite.constructRecordsWriteIndexes(true);
+          const index = await recordsWrite.constructIndexes(true);
 
           await eventLog.append(author.did, messageCid, index);
           expectedMessages.push(messageCid);
@@ -104,7 +104,7 @@ export function testEventLog(): void {
       it('gets all events that occurred after the cursor provided', async () => {
         const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
         const messageCid = await Message.getCid(message);
-        const index = await recordsWrite.constructRecordsWriteIndexes(true);
+        const index = await recordsWrite.constructIndexes(true);
 
         await eventLog.append(author.did, messageCid, index);
 
@@ -114,7 +114,7 @@ export function testEventLog(): void {
         for (let i = 0; i < 9; i += 1) {
           const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
           const messageCid = await Message.getCid(message);
-          const index = await recordsWrite.constructRecordsWriteIndexes(true);
+          const index = await recordsWrite.constructIndexes(true);
 
           await eventLog.append(author.did, messageCid, index);
           if (i === 4) {
@@ -138,7 +138,7 @@ export function testEventLog(): void {
       it('finds and deletes events that whose values match the cids provided', async () => {
         const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
         const messageCid = await Message.getCid(message);
-        const index = await recordsWrite.constructRecordsWriteIndexes(true);
+        const index = await recordsWrite.constructIndexes(true);
 
         await eventLog.append(author.did, messageCid, index);
 
@@ -146,7 +146,7 @@ export function testEventLog(): void {
         for (let i = 0; i < 9; i += 1) {
           const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
           const messageCid = await Message.getCid(message);
-          const index = await recordsWrite.constructRecordsWriteIndexes(true);
+          const index = await recordsWrite.constructIndexes(true);
 
           await eventLog.append(author.did, messageCid, index);
           if (i % 2 === 0) {
@@ -164,7 +164,7 @@ export function testEventLog(): void {
         const cids: string[] = [];
         const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
         const messageCid = await Message.getCid(message);
-        const index = await recordsWrite.constructRecordsWriteIndexes(true);
+        const index = await recordsWrite.constructIndexes(true);
 
         await eventLog.append(author.did, messageCid, index);
         cids.push(messageCid);
@@ -172,7 +172,7 @@ export function testEventLog(): void {
         for (let i = 0; i < 3; i += 1) {
           const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author });
           const messageCid = await Message.getCid(message);
-          const index = await recordsWrite.constructRecordsWriteIndexes(true);
+          const index = await recordsWrite.constructIndexes(true);
 
           await eventLog.append(author.did, messageCid, index);
           cids.push(messageCid);
@@ -192,7 +192,7 @@ export function testEventLog(): void {
 
         const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ schema: 'schema1' });
         const messageCid = await Message.getCid(message);
-        const indexes = await recordsWrite.constructRecordsWriteIndexes(true);
+        const indexes = await recordsWrite.constructIndexes(true);
         await eventLog.append(author.did, messageCid, indexes);
 
         expectedMessages.push(messageCid);
@@ -200,7 +200,7 @@ export function testEventLog(): void {
         for (let i = 0; i < 5; i += 1) {
           const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author, schema: 'schema1' });
           const messageCid = await Message.getCid(message);
-          const indexes = await recordsWrite.constructRecordsWriteIndexes(true);
+          const indexes = await recordsWrite.constructIndexes(true);
           await eventLog.append(author.did, messageCid, indexes);
 
           expectedMessages.push(messageCid);
@@ -210,13 +210,13 @@ export function testEventLog(): void {
         // not inserted into expected events.
         const { message: message2, recordsWrite: recordsWrite2 } = await TestDataGenerator.generateRecordsWrite({ author });
         const message2Cid = await Message.getCid(message2);
-        const message2Indexes = await recordsWrite2.constructRecordsWriteIndexes(true);
+        const message2Indexes = await recordsWrite2.constructIndexes(true);
         await eventLog.append(author.did, message2Cid, message2Indexes);
 
         for (let i = 0; i < 5; i += 1) {
           const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author, schema: 'schema1' });
           const messageCid = await Message.getCid(message);
-          const indexes = await recordsWrite.constructRecordsWriteIndexes(true);
+          const indexes = await recordsWrite.constructIndexes(true);
           await eventLog.append(author.did, messageCid, indexes);
 
           expectedMessages.push(messageCid);
@@ -236,13 +236,13 @@ export function testEventLog(): void {
 
         const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ schema: 'schema1' });
         const messageCid = await Message.getCid(message);
-        const indexes = await recordsWrite.constructRecordsWriteIndexes(true);
+        const indexes = await recordsWrite.constructIndexes(true);
         await eventLog.append(author.did, messageCid, indexes);
 
         for (let i = 0; i < 5; i += 1) {
           const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author, schema: 'schema1' });
           const messageCid = await Message.getCid(message);
-          const indexes = await recordsWrite.constructRecordsWriteIndexes(true);
+          const indexes = await recordsWrite.constructIndexes(true);
           await eventLog.append(author.did, messageCid, indexes);
 
           if (i === 3) {
@@ -258,13 +258,13 @@ export function testEventLog(): void {
         // not inserted into expected events because it's not a part of the schema.
         const { message: message2, recordsWrite: recordsWrite2 } = await TestDataGenerator.generateRecordsWrite({ author });
         const message2Cid = await Message.getCid(message2);
-        const message2Indexes = await recordsWrite2.constructRecordsWriteIndexes(true);
+        const message2Indexes = await recordsWrite2.constructIndexes(true);
         await eventLog.append(author.did, message2Cid, message2Indexes);
 
         for (let i = 0; i < 5; i += 1) {
           const { message, recordsWrite } = await TestDataGenerator.generateRecordsWrite({ author, schema: 'schema1' });
           const messageCid = await Message.getCid(message);
-          const indexes = await recordsWrite.constructRecordsWriteIndexes(true);
+          const indexes = await recordsWrite.constructIndexes(true);
           await eventLog.append(author.did, messageCid, indexes);
 
           expectedEvents.push(messageCid);

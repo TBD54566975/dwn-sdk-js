@@ -24,6 +24,7 @@ import Definitions from '../json-schemas/definitions.json' assert { type: 'json'
 import EventsFilter from '../json-schemas/interface-methods/events-filter.json' assert { type: 'json' };
 import EventsGet from '../json-schemas/interface-methods/events-get.json' assert { type: 'json' };
 import EventsQuery from '../json-schemas/interface-methods/events-query.json' assert { type: 'json' };
+import EventsSubscribe from '../json-schemas/interface-methods/events-subscribe.json' assert { type: 'json' };
 import GeneralJwk from '../json-schemas/jwk/general-jwk.json' assert { type: 'json' };
 import GeneralJws from '../json-schemas/general-jws.json' assert { type: 'json' };
 import GenericSignaturePayload from '../json-schemas/signature-payloads/generic-signature-payload.json' assert { type: 'json' };
@@ -44,6 +45,7 @@ import RecordsDelete from '../json-schemas/interface-methods/records-delete.json
 import RecordsFilter from '../json-schemas/interface-methods/records-filter.json' assert { type: 'json' };
 import RecordsQuery from '../json-schemas/interface-methods/records-query.json' assert { type: 'json' };
 import RecordsRead from '../json-schemas/interface-methods/records-read.json' assert { type: 'json' };
+import RecordsSubscribe from '../json-schemas/interface-methods/records-subscribe.json' assert { type: 'json' };
 import RecordsWrite from '../json-schemas/interface-methods/records-write.json' assert { type: 'json' };
 import RecordsWriteSignaturePayload from '../json-schemas/signature-payloads/records-write-signature-payload.json' assert { type: 'json' };
 import RecordsWriteUnidentified from '../json-schemas/interface-methods/records-write-unidentified.json' assert { type: 'json' };
@@ -54,10 +56,12 @@ const schemas = {
   AuthorizationOwner,
   RecordsDelete,
   RecordsQuery,
+  RecordsSubscribe,
   RecordsWrite,
   RecordsWriteUnidentified,
   EventsFilter,
   EventsGet,
+  EventsSubscribe,
   EventsQuery,
   Definitions,
   GeneralJwk,

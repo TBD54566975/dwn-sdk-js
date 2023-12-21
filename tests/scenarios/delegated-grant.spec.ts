@@ -1,3 +1,4 @@
+import type { EventStream } from '../../src/types/event-stream.js';
 import type { DataStore, EventLog, MessageStore, PermissionScope } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -19,7 +20,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DwnInterfaceName, DwnMethodName, PermissionsGrant, RecordsDelete, RecordsQuery, RecordsRead } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName, EventStreamEmitter, PermissionsGrant, RecordsDelete, RecordsQuery, RecordsRead } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -29,6 +30,7 @@ export function testDelegatedGrantScenarios(): void {
     let messageStore: MessageStore;
     let dataStore: DataStore;
     let eventLog: EventLog;
+    let eventStream: EventStream;
     let dwn: Dwn;
 
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
@@ -40,8 +42,9 @@ export function testDelegatedGrantScenarios(): void {
       messageStore = stores.messageStore;
       dataStore = stores.dataStore;
       eventLog = stores.eventLog;
+      eventStream = new EventStreamEmitter({ messageStore, didResolver });
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
     });
 
     beforeEach(async () => {

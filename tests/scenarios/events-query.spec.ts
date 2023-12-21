@@ -1,6 +1,7 @@
 import type {
   DataStore,
   EventLog,
+  EventStream,
   MessageStore
 } from '../../src/index.js';
 
@@ -8,7 +9,7 @@ import freeForAll from '../vectors/protocol-definitions/free-for-all.json' asser
 import threadProtocol from '../vectors/protocol-definitions/thread-role.json' assert { type: 'json' };
 
 import { TestStores } from '../test-stores.js';
-import { DidKeyResolver, DidResolver, Dwn, DwnConstant, DwnInterfaceName, DwnMethodName, Message, Time } from '../../src/index.js';
+import { DidKeyResolver, DidResolver, Dwn, DwnConstant, DwnInterfaceName, DwnMethodName, EventStreamEmitter, Message, Time } from '../../src/index.js';
 
 import { expect } from 'chai';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
@@ -19,6 +20,7 @@ export function testEventsQueryScenarios(): void {
     let messageStore: MessageStore;
     let dataStore: DataStore;
     let eventLog: EventLog;
+    let eventStream: EventStream;
     let dwn: Dwn;
 
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
@@ -30,8 +32,9 @@ export function testEventsQueryScenarios(): void {
       messageStore = stores.messageStore;
       dataStore = stores.dataStore;
       eventLog = stores.eventLog;
+      eventStream = new EventStreamEmitter({ messageStore, didResolver });
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
     });
 
     beforeEach(async () => {

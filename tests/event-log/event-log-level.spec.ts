@@ -29,7 +29,7 @@ describe('EventLogLevel Tests', () => {
     it('deletes all index related data', async () => {
       const { author, message, recordsWrite } = await TestDataGenerator.generateRecordsWrite();
       const messageCid = await Message.getCid(message);
-      const index = await recordsWrite.constructRecordsWriteIndexes(true);
+      const index = await recordsWrite.constructIndexes(true);
       await eventLog.append(author.did, messageCid, index);
 
       const indexLevelDeleteSpy = sinon.spy(eventLog.index, 'delete');

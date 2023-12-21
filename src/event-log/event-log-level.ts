@@ -1,3 +1,4 @@
+import type { EventStream } from '../types/event-stream.js';
 import type { ULIDFactory } from 'ulidx';
 import type { EventLog, GetEventsOptions } from '../types/event-log.js';
 import type { Filter, KeyValues } from '../types/query-types.js';
@@ -15,6 +16,7 @@ type EventLogLevelConfig = {
   */
   location?: string,
   createLevelDatabase?: typeof createLevelDatabase,
+  eventStream?: EventStream,
 };
 
 export class EventLogLevel implements EventLog {

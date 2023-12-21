@@ -1,5 +1,6 @@
 import type { DidResolver } from '../did/did-resolver.js';
 import type { EventLog } from '../types/event-log.js';
+import type { EventStream } from '../types/event-stream.js';
 import type { GenericMessageReply } from '../types/message-types.js';
 import type { KeyValues } from '../types/query-types.js';
 import type { MessageStore } from '../types/message-store.js';
@@ -13,7 +14,12 @@ import { PermissionsRevoke } from '../interfaces/permissions-revoke.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
 
 export class PermissionsRevokeHandler implements MethodHandler {
-  constructor(private didResolver: DidResolver, private messageStore: MessageStore, private eventLog: EventLog) { }
+  constructor(
+    private didResolver: DidResolver,
+    private messageStore: MessageStore,
+    private eventLog: EventLog,
+    private eventStream: EventStream
+  ) { }
 
   public async handle({
     tenant,
@@ -88,6 +94,9 @@ export class PermissionsRevokeHandler implements MethodHandler {
     const indexes = PermissionsRevokeHandler.constructIndexes(permissionsRevoke);
     await this.messageStore.put(tenant, message, indexes);
     await this.eventLog.append(tenant, await Message.getCid(message), indexes);
+
+    // emit revoke and exercise any revocation necessary within the event stream
+    this.eventStream.emit(tenant, message, indexes);
 
     // Delete existing revokes which are all newer than the incoming message
     const removedRevokeCids: string[] = [];

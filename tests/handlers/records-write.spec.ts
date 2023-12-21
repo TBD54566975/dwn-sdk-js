@@ -1,4 +1,5 @@
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
+import type { EventStream } from '../../src/types/event-stream.js';
 import type { GenerateFromRecordsWriteOut } from '../utils/test-data-generator.js';
 import type { ProtocolDefinition } from '../../src/types/protocols-types.js';
 import type { RecordsQueryReplyEntry } from '../../src/types/records-types.js';
@@ -42,7 +43,7 @@ import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
 
-import { DwnConstant, DwnInterfaceName, DwnMethodName, KeyDerivationScheme, RecordsDelete, RecordsQuery } from '../../src/index.js';
+import { DwnConstant, DwnInterfaceName, DwnMethodName, EventStreamEmitter, KeyDerivationScheme, RecordsDelete, RecordsQuery } from '../../src/index.js';
 import { Encryption, EncryptionAlgorithm } from '../../src/utils/encryption.js';
 
 chai.use(chaiAsPromised);
@@ -53,6 +54,7 @@ export function testRecordsWriteHandler(): void {
     let messageStore: MessageStore;
     let dataStore: DataStore;
     let eventLog: EventLog;
+    let eventStream: EventStream;
     let dwn: Dwn;
 
     describe('functional tests', () => {
@@ -66,8 +68,9 @@ export function testRecordsWriteHandler(): void {
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;
+        eventStream = new EventStreamEmitter({ messageStore, didResolver });
 
-        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
+        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
       });
 
       beforeEach(async () => {
@@ -3053,7 +3056,7 @@ export function testRecordsWriteHandler(): void {
         // replace valid `encryption` property with a mismatching one
         message.encryption!.initializationVector = Encoder.stringToBase64Url('any value which will result in a different CID');
 
-        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
+        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
         const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream: dataStream! });
 
         expect(writeReply.status.code).to.equal(400);
@@ -4176,7 +4179,7 @@ export function testRecordsWriteHandler(): void {
         const messageStore = stubInterface<MessageStore>();
         const dataStore = stubInterface<DataStore>();
 
-        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
+        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
         const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
 
         expect(reply.status.code).to.equal(400);
@@ -4200,7 +4203,7 @@ export function testRecordsWriteHandler(): void {
         const messageStore = stubInterface<MessageStore>();
         const dataStore = stubInterface<DataStore>();
 
-        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
+        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
         const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
 
         expect(reply.status.code).to.equal(400);
@@ -4218,7 +4221,7 @@ export function testRecordsWriteHandler(): void {
         const messageStore = stubInterface<MessageStore>();
         const dataStore = stubInterface<DataStore>();
 
-        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
+        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
         const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
 
         expect(reply.status.code).to.equal(401);
@@ -4233,7 +4236,7 @@ export function testRecordsWriteHandler(): void {
         const messageStore = stubInterface<MessageStore>();
         const dataStore = stubInterface<DataStore>();
 
-        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
+        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
 
         const tenant = await (await TestDataGenerator.generatePersona()).did; // unauthorized tenant
         const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
@@ -4266,7 +4269,7 @@ export function testRecordsWriteHandler(): void {
         const messageStore = stubInterface<MessageStore>();
         const dataStore = stubInterface<DataStore>();
 
-        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
+        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
         const reply = await recordsWriteHandler.handle({ tenant, message, dataStream: dataStream! });
 
         expect(reply.status.code).to.equal(400);
@@ -4278,7 +4281,7 @@ export function testRecordsWriteHandler(): void {
         const bob = await DidKeyResolver.generate();
         const { message, dataStream } = await TestDataGenerator.generateRecordsWrite({ author: alice, attesters: [alice, bob] });
 
-        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
+        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
         const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream: dataStream! });
 
         expect(writeReply.status.code).to.equal(400);
@@ -4293,7 +4296,7 @@ export function testRecordsWriteHandler(): void {
         const anotherWrite = await TestDataGenerator.generateRecordsWrite({ attesters: [alice] });
         message.attestation = anotherWrite.message.attestation;
 
-        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
+        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
         const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream: dataStream! });
 
         expect(writeReply.status.code).to.equal(400);
@@ -4310,7 +4313,7 @@ export function testRecordsWriteHandler(): void {
         const attestationNotReferencedByAuthorization = await RecordsWrite['createAttestation'](descriptorCid, Jws.createSigners([bob]));
         message.attestation = attestationNotReferencedByAuthorization;
 
-        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog);
+        const recordsWriteHandler = new RecordsWriteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
         const writeReply = await recordsWriteHandler.handle({ tenant: alice.did, message, dataStream: dataStream! });
 
         expect(writeReply.status.code).to.equal(400);
@@ -4331,14 +4334,15 @@ export function testRecordsWriteHandler(): void {
 
         const { message, dataStream } = await TestDataGenerator.generateFromRecordsWrite({ author, existingWrite: initialWrite });
         const tenant = author.did;
-
         const didResolverStub = TestStubGenerator.createDidResolverStub(author);
 
         const messageStoreStub = stubInterface<MessageStore>();
         messageStoreStub.query.resolves({ messages: [ initialWriteMessage ] });
 
         const dataStoreStub = stubInterface<DataStore>();
-        const recordsWriteHandler = new RecordsWriteHandler(didResolverStub, messageStoreStub, dataStoreStub, eventLog);
+
+        const recordsWriteHandler = new RecordsWriteHandler(didResolverStub, messageStoreStub, dataStoreStub, eventLog, eventStream);
+
         // simulate throwing unexpected error
         sinon.stub(recordsWriteHandler as any, 'processMessageWithoutDataStream').throws(new Error('an unknown error in recordsWriteHandler.processMessageWithoutDataStream()'));
         sinon.stub(recordsWriteHandler as any, 'processMessageWithDataStream').throws(new Error('an unknown error in recordsWriteHandler.processMessageWithDataStream()'));

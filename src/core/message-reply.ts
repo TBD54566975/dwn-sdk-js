@@ -2,7 +2,7 @@ import type { MessagesGetReplyEntry } from '../types/messages-types.js';
 import type { ProtocolsConfigureMessage } from '../types/protocols-types.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsWriteMessage } from '../types/records-types.js';
-import type { GenericMessageReply, QueryResultEntry } from '../types/message-types.js';
+import type { GenericMessageReply, GenericMessageSubscription, QueryResultEntry } from '../types/message-types.js';
 
 export function messageReplyFromError(e: unknown, code: number): GenericMessageReply {
 
@@ -39,4 +39,9 @@ export type UnionMessageReply = GenericMessageReply & {
    * Mutually exclusive with `record`.
    */
   cursor?: string;
+
+  /**
+   * A subscription object if a subscription was requested.
+   */
+  subscription?: GenericMessageSubscription;
 };

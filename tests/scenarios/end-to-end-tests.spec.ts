@@ -1,4 +1,5 @@
 import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
+import type { EventStream } from '../../src/types/event-stream.js';
 import type { DataStore, EventLog, MessageStore, ProtocolDefinition, ProtocolsConfigureMessage, RecordsReadReply } from '../../src/index.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -7,12 +8,12 @@ import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread
 
 import { authenticate } from '../../src/core/auth.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
-import { Encoder } from '../../src/index.js';
 import { HdKey } from '../../src/utils/hd-key.js';
 import { KeyDerivationScheme } from '../../src/utils/hd-key.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
+import { Encoder, EventStreamEmitter } from '../../src/index.js';
 
 import chai, { expect } from 'chai';
 import { DataStream, DidResolver, Dwn, Jws, Protocols, ProtocolsConfigure, ProtocolsQuery, Records, RecordsRead } from '../../src/index.js';
@@ -25,6 +26,7 @@ export function testEndToEndScenarios(): void {
     let messageStore: MessageStore;
     let dataStore: DataStore;
     let eventLog: EventLog;
+    let eventStream: EventStream;
     let dwn: Dwn;
 
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
@@ -36,8 +38,9 @@ export function testEndToEndScenarios(): void {
       messageStore = stores.messageStore;
       dataStore = stores.dataStore;
       eventLog = stores.eventLog;
+      eventStream = new EventStreamEmitter({ messageStore, didResolver });
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
     });
 
     beforeEach(async () => {
