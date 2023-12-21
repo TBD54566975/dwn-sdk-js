@@ -1,5 +1,5 @@
 
-import type { EventStream } from '../../src/types/event-stream.js';
+import type { EventStream } from '../../src/types/subscriptions.js';
 import type { GenerateProtocolsConfigureOutput } from '../utils/test-data-generator.js';
 import type {
   DataStore,

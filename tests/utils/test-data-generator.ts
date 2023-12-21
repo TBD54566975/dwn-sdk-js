@@ -15,7 +15,7 @@ import type { Signer } from '../../src/types/signer.js';
 import type { AuthorizationModel, Pagination } from '../../src/types/message-types.js';
 import type { CreateFromOptions, EncryptionInput, KeyEncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
 import type { DateSort, RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage } from '../../src/types/records-types.js';
-import type { EventsFilter, EventsGetMessage, EventsQueryMessage, EventsSubscribeMessage } from '../../src/types/event-types.js';
+import type { EventsFilter, EventsGetMessage, EventsQueryMessage, EventsSubscribeMessage } from '../../src/types/events-types.js';
 import type { PermissionConditions, PermissionScope } from '../../src/types/permissions-grant-descriptor.js';
 import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from '../../src/types/permissions-types.js';
 import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';

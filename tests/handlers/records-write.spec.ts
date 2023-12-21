@@ -1,5 +1,5 @@
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
-import type { EventStream } from '../../src/types/event-stream.js';
+import type { EventStream } from '../../src/types/subscriptions.js';
 import type { GenerateFromRecordsWriteOut } from '../utils/test-data-generator.js';
 import type { ProtocolDefinition } from '../../src/types/protocols-types.js';
 import type { RecordsQueryReplyEntry } from '../../src/types/records-types.js';

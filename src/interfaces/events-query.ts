@@ -1,7 +1,7 @@
 import type { Filter } from '../types/query-types.js';
 import type { ProtocolsQueryFilter } from '../types/protocols-types.js';
 import type { Signer } from '../types/signer.js';
-import type { EventsFilter, EventsMessageFilter, EventsQueryDescriptor, EventsQueryMessage, EventsRecordsFilter } from '../types/event-types.js';
+import type { EventsFilter, EventsMessageFilter, EventsQueryDescriptor, EventsQueryMessage, EventsRecordsFilter } from '../types/events-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';
 import { FilterUtility } from '../utils/filter.js';

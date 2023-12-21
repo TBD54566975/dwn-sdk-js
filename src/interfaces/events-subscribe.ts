@@ -1,6 +1,6 @@
 import type { GenericMessage } from '../types/message-types.js';
 import type { Signer } from '../types/signer.js';
-import type { EventsFilter, EventsSubscribeDescriptor, EventsSubscribeMessage } from '../types/event-types.js';
+import type { EventsFilter, EventsSubscribeDescriptor, EventsSubscribeMessage } from '../types/events-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';

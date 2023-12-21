@@ -1,4 +1,4 @@
-import type { EventStream } from '../../src/types/event-stream.js';
+import type { EventStream } from '../../src/types/subscriptions.js';
 import type { GenericMessage } from '../../src/types/message-types.js';
 import type { DataStore, EventLog, MessageStore, RecordsWriteMessage } from '../../src/index.js';
 import type { RecordsDeleteMessage, RecordsFilter } from '../../src/types/records-types.js';

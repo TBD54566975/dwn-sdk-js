@@ -2,7 +2,7 @@ import type { DidResolver } from '../did/did-resolver.js';
 import type { EventLog } from '../types/event-log.js';
 import type { GetEventsOptions } from '../types/event-log.js';
 import type { MethodHandler } from '../types/method-handler.js';
-import type { EventsGetMessage, EventsGetReply } from '../types/event-types.js';
+import type { EventsGetMessage, EventsGetReply } from '../types/events-types.js';
 
 import { EventsGet } from '../interfaces/events-get.js';
 import { messageReplyFromError } from '../core/message-reply.js';
