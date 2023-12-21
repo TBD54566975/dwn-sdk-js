@@ -2,14 +2,15 @@
 export type { DwnConfig } from './dwn.js';
 export type { DidMethodResolver, DwnServiceEndpoint, ServiceEndpoint, DidDocument, DidResolutionResult, DidResolutionMetadata, DidDocumentMetadata, VerificationMethod } from './types/did-types.js';
 export type { EventLog } from './types/event-log.js';
-export type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply } from './types/event-types.js';
+export type { EventStream } from './types/event-stream.js';
+export type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply, EventsSubscribeDescriptor, EventsSubscribeMessage, EventsSubscribeReply, EventSubscription } from './types/event-types.js';
 export type { GenericMessage, GenericMessageReply, MessageSort, Pagination, QueryResultEntry } from './types/message-types.js';
 export type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from './types/messages-types.js';
 export type { Filter, EqualFilter, OneOfFilter, RangeFilter, RangeCriterion, PaginationCursor, QueryOptions } from './types/query-types.js';
 export type { PermissionConditions, PermissionScope, PermissionsGrantDescriptor } from './types/permissions-grant-descriptor.js';
 export type { PermissionsGrantMessage, PermissionsRequestDescriptor, PermissionsRequestMessage, PermissionsRevokeDescriptor, PermissionsRevokeMessage } from './types/permissions-types.js';
 export type { ProtocolsConfigureDescriptor, ProtocolDefinition, ProtocolTypes, ProtocolRuleSet, ProtocolsQueryFilter, ProtocolsConfigureMessage, ProtocolsQueryMessage, ProtocolsQueryReply } from './types/protocols-types.js';
-export type { EncryptionProperty, RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, RecordsReadReply, RecordsWriteDescriptor, RecordsWriteMessage } from './types/records-types.js';
+export type { EncryptionProperty, RecordsDeleteMessage, RecordsQueryMessage, RecordsQueryReply, RecordsQueryReplyEntry, RecordsReadReply, RecordsSubscribeDescriptor, RecordsSubscribeMessage, RecordsSubscription, RecordsWriteDescriptor, RecordsWriteMessage } from './types/records-types.js';
 export { authenticate } from './core/auth.js';
 export { ActiveTenantCheckResult, AllowAllTenantGate, TenantGate } from './core/tenant-gate.js';
 export { Cid } from './utils/cid.js';
@@ -46,15 +47,20 @@ export { ProtocolsQuery, ProtocolsQueryOptions } from './interfaces/protocols-qu
 export { Records } from './utils/records.js';
 export { RecordsDelete, RecordsDeleteOptions } from './interfaces/records-delete.js';
 export { RecordsRead, RecordsReadOptions } from './interfaces/records-read.js';
+export { RecordsSubscribe, RecordsSubscribeOptions } from './interfaces/records-subscribe.js';
 export { Secp256k1 } from './utils/secp256k1.js';
 export { Signer } from './types/signer.js';
 export { SortDirection } from './types/query-types.js';
 export { Time } from './utils/time.js';
 
-// store interfaces
+// store implementations
 export { DataStoreLevel } from './store/data-store-level.js';
 export { EventLogLevel } from './event-log/event-log-level.js';
 export { MessageStoreLevel } from './store/message-store-level.js';
+
+// eventing implementations
+export { EventStreamEmitter } from './event-log/event-stream.js';
+export { EventsSubscribe , EventsSubscribeOptions } from './interfaces/events-subscribe.js';
 
 // test library exports
 export { Persona, TestDataGenerator } from '../tests/utils/test-data-generator.js';

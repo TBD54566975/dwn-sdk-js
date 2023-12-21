@@ -1,3 +1,4 @@
+import type { EventStream } from '../../src/types/event-stream.js';
 import type {
   DataStore,
   EventLog,
@@ -16,7 +17,7 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
-import { DidResolver, Dwn, DwnErrorCode, DwnInterfaceName, DwnMethodName, Encoder, Jws, ProtocolsQuery } from '../../src/index.js';
+import { DidResolver, Dwn, DwnErrorCode, DwnInterfaceName, DwnMethodName, Encoder, EventStreamEmitter, Jws, ProtocolsQuery } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -26,6 +27,7 @@ export function testProtocolsQueryHandler(): void {
     let messageStore: MessageStore;
     let dataStore: DataStore;
     let eventLog: EventLog;
+    let eventStream: EventStream;
     let dwn: Dwn;
 
     describe('functional tests', () => {
@@ -39,8 +41,9 @@ export function testProtocolsQueryHandler(): void {
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;
+        eventStream = new EventStreamEmitter({ messageStore, didResolver });
 
-        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
+        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
       });
 
       beforeEach(async () => {

@@ -1,6 +1,6 @@
 import type { ProtocolsQueryFilter } from '../types/protocols-types.js';
 import type { Signer } from '../types/signer.js';
-import type { EventsMessageFilter, EventsQueryDescriptor, EventsQueryFilter, EventsQueryMessage, EventsRecordsFilter } from '../types/event-types.js';
+import type { EventsFilter, EventsMessageFilter, EventsQueryDescriptor, EventsQueryMessage, EventsRecordsFilter } from '../types/event-types.js';
 import type { Filter, PaginationCursor } from '../types/query-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';
@@ -14,7 +14,7 @@ import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.j
 
 export type EventsQueryOptions = {
   signer: Signer;
-  filters: EventsQueryFilter[];
+  filters: EventsFilter[];
   cursor?: PaginationCursor;
   messageTimestamp?: string;
 };
@@ -47,9 +47,9 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
     return new EventsQuery(message);
   }
 
-  private static normalizeFilters(filters: EventsQueryFilter[]): EventsQueryFilter[] {
+  private static normalizeFilters(filters: EventsFilter[]): EventsFilter[] {
 
-    const eventsQueryFilters: EventsQueryFilter[] = [];
+    const eventsQueryFilters: EventsFilter[] = [];
 
     // normalize each filter individually by the type of filter it is.
     for (const filter of filters) {
@@ -73,7 +73,7 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
    * @param filters An array of EventsFilter
    * @returns {Filter[]} an array of generic Filter able to be used when querying.
    */
-  public static convertFilters(filters: EventsQueryFilter[]): Filter[] {
+  public static convertFilters(filters: EventsFilter[]): Filter[] {
 
     const eventsQueryFilters: Filter[] = [];
 
@@ -103,11 +103,11 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
     return filterCopy as Filter;
   }
 
-  private static isMessagesFilter(filter: EventsQueryFilter): filter is EventsMessageFilter {
+  private static isMessagesFilter(filter: EventsFilter): filter is EventsMessageFilter {
     return 'method' in filter || 'interface' in filter || 'dateUpdated' in filter || 'author' in filter;
   }
 
-  private static isRecordsFilter(filter: EventsQueryFilter): filter is EventsRecordsFilter {
+  private static isRecordsFilter(filter: EventsFilter): filter is EventsRecordsFilter {
     return 'dateCreated' in filter ||
       'dataFormat' in filter ||
       'dataSize' in filter ||
@@ -118,7 +118,7 @@ export class EventsQuery extends AbstractMessage<EventsQueryMessage>{
       'recipient' in filter;
   }
 
-  private static isProtocolFilter(filter: EventsQueryFilter): filter is ProtocolsQueryFilter {
+  private static isProtocolFilter(filter: EventsFilter): filter is ProtocolsQueryFilter {
     return 'protocol' in filter;
   }
 }

@@ -1,3 +1,4 @@
+import type { EventStream } from '../../src/types/event-stream.js';
 import type {
   DataStore,
   EventLog,
@@ -11,7 +12,8 @@ import { TestDataGenerator } from '../utils/test-data-generator.js';
 import {
   DidKeyResolver,
   DidResolver,
-  Dwn
+  Dwn,
+  EventStreamEmitter
 } from '../../src/index.js';
 
 import { Message } from '../../src/core/message.js';
@@ -23,6 +25,7 @@ export function testEventsGetHandler(): void {
     let messageStore: MessageStore;
     let dataStore: DataStore;
     let eventLog: EventLog;
+    let eventStream: EventStream;
     let dwn: Dwn;
 
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
@@ -34,8 +37,9 @@ export function testEventsGetHandler(): void {
       messageStore = stores.messageStore;
       dataStore = stores.dataStore;
       eventLog = stores.eventLog;
+      eventStream = new EventStreamEmitter({ messageStore, didResolver });
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
     });
 
     beforeEach(async () => {

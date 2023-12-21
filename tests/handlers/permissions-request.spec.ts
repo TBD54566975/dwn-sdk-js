@@ -1,3 +1,4 @@
+import type { EventStream } from '../../src/types/event-stream.js';
 import type {
   DataStore,
   EventLog,
@@ -15,7 +16,7 @@ import { PermissionsRequest } from '../../src/interfaces/permissions-request.js'
 import { PermissionsRequestHandler } from '../../src/handlers/permissions-request.js';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
-import { DwnInterfaceName, DwnMethodName } from '../../src/index.js';
+import { DwnInterfaceName, DwnMethodName, EventStreamEmitter } from '../../src/index.js';
 
 export function testPermissionsRequestHandler(): void {
   describe('PermissionsRequestHandler.handle()', () => {
@@ -23,6 +24,7 @@ export function testPermissionsRequestHandler(): void {
     let messageStore: MessageStore;
     let dataStore: DataStore;
     let eventLog: EventLog;
+    let eventStream: EventStream;
     let dwn: Dwn;
 
     describe('functional tests', () => {
@@ -36,8 +38,9 @@ export function testPermissionsRequestHandler(): void {
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;
+        eventStream = new EventStreamEmitter({ messageStore, didResolver });
 
-        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
+        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
       });
 
       beforeEach(async () => {
@@ -94,7 +97,7 @@ export function testPermissionsRequestHandler(): void {
         const alice = await DidKeyResolver.generate();
         const { message } = await TestDataGenerator.generatePermissionsRequest();
 
-        const permissionsRequestHandler = new PermissionsRequestHandler(didResolver, messageStore, eventLog);
+        const permissionsRequestHandler = new PermissionsRequestHandler(didResolver, messageStore, eventLog, eventStream);
 
         // stub the `parse()` function to throw an error
         sinon.stub(PermissionsRequest, 'parse').throws('anyError');

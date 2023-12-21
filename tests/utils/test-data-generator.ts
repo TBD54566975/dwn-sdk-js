@@ -2,6 +2,7 @@ import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
 import type { DidResolutionResult } from '../../src/types/did-types.js';
 import type { EventsGetOptions } from '../../src/interfaces/events-get.js';
 import type { EventsQueryOptions } from '../../src/interfaces/events-query.js';
+import type { EventsSubscribeOptions } from '../../src/interfaces/events-subscribe.js';
 import type { GeneralJws } from '../../src/types/jws-types.js';
 import type { MessagesGetMessage } from '../../src/types/messages-types.js';
 import type { MessagesGetOptions } from '../../src/interfaces/messages-get.js';
@@ -10,16 +11,17 @@ import type { ProtocolsConfigureOptions } from '../../src/interfaces/protocols-c
 import type { ProtocolsQueryOptions } from '../../src/interfaces/protocols-query.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsQueryOptions } from '../../src/interfaces/records-query.js';
-import type { RecordsWriteMessage } from '../../src/types/records-types.js';
+import type { RecordsSubscribeOptions } from '../../src/interfaces/records-subscribe.js';
 import type { Signer } from '../../src/types/signer.js';
 import type { AuthorizationModel, Pagination } from '../../src/types/message-types.js';
 import type { CreateFromOptions, EncryptionInput, KeyEncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
 import type { DateSort, RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage } from '../../src/types/records-types.js';
-import type { EventsGetMessage, EventsQueryFilter, EventsQueryMessage } from '../../src/types/event-types.js';
+import type { EventsFilter, EventsGetMessage, EventsQueryMessage, EventsSubscribeMessage } from '../../src/types/event-types.js';
 import type { PermissionConditions, PermissionScope } from '../../src/types/permissions-grant-descriptor.js';
 import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from '../../src/types/permissions-types.js';
 import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 import type { ProtocolDefinition, ProtocolsConfigureMessage, ProtocolsQueryMessage } from '../../src/types/protocols-types.js';
+import type { RecordsSubscribeMessage, RecordsWriteMessage } from '../../src/types/records-types.js';
 
 
 import * as cbor from '@ipld/dag-cbor';
@@ -29,6 +31,7 @@ import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { Encryption } from '../../src/utils/encryption.js';
 import { EventsGet } from '../../src/interfaces/events-get.js';
 import { EventsQuery } from '../../src/interfaces/events-query.js';
+import { EventsSubscribe } from '../../src/interfaces/events-subscribe.js';
 import { Jws } from '../../src/utils/jws.js';
 import { MessagesGet } from '../../src/interfaces/messages-get.js';
 import { PermissionsGrant } from '../../src/interfaces/permissions-grant.js';
@@ -40,6 +43,7 @@ import { ProtocolsQuery } from '../../src/interfaces/protocols-query.js';
 import { Records } from '../../src/utils/records.js';
 import { RecordsDelete } from '../../src/interfaces/records-delete.js';
 import { RecordsQuery } from '../../src/interfaces/records-query.js';
+import { RecordsSubscribe } from '../../src/interfaces/records-subscribe.js';
 import { RecordsWrite } from '../../src/interfaces/records-write.js';
 import { removeUndefinedProperties } from '../../src/utils/object.js';
 import { Secp256k1 } from '../../src/utils/secp256k1.js';
@@ -164,6 +168,22 @@ export type GenerateRecordsQueryOutput = {
   message: RecordsQueryMessage;
 };
 
+export type GenerateRecordsSubscribeInput = {
+    /**
+   * Treated as `false` if not given.
+   */
+    anonymous?: boolean;
+    author?: Persona;
+    messageTimestamp?: string;
+    filter?: RecordsFilter;
+    protocolRole?: string;
+};
+
+export type GenerateRecordsSubscribeOutput = {
+  author: Persona | undefined;
+  message: RecordsSubscribeMessage;
+};
+
 export type GenerateRecordsDeleteInput = {
   author?: Persona;
   recordId?: string;
@@ -237,7 +257,7 @@ export type GenerateEventsGetOutput = {
 
 export type GenerateEventsQueryInput = {
   author?: Persona;
-  filters: EventsQueryFilter[];
+  filters: EventsFilter[];
   cursor?: PaginationCursor;
 };
 
@@ -245,6 +265,17 @@ export type GenerateEventsQueryOutput = {
   author: Persona;
   eventsQuery: EventsQuery;
   message: EventsQueryMessage;
+};
+
+export type GenerateEventsSubscribeInput = {
+  author: Persona;
+  filters: EventsFilter[];
+};
+
+export type GenerateEventsSubscribeOutput = {
+  author: Persona;
+  eventsSubscribe: EventsSubscribe;
+  message: EventsSubscribeMessage;
 };
 
 export type GenerateMessagesGetInput = {
@@ -639,6 +670,44 @@ export class TestDataGenerator {
   };
 
   /**
+   * Generates a RecordsSubscribe message for testing.
+   */
+  public static async generateRecordsSubscribe(input?: GenerateRecordsSubscribeInput): Promise<GenerateRecordsSubscribeOutput> {
+    let author = input?.author;
+    const anonymous: boolean = input?.anonymous ?? false;
+
+    if (anonymous && author) {
+      throw new Error('Cannot have `author` and be anonymous at the same time.');
+    }
+
+    // generate author if needed
+    if (author === undefined && !anonymous) {
+      author = await TestDataGenerator.generatePersona();
+    }
+
+    let signer = undefined;
+    if (author !== undefined) {
+      signer = Jws.createSigner(author);
+    }
+
+    const options: RecordsSubscribeOptions = {
+      messageTimestamp : input?.messageTimestamp,
+      signer,
+      filter           : input?.filter ?? { schema: TestDataGenerator.randomString(10) }, // must have one filter property if no filter is given
+      protocolRole     : input?.protocolRole,
+    };
+    removeUndefinedProperties(options);
+
+    const recordsSubscribe = await RecordsSubscribe.create(options);
+    const message = recordsSubscribe.message;
+
+    return {
+      author,
+      message
+    };
+  }
+
+  /**
    * Generates a RecordsDelete for testing.
    */
   public static async generateRecordsDelete(input?: GenerateRecordsDeleteInput): Promise<GenerateRecordsDeleteOutput> {
@@ -763,6 +832,29 @@ export class TestDataGenerator {
       author,
       eventsQuery,
       message: eventsQuery.message
+    };
+  }
+
+  /**
+   * Generates a EventsSubscribe message for testing.
+   */
+  public static async generateEventsSubscribe(input?: GenerateEventsSubscribeInput): Promise<GenerateEventsSubscribeOutput> {
+    const author = input?.author ?? await TestDataGenerator.generatePersona();
+    const signer = Jws.createSigner(author);
+
+    const options: EventsSubscribeOptions = {
+      filters: input?.filters,
+      signer,
+    };
+    removeUndefinedProperties(options);
+
+    const eventsSubscribe = await EventsSubscribe.create(options);
+    const message = eventsSubscribe.message;
+
+    return {
+      author,
+      eventsSubscribe,
+      message
     };
   }
 

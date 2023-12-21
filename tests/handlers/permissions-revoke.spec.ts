@@ -1,12 +1,14 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
 
+
 import { DataStoreLevel } from '../../src/store/data-store-level.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
 import { DidResolver } from '../../src/did/did-resolver.js';
 import { Dwn } from '../../src/dwn.js';
 import { DwnErrorCode } from '../../src/core/dwn-error.js';
 import { EventLogLevel } from '../../src/event-log/event-log-level.js';
+import { EventStreamEmitter } from '../../src/event-log/event-stream.js';
 import { Message } from '../../src/core/message.js';
 import { MessageStoreLevel } from '../../src/store/message-store-level.js';
 import { PermissionsRevoke } from '../../src/interfaces/permissions-revoke.js';
@@ -18,6 +20,7 @@ describe('PermissionsRevokeHandler.handle()', () => {
   let messageStore: MessageStoreLevel;
   let dataStore: DataStoreLevel;
   let eventLog: EventLogLevel;
+  let eventStream: EventStreamEmitter;
   let dwn: Dwn;
 
   describe('functional tests', () => {
@@ -39,7 +42,9 @@ describe('PermissionsRevokeHandler.handle()', () => {
         location: 'TEST-EVENTLOG'
       });
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
+      eventStream = new EventStreamEmitter({ didResolver, messageStore });
+
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
     });
 
     beforeEach(async () => {

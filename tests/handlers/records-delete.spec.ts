@@ -1,3 +1,4 @@
+import type { EventStream } from '../../src/types/event-stream.js';
 import type {
   DataStore,
   EventLog,
@@ -17,7 +18,6 @@ import threadRoleProtocolDefinition from '../vectors/protocol-definitions/thread
 
 import { ArrayUtility } from '../../src/utils/array.js';
 import { DidKeyResolver } from '../../src/did/did-key-resolver.js';
-import { DwnErrorCode } from '../../src/index.js';
 import { DwnMethodName } from '../../src/enums/dwn-interface-method.js';
 import { Message } from '../../src/core/message.js';
 import { normalizeSchemaUrl } from '../../src/utils/url.js';
@@ -28,6 +28,7 @@ import { TestStores } from '../test-stores.js';
 import { TestStubGenerator } from '../utils/test-stub-generator.js';
 import { Time } from '../../src/utils/time.js';
 import { DataStream, DidResolver, Dwn, Encoder, Jws, RecordsDelete, RecordsRead, RecordsWrite } from '../../src/index.js';
+import { DwnErrorCode, EventStreamEmitter } from '../../src/index.js';
 
 chai.use(chaiAsPromised);
 
@@ -37,6 +38,7 @@ export function testRecordsDeleteHandler(): void {
     let messageStore: MessageStore;
     let dataStore: DataStore;
     let eventLog: EventLog;
+    let eventStream: EventStream;
     let dwn: Dwn;
 
     describe('functional tests', () => {
@@ -50,8 +52,9 @@ export function testRecordsDeleteHandler(): void {
         messageStore = stores.messageStore;
         dataStore = stores.dataStore;
         eventLog = stores.eventLog;
+        eventStream = new EventStreamEmitter({ messageStore, didResolver });
 
-        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
+        dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
       });
 
       beforeEach(async () => {
@@ -760,7 +763,7 @@ export function testRecordsDeleteHandler(): void {
       const messageStore = stubInterface<MessageStore>();
       const dataStore = stubInterface<DataStore>();
 
-      const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore, eventLog);
+      const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
       const reply = await recordsDeleteHandler.handle({ tenant, message });
       expect(reply.status.code).to.equal(401);
     });
@@ -773,7 +776,7 @@ export function testRecordsDeleteHandler(): void {
       const messageStore = stubInterface<MessageStore>();
       const dataStore = stubInterface<DataStore>();
 
-      const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore, eventLog);
+      const recordsDeleteHandler = new RecordsDeleteHandler(didResolver, messageStore, dataStore, eventLog, eventStream);
 
       // stub the `parse()` function to throw an error
       sinon.stub(RecordsDelete, 'parse').throws('anyError');

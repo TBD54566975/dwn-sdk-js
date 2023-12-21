@@ -1,3 +1,4 @@
+import type { EventStream } from '../../src/types/event-stream.js';
 import type {
   DataStore,
   EventLog,
@@ -11,7 +12,7 @@ import { MessagesGetHandler } from '../../src/handlers/messages-get.js';
 import { stubInterface } from 'ts-sinon';
 import { TestDataGenerator } from '../utils/test-data-generator.js';
 import { TestStores } from '../test-stores.js';
-import { DidKeyResolver, DidResolver, Dwn, DwnConstant } from '../../src/index.js';
+import { DidKeyResolver, DidResolver, Dwn, DwnConstant, EventStreamEmitter } from '../../src/index.js';
 
 import sinon from 'sinon';
 
@@ -22,6 +23,7 @@ export function testMessagesGetHandler(): void {
     let messageStore: MessageStore;
     let dataStore: DataStore;
     let eventLog: EventLog;
+    let eventStream: EventStream;
 
     // important to follow the `before` and `after` pattern to initialize and clean the stores in tests
     // so that different test suites can reuse the same backend store for testing
@@ -32,8 +34,9 @@ export function testMessagesGetHandler(): void {
       messageStore = stores.messageStore;
       dataStore = stores.dataStore;
       eventLog = stores.eventLog;
+      eventStream = new EventStreamEmitter({ messageStore, didResolver });
 
-      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog });
+      dwn = await Dwn.create({ didResolver, messageStore, dataStore, eventLog, eventStream });
     });
 
     beforeEach(async () => {

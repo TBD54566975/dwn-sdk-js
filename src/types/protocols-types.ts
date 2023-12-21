@@ -40,6 +40,7 @@ export enum ProtocolAction {
   Delete = 'delete',
   Query = 'query',
   Read = 'read',
+  Subscribe = 'subscribe',
   Update = 'update',
   Write = 'write'
 }
