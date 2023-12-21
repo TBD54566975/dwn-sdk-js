@@ -1,4 +1,5 @@
 import type { MessagesGetReplyEntry } from '../types/messages-types.js';
+import type { ProtocolsConfigureMessage } from '../types/protocols-types.js';
 import type { RecordsWriteReply } from '../types/records-types.js';
 import type { GenericMessageReply, QueryResultEntry } from '../types/message-types.js';
 
@@ -18,7 +19,7 @@ export type UnionMessageReply = GenericMessageReply & {
    * e.g. the resulting messages from a RecordsQuery, or array of messageCid strings for EventsGet or EventsQuery
    * Mutually exclusive with `record`.
    */
-  entries?: QueryResultEntry[] | MessagesGetReplyEntry[] | string[];
+  entries?: QueryResultEntry[] | ProtocolsConfigureMessage[] | MessagesGetReplyEntry[] | string[];
 
   /**
    * Record corresponding to the message received if applicable (e.g. RecordsRead).
