@@ -1,7 +1,8 @@
 import type { DelegatedGrantMessage } from '../types/delegated-grant-message.js';
-import type { DwnError } from '../core/dwn-error.js';
+import type { EventsHandler } from './events-types.js';
 import type { GeneralJws } from './jws-types.js';
 import type { Readable } from 'readable-stream';
+import type { RecordsSubscribeMessageHandler } from './records-types.js';
 import type { SortDirection } from './query-types.js';
 
 /**
@@ -77,12 +78,10 @@ export type QueryResultEntry = GenericMessage & {
   encodedData?: string;
 };
 
-export type GenericMessageHandler = (message: GenericMessage) => void;
+export type GenericMessageHandler = EventsHandler | RecordsSubscribeMessageHandler;
 
 export type GenericMessageSubscription = {
   id: string;
-  on: (handler: GenericMessageHandler) => { off: () => void };
-  onError: (handler: (error: DwnError) => void) => void;
   close: () => Promise<void>;
 };
 

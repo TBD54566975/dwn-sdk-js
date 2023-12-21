@@ -54,7 +54,6 @@ export class EventsSubscribeHandler implements MethodHandler {
         status: { code: 200, detail: 'OK' },
         subscription,
       };
-
       return messageReply;
     } catch (error) {
       return messageReplyFromError(error, 401);
