@@ -1,6 +1,6 @@
 import type { DerivedPrivateJwk } from '../../src/utils/hd-key.js';
 import type { EncryptionInput } from '../../src/interfaces/records-write.js';
-import type { EventStream } from '../../src/types/event-stream.js';
+import type { EventStream } from '../../src/types/subscriptions.js';
 import type { DataStore, EventLog, MessageStore, ProtocolDefinition, ProtocolsConfigureMessage } from '../../src/index.js';
 
 import { DwnConstant, EventStreamEmitter, Message } from '../../src/index.js';

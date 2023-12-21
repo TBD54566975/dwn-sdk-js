@@ -1,5 +1,5 @@
 import type { EventLog } from '../types/event-log.js';
-import type { EventStream } from '../types/event-stream.js';
+import type { EventStream } from '../types/subscriptions.js';
 import type { ULIDFactory } from 'ulidx';
 import type { Filter, KeyValues, PaginationCursor } from '../types/query-types.js';
 

@@ -1,4 +1,4 @@
-import type { EventStream } from '../src/types/event-stream.js';
+import type { EventStream } from '../src/types/subscriptions.js';
 import type { ActiveTenantCheckResult, EventsGetReply, TenantGate } from '../src/index.js';
 import type { DataStore, EventLog, MessageStore } from '../src/index.js';
 

@@ -1,6 +1,6 @@
 import type { ProtocolsQueryFilter } from '../types/protocols-types.js';
 import type { Signer } from '../types/signer.js';
-import type { EventsFilter, EventsMessageFilter, EventsQueryDescriptor, EventsQueryMessage, EventsRecordsFilter } from '../types/event-types.js';
+import type { EventsFilter, EventsMessageFilter, EventsQueryDescriptor, EventsQueryMessage, EventsRecordsFilter } from '../types/events-types.js';
 import type { Filter, PaginationCursor } from '../types/query-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';

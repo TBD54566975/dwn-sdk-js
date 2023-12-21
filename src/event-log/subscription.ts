@@ -1,12 +1,12 @@
 import type { EventEmitter } from 'events';
-import type { EventHandler } from '../types/event-types.js';
-import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
+import type { Subscription } from '../types/subscriptions.js';
 import type { Filter, KeyValues } from '../types/query-types.js';
+import type { GenericMessage, GenericMessageHandler } from '../types/message-types.js';
 
 import { FilterUtility } from '../utils/filter.js';
 
-export class SubscriptionBase {
+export class SubscriptionBase implements Subscription {
   protected eventEmitter: EventEmitter;
   protected messageStore: MessageStore;
   protected filters: Filter[];
@@ -56,7 +56,7 @@ export class SubscriptionBase {
     }
   };
 
-  on(handler: EventHandler): { off: () => void } {
+  on(handler: GenericMessageHandler): { off: () => void } {
     this.eventEmitter.on(this.eventChannel, handler);
     return {
       off: (): void => {
