@@ -75,6 +75,14 @@ export type QueryResultEntry = GenericMessage & {
   encodedData?: string;
 };
 
+export type GenericMessageHandler = (message: GenericMessage) => void;
+
+export type GenericMessageSubscription = {
+  id: string;
+  on: (handler: GenericMessageHandler) => { off: () => void };
+  close: () => Promise<void>;
+};
+
 /**
  * Pagination Options for querying messages.
  *

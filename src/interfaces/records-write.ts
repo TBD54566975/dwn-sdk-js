@@ -689,7 +689,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
   }
 
 
-  public async constructRecordsWriteIndexes(
+  public async constructIndexes(
     isLatestBaseState: boolean
   ): Promise<KeyValues> {
     const message = this.message;
@@ -931,5 +931,9 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     const attestationSignatures = message.attestation?.signatures ?? [];
     const attesters = attestationSignatures.map((signature) => Jws.getSignerDid(signature));
     return attesters;
+  }
+
+  public static isRecordsWriteMessage(message: GenericMessage): message is RecordsWriteMessage {
+    return message.descriptor.interface === DwnInterfaceName.Records && message.descriptor.method === DwnMethodName.Write;
   }
 }
