@@ -1,6 +1,6 @@
 import type { DidResolver } from '../did/did-resolver.js';
 import type EventEmitter from 'events';
-import type { EventStream } from '../types/event-stream.js';
+import type { EventStream } from '../types/subscriptions.js';
 import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types//message-store.js';
 import type { MethodHandler } from '../types/method-handler.js';

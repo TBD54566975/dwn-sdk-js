@@ -2,8 +2,8 @@
 export type { DwnConfig } from './dwn.js';
 export type { DidMethodResolver, DwnServiceEndpoint, ServiceEndpoint, DidDocument, DidResolutionResult, DidResolutionMetadata, DidDocumentMetadata, VerificationMethod } from './types/did-types.js';
 export type { EventLog, GetEventsOptions } from './types/event-log.js';
-export type { EventStream } from './types/event-stream.js';
-export type { EventsGetMessage, EventsGetReply, EventsSubscribeDescriptor, EventsSubscribeMessage, EventsSubscribeReply, EventSubscription } from './types/event-types.js';
+export type { EventStream, SubscriptionReply } from './types/subscriptions.js';
+export type { EventsGetMessage, EventsGetReply, EventsSubscribeDescriptor, EventsSubscribeMessage, EventsSubscribeReply, EventsSubscription } from './types/events-types.js';
 export type { Filter } from './types/query-types.js';
 export type { GenericMessage, GenericMessageReply, MessageSort, Pagination, QueryResultEntry } from './types/message-types.js';
 export type { MessagesGetMessage, MessagesGetReply, MessagesGetReplyEntry } from './types/messages-types.js';

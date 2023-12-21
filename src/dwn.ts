@@ -1,12 +1,12 @@
 import type { DataStore } from './types/data-store.js';
 import type { EventLog } from './types/event-log.js';
-import type { EventStream } from './types/event-stream.js';
+import type { EventStream } from './types/subscriptions.js';
 import type { MessageStore } from './types/message-store.js';
 import type { MethodHandler } from './types/method-handler.js';
 import type { Readable } from 'readable-stream';
 import type { TenantGate } from './core/tenant-gate.js';
 import type { UnionMessageReply } from './core/message-reply.js';
-import type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply, EventsSubscribeMessage, EventsSubscribeReply } from './types/event-types.js';
+import type { EventsGetMessage, EventsGetReply, EventsQueryMessage, EventsQueryReply, EventsSubscribeMessage, EventsSubscribeReply } from './types/events-types.js';
 import type { GenericMessage, GenericMessageReply } from './types/message-types.js';
 import type { MessagesGetMessage, MessagesGetReply } from './types/messages-types.js';
 import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from './types/permissions-types.js';

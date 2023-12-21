@@ -1,9 +1,9 @@
 import type { DidResolver } from '../did/did-resolver.js';
-import type { GenericMessage } from '../types/message-types.js';
 import type { MessageStore } from '../types/message-store.js';
-import type { EventsSubscribeMessage, EventSubscription } from '../types/event-types.js';
-import type { EventStream, EventStreamSubscription } from '../types/event-stream.js';
+import type { EventsSubscribeMessage, EventsSubscription } from '../types/events-types.js';
+import type { EventStream, Subscription } from '../types/subscriptions.js';
 import type { Filter, KeyValues } from '../types/query-types.js';
+import type { GenericMessage, GenericMessageSubscription } from '../types/message-types.js';
 import type { RecordsSubscribeMessage, RecordsSubscription } from '../types/records-types.js';
 
 import { EventEmitter } from 'events';
@@ -30,7 +30,7 @@ export class EventStreamEmitter implements EventStream {
   private reauthorizationTTL: number;
 
   private isOpen: boolean = false;
-  private subscriptions: Map<string, EventStreamSubscription> = new Map();
+  private subscriptions: Map<string, Subscription> = new Map();
 
   constructor(config: EventStreamConfig) {
     this.didResolver = config.didResolver;
@@ -49,9 +49,9 @@ export class EventStreamEmitter implements EventStream {
     console.error('event emitter error', error);
   };
 
-  async subscribe(tenant: string, message: EventsSubscribeMessage, filters: Filter[]): Promise<EventSubscription>;
+  async subscribe(tenant: string, message: EventsSubscribeMessage, filters: Filter[]): Promise<EventsSubscription>;
   async subscribe(tenant: string, message: RecordsSubscribeMessage, filters: Filter[]): Promise<RecordsSubscription>;
-  async subscribe(tenant: string, message: GenericMessage, filters: Filter[]): Promise<EventSubscription> {
+  async subscribe(tenant: string, message: GenericMessage, filters: Filter[]): Promise<GenericMessageSubscription> {
     const messageCid = await Message.getCid(message);
     let subscription = this.subscriptions.get(messageCid);
     if (subscription !== undefined) {

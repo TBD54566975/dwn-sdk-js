@@ -46,16 +46,16 @@ export type EventsSubscribeMessage = {
   descriptor: EventsSubscribeDescriptor;
 };
 
-export type EventHandler = (message: GenericMessage) => void;
+export type EventsHandler = (message: GenericMessage) => void;
 
-export type EventSubscription = {
+export type EventsSubscription = {
   id: string;
-  on: (handler: EventHandler) => { off: () => void };
+  on: (handler: EventsHandler) => { off: () => void };
   close: () => Promise<void>;
 };
 
 export type EventsSubscribeReply = GenericMessageReply & {
-  subscription?: EventSubscription;
+  subscription?: EventsSubscription;
 };
 
 export type EventsSubscribeDescriptor = {

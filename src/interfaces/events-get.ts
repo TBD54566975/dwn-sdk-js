@@ -1,5 +1,5 @@
 import type { Signer } from '../types/signer.js';
-import type { EventsGetDescriptor, EventsGetMessage } from '../types/event-types.js';
+import type { EventsGetDescriptor, EventsGetMessage } from '../types/events-types.js';
 
 import { AbstractMessage } from '../core/abstract-message.js';
 import { Message } from '../core/message.js';
