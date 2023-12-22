@@ -26,7 +26,7 @@ export type RecordsWriteDescriptor = {
   recipient?: string;
   schema?: string;
   parentId?: string;
-  // tags?: RecordsTags;
+  tags?: RecordsTags;
   dataCid: string;
   dataSize: number;
   dateCreated: string;
