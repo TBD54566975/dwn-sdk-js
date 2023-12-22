@@ -107,6 +107,58 @@ export class IndexLevel {
     await tenantPartition.batch(indexOps, options);
   }
 
+  async update(tenant: string, itemId: string, indexes: KeyValues, options?: IndexLevelOptions): Promise<void> {
+    const indexOps: LevelWrapperBatchOperation<string>[] = [];
+
+    const initialIndexes = await this.getIndexes(tenant, itemId);
+    if (initialIndexes === undefined) {
+      // invalid itemId
+      return;
+    }
+
+    // delete the reverse lookup
+    const partitionOperation = await this.createOperationForIndexesLookupPartition(
+      tenant,
+      { type: 'put', key: itemId, value: JSON.stringify(indexes) }
+    );
+    indexOps.push(partitionOperation);
+
+    // delete the keys for each sortIndex
+    for (const indexName in initialIndexes) {
+      const sortValue = initialIndexes[indexName];
+      const deleteOperation = await this.createOperationForIndexPartition(
+        tenant,
+        indexName,
+        {
+          type : 'del',
+          key  : IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), itemId)
+        }
+      );
+      indexOps.push(deleteOperation);
+    }
+
+    // create an index entry for each property index
+    // these indexes are all sortable lexicographically.
+    for (const indexName in indexes) {
+      const indexValue = indexes[indexName];
+      // the key is indexValue followed by the itemId as a tie-breaker.
+      // for example if the property is messageTimestamp the key would look like:
+      // '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+      const key = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(indexValue), itemId);
+      const item: IndexedItem = { itemId, indexes };
+
+      const partitionOperation = await this.createOperationForIndexPartition(
+        tenant,
+        indexName,
+        { type: 'put', key, value: JSON.stringify(item) }
+      );
+      indexOps.push(partitionOperation);
+    }
+
+    const tenantPartition = await this.db.partition(tenant);
+    await tenantPartition.batch(indexOps, options);
+  }
+
   /**
    *  Deletes all of the index data associated with the item.
    */

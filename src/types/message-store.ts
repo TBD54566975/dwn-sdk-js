@@ -27,6 +27,8 @@ export interface MessageStore {
     options?: MessageStoreOptions
   ): Promise<void>;
 
+  updateIndex(tenant: string, cid: string, indexes: KeyValues, options?: MessageStoreOptions): Promise<void>;
+
   /**
    * Fetches a single message by `cid` from the underlying store.
    * Returns `undefined` no message was found.

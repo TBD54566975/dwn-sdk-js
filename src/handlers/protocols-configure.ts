@@ -56,7 +56,7 @@ export class ProtocolsConfigureHandler implements MethodHandler {
     // write the incoming message to DB if incoming message is newest
     let messageReply: GenericMessageReply;
     if (incomingMessageIsNewest) {
-      const indexes = ProtocolsConfigureHandler.constructIndexes(protocolsConfigure);
+      const indexes = ProtocolsConfigureHandler.constructIndexes(protocolsConfigure, true);
 
       const messageCid = await Message.getCid(message);
       await this.messageStore.put(tenant, message, indexes);
@@ -71,32 +71,33 @@ export class ProtocolsConfigureHandler implements MethodHandler {
       };
     }
 
-    // delete all existing records that are smaller
-    const deletedMessageCids: string[] = [];
-    for (const message of existingMessages) {
+    // update all existing records indexes that are smaller to latestBaseState false
+    const updateIndexPromises:Promise<void>[] = [];
+    for (const message of existingMessages as ProtocolsConfigureMessage[]) {
       if (await Message.isNewer(newestMessage, message)) {
         const messageCid = await Message.getCid(message);
-        deletedMessageCids.push(messageCid);
-
-        await this.messageStore.delete(tenant, messageCid);
+        const olderProtocolConfigure = await ProtocolsConfigure.parse(message);
+        const updatedIndexes = ProtocolsConfigureHandler.constructIndexes(olderProtocolConfigure, false);
+        updateIndexPromises.push(this.messageStore.updateIndex(tenant, messageCid, updatedIndexes));
       }
     }
 
-    await this.eventLog.deleteEventsByCid(tenant, deletedMessageCids);
+    await Promise.all(updateIndexPromises);
 
     return messageReply;
   };
 
-  static constructIndexes(protocolsConfigure: ProtocolsConfigure): { [key: string]: string | boolean } {
+  static constructIndexes(protocolsConfigure: ProtocolsConfigure, isLatestBaseState: boolean): { [key: string]: string | boolean } {
     // strip out `definition` as it is not indexable
     const { definition, ...propertiesToIndex } = protocolsConfigure.message.descriptor;
     const { author } = protocolsConfigure;
 
     const indexes: { [key: string]: string | boolean } = {
       ...propertiesToIndex,
-      author    : author!,
-      protocol  : definition.protocol, // retain protocol url from `definition`,
-      published : definition.published // retain published state from definition
+      author            : author!,
+      protocol          : definition.protocol, // retain protocol url from `definition`,
+      published         : definition.published, // retain published state from definition
+      isLatestBaseState : isLatestBaseState
     };
 
     return indexes;

@@ -252,9 +252,10 @@ export class ProtocolAuthorization {
   ): Promise<ProtocolDefinition> {
     // fetch the corresponding protocol definition
     const query: Filter = {
-      interface : DwnInterfaceName.Protocols,
-      method    : DwnMethodName.Configure,
-      protocol  : protocolUri
+      isLatestBaseState : true,
+      interface         : DwnInterfaceName.Protocols,
+      method            : DwnMethodName.Configure,
+      protocol          : protocolUri
     };
     const { messages: protocols } = await messageStore.query(tenant, [query]);
 

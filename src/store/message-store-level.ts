@@ -178,6 +178,9 @@ export class MessageStoreLevel implements MessageStore {
     await this.index.put(tenant, messageCidString, indexes, options);
   }
 
+  async updateIndex(tenant: string, cid: string, indexes: KeyValues, options?: MessageStoreOptions): Promise<void> {
+    await this.index.update(tenant, cid, indexes, options);
+  }
 
   /**
    * deletes everything in the underlying blockstore and indices.

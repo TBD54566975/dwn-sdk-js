@@ -296,7 +296,7 @@ export function testProtocolsConfigureHandler(): void {
           expect(events[0]).to.equal(messageCid);
         });
 
-        it('should delete older ProtocolsConfigure events when one is overwritten', async () => {
+        it('should not delete older ProtocolsConfigure events when a new one is added', async () => {
           const alice = await DidKeyResolver.generate();
           const oldestWrite = await TestDataGenerator.generateProtocolsConfigure({ author: alice, protocolDefinition: minimalProtocolDefinition });
           await Time.minimalSleep();
@@ -309,10 +309,11 @@ export function testProtocolsConfigureHandler(): void {
           expect(reply.status.code).to.equal(202);
 
           const events = await eventLog.getEvents(alice.did);
-          expect(events.length).to.equal(1);
+          expect(events.length).to.equal(2);
 
+          const olderMessageCid = await Message.getCid(oldestWrite.message);
           const newestMessageCid = await Message.getCid(newestWrite.message);
-          expect(events[0]).to.equal(newestMessageCid);
+          expect(events).to.have.members([ olderMessageCid, newestMessageCid ]);
         });
       });
     });
