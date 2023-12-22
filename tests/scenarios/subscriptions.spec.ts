@@ -302,7 +302,9 @@ export function testSubscriptionScenarios(): void {
         expect(aliceMessage2Reply.status.code).to.equal(202);
         authorizeSpy.restore();
 
-        await Time.minimalSleep();
+        while (messageCids.length < 2) {
+          await Time.minimalSleep();
+        }
 
         expect(authorizeSpy.callCount).to.equal(0, 'reauthorize'); // authorize is never called
         expect(messageCids.length).to.equal(2, 'messageCids');
@@ -378,7 +380,9 @@ export function testSubscriptionScenarios(): void {
         expect(aliceMessage2Reply.status.code).to.equal(202);
         authorizeSpy.restore();
 
-        await Time.minimalSleep();
+        while (messageCids.length < 2) {
+          await Time.minimalSleep();
+        }
 
         expect(authorizeSpy.callCount).to.equal(2, 'reauthorize'); // authorize on each message
         expect(messageCids.length).to.equal(2, 'messageCids');
@@ -475,7 +479,9 @@ export function testSubscriptionScenarios(): void {
         authorizeSpy.restore();
         clock.restore();
 
-        await Time.minimalSleep();
+        while (messageCids.length < 3) {
+          await Time.minimalSleep();
+        }
 
         expect(authorizeSpy.callCount).to.equal(1, 'reauthorize'); // called once after the TTL has passed
         expect(messageCids.length).to.equal(3, 'messageCids');
