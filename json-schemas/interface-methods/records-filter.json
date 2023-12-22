@@ -52,6 +52,8 @@
                 "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
               }
             }
+          },{
+            "$ref": "https://identity.foundation/dwn/json-schemas/number-range-filter.json"
           }
         ]
       }

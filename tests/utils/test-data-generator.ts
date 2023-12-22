@@ -9,7 +9,6 @@ import type { ProtocolsConfigureOptions } from '../../src/interfaces/protocols-c
 import type { ProtocolsQueryOptions } from '../../src/interfaces/protocols-query.js';
 import type { Readable } from 'readable-stream';
 import type { RecordsQueryOptions } from '../../src/interfaces/records-query.js';
-import type { RecordsWriteMessage } from '../../src/types/records-types.js';
 import type { Signer } from '../../src/types/signer.js';
 import type { AuthorizationModel, Pagination } from '../../src/types/message-types.js';
 import type { CreateFromOptions, EncryptionInput, KeyEncryptionInput, RecordsWriteOptions } from '../../src/interfaces/records-write.js';
@@ -19,6 +18,7 @@ import type { PermissionConditions, PermissionScope } from '../../src/types/perm
 import type { PermissionsGrantMessage, PermissionsRequestMessage, PermissionsRevokeMessage } from '../../src/types/permissions-types.js';
 import type { PrivateJwk, PublicJwk } from '../../src/types/jose-types.js';
 import type { ProtocolDefinition, ProtocolsConfigureMessage, ProtocolsQueryMessage } from '../../src/types/protocols-types.js';
+import type { RecordsTags, RecordsWriteMessage } from '../../src/types/records-types.js';
 
 
 import * as cbor from '@ipld/dag-cbor';
@@ -104,6 +104,7 @@ export type GenerateRecordsWriteInput = {
   protocolRole?: string;
   contextId?: string;
   schema?: string;
+  tags?: RecordsTags;
   recordId?: string;
   parentId?: string;
   published?: boolean;
@@ -396,6 +397,7 @@ export class TestDataGenerator {
       protocolRole       : input?.protocolRole,
       contextId          : input?.contextId,
       schema             : input?.schema ?? `http://${TestDataGenerator.randomString(20)}`,
+      tags               : input?.tags,
       recordId           : input?.recordId,
       parentId           : input?.parentId,
       published          : input?.published,

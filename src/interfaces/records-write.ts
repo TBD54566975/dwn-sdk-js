@@ -9,6 +9,7 @@ import type {
   EncryptedKey,
   EncryptionProperty,
   InternalRecordsWriteMessage,
+  RecordsTags,
   RecordsWriteAttestationPayload,
   RecordsWriteDescriptor,
   RecordsWriteMessage,
@@ -40,6 +41,7 @@ export type RecordsWriteOptions = {
   protocolRole?: string;
   contextId?: string;
   schema?: string;
+  tags?: RecordsTags;
   recordId?: string;
   parentId?: string;
   data?: Uint8Array;
@@ -120,6 +122,7 @@ export type KeyEncryptionInput = {
 
 export type CreateFromOptions = {
   recordsWriteMessage: RecordsWriteMessage,
+  tags?: RecordsTags;
   data?: Uint8Array;
   published?: boolean;
   messageTimestamp?: string;
@@ -290,6 +293,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       protocolPath     : options.protocolPath,
       recipient        : options.recipient,
       schema           : options.schema !== undefined ? normalizeSchemaUrl(options.schema) : undefined,
+      tags             : options.tags,
       parentId         : options.parentId,
       dataCid,
       dataSize,
@@ -406,6 +410,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       dataSize           : options.data ? undefined : sourceMessage.descriptor.dataSize, // if data not given, use base message dataSize
       protocolRole       : options.protocolRole,
       delegatedGrant     : options.delegatedGrant,
+      tags               : options.tags,
       // finally still need signers
       signer             : options.signer,
       attestationSigners : options.attestationSigners

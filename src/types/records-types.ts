@@ -117,7 +117,7 @@ export type RecordsFilter = {
   published?: boolean;
   contextId?: string;
   schema?: string;
-  tags?: { [property: string]: RangeCriterion | string | number | boolean };
+  tags?: { [property: string]: RangeFilter | RangeCriterion | string | number | boolean };
   recordId?: string;
   parentId?: string;
   dataFormat?: string;

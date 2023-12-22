@@ -1,7 +1,7 @@
 import type { DerivedPrivateJwk } from './hd-key.js';
 import type { GenericSignaturePayload } from '../types/message-types.js';
 import type { Readable } from 'readable-stream';
-import type { Filter, KeyValues, RangeCriterion } from '../types/query-types.js';
+import type { Filter, KeyValues, RangeCriterion, RangeFilter } from '../types/query-types.js';
 import type { RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsReadMessage, RecordsTags, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
 
 import { DateSort } from '../types/records-types.js';
@@ -10,9 +10,9 @@ import { Encryption } from './encryption.js';
 import { FilterUtility } from './filter.js';
 import { KeyDerivationScheme } from './hd-key.js';
 import { Message } from '../core/message.js';
+import { removeUndefinedProperties } from './object.js';
 import { Secp256k1 } from './secp256k1.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
-import { flatten, removeUndefinedProperties } from './object.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from './url.js';
 
 /**
@@ -252,14 +252,24 @@ export class Records {
    * This will create individual keys for each of the tags that look like `tag.tag_property`
    */
   public static flattenTags(tags: RecordsTags): KeyValues {
-    return flatten({ tag: tags }) as KeyValues;
+    const tagValues:KeyValues = {};
+    for (const property in tags) {
+      const value = tags[property];
+      tagValues[`tag.${property}`] = value;
+    }
+    return tagValues;
   }
 
   /**
    * This will create individual keys for each of the tag filters that look like `tag.tag_filter_property`
    */
-  public static flattenTagFilters( tags: { [property: string]: RangeCriterion | string | number | boolean }): Filter {
-    return flatten({ tag: tags }) as Filter;
+  public static flattenTagFilters( tags: { [property: string]: RangeFilter | RangeCriterion | string | number | boolean }): Filter {
+    const tagValues:Filter = {};
+    for (const property in tags) {
+      const value = tags[property];
+      tagValues[`tag.${property}`] = FilterUtility.isRangeCriterion(value) ? FilterUtility.convertRangeCriterion(value)! : value;
+    }
+    return tagValues;
   }
 
   /**

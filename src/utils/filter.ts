@@ -158,6 +158,10 @@ export class FilterUtility {
     return false;
   }
 
+  public static isRangeCriterion(filter: RangeFilter | RangeCriterion | string | number | boolean ): filter is RangeCriterion {
+    return typeof filter === 'object' && ('from' in filter || 'to' in filter);
+  }
+
   static convertRangeCriterion(inputFilter: RangeCriterion): RangeFilter | undefined {
     let rangeFilter: RangeFilter | undefined;
     if (inputFilter.to !== undefined && inputFilter.from !== undefined) {
