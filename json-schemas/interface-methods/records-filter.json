@@ -26,6 +26,36 @@
     "schema": {
       "type": "string"
     },
+    "tags": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": false,
+            "properties": {
+              "from": {
+                "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+              },
+              "to": {
+                "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+              }
+            }
+          }
+        ]
+      }
+    },
     "recordId": {
       "type": "string"
     },

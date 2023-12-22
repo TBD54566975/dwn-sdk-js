@@ -9,7 +9,6 @@ import type {
   EncryptedKey,
   EncryptionProperty,
   InternalRecordsWriteMessage,
-  RecordsTags,
   RecordsWriteAttestationPayload,
   RecordsWriteDescriptor,
   RecordsWriteMessage,
@@ -27,11 +26,11 @@ import { KeyDerivationScheme } from '../utils/hd-key.js';
 import { Message } from '../core/message.js';
 import { Records } from '../utils/records.js';
 import { RecordsGrantAuthorization } from '../core/records-grant-authorization.js';
+import { removeUndefinedProperties } from '../utils/object.js';
 import { Secp256k1 } from '../utils/secp256k1.js';
 import { Time } from '../utils/time.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
 import { DwnInterfaceName, DwnMethodName } from '../enums/dwn-interface-method.js';
-import { flatten, removeUndefinedProperties } from '../utils/object.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl, validateProtocolUrlNormalized, validateSchemaUrlNormalized } from '../utils/url.js';
 
 export type RecordsWriteOptions = {
@@ -708,7 +707,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
 
     // we don't want the tags to occupy the descriptor tag space, so we augment them with tag. for each indexed property
     if (tags !== undefined) {
-      const flattenedTags = this.flattenTags(tags);
+      const flattenedTags = Records.flattenTags(tags);
       indexes = { ...indexes, ...flattenedTags };
     }
 
@@ -718,13 +717,6 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     if (message.contextId !== undefined) { indexes.contextId = message.contextId; }
 
     return indexes;
-  }
-
-  /**
-   * This will create individual keys for each of the gats that look like `tag.tag_property`
-   */
-  public flattenTags(tags: RecordsTags): KeyValues {
-    return flatten({ tag: tags }) as KeyValues;
   }
 
   /**

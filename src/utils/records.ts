@@ -1,8 +1,8 @@
 import type { DerivedPrivateJwk } from './hd-key.js';
-import type { Filter } from '../types/query-types.js';
 import type { GenericSignaturePayload } from '../types/message-types.js';
 import type { Readable } from 'readable-stream';
-import type { RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsReadMessage, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
+import type { Filter, KeyValues, RangeCriterion } from '../types/query-types.js';
+import type { RecordsDeleteMessage, RecordsFilter, RecordsQueryMessage, RecordsReadMessage, RecordsTags, RecordsWriteDescriptor, RecordsWriteMessage } from '../types/records-types.js';
 
 import { DateSort } from '../types/records-types.js';
 import { Encoder } from './encoder.js';
@@ -10,9 +10,9 @@ import { Encryption } from './encryption.js';
 import { FilterUtility } from './filter.js';
 import { KeyDerivationScheme } from './hd-key.js';
 import { Message } from '../core/message.js';
-import { removeUndefinedProperties } from './object.js';
 import { Secp256k1 } from './secp256k1.js';
 import { DwnError, DwnErrorCode } from '../core/dwn-error.js';
+import { flatten, removeUndefinedProperties } from './object.js';
 import { normalizeProtocolUrl, normalizeSchemaUrl } from './url.js';
 
 /**
@@ -249,13 +249,33 @@ export class Records {
   }
 
   /**
+   * This will create individual keys for each of the tags that look like `tag.tag_property`
+   */
+  public static flattenTags(tags: RecordsTags): KeyValues {
+    return flatten({ tag: tags }) as KeyValues;
+  }
+
+  /**
+   * This will create individual keys for each of the tag filters that look like `tag.tag_filter_property`
+   */
+  public static flattenTagFilters( tags: { [property: string]: RangeCriterion | string | number | boolean }): Filter {
+    return flatten({ tag: tags }) as Filter;
+  }
+
+  /**
    *  Converts an incoming RecordsFilter into a Filter usable by MessageStore.
    *
    * @param filter A RecordsFilter
    * @returns {Filter} a generic Filter able to be used with MessageStore.
    */
   public static convertFilter(filter: RecordsFilter, dateSort?: DateSort): Filter {
-    const filterCopy = { ...filter } as Filter;
+    const { tags, ...remainingFilter } = filter;
+    let tagsFilter: Filter = {};
+    if (tags !== undefined) {
+      tagsFilter = { ...this.flattenTagFilters(tags) };
+    }
+
+    const filterCopy = { ...remainingFilter, ...tagsFilter } as Filter;
 
     const { dateCreated, datePublished, dateUpdated } = filter;
     const dateCreatedFilter = dateCreated ? FilterUtility.convertRangeCriterion(dateCreated) : undefined;
