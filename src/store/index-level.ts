@@ -83,7 +83,7 @@ export class IndexLevel {
     for (const indexName in indexes) {
       const indexValue = indexes[indexName];
       if (Array.isArray(indexValue)) {
-        for (const indexValueItem in indexValue) {
+        for (const indexValueItem of indexValue) {
           const partitionOperation = this.generatePutIndexedItemOperation(tenant, itemId, indexes, indexName, indexValueItem);
           indexOpsPromises.push(partitionOperation);
         }
@@ -160,7 +160,7 @@ export class IndexLevel {
     for (const indexName in indexes) {
       const sortValue = indexes[indexName];
       if (Array.isArray(sortValue)) {
-        for (const sortValueItem in sortValue) {
+        for (const sortValueItem of sortValue) {
           const partitionOperation = this.generateDeleteIndexedItemOperation(tenant, itemId, indexName, sortValueItem);
           indexOpsPromises.push(partitionOperation);
         }
@@ -314,7 +314,8 @@ export class IndexLevel {
     }
 
     if (Array.isArray(sortValue)) {
-      throw new Error('cursor from array value properties not supported');
+      // sort property value is an array, it is an invalid cursor
+      return;
     }
 
     // cursor indexes must match the provided filters in order to be valid.
@@ -431,8 +432,9 @@ export class IndexLevel {
           continue;
         }
 
-        // ensure that each matched item has the sortProperty, otherwise fail the entire query.
-        if (indexedItem.indexes[sortProperty] === undefined) {
+        // ensure that each matched item has the sortProperty or the sort property's value is not an array, otherwise fail the entire query.
+        const indexValues = indexedItem.indexes[sortProperty];
+        if (Array.isArray(indexValues) || indexValues === undefined) {
           throw new DwnError(DwnErrorCode.IndexInvalidSortProperty, `invalid sort property ${sortProperty}`);
         }
 
@@ -525,16 +527,13 @@ export class IndexLevel {
 
   /**
    * Sorts Items lexicographically in ascending or descending order given a specific indexName, using the itemId as a tie breaker.
+   *
    * We know the indexes include the indexName here because they have already been checked within executeSingleFilterQuery.
+   * We know that any of the indexes used to sort by are not array values because they have already been checked within executeSingleFilterQuery.
    */
   private sortItems(itemA: IndexedItem, itemB: IndexedItem, indexName: string, direction: SortDirection): number {
-    const itemAValue = itemA.indexes[indexName];
-    const itemBValue = itemB.indexes[indexName];
-
-    // will not use tags for sort values
-    if (Array.isArray(itemAValue) || Array.isArray(itemBValue)) {
-      throw new Error('we do not support sorting by array value properties');
-    }
+    const itemAValue = itemA.indexes[indexName] as string | boolean | number;
+    const itemBValue = itemB.indexes[indexName] as string | boolean | number;
 
     const aCompareValue = IndexLevel.encodeValue(itemAValue) + itemA.itemId;
     const bCompareValue = IndexLevel.encodeValue(itemBValue) + itemB.itemId;

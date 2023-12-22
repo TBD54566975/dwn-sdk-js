@@ -49,36 +49,39 @@ describe('IndexLevel', () => {
       const id = uuid();
       const successfulIndex = testIndex.put(tenant, id, {
         id,
-        foo: 'foo',
+        foo    : 'foo',
+        digit  : 12,
+        toggle : false,
+        tag    : ['bar', 'baz']
       });
       await expect(successfulIndex).to.eventually.not.be.rejected;
       const results = await testIndex.query(tenant, [{ id: id }], { sortProperty: 'id' });
       expect(results[0]).to.equal(id);
     });
 
-    it('adds one index key per property, aside from id', async () => {
-      const id = uuid();
+    it('adds one index key per property value, aside from id', async () => {
+      const id = uuid(); // 1 key for reverse lookup
       const dateCreated = new Date().toISOString();
 
       await testIndex.put(tenant, id, {
         'a' : 'b', // 1 key
-        'c' : 'd', // 1 key
+        'c' : ['d', 'e'], // 2 keys
         dateCreated, // 1 key
       });
 
       let keys = await ArrayUtility.fromAsyncGenerator(testIndex.db.keys());
-      expect(keys.length).to.equal(4);
+      expect(keys.length).to.equal(5);
 
       await testIndex.clear();
 
       await testIndex.put(tenant, id, {
         'a' : 'b', // 1 key
-        'c' : 'd', // 1 ke
-        'e' : 'f', // 1 key
+        'c' : ['d', 'e'], // 2 keys
+        'f' : 'g', // 1 key
         dateCreated, // 1 key
       });
       keys = await ArrayUtility.fromAsyncGenerator(testIndex.db.keys());
-      expect(keys.length).to.equal(5);
+      expect(keys.length).to.equal(6);
     });
 
     it('should not put anything if aborted beforehand', async () => {
@@ -170,7 +173,7 @@ describe('IndexLevel', () => {
       it('invalid sort property returns no results', async () => {
         const testVals = ['b', 'd', 'c', 'a'];
         for (const val of testVals) {
-          await testIndex.put(tenant, val, { val, schema: 'schema' });
+          await testIndex.put(tenant, val, { val, schema: 'schema', tag: [ 'tag1', 'tag2' ] });
         }
 
         const filters = [{ schema: 'schema' }];
@@ -190,16 +193,20 @@ describe('IndexLevel', () => {
         // invalid sort property with a valid cursor value
         invalidResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'invalid', cursor: 'a' });
         expect(invalidResults.length).to.equal(0);
+
+        // pass valid cursor that sorts by an array value (tags)
+        invalidResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'tag', cursor: 'a' });
+        expect(invalidResults.length).to.equal(0);
       });
 
       it('invalid cursor returns no results', async () => {
         const testVals = ['e', 'b', 'd', 'c'];
         for (const val of testVals) {
-          await testIndex.put(tenant, val, { val, schema: 'schema' });
+          await testIndex.put(tenant, val, { val, schema: 'schema', tag: [ 'tag1', 'tag2' ] });
         }
 
         //insert 'a' as a valid cursor, but not valid match by assigning it to schema2
-        await testIndex.put(tenant, 'a', { val: 'a', schema: 'schema2' });
+        await testIndex.put(tenant, 'a', { val: 'a', schema: 'schema2', tag: [ 'tag3', 'tag4' ] });
 
         const filters = [{ schema: 'schema' }];
 
@@ -215,6 +222,110 @@ describe('IndexLevel', () => {
         // pass valid cursor that isn't part of the query/matches
         invalidResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'val', cursor: 'a' });
         expect(invalidResults.length).to.equal(0);
+
+        // pass valid cursor that sorts by an array value (tags)
+        invalidResults = await testIndex.queryWithIteratorPaging(tenant, filters, { sortProperty: 'tag', cursor: 'b' });
+        expect(invalidResults.length).to.equal(0);
+      });
+
+      describe('array values', () => {
+        it('query items with string array values', async () => {
+          const items = [{
+            id  : uuid(),
+            tag : ['item1', 'item']
+          },{
+            id  : uuid(),
+            tag : ['item2', 'item']
+          },{
+            id  : uuid(),
+            tag : ['item3', 'item']
+          },{
+            id  : uuid(),
+            tag : ['item4', 'item']
+          }];
+          for (const item of items) {
+            await testIndex.put(tenant, item.id, item);
+          }
+
+          const filterForItemTag = [{ tag: 'item' }];
+          const allResults = await testIndex.queryWithIteratorPaging(tenant, filterForItemTag, { sortProperty: 'id' });
+          expect(allResults.length).to.equal(4);
+          expect(allResults).to.have.members(items.map(item => item.id));
+
+          const filterForItem3 = [{ tag: 'item3' }];
+          const item3Results = await testIndex.queryWithIteratorPaging(tenant, filterForItem3, { sortProperty: 'id' });
+          expect(item3Results.length).to.equal(1);
+          expect(item3Results).to.has.members([items[2].id]);
+        });
+
+        it('query items with number array values', async () => {
+          const items = [{
+            id  : uuid(),
+            tag : [ 1 ]
+          },{
+            id  : uuid(),
+            tag : [ 1, 2 ]
+          },{
+            id  : uuid(),
+            tag : [ 1, 3 ]
+          },{
+            id  : uuid(),
+            tag : [ 1, 4 ]
+          }];
+          for (const item of items) {
+            await testIndex.put(tenant, item.id, item);
+          }
+
+          const filterForItemTag = [{ tag: 1 }];
+          const allResults = await testIndex.queryWithIteratorPaging(tenant, filterForItemTag, { sortProperty: 'id' });
+          expect(allResults.length).to.equal(4);
+          expect(allResults).to.have.members(items.map(item => item.id));
+
+          const filterForItem3 = [{ tag: 3 }];
+          const item3Results = await testIndex.queryWithIteratorPaging(tenant, filterForItem3, { sortProperty: 'id' });
+          expect(item3Results.length).to.equal(1);
+          expect(item3Results).to.have.members([items[2].id]);
+
+
+          const filterForRange = [{ tag: { gt: 1, lt: 4 } }];
+          const rangeItems = await testIndex.queryWithIteratorPaging(tenant, filterForRange, { sortProperty: 'id' });
+          expect(rangeItems.length).to.equal(2);
+          expect(rangeItems).to.have.members([ items[1].id, items[2].id ]);
+        });
+
+        it('query items with boolean array values', async () => {
+          const items = [{
+            id  : uuid(),
+            tag : [ false ]
+          },{
+            id  : uuid(),
+            tag : [ true ]
+          },{
+            id  : uuid(),
+            tag : [ false, true ] // control, should we blow up for this?
+          },{
+            id  : uuid(),
+            tag : [] // control
+          }];
+          for (const item of items) {
+            await testIndex.put(tenant, item.id, item);
+          }
+
+          const filterForItemTag = [{ tag: true }];
+          const trueResults = await testIndex.queryWithIteratorPaging(tenant, filterForItemTag, { sortProperty: 'id' });
+          expect(trueResults.length).to.equal(2);
+          expect(trueResults).to.have.members([ items[1].id, items[2].id ]);
+
+          const filterForItem3 = [{ tag: false }];
+          const falseResults = await testIndex.queryWithIteratorPaging(tenant, filterForItem3, { sortProperty: 'id' });
+          expect(falseResults.length).to.equal(2);
+          expect(falseResults).to.have.members([ items[0].id, items[2].id ]);
+
+          const controlGetAll = [{ }];
+          const allResults = await testIndex.queryWithIteratorPaging(tenant, controlGetAll, { sortProperty: 'id' });
+          expect(allResults.length).to.equal(4);
+          expect(allResults).to.have.members(items.map(item => item.id));
+        });
       });
     });
 
@@ -242,16 +353,20 @@ describe('IndexLevel', () => {
         // invalid sort property with a valid cursor value
         invalidResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'invalid', cursor: 'a' });
         expect(invalidResults.length).to.equal(0);
+
+        // pass valid cursor that sorts by an array value (tags)
+        invalidResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'tag', cursor: 'a' });
+        expect(invalidResults.length).to.equal(0);
       });
 
       it('invalid cursor returns no results', async () => {
         const testVals = ['e', 'b', 'd', 'c'];
         for (const val of testVals) {
-          await testIndex.put(tenant, val, { val, schema: 'schema' });
+          await testIndex.put(tenant, val, { val, schema: 'schema', tag: [ 'tag1', 'tag2' ] });
         }
 
         //insert 'a' as a valid cursor, but not valid match by assigning it to schema2
-        await testIndex.put(tenant, 'a', { val: 'a', schema: 'schema2' });
+        await testIndex.put(tenant, 'a', { val: 'a', schema: 'schema2', tag: [ 'tag3', 'tag4' ] });
 
         const filters = [{ schema: 'schema' }];
 
@@ -266,6 +381,10 @@ describe('IndexLevel', () => {
 
         // pass valid cursor that isn't part of the query/matches
         invalidResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'val', cursor: 'a' });
+        expect(invalidResults.length).to.equal(0);
+
+        // pass valid cursor that sorts by an array value (tags)
+        invalidResults = await testIndex.queryWithInMemoryPaging(tenant, filters, { sortProperty: 'tag', cursor: 'b' });
         expect(invalidResults.length).to.equal(0);
       });
 
@@ -314,6 +433,106 @@ describe('IndexLevel', () => {
         expect(lteReply.length).to.equal(3);
         expect(lteReply).to.have.members([id, id2, id3]);
 
+      });
+
+      describe('array values', () => {
+        it('query items with string array values', async () => {
+          const items = [{
+            id  : uuid(),
+            tag : ['item1', 'item']
+          },{
+            id  : uuid(),
+            tag : ['item2', 'item']
+          },{
+            id  : uuid(),
+            tag : ['item3', 'item']
+          },{
+            id  : uuid(),
+            tag : ['item4', 'item']
+          }];
+          for (const item of items) {
+            await testIndex.put(tenant, item.id, item);
+          }
+
+          const filterForItemTag = [{ tag: 'item' }];
+          const allResults = await testIndex.queryWithInMemoryPaging(tenant, filterForItemTag, { sortProperty: 'id' });
+          expect(allResults.length).to.equal(4);
+          expect(allResults).to.have.members(items.map(item => item.id));
+
+          const filterForItem3 = [{ tag: 'item3' }];
+          const item3Results = await testIndex.queryWithInMemoryPaging(tenant, filterForItem3, { sortProperty: 'id' });
+          expect(item3Results.length).to.equal(1);
+          expect(item3Results).to.has.members([items[2].id]);
+        });
+
+        it('query items with number array values', async () => {
+          const items = [{
+            id  : uuid(),
+            tag : [ 1 ]
+          },{
+            id  : uuid(),
+            tag : [ 1, 2 ]
+          },{
+            id  : uuid(),
+            tag : [ 1, 3 ]
+          },{
+            id  : uuid(),
+            tag : [ 1, 4 ]
+          }];
+          for (const item of items) {
+            await testIndex.put(tenant, item.id, item);
+          }
+
+          const filterForItemTag = [{ tag: 1 }];
+          const allResults = await testIndex.queryWithInMemoryPaging(tenant, filterForItemTag, { sortProperty: 'id' });
+          expect(allResults.length).to.equal(4);
+          expect(allResults).to.have.members(items.map(item => item.id));
+
+          const filterForItem3 = [{ tag: 3 }];
+          const item3Results = await testIndex.queryWithInMemoryPaging(tenant, filterForItem3, { sortProperty: 'id' });
+          expect(item3Results.length).to.equal(1);
+          expect(item3Results).to.have.members([items[2].id]);
+
+
+          const filterForRange = [{ tag: { gt: 1, lt: 4 } }];
+          const rangeItems = await testIndex.queryWithInMemoryPaging(tenant, filterForRange, { sortProperty: 'id' });
+          expect(rangeItems.length).to.equal(2);
+          expect(rangeItems).to.have.members([ items[1].id, items[2].id ]);
+        });
+
+        it('query items with boolean array values', async () => {
+          const items = [{
+            id  : uuid(),
+            tag : [ false ]
+          },{
+            id  : uuid(),
+            tag : [ true ]
+          },{
+            id  : uuid(),
+            tag : [ false, true ] // control, should we blow up for this?
+          },{
+            id  : uuid(),
+            tag : [] // control
+          }];
+          for (const item of items) {
+            await testIndex.put(tenant, item.id, item);
+          }
+
+          const filterForItemTag = [{ tag: true }];
+          const trueResults = await testIndex.queryWithInMemoryPaging(tenant, filterForItemTag, { sortProperty: 'id' });
+          expect(trueResults.length).to.equal(2);
+          expect(trueResults).to.have.members([ items[1].id, items[2].id ]);
+
+          const filterForItem3 = [{ tag: false }];
+          const falseResults = await testIndex.queryWithInMemoryPaging(tenant, filterForItem3, { sortProperty: 'id' });
+          expect(falseResults.length).to.equal(2);
+          expect(falseResults).to.have.members([ items[0].id, items[2].id ]);
+
+          const controlGetAll = [{ }];
+          const allResults = await testIndex.queryWithInMemoryPaging(tenant, controlGetAll, { sortProperty: 'id' });
+          expect(allResults.length).to.equal(4);
+          expect(allResults).to.have.members(items.map(item => item.id));
+        });
       });
     });
 
@@ -1035,14 +1254,14 @@ describe('IndexLevel', () => {
       const doc1 = {
         id  : id1,
         'a' : 'b',
-        'c' : 'd'
+        'c' : [ 'd', 'e' ],
       };
 
       const id2 = uuid();
       const doc2 = {
         id  : id2,
         'a' : 'b',
-        'c' : 'd'
+        'c' : [ 'd', 'e' ]
       };
 
       await testIndex.put(tenant, id1, doc1);

@@ -1,6 +1,7 @@
 import type { Filter } from '../../src/types/query-types.js';
 
 import { Time } from '../../src/utils/time.js';
+import { v4 as uuid } from 'uuid';
 import { FilterSelector, FilterUtility } from '../../src/utils/filter.js';
 
 import chaiAsPromised from 'chai-as-promised';
@@ -228,6 +229,38 @@ describe('filters util', () => {
       });
 
       describe('numbers', () => {
+      });
+
+      describe('array value types', () => {
+        it('strings', async () => {
+          const taggedItem = {
+            id   : uuid(),
+            tags : ['tag1', 'tag2', 'tag3']
+          };
+
+          expect(FilterUtility.matchAnyFilter(taggedItem, [{ tags: 'tag2' }])).to.be.true;
+          expect(FilterUtility.matchAnyFilter(taggedItem, [{ tags: 'tag4' }])).to.be.false;
+        });
+
+        it('number', async () => {
+          const taggedItem = {
+            id   : uuid(),
+            tags : [ 1, 2, 3 ]
+          };
+
+          expect(FilterUtility.matchAnyFilter(taggedItem, [{ tags: 2 }])).to.be.true;
+          expect(FilterUtility.matchAnyFilter(taggedItem, [{ tags: 4 }])).to.be.false;
+        });
+
+        it('boolean', async () => {
+          const taggedItem = {
+            id   : uuid(),
+            tags : [ true ]
+          };
+
+          expect(FilterUtility.matchAnyFilter(taggedItem, [{ tags: true }])).to.be.true;
+          expect(FilterUtility.matchAnyFilter(taggedItem, [{ tags: false }])).to.be.false;
+        });
       });
     });
 

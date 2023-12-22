@@ -43,17 +43,13 @@ export class FilterUtility {
         return false;
       }
 
-      if (Array.isArray(indexValue)) {
-        for (const indexValueItem in indexValue) {
-          if (this.matchFilterIndex(filterValue, indexValueItem)) {
-            missingPropertyMatches.delete(filterProperty);
-          } else {
-            return false;
-          }
-        }
-        continue;
-      }
-      if (this.matchFilterIndex(filterValue, indexValue)) {
+      // the indexed value can be a singular value or an array of values.
+      // the array value is matched if any of the items within the array match the filter.
+      const matched = Array.isArray(indexValue) ?
+        this.matchArrayFilterIndex(filterValue, indexValue) :
+        this.matchFilterIndex(filterValue, indexValue);
+
+      if (matched) {
         missingPropertyMatches.delete(filterProperty);
       } else {
         return false;
@@ -62,6 +58,22 @@ export class FilterUtility {
     return missingPropertyMatches.size === 0;
   }
 
+  /**
+   *  Matches a FilterValue for any of the the individual indexValues within the array provided.
+   */
+  private static matchArrayFilterIndex(filterValue: FilterValue, indexValues: string[] | number[] | boolean[]): boolean {
+    for (const indexValue of indexValues) {
+      if (this.matchFilterIndex(filterValue, indexValue)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   *  Matches a FilterValue for an individual indexed value.
+   */
   private static matchFilterIndex(filterValue: FilterValue, indexValue: string | number | boolean): boolean {
     if (typeof filterValue === 'object') {
       if (Array.isArray(filterValue)) {
