@@ -43,34 +43,49 @@ export class FilterUtility {
         return false;
       }
 
-      if (typeof filterValue === 'object') {
-        if (Array.isArray(filterValue)) {
-          // if `filterValue` is an array, it is a OneOfFilter
-          // Support OR matches by querying for each values separately,
-          if (!this.matchOneOf(filterValue, indexValue)) {
+      if (Array.isArray(indexValue)) {
+        for (const indexValueItem in indexValue) {
+          if (this.matchFilterIndex(filterValue, indexValueItem)) {
+            missingPropertyMatches.delete(filterProperty);
+          } else {
             return false;
           }
-          missingPropertyMatches.delete(filterProperty);
-          continue;
-        } else {
-          // `filterValue` is a `RangeFilter`
-          // range filters cannot range over booleans
-          if (!this.matchRange(filterValue, indexValue as RangeValue)) {
-            return false;
-          }
-          missingPropertyMatches.delete(filterProperty);
-          continue;
         }
-      } else {
-        // filterValue is an EqualFilter, meaning it is a non-object primitive type
-        if (indexValue !== filterValue) {
-          return false;
-        }
-        missingPropertyMatches.delete(filterProperty);
         continue;
+      }
+      if (this.matchFilterIndex(filterValue, indexValue)) {
+        missingPropertyMatches.delete(filterProperty);
+      } else {
+        return false;
       }
     }
     return missingPropertyMatches.size === 0;
+  }
+
+  private static matchFilterIndex(filterValue: FilterValue, indexValue: string | number | boolean): boolean {
+    if (typeof filterValue === 'object') {
+      if (Array.isArray(filterValue)) {
+        // if `filterValue` is an array, it is a OneOfFilter
+        // Support OR matches by querying for each values separately,
+        if (!this.matchOneOf(filterValue, indexValue)) {
+          return false;
+        }
+        return true;
+      } else {
+        // `filterValue` is a `RangeFilter`
+        // range filters cannot range over booleans
+        if (!this.matchRange(filterValue, indexValue as RangeValue)) {
+          return false;
+        }
+        return true;
+      }
+    } else {
+      // filterValue is an EqualFilter, meaning it is a non-object primitive type
+      if (indexValue !== filterValue) {
+        return false;
+      }
+      return true;
+    }
   }
 
   /**

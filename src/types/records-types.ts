@@ -14,6 +14,10 @@ export enum DateSort {
   PublishedDescending = 'publishedDescending'
 }
 
+export type RecordsTags = {
+  [property: string]: string[] | number[] | boolean[]
+};
+
 export type RecordsWriteDescriptor = {
   interface: DwnInterfaceName.Records;
   method: DwnMethodName.Write;
@@ -22,6 +26,7 @@ export type RecordsWriteDescriptor = {
   recipient?: string;
   schema?: string;
   parentId?: string;
+  // tags?: RecordsTags;
   dataCid: string;
   dataSize: number;
   dateCreated: string;

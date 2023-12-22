@@ -76,42 +76,75 @@ export class IndexLevel {
       throw new DwnError(DwnErrorCode.IndexMissingIndexableProperty, 'Index must include at least one valid indexable property');
     }
 
-    const indexOps: LevelWrapperBatchOperation<string>[] = [];
+    const indexOpsPromises: Promise<LevelWrapperBatchOperation<string>>[] = [];
 
     // create an index entry for each property index
     // these indexes are all sortable lexicographically.
     for (const indexName in indexes) {
       const indexValue = indexes[indexName];
-      // the key is indexValue followed by the itemId as a tie-breaker.
-      // for example if the property is messageTimestamp the key would look like:
-      // '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
-      const key = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(indexValue), itemId);
-      const item: IndexedItem = { itemId, indexes };
+      if (Array.isArray(indexValue)) {
+        for (const indexValueItem in indexValue) {
+          const partitionOperation = this.generatePutIndexedItemOperation(tenant, itemId, indexes, indexName, indexValueItem);
+          indexOpsPromises.push(partitionOperation);
+        }
+        continue;
+      }
 
-      const partitionOperation = await this.createOperationForIndexPartition(
-        tenant,
-        indexName,
-        { type: 'put', key, value: JSON.stringify(item) }
-      );
-      indexOps.push(partitionOperation);
+      const partitionOperation = this.generatePutIndexedItemOperation(tenant, itemId, indexes, indexName, indexValue);
+      indexOpsPromises.push(partitionOperation);
     }
 
     // create a reverse lookup for the sortedIndex values. This is used during deletion and cursor starting point lookup.
-    const partitionOperation = await this.createOperationForIndexesLookupPartition(
+    const partitionOperation = this.createOperationForIndexesLookupPartition(
       tenant,
       { type: 'put', key: itemId, value: JSON.stringify(indexes) }
     );
-    indexOps.push(partitionOperation);
+    indexOpsPromises.push(partitionOperation);
+    const indexOps = await Promise.all(indexOpsPromises);
 
     const tenantPartition = await this.db.partition(tenant);
     await tenantPartition.batch(indexOps, options);
+  }
+
+  private generatePutIndexedItemOperation(
+    tenant: string,
+    itemId: string,
+    indexes: KeyValues,
+    indexName: string,
+    indexValue: string | number | boolean
+  ):Promise<LevelWrapperBatchOperation<string>> {
+    // the key is indexValue followed by the itemId as a tie-breaker.
+    // for example if the property is messageTimestamp the key would look like:
+    // '"2023-05-25T18:23:29.425008Z"\u0000bafyreigs3em7lrclhntzhgvkrf75j2muk6e7ypq3lrw3ffgcpyazyw6pry'
+    const key = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(indexValue), itemId);
+    const item: IndexedItem = { itemId, indexes };
+
+    return this.createOperationForIndexPartition(
+      tenant,
+      indexName,
+      { type: 'put', key, value: JSON.stringify(item) }
+    );
+  }
+
+  private generateDeleteIndexedItemOperation(
+    tenant: string,
+    itemId: string,
+    indexName: string,
+    indexValue: string | number | boolean
+  ):Promise<LevelWrapperBatchOperation<string>> {
+    const key = IndexLevel.keySegmentJoin(IndexLevel.encodeValue(indexValue), itemId);
+    return this.createOperationForIndexPartition(
+      tenant,
+      indexName,
+      { type: 'del', key }
+    );
   }
 
   /**
    *  Deletes all of the index data associated with the item.
    */
   async delete(tenant: string, itemId: string, options?: IndexLevelOptions): Promise<void> {
-    const indexOps: LevelWrapperBatchOperation<string>[] = [];
+    const indexOpsPromises: Promise<LevelWrapperBatchOperation<string>>[] = [];
 
     const indexes = await this.getIndexes(tenant, itemId);
     if (indexes === undefined) {
@@ -120,22 +153,24 @@ export class IndexLevel {
     }
 
     // delete the reverse lookup
-    const partitionOperation = await this.createOperationForIndexesLookupPartition(tenant, { type: 'del', key: itemId });
-    indexOps.push(partitionOperation);
+    const partitionOperation = this.createOperationForIndexesLookupPartition(tenant, { type: 'del', key: itemId });
+    indexOpsPromises.push(partitionOperation);
 
     // delete the keys for each sortIndex
     for (const indexName in indexes) {
       const sortValue = indexes[indexName];
-      const partitionOperation = await this.createOperationForIndexPartition(
-        tenant,
-        indexName,
-        {
-          type : 'del',
-          key  : IndexLevel.keySegmentJoin(IndexLevel.encodeValue(sortValue), itemId)
+      if (Array.isArray(sortValue)) {
+        for (const sortValueItem in sortValue) {
+          const partitionOperation = this.generateDeleteIndexedItemOperation(tenant, itemId, indexName, sortValueItem);
+          indexOpsPromises.push(partitionOperation);
         }
-      );
-      indexOps.push(partitionOperation);
+        continue;
+      }
+      const partitionOperation = this.generateDeleteIndexedItemOperation(tenant, itemId, indexName, sortValue);
+      indexOpsPromises.push(partitionOperation);
     }
+
+    const indexOps = await Promise.all(indexOpsPromises);
 
     const tenantPartition = await this.db.partition(tenant);
     await tenantPartition.batch(indexOps, options);
@@ -276,6 +311,10 @@ export class IndexLevel {
     if (sortValue === undefined) {
       // invalid sort property
       return;
+    }
+
+    if (Array.isArray(sortValue)) {
+      throw new Error('cursor from array value properties not supported');
     }
 
     // cursor indexes must match the provided filters in order to be valid.
@@ -489,11 +528,19 @@ export class IndexLevel {
    * We know the indexes include the indexName here because they have already been checked within executeSingleFilterQuery.
    */
   private sortItems(itemA: IndexedItem, itemB: IndexedItem, indexName: string, direction: SortDirection): number {
-    const aValue = IndexLevel.encodeValue(itemA.indexes[indexName]) + itemA.itemId;
-    const bValue = IndexLevel.encodeValue(itemB.indexes[indexName]) + itemB.itemId;
+    const itemAValue = itemA.indexes[indexName];
+    const itemBValue = itemB.indexes[indexName];
+
+    // will not use tags for sort values
+    if (Array.isArray(itemAValue) || Array.isArray(itemBValue)) {
+      throw new Error('we do not support sorting by array value properties');
+    }
+
+    const aCompareValue = IndexLevel.encodeValue(itemAValue) + itemA.itemId;
+    const bCompareValue = IndexLevel.encodeValue(itemBValue) + itemB.itemId;
     return direction === SortDirection.Ascending ?
-      lexicographicalCompare(aValue, bValue) :
-      lexicographicalCompare(bValue, aValue);
+      lexicographicalCompare(aCompareValue, bCompareValue) :
+      lexicographicalCompare(bCompareValue, aCompareValue);
   }
 
   /**

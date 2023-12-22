@@ -693,8 +693,10 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     isLatestBaseState: boolean
   ): Promise<KeyValues> {
     const message = this.message;
-    const descriptor = { ...message.descriptor };
+    const { ...descriptor } = { ...message.descriptor };
+    // const { tags, ...descriptor } = { ...message.descriptor };
     delete descriptor.published; // handle `published` specifically further down
+    // const flattenedTags = flatten(tags) as { [property: string]: string[] | number[] | boolean[] };
 
     const indexes: KeyValues = {
       ...descriptor,
