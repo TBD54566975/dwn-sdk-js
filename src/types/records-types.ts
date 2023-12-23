@@ -193,6 +193,6 @@ export type RecordsDeleteDescriptor = {
 
 export type RecordsSubscription = {
   id: string;
-  on: (handler:(message: RecordsWriteMessage | RecordsDeleteMessage) => void) => { off: () => void };
+  on: (handler:(message: RecordsWriteMessage | RecordsDeleteMessage) => void, updated?: boolean) => { off: () => void };
   close: () => Promise<void>;
 };
