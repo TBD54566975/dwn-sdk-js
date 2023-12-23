@@ -698,6 +698,7 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
     isLatestBaseState: boolean
   ): Promise<KeyValues> {
     const message = this.message;
+    // we want to process tags separately from the rest of descriptors as it is an object and not a primitive KeyValue type.
     const { tags, ...descriptor } = { ...message.descriptor };
     delete descriptor.published; // handle `published` specifically further down
 
@@ -710,7 +711,8 @@ export class RecordsWrite implements MessageInterface<RecordsWriteMessage> {
       entryId   : await RecordsWrite.getEntryId(this.author, this.message.descriptor)
     };
 
-    // we don't want the tags to occupy the descriptor tag space, so we augment them with tag. for each indexed property
+    // we don't want the tags properties to occupy the descriptor index namespace
+    // so we augment them with `tag.property_name` for each tag property and add them to the indexes
     if (tags !== undefined) {
       const flattenedTags = Records.flattenTags(tags);
       indexes = { ...indexes, ...flattenedTags };

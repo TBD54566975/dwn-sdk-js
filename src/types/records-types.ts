@@ -18,6 +18,8 @@ export type RecordsTags = {
   [property: string]: string[] | number[] | boolean[]
 };
 
+export type TagsFilter = RangeFilter | RangeCriterion | string | number | boolean;
+
 export type RecordsWriteDescriptor = {
   interface: DwnInterfaceName.Records;
   method: DwnMethodName.Write;
@@ -117,7 +119,7 @@ export type RecordsFilter = {
   published?: boolean;
   contextId?: string;
   schema?: string;
-  tags?: { [property: string]: RangeFilter | RangeCriterion | string | number | boolean };
+  tags?: { [property: string]: TagsFilter };
   recordId?: string;
   parentId?: string;
   dataFormat?: string;
