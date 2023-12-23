@@ -46,10 +46,10 @@
             "additionalProperties": false,
             "properties": {
               "from": {
-                "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+                "type": "string"
               },
               "to": {
-                "$ref": "https://identity.foundation/dwn/json-schemas/defs.json#/definitions/date-time"
+                "type": "string"
               }
             }
           },{

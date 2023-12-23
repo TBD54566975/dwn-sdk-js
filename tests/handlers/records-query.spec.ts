@@ -471,6 +471,22 @@ export function testRecordsQueryHandler(): void {
         expect(tagRangeFilterReply.status.code).to.equal(200);
         expect(tagRangeFilterReply.entries?.length).to.equal(2, 'tag2: gt 2 lt 4');
         expect(tagRangeFilterReply.entries?.map(entry => entry.recordId)).to.have.members([ tagsRecord1.message.recordId, tagsRecord2.message.recordId ], 'tag2: 3');
+
+        const tagRangeTextFilter = await TestDataGenerator.generateRecordsQuery({
+          author : alice,
+          filter : {
+            tags: {
+              tag1: {
+                from : 'tag2',
+                to   : 'tag4'
+              }
+            }
+          }
+        });
+        const tagRangeTextFilterReply = await dwn.processMessage(alice.did, tagRangeTextFilter.message);
+        expect(tagRangeTextFilterReply.status.code).to.equal(200);
+        expect(tagRangeTextFilterReply.entries?.length).to.equal(2, 'tag1: from tag1 to tag3');
+        expect(tagRangeTextFilterReply.entries?.map(entry => entry.recordId)).to.have.members([ tagsRecord1.message.recordId, tagsRecord2.message.recordId ], 'tag2: 3');
       });
 
 
